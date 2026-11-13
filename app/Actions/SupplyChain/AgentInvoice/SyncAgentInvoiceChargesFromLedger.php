@@ -8,11 +8,13 @@
 
 namespace App\Actions\SupplyChain\AgentInvoice;
 
+use App\Actions\SupplyChain\Agent\UI\GetAgentCleanHandoverScore;
 use App\Enums\Procurement\SupplierAgreedTerm\SupplierAgreedTermTypeEnum;
 use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\AgentInvoice;
 use App\Models\SupplyChain\AgentPayment;
 use Illuminate\Support\Arr;
@@ -100,7 +102,8 @@ class SyncAgentInvoiceChargesFromLedger
     }
 
     /**
-     * The agent fee of a container, each supplier's own fee percentage of its goods, else the client's (2 unless set), written to the ledger
+     * The agent fee of a container, each supplier's own fee percentage of its goods, else the client's (2 unless set),
+     * less the client's CHO penalty on the goods of an order that missed clean hand over, written to the ledger
      * when the invoice is issued and kept in step when it is issued again. A fee the agent recorded by hand for
      * this container stands instead.
      */
@@ -157,6 +160,7 @@ class SyncAgentInvoiceChargesFromLedger
         return [
             __('Charged on the goods of a container when its invoice is issued.'),
             __("Uses the supplier's agent fee. If it is empty, the client's agent fee is used, or :percentage% if that is empty too.", ['percentage' => self::DEFAULT_AGENT_FEE_PERCENTAGE]),
+            __("The goods of an order that missed clean hand over (CHO) are charged the fee less the client's CHO penalty, never below 0%."),
             __('A change applies to invoices issued after it. Reissue an existing invoice before dispatch to apply it.'),
             __('A fee recorded by hand replaces it.'),
         ];
@@ -169,48 +173,91 @@ class SyncAgentInvoiceChargesFromLedger
         return $percentage !== null ? (float) $percentage : self::DEFAULT_AGENT_FEE_PERCENTAGE;
     }
 
+    public static function choPenaltyPercentage(int $agentId, int $organisationId): float
+    {
+        $percentage = OrgAgent::where('agent_id', $agentId)->where('organisation_id', $organisationId)->value('cho_penalty_percentage');
+
+        return (float) $percentage;
+    }
+
     /**
-     * The invoice's goods grouped by the fee charged on them: a supplier's own agent fee, else the client's.
+     * The invoice's goods grouped by the fee charged on them: a supplier's own agent fee, else the client's, less the
+     * CHO penalty on the goods of an order that missed clean hand over.
      *
-     * @return list<array{percentage: float, amount: float}>
+     * @return list<array{percentage: float, amount: float, missed_cho: list<string>}>
      */
     private static function goodsByFeePercentage(AgentInvoice $agentInvoice): array
     {
         $clientPercentage = self::clientFeePercentage($agentInvoice->agent_id, $agentInvoice->organisation_id);
+        $penalty          = self::choPenaltyPercentage($agentInvoice->agent_id, $agentInvoice->organisation_id);
         $lines            = collect($agentInvoice->lines ?? []);
 
-        $supplierPercentages = DB::table('stock_delivery_items')
-            ->join('supplier_products', 'supplier_products.id', '=', 'stock_delivery_items.supplier_product_id')
-            ->join('suppliers', 'suppliers.id', '=', 'supplier_products.supplier_id')
+        $items = DB::table('stock_delivery_items')
+            ->leftJoin('supplier_products', 'supplier_products.id', '=', 'stock_delivery_items.supplier_product_id')
+            ->leftJoin('suppliers', 'suppliers.id', '=', 'supplier_products.supplier_id')
+            ->leftJoin('purchase_order_transactions', fn ($join) => $join->on(DB::raw("(stock_delivery_items.data->>'purchase_order_transaction_id')::bigint"), '=', 'purchase_order_transactions.id'))
             ->whereIn('stock_delivery_items.id', $lines->pluck('stock_delivery_item_id')->filter()->all())
-            ->whereNotNull('suppliers.agent_fee_percentage')
-            ->pluck('suppliers.agent_fee_percentage', 'stock_delivery_items.id');
+            ->get(['stock_delivery_items.id', 'suppliers.agent_fee_percentage', 'purchase_order_transactions.purchase_order_id'])
+            ->keyBy('id');
+
+        $missedChoReferences = $penalty > 0 ? self::ordersMissingCleanHandover($items->pluck('purchase_order_id')->filter()->unique()->all()) : collect();
 
         return $lines
-            ->groupBy(fn (array $line) => (string) (float) ($supplierPercentages->get(Arr::get($line, 'stock_delivery_item_id')) ?? $clientPercentage))
-            ->map(fn ($group, string $percentage) => ['percentage' => (float) $percentage, 'amount' => (float) $group->sum('amount')])
+            ->map(function (array $line) use ($items, $clientPercentage, $penalty, $missedChoReferences) {
+                $item       = $items->get(Arr::get($line, 'stock_delivery_item_id'));
+                $percentage = (float) ($item?->agent_fee_percentage ?? $clientPercentage);
+                $missedCho  = $item?->purchase_order_id ? $missedChoReferences->get($item->purchase_order_id) : null;
+
+                return [
+                    'percentage' => $missedCho !== null ? max(0.0, $percentage - $penalty) : $percentage,
+                    'amount'     => (float) Arr::get($line, 'amount', 0),
+                    'missed_cho' => $missedCho,
+                ];
+            })
+            ->groupBy(fn (array $line) => $line['percentage'].($line['missed_cho'] !== null ? ':missed_cho' : ''))
+            ->map(fn ($group) => [
+                'percentage' => $group->first()['percentage'],
+                'amount'     => (float) $group->sum('amount'),
+                'missed_cho' => $group->pluck('missed_cho')->filter()->unique()->sort()->values()->all(),
+            ])
             ->sortByDesc('amount')
             ->values()
             ->all();
     }
 
     /**
-     * @param  list<array{percentage: float, amount: float}>  $goodsByPercentage
+     * @param  list<int>  $purchaseOrderIds
+     * @return \Illuminate\Support\Collection<int, string>
+     */
+    private static function ordersMissingCleanHandover(array $purchaseOrderIds): \Illuminate\Support\Collection
+    {
+        $cleanHandoverScore = GetAgentCleanHandoverScore::make();
+
+        return PurchaseOrder::with('agent')
+            ->whereIn('id', $purchaseOrderIds)
+            ->get()
+            ->filter(fn (PurchaseOrder $purchaseOrder) => (bool) $cleanHandoverScore->cleanHandoverMisses($purchaseOrder))
+            ->pluck('reference', 'id');
+    }
+
+    /**
+     * @param  list<array{percentage: float, amount: float, missed_cho: list<string>}>  $goodsByPercentage
      */
     private static function feeNote(array $goodsByPercentage, AgentInvoice $agentInvoice): string
     {
         $formatPercentage = fn (float $percentage) => rtrim(rtrim(number_format($percentage, 2), '0'), '.');
+        $missedCho        = fn (array $goods) => $goods['missed_cho'] ? ' '.__('(:references missed CHO)', ['references' => implode(', ', $goods['missed_cho'])]) : '';
 
         if (count($goodsByPercentage) <= 1) {
             return __(':percentage% of the goods of :reference', [
                 'percentage' => $formatPercentage($goodsByPercentage[0]['percentage'] ?? self::clientFeePercentage($agentInvoice->agent_id, $agentInvoice->organisation_id)),
                 'reference'  => $agentInvoice->reference,
-            ]);
+            ]).(isset($goodsByPercentage[0]) ? $missedCho($goodsByPercentage[0]) : '');
         }
 
         return __(':parts of the goods of :reference', [
             'parts'     => implode(', ', array_map(
-                fn (array $goods) => __(':percentage% of :amount', ['percentage' => $formatPercentage($goods['percentage']), 'amount' => number_format($goods['amount'], 2)]),
+                fn (array $goods) => __(':percentage% of :amount', ['percentage' => $formatPercentage($goods['percentage']), 'amount' => number_format($goods['amount'], 2)]).$missedCho($goods),
                 $goodsByPercentage
             )),
             'reference' => $agentInvoice->reference,

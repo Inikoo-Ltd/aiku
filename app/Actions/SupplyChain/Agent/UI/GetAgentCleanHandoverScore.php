@@ -110,6 +110,39 @@ class GetAgentCleanHandoverScore
     }
 
     /**
+     * Why an order missed clean hand over (empty when it made it), or null when it is left out of the score or cannot
+     * be judged yet: not approved as ready, or not handed over.
+     *
+     * @return list<string>|null
+     */
+    public function cleanHandoverMisses(PurchaseOrder $purchaseOrder): ?array
+    {
+        $handedOverAt = $this->handedOverAt($purchaseOrder);
+        if ($purchaseOrder->chs_excluded || !$handedOverAt || !$purchaseOrder->approved_ready_at) {
+            return null;
+        }
+
+        $deadline = $purchaseOrder->approved_ready_at->copy()->addDays(self::HANDOVER_TOLERANCE_DAYS);
+        $misses   = [];
+
+        if ($handedOverAt->gt($deadline)) {
+            $daysLate = max(1, (int) ceil($deadline->diffInDays($handedOverAt)));
+            $misses[] = trans_choice('handed over :count day late|handed over :count days late', $daysLate, ['count' => $daysLate]);
+        }
+        if ($purchaseOrder->qc_passed_at === null) {
+            $misses[] = __('QC not passed');
+        }
+        if ($purchaseOrder->compliance_complete_at === null) {
+            $misses[] = __('compliance not complete');
+        }
+        if ($purchaseOrder->not_received_at !== null) {
+            $misses[] = __('goods not received');
+        }
+
+        return $misses;
+    }
+
+    /**
      * When the supplier handed the goods over: marked by hand, or, for an agent sending goods on the next container
      * (cho_mode), where Handed over is not marked, the goods receipt that completed the order there (HELP-4292).
      */

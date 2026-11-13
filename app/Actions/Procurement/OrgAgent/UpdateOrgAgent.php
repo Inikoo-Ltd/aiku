@@ -50,6 +50,7 @@ class UpdateOrgAgent extends OrgAction
             'source_id'   => 'sometimes|nullable|string|max:64',
             'status'      => ['sometimes', 'required', 'boolean'],
             'order_container' => ['sometimes', 'required', Rule::enum(OrgAgentOrderContainerEnum::class)],
+            'cho_penalty_percentage' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
             'money_request_payer_user_ids'   => ['sometimes', 'nullable', 'array'],
             'money_request_payer_user_ids.*' => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
             'money_request_cc_user_ids'      => ['sometimes', 'nullable', 'array'],

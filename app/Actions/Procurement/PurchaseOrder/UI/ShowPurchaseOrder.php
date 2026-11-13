@@ -44,6 +44,8 @@ use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransa
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\DepositRequest\GetAgentMoneyRequestLines;
+use App\Actions\SupplyChain\Agent\UI\GetAgentCleanHandoverScore;
+use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
@@ -964,6 +966,30 @@ class ShowPurchaseOrder extends OrgAction
             ] : null,
             'deposit'      => $this->getDepositChoice($purchaseOrder, $buyerCanEdit),
             'sample'       => $this->getSampleChoice($purchaseOrder, $buyerCanEdit),
+            'cho'          => $this->getCleanHandover($purchaseOrder),
+        ];
+    }
+
+    /**
+     * Whether an agent order made clean hand over, and the points the agent fee on its goods drops when it did not.
+     *
+     * @return array{passed: bool, misses: list<string>, penalty_percentage: float}|null
+     */
+    private function getCleanHandover(PurchaseOrder $purchaseOrder): ?array
+    {
+        if (!$purchaseOrder->isAgentOrder()) {
+            return null;
+        }
+
+        $misses = GetAgentCleanHandoverScore::make()->cleanHandoverMisses($purchaseOrder);
+        if ($misses === null) {
+            return null;
+        }
+
+        return [
+            'passed'             => $misses === [],
+            'misses'             => $misses,
+            'penalty_percentage' => SyncAgentInvoiceChargesFromLedger::choPenaltyPercentage($purchaseOrder->agent_id, $purchaseOrder->organisation_id),
         ];
     }
 

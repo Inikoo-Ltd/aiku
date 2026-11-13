@@ -91,6 +91,7 @@ const props = defineProps<{
     skipRoute?: routeType | null
     deposit?: { not_needed: boolean, agrees?: boolean, route: routeType } | null
     sample?: { required: boolean, approved: boolean, override_reason: string | null, skipped?: boolean, route: routeType | null } | null
+    cho?: { passed: boolean, misses: string[], penalty_percentage: number } | null
 }>()
 
 const slots = useSlots()
@@ -394,6 +395,21 @@ function save() {
             </div>
 
             <div v-if="stage.note" class="mt-0.5 text-xs text-gray-500">{{ stage.note }}</div>
+
+            <div v-if="stage.key === 'handed_over' && cho" class="mt-1">
+                <span v-if="cho.passed" class="inline-flex items-center gap-1 rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700">
+                    <FontAwesomeIcon icon="fas fa-check-circle" fixed-width aria-hidden="true" />
+                    {{ ctrans("CHO passed") }}
+                </span>
+                <template v-else>
+                    <span class="inline-flex items-center gap-1 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700">
+                        <FontAwesomeIcon icon="fal fa-exclamation-circle" fixed-width aria-hidden="true" />
+                        <template v-if="cho.penalty_percentage > 0">{{ ctrans("CHO failed: agent fee −:penalty%", { penalty: cho.penalty_percentage }) }}</template>
+                        <template v-else>{{ ctrans("CHO failed") }}</template>
+                    </span>
+                    <div class="mt-0.5 text-xs text-red-600">{{ cho.misses.join(", ") }}</div>
+                </template>
+            </div>
 
             <div v-if="stage.deliveries && stage.deliveries.total" class="mt-1 flex items-center gap-1 text-xs text-gray-500">
                 <FontAwesomeIcon icon="fal fa-truck" fixed-width aria-hidden="true" />

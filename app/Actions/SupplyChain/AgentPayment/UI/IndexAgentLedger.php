@@ -153,7 +153,7 @@ class IndexAgentLedger extends OrgAction
     /**
      * What each client sent and what was paid from it, by currency; a client with no lines yet shows at zero.
      *
-     * @return list<array{organisation_id: int, code: string, name: string, currency_code: string, received: float, paid: float, balance: float, org_agent_id: int|null, agent_fee_percentage: float|null}>
+     * @return list<array{organisation_id: int, code: string, name: string, currency_code: string, received: float, paid: float, balance: float, org_agent_id: int|null, agent_fee_percentage: float|null, cho_penalty_percentage: float}>
      */
     public function wallets(Agent $agent): array
     {
@@ -170,7 +170,7 @@ class IndexAgentLedger extends OrgAction
             ->groupBy('organisation_id');
 
         $agentCurrency = $agent->organisation->currency->code;
-        $orgAgents     = OrgAgent::where('agent_id', $agent->id)->get(['id', 'organisation_id', 'agent_fee_percentage'])->keyBy('organisation_id');
+        $orgAgents     = OrgAgent::where('agent_id', $agent->id)->get(['id', 'organisation_id', 'agent_fee_percentage', 'cho_penalty_percentage'])->keyBy('organisation_id');
 
         return $this->clients($agent)->flatMap(function (Organisation $client) use ($sums, $agentCurrency, $orgAgents) {
             $rows = $sums->get($client->id) ?? collect([(object) ['currency_code' => $agentCurrency, 'received' => 0, 'paid' => 0]]);
@@ -185,6 +185,7 @@ class IndexAgentLedger extends OrgAction
                 'balance'         => round((float) $row->received - (float) $row->paid, 2),
                 'org_agent_id'    => $orgAgents->get($client->id)?->id,
                 'agent_fee_percentage' => $orgAgents->get($client->id)?->agent_fee_percentage !== null ? (float) $orgAgents->get($client->id)->agent_fee_percentage : null,
+                'cho_penalty_percentage' => (float) $orgAgents->get($client->id)?->cho_penalty_percentage,
             ]);
         })->values()->all();
     }

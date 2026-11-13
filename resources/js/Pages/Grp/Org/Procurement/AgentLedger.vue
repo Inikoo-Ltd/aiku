@@ -43,6 +43,7 @@ interface Wallet {
 	balance: number
 	org_agent_id: number | null
 	agent_fee_percentage: number | null
+	cho_penalty_percentage: number
 	suppliers: SupplierFee[]
 	suppliers_with_different_fee: SupplierFee[]
 }
@@ -394,7 +395,10 @@ const confirmRemove = (row: EntryRow) =>
 				</div>
 			</div>
 			<div v-if="wallet.org_agent_id" class="mt-2 flex items-center justify-between border-t border-gray-100 pt-2 text-xs text-gray-500">
-				<span>{{ ctrans("Agent fee") }} {{ wallet.agent_fee_percentage ?? 2 }}%</span>
+				<span>
+					{{ ctrans("Agent fee") }} {{ wallet.agent_fee_percentage ?? 2 }}%
+					<span v-if="wallet.cho_penalty_percentage > 0" class="text-gray-400" v-tooltip="ctrans('Taken off the agent fee on the goods of an order that missed clean hand over. Set by the client.')">· {{ ctrans("CHO penalty −:penalty%", { penalty: wallet.cho_penalty_percentage }) }}</span>
+				</span>
 				<button v-if="form" type="button" class="text-gray-400 hover:text-gray-700" :title="ctrans('Edit')" :aria-label="ctrans('Edit')" @click="openFee(wallet)">
 					<FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
 				</button>
