@@ -41,6 +41,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Services\GoogleMerchant\GoogleMerchantClient;
 use App\Support\Forms\SesConfigurationBlueprint;
 use Exception;
 use Illuminate\Support\Arr;
@@ -134,6 +135,18 @@ class EditShop extends OrgAction
                 'uploaded' => Arr::get($lastSync, 'uploaded', 0),
                 'removed'  => Arr::get($lastSync, 'removed', 0),
             ]);
+        }
+
+        $isGoogleMerchantConnected         = GoogleMerchantClient::isConnected($shop);
+        $googleMerchantLastSyncInformation = '';
+        if ($lastSync = Arr::get($shop->settings, 'google_merchant.last_sync')) {
+            $googleMerchantLastSyncInformation = ' ' . __('Last sync :at: :sent sent, :unchanged unchanged, :no_cost without a cost, :failed failed.', [
+                'at'        => Arr::get($lastSync, 'at'),
+                'sent'      => Arr::get($lastSync, 'sent', 0),
+                'unchanged' => Arr::get($lastSync, 'unchanged', 0),
+                'no_cost'   => Arr::get($lastSync, 'no_cost', 0),
+                'failed'    => Arr::get($lastSync, 'failed', 0),
+            ]) . (Arr::get($lastSync, 'error') ? ' ' . __('Last error: :error', ['error' => Arr::get($lastSync, 'error')]) : '');
         }
 
         $viewContactOptionsPanel = (bool) Arr::get($shop->settings, 'chat.view_contact_options_panel', false);
@@ -1310,6 +1323,32 @@ class EditShop extends OrgAction
                                 ['value' => 'all', 'label' => __('All customers')],
                             ],
                             'information' => __('All customers uploads people who did not agree to marketing. Only use this if you have another lawful basis.'),
+                        ],
+                    ],
+                ],
+                [
+                    'label'       => __('Google Merchant Center'),
+                    'icon'        => 'fa-brands fa-google',
+                    'information' => __('Every night Aiku sends the cost of each product in your Merchant Center feed as cost of goods sold, so Google Ads can report gross profit. Products are matched by product code. After the first sync, add the "Aiku cost of goods sold" data source to your primary feed in Merchant Center.') . $googleMerchantLastSyncInformation,
+                    'fields'      => [
+                        'gmc__connect'    => [
+                            'type'        => 'action',
+                            'label'       => __('Google Account'),
+                            'information' => $isGoogleMerchantConnected ? __('Connected.') : __('Not connected yet.'),
+                            'action'      => [
+                                'type'  => 'button',
+                                'style' => $isGoogleMerchantConnected ? 'tertiary' : 'save',
+                                'icon'  => ['fab', 'fa-google'],
+                                'label' => $isGoogleMerchantConnected ? __('Reconnect Google account') : __('Connect Google account'),
+                                'route' => [
+                                    'url' => GoogleMerchantClient::authUrl($shop),
+                                ],
+                            ],
+                        ],
+                        'gmc_merchant_id' => [
+                            'type'  => 'input',
+                            'label' => __('Merchant Center ID'),
+                            'value' => Arr::get($shop->settings, 'google_merchant.merchant_id', ''),
                         ],
                     ],
                 ],

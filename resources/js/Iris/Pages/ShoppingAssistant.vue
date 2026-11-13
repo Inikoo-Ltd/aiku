@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import axios from "axios"
-import { router } from "@inertiajs/vue3"
+import { router, usePage } from "@inertiajs/vue3"
 import { get } from "lodash-es"
 import Textarea from "primevue/textarea"
 import Tabs from "primevue/tabs"
@@ -115,21 +115,52 @@ const isLandingVisible = computed(() => showLanding.value && !!assistant.value)
 const isChatVisible = computed(() => !isLandingVisible.value && (!!assistant.value || messages.value.length > 0 || isPending.value))
 const isMerlin = computed(() => assistantName.value.trim().toLowerCase() === "merlin")
 
-const knowsTheRange = computed(() => props.products_in_range
-    ? ctrans(":name knows all :count+ products in our range and what shops like yours buy most.", {
-        name: assistantName.value,
-        count: locale.number(props.products_in_range),
-    })
-    : ctrans(":name knows every product in our range and what shops like yours buy most.", { name: assistantName.value }))
+const knowsTheRange = computed(() => isDropshipping.value
+    ? (props.products_in_range
+        ? ctrans(":name knows all :count+ products you can sell from us and what sells best for online sellers like you.", {
+            name: assistantName.value,
+            count: locale.number(props.products_in_range),
+        })
+        : ctrans(":name knows every product you can sell from us and what sells best for online sellers like you.", { name: assistantName.value }))
+    : (props.products_in_range
+        ? ctrans(":name knows all :count+ products in our range and what shops like yours buy most.", {
+            name: assistantName.value,
+            count: locale.number(props.products_in_range),
+        })
+        : ctrans(":name knows every product in our range and what shops like yours buy most.", { name: assistantName.value })))
 
-const starterQuestions = computed(() => isDropshipping.value ? [
+const landingIntro = computed(() => isDropshipping.value
+    ? ctrans(":name is your dropshipping coach. Ask in your own words and your own language: how to start, how to connect your Shopify, eBay, WooCommerce, TikTok Shop or Wix store, which products to list, how to price them, and how orders and delivery to your buyers work. When :name is not sure, one of our experts answers.", { name: assistantName.value })
+    : ctrans(":name is a new way to work with us. Ask in your own words and your own language: what sells for shops like yours, a product, offers, delivery, samples or product documents. When :name is not sure, one of our experts answers.", { name: assistantName.value }))
+
+const landingFooter = computed(() => isDropshipping.value
+    ? ctrans("Something not working with your store or orders? :name passes it straight to our engineers.", { name: assistantName.value })
+    : ctrans("Planning a big order? :name passes it to our team.", { name: assistantName.value }))
+
+const PLATFORM_NAMES: Record<string, string> = { shopify: "Shopify", ebay: "eBay", woocommerce: "WooCommerce", tiktok: "TikTok Shop", wix: "Wix", amazon: "Amazon", magento: "Magento", allegro: "Allegro" }
+const NEXT_PLATFORMS = ["shopify", "tiktok", "ebay", "woocommerce"]
+
+const connectedPlatforms = computed<string[]>(() => {
+    const channels = layout?.user?.customerSalesChannels ?? (usePage().props as any)?.auth?.customerSalesChannels ?? {}
+    return [...new Set(Object.values(channels).map((channel: any) => channel?.platform_slug).filter((slug: string) => slug && PLATFORM_NAMES[slug]))] as string[]
+})
+
+const nextPlatform = computed(() => NEXT_PLATFORMS.find((slug) => !connectedPlatforms.value.includes(slug)) ?? null)
+
+const starterQuestions = computed(() => isDropshipping.value ? (connectedPlatforms.value.length ? [
+    ...connectedPlatforms.value.slice(0, 2).map((slug) => ctrans("Best sellers to add to my :platform store", { platform: PLATFORM_NAMES[slug] })),
+    ctrans("How do I get more sales on :platform?", { platform: PLATFORM_NAMES[connectedPlatforms.value[0]] }),
+    ...(nextPlatform.value ? [ctrans("Should I start selling on :platform too?", { platform: PLATFORM_NAMES[nextPlatform.value] })] : []),
+    ctrans("How should I set my selling prices?"),
+    ctrans("How fast do you send orders to my buyers?"),
+] : [
     ctrans("I am new to dropshipping – how do I start?"),
     ctrans("How do I connect my Shopify store?"),
     ctrans("Best sellers to list on eBay"),
     ctrans("How should I set my selling prices?"),
     ctrans("What sells well for a crystal store?"),
     ctrans("How fast do you send orders to my buyers?"),
-] : [
+]) : [
     ctrans("I run a crystal shop – what am I missing?"),
     ctrans("Low-priced Christmas gifts that sell well"),
     ctrans("Help me start bath & body"),
@@ -139,17 +170,28 @@ const starterQuestions = computed(() => isDropshipping.value ? [
 ])
 
 const steps = computed(() => [
-    { title: ctrans("Ask anything"), body: ctrans("A question, your shop or what you need – in your own words.") },
-    { title: ctrans("Get picks with a reason"), body: ctrans("Must-haves and add-ons to your range, each with a one-line reason – all live and in stock.") },
+    isDropshipping.value
+        ? { title: ctrans("Ask anything"), body: ctrans("Starting out, your store, a product or a problem – in your own words.") }
+        : { title: ctrans("Ask anything"), body: ctrans("A question, your shop or what you need – in your own words.") },
+    isDropshipping.value
+        ? { title: ctrans("Get clear steps and products to list"), body: ctrans("What to do next for your store, and products picked for online sellers, each with a one-line reason.") }
+        : { title: ctrans("Get picks with a reason"), body: ctrans("Must-haves and add-ons to your range, each with a one-line reason – all live and in stock.") },
     isDropshipping.value
         ? { title: ctrans("Add to your store or keep chatting"), body: ctrans("Send products to your sales channels from each card, ask how to set up your store or start a new conversation.") }
         : { title: ctrans("Add to basket or keep chatting"), body: ctrans("Add them all in one click, ask a follow-up question or start a new conversation.") },
 ])
 
-const promises = computed(() => [
+const promises = computed(() => isDropshipping.value ? [
+    ctrans("Help to set up and connect your store"),
+    ctrans("Products to list, with a reason for each"),
+    ctrans("Tips to get your first sales and grow"),
+    ctrans("Here day and night, also when our team is closed"),
+] : [
     ctrans("Only products in stock now"),
     ctrans("Your own trade prices on every card"),
     ctrans("A reason for every suggestion"),
+    ctrans("Here day and night, also when our team is closed"),
+    ctrans("Problems with your account or our website go straight to our engineers"),
 ])
 
 const latestAssistantId = computed(() => [...messages.value].reverse().find((message) => message.role === "assistant")?.id ?? null)
@@ -696,11 +738,15 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                 maxlength="1000"
                                 class="landing-textarea"
                                 :aria-label="ctrans('Ask anything')"
-                                :placeholder="ctrans('e.g. We’re a small crystal shop in York. What Christmas gifts should we stock, and do you send samples?')"
+                                :placeholder="isDropshipping && connectedPlatforms.length
+                                    ? ctrans('e.g. What should I add to my :platform store for Christmas, and how do I get more sales?', { platform: PLATFORM_NAMES[connectedPlatforms[0]] })
+                                    : isDropshipping
+                                    ? ctrans('e.g. I’m starting a Shopify store for crystals. What should I list first, and how do I connect my store?')
+                                    : ctrans('e.g. We’re a small crystal shop in York. What Christmas gifts should we stock, and do you send samples?')"
                                 @keydown.enter="sendOnEnter"
                             />
                             <div class="landing-ask-footer">
-                                <p class="landing-hint">{{ ctrans("A question, your shop, what you need – the more :name knows, the better the answer.", { name: assistantName }) }}</p>
+                                <p class="landing-hint">{{ isDropshipping ? ctrans("A question, your store, what you need – the more :name knows, the better the answer.", { name: assistantName }) : ctrans("A question, your shop, what you need – the more :name knows, the better the answer.", { name: assistantName }) }}</p>
                                 <button
                                     type="button"
                                     class="landing-ask-button"
@@ -812,7 +858,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
                         <p class="landing-intro">
                             {{ knowsTheRange }}
-                            {{ ctrans(":name is a new way to work with us. Ask in your own words and your own language: what sells for shops like yours, a product, offers, delivery, samples or product documents. When :name is not sure, one of our experts answers.", { name: assistantName }) }}
+                            {{ landingIntro }}
                         </p>
 
                         <p v-if="isMerlin" class="landing-legend">
@@ -831,7 +877,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
                         <ul class="landing-promises">
                             <li v-for="promise in promises" :key="promise">✓ {{ promise }}</li>
-                            <li>{{ ctrans("Planning a big order? :name passes it to our team.", { name: assistantName }) }}</li>
+                            <li>{{ landingFooter }}</li>
                         </ul>
                     </aside>
                 </div>
@@ -909,7 +955,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     <span class="assistant-avatar" aria-hidden="true"><FontAwesomeIcon icon="far fa-sparkles" fixed-width /></span>
                     <div class="min-w-0 flex-1">
                         <p class="chat-header-name">{{ assistantName }}</p>
-                        <p class="chat-header-role">{{ ctrans("Your range advisor") }}</p>
+                        <p class="chat-header-role">{{ isDropshipping ? ctrans("Your dropshipping coach") : ctrans("Your range advisor") }}</p>
                     </div>
                     <button
                         v-if="canTalkToAPerson"
@@ -1106,7 +1152,9 @@ const sendOnEnter = (event: KeyboardEvent) => {
                             maxlength="1000"
                             class="landing-textarea chat-composer-input"
                             :aria-label="ctrans('Describe what your shop needs')"
-                            :placeholder="ctrans('Ask :name a follow-up or describe what your shop needs', { name: assistantName })"
+                            :placeholder="isDropshipping
+                                ? ctrans('Ask :name a follow-up or tell it about your store', { name: assistantName })
+                                : ctrans('Ask :name a follow-up or describe what your shop needs', { name: assistantName })"
                             @keydown.enter="sendChatOnEnter"
                         />
                         <button

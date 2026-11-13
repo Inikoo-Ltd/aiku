@@ -2822,3 +2822,15 @@ test('a supervisor-only shipper is hidden from and refused to dispatch clerks (P
     request()->setUserResolver(fn () => null);
     actingAsUserWithRoles($user, $originalRoles);
 });
+
+test('repairing a channel location rewrites its address on eBay from the shop warehouse settings, keeping the key', function () {
+    $ebayUser = ebayChannel($this, ['location_key' => 'dssk-warehouse-DE']);
+
+    fakeEbay($this, ['/sell/inventory/v1/location/dssk-warehouse-DE/update_location_details' => fn () => Http::response(null, 204)]);
+
+    $this->artisan('repair:ebay_location_address', ['customerSalesChannel' => $ebayUser->customerSalesChannel->slug])->assertSuccessful();
+
+    expect(sentEbayRequest('POST', '/sell/inventory/v1/location/dssk-warehouse-DE/update_location_details')->data())
+        ->toBe(['location' => ['address' => ['city' => 'Sheffield', 'stateOrProvince' => 'South Yorkshire', 'country' => 'GB']]])
+        ->and($ebayUser->refresh()->location_key)->toBe('dssk-warehouse-DE');
+});
