@@ -616,6 +616,9 @@ use App\Actions\Procurement\PurchaseOrderTransaction\GetPurchaseOrderTransaction
 use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier;
 use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionsToSupplier;
 use App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction;
+use App\Actions\Procurement\PurchaseOrderTransaction\GetPurchaseOrderPullSources;
+use App\Actions\Procurement\PurchaseOrderTransaction\GetPurchaseOrderPullSourceLines;
+use App\Actions\Procurement\PurchaseOrderTransaction\PullPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrderTransaction\PackPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\PackPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrderTransaction\SetPurchaseOrderTransactionAgentUnitExpense;
@@ -2128,6 +2131,9 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::post('transactions/{purchaseOrderTransaction:id}/move', MovePurchaseOrderTransactionToSupplier::class)->name('transaction.move')->withoutScopedBindings();
     Route::post('transactions/move', MovePurchaseOrderTransactionsToSupplier::class)->name('transaction.move_many');
     Route::post('transactions/{purchaseOrderTransaction:id}/undo-move', UndoMovePurchaseOrderTransaction::class)->name('transaction.move.undo')->withoutScopedBindings();
+    Route::get('transactions/pull-sources', GetPurchaseOrderPullSources::class)->name('transaction.pull.sources');
+    Route::get('transactions/pull-lines', GetPurchaseOrderPullSourceLines::class)->name('transaction.pull.lines');
+    Route::post('transactions/pull', PullPurchaseOrderTransactions::class)->name('transaction.pull');
     Route::post('transactions/{purchaseOrderTransaction:id}/price-change', AskPurchaseOrderTransactionPriceChange::class)->name('transaction.price_change.ask')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/price-change', AnswerPurchaseOrderTransactionPriceChange::class)->name('transaction.price_change.answer')->withoutScopedBindings();
     Route::post('transactions/{purchaseOrderTransaction:id}/quantity-change', AskPurchaseOrderTransactionQuantityChange::class)->name('transaction.quantity_change.ask')->withoutScopedBindings();

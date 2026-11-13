@@ -26,15 +26,15 @@ class CancelPurchaseOrderTransaction extends OrgAction
     use WithPurchaseOrderAgentEditAuthorisation;
     use WithActionUpdate;
 
-    public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, ?string $reason = null, bool $cancelEmptyOrder = true): PurchaseOrderTransaction
+    public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, ?string $reason = null, bool $cancelEmptyOrder = true, bool $evenInProduction = false): PurchaseOrderTransaction
     {
         $purchaseOrder = $purchaseOrderTransaction->purchaseOrder;
 
-        $purchaseOrderTransaction = DB::transaction(function () use ($purchaseOrder, $purchaseOrderTransaction, $reason, $cancelEmptyOrder) {
+        $purchaseOrderTransaction = DB::transaction(function () use ($purchaseOrder, $purchaseOrderTransaction, $reason, $cancelEmptyOrder, $evenInProduction) {
             $purchaseOrder = PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->first();
             $purchaseOrderTransaction->refresh();
 
-            if ($purchaseOrder->areLinesLockedByProduction()) {
+            if (!$evenInProduction && $purchaseOrder->areLinesLockedByProduction()) {
                 abort(422, __('The supplier is already making this order: its items can no longer be cancelled'));
             }
 
@@ -121,15 +121,16 @@ class CancelPurchaseOrderTransaction extends OrgAction
 
     /**
      * Moving lines to another supplier and undoing a move settle an emptied order themselves, so they pass $cancelEmptyOrder false.
+     * Pulling a line into another order passes $evenInProduction: the units it takes are ones the agent has not received.
      */
-    public function action(PurchaseOrderTransaction $purchaseOrderTransaction, int $hydratorsDelay = 0, bool $cancelEmptyOrder = true): PurchaseOrderTransaction
+    public function action(PurchaseOrderTransaction $purchaseOrderTransaction, int $hydratorsDelay = 0, bool $cancelEmptyOrder = true, bool $evenInProduction = false): PurchaseOrderTransaction
     {
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->initialisation($purchaseOrderTransaction->organisation, []);
 
-        return $this->handle($purchaseOrderTransaction, cancelEmptyOrder: $cancelEmptyOrder);
+        return $this->handle($purchaseOrderTransaction, cancelEmptyOrder: $cancelEmptyOrder, evenInProduction: $evenInProduction);
     }
 
     public function jsonResponse(PurchaseOrderTransaction $purchaseOrderTransaction): PurchaseOrderTransactionResource

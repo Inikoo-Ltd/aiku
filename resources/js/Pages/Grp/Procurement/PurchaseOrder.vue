@@ -57,6 +57,7 @@ import PurchaseOrderReadyCheckItems, { type ReadyCheckItems } from "@/Components
 import PurchaseOrderSampleRequired, { type PurchaseOrderSample } from "@/Components/Procurement/PurchaseOrderSampleRequired.vue"
 import AgentPurchaseOrderGoodsReceipts from "@/Components/Procurement/AgentPurchaseOrderGoodsReceipts.vue"
 import AgentReceiveGoodsButton from "@/Components/Procurement/AgentReceiveGoodsButton.vue"
+import PurchaseOrderPullLinesDialog from "@/Components/Procurement/PurchaseOrderPullLinesDialog.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import ButtonDownloadWithOptions from "@/Components/Utils/ButtonDownloadWithOptions.vue"
@@ -76,12 +77,12 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faCubes, faUndo, faCheck, faExternalLink, faPlus as falPlus } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faCubes, faUndo, faCheck, faExternalLink, faExchange, faPlus as falPlus } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
 library.add(
-	faDownload, faChevronDown, faChevronRight, faBan, faCheckDouble, faBoxOpen, faCubes, falPlus,
+	faDownload, faChevronDown, faChevronRight, faBan, faCheckDouble, faBoxOpen, faCubes, falPlus, faExchange,
 	faIdCardAlt,
 	faEnvelope,
 	faPhone,
@@ -451,6 +452,7 @@ const moneyTable = computed(() => {
 
 const currentTab = ref(props.tabs.current)
 const isModalUploadExcel = ref(false)
+const isPullLinesDialogOpen = ref(false)
 
 const currentLevel = ref<OrderingLevel>(props.data.data.is_partner ? "skos" : "cartons")
 
@@ -1144,6 +1146,16 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				:icon="action.icon"
 				:tooltip="action.tooltip"
 				@click="() => openProductListModal(action)"
+			/>
+		</template>
+
+		<template #button-pull-from-other-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				@click="() => isPullLinesDialogOpen = true"
 			/>
 		</template>
 
@@ -2097,6 +2109,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			/>
 		</template>
 	</Dialog>
+
+	<PurchaseOrderPullLinesDialog v-model:visible="isPullLinesDialogOpen" :purchase-order-id="data.data.id" />
 
 	<UploadExcel
 		v-if="props.upload_excel"

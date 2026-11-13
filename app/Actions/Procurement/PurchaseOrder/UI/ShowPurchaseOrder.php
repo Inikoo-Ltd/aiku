@@ -39,6 +39,7 @@ use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\PurchaseOrder\ConfirmPurchaseOrderPayment;
 use App\Actions\Procurement\PurchaseOrder\ResolvePurchaseOrderDeliveryAddress;
 use App\Actions\Procurement\PurchaseOrder\Traits\WithPurchaseOrderWeightAndVolume;
+use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier;
 use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
@@ -89,7 +90,7 @@ class ShowPurchaseOrder extends OrgAction
     use WithPurchaseOrderWeightAndVolume;
     use WithAgentOrganisation;
 
-    private const array AGENT_ACTION_KEYS = ['edit_estimated_delivery_date', 'cancel_purchase_order', 'undo_cancel_purchase_order'];
+    private const array AGENT_ACTION_KEYS = ['edit_estimated_delivery_date', 'cancel_purchase_order', 'undo_cancel_purchase_order', 'pull_from_other_order'];
 
     private bool $agentCanEdit = false;
 
@@ -813,6 +814,22 @@ class ShowPurchaseOrder extends OrgAction
             PurchaseOrderStateEnum::CANCELLED => [$this->undoCancelAction($purchaseOrder)],
             default => []
         };
+
+        if (MovePurchaseOrderTransactionToSupplier::canPullInto($purchaseOrder)) {
+            $actions[] = [
+                'label'   => __('Add from another PO'),
+                'tooltip' => __('Move all or part of items of another open order of the agent to this order'),
+                'type'    => 'button',
+                'style'   => 'secondary',
+                'icon'    => 'fal fa-exchange',
+                'key'     => 'pull_from_other_order',
+                'route'   => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.purchase-order.transaction.pull',
+                    'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                ],
+            ];
+        }
 
         if ($this->datedByItsStockDeliveries($purchaseOrder)) {
             $actions = array_values(array_filter($actions, fn (array $action) => Arr::get($action, 'key') !== 'edit_estimated_delivery_date'));

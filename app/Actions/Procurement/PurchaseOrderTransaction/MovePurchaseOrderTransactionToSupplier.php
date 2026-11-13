@@ -21,6 +21,8 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Models\GoodsIn\StockDelivery;
+use App\Models\Procurement\AgentWarehouseStock;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
@@ -41,6 +43,8 @@ use Lorisleiva\Actions\ActionRequest;
  * on a new one named after the source order with the new supplier's code, at the
  * price the buyer agreed; a different supplier price is asked to the buyer with the usual price question.
  * The agent can also move the line to another order of the same supplier: it keeps its product and price.
+ * Pulling ($into) is the same move started from the order that takes the line: any live order of the agent in the same
+ * currency, from any open order of the agent, even once production started, for the units the agent has not received yet.
  */
 class MovePurchaseOrderTransactionToSupplier extends OrgAction
 {
@@ -49,17 +53,26 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
     /**
      * @param array{org_supplier_id: int, quantity: float|string, reference?: string|null, code?: string|null, name?: string|null, cost?: float|string|null, units_per_carton?: float|string|null} $modelData
      *
+     * @param PurchaseOrder|null $into the order pulling the line; its supplier and reference replace org_supplier_id and reference
+     * @param bool $acceptsSupplierPrice the buyer pulls: a line changing supplier takes that supplier's price instead of asking the buyer
+     *
      * @return array{source: PurchaseOrderTransaction, moved: PurchaseOrderTransaction, source_cancelled: bool, source_empty: bool, deposit_paid: bool}
      */
-    public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData, ?User $user = null): array
+    public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData, ?User $user = null, ?PurchaseOrder $into = null, bool $acceptsSupplierPrice = false): array
     {
-        $result = DB::transaction(function () use ($purchaseOrderTransaction, $modelData, $user) {
+        $result = DB::transaction(function () use ($purchaseOrderTransaction, $modelData, $user, $into, $acceptsSupplierPrice) {
             $sourcePurchaseOrder = PurchaseOrder::whereKey($purchaseOrderTransaction->purchase_order_id)->lockForUpdate()->first();
             $purchaseOrderTransaction->refresh();
             $quantity = round((float) $modelData['quantity'], 3);
 
-            $this->ensureMovable($sourcePurchaseOrder, $purchaseOrderTransaction, $quantity);
-            $orgSupplier = $this->targetOrgSupplier($sourcePurchaseOrder, (int) $modelData['org_supplier_id']);
+            if ($into) {
+                $into = PurchaseOrder::whereKey($into->id)->lockForUpdate()->first();
+                $this->ensurePullable($sourcePurchaseOrder, $purchaseOrderTransaction, $quantity, $into);
+                $orgSupplier = $into->parent;
+            } else {
+                $this->ensureMovable($sourcePurchaseOrder, $purchaseOrderTransaction, $quantity);
+                $orgSupplier = $this->targetOrgSupplier($sourcePurchaseOrder, (int) $modelData['org_supplier_id']);
+            }
 
             $isSameSupplier     = $orgSupplier->id === $sourcePurchaseOrder->parent_id;
             $orgStock           = $purchaseOrderTransaction->orgStock;
@@ -85,10 +98,14 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             }
 
             $agreedUnitCost      = (float) ($purchaseOrderTransaction->unit_cost ?? $supplierProduct->cost);
+            $takesSupplierPrice  = $acceptsSupplierPrice && !$isSameSupplier && (float) $supplierProduct->cost > 0;
+            $unitCost            = $takesSupplierPrice ? (float) $supplierProduct->cost : $agreedUnitCost;
             $typedReference      = trim((string) Arr::get($modelData, 'reference'));
-            $targetPurchaseOrder = $typedReference !== ''
-                ? $this->purchaseOrderNamed($orgSupplier, $sourcePurchaseOrder, $typedReference)
-                : $this->openPurchaseOrderOf($orgSupplier, $sourcePurchaseOrder);
+            $targetPurchaseOrder = match (true) {
+                $into !== null        => $into,
+                $typedReference !== '' => $this->purchaseOrderNamed($orgSupplier, $sourcePurchaseOrder, $typedReference),
+                default               => $this->openPurchaseOrderOf($orgSupplier, $sourcePurchaseOrder),
+            };
             $isNewPurchaseOrder  = $targetPurchaseOrder === null;
 
             if ($isNewPurchaseOrder) {
@@ -105,7 +122,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
                 $orgStock,
                 array_filter([
                     'quantity_ordered'        => $quantity,
-                    'net_amount'              => round($agreedUnitCost * $quantity, 2),
+                    'net_amount'              => round($unitCost * $quantity, 2),
                     'currency_id'             => $lineCurrencyId,
                     'org_supplier_product_id' => $orgSupplierProduct->id,
                     'state'                   => $isNewPurchaseOrder ? null : $targetPurchaseOrder->state->transactionState(),
@@ -121,7 +138,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
                 }
             }
 
-            if (!$isSameSupplier && round((float) $supplierProduct->cost, 6) !== round($agreedUnitCost, 6) && (float) $supplierProduct->cost > 0) {
+            if (!$isSameSupplier && !$takesSupplierPrice && round((float) $supplierProduct->cost, 6) !== round($agreedUnitCost, 6) && (float) $supplierProduct->cost > 0) {
                 $moved = AskPurchaseOrderTransactionPriceChange::make()->action($moved->refresh(), [
                     'unit_cost' => $supplierProduct->cost,
                     'note'      => __('Moved from :reference', ['reference' => $sourcePurchaseOrder->reference]),
@@ -130,7 +147,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
 
             $isWholeLine = $quantity >= (float) $purchaseOrderTransaction->quantity_ordered;
             $source      = $isWholeLine
-                ? CancelPurchaseOrderTransaction::make()->action($purchaseOrderTransaction, cancelEmptyOrder: false)
+                ? CancelPurchaseOrderTransaction::make()->action($purchaseOrderTransaction, cancelEmptyOrder: false, evenInProduction: $into !== null)
                 : UpdatePurchaseOrderTransaction::make()->action($purchaseOrderTransaction, ['quantity_ordered' => round((float) $purchaseOrderTransaction->quantity_ordered - $quantity, 3)]);
 
             $movedAt = now()->toIso8601String();
@@ -203,6 +220,104 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
 
         if ($quantity <= 0 || $quantity > (float) $purchaseOrderTransaction->quantity_ordered) {
             throw ValidationException::withMessages(['quantity' => __('Move between 1 and :quantity units', ['quantity' => trimDecimalZeros($purchaseOrderTransaction->quantity_ordered)])]);
+        }
+    }
+
+    /**
+     * What each line can still give to another order: the units the agent has not received yet, nothing when the line is
+     * on a stock delivery (named, so the person knows which container to take it off), not sent to the supplier yet, or has no SKO.
+     *
+     * @param Collection<int, PurchaseOrderTransaction> $purchaseOrderTransactions
+     *
+     * @return Collection<int, array{quantity: float, received_at_agent: float, blocked_reason: string|null, stock_delivery: array{reference: string, slug: string, state_label: string}|null}>
+     */
+    public static function pullableQuantities(Collection $purchaseOrderTransactions): Collection
+    {
+        $transactionIds  = $purchaseOrderTransactions->pluck('id')->all();
+        $receivedAtAgent = AgentWarehouseStock::whereIn('purchase_order_transaction_id', $transactionIds)
+            ->where('quantity', '>', 0)
+            ->groupBy('purchase_order_transaction_id')
+            ->selectRaw('purchase_order_transaction_id, sum(quantity) as quantity')
+            ->pluck('quantity', 'purchase_order_transaction_id');
+        $deliveryIdOfTransaction = PurchaseOrderTransaction::whereIn('id', $transactionIds)
+            ->select('purchase_order_transactions.id')
+            ->selectSub(
+                fn (Builder $items) => StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction($items)
+                    ->select('stock_delivery_items.stock_delivery_id')
+                    ->orderBy('stock_delivery_items.stock_delivery_id')
+                    ->limit(1),
+                'stock_delivery_id'
+            )
+            ->pluck('stock_delivery_id', 'id')
+            ->filter();
+        $stockDeliveries = StockDelivery::whereIn('id', $deliveryIdOfTransaction->unique()->values()->all())->get(['id', 'reference', 'slug', 'state'])->keyBy('id');
+
+        return $purchaseOrderTransactions->mapWithKeys(function (PurchaseOrderTransaction $purchaseOrderTransaction) use ($receivedAtAgent, $deliveryIdOfTransaction, $stockDeliveries) {
+            $stockDelivery = $stockDeliveries->get($deliveryIdOfTransaction->get($purchaseOrderTransaction->id));
+            $ordered       = (float) $purchaseOrderTransaction->quantity_ordered;
+            $received      = (float) $receivedAtAgent->get($purchaseOrderTransaction->id, 0);
+            $blockedReason = match (true) {
+                !in_array($purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true) => __('Only submitted or agreed items can move'),
+                $purchaseOrderTransaction->org_stock_id === null => __('This item has no SKO'),
+                $deliveryIdOfTransaction->has($purchaseOrderTransaction->id) => $stockDelivery
+                    ? __('In container :reference (:state): take it off the container first', ['reference' => $stockDelivery->reference, 'state' => StockDeliveryStateEnum::labels()[$stockDelivery->state->value] ?? $stockDelivery->state->value])
+                    : __('On a stock delivery: deal with it there'),
+                $received >= $ordered => __('The agent already received all of it'),
+                default => null,
+            };
+
+            return [$purchaseOrderTransaction->id => [
+                'quantity'          => $blockedReason ? 0.0 : round($ordered - $received, 3),
+                'received_at_agent' => $received,
+                'blocked_reason'    => $blockedReason,
+                'stock_delivery'    => $stockDelivery && $blockedReason && $deliveryIdOfTransaction->has($purchaseOrderTransaction->id) ? [
+                    'reference'   => $stockDelivery->reference,
+                    'slug'        => $stockDelivery->slug,
+                    'state_label' => StockDeliveryStateEnum::labels()[$stockDelivery->state->value] ?? $stockDelivery->state->value,
+                ] : null,
+            ]];
+        });
+    }
+
+    /**
+     * Orders a line can be pulled from into this one: open orders of the same agent and currency, never this one.
+     *
+     * @return EloquentBuilder<PurchaseOrder>
+     */
+    public static function purchaseOrdersToPullFromQuery(PurchaseOrder $intoPurchaseOrder): EloquentBuilder
+    {
+        return PurchaseOrder::query()
+            ->where('organisation_id', $intoPurchaseOrder->organisation_id)
+            ->whereKeyNot($intoPurchaseOrder->id)
+            ->where('parent_type', 'OrgSupplier')
+            ->where('agent_id', $intoPurchaseOrder->agent_id)
+            ->where('currency_id', $intoPurchaseOrder->currency_id)
+            ->whereIn('state', PurchaseOrderStateEnum::open());
+    }
+
+    public static function canPullInto(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->isAgentOrder() && in_array($purchaseOrder->state, PurchaseOrderStateEnum::live(), true);
+    }
+
+    private function ensurePullable(PurchaseOrder $sourcePurchaseOrder, PurchaseOrderTransaction $purchaseOrderTransaction, float $quantity, PurchaseOrder $intoPurchaseOrder): void
+    {
+        if (!self::canPullInto($intoPurchaseOrder)) {
+            throw ValidationException::withMessages(['purchase_order' => __(':reference can no longer take items', ['reference' => $intoPurchaseOrder->reference])]);
+        }
+
+        if (!self::purchaseOrdersToPullFromQuery($intoPurchaseOrder)->whereKey($sourcePurchaseOrder->id)->exists()) {
+            throw ValidationException::withMessages(['source_purchase_order_id' => __('Choose an open order of the same agent in :currency', ['currency' => $intoPurchaseOrder->currency?->code])]);
+        }
+
+        $pullable = self::pullableQuantities(collect([$purchaseOrderTransaction]))->get($purchaseOrderTransaction->id);
+
+        if ($pullable['blocked_reason']) {
+            throw ValidationException::withMessages(['purchase_order_transaction' => $pullable['blocked_reason']]);
+        }
+
+        if ($quantity <= 0 || $quantity > $pullable['quantity']) {
+            throw ValidationException::withMessages(['quantity' => __('Move between 1 and :quantity units', ['quantity' => trimDecimalZeros($pullable['quantity'])])]);
         }
     }
 
