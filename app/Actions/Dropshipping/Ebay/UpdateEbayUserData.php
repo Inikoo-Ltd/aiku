@@ -143,7 +143,7 @@ class UpdateEbayUserData extends OrgAction
     public function moveToWarehouseLocation(EbayUser $ebayUser): array
     {
         $shop   = $ebayUser->customer?->shop;
-        $result = ['location_key' => null, 'moved' => 0, 'already' => 0, 'failed' => []];
+        $result = ['location_key' => null, 'moved' => 0, 'already' => 0, 'drafts' => 0, 'failed' => []];
 
         if (!$shop || !Country::find(Arr::get($shop->settings, 'ebay.warehouse_country'))) {
             return $result;
@@ -165,6 +165,11 @@ class UpdateEbayUserData extends OrgAction
 
             if (Arr::get($offer, 'merchantLocationKey') === $locationKey) {
                 $result['already']++;
+                continue;
+            }
+
+            if (Arr::get($offer, 'offerId') && Arr::get($offer, 'status') !== 'PUBLISHED') {
+                $result['drafts']++;
                 continue;
             }
 

@@ -42,7 +42,7 @@ class RepairEbayLocationAddress
             return 1;
         }
 
-        $command->info($result['location_key'].': '.$result['moved'].' moved, '.$result['already'].' already there, '.count($result['failed']).' failed');
+        $command->info($result['location_key'].': '.$result['moved'].' moved, '.$result['already'].' already there, '.$result['drafts'].' drafts skipped, '.count($result['failed']).' failed');
 
         foreach ($result['failed'] as $offerId => $error) {
             $command->warn($offerId.' '.$error);

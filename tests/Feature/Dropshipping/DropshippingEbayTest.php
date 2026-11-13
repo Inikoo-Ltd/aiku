@@ -2837,6 +2837,7 @@ test('repairing a channel location moves its offers onto the shop warehouse loca
         'listingPolicies'     => ['fulfillmentPolicyId' => 'fp-seller'],
         'categoryId'          => '123',
         'format'              => 'FIXED_PRICE',
+        'status'              => 'PUBLISHED',
     ];
 
     fakeEbay($this, [
@@ -2854,4 +2855,20 @@ test('repairing a channel location moves its offers onto the shop warehouse loca
         ->and($put['pricingSummary']['price']['value'])->toBe('28.56')
         ->and($put['listingPolicies'])->toBe(['fulfillmentPolicyId' => 'fp-seller'])
         ->and($ebayUser->refresh()->location_key)->toBe($locationKey);
+});
+
+test('repairing a channel location leaves draft offers that never went live alone', function () {
+    $ebayUser = ebayChannel($this, ['location_key' => 'dssk-warehouse-DE']);
+    listedEbayPortfolio($this, $ebayUser, '111', 'offer-draft');
+    $locationKey = $this->shop->slug.'-warehouse-GB';
+
+    fakeEbay($this, [
+        '/sell/inventory/v1/location/'.$locationKey => fn () => Http::response(null, 204),
+        '/sell/inventory/v1/offer/offer-draft'      => fn () => Http::response(['offerId' => 'offer-draft', 'status' => 'UNPUBLISHED', 'pricingSummary' => []]),
+    ]);
+
+    $result = UpdateEbayUserData::make()->moveToWarehouseLocation($ebayUser);
+
+    expect($result)->toMatchArray(['location_key' => $locationKey, 'moved' => 0, 'drafts' => 1, 'failed' => []]);
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'PUT');
 });
