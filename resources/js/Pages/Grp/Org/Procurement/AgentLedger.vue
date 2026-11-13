@@ -600,17 +600,19 @@ const confirmRemove = (row: EntryRow) =>
 	</Dialog>
 
 	<Dialog v-model:visible="isSupplierFeeOpen" modal :header="ctrans('Supplier agent fees for :client', { client: supplierFeeWallet?.code ?? '' })" :style="{ width: '34rem', maxWidth: 'calc(100vw - 2rem)' }">
-		<p class="text-sm text-gray-600">
-			{{ ctrans(":client's agent fee is :percentage%. These suppliers charge their own fee instead:", { client: supplierFeeWallet?.code ?? "", percentage: clientFee(supplierFeeWallet) }) }}
-		</p>
-		<ul v-if="supplierFeeWallet?.suppliers_with_different_fee.length" class="mt-3 divide-y divide-gray-100 rounded-md border border-gray-200">
+		<div class="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-sm">
+			<span class="text-gray-600">{{ ctrans(":client agent fee", { client: supplierFeeWallet?.code ?? "" }) }}</span>
+			<span class="font-semibold text-gray-900">{{ clientFee(supplierFeeWallet) }}%</span>
+		</div>
+		<div class="mt-4 text-sm font-medium text-gray-700">{{ ctrans("Suppliers with their own fee") }}</div>
+		<ul v-if="supplierFeeWallet?.suppliers_with_different_fee.length" class="mt-2 divide-y divide-gray-100 rounded-md border border-gray-200">
 			<li v-for="supplier in supplierFeeWallet.suppliers_with_different_fee" :key="supplier.id" class="flex items-center justify-between gap-3 px-3 py-2 text-sm">
 				<span class="min-w-0 truncate">
 					<span class="font-semibold uppercase text-gray-700">{{ supplier.code }}</span>
 					<span v-if="supplier.name" class="ml-2 text-gray-500">{{ supplier.name }}</span>
 				</span>
 				<span class="flex shrink-0 items-center gap-2">
-					<span class="font-medium text-gray-800">{{ supplier.agent_fee_percentage }}%</span>
+					<span class="font-semibold text-gray-900">{{ supplier.agent_fee_percentage }}%</span>
 					<button v-if="form" type="button" class="text-gray-400 hover:text-gray-700" :title="ctrans('Edit')" :aria-label="ctrans('Edit')" @click="pickSupplierFee(supplier)">
 						<FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
 					</button>
@@ -627,7 +629,7 @@ const confirmRemove = (row: EntryRow) =>
 				</span>
 			</li>
 		</ul>
-		<p v-else class="mt-3 text-sm text-gray-400">{{ ctrans("No supplier has a different agent fee.") }}</p>
+		<p v-else class="mt-2 text-sm text-gray-400">{{ ctrans("No supplier has a different agent fee.") }}</p>
 		<AgentFeeCalculationInfo :items="agent_fee_explained" class="mt-3" />
 
 		<div v-if="form" class="mt-5 border-t border-gray-100 pt-4">
