@@ -54,6 +54,12 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use App\Actions\Comms\Mailshot\StoreMailshot;
+use App\Enums\Comms\Mailshot\MailshotStateEnum;
+use App\Enums\Comms\Mailshot\MailshotTypeEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Models\Comms\Mailshot;
+use App\Models\Comms\MailshotRecipient;
 
 use function Pest\Laravel\actingAs;
 
@@ -3007,4 +3013,58 @@ test('a basket add of a product both a chat and a later panel day showed is reco
 
     expect(ShoppingAssistantEvent::where('type', ShoppingAssistantEventTypeEnum::ADDED)->where('product_id', $product->id)->pluck('shopping_assistant_conversation_id')->all())
         ->toBe([$message->shopping_assistant_conversation_id]);
+});
+
+function shoppingAssistantSentMailshot(Shop $shop, ?Customer $recipient, string $html, Carbon $sentAt, MailshotTypeEnum $type = MailshotTypeEnum::NEWSLETTER): Mailshot
+{
+    $outbox   = $shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    $mailshot = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+    $mailshot->update(['type' => $type, 'state' => MailshotStateEnum::SENT, 'sent_at' => $sentAt]);
+    $mailshot->email->liveSnapshot->update(['compiled_layout' => $html]);
+
+    if ($recipient) {
+        $dispatchedEmail = $outbox->dispatchedEmails()->create(['data' => []]);
+        MailshotRecipient::create(['mailshot_id' => $mailshot->id, 'dispatched_email_id' => $dispatchedEmail->id, 'recipient_type' => 'Customer', 'recipient_id' => $recipient->id, 'channel' => 1]);
+    }
+
+    return $mailshot->refresh();
+}
+
+test('a question about an email we sent is answered from the newsletters this customer received in the last 30 days, citing the email so its figures may be repeated', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $other    = shoppingAssistantCustomer($this->shop);
+    $received = shoppingAssistantSentMailshot($this->shop, $customer, '<head><style>body{margin:0}</style></head><p>Hi [Customer Name],</p><p>A free gift when you spend over &pound;150+VAT&nbsp;with the code ASTROWISDOM.</p>', Carbon::now()->subDays(3));
+    shoppingAssistantSentMailshot($this->shop, $other, '<p>Only for the other customer: code OTHERCODE.</p>', Carbon::now()->subDay());
+    shoppingAssistantSentMailshot($this->shop, $customer, '<p>Old news: code OLDCODE.</p>', Carbon::now()->subDays(45));
+
+    Http::fake([
+        '*chat/completions' => Http::sequence()
+            ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('recent_emails_to_customer', [])]], 'tool_calls'))
+            ->push(shoppingAssistantPresent(['reply' => "Our email of {$received->sent_at->format('j. n.')} offered a free gift on orders over 150 pounds with the code ASTROWISDOM.", 'answer_kind' => 'shop_answer', 'sources' => [-$received->id]]))
+            ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('recent_emails_to_customer', [])]], 'tool_calls'))
+            ->push(shoppingAssistantPresent(['reply' => 'We have not sent you a newsletter lately. What are you looking for?', 'answer_kind' => 'question'])),
+    ]);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $result       = AskShoppingAssistant::run($conversation, 'What was the offer in your email?');
+    $message      = $result['message']->refresh();
+
+    expect($result['reply'])->toBe("Our email of {$received->sent_at->format('j. n.')} offered a free gift on orders over 150 pounds with the code ASTROWISDOM.")
+        ->and($message->flags)->toBeNull()
+        ->and($message->answer_kind->value)->toBe('shop_answer')
+        ->and($message->source_kind)->toBe('email')
+        ->and($message->sources[0]['source_id'])->toBe((string) $received->id)
+        ->and($message->tool_calls[0]['source_ids'])->toBe([-$received->id]);
+
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'chat/completions') && collect($request['messages'])->contains(
+        fn ($sent) => ($sent['role'] ?? null) === 'tool' && str_contains($sent['content'], 'ASTROWISDOM') && str_contains($sent['content'], 'Hi [Customer Name]')
+            && !str_contains($sent['content'], 'margin') && !str_contains($sent['content'], 'OTHERCODE') && !str_contains($sent['content'], 'OLDCODE')
+    ));
+
+    $none = AskShoppingAssistant::run(StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::COMMAND), 'What was in your last email?');
+
+    expect($none['reply'])->toBe('We have not sent you a newsletter lately. What are you looking for?')
+        ->and($none['message']->refresh()->flags)->toBeNull()
+        ->and($none['message']->answer_kind->value)->toBe('question')
+        ->and($none['message']->sources)->toBeNull();
 });

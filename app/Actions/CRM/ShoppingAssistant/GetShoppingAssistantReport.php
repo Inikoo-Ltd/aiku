@@ -872,6 +872,7 @@ class GetShoppingAssistantReport
             'note'      => __('Staff notes'),
             'verified'  => __('Verified facts'),
             'learned'   => __('Learned rules'),
+            'email'     => __('Our emails'),
         ];
     }
 
