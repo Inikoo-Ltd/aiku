@@ -3054,6 +3054,54 @@ test('on a dropshipping shop the assistant is on, coaches and sells with the cus
     }
 });
 
+test('on a dropshipping shop missing_from_range leaves out products the customer already lists, and the other product tools mark them already_listed', function () {
+    $originalType = $this->shop->type;
+
+    try {
+        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+        shoppingAssistantStorefront($this);
+        $customer = shoppingAssistantCustomer($this->shop->refresh());
+        $channel  = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::SHOPIFY)->firstOrFail(), ['reference' => 'listed-'.Str::random(6)]);
+        $listed   = shoppingAssistantLiveProduct($this->product);
+        $unlisted = shoppingAssistantLiveProduct($this->product);
+        DB::table('portfolios')->insert([
+            'group_id'                  => $customer->group_id,
+            'organisation_id'           => $customer->organisation_id,
+            'shop_id'                   => $customer->shop_id,
+            'customer_id'               => $customer->id,
+            'customer_sales_channel_id' => $channel->id,
+            'item_type'                 => 'Product',
+            'item_id'                   => $listed->id,
+            'status'                    => true,
+            'data'                      => '{}',
+            'settings'                  => '{}',
+        ]);
+
+        DB::table('segment_product_sales')->where('shop_id', $this->shop->id)->delete();
+        DB::table('segment_product_sales')->insert(collect([$listed, $unlisted])->map(fn (Product $product) => [
+            'shop_id'           => $this->shop->id,
+            'level'             => App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales::LEVEL_SHOP,
+            'shop_type'         => null,
+            'product_id'        => $product->id,
+            'family_id'         => $product->family_id,
+            'segment_customers' => 40,
+            'customers'         => 12,
+            'repeat_customers'  => 5,
+            'revenue'           => 999.50,
+        ])->all());
+
+        $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+        $missing      = GetShoppingAssistantTools::make()->execute($conversation, 'missing_from_range', []);
+        $bestSellers  = collect(GetShoppingAssistantTools::make()->execute($conversation, 'best_sellers_for_similar_shops', [])['content']['products'])->keyBy('id');
+
+        expect(array_column($missing['products'], 'id'))->toBe([$unlisted->id])
+            ->and($bestSellers[$listed->id]['already_listed'] ?? false)->toBeTrue()
+            ->and($bestSellers[$unlisted->id])->not->toHaveKey('already_listed');
+    } finally {
+        $this->shop->update(['type' => $originalType]);
+    }
+});
+
 test('on a B2B shop the assistant prompt keeps the range advisor and the basket tools', function () {
     $customer = shoppingAssistantCustomer($this->shop);
 

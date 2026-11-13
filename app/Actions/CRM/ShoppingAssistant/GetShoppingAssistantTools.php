@@ -226,7 +226,7 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'missing_from_range',
-                'Products that sell well in the shops closest to this customer (the same kind of shop when we know theirs, otherwise every shop) but that this customer has never ordered. Each product\'s why says exactly which shops it is about. Use it when the customer asks what they are missing or how to widen their range. Returns products with id, name, family and why.',
+                'Products that sell well in the shops closest to this customer (the same kind of shop when we know theirs, otherwise every shop) but that this customer has never ordered and, on a dropshipping shop, does not list in their stores. Each product\'s why says exactly which shops it is about. Use it when the customer asks what they are missing or how to widen their range. Returns products with id, name, family and why.',
                 ['limit' => $limit]
             ),
             $this->tool(
@@ -1467,6 +1467,7 @@ class GetShoppingAssistantTools
         $seen    = [];
         $content = [];
         $found   = [];
+        $listed  = self::isDropshipping($customer) && $products->isNotEmpty() ? array_flip(GetCustomerRangeGaps::listedProductIds($customer)) : [];
 
         foreach ($products as $product) {
             if (isset($seen[$product->id])) {
@@ -1485,12 +1486,20 @@ class GetShoppingAssistantTools
             if ($withLastOrdered) {
                 $item['last_ordered'] = $product->customer_last_ordered_at?->format('Y-m');
             }
+            if (isset($listed[$product->id])) {
+                $item['already_listed'] = true;
+            }
 
             $content[] = $item;
             $found[]   = ['id' => $product->id, 'reason_code' => $reasonCode, 'reason' => $this->reasonText($reasonCode, $customer, $locale)];
         }
 
-        return ['content' => ['products' => $content], 'products' => $found, 'error' => null];
+        $result = ['content' => ['products' => $content], 'products' => $found, 'error' => null];
+        if ($listed && collect($content)->contains('already_listed', true)) {
+            $result['content']['already_listed_note'] = 'Products marked already_listed are already in the customer\'s stores: never present them as new or as something to add; leave them out unless the customer asked for that product.';
+        }
+
+        return $result;
     }
 
     public function segmentReasonCode(Product $product): string
