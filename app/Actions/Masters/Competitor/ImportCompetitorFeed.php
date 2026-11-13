@@ -11,6 +11,7 @@ namespace App\Actions\Masters\Competitor;
 use App\Enums\Masters\Competitor\CompetitorStatusEnum;
 use App\Models\Masters\Competitor;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Laravel\Nightwatch\Facades\Nightwatch;
@@ -106,7 +107,9 @@ class ImportCompetitorFeed
         }
 
         if ($isComplete) {
-            $competitor->products()->where('fetched_at', '<', $startedAt)->delete();
+            $competitor->products()->where('fetched_at', '<', $startedAt)
+                ->whereNotExists(fn ($query) => $query->select(DB::raw(1))->from('competitor_price_checks')->whereColumn('competitor_price_checks.competitor_product_id', 'competitor_products.id'))
+                ->delete();
             if (static::readsOffers($competitor->feed_url)) {
                 static::writeDailyStats($competitor, $startedAt->toDateString());
             }
