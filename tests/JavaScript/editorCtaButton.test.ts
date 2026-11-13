@@ -108,3 +108,40 @@ test("a button whose link is unsafe is saved without the link", () => {
 	assert.equal(anchor.href, undefined)
 	assert.equal(anchor.rel, undefined)
 })
+
+test("the link type follows the address, and a page of the website keeps its webpage", () => {
+	assert.equal(normaliseCtaButtonAttributes({ href: "mailto:sales@aiku.test", linkType: "web" }).linkType, "email")
+	assert.equal(normaliseCtaButtonAttributes({ href: "tel:+442012345678" }).linkType, "phone")
+	assert.equal(normaliseCtaButtonAttributes({ href: "sms:+442012345678" }).linkType, "sms")
+	assert.equal(normaliseCtaButtonAttributes({ href: "https://www.awgifts.eu" }).linkType, "web")
+
+	const internal = normaliseCtaButtonAttributes({ href: "/christmas", linkType: "internal", webpageId: 42 })
+	assert.equal(internal.linkType, "internal")
+	assert.equal(internal.webpageId, "42")
+
+	const withoutWebpage = normaliseCtaButtonAttributes({ href: "/christmas", linkType: "internal", webpageId: null })
+	assert.equal(withoutWebpage.linkType, "web")
+	assert.equal(withoutWebpage.webpageId, null)
+})
+
+test("the seo rel is written next to noopener and read back", () => {
+	const [, , [, anchor]] = renderButton({ label: "Buy now", href: "/christmas", linkType: "internal", webpageId: "7", target: "_blank", seoRel: "nofollow" })
+
+	assert.equal(anchor.rel, "nofollow noopener")
+	assert.equal(anchor["data-link-type"], "internal")
+	assert.equal(anchor["data-webpage-id"], "7")
+	assert.equal(normaliseCtaButtonAttributes({ seoRel: "sponsored" }).seoRel, null)
+
+	const anchorAttributes: Record<string, string> = { href: "/christmas", target: "_blank", rel: "nofollow noopener" }
+	const savedAnchor = {
+		textContent: "Buy now",
+		dataset: { linkType: "internal", webpageId: "7" },
+		getAttribute: (name: string) => anchorAttributes[name] ?? null,
+	}
+	const wrapper = { dataset: { align: "center" }, querySelector: () => savedAnchor, getAttribute: () => null } as unknown as HTMLElement
+	const parsed = schema.nodes.ctaButton.spec.parseDOM![0].getAttrs!(wrapper) as Record<string, unknown>
+
+	assert.equal(parsed.seoRel, "nofollow")
+	assert.equal(parsed.linkType, "internal")
+	assert.equal(parsed.webpageId, "7")
+})

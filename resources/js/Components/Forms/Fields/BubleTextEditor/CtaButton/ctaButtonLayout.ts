@@ -2,11 +2,16 @@ export type CtaButtonAlignment = "left" | "center" | "right"
 export type CtaButtonSize = "small" | "medium" | "large"
 export type CtaButtonShape = "square" | "rounded" | "pill"
 export type CtaButtonTarget = "_self" | "_blank"
+export type CtaButtonLinkType = "internal" | "web" | "email" | "phone" | "sms"
+export type CtaButtonSeoRel = "follow" | "nofollow" | null
 
 export interface CtaButtonAttributes {
 	label: string
 	href: string
+	linkType: CtaButtonLinkType
+	webpageId: string | null
 	target: CtaButtonTarget
+	seoRel: CtaButtonSeoRel
 	alignment: CtaButtonAlignment
 	size: CtaButtonSize
 	shape: CtaButtonShape
@@ -20,6 +25,7 @@ export const CTA_BUTTON_THEME_TEXT = "var(--theme-color-5, #ffffff)"
 export const CTA_BUTTON_ALIGNMENTS: CtaButtonAlignment[] = ["left", "center", "right"]
 export const CTA_BUTTON_SIZES: CtaButtonSize[] = ["small", "medium", "large"]
 export const CTA_BUTTON_SHAPES: CtaButtonShape[] = ["square", "rounded", "pill"]
+export const CTA_BUTTON_LINK_TYPES: CtaButtonLinkType[] = ["internal", "web", "email", "phone", "sms"]
 
 const SIZE_STYLES: Record<CtaButtonSize, string> = {
 	small: "padding: 0.5rem 1.25rem; font-size: 0.875rem;",
@@ -41,7 +47,10 @@ const RGB_COLOR_PATTERN = /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(?:,
 export const defaultCtaButtonAttributes = (): CtaButtonAttributes => ({
 	label: "Buy now",
 	href: "",
+	linkType: "web",
+	webpageId: null,
 	target: "_self",
+	seoRel: null,
 	alignment: "center",
 	size: "medium",
 	shape: "rounded",
@@ -71,14 +80,47 @@ export const safeCtaButtonColor = (color: unknown): string | null => {
 	return HEX_COLOR_PATTERN.test(value) || RGB_COLOR_PATTERN.test(value) ? value : null
 }
 
+export const ctaButtonLinkTypeFromHref = (href: unknown): CtaButtonLinkType => {
+	const value = String(href ?? "").trim().toLowerCase()
+
+	if (value.startsWith("mailto:")) {
+		return "email"
+	}
+	if (value.startsWith("tel:")) {
+		return "phone"
+	}
+	if (value.startsWith("sms:")) {
+		return "sms"
+	}
+
+	return "web"
+}
+
+const linkTypeFor = (linkType: unknown, href: string, webpageId: string | null): CtaButtonLinkType => {
+	const typeFromHref = ctaButtonLinkTypeFromHref(href)
+	if (linkType === "internal") {
+		return webpageId && typeFromHref === "web" ? "internal" : typeFromHref
+	}
+
+	return typeFromHref
+}
+
 export const normaliseCtaButtonAttributes = (attributes: Partial<Record<keyof CtaButtonAttributes, unknown>>): CtaButtonAttributes => {
 	const defaults = defaultCtaButtonAttributes()
 	const label = String(attributes.label ?? "").trim()
+	const href = safeCtaButtonHref(attributes.href)
+	const webpageId = attributes.webpageId === null || attributes.webpageId === undefined || attributes.webpageId === ""
+		? null
+		: String(attributes.webpageId)
+	const linkType = linkTypeFor(attributes.linkType, href, webpageId)
 
 	return {
 		label: label || defaults.label,
-		href: safeCtaButtonHref(attributes.href),
+		href,
+		linkType,
+		webpageId: linkType === "internal" ? webpageId : null,
 		target: attributes.target === "_blank" ? "_blank" : "_self",
+		seoRel: attributes.seoRel === "follow" || attributes.seoRel === "nofollow" ? attributes.seoRel : null,
 		alignment: oneOf(attributes.alignment, CTA_BUTTON_ALIGNMENTS, defaults.alignment),
 		size: oneOf(attributes.size, CTA_BUTTON_SIZES, defaults.size),
 		shape: oneOf(attributes.shape, CTA_BUTTON_SHAPES, defaults.shape),
@@ -100,5 +142,8 @@ export const ctaButtonStyle = (attributes: CtaButtonAttributes): string =>
 		`color: ${safeCtaButtonColor(attributes.textColor) ?? CTA_BUTTON_THEME_TEXT};`,
 	].join(" ")
 
-export const ctaButtonRel = (attributes: Pick<CtaButtonAttributes, "target">): string | null =>
-	attributes.target === "_blank" ? "noopener" : null
+export const ctaButtonRel = (attributes: Pick<CtaButtonAttributes, "target" | "seoRel">): string | null =>
+	[
+		...(attributes.seoRel ? [attributes.seoRel] : []),
+		...(attributes.target === "_blank" ? ["noopener"] : []),
+	].join(" ") || null

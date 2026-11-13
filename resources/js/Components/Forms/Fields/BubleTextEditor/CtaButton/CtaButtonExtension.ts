@@ -30,6 +30,8 @@ const anchorAttributes = (attributes: CtaButtonAttributes): Record<string, strin
 		...(attributes.href ? { href: attributes.href } : {}),
 		target: attributes.target,
 		...(rel ? { rel } : {}),
+		"data-link-type": attributes.linkType,
+		...(attributes.webpageId ? { "data-webpage-id": attributes.webpageId } : {}),
 		"data-size": attributes.size,
 		"data-shape": attributes.shape,
 		...(attributes.backgroundColor ? { "data-background-color": attributes.backgroundColor } : {}),
@@ -40,11 +42,15 @@ const anchorAttributes = (attributes: CtaButtonAttributes): Record<string, strin
 
 const attributesFromElement = (element: HTMLElement): CtaButtonAttributes => {
 	const anchor = element.querySelector("a")
+	const relTokens = (anchor?.getAttribute("rel") ?? "").split(/\s+/)
 
 	return normaliseCtaButtonAttributes({
 		label: anchor?.textContent,
 		href: anchor?.getAttribute("href"),
+		linkType: anchor?.dataset.linkType,
+		webpageId: anchor?.dataset.webpageId,
 		target: anchor?.getAttribute("target"),
+		seoRel: relTokens.find((token) => token === "follow" || token === "nofollow"),
 		alignment: element.dataset.align,
 		size: anchor?.dataset.size,
 		shape: anchor?.dataset.shape,

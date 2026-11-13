@@ -1543,6 +1543,7 @@ onMounted(async () => {
             :show="showCtaButtonDialog"
             :button="ctaButtonInDialog.attributes"
             :isNew="ctaButtonInDialog.position === null"
+            :routeGetInternalLink="routeGetInternalLink"
             @close="closeCtaButtonDialog"
             @update="saveCtaButton"
         />
