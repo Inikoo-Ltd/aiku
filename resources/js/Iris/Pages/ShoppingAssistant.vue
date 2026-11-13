@@ -100,6 +100,7 @@ const handingOver = ref<number | "link" | null>(null)
 const handOverErrors = ref<Record<number, string>>({})
 
 const hasPanelProducts = ref(true)
+const hasForgottenProducts = ref(false)
 
 const focusLandingTextarea = () => {
     const textarea = document.querySelector<HTMLTextAreaElement>(".landing-textarea")
@@ -132,7 +133,7 @@ const starterQuestions = computed(() => isDropshipping.value ? [
     ctrans("I run a crystal shop – what am I missing?"),
     ctrans("Low-priced Christmas gifts that sell well"),
     ctrans("Help me start bath & body"),
-    ctrans("What did I use to order that still sells?"),
+    ...(hasForgottenProducts.value ? [ctrans("What did I use to order that still sells?")] : []),
     ctrans("Do you send samples?"),
     ctrans("How fast do you deliver?"),
 ])
@@ -842,7 +843,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                 :fieldValue
                 :productCardCode
                 :screenType
-                @loaded="(hasProducts) => hasPanelProducts = hasProducts"
+                @loaded="(hasProducts, hasForgotten) => { hasPanelProducts = hasProducts; hasForgottenProducts = hasForgotten }"
                 @tellShop="focusLandingTextarea"
             />
         </div>

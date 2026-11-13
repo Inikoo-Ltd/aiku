@@ -71,7 +71,7 @@ beforeEach(function () {
     [$this->organisation, $this->user, $this->shop] = createShop();
     [, $this->product] = createProduct($this->shop);
 
-    config(['services.openrouter.api_key' => 'test']);
+    config(['services.openrouter.api_key' => 'test', 'services.shopping_assistant.light_model' => null, 'services.shopping_assistant.premium_model' => null]);
     actingAs($this->user);
 });
 
@@ -2007,7 +2007,8 @@ test('a follow-up with a number nobody gave is dropped alone, and the prompt ask
     $prompt = Http::recorded()->first()[0]['messages'][0]['content'];
 
     expect($turn['follow_ups'])->toBe(['What sells well in shops like mine?'])
-        ->and($prompt)->toContain('addressing the customer formally, with "usted"');
+        ->and($prompt)->toContain('addressing the customer formally, with "usted"')
+        ->and($prompt)->toContain('low-priced, cheap or budget products, that is a search, not a request for a better price');
 });
 
 test('a lead goes to the sales leads managers, else the customer services supervisors, else the org admins, and calls are offered only when one of them exists', function () {
@@ -3015,6 +3016,55 @@ test('a basket add of a product both a chat and a later panel day showed is reco
         ->toBe([$message->shopping_assistant_conversation_id]);
 });
 
+test('on a dropshipping shop the assistant is on, coaches and sells with the customer\'s sales channels in words, and has no basket, shipping cost or big order tools', function () {
+    $originalType = $this->shop->type;
+
+    try {
+        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+        $website  = shoppingAssistantStorefront($this);
+        $customer = shoppingAssistantCustomer($this->shop->refresh());
+        $channel  = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::SHOPIFY)->firstOrFail(), ['reference' => 'merlin-'.Str::random(6)]);
+        $channel->update(['name' => 'Moon Gifts', 'number_portfolios' => 3, 'number_orders' => 0, 'connection_status' => \App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum::ERROR]);
+
+        expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Ava', 'hand_over' => false]);
+
+        Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantPresent(['reply' => 'Dropshipping means your buyers order from your store and we send the parcel for you.', 'answer_kind' => 'coaching', 'follow_ups' => ['Best sellers for my store']]))]);
+        $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+        AskShoppingAssistant::run($conversation, 'what is dropshipping?');
+
+        $request   = Http::recorded()->first()[0];
+        $prompt    = $request['messages'][0]['content'];
+        $toolNames = collect($request['tools'])->pluck('function.name');
+
+        expect($prompt)->toContain('dropshipping advisor and salesperson')
+            ->and($prompt)->toContain('Their sales channels with us: Shopify store "Moon Gifts", has our products, no orders yet, connection problem')
+            ->and($prompt)->toContain('Dropshipping coaching and selling:')
+            ->and($prompt)->not->toContain('call add_to_basket')
+            ->and($prompt)->not->toContain('big_order_lead')
+            ->and($toolNames)->not->toContain('add_to_basket')
+            ->and($toolNames)->not->toContain('shipping_cost')
+            ->and($toolNames)->not->toContain('big_order_lead')
+            ->and($toolNames)->toContain('shop_information')
+            ->and($conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->first()->answer_kind)->toBe(\App\Enums\CRM\ShoppingAssistant\ShoppingAssistantAnswerKindEnum::COACHING)
+            ->and(GetShoppingAssistantTools::make()->execute($conversation, 'add_to_basket', [])['error'])->toContain('not available on a dropshipping shop');
+    } finally {
+        $this->shop->update(['type' => $originalType]);
+    }
+});
+
+test('on a B2B shop the assistant prompt keeps the range advisor and the basket tools', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+
+    Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantModelReply(['content' => 'Hello.'], 'stop'))]);
+    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'hello');
+
+    $request = Http::recorded()->first()[0];
+
+    expect($request['messages'][0]['content'])->toContain('You are the range advisor for trade customers')
+        ->and($request['messages'][0]['content'])->not->toContain('Their sales channels with us')
+        ->and(collect($request['tools'])->pluck('function.name'))->toContain('add_to_basket', 'shipping_cost', 'big_order_lead');
+});
+
 function shoppingAssistantSentMailshot(Shop $shop, ?Customer $recipient, string $html, Carbon $sentAt, MailshotTypeEnum $type = MailshotTypeEnum::NEWSLETTER): Mailshot
 {
     $outbox   = $shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
@@ -3067,55 +3117,6 @@ test('a question about an email we sent is answered from the newsletters this cu
         ->and($none['message']->refresh()->flags)->toBeNull()
         ->and($none['message']->answer_kind->value)->toBe('question')
         ->and($none['message']->sources)->toBeNull();
-});
-
-test('on a dropshipping shop the assistant is on, coaches and sells with the customer\'s sales channels in words, and has no basket, shipping cost or big order tools', function () {
-    $originalType = $this->shop->type;
-
-    try {
-        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
-        $website  = shoppingAssistantStorefront($this);
-        $customer = shoppingAssistantCustomer($this->shop->refresh());
-        $channel  = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::SHOPIFY)->firstOrFail(), ['reference' => 'merlin-'.Str::random(6)]);
-        $channel->update(['name' => 'Moon Gifts', 'number_portfolios' => 3, 'number_orders' => 0, 'connection_status' => \App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum::ERROR]);
-
-        expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Ava', 'hand_over' => false]);
-
-        Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantPresent(['reply' => 'Dropshipping means your buyers order from your store and we send the parcel for you.', 'answer_kind' => 'coaching', 'follow_ups' => ['Best sellers for my store']]))]);
-        $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
-        AskShoppingAssistant::run($conversation, 'what is dropshipping?');
-
-        $request   = Http::recorded()->first()[0];
-        $prompt    = $request['messages'][0]['content'];
-        $toolNames = collect($request['tools'])->pluck('function.name');
-
-        expect($prompt)->toContain('dropshipping advisor and salesperson')
-            ->and($prompt)->toContain('Their sales channels with us: Shopify store "Moon Gifts", has our products, no orders yet, connection problem')
-            ->and($prompt)->toContain('Dropshipping coaching and selling:')
-            ->and($prompt)->not->toContain('call add_to_basket')
-            ->and($prompt)->not->toContain('big_order_lead')
-            ->and($toolNames)->not->toContain('add_to_basket')
-            ->and($toolNames)->not->toContain('shipping_cost')
-            ->and($toolNames)->not->toContain('big_order_lead')
-            ->and($toolNames)->toContain('shop_information')
-            ->and($conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->first()->answer_kind)->toBe(\App\Enums\CRM\ShoppingAssistant\ShoppingAssistantAnswerKindEnum::COACHING)
-            ->and(GetShoppingAssistantTools::make()->execute($conversation, 'add_to_basket', [])['error'])->toContain('not available on a dropshipping shop');
-    } finally {
-        $this->shop->update(['type' => $originalType]);
-    }
-});
-
-test('on a B2B shop the assistant prompt keeps the range advisor and the basket tools', function () {
-    $customer = shoppingAssistantCustomer($this->shop);
-
-    Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantModelReply(['content' => 'Hello.'], 'stop'))]);
-    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'hello');
-
-    $request = Http::recorded()->first()[0];
-
-    expect($request['messages'][0]['content'])->toContain('You are the range advisor for trade customers')
-        ->and($request['messages'][0]['content'])->not->toContain('Their sales channels with us')
-        ->and(collect($request['tools'])->pluck('function.name'))->toContain('add_to_basket', 'shipping_cost', 'big_order_lead');
 });
 
 test('Merlin sends a confirmed problem straight to the engineers as a MER ticket with the channel diagnostics, and a second report while it is open goes to the same ticket', function () {
@@ -3191,3 +3192,76 @@ test('a question asked in the website chat window starts a chat conversation, an
     $this->actingAs($webUser, 'retina')->postJson($url, ['message' => 'Hello', 'entry_point' => 'command'])->assertStatus(422);
 });
 
+test('chat unrelated to the business runs on the light model, a hard question from a big spender on the premium model, and everything else or a doubtful verdict on the main model', function () {
+    config(['services.shopping_assistant.light_model' => 'light-model', 'services.shopping_assistant.premium_model' => 'premium-model']);
+    $main     = config('services.shopping_assistant.model');
+    $spender  = shoppingAssistantCustomer($this->shop);
+    $spender->update(['last_invoiced_at' => now()->subMonth()]);
+    $spender->stats()->update(['sales_grp_currency_all' => config('services.shopping_assistant.premium_customer_sales')]);
+    $dormant  = shoppingAssistantCustomer($this->shop);
+    $dormant->update(['last_invoiced_at' => now()->subYears(2)]);
+    $dormant->stats()->update(['sales_grp_currency_all' => config('services.shopping_assistant.premium_customer_sales') * 5]);
+    $hard     = 'Plan me a Christmas gift range that does not overlap what I already buy';
+    $verdict  = fn (string $choice, float $probability) => ['choice' => $choice, 'probabilities' => [$choice => $probability]];
+    $modelOf  = fn (Customer $customer, string $message) => AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer->fresh(), ShoppingAssistantEntryPointEnum::COMMAND), $message)['message']->model;
+    $present  = shoppingAssistantPresent(['reply' => 'Here you go.']);
+
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('choice')->times(8)->andReturn($verdict('hard', 0.9), $verdict('off_topic', 0.95), $verdict('hard', 0.9), $verdict('hard', 0.6), $verdict('hard', 0.9), $verdict('hard', 0.9), $verdict('normal', 0.99), $verdict('closing', 0.9));
+    Http::fake(['*chat/completions' => Http::sequence()->push($present)->push($present)->push($present)->push($present)->push($present)->push($present)->push($present)->push($present)->push($present)]);
+
+    $returning = shoppingAssistantCustomer($this->shop);
+    $returning->update(['state' => \App\Enums\CRM\Customer\CustomerStateEnum::LOST]);
+
+    expect($modelOf($returning, $hard))->toBe('premium-model')
+        ->and($modelOf($spender, 'tell me a joke please'))->toBe('light-model')
+        ->and($modelOf($spender, $hard))->toBe('premium-model')
+        ->and($modelOf($spender, $hard))->toBe($main)
+        ->and($modelOf($spender, 'which candles are hard to sell'))->toBe($main)
+        ->and($modelOf($dormant, $hard))->toBe($main)
+        ->and($modelOf($spender, 'show me incense sticks'))->toBe($main)
+        ->and($modelOf($dormant, 'I am not sure the big incense order is worth it for my stall'))->toBe('premium-model')
+        ->and($modelOf($spender, 'frog'))->toBe($main);
+});
+
+test('an answer the main model is not sure of is tried once more on the premium model, and the first answer stands when that try fails', function () {
+    config(['services.shopping_assistant.premium_model' => 'premium-model']);
+    $main     = config('services.shopping_assistant.model');
+    $customer = shoppingAssistantCustomer($this->shop);
+    $unsure   = shoppingAssistantPresent(['reply' => 'I do not know.', 'answer_kind' => 'offer_person', 'offer_reason' => 'not_sure']);
+
+    Http::fake(['*chat/completions' => Http::sequence()->push($unsure)->push(shoppingAssistantPresent(['reply' => 'Yes, they suit a market stall.', 'answer_kind' => 'question']))->push($unsure)->push('down', 500)]);
+    $retried = AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'ok')['message'];
+
+    $kept = AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'ok')['message'];
+
+    expect($retried->model)->toBe('premium-model')
+        ->and($retried->body)->toBe('Yes, they suit a market stall.')
+        ->and($retried->flags)->toContain('premium_retry')
+        ->and($retried->model_calls)->toBe(2)
+        ->and($retried->hand_over_offer)->toBeNull()
+        ->and($kept->model)->toBe($main)
+        ->and($kept->flags ?? [])->not->toContain('premium_retry')
+        ->and($kept->flags ?? [])->not->toContain('model_unavailable')
+        ->and($kept->model_calls)->toBe(1);
+});
+
+test('a customer back after years still sees what they used to order, from orders older than the purchase history keeps, and Merlin is told they are back', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $old      = shoppingAssistantLiveProduct($this->product);
+    $basket   = shoppingAssistantLiveProduct($this->product);
+    $order    = createOrder($customer, $old);
+    $order->update(['date' => now()->subYears(5), 'state' => \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED]);
+    $abandoned = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, ['reference' => 'old-'.Str::random(6), 'date' => date('Y-m-d'), 'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()), 'billing_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition())]);
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($abandoned, $basket->historicAsset, \App\Models\Ordering\Transaction::factory()->definition());
+    $abandoned->update(['date' => now()->subYears(5), 'state' => \App\Enums\Ordering\Order\OrderStateEnum::CREATING]);
+    $customer->update(['state' => \App\Enums\CRM\Customer\CustomerStateEnum::LOST]);
+
+    $forgotten = \App\Actions\CRM\RangeAdvisor\GetCustomerRangeGaps::run($customer->fresh())['forgotten'];
+
+    Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantPresent(['reply' => 'Welcome back.']))]);
+    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer->fresh(), ShoppingAssistantEntryPointEnum::COMMAND), 'hello');
+
+    expect($forgotten->pluck('id')->all())->toBe([$old->id])
+        ->and($forgotten->first()->customer_last_ordered_at->year)->toBe(now()->subYears(5)->year)
+        ->and(Http::recorded()->first()[0]['messages'][0]['content'])->toContain('Back after a long time without ordering: yes');
+});

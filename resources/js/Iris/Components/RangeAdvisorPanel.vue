@@ -32,7 +32,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-    (event: "loaded", hasProducts: boolean): void
+    (event: "loaded", hasProducts: boolean, hasForgotten: boolean): void
     (event: "tellShop"): void
 }>()
 
@@ -186,7 +186,7 @@ const addAll = async (addKey: string, cards: Card[]) => {
 
 onMounted(async () => {
     await load()
-    emit("loaded", !!panel.value?.lists.length)
+    emit("loaded", !!panel.value?.lists.length, !!panel.value?.lists.some((list) => list.key === "forgotten"))
 })
 </script>
 
