@@ -205,6 +205,9 @@ const props = defineProps < {
     			port_of_import: string | null
     			delivery_address: string | null
     			is_own_warehouse?: boolean
+    			default_delivery_address?: string | null
+    			follows_default?: boolean
+    			update_route?: routeType | null
     		}
     		seller_order?: { reference: string; url: string | null } | null
     		clean_handover?: {
@@ -1471,7 +1474,13 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<span class="shrink-0 text-xs text-gray-400">{{ development.stage }}</span>
 				</div>
 				<PurchaseOrderSampleRequired v-if="sampleRequirement" :sample="sampleRequirement" />
-				<ProcurementOrderData v-if="showcase" :data="showcase" :isOwnWarehouse="box_stats.first_block.delivery.is_own_warehouse" />
+				<ProcurementOrderData
+					v-if="showcase"
+					:data="showcase"
+					:isOwnWarehouse="box_stats.first_block.delivery.is_own_warehouse"
+					:defaultDeliveryAddress="box_stats.first_block.delivery.default_delivery_address"
+					:followsDefault="box_stats.first_block.delivery.follows_default"
+					:deliveryAddressRoute="box_stats.first_block.delivery.update_route" />
 			</div>
 		</BoxStatPallet>
 

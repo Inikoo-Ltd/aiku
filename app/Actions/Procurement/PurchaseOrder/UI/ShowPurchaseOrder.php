@@ -171,7 +171,8 @@ class ShowPurchaseOrder extends OrgAction
         $weightAndVolume = $this->getPurchaseOrderWeightAndVolume($purchaseOrder);
         $deliveryStats = $this->getDeliveryStats($purchaseOrder);
         $hasItems = $purchaseOrder->number_purchase_order_transactions > 0;
-        $deliveryAddress = ResolvePurchaseOrderDeliveryAddress::run(
+        $defaultDeliveryAddress = ResolvePurchaseOrderDeliveryAddress::run($purchaseOrder->organisation);
+        $deliveryAddress        = ResolvePurchaseOrderDeliveryAddress::run(
             $purchaseOrder->organisation,
             Arr::get($purchaseOrder->data, 'delivery_address')
         );
@@ -388,7 +389,14 @@ class ShowPurchaseOrder extends OrgAction
                             'port_of_import'   => Arr::get($purchaseOrder->data, 'port_of_import'),
                             'delivery_address' => $deliveryAddress,
                             'is_own_warehouse' => $purchaseOrder->organisation_id === $this->organisation->id
-                                && $deliveryAddress === ResolvePurchaseOrderDeliveryAddress::run($purchaseOrder->organisation),
+                                && $deliveryAddress === $defaultDeliveryAddress,
+                            'default_delivery_address' => $defaultDeliveryAddress,
+                            'follows_default'          => blank(Arr::get($purchaseOrder->data, 'delivery_address')),
+                            'update_route'             => $this->canChangeDeliveryAddress($purchaseOrder, $request) ? [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.purchase-order.update',
+                                'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                            ] : null,
                         ],
                         'seller_order' => $this->sellerOrder($purchaseOrder, $request),
                         'clean_handover' => $purchaseOrder->isAgentOrder() ? [
@@ -518,6 +526,16 @@ class ShowPurchaseOrder extends OrgAction
             ->table(IndexAttachments::make()->tableStructure(prefix: PurchaseOrderTabsEnum::ATTACHMENTS->value))
             ->table(IndexDispatchedEmailsInOrder::make()->tableStructure(prefix: PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: PurchaseOrderTabsEnum::HISTORY->value, withRecordColumn: true));
+    }
+
+    /**
+     * The buyer changes where the goods go until they are handed over to the carrier.
+     */
+    private function canChangeDeliveryAddress(PurchaseOrder $purchaseOrder, ActionRequest $request): bool
+    {
+        return $purchaseOrder->state->isLive()
+            && !in_array($purchaseOrder->state, [PurchaseOrderStateEnum::HANDED_OVER, PurchaseOrderStateEnum::ARRIVED], true)
+            && $request->user()->authTo("procurement.$purchaseOrder->organisation_id.edit");
     }
 
     private function isAgentViewingOwnOrder(PurchaseOrder $purchaseOrder): bool
