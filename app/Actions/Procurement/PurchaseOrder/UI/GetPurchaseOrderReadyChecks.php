@@ -21,7 +21,8 @@ use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
  * What still keeps the Packing and QC checks of Ready to Roll open on an order through an agent warehouse: the lines
- * received and not packed yet, and the goods receipt lines not checked yet, with the routes that pack or check them all.
+ * received and not packed yet, and every goods receipt line with whether it is checked, with the routes that pack or
+ * check them all.
  */
 class GetPurchaseOrderReadyChecks
 {
@@ -62,7 +63,7 @@ class GetPurchaseOrderReadyChecks
             ],
             'qc'      => [
                 'received_in_full' => $isReceivedInFull,
-                'items'            => $this->itemsToCheck($receiptItems, $transactions),
+                'items'            => $this->itemsForQc($receiptItems, $transactions),
                 'route'            => $agentCanEdit ? [
                     'name'       => 'grp.org.agent.warehouse.received.goods_receipts.items.check_many',
                     'parameters' => [$agentOrganisation->slug],
@@ -99,18 +100,20 @@ class GetPurchaseOrderReadyChecks
      *
      * @return array<int, array<string, mixed>>
      */
-    private function itemsToCheck(Collection $receiptItems, Collection $transactions): array
+    private function itemsForQc(Collection $receiptItems, Collection $transactions): array
     {
         return $receiptItems
-            ->reject(fn (AgentGoodsReceiptItem $item) => $item->isChecked())
             ->map(fn (AgentGoodsReceiptItem $item) => [
                 ...$this->product($transactions->get($item->purchase_order_transaction_id)),
-                'id'           => $item->id,
-                'reference'    => $item->agentGoodsReceipt->reference,
-                'quantity'     => (float) $item->quantity,
-                'is_checkable' => $item->isEditable(),
+                'id'                => $item->id,
+                'reference'         => $item->agentGoodsReceipt->reference,
+                'quantity'          => (float) $item->quantity,
+                'is_checked'        => $item->isChecked(),
+                'checked_at'        => $item->checked_at,
+                'quantity_rejected' => (float) $item->quantity_rejected,
+                'is_checkable'      => !$item->isChecked() && $item->isEditable(),
             ])
-            ->sortBy('code')
+            ->sortBy(fn (array $item) => [$item['is_checked'], $item['code']])
             ->values()
             ->all();
     }

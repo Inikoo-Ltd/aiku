@@ -11,9 +11,10 @@ import { router } from "@inertiajs/vue3"
 import Image from "@common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBox, faClipboardCheck, faExclamationTriangle, faInfoCircle } from "@fal"
+import { faBox, faCheck, faClipboardCheck, faExclamationTriangle, faInfoCircle } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 
 export type ReadyCheckItem = {
@@ -25,6 +26,9 @@ export type ReadyCheckItem = {
 	reference?: string
 	has_unchecked?: boolean
 	is_checkable?: boolean
+	is_checked?: boolean
+	checked_at?: string | null
+	quantity_rejected?: number
 }
 
 export type ReadyCheckItems = {
@@ -49,6 +53,10 @@ const isPacking = computed(() => props.check === "packing")
 const actionableIds = computed(() => props.data.items.filter((item) => isPacking.value || item.is_checkable).map((item) => item.id))
 
 const totalUnits = computed(() => props.data.items.reduce((total, item) => total + item.quantity, 0))
+
+const checkedCount = computed(() => props.data.items.filter((item) => item.is_checked).length)
+
+const hasUncheckedQc = computed(() => !isPacking.value && checkedCount.value < props.data.items.length)
 
 const hasUncheckedToPack = computed(() => isPacking.value && props.data.items.some((item) => item.has_unchecked))
 
@@ -84,7 +92,8 @@ function runAll() {
 	<div class="space-y-3 text-sm">
 		<template v-if="data.items.length">
 			<p class="text-gray-600">
-				{{ isPacking ? ctrans("These items are received at the warehouse and not packed yet:") : ctrans("These goods receipt lines are not checked yet:") }}
+				<template v-if="isPacking">{{ ctrans("These items are received at the warehouse and not packed yet:") }}</template>
+				<template v-else>{{ ctrans(":checked of :total goods receipt lines are checked:", { checked: checkedCount, total: data.items.length }) }}</template>
 			</p>
 
 			<ul class="max-h-[50vh] divide-y divide-gray-100 overflow-y-auto rounded-md border border-gray-200">
@@ -97,7 +106,15 @@ function runAll() {
 						</div>
 						<div v-if="item.name" class="text-xs text-gray-500">{{ item.name }}</div>
 						<div v-if="isPacking && item.has_unchecked" class="text-xs text-amber-600">{{ ctrans("Not checked yet") }}</div>
-						<div v-if="!isPacking && !item.is_checkable" class="text-xs text-amber-600">{{ ctrans("Packed before it was checked: it can no longer be checked") }}</div>
+						<template v-if="!isPacking">
+							<div v-if="item.is_checked" class="flex items-center gap-1 text-xs text-green-700">
+								<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+								{{ item.checked_at ? ctrans("Checked :date", { date: useFormatTime(item.checked_at) }) : ctrans("Checked") }}
+								<span v-if="item.quantity_rejected" class="text-red-600">· {{ ctrans(":units rejected", { units: locale.number(item.quantity_rejected) }) }}</span>
+							</div>
+							<div v-else-if="!item.is_checkable" class="text-xs text-amber-600">{{ ctrans("Not checked: packed before it was checked, it can no longer be checked") }}</div>
+							<div v-else class="text-xs text-amber-600">{{ ctrans("Not checked yet") }}</div>
+						</template>
 					</div>
 					<span class="shrink-0 whitespace-nowrap tabular-nums text-gray-700">{{ ctrans(":units units", { units: locale.number(item.quantity) }) }}</span>
 				</li>
@@ -108,8 +125,10 @@ function runAll() {
 			</p>
 		</template>
 		<p v-else class="text-gray-500">
-			{{ isPacking ? ctrans("Nothing received is waiting to be packed") : ctrans("Every goods receipt line is checked") }}
+			{{ isPacking ? ctrans("Nothing received is waiting to be packed") : ctrans("Nothing received yet to check") }}
 		</p>
+
+		<p v-if="!isPacking && data.items.length && !hasUncheckedQc" class="text-xs text-green-700">{{ ctrans("Every goods receipt line is checked") }}</p>
 
 		<p v-if="hasUncheckedToPack" class="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
 			<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5" fixed-width aria-hidden="true" />
