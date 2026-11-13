@@ -46,9 +46,9 @@ trait WithIrisInertia
 
         return $header;
     }
-    public function getIrisData(Website $website): array
+    public function getIrisData(Website $website, ?string $locale = null): array
     {
-        $locale = app()->getLocale();
+        $locale ??= app()->getLocale();
 
         $cacheKey = "irisData:website:$website->id:locale:".$locale;
         $ttl      = config('iris.cache.iris_website_data_ttl');

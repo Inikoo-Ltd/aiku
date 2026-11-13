@@ -949,6 +949,74 @@ test('the tickets reports load every avatar with its people instead of one perso
         ->and($avatarOf($report['reporters'], 'key', "User-$person->id"))->not->toBeNull());
 });
 
+test('a ticket page loads its engineer and QA lists once, with every avatar in one query', function () {
+    Notification::fake();
+    setPermissionsTeamId($this->group->id);
+
+    $people = collect(['help-desk-clerk', 'help-desk-supervisor', 'qa'])->map(function (string $role, int $index) {
+        $avatar = Media::create([
+            'group_id'              => $this->group->id,
+            'ulid'                  => (string) Str::ulid(),
+            'uuid'                  => (string) Str::uuid(),
+            'name'                  => "ticket-avatar-$index",
+            'file_name'             => "ticket-avatar-$index.png",
+            'mime_type'             => 'image/png',
+            'disk'                  => 'local',
+            'collection_name'       => 'photo',
+            'size'                  => 4,
+            'manipulations'         => [],
+            'custom_properties'     => [],
+            'generated_conversions' => [],
+            'responsive_images'     => [],
+        ]);
+        $person = User::factory()->create(['group_id' => $this->group->id, 'image_id' => $avatar->id]);
+        $person->assignRole($role);
+
+        return $person;
+    });
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Avatars on the ticket page']);
+    actingAs($people->first());
+
+    $avatarOf  = fn (User $person) => json_decode(json_encode(User::find($person->id)->imageSources(48, 48)), true);
+    $optionFor = fn ($people, callable $label) => $people
+        ->map(fn (User $person) => ['label' => $label($person), 'value' => $person->id, 'avatar' => $avatarOf($person)])
+        ->sortBy('label')->values()->all();
+    $firstName = fn (User $person) => strtok((string) ($person->contact_name ?: $person->username), ' ');
+    $fullName  = fn (User $person) => $person->contact_name ?: $person->username;
+    $engineers = GetTicketBadgeData::engineers($this->group->id);
+    $qaUsers   = GetTicketBadgeData::qaUsers($this->group->id);
+
+    $expected = [
+        'qa_users'      => $optionFor($qaUsers, $firstName),
+        'collaborators' => $optionFor($engineers->merge($qaUsers)->unique('id'), $fullName),
+        'assignees'     => collect($optionFor($engineers, $firstName))->map(fn (array $row) => $row + ['is_me' => $row['value'] === $people->first()->id])->all(),
+        'developers'    => $engineers->map(fn (User $person) => ['username' => $person->username, 'name' => $fullName($person)])->sortBy('name')->values()->all(),
+    ];
+
+    $avatarQueries = 0;
+    $roleQueries   = 0;
+    DB::listen(function ($query) use (&$avatarQueries, &$roleQueries) {
+        if (str_starts_with($query->sql, 'select * from "media" where "media"."id"')) {
+            $avatarQueries++;
+        }
+        if (str_starts_with($query->sql, 'select * from "users" where "group_id" = ? and "status" = ? and "is_bot" = ? and exists')) {
+            $roleQueries++;
+        }
+    });
+
+    request()->setUserResolver(fn () => $people->first());
+    $options = json_decode(json_encode(\App\Actions\Helpers\Ticket\UI\ShowTicket::make()->controlProps($ticket)['options']), true);
+
+    expect($avatarQueries)->toBe(2)
+        ->and($roleQueries)->toBe(3)
+        ->and($options['qa_users'])->toBe($expected['qa_users'])
+        ->and($options['collaborators'])->toBe($expected['collaborators'])
+        ->and($options['assignees'])->toBe($expected['assignees'])
+        ->and($options['developers'])->toBe($expected['developers'])
+        ->and(collect($options['assignees'])->whereIn('value', $people->take(2)->pluck('id'))->pluck('avatar')->filter())->toHaveCount(2);
+});
+
 test('the tickets overview counts every tile, QA check and status in one query', function () {
     Notification::fake();
     $this->freezeTime();

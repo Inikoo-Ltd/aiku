@@ -203,7 +203,7 @@ class ShowTicketsBoard extends OrgAction
                 'updateRoute' => 'grp.models.ticket.update',
                 'me'          => request()->user()->username,
                 'formerAssignees' => $this->formerAssignees($board['columns']),
-                'assignees'       => GetTicketBadgeData::engineers(request()->user()->group_id)
+                'assignees'       => GetTicketBadgeData::engineers(request()->user()->group_id)->loadMissing('image')
                     ->map(fn (User $user) => [
                         'label'  => strtok((string) ($user->contact_name ?: $user->username), ' '),
                         'value'  => $user->id,

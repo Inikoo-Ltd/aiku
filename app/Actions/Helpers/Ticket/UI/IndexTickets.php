@@ -466,7 +466,7 @@ class IndexTickets extends OrgAction
                     'priorities' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value, 'icon' => ChatPriorityEnum::stateIcon()[$value]])->values(),
                     'kinds'      => collect(TicketKindEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                     'modules'    => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
-                    'assignees'  => GetTicketBadgeData::engineers($this->group->id)
+                    'assignees'  => GetTicketBadgeData::engineers($this->group->id)->loadMissing('image')
                         ->map(fn (User $engineer) => [
                             'label'  => strtok((string) ($engineer->contact_name ?: $engineer->username), ' '),
                             'value'  => $engineer->id,
