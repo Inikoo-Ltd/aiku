@@ -811,11 +811,13 @@ test('the group AI assistant report is only for group-wide viewers, a shop webma
     $this->get(route('grp.websites.shopping_assistant.show', [...$query, 'outcome' => 'clicked']))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->all() === [$clicked->ulid]));
 
+    DB::table('products')->where('id', $product->id)->update(['web_images' => json_encode(['main' => ['thumbnail' => ['original' => 'rug.jpg']]])]);
     $this->get(route('grp.websites.shopping_assistant.conversations.show', [$ordered->ulid]))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Org/Web/ShoppingAssistantConversation', false)
             ->where('messages.1.products.0.ordered', true)
-            ->where('messages.1.products.0.revenue', fn ($revenue) => (float) $revenue === 30.0));
+            ->where('messages.1.products.0.revenue', fn ($revenue) => (float) $revenue === 30.0)
+            ->where('messages.1.products.0.image', ['original' => 'rug.jpg']));
 
     $webmaster = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     actingAsUserWithOnlyPermissions($webmaster, ["web.{$this->shop->id}.view"]);

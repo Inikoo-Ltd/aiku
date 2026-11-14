@@ -30,6 +30,7 @@ use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -116,7 +117,7 @@ class ShowShoppingAssistantConversation extends OrgAction
             'select matches.product_id, coalesce((select sum(lines.amount) from lines where lines.product_id = matches.product_id), 0) as revenue from matches group by matches.product_id'
         ))->keyBy('product_id');
 
-        $events = $conversation->events()->with('product:id,code,name,slug')->orderBy('position')->orderBy('id')->get();
+        $events = $conversation->events()->with('product:id,code,name,slug,web_images')->orderBy('position')->orderBy('id')->get();
         $done   = fn (ShoppingAssistantEvent $shown, ShoppingAssistantEventTypeEnum $type) => $events->contains(
             fn (ShoppingAssistantEvent $event) => $event->type === $type && $event->product_id === $shown->product_id && $event->shopping_assistant_message_id === $shown->shopping_assistant_message_id
         );
@@ -196,6 +197,7 @@ class ShowShoppingAssistantConversation extends OrgAction
                         'id'      => $shown->product_id,
                         'code'    => $shown->product?->code,
                         'name'    => $shown->product?->name,
+                        'image'   => Arr::get($shown->product?->web_images, 'main.thumbnail'),
                         'group'   => $shown->group,
                         'reason'  => $shown->reason,
                         'clicked' => $done($shown, ShoppingAssistantEventTypeEnum::CLICKED),
