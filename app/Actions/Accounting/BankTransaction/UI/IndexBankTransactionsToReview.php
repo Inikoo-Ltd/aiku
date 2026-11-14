@@ -20,6 +20,7 @@ use App\Models\Accounting\BankTransaction;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
+use Illuminate\Support\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -42,19 +43,31 @@ class IndexBankTransactionsToReview extends OrgAction
 
     private string $period = '90d';
 
-    public function handle(Organisation $organisation, string $scope = 'review', string $period = '90d', $prefix = null): LengthAwarePaginator
+    private ?string $currency = null;
+
+    private ?string $from = null;
+
+    private ?string $to = null;
+
+    public function handle(Organisation $organisation, string $scope = 'review', string $period = '90d', $prefix = null, ?string $currency = null, ?string $from = null, ?string $to = null): LengthAwarePaginator
     {
-        $since = match ($period) {
-            'all'   => null,
-            '1y'    => now()->subYear(),
-            default => now()->subDays(90),
+        $since = match (true) {
+            $from !== null  => Carbon::parse($from)->startOfDay(),
+            $period === 'all' => null,
+            $period === '1y'  => now()->subYear(),
+            default         => now()->subDays(90),
         };
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('bank_transactions.reference', $value)
+                $query->whereWith('bank_transactions.reference', $value)
                     ->orWhereAnyWordStartWith('bank_transactions.counterparty_name', $value)
+                    ->orWhereWith('bank_connections.name', $value)
                     ->orWhere('orders.reference', '=', strtoupper($value));
+                $amount = $this->searchedAmount($value);
+                if ($amount !== null) {
+                    $query->orWhere('bank_transactions.amount', $amount);
+                }
             });
         });
 
@@ -68,6 +81,8 @@ class IndexBankTransactionsToReview extends OrgAction
             ->where('bank_transactions.status', BankTransactionStatusEnum::BOOKED)
             ->whereNull('bank_transactions.payment_id')
             ->when($since, fn ($query) => $query->where('bank_transactions.booked_at', '>=', $since))
+            ->when($to, fn ($query) => $query->where('bank_transactions.booked_at', '<=', Carbon::parse($to)->endOfDay()))
+            ->when($currency, fn ($query) => $query->where('currencies.code', $currency))
             ->whereIn('bank_transactions.match_state', match ($scope) {
                 'unmatched' => [BankTransactionMatchStateEnum::UNMATCHED],
                 'dismissed' => [BankTransactionMatchStateEnum::DISMISSED],
@@ -103,8 +118,45 @@ class IndexBankTransactionsToReview extends OrgAction
         $this->initialisation($organisation, $request);
         $this->scope  = in_array($request->query('scope'), self::SCOPES, true) ? $request->query('scope') : 'review';
         $this->period = in_array($request->query('period'), self::PERIODS, true) ? $request->query('period') : '90d';
+        $this->currency = in_array($request->query('currency'), $this->currencies($organisation), true) ? $request->query('currency') : null;
+        $this->from     = $this->validDate($request->query('from'));
+        $this->to       = $this->from ? $this->validDate($request->query('to')) : null;
 
-        return $this->handle($organisation, $this->scope, $this->period);
+        return $this->handle($organisation, $this->scope, $this->period, currency: $this->currency, from: $this->from, to: $this->to);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function currencies(Organisation $organisation): array
+    {
+        return BankTransaction::query()
+            ->join('currencies', 'currencies.id', 'bank_transactions.currency_id')
+            ->where('bank_transactions.organisation_id', $organisation->id)
+            ->where('bank_transactions.direction', BankTransactionDirectionEnum::IN)
+            ->distinct()
+            ->orderBy('currencies.code')
+            ->pluck('currencies.code')
+            ->all();
+    }
+
+    private function validDate(mixed $date): ?string
+    {
+        return is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) && strtotime($date) ? $date : null;
+    }
+
+    /**
+     * Reads "57 277,82", "1.419,30" or "1,419.30" as an amount; whatever is not a number is not searched as one.
+     */
+    private function searchedAmount(string $value): ?string
+    {
+        $amount = preg_replace('/[\s\x{00A0}\x{202F}]/u', '', $value);
+        if (str_contains($amount, ',') && str_contains($amount, '.')) {
+            $amount = strrpos($amount, ',') > strrpos($amount, '.') ? str_replace('.', '', $amount) : str_replace(',', '', $amount);
+        }
+        $amount = str_replace(',', '.', $amount);
+
+        return preg_match('/^\d{1,12}(\.\d{1,2})?$/', $amount) ? $amount : null;
     }
 
     public function htmlResponse(LengthAwarePaginator $bankTransactions, ActionRequest $request): Response
@@ -121,7 +173,11 @@ class IndexBankTransactionsToReview extends OrgAction
                 'canEdit'        => $request->user()->authTo("accounting.{$this->organisation->id}.edit"),
                 'organisationId' => $this->organisation->id,
                 'scope'          => $this->scope,
-                'period'         => $this->period,
+                'period'         => $this->from ? null : $this->period,
+                'currency'       => $this->currency,
+                'currencies'     => $this->currencies($this->organisation),
+                'from'           => $this->from,
+                'to'             => $this->to,
                 'data'        => BankTransactionsToReviewResource::collection($bankTransactions),
             ]
         )->table($this->tableStructure());
@@ -145,7 +201,6 @@ class IndexBankTransactionsToReview extends OrgAction
             $table->column(key: 'amount', label: __('Amount'), sortable: true, align: 'right');
             $table->column(key: 'counterparty_name', label: __('Paid by'));
             $table->column(key: 'reference', label: __('Bank reference'));
-            $table->column(key: 'reason', label: __('Why it is here'));
             $table->column(key: 'order_reference', label: __('Order'));
             $table->column(key: 'actions', label: '');
         };

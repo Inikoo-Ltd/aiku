@@ -12,6 +12,7 @@ import AutoComplete from "primevue/autocomplete"
 import axios from "axios"
 import Textarea from "primevue/textarea"
 import Checkbox from "primevue/checkbox"
+import DatePicker from "primevue/datepicker"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -60,7 +61,11 @@ const props = defineProps<{
 	canEdit: boolean
 	organisationId: number
 	scope: "review" | "unmatched" | "dismissed"
-	period: "90d" | "1y" | "all"
+	period: "90d" | "1y" | "all" | null
+	currency: string | null
+	currencies: string[]
+	from: string | null
+	to: string | null
 	data: { data: BankLine[] }
 }>()
 
@@ -83,20 +88,46 @@ const periodOptions = [
 	{ label: ctrans("Last year"), value: "1y" },
 	{ label: ctrans("All"), value: "all" },
 ]
-const reload = (query: Record<string, string>) =>
+const currencyOptions = computed(() => [{ label: ctrans("All"), value: "all" }, ...props.currencies.map((code) => ({ label: code, value: code }))])
+
+const reload = (query: Record<string, string | null>) => {
+	const params = { scope: props.scope, period: props.period, currency: props.currency, from: props.from, to: props.to, ...query }
 	router.get(
 		route("grp.org.accounting.bank_review.index", [route().params["organisation"]]),
-		{ scope: props.scope, period: props.period, ...query },
+		Object.fromEntries(Object.entries(params).filter(([, value]) => value)),
 		{ preserveState: false }
 	)
+}
 const scope = computed({
 	get: () => props.scope,
 	set: (value: string) => reload({ scope: value }),
 })
 const period = computed({
 	get: () => props.period,
-	set: (value: string) => reload({ period: value }),
+	set: (value: string) => reload({ period: value, from: null, to: null }),
 })
+const currency = computed({
+	get: () => props.currency ?? "all",
+	set: (value: string) => reload({ currency: value === "all" ? null : value }),
+})
+
+const fromIsoDate = (iso: string): Date => {
+	const [year, month, day] = iso.split("-").map(Number)
+	return new Date(year, month - 1, day)
+}
+const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+const dateRange = computed<(Date | null)[] | null>({
+	get: () => (props.from ? [fromIsoDate(props.from), props.to ? fromIsoDate(props.to) : null] : null),
+	set: (value) => {
+		if (!value?.[0]) {
+			reload({ from: null, to: null })
+		} else if (value[1]) {
+			reload({ from: toLocalIsoDate(value[0]), to: toLocalIsoDate(value[1]) })
+		}
+	},
+})
+const datePickerPt = { pcInputText: { root: { class: "!w-56 !py-1 !text-xs" } } }
+const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
 
 const ALREADY_PAID_NOTE = "Already recorded on the order by hand"
 
@@ -210,11 +241,33 @@ const submit = () => {
 	<div class="flex flex-wrap items-center gap-3 px-4 pt-3">
 		<SegmentedToggle v-model="scope" :options="scopeOptions" :aria-label="ctrans('Which bank payments')" />
 		<SegmentedToggle v-model="period" :options="periodOptions" soft :aria-label="ctrans('Received in')" />
+		<DatePicker
+			v-model="dateRange"
+			selectionMode="range"
+			:manualInput="false"
+			dateFormat="d M yy"
+			showIcon
+			iconDisplay="input"
+			showButtonBar
+			:placeholder="ctrans('From – to')"
+			:class="fieldFocusClass"
+			:pt="datePickerPt"
+			:aria-label="ctrans('Received between')"
+		/>
+		<SegmentedToggle v-if="currencies.length > 1" v-model="currency" :options="currencyOptions" soft :aria-label="ctrans('Currency')" />
 	</div>
 
 	<Table :resource="data" class="mt-5">
 		<template #cell(booked_at)="{ item }">
-			<span class="whitespace-nowrap">{{ useFormatTime(item.booked_at) }}</span>
+			<span class="whitespace-nowrap">{{ useFormatTime(item.booked_at, { formatTime: "d MMM yyyy" }) }}</span>
+		</template>
+
+		<template #cell(bank)="{ item }">
+			<span class="whitespace-nowrap">{{ item.bank }}</span>
+		</template>
+
+		<template #cell(counterparty_name)="{ item }">
+			<span class="text-xs">{{ item.counterparty_name ?? "—" }}</span>
 		</template>
 
 		<template #cell(amount)="{ item }">
@@ -222,11 +275,7 @@ const submit = () => {
 		</template>
 
 		<template #cell(reference)="{ item }">
-			<span class="text-gray-600">{{ item.reference ?? "—" }}</span>
-		</template>
-
-		<template #cell(reason)="{ item }">
-			<span class="text-sm text-gray-600">{{ item.reason ? sentenceCase(ctrans(item.reason)) : "—" }}</span>
+			<span class="break-all text-xs text-gray-600">{{ item.reference ?? "—" }}</span>
 		</template>
 
 		<template #cell(order_reference)="{ item }">
@@ -237,6 +286,7 @@ const submit = () => {
 		</template>
 
 		<template #cell(actions)="{ item }">
+			<div v-if="item.reason" class="mb-1 text-right text-xs text-gray-500">{{ sentenceCase(ctrans(item.reason)) }}</div>
 			<div v-if="canEdit && item.is_dismissed" class="flex flex-col items-end gap-1 whitespace-nowrap">
 				<Button type="tertiary" size="xs" :label="ctrans('Bring back')" @click="restore(item)">
 					<template #icon>

@@ -767,6 +767,7 @@ test('staff record a bank payment from the review queue on the order they name, 
             ->component('Org/Accounting/BankTransactionsToReview')
             ->where('canEdit', true)
             ->where('period', '90d')
+            ->where('queryBuilderProps.default.columns', fn ($columns) => collect($columns)->pluck('key')->contains('actions') && !collect($columns)->pluck('key')->contains('reason'))
             ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($toReview->id)
                 && !collect($rows)->pluck('id')->contains($old->id)
                 && !collect($rows)->pluck('id')->contains($paid->id)
@@ -776,6 +777,16 @@ test('staff record a bank payment from the review queue on the order they name, 
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('period', 'all')
             ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($old->id)));
+
+    $toReview->update(['reference' => 'Faire EWACREAMZ3']);
+    $ids = fn (array $query) => collect(get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, ...$query]))->viewData('page')['props']['data']['data'])->pluck('id');
+
+    expect($ids(['filter' => ['global' => 'ewacreamz3']]))->toContain($toReview->id)->not->toContain($old->id)
+        ->and($ids(['filter' => ['global' => '12,00']]))->toContain($toReview->id)->not->toContain($old->id)
+        ->and($ids(['period' => 'all', 'filter' => ['global' => $bankConnection->name]]))->toContain($toReview->id, $old->id)
+        ->and($ids(['currency' => $order->currency->code]))->toContain($toReview->id)
+        ->and($ids(['currency' => $otherCurrencyLine->currency->code]))->not->toContain($toReview->id)
+        ->and($ids(['from' => now()->subYears(3)->subDay()->toDateString(), 'to' => now()->subYears(2)->toDateString()]))->toContain($old->id)->not->toContain($toReview->id);
 });
 
 test('order numbers are read from bank references as whole words', function () {
