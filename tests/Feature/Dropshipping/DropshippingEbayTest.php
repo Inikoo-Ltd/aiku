@@ -2857,6 +2857,26 @@ test('repairing a channel location moves its offers onto the shop warehouse loca
         ->and($ebayUser->refresh()->location_key)->toBe($locationKey);
 });
 
+test('an offer eBay returns with an empty price block is sent back without it, not as a list', function () {
+    $ebayUser = ebayChannel($this, ['location_key' => 'dssk-warehouse-DE']);
+    listedEbayPortfolio($this, $ebayUser, '111', 'offer-sparse');
+    $locationKey = $this->shop->slug.'-warehouse-GB';
+
+    fakeEbay($this, [
+        '/sell/inventory/v1/location/'.$locationKey => fn () => Http::response(null, 204),
+        '/sell/inventory/v1/offer/offer-sparse'     => fn (Request $request) => $request->method() === 'PUT'
+            ? Http::response([])
+            : Http::response('{"offerId":"offer-sparse","sku":"sku-sparse","format":"FIXED_PRICE","pricingSummary":{},"listingPolicies":{"eBayPlusIfEligible":false},"status":"PUBLISHED"}'),
+    ]);
+
+    $result = UpdateEbayUserData::make()->moveToWarehouseLocation($ebayUser);
+    $body   = sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-sparse')->body();
+
+    expect($result['moved'])->toBe(1)
+        ->and($body)->not->toContain('"pricingSummary":[]')
+        ->and(json_decode($body, true))->toMatchArray(['merchantLocationKey' => $locationKey, 'listingPolicies' => ['eBayPlusIfEligible' => false]]);
+});
+
 test('repairing a channel location leaves draft offers that never went live alone', function () {
     $ebayUser = ebayChannel($this, ['location_key' => 'dssk-warehouse-DE']);
     listedEbayPortfolio($this, $ebayUser, '111', 'offer-draft');

@@ -1672,6 +1672,7 @@ trait WithEbayApiRequest
                 'storeCategoryNames',
                 'tax',
             ]);
+            $data = array_filter($data, fn ($value) => $value !== []);
 
             if (filled(Arr::get($offerData, 'description'))) {
                 data_set($data, 'listingDescription', Arr::get($offerData, 'description'));
