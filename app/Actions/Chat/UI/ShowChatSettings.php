@@ -143,15 +143,22 @@ class ShowChatSettings extends OrgAction
                 ] : null,
                 'policies'       => $isShop ? [
                     'text'         => data_get($parent->settings, 'chat.policies', ''),
-                    'notes'        => ChatKnowledgeEntry::where('shop_id', $parent->id)->where('is_manual', true)->where('status', '!=', 'removed')->latest('updated_at')->get(['id', 'title', 'body', 'updated_at', 'status', 'is_manual', 'source_type', 'created_by_user_id'])
+                    'notes'        => ChatKnowledgeEntry::where('group_id', $parent->group_id)->where('is_manual', true)->where('status', '!=', 'removed')
+                        ->where(fn ($query) => $query->where('shop_id', $parent->id)
+                            ->orWhere(fn ($query) => $query->whereNull('shop_id')->where('organisation_id', $parent->organisation_id))
+                            ->orWhere(fn ($query) => $query->whereNull('shop_id')->whereNull('organisation_id')))
+                        ->latest('updated_at')->get(['id', 'group_id', 'organisation_id', 'shop_id', 'title', 'body', 'updated_at', 'status', 'is_manual', 'source_type', 'created_by_user_id'])
                         ->map(fn (ChatKnowledgeEntry $note) => [
                             'id'          => $note->id,
                             'title'       => $note->title,
                             'body'        => $note->body,
                             'updated_at'  => $note->updated_at,
+                            'reach'       => UpdateShopChatKnowledgeNote::reachOf($note),
+                            'can_edit'    => UpdateShopChatKnowledgeNote::make()->canManageReach($request->user(), $parent, UpdateShopChatKnowledgeNote::reachOf($note)),
                             'proposed'    => $note->status === 'proposed',
-                            'can_approve' => UpdateShopChatKnowledgeNote::awaitsDecisionBy($note, $request->user()),
+                            'can_approve' => $note->shop_id === $parent->id && UpdateShopChatKnowledgeNote::awaitsDecisionBy($note, $request->user()),
                         ])->all(),
+                    'note_reaches' => UpdateShopChatKnowledgeNote::make()->reachesFor($request->user(), $parent),
                     'copied'       => ChatKnowledgeEntry::where('shop_id', $parent->id)->whereIn('source_type', ['webpage', 'shop_settings', 'docs'])->selectRaw('kind, count(*) as total, max(hydrated_at) as at')->groupBy('kind')->get()->all(),
                     'learned'      => ChatKnowledgeEntry::where('shop_id', $parent->id)->where('source_type', 'learned')->whereIn('status', ['active', 'proposed', 'conflict'])->orderByDesc('customers_count')->limit(200)
                         ->get(['id', 'title', 'body', 'status', 'conflict', 'customers_count', 'last_seen_at', 'expires_at'])->all(),

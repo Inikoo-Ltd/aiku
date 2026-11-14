@@ -7,6 +7,8 @@
 import { Head, Link, useForm } from "@inertiajs/vue3"
 import { computed, onMounted } from "vue"
 import Textarea from "primevue/textarea"
+import InputText from "primevue/inputtext"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import Select from "primevue/select"
 import Checkbox from "primevue/checkbox"
 import InputNumber from "primevue/inputnumber"
@@ -26,6 +28,8 @@ import { faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faB
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
 library.add(faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faWhatsapp, faBook, faSignature, faAddressBook)
+
+type NoteReach = "shop" | "organisation" | "group"
 
 const props = defineProps<{
     title: string
@@ -64,7 +68,8 @@ const props = defineProps<{
     } | null
     policies: {
         text: string
-        notes: { id: number; title: string; body: string; updated_at: string; proposed: boolean; can_approve: boolean }[]
+        notes: { id: number; title: string; body: string; updated_at: string; reach: NoteReach; can_edit: boolean; proposed: boolean; can_approve: boolean }[]
+        note_reaches: NoteReach[]
         copied: { kind: string; total: number; at: string | null }[]
         learned: { id: number; title: string; body: string; status: "active" | "proposed" | "conflict"; conflict: string | null; customers_count: number; last_seen_at: string | null; expires_at: string | null }[]
         knowledge_route: Record<string, any>
@@ -176,13 +181,21 @@ const saveClosing = () => {
     })
 }
 
-const noteForm = useForm({ id: null as number | null, title: "", body: "" })
+const noteForm = useForm({ id: null as number | null, title: "", body: "", reach: "shop" as NoteReach })
 
-const editNote = (note: { id: number; title: string; body: string } | null) => {
+const reachLabels = computed<Record<NoteReach, string>>(() => ({
+    shop: ctrans("This shop"),
+    organisation: ctrans("Every shop of the organisation"),
+    group: ctrans("Every shop of the group"),
+}))
+const reachOptions = computed(() => (props.policies?.note_reaches ?? []).map((reach) => ({ label: reachLabels.value[reach], value: reach })))
+
+const editNote = (note: { id: number; title: string; body: string; reach?: NoteReach } | null) => {
     noteForm.clearErrors()
     noteForm.id = note?.id ?? null
     noteForm.title = note?.title ?? ""
     noteForm.body = note?.body ?? ""
+    noteForm.reach = note?.reach ?? "shop"
 }
 
 const saveNote = () => {
@@ -374,12 +387,16 @@ const saveCouriers = () => {
 
         <div v-if="policies.can_edit" class="rounded-lg border border-gray-200 p-4">
             <div class="text-sm font-medium text-gray-700">{{ noteForm.id ? ctrans("Edit note") : ctrans("New note") }}</div>
-            <input v-model="noteForm.title" type="text" maxlength="200" :placeholder="ctrans('Title, for example: Shipping to Germany')"
-                class="mt-2 w-full rounded-md border-gray-300 text-sm" />
+            <InputText v-model="noteForm.title" maxlength="200" :placeholder="ctrans('Title, for example: Shipping to Germany')" class="mt-2 w-full text-sm" />
             <p v-if="noteForm.errors.title" class="mt-1 text-sm text-red-600">{{ noteForm.errors.title }}</p>
             <Textarea v-model="noteForm.body" rows="4" autoResize maxlength="2000" class="mt-2 w-full text-sm"
                 :placeholder="ctrans('What customer service knows, as you would tell a new colleague.')" />
             <p v-if="noteForm.errors.body" class="mt-1 text-sm text-red-600">{{ noteForm.errors.body }}</p>
+            <div v-if="reachOptions.length > 1" class="mt-2 flex flex-wrap items-center gap-2">
+                <span class="text-xs text-gray-600">{{ ctrans("Merlin uses it for") }}</span>
+                <SegmentedToggle v-model="noteForm.reach" :options="reachOptions" :aria-label="ctrans('Which shops the note is for')" />
+            </div>
+            <p v-if="noteForm.errors.reach" class="mt-1 text-sm text-red-600">{{ noteForm.errors.reach }}</p>
             <div class="mt-2 flex gap-2">
                 <Button :label="ctrans('Save note')" :loading="noteForm.processing" :disabled="!noteForm.title.trim() || !noteForm.body.trim()" @click="saveNote" />
                 <Button v-if="noteForm.id" type="tertiary" :label="ctrans('Cancel')" @click="editNote(null)" />
@@ -391,13 +408,14 @@ const saveCouriers = () => {
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-medium text-gray-800">
                         {{ note.title }}
+                        <span v-if="note.reach !== 'shop'" class="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-normal text-gray-700">{{ reachLabels[note.reach] }}</span>
                         <span v-if="note.proposed" class="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-normal text-amber-800">{{ ctrans("Waiting for a second yes: the AI does not use it yet") }}</span>
                     </div>
                     <p class="whitespace-pre-line text-sm text-gray-600">{{ note.body }}</p>
                 </div>
                 <button v-if="policies.can_edit && note.can_approve" type="button" class="text-xs text-emerald-700 underline" @click="decideLearned(note.id, 'active')">{{ ctrans("Use it") }}</button>
-                <button v-if="policies.can_edit" type="button" class="text-xs font-medium text-gray-700 hover:underline" @click="editNote(note)">{{ ctrans("Edit") }}</button>
-                <button v-if="policies.can_edit" type="button" class="text-xs text-red-600 underline" @click="deleteNote(note.id)">{{ ctrans("Remove") }}</button>
+                <button v-if="policies.can_edit && note.can_edit" type="button" class="text-xs font-medium text-gray-700 hover:underline" @click="editNote(note)">{{ ctrans("Edit") }}</button>
+                <button v-if="policies.can_edit && note.can_edit" type="button" class="text-xs text-red-600 underline" @click="deleteNote(note.id)">{{ ctrans("Remove") }}</button>
             </div>
         </div>
 
