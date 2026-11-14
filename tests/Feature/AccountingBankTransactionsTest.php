@@ -929,3 +929,130 @@ test('the bank fees report sums fees the bank took and fees absorbed, per curren
     get(route('grp.org.accounting.bank_fees.index', [$this->organisation->slug, 'from' => 'garbage']))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('range.to', now()->toDateString()));
 });
+
+test('a faire payout of the order total less its commission marks the order paid by the marketplace, with no payment', function () {
+    $originalShop = $this->shop->only(['type', 'settings']);
+    $this->shop->updateQuietly(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL, 'settings' => array_merge($this->shop->settings ?? [], ['faire' => ['order_from_days' => 6]])]);
+
+    try {
+        $faireOrder = function (float $total, float $commission) {
+            $order = bankMatchingOrder(createCustomer($this->shop), $total);
+            $order->updateQuietly([
+                'reference'         => strtoupper(\Illuminate\Support\Str::random(10)),
+                'state'             => OrderStateEnum::DISPATCHED,
+                'commission_amount' => $commission,
+            ]);
+
+            return UpdateOrderPaymentsStatus::run($order->refresh());
+        };
+        $exact = $faireOrder(198.06, 29.71);
+        $short = $faireOrder(331.60, 49.74);
+
+        expect($exact->pay_status)->toBe(OrderPayStatusEnum::UNPAID)
+            ->and($exact->pay_detailed_status)->toBe(\App\Enums\Ordering\Order\OrderPayDetailedStatusEnum::TO_BE_PAID_BY_MARKETPLACE);
+
+        $bankConnection = bankMatchingConnection($this->organisation);
+        $line = fn (string $id, Order $order, float $amount) => BankTransaction::create([
+            'group_id'                => $bankConnection->group_id,
+            'organisation_id'         => $bankConnection->organisation_id,
+            'bank_connection_id'      => $bankConnection->id,
+            'provider_transaction_id' => $id,
+            'provider_type'           => 'TRANSFER',
+            'direction'               => BankTransactionDirectionEnum::IN,
+            'amount'                  => $amount,
+            'currency_id'             => $order->currency_id,
+            'status'                  => BankTransactionStatusEnum::BOOKED,
+            'counterparty_name'       => 'Faire Wholesale B. V.',
+            'reference'               => 'Faire '.$order->reference,
+            'booked_at'               => now(),
+        ]);
+
+        $exactLine = $line('f1', $exact, 168.35);
+        $shortLine = $line('f2', $short, 270.00);
+
+        expect(MatchBankTransactions::run($bankConnection))->toBe(['paid_by_marketplace' => 1, 'review' => 1])
+            ->and($exactLine->refresh()->order_id)->toBe($exact->id)
+            ->and($exactLine->payment_id)->toBeNull()
+            ->and($exactLine->match_data['commission'])->toBe(29.71)
+            ->and($shortLine->refresh()->match_data['reason'])->toBe('marketplace paid other than the order total less its commission')
+            ->and($exact->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID)
+            ->and($exact->pay_detailed_status)->toBe(\App\Enums\Ordering\Order\OrderPayDetailedStatusEnum::PAID_BY_MARKETPLACE)
+            ->and((float)$exact->payment_amount)->toBe(0.0)
+            ->and($exact->payments()->count())->toBe(0);
+
+        PayBankTransactionToOrder::make()->handle($shortLine, ['order_reference' => $short->reference]);
+
+        expect($shortLine->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE)
+            ->and($shortLine->payment_id)->toBeNull()
+            ->and($shortLine->match_data['difference'])->toBe(-11.86)
+            ->and($short->refresh()->pay_detailed_status)->toBe(\App\Enums\Ordering\Order\OrderPayDetailedStatusEnum::PAID_BY_MARKETPLACE)
+            ->and($short->payments()->count())->toBe(0);
+
+        $cancelled = $faireOrder(50, 7.5);
+        $cancelled->updateQuietly(['state' => OrderStateEnum::CANCELLED]);
+        expect(UpdateOrderPaymentsStatus::run($cancelled->refresh())->pay_detailed_status)->toBe(\App\Enums\Ordering\Order\OrderPayDetailedStatusEnum::UNPAID);
+
+        $exactLine->update(['match_state' => null, 'order_id' => null, 'match_data' => [], 'matched_at' => null]);
+        MatchBankTransactions::make()->refreshMarketplaceOrders([$exact->id]);
+        expect($exact->refresh()->pay_status)->toBe(OrderPayStatusEnum::UNPAID)
+            ->and($exact->pay_detailed_status)->toBe(\App\Enums\Ordering\Order\OrderPayDetailedStatusEnum::TO_BE_PAID_BY_MARKETPLACE);
+    } finally {
+        $this->shop->updateQuietly($originalShop);
+    }
+});
+
+test('the faire payout backfill links old payouts and relabels unpaid faire orders, only with --commit', function () {
+    $originalShop = $this->shop->only(['type', 'settings']);
+    $this->shop->updateQuietly(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL, 'settings' => array_merge($this->shop->settings ?? [], ['faire' => ['order_from_days' => 6]])]);
+
+    try {
+        $faireOrder = function (float $total, float $commission) {
+            $order = bankMatchingOrder(createCustomer($this->shop), $total);
+            $order->updateQuietly([
+                'reference'           => strtoupper(\Illuminate\Support\Str::random(10)),
+                'state'               => OrderStateEnum::DISPATCHED,
+                'commission_amount'   => $commission,
+                'pay_detailed_status' => \App\Enums\Ordering\Order\OrderPayDetailedStatusEnum::UNPAID,
+            ]);
+
+            return $order->refresh();
+        };
+        $paidOut  = $faireOrder(100, 15);
+        $awaiting = $faireOrder(80, 12);
+
+        $bankConnection = bankMatchingConnection($this->organisation);
+        $oldLine        = BankTransaction::create([
+            'group_id'                => $bankConnection->group_id,
+            'organisation_id'         => $bankConnection->organisation_id,
+            'bank_connection_id'      => $bankConnection->id,
+            'provider_transaction_id' => 'bf1',
+            'provider_type'           => 'TRANSFER',
+            'direction'               => BankTransactionDirectionEnum::IN,
+            'amount'                  => 85,
+            'currency_id'             => $paidOut->currency_id,
+            'status'                  => BankTransactionStatusEnum::BOOKED,
+            'counterparty_name'       => 'Faire Wholesale B. V.',
+            'reference'               => 'Faire '.$paidOut->reference,
+            'booked_at'               => now()->subMonths(3),
+            'match_state'             => BankTransactionMatchStateEnum::UNMATCHED,
+            'match_data'              => ['reason' => 'no order number in the reference'],
+        ]);
+
+        $dryRun = \App\Actions\Accounting\BankTransaction\BackfillFairePayouts::run(false);
+        expect($dryRun['payouts paid_by_marketplace'] ?? 0)->toBeGreaterThanOrEqual(1)
+            ->and($oldLine->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+            ->and($awaiting->refresh()->pay_detailed_status)->toBe(\App\Enums\Ordering\Order\OrderPayDetailedStatusEnum::UNPAID);
+
+        \App\Actions\Accounting\BankTransaction\BackfillFairePayouts::run(true);
+
+        expect($oldLine->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE)
+            ->and($oldLine->order_id)->toBe($paidOut->id)
+            ->and($oldLine->payment_id)->toBeNull()
+            ->and($paidOut->refresh()->pay_detailed_status)->toBe(\App\Enums\Ordering\Order\OrderPayDetailedStatusEnum::PAID_BY_MARKETPLACE)
+            ->and($paidOut->pay_status)->toBe(OrderPayStatusEnum::PAID)
+            ->and((float)$paidOut->total_amount)->toBe(100.0)
+            ->and($awaiting->refresh()->pay_detailed_status)->toBe(\App\Enums\Ordering\Order\OrderPayDetailedStatusEnum::TO_BE_PAID_BY_MARKETPLACE);
+    } finally {
+        $this->shop->updateQuietly($originalShop);
+    }
+});

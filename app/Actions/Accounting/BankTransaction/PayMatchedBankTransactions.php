@@ -12,6 +12,7 @@ use App\Actions\Accounting\Invoice\AttachPaymentToInvoice;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
+use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
@@ -141,6 +142,12 @@ class PayMatchedBankTransactions
                 $order->amountStillToPay() <= 0.01 => __('The order owes nothing'),
                 default => null,
             };
+            if (!$problem && $order->shop->isFaire()) {
+                $this->acceptMarketplacePayout($bankTransaction, $order, $paidBy);
+
+                return null;
+            }
+
             $paymentAccount = $problem ? null : $this->paymentAccount($bankConnection, $bankTransaction);
             if (!$problem && !$paymentAccount) {
                 $problem = __('No payment account is set for :currency on this bank connection', ['currency' => $bankTransaction->currency->code]);
@@ -167,7 +174,36 @@ class PayMatchedBankTransactions
             return $paid;
         });
 
-        $this->afterPayment($paid);
+        if ($paid) {
+            $this->afterPayment($paid);
+        }
+    }
+
+    /**
+     * The retailer paid the marketplace, so its payout to us is not a customer payment: the line is linked to the
+     * order, which reads as paid by the marketplace, whatever commission the marketplace kept.
+     */
+    private function acceptMarketplacePayout(BankTransaction $bankTransaction, Order $order, string $paidBy): void
+    {
+        $received = round((float)$bankTransaction->amount, 2);
+        $owed     = round((float)$order->total_amount - (float)$order->commission_amount, 2);
+
+        $bankTransaction->update([
+            'match_state' => BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE,
+            'order_id'    => $order->id,
+            'matched_at'  => now(),
+            'match_data'  => array_merge($bankTransaction->match_data, [
+                'paid_by'    => $paidBy,
+                'reason'     => null,
+                'owed'       => $owed,
+                'received'   => $received,
+                'difference' => round($received - $owed, 2),
+                'commission' => round((float)$order->commission_amount, 2),
+                'paid_at'    => now()->toIso8601String(),
+            ]),
+        ]);
+
+        UpdateOrderPaymentsStatus::run($order);
     }
 
     /**

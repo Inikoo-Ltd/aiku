@@ -12,12 +12,14 @@ use App\Actions\Ordering\PreOrder\ReleasePreOrder;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Accounting\BankTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use App\Models\Ordering\Order;
@@ -114,6 +116,15 @@ class UpdateOrderPaymentsStatus extends OrgAction
             )
         ) {
             $payDetailedStatus = OrderPayDetailedStatusEnum::REFUNDED;
+        }
+
+        /**
+         * A Faire order carries no customer payment: it is paid once its payout is linked to it from the bank feed.
+         */
+        if ($runningPaymentsAmount == 0 && $totalAmount != 0 && $order->state !== OrderStateEnum::CANCELLED && $order->shop->isFaire()) {
+            $paidByMarketplace = BankTransaction::where('order_id', $order->id)->where('match_state', BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE)->exists();
+            $payStatus         = $paidByMarketplace ? OrderPayStatusEnum::PAID : OrderPayStatusEnum::UNPAID;
+            $payDetailedStatus = $paidByMarketplace ? OrderPayDetailedStatusEnum::PAID_BY_MARKETPLACE : OrderPayDetailedStatusEnum::TO_BE_PAID_BY_MARKETPLACE;
         }
 
         $order->update(

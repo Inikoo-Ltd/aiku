@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\BankConnection\Wise;
 
+use App\Actions\Accounting\BankTransaction\MatchBankTransactions;
 use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
@@ -157,11 +158,15 @@ class SyncWiseBankConnection
 
             $stored = BankTransaction::where('bank_connection_id', $bankConnection->id)->where('provider_transaction_id', $activity['id'].$suffix)->first();
             if ($stored) {
+                $marketplaceOrderId = $stored->match_state === BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE ? $stored->order_id : null;
                 $stored->update(array_merge($values, match (true) {
                     $this->paidLineChanged($stored, $values) => $this->flagPaidLineChanged($stored),
                     $this->decisionNoLongerValid($stored, $values) => self::FORGET_DECISION,
                     default => [],
                 }));
+                if ($marketplaceOrderId && $stored->match_state === null) {
+                    MatchBankTransactions::make()->refreshMarketplaceOrders([$marketplaceOrderId]);
+                }
             } else {
                 BankTransaction::create(array_merge($values, [
                     'bank_connection_id'      => $bankConnection->id,

@@ -14,9 +14,11 @@ use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\BankConnection;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Models\Accounting\BankTransaction;
 use App\Models\Accounting\Payment;
 use App\Models\Helpers\Currency;
@@ -73,6 +75,9 @@ class MatchBankTransactions
                         'match_data'  => $matchData,
                         'matched_at'  => now(),
                     ]);
+                    if ($state === BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE) {
+                        $this->refreshMarketplaceOrders([$order->id]);
+                    }
                     $counts[$state->value] = ($counts[$state->value] ?? 0) + 1;
                 }
             });
@@ -160,6 +165,11 @@ class MatchBankTransactions
      */
     public function decide(BankTransaction $bankTransaction): array
     {
+        $marketplaceOrderReference = $this->marketplaceOrderReference($bankTransaction);
+        if ($marketplaceOrderReference) {
+            return $this->decideMarketplacePayout($bankTransaction, $marketplaceOrderReference);
+        }
+
         $tokens = $this->orderReferenceTokens($bankTransaction->reference);
         if (!$tokens) {
             return [BankTransactionMatchStateEnum::UNMATCHED, null, ['reason' => 'no order number in the reference']];
@@ -248,6 +258,77 @@ class MatchBankTransactions
         return [BankTransactionMatchStateEnum::MATCHED, $order, $matchData];
     }
 
+    /**
+     * Faire pays each order in its own transfer, referenced "Faire <order code>".
+     */
+    public function marketplaceOrderReference(BankTransaction $bankTransaction): ?string
+    {
+        if (!preg_match('/^faire\b/i', (string)$bankTransaction->counterparty_name)) {
+            return null;
+        }
+
+        return preg_match('/(?<![A-Za-z0-9])Faire ([A-Za-z0-9]{8,12})(?![A-Za-z0-9])/i', (string)$bankTransaction->reference, $matches)
+            ? strtoupper($matches[1])
+            : null;
+    }
+
+    /**
+     * A marketplace payout is the order total less the commission the marketplace keeps, which Aiku stores on the
+     * order. When it is exactly that, the order is paid by the marketplace; no customer payment is recorded, as the
+     * retailer paid the marketplace. Any other amount goes to review.
+     *
+     * @return array{0: BankTransactionMatchStateEnum, 1: Order|null, 2: array<string, mixed>}
+     */
+    private function decideMarketplacePayout(BankTransaction $bankTransaction, string $orderReference): array
+    {
+        $order = Order::where('organisation_id', $bankTransaction->organisation_id)
+            ->where('reference', $orderReference)
+            ->whereHas('shop', fn ($query) => $query->where('type', ShopTypeEnum::EXTERNAL))
+            ->get()
+            ->first(fn (Order $order) => $order->shop->isFaire());
+        if (!$order) {
+            return [BankTransactionMatchStateEnum::UNMATCHED, null, ['reason' => 'marketplace order not found', 'tokens' => [$orderReference]]];
+        }
+
+        $received  = round((float)$bankTransaction->amount, 2);
+        $owed      = round((float)$order->total_amount - (float)$order->commission_amount, 2);
+        $matchData = ['owed' => $owed, 'received' => $received, 'difference' => round($received - $owed, 2), 'commission' => round((float)$order->commission_amount, 2)];
+
+        $otherPayout = BankTransaction::where('order_id', $order->id)
+            ->where('id', '!=', $bankTransaction->id)
+            ->where('match_state', BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE)
+            ->exists();
+
+        $reason = match (true) {
+            $order->currency_id !== $bankTransaction->currency_id => 'currency differs from the order',
+            $order->state === OrderStateEnum::CANCELLED => 'order cancelled',
+            $otherPayout => 'another marketplace payout is already on this order',
+            abs($matchData['difference']) > 0.01 => 'marketplace paid other than the order total less its commission',
+            default => null,
+        };
+
+        return $reason
+            ? [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => $reason])]
+            : [BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE, $order, $matchData];
+    }
+
+    /**
+     * A Faire order reads as paid by the marketplace only while a payout line is linked to it, so it is worked out
+     * again whenever a line is linked or its decision is forgotten.
+     *
+     * @param array<int, int|null> $orderIds
+     */
+    public function refreshMarketplaceOrders(array $orderIds): void
+    {
+        foreach (Order::whereIn('id', array_filter($orderIds))->get() as $order) {
+            try {
+                UpdateOrderPaymentsStatus::run($order);
+            } catch (Throwable $exception) {
+                Sentry::captureException($exception);
+            }
+        }
+    }
+
     private function successfulPayments(Order $order): \Illuminate\Database\Eloquent\Relations\MorphToMany
     {
         return $order->payments()
@@ -316,7 +397,13 @@ class MatchBankTransactions
         }
 
         try {
+            $forgottenMarketplaceOrderIds = [];
             if ($command->option('reset')) {
+                $forgottenMarketplaceOrderIds = BankTransaction::where('bank_connection_id', $bankConnection->id)
+                    ->where('match_state', BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE)
+                    ->whereNull('payment_id')
+                    ->pluck('order_id')
+                    ->all();
                 BankTransaction::where('bank_connection_id', $bankConnection->id)
                     ->whereNull('payment_id')
                     ->where(fn ($query) => $query->whereNull('match_state')->orWhere('match_state', '!=', BankTransactionMatchStateEnum::DISMISSED))
@@ -326,6 +413,7 @@ class MatchBankTransactions
             foreach ($this->handle($bankConnection) as $state => $lines) {
                 $command->info("$state: $lines");
             }
+            $this->refreshMarketplaceOrders($forgottenMarketplaceOrderIds);
         } finally {
             $lock->release();
         }

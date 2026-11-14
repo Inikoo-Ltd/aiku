@@ -989,6 +989,14 @@ class Shop extends Model implements HasMedia, Auditable
         return Arr::get($this->settings, "pre_orders.$key") ?? self::PRE_ORDER_DEFAULTS[$key];
     }
 
+    /**
+     * Faire collects from the retailer and pays us each order later, less its commission.
+     */
+    public function isFaire(): bool
+    {
+        return $this->type === ShopTypeEnum::EXTERNAL && Arr::has($this->settings, 'faire');
+    }
+
     public function hasPreOrders(): bool
     {
         return (bool) $this->preOrderSetting('enabled');
