@@ -237,7 +237,7 @@ it('reads the agent PO journey settings with defaults', function () {
 
     expect($warehouse['cho_mode'])->toBe('next_container')
         ->and($forwarder['cho_mode'])->toBe('forwarder')
-        ->and($forwarder['ready_checks'])->toBe(['balance', 'packing', 'qc', 'compliance'])
+        ->and($forwarder['ready_checks'])->toBe(['balance', 'qc', 'packing', 'compliance'])
         ->and($forwarder['stages']['ready'])->toBe(['label' => 'Ready to Roll', 'description' => 'Final checks', 'days' => null])
         ->and($custom['cho_mode'])->toBe('forwarder')
         ->and($custom['ready_checks'])->toBe(['qc'])

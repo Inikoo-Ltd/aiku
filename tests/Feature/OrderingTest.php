@@ -7241,6 +7241,8 @@ test('adding and removing basket lines keeps totals, discounts, shipping and cha
         'in_basket'  => 112.0,
     ]);
 
+    $this->actingAs($webUser->fresh(), 'retina')->get('http://'.$website->domain.'/app/basket')->assertOk();
+
     $line          = $basket->transactions()->where('model_type', 'Product')->where('model_id', $products[2]->id)->first();
     $deleteQueries = $queriesOf(fn () => $this->actingAs($webUser->fresh(), 'retina')
         ->delete('http://'.$website->domain.'/app/models/transaction/'.$line->id)

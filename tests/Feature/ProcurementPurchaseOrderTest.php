@@ -1283,16 +1283,16 @@ test('an agent user marks hand over through the order page and the PO journey bo
     $this->patch($stageRoute, ['field' => 'sample_approved_at', 'date' => $today, 'reason' => 'Agent saw the sample'])->assertSessionHasErrors('field');
     $this->patch($stageRoute, ['field' => 'handed_over_at', 'date' => $today, 'reason' => 'Handed to the shipping agent'])->assertSessionHasNoErrors();
     $this->patch($stageRoute, ['field' => 'approved_ready_at', 'date' => $today])->assertSessionHasErrors('field');
-    $this->patch($stageRoute, ['field' => 'compliance_complete_at', 'date' => $today])->assertSessionHasErrors('field');
+    $this->patch($stageRoute, ['field' => 'compliance_complete_at', 'date' => $today])->assertSessionHasNoErrors();
 
     $purchaseOrder->refresh();
     expect($purchaseOrder->qc_passed_at)->toBeNull()
         ->and($purchaseOrder->sample_approved_at)->toBeNull()
         ->and($purchaseOrder->handed_over_at)->not->toBeNull()
         ->and($purchaseOrder->approved_ready_at)->toBeNull()
-        ->and($purchaseOrder->compliance_complete_at)->toBeNull();
+        ->and($purchaseOrder->compliance_complete_at)->not->toBeNull();
 
-    $purchaseOrder->updateQuietly(['handed_over_at' => null]);
+    $purchaseOrder->updateQuietly(['handed_over_at' => null, 'compliance_complete_at' => null]);
 
     $this->patch($journeyRoute, ['stage' => 'ready', 'date' => $today, 'reason' => 'Agent checked the goods'])->assertForbidden();
     $this->patch($journeyRoute, ['stage' => 'handed_over', 'date' => $today, 'reason' => 'Handed to the shipping agent'])->assertSessionHasNoErrors();
@@ -1394,7 +1394,8 @@ test('agent marks only its own stages and the order shows its slowest delivery',
     $this->patch($route, ['field' => 'production_started_at', 'date' => $today, 'reason' => 'Supplier started before the deposit'])->assertSessionHasNoErrors();
     $this->patch($route, ['field' => 'qc_passed_at', 'date' => $today, 'reason' => 'x'])->assertSessionHasErrors('field');
     $this->patch($route, ['field' => 'sample_approved_at', 'date' => $today])->assertSessionHasErrors('field');
-    $this->patch($route, ['field' => 'compliance_complete_at', 'date' => $today])->assertSessionHasErrors('field');
+    $this->patch($route, ['field' => 'compliance_complete_at', 'date' => $today])->assertSessionHasNoErrors();
+    $purchaseOrder->updateQuietly(['compliance_complete_at' => null]);
     actingAs($this->adminGuest->getUser());
 
     expect($purchaseOrder->refresh()->stageMarkUserId('production_started_at'))->toBe($agent->id);
@@ -4562,7 +4563,7 @@ test('clean hand over is recorded on its own, dated by the last ready to roll ch
     $orgAgent             = createFreshOrgAgent($this);
     [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
     $order                = createConfirmedAgentOrder($this, $supplier, $product, 0, 4)->refresh();
-    $checks               = $orgAgent->agent->poJourney()['ready_checks'];
+    $checks               = array_values(array_diff($orgAgent->agent->poJourney()['ready_checks'], ['compliance']));
     $fields               = array_map(fn (string $key) => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum::READY_CHECK_FIELDS[$key], $checks);
     $lastField            = array_pop($fields);
     $order->updateQuietly(['handed_over_at' => null, 'sample_approved_at' => now(), ...array_fill_keys($fields, now()->subDays(3))]);
