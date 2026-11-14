@@ -21,8 +21,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * A product the assistant showed the customer in the last 24 hours and that they put in the basket
  * is recorded as `added` once per product per conversation, on the conversation that showed it last
  * (a chat before a Range Advisor panel day, as the report credits the chat):
- * from a card (single add) or as a new line of a bulk add. A quantity raised on such a line in the
- * basket is recorded as `increased`, once per product per conversation, and never counts as an add.
+ * from a card (single add) or as a new line of a bulk add, with the line and its order (the basket,
+ * which keeps its id when submitted). A quantity raised on such a line in the basket is recorded as `increased`, once per product per conversation, and never counts as an add.
  * A dropshipping customer has no basket: for them `added` is a product they added to one of their
  * sales channels from the storefront (StoreIrisPortfolioToMultiChannels and ...ToAllChannels), with
  * no transaction, so the report's funnel and the review of what Merlin's answers led to work there too.
@@ -83,6 +83,8 @@ class RecordShoppingAssistantBasketAdd
             return;
         }
 
+        $orderIds = DB::table('transactions')->whereIn('id', $lines->pluck('transaction_id')->filter()->all())->pluck('order_id', 'id');
+
         $recorded = DB::table('shopping_assistant_events')
             ->whereIn('shopping_assistant_conversation_id', $shown->pluck('shopping_assistant_conversation_id')->unique()->all())
             ->whereIn('product_id', $shown->pluck('product_id')->all())
@@ -102,6 +104,7 @@ class RecordShoppingAssistantBasketAdd
                 'position'                           => $event->position,
                 'reason_code'                        => $event->reason_code,
                 'transaction_id'                     => $lines[$event->product_id]['transaction_id'],
+                'order_id'                           => $orderIds[$lines[$event->product_id]['transaction_id']] ?? null,
                 'quantity'                           => $lines[$event->product_id]['quantity'],
                 'created_at'                         => now(),
             ])

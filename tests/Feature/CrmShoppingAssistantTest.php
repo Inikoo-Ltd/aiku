@@ -546,7 +546,8 @@ test('adding a shown product to the basket from the storefront records it, and n
 
     $added = ShoppingAssistantEvent::where('type', ShoppingAssistantEventTypeEnum::ADDED)->whereIn('product_id', [$product->id, $later->id])->get();
 
-    expect($added->map(fn ($event) => [$event->product_id, $event->transaction_id, (float) $event->quantity])->all())->toBe([[$product->id, $transactionId, 2.0]]);
+    expect($added->map(fn ($event) => [$event->product_id, $event->transaction_id, $event->order_id, (float) $event->quantity])->all())
+        ->toBe([[$product->id, $transactionId, \App\Models\Ordering\Transaction::find($transactionId)->order_id, 2.0]]);
 });
 
 function shoppingAssistantReportFilters(Website $website, array $overrides = []): array
@@ -653,7 +654,7 @@ test('the assistant report counts a line ordered within the attribution window o
     shoppingAssistantOrderLine($customer, $shown, '2024-01-06 12:00:00', 1);
 
     foreach ([$lastSecond, $cancelled] as $transactionId) {
-        $first->events()->create(['type' => ShoppingAssistantEventTypeEnum::ADDED, 'product_id' => $shown->id, 'transaction_id' => $transactionId, 'created_at' => '2024-01-05 10:05:00']);
+        $first->events()->create(['type' => ShoppingAssistantEventTypeEnum::ADDED, 'product_id' => $shown->id, 'transaction_id' => $transactionId, 'order_id' => DB::table('transactions')->where('id', $transactionId)->value('order_id'), 'created_at' => '2024-01-05 10:05:00']);
     }
 
     $this->travelTo(CarbonImmutable::parse('2024-03-01 12:00:00'));
@@ -1063,6 +1064,23 @@ test('a bulk add records added for the new lines of shown products only, once, a
         ['increased', $shown->id, $shownTransaction, 6.0, $message->id],
     ])
         ->and(ShoppingAssistantEvent::where('product_id', $notShown->id)->exists())->toBeFalse();
+});
+
+test('a Merlin line the customer removed and added again on the same order still counts in the strict figures', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $website      = createWebsite($this->shop);
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $product      = shoppingAssistantProduct($this->product);
+    $conversation = shoppingAssistantShownAt($customer, [$product->id], '2020-08-05 10:00:00');
+    $removed      = shoppingAssistantOrderLine($customer, $product, '2020-08-06 10:00:00', 25, ['deleted_at' => '2020-08-05 11:00:00']);
+    $orderId      = DB::table('transactions')->where('id', $removed)->value('order_id');
+    shoppingAssistantOrderLine($customer, $product, '2020-08-06 10:00:00', 30, ['order_id' => $orderId]);
+    $conversation->events()->create(['type' => ShoppingAssistantEventTypeEnum::ADDED, 'product_id' => $product->id, 'transaction_id' => $removed, 'order_id' => $orderId, 'quantity' => 1, 'created_at' => '2020-08-05 10:05:00']);
+
+    $report = shoppingAssistantReport($website, '2020-08-01', '2020-08-31');
+
+    expect($report['kpis']['strict_orders']['value'])->toBe(1)
+        ->and($report['kpis']['strict_revenue']['value'])->toBe(30.0);
 });
 
 test('an increased event moves neither the strict figures nor the added step of the assistant report', function () {
@@ -3111,7 +3129,7 @@ test('on a B2B shop the assistant prompt keeps the range advisor and the basket 
     $customer = shoppingAssistantCustomer($this->shop);
 
     Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantModelReply(['content' => 'Hello.'], 'stop'))]);
-    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'hello');
+    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'what should I stock for spring?');
 
     $request = Http::recorded()->first()[0];
 
@@ -3314,7 +3332,7 @@ test('a customer back after years still sees what they used to order, from order
     $forgotten = \App\Actions\CRM\RangeAdvisor\GetCustomerRangeGaps::run($customer->fresh())['forgotten'];
 
     Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantPresent(['reply' => 'Welcome back.']))]);
-    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer->fresh(), ShoppingAssistantEntryPointEnum::COMMAND), 'hello');
+    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer->fresh(), ShoppingAssistantEntryPointEnum::COMMAND), 'what should I stock for spring?');
 
     expect($forgotten->pluck('id')->all())->toBe([$old->id])
         ->and($forgotten->first()->customer_last_ordered_at->year)->toBe(now()->subYears(5)->year)

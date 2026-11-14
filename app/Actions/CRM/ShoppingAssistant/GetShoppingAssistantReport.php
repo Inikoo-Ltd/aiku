@@ -496,7 +496,10 @@ class GetShoppingAssistantReport
                 select distinct transactions.id, transactions.order_id, transactions.{$amountColumn} as amount
                 from shopping_assistant_events events
                 join convs on convs.id = events.shopping_assistant_conversation_id
-                join transactions on transactions.id = events.transaction_id
+                join transactions on transactions.order_id = events.order_id
+                    and transactions.model_type = 'Product'
+                    and transactions.model_id = events.product_id
+                    and transactions.is_gift = false
                 where events.type = 'added'
                     and transactions.submitted_at is not null
                     and transactions.state not in (?, ?)
