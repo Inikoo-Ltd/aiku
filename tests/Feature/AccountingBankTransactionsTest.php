@@ -1069,3 +1069,114 @@ test('the faire payout backfill links old payouts and relabels unpaid faire orde
         $this->shop->updateQuietly($originalShop);
     }
 });
+
+test('checkout payouts pay no order, and their report says which payments they settled and what was kept', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $order          = bankMatchingOrder(createCustomer($this->shop), 100);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $line           = fn (string $id, string $name, string $reference, float $amount, array $extra = []) => BankTransaction::create(array_merge([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $amount,
+        'currency_id'             => $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => $name,
+        'reference'               => $reference,
+        'booked_at'               => now()->subDay(),
+    ], $extra));
+
+    $daily    = $line('co1', 'CHECKOUT SAS', '00000003YGCF', 95.80);
+    $spaced   = $line('co2', 'CHECKOUT SAS 44 RUE DE CHATEAUDUN P ARIS 75009 FR', '00000003YLN X', 50);
+    $named    = $line('co3', 'CHECKOUT SAS', $order->reference.'XYZ1', 100);
+    $notOurs  = $line('co4', 'Checkout Sasha Ltd', $order->reference, 100);
+    $oldLabel = $line('co5', 'CHECKOUT SAS 20 BIS RUE LA FAYETTE PARIS 75009 FR', '00000003ABC 1', 20, [
+        'match_state' => BankTransactionMatchStateEnum::UNMATCHED,
+        'match_data'  => ['reason' => 'no order number in the reference'],
+    ]);
+
+    MatchBankTransactions::run($bankConnection);
+
+    expect($daily->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
+        ->and($daily->match_data['payout_id'])->toBe('00000003YGCF')
+        ->and($daily->order_id)->toBeNull()
+        ->and($spaced->refresh()->match_data['payout_id'])->toBe('00000003YLNX')
+        ->and($named->refresh()->match_state)->not->toBe(BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
+        ->and($notOurs->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($oldLabel->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
+
+    expect(fn () => PayMatchedBankTransactions::make()->payToOrder($oldLabel, $order, false, 'test'))
+        ->toThrow(ValidationException::class, 'This is a card processor payout of payments already on their orders');
+
+    $checkoutAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'checkout')->firstOrFail(),
+        ['code' => 'cko'.random_int(1000, 9999), 'name' => 'Checkout payouts test']
+    );
+    $cardPayment = \App\Actions\Accounting\Payment\StorePayment::make()->action($order->customer, $checkoutAccount, [
+        'amount' => 100,
+        'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+        'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+    ]);
+    $paymentReference = 'pay_'.\Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(26));
+    $cardPayment->updateQuietly(['reference' => $paymentReference]);
+
+    $csv = implode("\n", [
+        'Action Type,Action ID,Payment ID,Payout ID,Breakdown Type,Processing Currency Amount,Holding Currency,Holding Currency Amount',
+        "Capture,act_1,$paymentReference,00000003YGCF,Gross,100.00,CZK,100.00",
+        "Capture,act_1,$paymentReference,00000003YGCF,Interchange Fee,-0.30,CZK,-0.30",
+        "Capture,act_1,$paymentReference,00000003YGCF,Scheme Fee,-0.20,CZK,-0.20",
+        'Capture,act_2,pay_notinaiku000000000000000000,00000003YGCF,Gross,5.00,CZK,5.00',
+        'Refund,act_3,pay_refunded00000000000000000000,00000003YGCF,Gross,-8.00,CZK,-8.00',
+        'Refund,act_3,pay_refunded00000000000000000000,00000003YGCF,Gateway Fee,-0.50,CZK,-0.50',
+    ]);
+    $reconciler = \App\Actions\Accounting\BankTransaction\ReconcileCheckoutPayouts::partialMock();
+    $reconciler->shouldReceive('payoutReportFiles')->andReturn([
+        '00000003YGCF' => ['report_id' => 'rpt_1', 'file_id' => 'file_1'],
+        '00000003YLNX' => ['report_id' => 'rpt_2', 'file_id' => 'file_2'],
+    ]);
+    $reconciler->shouldReceive('payoutReportCsv')->with(\Mockery::any(), \Mockery::any(), 'rpt_1', 'file_1')->andReturn($csv);
+    $reconciler->shouldReceive('payoutReportCsv')->with(\Mockery::any(), \Mockery::any(), 'rpt_2', 'file_2')->andReturn(implode("\n", [
+        'Action Type,Payment ID,Breakdown Type,Processing Currency Amount,Holding Currency,Holding Currency Amount',
+        'Capture,pay_short000000000000000000000,Gross,10.00,CZK,10.00',
+    ]));
+    Config::set('app.sandbox.checkout_com.secret_key', 'sk_test');
+
+    $dryRun = $reconciler->handle(false, true);
+    expect($dryRun['payout lines labelled'] ?? 0)->toBeGreaterThanOrEqual(1)
+        ->and($oldLabel->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($daily->refresh()->match_data)->not->toHaveKey('reconciled_at');
+
+    $reconciler->handle(true, true);
+
+    $daily->refresh();
+    expect($oldLabel->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
+        ->and($oldLabel->match_data['payout_id'])->toBe('00000003ABC1')
+        ->and($daily->match_data['reconciled_at'])->not->toBeNull()
+        ->and($daily->match_data['payout_total'])->toEqual(96)
+        ->and($daily->match_data['gross'])->toEqual(97)
+        ->and($daily->match_data['processor_fees'])->toEqual(1)
+        ->and($daily->match_data['bank_fee'])->toEqual(0.2)
+        ->and($daily->match_data['payment_ids'])->toBe([$cardPayment->id])
+        ->and($daily->match_data['payments_in_payout'])->toBe(2)
+        ->and($daily->match_data['refunds_in_payout'])->toBe(1)
+        ->and($daily->match_data['payments_missing'])->toBe(['pay_notinaiku000000000000000000'])
+        ->and($daily->match_data['payment_account_id'])->toBe($checkoutAccount->id)
+        ->and($daily->payment_id)->toBeNull()
+        ->and($spaced->refresh()->match_data)->not->toHaveKey('reconciled_at')
+        ->and(collect($reconciler->samples)->pluck('payout')->unique()->sort()->values()->all())->toBe(['00000003YGCF', '00000003YLNX'])
+        ->and(collect($reconciler->samples)->firstWhere('payout', '00000003YLNX')['understood'])->toBeFalse();
+
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, 'scope' => 'payouts']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('scope', 'payouts')
+            ->where('data.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['id'] === $daily->id
+                && $row['payout']['reconciled']
+                && $row['payout']['payments'] === 2
+                && $row['payout']['processor_fees'] == 1
+                && $row['payout']['payments_missing'] === 1)));
+});

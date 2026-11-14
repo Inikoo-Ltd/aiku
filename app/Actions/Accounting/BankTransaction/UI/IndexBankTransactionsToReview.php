@@ -35,7 +35,7 @@ class IndexBankTransactionsToReview extends OrgAction
 {
     use WithAccountingPagesAuthorisation;
 
-    public const array SCOPES = ['review', 'unmatched', 'dismissed'];
+    public const array SCOPES = ['review', 'unmatched', 'dismissed', 'payouts'];
 
     public const array PERIODS = ['90d', '1y', 'all'];
 
@@ -86,6 +86,7 @@ class IndexBankTransactionsToReview extends OrgAction
             ->whereIn('bank_transactions.match_state', match ($scope) {
                 'unmatched' => [BankTransactionMatchStateEnum::UNMATCHED],
                 'dismissed' => [BankTransactionMatchStateEnum::DISMISSED],
+                'payouts'   => [BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT],
                 default     => [BankTransactionMatchStateEnum::REVIEW, BankTransactionMatchStateEnum::MATCHED],
             })
             ->join('bank_connections', 'bank_connections.id', 'bank_transactions.bank_connection_id')

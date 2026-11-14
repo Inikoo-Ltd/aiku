@@ -165,6 +165,11 @@ class MatchBankTransactions
      */
     public function decide(BankTransaction $bankTransaction): array
     {
+        $payoutId = $this->cardProcessorPayoutId($bankTransaction);
+        if ($payoutId) {
+            return [BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT, null, ['provider' => 'checkout', 'payout_id' => $payoutId]];
+        }
+
         $marketplaceOrderReference = $this->marketplaceOrderReference($bankTransaction);
         if ($marketplaceOrderReference) {
             return $this->decideMarketplacePayout($bankTransaction, $marketplaceOrderReference);
@@ -256,6 +261,21 @@ class MatchBankTransactions
         }
 
         return [BankTransactionMatchStateEnum::MATCHED, $order, $matchData];
+    }
+
+    /**
+     * Checkout.com pays out the card payments it collected, less its fees, in one transfer per day and currency from
+     * Checkout SAS, referenced with its 12 character payout id (some banks put a space inside it). Those payments are
+     * already on their orders, so the line pays no order.
+     */
+    public function cardProcessorPayoutId(BankTransaction $bankTransaction): ?string
+    {
+        if (!preg_match('/^checkout sas\b/i', (string)$bankTransaction->counterparty_name)) {
+            return null;
+        }
+        $payoutId = strtoupper(str_replace(' ', '', (string)$bankTransaction->reference));
+
+        return preg_match('/^[0-9A-Z]{12}$/', $payoutId) ? $payoutId : null;
     }
 
     /**

@@ -42,6 +42,15 @@ interface BankLine {
 	order_slug: string | null
 	shop_slug: string | null
 	is_dismissed: boolean
+	payout: {
+		payout_id: string | null
+		reconciled: boolean
+		payments: number
+		refunds: number
+		processor_fees: number
+		bank_fee: number
+		payments_missing: number
+	} | null
 }
 
 interface OrderCandidate {
@@ -60,7 +69,7 @@ const props = defineProps<{
 	pageHead: PageHeadingTypes
 	canEdit: boolean
 	organisationId: number
-	scope: "review" | "unmatched" | "dismissed"
+	scope: "review" | "unmatched" | "dismissed" | "payouts"
 	period: "90d" | "1y" | "all" | null
 	currency: string | null
 	currencies: string[]
@@ -82,6 +91,7 @@ const scopeOptions = [
 	{ label: ctrans("To review"), value: "review" },
 	{ label: ctrans("No order number"), value: "unmatched" },
 	{ label: ctrans("Not for an order"), value: "dismissed" },
+	{ label: ctrans("Card payouts"), value: "payouts" },
 ]
 const periodOptions = [
 	{ label: ctrans("Last 90 days"), value: "90d" },
@@ -286,7 +296,21 @@ const submit = () => {
 		</template>
 
 		<template #cell(actions)="{ item }">
-			<div v-if="item.reason" class="mb-1 text-right text-xs text-gray-500">{{ sentenceCase(ctrans(item.reason)) }}</div>
+			<div v-if="item.payout" class="text-right text-xs text-gray-500">
+				<template v-if="item.payout.reconciled">
+					{{ ctrans("Checkout payout of :payments payments and :refunds refunds, Checkout kept :fees, the bank :bank_fee", {
+						payments: item.payout.payments,
+						refunds: item.payout.refunds,
+						fees: locale.currencyFormat(item.currency_code, item.payout.processor_fees),
+						bank_fee: locale.currencyFormat(item.currency_code, item.payout.bank_fee),
+					}) }}
+					<span v-if="item.payout.payments_missing" class="text-amber-600">
+						· {{ ctrans(":count payments are not in Aiku", { count: item.payout.payments_missing }) }}
+					</span>
+				</template>
+				<template v-else>{{ ctrans("Checkout payout, its report is not read yet") }}</template>
+			</div>
+			<div v-else-if="item.reason" class="mb-1 text-right text-xs text-gray-500">{{ sentenceCase(ctrans(item.reason)) }}</div>
 			<div v-if="canEdit && item.is_dismissed" class="flex flex-col items-end gap-1 whitespace-nowrap">
 				<Button type="tertiary" size="xs" :label="ctrans('Bring back')" @click="restore(item)">
 					<template #icon>
@@ -295,7 +319,7 @@ const submit = () => {
 				</Button>
 				<span v-if="rowError?.id === item.id" class="text-xs text-red-600">{{ rowError.message }}</span>
 			</div>
-			<div v-else-if="canEdit" class="flex flex-col items-end gap-1">
+			<div v-else-if="canEdit && !item.payout" class="flex flex-col items-end gap-1">
 				<div class="flex justify-end gap-2 whitespace-nowrap">
 					<Button type="tertiary" size="xs" :label="ctrans('Pay order')" @click="open(item, 'pay')">
 						<template #icon>

@@ -134,6 +134,7 @@ class PayMatchedBankTransactions
 
             $problem = match (true) {
                 $bankTransaction->payment_id !== null => __('This bank payment is already recorded on an order'),
+                MatchBankTransactions::make()->cardProcessorPayoutId($bankTransaction) !== null => __('This is a card processor payout of payments already on their orders'),
                 $bankTransaction->direction !== BankTransactionDirectionEnum::IN || $bankTransaction->status !== BankTransactionStatusEnum::BOOKED => __('Only money received and booked by the bank can pay an order'),
                 $order->organisation_id !== $bankTransaction->organisation_id => __('The order belongs to another organisation'),
                 $order->currency_id !== $bankTransaction->currency_id => __('The order is in another currency'),
