@@ -273,9 +273,9 @@ class MatchBankTransactions
     }
 
     /**
-     * A marketplace payout is the order total less the commission the marketplace keeps, which Aiku stores on the
-     * order. When it is exactly that, the order is paid by the marketplace; no customer payment is recorded, as the
-     * retailer paid the marketplace. Any other amount goes to review.
+     * A marketplace payout pays its order whatever the amount: the marketplace decides what it pays. No customer
+     * payment is recorded, as the retailer paid the marketplace. The difference from the order total less the
+     * commission Aiku stores is kept on the line, to report payouts that came in short.
      *
      * @return array{0: BankTransactionMatchStateEnum, 1: Order|null, 2: array<string, mixed>}
      */
@@ -303,7 +303,6 @@ class MatchBankTransactions
             $order->currency_id !== $bankTransaction->currency_id => 'currency differs from the order',
             $order->state === OrderStateEnum::CANCELLED => 'order cancelled',
             $otherPayout => 'another marketplace payout is already on this order',
-            abs($matchData['difference']) > 0.01 => 'marketplace paid other than the order total less its commission',
             default => null,
         };
 

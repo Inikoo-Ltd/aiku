@@ -24,7 +24,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Faire payouts booked before marketplace matching existed sit unmatched or in review: decide them again, linking each
- * payout that is exactly its order's total less commission. Then every unpaid Faire order is relabelled to be paid,
+ * payout to its order. Then every unpaid Faire order is relabelled to be paid,
  * or paid, by the marketplace. No payment is recorded and no amount changes. Dry run unless --commit.
  */
 class BackfillFairePayouts

@@ -930,7 +930,7 @@ test('the bank fees report sums fees the bank took and fees absorbed, per curren
         ->assertInertia(fn (AssertableInertia $page) => $page->where('range.to', now()->toDateString()));
 });
 
-test('a faire payout of the order total less its commission marks the order paid by the marketplace, with no payment', function () {
+test('a faire payout marks its order paid by the marketplace whatever the amount, keeping the difference, with no payment', function () {
     $originalShop = $this->shop->only(['type', 'settings']);
     $this->shop->updateQuietly(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL, 'settings' => array_merge($this->shop->settings ?? [], ['faire' => ['order_from_days' => 6]])]);
 
@@ -970,16 +970,18 @@ test('a faire payout of the order total less its commission marks the order paid
         $exactLine = $line('f1', $exact, 168.35);
         $shortLine = $line('f2', $short, 270.00);
 
-        expect(MatchBankTransactions::run($bankConnection))->toBe(['paid_by_marketplace' => 1, 'review' => 1])
+        expect(MatchBankTransactions::run($bankConnection))->toBe(['paid_by_marketplace' => 2])
             ->and($exactLine->refresh()->order_id)->toBe($exact->id)
             ->and($exactLine->payment_id)->toBeNull()
             ->and($exactLine->match_data['commission'])->toBe(29.71)
-            ->and($shortLine->refresh()->match_data['reason'])->toBe('marketplace paid other than the order total less its commission')
+            ->and($shortLine->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE)
+            ->and($shortLine->match_data['difference'])->toBe(-11.86)
             ->and($exact->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID)
             ->and($exact->pay_detailed_status)->toBe(\App\Enums\Ordering\Order\OrderPayDetailedStatusEnum::PAID_BY_MARKETPLACE)
             ->and((float)$exact->payment_amount)->toBe(0.0)
             ->and($exact->payments()->count())->toBe(0);
 
+        $shortLine->update(['match_state' => BankTransactionMatchStateEnum::REVIEW, 'order_id' => null]);
         PayBankTransactionToOrder::make()->handle($shortLine, ['order_reference' => $short->reference]);
 
         expect($shortLine->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE)
