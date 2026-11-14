@@ -1261,10 +1261,19 @@ test('a pastpay payout settles the one pastpay order whose total less a pastpay 
     ]);
 
     [$order, $payment] = $pastpayOrder(681.82);
+    $refund            = \App\Actions\Accounting\Payment\StorePayment::make()->action($order->customer, $pastpayAccount, [
+        'amount' => -12.35,
+        'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+        'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+    ]);
+    $refund->updateQuietly(['date' => now()->subDays(2)]);
+    \App\Actions\Ordering\Order\AttachPaymentToOrder::make()->action($order, $refund, ['amount' => -12.35]);
+    [$spanishOrder] = $pastpayOrder(230.06);
     $pastpayOrder(2000.00);
     $pastpayOrder(2000.00);
 
-    $payout = $line('pp1', 652.84);
+    $spanish = $line('pp5', 221.87);
+    $payout  = $line('pp1', 652.84);
     $again  = $line('pp2', 652.84);
     $twins  = $line('pp3', 1915.00);
     $none   = $line('pp4', 12.34);
@@ -1278,11 +1287,13 @@ test('a pastpay payout settles the one pastpay order whose total less a pastpay 
         ->and($payout->match_data['payment_ids'])->toBe([$payment->id])
         ->and($payout->match_data['fee_rate'])->toEqual(0.0425)
         ->and($payout->match_data['processor_fees'])->toEqual(28.98)
+        ->and($spanish->refresh()->order_id)->toBe($spanishOrder->id)
+        ->and($spanish->match_data['fee_rate'])->toEqual(0.0356)
         ->and($again->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
         ->and($again->match_data['reason'])->toBe('PastPay payout, no PastPay order of this amount')
         ->and($twins->refresh()->match_data['reason'])->toBe('PastPay payout, several PastPay orders of this amount')
         ->and($none->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
-        ->and($order->refresh()->payment_amount)->toEqual(681.82);
+        ->and($order->refresh()->payment_amount)->toEqual(669.47);
 
     actingAs(createAdminGuest($this->organisation->group)->getUser());
     get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, 'scope' => 'payouts']))

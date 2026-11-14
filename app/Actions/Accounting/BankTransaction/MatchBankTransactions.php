@@ -448,8 +448,8 @@ class MatchBankTransactions
         return preg_match('/^[0-9A-Z]{12}$/', $payoutId) ? $payoutId : null;
     }
 
-    /** PastPay's fees on the payouts it has sent us: 60 and 30 day terms, under each contract so far. */
-    public const array PASTPAY_FEE_RATES = [0.0425, 0.022, 0.046, 0.033, 0.0185];
+    /** PastPay's fees on the payouts it has sent us: 60 and 30 day terms, under each organisation's contract so far. */
+    public const array PASTPAY_FEE_RATES = [0.0425, 0.022, 0.046, 0.033, 0.0185, 0.0356, 0.0197, 0.0256];
 
     /**
      * PastPay pays each order it financed in its own transfer, the order total less its fee, referenced only with our
@@ -471,6 +471,7 @@ class MatchBankTransactions
             ->where('payments.currency_id', $bankTransaction->currency_id)
             ->where('payments.status', PaymentStatusEnum::SUCCESS)
             ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
+            ->where('payments.amount', '>', 0)
             ->whereBetween('payments.date', [$bankTransaction->booked_at->copy()->subDays(90), $bankTransaction->booked_at])
             ->get(['payments.id', 'payments.payment_account_id', 'orders.id as order_id', 'orders.total_amount'])
             ->map(function (Payment $payment) use ($received) {
