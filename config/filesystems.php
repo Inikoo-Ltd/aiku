@@ -76,7 +76,7 @@ return [
 
         'media_test'  => [
             'driver' => 'local',
-            'root'   => storage_path('media_test'),
+            'root'   => storage_path('media_test'.(env('TEST_TOKEN') ? '/'.env('TEST_TOKEN') : '')),
             'throw'  => false,
         ],
         'r2' => [
