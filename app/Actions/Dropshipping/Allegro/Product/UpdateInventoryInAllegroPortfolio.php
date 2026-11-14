@@ -73,7 +73,7 @@ class UpdateInventoryInAllegroPortfolio
             $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
                 ->whereNotNull('platform_product_id')
                 ->where('item_type', 'Product')
-                ->where('platform_status', true)
+                ->where('exist_in_platform', true)
                 ->get();
 
             $first = true;
@@ -102,6 +102,10 @@ class UpdateInventoryInAllegroPortfolio
 
         /** @var Product $product */
         $product = $portfolio->item;
+
+        if ($product->available_quantity > 0 && CheckAllegroPortfolio::storedAsEndedForEmptyStock($portfolio)) {
+            return true;
+        }
 
         return !$product->available_quantity_updated_at
             || $product->available_quantity_updated_at->gt($portfolio->stock_last_updated_at);

@@ -52,7 +52,7 @@ class CreateNewBulkPortfoliosToAllegro extends OrgAction implements ShouldBeUniq
             if ($portfolio) {
                 $portfolio = StoreProductToAllegro::run($portfolio);
 
-                if ($portfolio->platform_status) {
+                if (CheckAllegroPortfolio::isLiveOrActivating($portfolio)) {
                     Cache::increment($cacheKey . '_success');
                 } else {
                     Cache::increment($cacheKey . '_fail');

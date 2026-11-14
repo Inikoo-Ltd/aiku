@@ -7,6 +7,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/Procurement/** | .ai/rules/actions-procurement.md |
 | app/Actions/**/*TimeSeries*.php, app/Actions/** | .ai/rules/actions.md |
 | app/Actions/SupplyChain/AgentPayment/** | .ai/rules/agent-payment.md |
+| app/Actions/Dropshipping/Allegro/** | .ai/rules/allegro.md |
 | apps/** | .ai/rules/apps.md |
 | app/Actions/Production/Artisan/** | .ai/rules/artisan.md |
 | app/Actions/Chat/** | .ai/rules/chat.md |

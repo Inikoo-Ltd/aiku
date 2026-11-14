@@ -18,6 +18,16 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
+use App\Actions\Dropshipping\Allegro\Product\CheckAllegroPortfolio;
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use GuzzleHttp\Psr7\Response as Psr7Response;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Queue;
+use Lorisleiva\Actions\Decorators\JobDecorator;
+use App\Actions\Dropshipping\Allegro\Product\UpdateInventoryAllegro;
+use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
+use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
+use App\Models\Dropshipping\PlatformPortfolioLogs;
 use Mockery;
 
 function allegroTestProduct(array $attributes): Product
@@ -231,4 +241,133 @@ test('an upload links only to the Allegro catalogue product that carries our bar
         ->and($storeProductToAllegro->catalogueProductWithBarcode([['id' => 'no-parameters']], '5056368347337'))->toBeNull()
         ->and($storeProductToAllegro->catalogueProductHasBarcode($flaggedGtin, '5056368347337'))->toBeTrue()
         ->and($storeProductToAllegro->catalogueProductHasBarcode(['parameters' => [['name' => 'Model', 'values' => ['5056368347337']]]], '5056368347337'))->toBeFalse();
+});
+
+function allegroCheckedPortfolio(array $attributes, AllegroUser $allegroUser): array
+{
+    $portfolio = new Portfolio(array_merge(['platform_product_id' => '19118876760', 'platform_status' => true, 'exist_in_platform' => true], $attributes));
+    $customerSalesChannel = new CustomerSalesChannel();
+    $customerSalesChannel->setRelation('user', $allegroUser);
+    $portfolio->setRelation('customerSalesChannel', $customerSalesChannel);
+
+    $updates = new \ArrayObject();
+    UpdatePortfolio::mock()
+        ->shouldReceive('handle')
+        ->andReturnUsing(function (Portfolio $portfolio, array $modelData) use ($updates) {
+            $updates->append($modelData);
+
+            return $portfolio;
+        });
+
+    return [$portfolio, $updates];
+}
+
+function allegroOfferResponse(int $status, array $body = []): Response
+{
+    return new Response(new Psr7Response($status, [], json_encode($body)));
+}
+
+test('an Allegro offer is live only when Allegro says its publication is ACTIVE, and otherwise the portfolio says why', function (array $offer, bool $live, ?string $reason) {
+    $allegroUser = Mockery::mock(AllegroUser::class)->makePartial();
+    $allegroUser->shouldReceive('getOfferResponse')->with('19118876760')->andReturn(allegroOfferResponse(200, $offer));
+
+    [$portfolio, $updates] = allegroCheckedPortfolio([], $allegroUser);
+
+    CheckAllegroPortfolio::run($portfolio);
+
+    expect($updates)->toHaveCount(1)
+        ->and($updates[0]['platform_status'])->toBe($live)
+        ->and($updates[0]['exist_in_platform'])->toBeTrue()
+        ->and($updates[0]['data']['allegro_publication']['status'])->toBe($offer['publication']['status'])
+        ->and(Arr::get($updates[0], 'errors_response.message'))->toBe($reason);
+})->with([
+    'active'                => [['publication' => ['status' => 'ACTIVE']], true, null],
+    'inactive with errors'  => [['publication' => ['status' => 'INACTIVE'], 'validation' => ['errors' => [['userMessage' => 'Missing return policy.']]]], false, 'Allegro did not activate this offer: Missing return policy.'],
+    'inactive, no reason'   => [['publication' => ['status' => 'INACTIVE']], false, 'This offer is on Allegro but not active, and Allegro gave no reason.'],
+    'ended for empty stock' => [['publication' => ['status' => 'ENDED', 'endedBy' => 'EMPTY_STOCK']], false, 'Allegro ended this offer because it ran out of stock. It is activated again when we have stock.'],
+]);
+
+test('an Allegro offer that is gone is marked missing, and an Allegro outage leaves the portfolio as it was', function () {
+    $allegroUser = Mockery::mock(AllegroUser::class)->makePartial();
+    $allegroUser->shouldReceive('getOfferResponse')->andReturn(allegroOfferResponse(404), allegroOfferResponse(503));
+
+    [$portfolio, $updates] = allegroCheckedPortfolio([], $allegroUser);
+
+    CheckAllegroPortfolio::run($portfolio);
+    expect($updates)->toHaveCount(1)
+        ->and($updates[0]['exist_in_platform'])->toBeFalse()
+        ->and($updates[0]['platform_status'])->toBeFalse();
+
+    CheckAllegroPortfolio::run($portfolio);
+    expect($updates)->toHaveCount(1);
+});
+
+test('uploading a product whose Allegro offer still exists activates that offer instead of creating a second one', function () {
+    Queue::fake();
+
+    $allegroUser = Mockery::mock(AllegroUser::class)->makePartial();
+    $allegroUser->shouldNotReceive('createOffer');
+    $allegroUser->shouldReceive('publishOffers')->once()->withArgs(fn ($commandId, $offerIds) => $offerIds === ['19118876760'])->andReturn([]);
+
+    [$portfolio, $updates] = allegroCheckedPortfolio(['platform_status' => false], $allegroUser);
+
+    StoreProductToAllegro::run($portfolio);
+
+    expect($updates)->toHaveCount(1)
+        ->and($updates[0]['data']['allegro_publication']['status'])->toBe('ACTIVATING')
+        ->and($updates[0]['errors_response'])->toBe(['message' => CheckAllegroPortfolio::ACTIVATING_MESSAGE]);
+    Queue::assertPushed(JobDecorator::class);
+});
+
+function allegroStockPush(array $offerAfterPatch, AllegroUser $allegroUser): \ArrayObject
+{
+    Queue::fake();
+    StorePlatformPortfolioLog::mock()->shouldReceive('handle')->andReturn(new PlatformPortfolioLogs());
+    UpdatePlatformPortfolioLog::mock()->shouldReceive('handle');
+
+    $product = allegroTestProduct(['available_quantity' => 12]);
+    $product->shouldReceive('isSellableThroughSalesChannels')->andReturn(true);
+
+    $allegroUser->shouldReceive('updateOffer')->once()->andReturn($offerAfterPatch);
+
+    $customerSalesChannel = Mockery::mock(CustomerSalesChannel::class)->makePartial();
+    $customerSalesChannel->shouldReceive('update')->andReturnTrue();
+    $customerSalesChannel->setRelation('user', $allegroUser);
+
+    $portfolio = Mockery::mock(Portfolio::class)->makePartial();
+    $portfolio->shouldReceive('update')->andReturnTrue();
+    $portfolio->platform_product_id = '19118876760';
+    $portfolio->setRelation('item', $product);
+    $portfolio->setRelation('customerSalesChannel', $customerSalesChannel);
+
+    $updates = new \ArrayObject();
+    UpdatePortfolio::mock()->shouldReceive('handle')->andReturnUsing(function (Portfolio $portfolio, array $modelData) use ($updates) {
+        $updates->append($modelData);
+
+        return $portfolio;
+    });
+
+    UpdateInventoryAllegro::run($portfolio);
+
+    return $updates;
+}
+
+test('a stock push with stock reactivates an offer Allegro ended for empty stock', function () {
+    $allegroUser = Mockery::mock(AllegroUser::class)->makePartial();
+    $allegroUser->shouldReceive('publishOffers')->once()->andReturn([]);
+
+    $updates = allegroStockPush(['publication' => ['status' => 'ENDED', 'endedBy' => 'EMPTY_STOCK']], $allegroUser);
+
+    expect($updates[0]['platform_status'])->toBeFalse()
+        ->and($updates[1]['data']['allegro_publication']['status'])->toBe('ACTIVATING');
+});
+
+test('a stock push never reactivates an offer the seller ended', function () {
+    $allegroUser = Mockery::mock(AllegroUser::class)->makePartial();
+    $allegroUser->shouldNotReceive('publishOffers');
+
+    $updates = allegroStockPush(['publication' => ['status' => 'ENDED', 'endedBy' => 'USER']], $allegroUser);
+
+    expect($updates)->toHaveCount(1)
+        ->and($updates[0]['errors_response']['message'])->toBe('This offer was ended on Allegro.');
 });

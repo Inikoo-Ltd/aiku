@@ -16,6 +16,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -47,12 +48,22 @@ class UpdateInventoryAllegro extends RetinaAction
         }
 
         try {
-            $allegroUser->updateOffer($portfolio->platform_product_id, [
+            $offer = $allegroUser->updateOffer($portfolio->platform_product_id, [
                 'stock' => [
                     'available' => $availableQuantity,
                     'unit'      => 'UNIT'
                 ]
             ]);
+
+            if ($updateError = Arr::get($offer, 'message')) {
+                throw new \Exception($updateError);
+            }
+
+            CheckAllegroPortfolio::make()->applyOffer($portfolio, $offer);
+
+            if ($availableQuantity > 0 && CheckAllegroPortfolio::endedForEmptyStock($offer)) {
+                StoreProductToAllegro::make()->activateOffer($allegroUser, $portfolio);
+            }
 
             UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
                 'status'           => PlatformPortfolioLogsStatusEnum::OK,

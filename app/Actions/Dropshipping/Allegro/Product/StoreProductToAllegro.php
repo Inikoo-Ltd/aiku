@@ -54,6 +54,10 @@ class StoreProductToAllegro extends RetinaAction
             return $portfolio;
         }
 
+        if ($portfolio->platform_product_id && $portfolio->exist_in_platform) {
+            return $this->activateOffer($allegroUser, $portfolio);
+        }
+
         /** @var Customer $customer */
         $customer = $customerSalesChannel->customer;
 
@@ -254,20 +258,14 @@ class StoreProductToAllegro extends RetinaAction
             UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => $allegroOfferId,
                 'platform_product_variant_id' => $allegroOfferId,
+                'has_valid_platform_product_id' => true,
+                'exist_in_platform' => true,
                 'errors_response' => null
             ]);
 
-            $publishResponse = $allegroUser->publishOffers(Str::uuid(), [$allegroOfferId]);
+            $this->activateOffer($allegroUser, $portfolio);
 
-            if ($publishError = Arr::get($publishResponse, 'message')) {
-                throw new \Exception($publishError);
-            }
-
-            CheckAllegroPortfolio::run($portfolio);
-
-            $portfolio->refresh();
-
-            if ($portfolio->platform_status) {
+            if (CheckAllegroPortfolio::isLiveOrActivating($portfolio)) {
                 UpdatePlatformPortfolioLog::run($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK,
                     'response' => json_encode([
@@ -282,13 +280,9 @@ class StoreProductToAllegro extends RetinaAction
                     ])
                 ]);
             } else {
-                UpdatePortfolio::run($portfolio, [
-                    'errors_response' => $this->portfolioErrorResponse($allegroOffer)
-                ]);
-
                 UpdatePlatformPortfolioLog::run($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => json_encode($allegroOffer)
+                    'response' => json_encode(['offer_id' => $allegroOfferId, 'errors_response' => $portfolio->errors_response])
                 ]);
             }
 
@@ -305,6 +299,34 @@ class StoreProductToAllegro extends RetinaAction
 
             return $portfolio;
         }
+    }
+
+    public function activateOffer(AllegroUser $allegroUser, Portfolio $portfolio): Portfolio
+    {
+        $commandId = (string) Str::uuid();
+
+        $publishResponse = $allegroUser->publishOffers($commandId, [$portfolio->platform_product_id]);
+
+        if ($publishError = Arr::get($publishResponse, 'message')) {
+            UpdatePortfolio::run($portfolio, [
+                'platform_status' => false,
+                'errors_response' => $this->portfolioErrorResponse("Allegro refused to activate this offer: $publishError"),
+            ]);
+
+            return $portfolio;
+        }
+
+        UpdatePortfolio::run($portfolio, [
+            'has_valid_platform_product_id' => true,
+            'exist_in_platform'             => true,
+            'platform_status'               => false,
+            'errors_response'               => ['message' => CheckAllegroPortfolio::ACTIVATING_MESSAGE],
+            'data'                          => ['allegro_publication' => ['status' => 'ACTIVATING', 'ended_by' => null]],
+        ]);
+
+        CheckAllegroPortfolio::dispatch($portfolio, $commandId)->delay(now()->addSeconds(CheckAllegroPortfolio::RECHECK_AFTER_PUBLISH_SECONDS));
+
+        return $portfolio;
     }
 
     public function catalogueProductWithBarcode(array $catalogueProducts, string $barcode): ?array
