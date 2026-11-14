@@ -15,6 +15,7 @@ use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
 use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\User;
 use App\Models\Chat\MetaChatSession;
+use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
@@ -166,7 +167,10 @@ class TicketResource extends JsonResource
 
         $session  = $this->source;
         $channel  = $this->source_channel;
-        $customer = $session instanceof MetaChatSession ? $session->customer : $session?->webUser?->customer;
+        $customer = match (true) {
+            $session instanceof MetaChatSession, $session instanceof ShoppingAssistantConversation => $session->customer,
+            default                                                                                => $session?->webUser?->customer,
+        };
 
         return [
             'channel'       => $channel?->value,
@@ -186,6 +190,10 @@ class TicketResource extends JsonResource
 
     private function sourceUrl(mixed $session): ?string
     {
+        if ($session instanceof ShoppingAssistantConversation) {
+            return route('grp.websites.shopping_assistant.conversations.show', $session->ulid);
+        }
+
         $organisationSlug = $this->organisation?->slug ?? $session?->shop?->organisation?->slug;
 
         if (!$organisationSlug || !$session?->ulid) {

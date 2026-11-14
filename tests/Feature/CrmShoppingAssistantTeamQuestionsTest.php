@@ -716,7 +716,8 @@ test('an engineer can raise a MER ticket from a Merlin conversation with the tic
     expect($ticket->type)->toBe(App\Enums\Helpers\Ticket\TicketTypeEnum::MERLIN)
         ->and($ticket->customer_id)->toBe($conversation->customer_id)
         ->and($ticket->shop_id)->toBe($conversation->customer->shop_id)
-        ->and($ticket->tags)->toContain('merlin', 'allegro');
+        ->and($ticket->tags)->toContain('merlin', 'allegro')
+        ->and(App\Http\Resources\Helpers\TicketResource::make($ticket)->resolve()['source']['url'])->toContain('/websites/ai-assistant/conversations/'.$conversation->ulid);
 
     $ticket->delete();
     actingAs($this->user);
