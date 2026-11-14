@@ -1225,6 +1225,74 @@ test('checkout payouts pay no order, and their report says which payments they s
                 && $row['payout']['payments_missing'] === 1)));
 });
 
+test('a pastpay payout settles the one pastpay order whose total less a pastpay fee arrived, and pays nothing', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $pastpayAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'pastpay')->firstOrFail(),
+        ['code' => 'pp'.random_int(1000, 9999), 'name' => 'PastPay payouts test']
+    );
+    $pastpayOrder = function (float $total) use ($pastpayAccount) {
+        $order   = bankMatchingOrder(createCustomer($this->shop), $total);
+        $payment = \App\Actions\Accounting\Payment\StorePayment::make()->action($order->customer, $pastpayAccount, [
+            'amount' => $total,
+            'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+            'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+        ]);
+        $payment->updateQuietly(['date' => now()->subDays(5)]);
+        \App\Actions\Ordering\Order\AttachPaymentToOrder::make()->action($order, $payment, ['amount' => $total]);
+
+        return [$order, $payment];
+    };
+    $line = fn (string $id, float $amount) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $amount,
+        'currency_id'             => $this->shop->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => 'PastPay Europe SP.ZO.O',
+        'reference'               => 'SK2120525440-20261106-01/FXB133011X0ENLEP',
+        'booked_at'               => now(),
+    ]);
+
+    [$order, $payment] = $pastpayOrder(681.82);
+    $pastpayOrder(2000.00);
+    $pastpayOrder(2000.00);
+
+    $payout = $line('pp1', 652.84);
+    $again  = $line('pp2', 652.84);
+    $twins  = $line('pp3', 1915.00);
+    $none   = $line('pp4', 12.34);
+
+    MatchBankTransactions::run($bankConnection);
+
+    expect($payout->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
+        ->and($payout->order_id)->toBe($order->id)
+        ->and($payout->payment_id)->toBeNull()
+        ->and($payout->match_data['provider'])->toBe('pastpay')
+        ->and($payout->match_data['payment_ids'])->toBe([$payment->id])
+        ->and($payout->match_data['fee_rate'])->toEqual(0.0425)
+        ->and($payout->match_data['processor_fees'])->toEqual(28.98)
+        ->and($again->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($again->match_data['reason'])->toBe('PastPay payout, no PastPay order of this amount')
+        ->and($twins->refresh()->match_data['reason'])->toBe('PastPay payout, several PastPay orders of this amount')
+        ->and($none->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($order->refresh()->payment_amount)->toEqual(681.82);
+
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, 'scope' => 'payouts']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['id'] === $payout->id
+                && $row['payout']['provider'] === 'pastpay'
+                && $row['payout']['processor_fees'] == 28.98
+                && $row['order_reference'] === $order->reference)));
+});
+
 test('bank lines naming a fulfilment invoice are matched and paid onto it, or already paid when staff recorded it by hand', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
 

@@ -46,6 +46,7 @@ interface BankLine {
 	shop_slug: string | null
 	is_dismissed: boolean
 	payout: {
+		provider: "checkout" | "pastpay"
 		payout_id: string | null
 		reconciled: boolean
 		payments: number
@@ -108,7 +109,7 @@ const scopeOptions = computed(() => [
 	scopeOption(ctrans("To review"), "review"),
 	scopeOption(ctrans("No order number"), "unmatched"),
 	scopeOption(ctrans("Not for an order"), "dismissed"),
-	scopeOption(ctrans("Card payouts"), "payouts"),
+	scopeOption(ctrans("Payouts"), "payouts"),
 ])
 const periodOptions = [
 	{ label: ctrans("Last 90 days"), value: "90d" },
@@ -337,7 +338,12 @@ const submit = () => {
 
 		<template #cell(actions)="{ item }">
 			<div v-if="item.payout" class="text-right text-xs text-gray-500">
-				<template v-if="item.payout.reconciled">
+				<template v-if="item.payout.provider === 'pastpay'">
+					{{ ctrans("PastPay payout of this order, PastPay kept :fees", {
+						fees: locale.currencyFormat(item.currency_code, item.payout.processor_fees),
+					}) }}
+				</template>
+				<template v-else-if="item.payout.reconciled">
 					{{ ctrans("Checkout payout of :payments payments and :refunds refunds, Checkout kept :fees, the bank :bank_fee", {
 						payments: item.payout.payments,
 						refunds: item.payout.refunds,

@@ -175,6 +175,10 @@ class MatchBankTransactions
             return [BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT, null, ['provider' => 'checkout', 'payout_id' => $payoutId]];
         }
 
+        if (preg_match('/^pastpay\b/i', (string)$bankTransaction->counterparty_name)) {
+            return $this->decidePastpayPayout($bankTransaction);
+        }
+
         $marketplaceOrderReference = $this->marketplaceOrderReference($bankTransaction);
         if ($marketplaceOrderReference) {
             return $this->decideMarketplacePayout($bankTransaction, $marketplaceOrderReference);
@@ -442,6 +446,72 @@ class MatchBankTransactions
         $payoutId = strtoupper(str_replace(' ', '', (string)$bankTransaction->reference));
 
         return preg_match('/^[0-9A-Z]{12}$/', $payoutId) ? $payoutId : null;
+    }
+
+    /** PastPay's fees on the payouts it has sent us: 60 and 30 day terms, under each contract so far. */
+    public const array PASTPAY_FEE_RATES = [0.0425, 0.022, 0.046, 0.033, 0.0185];
+
+    /**
+     * PastPay pays each order it financed in its own transfer, the order total less its fee, referenced only with our
+     * own tax number and the payout date. The order is the one PastPay order from the last 90 days whose total less
+     * one of PastPay's fees is what arrived, and that no other payout line has claimed. Its PastPay payment is already
+     * on the order, so like a card payout the line pays nothing; it only records which payment it settled.
+     *
+     * @return array{0: BankTransactionMatchStateEnum, 1: Order|null, 2: array<string, mixed>}
+     */
+    private function decidePastpayPayout(BankTransaction $bankTransaction): array
+    {
+        $received   = round((float)$bankTransaction->amount, 2);
+        $candidates = Payment::query()
+            ->join('payment_accounts', 'payment_accounts.id', 'payments.payment_account_id')
+            ->join('model_has_payments', fn ($join) => $join->on('model_has_payments.payment_id', 'payments.id')->where('model_has_payments.model_type', 'Order'))
+            ->join('orders', 'orders.id', 'model_has_payments.model_id')
+            ->where('payment_accounts.type', PaymentAccountTypeEnum::PASTPAY)
+            ->where('payments.organisation_id', $bankTransaction->organisation_id)
+            ->where('payments.currency_id', $bankTransaction->currency_id)
+            ->where('payments.status', PaymentStatusEnum::SUCCESS)
+            ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
+            ->whereBetween('payments.date', [$bankTransaction->booked_at->copy()->subDays(90), $bankTransaction->booked_at])
+            ->get(['payments.id', 'payments.payment_account_id', 'orders.id as order_id', 'orders.total_amount'])
+            ->map(function (Payment $payment) use ($received) {
+                $rate = collect(self::PASTPAY_FEE_RATES)->first(fn (float $rate) => abs(round((float)$payment->total_amount * (1 - $rate), 2) - $received) <= 0.01);
+
+                return $rate === null ? null : ['payment' => $payment, 'rate' => $rate];
+            })
+            ->filter()
+            ->reject(fn (array $candidate) => BankTransaction::where('match_state', BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
+                ->where('id', '!=', $bankTransaction->id)
+                ->where('match_data->provider', 'pastpay')
+                ->whereJsonContains('match_data->payment_ids', $candidate['payment']->id)
+                ->exists())
+            ->unique(fn (array $candidate) => $candidate['payment']->id)
+            ->values();
+
+        if ($candidates->count() !== 1) {
+            return [BankTransactionMatchStateEnum::UNMATCHED, null, [
+                'reason'      => $candidates->isEmpty() ? 'PastPay payout, no PastPay order of this amount' : 'PastPay payout, several PastPay orders of this amount',
+                'payment_ids' => $candidates->pluck('payment.id')->all(),
+            ]];
+        }
+
+        ['payment' => $payment, 'rate' => $rate] = $candidates->first();
+        $gross = round((float)$payment->total_amount, 2);
+
+        return [BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT, Order::find($payment->order_id), [
+            'provider'           => 'pastpay',
+            'reason'             => null,
+            'reconciled_at'      => now()->toIso8601String(),
+            'fee_rate'           => $rate,
+            'payout_total'       => $received,
+            'gross'              => $gross,
+            'processor_fees'     => round($gross - $received, 2),
+            'bank_fee'           => 0,
+            'payment_ids'        => [$payment->id],
+            'payments_in_payout' => 1,
+            'refunds_in_payout'  => 0,
+            'payments_missing'   => [],
+            'payment_account_id' => $payment->payment_account_id,
+        ]];
     }
 
     /**

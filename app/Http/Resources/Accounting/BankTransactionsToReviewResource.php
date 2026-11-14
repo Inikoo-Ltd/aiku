@@ -49,6 +49,7 @@ class BankTransactionsToReviewResource extends JsonResource
             },
             'is_dismissed'      => $this->match_state === BankTransactionMatchStateEnum::DISMISSED,
             'payout'            => $this->match_state === BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT ? [
+                'provider'         => $this->match_data['provider'] ?? 'checkout',
                 'payout_id'        => $this->match_data['payout_id'] ?? null,
                 'reconciled'       => !empty($this->match_data['reconciled_at']),
                 'payments'         => $this->match_data['payments_in_payout'] ?? 0,
