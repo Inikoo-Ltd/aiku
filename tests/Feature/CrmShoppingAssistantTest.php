@@ -2244,6 +2244,29 @@ function shoppingAssistantEmbeddingRequests(): int
     return Http::recorded(fn (Request $request) => str_contains($request->url(), 'embeddings'))->count();
 }
 
+test('a shop answer shows no products even when the model presents some', function () {
+    shoppingAssistantClearKnowledge($this->shop);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $entry    = shoppingAssistantKnowledge($this->shop);
+    $product  = shoppingAssistantProduct($this->product);
+    shoppingAssistantStoppedOrdering($customer, $product);
+
+    Http::fake([
+        '*embeddings'       => shoppingAssistantEmbeddingsFake(),
+        '*chat/completions' => Http::sequence()
+            ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('shop_information', ['question' => 'Is delivery free?']), shoppingAssistantToolCall('products_they_stopped_ordering', [], 'call_2')]], 'tool_calls'))
+            ->push(shoppingAssistantPresent(['reply' => 'Delivery is free on orders over 150 pounds.', 'answer_kind' => 'shop_answer', 'sources' => [$entry->id], 'must_haves' => [$product->id]])),
+    ]);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $result       = AskShoppingAssistant::run($conversation, 'Is delivery free?');
+
+    expect($result['reply'])->toBe('Delivery is free on orders over 150 pounds.')
+        ->and($result['groups']['must_haves'])->toBeEmpty()
+        ->and($result['message']->refresh()->answer_kind->value)->toBe('shop_answer')
+        ->and($conversation->events()->where('type', ShoppingAssistantEventTypeEnum::SHOWN)->count())->toBe(0);
+});
+
 test('a general question is answered from the knowledge text the assistant cites, which may repeat a figure of that text', function () {
     shoppingAssistantClearKnowledge($this->shop);
     $customer = shoppingAssistantCustomer($this->shop);
