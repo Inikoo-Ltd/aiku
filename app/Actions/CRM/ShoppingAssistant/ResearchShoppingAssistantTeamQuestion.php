@@ -9,8 +9,10 @@
 namespace App\Actions\CRM\ShoppingAssistant;
 
 use App\Actions\Chat\Staff\SendStaffMessage;
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Helpers\AI\AskJev;
 use App\Actions\Tasks\GetAikuAssistant;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
 use App\Models\SysAdmin\User;
@@ -32,6 +34,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ResearchShoppingAssistantTeamQuestion
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public const int CLAIM_MINUTES = 20;
 
@@ -40,21 +43,39 @@ class ResearchShoppingAssistantTeamQuestion
     public const int MIN_EVIDENCE_CHARACTERS = 40;
 
     /**
-     * The open questions worth researching now, oldest first: not claimed by another run, and not
-     * already drafted unless the customer asked more since or the draft is over a day old.
+     * The open questions worth researching now, oldest first, of the shops whose chats the user
+     * works: not claimed by another run, and not already drafted unless the customer asked more
+     * since or the draft is over a day old.
      *
      * @return Collection<int, StaffTask>
      */
-    public static function open(int $groupId, string $run, int $limit): Collection
+    public static function open(User $user, string $run, int $limit): Collection
     {
-        return StaffTask::where('group_id', $groupId)
+        $research = self::make();
+
+        return StaffTask::where('group_id', $user->group_id)
             ->where('data->kind', StoreShoppingAssistantTeamQuestion::TASK_KIND)
             ->whereNull('data->answered_at')
             ->oldest('id')
             ->get()
-            ->filter(fn (StaffTask $task) => !self::claimedByAnother($task, $run) && self::needsResearch($task))
+            ->filter(fn (StaffTask $task) => $research->mayResearch($user, $task) && !self::claimedByAnother($task, $run) && self::needsResearch($task))
             ->take($limit)
             ->values();
+    }
+
+    /**
+     * A question still open, of a shop whose chats the user works, as for the customer service tools.
+     */
+    public function mayResearch(User $user, StaffTask $task): bool
+    {
+        $shop = Shop::find(data_get($task->data, 'shop_id'));
+        setPermissionsTeamId($user->group_id);
+
+        return $task->group_id === $user->group_id
+            && $task->status->isOpen()
+            && !data_get($task->data, 'answered_at')
+            && $shop
+            && $this->userCanActOnChatOnShop($user, $shop);
     }
 
     public static function claimedByAnother(StaffTask $task, string $run): bool

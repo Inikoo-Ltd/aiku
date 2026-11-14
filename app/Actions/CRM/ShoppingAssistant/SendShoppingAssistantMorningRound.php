@@ -21,6 +21,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
@@ -59,6 +60,7 @@ class SendShoppingAssistantMorningRound
             ->whereNull('data->answered_at')
             ->oldest('id')
             ->get()
+            ->filter(fn (StaffTask $task) => $task->status->isOpen())
             ->groupBy(fn (StaffTask $task) => (int) data_get($task->data, 'organisation_id'));
 
         foreach (Organisation::all() as $organisation) {
@@ -78,8 +80,7 @@ class SendShoppingAssistantMorningRound
                 $sent += $this->sendRound($organisation, $tasks, $toConfirm, CarbonImmutable::parse($startOfDay), $facts);
             } catch (Throwable $exception) {
                 Cache::forget('shopping_assistant:morning_round:'.$organisation->id.':'.$startOfDay->toDateString());
-
-                throw $exception;
+                Log::error('Merlin morning round of organisation '.$organisation->id.' failed: '.$exception->getMessage());
             }
         }
 
@@ -128,15 +129,13 @@ class SendShoppingAssistantMorningRound
 
         foreach ($byUser as $userId => $userTasks) {
             $notification = new ShoppingAssistantMorningRoundNotification(collect($userTasks), $this->helpedCustomers($userId), false, collect($confirmBy[$userId] ?? []), collect($factsBy[$userId] ?? []));
-            NotifyUserOnChosenChannels::run($users[$userId], UserNotificationEnum::ASSISTANT_QUESTION, $notification, $notification->title(), $notification->summary(), $notification->url());
-            $sent++;
+            $sent += $this->notify($users[$userId], $notification);
         }
 
         if ($overdue->isNotEmpty()) {
             $notification = new ShoppingAssistantMorningRoundNotification($overdue, null, true);
             foreach (StoreShoppingAssistantSalesLead::managersOf($organisation, GetAikuAssistant::run($organisation->group_id)) as $manager) {
-                NotifyUserOnChosenChannels::run($manager, UserNotificationEnum::ASSISTANT_QUESTION, $notification, $notification->title(), $notification->summary(), $notification->url());
-                $sent++;
+                $sent += $this->notify($manager, $notification);
             }
         }
 
@@ -154,6 +153,23 @@ class SendShoppingAssistantMorningRound
         }
 
         return $sent;
+    }
+
+    /**
+     * One person's message; a failure (their email bounced, Slack down) is logged and the round goes on,
+     * so the questions are still stamped and the others are not sent the round again.
+     */
+    private function notify(User $user, ShoppingAssistantMorningRoundNotification $notification): int
+    {
+        try {
+            NotifyUserOnChosenChannels::run($user, UserNotificationEnum::ASSISTANT_QUESTION, $notification, $notification->title(), $notification->summary(), $notification->url());
+
+            return 1;
+        } catch (Throwable $exception) {
+            Log::warning('Merlin morning round to user '.$user->id.' failed: '.$exception->getMessage());
+
+            return 0;
+        }
     }
 
     /**

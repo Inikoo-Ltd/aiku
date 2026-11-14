@@ -152,6 +152,7 @@ class StoreShoppingAssistantTeamQuestion
 
         if ($isNew) {
             $data['more_questions'] = [...data_get($data, 'more_questions', []), ['question' => $question, 'customer_words' => $words, 'language' => $language, 'asked_at' => now()->toIso8601String()]];
+            unset($data['round_first_at'], $data['managers_told_at']);
         }
 
         $also = implode("\n", array_filter([

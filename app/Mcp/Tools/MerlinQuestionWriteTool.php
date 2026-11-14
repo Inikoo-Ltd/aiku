@@ -42,8 +42,8 @@ class MerlinQuestionWriteTool extends Tool
         if (!$task) {
             return Response::error('No question to the team with that reference. Nothing was changed.');
         }
-        if (data_get($task->data, 'answered_at')) {
-            return Response::error('This question has already been answered or closed. Nothing was changed.');
+        if (!ResearchShoppingAssistantTeamQuestion::make()->mayResearch($user, $task)) {
+            return Response::error('This question is answered or closed, or its shop is not one whose chats this user works. Nothing was changed.');
         }
         if (ResearchShoppingAssistantTeamQuestion::claimedByAnother($task, $request->string('run')->toString())) {
             return Response::error('Another run is working this question. Nothing was changed.');

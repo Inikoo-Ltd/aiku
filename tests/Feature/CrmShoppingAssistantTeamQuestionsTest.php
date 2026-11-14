@@ -621,3 +621,30 @@ test('with no other guru to say yes, a kept answer is used at once, and a resear
         ->and(data_get($task->refresh()->data, 'answered_at'))->not->toBeNull()
         ->and(data_get($task->data, 'draft_answer'))->toBeNull();
 });
+
+test('the researcher only reaches open questions of shops whose chats the user works, and a question the customer adds starts the closing clock again', function () {
+    $conversation = teamQuestionConversation($this);
+    $task         = StoreShoppingAssistantTeamQuestion::run($conversation, 'Do you sell display stands?', 'display stands?')['task'];
+    $outsider     = teamQuestionStaff($this);
+    $outsider->update(['can_use_mcp_customer_service' => true]);
+    $outsider->syncRoles([]);
+    App\Actions\SysAdmin\CleanUserCaches::make()->clearPermissionsCache($outsider);
+    app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+    AikuServer::actingAs($outsider)->tool(MerlinQuestionsTool::class, ['run' => 'run-x', 'limit' => 20])->assertOk()->assertDontSee($task->reference);
+    AikuServer::actingAs($outsider)->tool(MerlinQuestionWriteTool::class, ['action' => 'save_draft', 'reference' => $task->reference, 'run' => 'run-x', 'answer' => 'Yes.', 'evidence' => 'the catalogue has a display stands family with products in stock'])
+        ->assertHasErrors(['Nothing was changed']);
+    expect(data_get($task->refresh()->data, 'draft_answer'))->toBeNull();
+
+    $task->update(['data' => [...$task->data, 'round_first_at' => now()->subHours(23)->toIso8601String(), 'managers_told_at' => now()->subHours(23)->toIso8601String()]]);
+    Carbon::setTestNow(now()->addHours(2));
+    StoreShoppingAssistantTeamQuestion::run($conversation, 'And do you sell shelf labels?', 'shelf labels?');
+    $task->refresh();
+    expect(data_get($task->data, 'round_first_at'))->toBeNull()
+        ->and(data_get($task->data, 'managers_told_at'))->toBeNull()
+        ->and(CloseUnansweredShoppingAssistantTeamQuestions::isDue($task))->toBeFalse();
+
+    UpdateStaffTask::run($task, $this->person, ['status' => StaffTaskStatusEnum::CANCELLED->value, 'note' => 'Handled by phone']);
+    $this->user->update(['can_use_mcp_customer_service' => true]);
+    expect(ResearchShoppingAssistantTeamQuestion::make()->mayResearch($this->user, $task->refresh()))->toBeFalse();
+});
