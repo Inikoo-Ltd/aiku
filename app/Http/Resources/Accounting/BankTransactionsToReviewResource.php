@@ -42,7 +42,7 @@ class BankTransactionsToReviewResource extends JsonResource
             'counterparty_name' => $this->counterparty_name,
             'reference'         => $this->reference,
             'reason'            => match ($this->match_state) {
-                BankTransactionMatchStateEnum::MATCHED   => __('Matches the order, not paid automatically'),
+                BankTransactionMatchStateEnum::MATCHED   => isset($this->match_data['invoice_id']) ? __('Matches the invoice, not paid automatically') : __('Matches the order, not paid automatically'),
                 BankTransactionMatchStateEnum::DISMISSED => $this->match_data['dismissed_note'] ?? null,
                 BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT => null,
                 default                                  => $this->match_data['reason'] ?? null,
