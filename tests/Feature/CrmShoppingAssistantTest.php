@@ -3592,6 +3592,11 @@ test('Merlin finds the order a customer asks about without a number, says it wai
         ->and($again['content']['priority'])->toContain('already has premium dispatch')
         ->and($young['content'])->not->toHaveKey('priority')
         ->and($recent->refresh()->is_premium_dispatch)->toBeFalse();
+
+    $more = collect(range(1, 3))->map(fn () => $newOrder(['state' => \App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID, 'submitted_at' => now()->subHours(26)]));
+    $more->each(fn ($order) => $tools->execute($conversation, 'order_status', ['reference' => $order->reference]));
+
+    expect($more->map(fn ($order) => $order->refresh()->is_premium_dispatch)->all())->toBe([true, true, false]);
 });
 
 test('a customer nobody answered after a hand-over to the live chat or a question to our team is told once when the team is back', function () {

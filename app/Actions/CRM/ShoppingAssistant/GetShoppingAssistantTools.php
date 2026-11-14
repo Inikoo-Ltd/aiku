@@ -50,6 +50,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Number;
@@ -137,6 +138,8 @@ class GetShoppingAssistantTools
     private const int MAX_NOT_IN_STORE = 10;
 
     public const int PRIORITY_AFTER_HOURS = 24;
+
+    public const int PRIORITY_PER_DAY = 3;
 
     private const array ORDER_OPEN_STATES = [
         OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::HANDLING, OrderStateEnum::HANDLING_BLOCKED,
@@ -1173,7 +1176,9 @@ class GetShoppingAssistantTools
      * A customer asking about an order still waiting to be picked a day after it was placed gets
      * premium dispatch free, which puts it at the front of the picking queue: earns their heart.
      *
-     * ponytail: a fixed day, no limit per customer; tighten if customers ask Merlin just to jump the queue.
+     * At most PRIORITY_PER_DAY orders a day in each organisation.
+     *
+     * ponytail: counted in the cache, so a cache flush resets the day's count; count audits if that ever matters.
      */
     private function priorityFor(Order $order): ?string
     {
@@ -1188,7 +1193,14 @@ class GetShoppingAssistantTools
             return null;
         }
 
+        $given = 'shopping_assistant:priority_given:'.$order->organisation_id.':'.now()->toDateString();
+        if ((int) Cache::get($given, 0) >= self::PRIORITY_PER_DAY) {
+            return null;
+        }
+
         UpdateOrderPremiumDispatch::make()->action($order, ['is_premium_dispatch' => true], charged: false);
+        Cache::add($given, 0, now()->endOfDay());
+        Cache::increment($given);
 
         return 'Given now: premium dispatch, free of charge, as an apology for the wait.';
     }
