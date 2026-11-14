@@ -74,7 +74,7 @@ class FollowUpShoppingAssistantRestockQuestion
             $conversation->increment('messages_count', 1, ['last_message_at' => now()]);
         }
 
-        [$channel, $log] = $this->deliver($conversation, $message, $translated, $answer, __('The purchasing team answered a restock question from this customer in :reference. The shop cannot email it automatically, so please send it to the customer.', ['reference' => $task->reference]), $task, $assistant);
+        [$channel, $log] = $this->deliver($conversation, $message, $translated, $answer, __('The purchasing team answered a restock question from this customer in :reference. The shop cannot email it automatically, so please send it to the customer.', ['reference' => $task->reference]), ['restock_task_id' => $task->id], $assistant);
 
         $task->update(['data' => [...$task->data, 'answer' => $answer, 'answer_sent_at' => now()->toIso8601String(), 'answer_channel' => $channel, 'answered_by' => $actor->id]]);
         if ($task->conversation) {
@@ -88,9 +88,10 @@ class FollowUpShoppingAssistantRestockQuestion
      * Emails the answer with the shop's "Chat notification to customer" email and a link to the
      * conversation, or, where that email is off, asks customer services to pass it on.
      *
+     * @param  array<string, int>  $relayData  what the customer services task links back to
      * @return array{0: string, 1: string} the channel used and a line for the task thread
      */
-    public function deliver(ShoppingAssistantConversation $conversation, string $message, string $translated, string $answer, string $relayReason, StaffTask $task, User $assistant): array
+    public function deliver(ShoppingAssistantConversation $conversation, string $message, string $translated, string $answer, string $relayReason, array $relayData, User $assistant): array
     {
         $customer  = $conversation->customer;
         $emailIsOn = $customer->shop->outboxes()
@@ -119,7 +120,7 @@ class FollowUpShoppingAssistantRestockQuestion
             'priority'    => ChatPriorityEnum::NORMAL->value,
             'model_type'  => 'Customer',
             'model_id'    => $customer->id,
-            'data'        => ['kind' => 'shopping_assistant_restock_answer_relay', 'organisation_id' => $customer->organisation_id, 'restock_task_id' => $task->id],
+            'data'        => ['kind' => 'shopping_assistant_restock_answer_relay', 'organisation_id' => $customer->organisation_id, ...$relayData],
         ]);
 
         return ['customer_services', __('This shop cannot email it automatically, so customer services was asked to send it: :reference', ['reference' => $relay->reference])];

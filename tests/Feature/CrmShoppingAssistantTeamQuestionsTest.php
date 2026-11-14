@@ -722,3 +722,25 @@ test('an engineer can raise a MER ticket from a Merlin conversation with the tic
     $ticket->delete();
     actingAs($this->user);
 });
+
+test('a comment staff send to the customer on a MER ticket reaches their Merlin conversation and is passed on to them; a plain public comment stays on the ticket', function () {
+    $conversation = teamQuestionConversation($this);
+    $this->isFault = 0.92;
+    $ticket        = StoreShoppingAssistantTeamQuestion::run($conversation, 'My eBay products do not reach my store.', 'products not reaching eBay')['ticket'];
+    $messages      = $conversation->messages()->count();
+
+    App\Actions\Helpers\Ticket\StoreTicketComment::make()->action($ticket, $this->user, ['body' => '@rodrigo can you check the eBay logs?']);
+    expect($conversation->messages()->count())->toBe($messages);
+
+    App\Actions\Helpers\Ticket\StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'We closed your duplicate eBay channel. Please press Upload on the new products.', 'to_customer' => true]);
+
+    $last  = $conversation->messages()->latest('id')->first();
+    $relay = StaffTask::where('data->kind', 'shopping_assistant_restock_answer_relay')->where('data->ticket_id', $ticket->id)->sole();
+    expect($conversation->messages()->count())->toBe($messages + 1)
+        ->and($last->body)->toContain('Our team answered your question:', 'Please press Upload on the new products.')
+        ->and($last->flags)->toContain('ticket_reply')
+        ->and($relay->description)->toContain($ticket->reference, 'Please press Upload on the new products.');
+
+    $relay->delete();
+    $ticket->delete();
+});

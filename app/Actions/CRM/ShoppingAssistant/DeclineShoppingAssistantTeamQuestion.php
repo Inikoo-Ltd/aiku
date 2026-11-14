@@ -96,7 +96,7 @@ class DeclineShoppingAssistantTeamQuestion
             $conversation->increment('messages_count', 1, ['last_message_at' => now()]);
 
             if (!$awaited) {
-                [, $log] = FollowUpShoppingAssistantRestockQuestion::make()->deliver($conversation, $message, $message, $message, __('Nobody in our team could answer a question this customer asked the AI shopping assistant (:reference). Please tell the customer and help them if you can.', ['reference' => $task->reference]), $task, GetAikuAssistant::run($task->group_id));
+                [, $log] = FollowUpShoppingAssistantRestockQuestion::make()->deliver($conversation, $message, $message, $message, __('Nobody in our team could answer a question this customer asked the AI shopping assistant (:reference). Please tell the customer and help them if you can.', ['reference' => $task->reference]), ['restock_task_id' => $task->id], GetAikuAssistant::run($task->group_id));
                 if ($task->conversation) {
                     SendStaffMessage::run($task->conversation, GetAikuAssistant::run($task->group_id), ['body' => $log]);
                 }

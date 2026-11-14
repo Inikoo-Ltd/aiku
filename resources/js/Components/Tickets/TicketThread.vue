@@ -39,7 +39,7 @@ const qaVerdictIcon: Record<string, string> = {
 }
 
 const props = withDefaults(defineProps<{
-    ticket: { id?: number; subject: string; description: string | null; reporter: string | null; reporter_roles?: { key: string; label: string }[]; reporter_avatar?: Record<string, string> | null; reporter_username?: string | null; reporter_key?: string | null; reporter_profile_url?: string | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: (Record<string, string> & { ulid?: string })[]; attachments?: { name: string; url: string; ulid?: string; mime?: string | null }[] }
+    ticket: { id?: number; type?: string; subject: string; description: string | null; reporter: string | null; reporter_roles?: { key: string; label: string }[]; reporter_avatar?: Record<string, string> | null; reporter_username?: string | null; reporter_key?: string | null; reporter_profile_url?: string | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: (Record<string, string> & { ulid?: string })[]; attachments?: { name: string; url: string; ulid?: string; mime?: string | null }[] }
     contentRoute?: { name: string; parameters: Record<string, unknown> } | null
     comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; type?: string; has_qa_verdict?: string | null; qa_verdict_label?: string | null; author_avatar?: Record<string, string> | null; author_username?: string | null; author_key?: string | null; author_profile_url?: string | null; author_roles?: { key: string; label: string }[]; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: (Record<string, string> & { ulid?: string })[]; attachments?: { name: string; url: string; ulid?: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
@@ -57,7 +57,7 @@ const emit = defineEmits<{
     (e: "update:commentsNewestFirst", value: boolean): void
 }>()
 
-const form = useForm<{ body: string; images: File[]; is_internal: boolean; type: string }>({ body: "", images: [], is_internal: false, type: "comment" })
+const form = useForm<{ body: string; images: File[]; is_internal: boolean; to_customer: boolean; type: string }>({ body: "", images: [], is_internal: false, to_customer: false, type: "comment" })
 
 const composer = ref<{ appendMention: (username: string) => void } | null>(null)
 
@@ -287,6 +287,11 @@ const submit = () => {
                     <input v-model="form.is_internal" type="checkbox" class="cursor-pointer rounded border-gray-300 text-amber-500 focus:ring-amber-400" />
                     {{ ctrans("Engineering note") }}
                     <span class="text-xs font-normal text-gray-400">{{ ctrans("staff only, shown collapsed") }}</span>
+                </label>
+                <label v-if="canCommentInternally && ticket.type === 'merlin' && !form.is_internal" class="flex cursor-pointer select-none items-center gap-2 text-sm transition duration-200" :class="form.to_customer ? 'font-semibold text-gray-900' : 'text-gray-500 hover:text-gray-700'">
+                    <input v-model="form.to_customer" type="checkbox" class="cursor-pointer rounded border-gray-300 text-[var(--app-accent)] focus:ring-[var(--app-accent)]" />
+                    {{ ctrans("Send to the customer") }}
+                    <span class="text-xs font-normal text-gray-400">{{ ctrans("in their Merlin chat, by email") }}</span>
                 </label>
                 <label v-if="canCommentInternally" class="flex cursor-pointer select-none items-center gap-2 text-sm transition duration-200" :class="form.type === 'post_mortem' ? 'font-semibold text-red-700' : 'text-gray-500 hover:text-gray-700'">
                     <input v-model="form.type" type="checkbox" true-value="post_mortem" false-value="comment" class="cursor-pointer rounded border-gray-300 text-red-500 focus:ring-red-400" />

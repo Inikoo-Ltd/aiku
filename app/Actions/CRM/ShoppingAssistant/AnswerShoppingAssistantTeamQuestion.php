@@ -105,7 +105,7 @@ class AnswerShoppingAssistantTeamQuestion
             $conversation->increment('messages_count', 1, ['last_message_at' => now()]);
 
             if ($answeredLate) {
-                [, $log] = $followUp->deliver($conversation, $message, $translated, $answer, __('Our team answered a question this customer asked the AI shopping assistant (:reference). The shop cannot email it automatically, so please send it to the customer.', ['reference' => $task->reference]), $task, $assistant);
+                [, $log] = $followUp->deliver($conversation, $message, $translated, $answer, __('Our team answered a question this customer asked the AI shopping assistant (:reference). The shop cannot email it automatically, so please send it to the customer.', ['reference' => $task->reference]), ['restock_task_id' => $task->id], $assistant);
                 if ($task->conversation) {
                     SendStaffMessage::run($task->conversation, $assistant, ['body' => $log]);
                 }

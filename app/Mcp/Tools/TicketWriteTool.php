@@ -16,6 +16,7 @@ use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Helpers\Ticket\UpdateTicketComment;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
+use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -48,6 +49,7 @@ class TicketWriteTool extends Tool
             'comment'     => ['sometimes', 'string'],
             'comment_id'  => ['sometimes', 'integer'],
             'internal'    => ['sometimes', 'boolean'],
+            'to_customer' => ['sometimes', 'boolean'],
             'post_mortem' => ['sometimes', 'boolean'],
             'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,pending_deploy,cancelled'],
             'priority'    => ['sometimes', 'in:low,normal,high,urgent'],
@@ -73,7 +75,7 @@ class TicketWriteTool extends Tool
         $uploaderId = $user->id;
 
         $isStaffReporter = !Ticket::canUseAssistant($user);
-        if ($isStaffReporter && $request->hasAny(['acting_as', 'subject', 'description', 'status', 'priority', 'kind', 'module', 'assignee', 'tags', 'internal', 'post_mortem', 'ask_qa', 'commit', 'type']) && $request->filled('reference')) {
+        if ($isStaffReporter && $request->hasAny(['acting_as', 'subject', 'description', 'status', 'priority', 'kind', 'module', 'assignee', 'tags', 'internal', 'to_customer', 'post_mortem', 'ask_qa', 'commit', 'type']) && $request->filled('reference')) {
             return Response::error('On a ticket you raised you can add comments and attachments. Changing tickets is for engineers and QA.');
         }
         if ($isStaffReporter && $request->filled('acting_as')) {
@@ -147,6 +149,9 @@ class TicketWriteTool extends Tool
         }
         if ($request->boolean('post_mortem') && !$ticket->canContributeBy($user)) {
             return Response::error('Only the assignee, collaborators and lead engineers can write incident post-mortems.');
+        }
+        if ($request->boolean('to_customer') && ($request->boolean('internal') || $request->input('status') === TicketStatusEnum::PENDING_DEPLOY->value || $ticket->source_type !== 'ShoppingAssistantConversation')) {
+            return Response::error('to_customer is only for a public comment on a MER ticket, posted now: not with internal, and not held for a deployment.');
         }
         if ($request->boolean('internal') && !$ticket->canContributeBy($user)) {
             return Response::error('Only the assignee, collaborators and lead engineers can write internal notes.');
@@ -248,6 +253,7 @@ class TicketWriteTool extends Tool
             StoreTicketComment::make()->action($ticket, $user, [
                 'body'        => $request->string('comment')->toString(),
                 'is_internal' => $request->boolean('internal'),
+                'to_customer' => $request->boolean('to_customer'),
                 'type'        => $request->boolean('post_mortem') ? TicketCommentTypeEnum::POST_MORTEM->value : TicketCommentTypeEnum::COMMENT->value,
                 'images'      => $attachments,
             ]);
@@ -297,6 +303,7 @@ class TicketWriteTool extends Tool
             'comment'     => $schema->string()->description('Comment to add to the ticket, posted as you. With comment_id, the text that replaces that comment'),
             'comment_id'  => $schema->integer()->description('Id of one of your own comments on this ticket: its text is replaced by comment, rather than a new comment being added. Use it to correct something you already posted instead of following it with a correction'),
             'internal'    => $schema->boolean()->description('true = internal comment, visible to the help desk only. Use it for technical notes (ids repaired, commands run, root cause) so the public thread stays readable for the reporter'),
+            'to_customer' => $schema->boolean()->description('MER tickets only: true = this comment is a reply to the customer. It is translated into their language, added to their Merlin conversation and emailed to them (or customer services is asked to pass it on). Write it to the customer, in plain words, nothing technical'),
             'post_mortem' => $schema->boolean()->description('true = the comment is an incident post-mortem (what broke, who was affected, root cause, fix, how it is prevented), shown highlighted in red on the ticket. Combine with internal for a help-desk-only post-mortem'),
             'status'      => $schema->string()->description('open, in_progress, waiting, resolved, pending_deploy or cancelled. pending_deploy = close after next deployment (fix already on main): the comment and its files are held and posted when the deployment closes the ticket; a second pending_deploy comment replaces the held one. Pass commit too'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
