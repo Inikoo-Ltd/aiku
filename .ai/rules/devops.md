@@ -13,3 +13,6 @@ Stuck reboot (ping OK, SSH drops connections, Postgres closed) = usually a stuck
 
 ## Varnish never answers a logged-in page request with a 304
 The Cloudflare edge adds Last-Modified to the logged-out HTML it stores (origin sends none), so browsers keep that copy with a validator and revalidate it after login. Varnish answers If-Modified-Since from the object's age, so a 304 made the browser show its logged-out page to a logged-in customer (HELP-4671). vcl_recv drops If-Modified-Since and If-None-Match when X-Logged-Status is In; keep that, and never add Last-Modified or ETag to pages that differ by login state. Test: devops/varnish/tests/logged_in_revalidation.vtc. A VCL change is live only after it is applied and reloaded on both litio and boro.
+
+## MySQL runs only on litio, without binary logs
+Aurora's MySQL lives only on litio (10.0.0.1). boro's stale replica, which had not changed since Feb 2025, was removed with its data on 14 Nov 2026 (INI-258), and litio runs with disable_log_bin because nothing replicates from it. Don't reinstall MySQL on boro or turn binlog back on without a replica that needs it. mysql.service in supervisor.conf's After= is a no-op on boro and is kept for litio. On litio the default `php` CLI is 7.4 (for Aurora): run aiku artisan there with `php8.4`.
