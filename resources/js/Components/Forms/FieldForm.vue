@@ -108,6 +108,13 @@ watch(() => props.fieldData.value, (serverValue) => {
     }
 })
 
+const isSaved = ref(false)
+watch(() => form.isDirty, (isDirty) => {
+    if (isDirty) {
+        isSaved.value = false
+    }
+})
+
 // Gated here, not on the save button, so fields with their own save (trade units) cannot bypass it
 const submit = () => {
     if (props.fieldData.readonly) {
@@ -126,6 +133,7 @@ const save = () => {
         {
             preserveScroll: true,
             onSuccess: () => {
+                isSaved.value = true
                 if (props.fieldData.revisit_after_save) {
                     router.reload()
                 }
@@ -299,7 +307,7 @@ const needsSaveConfirmation = computed(() => {
                 <span v-else-if="fieldData.save" class="ml-2 flex-shrink-0">
 
                 </span>
-                <span v-else class="ml-2 flex-shrink-0">
+                <span v-else class="ml-2 flex flex-shrink-0 items-center">
                     <button v-if="!fieldData.verification" class="h-9 align-bottom text-center" :disabled="form.processing || !form.isDirty" type="submit">
                         <template v-if="form.isDirty">
                             <FontAwesomeIcon v-if="form.processing" icon='fad fa-spinner-third' class='text-2xl animate-spin' fixed-width aria-hidden='true' />
@@ -307,9 +315,12 @@ const needsSaveConfirmation = computed(() => {
                         </template>
                         <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
                     </button>
+                    <span v-if="isSaved && !fieldData.verification" class="ml-1 text-xs font-medium text-green-600" role="status">
+                        {{ ctrans('Saved') }}
+                    </span>
 
                     <!-- Verification: Button -->
-                    <span v-else>
+                    <span v-if="fieldData.verification">
                         <FontAwesomeIcon v-if="isVerificationLoading" icon='fad fa-spinner-third' class='animate-spin h-8 text-gray-500 hover:text-gray-600 cursor-pointer' fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-else @click="isVerificationDirty ? checkVerification() : ''"
                             icon='fas fa-question'
