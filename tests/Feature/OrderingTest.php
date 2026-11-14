@@ -7325,7 +7325,7 @@ test('adding and removing basket lines keeps totals, discounts, shipping and cha
         ->and($storeQueries[1])->toBeLessThan(119)
         ->and($storeQueries[2])->toBeLessThan(126)
         ->and($deleteQueries)->toBeLessThan(131)
-        ->and($showQueries)->toBeLessThan(71);
+        ->and($showQueries)->toBeLessThan(69);
 
     $rowVersions = fn () => DB::table('transactions')->where('order_id', $basket->id)->orderBy('id')->selectRaw('id, xmin::text as row_version')->pluck('row_version', 'id')->all();
     $versionsBefore = $rowVersions();

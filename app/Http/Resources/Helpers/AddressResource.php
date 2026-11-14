@@ -45,7 +45,7 @@ class AddressResource extends JsonResource
             'updated_at'          => $address->updated_at,
             'country'             => $this->whenLoaded(
                 'country',
-                CountryResource::make($address->country)
+                fn () => CountryResource::make($address->country)
             ),
             'formatted_address'   => GetFormattedAddress::run($address),
             'label'               => $address->whenPivotLoadedAs('pivot', 'model_has_addresses', function () {
