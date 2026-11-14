@@ -47,8 +47,9 @@ trait WithPayAndSubmitOrder
             $this->recordBannedDelivery($order);
         }
 
-        // If forbidden, do not allow payment. So that it stucks at submit order only, and not in warehouse
-        if (!$isForbidden) {
+        /** Forbidden and shipped-by-the-platform orders are never charged, so they stay submitted and never
+         * reach the warehouse. TikTok orders shipped by TikTok are always cancelled by CS (HELP-4568, PRE-106). */
+        if (!$isForbidden && !$order->is_shipping_by_external) {
             try {
                 PayOrderAsync::run($order);
             } catch (Exception $e) {
@@ -95,7 +96,7 @@ trait WithPayAndSubmitOrder
      */
     protected function tellCustomerWeCouldNotTakePayment(Order $order): void
     {
-        if (!$order->isPlacedOnAChannel() || $order->refresh()->pay_status === OrderPayStatusEnum::PAID) {
+        if (!$order->isPlacedOnAChannel() || $order->is_shipping_by_external || $order->refresh()->pay_status === OrderPayStatusEnum::PAID) {
             return;
         }
 

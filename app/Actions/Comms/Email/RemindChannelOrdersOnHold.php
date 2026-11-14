@@ -120,6 +120,7 @@ class RemindChannelOrdersOnHold
             ->where('orders.state', OrderStateEnum::SUBMITTED)
             ->payNotSettled()
             ->whereNull('orders.data->banned_delivery')
+            ->where('orders.is_shipping_by_external', false)
             ->whereHas('platform', fn ($query) => $query->whereNot('type', PlatformTypeEnum::MANUAL));
     }
 
