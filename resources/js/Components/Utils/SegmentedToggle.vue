@@ -11,7 +11,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle } from "@fal"
 
 defineProps<{
-	options: Array<{ label: string; value: T; icon?: any; tone?: "gray" | "emerald" | "amber" | "red" | "primary"; disabled?: boolean; count?: number; help?: string }>
+	options: Array<{ label: string; value: T; icon?: any; tone?: "gray" | "emerald" | "amber" | "red" | "primary"; disabled?: boolean; count?: number; note?: string; help?: string }>
 	ariaLabel?: string
 	iconOnly?: boolean
 	soft?: boolean
@@ -28,6 +28,7 @@ const model = defineModel<T | T[]>()
 				<FontAwesomeIcon v-if="option.icon" :icon="option.icon" fixed-width aria-hidden="true" />
 				<span :class="{ 'sr-only': iconOnly }">{{ option.label }}</span>
 				<span v-if="option.count !== undefined" class="segmented-toggle-count">{{ option.count > 99 ? '99+' : option.count }}</span>
+				<span v-if="option.note" class="text-[11px] tabular-nums opacity-60">{{ option.note }}</span>
 				<span v-if="option.help" v-tooltip.top="option.help" class="segmented-toggle-help">
 					<FontAwesomeIcon :icon="faInfoCircle" fixed-width aria-hidden="true" />
 					<span class="sr-only">{{ option.help }}</span>

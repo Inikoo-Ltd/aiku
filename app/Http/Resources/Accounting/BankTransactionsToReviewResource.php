@@ -21,6 +21,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property array<string, mixed> $match_data
  * @property string $bank
  * @property string $currency_code
+ * @property string $org_currency_code
+ * @property string|null $org_amount
  * @property string|null $order_reference
  * @property string|null $order_slug
  * @property string|null $shop_slug
@@ -35,6 +37,8 @@ class BankTransactionsToReviewResource extends JsonResource
             'bank'              => $this->bank,
             'amount'            => (float)$this->amount,
             'currency_code'     => $this->currency_code,
+            'org_amount'        => $this->currency_code === $this->org_currency_code || $this->org_amount === null ? null : (float)$this->org_amount,
+            'org_currency_code' => $this->org_currency_code,
             'counterparty_name' => $this->counterparty_name,
             'reference'         => $this->reference,
             'reason'            => match ($this->match_state) {

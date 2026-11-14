@@ -21,6 +21,7 @@ use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
 use App\Models\Accounting\BankConnection;
 use App\Models\Accounting\BankTransaction;
 use App\Models\Helpers\Currency;
+use App\Models\Helpers\CurrencyExchange;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Helpers\Address;
@@ -794,6 +795,31 @@ test('staff record a bank payment from the review queue on the order they name, 
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('period', 'all')
             ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($old->id)));
+
+    $orgCurrency     = $this->organisation->currency;
+    $foreignCurrency = Currency::whereNotIn('code', [$orgCurrency->code, config('app.currency_exchange.pivot')])->firstOrFail();
+    $foreign         = $line('fx1', 400, $foreignCurrency->id);
+    $orgRate         = $orgCurrency->code === config('app.currency_exchange.pivot') ? 1 : 2;
+    foreach ([[$foreignCurrency, 4], [$orgCurrency, $orgRate]] as [$currency, $rate]) {
+        CurrencyExchange::updateOrCreate(['currency_id' => $currency->id, 'date' => now()->subDays(3)->toDateString()], ['exchange' => $rate, 'source' => 'test']);
+    }
+    $expectedOrgAmount = 400 * $orgRate / 4;
+    $orgCurrencyLine = $line('fx2', 12, $orgCurrency->id);
+
+    $props = fn (array $query) => get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, ...$query]))->viewData('page')['props'];
+    $rows  = collect($props([])['data']['data'])->keyBy('id');
+    expect($rows[$foreign->id]['org_amount'])->toEqual($expectedOrgAmount)
+        ->and($rows[$foreign->id]['org_currency_code'])->toBe($orgCurrency->code)
+        ->and($rows[$orgCurrencyLine->id]['org_amount'])->toBeNull()
+        ->and($props([])['currencyTotals'][$foreignCurrency->code]['total'])->toBeGreaterThanOrEqual($expectedOrgAmount)
+        ->and($props([])['scopeTotals']['review'])->toBeGreaterThanOrEqual($expectedOrgAmount + 12);
+
+    $inRange = collect($props(['min' => $expectedOrgAmount - 1, 'max' => $expectedOrgAmount + 1])['data']['data'])->pluck('id');
+    expect($inRange)->toContain($foreign->id)->not->toContain($orgCurrencyLine->id)
+        ->and(collect($props(['min' => 10, 'max' => 13])['data']['data'])->pluck('id'))->toContain($orgCurrencyLine->id)->not->toContain($foreign->id)->not->toContain($toReview->id)
+        ->and($props(['min' => 'abc'])['min'])->toBeNull();
+    $foreign->delete();
+    $orgCurrencyLine->delete();
 
     $toReview->update(['reference' => 'Faire EWACREAMZ3']);
     $ids = fn (array $query) => collect(get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, ...$query]))->viewData('page')['props']['data']['data'])->pluck('id');

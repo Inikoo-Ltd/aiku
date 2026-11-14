@@ -49,7 +49,11 @@ class IndexBankTransactionsToReview extends OrgAction
 
     private ?string $to = null;
 
-    public function handle(Organisation $organisation, string $scope = 'review', string $period = '90d', $prefix = null, ?string $currency = null, ?string $from = null, ?string $to = null): LengthAwarePaginator
+    private ?float $min = null;
+
+    private ?float $max = null;
+
+    public function handle(Organisation $organisation, string $scope = 'review', string $period = '90d', $prefix = null, ?string $currency = null, ?string $from = null, ?string $to = null, ?float $min = null, ?float $max = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -68,7 +72,7 @@ class IndexBankTransactionsToReview extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        return $this->linesReceived(QueryBuilder::for(BankTransaction::class), $organisation, $period, $currency, $from, $to)
+        return $this->linesReceived(QueryBuilder::for(BankTransaction::class), $organisation, $period, $currency, $from, $to, $min, $max)
             ->whereIn('bank_transactions.match_state', self::scopeStates($scope))
             ->join('bank_connections', 'bank_connections.id', 'bank_transactions.bank_connection_id')
             ->leftJoin('orders', 'orders.id', 'bank_transactions.order_id')
@@ -83,10 +87,12 @@ class IndexBankTransactionsToReview extends OrgAction
                 'bank_transactions.match_data',
                 'bank_connections.name as bank',
                 'currencies.code as currency_code',
+                'org_currencies.code as org_currency_code',
                 'orders.reference as order_reference',
                 'orders.slug as order_slug',
                 'shops.slug as shop_slug',
             ])
+            ->selectRaw($this->orgAmountSql().' as org_amount')
             ->defaultSort('-booked_at')
             ->allowedSorts(['booked_at', 'amount'])
             ->allowedFilters([$globalSearch])
@@ -102,8 +108,10 @@ class IndexBankTransactionsToReview extends OrgAction
         $this->currency = in_array($request->query('currency'), $this->currencies($organisation), true) ? $request->query('currency') : null;
         $this->from     = $this->validDate($request->query('from'));
         $this->to       = $this->from ? $this->validDate($request->query('to')) : null;
+        $this->min      = $this->validAmount($request->query('min'));
+        $this->max      = $this->validAmount($request->query('max'));
 
-        return $this->handle($organisation, $this->scope, $this->period, currency: $this->currency, from: $this->from, to: $this->to);
+        return $this->handle($organisation, $this->scope, $this->period, currency: $this->currency, from: $this->from, to: $this->to, min: $this->min, max: $this->max);
     }
 
     /**
@@ -124,7 +132,7 @@ class IndexBankTransactionsToReview extends OrgAction
      * @param  TQuery  $query
      * @return TQuery
      */
-    private function linesReceived($query, Organisation $organisation, string $period, ?string $currency, ?string $from, ?string $to)
+    private function linesReceived($query, Organisation $organisation, string $period, ?string $currency, ?string $from, ?string $to, ?float $min = null, ?float $max = null)
     {
         $since = match (true) {
             $from !== null    => Carbon::parse($from)->startOfDay(),
@@ -141,7 +149,21 @@ class IndexBankTransactionsToReview extends OrgAction
             ->when($since, fn ($query) => $query->where('bank_transactions.booked_at', '>=', $since))
             ->when($to, fn ($query) => $query->where('bank_transactions.booked_at', '<=', Carbon::parse($to)->endOfDay()))
             ->join('currencies', 'currencies.id', 'bank_transactions.currency_id')
-            ->when($currency, fn ($query) => $query->where('currencies.code', $currency));
+            ->join('organisations', 'organisations.id', 'bank_transactions.organisation_id')
+            ->join('currencies as org_currencies', 'org_currencies.id', 'organisations.currency_id')
+            ->when($currency, fn ($query) => $query->where('currencies.code', $currency))
+            ->when($min !== null, fn ($query) => $query->whereRaw($this->orgAmountSql().' >= ?', [$min]))
+            ->when($max !== null, fn ($query) => $query->whereRaw($this->orgAmountSql().' <= ?', [$max]));
+    }
+
+    /**
+     * The line in the organisation's currency, at the last rate known on the day it was booked; null when no rate is known.
+     */
+    private function orgAmountSql(): string
+    {
+        $rate = fn (string $currencyId) => "case when $currencyId = (select id from currencies where code = '".addslashes(config('app.currency_exchange.pivot'))."') then 1 else (select ce.exchange from currency_exchanges ce where ce.currency_id = $currencyId and ce.date <= bank_transactions.booked_at::date order by ce.date desc limit 1) end";
+
+        return "case when bank_transactions.currency_id = organisations.currency_id then bank_transactions.amount else round(bank_transactions.amount * ({$rate('organisations.currency_id')}) / nullif(({$rate('bank_transactions.currency_id')}), 0), 2) end";
     }
 
     /**
@@ -149,9 +171,9 @@ class IndexBankTransactionsToReview extends OrgAction
      *
      * @return array<string, int>
      */
-    public function scopeCounts(Organisation $organisation, string $period, ?string $currency, ?string $from, ?string $to): array
+    public function scopeCounts(Organisation $organisation, string $period, ?string $currency, ?string $from, ?string $to, ?float $min = null, ?float $max = null): array
     {
-        $byState = $this->linesReceived(BankTransaction::query(), $organisation, $period, $currency, $from, $to)
+        $byState = $this->linesReceived(BankTransaction::query(), $organisation, $period, $currency, $from, $to, $min, $max)
             ->selectRaw('bank_transactions.match_state, count(*) as lines')
             ->groupBy('bank_transactions.match_state')
             ->pluck('lines', 'match_state');
@@ -159,6 +181,39 @@ class IndexBankTransactionsToReview extends OrgAction
         return collect(self::SCOPES)->mapWithKeys(fn (string $scope) => [
             $scope => collect(self::scopeStates($scope))->sum(fn (BankTransactionMatchStateEnum $state) => (int) $byState->get($state->value, 0)),
         ])->all();
+    }
+
+    /**
+     * What each tab holds in the organisation's currency, under the period, currency, dates and range chosen.
+     *
+     * @return array<string, float>
+     */
+    public function scopeTotals(Organisation $organisation, string $period, ?string $currency, ?string $from, ?string $to, ?float $min = null, ?float $max = null): array
+    {
+        $byState = $this->linesReceived(BankTransaction::query(), $organisation, $period, $currency, $from, $to, $min, $max)
+            ->selectRaw('bank_transactions.match_state, sum('.$this->orgAmountSql().') as total')
+            ->groupBy('bank_transactions.match_state')
+            ->pluck('total', 'match_state');
+
+        return collect(self::SCOPES)->mapWithKeys(fn (string $scope) => [
+            $scope => round(collect(self::scopeStates($scope))->sum(fn (BankTransactionMatchStateEnum $state) => (float) $byState->get($state->value, 0)), 2),
+        ])->all();
+    }
+
+    /**
+     * How many lines the tab holds in each currency and what they add up to in the organisation's currency.
+     *
+     * @return array<string, array{count: int, total: float}>
+     */
+    public function currencyTotals(Organisation $organisation, string $scope, string $period, ?string $from, ?string $to, ?float $min = null, ?float $max = null): array
+    {
+        return $this->linesReceived(BankTransaction::query(), $organisation, $period, null, $from, $to, $min, $max)
+            ->whereIn('bank_transactions.match_state', self::scopeStates($scope))
+            ->selectRaw('currencies.code, count(*) as lines, sum('.$this->orgAmountSql().') as total')
+            ->groupBy('currencies.code')
+            ->get()
+            ->mapWithKeys(fn ($row) => [$row->code => ['count' => (int) $row->lines, 'total' => round((float) $row->total, 2)]])
+            ->all();
     }
 
     /**
@@ -174,6 +229,11 @@ class IndexBankTransactionsToReview extends OrgAction
             ->orderBy('currencies.code')
             ->pluck('currencies.code')
             ->all();
+    }
+
+    private function validAmount(mixed $amount): ?float
+    {
+        return is_numeric($amount) && $amount >= 0 ? (float) $amount : null;
     }
 
     private function validDate(mixed $date): ?string
@@ -209,12 +269,17 @@ class IndexBankTransactionsToReview extends OrgAction
                 'canEdit'        => $request->user()->authTo("accounting.{$this->organisation->id}.edit"),
                 'organisationId' => $this->organisation->id,
                 'scope'          => $this->scope,
-                'scopeCounts'    => $this->scopeCounts($this->organisation, $this->period, $this->currency, $this->from, $this->to),
+                'scopeCounts'    => $this->scopeCounts($this->organisation, $this->period, $this->currency, $this->from, $this->to, $this->min, $this->max),
+                'scopeTotals'    => $this->scopeTotals($this->organisation, $this->period, $this->currency, $this->from, $this->to, $this->min, $this->max),
+                'currencyTotals' => $this->currencyTotals($this->organisation, $this->scope, $this->period, $this->from, $this->to, $this->min, $this->max),
                 'period'         => $this->from ? null : $this->period,
                 'currency'       => $this->currency,
                 'currencies'     => $this->currencies($this->organisation),
                 'from'           => $this->from,
                 'to'             => $this->to,
+                'min'            => $this->min,
+                'max'            => $this->max,
+                'orgCurrency'    => $this->organisation->currency->code,
                 'data'        => BankTransactionsToReviewResource::collection($bankTransactions),
             ]
         )->table($this->tableStructure());

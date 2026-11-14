@@ -13,6 +13,7 @@ import axios from "axios"
 import Textarea from "primevue/textarea"
 import Checkbox from "primevue/checkbox"
 import DatePicker from "primevue/datepicker"
+import InputNumber from "primevue/inputnumber"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -34,6 +35,8 @@ interface BankLine {
 	bank: string
 	amount: number
 	currency_code: string
+	org_amount: number | null
+	org_currency_code: string
 	counterparty_name: string | null
 	reference: string | null
 	reason: string | null
@@ -71,6 +74,11 @@ const props = defineProps<{
 	organisationId: number
 	scope: "review" | "unmatched" | "dismissed" | "payouts"
 	scopeCounts: Record<"review" | "unmatched" | "dismissed" | "payouts", number>
+	scopeTotals: Record<"review" | "unmatched" | "dismissed" | "payouts", number>
+	currencyTotals: Record<string, { count: number; total: number }>
+	orgCurrency: string
+	min: number | null
+	max: number | null
 	period: "90d" | "1y" | "all" | null
 	currency: string | null
 	currencies: string[]
@@ -88,24 +96,40 @@ const orderRoute = (line: BankLine) =>
 		? route("grp.org.shops.show.ordering.orders.show", [route().params["organisation"], line.shop_slug, line.order_slug])
 		: null
 
+const shortAmount = (amount: number) =>
+	new Intl.NumberFormat(undefined, { style: "currency", currency: props.orgCurrency, currencyDisplay: "narrowSymbol", notation: "compact", maximumFractionDigits: Math.abs(amount) >= 1000 ? 1 : 0 }).format(amount)
+const scopeOption = (label: string, value: "review" | "unmatched" | "dismissed" | "payouts") => ({
+	label,
+	value,
+	count: props.scopeCounts[value],
+	note: props.scopeTotals[value] ? shortAmount(props.scopeTotals[value]) : undefined,
+})
 const scopeOptions = computed(() => [
-	{ label: ctrans("To review"), value: "review", count: props.scopeCounts.review },
-	{ label: ctrans("No order number"), value: "unmatched", count: props.scopeCounts.unmatched },
-	{ label: ctrans("Not for an order"), value: "dismissed", count: props.scopeCounts.dismissed },
-	{ label: ctrans("Card payouts"), value: "payouts", count: props.scopeCounts.payouts },
+	scopeOption(ctrans("To review"), "review"),
+	scopeOption(ctrans("No order number"), "unmatched"),
+	scopeOption(ctrans("Not for an order"), "dismissed"),
+	scopeOption(ctrans("Card payouts"), "payouts"),
 ])
 const periodOptions = [
 	{ label: ctrans("Last 90 days"), value: "90d" },
 	{ label: ctrans("Last year"), value: "1y" },
 	{ label: ctrans("All"), value: "all" },
 ]
-const currencyOptions = computed(() => [{ label: ctrans("All"), value: "all" }, ...props.currencies.map((code) => ({ label: code, value: code }))])
+const currencyOptions = computed(() => [
+	{ label: ctrans("All"), value: "all" },
+	...props.currencies.filter((code) => props.currencyTotals[code]?.count || code === props.currency).map((code) => ({
+		label: code,
+		value: code,
+		count: props.currencyTotals[code]?.count ?? 0,
+		note: props.currencyTotals[code]?.total ? shortAmount(props.currencyTotals[code].total) : undefined,
+	})),
+])
 
-const reload = (query: Record<string, string | null>) => {
-	const params = { scope: props.scope, period: props.period, currency: props.currency, from: props.from, to: props.to, ...query }
+const reload = (query: Record<string, string | number | null>) => {
+	const params = { scope: props.scope, period: props.period, currency: props.currency, from: props.from, to: props.to, min: props.min, max: props.max, ...query }
 	router.get(
 		route("grp.org.accounting.bank_review.index", [route().params["organisation"]]),
-		Object.fromEntries(Object.entries(params).filter(([, value]) => value)),
+		Object.fromEntries(Object.entries(params).filter(([, value]) => value !== null && value !== undefined && value !== "")),
 		{ preserveState: false }
 	)
 }
@@ -137,6 +161,14 @@ const dateRange = computed<(Date | null)[] | null>({
 		}
 	},
 })
+const amountRange = ref<{ min: number | null; max: number | null }>({ min: props.min, max: props.max })
+const applyAmountRange = () => {
+	if (amountRange.value.min !== props.min || amountRange.value.max !== props.max) {
+		reload({ min: amountRange.value.min, max: amountRange.value.max })
+	}
+}
+const amountInputPt = { pcInputText: { root: { class: "!w-24 !py-1 !text-xs" } } }
+
 const datePickerPt = { pcInputText: { root: { class: "!w-56 !py-1 !text-xs" } } }
 const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
 
@@ -265,6 +297,12 @@ const submit = () => {
 			:pt="datePickerPt"
 			:aria-label="ctrans('Received between')"
 		/>
+		<div class="flex items-center gap-1 text-xs text-gray-500">
+			<InputNumber v-model="amountRange.min" :min="0" :maxFractionDigits="2" :placeholder="ctrans('Min')" :class="fieldFocusClass" :pt="amountInputPt" :aria-label="ctrans('Smallest amount')" @blur="applyAmountRange" @keydown.enter="applyAmountRange" />
+			<span>–</span>
+			<InputNumber v-model="amountRange.max" :min="0" :maxFractionDigits="2" :placeholder="ctrans('Max')" :class="fieldFocusClass" :pt="amountInputPt" :aria-label="ctrans('Largest amount')" @blur="applyAmountRange" @keydown.enter="applyAmountRange" />
+			<span>{{ orgCurrency }}</span>
+		</div>
 		<SegmentedToggle v-if="currencies.length > 1" v-model="currency" :options="currencyOptions" soft :aria-label="ctrans('Currency')" />
 	</div>
 
@@ -283,6 +321,7 @@ const submit = () => {
 
 		<template #cell(amount)="{ item }">
 			<span class="whitespace-nowrap tabular-nums">{{ locale.currencyFormat(item.currency_code, item.amount) }}</span>
+			<div v-if="item.org_amount !== null" class="whitespace-nowrap text-[11px] tabular-nums text-gray-400">{{ locale.currencyFormat(item.org_currency_code, item.org_amount) }}</div>
 		</template>
 
 		<template #cell(reference)="{ item }">
