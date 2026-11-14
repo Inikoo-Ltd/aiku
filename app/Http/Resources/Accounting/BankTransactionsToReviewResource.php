@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Accounting;
 
+use App\Actions\Accounting\BankTransaction\ReconcileCodPayouts;
 use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -57,6 +58,9 @@ class BankTransactionsToReviewResource extends JsonResource
                 'processor_fees'   => (float)($this->match_data['processor_fees'] ?? 0),
                 'bank_fee'         => (float)($this->match_data['bank_fee'] ?? 0),
                 'payments_missing' => count($this->match_data['payments_missing'] ?? []),
+                'carrier'          => ReconcileCodPayouts::CARRIERS[$this->match_data['carrier'] ?? '']['name'] ?? null,
+                'differences'      => $this->match_data['differences'] ?? [],
+                'not_recorded'     => $this->match_data['payments_not_recorded'] ?? [],
             ] : null,
             'owed'              => $this->match_data['owed'] ?? null,
             'order_reference'   => $this->order_reference,

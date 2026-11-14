@@ -56,6 +56,7 @@ class ReconcileCheckoutPayouts
         BankTransaction::where('match_state', BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
             ->whereNull('payment_id')
             ->whereNull('match_data->reconciled_at')
+            ->where(fn ($query) => $query->whereNull('match_data->provider')->orWhere('match_data->provider', 'checkout'))
             ->where('booked_at', '>=', now()->subDays(120))
             ->get()
             ->groupBy('organisation_id')
@@ -109,6 +110,7 @@ class ReconcileCheckoutPayouts
         $counts['payouts without a report yet'] = BankTransaction::where('match_state', BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
             ->whereNull('payment_id')
             ->whereNull('match_data->reconciled_at')
+            ->where(fn ($query) => $query->whereNull('match_data->provider')->orWhere('match_data->provider', 'checkout'))
             ->count();
 
         return $counts;

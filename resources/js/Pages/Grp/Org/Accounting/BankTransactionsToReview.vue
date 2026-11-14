@@ -46,7 +46,7 @@ interface BankLine {
 	shop_slug: string | null
 	is_dismissed: boolean
 	payout: {
-		provider: "checkout" | "pastpay"
+		provider: "checkout" | "pastpay" | "cod"
 		payout_id: string | null
 		reconciled: boolean
 		payments: number
@@ -54,6 +54,9 @@ interface BankLine {
 		processor_fees: number
 		bank_fee: number
 		payments_missing: number
+		carrier: string | null
+		differences: { order: string; list: number; aiku: number; not_recorded?: boolean }[]
+		not_recorded: string[]
 	} | null
 }
 
@@ -342,6 +345,25 @@ const submit = () => {
 					{{ ctrans("PastPay payout of this order, PastPay kept :fees", {
 						fees: locale.currencyFormat(item.currency_code, item.payout.processor_fees),
 					}) }}
+				</template>
+				<template v-else-if="item.payout.provider === 'cod' && item.payout.payments">
+					{{ ctrans(":carrier cash on delivery payout of :payments parcels", { carrier: item.payout.carrier, payments: item.payout.payments }) }}
+					<span v-if="item.payout.payments_missing" class="text-amber-600">
+						· {{ ctrans(":count parcels not found in Aiku", { count: item.payout.payments_missing }) }}
+					</span>
+					<span v-if="item.payout.not_recorded.length" class="text-amber-600">
+						· {{ ctrans("No cash on delivery payment yet on :orders", { orders: item.payout.not_recorded.join(", ") }) }}
+					</span>
+					<div v-for="difference in item.payout.differences" :key="difference.order" class="text-amber-600">
+						{{ ctrans(":order: the list says :list, Aiku has :aiku", {
+							order: difference.order,
+							list: locale.currencyFormat(item.currency_code, difference.list),
+							aiku: locale.currencyFormat(item.currency_code, difference.aiku),
+						}) }}
+					</div>
+				</template>
+				<template v-else-if="item.payout.provider === 'cod'">
+					{{ ctrans(":carrier cash on delivery payout, its parcel list is not read yet", { carrier: item.payout.carrier }) }}
 				</template>
 				<template v-else-if="item.payout.reconciled">
 					{{ ctrans("Checkout payout of :payments payments and :refunds refunds, Checkout kept :fees, the bank :bank_fee", {

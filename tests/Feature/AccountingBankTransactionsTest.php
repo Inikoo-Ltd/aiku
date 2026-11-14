@@ -1494,3 +1494,175 @@ test('a fulfilment customer paying without the invoice number is matched by paye
         ->and($lines['third']->match_data['reason'])->toBe('the invoices of this amount from this payer are settled or matched to other lines')
         ->and($lines['stranger']->match_data['reason'])->toBe('no order number in the reference');
 });
+
+test('a carrier cash on delivery payout is read from its emailed list: payments staff typed are linked, missing ones recorded, differences reported', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankConnection->update(['settings' => ['auto_pay_from' => now()->subDay()->toIso8601String()]]);
+    $codAccount = \App\Actions\Accounting\PaymentAccount\StorePaymentAccount::make()->action(
+        \App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider::make()->action(
+            paymentServiceProvider: PaymentServiceProvider::where('code', 'cond')->firstOrFail(),
+            organisation: $this->organisation,
+            modelData: ['code' => 'cod'.random_int(1000, 9999)]
+        ),
+        ['code' => 'cod'.random_int(1000, 9999), 'name' => 'COD payouts test', 'type' => PaymentAccountTypeEnum::CASH_ON_DELIVERY->value]
+    );
+    \App\Actions\Accounting\PaymentAccountShop\StorePaymentAccountShop::make()->action($codAccount, $this->shop, [
+        'currency_id' => $this->shop->currency_id,
+        'state'       => \App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum::ACTIVE,
+    ]);
+    $warehouse = createWarehouse();
+    $shipper   = \App\Actions\Dispatching\Shipper\StoreShipper::make()->action($this->organisation, ['code' => 'DPD'.random_int(100, 999), 'name' => 'DPD', 'trade_as' => 'dpd']);
+    $parcel    = function (float $total, string $tracking) use ($warehouse, $shipper) {
+        $order = bankMatchingOrder(createCustomer($this->shop), $total);
+        $order->updateQuietly(['to_be_paid_by' => \App\Enums\Ordering\Order\OrderToBePaidByEnum::CASH_ON_DELIVERY]);
+        $deliveryNote = \App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote::make()->action($order, [
+            'reference'        => 'DN'.random_int(100000, 999999),
+            'state'            => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::UNASSIGNED,
+            'email'            => 'test@email.com',
+            'date'             => date('Y-m-d'),
+            'delivery_address' => new Address(Address::factory()->definition()),
+            'warehouse_id'     => $warehouse->id,
+        ]);
+        \App\Actions\Dispatching\Shipment\StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => $tracking]);
+
+        return $order->refresh();
+    };
+    $digits = fn (Order $order) => preg_replace('/\D/', '', $order->reference);
+    $prefix = (string)random_int(10000000, 99999999);
+
+    $typed      = $parcel(50757.55, $prefix.'000001');
+    $typedWrong = $parcel(40896.00, $prefix.'000002');
+    $untyped    = $parcel(23431.40, $prefix.'000003');
+    \App\Actions\Dispatching\Shipment\StoreShipment::make()->action($untyped->deliveryNotes()->first(), $shipper, ['tracking' => $prefix.'000004']);
+    foreach ([[$typed, 50757.55], [$typedWrong, 31446]] as [$order, $amount]) {
+        \App\Actions\Ordering\Order\PayOrder::make()->action($order, $codAccount, ['amount' => $amount, 'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS, 'state' => PaymentStateEnum::COMPLETED]);
+    }
+
+    $text = "Átutalás melléklet lista\nFeladó:Ancient Wisdom s.r.o.\tDátum:".now()->toDateString()."\nCsomagszám\tCímzett\tFeladás d.ÖsszegRef. szám\n"
+        .$prefix."000001\t0001.01.01WEBfield-Design Kft. Richard J, 8,\n5700, Gyula\n50758.0".$digits($typed)."\n"
+        .$prefix."000002\t0001.01.01Szarvas Agnes, D, 4200,\n40896.0".$digits($typedWrong)."\n"
+        .$prefix."000003\t0001.01.01Nilsson Thomas,\n4243, Teglas\n20000.0".$digits($untyped)." / HU".$digits($untyped)."\n"
+        .$prefix."000004\t0001.01.01Nilsson Thomas,\n4243, Teglas\n3431.0".$digits($untyped)." / HU".$digits($untyped)."-1\n"
+        .$prefix."000009\t0001.01.01Somebody Else\n10000.0123\n\nÖsszesen: 125,085";
+    $reconciler = \App\Actions\Accounting\BankTransaction\ReconcileCodPayouts::make();
+    $list       = $reconciler->parseDpdHungaryList($text);
+
+    expect($list['total'])->toBe(125085)
+        ->and($list['rows'])->toHaveCount(5)
+        ->and($list['rows'][3])->toBe(['tracking' => $prefix.'000004', 'reference' => $digits($untyped), 'amount' => 3431.0])
+        ->and($reconciler->parseDpdHungaryList(str_replace('125,085', '125,086', $text)))->toBeNull();
+
+    $line = BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => 'cod'.random_int(1000, 9999),
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 125085,
+        'currency_id'             => $this->shop->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => 'DPD HUNGARY KFT.',
+        'reference'               => $prefix.'000001, B02, 093 közvetített áru ellenértéke',
+        'booked_at'               => now(),
+    ]);
+    MatchBankTransactions::run($bankConnection);
+
+    expect($line->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
+        ->and($line->match_data)->toEqual(['provider' => 'cod', 'carrier' => 'dpd_hu']);
+
+    $dryRun = $reconciler->reconcile($line->load('bankConnection'), $list, false);
+    expect($dryRun['payments_created'])->toBe(0)
+        ->and($dryRun['payments_not_recorded'])->toBe([$untyped->reference])
+        ->and($untyped->refresh()->payment_amount)->toEqual(0);
+
+    $matchData = $reconciler->reconcile($line, $list, true);
+    $recorded  = $untyped->refresh()->payments()->first();
+
+    expect($matchData['payments_created'])->toBe(1)
+        ->and($recorded->amount)->toEqual(23431.40)
+        ->and($recorded->reference)->toBe($prefix.'000003')
+        ->and($untyped->payment_amount)->toEqual(23431.40)
+        ->and($matchData['payment_ids'])->toHaveCount(3)
+        ->and($matchData['payment_ids'])->toContain($recorded->id)
+        ->and($matchData['payments_missing'])->toBe([$prefix.'000009'])
+        ->and($matchData['differences'])->toBe([['order' => $typedWrong->reference, 'list' => 40896.0, 'aiku' => 31446.0]])
+        ->and($typedWrong->refresh()->payment_amount)->toEqual(31446)
+        ->and($matchData['reconciled_at'])->toBeNull()
+        ->and($reconciler->reconcile($line, $list, true)['payments_created'])->toBe(0)
+        ->and($reconciler->reconcile($line, ['date' => $list['date'], 'total' => 50758, 'rows' => [$list['rows'][0]]], true)['reconciled_at'])->not->toBeNull();
+
+    $line->update(['match_data' => $matchData]);
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    post(route('grp.models.order.payment.store', [$untyped->id, $codAccount->id]), ['amount' => 23431.40, 'status' => 'success', 'state' => 'completed'])
+        ->assertSessionHasErrors('amount');
+    expect($untyped->payments()->count())->toBe(1);
+    get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, 'scope' => 'payouts']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['id'] === $line->id
+                && $row['payout']['provider'] === 'cod'
+                && $row['payout']['carrier'] === 'DPD Hungary'
+                && $row['payout']['reconciled'] === false
+                && $row['payout']['payments'] === 5
+                && $row['payout']['payments_missing'] === 1
+                && count($row['payout']['differences']) === 1)));
+});
+
+test('carrier lines decided before carriers were recognised become cash on delivery payouts', function () {
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $line           = fn (string $payer, $state) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => 'gls'.random_int(10000, 99999),
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 532.69,
+        'currency_id'             => $this->shop->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => $payer,
+        'reference'               => '/ROC/TRANSFER RAMBURS',
+        'booked_at'               => now(),
+        'match_state'             => $state,
+        'match_data'              => ['reason' => 'no order named'],
+    ]);
+    $romania  = $line('GLS GENERAL LOGISTICS SYSTEMS ROMAN', BankTransactionMatchStateEnum::UNMATCHED);
+    $reviewed = $line('GLS GENERAL LOG.SYSTEMS HUNG.CSOMAG', BankTransactionMatchStateEnum::REVIEW);
+    $other    = $line('GLS Spain customer service', BankTransactionMatchStateEnum::UNMATCHED);
+
+    \App\Actions\Accounting\BankTransaction\ReconcileCodPayouts::make()->handle(false);
+    expect($romania->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
+
+    $amount = random_int(100000, 999999);
+    $dpd    = fn (Carbon $bookedAt) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => 'dpd'.random_int(10000, 99999),
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $amount,
+        'currency_id'             => $this->shop->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => 'DPD HUNGARY KFT.',
+        'reference'               => '06585701046349 közvetített áru ellenértéke',
+        'booked_at'               => $bookedAt,
+    ]);
+    $paid = $dpd(now()->subDay());
+    $twin = $dpd(now()->subDay());
+    $late = $dpd(now()->subDays(10));
+    $list = ['date' => now()->toDateString(), 'total' => $amount, 'rows' => [['tracking' => '99999999999999', 'reference' => '1', 'amount' => (float)$amount]], 'source' => 'hu:test'];
+    \App\Actions\Accounting\BankTransaction\ReconcileCodPayouts::partialMock()->shouldReceive('listsInMailboxes')->andReturn([$list['date'].'|'.$amount => $list]);
+
+    \App\Actions\Accounting\BankTransaction\ReconcileCodPayouts::make()->handle(true);
+    expect($romania->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
+        ->and($romania->match_data)->toEqual(['provider' => 'cod', 'carrier' => 'gls_ro'])
+        ->and($reviewed->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($other->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($paid->refresh()->match_data['reconciled_at'])->toBeNull()
+        ->and($paid->match_data['list'])->toEqual(['date' => $list['date'], 'total' => $amount, 'source' => 'hu:test'])
+        ->and($paid->match_data['payments_missing'])->toBe(['99999999999999'])
+        ->and($twin->refresh()->match_data)->toEqual(['provider' => 'cod', 'carrier' => 'dpd_hu'])
+        ->and($late->refresh()->match_data)->toEqual(['provider' => 'cod', 'carrier' => 'dpd_hu']);
+});

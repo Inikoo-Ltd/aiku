@@ -140,6 +140,8 @@ class PayOrder extends OrgAction
             ->latest('booked_at')
             ->first();
         if (!$bankTransaction) {
+            $this->refuseCodPaymentFromCarrierList($order, $owed);
+
             return;
         }
 
@@ -148,6 +150,39 @@ class PayOrder extends OrgAction
                 'date'   => $bankTransaction->booked_at->toDateString(),
                 'amount' => number_format((float)$bankTransaction->payment->amount, 2).' '.$bankTransaction->currency->code,
                 'owed'   => number_format(max($owed, 0), 2),
+            ]),
+        ]);
+    }
+
+    /**
+     * The carrier's cash on delivery list already recorded this order's payment (ReconcileCodPayouts): typing it from
+     * the same list again would pay the order twice.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function refuseCodPaymentFromCarrierList(Order $order, float $owed): void
+    {
+        $codPaymentIds = $order->payments()
+            ->where('payments.status', PaymentStatusEnum::SUCCESS)
+            ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
+            ->pluck('payments.id');
+        if ($codPaymentIds->isEmpty()) {
+            return;
+        }
+
+        $payout = BankTransaction::where('organisation_id', $order->organisation_id)
+            ->where('match_data->provider', 'cod')
+            ->where(fn ($query) => $codPaymentIds->each(fn (int $paymentId) => $query->orWhereJsonContains('match_data->payment_ids', $paymentId)))
+            ->latest('booked_at')
+            ->first();
+        if (!$payout) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'amount' => __('The cash on delivery for this order was already recorded from the carrier\'s payout of :date, and :owed is still owed.', [
+                'date' => $payout->booked_at->toDateString(),
+                'owed' => number_format(max($owed, 0), 2),
             ]),
         ]);
     }

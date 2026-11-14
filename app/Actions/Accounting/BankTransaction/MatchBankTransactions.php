@@ -175,6 +175,11 @@ class MatchBankTransactions
             return [BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT, null, ['provider' => 'checkout', 'payout_id' => $payoutId]];
         }
 
+        $codCarrier = ReconcileCodPayouts::carrier($bankTransaction->counterparty_name);
+        if ($codCarrier) {
+            return [BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT, null, ['provider' => 'cod', 'carrier' => $codCarrier]];
+        }
+
         if (preg_match('/^pastpay\b/i', (string)$bankTransaction->counterparty_name)) {
             return $this->decidePastpayPayout($bankTransaction);
         }
