@@ -31,6 +31,7 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Actions\Ordering\Order\UpdateOrderPremiumDispatch;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\Catalogue\Product;
@@ -134,6 +135,13 @@ class GetShoppingAssistantTools
     public const array ONLY_FOR_DROPSHIPPING = ['products_not_in_store'];
 
     private const int MAX_NOT_IN_STORE = 10;
+
+    public const int PRIORITY_AFTER_HOURS = 24;
+
+    private const array ORDER_OPEN_STATES = [
+        OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::HANDLING, OrderStateEnum::HANDLING_BLOCKED,
+        OrderStateEnum::PICKED, OrderStateEnum::PACKING, OrderStateEnum::PACKED, OrderStateEnum::FINALISED,
+    ];
 
     public const array ENGINEER_TICKET_KINDS = ['bug', 'support', 'data_integrity'];
 
@@ -296,7 +304,7 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'order_status',
-                'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, whether it was sent, or for its tracking. Pass the order number they wrote as reference (ours or their own); without one you get their latest order. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
+                'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, why it has not been dispatched yet, whether it was sent, or for its tracking. Pass the order number they wrote as reference (ours or their own); without one you get their oldest order not dispatched yet, else their latest, so never ask for the number first. It also says when an order waits for payment, and an order still waiting to be picked a day after it was placed is moved to premium dispatch free of charge. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
                 ['reference' => ['type' => 'string', 'description' => 'The order number the customer wrote, exactly as written. Leave it out when they gave none.']]
             ),
             $this->tool(
@@ -1093,9 +1101,10 @@ class GetShoppingAssistantTools
         $reference = is_string($arguments['reference'] ?? null) ? trim($arguments['reference'], " \t\n\r#") : '';
         $orders    = Order::where('customer_id', $customer->id);
 
+        $open  = (clone $orders)->whereIn('state', self::ORDER_OPEN_STATES)->orderBy('submitted_at')->orderBy('id')->get();
         $order = $reference !== ''
             ? $orders->where(fn ($query) => $query->where('reference', $reference)->orWhere('customer_reference', $reference)->orWhere('platform_order_id', $reference))->latest('id')->first()
-            : $orders->where('state', '!=', OrderStateEnum::CREATING)->latest('submitted_at')->latest('id')->first();
+            : ($open->first() ?? $orders->where('state', '!=', OrderStateEnum::CREATING)->latest('submitted_at')->latest('id')->first());
 
         if (!$order) {
             return ['content' => ['found' => false, 'note' => $reference !== ''
@@ -1105,8 +1114,10 @@ class GetShoppingAssistantTools
 
         $state = match ($order->state) {
             OrderStateEnum::CREATING                          => 'still a basket: it has not been placed yet',
-            OrderStateEnum::SUBMITTED                         => 'placed and received by us, not yet in the warehouse',
-            OrderStateEnum::IN_WAREHOUSE                      => 'in our warehouse, waiting to be picked',
+            OrderStateEnum::SUBMITTED                         => in_array($order->pay_status, Order::PAY_SETTLED_STATUSES, true)
+                ? 'placed and paid, on its way to the warehouse queue'
+                : 'placed but not paid yet: it goes to the warehouse queue once the payment is in',
+            OrderStateEnum::IN_WAREHOUSE                      => 'in our warehouse, in the queue waiting to be picked',
             OrderStateEnum::HANDLING                          => 'being picked in our warehouse',
             OrderStateEnum::HANDLING_BLOCKED                  => 'in our warehouse but on hold, waiting on something on our side: our team can say what',
             OrderStateEnum::PICKED                            => 'picked, waiting to be packed',
@@ -1131,22 +1142,55 @@ class GetShoppingAssistantTools
             ...$tracking->all(),
         ]));
 
+        $priority = $this->priorityFor($order);
+
         return [
-            'content'  => [
+            'content'  => array_filter([
                 'found'        => true,
                 'state'        => $state,
+                'priority'     => $priority,
+                'busy_season'  => in_array(now()->month, [11, 12], true) && in_array($order->state, self::ORDER_OPEN_STATES, true)
+                    ? 'It is our Christmas rush, our busiest weeks of the year. Be honest about it: we are working through every order as fast as we can.'
+                    : null,
+                'other_open_orders' => $reference === '' && $open->count() > 1
+                    ? ($open->count() - 1).' more of their orders are not dispatched yet; this is the oldest. Ask for the order number if they meant another.'
+                    : null,
                 'has_tracking' => $tracking->isNotEmpty(),
                 'line_shows'   => match ($order->state) {
                     OrderStateEnum::DISPATCHED => 'the order number, the date it was dispatched'.($tracking->isNotEmpty() ? ', the carrier with the tracking number and the tracking link' : ''),
                     OrderStateEnum::CANCELLED  => 'the order number and the date it was cancelled',
                     default                    => 'the order number and the date it was placed',
                 },
-                'note'         => 'A line with what line_shows says is added under your reply by the system. Tell the customer in one or two sentences where the order is, from state, and that the details are below; write no number, date or tracking yourself and never promise a delivery date. When it is dispatched without tracking, say there is no tracking number on it. When they need more than this (a late or lost parcel, a change, a cancellation, a payment, an invoice, a refund), or the order is on hold, also offer our team: answer_kind offer_person, offer_reason order_question.',
-            ],
+                'note'         => 'A line with what line_shows says is added under your reply by the system. Be warm and honest: tell the customer in two or three sentences where the order is, from state, and that the details are below; write no number, date or tracking yourself and never promise a delivery or dispatch date. When priority is given, say sorry for the wait and that, as a thank-you for their patience, we have just moved it to premium dispatch free of charge, so it goes to the front of the picking queue. When it is waiting for payment, say that is what holds it. When it is dispatched without tracking, say there is no tracking number on it. When they need more than this (a late or lost parcel, a change, a cancellation, a refund, a payment problem, an invoice), or the order is on hold, also offer our team: answer_kind offer_person, offer_reason order_question; a plain wait in the queue needs no person.',
+            ], fn ($value) => $value !== null),
             'products' => [],
             'error'    => null,
             'fact'     => $line,
         ];
+    }
+
+    /**
+     * A customer asking about an order still waiting to be picked a day after it was placed gets
+     * premium dispatch free, which puts it at the front of the picking queue: earns their heart.
+     *
+     * ponytail: a fixed day, no limit per customer; tighten if customers ask Merlin just to jump the queue.
+     */
+    private function priorityFor(Order $order): ?string
+    {
+        if ($order->is_premium_dispatch) {
+            return in_array($order->state, self::ORDER_OPEN_STATES, true) ? 'It already has premium dispatch, so it is at the front of the picking queue.' : null;
+        }
+
+        $waiting = $order->state === OrderStateEnum::IN_WAREHOUSE
+            || ($order->state === OrderStateEnum::SUBMITTED && in_array($order->pay_status, Order::PAY_SETTLED_STATUSES, true));
+
+        if (!$waiting || !$order->submitted_at || $order->submitted_at->gt(now()->subHours(self::PRIORITY_AFTER_HOURS))) {
+            return null;
+        }
+
+        UpdateOrderPremiumDispatch::make()->action($order, ['is_premium_dispatch' => true], charged: false);
+
+        return 'Given now: premium dispatch, free of charge, as an apology for the wait.';
     }
 
     /**

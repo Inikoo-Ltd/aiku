@@ -3559,6 +3559,41 @@ test('Merlin says where the customer\'s own order is, with the order number, dat
         ->and($request['messages'][0]['content'])->not->toContain('You cannot see the customer\'s orders');
 });
 
+test('Merlin finds the order a customer asks about without a number, says it waits for payment, and moves an order still waiting to be picked after a day to premium dispatch free', function () {
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $tools        = GetShoppingAssistantTools::make();
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'en']);
+
+    $newOrder = fn (array $data) => tap(\App\Actions\Ordering\Order\StoreOrder::make()->action($customer, ['reference' => 'CZ-'.Str::upper(Str::random(8)), 'date' => date('Y-m-d'), 'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()), 'billing_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition())]))->update($data);
+    $queued   = $newOrder(['state' => \App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID, 'submitted_at' => now()->subHours(28)]);
+    $unpaid   = $newOrder(['state' => \App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::UNPAID, 'submitted_at' => now()->subHours(30)]);
+    $recent   = $newOrder(['state' => \App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID, 'submitted_at' => now()->subHours(2)]);
+
+    $guessed = $tools->execute($conversation, 'order_status', []);
+    $waiting = $tools->execute($conversation, 'order_status', ['reference' => $unpaid->reference]);
+    $young   = $tools->execute($conversation, 'order_status', ['reference' => $recent->reference]);
+
+    expect($guessed['fact'])->toStartWith($unpaid->reference)
+        ->and($guessed['content']['other_open_orders'])->toStartWith('2 more')
+        ->and($waiting['content']['state'])->toContain('not paid yet')
+        ->and($waiting['content'])->not->toHaveKey('priority')
+        ->and($unpaid->refresh()->is_premium_dispatch)->toBeFalse();
+
+    $unpaid->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID, 'state' => \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED, 'dispatched_at' => now()]);
+    $guessed = $tools->execute($conversation, 'order_status', []);
+    $again   = $tools->execute($conversation, 'order_status', ['reference' => $queued->reference]);
+
+    expect($guessed['fact'])->toStartWith($queued->reference)
+        ->and($guessed['content']['state'])->toBe('in our warehouse, in the queue waiting to be picked')
+        ->and($guessed['content']['priority'])->toContain('Given now')
+        ->and($queued->refresh()->is_premium_dispatch)->toBeTrue()
+        ->and(\App\Models\Ordering\Transaction::where('order_id', $queued->id)->where('model_type', 'Charge')->count())->toBe(0)
+        ->and($again['content']['priority'])->toContain('already has premium dispatch')
+        ->and($young['content'])->not->toHaveKey('priority')
+        ->and($recent->refresh()->is_premium_dispatch)->toBeFalse();
+});
+
 test('a customer nobody answered after a hand-over to the live chat or a question to our team is told once when the team is back', function () {
     $customer     = shoppingAssistantCustomer($this->shop);
     $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH);
