@@ -41,7 +41,7 @@ trait WithStoreNoProductTransaction
         data_set($modelData, 'model_type', 'Charge');
         if ($charge) {
             data_set($modelData, 'model_id', $charge->id);
-            data_set($modelData, 'asset_id', $charge->id);
+            data_set($modelData, 'asset_id', $charge->asset_id);
             data_set($modelData, 'historic_asset_id', $charge->current_historic_asset_id);
         }
 
@@ -53,7 +53,7 @@ trait WithStoreNoProductTransaction
         data_set($modelData, 'model_type', 'ShippingZone');
         if ($shippingZone) {
             data_set($modelData, 'model_id', $shippingZone->id);
-            data_set($modelData, 'asset_id', $shippingZone->id);
+            data_set($modelData, 'asset_id', $shippingZone->asset_id);
             data_set($modelData, 'historic_asset_id', $shippingZone->current_historic_asset_id);
         }
 
