@@ -180,7 +180,7 @@ class ResearchShoppingAssistantTeamQuestion
     /**
      * Sends the answer only when the evidence carries it; else it is kept as a draft for the guru.
      *
-     * @return array{result: 'answered'|'drafted'|'already_answered'|'not_an_answer'|'not_a_question', confidence: ?float}
+     * @return array{result: 'answered'|'drafted'|'already_answered'|'not_an_answer'|'has_gap'|'not_a_question', confidence: ?float}
      */
     public static function answer(StaffTask $task, User $user, string $answer, string $evidence, bool $keepForEveryone): array
     {

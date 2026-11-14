@@ -648,3 +648,19 @@ test('the researcher only reaches open questions of shops whose chats the user w
     $this->user->update(['can_use_mcp_customer_service' => true]);
     expect(ResearchShoppingAssistantTeamQuestion::make()->mayResearch($this->user, $task->refresh()))->toBeFalse();
 });
+
+test('an answer still holding a [[gap]] from a researcher draft is refused from the pop-up and the done note, and nothing reaches the customer', function () {
+    $conversation = teamQuestionConversation($this);
+    $task         = StoreShoppingAssistantTeamQuestion::run($conversation, 'Do you send samples?', 'samples?')['task'];
+    $messages     = $conversation->messages()->count();
+
+    $this->postJson(route('grp.tasks.assistant_answer', $task->reference), ['answer' => 'Hello, thank you. [[Guru: state our samples policy.]]'])
+        ->assertStatus(422)
+        ->assertJsonPath('result', 'has_gap');
+
+    UpdateStaffTask::run($task->refresh(), $this->person, ['status' => StaffTaskStatusEnum::DONE->value, 'note' => 'Hello. [[Guru: fill in]]']);
+
+    expect(data_get($task->refresh()->data, 'answered_at'))->toBeNull()
+        ->and($conversation->messages()->count())->toBe($messages)
+        ->and($task->conversation->messages()->pluck('body')->implode("\n"))->toContain('double brackets');
+});

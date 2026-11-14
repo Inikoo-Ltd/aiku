@@ -53,13 +53,17 @@ class AnswerShoppingAssistantTeamQuestion
     public const float NOT_AN_ANSWER_CONFIDENCE = 0.8;
 
     /**
-     * @return 'answered'|'already_answered'|'not_a_question'|'not_an_answer'
+     * @return 'answered'|'already_answered'|'not_a_question'|'not_an_answer'|'has_gap'
      */
     public function handle(StaffTask $task, User $user, string $answer, bool $keepForEveryone = true): string
     {
         $answer = trim($answer);
         if (data_get($task->data, 'kind') !== StoreShoppingAssistantTeamQuestion::TASK_KIND || $answer === '') {
             return 'not_a_question';
+        }
+
+        if (str_contains($answer, '[[')) {
+            return 'has_gap';
         }
 
         $question = StoreShoppingAssistantTeamQuestion::questionText($task);
@@ -148,11 +152,21 @@ class AnswerShoppingAssistantTeamQuestion
     {
         $result = $this->handle($staffTask, $request->user(), $request->validated('answer'), (bool) $request->validated('keep_for_everyone', true));
 
-        if ($result === 'not_an_answer') {
-            return response()->json(['result' => $result, 'message' => self::notAnAnswerMessage()], 422);
+        if ($result === 'not_an_answer' || $result === 'has_gap') {
+            return response()->json(['result' => $result, 'message' => self::refusalMessage($result)], 422);
         }
 
         return response()->json(['result' => $result], $result === 'answered' ? 200 : 409);
+    }
+
+    /**
+     * A draft by the researcher can hold a [[note for the guru]]: sent as it is, the customer would read it.
+     */
+    public static function refusalMessage(string $result): string
+    {
+        return $result === 'has_gap'
+            ? __('Not sent: the answer still has a part in [[double brackets]], a note for you from the draft. Replace it with the answer, or remove it, before sending.')
+            : self::notAnAnswerMessage();
     }
 
     public static function notAnAnswerMessage(): string

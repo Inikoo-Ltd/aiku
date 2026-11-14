@@ -64,6 +64,7 @@ class MerlinQuestionWriteTool extends Tool
             'answered'         => 'Sent to the customer; the gurus will see it in their next morning round to confirm.',
             'drafted'          => 'Not sent: the check was not sure the evidence proves it. Kept as a draft for the guru.',
             'not_an_answer'    => 'Refused: it reads as a question or a note for us, not an answer for the customer.',
+            'has_gap'          => 'Refused: it holds a [[gap]]. An answer goes to the customer as written; leave a draft instead.',
             'already_answered' => 'Someone answered first. Nothing was sent.',
             default            => 'Nothing was sent.',
         }]);
