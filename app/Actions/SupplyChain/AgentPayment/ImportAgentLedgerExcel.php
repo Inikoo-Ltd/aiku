@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\AgentPayment;
 
+use App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderPaidFromAgentLedger;
 use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
@@ -195,6 +196,10 @@ class ImportAgentLedgerExcel
     private function apply(Agent $agent, Organisation $client, array $lines, Builder $imported): void
     {
         $containers = $imported->clone()->whereNotNull('stock_delivery_id')->distinct()->pluck('stock_delivery_id')->all();
+        $paidDatesBefore = SyncPurchaseOrderPaidFromAgentLedger::ledgerDatesFor(array_merge(
+            $imported->clone()->whereNull('deleted_at')->whereNotNull('purchase_order_id')->distinct()->pluck('purchase_order_id')->all(),
+            array_column($lines, 'purchase_order_id')
+        ));
 
         DB::transaction(function () use ($agent, $client, $lines, $imported) {
             $imported->clone()->whereNull('deleted_at')->update(['deleted_at' => now(), 'data->replaced_at' => now()->toDateTimeString()]);
@@ -225,6 +230,8 @@ class ImportAgentLedgerExcel
         StockDelivery::whereIn('id', array_filter(array_unique(array_merge($containers, array_column($lines, 'stock_delivery_id')))))
             ->get()
             ->each(fn (StockDelivery $stockDelivery) => SyncAgentInvoiceChargesFromLedger::run($stockDelivery));
+
+        SyncPurchaseOrderPaidFromAgentLedger::runForOrders($paidDatesBefore);
     }
 
     /**

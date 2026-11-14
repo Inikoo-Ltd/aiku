@@ -18,6 +18,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum as Stage;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\AgentGoodsReceipt;
 use App\Models\Procurement\AgentGoodsReceiptItem;
@@ -359,6 +360,7 @@ class GetPurchaseOrderStages
             'deliveries'  => $stages[$stage->value]['deliveries'],
             'note'        => match (true) {
                 $stage === Stage::SUBMITTED && (bool) $purchaseOrder->agent_reference => __('Agent\'s number: :number', ['number' => $purchaseOrder->agent_reference]),
+                $stage === Stage::DEPOSIT_PAID && ($paidByAgent = $this->paidByAgentNote($purchaseOrder)) !== null => $paidByAgent,
                 $stage === Stage::READY && $purchaseOrder->qc_passed_at === null && $this->allOnContainersAt($purchaseOrder) !== null => __('Every item is in a container, QC not recorded'),
                 $stage === Stage::HANDED_OVER && RecordPurchaseOrderHandedOverWhenReady::wasRecordedAutomatically($purchaseOrder) => __('Recorded when every Ready to Roll check was done'),
                 $stage === Stage::HANDED_OVER && $purchaseOrder->handed_over_at === null && $stages[$stage->value]['recorded'] => match (true) {
@@ -419,6 +421,34 @@ class GetPurchaseOrderStages
                     'blocked'     => $this->blockedReason($purchaseOrder, $stage, $stages),
                 ])->values()->all(),
         ])->all();
+    }
+
+    /**
+     * On an agent order the agent pays the supplier from its ledger: what it paid against the goods value.
+     */
+    private function paidByAgentNote(PurchaseOrder $purchaseOrder): ?string
+    {
+        if (!$purchaseOrder->isAgentOrder()) {
+            return null;
+        }
+
+        $paid = round((float) DB::table('agent_payments')
+            ->where('purchase_order_id', $purchaseOrder->id)
+            ->whereIn('type', AgentPaymentTypeEnum::supplierPaymentValues())
+            ->whereNull('deleted_at')
+            ->whereNotNull('date')
+            ->sum('amount'), 2);
+
+        if ($paid <= 0) {
+            return null;
+        }
+
+        $goods       = round((float) $purchaseOrder->cost_items, 2);
+        $replacement = ['paid' => number_format($paid, 2), 'goods' => number_format($goods, 2), 'currency' => $purchaseOrder->currency->code];
+
+        return $goods > 0 && $paid >= $goods
+            ? __('Paid by the agent: :currency :paid of :goods, paid in full', $replacement)
+            : __('Paid by the agent: :currency :paid of :goods, part paid', $replacement);
     }
 
     /**
