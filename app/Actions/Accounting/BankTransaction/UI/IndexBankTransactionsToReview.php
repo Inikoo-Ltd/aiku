@@ -51,13 +51,6 @@ class IndexBankTransactionsToReview extends OrgAction
 
     public function handle(Organisation $organisation, string $scope = 'review', string $period = '90d', $prefix = null, ?string $currency = null, ?string $from = null, ?string $to = null): LengthAwarePaginator
     {
-        $since = match (true) {
-            $from !== null  => Carbon::parse($from)->startOfDay(),
-            $period === 'all' => null,
-            $period === '1y'  => now()->subYear(),
-            default         => now()->subDays(90),
-        };
-
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereWith('bank_transactions.reference', $value)
@@ -75,22 +68,9 @@ class IndexBankTransactionsToReview extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        return QueryBuilder::for(BankTransaction::class)
-            ->where('bank_transactions.organisation_id', $organisation->id)
-            ->where('bank_transactions.direction', BankTransactionDirectionEnum::IN)
-            ->where('bank_transactions.status', BankTransactionStatusEnum::BOOKED)
-            ->whereNull('bank_transactions.payment_id')
-            ->when($since, fn ($query) => $query->where('bank_transactions.booked_at', '>=', $since))
-            ->when($to, fn ($query) => $query->where('bank_transactions.booked_at', '<=', Carbon::parse($to)->endOfDay()))
-            ->when($currency, fn ($query) => $query->where('currencies.code', $currency))
-            ->whereIn('bank_transactions.match_state', match ($scope) {
-                'unmatched' => [BankTransactionMatchStateEnum::UNMATCHED],
-                'dismissed' => [BankTransactionMatchStateEnum::DISMISSED],
-                'payouts'   => [BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT],
-                default     => [BankTransactionMatchStateEnum::REVIEW, BankTransactionMatchStateEnum::MATCHED],
-            })
+        return $this->linesReceived(QueryBuilder::for(BankTransaction::class), $organisation, $period, $currency, $from, $to)
+            ->whereIn('bank_transactions.match_state', self::scopeStates($scope))
             ->join('bank_connections', 'bank_connections.id', 'bank_transactions.bank_connection_id')
-            ->join('currencies', 'currencies.id', 'bank_transactions.currency_id')
             ->leftJoin('orders', 'orders.id', 'bank_transactions.order_id')
             ->leftJoin('shops', 'shops.id', 'orders.shop_id')
             ->select([
@@ -124,6 +104,61 @@ class IndexBankTransactionsToReview extends OrgAction
         $this->to       = $this->from ? $this->validDate($request->query('to')) : null;
 
         return $this->handle($organisation, $this->scope, $this->period, currency: $this->currency, from: $this->from, to: $this->to);
+    }
+
+    /**
+     * @return array<int, BankTransactionMatchStateEnum>
+     */
+    public static function scopeStates(string $scope): array
+    {
+        return match ($scope) {
+            'unmatched' => [BankTransactionMatchStateEnum::UNMATCHED],
+            'dismissed' => [BankTransactionMatchStateEnum::DISMISSED],
+            'payouts'   => [BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT],
+            default     => [BankTransactionMatchStateEnum::REVIEW, BankTransactionMatchStateEnum::MATCHED],
+        };
+    }
+
+    /**
+     * @template TQuery of \Illuminate\Database\Eloquent\Builder|QueryBuilder
+     * @param  TQuery  $query
+     * @return TQuery
+     */
+    private function linesReceived($query, Organisation $organisation, string $period, ?string $currency, ?string $from, ?string $to)
+    {
+        $since = match (true) {
+            $from !== null    => Carbon::parse($from)->startOfDay(),
+            $period === 'all' => null,
+            $period === '1y'  => now()->subYear(),
+            default           => now()->subDays(90),
+        };
+
+        return $query
+            ->where('bank_transactions.organisation_id', $organisation->id)
+            ->where('bank_transactions.direction', BankTransactionDirectionEnum::IN)
+            ->where('bank_transactions.status', BankTransactionStatusEnum::BOOKED)
+            ->whereNull('bank_transactions.payment_id')
+            ->when($since, fn ($query) => $query->where('bank_transactions.booked_at', '>=', $since))
+            ->when($to, fn ($query) => $query->where('bank_transactions.booked_at', '<=', Carbon::parse($to)->endOfDay()))
+            ->join('currencies', 'currencies.id', 'bank_transactions.currency_id')
+            ->when($currency, fn ($query) => $query->where('currencies.code', $currency));
+    }
+
+    /**
+     * How many lines each tab holds under the period, currency and dates chosen.
+     *
+     * @return array<string, int>
+     */
+    public function scopeCounts(Organisation $organisation, string $period, ?string $currency, ?string $from, ?string $to): array
+    {
+        $byState = $this->linesReceived(BankTransaction::query(), $organisation, $period, $currency, $from, $to)
+            ->selectRaw('bank_transactions.match_state, count(*) as lines')
+            ->groupBy('bank_transactions.match_state')
+            ->pluck('lines', 'match_state');
+
+        return collect(self::SCOPES)->mapWithKeys(fn (string $scope) => [
+            $scope => collect(self::scopeStates($scope))->sum(fn (BankTransactionMatchStateEnum $state) => (int) $byState->get($state->value, 0)),
+        ])->all();
     }
 
     /**
@@ -174,6 +209,7 @@ class IndexBankTransactionsToReview extends OrgAction
                 'canEdit'        => $request->user()->authTo("accounting.{$this->organisation->id}.edit"),
                 'organisationId' => $this->organisation->id,
                 'scope'          => $this->scope,
+                'scopeCounts'    => $this->scopeCounts($this->organisation, $this->period, $this->currency, $this->from, $this->to),
                 'period'         => $this->from ? null : $this->period,
                 'currency'       => $this->currency,
                 'currencies'     => $this->currencies($this->organisation),

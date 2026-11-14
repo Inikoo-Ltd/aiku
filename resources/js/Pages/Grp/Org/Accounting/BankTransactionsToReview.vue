@@ -70,6 +70,7 @@ const props = defineProps<{
 	canEdit: boolean
 	organisationId: number
 	scope: "review" | "unmatched" | "dismissed" | "payouts"
+	scopeCounts: Record<"review" | "unmatched" | "dismissed" | "payouts", number>
 	period: "90d" | "1y" | "all" | null
 	currency: string | null
 	currencies: string[]
@@ -87,12 +88,12 @@ const orderRoute = (line: BankLine) =>
 		? route("grp.org.shops.show.ordering.orders.show", [route().params["organisation"], line.shop_slug, line.order_slug])
 		: null
 
-const scopeOptions = [
-	{ label: ctrans("To review"), value: "review" },
-	{ label: ctrans("No order number"), value: "unmatched" },
-	{ label: ctrans("Not for an order"), value: "dismissed" },
-	{ label: ctrans("Card payouts"), value: "payouts" },
-]
+const scopeOptions = computed(() => [
+	{ label: ctrans("To review"), value: "review", count: props.scopeCounts.review },
+	{ label: ctrans("No order number"), value: "unmatched", count: props.scopeCounts.unmatched },
+	{ label: ctrans("Not for an order"), value: "dismissed", count: props.scopeCounts.dismissed },
+	{ label: ctrans("Card payouts"), value: "payouts", count: props.scopeCounts.payouts },
+])
 const periodOptions = [
 	{ label: ctrans("Last 90 days"), value: "90d" },
 	{ label: ctrans("Last year"), value: "1y" },
@@ -144,7 +145,7 @@ const ALREADY_PAID_NOTE = "Already recorded on the order by hand"
 const rowError = ref<{ id: number; message: string } | null>(null)
 const markAlreadyPaid = (line: BankLine) => {
 	rowError.value = null
-	router.post(route("grp.models.org.bank_transaction.dismiss", [props.organisationId, line.id]), { note: ALREADY_PAID_NOTE }, {
+	router.post(route("grp.models.org.bank_transaction.dismiss", [props.organisationId, line.id]), { note: ALREADY_PAID_NOTE, already_paid: true }, {
 		preserveScroll: true,
 		onError: (errors: Record<string, string>) => (rowError.value = { id: line.id, message: Object.values(errors ?? {})[0] ?? ctrans("Something went wrong") }),
 	})

@@ -729,6 +729,21 @@ test('staff record a bank payment from the review queue on the order they name, 
     expect($payout->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
     $payout->update(['match_state' => BankTransactionMatchStateEnum::DISMISSED]);
 
+    $cancelledUnpaid = bankMatchingOrder(createCustomer($this->shop), 25);
+    $cancelledUnpaid->updateQuietly(['state' => OrderStateEnum::CANCELLED]);
+    $forCancelled = $line('q12', 25);
+    $forCancelled->update(['order_id' => $cancelledUnpaid->id]);
+    post(route('grp.models.org.bank_transaction.dismiss', [$this->organisation->id, $forCancelled->id]), ['note' => 'Already recorded on the order by hand', 'already_paid' => true])
+        ->assertSessionHasErrors('note');
+    expect($forCancelled->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW);
+
+    $forPartOrder = $line('q13', 100);
+    $forPartOrder->update(['order_id' => $partOrder->id]);
+    post(route('grp.models.org.bank_transaction.dismiss', [$this->organisation->id, $forPartOrder->id]), ['note' => 'Already recorded on the order by hand', 'already_paid' => true])
+        ->assertSessionHasNoErrors();
+    expect($forPartOrder->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($forPartOrder->match_data['dismissed_note'])->toBe('Already recorded on the order by hand');
+
     $owing = bankMatchingOrder(createCustomer($this->shop), 70);
     $owing->customer->updateQuietly(['name' => 'Natursens Quokka d.o.o.']);
     $settledOrder = bankMatchingOrder($owing->customer, 40);
@@ -767,6 +782,8 @@ test('staff record a bank payment from the review queue on the order they name, 
             ->component('Org/Accounting/BankTransactionsToReview')
             ->where('canEdit', true)
             ->where('period', '90d')
+            ->where('scopeCounts.review', fn ($count) => $count >= 1)
+            ->where('scopeCounts', fn ($counts) => collect($counts)->keys()->all() === ['review', 'unmatched', 'dismissed', 'payouts'])
             ->where('queryBuilderProps.default.columns', fn ($columns) => collect($columns)->pluck('key')->contains('actions') && !collect($columns)->pluck('key')->contains('reason'))
             ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($toReview->id)
                 && !collect($rows)->pluck('id')->contains($old->id)
@@ -1094,8 +1111,8 @@ test('checkout payouts pay no order, and their report says which payments they s
     $named    = $line('co3', 'CHECKOUT SAS', $order->reference.'XYZ1', 100);
     $notOurs  = $line('co4', 'Checkout Sasha Ltd', $order->reference, 100);
     $oldLabel = $line('co5', 'CHECKOUT SAS 20 BIS RUE LA FAYETTE PARIS 75009 FR', '00000003ABC 1', 20, [
-        'match_state' => BankTransactionMatchStateEnum::UNMATCHED,
-        'match_data'  => ['reason' => 'no order number in the reference'],
+        'match_state' => BankTransactionMatchStateEnum::DISMISSED,
+        'match_data'  => ['reason' => 'no order number in the reference', 'dismissed_note' => 'checkout payment grouped'],
     ]);
 
     MatchBankTransactions::run($bankConnection);
@@ -1106,7 +1123,7 @@ test('checkout payouts pay no order, and their report says which payments they s
         ->and($spaced->refresh()->match_data['payout_id'])->toBe('00000003YLNX')
         ->and($named->refresh()->match_state)->not->toBe(BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
         ->and($notOurs->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
-        ->and($oldLabel->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
+        ->and($oldLabel->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::DISMISSED);
 
     expect(fn () => PayMatchedBankTransactions::make()->payToOrder($oldLabel, $order, false, 'test'))
         ->toThrow(ValidationException::class, 'This is a card processor payout of payments already on their orders');
@@ -1147,7 +1164,7 @@ test('checkout payouts pay no order, and their report says which payments they s
 
     $dryRun = $reconciler->handle(false, true);
     expect($dryRun['payout lines labelled'] ?? 0)->toBeGreaterThanOrEqual(1)
-        ->and($oldLabel->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($oldLabel->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::DISMISSED)
         ->and($daily->refresh()->match_data)->not->toHaveKey('reconciled_at');
 
     $reconciler->handle(true, true);
@@ -1174,6 +1191,7 @@ test('checkout payouts pay no order, and their report says which payments they s
     get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, 'scope' => 'payouts']))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('scope', 'payouts')
+            ->where('scopeCounts.payouts', fn ($count) => $count >= 1)
             ->where('data.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['id'] === $daily->id
                 && $row['payout']['reconciled']
                 && $row['payout']['payments'] === 2

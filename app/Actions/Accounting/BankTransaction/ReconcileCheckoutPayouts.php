@@ -125,7 +125,7 @@ class ReconcileCheckoutPayouts
             ->where('status', BankTransactionStatusEnum::BOOKED)
             ->whereIn('provider_type', MatchBankTransactions::CUSTOMER_TRANSFER_TYPES)
             ->whereNull('payment_id')
-            ->where(fn ($query) => $query->whereNull('match_state')->orWhereIn('match_state', [BankTransactionMatchStateEnum::UNMATCHED, BankTransactionMatchStateEnum::REVIEW]))
+            ->where(fn ($query) => $query->whereNull('match_state')->orWhereIn('match_state', [BankTransactionMatchStateEnum::UNMATCHED, BankTransactionMatchStateEnum::REVIEW, BankTransactionMatchStateEnum::DISMISSED]))
             ->where('counterparty_name', 'ilike', 'checkout sas%')
             ->chunkById(500, function ($bankTransactions) use ($matcher, $commit, &$counts) {
                 foreach ($bankTransactions as $bankTransaction) {
