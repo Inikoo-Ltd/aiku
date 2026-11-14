@@ -203,6 +203,7 @@ class CalculateOrderShipping
             $order,
             $shippingZone->historicAsset,
             [
+                'model_id'         => $shippingZone->id,
                 'quantity_ordered' => 1,
                 'gross_amount'     => $shippingAmount,
                 'net_amount'       => $shippingAmount,

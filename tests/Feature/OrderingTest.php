@@ -3121,6 +3121,51 @@ test('a step priced TBC leaves the shipping to be confirmed instead of free', fu
         ->and((float)$shippingTransaction->net_amount)->toBe(0.0);
 })->depends('shipping zone with territories wins over a catch all zone placed above it');
 
+test('a new shipping line points to the zone that priced it, even when that zone shares another zone asset', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, [
+        'name' => 'shared asset schema',
+    ]);
+
+    $ukZone = StoreShippingZone::make()->action($shippingZoneSchema, [
+        'code'        => 'ZONE-UK',
+        'name'        => 'United Kingdom',
+        'status'      => true,
+        'price'       => ['type' => 'Step Order Items Net Amount', 'steps' => [['from' => 0, 'to' => 'INF', 'price' => 20]]],
+        'territories' => [['country_code' => 'GB']],
+        'position'    => 1,
+        'is_failover' => false,
+    ]);
+
+    $greeceZone = StoreShippingZone::make()->action($shippingZoneSchema, [
+        'code'        => 'ZONE-GR',
+        'name'        => 'Greece',
+        'status'      => true,
+        'price'       => ['type' => 'Step Order Items Net Amount', 'steps' => [['from' => 0, 'to' => 'INF', 'price' => 6.1]]],
+        'territories' => [['country_code' => 'GR']],
+        'position'    => 2,
+        'is_failover' => false,
+    ]);
+    $greeceZone->updateQuietly(['asset_id' => $ukZone->asset_id, 'current_historic_asset_id' => $ukZone->current_historic_asset_id]);
+
+    $this->shop->update(['shipping_zone_schema_id' => $shippingZoneSchema->id]);
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->deliveryAddress->update(['country_code' => 'GR', 'postal_code' => '54454']);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+
+    $order = CalculateOrderShipping::make()->handle($order->refresh());
+
+    $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();
+
+    expect($order->shipping_zone_id)->toBe($greeceZone->id)
+        ->and($shippingTransaction->model_id)->toBe($greeceZone->id)
+        ->and((float)$shippingTransaction->net_amount)->toBe(6.1);
+});
+
 test('repricing a basket picks up a shipping price that changed since it was created', function () {
     $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, [
         'name' => 'stale basket schema',

@@ -63,7 +63,7 @@ class StoreTransaction extends OrgAction
 
         data_set($modelData, 'tax_category_id', $order->tax_category_id, overwrite: false);
         data_set($modelData, 'model_type', $historicAsset->asset->model_type);
-        data_set($modelData, 'model_id', $historicAsset->asset->model_id);
+        data_set($modelData, 'model_id', $historicAsset->asset->model_id, overwrite: false);
 
 
         if (Arr::get($modelData, 'model_type') == 'Product') {
