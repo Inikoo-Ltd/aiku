@@ -218,3 +218,17 @@ test('a private Allegro seller refused a company-only delivery method gets our p
     expect($result)->toBe(['id' => 'rates-1'])
         ->and($triedMethods)->toBe(['dpd-company-only', 'poczta-polska']);
 });
+
+test('an upload links only to the Allegro catalogue product that carries our barcode, not the first search result', function () {
+    $storeProductToAllegro = new StoreProductToAllegro();
+
+    $otherProduct = ['id' => 'other', 'parameters' => [['id' => '225693', 'name' => 'EAN (GTIN)', 'values' => ['5901234123457']]]];
+    $ourProduct   = ['id' => 'ours', 'parameters' => [['id' => '225693', 'name' => 'EAN (GTIN)', 'values' => ['05056368347337']]]];
+    $flaggedGtin  = ['id' => 'flagged', 'parameters' => [['id' => '1', 'name' => 'Kód', 'values' => ['5056368347337'], 'options' => ['isGTIN' => true]]]];
+
+    expect($storeProductToAllegro->catalogueProductWithBarcode([$otherProduct, $ourProduct], '5056368347337')['id'])->toBe('ours')
+        ->and($storeProductToAllegro->catalogueProductWithBarcode([$otherProduct], '5056368347337'))->toBeNull()
+        ->and($storeProductToAllegro->catalogueProductWithBarcode([['id' => 'no-parameters']], '5056368347337'))->toBeNull()
+        ->and($storeProductToAllegro->catalogueProductHasBarcode($flaggedGtin, '5056368347337'))->toBeTrue()
+        ->and($storeProductToAllegro->catalogueProductHasBarcode(['parameters' => [['name' => 'Model', 'values' => ['5056368347337']]]], '5056368347337'))->toBeFalse();
+});

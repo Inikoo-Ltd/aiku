@@ -70,7 +70,7 @@ trait WithAllegroApiServices
                 if ($errorCode === 'ProductDuplicate') {
                     $existingId = Arr::get($firstError, 'metadata.existingProductId');
                     if ($existingId) {
-                        return ['id' => $existingId];
+                        return ['id' => $existingId, 'existing_product' => true];
                     }
                 }
 

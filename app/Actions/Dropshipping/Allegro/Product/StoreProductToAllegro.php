@@ -72,13 +72,16 @@ class StoreProductToAllegro extends RetinaAction
 
             $offerLanguage = $this->getAllegroOfferLanguage($marketplaceId);
 
-            $productSearch = [];
+            $catalogueProduct = null;
             if ($product->barcode) {
-                $productSearch = $allegroUser->getProductByEan($product->barcode);
+                $catalogueProduct = $this->catalogueProductWithBarcode(
+                    Arr::get($allegroUser->getProductByEan($product->barcode), 'products', []),
+                    $product->barcode
+                );
             }
 
-            if ($foundedProduct = Arr::get($productSearch, 'products.0.category.id')) {
-                $categoryId = $foundedProduct;
+            if ($catalogueCategoryId = Arr::get($catalogueProduct, 'category.id')) {
+                $categoryId = $catalogueCategoryId;
             } else {
                 $parent = $product->subDepartment?->name;
                 if (!$parent) {
@@ -95,33 +98,40 @@ class StoreProductToAllegro extends RetinaAction
 
             $getParameters = $allegroUser->getCategoryParameters($categoryId);
 
-            try {
-                $proposedProduct = ProposeAllegroProduct::run($allegroUser, $portfolio, [
-                    'category_id' => $categoryId,
-                    'parameters' => $getParameters,
-                    'language' => $offerLanguage
-                ]);
+            $proposedProduct = ProposeAllegroProduct::run($allegroUser, $portfolio, [
+                'category_id' => $categoryId,
+                'parameters' => $getParameters,
+                'language' => $offerLanguage
+            ]);
 
-                $allegroProductId = Arr::get($proposedProduct, 'id');
+            $allegroProductId = Arr::get($proposedProduct, 'id');
+            $linkedToExistingProduct = false;
 
-                if (!$allegroProductId && Str::contains((string)Arr::get($proposedProduct, 'message'), 'Product already exists')) {
-                    if (!$product->barcode) {
-                        throw new \Exception('Allegro reports this product already exists, but there is no barcode to find it with.');
-                    }
-
-                    $proposedProduct = $allegroUser->searchProducts([
-                        'phrase' => $product->barcode,
-                        'mode' => 'GTIN'
-                    ]);
-
-                    $allegroProductId = Arr::get($proposedProduct, 'products.0.id');
+            if (!$allegroProductId && Str::contains((string)Arr::get($proposedProduct, 'message'), 'Product already exists')) {
+                if (!$catalogueProduct) {
+                    throw new \Exception($product->barcode
+                        ? "Allegro reports this product already exists, but no product in its catalogue has barcode $product->barcode, so it was not listed under another product."
+                        : 'Allegro reports this product already exists, but there is no barcode to find it with.');
                 }
 
-                if (!$allegroProductId) {
-                    throw new \Exception(Arr::get($proposedProduct, 'message', 'Failed to propose product to Allegro: no product ID returned.'));
+                $proposedProduct = $catalogueProduct;
+                $allegroProductId = Arr::get($catalogueProduct, 'id');
+                $linkedToExistingProduct = true;
+            } elseif (Arr::get($proposedProduct, 'existing_product')) {
+                $proposedProduct = $allegroUser->getProduct($allegroProductId);
+                $linkedToExistingProduct = true;
+
+                if ($getProductError = Arr::get($proposedProduct, 'message')) {
+                    throw new \Exception($getProductError);
                 }
-            } catch (\Exception $e) {
-                throw new \Exception($e->getMessage());
+
+                if ($product->barcode && !$this->catalogueProductHasBarcode($proposedProduct, $product->barcode)) {
+                    throw new \Exception("Allegro matched this product to its catalogue product $allegroProductId (".Arr::get($proposedProduct, 'name')."), which does not have barcode $product->barcode, so it was not listed under it.");
+                }
+            }
+
+            if (!$allegroProductId) {
+                throw new \Exception(Arr::get($proposedProduct, 'message', 'Failed to propose product to Allegro: no product ID returned.'));
             }
 
             $offerCategoryId = $this->resolveOfferCategoryId(
@@ -259,7 +269,17 @@ class StoreProductToAllegro extends RetinaAction
 
             if ($portfolio->platform_status) {
                 UpdatePlatformPortfolioLog::run($logs, [
-                    'status' => PlatformPortfolioLogsStatusEnum::OK
+                    'status' => PlatformPortfolioLogsStatusEnum::OK,
+                    'response' => json_encode([
+                        'offer_id' => $allegroOfferId,
+                        'catalogue_product' => [
+                            'id' => $allegroProductId,
+                            'existing' => $linkedToExistingProduct,
+                            'name' => Arr::get($proposedProduct, 'name'),
+                            'gtins' => $this->catalogueProductGtins($proposedProduct),
+                            'image' => Arr::get($proposedProduct, 'images.0.url'),
+                        ],
+                    ])
                 ]);
             } else {
                 UpdatePortfolio::run($portfolio, [
@@ -285,6 +305,37 @@ class StoreProductToAllegro extends RetinaAction
 
             return $portfolio;
         }
+    }
+
+    public function catalogueProductWithBarcode(array $catalogueProducts, string $barcode): ?array
+    {
+        foreach ($catalogueProducts as $catalogueProduct) {
+            if ($this->catalogueProductHasBarcode($catalogueProduct, $barcode)) {
+                return $catalogueProduct;
+            }
+        }
+
+        return null;
+    }
+
+    public function catalogueProductHasBarcode(array $catalogueProduct, string $barcode): bool
+    {
+        return in_array($this->normalizeGtin($barcode), array_map($this->normalizeGtin(...), $this->catalogueProductGtins($catalogueProduct)), true);
+    }
+
+    private function catalogueProductGtins(array $catalogueProduct): array
+    {
+        return collect(Arr::get($catalogueProduct, 'parameters', []))
+            ->filter(fn ($parameter) => Arr::get($parameter, 'options.isGTIN') || preg_match('/\b(ean|gtin)\b/i', (string) Arr::get($parameter, 'name')))
+            ->flatMap(fn ($parameter) => Arr::get($parameter, 'values', []))
+            ->map(fn ($value) => (string) $value)
+            ->values()
+            ->all();
+    }
+
+    private function normalizeGtin(string $gtin): string
+    {
+        return ltrim(preg_replace('/\D/', '', $gtin), '0');
     }
 
     private function resolveOfferCategoryId(
