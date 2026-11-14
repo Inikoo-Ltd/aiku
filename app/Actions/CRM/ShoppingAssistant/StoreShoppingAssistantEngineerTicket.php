@@ -35,12 +35,20 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * the customer's sales channels with their counters and the conversation link. One open MER ticket
  * per customer: a new report while one is open becomes a comment on it. The customer sees it under
  * Tickets in their account when it has a web user.
+ *
+ * A question Merlin was about to pass to the gurus goes here instead when it reports something of
+ * ours not working for this customer (an upload, a sync, stock, orders, photos, the connection) and
+ * an independent check is at least FAULT_CONFIDENCE sure of it (fromQuestion()): a guru cannot
+ * explain an integration fault, only engineers can (Raul, 14 Nov 2026, the Allegro photo of INI-260).
+ * There the customer has not been offered a fix yet, so tried_fix is not asked for.
  */
 class StoreShoppingAssistantEngineerTicket
 {
     use AsAction;
 
     public const float MER_CONFIDENCE = 0.8;
+
+    public const float FAULT_CONFIDENCE = 0.8;
 
     /**
      * @return array{status: 'created'|'already_reported'|'not_for_engineers', ticket: ?Ticket, confidence: ?float}
@@ -51,17 +59,7 @@ class StoreShoppingAssistantEngineerTicket
         $webUser  = $conversation->web_user_id ? WebUser::find($conversation->web_user_id) : null;
         $words    = (string) $conversation->messages()->where('role', 'customer')->latest('id')->value('body');
 
-        $open = Ticket::where('type', TicketTypeEnum::MERLIN)
-            ->where('customer_id', $customer->id)
-            ->whereNotIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::CANCELLED])
-            ->latest('id')
-            ->first();
-
-        if ($open) {
-            if ($webUser) {
-                StoreTicketComment::make()->handle($open, $webUser, ['body' => trim("Merlin: $details\n\n$words")]);
-            }
-
+        if ($open = $this->addToOpen($conversation, $details, $words, $webUser)) {
             return ['status' => 'already_reported', 'ticket' => $open, 'confidence' => null];
         }
 
@@ -73,12 +71,94 @@ class StoreShoppingAssistantEngineerTicket
             return ['status' => 'not_for_engineers', 'ticket' => null, 'confidence' => $confidence];
         }
 
-        $ticket = StoreTicket::make()->action($conversation->group, array_filter([
+        $ticket = $this->store($conversation, $summary, $this->description($conversation, $details, $words, $channels, $whyOnlyUs), $kind, $webUser, ['why_only_us' => $whyOnlyUs, 'confidence' => $confidence]);
+
+        return ['status' => 'created', 'ticket' => $ticket, 'confidence' => $confidence];
+    }
+
+    /**
+     * A question for the team that is really a fault report: a MER ticket instead of a guru task.
+     *
+     * @return array{status: 'created'|'already_reported'|'not_a_fault', ticket: ?Ticket, confidence: ?float}
+     */
+    public function fromQuestion(ShoppingAssistantConversation $conversation, string $questionInEnglish, string $customerWords): array
+    {
+        $customer       = $conversation->customer;
+        $isDropshipping = $customer->shop->type === ShopTypeEnum::DROPSHIPPING;
+        $channels       = $isDropshipping ? $this->channels($conversation) : null;
+        $confidence     = $this->confidenceFault($questionInEnglish, $customerWords, $channels);
+
+        if ($confidence === null || $confidence < self::FAULT_CONFIDENCE) {
+            return ['status' => 'not_a_fault', 'ticket' => null, 'confidence' => $confidence];
+        }
+
+        $webUser = $conversation->web_user_id ? WebUser::find($conversation->web_user_id) : null;
+        if ($open = $this->addToOpen($conversation, $questionInEnglish, $customerWords, $webUser)) {
+            return ['status' => 'already_reported', 'ticket' => $open, 'confidence' => $confidence];
+        }
+
+        $parts = [
+            'Raised by Merlin: the customer reported something of ours not working, and an independent check read it as a fault for engineers rather than a question for our team. No fix has been offered to the customer yet.',
+            "What the customer reports:\n$questionInEnglish",
+            "The customer's words:\n> ".str_replace("\n", "\n> ", trim($customerWords)),
+        ];
+        if ($channels !== null) {
+            $parts[] = "Sales channels:\n".($channels ?: 'none');
+        }
+        $parts[] = 'Conversation: '.route('grp.org.shops.show.ai_salesman.conversations.show', [$customer->organisation->slug, $customer->shop->slug, $conversation->ulid]);
+
+        $ticket = $this->store($conversation, $questionInEnglish, implode("\n\n", $parts), TicketKindEnum::BUG, $webUser, ['from_question' => true, 'confidence' => $confidence]);
+
+        return ['status' => 'created', 'ticket' => $ticket, 'confidence' => $confidence];
+    }
+
+    /**
+     * What the customer is told, with the reference. "Follow it under Tickets" only where customers see
+     * their tickets: that section is local only until customer support launches (same guard as
+     * GetRetinaDropshippingNavigation and NotifyTicketUsers::notifyCustomer; drop it with them).
+     */
+    public static function customerSentence(ShoppingAssistantConversation $conversation, Ticket $ticket, bool $alreadyReported): string
+    {
+        $locale    = $conversation->language_code;
+        $canFollow = $conversation->web_user_id
+            && $conversation->customer?->shop->type === ShopTypeEnum::DROPSHIPPING
+            && app()->environment(['local', 'testing']);
+
+        return match (true) {
+            $alreadyReported => __('I have added this to :reference, which our engineers are already looking into.', ['reference' => $ticket->reference], $locale),
+            $canFollow       => __('I have passed this to our engineers as :reference. You can follow it under Tickets in your account.', ['reference' => $ticket->reference], $locale),
+            default          => __('I have passed this to our engineers as :reference.', ['reference' => $ticket->reference], $locale),
+        };
+    }
+
+    private function addToOpen(ShoppingAssistantConversation $conversation, string $details, string $words, ?WebUser $webUser): ?Ticket
+    {
+        $open = Ticket::where('type', TicketTypeEnum::MERLIN)
+            ->where('customer_id', $conversation->customer_id)
+            ->whereNotIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::CANCELLED])
+            ->latest('id')
+            ->first();
+
+        if ($open && $webUser) {
+            StoreTicketComment::make()->handle($open, $webUser, ['body' => trim("Merlin: $details\n\n$words")]);
+        }
+
+        return $open;
+    }
+
+    /**
+     * @param  array<string, mixed>  $triage
+     */
+    private function store(ShoppingAssistantConversation $conversation, string $summary, string $description, TicketKindEnum $kind, ?WebUser $webUser, array $triage): Ticket
+    {
+        $customer = $conversation->customer;
+
+        return StoreTicket::make()->action($conversation->group, array_filter([
             'type'            => TicketTypeEnum::MERLIN->value,
             'subject'         => mb_substr($summary, 0, 255),
-            'description'     => $this->description($conversation, $details, $words, $channels, $whyOnlyUs),
+            'description'     => $description,
             'kind'            => $kind->value,
-            'module'          => $isDropshipping ? TicketModuleEnum::DROPSHIPPING->value : null,
+            'module'          => $customer->shop->type === ShopTypeEnum::DROPSHIPPING ? TicketModuleEnum::DROPSHIPPING->value : null,
             'organisation_id' => $conversation->organisation_id,
             'shop_id'         => $conversation->shop_id,
             'customer_id'     => $customer->id,
@@ -88,10 +168,8 @@ class StoreShoppingAssistantEngineerTicket
             'source_id'       => $conversation->id,
             'source_channel'  => TicketSourceChannelEnum::WEBSITE->value,
             'tags'            => ['merlin'],
-            'data'            => ['merlin_triage' => ['why_only_us' => $whyOnlyUs, 'confidence' => $confidence]],
+            'data'            => ['merlin_triage' => $triage],
         ], fn ($value) => $value !== null));
-
-        return ['status' => 'created', 'ticket' => $ticket, 'confidence' => $confidence];
     }
 
     private function description(ShoppingAssistantConversation $conversation, string $details, string $words, ?string $channels, string $whyOnlyUs): string
@@ -124,6 +202,21 @@ class StoreShoppingAssistantEngineerTicket
             'Engineering triage for the ordering and dropshipping platform of a wholesale supplier. The customer already tried the documented fix. Is this a real defect that only our engineers can fix?',
             'A defect in our own system, integration code or data that the customer and customer services cannot fix',
             'User error, a question, a setting the customer can change, a problem on their own store or marketplace, something customer services can sort out, or not enough evidence'
+        );
+    }
+
+    /**
+     * How sure an independent model is that the customer reports something of ours not working, as
+     * opposed to asking a question a person in our team can answer; null when it cannot be asked,
+     * which leaves the question with the gurus.
+     */
+    private function confidenceFault(string $question, string $words, ?string $channels): ?float
+    {
+        return AskJev::make()->noul(
+            array_filter(['question' => $question, 'customer_words' => $words, 'sales_channels' => $channels]),
+            'A customer of a wholesale and dropshipping supplier wrote this to the supplier\'s shopping assistant, which could not answer it. Does the customer report that something of the supplier\'s does not work as it should for them (a product upload or sync to their store or marketplace, stock, prices or photos sent to it, orders not arriving, tracking, the connection, an error on our website or in their account), so that engineers must look at it?',
+            'They report something of ours not working or showing wrong for them, which engineers must look into.',
+            'It is a question a person in the supplier\'s team can answer: about products, prices, policy, samples, delivery, how to do something, or anything that is not a fault on the supplier\'s side.'
         );
     }
 

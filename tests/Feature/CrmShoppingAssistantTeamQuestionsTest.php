@@ -54,7 +54,12 @@ beforeEach(function () {
     config(['services.openrouter.api_key' => 'test', 'services.shopping_assistant.light_model' => null, 'services.shopping_assistant.plain_search' => false]);
     $this->notAnAnswerProbability = null;
     $this->followsFromEvidence    = null;
-    Http::fake(['*alpha/decisions' => fn ($request) => Http::response(['answers' => ['answer' => ['noul' => str_contains($request->body(), 'follow from the evidence') ? $this->followsFromEvidence : $this->notAnAnswerProbability]]])]);
+    $this->isFault                = null;
+    Http::fake(['*alpha/decisions' => fn ($request) => Http::response(['answers' => ['answer' => ['noul' => match (true) {
+        str_contains($request->body(), 'follow from the evidence')   => $this->followsFromEvidence,
+        str_contains($request->body(), 'engineers must look at it') => $this->isFault,
+        default                                                      => $this->notAnAnswerProbability,
+    }]]])]);
     actingAs($this->user);
     $tz = $this->organisation->timezone?->name ?? 'UTC';
     Carbon::setTestNow(CarbonImmutable::parse('next wednesday 10:00', $tz));
@@ -663,4 +668,56 @@ test('an answer still holding a [[gap]] from a researcher draft is refused from 
     expect(data_get($task->refresh()->data, 'answered_at'))->toBeNull()
         ->and($conversation->messages()->count())->toBe($messages)
         ->and($task->conversation->messages()->pluck('body')->implode("\n"))->toContain('double brackets');
+});
+
+test('a question that reports something of ours not working goes to the engineers as a MER ticket, not to a guru, and the customer is told its reference', function () {
+    $conversation = teamQuestionConversation($this);
+    $tasks        = StaffTask::where('data->kind', StoreShoppingAssistantTeamQuestion::TASK_KIND)->count();
+
+    $this->isFault = 0.92;
+    $result        = StoreShoppingAssistantTeamQuestion::run($conversation, 'I uploaded a product to Allegro but the listing shows a different product photo.', 'the listing shows a different photo');
+
+    expect($result['status'])->toBe('to_engineers')
+        ->and($result['ticket']->type)->toBe(App\Enums\Helpers\Ticket\TicketTypeEnum::MERLIN)
+        ->and($result['ticket']->customer_id)->toBe($conversation->customer_id)
+        ->and($result['ticket']->description)->toContain('the listing shows a different photo')
+        ->and(StaffTask::where('data->kind', StoreShoppingAssistantTeamQuestion::TASK_KIND)->count())->toBe($tasks)
+        ->and(App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantEngineerTicket::customerSentence($conversation, $result['ticket'], false))->toContain($result['ticket']->reference);
+
+    $again = StoreShoppingAssistantTeamQuestion::run($conversation, 'Stock does not update in my Allegro store either.', 'stock not updating');
+    expect($again['status'])->toBe('to_engineers')
+        ->and($again['already_reported'])->toBeTrue()
+        ->and($again['ticket']->id)->toBe($result['ticket']->id);
+
+    $this->isFault = 0.3;
+    expect(StoreShoppingAssistantTeamQuestion::run($conversation, 'Do you sell samples?', 'samples?')['status'])->toBe('created');
+
+    $this->isFault = 0.95;
+    $refused       = teamQuestionConversation($this);
+    expect(StoreShoppingAssistantTeamQuestion::run($refused, 'My products do not sync to Shopify.', 'products not syncing', false)['status'])->toBe('created');
+
+    $result['ticket']->delete();
+});
+
+test('an engineer can raise a MER ticket from a Merlin conversation with the ticket tool, tied to its customer and conversation', function () {
+    $conversation = teamQuestionConversation($this);
+    $engineer     = teamQuestionStaff($this);
+    actingAsUserWithOnlyPermissions($engineer, ['help-desk.resolve']);
+
+    AikuServer::actingAs($engineer)->tool(App\Mcp\Tools\TicketWriteTool::class, ['subject' => 'Allegro shows another product photo', 'type' => 'merlin'])
+        ->assertHasErrors();
+    AikuServer::actingAs($engineer)->tool(App\Mcp\Tools\TicketWriteTool::class, ['subject' => 'Allegro shows another product photo', 'type' => 'merlin', 'conversation' => '01NOTACONVERSATION00000000'])
+        ->assertHasErrors(['No Merlin conversation']);
+
+    AikuServer::actingAs($engineer)->tool(App\Mcp\Tools\TicketWriteTool::class, ['subject' => 'Allegro shows another product photo', 'type' => 'merlin', 'conversation' => $conversation->ulid, 'tags' => ['allegro']])
+        ->assertOk()->assertSee('MER-');
+
+    $ticket = App\Models\Helpers\Ticket::where('source_type', 'ShoppingAssistantConversation')->where('source_id', $conversation->id)->latest('id')->first();
+    expect($ticket->type)->toBe(App\Enums\Helpers\Ticket\TicketTypeEnum::MERLIN)
+        ->and($ticket->customer_id)->toBe($conversation->customer_id)
+        ->and($ticket->shop_id)->toBe($conversation->customer->shop_id)
+        ->and($ticket->tags)->toContain('merlin', 'allegro');
+
+    $ticket->delete();
+    actingAs($this->user);
 });

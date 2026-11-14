@@ -310,9 +310,15 @@ class AskShoppingAssistant
             $open      = $askedTeam ? StoreShoppingAssistantTeamQuestion::openFor($conversation) : null;
             $team      = $askedTeam
                 ? ($open ? ['status' => 'already_asked', 'live' => StoreShoppingAssistantTeamQuestion::isAwaited($open)] : null)
-                : StoreShoppingAssistantTeamQuestion::run($conversation, $message, $message);
+                : StoreShoppingAssistantTeamQuestion::run($conversation, $message, $message, !collect($turn['tool_calls'])->contains(fn (array $toolCall) => $toolCall['name'] === 'report_to_engineers'));
 
-            if ($team && in_array($team['status'], ['created', 'already_asked'], true)) {
+            if ($team && $team['status'] === 'to_engineers') {
+                $offerReason = null;
+                $flags[]     = 'reported_engineers';
+                $reply       = StoreShoppingAssistantEngineerTicket::customerSentence($conversation, $team['ticket'], $team['already_reported']);
+                $isFixed     = true;
+                $groups      = ['must_haves' => collect(), 'add_ons' => collect()];
+            } elseif ($team && in_array($team['status'], ['created', 'already_asked'], true)) {
                 $offerReason = null;
                 $flags[]     = 'asked_team';
                 $reply       = $this->teamSentence($conversation, $team['live']);

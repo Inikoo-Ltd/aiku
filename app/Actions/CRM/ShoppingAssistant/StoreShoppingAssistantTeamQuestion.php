@@ -57,12 +57,24 @@ class StoreShoppingAssistantTeamQuestion
     public const string ONLINE_CACHE_KEY = 'shopping_assistant:online_user_ids';
 
     /**
-     * @return array{status: 'created'|'already_asked'|'limit'|'off', task: ?StaffTask, live: bool}
+     * A question that reports something of ours not working goes to the engineers as a MER ticket
+     * instead (StoreShoppingAssistantEngineerTicket::fromQuestion): status to_engineers, with the ticket.
+     * Not when the stricter report_to_engineers check already refused it in this turn ($mayBeFault
+     * false): that refusal means the customer should try the documented fix or talk to a person first.
+     *
+     * @return array{status: 'created'|'already_asked'|'limit'|'off'|'to_engineers', task: ?StaffTask, live: bool, ticket?: \App\Models\Helpers\Ticket, already_reported?: bool}
      */
-    public function handle(ShoppingAssistantConversation $conversation, string $questionInEnglish, string $customerWords): array
+    public function handle(ShoppingAssistantConversation $conversation, string $questionInEnglish, string $customerWords, bool $mayBeFault = true): array
     {
         $customer     = $conversation->customer;
         $organisation = $customer?->organisation;
+
+        if ($customer && $mayBeFault) {
+            $fault = StoreShoppingAssistantEngineerTicket::make()->fromQuestion($conversation, mb_substr(trim($questionInEnglish), 0, 500), mb_substr(trim($customerWords), 0, 1000));
+            if ($fault['ticket']) {
+                return ['status' => 'to_engineers', 'task' => null, 'live' => false, 'ticket' => $fault['ticket'], 'already_reported' => $fault['status'] === 'already_reported'];
+            }
+        }
 
         $gurus        = $organisation ? self::gurusOf($organisation, $customer->shop_id) : [];
 

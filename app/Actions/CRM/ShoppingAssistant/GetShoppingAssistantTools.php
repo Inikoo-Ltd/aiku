@@ -1380,15 +1380,7 @@ class GetShoppingAssistantTools
             ];
         }
 
-        $reference = $result['ticket']->reference;
-        $canFollow = $conversation->web_user_id && self::isDropshipping($conversation->customer);
-        $locale    = $conversation->language_code;
-
-        $fact = match (true) {
-            $result['status'] === 'already_reported' => __('I have added this to :reference, which our engineers are already looking into.', ['reference' => $reference], $locale),
-            $canFollow                                => __('I have passed this to our engineers as :reference. You can follow it under Tickets in your account.', ['reference' => $reference], $locale),
-            default                                   => __('I have passed this to our engineers as :reference.', ['reference' => $reference], $locale),
-        };
+        $fact = StoreShoppingAssistantEngineerTicket::customerSentence($conversation, $result['ticket'], $result['status'] === 'already_reported');
 
         return [
             'content' => ['reported' => true, 'already_open' => $result['status'] === 'already_reported', 'note' => 'The ticket reference is added under your reply. Say in one or two sentences that our engineers will look into it, without promising a time or a fix, and offer to help with anything else meanwhile.'],
@@ -1407,6 +1399,15 @@ class GetShoppingAssistantTools
 
         $words  = (string) $conversation->messages()->where('role', 'customer')->latest('id')->value('body');
         $result = StoreShoppingAssistantTeamQuestion::run($conversation, $question, $words ?: $question);
+
+        if ($result['status'] === 'to_engineers') {
+            return [
+                'content'  => ['passed_on' => true, 'to_engineers' => true, 'note' => 'This is a fault, so it went to our engineers, not to a person in our team; the ticket reference is added under your reply. Say in one or two sentences that our engineers will look into it, without promising a time or a fix, and offer to help with anything else meanwhile.'],
+                'products' => [],
+                'error'    => null,
+                'fact'     => StoreShoppingAssistantEngineerTicket::customerSentence($conversation, $result['ticket'], $result['already_reported']),
+            ];
+        }
 
         $note = match (true) {
             $result['status'] === 'off', $result['status'] === 'limit' => 'Our team cannot be asked now: say you are not sure and offer a person (answer_kind offer_person, offer_reason not_sure).',

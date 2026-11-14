@@ -228,6 +228,7 @@ class AppServiceProvider extends ServiceProvider
                 'PollReply'                        => 'App\Models\CRM\PollReply',
                 'Prospect'                         => 'App\Models\CRM\Prospect',
                 'WebUser'                          => 'App\Models\CRM\WebUser',
+                'ShoppingAssistantConversation'    => 'App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation',
 
                 // Dispatching
                 'Box'                              => 'App\Models\Dispatching\Box',
