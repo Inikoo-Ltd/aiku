@@ -103,7 +103,7 @@ use Throwable;
  *
  * shop_information answers a general question about buying from the shop (payment, delivery rules,
  * returns, ordering, the account, terms) from the shop's knowledge base, found by meaning
- * (SearchShopKnowledge): up to four texts, each with its id, and `sources` for the turn, which
+ * (SearchShopKnowledge, with the customer's words and an English version): up to six texts, each with its id, and `sources` for the turn, which
  * AskShoppingAssistant checks the answer cites. With no text it tells the model to offer a person,
  * and when the search is not available it returns the tool error, so the model never answers a
  * shop question from its own knowledge.
@@ -369,9 +369,10 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'shop_information',
-                'What our own pages, shop settings and customer service notes say about buying from this shop: payment, delivery and its cost rules, returns, ordering, minimum order, the customer\'s account, our terms. Use it for every general question about the shop that is not a request for products. Returns up to 4 texts, each with an id. Answer only from these texts and list the ids you used in sources. Returns no products.',
+                'What our own pages, shop settings and customer service notes say about buying from this shop: payment, delivery and its cost rules, returns, ordering, minimum order, the customer\'s account, our terms. Use it for every general question about the shop that is not a request for products; for a question with two parts (delivery cost and VAT), call it once per part. Returns up to 6 texts, each with an id. Answer only from these texts and list the ids you used in sources. Returns no products.',
                 [
-                    'question' => ['type' => 'string', 'description' => 'The customer\'s question, in their words.'],
+                    'question'            => ['type' => 'string', 'description' => 'The customer\'s question, in their words.'],
+                    'question_in_english' => ['type' => 'string', 'description' => 'The same question in one sentence in English, when the customer did not write in English.'],
                 ],
                 ['question']
             ),
@@ -960,7 +961,8 @@ class GetShoppingAssistantTools
     private function shopInformation(Customer $customer, array $arguments): array
     {
         $question = is_string($arguments['question'] ?? null) ? $arguments['question'] : '';
-        $entries  = SearchShopKnowledge::run($customer->shop, $question);
+        $english  = is_string($arguments['question_in_english'] ?? null) ? $arguments['question_in_english'] : '';
+        $entries  = SearchShopKnowledge::run($customer->shop, array_filter([$question, $english]));
 
         if ($entries === null) {
             return $this->error('The shop information is not available right now. Do not answer from your own knowledge: answer with answer_kind offer_person and offer_reason not_sure.');

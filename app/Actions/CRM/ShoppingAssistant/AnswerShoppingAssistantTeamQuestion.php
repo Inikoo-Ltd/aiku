@@ -110,7 +110,7 @@ class AnswerShoppingAssistantTeamQuestion
 
         $shop = Shop::find(data_get($task->data, 'shop_id'));
         if ($keepForEveryone && $shop) {
-            UpdateShopChatKnowledgeNote::make()->handle($shop, null, ['title' => mb_substr(str_replace("\n", ' ', $question), 0, 200), 'body' => mb_substr($answer, 0, 2000)], $user);
+            UpdateShopChatKnowledgeNote::make()->handle($shop, null, ['title' => mb_substr(str_replace("\n", ' ', $question), 0, 200), 'body' => mb_substr($answer, 0, 2000)], $user, $this->needsSecondYes($task, $user) ? 'proposed' : 'active');
             dispatch(fn () => HydrateChatKnowledge::make()->embedMissing($shop));
         }
 
@@ -119,6 +119,16 @@ class AnswerShoppingAssistantTeamQuestion
         }
 
         return 'answered';
+    }
+
+    /**
+     * While new answers are reviewed, a kept answer waits for another guru of the shop; with no
+     * other guru to say yes, it is used at once rather than never.
+     */
+    private function needsSecondYes(StaffTask $task, User $user): bool
+    {
+        return config('services.shopping_assistant.review_new_answers')
+            && collect(StoreShoppingAssistantTeamQuestion::gurusOfTask($task))->contains(fn (User $guru) => $guru->id !== $user->id);
     }
 
     public function authorize(ActionRequest $request): bool

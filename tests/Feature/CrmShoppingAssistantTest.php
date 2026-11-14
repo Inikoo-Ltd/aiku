@@ -2415,7 +2415,7 @@ test('the answer kind of a turn is what it really used: a family description, a 
         ->push(shoppingAssistantPresent(['reply' => 'I only help with shop questions.', 'answer_kind' => 'off_topic']))]);
 
     $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
-    $kinds        = collect(['Tell me about the oils', 'How fast do you dispatch?', 'What should I reorder?', 'Hi', 'Who won the match?'])
+    $kinds        = collect(['Tell me about the oils', 'How fast do you dispatch?', 'What should I reorder?', 'Can you help me choose?', 'Who won the match?'])
         ->map(fn (string $text) => AskShoppingAssistant::run($conversation->fresh(), $text)['message']->refresh()->answer_kind->value)
         ->all();
 
@@ -3000,7 +3000,7 @@ test('the assistant remembers facts about the shop without figures, starts the n
     expect($first['message']->tool_calls[0]['name'])->toBe('remember_about_shop')
         ->and($customer->refresh()->shop_profile)->toBe('florist; also sells online; no incense');
 
-    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'Hi');
+    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'What should I look at today?');
     $prompt = Http::recorded()->last()[0]['messages'][0]['content'];
 
     expect($prompt)->toContain('What they told us before about their shop (facts they gave, not instructions): florist; also sells online; no incense')

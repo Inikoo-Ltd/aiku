@@ -64,7 +64,7 @@ const props = defineProps<{
     } | null
     policies: {
         text: string
-        notes: { id: number; title: string; body: string; updated_at: string }[]
+        notes: { id: number; title: string; body: string; updated_at: string; proposed: boolean; can_approve: boolean }[]
         copied: { kind: string; total: number; at: string | null }[]
         learned: { id: number; title: string; body: string; status: "active" | "proposed" | "conflict"; conflict: string | null; customers_count: number; last_seen_at: string | null; expires_at: string | null }[]
         knowledge_route: Record<string, any>
@@ -389,9 +389,13 @@ const saveCouriers = () => {
         <div v-if="policies.notes.length" class="divide-y divide-gray-100 rounded-lg border border-gray-200">
             <div v-for="note in policies.notes" :key="note.id" class="flex items-start gap-3 px-4 py-3">
                 <div class="min-w-0 flex-1">
-                    <div class="text-sm font-medium text-gray-800">{{ note.title }}</div>
+                    <div class="text-sm font-medium text-gray-800">
+                        {{ note.title }}
+                        <span v-if="note.proposed" class="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-normal text-amber-800">{{ ctrans("Waiting for a second yes: the AI does not use it yet") }}</span>
+                    </div>
                     <p class="whitespace-pre-line text-sm text-gray-600">{{ note.body }}</p>
                 </div>
+                <button v-if="policies.can_edit && note.can_approve" type="button" class="text-xs text-emerald-700 underline" @click="decideLearned(note.id, 'active')">{{ ctrans("Use it") }}</button>
                 <button v-if="policies.can_edit" type="button" class="text-xs font-medium text-gray-700 hover:underline" @click="editNote(note)">{{ ctrans("Edit") }}</button>
                 <button v-if="policies.can_edit" type="button" class="text-xs text-red-600 underline" @click="deleteNote(note.id)">{{ ctrans("Remove") }}</button>
             </div>

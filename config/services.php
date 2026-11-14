@@ -168,6 +168,7 @@ return [
         'premium_model'   => env('SHOPPING_ASSISTANT_PREMIUM_MODEL', 'anthropic/claude-fable-5.2'),
         'light_model'     => env('SHOPPING_ASSISTANT_LIGHT_MODEL', 'anthropic/claude-haiku-5.5'),
         'plain_search'    => env('SHOPPING_ASSISTANT_PLAIN_SEARCH', true),
+        'review_new_answers' => env('SHOPPING_ASSISTANT_REVIEW_NEW_ANSWERS', true),
         'premium_customer_sales'        => 10000,
         'premium_member_customer_sales' => 5000,
         'premium_min_words'             => 8,

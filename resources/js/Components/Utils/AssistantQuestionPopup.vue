@@ -24,6 +24,8 @@ export type AssistantQuestion = {
     decline_url: string
     pass_url: string
     task_url: string
+    draft?: string
+    draft_evidence?: string
 }
 
 const props = defineProps<{
@@ -34,7 +36,7 @@ const emit = defineEmits<{
     (e: "close"): void
 }>()
 
-const answer = ref("")
+const answer = ref(props.question.draft ?? "")
 const keepForEveryone = ref(true)
 const busy = ref<"" | "send" | "decline" | "pass">("")
 const errorMessage = ref("")
@@ -111,6 +113,9 @@ const pass = () => {
                 :placeholder="ctrans('Your answer, in any language: the customer gets it in theirs')"
                 @keydown.meta.enter="send"
                 @keydown.ctrl.enter="send" />
+            <div v-if="question.draft_evidence" class="mt-1 whitespace-pre-line text-xs text-gray-400">
+                {{ ctrans("Draft by Merlin's researcher. Evidence: :evidence", { evidence: question.draft_evidence }) }}
+            </div>
 
             <label class="mt-1.5 flex items-center gap-2 text-xs text-gray-600">
                 <Checkbox v-model="keepForEveryone" binary input-id="assistant-question-keep" :pt="{ box: { class: '!h-4 !w-4 !rounded !border !border-gray-400 !bg-white !shadow-none' } }">

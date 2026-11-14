@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Chat\UpdateShopChatKnowledgeNote;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\ShoppingAssistant\AlertShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
@@ -14,22 +15,31 @@ use App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant;
 use App\Actions\CRM\ShoppingAssistant\CloseUnansweredShoppingAssistantTeamQuestions;
 use App\Actions\CRM\ShoppingAssistant\DeclineShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantTools;
+use App\Actions\CRM\ShoppingAssistant\ResearchShoppingAssistantTeamQuestion;
+use App\Actions\CRM\ShoppingAssistant\SearchShopKnowledge;
+use App\Actions\CRM\ShoppingAssistant\SendShoppingAssistantMorningRound;
 use App\Actions\CRM\ShoppingAssistant\StartShoppingAssistantConversation;
 use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantTeamQuestion;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
 use App\Actions\Tasks\UpdateStaffTask;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Models\Chat\ChatKnowledgeEntry;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\User;
+use App\Mcp\Servers\AikuServer;
+use App\Mcp\Tools\MerlinQuestionWriteTool;
+use App\Mcp\Tools\MerlinQuestionsTool;
 use App\Models\Tasks\StaffTask;
+use App\Notifications\ShoppingAssistantMorningRoundNotification;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\actingAs;
@@ -43,7 +53,8 @@ beforeEach(function () {
 
     config(['services.openrouter.api_key' => 'test', 'services.shopping_assistant.light_model' => null, 'services.shopping_assistant.plain_search' => false]);
     $this->notAnAnswerProbability = null;
-    Http::fake(['*alpha/decisions' => fn () => Http::response(['answers' => ['answer' => ['noul' => $this->notAnAnswerProbability]]])]);
+    $this->followsFromEvidence    = null;
+    Http::fake(['*alpha/decisions' => fn ($request) => Http::response(['answers' => ['answer' => ['noul' => str_contains($request->body(), 'follow from the evidence') ? $this->followsFromEvidence : $this->notAnAnswerProbability]]])]);
     actingAs($this->user);
     $tz = $this->organisation->timezone?->name ?? 'UTC';
     Carbon::setTestNow(CarbonImmutable::parse('next wednesday 10:00', $tz));
@@ -263,14 +274,46 @@ test('a shop guru is asked first and the organisation guru and backup are its ba
     UpdateShop::make()->action($this->shop->refresh(), ['assistant_questions_user_id' => null]);
 });
 
-test('a question nobody answered within a day is closed in working hours and the customer is told to contact customer services', function () {
+test('a question nobody answered is closed a day after the gurus first had it in their morning round, so a Friday evening question gets Monday, and a day after the managers were told when it went to them', function () {
+    Notification::fake();
+    $tz      = $this->organisation->timezone?->name ?? 'UTC';
+    $friday  = CarbonImmutable::parse('next friday 18:00', $tz);
+    Carbon::setTestNow($friday);
     $conversation = teamQuestionConversation($this);
     $task         = StoreShoppingAssistantTeamQuestion::run($conversation, 'Do you sell samples?', 'Do you sell samples?')['task'];
 
-    Carbon::setTestNow(now()->addHours(2));
-    expect(CloseUnansweredShoppingAssistantTeamQuestions::run())->toBe(0);
+    Carbon::setTestNow($friday->addDay()->setTime(10, 0));
+    SendShoppingAssistantMorningRound::run();
+    expect(data_get($task->refresh()->data, 'round_first_at'))->toBeNull();
 
-    Carbon::setTestNow(now()->addDay());
+    Carbon::setTestNow($friday->addDays(3)->setTime(8, 30));
+    SendShoppingAssistantMorningRound::run();
+    expect(data_get($task->refresh()->data, 'round_first_at'))->toBeNull();
+
+    Carbon::setTestNow($friday->addDays(3)->setTime(9, 15));
+    SendShoppingAssistantMorningRound::run();
+    CloseUnansweredShoppingAssistantTeamQuestions::run();
+    $task->refresh();
+    expect(data_get($task->data, 'answered_at'))->toBeNull()
+        ->and(data_get($task->data, 'rounds'))->toBe(1);
+
+    Carbon::setTestNow($friday->addDays(4)->setTime(9, 0));
+    CloseUnansweredShoppingAssistantTeamQuestions::run();
+    expect(data_get($task->refresh()->data, 'answered_at'))->toBeNull();
+
+    Carbon::setTestNow($friday->addDays(4)->setTime(10, 15));
+    expect(CloseUnansweredShoppingAssistantTeamQuestions::isDue($task->refresh()))->toBeTrue();
+
+    Carbon::setTestNow($friday->addDays(4)->setTime(9, 5));
+    SendShoppingAssistantMorningRound::run();
+    Carbon::setTestNow($friday->addDays(4)->setTime(10, 15));
+    CloseUnansweredShoppingAssistantTeamQuestions::run();
+    expect(data_get($task->refresh()->data, 'answered_at'))->toBeNull()
+        ->and(data_get($task->data, 'managers_told_at'))->not->toBeNull();
+
+    Carbon::setTestNow($friday->addDays(5)->setTime(9, 5));
+    SendShoppingAssistantMorningRound::run();
+    Carbon::setTestNow($friday->addDays(5)->setTime(10, 15));
     expect(CloseUnansweredShoppingAssistantTeamQuestions::run())->toBeGreaterThanOrEqual(1);
     $task->refresh();
 
@@ -278,6 +321,58 @@ test('a question nobody answered within a day is closed in working hours and the
         ->and(data_get($task->data, 'unanswered'))->toBeTrue()
         ->and($conversation->messages()->latest('id')->first()->flags)->toBe(['team_unanswered'])
         ->and($task->conversation->messages()->pluck('body')->implode("\n"))->toContain('customer services was asked to send it');
+});
+
+test('a question that never reached a morning round is closed after three days', function () {
+    $conversation = teamQuestionConversation($this);
+    $task         = StoreShoppingAssistantTeamQuestion::run($conversation, 'Do you sell testers?', 'testers?')['task'];
+
+    Carbon::setTestNow(now()->addDay()->addHour());
+    expect(CloseUnansweredShoppingAssistantTeamQuestions::isDue($task))->toBeFalse();
+
+    Carbon::setTestNow(now()->addDays(2));
+    expect(CloseUnansweredShoppingAssistantTeamQuestions::isDue($task))->toBeTrue();
+});
+
+test('the morning round sends each guru one message a day with their open questions and the customers their notes helped, and a question already in an earlier round goes to the managers', function () {
+    Notification::fake();
+    $settings = $this->organisation->settings;
+    $this->organisation->update(['settings' => [...$settings, 'sales_leads' => ['manager_user_ids' => [$this->backup->id]]]]);
+
+    $tz = $this->organisation->timezone?->name ?? 'UTC';
+    Carbon::setTestNow(CarbonImmutable::parse('next tuesday 17:00', $tz));
+    $conversation = teamQuestionConversation($this);
+    $task         = StoreShoppingAssistantTeamQuestion::run($conversation, 'Do you sell samples?', 'Do you sell samples?')['task'];
+
+    $note = UpdateShopChatKnowledgeNote::make()->handle($this->shop, null, ['title' => 'Outers', 'body' => 'An outer is the pack the price is for.'], $this->person);
+    $conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'An outer is a pack.', 'model' => 'test', 'sources' => [['id' => $note->id, 'kind' => 'note', 'source_type' => 'manual', 'source_id' => null, 'title' => 'Outers', 'url' => null]]]);
+
+    Carbon::setTestNow(CarbonImmutable::parse('next wednesday 09:05', $tz));
+    SendShoppingAssistantMorningRound::run();
+    SendShoppingAssistantMorningRound::run();
+
+    $forTask = fn (bool $forManager) => fn (ShoppingAssistantMorningRoundNotification $notification) => $notification->forManager === $forManager && $notification->tasks->contains('id', $task->id);
+    Notification::assertSentToTimes($this->person, ShoppingAssistantMorningRoundNotification::class, 1);
+    Notification::assertSentTo($this->person, ShoppingAssistantMorningRoundNotification::class, fn (ShoppingAssistantMorningRoundNotification $notification) => $forTask(false)($notification) && $notification->helpedCustomers === 1 && str_contains($notification->summary(), 'helped 1 customer'));
+    Notification::assertSentTo($this->backup, ShoppingAssistantMorningRoundNotification::class, $forTask(false));
+    Notification::assertNotSentTo($this->backup, ShoppingAssistantMorningRoundNotification::class, $forTask(true));
+    expect(data_get($task->refresh()->data, 'rounds'))->toBe(1)
+        ->and(data_get($task->data, 'round_first_at'))->not->toBeNull();
+
+    Carbon::setTestNow(CarbonImmutable::parse('next thursday 09:05', $tz));
+    SendShoppingAssistantMorningRound::run();
+
+    Carbon::setTestNow(CarbonImmutable::parse('next friday 09:05', $tz));
+    SendShoppingAssistantMorningRound::run();
+    expect(Notification::sent($this->backup, ShoppingAssistantMorningRoundNotification::class)->filter($forTask(true)))->toHaveCount(1);
+
+    Notification::assertSentTo($this->backup, ShoppingAssistantMorningRoundNotification::class, fn (ShoppingAssistantMorningRoundNotification $notification) => $forTask(true)($notification)
+        && str_starts_with($notification->title(), 'Urgent')
+        && str_contains($notification->summary(), 'still waiting')
+        && str_contains($notification->summary(), 'asked '));
+    expect(data_get($task->refresh()->data, 'rounds'))->toBe(3);
+
+    $this->organisation->update(['settings' => $settings]);
 });
 
 test('the Merlin report counts the guru questions: answered, in time, not answered, by person with declines and passes, and the latest ones', function () {
@@ -408,4 +503,121 @@ test('a question that went to customer services still reaches the gurus: they se
         ->and(DeclineShoppingAssistantTeamQuestion::run($task->refresh(), $agent))->toBe('to_backup')
         ->and($task->refresh()->assignee_id)->toBe($this->person->id)
         ->and(data_get($task->data, 'answered_at'))->toBeNull();
+});
+
+test('the researcher lists and claims the open questions so two runs never work the same one, and a drafted question waits for the guru with the draft in the pop-up until the customer asks more', function () {
+    $this->user->update(['can_use_mcp_customer_service' => true]);
+    $conversation = teamQuestionConversation($this);
+    $task         = StoreShoppingAssistantTeamQuestion::run($conversation, 'Which courier delivers to Poland?', 'Jaki kurier?')['task'];
+    $listed       = fn (string $run, bool $claim = false) => AikuServer::actingAs($this->user)->tool(MerlinQuestionsTool::class, ['run' => $run, 'claim' => $claim, 'limit' => 20])->assertOk();
+
+    $listed('run-a', true)->assertSee($task->reference);
+    $listed('run-b')->assertDontSee($task->reference);
+
+    AikuServer::actingAs($this->user)->tool(MerlinQuestionWriteTool::class, ['action' => 'save_draft', 'reference' => $task->reference, 'run' => 'run-b', 'answer' => 'We send to Poland with DPD.', 'evidence' => 'shipments of shop plsk to PL in the last 90 days: DPD 754, DPP 13'])
+        ->assertHasErrors(['Another run is working this question']);
+
+    Carbon::setTestNow(now()->addMinutes(ResearchShoppingAssistantTeamQuestion::CLAIM_MINUTES + 1));
+    $listed('run-b')->assertSee($task->reference);
+
+    AikuServer::actingAs($this->user)->tool(MerlinQuestionWriteTool::class, ['action' => 'save_draft', 'reference' => $task->reference, 'run' => 'run-b', 'answer' => 'We send to Poland with DPD.', 'evidence' => 'shipments of shop plsk to PL in the last 90 days: DPD 754, DPP 13'])->assertOk();
+    $task->refresh();
+
+    expect(StoreShoppingAssistantTeamQuestion::popup($task))->toMatchArray(['draft' => 'We send to Poland with DPD.', 'draft_evidence' => 'shipments of shop plsk to PL in the last 90 days: DPD 754, DPP 13'])
+        ->and(data_get($task->data, 'answered_at'))->toBeNull();
+    $listed('run-c')->assertDontSee($task->reference);
+
+    StoreShoppingAssistantTeamQuestion::run($conversation, 'Does the courier phone before delivery?', 'Czy kurier dzwoni?');
+    $listed('run-c')->assertSee($task->reference);
+
+    $this->user->update(['can_use_mcp_customer_service' => false]);
+    AikuServer::actingAs($this->user)->tool(MerlinQuestionsTool::class, ['run' => 'run-c'])->assertHasErrors(['not enabled']);
+});
+
+test('the researcher answers only when an independent check is very sure the evidence proves it, else the answer stays a draft, and its answers are listed in the next morning round', function () {
+    Notification::fake();
+    $this->user->update(['can_use_mcp_customer_service' => true]);
+    $conversation = teamQuestionConversation($this);
+    $task         = StoreShoppingAssistantTeamQuestion::run($conversation, 'What is an outer?', 'what is an outer')['task'];
+    $evidence     = 'resources/js/Iris/Components/BlocksUtils/Prices.vue shows "/ outer" when product.units != 1';
+
+    AikuServer::actingAs($this->user)->tool(MerlinQuestionWriteTool::class, ['action' => 'answer', 'reference' => $task->reference, 'run' => 'run-a', 'answer' => 'An outer is the pack the price is for.', 'evidence' => 'it is likely'])
+        ->assertHasErrors();
+
+    $this->followsFromEvidence = 0.6;
+    AikuServer::actingAs($this->user)->tool(MerlinQuestionWriteTool::class, ['action' => 'answer', 'reference' => $task->reference, 'run' => 'run-a', 'answer' => 'An outer is the pack the price is for.', 'evidence' => $evidence])
+        ->assertOk()->assertSee('drafted');
+    expect(data_get($task->refresh()->data, 'answered_at'))->toBeNull()
+        ->and(data_get($task->data, 'draft_answer'))->toBe('An outer is the pack the price is for.');
+
+    $this->followsFromEvidence = 0.95;
+    AikuServer::actingAs($this->user)->tool(MerlinQuestionWriteTool::class, ['action' => 'answer', 'reference' => $task->reference, 'run' => 'run-a', 'answer' => 'An outer is the pack the price is for.', 'evidence' => $evidence])
+        ->assertOk()->assertSee('answered');
+    $task->refresh();
+
+    expect(data_get($task->data, 'answered_at'))->not->toBeNull()
+        ->and(data_get($task->data, 'answered_by_researcher'))->toBeTrue()
+        ->and(data_get($task->data, 'answer_evidence'))->toBe($evidence)
+        ->and($conversation->messages()->latest('id')->first()->flags)->toBe(['team_answer']);
+
+    $tz = $this->organisation->timezone?->name ?? 'UTC';
+    Carbon::setTestNow(CarbonImmutable::parse('next thursday 09:05', $tz));
+    SendShoppingAssistantMorningRound::run();
+
+    Notification::assertSentTo($this->person, ShoppingAssistantMorningRoundNotification::class, fn (ShoppingAssistantMorningRoundNotification $notification) => $notification->researcherAnswers?->contains('id', $task->id) && str_contains($notification->summary(), 'An outer is the pack the price is for.'));
+    expect(data_get($task->refresh()->data, 'researcher_answer_listed_at'))->not->toBeNull()
+        ->and(ResearchShoppingAssistantTeamQuestion::toConfirm($this->organisation->id)->pluck('id'))->not->toContain($task->id);
+});
+
+test('a kept answer waits for a second person before Merlin uses it, and the morning round asks the other gurus, with a few of the agents\' answers waiting for a yes', function () {
+    Notification::fake();
+    $conversation = teamQuestionConversation($this);
+    $task         = StoreShoppingAssistantTeamQuestion::run($conversation, 'Do you sell testers?', 'testers?')['task'];
+    AnswerShoppingAssistantTeamQuestion::run($task, $this->person, 'Yes, testers are sold in packs of three.');
+
+    $note = ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->where('created_by_user_id', $this->person->id)->latest('id')->first();
+    $learned = ChatKnowledgeEntry::create(['group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id, 'kind' => 'learned', 'source_type' => 'learned', 'status' => 'proposed', 'title' => 'Samples', 'body' => 'We do not send free samples.', 'customers_count' => 4]);
+
+    expect($note->status)->toBe('proposed')
+        ->and(ChatKnowledgeEntry::forShop($this->shop)->whereKey($note->id)->exists())->toBeFalse()
+        ->and(UpdateShopChatKnowledgeNote::awaitsDecisionBy($note, $this->person))->toBeFalse()
+        ->and(UpdateShopChatKnowledgeNote::awaitsDecisionBy($note, $this->backup))->toBeTrue();
+
+    $tz = $this->organisation->timezone?->name ?? 'UTC';
+    Carbon::setTestNow(CarbonImmutable::parse('next thursday 09:05', $tz));
+    SendShoppingAssistantMorningRound::run();
+
+    Notification::assertSentTo($this->backup, ShoppingAssistantMorningRoundNotification::class, fn (ShoppingAssistantMorningRoundNotification $notification) => $notification->facts?->contains('id', $note->id) && $notification->facts->contains('id', $learned->id) && str_contains($notification->summary(), 'Still true?'));
+    Notification::assertSentTo($this->person, ShoppingAssistantMorningRoundNotification::class, fn (ShoppingAssistantMorningRoundNotification $notification) => !$notification->facts?->contains('id', $note->id) && $notification->facts->contains('id', $learned->id));
+
+    $note->update(['status' => 'active']);
+    expect(ChatKnowledgeEntry::forShop($this->shop)->whereKey($note->id)->exists())->toBeTrue();
+    $learned->delete();
+});
+
+test('the shop knowledge is searched in the customer\'s words and in English in one embeddings call, nearest first and each text once', function () {
+    Http::fake(['*embeddings' => fn ($request) => Http::response(['data' => collect($request['input'])->values()->map(fn ($text, $index) => ['index' => $index, 'embedding' => array_fill(0, 1024, $index === 0 ? 0.1 : 0.2)])->all()])]);
+    $entry = ChatKnowledgeEntry::create(['group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id, 'kind' => 'note', 'source_type' => 'manual', 'is_manual' => true, 'status' => 'active', 'title' => 'Manufacturer', 'body' => 'The manufacturer is on the label.', 'embedding' => array_fill(0, 1024, 0.2)]);
+
+    $found = SearchShopKnowledge::run($this->shop, ['Comment savoir qui est le fabricant ?', 'Who is the manufacturer?']);
+
+    expect($found->where('id', $entry->id))->toHaveCount(1)
+        ->and($found->count())->toBeLessThanOrEqual(SearchShopKnowledge::LIMIT)
+        ->and(Http::recorded(fn ($request) => str_contains($request->url(), 'embeddings')))->toHaveCount(1);
+    $entry->delete();
+});
+
+test('with no other guru to say yes, a kept answer is used at once, and a researcher draft never reopens a question a guru answered meanwhile', function () {
+    UpdateOrganisation::make()->action($this->organisation, ['assistant_questions_backup_user_id' => null]);
+    $conversation = teamQuestionConversation($this);
+    $task         = StoreShoppingAssistantTeamQuestion::run($conversation, 'Do you sell gift boxes?', 'gift boxes?')['task'];
+    $stale        = StaffTask::find($task->id);
+
+    AnswerShoppingAssistantTeamQuestion::run($task, $this->person, 'Yes, gift boxes are in the packaging section.');
+    $note = ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->where('created_by_user_id', $this->person->id)->latest('id')->first();
+
+    expect($note->status)->toBe('active')
+        ->and(ResearchShoppingAssistantTeamQuestion::saveDraft($stale, $this->person, 'Maybe.', 'nothing found in the shop settings or pages'))->toBeFalse()
+        ->and(data_get($task->refresh()->data, 'answered_at'))->not->toBeNull()
+        ->and(data_get($task->data, 'draft_answer'))->toBeNull();
 });

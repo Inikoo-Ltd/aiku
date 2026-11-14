@@ -28,3 +28,10 @@ Raul, 14 Nov 2026 ("save money providing the best chats possible, only if qualit
 
 ## The AI answers a customer only when it is very sure; otherwise the question goes to the guru
 Raul, 14 Nov 2026 (INI-257). Applies to Merlin live and to the researcher routine that works the questions Merlin could not answer. An answer needs evidence it can name (data it queried, the code, a published guide, a cited fact); likely is not proven; a question whose meaning has to be guessed is not answered; policy, exceptions, promises and figures not in the data are never answered by the AI. Not sure = the guru, with what was looked at. A defect or missing data = a ticket to engineers. Do not loosen the cited-source rule, the number guard or the confidence bars to raise the share of questions answered: a wrong answer sent and saved as a fact is worse than a late one.
+
+## Team questions: morning round, closing clock, researcher, second yes
+Raul, 14 Nov 2026 (INI-257).
+- SendShoppingAssistantMorningRound sends each guru one message per working day, never a modal. It lists their open questions, the researcher's answers to check, and facts waiting for a yes. A question still open from an earlier round goes to the managers as urgent (managers_told_at).
+- CloseUnansweredShoppingAssistantTeamQuestions closes a question 24 h after round_first_at, or 24 h after managers_told_at when the managers were told. With no round at all, it closes after 72 h. Never count from created_at again: Friday questions closed before any guru saw them.
+- The researcher routine works only through merlin-questions-tool and merlin-question-write-tool (ResearchShoppingAssistantTeamQuestion). Claims lapse after CLAIM_MINUTES. It sends an answer only with named evidence and an AskJev "follows from the evidence" score of at least ANSWER_CONFIDENCE (0.9); otherwise the answer stays a draft.
+- A kept answer is saved as a proposed note while services.shopping_assistant.review_new_answers is on. Merlin uses it once someone other than its author says yes (UpdateShopChatKnowledgeNote::awaitsDecisionBy).

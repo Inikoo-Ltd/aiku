@@ -307,7 +307,10 @@ class StoreShoppingAssistantTeamQuestion
      */
     public static function popup(StaffTask $task): array
     {
-        return [
+        return array_filter([
+            'draft'          => data_get($task->data, 'draft_answer'),
+            'draft_evidence' => data_get($task->data, 'draft_evidence'),
+        ]) + [
             'task'           => $task->reference,
             'question'       => self::questionText($task),
             'customer_words' => self::questionText($task, 'customer_words'),

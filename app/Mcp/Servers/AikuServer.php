@@ -34,6 +34,8 @@ use App\Mcp\Tools\StockLocationsTool;
 use App\Mcp\Tools\ProductionSetupTool;
 use App\Mcp\Tools\StockDeliveryCostsTool;
 use App\Mcp\Tools\CarrierQuoteTool;
+use App\Mcp\Tools\MerlinQuestionWriteTool;
+use App\Mcp\Tools\MerlinQuestionsTool;
 use App\Mcp\Tools\HubOrderPlanningTool;
 use App\Mcp\Tools\HubShoppingListTool;
 use App\Mcp\Tools\FamilySalesTool;
@@ -161,6 +163,8 @@ class AikuServer extends Server
         ProductionSetupTool::class,
         StockDeliveryCostsTool::class,
         CarrierQuoteTool::class,
+        MerlinQuestionsTool::class,
+        MerlinQuestionWriteTool::class,
         FamilyPricingReviewTool::class,
         CompetitorMatchReviewTool::class,
         HubOrderPlanningTool::class,
