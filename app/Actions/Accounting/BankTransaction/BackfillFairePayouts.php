@@ -46,7 +46,7 @@ class BackfillFairePayouts
             ->whereIn('provider_type', MatchBankTransactions::CUSTOMER_TRANSFER_TYPES)
             ->whereNull('payment_id')
             ->where(fn ($query) => $query->whereNull('match_state')->orWhereIn('match_state', [BankTransactionMatchStateEnum::UNMATCHED, BankTransactionMatchStateEnum::REVIEW]))
-            ->where('counterparty_name', 'ilike', 'faire%')
+            ->where(fn ($query) => $query->where('counterparty_name', 'ilike', 'faire%')->orWhere('counterparty_name', 'ilike', 'adyen%'))
             ->chunkById(500, function ($bankTransactions) use ($matcher, $commit, &$counts) {
                 foreach ($bankTransactions as $bankTransaction) {
                     if (!$matcher->marketplaceOrderReference($bankTransaction)) {

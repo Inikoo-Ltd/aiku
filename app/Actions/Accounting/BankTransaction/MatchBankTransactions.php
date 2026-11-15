@@ -582,15 +582,19 @@ class MatchBankTransactions
     }
 
     /**
-     * Faire pays each order in its own transfer, referenced "Faire <order code>".
+     * Faire pays each order in its own transfer, referenced "Faire <order code>". GBP payouts come through Adyen,
+     * referenced "FAIRE <order code>" with two more characters glued on.
      */
     public function marketplaceOrderReference(BankTransaction $bankTransaction): ?string
     {
-        if (!preg_match('/^faire\b/i', (string)$bankTransaction->counterparty_name)) {
-            return null;
-        }
+        $counterpartyName = (string)$bankTransaction->counterparty_name;
+        $pattern          = match (true) {
+            (bool)preg_match('/^faire\b/i', $counterpartyName) => '/(?<![A-Za-z0-9])Faire ([A-Za-z0-9]{8,12})(?![A-Za-z0-9])/i',
+            (bool)preg_match('/^adyen\b/i', $counterpartyName) => '/(?<![A-Za-z0-9])Faire ([A-Za-z0-9]{10})[A-Za-z0-9]{2}(?![A-Za-z0-9])/i',
+            default => null,
+        };
 
-        return preg_match('/(?<![A-Za-z0-9])Faire ([A-Za-z0-9]{8,12})(?![A-Za-z0-9])/i', (string)$bankTransaction->reference, $matches)
+        return $pattern && preg_match($pattern, (string)$bankTransaction->reference, $matches)
             ? strtoupper($matches[1])
             : null;
     }

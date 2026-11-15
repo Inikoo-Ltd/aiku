@@ -1012,7 +1012,7 @@ test('a faire payout marks its order paid by the marketplace whatever the amount
             ->and($exact->pay_detailed_status)->toBe(\App\Enums\Ordering\Order\OrderPayDetailedStatusEnum::TO_BE_PAID_BY_MARKETPLACE);
 
         $bankConnection = bankMatchingConnection($this->organisation);
-        $line = fn (string $id, Order $order, float $amount) => BankTransaction::create([
+        $line = fn (string $id, Order $order, float $amount, string $counterpartyName = 'Faire Wholesale B. V.', ?string $reference = null) => BankTransaction::create([
             'group_id'                => $bankConnection->group_id,
             'organisation_id'         => $bankConnection->organisation_id,
             'bank_connection_id'      => $bankConnection->id,
@@ -1022,15 +1022,19 @@ test('a faire payout marks its order paid by the marketplace whatever the amount
             'amount'                  => $amount,
             'currency_id'             => $order->currency_id,
             'status'                  => BankTransactionStatusEnum::BOOKED,
-            'counterparty_name'       => 'Faire Wholesale B. V.',
-            'reference'               => 'Faire '.$order->reference,
+            'counterparty_name'       => $counterpartyName,
+            'reference'               => $reference ?? 'Faire '.$order->reference,
             'booked_at'               => now(),
         ]);
 
         $exactLine = $line('f1', $exact, 168.35);
         $shortLine = $line('f2', $short, 270.00);
+        $viaAdyen  = $faireOrder(113.79, 17.07);
+        $adyenLine = $line('f3', $viaAdyen, 96.72, 'ADYEN N.V.', 'FAIRE '.$viaAdyen->reference.'MC');
 
-        expect(MatchBankTransactions::run($bankConnection))->toBe(['paid_by_marketplace' => 2])
+        expect(MatchBankTransactions::run($bankConnection))->toBe(['paid_by_marketplace' => 3])
+            ->and($adyenLine->refresh()->order_id)->toBe($viaAdyen->id)
+            ->and($adyenLine->match_data['difference'])->toEqual(0)
             ->and($exactLine->refresh()->order_id)->toBe($exact->id)
             ->and($exactLine->payment_id)->toBeNull()
             ->and($exactLine->match_data['commission'])->toBe(29.71)
