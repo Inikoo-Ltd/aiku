@@ -71,10 +71,10 @@ use Throwable;
  *   ignored). A declared shop_answer with no valid source, and any turn that called shop_information
  *   and cited nothing, are not shown: flag shop_answer_without_source, and the customer is offered a
  *   person instead. That holds for a mixed turn too ("do you take PayPal, and how fast do you
- *   dispatch?"): the model's words go, while the products the tools found and the sentences our code
- *   wrote stay. Two turns are answered without a cited text: one that passed the question to our
- *   purchasing team (the model says so, as the tool told it to), and a declared shop_answer that
- *   called no shop_information but got a sentence our code wrote (dispatch times, shipping cost,
+ *   dispatch?"): the model's words go and so do the products, which nothing explains once the words
+ *   are gone, while the sentences our code wrote stay. Two turns are answered without a cited text:
+ *   one that passed the question to our purchasing team (the model says so, as the tool told it to),
+ *   and a declared shop_answer that called no shop_information but got a sentence our code wrote (dispatch times, shipping cost,
  *   order line), which shows that sentence alone, without the model's words. Neither is offered a
  *   person nor opens a team question: "yes, ask purchasing" became "I don't know this one" and a
  *   second, empty question for the team.
@@ -337,9 +337,7 @@ class AskShoppingAssistant
                 $flags[]     = 'asked_team';
                 $reply       = $this->teamSentence($conversation, $team['live']);
                 $isFixed     = true;
-                if ($declaredKind === ShoppingAssistantAnswerKindEnum::OFFER_PERSON) {
-                    $groups = ['must_haves' => collect(), 'add_ons' => collect()];
-                }
+                $groups      = ['must_haves' => collect(), 'add_ons' => collect()];
             }
         }
 
@@ -350,9 +348,7 @@ class AskShoppingAssistant
         } elseif ($offerReason) {
             $reply   = $this->offerSentence($conversation, $customer, $offerReason);
             $isFixed = true;
-            if ($declaredKind === ShoppingAssistantAnswerKindEnum::OFFER_PERSON) {
-                $groups = ['must_haves' => collect(), 'add_ons' => collect()];
-            }
+            $groups  = ['must_haves' => collect(), 'add_ons' => collect()];
         } elseif ($reply === '' && $turn['basket']) {
             $reply = __('I have added the products to your basket.', [], $conversation->language_code);
         }

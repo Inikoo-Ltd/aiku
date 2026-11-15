@@ -2761,7 +2761,7 @@ test('the transcript shows the answer kind, the cited sources, the offer, the ha
             ->where('messages.5.hand_over.chat_route', ['name' => 'grp.org.chat.inbox.conversation', 'parameters' => [$this->organisation->slug, $chatUlid]]));
 });
 
-test('a mixed question answered without citing a source is replaced by the offer, keeping the sentence our code wrote and the products the tools found', function () {
+test('a mixed question answered without citing a source is replaced by the offer, keeping the sentence our code wrote but not the products the tools found', function () {
     shoppingAssistantClearKnowledge($this->shop);
     $customer = shoppingAssistantCustomer($this->shop);
     $product  = shoppingAssistantProduct($this->product);
@@ -2801,7 +2801,7 @@ test('a mixed question answered without citing a source is replaced by the offer
         ->and($withFact['message']->hand_over_offer->value)->toBe('not_sure')
         ->and($withFact['message']->flags)->toBe(['shop_answer_without_source'])
         ->and($withProduct['reply'])->toBe($sentence)
-        ->and($withProduct['groups']['must_haves']->pluck('id')->all())->toBe([$product->id])
+        ->and($withProduct['groups']['must_haves'])->toBeEmpty()
         ->and($withProduct['message']->refresh()->answer_kind->value)->toBe('offer_person')
         ->and($withProduct['message']->hand_over_offer->value)->toBe('not_sure')
         ->and($withProduct['message']->flags)->toBe(['shop_answer_without_source']);
