@@ -2031,7 +2031,8 @@ test('a follow-up with a number nobody gave is dropped alone, and the prompt ask
 
     expect($turn['follow_ups'])->toBe(['What sells well in shops like mine?'])
         ->and($prompt)->toContain('addressing the customer formally, with "usted"')
-        ->and($prompt)->toContain('low-priced, cheap or budget products, that is a search, not a request for a better price');
+        ->and($prompt)->toContain('low-priced, cheap or budget products, that is a search, not a request for a better price')
+        ->and($prompt)->toContain('we restock every product as soon as we can, unless it has been discontinued');
 });
 
 test('a lead goes to the sales leads managers, else the customer services supervisors, else the org admins, and calls are offered only when one of them exists', function () {
