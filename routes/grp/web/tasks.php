@@ -9,6 +9,7 @@
 use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\DeclineShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantTeamQuestionsForUser;
+use App\Actions\CRM\ShoppingAssistant\MarkShoppingAssistantGuruWelcomeSeen;
 use App\Actions\CRM\ShoppingAssistant\PassShoppingAssistantTeamQuestion;
 use App\Actions\Tasks\Json\GetStaffTask;
 use App\Actions\Tasks\Json\GetStaffTaskConversation;
@@ -47,6 +48,7 @@ Route::get('/covering', ShowStaffTasksCovering::class)->name('covering');
 Route::get('/list', GetStaffTasks::class)->name('list');
 Route::get('/options', GetStaffTaskOptions::class)->name('options');
 Route::get('/assistant-questions', GetShoppingAssistantTeamQuestionsForUser::class)->name('assistant_questions');
+Route::post('/assistant-questions/welcome-seen', MarkShoppingAssistantGuruWelcomeSeen::class)->name('assistant_questions.welcome_seen');
 Route::post('/', StoreStaffTask::class)->name('store');
 Route::post('/import', StoreStaffTasksFromList::class)->name('import');
 Route::patch('/{staffTask}', UpdateStaffTask::class)->name('update');

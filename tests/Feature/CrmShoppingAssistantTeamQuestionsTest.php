@@ -744,3 +744,14 @@ test('a comment staff send to the customer on a MER ticket reaches their Merlin 
     $relay->delete();
     $ticket->delete();
 });
+
+test('a guru sees the welcome once, before their first question, and a colleague who is not a guru never does', function () {
+    $colleague = teamQuestionStaff($this);
+
+    expect(actingAs($this->backup)->getJson(route('grp.tasks.assistant_questions'))->assertOk()->json('welcome'))->toBeTrue()
+        ->and(actingAs($colleague)->getJson(route('grp.tasks.assistant_questions'))->json('welcome'))->toBeFalse();
+
+    actingAs($this->backup)->postJson(route('grp.tasks.assistant_questions.welcome_seen'))->assertOk();
+
+    expect(actingAs($this->backup)->getJson(route('grp.tasks.assistant_questions'))->json('welcome'))->toBeFalse();
+});

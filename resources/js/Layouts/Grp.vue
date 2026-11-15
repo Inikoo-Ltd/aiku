@@ -39,6 +39,7 @@ import { computed } from "vue"
 import { useAppAccentVariables } from "@/Composables/useAppAccent"
 import AlertToast from "@/Components/Utils/AlertToast.vue"
 import AssistantQuestionPopup from "@/Components/Utils/AssistantQuestionPopup.vue"
+import GuruWelcomeDialog from "@/Components/Utils/GuruWelcomeDialog.vue"
 import { loadMyAssistantQuestions } from "@/Composables/useAssistantQuestions"
 import { useMediaQuery, useWindowSize } from "@vueuse/core"
 import axios from "axios"
@@ -460,6 +461,8 @@ const safeTheme = computed(() => {
             <Notification :notification="props" />
         </template>
     </notifications>
+
+    <GuruWelcomeDialog v-if="!isEmbedded" />
 
     <notifications
         group="assistant-questions"
