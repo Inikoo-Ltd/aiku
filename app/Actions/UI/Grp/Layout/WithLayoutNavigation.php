@@ -141,6 +141,24 @@ trait WithLayoutNavigation
                             ]
                         ],
                         [
+                            'label' => __('Receivables'),
+                            'icon'  => ['fal', 'fa-hand-holding-usd'],
+                            'root'  => 'grp.org.accounting.receivables.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.receivables.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
+                            'label' => __('Payables'),
+                            'icon'  => ['fal', 'fa-file-invoice'],
+                            'root'  => 'grp.org.accounting.payables.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.payables.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
                             'label' => __('Invoices'),
                             'icon'  => ['fal', 'fa-file-invoice-dollar'],
                             'root'  => 'grp.org.accounting.invoices.',

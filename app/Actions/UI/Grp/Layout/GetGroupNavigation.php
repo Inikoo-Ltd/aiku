@@ -161,6 +161,22 @@ class GetGroupNavigation
                                 'name' => 'grp.financials.cash.index',
                             ],
                         ],
+                        [
+                            'label' => __('Receivables'),
+                            'icon'  => ['fal', 'fa-hand-holding-usd'],
+                            'root'  => 'grp.financials.receivables.',
+                            'route' => [
+                                'name' => 'grp.financials.receivables.index',
+                            ],
+                        ],
+                        [
+                            'label' => __('Payables'),
+                            'icon'  => ['fal', 'fa-file-invoice'],
+                            'root'  => 'grp.financials.payables.',
+                            'route' => [
+                                'name' => 'grp.financials.payables.index',
+                            ],
+                        ],
                     ],
                 ],
             ];

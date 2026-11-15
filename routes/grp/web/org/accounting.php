@@ -70,6 +70,18 @@ Route::prefix('bank-outgoing')->as('bank_outgoing.')->group(function () {
     }
 });
 Route::get('/cash', App\Actions\Accounting\BankBalance\UI\ShowCash::class)->name('cash.index');
+Route::prefix('payables')->as('payables.')->group(function () {
+    Route::get('/', App\Actions\Accounting\Payables\ShowPayablesDashboard::class)->name('index');
+    foreach (array_keys(App\Actions\Accounting\Payables\IndexPayables::sections()) as $section) {
+        Route::get('/'.str_replace('_', '-', $section), App\Actions\Accounting\Payables\IndexPayables::class)->name($section);
+    }
+});
+Route::prefix('receivables')->as('receivables.')->group(function () {
+    Route::get('/', App\Actions\Accounting\Receivables\UI\ShowReceivablesDashboard::class)->name('index');
+    foreach (App\Actions\Accounting\Receivables\UI\IndexReceivables::SECTIONS as $section) {
+        Route::get("/$section", App\Actions\Accounting\Receivables\UI\IndexReceivables::class)->name($section);
+    }
+});
 Route::redirect('/bank-review', '/org/{organisation}/accounting/bank-incoming');
 
 

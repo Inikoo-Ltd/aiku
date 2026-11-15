@@ -168,6 +168,18 @@ Route::middleware(
                 }
             });
             Route::get('/cash', [App\Actions\Accounting\BankBalance\UI\ShowCash::class, 'inGroup'])->name('cash.index');
+            Route::prefix('payables')->name('payables.')->group(function () {
+                Route::get('/', [App\Actions\Accounting\Payables\ShowPayablesDashboard::class, 'inGroup'])->name('index');
+                foreach (array_keys(App\Actions\Accounting\Payables\IndexPayables::sections()) as $section) {
+                    Route::get('/'.str_replace('_', '-', $section), [App\Actions\Accounting\Payables\IndexPayables::class, 'inGroup'])->name($section);
+                }
+            });
+            Route::prefix('receivables')->name('receivables.')->group(function () {
+                Route::get('/', [App\Actions\Accounting\Receivables\UI\ShowReceivablesDashboard::class, 'inGroup'])->name('index');
+                foreach (App\Actions\Accounting\Receivables\UI\IndexReceivables::SECTIONS as $section) {
+                    Route::get("/$section", [App\Actions\Accounting\Receivables\UI\IndexReceivables::class, 'inGroup'])->name($section);
+                }
+            });
         });
     Route::prefix("marketing")
         ->name("marketing.")
