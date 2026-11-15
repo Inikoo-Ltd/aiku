@@ -44,10 +44,10 @@ class HydrateCatalogueSearchEmbeddings
         $counts = ['embedded' => 0, 'unchanged' => 0, 'removed' => 0, 'failed' => 0];
 
         $this->websiteProducts($shop)->select(['id', 'shop_id', 'name', 'description', 'description_extra', 'family_id', 'department_id'])
-            ->with(['family:id,name', 'department:id,name'])
+            ->with(['family:id,name', 'department:id,name', 'brands:id,name'])
             ->chunkById(self::BATCH, function (Collection $products) use ($shop, &$counts) {
                 $this->embed($shop, 'Product', $products->mapWithKeys(fn (Product $product) => [
-                    $product->id => $this->text([$product->name, $product->family?->name, $product->department?->name, $product->description, $product->description_extra]),
+                    $product->id => $this->text([$product->name, $product->brands->pluck('name')->implode(', '), $product->family?->name, $product->department?->name, $product->description, $product->description_extra]),
                 ]), $counts);
             });
 
@@ -79,7 +79,8 @@ class HydrateCatalogueSearchEmbeddings
     }
 
     /**
-     * Name, family and department names first, then the descriptions as plain text, capped so
+     * Name, brand, family and department names first (a customer asks for "Agnes and Cat bath
+     * salts" when no product name carries the brand), then the descriptions as plain text, capped so
      * the embedding is about what the item is rather than a long blurb.
      *
      * @param  array<int, string|null>  $parts

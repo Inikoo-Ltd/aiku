@@ -3,7 +3,7 @@ import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } fr
 import axios from "axios"
 import Textarea from "primevue/textarea"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPaperPlane, faHatWizard } from "@fortawesome/free-solid-svg-icons"
+import { faPaperPlane, faHatWizard, faHeadset } from "@fortawesome/free-solid-svg-icons"
 import Image from "@common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -18,6 +18,7 @@ type Message = {
     follow_ups?: string[]
     links?: { label: string, url: string }[]
     hand_over_offer?: string | null
+    handed_over?: boolean
     groups?: { must_haves?: Card[], add_ons?: Card[] }
 }
 
@@ -35,12 +36,16 @@ const messages = ref<Message[]>([])
 const draft = ref("")
 const isPending = ref(false)
 const errorMessage = ref("")
+const handOverAvailable = ref(false)
+const handingOver = ref<number | null>(null)
+const handOverErrors = ref<Record<number, string>>({})
 const scroller = ref<HTMLElement>()
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 
 const jsonUrl = (name: string, params: Record<string, string>, fallback: string): string =>
     route().has(name) ? route(name, params) : fallback
 const askUrl = () => jsonUrl("iris.json.shopping_assistant.ask", {}, "/json/shopping-assistant/ask")
+const handOverUrl = () => jsonUrl("iris.json.shopping_assistant.hand_over", {}, "/json/shopping-assistant/hand-over")
 const showUrl = (id: string) => jsonUrl("iris.json.shopping_assistant.show", { conversation: id }, `/json/shopping-assistant/${id}`)
 
 const cardsOf = (message: Message): Card[] => [...(message.groups?.must_haves ?? []), ...(message.groups?.add_ons ?? [])]
@@ -64,6 +69,9 @@ const fetchConversation = async (after?: number) => {
         messages.value = []
         return null
     }
+    handOverAvailable.value = !!data.hand_over_available
+    const handedOver = new Set((data.messages ?? []).filter((message: Message) => message.handed_over).map((message: Message) => message.id))
+    messages.value = messages.value.map((message) => handedOver.has(message.id) ? { ...message, handed_over: true } : message)
     const known = new Set(messages.value.map((message) => message.id))
     const incoming: Message[] = (data.messages ?? []).filter((message: Message) => !known.has(message.id))
     messages.value = [...messages.value, ...incoming].sort((first, second) => first.id - second.id)
@@ -103,7 +111,13 @@ const send = async (text: string) => {
     errorMessage.value = ""
     isPending.value = true
     try {
-        const { data } = await axios.post(askUrl(), { message, conversation: conversation.value, entry_point: "chat" })
+        const { data } = await axios.post(askUrl(), { message, conversation: conversation.value, entry_point: "chat", can_hand_over: true })
+        if (data.accept_offer) {
+            isPending.value = false
+            draft.value = ""
+            await handOver(data.accept_offer)
+            return
+        }
         conversation.value = data.conversation
         sessionStorage.setItem(shoppingAssistantConversationKey, data.conversation)
         if (!messages.value.some((held) => held.id === data.message_id)) {
@@ -121,6 +135,26 @@ const send = async (text: string) => {
         errorMessage.value = status === 429
             ? ctrans("You have asked a lot in a short time. Please try again in a minute.")
             : ctrans("Something went wrong. Please try again.")
+    }
+}
+
+const handOver = async (offerMessageId: number) => {
+    if (handingOver.value !== null || !conversation.value) {
+        return
+    }
+    handOverErrors.value = { ...handOverErrors.value, [offerMessageId]: "" }
+    handingOver.value = offerMessageId
+    try {
+        const { data } = await axios.post(handOverUrl(), { conversation: conversation.value, offer_message_id: offerMessageId })
+        messages.value = messages.value.map((message) => message.id === offerMessageId ? { ...message, handed_over: true } : message)
+        await fetchConversation(messages.value[messages.value.length - 1]?.id)
+        if (data.route === "live_chat" && data.chat_session) {
+            window.dispatchEvent(new CustomEvent("iris-open-chat", { detail: { ulid: data.chat_session } }))
+        }
+    } catch {
+        handOverErrors.value = { ...handOverErrors.value, [offerMessageId]: ctrans("Sorry, that did not work. Please try again.") }
+    } finally {
+        handingOver.value = null
     }
 }
 
@@ -201,9 +235,17 @@ onBeforeUnmount(stopPolling)
                             </a>
                         </div>
 
-                        <a v-if="message.hand_over_offer" :href="fullPageUrl" class="mt-2 block text-xs font-semibold text-gray-700 underline hover:text-gray-900">
-                            {{ ctrans("Pass this to our team") }}
-                        </a>
+                        <div v-if="message.hand_over_offer && (handOverAvailable || message.handed_over)" class="mt-2">
+                            <p v-if="message.handed_over" class="text-xs text-gray-500">{{ ctrans("Passed to our team") }}</p>
+                            <Button v-else type="tertiary" size="xs" :label="ctrans('Talk to our team')"
+                                :disabled="handingOver !== null || isPending" @click="handOver(message.id)">
+                                <template #icon>
+                                    <LoadingIcon v-if="handingOver === message.id" />
+                                    <FontAwesomeIcon v-else :icon="faHeadset" class="text-gray-500" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                            <p v-if="handOverErrors[message.id]" class="mt-1 text-xs text-red-500">{{ handOverErrors[message.id] }}</p>
+                        </div>
 
                         <div v-if="message.id === latestAssistantId && message.follow_ups?.length && !isPending" class="mt-2 flex flex-wrap gap-1.5">
                             <button v-for="followUp in message.follow_ups" :key="followUp" type="button"

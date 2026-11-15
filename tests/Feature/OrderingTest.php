@@ -6009,6 +6009,21 @@ test('catalogue meaning search embeds website products once and returns the near
         ->and(\App\Actions\Catalogue\Search\SearchCatalogueByMeaning::run($this->shop, ' '))->toBeEmpty();
 });
 
+test('catalogue meaning search embeds the brand with the product name, so a brand the name does not carry is found', function () {
+    [, $product] = createProduct($this->shop);
+    DB::table('products')->where('id', $product->id)->update(['is_in_website' => true]);
+    $brand = \App\Models\Helpers\Brand::create(['group_id' => $this->shop->group_id, 'name' => 'Agnes + Cat', 'reference' => 'agnes-cat-'.uniqid(), 'slug' => 'agnes-cat-'.uniqid()]);
+    $product->brands()->attach($brand->id);
+
+    config(['services.openrouter.api_key' => 'test']);
+    Http::fake(['*' => fn ($request) => Http::response(['data' => collect($request['input'])->map(fn ($text, $index) => ['index' => $index, 'embedding' => array_fill(0, 1024, 0.5)])->all()])]);
+
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+    $texts = collect(Http::recorded())->flatMap(fn ($pair) => $pair[0]['input'] ?? [])->filter(fn ($text) => str_starts_with($text, $product->name));
+
+    expect($texts->first())->toStartWith($product->name."\nAgnes + Cat");
+});
+
 test('adds from the customer dashboard are logged per section and counted as ordered once the basket is submitted', function () {
     $website = createWebsite($this->shop);
     $website->update(['status' => true]);

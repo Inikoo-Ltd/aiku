@@ -53,6 +53,11 @@ use Throwable;
  *   decimal comma or another ending of the unit ("10 ml", "0,5 kg", "100-stick" for "100 Sticks"); otherwise the sentences that carry such a number are taken out (flag reply_trimmed_number) and, when no sentence is left or the answer cites sources, the whole reply becomes the fixed fallback (flag reply_replaced_number). A currency sign on its own is allowed:
  *   "£600" after the customer wrote "600 pounds" is an echo, and a price is caught by its number.
  *   A follow-up breaking the same rule is dropped on its own; the others stay.
+ *   Before any of that, a final answer whose reply breaks the rule goes back to the model once, as
+ *   long as a model call is left and it is not an offer of a person, whose words are never shown
+ *   (flag numbers_rewritten): taking a sentence out cut the opening of
+ *   replies ("Here are our 2 kalimbas", "9 copper products"), leaving answers that never said what
+ *   was found. The rule itself is unchanged and still applies to the rewritten reply.
  * - A turn that called clear_conversation always answers with the fixed cleared sentence, no products
  *   and no follow-ups; one that added to the basket and lost its reply to a rule above says so with a
  *   fixed sentence instead of the product fallback.
@@ -67,7 +72,12 @@ use Throwable;
  *   and cited nothing, are not shown: flag shop_answer_without_source, and the customer is offered a
  *   person instead. That holds for a mixed turn too ("do you take PayPal, and how fast do you
  *   dispatch?"): the model's words go, while the products the tools found and the sentences our code
- *   wrote stay.
+ *   wrote stay. Two turns are answered without a cited text: one that passed the question to our
+ *   purchasing team (the model says so, as the tool told it to), and a declared shop_answer that
+ *   called no shop_information but got a sentence our code wrote (dispatch times, shipping cost,
+ *   order line), which shows that sentence alone, without the model's words. Neither is offered a
+ *   person nor opens a team question: "yes, ask purchasing" became "I don't know this one" and a
+ *   second, empty question for the team.
  * - Offers: answer_kind offer_person (declared by the model, or forced by the rule above or by the
  *   number rule below) always gets a fixed sentence in the conversation's language, never the
  *   model's own words, which may hold a guess; a declared offer whose reply came back empty is still
@@ -247,9 +257,7 @@ class AskShoppingAssistant
         $this->followReplyLanguage($conversation, $turn['answer']['language'] ?? null);
 
         $flags          = $turn['flags'];
-        $knownProductIds = $conversation->events()->where('type', ShoppingAssistantEventTypeEnum::SHOWN)->pluck('product_id')->merge(array_keys($turn['found']))->unique();
-        $productNames    = Product::whereIn('id', $knownProductIds)->with('family:id,name')->get()->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->merge($turn['names'])->filter()->unique()->implode("\n");
-        $customerText    = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::CUSTOMER)->pluck('body')->implode("\n");
+        [$productNames, $customerText] = $this->numberContext($conversation, $turn);
         $groups         = ['must_haves' => collect(), 'add_ons' => collect()];
         $reply          = '';
         $followUps      = [];
@@ -284,8 +292,14 @@ class AskShoppingAssistant
             }
         }
 
-        $askedShopInfo = collect($turn['tool_calls'])->contains(fn (array $toolCall) => $toolCall['name'] === 'shop_information');
-        $unsourced     = !$cited && ($declaredKind === ShoppingAssistantAnswerKindEnum::SHOP_ANSWER || $askedShopInfo);
+        $askedShopInfo       = collect($turn['tool_calls'])->contains(fn (array $toolCall) => $toolCall['name'] === 'shop_information');
+        $passedToPurchasing  = collect($turn['tool_calls'])->contains(fn (array $toolCall) => $toolCall['name'] === 'ask_purchasing_team' && $toolCall['error'] === null);
+        $answeredByOurFacts  = !$askedShopInfo && $turn['facts'] !== [];
+        $unsourced           = !$cited && !$passedToPurchasing && !$answeredByOurFacts && ($declaredKind === ShoppingAssistantAnswerKindEnum::SHOP_ANSWER || $askedShopInfo);
+
+        if ($answered && !$cited && $answeredByOurFacts && $declaredKind === ShoppingAssistantAnswerKindEnum::SHOP_ANSWER) {
+            $reply = '';
+        }
         $offerReason   = null;
 
         if ($answered && !$turn['cleared']) {
@@ -334,7 +348,7 @@ class AskShoppingAssistant
             $groups    = ['must_haves' => collect(), 'add_ons' => collect()];
             $followUps = [];
         } elseif ($offerReason) {
-            $reply   = $this->offerSentence($conversation, $customer, $offerReason, $orderLooked);
+            $reply   = $this->offerSentence($conversation, $customer, $offerReason);
             $isFixed = true;
             if ($declaredKind === ShoppingAssistantAnswerKindEnum::OFFER_PERSON) {
                 $groups = ['must_haves' => collect(), 'add_ons' => collect()];
@@ -561,6 +575,8 @@ class AskShoppingAssistant
             [['role' => 'user', 'content' => $message]]
         );
 
+        $rewroteNumbers = false;
+
         for ($call = 0; $call < (int) config('services.shopping_assistant.max_model_calls'); $call++) {
             $callStartedAt = hrtime(true);
             $response      = $this->callModel($model, $messages, $tools->definitions($customer && GetShoppingAssistantTools::isDropshipping($customer)));
@@ -624,7 +640,21 @@ class AskShoppingAssistant
             }
 
             if ($present) {
-                $answer               = $this->decodeArguments(data_get($present, 'function.arguments'));
+                $answer = $this->decodeArguments(data_get($present, 'function.arguments'));
+
+                if ($answer !== null && !$rewroteNumbers && ($answer['answer_kind'] ?? null) !== ShoppingAssistantAnswerKindEnum::OFFER_PERSON->value && $call + 1 < (int) config('services.shopping_assistant.max_model_calls') && $this->hasUngivenNumbers($conversation, $message, $turn, $answer)) {
+                    $rewroteNumbers       = true;
+                    $turn['flags'][]      = 'numbers_rewritten';
+                    $turn['tool_calls'][] = ['name' => GetShoppingAssistantTools::PRESENT_PRODUCTS, 'arguments' => $answer, 'product_ids' => [], 'error' => 'ungiven_numbers', 'ms' => 0];
+                    $messages[]           = [
+                        'role'         => 'tool',
+                        'tool_call_id' => (string) ($present['id'] ?? ''),
+                        'content'      => json_encode(['error' => 'Not shown to the customer: your reply has a number that neither the customer, the product names nor your cited texts gave (a count of products, a price, a quantity, stock). Write the same answer again without that number: name the products or ranges instead of counting them. Keep everything else, and call present_products again.']),
+                    ];
+
+                    continue;
+                }
+
                 $turn['tool_calls'][] = [
                     'name'        => GetShoppingAssistantTools::PRESENT_PRODUCTS,
                     'arguments'   => $answer ?? data_get($present, 'function.arguments'),
@@ -645,6 +675,45 @@ class AskShoppingAssistant
         $turn['flags'][] = 'model_call_limit';
 
         return $turn;
+    }
+
+    /**
+     * The product and family names and everything the customer wrote in this conversation: the
+     * texts a number in a reply may come from.
+     *
+     * @param  array<string, mixed>  $turn
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function numberContext(ShoppingAssistantConversation $conversation, array $turn): array
+    {
+        $knownProductIds = $conversation->events()->where('type', ShoppingAssistantEventTypeEnum::SHOWN)->pluck('product_id')->merge(array_keys($turn['found']))->unique();
+        $productNames    = Product::whereIn('id', $knownProductIds)->with('family:id,name')->get()->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->merge($turn['names'])->filter()->unique()->implode("\n");
+        $customerText    = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::CUSTOMER)->pluck('body')->implode("\n");
+
+        return [$productNames, $customerText];
+    }
+
+    /**
+     * Whether the final answer would lose a sentence to the number rule, checked the way answer()
+     * checks it, so the model can write it again before the customer sees a reply cut in half.
+     *
+     * @param  array<string, mixed>  $turn
+     * @param  array<string, mixed>  $answer
+     */
+    private function hasUngivenNumbers(ShoppingAssistantConversation $conversation, string $message, array $turn, array $answer): bool
+    {
+        $reply = trim((string) ($answer['reply'] ?? ''));
+        if ($reply === '') {
+            return false;
+        }
+
+        [$productNames, $customerText] = $this->numberContext($conversation, $turn);
+        $cited  = $this->citedSources($answer, $turn['sources']);
+        $shown  = $this->numbers($message) ? array_map(fn (mixed $ids) => is_array($ids) ? count($ids) : 0, [$answer['must_haves'] ?? [], $answer['add_ons'] ?? []]) : [];
+        $counts = $shown ? [...$shown, array_sum($shown)] : [];
+
+        return !$this->onlyGivenNumbers($reply, $cited ? $customerText."\n".implode("\n", array_column($cited, 'body')) : $customerText, $productNames, $counts);
     }
 
     /**
@@ -1078,15 +1147,14 @@ class AskShoppingAssistant
             : __('I don\'t know this one, so I have passed it to one of our experts. They will get back to you as soon as they can.', [], $conversation->language_code);
     }
 
-    private function offerSentence(ShoppingAssistantConversation $conversation, Customer $customer, ShoppingAssistantHandOverReasonEnum $reason, bool $orderLooked = false): string
+    private function offerSentence(ShoppingAssistantConversation $conversation, Customer $customer, ShoppingAssistantHandOverReasonEnum $reason): string
     {
         $locale  = $conversation->language_code;
         $offered = $conversation->website && GetShoppingAssistantHandOverRoute::isOffered($conversation->website, $customer);
 
         return match (true) {
-            $offered && $reason === ShoppingAssistantHandOverReasonEnum::ORDER_QUESTION && $orderLooked => __('Our team will need to help you with that. Would you like to ask them?', [], $locale),
+            $offered && $reason === ShoppingAssistantHandOverReasonEnum::ORDER_QUESTION => __('Our team will need to help you with that. Would you like to ask them?', [], $locale),
             $offered && $reason === ShoppingAssistantHandOverReasonEnum::NOT_SURE       => __('I am not sure about that, and I would rather not guess. Would you like to ask our team?', [], $locale),
-            $offered && $reason === ShoppingAssistantHandOverReasonEnum::ORDER_QUESTION => __('I cannot see your orders, so our team will need to answer that. Would you like to ask them?', [], $locale),
             $offered                                                                    => __('Of course. Our team can help you with that.', [], $locale),
             $reason === ShoppingAssistantHandOverReasonEnum::NOT_SURE                   => __('I am not sure about that, and I would rather not guess. Please contact our customer service team.', [], $locale),
             default                                                                     => __('Please contact our customer service team, who will be glad to help.', [], $locale),
