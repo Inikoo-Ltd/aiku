@@ -65,6 +65,9 @@ beforeAll(function () {
 
 beforeEach(function () {
     list($this->organisation, , $this->shop) = createShop();
+    $this->wiseBalances       = [['currency' => 'EUR', 'amount' => ['value' => 0], 'reservedAmount' => ['value' => 0]]];
+    $this->wiseBalancesStatus = 200;
+    Http::fake(['api.wise.com/v4/profiles/*/balances*' => fn () => Http::response($this->wiseBalances, $this->wiseBalancesStatus)]);
 });
 
 function wiseActivity(string $id, string $type, string $amount, string $title, string $status = 'COMPLETED', ?string $resourceId = null, string $updatedOn = '2026-11-10T10:05:00.071Z'): array
@@ -2027,4 +2030,436 @@ test('group financials shows bank incoming of every organisation the user may se
         ->and(\App\Actions\UI\Grp\Layout\GetGroupNavigation::make()->handle($restricted))->toHaveKey('financials');
     $dashboard = get(route('grp.financials.bank_incoming.index'))->assertOk()->viewData('page')['props']['dashboard'];
     expect(collect($dashboard['organisations'])->pluck('label')->all())->toBe([$otherOrganisation->name]);
+});
+
+test('bank outgoing follows the payee: guessed from a name in aiku, else classified once by a person for past and future lines', function () {
+    $group          = $this->organisation->group;
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $supplier       = \App\Actions\SupplyChain\Supplier\StoreSupplier::make()->action($group, array_merge(\App\Models\SupplyChain\Supplier::factory()->definition(), ['company_name' => 'Zebra Żółw Candles Limited']));
+    $line           = fn (string $id, string $type, ?string $payee, float $amount = -10, array $extra = []) => BankTransaction::create(array_merge([
+        'group_id'                => $group->id,
+        'organisation_id'         => $this->organisation->id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => $type,
+        'direction'               => BankTransactionDirectionEnum::OUT,
+        'amount'                  => $amount,
+        'currency_id'             => $this->organisation->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => $payee,
+        'reference'               => 'Outgoing test',
+        'booked_at'               => now()->subDay(),
+    ], $extra));
+
+    $toSupplier = $line('o1', 'TRANSFER', 'ZEBRA  ŻÓŁW candles, Ltd.');
+    $toOurs     = $line('o2', 'TRANSFER', strtoupper($this->organisation->name));
+    $unknown    = $line('o3', 'TRANSFER', 'Quokka Freight s.r.o.', -40);
+    $unknownToo = $line('o4', 'TRANSFER', 'quokka freight S.R.O', -60);
+    $card       = $line('o5', 'CARD_PAYMENT', 'Paypal *Quokkaprints');
+    $fee        = $line('o6', 'BALANCE_ASSET_FEE', 'Assets fee');
+    $conversion = $line('o7', 'INTERBALANCE', 'To GBP', -500);
+    $cardCheck  = $line('o8', 'CARD_CHECK', 'Some shop', 0);
+    $incoming   = $line('o9', 'TRANSFER', 'Quokka Freight s.r.o.', 25, ['direction' => BankTransactionDirectionEnum::IN]);
+
+    expect(\App\Models\Accounting\BankPayee::normalise('  AW  Aromatics, LIMITED. '))->toBe('aw aromatics ltd')
+        ->and(\App\Models\Accounting\BankPayee::normalise('Żółw-Świat'))->toBe('żółw świat')
+        ->and(\App\Models\Accounting\BankPayee::normalise(' .. '))->toBeNull();
+
+    $this->artisan('bank-transactions:classify-outgoing')->assertExitCode(0);
+
+    $category = fn (BankTransaction $bankTransaction) => $bankTransaction->refresh()->out_category;
+    expect($category($toSupplier))->toBe('suppliers')
+        ->and($category($toOurs))->toBe('own_companies')
+        ->and($category($unknown))->toBe('needs_person')
+        ->and($unknown->payee_key)->toBe($unknownToo->refresh()->payee_key)
+        ->and($category($card))->toBe('services')
+        ->and($category($fee))->toBe('bank_fees')
+        ->and($category($conversion))->toBe('other')
+        ->and($category($incoming))->toBeNull()
+        ->and($incoming->match_state)->toBeNull();
+    $guessed = \App\Models\Accounting\BankPayee::where('group_id', $group->id)->where('key', $toSupplier->payee_key)->firstOrFail();
+    expect($guessed->source)->toBe('auto')
+        ->and($guessed->model_type)->toBe('Supplier')
+        ->and($guessed->model_id)->toBe($supplier->id);
+
+    $admin = createAdminGuest($group)->getUser();
+    actingAs($admin);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+    $props = fn (string $section, array $query = []) => get(route("grp.org.accounting.bank_outgoing.$section", [$this->organisation->slug, 'filter' => ['global' => 'Outgoing test'], ...$query]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Accounting/BankOutgoing')->where('section', $section)->where('canEdit', true))
+        ->viewData('page')['props'];
+
+    $queue = collect($props('needs_person')['data']['data']);
+    expect($queue->pluck('payee_key')->all())->toBe([$unknown->payee_key])
+        ->and($queue->first()['lines'])->toBe(2)
+        ->and($queue->first()['org_amount'])->toEqual(100)
+        ->and(collect($props('suppliers')['data']['data'])->pluck('id')->all())->toBe([$toSupplier->id])
+        ->and(collect($props('suppliers')['data']['data'])->first()['amount'])->toEqual(10)
+        ->and(collect($props('other')['data']['data'])->pluck('id')->all())->toBe([$conversion->id])
+        ->and(collect($props('services')['data']['data'])->pluck('id')->all())->toBe([$card->id])
+        ->and(collect($props('bank_fees')['data']['data'])->pluck('id')->all())->toBe([$fee->id])
+        ->and(collect(['own_companies', 'staff', 'tax'])->every(fn (string $section) => is_array($props($section)['data']['data'])))->toBeTrue()
+        ->and(BankTransaction::find($cardCheck->id)->out_category)->toBe('other');
+
+    $dashboard = get(route('grp.org.accounting.bank_outgoing.index', [$this->organisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Accounting/BankIncomingDashboard')->where('direction', 'out')->where('routeBase', 'grp.org.accounting.bank_outgoing.'))
+        ->viewData('page')['props']['dashboard'];
+    $paid = BankTransaction::where('organisation_id', $this->organisation->id)
+        ->where('direction', BankTransactionDirectionEnum::OUT)
+        ->where('status', BankTransactionStatusEnum::BOOKED)
+        ->where('amount', '<', 0)
+        ->where('provider_type', '!=', 'INTERBALANCE')
+        ->where('booked_at', '>=', now()->subDays(90));
+    expect($dashboard['total']['lines'])->toBe($paid->count())
+        ->and($dashboard['total']['amount'])->toBeGreaterThanOrEqual(130)
+        ->and(collect($dashboard['sections'])->sum('amount'))->toEqualWithDelta($dashboard['total']['amount'], 0.01)
+        ->and($dashboard['own']['lines'])->toBeGreaterThanOrEqual(1)
+        ->and(collect($dashboard['sections'])->pluck('key')->all())->toBe(\App\Actions\Accounting\BankTransaction\UI\IndexBankOutgoing::SECTIONS)
+        ->and(collect($dashboard['backlog']['reasons'])->pluck('lines')->sum())->toBeGreaterThanOrEqual(2);
+
+    post(route('grp.models.org.bank_payee.set', [$this->organisation->id]), ['payee_key' => 'never paid by anyone', 'category' => 'tax'])->assertSessionHasErrors('payee_key');
+    post(route('grp.models.org.bank_payee.set', [$this->organisation->id]), ['payee_key' => $unknown->payee_key, 'category' => 'staff', 'model_type' => 'Supplier', 'model_id' => $supplier->id])->assertSessionHasErrors('model_id');
+    post(route('grp.models.org.bank_payee.set', [$this->organisation->id]), ['payee_key' => $unknown->payee_key, 'category' => 'suppliers', 'model_type' => 'Supplier', 'model_id' => $supplier->id])->assertSessionHasNoErrors();
+    expect($category($unknown))->toBe('suppliers')
+        ->and($category($unknownToo))->toBe('suppliers');
+
+    $later = $line('o10', 'TRANSFER', 'QUOKKA FREIGHT S.R.O.');
+    $this->artisan('bank-transactions:classify-outgoing')->assertExitCode(0);
+    expect($category($later))->toBe('suppliers');
+
+    post(route('grp.models.org.bank_payee.set', [$this->organisation->id]), ['payee_key' => $card->refresh()->payee_key, 'category' => 'tax'])->assertSessionHasNoErrors();
+    post(route('grp.models.org.bank_payee.set', [$this->organisation->id]), ['payee_key' => $toSupplier->payee_key, 'category' => 'other'])->assertSessionHasNoErrors();
+    $this->artisan('bank-transactions:classify-outgoing')->assertExitCode(0);
+    expect($category($card))->toBe('tax')
+        ->and($category($toSupplier))->toBe('other')
+        ->and(\App\Models\Accounting\BankPayee::where('group_id', $group->id)->where('key', $toSupplier->payee_key)->value('source'))->toBe('person')
+        ->and(collect(get(route('grp.json.bank_payee.link_options', [$this->organisation->id]))->assertOk()->json())->where('type', 'Supplier')->pluck('id')->all())->toContain($supplier->id);
+
+    setPermissionsTeamId($group->id);
+    $viewer = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+    actingAs($viewer);
+    get(route('grp.org.accounting.bank_outgoing.index', [$this->organisation->slug]))->assertForbidden();
+    $viewer->givePermissionTo("accounting.{$this->organisation->id}.view");
+    $viewer->refresh();
+    actingAs($viewer);
+    get(route('grp.org.accounting.bank_outgoing.suppliers', [$this->organisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('canEdit', false));
+    post(route('grp.models.org.bank_payee.set', [$this->organisation->id]), ['payee_key' => $unknown->payee_key, 'category' => 'tax'])->assertForbidden();
+    get(route('grp.json.bank_payee.link_options', [$this->organisation->id]))->assertForbidden();
+    get(route('grp.financials.bank_outgoing.index'))->assertForbidden();
+    expect($category($unknown))->toBe('suppliers');
+});
+
+test('group financials shows bank outgoing of the organisations the user may see, in the group currency, read only', function () {
+    $group                 = $this->organisation->group;
+    $otherOrganisationData = Organisation::factory()->definition();
+    data_set($otherOrganisationData, 'code', 'out'.random_int(1000, 9999));
+    data_set($otherOrganisationData, 'type', OrganisationTypeEnum::SHOP);
+    $otherOrganisation = StoreOrganisation::make()->action($group, $otherOrganisationData);
+
+    $line = fn (Organisation $organisation, string $id) => BankTransaction::create([
+        'group_id'                => $group->id,
+        'organisation_id'         => $organisation->id,
+        'bank_connection_id'      => bankMatchingConnection($organisation)->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::OUT,
+        'amount'                  => -10,
+        'currency_id'             => $group->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => 'Numbat Group Payee',
+        'reference'               => 'Group outgoing test',
+        'booked_at'               => now()->subDay(),
+    ]);
+    $mine   = $line($this->organisation, 'go1');
+    $theirs = $line($otherOrganisation, 'go2');
+    $this->artisan('bank-transactions:classify-outgoing')->assertExitCode(0);
+
+    $admin = createAdminGuest($group)->getUser();
+    $admin->givePermissionTo('financials');
+    $admin->refresh();
+    actingAs($admin);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+
+    $queue = fn (array $query = []) => collect(get(route('grp.financials.bank_outgoing.needs_person', ['filter' => ['global' => 'Group outgoing test'], ...$query]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Accounting/BankOutgoing')
+            ->where('canEdit', false)
+            ->where('organisationId', null)
+            ->where('orgCurrency', $group->currency->code)
+            ->where('pageHead.subNavigation.0.route.name', 'grp.financials.bank_outgoing.index'))
+        ->viewData('page')['props']['data']['data']);
+    expect($queue()->count())->toBe(1)
+        ->and($queue()->first()['lines'])->toBe(2)
+        ->and($queue(['org' => $otherOrganisation->slug])->first()['lines'])->toBe(1);
+
+    foreach (\App\Actions\Accounting\BankTransaction\UI\IndexBankOutgoing::SECTIONS as $section) {
+        get(route("grp.financials.bank_outgoing.$section"))->assertOk();
+    }
+    $dashboard = get(route('grp.financials.bank_outgoing.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('direction', 'out')->where('orgCurrency', $group->currency->code))
+        ->viewData('page')['props']['dashboard'];
+    expect(collect($dashboard['organisations'])->pluck('label')->all())->toContain($this->organisation->name, $otherOrganisation->name);
+
+    setPermissionsTeamId($group->id);
+    $restricted = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $restricted->givePermissionTo(["accounting.{$otherOrganisation->id}.view", "accounting.{$otherOrganisation->id}.edit"]);
+    $restricted->refresh();
+    actingAs($restricted);
+    get(route('grp.financials.bank_outgoing.needs_person'))->assertForbidden();
+    post(route('grp.models.org.bank_payee.set', [$this->organisation->id]), ['payee_key' => $mine->refresh()->payee_key, 'category' => 'tax'])->assertForbidden();
+
+    $restricted->givePermissionTo('financials');
+    $restricted->refresh();
+    actingAs($restricted);
+    expect($queue()->first()['lines'])->toBe(1)
+        ->and($queue()->first()['organisation_code'])->toBe($otherOrganisation->code);
+    $dashboard = get(route('grp.financials.bank_outgoing.index'))->assertOk()->viewData('page')['props']['dashboard'];
+    expect(collect($dashboard['organisations'])->pluck('label')->all())->toBe([$otherOrganisation->name])
+        ->and($theirs->refresh()->out_category)->toBe('needs_person');
+});
+
+test('each wise sync keeps the balances as one snapshot a day per currency, and balances that cannot be read never fail the sync', function () {
+    Http::fake([
+        'api.wise.com/v2/profiles'                 => Http::response([['id' => 555, 'type' => 'BUSINESS']]),
+        'api.wise.com/v1/profiles/555/activities*' => Http::response(['cursor' => null, 'activities' => []]),
+    ]);
+    $balance = fn (string $currency, float $amount, float $reserved = 0) => [
+        'id'             => random_int(1, 999999),
+        'currency'       => $currency,
+        'type'           => 'STANDARD',
+        'amount'         => ['value' => $amount, 'currency' => $currency],
+        'reservedAmount' => ['value' => $reserved, 'currency' => $currency],
+    ];
+    $bankConnection = StoreBankConnection::run($this->organisation, [
+        'provider'    => BankConnectionProviderEnum::WISE,
+        'name'        => 'Wise cash',
+        'credentials' => 'cash-token',
+    ]);
+    $snapshot = fn () => \App\Models\Accounting\BankBalance::where('bank_connection_id', $bankConnection->id)->get()->keyBy(fn ($row) => $row->currency->code);
+
+    $this->wiseBalances = [$balance('EUR', 100.5, 5), $balance('PLN', 0), $balance('PLN', 250), $balance('GBP', 10)];
+    expect(SyncBankConnection::run($bankConnection, true))->toBe(['synced' => 0, 'skipped' => 0, 'skipped_examples' => []])
+        ->and($snapshot()->keys()->sort()->values()->all())->toBe(['EUR', 'GBP', 'PLN'])
+        ->and((float) $snapshot()['PLN']->amount)->toBe(250.0)
+        ->and((float) $snapshot()['EUR']->amount)->toBe(100.5)
+        ->and((float) $snapshot()['EUR']->reserved_amount)->toBe(5.0)
+        ->and($snapshot()['EUR']->date->toDateString())->toBe(now()->toDateString())
+        ->and($snapshot()['EUR']->organisation_id)->toBe($this->organisation->id);
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/v4/profiles/555/balances') && $request->hasHeader('Authorization', 'Bearer cash-token'));
+
+    $this->wiseBalances = [$balance('EUR', 200), $balance('PLN', 250)];
+    $this->artisan('bank-connections:balances', ['bankConnection' => $bankConnection->id])->assertSuccessful();
+    expect($snapshot()->keys()->sort()->values()->all())->toBe(['EUR', 'PLN'])
+        ->and((float) $snapshot()['EUR']->amount)->toBe(200.0)
+        ->and((float) $snapshot()['EUR']->reserved_amount)->toBe(0.0);
+
+    $this->wiseBalancesStatus = 401;
+    expect(SyncBankConnection::run($bankConnection->refresh()))->toBe(['synced' => 0, 'skipped' => 0, 'skipped_examples' => []])
+        ->and($bankConnection->refresh()->state)->toBe(BankConnectionStateEnum::ACTIVE)
+        ->and($bankConnection->last_error)->toBeNull()
+        ->and($bankConnection->sync_data['balances_error'])->not->toBeEmpty()
+        ->and($bankConnection->sync_data['last_result']['synced'])->toBe(0)
+        ->and((float) $snapshot()['EUR']->amount)->toBe(200.0);
+
+    $this->wiseBalancesStatus = 200;
+    $this->wiseBalances       = [$balance('EUR', 300), $balance('XYZ', 1)];
+    $this->artisan('bank-connections:balances', ['bankConnection' => $bankConnection->id])->assertFailed();
+    expect($bankConnection->refresh()->sync_data['balances_error'])->toContain('XYZ')
+        ->and((float) $snapshot()['EUR']->amount)->toBe(200.0);
+
+    $this->wiseBalances = [$balance('EUR', 300)];
+    $this->artisan('bank-connections:balances', ['bankConnection' => $bankConnection->id])->assertSuccessful();
+    expect($bankConnection->refresh()->sync_data)->not->toHaveKey('balances_error')
+        ->and($snapshot()->keys()->all())->toBe(['EUR']);
+});
+
+test('cash shows what the connected banks hold: the group in its currency for the organisations the user may see, an organisation in its own, stale and failed balances flagged', function () {
+    $group                 = $this->organisation->group;
+    $otherOrganisationData = Organisation::factory()->definition();
+    data_set($otherOrganisationData, 'code', 'csh'.random_int(1000, 9999));
+    data_set($otherOrganisationData, 'type', OrganisationTypeEnum::SHOP);
+    $otherOrganisation = StoreOrganisation::make()->action($group, $otherOrganisationData);
+
+    $pivot    = config('app.currency_exchange.pivot');
+    $foreign  = Currency::whereNotIn('code', [$group->currency->code, $pivot])->whereIn('code', ['PLN', 'HUF', 'EUR'])->firstOrFail();
+    $unrated  = Currency::whereNotIn('id', CurrencyExchange::select('currency_id'))->whereNotIn('id', [$group->currency_id, $foreign->id])->where('code', '!=', $pivot)->firstOrFail();
+    $today    = now()->toDateString();
+    $groupRate = 1;
+    if ($group->currency->code !== $pivot) {
+        $groupRate = 2;
+        CurrencyExchange::updateOrCreate(['currency_id' => $group->currency_id, 'date' => $today], ['exchange' => 2, 'source' => 'test']);
+    }
+    CurrencyExchange::updateOrCreate(['currency_id' => $foreign->id, 'date' => $today], ['exchange' => 4, 'source' => 'test']);
+
+    $mine   = bankMatchingConnection($this->organisation);
+    $theirs = bankMatchingConnection($otherOrganisation);
+    $held   = fn (BankConnection $bankConnection, int $currencyId, float $amount, \Illuminate\Support\Carbon $takenAt, float $reserved = 0) => \App\Models\Accounting\BankBalance::factory()->of($bankConnection)->create([
+        'currency_id'     => $currencyId,
+        'amount'          => $amount,
+        'reserved_amount' => $reserved,
+        'date'            => $takenAt->toDateString(),
+        'taken_at'        => $takenAt,
+    ]);
+    $held($mine, $group->currency_id, 70, now()->subDays(8));
+    $held($mine, $group->currency_id, 100, now()->subMinutes(5), 10);
+    $held($mine, $foreign->id, 80, now()->subMinutes(5));
+    $held($mine, $unrated->id, 999, now()->subMinutes(5));
+    $held($theirs, $group->currency_id, 40, now()->subHours(\App\Actions\Accounting\BankBalance\UI\ShowCash::STALE_HOURS + 1));
+
+    $admin = createAdminGuest($group)->getUser();
+    setPermissionsTeamId($group->id);
+    $admin->givePermissionTo('financials');
+    $admin->refresh();
+    actingAs($admin);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+
+    $cash = fn (array $query = []) => get(route('grp.financials.cash.index', $query))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Accounting/Cash')->where('currency', $group->currency->code)->where('isGroup', true))
+        ->viewData('page')['props']['cash'];
+
+    $groupCash   = $cash();
+    $connections = collect($groupCash['connections'])->keyBy('id');
+    $foreignHeld = round(80 * $groupRate / 4, 2);
+    expect($connections)->toHaveKeys([$mine->id, $theirs->id])
+        ->and($connections[$mine->id]['status'])->toBe('ok')
+        ->and($connections[$mine->id]['amount'])->toEqual(100 + $foreignHeld)
+        ->and($connections[$mine->id]['reserved'])->toEqual(10)
+        ->and(collect($connections[$mine->id]['balances'])->firstWhere('currency', $foreign->code)['converted'])->toEqual($foreignHeld)
+        ->and(collect($connections[$mine->id]['balances'])->firstWhere('currency', $unrated->code)['converted'])->toBeNull()
+        ->and($connections[$theirs->id]['status'])->toBe('stale')
+        ->and($connections[$theirs->id]['amount'])->toEqual(40)
+        ->and($groupCash['total']['amount'])->toEqual(round($connections->sum('amount'), 2))
+        ->and($groupCash['total']['amount'])->toEqual(end($groupCash['trend']['totals']))
+        ->and($groupCash['total']['stale_amount'])->toEqual(round($connections->where('status', '!=', 'ok')->sum('amount'), 2))
+        ->and($groupCash['total']['ago_7'])->toEqual(70)
+        ->and($groupCash['total']['ago_30'])->toBeNull()
+        ->and($groupCash['trend']['dates'][0])->toBe(now()->subDays(8)->toDateString())
+        ->and(collect($groupCash['unconverted'])->firstWhere('currency', $unrated->code)['amount'])->toEqual(999)
+        ->and(collect($groupCash['currencies'])->pluck('key')->all())->toContain($foreign->code)->not->toContain($unrated->code)
+        ->and(collect($groupCash['organisations'])->pluck('label')->all())->toContain($this->organisation->name, $otherOrganisation->name)
+        ->and($groupCash['not_connected'])->toContain('Tatra banka')
+        ->and(collect($cash(['org' => $otherOrganisation->slug])['connections'])->pluck('id')->all())->toBe([$theirs->id])
+        ->and(collect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::make()->handle($admin)['financials']['topMenu']['subSections'])->pluck('route.name')->all())->toContain('grp.financials.cash.index');
+
+    $theirs->update(['sync_data' => ['balances_error' => 'HTTP request returned status code 401', 'balances_error_at' => now()->toIso8601String()]]);
+    expect(collect($cash()['connections'])->firstWhere('id', $theirs->id)['status'])->toBe('failed');
+
+    $organisationCash = get(route('grp.org.accounting.cash.index', [$this->organisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Accounting/Cash')->where('currency', $this->organisation->currency->code)->where('isGroup', false))
+        ->viewData('page')['props']['cash'];
+    expect(collect($organisationCash['connections'])->pluck('id')->all())->toContain($mine->id)->not->toContain($theirs->id)
+        ->and($organisationCash['organisations'])->toBe([]);
+
+    setPermissionsTeamId($group->id);
+    $restricted = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+    actingAs($restricted);
+    get(route('grp.financials.cash.index'))->assertForbidden();
+    get(route('grp.org.accounting.cash.index', [$otherOrganisation->slug]))->assertForbidden();
+
+    $restricted->givePermissionTo("accounting.{$otherOrganisation->id}.view");
+    $restricted->refresh();
+    actingAs($restricted);
+    get(route('grp.financials.cash.index'))->assertForbidden();
+    get(route('grp.org.accounting.cash.index', [$otherOrganisation->slug]))->assertOk();
+
+    $restricted->givePermissionTo('financials');
+    $restricted->refresh();
+    actingAs($restricted);
+    expect(collect($cash()['connections'])->pluck('id')->all())->toBe([$theirs->id]);
+});
+
+test('bank outgoing: a transfer naming one of our orders is a customer refund, our companies are left out of group totals, employees are offered only to those who edit their accounting', function () {
+    $group          = $this->organisation->group;
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $order          = bankMatchingOrder(createCustomer($this->shop), 50);
+    $line           = fn (string $id, string $payee, ?string $reference, float $amount = -10, ?float $fee = null) => BankTransaction::create([
+        'group_id'                => $group->id,
+        'organisation_id'         => $this->organisation->id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::OUT,
+        'amount'                  => $amount,
+        'fee_amount'              => $fee,
+        'currency_id'             => $group->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => $payee,
+        'reference'               => $reference,
+        'booked_at'               => now()->subDay(),
+    ]);
+
+    $spaced     = preg_replace('/^([A-Za-z]+)(\d+)$/', '$1 $2', $order->reference);
+    $refund     = $line('r1', 'Wombat Refund Customer', "refund for order $spaced");
+    $toOurs     = $line('r2', $this->organisation->name.' ', "invoices, also $order->reference", -30);
+    $nameOnly   = $line('r3', 'Wombat Refund Customer', 'refund, sorry');
+    $ownCompany = $line('r4', $this->organisation->name, 'Wise Transfer', -70, 0.7);
+    $limited    = $line('r5', 'Wombat Panels Limited', 'Invoice 1', -20);
+    $ltd        = $line('r6', 'WOMBAT PANELS LTD', 'Invoice 2', -20);
+
+    $this->artisan('bank-transactions:classify-outgoing')->assertExitCode(0);
+
+    expect($refund->refresh()->out_category)->toBe('customer_refunds')
+        ->and($refund->order_id)->toBe($order->id)
+        ->and($toOurs->refresh()->out_category)->toBe('customer_refunds')
+        ->and($nameOnly->refresh()->out_category)->toBe('needs_person')
+        ->and($nameOnly->order_id)->toBeNull()
+        ->and($ownCompany->refresh()->out_category)->toBe('own_companies')
+        ->and(\App\Models\Accounting\BankPayee::where('group_id', $group->id)->where('key', $refund->payee_key)->exists())->toBeFalse();
+
+    $admin = createAdminGuest($group)->getUser();
+    $admin->givePermissionTo('financials');
+    $admin->refresh();
+    actingAs($admin);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+
+    $refunds = collect(get(route('grp.org.accounting.bank_outgoing.customer_refunds', [$this->organisation->slug, 'filter' => ['global' => $order->reference]]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('queryBuilderProps.default.columns', fn ($columns) => collect($columns)->pluck('key')->contains('order_reference')))
+        ->viewData('page')['props']['data']['data']);
+    expect($refunds->pluck('id')->all())->toContain($toOurs->id)
+        ->and($refunds->firstWhere('id', $toOurs->id)['order_reference'])->toBe($order->reference)
+        ->and($refunds->firstWhere('id', $toOurs->id)['order_slug'])->toBe($order->slug);
+
+    $own = fn (array $dashboard) => collect($dashboard['sections'])->firstWhere('key', 'own_companies');
+    $inOrganisation = get(route('grp.org.accounting.bank_outgoing.index', [$this->organisation->slug]))->assertOk()->viewData('page')['props'];
+    $inGroup        = get(route('grp.financials.bank_outgoing.index', ['org' => $this->organisation->slug]))->assertOk()->viewData('page')['props'];
+    expect($own($inOrganisation['dashboard'])['lines'])->toBeGreaterThanOrEqual(1)
+        ->and($own($inGroup['dashboard'])['lines'])->toBe(0)
+        ->and($inGroup['ownCompaniesApart'])->toBeTrue()
+        ->and($inGroup['dashboard']['own']['by_section']['own_companies'])->toBe($own($inOrganisation['dashboard'])['lines'])
+        ->and($inGroup['dashboard']['total']['lines'])->toBe($inOrganisation['dashboard']['total']['lines'] - $own($inOrganisation['dashboard'])['lines'])
+        ->and(collect($inGroup['pageHead']['subNavigation'])->firstWhere('route.name', 'grp.financials.bank_outgoing.own_companies')['number'])->toBe($own($inOrganisation['dashboard'])['lines'])
+        ->and($inOrganisation['dashboard']['transfer_fees'])->toBeGreaterThanOrEqual(0.7)
+        ->and(collect($inOrganisation['dashboard']['backlog']['reasons'])->where('key', $limited->refresh()->payee_key)->pluck('lines')->all())->toBe([2])
+        ->and($ltd->refresh()->payee_key)->toBe($limited->payee_key);
+
+    $otherOrganisationData = Organisation::factory()->definition();
+    data_set($otherOrganisationData, 'code', 'emp'.random_int(1000, 9999));
+    data_set($otherOrganisationData, 'type', OrganisationTypeEnum::SHOP);
+    $otherOrganisation = StoreOrganisation::make()->action($group, $otherOrganisationData);
+    $employeeOf        = fn (Organisation $organisation, string $name) => \App\Actions\HumanResources\Employee\StoreEmployee::make()->action(
+        $organisation,
+        array_merge(\App\Models\HumanResources\Employee::factory()->definition(), ['contact_name' => $name])
+    );
+    $mine   = $employeeOf($this->organisation, 'Wombat Mine Employee');
+    $theirs = $employeeOf($otherOrganisation, 'Wombat Their Employee');
+
+    setPermissionsTeamId($group->id);
+    $editor = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $editor->givePermissionTo(["accounting.{$this->organisation->id}.view", "accounting.{$this->organisation->id}.edit"]);
+    $editor->refresh();
+    actingAs($editor);
+    $employees = collect(get(route('grp.json.bank_payee.link_options', [$this->organisation->id]))->assertOk()->json())->where('type', 'Employee')->pluck('id');
+    expect($employees->all())->toContain($mine->id)->not->toContain($theirs->id);
+    post(route('grp.models.org.bank_payee.set', [$this->organisation->id]), ['payee_key' => $nameOnly->payee_key, 'category' => 'staff', 'model_type' => 'Employee', 'model_id' => $theirs->id])->assertSessionHasErrors('model_id');
+    post(route('grp.models.org.bank_payee.set', [$this->organisation->id]), ['payee_key' => $nameOnly->payee_key, 'category' => 'customer_refunds'])->assertSessionHasNoErrors();
+    expect($nameOnly->refresh()->out_category)->toBe('customer_refunds');
 });

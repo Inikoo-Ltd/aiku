@@ -1303,6 +1303,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
     Route::patch('/payment/{payment:id}/cancel', CancelPayment::class)->name('payment.cancel')->withoutScopedBindings();
 
+    Route::post('/bank-payee', App\Actions\Accounting\BankPayee\SetBankPayeeCategory::class)->name('bank_payee.set');
     Route::post('/bank-transaction/{bankTransaction:id}/pay-order', PayBankTransactionToOrder::class)->name('bank_transaction.pay_order')->withoutScopedBindings();
     Route::post('/bank-transaction/{bankTransaction:id}/dismiss', DismissBankTransaction::class)->name('bank_transaction.dismiss')->withoutScopedBindings();
     Route::post('/bank-transaction/{bankTransaction:id}/restore', RestoreBankTransaction::class)->name('bank_transaction.restore')->withoutScopedBindings();

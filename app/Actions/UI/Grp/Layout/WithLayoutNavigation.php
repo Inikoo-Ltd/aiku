@@ -123,6 +123,24 @@ trait WithLayoutNavigation
                             ]
                         ],
                         [
+                            'label' => __('Bank outgoing'),
+                            'icon'  => ['fal', 'fa-money-check-alt'],
+                            'root'  => 'grp.org.accounting.bank_outgoing.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.bank_outgoing.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
+                            'label' => __('Cash'),
+                            'icon'  => ['fal', 'fa-coins'],
+                            'root'  => 'grp.org.accounting.cash.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.cash.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
                             'label' => __('Invoices'),
                             'icon'  => ['fal', 'fa-file-invoice-dollar'],
                             'root'  => 'grp.org.accounting.invoices.',

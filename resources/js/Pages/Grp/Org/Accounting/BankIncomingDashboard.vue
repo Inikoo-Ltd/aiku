@@ -18,12 +18,12 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faUniversity, faClipboardListCheck, faCheckCircle, faChartLine, faChartPie, faUserClock, faRobot, faListUl } from "@fal"
+import { faUndo, faBuilding, faLandmark, faCreditCard, faTruckContainer, faUniversity, faClipboardListCheck, faCheckCircle, faChartLine, faChartPie, faUserClock, faRobot, faListUl } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faUniversity, faClipboardListCheck, faCheckCircle, faChartLine, faChartPie, faUserClock, faRobot, faListUl)
+library.add(faUndo, faBuilding, faLandmark, faCreditCard, faTruckContainer, faUniversity, faClipboardListCheck, faCheckCircle, faChartLine, faChartPie, faUserClock, faRobot, faListUl)
 
-type SectionKey = "customers" | "marketplaces" | "payment_accounts" | "other" | "needs_person"
+type SectionKey = string
 interface Figure {
 	lines: number
 	amount: number
@@ -42,12 +42,16 @@ const props = defineProps<{
 	routeBase: string
 	organisation: string | null
 	organisations: { value: string; label: string }[]
+	direction?: "in" | "out"
+	ownCompaniesApart?: boolean
+	sectionMeta?: { key: string; label: string; color: string }[]
 	dashboard: {
 		period: "90d" | "1y" | "all"
 		total: Figure & { previous_amount: number | null }
 		sections: (Figure & { key: SectionKey; previous_amount: number | null; waiting: number })[]
 		backlog: Figure & { oldest: string | null; reasons: Ranked[] }
 		own: Figure
+		transfer_fees?: number
 		placement: Record<"auto" | "hand" | "waiting" | "unread", Figure>
 		trend: { starts: string[]; bin_days: number; series: Record<SectionKey, number[]>; previous: number[] | null }
 		providers: Ranked[]
@@ -63,7 +67,62 @@ const shortMoney = (amount: number) =>
 	new Intl.NumberFormat(undefined, { style: "currency", currency: props.orgCurrency, currencyDisplay: "narrowSymbol", notation: "compact", maximumFractionDigits: 1 }).format(amount)
 const sentenceCase = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
 
-const sectionMeta: Record<SectionKey, { label: string; color: string; hint: string }> = {
+const isOut = computed(() => props.direction === "out")
+const t = computed(() =>
+	isOut.value
+		? {
+				headline: ctrans("Paid by the banks"),
+				periodAria: ctrans("Paid in"),
+				nothingTitle: ctrans("The banks paid nothing in this period"),
+				nothingHint: ctrans("Choose a longer period to see what went out before."),
+				waitingInSection: ":count not linked to an order yet",
+				own: props.ownCompaniesApart
+					? "Not counted as paid: :count conversions between our own balances and transfers to our own companies worth :amount."
+					: "Not counted as paid: :count conversions between our own balances worth :amount.",
+				trendWeek: ctrans("Paid each week"),
+				trendMonth: ctrans("Paid every 30 days"),
+				verb: ctrans("paid"),
+				noRate: ctrans("No exchange rate is known for what went out, so there is no trend to draw."),
+				donut: ctrans("What it was for"),
+				previous: "All paid, :period",
+				backlogDone: ctrans("Every payee paid in this period is classified."),
+				backlogButton: ctrans("Classify payees"),
+				placement: ctrans("How payments were classified"),
+				auto: ctrans("Classified automatically"),
+				hand: ctrans("Classified by a person"),
+				unread: ctrans("Not classified yet"),
+				breakdowns: ctrans("Where it went"),
+				breakdownsHint: ctrans("by payee, currency and bank connection"),
+				providers: ctrans("Top payees"),
+				providersEmpty: ctrans("No classified payee was paid in this period."),
+			}
+		: {
+				headline: ctrans("Received by the banks"),
+				periodAria: ctrans("Received in"),
+				nothingTitle: ctrans("The banks received nothing in this period"),
+				nothingHint: ctrans("Choose a longer period to see what came in before."),
+				waitingInSection: ":count not linked to an order yet",
+				own: "Not counted as received: :count movements of the bank itself (cashback, transfers between our balances) worth :amount.",
+				trendWeek: ctrans("Received each week"),
+				trendMonth: ctrans("Received every 30 days"),
+				verb: ctrans("received"),
+				noRate: ctrans("No exchange rate is known for what came in, so there is no trend to draw."),
+				donut: ctrans("Where the money went"),
+				previous: "All received, :period",
+				backlogDone: ctrans("Everything received in this period is placed."),
+				backlogButton: ctrans("Open the queue"),
+				placement: ctrans("How payments were placed"),
+				auto: ctrans("Placed automatically"),
+				hand: ctrans("Placed by hand"),
+				unread: ctrans("Not matched yet"),
+				breakdowns: ctrans("Where it came from"),
+				breakdownsHint: ctrans("by payment provider, currency and bank connection"),
+				providers: ctrans("By payment provider"),
+				providersEmpty: ctrans("No payment provider paid out in this period."),
+			}
+)
+
+const incomingMeta: Record<SectionKey, { label: string; color: string; hint: string }> = {
 	customers: { label: ctrans("Customers paying orders"), color: "#1f845a", hint: ctrans("Placed on customer orders") },
 	marketplaces: { label: ctrans("Marketplaces"), color: "#c0399f", hint: ctrans("Payouts from marketplaces") },
 	payment_accounts: { label: ctrans("Provider payouts"), color: "#3b82f6", hint: ctrans("Checkout, PastPay and cash on delivery carriers paying us out") },
@@ -71,7 +130,11 @@ const sectionMeta: Record<SectionKey, { label: string; color: string; hint: stri
 	other: { label: ctrans("Other"), color: "#9ca3af", hint: ctrans("Not for an order") },
 }
 const sectionOrder: SectionKey[] = ["customers", "marketplaces", "payment_accounts", "needs_person", "other"]
-const sections = computed(() => sectionOrder.map((key) => ({ ...props.dashboard.sections.find((section) => section.key === key)!, ...sectionMeta[key] })))
+const sections = computed(() =>
+	props.sectionMeta
+		? props.sectionMeta.map((meta) => ({ ...props.dashboard.sections.find((section) => section.key === meta.key)!, ...meta }))
+		: sectionOrder.map((key) => ({ ...props.dashboard.sections.find((section) => section.key === key)!, ...incomingMeta[key] }))
+)
 
 const isGroup = computed(() => props.organisations.length > 0)
 const routeParameters = computed(() => (isGroup.value ? {} : { organisation: route().params["organisation"] }))
@@ -110,10 +173,10 @@ const share = (amount: number) => (props.dashboard.total.amount > 0 ? Math.round
 const oldestDays = computed(() => (props.dashboard.backlog.oldest ? Math.floor((Date.now() - Date.parse(props.dashboard.backlog.oldest)) / 86400000) : null))
 
 const placementMeta = [
-	{ key: "auto" as const, label: ctrans("Placed automatically"), color: "#1f845a" },
-	{ key: "hand" as const, label: ctrans("Placed by hand"), color: "#0ea5e9" },
+	{ key: "auto" as const, label: t.value.auto, color: "#1f845a" },
+	{ key: "hand" as const, label: t.value.hand, color: "#0ea5e9" },
 	{ key: "waiting" as const, label: ctrans("Waiting for a person"), color: "#f59e0b" },
-	{ key: "unread" as const, label: ctrans("Not matched yet"), color: "#e5e7eb" },
+	{ key: "unread" as const, label: t.value.unread, color: "#e5e7eb" },
 ]
 const placedLines = computed(() => placementMeta.reduce((carry, item) => carry + props.dashboard.placement[item.key].lines, 0))
 const placement = computed(() =>
@@ -134,7 +197,7 @@ const lineChart = computed(() => {
 				.filter((section) => section.lines > 0)
 				.map((section) => ({ label: section.label, data: props.dashboard.trend.series[section.key], borderColor: section.color, backgroundColor: section.color, tension: 0, borderWidth: 1.5, pointRadius })),
 			...(props.dashboard.trend.previous
-				? [{ label: ctrans("All received, :period", { period: previousLabel.value }), data: props.dashboard.trend.previous, borderColor: "#9ca3af", backgroundColor: "#9ca3af", borderDash: [4, 4], tension: 0, borderWidth: 1.5, pointRadius: 0, hidden: true }]
+				? [{ label: ctrans(t.value.previous, { period: previousLabel.value }), data: props.dashboard.trend.previous, borderColor: "#9ca3af", backgroundColor: "#9ca3af", borderDash: [4, 4], tension: 0, borderWidth: 1.5, pointRadius: 0, hidden: true }]
 				: []),
 		],
 	}
@@ -206,7 +269,7 @@ const placementOptions = {
 }
 
 const breakdowns = computed(() => [
-	{ key: "providers", title: ctrans("By payment provider"), rows: props.dashboard.providers, color: "#3b82f6", empty: ctrans("No payment provider paid out in this period.") },
+	{ key: "providers", title: t.value.providers, rows: props.dashboard.providers, color: "#3b82f6", empty: t.value.providersEmpty },
 	{ key: "currencies", title: ctrans("By currency"), rows: props.dashboard.currencies, color: "#1f845a", empty: "" },
 	{ key: "banks", title: ctrans("By bank connection"), rows: props.dashboard.banks, color: "#c0399f", empty: "" },
 	...(isGroup.value ? [{ key: "organisations", title: ctrans("By organisation"), rows: props.dashboard.organisations ?? [], color: "#f59e0b", empty: "" }] : []),
@@ -221,7 +284,7 @@ const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (row.amount / M
 	<div class="space-y-5 px-4 py-4">
 		<div class="flex flex-wrap items-end justify-between gap-3">
 			<div>
-				<div class="text-xs text-gray-500">{{ ctrans("Received by the banks") }}</div>
+				<div class="text-xs text-gray-500">{{ t.headline }}</div>
 				<div class="flex flex-wrap items-baseline gap-x-3">
 					<span class="text-3xl font-semibold tabular-nums">{{ money(dashboard.total.amount) }}</span>
 					<span class="text-sm tabular-nums text-gray-500">{{ ctrans(dashboard.total.lines === 1 ? ":count payment" : ":count payments", { count: locale.number(dashboard.total.lines) }) }}</span>
@@ -232,13 +295,13 @@ const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (row.amount / M
 			</div>
 			<div class="flex flex-wrap items-center gap-3">
 				<SegmentedToggle v-if="organisations.length > 1" v-model="organisation" :options="organisationOptions" :aria-label="ctrans('Organisation')" />
-				<SegmentedToggle v-model="period" :options="periodOptions" soft :aria-label="ctrans('Received in')" />
+				<SegmentedToggle v-model="period" :options="periodOptions" soft :aria-label="t.periodAria" />
 			</div>
 		</div>
 
 		<div v-if="!dashboard.total.lines" class="rounded-lg border border-gray-200 bg-white px-6 py-12 text-center">
-			<div class="text-lg font-light text-gray-600">{{ ctrans("The banks received nothing in this period") }}</div>
-			<p class="mt-1 text-sm text-gray-500">{{ ctrans("Choose a longer period to see what came in before.") }}</p>
+			<div class="text-lg font-light text-gray-600">{{ t.nothingTitle }}</div>
+			<p class="mt-1 text-sm text-gray-500">{{ t.nothingHint }}</p>
 		</div>
 
 		<template v-else>
@@ -268,27 +331,31 @@ const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (row.amount / M
 				</Link>
 			</div>
 			<p v-if="dashboard.own.lines" class="-mt-2 text-xs text-gray-500">
-				{{ ctrans("Not counted as received: :count movements of the bank itself (cashback, transfers between our balances) worth :amount.", { count: locale.number(dashboard.own.lines), amount: money(dashboard.own.amount) }) }}
+				{{ ctrans(t.own, { count: locale.number(dashboard.own.lines), amount: money(dashboard.own.amount) }) }}
 				<Link :href="sectionRoute('other')" class="underline decoration-gray-300 hover:text-gray-700">{{ ctrans("See them in Other") }}</Link>
+				<template v-if="ownCompaniesApart"> · <Link :href="sectionRoute('own_companies')" class="underline decoration-gray-300 hover:text-gray-700">{{ ctrans("and in Our companies") }}</Link></template>
+			</p>
+			<p v-if="isOut && dashboard.transfer_fees" class="-mt-3 text-xs text-gray-500">
+				{{ ctrans("Of what was paid, :amount were the bank's fees on transfers.", { amount: money(dashboard.transfer_fees) }) }}
 			</p>
 
 			<DashboardWidgetBox storageKey="bank_incoming_received_collapsed">
 				<template #header>
 					<span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
 						<FontAwesomeIcon icon="fal fa-chart-line" class="text-pink-600" fixed-width aria-hidden="true" />
-						{{ dashboard.trend.bin_days === 7 ? ctrans("Received each week") : ctrans("Received every 30 days") }}
+						{{ dashboard.trend.bin_days === 7 ? t.trendWeek : t.trendMonth }}
 					</span>
-					<span class="text-xs text-gray-400">{{ money(dashboard.total.amount) }} {{ ctrans("received") }} · {{ ctrans(dashboard.total.lines === 1 ? ":count payment" : ":count payments", { count: locale.number(dashboard.total.lines) }) }}</span>
+					<span class="text-xs text-gray-400">{{ money(dashboard.total.amount) }} {{ t.verb }} · {{ ctrans(dashboard.total.lines === 1 ? ":count payment" : ":count payments", { count: locale.number(dashboard.total.lines) }) }}</span>
 				</template>
 				<div class="grid gap-6 lg:grid-cols-5">
 					<div class="h-72 lg:col-span-3">
 						<Chart v-if="hasTrend" type="line" :data="lineChart" :options="lineOptions" class="h-full" />
-						<p v-else class="py-10 text-center text-sm text-gray-500">{{ ctrans("No exchange rate is known for what came in, so there is no trend to draw.") }}</p>
+						<p v-else class="py-10 text-center text-sm text-gray-500">{{ t.noRate }}</p>
 					</div>
 					<div class="lg:col-span-2 lg:border-l lg:border-gray-100 lg:pl-6">
 						<p class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-600">
 							<FontAwesomeIcon icon="fal fa-chart-pie" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
-							{{ ctrans("Where the money went") }}
+							{{ t.donut }}
 							<span class="text-xs font-normal text-gray-400">{{ orgCurrency }}</span>
 						</p>
 						<div class="flex flex-wrap items-center gap-4 xl:flex-nowrap">
@@ -345,14 +412,14 @@ const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (row.amount / M
 							<table class="mt-3 w-full text-sm tabular-nums">
 								<tbody>
 									<tr v-for="reason in dashboard.backlog.reasons" :key="reason.key" class="border-t border-gray-100">
-										<td class="py-1 pr-3 text-gray-700">{{ sentenceCase(ctrans(reason.key)) }}</td>
+										<td class="py-1 pr-3 text-gray-700">{{ isOut ? reason.label : sentenceCase(ctrans(reason.key)) }}</td>
 										<td class="whitespace-nowrap py-1 pr-3 text-right font-medium">{{ locale.number(reason.lines) }}</td>
 										<td class="whitespace-nowrap py-1 text-right text-gray-500">{{ money(reason.amount) }}</td>
 									</tr>
 								</tbody>
 							</table>
 							<Link :href="sectionRoute('needs_person')" class="mt-3 inline-block">
-								<Button type="tertiary" size="xs" :label="ctrans('Open the queue')">
+								<Button type="tertiary" size="xs" :label="t.backlogButton">
 									<template #icon>
 										<FontAwesomeIcon icon="fal fa-clipboard-list-check" fixed-width aria-hidden="true" />
 									</template>
@@ -361,13 +428,13 @@ const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (row.amount / M
 						</template>
 						<p v-else class="flex items-center gap-2 text-sm text-gray-600">
 							<FontAwesomeIcon icon="fal fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
-							{{ ctrans("Everything received in this period is placed.") }}
+							{{ t.backlogDone }}
 						</p>
 					</div>
 					<div class="lg:col-span-2 lg:border-l lg:border-gray-100 lg:pl-6">
 						<p class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-600">
 							<FontAwesomeIcon icon="fal fa-robot" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
-							{{ ctrans("How payments were placed") }}
+							{{ t.placement }}
 						</p>
 						<div class="flex flex-wrap items-center gap-4 sm:flex-nowrap">
 							<div class="relative h-32 w-32 shrink-0">
@@ -401,9 +468,9 @@ const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (row.amount / M
 				<template #header>
 					<span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
 						<FontAwesomeIcon icon="fal fa-list-ul" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
-						{{ ctrans("Where it came from") }}
+						{{ t.breakdowns }}
 					</span>
-					<span class="text-xs text-gray-400">{{ ctrans("by payment provider, currency and bank connection") }}</span>
+					<span class="text-xs text-gray-400">{{ t.breakdownsHint }}</span>
 				</template>
 				<div class="grid gap-6" :class="isGroup ? 'lg:grid-cols-2 xl:grid-cols-4' : 'lg:grid-cols-3'">
 					<div v-for="(breakdown, index) in breakdowns" :key="breakdown.key" :class="index ? 'lg:border-l lg:border-gray-100 lg:pl-6' : ''">

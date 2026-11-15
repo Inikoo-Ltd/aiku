@@ -161,6 +161,13 @@ Route::middleware(
                     Route::get("/$path", [App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming::class, 'inGroup'])->name($name);
                 }
             });
+            Route::prefix('bank-outgoing')->name('bank_outgoing.')->group(function () {
+                Route::get('/', [App\Actions\Accounting\BankTransaction\UI\ShowBankOutgoingDashboard::class, 'inGroup'])->name('index');
+                foreach (App\Actions\Accounting\BankTransaction\UI\IndexBankOutgoing::SECTIONS as $section) {
+                    Route::get('/'.($section === 'needs_person' ? 'needs-a-person' : str_replace('_', '-', $section)), [App\Actions\Accounting\BankTransaction\UI\IndexBankOutgoing::class, 'inGroup'])->name($section);
+                }
+            });
+            Route::get('/cash', [App\Actions\Accounting\BankBalance\UI\ShowCash::class, 'inGroup'])->name('cash.index');
         });
     Route::prefix("marketing")
         ->name("marketing.")

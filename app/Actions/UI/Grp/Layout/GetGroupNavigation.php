@@ -145,6 +145,22 @@ class GetGroupNavigation
                                 'name' => 'grp.financials.bank_incoming.index',
                             ],
                         ],
+                        [
+                            'label' => __('Bank outgoing'),
+                            'icon'  => ['fal', 'fa-money-check-alt'],
+                            'root'  => 'grp.financials.bank_outgoing.',
+                            'route' => [
+                                'name' => 'grp.financials.bank_outgoing.index',
+                            ],
+                        ],
+                        [
+                            'label' => __('Cash'),
+                            'icon'  => ['fal', 'fa-coins'],
+                            'root'  => 'grp.financials.cash.',
+                            'route' => [
+                                'name' => 'grp.financials.cash.index',
+                            ],
+                        ],
                     ],
                 ],
             ];

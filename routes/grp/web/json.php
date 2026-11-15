@@ -307,6 +307,7 @@ Route::get('order/{order:id}/products-for-modify', GetOrderProductsForModificati
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
 Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');
 Route::get('organisation/{organisation}/org-suppliers', GetOrgSuppliers::class)->name('org_suppliers.index');
+Route::get('organisation/{organisation:id}/bank-payee-link-options', App\Actions\Accounting\BankPayee\Json\GetBankPayeeLinkOptions::class)->name('bank_payee.link_options');
 Route::get('organisation/{organisation:id}/bank-transaction/{bankTransaction:id}/order-candidates', GetBankTransactionOrderCandidates::class)->name('bank_transaction.order_candidates')->withoutScopedBindings();
 Route::get('organisation/{organisation}/org-supplier-products', GetOrgSupplierProducts::class)->name('org_supplier_products.index');
 Route::get('org-supplier-product/{orgSupplierProduct:id}/minimum-orders', GetOrgSupplierProductMinimumOrders::class)->name('org_supplier_product.minimum_orders');

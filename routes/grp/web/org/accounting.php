@@ -42,6 +42,8 @@ use App\Actions\Accounting\PaymentAccountShop\UI\IndexPaymentAccountShops;
 use App\Actions\Accounting\PaymentAccountShop\UI\ShowPaymentAccountShop;
 use App\Actions\Accounting\Reports\BankFees\IndexBankFees;
 use App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming;
+use App\Actions\Accounting\BankTransaction\UI\IndexBankOutgoing;
+use App\Actions\Accounting\BankTransaction\UI\ShowBankOutgoingDashboard;
 use App\Actions\Accounting\BankTransaction\UI\ShowBankIncomingDashboard;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
 use App\Actions\Accounting\UI\IndexInvoicesPerShop;
@@ -61,6 +63,13 @@ Route::prefix('bank-incoming')->as('bank_incoming.')->group(function () {
     Route::get('/other', [IndexBankIncoming::class, 'other'])->name('other');
     Route::get('/needs-a-person', IndexBankIncoming::class)->name('needs_person');
 });
+Route::prefix('bank-outgoing')->as('bank_outgoing.')->group(function () {
+    Route::get('/', ShowBankOutgoingDashboard::class)->name('index');
+    foreach (IndexBankOutgoing::SECTIONS as $section) {
+        Route::get('/'.($section === 'needs_person' ? 'needs-a-person' : str_replace('_', '-', $section)), IndexBankOutgoing::class)->name($section);
+    }
+});
+Route::get('/cash', App\Actions\Accounting\BankBalance\UI\ShowCash::class)->name('cash.index');
 Route::redirect('/bank-review', '/org/{organisation}/accounting/bank-incoming');
 
 

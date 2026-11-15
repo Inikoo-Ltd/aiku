@@ -10,6 +10,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/Dropshipping/Allegro/** | .ai/rules/allegro.md |
 | apps/** | .ai/rules/apps.md |
 | app/Actions/Production/Artisan/** | .ai/rules/artisan.md |
+| config/blueprint/job_positions.php | .ai/rules/blueprint.md |
 | app/Actions/Chat/** | .ai/rules/chat.md |
 | app/Actions/Web/Website/Cloudflare/** | .ai/rules/cloudflare.md |
 | app/Actions/CRM/Customer/** | .ai/rules/crm.md |

@@ -45,6 +45,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $bank_fee_payment_id the absorbed customer-side fee recorded with the payment
  * @property array<string, mixed> $match_data
  * @property \Illuminate\Support\Carbon|null $matched_at
+ * @property string|null $payee_key the payee's normalised name, on lines paid out to a payee
+ * @property string|null $out_category what a line paid out was for: a BankPayeeCategoryEnum value or needs_person
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read BankConnection $bankConnection
