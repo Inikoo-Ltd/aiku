@@ -26305,6 +26305,7 @@
     "yes": "Ano",
     "yesterday": "včera",
     "your order number": "číslo vaší objednávky",
+    "your order number (is it :reference?)": "číslo vaší objednávky (je to :reference?)",
     "your sales channel": "váš prodejní kanál",
     "yourself": "sebe",
     "{0} No inserts to print.|{1} :count insert sent to printer.|[2,*] :count inserts sent to printer.": "{0} Žádné vložené listy k tisku.|{1} :count vložený list odeslán na tiskárnu.|[2,*] Počet vložených listů odeslaných na tiskárnu: :count.",

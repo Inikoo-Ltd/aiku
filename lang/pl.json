@@ -11970,6 +11970,7 @@
     "workplace": "miejsce pracy",
     "workshop": "edytor",
     "your order number": "numer zamówienia",
+    "your order number (is it :reference?)": "numer zamówienia (czy chodzi o :reference?)",
     "{0} No open basket holds this product right now. Orders already submitted keep the tax they were sold under.|{1} :count open basket holds this product and will be retaxed. Orders already submitted keep the tax they were sold under.|[2,*] :count open baskets hold this product and will be retaxed. Orders already submitted keep the tax they were sold under.": "{0} W tej chwili nie ma otwartego koszyka z tym produktem. Zamówienia już złożone zachowują podatek, z którym zostały sprzedane.|{1} :count otwarty koszyk zawiera ten produkt i zostanie ponownie opodatkowany. Zamówienia już złożone zachowują podatek, z którym zostały sprzedane.|[2,*] :count otwarte koszyki zawierają ten produkt i zostaną ponownie opodatkowane. Zamówienia już złożone zachowują podatek, z którym zostały sprzedane.",
     "{0} items selected": "Wybrano {0} pozycji",
     "{1} 1 line added to their ongoing PO|[2,*] :count lines added to their ongoing PO": "{1} 1 pozycja dodana do ich trwającego zamówienia zakupu|[2,4] :count pozycje dodane do ich trwającego zamówienia zakupu|[5,*] :count pozycji dodanych do ich trwającego zamówienia zakupu",

@@ -11790,6 +11790,7 @@
     "worst delay :days days": "ritardo massimo: :days giorni",
     "worst delay :days days (:supplier)": "ritardo massimo: :days giorni (:supplier)",
     "your order number": "il numero del suo ordine",
+    "your order number (is it :reference?)": "il numero del suo ordine (si tratta di :reference?)",
     "{0} No open basket holds this product right now. Orders already submitted keep the tax they were sold under.|{1} :count open basket holds this product and will be retaxed. Orders already submitted keep the tax they were sold under.|[2,*] :count open baskets hold this product and will be retaxed. Orders already submitted keep the tax they were sold under.": "{0} Nessun carrello aperto contiene questo prodotto al momento. Gli ordini già inviati manterranno l'imposta applicata al momento della vendita.|{1} :count carrello aperto contiene questo prodotto e verrà nuovamente tassato. Gli ordini già inviati manterranno l'imposta applicata al momento della vendita.|[2,*] :count carrelli aperti contengono questo prodotto e verranno nuovamente tassati. Gli ordini già inviati manterranno l'imposta applicata al momento della vendita.",
     "{0} items selected": "{0} articoli selezionati",
     "{1} :count new order was imported.|[2,*] :count new orders were imported.": "{1} :count nuovo ordine importato.|[2,*] :count nuovi ordini importati.",

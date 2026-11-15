@@ -25382,6 +25382,7 @@
     "yes": "áno",
     "yesterday": "včera",
     "your order number": "číslo vašej objednávky",
+    "your order number (is it :reference?)": "číslo vašej objednávky (je to :reference?)",
     "your sales channel": "váš predajný kanál",
     "yourself": "vlastnú správu",
     "{0} No inserts to print.|{1} :count insert sent to printer.|[2,*] :count inserts sent to printer.": "{0} Žiadne letáky na tlač.|{1} :count leták odoslaný do tlačiarne.|[2,*] :count letákov odoslaných do tlačiarne.",

@@ -9628,6 +9628,7 @@
     "workplace": "locul de muncă",
     "workshop": "editor",
     "your order number": "numărul comenzii",
+    "your order number (is it :reference?)": "numărul comenzii (este :reference?)",
     "{0} items selected": "{0} articole selectate",
     "{1} 1 line added to their ongoing PO|[2,*] :count lines added to their ongoing PO": "{1} 1 linie adăugată la PO-ul lor în curs|[2,*] :count linii adăugate la PO-ul lor în curs",
     "Δ 1Y": "Δ 1Y",

@@ -25434,6 +25434,7 @@
     "yes": "是",
     "yesterday": "昨天",
     "your order number": "您的订单号",
+    "your order number (is it :reference?)": "您的订单号（是 :reference 吗？）",
     "your sales channel": "您的销售渠道",
     "yourself": "您自己",
     "{0} No inserts to print.|{1} :count insert sent to printer.|[2,*] :count inserts sent to printer.": "{0} 没有待打印的插页。|{1} 已将 :count 个插页发送到打印机。|[2,*] 已将 :count 个插页发送到打印机。",

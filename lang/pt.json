@@ -25282,6 +25282,7 @@
     "yes": "sim",
     "yesterday": "ontem",
     "your order number": "o seu número de encomenda",
+    "your order number (is it :reference?)": "o seu número de encomenda (é a :reference?)",
     "your sales channel": "o seu canal de venda",
     "yourself": "você mesmo",
     "{0} No inserts to print.|{1} :count insert sent to printer.|[2,*] :count inserts sent to printer.": "{0} Não há inserções para imprimir.|{1} :count inserção enviada para a impressora.|[2,*] :count inserções enviadas para a impressora.",

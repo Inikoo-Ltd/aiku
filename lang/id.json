@@ -23264,6 +23264,7 @@
     "yes": "ya",
     "yesterday": "kemarin",
     "your order number": "nomor pesanan Anda",
+    "your order number (is it :reference?)": "nomor pesanan Anda (apakah :reference?)",
     "your sales channel": "kanal penjualan Anda",
     "yourself": "Anda sendiri",
     "{0} No inserts to print.|{1} :count insert sent to printer.|[2,*] :count inserts sent to printer.": "{0} Tidak ada sisipan untuk dicetak.|{1} :count sisipan dikirim ke printer.|[2,*] :count sisipan dikirim ke printer.",

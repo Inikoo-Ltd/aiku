@@ -23133,6 +23133,7 @@
     "yes": "हो",
     "yesterday": "हिजो",
     "your order number": "तपाईंको अर्डर नम्बर",
+    "your order number (is it :reference?)": "तपाईंको अर्डर नम्बर (के यो :reference हो?)",
     "your sales channel": "तपाईंको बिक्री च्यानल",
     "yourself": "आफैं",
     "{0} No inserts to print.|{1} :count insert sent to printer.|[2,*] :count inserts sent to printer.": "{0} छाप्नका लागि कुनै इन्सर्ट छैन।|{1} :count इन्सर्ट प्रिन्टरमा पठाइयो।|[2,*] :count इन्सर्टहरू प्रिन्टरमा पठाइए।",

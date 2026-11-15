@@ -26429,6 +26429,7 @@
     "yes": "yes",
     "yesterday": "yesterday",
     "your order number": "your order number",
+    "your order number (is it :reference?)": "your order number (is it :reference?)",
     "your sales channel": "your sales channel",
     "yourself": "yourself",
     "{0} No inserts to print.|{1} :count insert sent to printer.|[2,*] :count inserts sent to printer.": "{0} No inserts to print.|{1} :count insert sent to printer.|[2,*] :count inserts sent to printer.",

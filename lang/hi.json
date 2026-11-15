@@ -22393,6 +22393,7 @@
     "yes": "हाँ",
     "yesterday": "कल",
     "your order number": "आपका ऑर्डर नंबर",
+    "your order number (is it :reference?)": "आपका ऑर्डर नंबर (क्या यह :reference है?)",
     "your sales channel": "आपका बिक्री चैनल",
     "yourself": "स्वयं",
     "{0} No inserts to print.|{1} :count insert sent to printer.|[2,*] :count inserts sent to printer.": "{0} प्रिंट करने के लिए कोई इंसर्ट नहीं।|{1} :count इंसर्ट प्रिंटर को भेजा गया।|[2,*] :count इंसर्ट प्रिंटर को भेजे गए।",

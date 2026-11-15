@@ -16203,6 +16203,7 @@
     "worth": "değeri",
     "yes": "evet",
     "your order number": "sipariş numaranız",
+    "your order number (is it :reference?)": "sipariş numaranız (:reference mi?)",
     "your sales channel": "satış kanalınız",
     "yourself": "kendiniz",
     "{0} No inserts to print.|{1} :count insert sent to printer.|[2,*] :count inserts sent to printer.": "{0} Yazdırılacak ek yok.|{1} :count ek yazıcıya gönderildi.|[2,*] :count ek yazıcıya gönderildi.",

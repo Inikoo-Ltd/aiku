@@ -25281,6 +25281,7 @@
     "yes": "Ja",
     "yesterday": "gestern",
     "your order number": "Ihre Bestellnummer",
+    "your order number (is it :reference?)": "Ihre Bestellnummer (ist es :reference?)",
     "your sales channel": "Ihr Vertriebskanal",
     "yourself": "selbst",
     "{0} No inserts to print.|{1} :count insert sent to printer.|[2,*] :count inserts sent to printer.": "{0} Keine Beilagen zum Drucken.|{1} :count Beilage an den Drucker gesendet.|[2,*] :count Beilagen an den Drucker gesendet.",
