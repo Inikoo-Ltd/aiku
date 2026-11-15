@@ -1070,6 +1070,38 @@ test('a faire payout marks its order paid by the marketplace whatever the amount
     }
 });
 
+test('an order in an ordinary shop reads as paid by the marketplace once a faire payout is linked to it', function () {
+    $order = bankMatchingOrder(createCustomer($this->shop), 120);
+    $order->updateQuietly(['state' => OrderStateEnum::DISPATCHED]);
+
+    expect(UpdateOrderPaymentsStatus::run($order->refresh())->pay_detailed_status)->not->toBe(\App\Enums\Ordering\Order\OrderPayDetailedStatusEnum::TO_BE_PAID_BY_MARKETPLACE);
+
+    $bankConnection = bankMatchingConnection($this->organisation);
+    BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => 'old-faire',
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 99.60,
+        'currency_id'             => $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => 'ADYEN N.V.',
+        'reference'               => 'FAIRE 8MH5XCFQM2LY',
+        'booked_at'               => now(),
+        'match_state'             => BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE,
+        'order_id'                => $order->id,
+    ]);
+
+    $order = UpdateOrderPaymentsStatus::run($order->refresh());
+
+    expect($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and($order->pay_detailed_status)->toBe(\App\Enums\Ordering\Order\OrderPayDetailedStatusEnum::PAID_BY_MARKETPLACE)
+        ->and((float)$order->payment_amount)->toBe(0.0)
+        ->and($order->payments()->count())->toBe(0);
+});
+
 test('the faire payout backfill links old payouts and relabels unpaid faire orders, only with --commit', function () {
     $originalShop = $this->shop->only(['type', 'settings']);
     $this->shop->updateQuietly(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL, 'settings' => array_merge($this->shop->settings ?? [], ['faire' => ['order_from_days' => 6]])]);

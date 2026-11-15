@@ -120,11 +120,15 @@ class UpdateOrderPaymentsStatus extends OrgAction
 
         /**
          * A Faire order carries no customer payment: it is paid once its payout is linked to it from the bank feed.
+         * Faire orders from before the Faire shops were entered in the ordinary shops, and read as paid the same way
+         * once their payout is linked.
          */
-        if ($runningPaymentsAmount == 0 && $totalAmount != 0 && $order->state !== OrderStateEnum::CANCELLED && $order->shop->isFaire()) {
+        if ($runningPaymentsAmount == 0 && $totalAmount != 0 && $order->state !== OrderStateEnum::CANCELLED) {
             $paidByMarketplace = BankTransaction::where('order_id', $order->id)->where('match_state', BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE)->exists();
-            $payStatus         = $paidByMarketplace ? OrderPayStatusEnum::PAID : OrderPayStatusEnum::UNPAID;
-            $payDetailedStatus = $paidByMarketplace ? OrderPayDetailedStatusEnum::PAID_BY_MARKETPLACE : OrderPayDetailedStatusEnum::TO_BE_PAID_BY_MARKETPLACE;
+            if ($paidByMarketplace || $order->shop->isFaire()) {
+                $payStatus         = $paidByMarketplace ? OrderPayStatusEnum::PAID : OrderPayStatusEnum::UNPAID;
+                $payDetailedStatus = $paidByMarketplace ? OrderPayDetailedStatusEnum::PAID_BY_MARKETPLACE : OrderPayDetailedStatusEnum::TO_BE_PAID_BY_MARKETPLACE;
+            }
         }
 
         $order->update(
