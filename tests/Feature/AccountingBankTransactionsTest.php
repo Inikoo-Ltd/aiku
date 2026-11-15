@@ -1867,3 +1867,74 @@ test('bank incoming puts every line received in exactly one section, each with i
     get("/org/{$this->organisation->slug}/accounting/bank-review")
         ->assertRedirect(route('grp.org.accounting.bank_incoming.index', [$this->organisation->slug]));
 });
+
+test('group financials shows bank incoming of every organisation the user may see, in the group currency, read only', function () {
+    $group                 = $this->organisation->group;
+    $otherOrganisationData = Organisation::factory()->definition();
+    data_set($otherOrganisationData, 'code', 'fin'.random_int(1000, 9999));
+    data_set($otherOrganisationData, 'type', OrganisationTypeEnum::SHOP);
+    $otherOrganisation = StoreOrganisation::make()->action($group, $otherOrganisationData);
+
+    $line = fn (Organisation $organisation, string $id) => BankTransaction::create([
+        'group_id'                => $group->id,
+        'organisation_id'         => $organisation->id,
+        'bank_connection_id'      => bankMatchingConnection($organisation)->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 10,
+        'currency_id'             => $group->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => 'Financials test',
+        'booked_at'               => now()->subDay(),
+        'match_state'             => BankTransactionMatchStateEnum::REVIEW,
+        'match_data'              => ['reason' => 'pays less than owed'],
+    ]);
+    $mine   = $line($this->organisation, 'g1');
+    $theirs = $line($otherOrganisation, 'g2');
+
+    $admin = createAdminGuest($group)->getUser();
+    actingAs($admin);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+
+    $rows = fn (array $query = []) => collect(get(route('grp.financials.bank_incoming.needs_person', ['filter' => ['global' => 'Financials test'], ...$query]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Accounting/BankIncoming')
+            ->where('canEdit', false)
+            ->where('orgCurrency', $group->currency->code)
+            ->where('queryBuilderProps.default.columns', fn ($columns) => collect($columns)->pluck('key')->contains('organisation_code'))
+            ->where('pageHead.subNavigation.0.route.name', 'grp.financials.bank_incoming.index'))
+        ->viewData('page')['props']['data']['data']);
+
+    expect($rows()->pluck('id')->all())->toContain($mine->id, $theirs->id)
+        ->and($rows()->every(fn ($row) => $row['actionable'] === false && $row['reason'] === 'pays less than owed'))->toBeTrue()
+        ->and($rows()->firstWhere('id', $theirs->id)['organisation_slug'])->toBe($otherOrganisation->slug)
+        ->and($rows(['org' => $otherOrganisation->slug])->pluck('id')->all())->toBe([$theirs->id]);
+
+    foreach (['customers', 'marketplaces', 'payment_accounts', 'other'] as $section) {
+        get(route("grp.financials.bank_incoming.$section"))->assertOk();
+    }
+    $dashboard = get(route('grp.financials.bank_incoming.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Accounting/BankIncomingDashboard')->where('orgCurrency', $group->currency->code))
+        ->viewData('page')['props']['dashboard'];
+    expect(collect($dashboard['organisations'])->pluck('label')->all())->toContain($this->organisation->name, $otherOrganisation->name);
+    get(route('grp.financials.dashboard'))->assertRedirect('/financials/bank-incoming');
+    expect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::make()->handle($admin))->toHaveKey('financials');
+
+    setPermissionsTeamId($group->id);
+    $restricted = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+    expect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::make()->handle($restricted))->not->toHaveKey('financials');
+    actingAs($restricted);
+    get(route('grp.financials.bank_incoming.index'))->assertForbidden();
+    get(route('grp.financials.bank_incoming.needs_person'))->assertForbidden();
+
+    $restricted->givePermissionTo("accounting.{$otherOrganisation->id}.view");
+    $restricted->refresh();
+    actingAs($restricted);
+    expect($rows()->pluck('id')->all())->toBe([$theirs->id])
+        ->and(\App\Actions\UI\Grp\Layout\GetGroupNavigation::make()->handle($restricted))->toHaveKey('financials');
+    $dashboard = get(route('grp.financials.bank_incoming.index'))->assertOk()->viewData('page')['props']['dashboard'];
+    expect(collect($dashboard['organisations'])->pluck('label')->all())->toBe([$otherOrganisation->name]);
+});

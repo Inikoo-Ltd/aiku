@@ -45,6 +45,8 @@ interface BankLine {
 	order_slug: string | null
 	shop_slug: string | null
 	is_dismissed: boolean
+	organisation_slug: string
+	organisation_code: string
 	actionable: boolean
 	payout: {
 		provider: "checkout" | "pastpay" | "cod"
@@ -76,7 +78,9 @@ const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	canEdit: boolean
-	organisationId: number
+	organisationId: number | null
+	organisation: string | null
+	organisations: { value: string; label: string }[]
 	section: "customers" | "marketplaces" | "payment_accounts" | "other" | "needs_person"
 	summary: { count: number; total: number | null }
 	provider: string | null
@@ -99,7 +103,7 @@ const sentenceCase = (text: string) => text.charAt(0).toUpperCase() + text.slice
 
 const orderRoute = (line: BankLine) =>
 	line.order_slug && line.shop_slug
-		? route("grp.org.shops.show.ordering.orders.show", [route().params["organisation"], line.shop_slug, line.order_slug])
+		? route("grp.org.shops.show.ordering.orders.show", [line.organisation_slug, line.shop_slug, line.order_slug])
 		: null
 
 const shortAmount = (amount: number) =>
@@ -121,13 +125,18 @@ const currencyOptions = computed(() => [
 ])
 
 const reload = (query: Record<string, string | number | null>) => {
-	const params = { provider: props.provider, period: props.period, currency: props.currency, from: props.from, to: props.to, min: props.min, max: props.max, ...query }
+	const params = { org: props.organisation, provider: props.provider, period: props.period, currency: props.currency, from: props.from, to: props.to, min: props.min, max: props.max, ...query }
 	router.get(
-		route(route().current() as string, [route().params["organisation"]]),
+		route(route().current() as string, props.organisationId ? [route().params["organisation"]] : []),
 		Object.fromEntries(Object.entries(params).filter(([, value]) => value !== null && value !== undefined && value !== "")),
 		{ preserveState: false }
 	)
 }
+const organisationOptions = computed(() => [{ label: ctrans("All"), value: "all" }, ...props.organisations])
+const organisation = computed({
+	get: () => props.organisation ?? "all",
+	set: (value: string) => reload({ org: value === "all" ? null : value }),
+})
 const provider = computed({
 	get: () => props.provider ?? "all",
 	set: (value: string) => reload({ provider: value === "all" ? null : value }),
@@ -277,6 +286,7 @@ const submit = () => {
 	<PageHeading :data="pageHead" />
 
 	<div class="flex flex-wrap items-center gap-3 px-4 pt-3">
+		<SegmentedToggle v-if="organisations.length > 1" v-model="organisation" :options="organisationOptions" :aria-label="ctrans('Organisation')" />
 		<SegmentedToggle v-if="providers.length > 1" v-model="provider" :options="providerOptions" :aria-label="ctrans('Payment provider')" />
 		<SegmentedToggle v-model="period" :options="periodOptions" soft :aria-label="ctrans('Received in')" />
 		<DatePicker
@@ -307,6 +317,12 @@ const submit = () => {
 	<Table :resource="data" class="mt-5">
 		<template #cell(booked_at)="{ item }">
 			<span class="whitespace-nowrap">{{ useFormatTime(item.booked_at, { formatTime: "d MMM yyyy" }) }}</span>
+		</template>
+
+		<template #cell(organisation_code)="{ item }">
+			<Link :href="route(`grp.org.accounting.bank_incoming.${section}`, [item.organisation_slug])" class="primaryLink whitespace-nowrap" v-tooltip="ctrans('Open in the organisation, where payments are placed')">
+				{{ item.organisation_code }}
+			</Link>
 		</template>
 
 		<template #cell(bank)="{ item }">

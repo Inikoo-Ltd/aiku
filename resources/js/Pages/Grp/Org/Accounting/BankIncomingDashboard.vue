@@ -39,6 +39,9 @@ const props = defineProps<{
 	pageHead: PageHeadingTypes
 	query: Record<string, string>
 	orgCurrency: string
+	routeBase: string
+	organisation: string | null
+	organisations: { value: string; label: string }[]
 	dashboard: {
 		period: "90d" | "1y" | "all"
 		total: Figure & { previous_amount: number | null }
@@ -50,6 +53,7 @@ const props = defineProps<{
 		providers: Ranked[]
 		currencies: Ranked[]
 		banks: Ranked[]
+		organisations?: Ranked[]
 	}
 }>()
 
@@ -69,7 +73,18 @@ const sectionMeta: Record<SectionKey, { label: string; color: string; hint: stri
 const sectionOrder: SectionKey[] = ["customers", "marketplaces", "payment_accounts", "needs_person", "other"]
 const sections = computed(() => sectionOrder.map((key) => ({ ...props.dashboard.sections.find((section) => section.key === key)!, ...sectionMeta[key] })))
 
-const sectionRoute = (key: SectionKey) => route(`grp.org.accounting.bank_incoming.${key}`, { organisation: route().params["organisation"], ...props.query })
+const isGroup = computed(() => props.organisations.length > 0)
+const routeParameters = computed(() => (isGroup.value ? {} : { organisation: route().params["organisation"] }))
+const reload = (query: Record<string, string | null>) => {
+	const params = { ...props.query, ...query }
+	router.get(route(`${props.routeBase}index`, routeParameters.value), Object.fromEntries(Object.entries(params).filter(([, value]) => value && value !== "90d")))
+}
+const organisationOptions = computed(() => [{ label: ctrans("All"), value: "all" }, ...props.organisations])
+const organisation = computed({
+	get: () => props.organisation ?? "all",
+	set: (value: string) => reload({ org: value === "all" ? null : value }),
+})
+const sectionRoute = (key: SectionKey) => route(`${props.routeBase}${key}`, { ...routeParameters.value, ...props.query })
 
 const periodOptions = [
 	{ label: ctrans("Last 90 days"), value: "90d" },
@@ -78,7 +93,7 @@ const periodOptions = [
 ]
 const period = computed({
 	get: () => props.dashboard.period,
-	set: (value: string) => router.get(route("grp.org.accounting.bank_incoming.index", [route().params["organisation"]]), value === "90d" ? {} : { period: value }),
+	set: (value: string) => reload({ period: value }),
 })
 const previousLabel = computed(() => (props.dashboard.period === "1y" ? ctrans("the year before") : ctrans("the 90 days before")))
 
@@ -194,6 +209,7 @@ const breakdowns = computed(() => [
 	{ key: "providers", title: ctrans("By payment provider"), rows: props.dashboard.providers, color: "#3b82f6", empty: ctrans("No payment provider paid out in this period.") },
 	{ key: "currencies", title: ctrans("By currency"), rows: props.dashboard.currencies, color: "#1f845a", empty: "" },
 	{ key: "banks", title: ctrans("By bank connection"), rows: props.dashboard.banks, color: "#c0399f", empty: "" },
+	...(isGroup.value ? [{ key: "organisations", title: ctrans("By organisation"), rows: props.dashboard.organisations ?? [], color: "#f59e0b", empty: "" }] : []),
 ])
 const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (row.amount / Math.max(...rows.map((item) => item.amount), 1)) * 100)}%`
 </script>
@@ -214,7 +230,10 @@ const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (row.amount / M
 					</span>
 				</div>
 			</div>
-			<SegmentedToggle v-model="period" :options="periodOptions" soft :aria-label="ctrans('Received in')" />
+			<div class="flex flex-wrap items-center gap-3">
+				<SegmentedToggle v-if="organisations.length > 1" v-model="organisation" :options="organisationOptions" :aria-label="ctrans('Organisation')" />
+				<SegmentedToggle v-model="period" :options="periodOptions" soft :aria-label="ctrans('Received in')" />
+			</div>
 		</div>
 
 		<div v-if="!dashboard.total.lines" class="rounded-lg border border-gray-200 bg-white px-6 py-12 text-center">
@@ -386,7 +405,7 @@ const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (row.amount / M
 					</span>
 					<span class="text-xs text-gray-400">{{ ctrans("by payment provider, currency and bank connection") }}</span>
 				</template>
-				<div class="grid gap-6 lg:grid-cols-3">
+				<div class="grid gap-6" :class="isGroup ? 'lg:grid-cols-2 xl:grid-cols-4' : 'lg:grid-cols-3'">
 					<div v-for="(breakdown, index) in breakdowns" :key="breakdown.key" :class="index ? 'lg:border-l lg:border-gray-100 lg:pl-6' : ''">
 						<p class="mb-2 text-sm font-semibold text-gray-600">{{ breakdown.title }}</p>
 						<p v-if="!breakdown.rows.length" class="text-sm text-gray-400">{{ breakdown.empty }}</p>

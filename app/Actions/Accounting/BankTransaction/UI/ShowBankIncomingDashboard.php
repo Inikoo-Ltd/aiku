@@ -12,6 +12,7 @@ use App\Actions\Accounting\BankTransaction\MatchBankTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithAccountingPagesAuthorisation;
 use App\Models\Accounting\BankTransaction;
+use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -26,16 +27,20 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowBankIncomingDashboard extends OrgAction
 {
-    use WithAccountingPagesAuthorisation;
+    use WithAccountingPagesAuthorisation {
+        authorize as authorizeInOrganisation;
+    }
+
+    private ?IndexBankIncoming $groupIndex = null;
 
     private string $period = '90d';
 
     /**
      * @return array<string, mixed>
      */
-    public function handle(Organisation $organisation, string $period = '90d'): array
+    public function handle(Organisation|Group $organisation, string $period = '90d', ?IndexBankIncoming $index = null): array
     {
-        $index   = IndexBankIncoming::make();
+        $index ??= IndexBankIncoming::make();
         $now     = now();
         $days    = match ($period) {
             '1y'    => 365,
@@ -58,9 +63,9 @@ class ShowBankIncomingDashboard extends OrgAction
                 else 'auto' end as placed")
             ->selectRaw('case when ('.IndexBankIncoming::BUCKET_SQL.") = 'payment_accounts' then ".IndexBankIncoming::PROVIDER_SQL.' end as provider')
             ->selectRaw('case when ('.IndexBankIncoming::BUCKET_SQL.") = 'needs_person' then coalesce(bank_transactions.match_data->>'reason', 'matches, not paid automatically') end as reason")
-            ->selectRaw('currencies.code as currency, bank_connections.name as bank')
+            ->selectRaw('currencies.code as currency, bank_connections.name as bank, organisations.name as organisation')
             ->selectRaw('count(*) as lines, sum(bank_transactions.amount) as amount, sum('.$index->orgAmountSql().') as org_amount')
-            ->groupByRaw('1, 2, 3, 4, 5, 6, 7')
+            ->groupByRaw('1, 2, 3, 4, 5, 6, 7, 8')
             ->get()
             ->map(function ($row) use ($now, $since, $binDays) {
                 $day           = Carbon::parse($row->day);
@@ -115,6 +120,7 @@ class ShowBankIncomingDashboard extends OrgAction
                 ->map(fn (Collection $group, string $code) => ['key' => $code, 'label' => $code, ...$sum($group), 'native' => round((float) $group->sum('amount'), 2)])
                 ->sortByDesc('amount')->values()->all(),
             'banks'       => $ranked($current, 'bank'),
+            'organisations' => $organisation instanceof Group ? $ranked($current, 'organisation') : [],
         ];
     }
 
@@ -130,8 +136,27 @@ class ShowBankIncomingDashboard extends OrgAction
     }
 
     /**
-     * @param array<string, mixed> $dashboard
+     * @return array<string, mixed>
      */
+    public function inGroup(ActionRequest $request): array
+    {
+        $slug             = $request->query('org');
+        $this->groupIndex = IndexBankIncoming::make()->forGroup(group(), $request->user(), is_string($slug) ? $slug : null);
+        $this->initialisationFromGroup(group(), $request);
+        $this->period = in_array($request->query('period'), IndexBankIncoming::PERIODS, true) ? $request->query('period') : '90d';
+
+        return $this->handle(group(), $this->period, $this->groupIndex);
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction || $this->groupIndex === null) {
+            return $this->authorizeInOrganisation($request);
+        }
+
+        return IndexBankIncoming::accountingOrganisations(group(), $request->user())->isNotEmpty();
+    }
+
     /**
      * @param array<string, mixed> $dashboard
      * @return array<string, int>
@@ -146,20 +171,27 @@ class ShowBankIncomingDashboard extends OrgAction
 
     public function htmlResponse(array $dashboard, ActionRequest $request): Response
     {
-        $query = $this->period === '90d' ? [] : ['period' => $this->period];
+        $isGroup = $this->groupIndex !== null;
+        $query   = array_filter(['period' => $this->period === '90d' ? null : $this->period, 'org' => $this->groupIndex?->organisationSlug]);
+        $parent  = $isGroup ? $this->group : $this->organisation;
 
         return Inertia::render(
             'Org/Accounting/BankIncomingDashboard',
             [
-                'breadcrumbs' => IndexBankIncoming::make()->getBreadcrumbs($request->route()->originalParameters()),
+                'breadcrumbs' => $isGroup ? IndexBankIncoming::groupBreadcrumbs() : IndexBankIncoming::make()->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => __('Bank incoming'),
                 'pageHead'    => [
                     'title'         => __('Bank incoming'),
                     'icon'          => ['fal', 'fa-university'],
-                    'subNavigation' => IndexBankIncoming::subNavigation($this->organisation, $this->tabCounts($dashboard), $query),
+                    'subNavigation' => IndexBankIncoming::subNavigation($parent, $this->tabCounts($dashboard), $query),
                 ],
                 'query'       => $query,
-                'orgCurrency' => $this->organisation->currency->code,
+                'organisation'  => $this->groupIndex?->organisationSlug,
+                'organisations' => $isGroup
+                    ? IndexBankIncoming::accountingOrganisations($this->group, $request->user())->map(fn (Organisation $organisation) => ['value' => $organisation->slug, 'label' => $organisation->code])->all()
+                    : [],
+                'routeBase'   => $isGroup ? 'grp.financials.bank_incoming.' : 'grp.org.accounting.bank_incoming.',
+                'orgCurrency' => $parent->currency->code,
                 'dashboard'   => $dashboard,
             ]
         );

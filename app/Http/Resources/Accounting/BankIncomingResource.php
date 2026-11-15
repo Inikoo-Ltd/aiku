@@ -29,6 +29,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string|null $order_slug
  * @property string|null $shop_slug
  * @property int|null $payment_id
+ * @property bool $read_only
+ * @property string $organisation_slug
+ * @property string $organisation_code
  * @property string|null $provider_type
  */
 class BankIncomingResource extends JsonResource
@@ -38,6 +41,8 @@ class BankIncomingResource extends JsonResource
         return [
             'id'                => $this->id,
             'booked_at'         => $this->booked_at,
+            'organisation_slug' => $this->organisation_slug,
+            'organisation_code' => $this->organisation_code,
             'bank'              => $this->bank,
             'amount'            => (float)$this->amount,
             'currency_code'     => $this->currency_code,
@@ -58,7 +63,7 @@ class BankIncomingResource extends JsonResource
                 default                                                               => $this->match_data['reason'] ?? null,
             },
             'is_dismissed'      => $this->match_state === BankTransactionMatchStateEnum::DISMISSED,
-            'actionable'        => $this->payment_id === null && in_array($this->match_state, [BankTransactionMatchStateEnum::REVIEW, BankTransactionMatchStateEnum::UNMATCHED, BankTransactionMatchStateEnum::MATCHED], true),
+            'actionable'        => !$this->read_only && $this->payment_id === null && in_array($this->match_state, [BankTransactionMatchStateEnum::REVIEW, BankTransactionMatchStateEnum::UNMATCHED, BankTransactionMatchStateEnum::MATCHED], true),
             'payout'            => $this->match_state === BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT ? [
                 'provider'         => $this->match_data['provider'] ?? 'checkout',
                 'payout_id'        => $this->match_data['payout_id'] ?? null,

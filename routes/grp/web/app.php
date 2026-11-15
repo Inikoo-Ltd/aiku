@@ -151,6 +151,17 @@ Route::middleware(
     Route::prefix("sysadmin")
         ->name("sysadmin.")
         ->group(__DIR__."/sysadmin.php");
+    Route::prefix("financials")
+        ->name("financials.")
+        ->group(function () {
+            Route::redirect('/', '/financials/bank-incoming')->name('dashboard');
+            Route::prefix('bank-incoming')->name('bank_incoming.')->group(function () {
+                Route::get('/', [App\Actions\Accounting\BankTransaction\UI\ShowBankIncomingDashboard::class, 'inGroup'])->name('index');
+                foreach (['customers' => 'customers', 'marketplaces' => 'marketplaces', 'payment-accounts' => 'payment_accounts', 'other' => 'other', 'needs-a-person' => 'needs_person'] as $path => $name) {
+                    Route::get("/$path", [App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming::class, 'inGroup'])->name($name);
+                }
+            });
+        });
     Route::prefix("marketing")
         ->name("marketing.")
         ->group(function () {
