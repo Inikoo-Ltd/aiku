@@ -635,13 +635,13 @@ class MatchBankTransactions
     }
 
     /**
-     * @return list<string> upper-cased order-number-shaped words, e.g. PL31515 or DEU123456
+     * @return list<string> upper-cased order-number-shaped words, e.g. PL31515 or DEU123456; customers sometimes write PL 31515 or PL-31515
      */
     public function orderReferenceTokens(?string $reference): array
     {
-        preg_match_all('/(?<![A-Za-z0-9])([A-Za-z]{2,5}[0-9]{3,8})(?![A-Za-z0-9])/', (string)$reference, $matches);
+        preg_match_all('/(?<![A-Za-z0-9])([A-Za-z]{2,5})[ -]?([0-9]{3,8})(?![A-Za-z0-9])/', (string)$reference, $matches, PREG_SET_ORDER);
 
-        return array_values(array_unique(array_map('strtoupper', $matches[1])));
+        return array_values(array_unique(array_map(fn (array $match) => strtoupper($match[1].$match[2]), $matches)));
     }
 
     public function asCommand(Command $command): int
