@@ -115,6 +115,16 @@ return [
             ],
             'organisation_types' => []
         ],
+        'gp-fin-v'    => [
+            'code'               => 'gp-fin-v',
+            'name'               => 'Financials viewer',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'group admin',
+            'roles'              => [
+                RolesEnum::FINANCIALS_VIEWER
+            ],
+            'organisation_types' => []
+        ],
         'gp-mas'      => [
             'code'               => 'gp-mas',
             'name'               => 'Masters Manager',

@@ -15,6 +15,7 @@ use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\Traits\Authorisations\WithAccountingPagesAuthorisation;
 use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
+use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Http\Resources\Accounting\BankIncomingResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\BankTransaction;
@@ -184,6 +185,10 @@ class IndexBankIncoming extends OrgAction
      */
     public static function accountingOrganisations(Group $group, User $user): Collection
     {
+        if (!$user->hasPermissionTo(GroupPermissionsEnum::FINANCIALS->value)) {
+            return collect();
+        }
+
         return $group->organisations()->orderBy('name')->get()->filter(fn (Organisation $organisation) => $user->authTo("accounting.$organisation->id.view"))->values();
     }
 

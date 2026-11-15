@@ -1868,7 +1868,7 @@ test('bank incoming puts every line received in exactly one section, each with i
         ->assertRedirect(route('grp.org.accounting.bank_incoming.index', [$this->organisation->slug]));
 });
 
-test('group financials shows bank incoming of every organisation the user may see, in the group currency, read only', function () {
+test('group financials shows bank incoming of every organisation the user may see, in the group currency, read only, only to holders of the financials permission', function () {
     $group                 = $this->organisation->group;
     $otherOrganisationData = Organisation::factory()->definition();
     data_set($otherOrganisationData, 'code', 'fin'.random_int(1000, 9999));
@@ -1894,6 +1894,10 @@ test('group financials shows bank incoming of every organisation the user may se
     $theirs = $line($otherOrganisation, 'g2');
 
     $admin = createAdminGuest($group)->getUser();
+    setPermissionsTeamId($group->id);
+    expect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::make()->handle($admin))->not->toHaveKey('financials');
+    $admin->givePermissionTo('financials');
+    $admin->refresh();
     actingAs($admin);
     Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
 
@@ -1931,6 +1935,12 @@ test('group financials shows bank incoming of every organisation the user may se
     get(route('grp.financials.bank_incoming.needs_person'))->assertForbidden();
 
     $restricted->givePermissionTo("accounting.{$otherOrganisation->id}.view");
+    $restricted->refresh();
+    actingAs($restricted);
+    expect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::make()->handle($restricted))->not->toHaveKey('financials');
+    get(route('grp.financials.bank_incoming.needs_person'))->assertForbidden();
+
+    $restricted->givePermissionTo('financials');
     $restricted->refresh();
     actingAs($restricted);
     expect($rows()->pluck('id')->all())->toBe([$theirs->id])
