@@ -889,7 +889,9 @@ test('a Wix order with a product missing from the catalogue is skipped and raise
         ->and($tickets()->first()->subject)->toContain($family->shop->code.'-20189')
         ->and($tickets()->first()->description)->toContain('JOYOUS: SKU NOT-IN-CATALOGUE-')
         ->and($tickets()->first()->description)->toContain('Dark Fairytale (10ml) has no SKU in Wix')
-        ->and($tickets()->first()->description)->toContain('Aiku only imports Wix products that have a SKU');
+        ->and($tickets()->first()->description)->toContain('Aiku only imports Wix products that have a SKU')
+        ->and($tickets()->first()->type)->toBe(\App\Enums\Helpers\Ticket\TicketTypeEnum::ENGINEER)
+        ->and(\App\Http\Resources\Helpers\TicketResource::make($tickets()->first())->resolve()['reporter'])->toBe('System');
 })->depends('create family');
 
 test('a Wix order keeps the sale price and shipping the buyer paid in Wix', function (ProductCategory $family) {

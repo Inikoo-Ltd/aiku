@@ -86,7 +86,7 @@ class TicketsTool extends Tool
                 'tags'        => $ticket->tags,
                 'shop'        => $ticket->shop?->slug,
                 'customer'    => $ticket->customer?->name,
-                'reporter'    => $ticket->reporter?->contact_name ?: $ticket->reporter?->username,
+                'reporter'    => $ticket->reporter_id ? ($ticket->reporter?->contact_name ?: $ticket->reporter?->username) : __('System'),
                 'assignee'    => $ticket->assignee?->username,
                 'updated_at'  => $ticket->updated_at?->toDateTimeString(),
                 'reference_url' => data_get($ticket->data, 'reference_url'),

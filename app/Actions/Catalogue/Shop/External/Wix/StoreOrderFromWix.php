@@ -170,7 +170,7 @@ class StoreOrderFromWix extends OrgAction
                 ...array_map(fn (string $problem) => '- '.$problem, $problems),
                 ...($howToFix ? ['', $howToFix] : []),
             ]),
-            'type'            => TicketTypeEnum::HELP->value,
+            'type'            => TicketTypeEnum::ENGINEER->value,
             'kind'            => TicketKindEnum::BUG->value,
             'module'          => TicketModuleEnum::DROPSHIPPING->value,
             'priority'        => ChatPriorityEnum::HIGH->value,
