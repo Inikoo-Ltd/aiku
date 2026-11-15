@@ -45,6 +45,7 @@ interface BankLine {
 	order_slug: string | null
 	shop_slug: string | null
 	is_dismissed: boolean
+	actionable: boolean
 	payout: {
 		provider: "checkout" | "pastpay" | "cod"
 		payout_id: string | null
@@ -76,9 +77,10 @@ const props = defineProps<{
 	pageHead: PageHeadingTypes
 	canEdit: boolean
 	organisationId: number
-	scope: "review" | "unmatched" | "dismissed" | "payouts"
-	scopeCounts: Record<"review" | "unmatched" | "dismissed" | "payouts", number>
-	scopeTotals: Record<"review" | "unmatched" | "dismissed" | "payouts", number>
+	section: "customers" | "marketplaces" | "payment_accounts" | "other" | "needs_person"
+	summary: { count: number; total: number | null }
+	provider: string | null
+	providers: { value: string; label: string; count: number }[]
 	currencyTotals: Record<string, { count: number; total: number }>
 	orgCurrency: string
 	min: number | null
@@ -102,18 +104,7 @@ const orderRoute = (line: BankLine) =>
 
 const shortAmount = (amount: number) =>
 	new Intl.NumberFormat(undefined, { style: "currency", currency: props.orgCurrency, currencyDisplay: "narrowSymbol", notation: "compact", maximumFractionDigits: Math.abs(amount) >= 1000 ? 1 : 0 }).format(amount)
-const scopeOption = (label: string, value: "review" | "unmatched" | "dismissed" | "payouts") => ({
-	label,
-	value,
-	count: props.scopeCounts[value],
-	note: props.scopeTotals[value] ? shortAmount(props.scopeTotals[value]) : undefined,
-})
-const scopeOptions = computed(() => [
-	scopeOption(ctrans("To review"), "review"),
-	scopeOption(ctrans("No order number"), "unmatched"),
-	scopeOption(ctrans("Not for an order"), "dismissed"),
-	scopeOption(ctrans("Payouts"), "payouts"),
-])
+const providerOptions = computed(() => [{ label: ctrans("All"), value: "all" }, ...props.providers])
 const periodOptions = [
 	{ label: ctrans("Last 90 days"), value: "90d" },
 	{ label: ctrans("Last year"), value: "1y" },
@@ -130,16 +121,16 @@ const currencyOptions = computed(() => [
 ])
 
 const reload = (query: Record<string, string | number | null>) => {
-	const params = { scope: props.scope, period: props.period, currency: props.currency, from: props.from, to: props.to, min: props.min, max: props.max, ...query }
+	const params = { provider: props.provider, period: props.period, currency: props.currency, from: props.from, to: props.to, min: props.min, max: props.max, ...query }
 	router.get(
-		route("grp.org.accounting.bank_review.index", [route().params["organisation"]]),
+		route(route().current() as string, [route().params["organisation"]]),
 		Object.fromEntries(Object.entries(params).filter(([, value]) => value !== null && value !== undefined && value !== "")),
 		{ preserveState: false }
 	)
 }
-const scope = computed({
-	get: () => props.scope,
-	set: (value: string) => reload({ scope: value }),
+const provider = computed({
+	get: () => props.provider ?? "all",
+	set: (value: string) => reload({ provider: value === "all" ? null : value }),
 })
 const period = computed({
 	get: () => props.period,
@@ -286,7 +277,7 @@ const submit = () => {
 	<PageHeading :data="pageHead" />
 
 	<div class="flex flex-wrap items-center gap-3 px-4 pt-3">
-		<SegmentedToggle v-model="scope" :options="scopeOptions" :aria-label="ctrans('Which bank payments')" />
+		<SegmentedToggle v-if="providers.length > 1" v-model="provider" :options="providerOptions" :aria-label="ctrans('Payment provider')" />
 		<SegmentedToggle v-model="period" :options="periodOptions" soft :aria-label="ctrans('Received in')" />
 		<DatePicker
 			v-model="dateRange"
@@ -308,6 +299,9 @@ const submit = () => {
 			<span>{{ orgCurrency }}</span>
 		</div>
 		<SegmentedToggle v-if="currencies.length > 1" v-model="currency" :options="currencyOptions" soft :aria-label="ctrans('Currency')" />
+		<span v-if="summary.count" class="ml-auto whitespace-nowrap text-xs tabular-nums text-gray-500">
+			{{ ctrans(summary.count === 1 ? ":count payment" : ":count payments", { count: locale.number(summary.count) }) }}<template v-if="summary.total"> · {{ locale.currencyFormat(orgCurrency, summary.total) }}</template>
+		</span>
 	</div>
 
 	<Table :resource="data" class="mt-5">
@@ -340,7 +334,7 @@ const submit = () => {
 		</template>
 
 		<template #cell(actions)="{ item }">
-			<div v-if="item.payout" class="text-right text-xs text-gray-500">
+			<div v-if="item.payout" class="mb-1 text-right text-xs text-gray-500">
 				<template v-if="item.payout.provider === 'pastpay'">
 					{{ ctrans("PastPay payout of this order, PastPay kept :fees", {
 						fees: locale.currencyFormat(item.currency_code, item.payout.processor_fees),
@@ -387,7 +381,7 @@ const submit = () => {
 				</Button>
 				<span v-if="rowError?.id === item.id" class="text-xs text-red-600">{{ rowError.message }}</span>
 			</div>
-			<div v-else-if="canEdit && !item.payout" class="flex flex-col items-end gap-1">
+			<div v-else-if="canEdit && item.actionable" class="flex flex-col items-end gap-1">
 				<div class="flex justify-end gap-2 whitespace-nowrap">
 					<Button type="tertiary" size="xs" :label="ctrans('Pay order')" @click="open(item, 'pay')">
 						<template #icon>
@@ -479,7 +473,7 @@ const submit = () => {
 			</template>
 
 			<label v-else class="block">
-				<span class="mb-2 block text-gray-600">{{ ctrans("For money that pays no order, like a marketplace payout, a refund back to us or a transfer between our own accounts. It leaves the review list; you can bring it back from the Not for an order tab.") }}</span>
+				<span class="mb-2 block text-gray-600">{{ ctrans("For money that pays no order, like a marketplace payout, a refund back to us or a transfer between our own accounts. It moves to Other, where you can bring it back.") }}</span>
 				<span class="mb-1 block font-medium">{{ ctrans("Why") }} <span class="text-red-500">*</span></span>
 				<Textarea v-model="note" rows="3" class="w-full" :placeholder="ctrans('e.g. Amazon payout')" />
 			</label>

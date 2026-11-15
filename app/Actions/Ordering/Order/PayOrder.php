@@ -146,7 +146,7 @@ class PayOrder extends OrgAction
         }
 
         throw ValidationException::withMessages([
-            'amount' => __('This order was already paid automatically from the bank on :date (:amount), and :owed is still owed. If the customer really paid twice, record the second payment from Accounting → Bank review.', [
+            'amount' => __('This order was already paid automatically from the bank on :date (:amount), and :owed is still owed. If the customer really paid twice, record the second payment from Accounting → Bank incoming.', [
                 'date'   => $bankTransaction->booked_at->toDateString(),
                 'amount' => number_format((float)$bankTransaction->payment->amount, 2).' '.$bankTransaction->currency->code,
                 'owed'   => number_format(max($owed, 0), 2),

@@ -41,7 +41,8 @@ use App\Actions\Accounting\PaymentAccountShop\UI\EditPaymentAccountShop;
 use App\Actions\Accounting\PaymentAccountShop\UI\IndexPaymentAccountShops;
 use App\Actions\Accounting\PaymentAccountShop\UI\ShowPaymentAccountShop;
 use App\Actions\Accounting\Reports\BankFees\IndexBankFees;
-use App\Actions\Accounting\BankTransaction\UI\IndexBankTransactionsToReview;
+use App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming;
+use App\Actions\Accounting\BankTransaction\UI\ShowBankIncomingDashboard;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
 use App\Actions\Accounting\UI\IndexInvoicesPerShop;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
@@ -52,7 +53,15 @@ Route::get('/', ShowAccountingDashboard::class)->name('dashboard');
 
 Route::get('/per-store', IndexInvoicesPerShop::class)->name('invoices-shop');
 
-Route::get('/bank-review', IndexBankTransactionsToReview::class)->name('bank_review.index');
+Route::prefix('bank-incoming')->as('bank_incoming.')->group(function () {
+    Route::get('/', ShowBankIncomingDashboard::class)->name('index');
+    Route::get('/customers', [IndexBankIncoming::class, 'customers'])->name('customers');
+    Route::get('/marketplaces', [IndexBankIncoming::class, 'marketplaces'])->name('marketplaces');
+    Route::get('/payment-accounts', [IndexBankIncoming::class, 'paymentAccounts'])->name('payment_accounts');
+    Route::get('/other', [IndexBankIncoming::class, 'other'])->name('other');
+    Route::get('/needs-a-person', IndexBankIncoming::class)->name('needs_person');
+});
+Route::redirect('/bank-review', '/org/{organisation}/accounting/bank-incoming');
 
 
 

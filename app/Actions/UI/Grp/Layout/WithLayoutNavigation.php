@@ -114,11 +114,11 @@ trait WithLayoutNavigation
                             ]
                         ],
                         [
-                            'label' => __('Bank review'),
+                            'label' => __('Bank incoming'),
                             'icon'  => ['fal', 'fa-university'],
-                            'root'  => 'grp.org.accounting.bank_review.',
+                            'root'  => 'grp.org.accounting.bank_incoming.',
                             'route' => [
-                                'name'       => 'grp.org.accounting.bank_review.index',
+                                'name'       => 'grp.org.accounting.bank_incoming.index',
                                 'parameters' => [$organisation->slug],
                             ]
                         ],

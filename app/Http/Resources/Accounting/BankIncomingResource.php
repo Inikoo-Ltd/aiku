@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Accounting;
 
+use App\Actions\Accounting\BankTransaction\MatchBankTransactions;
 use App\Actions\Accounting\BankTransaction\ReconcileCodPayouts;
 use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -27,8 +28,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string|null $order_reference
  * @property string|null $order_slug
  * @property string|null $shop_slug
+ * @property int|null $payment_id
+ * @property string|null $provider_type
  */
-class BankTransactionsToReviewResource extends JsonResource
+class BankIncomingResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -42,13 +45,20 @@ class BankTransactionsToReviewResource extends JsonResource
             'org_currency_code' => $this->org_currency_code,
             'counterparty_name' => $this->counterparty_name,
             'reference'         => $this->reference,
-            'reason'            => match ($this->match_state) {
-                BankTransactionMatchStateEnum::MATCHED   => isset($this->match_data['invoice_id']) ? __('Matches the invoice, not paid automatically') : __('Matches the order, not paid automatically'),
-                BankTransactionMatchStateEnum::DISMISSED => $this->match_data['dismissed_note'] ?? null,
-                BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT => null,
-                default                                  => $this->match_data['reason'] ?? null,
+            'reason'            => match (true) {
+                $this->payment_id !== null && isset($this->match_data['paid_by'])     => __('Recorded on the order by :name', ['name' => $this->match_data['paid_by']]),
+                $this->payment_id !== null                                            => __('Paid automatically'),
+                $this->match_state === BankTransactionMatchStateEnum::MATCHED         => isset($this->match_data['invoice_id']) ? __('Matches the invoice, not paid automatically') : __('Matches the order, not paid automatically'),
+                $this->match_state === BankTransactionMatchStateEnum::DISMISSED       => $this->match_data['dismissed_note'] ?? null,
+                $this->match_state === BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT => null,
+                $this->match_state === BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE => __('Faire payout of this order'),
+                $this->match_state === null => in_array($this->provider_type, MatchBankTransactions::CUSTOMER_TRANSFER_TYPES, true)
+                    ? __('Not matched yet')
+                    : __('Movement of the bank itself (:type), not a payment received', ['type' => str_replace('_', ' ', strtolower((string) $this->provider_type))]),
+                default                                                               => $this->match_data['reason'] ?? null,
             },
             'is_dismissed'      => $this->match_state === BankTransactionMatchStateEnum::DISMISSED,
+            'actionable'        => $this->payment_id === null && in_array($this->match_state, [BankTransactionMatchStateEnum::REVIEW, BankTransactionMatchStateEnum::UNMATCHED, BankTransactionMatchStateEnum::MATCHED], true),
             'payout'            => $this->match_state === BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT ? [
                 'provider'         => $this->match_data['provider'] ?? 'checkout',
                 'payout_id'        => $this->match_data['payout_id'] ?? null,

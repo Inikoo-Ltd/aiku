@@ -778,20 +778,23 @@ test('staff record a bank payment from the review queue on the order they name, 
     $old = $line('q9', 75);
     $old->update(['booked_at' => now()->subYears(3), 'match_state' => BankTransactionMatchStateEnum::REVIEW, 'match_data' => ['reason' => 'order cancelled']]);
 
-    get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug]))
+    get(route('grp.org.accounting.bank_incoming.needs_person', [$this->organisation->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('Org/Accounting/BankTransactionsToReview')
+            ->component('Org/Accounting/BankIncoming')
             ->where('canEdit', true)
             ->where('period', '90d')
-            ->where('scopeCounts.review', fn ($count) => $count >= 1)
-            ->where('scopeCounts', fn ($counts) => collect($counts)->keys()->all() === ['review', 'unmatched', 'dismissed', 'payouts'])
+            ->where('section', 'needs_person')
+            ->where('sectionTotals.needs_person.count', fn ($count) => $count >= 1)
+            ->where('sectionTotals', fn ($totals) => collect($totals)->keys()->all() === ['customers', 'marketplaces', 'payment_accounts', 'other', 'needs_person'])
+            ->where('pageHead.subNavigation', fn ($navigation) => collect($navigation)->pluck('route.name')->all() === collect(['index', 'customers', 'marketplaces', 'payment_accounts', 'other', 'needs_person'])->map(fn ($name) => "grp.org.accounting.bank_incoming.$name")->all()
+                && collect($navigation)->last()['number'] >= 1)
             ->where('queryBuilderProps.default.columns', fn ($columns) => collect($columns)->pluck('key')->contains('actions') && !collect($columns)->pluck('key')->contains('reason'))
             ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($toReview->id)
                 && !collect($rows)->pluck('id')->contains($old->id)
                 && !collect($rows)->pluck('id')->contains($paid->id)
                 && !collect($rows)->pluck('id')->contains($payout->id)));
 
-    get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, 'period' => 'all']))
+    get(route('grp.org.accounting.bank_incoming.needs_person', [$this->organisation->slug, 'period' => 'all']))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('period', 'all')
             ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($old->id)));
@@ -806,13 +809,13 @@ test('staff record a bank payment from the review queue on the order they name, 
     $expectedOrgAmount = 400 * $orgRate / 4;
     $orgCurrencyLine = $line('fx2', 12, $orgCurrency->id);
 
-    $props = fn (array $query) => get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, ...$query]))->viewData('page')['props'];
+    $props = fn (array $query) => get(route('grp.org.accounting.bank_incoming.needs_person', [$this->organisation->slug, ...$query]))->viewData('page')['props'];
     $rows  = collect($props([])['data']['data'])->keyBy('id');
     expect($rows[$foreign->id]['org_amount'])->toEqual($expectedOrgAmount)
         ->and($rows[$foreign->id]['org_currency_code'])->toBe($orgCurrency->code)
         ->and($rows[$orgCurrencyLine->id]['org_amount'])->toBeNull()
         ->and($props([])['currencyTotals'][$foreignCurrency->code]['total'])->toBeGreaterThanOrEqual($expectedOrgAmount)
-        ->and($props([])['scopeTotals']['review'])->toBeGreaterThanOrEqual($expectedOrgAmount + 12);
+        ->and($props([])['sectionTotals']['needs_person']['total'])->toBeGreaterThanOrEqual($expectedOrgAmount + 12);
 
     $inRange = collect($props(['min' => $expectedOrgAmount - 1, 'max' => $expectedOrgAmount + 1])['data']['data'])->pluck('id');
     expect($inRange)->toContain($foreign->id)->not->toContain($orgCurrencyLine->id)
@@ -822,7 +825,7 @@ test('staff record a bank payment from the review queue on the order they name, 
     $orgCurrencyLine->delete();
 
     $toReview->update(['reference' => 'Faire EWACREAMZ3']);
-    $ids = fn (array $query) => collect(get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, ...$query]))->viewData('page')['props']['data']['data'])->pluck('id');
+    $ids = fn (array $query) => collect(get(route('grp.org.accounting.bank_incoming.needs_person', [$this->organisation->slug, ...$query]))->viewData('page')['props']['data']['data'])->pluck('id');
 
     expect($ids(['filter' => ['global' => 'ewacreamz3']]))->toContain($toReview->id)->not->toContain($old->id)
         ->and($ids(['filter' => ['global' => '12,00']]))->toContain($toReview->id)->not->toContain($old->id)
@@ -1217,10 +1220,11 @@ test('checkout payouts pay no order, and their report says which payments they s
         ->and(collect($reconciler->samples)->firstWhere('payout', '00000003YLNX')['understood'])->toBeFalse();
 
     actingAs(createAdminGuest($this->organisation->group)->getUser());
-    get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, 'scope' => 'payouts']))
+    get(route('grp.org.accounting.bank_incoming.payment_accounts', [$this->organisation->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('scope', 'payouts')
-            ->where('scopeCounts.payouts', fn ($count) => $count >= 1)
+            ->where('section', 'payment_accounts')
+            ->where('sectionTotals.payment_accounts.count', fn ($count) => $count >= 1)
+            ->where('providers', fn ($providers) => collect($providers)->pluck('value')->contains('checkout'))
             ->where('data.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['id'] === $daily->id
                 && $row['payout']['reconciled']
                 && $row['payout']['payments'] === 2
@@ -1299,7 +1303,7 @@ test('a pastpay payout settles the one pastpay order whose total less a pastpay 
         ->and($order->refresh()->payment_amount)->toEqual(669.47);
 
     actingAs(createAdminGuest($this->organisation->group)->getUser());
-    get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, 'scope' => 'payouts']))
+    get(route('grp.org.accounting.bank_incoming.payment_accounts', [$this->organisation->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('data.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['id'] === $payout->id
                 && $row['payout']['provider'] === 'pastpay'
@@ -1601,7 +1605,7 @@ test('a carrier cash on delivery payout is read from its emailed list: payments 
     post(route('grp.models.order.payment.store', [$untyped->id, $codAccount->id]), ['amount' => 23431.40, 'status' => 'success', 'state' => 'completed'])
         ->assertSessionHasErrors('amount');
     expect($untyped->payments()->count())->toBe(1);
-    get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, 'scope' => 'payouts']))
+    get(route('grp.org.accounting.bank_incoming.payment_accounts', [$this->organisation->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('data.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['id'] === $line->id
                 && $row['payout']['provider'] === 'cod'
@@ -1771,4 +1775,95 @@ test('GLS and DPD Poland cash on delivery sheets are read, and a parcel is follo
         ->and((float)$reused->refresh()->payment_amount)->toBe(254.83)
         ->and((float)$other->refresh()->payment_amount)->toBe(0.0)
         ->and((float)$differs->refresh()->payment_amount)->toBe(0.0);
+});
+
+test('bank incoming puts every line received in exactly one section, each with its own page, and a dashboard that adds up', function () {
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $currencyId     = $this->organisation->currency_id;
+    $line           = fn (string $id, ?BankTransactionMatchStateEnum $state, array $matchData = [], string $type = 'TRANSFER') => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => $type,
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 10,
+        'currency_id'             => $currencyId,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => 'Section test',
+        'booked_at'               => now()->subDay(),
+        'match_state'             => $state,
+        'match_data'              => $matchData,
+    ]);
+
+    $expected = [
+        'customers'        => [$line('s1', BankTransactionMatchStateEnum::ALREADY_PAID, ['reason' => 'order already settled'])],
+        'marketplaces'     => [
+            $line('s2', BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE),
+            $line('s3', BankTransactionMatchStateEnum::UNMATCHED, ['reason' => 'marketplace order not found']),
+        ],
+        'payment_accounts' => [
+            $line('s4', BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT, ['provider' => 'cod', 'carrier' => 'gls_hu']),
+            $line('s5', BankTransactionMatchStateEnum::UNMATCHED, ['reason' => 'PastPay payout, no PastPay order of this amount']),
+        ],
+        'other'            => [
+            $line('s6', BankTransactionMatchStateEnum::DISMISSED, ['dismissed_note' => 'Own transfer', 'dismissed_by' => 'staff']),
+            $line('s7', null, [], 'CARD_CASHBACK'),
+        ],
+        'needs_person'     => [
+            $line('s8', BankTransactionMatchStateEnum::REVIEW, ['reason' => 'pays less than owed']),
+            $line('s9', BankTransactionMatchStateEnum::UNMATCHED, ['reason' => 'no order number in the reference']),
+            $line('s10', BankTransactionMatchStateEnum::MATCHED),
+        ],
+    ];
+
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+
+    $shown = [];
+    foreach ($expected as $section => $lines) {
+        $props = get(route("grp.org.accounting.bank_incoming.$section", [$this->organisation->slug, 'filter' => ['global' => 'Section test']]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Accounting/BankIncoming')->where('section', $section))
+            ->viewData('page')['props'];
+        $shown[$section] = collect($props['data']['data'])->keyBy('id');
+        expect($shown[$section]->keys()->sort()->values()->all())->toBe(collect($lines)->pluck('id')->sort()->values()->all());
+    }
+    expect($shown['needs_person']->every(fn ($row) => $row['actionable']))->toBeTrue()
+        ->and($shown['marketplaces'][$expected['marketplaces'][1]->id]['actionable'])->toBeTrue()
+        ->and($shown['marketplaces'][$expected['marketplaces'][0]->id]['actionable'])->toBeFalse()
+        ->and($shown['customers']->first()['actionable'])->toBeFalse()
+        ->and($shown['other']->where('is_dismissed', true)->count())->toBe(1);
+
+    $providers = get(route('grp.org.accounting.bank_incoming.payment_accounts', [$this->organisation->slug, 'provider' => 'gls_hu', 'filter' => ['global' => 'Section test']]))->viewData('page')['props'];
+    expect(collect($providers['data']['data'])->pluck('id')->all())->toBe([$expected['payment_accounts'][0]->id])
+        ->and($providers['provider'])->toBe('gls_hu')
+        ->and(collect($providers['providers'])->pluck('label', 'value')->all())->toMatchArray(['gls_hu' => 'GLS Hungary', 'pastpay' => 'PastPay']);
+
+    $dashboard = get(route('grp.org.accounting.bank_incoming.index', [$this->organisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Accounting/BankIncomingDashboard'))
+        ->viewData('page')['props']['dashboard'];
+    $received = BankTransaction::where('organisation_id', $this->organisation->id)
+        ->where('direction', BankTransactionDirectionEnum::IN)
+        ->where('status', BankTransactionStatusEnum::BOOKED)
+        ->where('booked_at', '>=', now()->subDays(90))
+        ->where(fn ($query) => $query->whereNotNull('match_state')->orWhere('provider_type', 'TRANSFER'))
+        ->count();
+    expect(collect($dashboard['sections'])->sum('lines'))->toBe($received)
+        ->and($dashboard['total']['lines'])->toBe($received)
+        ->and(collect($dashboard['placement'])->sum('lines'))->toBe($received)
+        ->and($dashboard['backlog']['lines'])->toBe(collect($dashboard['sections'])->firstWhere('key', 'needs_person')['lines'])
+        ->and($dashboard['backlog']['lines'])->toBeGreaterThanOrEqual(3)
+        ->and($dashboard['placement']['hand']['lines'])->toBeGreaterThanOrEqual(1)
+        ->and($dashboard['own']['lines'])->toBeGreaterThanOrEqual(1)
+        ->and(collect($dashboard['sections'])->firstWhere('key', 'other')['lines'])->toBeGreaterThanOrEqual(1)
+        ->and($dashboard['backlog']['oldest'])->not->toBeNull()
+        ->and(collect($dashboard['providers'])->pluck('label')->all())->toContain('GLS Hungary', 'PastPay')
+        ->and(collect($dashboard['banks'])->pluck('label')->all())->toContain($bankConnection->name)
+        ->and(count($dashboard['trend']['starts']))->toBe(13)
+        ->and(array_sum(array_map('array_sum', $dashboard['trend']['series'])))->toEqualWithDelta($dashboard['total']['amount'], 0.01);
+
+    get("/org/{$this->organisation->slug}/accounting/bank-review")
+        ->assertRedirect(route('grp.org.accounting.bank_incoming.index', [$this->organisation->slug]));
 });
