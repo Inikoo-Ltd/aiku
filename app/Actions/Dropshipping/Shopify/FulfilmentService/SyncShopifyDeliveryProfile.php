@@ -27,7 +27,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * rates of the shop's current shipping zone schema, in the store's currency.
  *
  * Shopify zones stop at country level, so a country some of our zones cover only by postcode takes the
- * zone naming it with the highest price, as postcode zones are the dearer ones. Shopify has
+ * zone naming it without postcode rules, the rate most of the country pays (PRE-108: the dearest one priced
+ * all of Italy at the remote areas rate), or the cheapest when every zone has postcode rules. Shopify has
  * no "to be confirmed" rate, so a band or a rest of the world priced TBC gets no rate at all and checkout
  * offers no shipping there, as we can not promise a price. Overlapping bands are cut where the earlier one
  * ends, as CalculateOrderShipping takes the first band that matches. What we bill the merchant is
@@ -387,6 +388,7 @@ class SyncShopifyDeliveryProfile
 
         $candidateZones = [];
         $byPostcode     = [];
+        $plainZone      = [];
         foreach ($shippingZones as $index => $shippingZone) {
             foreach ($methodsByZone[$index] === [] ? [] : ($shippingZone->territories ?? []) as $territory) {
                 $countryCode = Arr::get($territory, 'country_code');
@@ -396,6 +398,8 @@ class SyncShopifyDeliveryProfile
                 $candidateZones[$countryCode][] = $index;
                 if (Arr::get($territory, 'included_postal_codes') || Arr::get($territory, 'excluded_postal_codes')) {
                     $byPostcode[$countryCode] = true;
+                } else {
+                    $plainZone[$countryCode] ??= $index;
                 }
             }
         }
@@ -403,7 +407,7 @@ class SyncShopifyDeliveryProfile
         $zoneOfCountry = [];
         foreach ($candidateZones as $countryCode => $indexes) {
             $zoneOfCountry[$countryCode] = isset($byPostcode[$countryCode])
-                ? collect($indexes)->sortByDesc(fn (int $index) => $highestByZone[$index])->first()
+                ? $plainZone[$countryCode] ?? collect($indexes)->sortBy(fn (int $index) => $highestByZone[$index] ?? PHP_FLOAT_MAX)->first()
                 : $indexes[0];
         }
 
