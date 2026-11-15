@@ -453,20 +453,35 @@ class MatchBankTransactions
         return preg_match('/^[0-9A-Z]{12}$/', $payoutId) ? $payoutId : null;
     }
 
-    /** PastPay's fees on the payouts it has sent us: 60 and 30 day terms, under each organisation's contract so far. */
-    public const array PASTPAY_FEE_RATES = [0.0425, 0.022, 0.046, 0.033, 0.0185, 0.0356, 0.0197, 0.0256];
+    /**
+     * PastPay's fees on the payouts it has sent us, per currency: its rates (60 and 30 day terms, under each contract
+     * so far), the fixed fees it may also keep from a transfer, how close each order's share comes (forints are whole)
+     * and how many orders one transfer has been seen to pay. Only forints and lei come several to a transfer; with the
+     * many rates and orders of the other currencies a sum of a few totals would fit by chance.
+     */
+    public const array PASTPAY_FEES = [
+        'HUF'     => ['rates' => [0.031, 0.057], 'fixed' => [0], 'tolerance' => 1.0, 'max_orders' => 4],
+        'RON'     => ['rates' => [0.0525, 0.0285], 'fixed' => [0, 18.80], 'tolerance' => 0.01, 'max_orders' => 4],
+        'PLN'     => ['rates' => [0.0485, 0.0425, 0.022], 'fixed' => [0], 'tolerance' => 0.01, 'max_orders' => 1],
+        'default' => ['rates' => [0.0425, 0.022, 0.046, 0.033, 0.0185, 0.0356, 0.0197, 0.0256], 'fixed' => [0], 'tolerance' => 0.01, 'max_orders' => 1],
+    ];
+
+    /** ponytail: several orders in one transfer are only looked for among this many candidates (forints and lei have had 9 at most); beyond it a chance fit gets likely and the search slow. */
+    public const int PASTPAY_MULTI_ORDER_POOL = 20;
 
     /**
-     * PastPay pays each order it financed in its own transfer, the order total less its fee, referenced only with our
-     * own tax number and the payout date. The order is the one PastPay order from the last 90 days whose total less
-     * one of PastPay's fees is what arrived, and that no other payout line has claimed. Its PastPay payment is already
-     * on the order, so like a card payout the line pays nothing; it only records which payment it settled.
+     * PastPay pays the orders it financed, their totals less its fee, referenced only with our own tax number and the
+     * payout date: usually one order per transfer, in HUF and RON sometimes up to four. The orders are the one set of
+     * PastPay orders from the last 90 days, not claimed by another payout line, whose totals less PastPay's fees are
+     * what arrived. Their PastPay payments are already on the orders, so like a card payout the line pays nothing; it
+     * only records which payments it settled.
      *
      * @return array{0: BankTransactionMatchStateEnum, 1: Order|null, 2: array<string, mixed>}
      */
     private function decidePastpayPayout(BankTransaction $bankTransaction): array
     {
         $received   = round((float)$bankTransaction->amount, 2);
+        $fees       = self::PASTPAY_FEES[$bankTransaction->currency?->code] ?? self::PASTPAY_FEES['default'];
         $candidates = Payment::query()
             ->join('payment_accounts', 'payment_accounts.id', 'payments.payment_account_id')
             ->join('model_has_payments', fn ($join) => $join->on('model_has_payments.payment_id', 'payments.id')->where('model_has_payments.model_type', 'Order'))
@@ -478,46 +493,92 @@ class MatchBankTransactions
             ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
             ->where('payments.amount', '>', 0)
             ->whereBetween('payments.date', [$bankTransaction->booked_at->copy()->subDays(90), $bankTransaction->booked_at])
-            ->get(['payments.id', 'payments.payment_account_id', 'orders.id as order_id', 'orders.total_amount'])
-            ->map(function (Payment $payment) use ($received) {
-                $rate = collect(self::PASTPAY_FEE_RATES)->first(fn (float $rate) => abs(round((float)$payment->total_amount * (1 - $rate), 2) - $received) <= 0.01);
+            ->get(['payments.id', 'payments.payment_account_id', 'orders.id as order_id', 'orders.reference as order_reference', 'orders.total_amount'])
+            ->unique('id');
+        $claimed    = BankTransaction::where('organisation_id', $bankTransaction->organisation_id)
+            ->where('match_state', BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
+            ->where('id', '!=', $bankTransaction->id)
+            ->where('match_data->provider', 'pastpay')
+            ->pluck('match_data')
+            ->flatMap(fn ($matchData) => (is_array($matchData) ? $matchData : json_decode((string)$matchData, true))['payment_ids'] ?? [])
+            ->flip();
+        $candidates = $candidates->reject(fn (Payment $payment) => $claimed->has($payment->id))
+            ->sortBy(fn (Payment $payment) => (float)$payment->total_amount)
+            ->values()
+            ->all();
 
-                return $rate === null ? null : ['payment' => $payment, 'rate' => $rate];
-            })
-            ->filter()
-            ->reject(fn (array $candidate) => BankTransaction::where('match_state', BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
-                ->where('id', '!=', $bankTransaction->id)
-                ->where('match_data->provider', 'pastpay')
-                ->whereJsonContains('match_data->payment_ids', $candidate['payment']->id)
-                ->exists())
-            ->unique(fn (array $candidate) => $candidate['payment']->id)
-            ->values();
+        $solutions = [];
+        $maxOrders = count($candidates) <= self::PASTPAY_MULTI_ORDER_POOL ? $fees['max_orders'] : 1;
+        for ($size = 1; $size <= $maxOrders; $size++) {
+            $this->searchPastpayPayout($candidates, 0, $size, [], 0.0, $received, $fees, $solutions);
+        }
 
-        if ($candidates->count() !== 1) {
+        if (count($solutions) !== 1) {
             return [BankTransactionMatchStateEnum::UNMATCHED, null, [
-                'reason'      => $candidates->isEmpty() ? 'PastPay payout, no PastPay order of this amount' : 'PastPay payout, several PastPay orders of this amount',
-                'payment_ids' => $candidates->pluck('payment.id')->all(),
+                'reason'      => $solutions ? 'PastPay payout, several PastPay orders of this amount' : 'PastPay payout, no PastPay order of this amount',
+                'payment_ids' => collect($solutions)->flatMap(fn (array $solution) => collect($solution['picks'])->pluck('payment.id'))->unique()->values()->all(),
             ]];
         }
 
-        ['payment' => $payment, 'rate' => $rate] = $candidates->first();
-        $gross = round((float)$payment->total_amount, 2);
+        ['picks' => $picks, 'fixed' => $fixed] = reset($solutions);
+        $payments = collect($picks)->pluck('payment');
+        $gross    = round($payments->sum(fn (Payment $payment) => (float)$payment->total_amount), 2);
 
-        return [BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT, Order::find($payment->order_id), [
+        return [BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT, count($picks) === 1 ? Order::find($payments->first()->order_id) : null, [
             'provider'           => 'pastpay',
             'reason'             => null,
             'reconciled_at'      => now()->toIso8601String(),
-            'fee_rate'           => $rate,
+            'fee_rate'           => count($picks) === 1 ? $picks[0]['rate'] : null,
+            'fee_rates'          => collect($picks)->mapWithKeys(fn (array $pick) => [$pick['payment']->order_reference => $pick['rate']])->all(),
+            'fixed_fee'          => $fixed,
             'payout_total'       => $received,
             'gross'              => $gross,
             'processor_fees'     => round($gross - $received, 2),
             'bank_fee'           => 0,
-            'payment_ids'        => [$payment->id],
-            'payments_in_payout' => 1,
+            'payment_ids'        => $payments->pluck('id')->all(),
+            'order_ids'          => $payments->pluck('order_id')->all(),
+            'order_references'   => $payments->pluck('order_reference')->all(),
+            'payments_in_payout' => count($picks),
             'refunds_in_payout'  => 0,
             'payments_missing'   => [],
-            'payment_account_id' => $payment->payment_account_id,
+            'payment_account_id' => $payments->first()->payment_account_id,
         ]];
+    }
+
+    /**
+     * Collects, keyed by their payment ids, the sets of $size candidates (sorted by total) whose totals less one of
+     * PastPay's rates each, less one of its fixed fees, come to what arrived. Every size is searched, so a set is only
+     * taken when no set of another size fits too.
+     *
+     * @param  list<Payment>  $candidates
+     * @param  list<array{payment: Payment, rate: float}>  $picks
+     * @param  array{rates: list<float>, fixed: list<float>, tolerance: float}  $fees
+     * @param  array<string, array{picks: list<array{payment: Payment, rate: float}>, fixed: float}>  $solutions
+     */
+    private function searchPastpayPayout(array $candidates, int $from, int $size, array $picks, float $sum, float $received, array $fees, array &$solutions): void
+    {
+        if (count($picks) === $size) {
+            foreach ($fees['fixed'] as $fixed) {
+                if (round(abs($sum - $fixed - $received), 2) <= $fees['tolerance'] * $size) {
+                    $solutions[collect($picks)->pluck('payment.id')->sort()->implode(',')] ??= ['picks' => $picks, 'fixed' => $fixed];
+                }
+            }
+
+            return;
+        }
+
+        $ceiling = $received + max($fees['fixed']) + $fees['tolerance'] * $size;
+        for ($i = $from; $i < count($candidates); $i++) {
+            if ($sum + (float)$candidates[$i]->total_amount * (1 - max($fees['rates'])) > $ceiling) {
+                break;
+            }
+            foreach ($fees['rates'] as $rate) {
+                $net = round((float)$candidates[$i]->total_amount * (1 - $rate), 2);
+                if ($sum + $net <= $ceiling) {
+                    $this->searchPastpayPayout($candidates, $i + 1, $size, [...$picks, ['payment' => $candidates[$i], 'rate' => $rate]], $sum + $net, $received, $fees, $solutions);
+                }
+            }
+        }
     }
 
     /**

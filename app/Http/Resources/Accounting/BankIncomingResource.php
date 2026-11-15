@@ -67,6 +67,7 @@ class BankIncomingResource extends JsonResource
             'payout'            => $this->match_state === BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT ? [
                 'provider'         => $this->match_data['provider'] ?? 'checkout',
                 'payout_id'        => $this->match_data['payout_id'] ?? null,
+                'orders'           => $this->match_data['order_references'] ?? [],
                 'reconciled'       => !empty($this->match_data['reconciled_at']),
                 'payments'         => $this->match_data['payments_in_payout'] ?? 0,
                 'refunds'          => $this->match_data['refunds_in_payout'] ?? 0,

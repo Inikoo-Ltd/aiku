@@ -1311,6 +1311,82 @@ test('a pastpay payout settles the one pastpay order whose total less a pastpay 
                 && $row['order_reference'] === $order->reference)));
 });
 
+test('a pastpay payout in forints or lei follows that currency fees and may settle several orders in one transfer', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $pastpayAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'pastpay')->firstOrFail(),
+        ['code' => 'pp'.random_int(1000, 9999), 'name' => 'PastPay HUF RON payouts test']
+    );
+    $huf          = \App\Models\Helpers\Currency::where('code', 'HUF')->firstOrFail();
+    $ron          = \App\Models\Helpers\Currency::where('code', 'RON')->firstOrFail();
+    $pastpayOrder = function (float $total, \App\Models\Helpers\Currency $currency) use ($pastpayAccount) {
+        $order   = bankMatchingOrder(createCustomer($this->shop), $total);
+        $payment = \App\Actions\Accounting\Payment\StorePayment::make()->action($order->customer, $pastpayAccount, [
+            'amount' => $total,
+            'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+            'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+        ]);
+        $payment->updateQuietly(['date' => now()->subDays(5), 'currency_id' => $currency->id]);
+        \App\Actions\Ordering\Order\AttachPaymentToOrder::make()->action($order, $payment, ['amount' => $total]);
+
+        return [$order, $payment];
+    };
+    $line = fn (string $id, float $amount, \App\Models\Helpers\Currency $currency) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $amount,
+        'currency_id'             => $currency->id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => 'PastPay Europe SP.ZO.O',
+        'reference'               => 'SK2120525440-20261014-01',
+        'booked_at'               => now(),
+    ]);
+
+    [$single, $singlePayment] = $pastpayOrder(130725.03, $huf);
+    [$first, $firstPayment]   = $pastpayOrder(21461.50, $huf);
+    [$second, $secondPayment] = $pastpayOrder(9843.99, $huf);
+    [$lei]                    = $pastpayOrder(7678.69, $ron);
+    $shopCurrency             = \App\Models\Helpers\Currency::findOrFail($this->shop->currency_id);
+    $pastpayOrder(300.00, $shopCurrency);
+    $pastpayOrder(100.00, $shopCurrency);
+
+    $forints  = $line('pph1', 126673, $huf);
+    $together = $line('pph2', 30336, $huf);
+    $withFee  = $line('ppr1', 7256.76, $ron);
+    $sumOfTwo = $line('ppe1', 385.05, $shopCurrency);
+
+    MatchBankTransactions::run($bankConnection);
+
+    expect($forints->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
+        ->and($forints->order_id)->toBe($single->id)
+        ->and($forints->match_data['fee_rate'])->toEqual(0.031)
+        ->and($forints->match_data['payment_ids'])->toBe([$singlePayment->id])
+        ->and($together->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
+        ->and($together->order_id)->toBeNull()
+        ->and($together->payment_id)->toBeNull()
+        ->and($together->match_data['payment_ids'])->toEqualCanonicalizing([$firstPayment->id, $secondPayment->id])
+        ->and($together->match_data['order_references'])->toEqualCanonicalizing([$first->reference, $second->reference])
+        ->and($together->match_data['payments_in_payout'])->toBe(2)
+        ->and($withFee->refresh()->order_id)->toBe($lei->id)
+        ->and($withFee->match_data['fee_rate'])->toEqual(0.0525)
+        ->and($withFee->match_data['fixed_fee'])->toEqual(18.80)
+        ->and($withFee->match_data['processor_fees'])->toEqual(421.93)
+        ->and($sumOfTwo->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
+
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    get(route('grp.org.accounting.bank_incoming.payment_accounts', [$this->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['id'] === $together->id
+                && $row['payout']['provider'] === 'pastpay'
+                && count($row['payout']['orders']) === 2)));
+});
+
 test('bank lines naming a fulfilment invoice are matched and paid onto it, or already paid when staff recorded it by hand', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
 

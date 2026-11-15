@@ -51,6 +51,7 @@ interface BankLine {
 	payout: {
 		provider: "checkout" | "pastpay" | "cod"
 		payout_id: string | null
+		orders: string[]
 		reconciled: boolean
 		payments: number
 		refunds: number
@@ -351,7 +352,13 @@ const submit = () => {
 
 		<template #cell(actions)="{ item }">
 			<div v-if="item.payout" class="mb-1 text-right text-xs text-gray-500">
-				<template v-if="item.payout.provider === 'pastpay'">
+				<template v-if="item.payout.provider === 'pastpay' && item.payout.orders.length > 1">
+					{{ ctrans("PastPay payout of :orders, PastPay kept :fees", {
+						orders: item.payout.orders.join(", "),
+						fees: locale.currencyFormat(item.currency_code, item.payout.processor_fees),
+					}) }}
+				</template>
+				<template v-else-if="item.payout.provider === 'pastpay'">
 					{{ ctrans("PastPay payout of this order, PastPay kept :fees", {
 						fees: locale.currencyFormat(item.currency_code, item.payout.processor_fees),
 					}) }}
