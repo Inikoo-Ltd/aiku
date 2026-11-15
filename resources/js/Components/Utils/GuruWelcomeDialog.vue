@@ -32,8 +32,11 @@ import { closeGuruWelcome, guruWelcomeOpen } from "@/Composables/useAssistantQue
             <p>{{ ctrans("Thank you. Your experience is what makes Merlin worth talking to.") }}</p>
         </div>
         <template #footer>
-            <div class="flex w-full gap-2">
-                <Button type="tertiary" full :label="ctrans('Count me in')" @click="closeGuruWelcome" />
+            <div class="flex w-full flex-col items-center gap-2">
+                <Button type="tertiary" full :label="ctrans('Count me in')" @click="closeGuruWelcome()" />
+                <button type="button" class="text-xs text-gray-400 hover:underline" @click="closeGuruWelcome(true)">
+                    {{ ctrans("No, I refuse. This is not my job.") }}
+                </button>
             </div>
         </template>
     </Dialog>

@@ -45,9 +45,9 @@ export const loadMyAssistantQuestions = async () => {
     }
 }
 
-export const closeGuruWelcome = () => {
+export const closeGuruWelcome = (refused = false) => {
     guruWelcomeOpen.value = false
-    axios.post(route("grp.tasks.assistant_questions.welcome_seen")).catch(() => {})
+    axios.post(route("grp.tasks.assistant_questions.welcome_seen"), { refused }).catch(() => {})
     heldQuestions.forEach((question) => showAssistantQuestion(question))
     heldQuestions = []
 }

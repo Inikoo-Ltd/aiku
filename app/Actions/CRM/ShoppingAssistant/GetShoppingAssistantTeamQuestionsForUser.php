@@ -12,6 +12,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -45,12 +46,24 @@ class GetShoppingAssistantTeamQuestionsForUser
 
     public static function isGuru(User $user): bool
     {
+        return self::guruOrganisations($user)->isNotEmpty();
+    }
+
+    /**
+     * The organisations where this person answers Merlin's questions, for a shop or for the whole organisation.
+     *
+     * @return Collection<int, Organisation>
+     */
+    public static function guruOrganisations(User $user): Collection
+    {
         $id = (string) $user->id;
 
-        return Shop::where('group_id', $user->group_id)->whereRaw("settings->'assistant_questions'->>'user_id' = ?", [$id])->exists()
-            || Organisation::where('group_id', $user->group_id)->where(fn ($query) => $query
+        return Organisation::where('group_id', $user->group_id)
+            ->where(fn ($query) => $query
                 ->whereRaw("settings->'assistant_questions'->>'user_id' = ?", [$id])
-                ->orWhereRaw("settings->'assistant_questions'->>'backup_user_id' = ?", [$id]))->exists();
+                ->orWhereRaw("settings->'assistant_questions'->>'backup_user_id' = ?", [$id])
+                ->orWhereIn('id', Shop::where('group_id', $user->group_id)->whereRaw("settings->'assistant_questions'->>'user_id' = ?", [$id])->select('organisation_id')))
+            ->get();
     }
 
     public function asController(ActionRequest $request): array

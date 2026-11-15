@@ -14,14 +14,18 @@ use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant;
 use App\Actions\CRM\ShoppingAssistant\CloseUnansweredShoppingAssistantTeamQuestions;
 use App\Actions\CRM\ShoppingAssistant\DeclineShoppingAssistantTeamQuestion;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantTeamQuestionsForUser;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantTools;
+use App\Actions\CRM\ShoppingAssistant\MarkShoppingAssistantGuruWelcomeSeen;
 use App\Actions\CRM\ShoppingAssistant\ResearchShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\SearchShopKnowledge;
 use App\Actions\CRM\ShoppingAssistant\SendShoppingAssistantMorningRound;
 use App\Actions\CRM\ShoppingAssistant\StartShoppingAssistantConversation;
+use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantSalesLead;
 use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantTeamQuestion;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
+use App\Actions\Tasks\GetAikuAssistant;
 use App\Actions\Tasks\UpdateStaffTask;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
@@ -35,6 +39,7 @@ use App\Mcp\Servers\AikuServer;
 use App\Mcp\Tools\MerlinQuestionWriteTool;
 use App\Mcp\Tools\MerlinQuestionsTool;
 use App\Models\Tasks\StaffTask;
+use App\Notifications\ShoppingAssistantGuruRefusedNotification;
 use App\Notifications\ShoppingAssistantMorningRoundNotification;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
@@ -754,4 +759,18 @@ test('a guru sees the welcome once, before their first question, and a colleague
     actingAs($this->backup)->postJson(route('grp.tasks.assistant_questions.welcome_seen'))->assertOk();
 
     expect(actingAs($this->backup)->getJson(route('grp.tasks.assistant_questions'))->json('welcome'))->toBeFalse();
+});
+
+test('a guru who refuses is recorded, their managers are told once, and they stay a guru', function () {
+    Notification::fake();
+    $managers = StoreShoppingAssistantSalesLead::managersOf($this->organisation, GetAikuAssistant::run($this->organisation->group_id));
+
+    actingAs($this->backup)->postJson(route('grp.tasks.assistant_questions.welcome_seen'), ['refused' => true])->assertOk();
+    actingAs($this->backup)->postJson(route('grp.tasks.assistant_questions.welcome_seen'), ['refused' => true])->assertOk();
+
+    expect($managers)->not->toBeEmpty()
+        ->and(data_get($this->backup->refresh()->settings, MarkShoppingAssistantGuruWelcomeSeen::REFUSED))->not->toBeNull()
+        ->and(GetShoppingAssistantTeamQuestionsForUser::isGuru($this->backup))->toBeTrue()
+        ->and(actingAs($this->backup)->getJson(route('grp.tasks.assistant_questions'))->json('welcome'))->toBeFalse();
+    Notification::assertSentToTimes($managers->first(), ShoppingAssistantGuruRefusedNotification::class, 1);
 });
