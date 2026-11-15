@@ -26,6 +26,8 @@ use App\Models\Ordering\Order;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailMessageParser;
 use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Laravel\Nightwatch\Facades\Nightwatch;
@@ -49,12 +51,17 @@ class ReconcileCodPayouts
 
     public string $commandSignature = 'bank-transactions:cod-payouts {--commit} {--days=120}';
 
-    /** Carriers paying cash on delivery, by the payer name on the transfer; only those with a sender have a list read. */
+    /**
+     * Carriers paying cash on delivery, by the payer name on the transfer. Their list is found in the shop mailboxes by
+     * the Gmail query and the attachment name: GLS sends its lists to a staff mailbox and staff forward them to the
+     * shop mailboxes, so GLS Hungary is only reconciled once someone forwarded the list. A parcel may differ from its
+     * order by the tolerance: DPD Hungary rounds forints to the unit, GLS Hungary to 5 forints as cash is.
+     */
     public const array CARRIERS = [
-        'dpd_hu' => ['payer' => '/^dpd hung(ary|ária)/iu', 'name' => 'DPD Hungary', 'sender' => 'noreply@dpd.hu'],
-        'dpd_pl' => ['payer' => '/^dpd polska\b/i', 'name' => 'DPD Poland', 'sender' => null],
-        'gls_hu' => ['payer' => '/^gls general log\.?\s*systems hung/i', 'name' => 'GLS Hungary', 'sender' => null],
-        'gls_ro' => ['payer' => '/^gls general logistics systems roman/i', 'name' => 'GLS Romania', 'sender' => null],
+        'dpd_hu' => ['payer' => '/^dpd hung(ary|ária)/iu', 'name' => 'DPD Hungary', 'query' => 'from:noreply@dpd.hu', 'file' => '/\.pdf$/i', 'tolerance' => 0.51],
+        'dpd_pl' => ['payer' => '/^dpd polska\b/i', 'name' => 'DPD Poland', 'query' => 'filename:"COD specification"', 'file' => '/^COD specification.*\.xlsx$/i', 'tolerance' => 0.01],
+        'gls_hu' => ['payer' => '/^gls general log\.?\s*systems hung/i', 'name' => 'GLS Hungary', 'query' => 'filename:980010059', 'file' => '/_HUF_.*\.xlsx$/i', 'tolerance' => 2.51],
+        'gls_ro' => ['payer' => '/^gls general logistics systems roman/i', 'name' => 'GLS Romania', 'query' => 'filename:980010059', 'file' => '/_RON_.*\.xlsx$/i', 'tolerance' => 0.01],
     ];
 
     /** @var list<array<string, mixed>> */
@@ -92,11 +99,11 @@ class ReconcileCodPayouts
             ->where('booked_at', '>=', now()->subDays($days))
             ->with('bankConnection')
             ->get()
-            ->filter(fn (BankTransaction $bankTransaction) => self::CARRIERS[$bankTransaction->match_data['carrier']]['sender'] ?? null)
+            ->filter(fn (BankTransaction $bankTransaction) => isset(self::CARRIERS[$bankTransaction->match_data['carrier']]))
             ->groupBy(fn (BankTransaction $bankTransaction) => $bankTransaction->organisation_id.'|'.$bankTransaction->match_data['carrier'])
             ->each(function (Collection $bankTransactions) use ($commit, $count, &$counts) {
                 $first = $bankTransactions->first();
-                $lists = $this->listsInMailboxes($first->organisation_id, self::CARRIERS[$first->match_data['carrier']]['sender'], $bankTransactions->min('booked_at')->copy()->subDays(2));
+                $lists = $this->listsInMailboxes($first->organisation_id, $first->match_data['carrier'], $bankTransactions->min('booked_at')->copy()->subDays(2));
                 foreach ($bankTransactions as $bankTransaction) {
                     $list = $this->listFor($bankTransaction, $lists);
                     if (!$list) {
@@ -159,13 +166,15 @@ class ReconcileCodPayouts
 
     /**
      * Every list the carrier sent to any shop mailbox of the organisation since $since, once each: the same list is
-     * often delivered twice or forwarded.
+     * often delivered twice or forwarded. Two different lists of the same date and total are both kept, so neither is
+     * used.
      *
-     * @return array<string, array{date: string, total: int, rows: list<array{tracking: string, reference: string, amount: float}>, source: string}>
+     * @return array<string, array{date: string, total: float, rows: list<array{tracking: string, reference: string, amount: float}>, source: string}>
      */
-    public function listsInMailboxes(int $organisationId, string $sender, \DateTimeInterface $since): array
+    public function listsInMailboxes(int $organisationId, string $carrier, \DateTimeInterface $since): array
     {
         $lists = [];
+        $query = self::CARRIERS[$carrier]['query'];
         foreach (Shop::where('organisation_id', $organisationId)->get() as $shop) {
             $client = GmailClient::isShopMailboxUsable($shop) ? GmailClient::forShop($shop) : null;
             if (!$client) {
@@ -174,16 +183,16 @@ class ReconcileCodPayouts
             try {
                 $pageToken = null;
                 do {
-                    $page = $client->listMessageIds("from:$sender has:attachment after:".$since->format('Y/m/d'), $pageToken);
+                    $page = $client->listMessageIds("$query has:attachment after:".$since->format('Y/m/d'), $pageToken);
                     foreach ($page['ids'] as $messageId) {
                         $raw = $client->getMessage($messageId);
                         foreach (GmailMessageParser::attachments($raw['payload'] ?? []) as $attachment) {
-                            if (!str_ends_with(strtolower($attachment['filename']), '.pdf')) {
+                            if (!preg_match(self::CARRIERS[$carrier]['file'], $attachment['filename'])) {
                                 continue;
                             }
-                            $pdf = $attachment['attachmentId'] ? $client->getAttachment($messageId, $attachment['attachmentId']) : GmailMessageParser::decodeData((string)$attachment['data']);
+                            $content = $attachment['attachmentId'] ? $client->getAttachment($messageId, $attachment['attachmentId']) : GmailMessageParser::decodeData((string)$attachment['data']);
                             try {
-                                $list = $this->parseDpdHungaryList((new Parser())->parseContent($pdf)->getText());
+                                $list = $this->parse($carrier, $content);
                             } catch (Throwable $exception) {
                                 Sentry::captureException($exception);
                                 $list = null;
@@ -192,7 +201,7 @@ class ReconcileCodPayouts
                                 $this->unreadable[] = $shop->slug.':'.$messageId.':'.$attachment['filename'];
                                 continue;
                             }
-                            $lists[$list['date'].'|'.$list['total']] ??= $list + ['source' => $shop->slug.':'.$messageId];
+                            $lists[$list['date'].'|'.$list['total'].'|'.md5(json_encode($list['rows']))] ??= $list + ['source' => $shop->slug.':'.$messageId];
                         }
                     }
                     $pageToken = $page['next'];
@@ -203,6 +212,26 @@ class ReconcileCodPayouts
         }
 
         return $lists;
+    }
+
+    /**
+     * @return array{date: string, total: float, rows: list<array{tracking: string, reference: string, amount: float}>}|null
+     */
+    public function parse(string $carrier, string $content): ?array
+    {
+        if ($carrier === 'dpd_hu') {
+            return $this->parseDpdHungaryList((new Parser())->parseContent($content)->getText());
+        }
+
+        $file = tempnam(sys_get_temp_dir(), 'cod');
+        try {
+            file_put_contents($file, $content);
+            $rows = IOFactory::load($file)->getActiveSheet()->toArray(null, false, false);
+        } finally {
+            unlink($file);
+        }
+
+        return $carrier === 'dpd_pl' ? $this->parseDpdPolandList($rows) : $this->parseGlsList($rows);
     }
 
     /**
@@ -236,6 +265,76 @@ class ReconcileCodPayouts
     }
 
     /**
+     * GLS Hungary's "Utánvét részletező" and GLS Romania's "Lista Colete cu Ramburs" sheets: the transfer date in the
+     * header ("Utalás dátuma: 2026. 11. 10." or "Data tranferarii banilor: 13.11.2026"), one row per parcel (report
+     * number, 11 digit parcel number, our order number with "-1"/"/1" on an order's further parcels, delivery date,
+     * amount) and a last row holding only the total. The list is only read when its rows add up to its total.
+     *
+     * @param list<list<mixed>> $rows
+     *
+     * @return array{date: string, total: float, rows: list<array{tracking: string, reference: string, amount: float}>}|null
+     */
+    public function parseGlsList(array $rows): ?array
+    {
+        $date   = null;
+        $total  = null;
+        $parcels = [];
+        foreach ($rows as $row) {
+            $first = trim((string)($row[0] ?? ''));
+            if (preg_match('/(\d{4})\.\s*(\d{2})\.\s*(\d{2})\.?\s*$/', $first, $match) || preg_match('/(\d{2})\.(\d{2})\.(\d{4})\s*$/', $first, $match)) {
+                $date = strlen($match[1]) === 4 ? "$match[1]-$match[2]-$match[3]" : "$match[3]-$match[2]-$match[1]";
+            } elseif (preg_match('/^\d{11}$/', trim((string)($row[1] ?? ''))) && is_numeric($row[4] ?? null)) {
+                $parcels[] = ['tracking' => trim((string)$row[1]), 'reference' => preg_replace('/\D/', '', preg_replace('/[-\/]\d+$/', '', trim((string)$row[2]))), 'amount' => (float)$row[4]];
+            } elseif ($first === '' && trim((string)($row[1] ?? '')) === '' && is_numeric($row[4] ?? null)) {
+                $total = round((float)$row[4], 2);
+            }
+        }
+
+        return $date && $parcels && $total !== null && round(array_sum(array_column($parcels, 'amount')), 2) == $total
+            ? ['date' => $date, 'total' => $total, 'rows' => $parcels]
+            : null;
+    }
+
+    /**
+     * DPD Poland's "COD specification" sheet, sent by DPD Slovakia: one row per parcel with our order number (without
+     * its PL prefix) in "Customer number2" and the date of the bank transfer. Its "Total transfer amount" is not the
+     * transfer (it adds up other customers), so the list carries no total of its own: its rows are only used when they
+     * add up to a DPD Poland transfer to the grosz. A sheet holding more than one transfer date is not read.
+     *
+     * @param list<list<mixed>> $rows
+     *
+     * @return array{date: string, total: float, rows: list<array{tracking: string, reference: string, amount: float}>}|null
+     */
+    public function parseDpdPolandList(array $rows): ?array
+    {
+        $header = array_map(fn ($cell) => trim((string)$cell), (array)array_shift($rows));
+        $column = array_flip($header);
+        if (!isset($column['Parcel label number'], $column['COD amount in PLN'], $column['Customer number2'], $column['Bank transfer date'])) {
+            return null;
+        }
+
+        $dates   = [];
+        $parcels = [];
+        foreach ($rows as $row) {
+            $tracking = trim((string)($row[$column['Parcel label number']] ?? ''));
+            if ($tracking === '') {
+                continue;
+            }
+            $amount = $row[$column['COD amount in PLN']] ?? null;
+            $date   = $row[$column['Bank transfer date']] ?? null;
+            if (!preg_match('/^\d{14}$/', $tracking) || !is_numeric($amount) || !is_numeric($date)) {
+                return null;
+            }
+            $dates[ExcelDate::excelToDateTimeObject($date)->format('Y-m-d')] = true;
+            $parcels[] = ['tracking' => $tracking, 'reference' => preg_replace('/\D/', '', (string)$row[$column['Customer number2']]), 'amount' => (float)$amount];
+        }
+
+        return $parcels && count($dates) === 1
+            ? ['date' => array_key_first($dates), 'total' => round(array_sum(array_column($parcels, 'amount')), 2), 'rows' => $parcels]
+            : null;
+    }
+
+    /**
      * The one list of exactly this amount, dated within three days of the line, that no other line has claimed.
      *
      * @param array<string, array<string, mixed>> $lists
@@ -245,12 +344,12 @@ class ReconcileCodPayouts
     private function listFor(BankTransaction $bankTransaction, array $lists): ?array
     {
         $candidates = collect($lists)
-            ->filter(fn (array $list) => $list['total'] == round((float)$bankTransaction->amount)
+            ->filter(fn (array $list) => round((float)$list['total'], 2) == round((float)$bankTransaction->amount, 2)
                 && abs($bankTransaction->booked_at->copy()->startOfDay()->diffInDays(Carbon::parse($list['date']))) <= 3)
             ->reject(fn (array $list) => BankTransaction::where('id', '!=', $bankTransaction->id)
                 ->where('match_data->provider', 'cod')
                 ->where('match_data->list->date', $list['date'])
-                ->where('match_data->list->total', $list['total'])
+                ->whereRaw("(match_data->'list'->>'total')::numeric = ?", [$list['total']])
                 ->exists());
 
         return $candidates->count() === 1 ? $candidates->first() : null;
@@ -261,7 +360,7 @@ class ReconcileCodPayouts
      * order sent in several parcels is paid what its parcels add up to. Its cash on delivery payment is linked; a payment staff typed that differs from the list by more than the rounding is
      * reported, never changed. An order without one gets it, for what it still owes, when that rounds to the list.
      *
-     * @param array{date: string, total: int, rows: list<array{tracking: string, reference: string, amount: float}>, source?: string} $list
+     * @param array{date: string, total: int|float, rows: list<array{tracking: string, reference: string, amount: float}>, source?: string} $list
      *
      * @return array<string, mixed>
      */
@@ -277,8 +376,8 @@ class ReconcileCodPayouts
 
         $parcels = [];
         foreach ($list['rows'] as $row) {
-            $order = $this->order($bankTransaction->organisation_id, $row['tracking']);
-            if (!$order || ltrim(preg_replace('/\D/', '', $order->reference), '0') !== ltrim($row['reference'], '0')) {
+            $order = $this->order($bankTransaction->organisation_id, $row['tracking'], $row['reference']);
+            if (!$order) {
                 $missing[] = $row['tracking'];
                 continue;
             }
@@ -289,7 +388,7 @@ class ReconcileCodPayouts
         }
 
         foreach ($parcels as ['order' => $order, 'amount' => $amount, 'count' => $parcelCount, 'tracking' => $tracking]) {
-            $tolerance = 0.51 * $parcelCount;
+            $tolerance = (self::CARRIERS[$bankTransaction->match_data['carrier'] ?? '']['tolerance'] ?? 0.51) * $parcelCount;
             $payments  = $this->codPayments($order);
             if ($payments->isNotEmpty()) {
                 array_push($paymentIds, ...$payments->pluck('id')->all());
@@ -343,13 +442,20 @@ class ReconcileCodPayouts
         ]);
     }
 
-    private function order(int $organisationId, string $tracking): ?Order
+    /**
+     * The order sent with this parcel that carries the order number on the list. A shipment of several parcels keeps
+     * their numbers in one string ("91130362231, 91130362250"), and a carrier sometimes reuses a number.
+     */
+    private function order(int $organisationId, string $tracking, string $reference): ?Order
     {
-        $orders = Shipment::where('organisation_id', $organisationId)
-            ->where('tracking', $tracking)
-            ->get()
+        $shipments = Shipment::where('organisation_id', $organisationId)->where('tracking', $tracking)->get();
+        if ($shipments->isEmpty()) {
+            $shipments = Shipment::where('organisation_id', $organisationId)->where('tracking', 'like', "%$tracking%")->get();
+        }
+        $orders = $shipments
             ->flatMap(fn (Shipment $shipment) => $shipment->deliveryNotes->flatMap->orders)
-            ->unique('id');
+            ->unique('id')
+            ->filter(fn (Order $order) => ltrim(preg_replace('/\D/', '', $order->reference), '0') === ltrim($reference, '0'));
 
         return $orders->count() === 1 ? $orders->first() : null;
     }

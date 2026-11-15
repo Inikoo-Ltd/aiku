@@ -1669,3 +1669,106 @@ test('carrier lines decided before carriers were recognised become cash on deliv
         ->and($twin->refresh()->match_data)->toEqual(['provider' => 'cod', 'carrier' => 'dpd_hu'])
         ->and($late->refresh()->match_data)->toEqual(['provider' => 'cod', 'carrier' => 'dpd_hu']);
 });
+
+test('GLS and DPD Poland cash on delivery sheets are read, and a parcel is followed through a shipment of several parcels or a reused number', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankConnection->update(['settings' => ['auto_pay_from' => now()->subDay()->toIso8601String()]]);
+    $codAccount = \App\Actions\Accounting\PaymentAccount\StorePaymentAccount::make()->action(
+        \App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider::make()->action(
+            paymentServiceProvider: PaymentServiceProvider::where('code', 'cond')->firstOrFail(),
+            organisation: $this->organisation,
+            modelData: ['code' => 'cod'.random_int(1000, 9999)]
+        ),
+        ['code' => 'cod'.random_int(1000, 9999), 'name' => 'GLS COD test', 'type' => PaymentAccountTypeEnum::CASH_ON_DELIVERY->value]
+    );
+    \App\Actions\Accounting\PaymentAccountShop\StorePaymentAccountShop::make()->action($codAccount, $this->shop, [
+        'currency_id' => $this->shop->currency_id,
+        'state'       => \App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum::ACTIVE,
+    ]);
+    $warehouse = createWarehouse();
+    $shipper   = \App\Actions\Dispatching\Shipper\StoreShipper::make()->action($this->organisation, ['code' => 'GLS'.random_int(100, 999), 'name' => 'GLS', 'trade_as' => 'gls']);
+    $parcel    = function (float $total, string $tracking) use ($warehouse, $shipper) {
+        $order = bankMatchingOrder(createCustomer($this->shop), $total);
+        $order->updateQuietly(['to_be_paid_by' => \App\Enums\Ordering\Order\OrderToBePaidByEnum::CASH_ON_DELIVERY]);
+        $deliveryNote = \App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote::make()->action($order, [
+            'reference'        => 'DN'.random_int(100000, 999999),
+            'state'            => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::UNASSIGNED,
+            'email'            => 'test@email.com',
+            'date'             => date('Y-m-d'),
+            'delivery_address' => new Address(Address::factory()->definition()),
+            'warehouse_id'     => $warehouse->id,
+        ]);
+        \App\Actions\Dispatching\Shipment\StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => $tracking]);
+
+        return $order->refresh();
+    };
+    $digits = fn (Order $order) => preg_replace('/\D/', '', $order->reference);
+    $prefix = (string)random_int(1000000, 9999999);
+
+    $twoParcels = $parcel(1264.47, $prefix.'0001, '.$prefix.'0002');
+    $reused     = $parcel(254.83, $prefix.'0003');
+    $other      = $parcel(254.83, $prefix.'0003');
+    $differs    = $parcel(300.00, $prefix.'0004');
+
+    $reconciler = \App\Actions\Accounting\BankTransaction\ReconcileCodPayouts::make();
+    $sheet      = [
+        ['GLS General Logistics Systems Romania SRL', '', '', '', '', '', ''],
+        [null, null, null, null, null, null, null],
+        ['Data tranferarii banilor: '.now()->format('d.m.Y'), null, null, null, null, null, null],
+        ['Număr referinta', 'Număr colet', 'Referire la ramb.', 'Livrat la data', 'Sumă ramburs', '', 'Postal Address'],
+        [135375480, (int)($prefix.'0001'), $digits($twoParcels).'/1', 46337, 1164.47, 'RON', 'Prodprosper 2003 Srl'],
+        [135375480, (int)($prefix.'0002'), $digits($twoParcels).'/2', 46337, 100, 'RON', 'Prodprosper 2003 Srl'],
+        [135379125, (int)($prefix.'0003'), $digits($reused), 46337, 254.83, 'RON', 'Sc Avelana Srl'],
+        [135379126, (int)($prefix.'0004'), $digits($differs), 46337, 299.6, 'RON', 'Somebody'],
+        ['', '', '', '', 1818.9, 'RON', ''],
+    ];
+    $list = $reconciler->parseGlsList($sheet);
+    expect($list['date'])->toBe(now()->toDateString())
+        ->and($list['total'])->toBe(1818.9)
+        ->and($list['rows'][1])->toBe(['tracking' => $prefix.'0002', 'reference' => $digits($twoParcels), 'amount' => 100.0])
+        ->and($reconciler->parseGlsList(array_replace($sheet, [8 => ['', '', '', '', 1818.91, 'RON', '']])))->toBeNull()
+        ->and($reconciler->parseGlsList(array_replace($sheet, [2 => ['Utalás dátuma: 2026. 11. 10.', null]]))['date'])->toBe('2026-11-10');
+
+    $dpdPoland = [
+        ['Customer number', 'Customer name', 'Parcel label number', 'Shiping date', 'COD amount in PLN', 'Delivery date', 'Recipient name', 'Recipient adres (postal code)', 'Recipient adres (city)', 'Recipient adres (street)', 'Customer number2', 'Total transfer amount in PLN', 'Bank transfer date', 'Settlement number'],
+        [230935, 'Ancient Wisdom s. r. o.', '06585701029623', 46318, 1654.92, 46321, 'NaturMedica', '42700', 'Lubliniec', 'Ul 22c', '31273', 318820.92, 46331, 'A25334'],
+        [230935, 'Ancient Wisdom s. r. o.', '06585701029685', 46318, 2065.69, 46322, 'Lidia', '09200', 'Sierpc', 'ul. Płocka 47', '31210', 318820.92, 46331, 'A25334'],
+    ];
+    expect($reconciler->parseDpdPolandList($dpdPoland))->toBe(['date' => '2026-11-05', 'total' => 3720.61, 'rows' => [
+        ['tracking' => '06585701029623', 'reference' => '31273', 'amount' => 1654.92],
+        ['tracking' => '06585701029685', 'reference' => '31210', 'amount' => 2065.69],
+    ]])
+        ->and($reconciler->parseDpdPolandList(array_replace($dpdPoland, [2 => array_replace($dpdPoland[2], [12 => 46332])])))->toBeNull();
+
+    $line = fn () => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => 'gls'.random_int(100000, 999999),
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 1818.90,
+        'currency_id'             => $this->shop->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => 'GLS GENERAL LOGISTICS SYSTEMS ROMAN',
+        'reference'               => '/ROC/TRANSFER RAMBURS',
+        'booked_at'               => now(),
+    ]);
+    $first = $line();
+    $twin  = $line();
+    MatchBankTransactions::run($bankConnection);
+    \App\Actions\Accounting\BankTransaction\ReconcileCodPayouts::partialMock()->shouldReceive('listsInMailboxes')->andReturn(['gls' => $list + ['source' => 'ro:test']]);
+    \App\Actions\Accounting\BankTransaction\ReconcileCodPayouts::make()->handle(true);
+
+    $claimed = collect([$first->refresh(), $twin->refresh()])->filter(fn (BankTransaction $bankTransaction) => isset($bankTransaction->match_data['list']));
+    expect($first->match_data['carrier'])->toBe('gls_ro')
+        ->and($claimed)->toHaveCount(1)
+        ->and($claimed->first()->match_data['payments_created'])->toBe(2)
+        ->and($claimed->first()->match_data['payments_missing'])->toBe([])
+        ->and($claimed->first()->match_data['differences'])->toEqual([['order' => $differs->reference, 'list' => 299.6, 'aiku' => 300, 'not_recorded' => true]])
+        ->and((float)$twoParcels->refresh()->payment_amount)->toBe(1264.47)
+        ->and((float)$reused->refresh()->payment_amount)->toBe(254.83)
+        ->and((float)$other->refresh()->payment_amount)->toBe(0.0)
+        ->and((float)$differs->refresh()->payment_amount)->toBe(0.0);
+});
