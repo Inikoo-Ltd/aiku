@@ -45,6 +45,7 @@ use App\Actions\Inventory\Warehouse\UpdateWarehouse;
 use App\Actions\Inventory\WarehouseArea\StoreWarehouseArea;
 use App\Actions\Inventory\WarehouseArea\UpdateWarehouseArea;
 use App\Enums\Goods\Stock\StockStateEnum;
+use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Inventory\OrgStock\LostAndFoundOrgStockStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -590,6 +591,35 @@ test('moving stock out of a location records who moved it', function (Warehouse 
     $movements = DB::table('org_stock_movements')->where('id', '>', $lastMovementId)->whereIn('location_id', [$source->id, $target->id]);
     expect((clone $movements)->count())->toBeGreaterThan(0)
         ->and((clone $movements)->where(fn ($query) => $query->whereNull('user_id')->orWhere('user_id', '!=', $this->user->id))->count())->toBe(0);
+})->depends('create warehouse');
+
+test('stock is only moved to a working location of the same warehouse that holds stock', function (Warehouse $warehouse) {
+    $source        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $broken        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $noStock       = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $working       = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $otherWarehouse = StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+    $elsewhere     = StoreLocation::make()->action($otherWarehouse, Location::factory()->definition());
+    $broken->update(['status' => LocationStatusEnum::BROKEN]);
+    $noStock->update(['allow_stocks' => false]);
+
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+    StoreLocationOrgStock::make()->action($orgStock, $source, ['type' => LocationStockTypeEnum::PICKING])->update(['quantity' => 4]);
+
+    $moveSome = route('grp.models.location.partial_move_stock', ['location' => $source->id]);
+    $moveAll  = route('grp.models.location.mass_move_stock', ['location' => $source->id]);
+
+    foreach ([$elsewhere, $broken, $noStock] as $target) {
+        post($moveSome, ['location_id' => $target->id, 'reason' => 'transfer', 'org_stocks' => [['org_stock_id' => $orgStock->id, 'quantity' => 1]]])
+            ->assertSessionHasErrors('location_id');
+        post($moveAll, ['location_id' => $target->id, 'reason' => 'transfer'])->assertSessionHasErrors('location_id');
+    }
+    expect((float) $source->locationOrgStocks()->where('org_stock_id', $orgStock->id)->value('quantity'))->toBe(4.0)
+        ->and(LocationOrgStock::whereIn('location_id', [$elsewhere->id, $broken->id, $noStock->id])->exists())->toBeFalse();
+
+    post($moveAll, ['location_id' => $working->id, 'reason' => 'transfer'])->assertSessionHasNoErrors();
+    expect((float) $working->locationOrgStocks()->where('org_stock_id', $orgStock->id)->value('quantity'))->toBe(4.0);
 })->depends('create warehouse');
 
 test('editing an SKO in a location needs stock edit rights, and a refused edit changes nothing', function (Warehouse $warehouse) {

@@ -14,6 +14,7 @@ use App\Actions\Inventory\LocationOrgStock\MoveOrgStockToOtherLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
+use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Inventory\Location;
@@ -90,12 +91,24 @@ class MassMoveLocationOrgStocks extends OrgAction
         return [
             'location_id'       => [
                 'required',
-                Rule::exists('locations', 'id')->where('organisation_id', $this->organisation->id),
+                Rule::exists('locations', 'id')
+                    ->where('warehouse_id', $this->location->warehouse_id)
+                    ->where('status', LocationStatusEnum::OPERATIONAL->value)
+                    ->where('allow_stocks', true)
+                    ->whereNull('deleted_at'),
                 'not_in:'.$this->location->id
             ],
             'remove_after_move' => ['sometimes', 'nullable', 'boolean'],
             'reason'            => [ 'required', new Enum(OrgStockMovementReasonEnum::class)],
             'note'              => ['sometimes', 'nullable', 'string'],
+        ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'location_id.exists' => __('Move the stock to a working location of the same warehouse that holds stock.'),
+            'location_id.not_in' => __('The source and the destination location must be different.'),
         ];
     }
 
