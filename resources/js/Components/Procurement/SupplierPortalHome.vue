@@ -6,6 +6,7 @@
 -->
 
 <script setup lang="ts">
+import { supplierPortalBrandLogos } from "@/Components/Procurement/SupplierPortalBrandLogos.vue"
 import { computed } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SupplierPortalStatCard from "@/Components/Procurement/SupplierPortalStatCard.vue"
@@ -101,12 +102,6 @@ const welcome = computed(() => [
 	ctrans("Thank you for your care and attention to products supplied to :group. Together we can sell more of your products.", { group: props.group }),
 ])
 
-const brandLogos = [
-	{ name: "ancient-wisdom-logo", alt: "Ancient Wisdom" },
-	{ name: "aw-artisan-logo", alt: "AW Artisan" },
-	{ name: "aw-gifts-logo", alt: "AW Gifts" },
-]
-
 const openRibbons = computed(() => (props.orders?.ribbons ?? []).filter((ribbon) => ribbon.status !== "completed"))
 const needsAttention = computed(() => openRibbons.value.filter((ribbon) => ribbon.status === "overdue" || ribbon.status === "at_risk").length)
 const shownRibbons = computed(() => openRibbons.value.slice(0, SHOWN_ORDERS))
@@ -197,7 +192,7 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 				<aside class="self-start">
 					<!-- <p class="text-center text-[11px] font-semibold uppercase tracking-wider text-gray-400">{{ ctrans("Our brands") }}</p> -->
 					<ul class="mt-3 grid grid-cols-3 items-center gap-3 lg:grid-cols-1 lg:gap-0 lg:divide-y lg:divide-dashed lg:divide-black/15">
-						<li v-for="logo in brandLogos" :key="logo.name" class="flex justify-center lg:py-4 lg:first:pt-0 lg:last:pb-0">
+						<li v-for="logo in supplierPortalBrandLogos" :key="logo.name" class="flex justify-center lg:py-4 lg:first:pt-0 lg:last:pb-0">
 							<picture>
 								<source :srcset="`/art/${logo.name}.avif`" type="image/avif" />
 								<img :src="`/art/${logo.name}.webp`" :alt="logo.alt" width="140" height="56" decoding="async" class="h-10 w-full max-w-[8.75rem] object-contain sm:h-12 lg:h-14" />

@@ -3,7 +3,25 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title data-inertia>{{ config('app.name', 'Aiku') }}</title>
+    <title data-inertia>{{ $socialMeta['title'] ?? config('app.name', 'Aiku') }}</title>
+    @isset($socialMeta)
+        <meta name="description" content="{{ $socialMeta['description'] }}">
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="{{ $socialMeta['site_name'] }}">
+        <meta property="og:title" content="{{ $socialMeta['title'] }}">
+        <meta property="og:description" content="{{ $socialMeta['description'] }}">
+        <meta property="og:url" content="{{ $socialMeta['url'] }}">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="{{ $socialMeta['title'] }}">
+        <meta name="twitter:description" content="{{ $socialMeta['description'] }}">
+        @if ($socialMeta['image'])
+            <meta property="og:image" content="{{ $socialMeta['image'] }}">
+            <meta property="og:image:width" content="1200">
+            <meta property="og:image:height" content="630">
+            <meta property="og:image:alt" content="{{ $socialMeta['image_alt'] ?? $socialMeta['site_name'] }}">
+            <meta name="twitter:image" content="{{ $socialMeta['image'] }}">
+        @endif
+    @endisset
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -14,7 +32,10 @@
           onload="this.onload=null;this.rel='stylesheet'">
 
 
-    @if (config('app.env') === 'local')
+    @if (!empty($socialMeta['icon']))
+        <link rel="icon" type="image/png" href="{{ $socialMeta['icon'] }}">
+        <link rel="apple-touch-icon" href="{{ $socialMeta['icon'] }}">
+    @elseif (config('app.env') === 'local')
         <link rel="icon" href="{{ url('favicon_local.svg?v=3') }}" type="image/svg+xml">
         <link rel="icon" type="image/png" sizes="32x32" href="{{ url('favicon_local-32.png?v=3') }}">
         <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon_local-180.png?v=3') }}">
@@ -28,7 +49,9 @@
         <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon-180.png?v=3') }}">
     @endif
 
-    <link rel="manifest" href="{{ url('grp.webmanifest') }}">
+    @empty($socialMeta)
+        <link rel="manifest" href="{{ url('grp.webmanifest') }}">
+    @endempty
 
     @if (config('app.env') === 'staging')
         <!-- == -->

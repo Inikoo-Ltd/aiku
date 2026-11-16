@@ -47,13 +47,25 @@ class ShowSupplierPortalLogin
 
     public function asController(Request $request): Response
     {
+        $group = group();
+
         return Inertia::render('SupplyChain/SupplierPortalLogin', [
             'title'          => __('Supplier sign in'),
             'link_requested' => (bool) session('link_requested'),
             'days'           => SendSupplierPortalLink::DAYS,
-            'company'        => group()->name,
+            'company'        => $group->name,
             'language'       => self::language($request),
             'routes'         => ['send' => route('grp.supplier_portal.send_link')],
+        ])->withViewData([
+            'socialMeta' => [
+                'title'       => __('Supplier sign in').' - '.$group->name,
+                'site_name'   => $group->name,
+                'description' => __('Enter the email your company has with :company. We email you a private link to your page. No password needed.', ['company' => $group->name]),
+                'image'       => asset('art/supplier-portal-og.png'),
+                'image_alt'   => 'AW Group: Ancient Wisdom, AW Artisan, AW Gifts',
+                'icon'        => $group->imageSources(64, 64)['png'] ?? null,
+                'url'         => route('grp.supplier_portal.login'),
+            ],
         ])->toResponse($request)->withHeaders([
             'Cache-Control'   => 'no-store, private',
             'Referrer-Policy' => 'no-referrer',

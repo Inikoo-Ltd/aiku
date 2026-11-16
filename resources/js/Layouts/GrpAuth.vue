@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { provide } from "vue"
+import { onBeforeUnmount, provide } from "vue"
 import { useLayoutStore } from "@/Stores/layout"
 import { usePage } from '@inertiajs/vue3'
 import { loadLanguageAsync } from 'laravel-vue-i18n'
@@ -14,6 +14,11 @@ import { watercolourBackground } from "@/Composables/useWatercolourBackground"
 import { Head } from "@inertiajs/vue3"
 import AuthMascotFooter from "@/Components/Auth/AuthMascotFooter.vue"
 import AuthQuote from "@/Components/Auth/AuthQuote.vue"
+import { resetAppTitleSuffix, useAppTitleSuffix } from "@/Composables/useAppTitle"
+
+const props = defineProps<{
+    brandName?: string
+}>()
 
 provide('layout', useLayoutStore())
 
@@ -25,6 +30,11 @@ const layout = useLayoutStore()
 const publicSiteUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname.replace(/^app\./, '')}` : '/'
 
 const background = watercolourBackground()
+
+if (props.brandName) {
+    useAppTitleSuffix(props.brandName)
+    onBeforeUnmount(resetAppTitleSuffix)
+}
 </script>
 
 <template>
@@ -32,19 +42,20 @@ const background = watercolourBackground()
     <div :style="{'background-image': background, 'background-size': 'cover', 'background-position': 'center'}"
           class="relative min-h-[100dvh] w-screen overflow-hidden flex items-center justify-center bg-[#fbf7ee] sm:px-6 lg:px-8">
         <Head><link rel="stylesheet" href="https://fonts.bunny.net/css?family=caveat:400&display=swap" /></Head>
-        <AuthQuote :public-site-url="publicSiteUrl" />
-        <a :href="publicSiteUrl" class="absolute top-8 left-10 flex items-center gap-x-3 select-none hover:opacity-80" title="About aiku">
+        <AuthQuote v-if="!brandName" :public-site-url="publicSiteUrl" />
+        <a v-if="!brandName" :href="publicSiteUrl" class="absolute top-8 left-10 flex items-center gap-x-3 select-none hover:opacity-80" title="About aiku">
             <img class="h-14 w-auto" src="/art/invader-sketch.svg" alt="aiku" fetchpriority="high" decoding="async" />
             <span style="font-family: Georgia, 'Times New Roman', serif" class="text-4xl font-semibold text-[#1c1b22] leading-none tracking-tight">aiku</span>
         </a>
 
         <div class="mx-auto -translate-y-4 sm:-translate-y-6 md:w-full max-w-md">
+            <slot name="above" />
             <div class="relative bg-white/80 backdrop-blur-sm py-8 px-4 rounded-lg md:px-10 border border-[#1c1b22]/10 shadow-[0_8px_30px_rgba(28,27,34,0.08)]">
                 <slot />
             </div>
             <slot name="below" />
         </div>
 
-        <AuthMascotFooter :public-site-url="publicSiteUrl" />
+        <AuthMascotFooter v-if="!brandName" :public-site-url="publicSiteUrl" />
     </div>
 </template>
