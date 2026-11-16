@@ -210,7 +210,7 @@ const getPricePerUnit = (product: { price_per_unit?: number | null; discounted_p
                     @click="askAssistant"
                 >
                     <template #icon>
-                        <MerlinIcon />
+                        <MerlinIcon themed />
                     </template>
                 </Button>
             </div>
