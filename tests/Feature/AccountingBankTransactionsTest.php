@@ -900,6 +900,9 @@ test('order numbers are read from bank references as whole words', function () {
         ->and($matcher->orderReferenceTokens('numer zamówienia PL 30569'))->toBe(['PL30569'])
         ->and($matcher->orderReferenceTokens('SVWZ+FR 26245, de-10288'))->toBe(['FR26245', 'DE10288'])
         ->and($matcher->orderReferenceTokens('PL 31515 PL31515'))->toBe(['PL31515'])
+        ->and($matcher->orderReferenceTokens('AWFI223 775'))->toBe(['AWFI223', 'AWFI223775'])
+        ->and($matcher->orderReferenceTokens('AWFi223 345/290'))->toBe(['AWFI223', 'AWFI223345'])
+        ->and($matcher->orderReferenceTokens('PL 31515 123'))->toBe(['PL31515'])
         ->and($matcher->orderReferenceTokens(null))->toBe([]);
 });
 

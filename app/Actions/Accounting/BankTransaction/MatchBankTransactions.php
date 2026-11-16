@@ -1037,8 +1037,12 @@ class MatchBankTransactions
     public function orderReferenceTokens(?string $reference): array
     {
         preg_match_all('/(?<![A-Za-z0-9])([A-Za-z]{2,5})[ -]?([0-9]{3,8})(?![A-Za-z0-9])/', (string)$reference, $matches, PREG_SET_ORDER);
+        preg_match_all('/(?<![A-Za-z0-9])([A-Za-z]{1,4}[iI])([0-9]{2,4}) ([0-9]{2,4})(?![A-Za-z0-9])/', (string)$reference, $spacedInvoices, PREG_SET_ORDER);
 
-        return array_values(array_unique(array_map(fn (array $match) => strtoupper($match[1].$match[2]), $matches)));
+        return array_values(array_unique(array_merge(
+            array_map(fn (array $match) => strtoupper($match[1].$match[2]), $matches),
+            array_map(fn (array $match) => strtoupper($match[1].$match[2].$match[3]), $spacedInvoices)
+        )));
     }
 
     public function asCommand(Command $command): int
