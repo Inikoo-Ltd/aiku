@@ -90,10 +90,10 @@ class StoreWooCommerceProduct extends RetinaAction
 
             $attributes = [];
             $dimensions = [];
-            $centimetres = DimensionsFormatter::fromMetres([...($product->marketing_dimensions ?? []), 'units' => 'cm']);
-            $w = Arr::get($centimetres, 'w');
-            $h = Arr::get($centimetres, 'h');
-            $l = Arr::get($centimetres, 'l');
+            $inStoreUnit = DimensionsFormatter::fromMetres([...($product->marketing_dimensions ?? []), 'units' => self::dimensionUnit($wooCommerceUser)]);
+            $w = Arr::get($inStoreUnit, 'w');
+            $h = Arr::get($inStoreUnit, 'h');
+            $l = Arr::get($inStoreUnit, 'l');
 
             if ($w && $h && $l) {
                 $dimensions = [
@@ -257,5 +257,17 @@ class StoreWooCommerceProduct extends RetinaAction
         ];
 
         return $stateMap[$status] ?? 'draft';
+    }
+
+    /**
+     * The store's own dimension unit, read by CheckWooChannel; a store not checked yet gets WooCommerce's default, cm.
+     */
+    public static function dimensionUnit(WooCommerceUser $wooCommerceUser): string
+    {
+        return match (Arr::get($wooCommerceUser->settings, 'dimension_option')) {
+            'm', 'mm' => Arr::get($wooCommerceUser->settings, 'dimension_option'),
+            'in'      => 'inch',
+            default   => 'cm',
+        };
     }
 }

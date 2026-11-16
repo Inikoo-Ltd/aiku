@@ -154,7 +154,10 @@ function wooFakeForPing(array $handlers = []): void
 
 function wooFake(array $handlers = []): void
 {
-    $handlers = array_merge(['GET settings' => Http::response(wooSettingsGroups())], $handlers);
+    $handlers = array_merge([
+        'GET settings'                                     => Http::response(wooSettingsGroups()),
+        'GET settings/products/woocommerce_dimension_unit' => Http::response(['value' => 'cm']),
+    ], $handlers);
 
     Http::swap(new Factory(app(Dispatcher::class)));
     Http::fake(function (Request $request) use ($handlers) {
