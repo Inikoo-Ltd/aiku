@@ -149,6 +149,8 @@ class IndexSuppliers extends OrgAction
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('suppliers.code', $value)
                     ->orWhereAnyWordStartWith('suppliers.name', $value)
+                    ->orWhereAnyWordStartWith('suppliers.company_name', $value)
+                    ->orWhereAnyWordStartWith('suppliers.contact_name', $value)
                     ->orWhereStartWith('agents.code', $value)
                     ->orWhereHas('supplierProducts', fn ($query) => $query->whereStartWith('supplier_products.code', $value));
             });
