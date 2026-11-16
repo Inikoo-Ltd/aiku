@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Actions\SupplyChain\SupplierAgreement\GetSupplierAgreementStatus;
 use App\Actions\SupplyChain\SupplierMailshot\UI\WithSupplierMailshotsSubNavigation;
 use App\Actions\Procurement\WithParentSiblingsNavigation;
@@ -202,7 +203,7 @@ class IndexSuppliers extends OrgAction
                 'supplier_stats.number_stock_deliveries',
             ])
             ->selectRaw("coalesce(nullif(suppliers.company_name, ''), suppliers.contact_name, suppliers.name) as official_name")
-            ->selectRaw('coalesce(supplier_stats.number_open_purchase_orders, 0) + coalesce(supplier_stats.number_purchase_orders_state_in_process, 0) as number_open_purchase_orders')
+            ->selectRaw(PurchaseOrderStateEnum::countFromStatsSql('supplier_stats', PurchaseOrderStateEnum::live()).' as number_open_purchase_orders')
             ->selectSub(ProcurementNote::openIncidentsOfSupplierQuery(), 'open_incidents')
             ->tap(fn ($query) => GetSupplierAgreementStatus::make()->selectStatus($query, $parent->group_id ?? $parent->id))
             ->allowedSorts([

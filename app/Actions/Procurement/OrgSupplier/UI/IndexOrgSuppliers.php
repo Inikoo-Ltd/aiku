@@ -20,6 +20,7 @@ use App\Models\Procurement\ProcurementNote;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\UI\Procurement\OrgSuppliersTabsEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -95,7 +96,7 @@ class IndexOrgSuppliers extends OrgAction
                 'org_supplier_stats.number_stock_deliveries',
                 'org_suppliers.slug as org_supplier_slug',
             ])
-                ->selectRaw('coalesce(org_supplier_stats.number_open_purchase_orders, 0) + coalesce(org_supplier_stats.number_purchase_orders_state_in_process, 0) as number_open_purchase_orders')
+                ->selectRaw(PurchaseOrderStateEnum::countFromStatsSql('org_supplier_stats', PurchaseOrderStateEnum::live()).' as number_open_purchase_orders')
                 ->selectSub(ProcurementNote::openIncidentsOfSupplierQuery($parent), 'open_incidents')
                 ->tap(fn ($query) => GetSupplierAgreementStatus::make()->selectStatus($query, $parent->group_id));
         }
@@ -202,7 +203,9 @@ class IndexOrgSuppliers extends OrgAction
                 'supplier_stats.number_purchase_orders',
                 'supplier_stats.number_stock_deliveries',
                 'org_suppliers.slug as org_supplier_slug',
-            ]);
+            ])
+            ->selectRaw(PurchaseOrderStateEnum::countFromStatsSql('supplier_stats', PurchaseOrderStateEnum::open()).' as number_open_purchase_orders')
+            ->tap(fn ($query) => GetSupplierAgreementStatus::make()->selectStatus($query, $agent->group_id));
     }
 
     public function tableStructure(Organisation $parent, ?array $modelOperations = null, $prefix = null): Closure
@@ -256,7 +259,7 @@ class IndexOrgSuppliers extends OrgAction
                 ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right');
 
-            if (!$agent && GetSupplierAgreementStatus::make()->requiredVersionNumber($parent->group_id) !== null) {
+            if (GetSupplierAgreementStatus::make()->requiredVersionNumber($parent->group_id) !== null) {
                 $table->column(key: 'agreement', label: __('Agreement'), canBeHidden: false);
             }
 
