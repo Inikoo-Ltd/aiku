@@ -52,6 +52,16 @@ Una tua tariffa che spedisce da <b>aiku-</b> in un paese per cui fissiamo già u
 
 I nostri prodotti sono venduti solo nei paesi inclusi nei tuoi mercati. Un cliente in un paese che nessuno dei tuoi mercati copre li vede esauriti.
 
+## Usa le tue tariffe di spedizione
+
+I tuoi clienti possono pagare la tua spedizione per i nostri prodotti invece di <b>AW Standard</b>, ad esempio per offrire la spedizione gratuita sopra un importo d'ordine.
+
+1. Nell'admin di Shopify, apri <b>Mercati</b>, poi ogni mercato in cui vendi, poi <b>Spedizione</b>. Modifica ciascuna delle tue tariffe e verifica che <b>Spedisce da</b> includa la sede <b>aiku-</b>. Senza di essa i tuoi clienti non vedono alcuna spedizione per i nostri prodotti.
+2. Nelle <b>Impostazioni</b> del tuo canale, in <b>Spedizione</b>, attiva <b>Usa le mie tariffe di spedizione</b>. Entro pochi minuti disattiviamo ogni tariffa <b>AW Standard</b> nel profilo <b>AW Connect shipping</b>, e restano disattivate quando i nostri prezzi cambiano.
+3. Fai un ordine di prova con uno dei nostri prodotti per vedere solo le tue tariffe al checkout.
+
+Quello che ti addebitiamo per ogni ordine non cambia: addebitiamo sempre la nostra spedizione. Disattiva l'impostazione per mostrare di nuovo <b>AW Standard</b>.
+
 ## Le tue scorte dei nostri prodotti
 
 I prodotti nel nostro profilo di spedizione partono solo dalla sede <b>aiku-</b>, quindi Shopify non li spedisce dalle tue sedi. Se hai tu stesso alcuni dei nostri prodotti, per esempio un articolo non usato che un cliente ti ha restituito, mettili in vendita nel tuo negozio come prodotto separato e spedisci tu quegli ordini.

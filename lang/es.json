@@ -26808,5 +26808,6 @@
     ":name is casting a spell…": ":name está lanzando un hechizo…",
     ":name is gazing into his crystal ball…": ":name está mirando en su bola de cristal…",
     "This one needs a little more thought. Nearly there…": "Esta necesita pensarse un poco más. Ya casi está…",
-    "Usually takes about :seconds seconds": "Suele tardar unos :seconds segundos"
+    "Usually takes about :seconds seconds": "Suele tardar unos :seconds segundos",
+    "Use my own shipping rates": "Usar mis propias tarifas de envío"
 }

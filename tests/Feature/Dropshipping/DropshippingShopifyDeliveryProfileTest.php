@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\SyncShopifyDeliveryProfile;
@@ -27,6 +28,7 @@ use Gnikyt\BasicShopifyAPI\Options;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Tests\Support\ShopifyFake;
 
@@ -486,4 +488,72 @@ test('rates the merchant turned off in a zone stay off when our rates are replac
         ->and($message)->toBe('Rates replaced, added 0 and removed 0 variant(s)')
         ->and(array_column($zonesCreated['Zone 1']['methodDefinitionsToCreate'], 'active'))->toBe([false, false])
         ->and(array_column($zonesCreated['Zone 2']['methodDefinitionsToCreate'], 'active'))->toBe([true]);
+});
+
+test('a channel using its own shipping rates gets our rates off, and switching it back turns them all on again', function () {
+    [$channel, $shopifyUser] = deliveryProfileChannel($this);
+    $name = 'AW Connect shipping ('.$channel->slug.')';
+    $shopifyUser->update(['data' => [...$shopifyUser->data, 'delivery_profile' => ['id' => 'gid://shopify/DeliveryProfile/900', 'rates_fingerprint' => 'old']]]);
+
+    Queue::fake();
+    UpdateCustomerSalesChannel::make()->action($channel, ['own_shipping_rates' => true]);
+    SyncShopifyDeliveryProfile::assertPushed();
+    expect(Arr::get($channel->fresh()->settings, 'shopify.own_shipping_rates'))->toBeTrue();
+
+    $profileWithZone1 = fn (bool $active) => appDeliveryProfile(['gid://shopify/ProductVariant/7001'], $name, locationGroupZones: [
+        ['zone' => ['id' => 'gid://shopify/DeliveryZone/50', 'name' => 'Zone 1'], 'methodDefinitions' => ['nodes' => [['active' => $active], ['active' => $active]]]],
+    ]);
+    $zone1Active = fn () => array_column(collect(ShopifyFake::calls('appDeliveryProfileUpdate'))->last()['variables']['profile']['locationGroupsToUpdate'][0]['zonesToCreate'][0]['methodDefinitionsToCreate'], 'active');
+
+    ShopifyFake::fake([
+        'getAppDeliveryProfile'    => $profileWithZone1(true),
+        'appDeliveryProfileUpdate' => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
+    ]);
+    [$status] = SyncShopifyDeliveryProfile::run($channel);
+    expect($status)->toBeTrue()
+        ->and($zone1Active())->toBe([false, false])
+        ->and($shopifyUser->refresh()->data['delivery_profile']['own_shipping_rates'])->toBeTrue();
+
+    UpdateCustomerSalesChannel::make()->action($channel, ['own_shipping_rates' => false]);
+    ShopifyFake::fake([
+        'getAppDeliveryProfile'    => $profileWithZone1(false),
+        'appDeliveryProfileUpdate' => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
+    ]);
+    [$status, $message] = SyncShopifyDeliveryProfile::run($channel);
+    expect($status)->toBeTrue()
+        ->and($message)->toBe('Rates replaced, added 0 and removed 0 variant(s)')
+        ->and($zone1Active())->toBe([true, true])
+        ->and($shopifyUser->refresh()->data['delivery_profile']['own_shipping_rates'])->toBeFalse();
+});
+
+test('rates written before a variant move fails are remembered, so switching own shipping rates back off still turns them on', function () {
+    [$channel, $shopifyUser] = deliveryProfileChannel($this);
+    $name = 'AW Connect shipping ('.$channel->slug.')';
+    $shopifyUser->update(['data' => [...$shopifyUser->data, 'delivery_profile' => ['id' => 'gid://shopify/DeliveryProfile/900', 'rates_fingerprint' => 'old']]]);
+    $channel->update(['settings' => [...($channel->settings ?? []), 'shopify' => ['own_shipping_rates' => true]]]);
+
+    $profileWithZone1 = fn (bool $active) => appDeliveryProfile([], $name, locationGroupZones: [
+        ['zone' => ['id' => 'gid://shopify/DeliveryZone/50', 'name' => 'Zone 1'], 'methodDefinitions' => ['nodes' => [['active' => $active], ['active' => $active]]]],
+    ]);
+    $updates = fn () => collect(ShopifyFake::calls('appDeliveryProfileUpdate'))->pluck('variables.profile');
+
+    ShopifyFake::fake([
+        'getAppDeliveryProfile'    => $profileWithZone1(true),
+        'appDeliveryProfileUpdate' => fn (array $variables) => isset($variables['profile']['variantsToAssociate'])
+            ? ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => [['field' => 'variants', 'message' => 'Throttled']]]])
+            : ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
+    ]);
+    [$status] = SyncShopifyDeliveryProfile::run($channel);
+    expect($status)->toBeFalse()
+        ->and(array_column($updates()->first()['locationGroupsToUpdate'][0]['zonesToCreate'][0]['methodDefinitionsToCreate'], 'active'))->toBe([false, false])
+        ->and($shopifyUser->refresh()->data['delivery_profile']['own_shipping_rates'])->toBeTrue();
+
+    $channel->update(['settings' => [...$channel->settings, 'shopify' => ['own_shipping_rates' => false]]]);
+    ShopifyFake::fake([
+        'getAppDeliveryProfile'    => $profileWithZone1(false),
+        'appDeliveryProfileUpdate' => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
+    ]);
+    SyncShopifyDeliveryProfile::run($channel);
+
+    expect(array_column($updates()->first()['locationGroupsToUpdate'][0]['zonesToCreate'][0]['methodDefinitionsToCreate'], 'active'))->toBe([true, true]);
 });

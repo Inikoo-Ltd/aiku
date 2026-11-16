@@ -37,6 +37,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * zone, or the buyer pays shipping for a fulfilment request we then reject (PRE-113); one banned only by
  * postcode keeps its zone.
  * Each variant belongs to one profile, so the merchant's own locations do not ship these products.
+ * A channel set to use the merchant's own shipping rates keeps the profile, with every rate off.
  *
  * A store still on shipping profiles keeps the merchant's rates: the aiku- location joins the profiles the
  * previous aiku location was in, or the merchant's default profile, and nothing else is touched. The app
@@ -115,7 +116,8 @@ class SyncShopifyDeliveryProfile
             return [false, 'The current shipping zone schema has no zone with a price'];
         }
 
-        $ratesFingerprint = md5(json_encode($zones));
+        $ownShippingRates = (bool) Arr::get($customerSalesChannel->settings, 'shopify.own_shipping_rates');
+        $ratesFingerprint = md5(json_encode($ownShippingRates ? [$zones, 'own_shipping_rates'] : $zones));
         $variantIds       = $customerSalesChannel->portfolios()
             ->where('status', true)
             ->whereNotNull('platform_product_variant_id')
@@ -145,7 +147,7 @@ class SyncShopifyDeliveryProfile
                 return [true, 'Would create the delivery profile with '.count($zones).' zone(s) and '.count($variantIds).' variant(s)'];
             }
 
-            return $this->createProfile($shopifyUser, self::profileName($customerSalesChannel), $zones, $variantIds, $ratesFingerprint);
+            return $this->createProfile($shopifyUser, self::profileName($customerSalesChannel), self::zonesForRates($zones, [], $ownShippingRates, false), $variantIds, $ratesFingerprint, $ownShippingRates);
         }
 
         $toAssociate    = array_values(array_diff($variantIds, $profile['variantIds']));
@@ -163,13 +165,16 @@ class SyncShopifyDeliveryProfile
                 $changes['zonesToDelete']          = $profile['zoneIds'];
                 $changes['locationGroupsToUpdate'] = [[
                     'id'            => $profile['locationGroupId'],
-                    'zonesToCreate' => self::keepZonesTurnedOff($zones, $profile['turnedOffZoneNames']),
+                    'zonesToCreate' => self::zonesForRates($zones, $profile['turnedOffZoneNames'], $ownShippingRates, (bool) Arr::get($shopifyUser->data, 'delivery_profile.own_shipping_rates')),
                 ]];
             }
 
             [$status, $message] = $this->updateProfile($shopifyUser, $profile['id'], $changes);
             if (!$status) {
                 return [false, $message];
+            }
+            if ($ratesChanged) {
+                $this->rememberInProfileData($shopifyUser, ['rates_fingerprint' => $ratesFingerprint, 'own_shipping_rates' => $ownShippingRates]);
             }
         }
 
@@ -178,7 +183,7 @@ class SyncShopifyDeliveryProfile
             return [false, $message];
         }
 
-        $this->remember($shopifyUser, $profile['id'], $ratesFingerprint);
+        $this->remember($shopifyUser, $profile['id'], $ratesFingerprint, $ownShippingRates);
 
         return [true, ($renamed ? 'Renamed, ' : '').($ratesChanged ? 'Rates replaced, ' : '').'added '.count($toAssociate).' and removed '.count($toDissociate).' variant(s)'];
     }
@@ -529,6 +534,24 @@ class SyncShopifyDeliveryProfile
     }
 
     /**
+     * A merchant who charges their own shipping (the channel's "Use my own shipping rates") gets our zones with
+     * every rate off, so checkout shows only their market rates that ship from the aiku- location. Switching it
+     * back off turns every zone on again, as we turned them off, not the merchant.
+     *
+     * @param  list<array<string, mixed>>  $zones
+     * @param  list<string>  $turnedOffZoneNames
+     * @return list<array<string, mixed>>
+     */
+    public static function zonesForRates(array $zones, array $turnedOffZoneNames, bool $ownShippingRates, bool $wasOwnShippingRates): array
+    {
+        if ($ownShippingRates) {
+            return self::keepZonesTurnedOff($zones, Arr::pluck($zones, 'name'));
+        }
+
+        return $wasOwnShippingRates ? $zones : self::keepZonesTurnedOff($zones, $turnedOffZoneNames);
+    }
+
+    /**
      * @param  list<array<string, mixed>>  $zones
      * @param  list<string>  $turnedOffZoneNames
      * @return list<array<string, mixed>>
@@ -653,7 +676,7 @@ class SyncShopifyDeliveryProfile
      * @param  list<string>  $variantIds
      * @return array{0: bool, 1: string}
      */
-    private function createProfile(ShopifyUser $shopifyUser, string $name, array $zones, array $variantIds, string $ratesFingerprint): array
+    private function createProfile(ShopifyUser $shopifyUser, string $name, array $zones, array $variantIds, string $ratesFingerprint, bool $ownShippingRates): array
     {
         $mutation = <<<'MUTATION'
             mutation deliveryProfileCreate($profile: DeliveryProfileInput!) {
@@ -692,7 +715,7 @@ class SyncShopifyDeliveryProfile
             return [false, 'User errors: '.json_encode($userErrors)];
         }
 
-        $this->remember($shopifyUser, $profileId, $ratesFingerprint);
+        $this->remember($shopifyUser, $profileId, $ratesFingerprint, $ownShippingRates);
 
         [$status, $message] = $this->moveVariants($shopifyUser, $profileId, array_slice($variantIds, self::VARIANTS_PER_CALL), []);
         if (!$status) {
@@ -803,12 +826,13 @@ class SyncShopifyDeliveryProfile
         return [true, $profile ? 'Removed the delivery profile and '.count($profile['variantIds']).' variant(s)' : 'The merchant had already deleted the delivery profile'];
     }
 
-    private function remember(ShopifyUser $shopifyUser, string $profileId, string $ratesFingerprint): void
+    private function remember(ShopifyUser $shopifyUser, string $profileId, string $ratesFingerprint, bool $ownShippingRates): void
     {
         $this->rememberInProfileData($shopifyUser, [
-            'id'                => $profileId,
-            'rates_fingerprint' => $ratesFingerprint,
-            'synced_at'         => now()->toIso8601String(),
+            'id'                 => $profileId,
+            'rates_fingerprint'  => $ratesFingerprint,
+            'own_shipping_rates' => $ownShippingRates,
+            'synced_at'          => now()->toIso8601String(),
         ]);
     }
 

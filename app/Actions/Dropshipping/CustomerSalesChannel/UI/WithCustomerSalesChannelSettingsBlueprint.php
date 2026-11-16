@@ -4,6 +4,7 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
+use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Helpers\TaxCategory;
 use Illuminate\Support\Arr;
@@ -70,6 +71,21 @@ trait WithCustomerSalesChannelSettingsBlueprint
                         'label' => __('Private tracking notes'),
                         'information' => __('When an order is dispatched we add its tracking to the order in WooCommerce as a note. Off: the note is for the customer, and WooCommerce emails it to them. On: the note is private, only you see it, and WooCommerce does not email it to your customer. Either way the order is completed with its tracking, and WooCommerce still sends its own order completed email if you have it switched on.'),
                         'value' => (bool) Arr::get($customerSalesChannel->settings, 'woocommerce.private_tracking_notes')
+                    ],
+                ]
+            ];
+        }
+
+        if ($user instanceof ShopifyUser) {
+            $properties[] = [
+                "label" => __("Shipping"),
+                'icon' => 'fa-light fa-truck',
+                'fields' => [
+                    'own_shipping_rates' => [
+                        'type' => 'toggle',
+                        'label' => __('Use my own shipping rates'),
+                        'information' => __('Off: at checkout your customers see our shipping prices, AW Standard, for our products. On: we turn AW Standard off in the AW Connect shipping profile, so they see only your own rates. Before turning it on, open Markets in Shopify, then each market, then Shipping, and add the aiku- location to Ships from on every rate of yours, or your customers get no shipping for our products. We still charge you our shipping for each order.'),
+                        'value' => (bool) Arr::get($customerSalesChannel->settings, 'shopify.own_shipping_rates')
                     ],
                 ]
             ];

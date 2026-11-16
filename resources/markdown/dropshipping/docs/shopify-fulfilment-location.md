@@ -52,6 +52,16 @@ A rate of yours that ships from <b>aiku-</b> in a country we already price shows
 
 Our products are only sold to the countries your markets include. A customer in a country none of your markets covers sees them as sold out.
 
+## Use your own shipping rates
+
+Your customers can pay your own shipping for our products instead of <b>AW Standard</b>, for example to offer free shipping above an order value.
+
+1. In your Shopify admin, open <b>Markets</b>, then each market you sell to, then <b>Shipping</b>. Edit each of your rates and make sure <b>Ships from</b> includes the <b>aiku-</b> location. Without it your customers see no shipping for our products.
+2. In your channel's <b>Settings</b>, under <b>Shipping</b>, turn on <b>Use my own shipping rates</b>. Within a few minutes we turn off every <b>AW Standard</b> rate in the <b>AW Connect shipping</b> profile, and we keep them off when our prices change.
+3. Place a test order with one of our products to see only your rates at checkout.
+
+What we charge you for each order does not change: we still charge our own shipping. Turn the setting off to show <b>AW Standard</b> again.
+
 ## Your own stock of our products
 
 Products in our shipping profile ship only from the <b>aiku-</b> location, so Shopify does not send them from your own locations. If you hold some of our products yourself, for example an unused item a customer returned to you, list them in your store as a separate product and send those orders yourself.

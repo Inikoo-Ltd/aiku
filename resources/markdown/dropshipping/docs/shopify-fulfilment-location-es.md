@@ -52,6 +52,16 @@ Una tarifa tuya que envíe desde <b>aiku-</b> en un país para el que ya fijamos
 
 Nuestros productos solo se venden a los países que incluyen tus mercados. Un cliente en un país que no cubre ninguno de tus mercados los ve agotados.
 
+## Usa tus propias tarifas de envío
+
+Tus clientes pueden pagar tu propio envío por nuestros productos en lugar de <b>AW Standard</b>, por ejemplo para ofrecer envío gratis a partir de un importe de pedido.
+
+1. En el admin de Shopify, abre <b>Mercados</b>, luego cada mercado en el que vendes, luego <b>Envío</b>. Edita cada una de tus tarifas y comprueba que <b>Envía desde</b> incluye la ubicación <b>aiku-</b>. Sin ella, tus clientes no ven ningún envío para nuestros productos.
+2. En los <b>Ajustes</b> de tu canal, en <b>Envío</b>, activa <b>Usar mis propias tarifas de envío</b>. En pocos minutos desactivamos todas las tarifas <b>AW Standard</b> del perfil <b>AW Connect shipping</b>, y siguen desactivadas cuando cambian nuestros precios.
+3. Haz un pedido de prueba con uno de nuestros productos para ver solo tus tarifas en el checkout.
+
+Lo que te cobramos por cada pedido no cambia: seguimos cobrando nuestro propio envío. Desactiva el ajuste para mostrar de nuevo <b>AW Standard</b>.
+
 ## Tu propio stock de nuestros productos
 
 Los productos de nuestro perfil de envío solo se envían desde la ubicación <b>aiku-</b>, así que Shopify no los envía desde tus propias ubicaciones. Si tienes algunos de nuestros productos tú mismo, por ejemplo un artículo sin usar que un cliente te devolvió, publícalos en tu tienda como un producto aparte y envía tú esos pedidos.
