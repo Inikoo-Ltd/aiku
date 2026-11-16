@@ -68,10 +68,15 @@ enum LeaveCalculator {
 
 struct LeaveService: Sendable {
     var list: @Sendable () async throws -> LeavesResponse
-    var request: @Sendable (LeaveRequestBody) async throws -> LeaveResponse
+    var request: @Sendable (LeaveRequestBody, [UploadFile]) async throws -> LeaveResponse
+    var replaceAttachments: @Sendable (Int, [UploadFile]) async throws -> LeaveResponse = { _, _ in throw APIError.unexpectedBody }
 
     static func live(_ client: APIClient) -> LeaveService {
-        LeaveService(list: { try await client.leaves() }, request: { try await client.requestLeave($0) })
+        LeaveService(
+            list: { try await client.leaves() },
+            request: { try await client.requestLeave($0, attachments: $1) },
+            replaceAttachments: { try await client.replaceLeaveAttachments(leaveID: $0, attachments: $1) }
+        )
     }
 }
 
@@ -146,7 +151,30 @@ final class LeaveStore {
         return nil
     }
 
-    func request(type: String?, start: String, end: String, reason: String) async -> Result<LeaveResponse, LeaveFormError> {
+    func isMedical(_ type: String?) -> Bool {
+        typeOptions.first { $0.code == type }?.category == "medical"
+    }
+
+    func canReplaceCertificate(_ leave: LeaveResponse) -> Bool {
+        leave.status == LeaveStatus.pending.rawValue && isMedical(leave.type)
+    }
+
+    func replaceCertificate(of leave: LeaveResponse, with files: [UploadFile]) async -> LeaveFormError? {
+        guard !files.isEmpty else { return LeaveFormError(message: "Choose at least one file.") }
+        do {
+            let updated = try await service.replaceAttachments(leave.id, files)
+            if let index = leaves.firstIndex(where: { $0.id == leave.id }) {
+                leaves[index] = updated
+            }
+            return nil
+        } catch APIError.offline {
+            return LeaveFormError(message: "No connection. Nothing was sent.")
+        } catch {
+            return LeaveFormError(message: error.localizedDescription)
+        }
+    }
+
+    func request(type: String?, start: String, end: String, reason: String, attachments: [UploadFile] = []) async -> Result<LeaveResponse, LeaveFormError> {
         if let error = validate(type: type, start: start, end: end, reason: reason) { return .failure(error) }
         let option = typeOptions.first { $0.code == type }
         let body = LeaveRequestBody(
@@ -156,7 +184,7 @@ final class LeaveStore {
             reason: reason.trimmingCharacters(in: .whitespacesAndNewlines)
         )
         do {
-            let leave = try await service.request(body)
+            let leave = try await service.request(body, isMedical(type) ? attachments : [])
             leaves.insert(leave, at: 0)
             await load()
             return .success(leave)

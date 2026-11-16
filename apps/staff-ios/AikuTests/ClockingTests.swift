@@ -71,7 +71,7 @@ private func service(
             await calls.recordQr(request)
             return try qr.get()
         },
-        requestAdjustment: { body in
+        requestAdjustment: { body, _ in
             await calls.recordAdjustment(body)
             if let adjustment { throw adjustment }
             return ClockingAdjustmentResponse(id: 50, date: body.date, timesheetId: body.timesheetId, originalStartTimeLocal: nil, originalEndTimeLocal: nil, requestedStartTimeLocal: body.requestedStartAt, requestedEndTimeLocal: body.requestedEndAt, reason: body.reason, status: "pending", statusLabel: "Pending", approvalComment: nil)

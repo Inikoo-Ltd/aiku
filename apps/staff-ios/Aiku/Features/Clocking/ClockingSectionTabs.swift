@@ -32,7 +32,7 @@ struct ClockingSectionTabs: View {
             case .clock: router.replace(with: ClockingRoute.clocking)
             case .timesheets: router.replace(with: ClockingRoute.timesheets)
             case .leave: router.replace(with: ClockingRoute.leave)
-            case .adjustment: onAdjust()
+            case .adjustment: router.replace(with: ClockingRoute.adjustments)
             case .overtime: router.replace(with: ClockingRoute.overtime)
             case .calendar: router.replace(with: ClockingRoute.calendar)
             }

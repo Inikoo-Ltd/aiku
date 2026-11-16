@@ -12,6 +12,12 @@ struct MobileWarehouse: Decodable, Sendable, Equatable {
         var viewGoodsOut = false
         var pickAndPack = false
         var superviseGoodsOut = false
+        var viewInventory = false
+        var moveStock = false
+        var viewGoodsIn = false
+        var bookIn = false
+        var viewFulfilment = false
+        var editFulfilment = false
     }
 
     let id: Int
@@ -23,7 +29,7 @@ struct MobileWarehouse: Decodable, Sendable, Equatable {
 
 extension MobileWarehouse.Abilities {
     private enum CodingKeys: String, CodingKey {
-        case viewLocations, editLocations, viewGoodsOut, pickAndPack, superviseGoodsOut
+        case viewLocations, editLocations, viewGoodsOut, pickAndPack, superviseGoodsOut, viewInventory, moveStock, viewGoodsIn, bookIn, viewFulfilment, editFulfilment
     }
 
     init(from decoder: Decoder) throws {
@@ -33,6 +39,12 @@ extension MobileWarehouse.Abilities {
         viewGoodsOut = try container.decodeIfPresent(Bool.self, forKey: .viewGoodsOut) ?? false
         pickAndPack = try container.decodeIfPresent(Bool.self, forKey: .pickAndPack) ?? false
         superviseGoodsOut = try container.decodeIfPresent(Bool.self, forKey: .superviseGoodsOut) ?? false
+        viewInventory = try container.decodeIfPresent(Bool.self, forKey: .viewInventory) ?? false
+        moveStock = try container.decodeIfPresent(Bool.self, forKey: .moveStock) ?? false
+        viewGoodsIn = try container.decodeIfPresent(Bool.self, forKey: .viewGoodsIn) ?? false
+        bookIn = try container.decodeIfPresent(Bool.self, forKey: .bookIn) ?? false
+        viewFulfilment = try container.decodeIfPresent(Bool.self, forKey: .viewFulfilment) ?? false
+        editFulfilment = try container.decodeIfPresent(Bool.self, forKey: .editFulfilment) ?? false
     }
 }
 

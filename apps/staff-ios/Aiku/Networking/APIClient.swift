@@ -13,6 +13,7 @@ struct Endpoint: Sendable {
     var method: HTTPMethod = .get
     var queryItems: [URLQueryItem] = []
     var body: Data?
+    var contentType: String?
 
     static let ping = Endpoint(path: "ping")
     static let profile = Endpoint(path: "profile")
@@ -83,7 +84,7 @@ final class APIClient: Sendable {
         }
         if let body = endpoint.body {
             request.httpBody = body
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue(endpoint.contentType ?? "application/json", forHTTPHeaderField: "Content-Type")
         }
         if let token = tokenProvider() {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")

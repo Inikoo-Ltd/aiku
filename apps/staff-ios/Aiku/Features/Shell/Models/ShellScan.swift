@@ -93,7 +93,7 @@ enum ShellScanCatalog {
                 link: .locations(.location(code: location.code))
             )
         }
-        return ShellScanTarget(code: sko.code, kind: .sko, detail: detail, link: nil, rows: rows)
+        return ShellScanTarget(code: sko.code, kind: .sko, detail: detail, link: .inventory(.skoID(id: sko.id)), rows: rows)
     }
 
     private static func locationTarget(_ location: MobileScannedLocation) -> ShellScanTarget {

@@ -91,7 +91,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeading("Shortcuts")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                ForEach(ShellHomeContent.shortcuts) { shortcut in
+                ForEach(ShellHomeContent.shortcuts(for: session.visibleModules)) { shortcut in
                     Button {
                         router.shellFollow(shortcut.link)
                     } label: {

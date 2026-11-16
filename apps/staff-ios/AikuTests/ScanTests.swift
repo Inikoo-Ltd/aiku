@@ -51,7 +51,7 @@ struct ScanTests {
             Issue.record("Expected a SKO")
             return
         }
-        #expect(target.link == nil)
+        #expect(target.link == .inventory(.skoID(id: 9)))
         #expect(target.detail == "Bath bomb · 12 in locations")
         #expect(target.rows == [ShellScanRow(title: "A-03-02", detail: "12 here", link: .locations(.location(code: "A-03-02")))])
     }

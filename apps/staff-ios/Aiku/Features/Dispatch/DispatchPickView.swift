@@ -30,6 +30,7 @@ struct DispatchPickView: View {
             }
         }
         .task { await store.load() }
+        .hardwareScanner(isEnabled: !isScanning && store.session?.canRun(PickingSessionActionKey.scanPick) == true) { store.scanToPick($0) }
         .onChange(of: store.event) { _, event in
             guard let event else { return }
             store.event = nil

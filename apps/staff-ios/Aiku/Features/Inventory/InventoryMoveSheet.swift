@@ -2,22 +2,26 @@ import SwiftUI
 
 struct InventoryMoveSheet: View {
     let sko: InventorySko
+    var showsReasons = true
     let onCancel: () -> Void
-    let onSave: (String, String, Int, InventoryMoveReason) throws -> String
+    let onSave: (String, String, Int, InventoryMoveReason) async throws -> String
     let onDone: (String) -> Void
     @State private var source: String
     @State private var destination: String
     @State private var quantity: Int
     @State private var reason: InventoryMoveReason = .warehouseTransfer
     @State private var error: String?
+    @State private var isSaving = false
 
     init(
         sko: InventorySko,
+        showsReasons: Bool = true,
         onCancel: @escaping () -> Void,
-        onSave: @escaping (String, String, Int, InventoryMoveReason) throws -> String,
+        onSave: @escaping (String, String, Int, InventoryMoveReason) async throws -> String,
         onDone: @escaping (String) -> Void
     ) {
         self.sko = sko
+        self.showsReasons = showsReasons
         self.onCancel = onCancel
         self.onSave = onSave
         self.onDone = onDone
@@ -33,13 +37,13 @@ struct InventoryMoveSheet: View {
         SheetScaffold(title: "Move stock · \(sko.reference)", subtitle: "Between two of its locations") {
             SheetSectionLabel("From")
             ForEach(sko.locations.filter { $0.quantity > 0 }) { location in
-                RadioCard("From \(location.code)", subtitle: "\(location.quantity) in location", isSelected: location.code == source) {
+                RadioCard("From \(location.code)", subtitle: "\(location.quantityText) in location", isSelected: location.code == source) {
                     selectSource(location)
                 }
             }
             SheetSectionLabel("To")
             ForEach(sko.locations.filter { $0.code != source }) { location in
-                RadioCard("To \(location.code)", subtitle: "\(location.quantity) in location", isSelected: location.code == destination) {
+                RadioCard("To \(location.code)", subtitle: "\(location.quantityText) in location", isSelected: location.code == destination) {
                     destination = location.code
                     error = nil
                 }
@@ -51,20 +55,22 @@ struct InventoryMoveSheet: View {
                 }
                 .frame(minHeight: 44)
             }
-            SheetSectionLabel("Reason")
-            ForEach(InventoryMoveReason.allCases, id: \.self) { option in
-                RadioCard(option.title, isSelected: option == reason) {
-                    reason = option
+            if showsReasons {
+                SheetSectionLabel("Reason")
+                ForEach(InventoryMoveReason.allCases, id: \.self) { option in
+                    RadioCard(option.title, isSelected: option == reason) {
+                        reason = option
+                    }
                 }
             }
             if let error {
                 FieldError(error)
             }
         } footer: {
-            AikuButton("Move \(quantity)") {
+            AikuButton(isSaving ? "Moving…" : "Move \(quantity)") {
                 save()
             }
-            .disabled(!canSave)
+            .disabled(!canSave || isSaving)
             .accessibilityIdentifier("inventory.move.save")
             AikuButton("Cancel", kind: .tertiary, action: onCancel)
         }
@@ -88,12 +94,14 @@ struct InventoryMoveSheet: View {
     }
 
     private func save() {
-        do {
-            onDone(try onSave(source, destination, quantity, reason))
-        } catch let failure as InventoryStockError {
-            error = failure.message
-        } catch {
-            self.error = "Couldn’t move the stock."
+        isSaving = true
+        Task {
+            defer { isSaving = false }
+            do {
+                onDone(try await onSave(source, destination, quantity, reason))
+            } catch {
+                self.error = InventoryLive.message(for: error)
+            }
         }
     }
 }

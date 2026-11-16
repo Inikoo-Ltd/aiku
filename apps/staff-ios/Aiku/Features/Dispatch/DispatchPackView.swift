@@ -30,6 +30,7 @@ struct DispatchPackView: View {
             }
         }
         .task { await store.load() }
+        .hardwareScanner(isEnabled: !isScanning && store.session?.canRun(PickingSessionActionKey.scanPack) == true) { store.scanToPack($0) }
         .onChange(of: store.event) { _, event in
             guard let event else { return }
             store.event = nil

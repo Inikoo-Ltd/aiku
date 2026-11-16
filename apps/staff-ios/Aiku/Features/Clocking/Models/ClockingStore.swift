@@ -24,6 +24,8 @@ final class ClockingStore {
     private(set) var rejection = ClockingRejection(message: "", scanned: "")
     private(set) var workingHoursLabel = "—"
     private(set) var adjustmentRequests: [ClockingAdjustmentResponse] = []
+    private(set) var adjustmentsError: String?
+    private(set) var hasLoadedAdjustments = false
     private(set) var isLoading = false
     private(set) var hasLoaded = false
     private(set) var loadError: String?
@@ -204,7 +206,7 @@ final class ClockingStore {
         return nil
     }
 
-    func requestAdjustment(date: String, start: String?, end: String?, reason: String) async -> Result<ClockingAdjustmentResponse, ClockingAdjustmentError> {
+    func requestAdjustment(date: String, start: String?, end: String?, reason: String, attachments: [UploadFile] = []) async -> Result<ClockingAdjustmentResponse, ClockingAdjustmentError> {
         if let error = validateAdjustment(date: date, start: start, end: end, reason: reason) {
             return .failure(error)
         }
@@ -216,11 +218,42 @@ final class ClockingStore {
             reason: reason.trimmingCharacters(in: .whitespacesAndNewlines)
         )
         do {
-            let created = try await service.requestAdjustment(body)
+            let created = try await service.requestAdjustment(body, attachments)
             adjustmentRequests.insert(created, at: 0)
             return .success(created)
         } catch {
             return .failure(.server(error.localizedDescription))
         }
+    }
+
+    func loadAdjustments() async {
+        do {
+            adjustmentRequests = try await service.adjustments()
+            adjustmentsError = nil
+            hasLoadedAdjustments = true
+        } catch where error.isCancellation {
+            return
+        } catch {
+            adjustmentsError = error.localizedDescription
+        }
+    }
+
+    func cancelAdjustment(_ adjustment: ClockingAdjustmentResponse) async -> String? {
+        do {
+            try await service.cancelAdjustment(adjustment.id)
+            adjustmentRequests.removeAll { $0.id == adjustment.id }
+            await loadAdjustments()
+            return nil
+        } catch APIError.offline {
+            return "No connection. Nothing was sent."
+        } catch let error as FormValidationError {
+            return error.message
+        } catch {
+            return error.localizedDescription
+        }
+    }
+
+    func download(_ attachment: ClockingAttachment) async throws -> URL {
+        try await service.downloadAttachment(attachment)
     }
 }

@@ -45,6 +45,15 @@ enum InventoryHistoryFilter: String, CaseIterable, Hashable, Sendable {
         }
     }
 
+    var flow: String? {
+        switch self {
+        case .all: nil
+        case .stockIn: "in"
+        case .stockOut: "out"
+        case .audit: "audit"
+        }
+    }
+
     func includes(_ movement: InventoryStockMovement) -> Bool {
         switch self {
         case .all: true
@@ -99,6 +108,22 @@ struct InventoryStockMovement: Identifiable, Hashable, Sendable {
     static func signed(_ value: Int) -> String {
         value > 0 ? "+\(value)" : value < 0 ? "−\(-value)" : "0"
     }
+
+    func display(usesTodaySummary: Bool = false) -> InventoryMovementDisplay {
+        InventoryMovementDisplay(
+            id: id.uuidString,
+            title: skoReference,
+            subtitle: usesTodaySummary ? (todaySummary ?? summary) : summary,
+            chip: chip
+        )
+    }
+}
+
+struct InventoryMovementDisplay: Identifiable, Hashable, Sendable {
+    let id: String
+    let title: String
+    let subtitle: String
+    let chip: Chip
 }
 
 enum InventoryAuditReason: String, CaseIterable, Hashable, Sendable {

@@ -4,7 +4,7 @@ import Testing
 
 struct ShellTests {
     @Test func menuForFullAccessListsEveryGroupAndFulfilmentRows() {
-        let groups = ShellMenuCatalog.groups(hasWarehouseAccess: true, hasFulfilmentAccess: true)
+        let groups = ShellMenuCatalog.groups(for: .everything)
         let itemIDs = groups.flatMap(\.items).map(\.id)
 
         #expect(groups.map(\.id) == ["inventory", "locations", "goodsIn", "goodsOut", "clocking"])
@@ -13,14 +13,16 @@ struct ShellTests {
     }
 
     @Test func menuForStaffWithoutWarehouseAccessOnlyShowsClockingAndHr() {
-        let groups = ShellMenuCatalog.groups(hasWarehouseAccess: false, hasFulfilmentAccess: false)
+        let groups = ShellMenuCatalog.groups(for: .nothing)
 
         #expect(groups.map(\.id) == ["clocking"])
         #expect(groups.first?.items.map(\.id) == ["clocking.clocking", "clocking.timesheets"])
     }
 
     @Test func menuWithWarehouseButNoFulfilmentHidesFulfilmentRows() {
-        let items = ShellMenuCatalog.groups(hasWarehouseAccess: true, hasFulfilmentAccess: false).flatMap(\.items)
+        var modules = ModuleAccess.everything
+        modules.fulfilment = false
+        let items = ShellMenuCatalog.groups(for: modules).flatMap(\.items)
 
         #expect(items.allSatisfy { $0.requirement != .fulfilment })
         #expect(items.contains { $0.id == "goodsOut.deliveryNotes" })

@@ -17,6 +17,11 @@ struct GoodsOutScanToPickView: View {
             } footer: {
                 panel(note)
             }
+            .hardwareScanner(isEnabled: note.state == .picking) { code in
+                if let current = store.note(reference) {
+                    scan(code, in: current)
+                }
+            }
         }
     }
 

@@ -38,7 +38,7 @@ struct MenuView: View {
                     }
                 }
             }
-            ForEach(ShellMenuCatalog.groups(hasWarehouseAccess: session.hasWarehouseAccess, hasFulfilmentAccess: session.hasFulfilmentAccess)) { group in
+            ForEach(ShellMenuCatalog.groups(for: session.visibleModules)) { group in
                 VStack(alignment: .leading, spacing: 8) {
                     ShellGroupHeading(title: group.title, icon: group.icon, note: group.note)
                     CardList(group.items) { item in
