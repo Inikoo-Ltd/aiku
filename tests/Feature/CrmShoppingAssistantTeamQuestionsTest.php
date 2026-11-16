@@ -296,7 +296,7 @@ test('a question nobody answered is closed a day after the gurus first had it in
     SendShoppingAssistantMorningRound::run();
     expect(data_get($task->refresh()->data, 'round_first_at'))->toBeNull();
 
-    Carbon::setTestNow($friday->addDays(3)->setTime(8, 30));
+    Carbon::setTestNow($friday->addDays(3)->setTime(8, 15));
     SendShoppingAssistantMorningRound::run();
     expect(data_get($task->refresh()->data, 'round_first_at'))->toBeNull();
 

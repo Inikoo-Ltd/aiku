@@ -32,7 +32,7 @@ use Throwable;
  * week. A question that was already in an earlier day's round goes to the organisation's managers
  * as well, saying how long the customer has waited and when it closes (a day after they are told). Each question is stamped with its first round (round_first_at), which the closing rule
  * counts from (CloseUnansweredShoppingAssistantTeamQuestions). Runs every 15 minutes and sends once
- * per organisation per day, at the first run of a working day in the organisation's time. The
+ * per organisation per day, at the first run from ROUND_AT of a working day in the organisation's time, giving the gurus half an hour to settle in. The
  * answers the researcher sent since the last round are listed too, for the gurus to confirm or to
  * correct on the shop's notes, and a few facts the AI does not use until somebody says yes. It is a message, never a pop-up that blocks the screen (INI-257).
  */
@@ -47,6 +47,8 @@ class SendShoppingAssistantMorningRound
     public const int LEARNED_FACTS_PER_GURU = 5;
 
     public const int NOTES_PER_ROUND = 20;
+
+    public const string ROUND_AT = '08:30';
 
     public string $commandSignature = 'shopping-assistant:morning-round';
 
@@ -67,7 +69,7 @@ class SendShoppingAssistantMorningRound
             $tasks     = $open->get($organisation->id, collect());
             $toConfirm = ResearchShoppingAssistantTeamQuestion::toConfirm($organisation->id);
             $facts     = $this->factsWaiting($organisation);
-            if (($tasks->isEmpty() && $toConfirm->isEmpty() && $facts->isEmpty()) || !RemindShoppingAssistantSalesLeads::make()->isWorkingTime($organisation)) {
+            if (($tasks->isEmpty() && $toConfirm->isEmpty() && $facts->isEmpty()) || !RemindShoppingAssistantSalesLeads::make()->isWorkingTime($organisation) || now()->setTimezone($organisation->timezone?->name ?? 'UTC')->format('H:i') < self::ROUND_AT) {
                 continue;
             }
 
