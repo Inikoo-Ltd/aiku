@@ -8,6 +8,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Comms\WhatsappCampaign\GetWhatsappRecipientsQuery;
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Actions\Comms\WhatsappSubscriber\SyncCustomerWhatsappSubscriber;
 use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
@@ -172,6 +173,20 @@ test('staff see the WhatsApp subscriptions of a customer, the Retina email manag
             ->has('formData.blueprint.0.fields.email_subscriptions.customer.email_subscriptions.subscriptions.newsletters')
             ->missing('formData.blueprint.0.fields.email_subscriptions.customer.email_subscriptions.subscriptions.whatsapp_notifications')
             ->missing('formData.blueprint.0.fields.email_subscriptions.customer.email_subscriptions.subscriptions.whatsapp_newsletter'));
+});
+
+test('the checkout offers WhatsApp order and membership updates once the shop has a WhatsApp number, before any outbox is active', function () {
+    $originalSettings = $this->shop->settings;
+    $this->customer->update(['marketing_whatsapp_phone' => '+447700900123']);
+    $sender = SendCustomerNotificationWhatsapp::make();
+
+    $this->shop->update(['settings' => array_merge((array) $originalSettings, ['whatsapp' => ['phone_number_id' => '']])]);
+    expect($sender->canOfferOptIn($this->customer->fresh()))->toBeFalse();
+
+    $this->shop->update(['settings' => array_merge((array) $originalSettings, ['whatsapp' => ['phone_number_id' => '123456789']])]);
+    expect($sender->canOfferOptIn($this->customer->fresh()))->toBeTrue();
+
+    $this->shop->update(['settings' => $originalSettings]);
 });
 
 test('opting in with neither box ticked is refused', function () {

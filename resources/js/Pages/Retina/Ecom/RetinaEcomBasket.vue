@@ -1078,7 +1078,7 @@ const onChangeInsurance = async (val: boolean) => {
             field="is_subscribed_to_whatsapp_notifications"
             :payload="{ whatsapp_notifications_subscribed_origin: 'checkout' }"
             inputId="opt_in_whatsapp_notifications_checkout"
-            :subscribedText="ctrans('Done. We will send your order updates to your WhatsApp.')"
+            :subscribedText="ctrans('Done. We will send your order and membership updates to your WhatsApp.')"
         />
     </template>
     

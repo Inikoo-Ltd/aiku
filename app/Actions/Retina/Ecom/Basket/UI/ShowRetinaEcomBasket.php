@@ -265,7 +265,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                 ],
                 'whatsapp_notifications' => SendCustomerNotificationWhatsapp::make()->canOfferOptIn($this->customer) ? [
                     'is_subscribed' => (bool) $this->customer->comms?->is_subscribed_to_whatsapp_notifications,
-                    'label'         => __('Send me order updates (confirmation, dispatch and tracking) on WhatsApp.'),
+                    'label'         => __('Send me WhatsApp updates about my orders and membership (order confirmation, dispatch, tracking and Gold status).'),
                     'update_route'  => [
                         'name'       => 'retina.models.customer_comms.update',
                         'parameters' => ['customerComms' => $this->customer->comms?->id],

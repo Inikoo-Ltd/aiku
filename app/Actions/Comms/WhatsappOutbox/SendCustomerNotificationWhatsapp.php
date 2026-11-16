@@ -214,9 +214,9 @@ class SendCustomerNotificationWhatsapp
     }
 
     /**
-     * The checkbox is only worth showing where it can lead to a message: the shop has a
-     * WhatsApp number, at least one WhatsApp outbox is active, and the customer has a number
-     * we could send to.
+     * The checkbox is shown where a message could reach the customer: the shop has a WhatsApp
+     * number and the customer has a number we could send to. Opt-ins are collected before any
+     * outbox is switched on, so customers are already subscribed when one is.
      */
     public function canOfferOptIn(Customer $customer): bool
     {
@@ -226,11 +226,7 @@ class SendCustomerNotificationWhatsapp
             return false;
         }
 
-        return $this->customerPhone($customer) !== null
-            && $shop->whatsappOutboxes()
-                ->where('state', OutboxStateEnum::ACTIVE->value)
-                ->whereNotNull('meta_message_template_id')
-                ->exists();
+        return $this->customerPhone($customer) !== null;
     }
 
     public function customerPhone(Customer $customer): ?string
