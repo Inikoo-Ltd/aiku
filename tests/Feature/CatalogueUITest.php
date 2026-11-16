@@ -1876,6 +1876,37 @@ test('products export links every image as a jpg', function () {
         ->toBe(['https://media.test/signature/'.$encodeSource('local://media/first.jpeg')]);
 });
 
+test('my products csv links every image as a jpg while shop data feeds keep the original links', function () {
+    config([
+        'img-proxy.base_url' => 'https://media.test',
+        'img-proxy.key'      => str_repeat('ab', 32),
+        'img-proxy.salt'     => str_repeat('cd', 32),
+    ]);
+    $encodeSource = fn (string $source) => rtrim(strtr(base64_encode($source), '+/', '-_'), '=');
+    $firstOriginal  = 'https://media.test/signature/'.$encodeSource('local://media/first.jpeg');
+    $secondOriginal = 'https://media.test/signature/'.$encodeSource('local://media/second.png');
+
+    $product = \App\Models\Catalogue\Product::where('shop_id', $this->shop->id)->where('is_main', true)->whereNull('exclusive_for_customer_id')->first();
+    $product->update([
+        'web_images' => [
+            'all' => [
+                ['original' => ['original' => $firstOriginal]],
+                ['original' => ['original' => $secondOriginal]],
+            ],
+        ],
+    ]);
+
+    $row          = \Illuminate\Support\Facades\DB::table('products')->select(\App\Exports\Marketing\ProductsInShopExport::DATA_FEED_PRODUCT_COLUMNS)->where('products.id', $product->id)->first();
+    $imagesColumn = array_search('Images', (new \App\Exports\Marketing\ProductsInShopExport($this->shop))->headings());
+
+    $firstJpg  = \App\Actions\Helpers\Images\GetImgProxyUrl::run(new \App\Helpers\ImgProxy\Image()->make('local://media/first.jpeg')->extension('jpg'));
+    $secondJpg = \App\Actions\Helpers\Images\GetImgProxyUrl::run(new \App\Helpers\ImgProxy\Image()->make('local://media/second.png')->extension('jpg'));
+
+    expect(\App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV::make()->map($row)[$imagesColumn])->toBe("$firstJpg, $secondJpg")
+        ->and($firstJpg)->toEndWith('.jpg')
+        ->and((new \App\Exports\Marketing\ProductsInShopExport($this->shop))->map($row)[$imagesColumn])->toBe("$firstOriginal, $secondOriginal");
+});
+
 test('website pages swap imgproxy urls for short signed links that serve the same image', function () {
     config([
         'img-proxy.base_url' => 'https://media.test',

@@ -31,13 +31,15 @@ class SetBankConnectionAutoPay
 
     public string $commandSignature = 'bank-connections:auto-pay {bankConnection : id}
         {--account=* : CURRENCY=payment-account-code, e.g. --account=PLN=sk-bank-pln2}
+        {--payer=* : PAYER NAME START=payment-account-code, a bank or cash on delivery account for one payer, e.g. --payer="Direct Parcel=cond-czk"}
         {--fee-ceiling-eur= : largest bank fee absorbed on one transfer, in EUR}
         {--off : stop paying automatically}';
 
     /**
      * @param array<string, string> $paymentAccountCodes currency code => payment account code
+     * @param array<string, string> $payerPaymentAccountCodes start of the payer's name => payment account code, e.g. a carrier's cash on delivery remittances
      */
-    public function handle(BankConnection $bankConnection, array $paymentAccountCodes, ?float $feeCeilingEur = null, bool $off = false): BankConnection
+    public function handle(BankConnection $bankConnection, array $paymentAccountCodes, ?float $feeCeilingEur = null, bool $off = false, array $payerPaymentAccountCodes = []): BankConnection
     {
         $settings = $bankConnection->settings;
 
@@ -60,6 +62,17 @@ class SetBankConnectionAutoPay
                 throw ValidationException::withMessages(['account' => "No bank payment account $paymentAccountCode in this organisation"]);
             }
             $settings['payment_accounts'][strtoupper($currencyCode)] = $paymentAccount->id;
+        }
+
+        foreach ($payerPaymentAccountCodes as $payer => $paymentAccountCode) {
+            $paymentAccount = PaymentAccount::where('organisation_id', $bankConnection->organisation_id)
+                ->where('code', $paymentAccountCode)
+                ->whereIn('type', [PaymentAccountTypeEnum::BANK, PaymentAccountTypeEnum::CASH_ON_DELIVERY])
+                ->first();
+            if (!$paymentAccount || trim($payer) === '') {
+                throw ValidationException::withMessages(['payer' => "No bank or cash on delivery payment account $paymentAccountCode in this organisation"]);
+            }
+            $settings['payer_payment_accounts'][trim($payer)] = $paymentAccount->id;
         }
 
         if (empty($settings['payment_accounts'])) {
@@ -113,11 +126,23 @@ class SetBankConnectionAutoPay
             $paymentAccountCodes[$currencyCode] = $paymentAccountCode;
         }
 
+        $payerPaymentAccountCodes = [];
+        foreach ($command->option('payer') as $mapping) {
+            [$payer, $paymentAccountCode] = array_pad(explode('=', $mapping, 2), 2, null);
+            if (!$payer || !$paymentAccountCode) {
+                $command->error("Use PAYER NAME START=payment-account-code, got $mapping");
+
+                return 1;
+            }
+            $payerPaymentAccountCodes[$payer] = $paymentAccountCode;
+        }
+
         $bankConnection = $this->handle(
             BankConnection::findOrFail($command->argument('bankConnection')),
             $paymentAccountCodes,
             $command->option('fee-ceiling-eur') !== null ? (float)$command->option('fee-ceiling-eur') : null,
-            (bool)$command->option('off')
+            (bool)$command->option('off'),
+            $payerPaymentAccountCodes
         );
 
         $settings = $bankConnection->settings;

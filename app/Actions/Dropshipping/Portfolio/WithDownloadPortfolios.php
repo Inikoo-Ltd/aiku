@@ -11,6 +11,7 @@
 namespace App\Actions\Dropshipping\Portfolio;
 
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Exports\Catalogue\ProductsExport;
 use App\Exports\Marketing\DataFeedsMapping;
 use App\Helpers\NaturalLanguage;
 use App\Models\Catalogue\Product;
@@ -23,6 +24,14 @@ use Symfony\Component\HttpFoundation\Response;
 trait WithDownloadPortfolios
 {
     use DataFeedsMapping;
+
+    /**
+     * WooCommerce and WordPress importers refuse an image link whose filename has no extension
+     */
+    public function feedImageUrl(?string $url): ?string
+    {
+        return ProductsExport::jpgUrl($url);
+    }
 
     public function handle(
         CustomerSalesChannel $customerSalesChannel,

@@ -60,6 +60,11 @@ trait DataFeedsMapping
         }
     }
 
+    public function feedImageUrl(?string $url): ?string
+    {
+        return $url;
+    }
+
     public function map($row): array
     {
         $dimensions      = NaturalLanguage::make()->dimensions($row->marketing_dimensions);
@@ -70,7 +75,7 @@ trait DataFeedsMapping
 
         if ($row->web_images && $rawImages = json_decode($row->web_images, true)) {
             foreach (Arr::get($rawImages, 'all', []) as $image) {
-                $images .= Arr::get($image, 'original.original');
+                $images .= $this->feedImageUrl(Arr::get($image, 'original.original'));
                 // Add comma if there's multiple image
                 if ($image !== end($rawImages['all'])) {
                     $images .= ', ';

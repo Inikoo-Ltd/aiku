@@ -287,9 +287,15 @@ class PayMatchedBankTransactions
         return $invoice;
     }
 
+    /**
+     * A payer mapped on the connection (DPD CZ's cash on delivery remittances on the cash on delivery account) takes
+     * its own account; everyone else the currency's bank account.
+     */
     private function paymentAccount(BankConnection $bankConnection, BankTransaction $bankTransaction): ?PaymentAccount
     {
-        $paymentAccountId = $bankConnection->settings['payment_accounts'][$bankTransaction->currency->code] ?? null;
+        $payerPaymentAccountId = collect($bankConnection->settings['payer_payment_accounts'] ?? [])
+            ->first(fn (int $id, string $payer) => str_starts_with(mb_strtolower((string)$bankTransaction->counterparty_name), mb_strtolower($payer)));
+        $paymentAccountId = $payerPaymentAccountId ?? $bankConnection->settings['payment_accounts'][$bankTransaction->currency->code] ?? null;
 
         return $paymentAccountId
             ? PaymentAccount::where('organisation_id', $bankConnection->organisation_id)->find($paymentAccountId)

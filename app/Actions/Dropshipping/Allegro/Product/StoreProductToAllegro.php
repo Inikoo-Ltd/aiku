@@ -121,6 +121,8 @@ class StoreProductToAllegro extends RetinaAction
                 $proposedProduct = $catalogueProduct;
                 $allegroProductId = Arr::get($catalogueProduct, 'id');
                 $linkedToExistingProduct = true;
+
+                $this->ensureCatalogueProductIsOurs($catalogueProduct, $portfolio);
             } elseif (Arr::get($proposedProduct, 'existing_product')) {
                 $proposedProduct = $allegroUser->getProduct($allegroProductId);
                 $linkedToExistingProduct = true;
@@ -132,6 +134,8 @@ class StoreProductToAllegro extends RetinaAction
                 if ($product->barcode && !$this->catalogueProductHasBarcode($proposedProduct, $product->barcode)) {
                     throw new \Exception("Allegro matched this product to its catalogue product $allegroProductId (".Arr::get($proposedProduct, 'name')."), which does not have barcode $product->barcode, so it was not listed under it.");
                 }
+
+                $this->ensureCatalogueProductIsOurs($proposedProduct, $portfolio);
             }
 
             if (!$allegroProductId) {
@@ -343,6 +347,50 @@ class StoreProductToAllegro extends RetinaAction
     public function catalogueProductHasBarcode(array $catalogueProduct, string $barcode): bool
     {
         return in_array($this->normalizeGtin($barcode), array_map($this->normalizeGtin(...), $this->catalogueProductGtins($catalogueProduct)), true);
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function ensureCatalogueProductIsOurs(array $catalogueProduct, Portfolio $portfolio): void
+    {
+        /** @var Product $product */
+        $product = $portfolio->item;
+
+        if ($this->catalogueProductIsOurs($catalogueProduct, $product->code, [$product->name, $portfolio->customer_product_name])) {
+            return;
+        }
+
+        throw new \Exception('Allegro already has a catalogue product with barcode '.$product->barcode.', but it is "'.Arr::get($catalogueProduct, 'name').'", which does not look like this product, so it was not listed under it. Ask Allegro to correct that catalogue product.');
+    }
+
+    /**
+     * @param array<int, string|null> $ourNames
+     */
+    public function catalogueProductIsOurs(array $catalogueProduct, ?string $productCode, array $ourNames): bool
+    {
+        $parameterValues = collect(Arr::get($catalogueProduct, 'parameters', []))
+            ->flatMap(fn ($parameter) => Arr::get($parameter, 'values', []))
+            ->map(fn ($value) => Str::lower(trim((string) $value)));
+
+        if ($productCode && $parameterValues->contains(Str::lower($productCode))) {
+            return true;
+        }
+
+        $ourWords = collect($ourNames)->flatMap($this->significantWords(...))->unique();
+
+        return $ourWords->intersect($this->significantWords(Arr::get($catalogueProduct, 'name')))->isNotEmpty();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function significantWords(?string $name): array
+    {
+        return collect(preg_split('/[^\p{L}\p{N}]+/u', Str::lower((string) $name), -1, PREG_SPLIT_NO_EMPTY))
+            ->filter(fn (string $word) => mb_strlen($word) >= 4 && !in_array($word, ['with', 'from', 'pack', 'size'], true))
+            ->values()
+            ->all();
     }
 
     private function catalogueProductGtins(array $catalogueProduct): array
