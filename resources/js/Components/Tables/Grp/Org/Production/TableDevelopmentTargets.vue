@@ -14,15 +14,16 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import InputNumber from "primevue/inputnumber"
 import MultiSelect from "primevue/multiselect"
+import Checkbox from "primevue/checkbox"
 import Textarea from "primevue/textarea"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faTimes, faCog, faStopwatch, faPause, faChevronDown, faChevronUp } from "@fal"
+import { faCheck, faTimes, faCog, faStopwatch, faPause, faChevronDown, faChevronUp, faSortAmountDown, faSortAmountUp } from "@fal"
 
-library.add(faCheck, faTimes, faCog, faStopwatch, faPause, faChevronDown, faChevronUp)
+library.add(faCheck, faTimes, faCog, faStopwatch, faPause, faChevronDown, faChevronUp, faSortAmountDown, faSortAmountUp)
 
 type StepSummary = {
     id: number
@@ -137,6 +138,83 @@ const isKeeping = ref(false)
 const isSaving = ref(false)
 const reviewError = ref<string | null>(null)
 const openSessions = ref<number | null>(null)
+
+type SortKey = "started_at" | "artisan" | "artefact_code" | "quantity" | "hours" | "rate" | "excluded"
+
+const sortKey = ref<SortKey>("started_at")
+const sortDescending = ref(false)
+const artisanFilter = ref<string[]>([])
+const productFilter = ref<string[]>([])
+const showLeftOut = ref(true)
+
+const sessionColumns: { key: SortKey, label: string, numeric: boolean }[] = [
+    { key: "started_at", label: ctrans("Date"), numeric: false },
+    { key: "artisan", label: ctrans("Artisan"), numeric: false },
+    { key: "artefact_code", label: ctrans("Product"), numeric: false },
+    { key: "quantity", label: ctrans("Made"), numeric: true },
+    { key: "hours", label: ctrans("Hours"), numeric: true },
+    { key: "rate", label: ctrans("Per hour"), numeric: true },
+    { key: "excluded", label: ctrans("Left out"), numeric: false },
+]
+
+const toggleSessions = (stepId: number) => {
+    openSessions.value = openSessions.value === stepId ? null : stepId
+    sortKey.value = "started_at"
+    sortDescending.value = false
+    artisanFilter.value = []
+    productFilter.value = []
+    showLeftOut.value = true
+}
+
+const sortBy = (column: { key: SortKey, numeric: boolean }) => {
+    if (sortKey.value === column.key) {
+        sortDescending.value = !sortDescending.value
+    } else {
+        sortKey.value = column.key
+        sortDescending.value = column.numeric
+    }
+}
+
+const distinct = (values: (string | null)[]) => [...new Set(values.filter((value): value is string => !!value))].sort()
+
+const sortValue = (session: Session, key: SortKey) => key === "excluded" ? excludedLabel(session.excluded) || null : session[key]
+
+const visibleSessions = (step: StepDetail) => step.sessions
+    .filter(session => showLeftOut.value || !session.excluded)
+    .filter(session => !artisanFilter.value.length || artisanFilter.value.includes(session.artisan ?? '—'))
+    .filter(session => !productFilter.value.length || productFilter.value.includes(session.artefact_code))
+    .sort((a, b) => {
+        const first = sortValue(a, sortKey.value)
+        const second = sortValue(b, sortKey.value)
+        if (first === second) {
+            return 0
+        }
+        if (first === null) {
+            return 1
+        }
+        if (second === null) {
+            return -1
+        }
+        const order = typeof first === "number" && typeof second === "number" ? first - second : String(first).localeCompare(String(second))
+
+        return sortDescending.value ? -order : order
+    })
+
+const artisanSummary = (sessions: Session[]) => {
+    const summary = new Map<string, { artisan: string, sessions: number, made: number, hours: number }>()
+    sessions.filter(session => !session.excluded).forEach(session => {
+        const artisan = session.artisan ?? "—"
+        const line = summary.get(artisan) ?? { artisan, sessions: 0, made: 0, hours: 0 }
+        line.sessions++
+        line.made += session.quantity
+        line.hours += session.hours
+        summary.set(artisan, line)
+    })
+
+    return [...summary.values()]
+        .map(line => ({ ...line, made: Math.round(line.made * 1000) / 1000, hours: Math.round(line.hours * 100) / 100, rate: line.hours > 0 ? Math.round(line.made / line.hours * 10) / 10 : null }))
+        .sort((a, b) => (b.rate ?? -1) - (a.rate ?? -1))
+}
 
 const openReview = async (row: Row) => {
     reviewing.value = row
@@ -326,33 +404,68 @@ onMounted(() => {
                     </span>
                 </div>
 
-                <Button v-if="step.sessions.length" type="tertiary" size="xs" class="mt-2" :label="openSessions === step.id ? ctrans('Hide sessions') : ctrans('Show the :count sessions', { count: step.sessions.length })" @click="openSessions = openSessions === step.id ? null : step.id">
+                <Button v-if="step.sessions.length" type="tertiary" size="xs" class="mt-2" :label="openSessions === step.id ? ctrans('Hide sessions') : ctrans('Show the :count sessions', { count: step.sessions.length })" @click="toggleSessions(step.id)">
                     <template #icon><FontAwesomeIcon :icon="['fal', openSessions === step.id ? 'chevron-up' : 'chevron-down']" fixed-width class="text-gray-500" aria-hidden="true" /></template>
                 </Button>
-                <table v-if="openSessions === step.id" class="mt-2 w-full text-xs">
-                    <thead class="whitespace-nowrap text-left text-gray-500">
-                        <tr>
-                            <th class="py-1 pr-3 font-medium">{{ ctrans("Date") }}</th>
-                            <th class="py-1 pr-3 font-medium">{{ ctrans("Artisan") }}</th>
-                            <th class="py-1 pr-3 font-medium">{{ ctrans("Product") }}</th>
-                            <th class="py-1 pr-3 text-right font-medium">{{ ctrans("Made") }}</th>
-                            <th class="py-1 pr-3 text-right font-medium">{{ ctrans("Hours") }}</th>
-                            <th class="py-1 pr-3 text-right font-medium">{{ ctrans("Per hour") }}</th>
-                            <th class="py-1 font-medium">{{ ctrans("Left out") }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        <tr v-for="session in step.sessions" :key="session.id" :class="session.excluded ? 'text-gray-400' : ''">
-                            <td class="whitespace-nowrap py-1 pr-3">{{ formatDate(session.started_at) }}</td>
-                            <td class="py-1 pr-3">{{ session.artisan }}</td>
-                            <td class="whitespace-nowrap py-1 pr-3">{{ session.artefact_code }}</td>
-                            <td class="py-1 pr-3 text-right tabular-nums">{{ session.quantity }}</td>
-                            <td class="py-1 pr-3 text-right tabular-nums">{{ session.hours }}</td>
-                            <td class="py-1 pr-3 text-right tabular-nums">{{ session.rate ?? "—" }}</td>
-                            <td class="py-1">{{ excludedLabel(session.excluded) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <template v-if="openSessions === step.id">
+                    <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                        <MultiSelect v-model="artisanFilter" :options="distinct(step.sessions.map(session => session.artisan ?? '—'))" :placeholder="ctrans('All artisans')" filter display="chip" size="small" class="min-w-48" />
+                        <MultiSelect v-if="distinct(step.sessions.map(session => session.artefact_code)).length > 1" v-model="productFilter" :options="distinct(step.sessions.map(session => session.artefact_code))" :placeholder="ctrans('All products')" display="chip" size="small" class="min-w-40" />
+                        <label class="flex items-center gap-1.5">
+                            <Checkbox v-model="showLeftOut" binary size="small" />
+                            {{ ctrans("Show left-out runs") }}
+                        </label>
+                    </div>
+
+                    <table v-if="artisanSummary(visibleSessions(step)).length" class="mt-2 w-full text-xs">
+                        <thead class="whitespace-nowrap text-left text-gray-500">
+                            <tr>
+                                <th class="py-1 pr-3 font-medium">{{ ctrans("Artisan") }}</th>
+                                <th class="py-1 pr-3 text-right font-medium">{{ ctrans("Sessions") }}</th>
+                                <th class="py-1 pr-3 text-right font-medium">{{ ctrans("Made") }}</th>
+                                <th class="py-1 pr-3 text-right font-medium">{{ ctrans("Hours") }}</th>
+                                <th class="py-1 text-right font-medium">{{ ctrans("Average per hour") }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="line in artisanSummary(visibleSessions(step))" :key="line.artisan">
+                                <td class="py-1 pr-3">{{ line.artisan }}</td>
+                                <td class="py-1 pr-3 text-right tabular-nums">{{ line.sessions }}</td>
+                                <td class="py-1 pr-3 text-right tabular-nums">{{ line.made }}</td>
+                                <td class="py-1 pr-3 text-right tabular-nums">{{ line.hours }}</td>
+                                <td class="py-1 text-right font-medium tabular-nums">{{ line.rate ?? "—" }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div v-if="artisanSummary(visibleSessions(step)).length" class="mt-0.5 text-[11px] text-gray-400">{{ ctrans("Per artisan, counted sessions only: made divided by hours") }}</div>
+
+                    <table class="mt-3 w-full text-xs">
+                        <thead class="whitespace-nowrap text-left text-gray-500">
+                            <tr>
+                                <th v-for="column in sessionColumns" :key="column.key" class="py-1 pr-3 font-medium" :class="column.numeric ? 'text-right' : ''">
+                                    <button type="button" class="inline-flex items-center gap-1 hover:text-gray-800" :class="sortKey === column.key ? 'text-gray-800' : ''" @click="sortBy(column)">
+                                        {{ column.label }}
+                                        <FontAwesomeIcon v-if="sortKey === column.key" :icon="['fal', sortDescending ? 'sort-amount-down' : 'sort-amount-up']" aria-hidden="true" />
+                                    </button>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="session in visibleSessions(step)" :key="session.id" :class="session.excluded ? 'text-gray-400' : ''">
+                                <td class="whitespace-nowrap py-1 pr-3">{{ formatDate(session.started_at) }}</td>
+                                <td class="py-1 pr-3">{{ session.artisan }}</td>
+                                <td class="whitespace-nowrap py-1 pr-3">{{ session.artefact_code }}</td>
+                                <td class="py-1 pr-3 text-right tabular-nums">{{ session.quantity }}</td>
+                                <td class="py-1 pr-3 text-right tabular-nums">{{ session.hours }}</td>
+                                <td class="py-1 pr-3 text-right tabular-nums">{{ session.rate ?? "—" }}</td>
+                                <td class="py-1">{{ excludedLabel(session.excluded) }}</td>
+                            </tr>
+                            <tr v-if="!visibleSessions(step).length">
+                                <td colspan="7" class="py-2 text-center text-gray-400">{{ ctrans("No sessions match the filters") }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </template>
             </div>
 
             <div v-if="isKeeping">
