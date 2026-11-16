@@ -298,7 +298,7 @@ onMounted(() => {
 					<TableSupplierPortalPurchaseOrders v-if="purchase_orders" :data="purchase_orders" tab="purchase_orders" @open="openPurchaseOrderId = $event" />
 				</div>
 
-				<SupplierPortalOrderPlan v-else-if="tab === 'order_plan'" :plan="order_plan" :accent="accent" />
+				<SupplierPortalOrderPlan v-else-if="tab === 'order_plan'" :plan="order_plan" :accent="accent" @open="openPurchaseOrderId = $event" />
 
 				<SupplierPortalPriceChanges
 					v-else-if="tab === 'price_changes' && price_changes && forms"
