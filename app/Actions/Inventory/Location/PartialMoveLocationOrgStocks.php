@@ -17,6 +17,7 @@ use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Inventory\Location;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -28,6 +29,8 @@ class PartialMoveLocationOrgStocks extends OrgAction
     use WithWarehouseEditAuthorisation;
 
     private Location $location;
+
+    private ?User $user = null;
 
     /**
      * @throws \Throwable
@@ -54,17 +57,17 @@ class PartialMoveLocationOrgStocks extends OrgAction
                         'picking_priority',
                         'type',
                     ]);
-                    $targetLocationOrgStock = StoreLocationOrgStock::make()->action($locationOrgStock->orgStock, $targetLocation, $movedData);
+                    $targetLocationOrgStock = StoreLocationOrgStock::make()->action($locationOrgStock->orgStock, $targetLocation, $movedData, user: $this->user);
                 }
 
                 MoveOrgStockToOtherLocation::make()->action($locationOrgStock, $targetLocationOrgStock, [
                     'quantity' => data_get($orgStock, 'quantity'),
                     'reason'   => data_get($modelData, 'reason'),
                     'note'     => data_get($modelData, 'note'),
-                ]);
+                ], $this->user);
 
                 if (data_get($orgStock, 'remove_after_move', false)) {
-                    DeleteLocationOrgStock::make()->action($locationOrgStock);
+                    DeleteLocationOrgStock::make()->action($locationOrgStock, $this->user);
                 }
             }
         });
@@ -110,6 +113,7 @@ class PartialMoveLocationOrgStocks extends OrgAction
     public function asController(Location $location, ActionRequest $request): Location
     {
         $this->location = $location;
+        $this->user     = $request->user();
         $this->initialisationFromWarehouse($location->warehouse, $request);
 
         return $this->handle($location, $this->validatedData);

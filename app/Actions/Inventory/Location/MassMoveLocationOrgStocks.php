@@ -17,6 +17,7 @@ use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Inventory\Location;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,8 @@ class MassMoveLocationOrgStocks extends OrgAction
      * @var \App\Models\Inventory\Location
      */
     private Location $location;
+
+    private ?User $user = null;
 
     /**
      * @throws \Throwable
@@ -50,7 +53,7 @@ class MassMoveLocationOrgStocks extends OrgAction
                         'picking_priority',
                         'type',
                     ]);
-                    $targetLocationOrgStock = StoreLocationOrgStock::make()->action($locationOrgStock->orgStock, $targetLocation, $movedData);
+                    $targetLocationOrgStock = StoreLocationOrgStock::make()->action($locationOrgStock->orgStock, $targetLocation, $movedData, user: $this->user);
                 }
 
                 if ($locationOrgStock->quantity > 0) {
@@ -58,11 +61,11 @@ class MassMoveLocationOrgStocks extends OrgAction
                         'quantity' => $locationOrgStock->quantity,
                         'reason'   => Arr::get($modelData, 'reason'),
                         'note'     => Arr::get($modelData, 'note'),
-                    ]);
+                    ], $this->user);
                 }
 
                 if (Arr::get($modelData, 'remove_after_move', false)) {
-                    DeleteLocationOrgStock::make()->action($locationOrgStock);
+                    DeleteLocationOrgStock::make()->action($locationOrgStock, $this->user);
                 }
             }
         });
@@ -102,6 +105,7 @@ class MassMoveLocationOrgStocks extends OrgAction
     public function asController(Location $location, ActionRequest $request): Location
     {
         $this->location = $location;
+        $this->user     = $request->user();
         $this->initialisationFromWarehouse($location->warehouse, $request);
 
         return $this->handle($location, $this->validatedData);
