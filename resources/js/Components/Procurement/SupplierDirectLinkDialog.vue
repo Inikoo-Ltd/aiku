@@ -76,7 +76,7 @@ const copy = async () => {
 
 <template>
 	<div>
-		<Button v-if="share.can_create" type="tertiary" size="xs" :label="ctrans('Direct link')" @click="open">
+		<Button v-if="share.can_create" type="secondary" size="xs" :label="ctrans('Direct link')" @click="open">
 			<template #icon><FontAwesomeIcon icon="fal fa-link" fixed-width aria-hidden="true" /></template>
 		</Button>
 
