@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\Accounting\ProfitAndLoss\GetProfitAndLoss;
 use App\Actions\Accounting\Receivables\UI\ShowReceivablesDashboard;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -280,4 +281,102 @@ test('group financials shows receivables of the organisations the user may see, 
     expect(collect($receivables()['organisations'])->pluck('value')->all())->toBe([$otherOrganisation->slug])
         ->and($receivables()['receivables']['total']['amount'])->toEqual(90)
         ->and($ids())->toBe([$theirs->id]);
+});
+
+test('profit and loss by month: sales, cost of goods picked, fees and costs read from the banks, beside the same month a year before', function () {
+    $group    = $this->organisation->group;
+    $currency = $this->organisation->currency_id;
+    $other    = StoreOrganisation::make()->action($group, array_merge(Organisation::factory()->definition(), ['code' => 'pl'.random_int(1000, 9999), 'type' => OrganisationTypeEnum::SHOP]));
+    $customer = createCustomer($this->shop);
+    $company  = createCustomer($this->shop);
+    DB::table('customers')->where('id', $company->id)->update(['as_organisation_id' => $other->id]);
+
+    $sale = fn (string $date, float $net, array $more = []) => receivableInvoice($customer, 0, $net, 0, ['date' => $date, 'org_net_amount' => $net, 'grp_net_amount' => $net * 2, ...$more]);
+    $sale('2001-03-10', 1000);
+    $sale('2001-03-11', -100, ['type' => 'refund']);
+    $sale('2001-03-12', 500, ['as_organisation_id' => $other->id]);
+    $sale('2001-03-13', 9999, ['deleted_at' => now()]);
+    $sale('2001-03-14', 9999, ['in_process' => true]);
+    $sale('2000-03-10', 800);
+
+    $orgStock     = createOrgStocks($this->organisation, createStocks($group))[0];
+    $deliveryNote = fn (Customer $for) => DB::table('delivery_notes')->insertGetId([
+        'group_id' => $group->id, 'organisation_id' => $this->organisation->id, 'warehouse_id' => createWarehouse()->id, 'shop_id' => $this->shop->id,
+        'customer_id' => $for->id, 'reference' => 'pl-'.random_int(100000, 999999), 'slug' => 'pl-'.random_int(100000, 999999), 'date' => '2001-03-12', 'data' => '{}',
+    ]);
+    $moved = fn (string $date, string $type, float $amount, ?int $deliveryNoteId = null) => DB::table('org_stock_movements')->insert([
+        'group_id' => $group->id, 'organisation_id' => $this->organisation->id, 'warehouse_id' => createWarehouse()->id, 'org_stock_id' => $orgStock->id,
+        'date' => $date, 'class' => 'movement', 'type' => $type, 'flow' => $amount < 0 ? 'out' : 'in', 'org_amount' => $amount, 'grp_amount' => $amount * 2, 'data' => '{}',
+        'parent_type' => $deliveryNoteId ? 'DeliveryNote' : null, 'parent_id' => $deliveryNoteId,
+    ]);
+    $moved('2001-03-10', 'picked', -400);
+    $moved('2001-03-11', 'cancel-picked', 50);
+    $moved('2001-03-12', 'picked', -200, $deliveryNote($company));
+    $moved('2001-03-12', 'audit', -999);
+    $moved('2000-03-10', 'picked', -300);
+
+    $bankConnection = BankConnection::create(['group_id' => $group->id, 'organisation_id' => $this->organisation->id, 'provider' => BankConnectionProviderEnum::WISE, 'name' => 'Wise P&L', 'external_id' => (string) random_int(1000, 9999)]);
+    $line           = fn (float $amount, array $more = []) => BankTransaction::create(array_merge([
+        'group_id' => $group->id, 'organisation_id' => $this->organisation->id, 'bank_connection_id' => $bankConnection->id,
+        'provider_transaction_id' => 'pl-'.random_int(1, PHP_INT_MAX), 'provider_type' => 'TRANSFER', 'direction' => $amount < 0 ? BankTransactionDirectionEnum::OUT : BankTransactionDirectionEnum::IN,
+        'amount' => $amount, 'currency_id' => $currency, 'status' => BankTransactionStatusEnum::BOOKED, 'booked_at' => '2001-03-15 10:00:00',
+    ], $more));
+    $line(-60, ['out_category' => 'services', 'fee_amount' => 2]);
+    $line(-300, ['out_category' => 'staff']);
+    $line(-25, ['out_category' => 'needs_person']);
+    $line(-5, ['out_category' => 'bank_fees']);
+    $line(-700, ['out_category' => 'suppliers', 'fee_amount' => 3]);
+    $line(-90, ['out_category' => 'own_companies']);
+    $line(-40, ['out_category' => 'customer_refunds']);
+    $line(-120, ['out_category' => 'tax']);
+    $line(-50, ['provider_type' => 'INTERBALANCE']);
+    $line(970, ['match_state' => BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT, 'match_data' => ['reconciled_at' => '2001-03-16', 'processor_fees' => 30]]);
+    $line(400, ['match_state' => BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT]);
+    $line(80, ['match_state' => BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE, 'match_data' => ['commission' => 20]]);
+    $line(-1, ['out_category' => 'staff', 'status' => BankTransactionStatusEnum::PENDING]);
+
+    $organisationView = GetProfitAndLoss::make()->handle($this->organisation, collect([$this->organisation]), Carbon::parse('2001-03-01'), Carbon::parse('2001-04-30'));
+    [$march, $april]  = $organisationView['months'];
+
+    expect($march)->toMatchArray([
+        'month' => '2001-03', 'sales' => 1400.0, 'cost_of_goods' => 550.0, 'gross_margin' => 850.0,
+        'bank_fees' => 10.0, 'provider_fees' => 30.0, 'provider_fees_unknown' => 1, 'marketplace_fees' => 20.0,
+        'staff' => 300.0, 'services' => 58.0, 'other' => 0.0, 'unclassified' => 25.0, 'tax_paid' => 120.0, 'result' => 407.0,
+    ])
+        ->and($march['last_year'])->toMatchArray(['sales' => 800.0, 'cost_of_goods' => 300.0, 'gross_margin' => 500.0, 'bank_fees' => null, 'result' => null])
+        ->and($april)->toMatchArray(['sales' => 0.0, 'staff' => null, 'result' => null])
+        ->and($organisationView['total'])->toMatchArray(['sales' => 1400.0, 'staff' => 300.0, 'result' => null])
+        ->and($organisationView['currency'])->toBe($this->organisation->currency->code);
+
+    $groupMarch = GetProfitAndLoss::make()->handle($group, collect([$this->organisation]), Carbon::parse('2001-03-01'), Carbon::parse('2001-03-31'))['months'][0];
+    expect($groupMarch)->toMatchArray(['sales' => 1800.0, 'cost_of_goods' => 700.0]);
+});
+
+test('profit and loss shows in the organisation accounting and in group financials, with its under construction banner data, only to those who may see it', function () {
+    $group = $this->organisation->group;
+
+    setPermissionsTeamId($group->id);
+    $viewer = StoreGuest::make()->action($group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $viewer->givePermissionTo(['financials', "accounting.{$this->organisation->id}.view"]);
+    $viewer->refresh();
+    actingAs($viewer);
+
+    get(route('grp.financials.profit_and_loss.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Accounting/ProfitAndLoss')
+            ->where('isGroup', true)
+            ->where('profitAndLoss.currency', $group->currency->code)
+            ->where('profitAndLoss.months', fn ($months) => collect($months)->count() === 12 && collect($months)->last()["month"] === now()->format("Y-m"))
+            ->where('notConnected', fn ($banks) => collect($banks)->contains('Tatra banka')));
+    get(route('grp.org.accounting.profit_and_loss.index', [$this->organisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('isGroup', false)->where('profitAndLoss.currency', $this->organisation->currency->code));
+    expect(collect(GetGroupNavigation::make()->handle($viewer)['financials']['topMenu']['subSections'])->pluck('route.name')->all())->toContain('grp.financials.profit_and_loss.index');
+
+    setPermissionsTeamId($group->id);
+    $outsider = StoreGuest::make()->action($group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    actingAs($outsider);
+    get(route('grp.financials.profit_and_loss.index'))->assertForbidden();
+    get(route('grp.org.accounting.profit_and_loss.index', [$this->organisation->slug]))->assertForbidden();
 });
