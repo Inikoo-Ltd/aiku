@@ -20,6 +20,7 @@ use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTargetFieldEnum;
 use App\Models\Goods\ProductDevelopmentChecklistItem;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
+use App\Helpers\DimensionsFormatter;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
@@ -175,7 +176,7 @@ class UpdateProductDevelopmentChecklistItem extends OrgAction
             'integer' => (int) $value,
             'decimal' => (float) $value,
             'country' => (int) $value,
-            'dimensions' => is_array($value) ? ['type' => 'rectangular', 'units' => 'cm', ...Arr::only($value, ['h', 'l', 'w', 'type', 'units'])] : $value,
+            'dimensions' => is_array($value) ? DimensionsFormatter::toMetres(['type' => 'rectangular', 'units' => 'cm', ...Arr::only($value, ['h', 'l', 'w', 'type', 'units'])]) : $value,
             default => is_string($value) ? trim($value) : $value,
         };
 
