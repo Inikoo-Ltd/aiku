@@ -16,11 +16,17 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $slug
  * @property string $code
  * @property string $name
+ * @property string|null $company_name
+ * @property string|null $contact_name
  * @property string $location
  * @property bool $status
  * @property int|null $agent_id
+ * @property string|null $agent_slug
+ * @property string|null $agent_code
+ * @property string|null $agent_name
  * @property int $number_supplier_products
  * @property int $number_purchase_orders
+ * @property int|null $number_open_purchase_orders
  * @property int $number_stock_deliveries
  * @property string|null $agreement_status
  * @property int|null $agreement_accepted_version
@@ -34,10 +40,15 @@ class SuppliersResource extends JsonResource
             'slug'                     => $this->slug,
             'code'                     => $this->code,
             'name'                     => $this->name,
+            'nickname'                 => $this->resource->nickname(),
+            'agent_slug'               => $this->agent_slug ?? null,
+            'agent_code'               => $this->agent_code ?? null,
+            'agent_name'               => $this->agent_name ?? null,
             'location'                 => $this->location,
             'status_icon'              => $this->getStatusIcon(),
             'number_supplier_products' => $this->number_supplier_products,
             'number_purchase_orders'   => $this->number_purchase_orders,
+            'number_open_purchase_orders' => (int) ($this->number_open_purchase_orders ?? 0),
             'number_stock_deliveries'  => $this->number_stock_deliveries,
             'open_incidents'           => (int) ($this->open_incidents ?? 0),
             'agreement'                => $this->agreement(),

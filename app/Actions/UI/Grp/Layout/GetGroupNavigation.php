@@ -584,14 +584,6 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('Agent Suppliers'),
-                        'icon'  => ['fal', 'fa-people-arrows'],
-                        'root'  => 'grp.supply-chain.agent_suppliers.',
-                        'route' => [
-                            'name' => 'grp.supply-chain.agent_suppliers.index',
-                        ]
-                    ],
-                    [
                         'label' => __('Suppliers'),
                         'icon'  => ['fal', 'fa-person-dolly'],
                         'root'  => 'grp.supply-chain.suppliers.',
