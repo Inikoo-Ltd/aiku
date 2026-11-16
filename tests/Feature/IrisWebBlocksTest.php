@@ -1616,3 +1616,35 @@ test('switching a variant off closes the page of a former leader that is not for
         ->and($leader->is_for_sale)->toBeFalse()
         ->and($webpage->refresh()->state)->toBe(WebpageStateEnum::CLOSED);
 });
+
+test('closing or reopening a page forgets its cached path even when a redirect already exists', function () {
+    [, $product] = createProduct($this->shop);
+    $this->website->refresh()->storefront->update(['state' => WebpageStateEnum::LIVE]);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+
+    \App\Models\Web\Redirect::create([
+        'group_id'        => $webpage->group_id,
+        'organisation_id' => $webpage->organisation_id,
+        'shop_id'         => $webpage->shop_id,
+        'website_id'      => $webpage->website_id,
+        'type'            => RedirectTypeEnum::PERMANENT,
+        'from_path'       => $webpage->url,
+        'from_url'        => $webpage->canonical_url,
+        'to_webpage_id'   => $this->website->storefront->id,
+    ]);
+
+    $pathKey = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($webpage->url);
+
+    Cache::put($pathKey, $webpage->id, 3600);
+    CloseWebpage::make()->action($webpage, [
+        'redirect_type' => RedirectTypeEnum::PERMANENT->value,
+        'to_webpage_id' => $this->website->storefront->id,
+    ]);
+    expect(Cache::has($pathKey))->toBeFalse();
+
+    Cache::put($pathKey, 0, 3600);
+    ReopenWebpage::run($webpage->refresh());
+    expect(Cache::has($pathKey))->toBeFalse();
+});

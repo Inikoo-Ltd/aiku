@@ -18,6 +18,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -53,6 +54,7 @@ class CloseWebpage extends OrgAction
 
         $this->dispatchWebpageHydratorsAndRefresh($webpage);
         BreakWebpageCache::run($webpage);
+        Cache::forget(config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($webpage->url));
 
         return $webpage;
     }

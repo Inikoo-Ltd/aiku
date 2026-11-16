@@ -14,6 +14,7 @@ use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
 
 class ReopenWebpage extends OrgAction
@@ -44,6 +45,7 @@ class ReopenWebpage extends OrgAction
 
         $this->dispatchWebpageHydratorsAndRefresh($webpage);
         BreakWebpageCache::run($webpage);
+        Cache::forget(config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($webpage->url));
 
         return $webpage;
     }
