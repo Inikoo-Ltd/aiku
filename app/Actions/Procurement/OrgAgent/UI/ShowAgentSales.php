@@ -95,7 +95,7 @@ class ShowAgentSales extends OrgAction
     public function relationships(Agent|Supplier $seller): Collection
     {
         return ($seller instanceof Agent ? OrgAgent::where('agent_id', $seller->id) : OrgSupplier::where('supplier_id', $seller->id))
-            ->with('organisation.currency')
+            ->with(['organisation.currency', 'organisation.country'])
             ->get();
     }
 
@@ -169,14 +169,18 @@ class ShowAgentSales extends OrgAction
 
         $products      = [];
         $organisations = [];
+        $countries     = [];
         foreach ($orgAgents as $orgAgent) {
             $code        = $orgAgent->organisation->code;
+            $country     = $orgAgent->organisation->country;
+            $countries[$country->code] ??= ['code' => $country->code, 'name' => $country->name];
             $stockToAgent = (float) (GetCurrencyExchange::run($orgAgent->organisation->currency, $currency) ?: 1);
             $rows        = $this->productRows($agent, $orgAgent, $from, $supplier, $amount, $valuation->stockSql($orgAgent));
 
             $organisations[] = [
                 'code'     => $code,
                 'name'     => $orgAgent->organisation->name,
+                'country'  => $country->code,
                 'products' => $rows->where('bucket', '!=', 'gone')->count(),
                 'selling'  => $rows->where('sold', '>', 0)->count(),
                 'sold'      => round(collect(range(0, self::MONTHS - 1))->sum(fn (int $offset) => $salesIn($orgAgent, $from->copy()->addMonths($offset)->format('Y-m'))), 2),
@@ -194,6 +198,7 @@ class ShowAgentSales extends OrgAction
                 $products[$row->supplier_product_id]['sold'] += $toAgent * (float) $row->sold;
                 $products[$row->supplier_product_id]['organisations'][] = [
                     'code'    => $code,
+                    'country' => $country->code,
                     'sold'    => round($toAgent * (float) $row->sold, 2),
                     'stock'   => round($stockToAgent * (float) $row->stock_value, 2),
                     'problem' => self::PROBLEMS[$row->bucket] ?? null,
@@ -213,11 +218,40 @@ class ShowAgentSales extends OrgAction
             'products'      => $products->count(),
             'selling'       => $products->where('sold', '>', 0)->count(),
             'organisations' => $organisations,
-            'top_sellers'   => $products->where('sold', '>', 0)->sortByDesc('sold')->take(self::RANKING)->values()->all(),
-            'out'           => $this->ranking($products, 'out', 'sold'),
-            'low'           => $this->ranking($products, 'low', 'sold'),
-            'dead'          => $this->ranking($products, 'dead', 'stock'),
+            ...$this->rankings($products),
+            'countries'     => collect($countries)->sortBy('name')->map(fn (array $country) => [
+                ...$country,
+                ...$this->rankings($this->inCountry($products, $country['code'])),
+            ])->values()->all(),
         ];
+    }
+
+    /**
+     * @return array{top_sellers: array<int, array<string, mixed>>, out: array, low: array, dead: array}
+     */
+    private function rankings(Collection $products): array
+    {
+        return [
+            'top_sellers' => $products->where('sold', '>', 0)->sortByDesc('sold')->take(self::RANKING)->values()->all(),
+            'out'         => $this->ranking($products, 'out', 'sold'),
+            'low'         => $this->ranking($products, 'low', 'sold'),
+            'dead'        => $this->ranking($products, 'dead', 'stock'),
+        ];
+    }
+
+    /**
+     * The products held by the organisations of one country, with what they sold there only.
+     */
+    private function inCountry(Collection $products, string $countryCode): Collection
+    {
+        return $products
+            ->map(function (array $product) use ($countryCode) {
+                $organisations = collect($product['organisations'])->where('country', $countryCode)->values();
+
+                return [...$product, 'organisations' => $organisations->all(), 'sold' => round($organisations->sum('sold'), 2)];
+            })
+            ->filter(fn (array $product) => $product['organisations'] !== [])
+            ->values();
     }
 
     /**

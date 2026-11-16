@@ -16,6 +16,7 @@ type Problem = "out" | "low" | "dead"
 interface OrganisationRow {
 	code: string
 	name: string
+	country: string
 	products: number
 	selling: number
 	sold: number
@@ -30,12 +31,24 @@ interface ProductRow {
 	code: string
 	name: string
 	sold: number
-	organisations: { code: string; sold: number; stock: number; problem: Problem | null }[]
+	organisations: { code: string; country: string; sold: number; stock: number; problem: Problem | null }[]
 }
 
 interface Ranking {
 	count: number
 	rows: ProductRow[]
+}
+
+interface Rankings {
+	top_sellers: ProductRow[]
+	out: Ranking
+	low: Ranking
+	dead: Ranking
+}
+
+interface CountryRankings extends Rankings {
+	code: string
+	name: string
 }
 
 interface Feedback {
@@ -67,6 +80,7 @@ interface Sales {
 	out: Ranking
 	low: Ranking
 	dead: Ranking
+	countries?: CountryRankings[]
 }
 
 const props = defineProps<{
@@ -292,15 +306,23 @@ const totalSold = computed(() => (props.sales?.organisations ?? []).reduce((sum,
 const topSold = computed(() => Math.max(1, ...(props.sales?.organisations ?? []).map((organisation) => organisation.sold)))
 const problemTotal = (problem: Problem) => (props.sales?.organisations ?? []).reduce((sum, organisation) => sum + organisation.problems[problem], 0)
 
+const selectedCountry = ref("all")
+const countries = computed(() => props.sales?.countries ?? [])
+const countryOptions = computed(() => [
+	{ label: ctrans("All countries"), value: "all" },
+	...countries.value.map((country) => ({ label: country.name, value: country.code })),
+])
+const shownRankings = computed<Rankings | null>(() => countries.value.find((country) => country.code === selectedCountry.value) ?? props.sales ?? null)
+
 const rankings = computed(() =>
-	props.sales
+	shownRankings.value
 		? [
 				{
 				key: "top",
 					title: ctrans("Best sellers"),
 					hint: atSupplierPrices.value ? ctrans("Goods sold in the last 12 months at your prices, every organisation together") : atCost.value ? ctrans("Goods sold in the last 12 months at cost, every organisation together") : ctrans("Goods sold in the last 12 months at what customers paid, every organisation together"),
 					empty: ctrans("Nothing sold in the period"),
-					rows: props.sales.top_sellers,
+					rows: shownRankings.value.top_sellers,
 					count: null,
 					tone: "text-gray-700",
 					figure: "sold" as const,
@@ -310,8 +332,8 @@ const rankings = computed(() =>
 					title: ctrans("Out of stock"),
 					hint: ctrans("Nothing left to sell where shown; the best sellers there first"),
 					empty: ctrans("No product is out of stock"),
-					rows: props.sales.out.rows,
-					count: props.sales.out.count,
+					rows: shownRankings.value.out.rows,
+					count: shownRankings.value.out.count,
 					tone: "text-red-600",
 					figure: "sold" as const,
 				},
@@ -320,8 +342,8 @@ const rankings = computed(() =>
 					title: ctrans("About to run out"),
 					hint: ctrans("At the rate it sells, the stock will not last until a new order can arrive"),
 					empty: ctrans("No product is about to run out"),
-					rows: props.sales.low.rows,
-					count: props.sales.low.count,
+					rows: shownRankings.value.low.rows,
+					count: shownRankings.value.low.count,
 					tone: "text-amber-600",
 					figure: "sold" as const,
 				},
@@ -330,8 +352,8 @@ const rankings = computed(() =>
 					title: ctrans("In stock but not selling"),
 					hint: atSupplierPrices.value ? ctrans("Stock sitting in the warehouse with no sales expected, at your prices; the largest first") : ctrans("Stock sitting in the warehouse with no sales expected, at what it cost; the largest first"),
 					empty: ctrans("No product is sitting unsold"),
-					rows: props.sales.dead.rows,
-					count: props.sales.dead.count,
+					rows: shownRankings.value.dead.rows,
+					count: shownRankings.value.dead.count,
 					tone: "text-gray-500",
 					figure: "stock" as const,
 				},
@@ -477,6 +499,8 @@ const rankings = computed(() =>
 						</tfoot>
 					</table>
 				</section>
+
+				<SegmentedToggle v-if="countries.length > 1" v-model="selectedCountry" :options="countryOptions" :aria-label="ctrans('Country')" />
 
 				<div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
 					<section v-for="ranking in rankings" :key="ranking.key" class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
