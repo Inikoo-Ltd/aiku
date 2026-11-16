@@ -75,6 +75,11 @@ use App\Actions\Fulfilment\PalletReturn\PickedPalletReturnWithStoredItems;
 use App\Actions\Fulfilment\PalletReturn\PickingPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\SubmitAndConfirmPalletReturn;
+use App\Actions\Comms\Mailbox\ProcessInboundEmail;
+use App\Models\Chat\ChatMessage;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Http;
+use App\Actions\Fulfilment\PalletReturn\ImportPalletReturnsFromPickNotice;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturn;
 use App\Actions\Fulfilment\PalletReturnItem\PickPalletReturnItemInPalletReturnWithStoredItem;
 use App\Actions\Fulfilment\RecurringBill\ConsolidateRecurringBill;
@@ -2967,6 +2972,76 @@ test('a stored item return charges full cartons with the carton service and the 
     expect($chargedQuantity($pieceService))->toBe(60);
 
     UpdateService::make()->action($pieceService, ['auto_assign' => 'none']);
+})->depends('set pallet delivery as booked in');
+
+test('a pick notice email becomes one stored item collection return per order', function (PalletDelivery $palletDelivery) {
+    SendPalletReturnNotification::shouldRun()->andReturn();
+
+    $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
+    $fulfilmentCustomer->update(['data' => array_merge($fulfilmentCustomer->data ?? [], ['pick_notice' => [
+        'senders' => ['sales@garden-machinery.test'],
+        'aliases' => ['TG46SE-2' => 'TG46SE-PN'],
+    ]])]);
+
+    $pallet = StorePallet::make()->action($fulfilmentCustomer, array_merge(['warehouse_id' => $this->warehouse->id], Pallet::factory()->definition()));
+    $stock  = [];
+    foreach (['TG46SE-PN', 'KT400-3PRO-PN', 'KT560-PRO-PN'] as $reference) {
+        $stock[StoreStoredItem::make()->action($fulfilmentCustomer, ['reference' => $reference])->id] = ['quantity' => 5];
+    }
+    SyncStoredItemToPallet::make()->action($pallet, ['stored_item_ids' => $stock]);
+
+    $html = str_replace(['KT400-3 PRO', 'KT560-PRO'], ['KT400-3 PRO-PN', 'KT560-PRO-PN'], file_get_contents(base_path('tests/fixtures/pick-notice.html')));
+
+    expect(ImportPalletReturnsFromPickNotice::fulfilmentCustomerForSender($fulfilmentCustomer->fulfilment->shop, 'Sales@Garden-Machinery.test')->id)->toBe($fulfilmentCustomer->id)
+        ->and(ImportPalletReturnsFromPickNotice::fulfilmentCustomerForSender($fulfilmentCustomer->fulfilment->shop, 'someone@else.test'))->toBeNull()
+        ->and(ImportPalletReturnsFromPickNotice::parse(str_replace('3 orders to pick', '4 orders to pick', $html)))->toBeNull()
+        ->and(ImportPalletReturnsFromPickNotice::parse('<p>Hello, can you call me?</p>'))->toBeNull();
+
+    expect(ImportPalletReturnsFromPickNotice::isPickNoticeSubject('Sheffield Pick Notice - 3 Orders'))->toBeTrue()
+        ->and(ImportPalletReturnsFromPickNotice::isPickNoticeSubject('Re: Sheffield Pick Notice - 3 Orders'))->toBeFalse()
+        ->and(ImportPalletReturnsFromPickNotice::isPickNoticeSubject('Fwd: Sheffield Pick Notice - 3 Orders'))->toBeFalse();
+
+    $shop     = $fulfilmentCustomer->fulfilment->shop;
+    $settings = $shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'info@fulfilment.test', 'refresh_token' => Crypt::encryptString('rt'), 'history_id' => '1'];
+    $shop->update(['settings' => $settings]);
+
+    Http::fake([
+        'oauth2.googleapis.com/token'                           => Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/pn1*'  => Http::response([
+            'id'       => 'pn1',
+            'threadId' => 'tpn1',
+            'labelIds' => ['INBOX'],
+            'payload'  => [
+                'mimeType' => 'text/html',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Sales (Garden Machinery) <sales@garden-machinery.test>'],
+                    ['name' => 'Subject', 'value' => 'Sheffield Pick Notice - 3 Orders'],
+                ],
+                'body'     => ['data' => rtrim(strtr(base64_encode($html), '+/', '-_'), '=')],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'         => Http::response(['labels' => [['id' => 'LPN', 'name' => 'aiku/pick-notices']]]),
+        'gmail.googleapis.com/*'                                => Http::response([]),
+    ]);
+
+    expect(ProcessInboundEmail::run($shop, 'pn1'))->toBeNull()
+        ->and(ChatMessage::where('metadata->gmail_message_id', 'pn1')->exists())->toBeFalse();
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'messages/pn1/modify') && in_array('LPN', $request['addLabelIds'] ?? [], true));
+
+    $returns = $fulfilmentCustomer->palletReturns()->where('data->pick_notice->gmail_message_id', 'pn1')->orderBy('id')->get()->all();
+
+    expect($returns)->toHaveCount(3)
+        ->and(collect($returns)->pluck('customer_reference')->all())->toBe(['90960 Gardener HU15 2BF', '90976 Mower PE25 2LQ', '90998 Hedge ML9 3DG'])
+        ->and(collect($returns)->every(fn (PalletReturn $palletReturn) => $palletReturn->is_collection && $palletReturn->type === PalletReturnTypeEnum::STORED_ITEM))->toBeTrue()
+        ->and($returns[0]->state)->toBe(PalletReturnStateEnum::CONFIRMED)
+        ->and($returns[0]->storedItems()->pluck('reference')->sort()->values()->all())->toBe(['KT400-3PRO-PN', 'TG46SE-PN'])
+        ->and((float) PalletReturnItem::where('pallet_return_id', $returns[0]->id)->whereHas('storedItem', fn ($query) => $query->where('reference', 'KT400-3PRO-PN'))->sum('quantity_ordered'))->toBe(2.0)
+        ->and($returns[1]->state)->toBe(PalletReturnStateEnum::CONFIRMED)
+        ->and($returns[2]->state)->toBe(PalletReturnStateEnum::IN_PROCESS)
+        ->and($returns[2]->internal_notes)->toContain('XX999');
+
+    expect(ImportPalletReturnsFromPickNotice::run($fulfilmentCustomer, $html, 'gmail-pick-1'))->toBe([]);
 })->depends('set pallet delivery as booked in');
 
 test('stored item reserved by an open return cannot be over-allocated to another return', function (PalletReturn $palletReturn) {
