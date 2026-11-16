@@ -33,24 +33,27 @@ struct ShellScanResultContent: View {
                             .foregroundStyle(AikuColor.text3)
                     }
                 }
-                AikuButton(target.kind.openTitle, size: .regular) {
-                    router.shellFollow(target.link)
-                }
-                .accessibilityIdentifier("shell.scan.open")
-                if !target.actions.isEmpty {
-                    HStack(spacing: 8) {
-                        ForEach(target.actions) { action in
-                            AikuButton(action.title, icon: action.icon, kind: .secondary, size: .regular) {
-                                router.shellFollow(action.link)
-                            }
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                        }
+                if let link = target.link {
+                    AikuButton(target.kind.openTitle, size: .regular) {
+                        router.shellFollow(link)
                     }
+                    .accessibilityIdentifier("shell.scan.open")
                 }
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel("\(target.kind.fallbackDetail) found")
+            if target.kind == .sko {
+                SectionHeading("Locations", detail: "\(target.rows.count)")
+                if target.rows.isEmpty {
+                    EmptyState(icon: .locations, title: "Not in any location", message: "This SKO has no stock in a location of this warehouse.")
+                } else {
+                    CardList(target.rows) { row in
+                        ListRow(row.title, subtitle: row.detail, icon: .locations, iconTone: .info) {
+                            router.shellFollow(row.link)
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -89,7 +92,6 @@ struct ShellScanCapabilities: View {
 struct ShellScanNotFoundCard: View {
     let code: String
     let onTypeCode: () -> Void
-    let onReport: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -101,18 +103,14 @@ struct ShellScanNotFoundCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Barcode not found")
                         .font(.aiku(15, .bold))
-                    Text("\(code) is not linked to a SKO or location")
+                    Text("\(code) is not linked to a SKO, location or delivery note")
                         .font(.aiku(13))
                 }
                 .foregroundStyle(AikuColor.dangerInk)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            HStack(spacing: 8) {
-                AikuButton("Type code", kind: .tertiary, size: .small, action: onTypeCode)
-                    .accessibilityIdentifier("shell.scan.typeCode")
-                AikuButton("Report", kind: .tertiary, size: .small, action: onReport)
-                    .accessibilityIdentifier("shell.scan.report")
-            }
+            AikuButton("Type code", kind: .tertiary, size: .small, fullWidth: false, action: onTypeCode)
+                .accessibilityIdentifier("shell.scan.typeCode")
         }
         .padding(14)
         .background(AikuColor.surface, in: RoundedRectangle(cornerRadius: 8))
@@ -121,23 +119,87 @@ struct ShellScanNotFoundCard: View {
     }
 }
 
+struct ShellScanOutcomeContent: View {
+    let lookup: ShellScanLookup
+    let onTypeCode: () -> Void
+    let onRetry: () -> Void
+    let onChooseWarehouse: () -> Void
+    @Environment(\.signOut) private var signOut
+
+    var body: some View {
+        if let code = lookup.lookingUpCode {
+            Card(padding: 16) {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text("Looking up \(code)…")
+                        .font(.aiku(14))
+                        .foregroundStyle(AikuColor.text2)
+                    Spacer(minLength: 0)
+                }
+            }
+            .accessibilityElement(children: .combine)
+        } else {
+            switch lookup.outcome {
+            case .found(let target):
+                ShellScanResultContent(target: target)
+            case .notFound(let code):
+                ShellScanNotFoundCard(code: code, onTypeCode: onTypeCode)
+            case .failed(let code, let message):
+                InlineAlert(title: "Couldn’t look up \(code)", message: message) {
+                    LinkButton("Try again", action: onRetry)
+                }
+            case .needsWarehouse:
+                ShellScanNeedsWarehouse(onChoose: onChooseWarehouse)
+            case .sessionExpired:
+                InlineAlert(tone: .warn, title: "Your session has ended", message: "Sign in again to keep scanning.") {
+                    LinkButton("Sign in again") { signOut() }
+                }
+            case nil:
+                EmptyView()
+            }
+        }
+    }
+}
+
+struct ShellScanNeedsWarehouse: View {
+    let onChoose: () -> Void
+    @State private var warehouseStore = WarehouseStore.shared
+
+    var body: some View {
+        InlineAlert(tone: .warn, title: "Choose a warehouse to scan", message: message) {
+            LinkButton("Choose warehouse", action: onChoose)
+        }
+    }
+
+    private var message: String {
+        if let loadError = warehouseStore.loadError {
+            return "A scan looks the code up in your warehouse, and the warehouses didn’t load: \(loadError)"
+        }
+        return "A scan looks the code up in the warehouse you work in."
+    }
+}
+
 struct ShellScanResultView: View {
-    @Environment(AppRouter.self) private var router
-    @Environment(ToastCenter.self) private var toasts
     let code: String
+    @State private var lookup = ShellScanLookup.live(.shared)
+    @State private var warehouseStore = WarehouseStore.shared
+    @State private var isChoosingWarehouse = false
+    @Environment(AppRouter.self) private var router
 
     var body: some View {
         AppScreen(title: "Result", kicker: "Scan", spacing: 16) {
-            if let target = ShellScanCatalog.target(for: code) {
-                ShellScanResultContent(target: target)
-            } else {
-                ShellScanNotFoundCard(code: code) {
-                    router.open(ShellRoute.search)
-                } onReport: {
-                    toasts.show("Reported \(code)")
-                }
+            ShellScanOutcomeContent(lookup: lookup) {
+                router.open(ShellRoute.search)
+            } onRetry: {
+                Task { await lookup.lookUp(code, warehouseID: warehouseStore.selectedID) }
+            } onChooseWarehouse: {
+                isChoosingWarehouse = true
             }
             ShellScanCapabilities()
         }
+        .task(id: warehouseStore.selectedID) {
+            await lookup.lookUp(code, warehouseID: warehouseStore.selectedID)
+        }
+        .shellWarehouseSheet(isPresented: $isChoosingWarehouse)
     }
 }

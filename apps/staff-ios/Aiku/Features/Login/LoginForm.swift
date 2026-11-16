@@ -81,18 +81,6 @@ enum LoginState: Equatable, Sendable {
     }
 }
 
-struct ForgotPasswordForm: Equatable {
-    var identifier = ""
-
-    var trimmedIdentifier: String {
-        identifier.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    var error: String? {
-        trimmedIdentifier.isEmpty ? "Enter your username or email." : nil
-    }
-}
-
 enum AuthQuotes {
     static let lines = [
         "ship it before the light goes.",

@@ -17,6 +17,14 @@ struct GoodsOutPrintSheet: View {
     private var pages: Int { note.lines.count > 4 ? 2 : 1 }
 
     var body: some View {
+        if note.isRemote {
+            GoodsOutDocumentsSheet(note: note, close: close)
+        } else {
+            sampleBody
+        }
+    }
+
+    private var sampleBody: some View {
         SheetScaffold(title: "Print \(note.reference)", subtitle: "Delivery note PDF · \(pages) \(pages == 1 ? "page" : "pages")") {
             SheetSectionLabel("Printer")
             ForEach(store.printers) { option in
@@ -43,6 +51,29 @@ struct GoodsOutPrintSheet: View {
                 toasts.show("Delivery note PDF of \(note.reference) opened", tone: .info, sticky: false)
             }
         }
+    }
+}
+
+struct GoodsOutDocumentsSheet: View {
+    let note: GoodsOutDeliveryNote
+    let close: () -> Void
+    @State private var opener = GoodsOutDocumentOpener()
+
+    var body: some View {
+        SheetScaffold(title: "Documents", subtitle: "Delivery note \(note.reference)") {
+            Card {
+                ForEach(Array(note.documents.enumerated()), id: \.element) { index, document in
+                    if index > 0 {
+                        RowDivider()
+                    }
+                    GoodsOutDocumentRow(document: document, reference: note.reference, opener: opener)
+                }
+            }
+            HelperText("Each PDF opens in the phone’s viewer, where you can print or share it.")
+        } footer: {
+            AikuButton("Close", kind: .tertiary, action: close)
+        }
+        .goodsOutDocumentPreview(opener)
     }
 }
 

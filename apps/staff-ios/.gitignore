@@ -17,3 +17,4 @@ Config/Signing.xcconfig
 Config/Secrets.xcconfig
 Aiku/Resources/Info.plist
 .DS_Store
+docs/

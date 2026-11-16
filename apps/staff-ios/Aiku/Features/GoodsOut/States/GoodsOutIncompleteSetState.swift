@@ -77,7 +77,16 @@ struct GoodsOutIncompleteSetFooter: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
-        if let set = note.incompleteSet {
+        if note.isRemote {
+            if let action = note.action(.putBackIncompleteSets), action.disabledReason == nil {
+                AikuButton(action.label, icon: .check, isLoading: store.isWorking(on: note.reference)) {
+                    GoodsOutRun.action(.putBackIncompleteSets, on: note.reference, fallback: "Set parts handled", toasts: toasts)
+                }
+                .accessibilityIdentifier("goodsOut.partsPutBack")
+            } else {
+                GoodsOutFooterStatus(title: "A set is missing a part", detail: "Only the picker can put the set parts back.")
+            }
+        } else if let set = note.incompleteSet {
             AikuButton(set.actionTitle, icon: .check) {
                 let previous = store.partsPutBack(note.reference)
                 GoodsOutFeedback.done(set.hasPicks ? "Set parts put back on the shelf" : "Set parts marked not picked", previous: previous, toasts: toasts)

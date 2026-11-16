@@ -8,4 +8,7 @@ enum DispatchRoute: Hashable, Sendable {
     case pickedBays
     case pickingSessionPick(reference: String)
     case pickingSessionPack(reference: String)
+    case pickingSessionID(id: Int)
+    case pickingSessionPickID(id: Int)
+    case pickingSessionPackID(id: Int)
 }

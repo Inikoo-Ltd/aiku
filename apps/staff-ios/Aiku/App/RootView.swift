@@ -32,14 +32,17 @@ struct RootView: View {
                 session.apply(profile)
             }
         }
-        .task(id: authStore.profile?.id) {
-            guard let userID = authStore.profile?.id, userID > 0 else { return }
+        .onChange(of: authStore.mobileProfile, initial: true) { _, profile in
+            if let profile {
+                session.apply(profile)
+            }
+        }
+        .task(id: authStore.userID) {
+            guard let userID = authStore.userID, userID > 0 else { return }
             LocationsStore.shared.beginRemoteLoad()
             await warehouseStore.load(for: userID, apiClient: apiClient)
             if let warehouse = warehouseStore.selected {
-                session.profile.warehouseName = warehouse.name
-                session.profile.warehouseCode = warehouse.code
-                session.profile.organisation = warehouse.organisation.name
+                session.apply(warehouse: warehouse.name, code: warehouse.code, organisation: warehouse.organisation.name)
             }
         }
         .onChange(of: scenePhase) { _, phase in

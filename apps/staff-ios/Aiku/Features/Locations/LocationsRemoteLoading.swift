@@ -8,8 +8,8 @@ struct LocationsRemoteLoading: ViewModifier {
     @Environment(\.apiClient) private var apiClient
 
     func body(content: Content) -> some View {
-        content.task(id: LocationsLoadKey(userID: authStore.profile?.id ?? 0, warehouseID: warehouseStore.selectedID)) {
-            guard let userID = authStore.profile?.id, userID > 0 else {
+        content.task(id: LocationsLoadKey(userID: authStore.userID ?? 0, warehouseID: warehouseStore.selectedID)) {
+            guard let userID = authStore.userID, userID > 0 else {
                 if store.source == .remote {
                     store.resetToSample()
                     warehouseStore.reset()
@@ -19,9 +19,7 @@ struct LocationsRemoteLoading: ViewModifier {
             store.beginRemoteLoad()
             await warehouseStore.load(for: userID, apiClient: apiClient)
             if let warehouse = warehouseStore.selected {
-                session.profile.warehouseName = warehouse.name
-                session.profile.warehouseCode = warehouse.code
-                session.profile.organisation = warehouse.organisation.name
+                session.apply(warehouse: warehouse.name, code: warehouse.code, organisation: warehouse.organisation.name)
             }
             await store.loadRemote(for: userID, warehouse: warehouseStore.selected, apiClient: apiClient)
         }

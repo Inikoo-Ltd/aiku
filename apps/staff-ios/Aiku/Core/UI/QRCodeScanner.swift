@@ -1,9 +1,18 @@
 import AVFoundation
 import SwiftUI
+import Vision
 import VisionKit
 
 struct QRCodeScanner: UIViewControllerRepresentable {
+    static let warehouseSymbologies: [VNBarcodeSymbology] = [.qr, .code128, .ean13, .ean8, .upce, .code39, .code93, .itf14, .i2of5, .dataMatrix]
+
+    var symbologies: [VNBarcodeSymbology] = [.qr]
     let onCode: (String) -> Void
+
+    init(symbologies: [VNBarcodeSymbology] = [.qr], onCode: @escaping (String) -> Void) {
+        self.symbologies = symbologies
+        self.onCode = onCode
+    }
 
     static var isAvailable: Bool {
         DataScannerViewController.isSupported && DataScannerViewController.isAvailable
@@ -11,7 +20,7 @@ struct QRCodeScanner: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> DataScannerViewController {
         let scanner = DataScannerViewController(
-            recognizedDataTypes: [.barcode(symbologies: [.qr])],
+            recognizedDataTypes: [.barcode(symbologies: symbologies)],
             qualityLevel: .balanced,
             recognizesMultipleItems: false,
             isHighFrameRateTrackingEnabled: false,

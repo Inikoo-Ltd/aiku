@@ -34,9 +34,13 @@ struct GoodsOutTakeOverFooter: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
-        AikuButton("Unlock to pick", icon: .lock) {
-            let previous = store.takeOver(note.reference)
-            GoodsOutFeedback.done("You are now picking \(note.reference)", previous: previous, toasts: toasts)
+        AikuButton(note.action(.takeOver)?.label ?? "Unlock to pick", icon: .lock, isLoading: store.isWorking(on: note.reference)) {
+            if note.isRemote {
+                GoodsOutRun.action(.takeOver, on: note.reference, fallback: "You can work on \(note.reference)", toasts: toasts)
+            } else {
+                let previous = store.takeOver(note.reference)
+                GoodsOutFeedback.done("You are now picking \(note.reference)", previous: previous, toasts: toasts)
+            }
         }
         .accessibilityIdentifier("goodsOut.unlockToPick")
     }

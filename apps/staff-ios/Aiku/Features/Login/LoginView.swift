@@ -2,6 +2,8 @@ import SwiftUI
 
 struct LoginView: View {
     var onForgotPassword: () -> Void = {}
+    var notice: String?
+    var initialUsername = ""
 
     @Environment(AuthStore.self) private var authStore
 
@@ -19,6 +21,10 @@ struct LoginView: View {
 
     var body: some View {
         AuthLayout {
+            if let notice, state.failure == nil {
+                InlineAlert(tone: .success, title: notice)
+                    .accessibilityIdentifier("login.notice")
+            }
             if let failure = state.failure {
                 InlineAlert(tone: .danger, title: failure.title, message: failure.message)
                     .accessibilityIdentifier("login.error")
@@ -32,6 +38,12 @@ struct LoginView: View {
             }
         }
         .accessibilityIdentifier("login.root")
+        .onAppear {
+            if form.username.isEmpty, !initialUsername.isEmpty {
+                form.username = initialUsername
+                focusedField = .password
+            }
+        }
     }
 
     private var isLocked: Bool { state.isSigningIn }

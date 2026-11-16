@@ -10,16 +10,26 @@ struct GoodsOutPickingStateView: View {
     var body: some View {
         GoodsOutStateStepper(state: note.state)
         Card {
-            ListRow(pickerTitle, subtitle: "Picker", icon: .person) {
-                present(.picker)
-            } trailing: {
-                changeLabel
+            if note.allows(.changePicker) {
+                ListRow(pickerTitle, subtitle: "Picker", icon: .person) {
+                    present(.picker)
+                } trailing: {
+                    changeLabel
+                }
+            } else {
+                ListRow(pickerTitle, subtitle: "Picker", icon: .person)
             }
-            RowDivider()
-            ListRow(note.trolley.map { "Trolley \($0)" } ?? "No trolley", subtitle: "Picking into", icon: .trolley) {
-                present(.trolley(startsPicking: false))
-            } trailing: {
-                changeLabel
+            if note.remote?.isDropshipping != true {
+                RowDivider()
+                if note.allows(.changeTrolley) {
+                    ListRow(note.trolley.map { "Trolley \($0)" } ?? "No trolley", subtitle: "Picking into", icon: .trolley) {
+                        present(.trolley(startsPicking: false))
+                    } trailing: {
+                        changeLabel
+                    }
+                } else {
+                    ListRow(note.trolley.map { "Trolley \($0)" } ?? "No trolley", subtitle: "Picking into", icon: .trolley)
+                }
             }
         }
         GoodsOutNoteOverview(
@@ -27,7 +37,7 @@ struct GoodsOutPickingStateView: View {
             onQuickAction: { GoodsOutMoreActions.perform(.quick($0), note: note, router: router, toasts: toasts, present: present) },
             onEditAddress: { GoodsOutMoreActions.perform(.editAddress, note: note, router: router, toasts: toasts, present: present) }
         )
-        if store.rights.canScanToPick, let next = note.nextLineToPick {
+        if store.rights.canScanToPick, note.canScanToPick, let next = note.nextLineToPick {
             GoodsOutScanPromptCard(
                 title: "Scan to pick",
                 location: next.pickLocation,
@@ -37,7 +47,7 @@ struct GoodsOutPickingStateView: View {
             }
             .accessibilityIdentifier("goodsOut.scanToPick")
         }
-        if !note.allLinesHandled {
+        if !note.allLinesHandled, note.canWorkLines {
             Card {
                 ListRow("Fast picking", subtitle: "Swipe through the lines in pick route order", icon: .swipe, showsChevron: true) {
                     router.open(GoodsOutRoute.fastPicking(reference: note.reference))
@@ -46,9 +56,9 @@ struct GoodsOutPickingStateView: View {
             .accessibilityIdentifier("goodsOut.fastPicking")
         }
         GoodsOutSectionTitle(title: "Items by location", detail: note.allLinesHandled ? "every line handled" : note.pickedProgress)
-        GoodsOutLinesCard(lines: note.linesByLocation, showsLocationStock: true, onTap: { line in
+        GoodsOutLinesCard(lines: note.linesByLocation, showsLocationStock: true, onTap: note.canWorkLines ? { line in
             present(.itemActions(line: line.id))
-        })
+        } : nil)
         HelperText(note.allLinesHandled
             ? "Set as picked only appears once every line is picked, not picked or waiting. Dropshipping notes skip packing, so they show Set as packed here instead."
             : "Scan to pick shows only when the organisation allows it. Tap a line for Pick all, another location, Not picked or Set as waiting.")
@@ -73,7 +83,9 @@ struct GoodsOutPickingFooter: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
-        if note.allLinesHandled {
+        if note.isRemote {
+            remoteFooter
+        } else if note.allLinesHandled {
             AikuButton(note.finishPickingTitle) {
                 if note.channel.skipsPacking, !note.hasWaitingLines {
                     let previous = store.setAsPicked(note.reference, bay: nil)
@@ -91,6 +103,42 @@ struct GoodsOutPickingFooter: View {
                     ? "Pick it, mark it not picked or set it as waiting. Then Set as picked appears."
                     : "Pick them, mark them not picked or set them as waiting. Then Set as picked appears."
             )
+        }
+    }
+
+    @ViewBuilder
+    private var remoteFooter: some View {
+        let working = store.isWorking(on: note.reference)
+        if let action = note.action(.putBackIncompleteSets) {
+            remoteButton(action, working: working) {
+                GoodsOutRun.action(.putBackIncompleteSets, on: note.reference, fallback: "Set parts handled", toasts: toasts)
+            }
+        } else if let action = note.action(.setAsPacked) {
+            remoteButton(action, working: working) {
+                GoodsOutRun.action(.post("set-as-packed"), on: note.reference, fallback: "\(note.reference) set as packed", toasts: toasts)
+            }
+        } else if let action = note.action(.setAsPicked) {
+            remoteButton(action, working: working) {
+                present(.pickedBay(setsPicked: true))
+            }
+        } else if note.canWorkLines {
+            let count = note.linesStillToHandle
+            GoodsOutFooterStatus(
+                title: "\(count) \(count == 1 ? "line" : "lines") still to handle",
+                detail: "Pick, mark as not picked or set as waiting every line. Then Set as picked appears."
+            )
+        } else {
+            GoodsOutFooterStatus(title: "Picking", detail: note.remote?.readOnlyNotice ?? "Only the picker can work on this delivery note.")
+        }
+    }
+
+    @ViewBuilder
+    private func remoteButton(_ action: GoodsOutAvailableAction, working: Bool, run: @escaping () -> Void) -> some View {
+        if let reason = action.disabledReason {
+            GoodsOutFooterStatus(title: action.label, detail: reason)
+        } else {
+            AikuButton(action.label, isLoading: working, action: run)
+                .accessibilityIdentifier("goodsOut.setAsPicked")
         }
     }
 }

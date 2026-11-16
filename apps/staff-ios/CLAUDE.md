@@ -17,14 +17,14 @@ Most screens still run on sample data so developers can see each screen before i
 
 - Each area keeps its sample data and its `@Observable` store in `Features/<Area>/Models/` (Foundation only, no SwiftUI).
 - When a screen is wired to real data, remove the sample data it no longer uses.
-- Wired to the API so far: sign in, sign out, profile, permissions, and Clocking (status, timesheets, QR clocking with camera and location, adjustment requests, clocking notes, leave list and leave requests) through `mobile/clocking`.
+- Wired to the API so far: sign in, sign out, profile (`mobile/profile`), permissions, change password and the code-based password reset (`mobile/password*`, same flow as aiku_droid), Goods out delivery notes (list, backlog counts, picking, packing, shipments, finalise, dispatch, documents) through `mobile/warehouses/{w}/delivery-notes` and `mobile/delivery-notes/{id}`, picking sessions, staff chat (Ask CRM, `ShellRoute.staffChat` with kind `delivery_note` or `picking_session`), the Scan tab lookup (`mobile/warehouses/{w}/scan`), and Clocking (status, timesheets, QR clocking with camera and location, adjustment requests, clocking notes, leave list and leave requests) through `mobile/clocking`.
 
 ## Backend
 
 - The app talks to aiku only through the staff API, never the database.
 - Debug builds call `http://aiku.test/app/api`, Release builds `https://aiku.io/app/api` (`API_BASE_URL`, read at runtime from `AikuAPIBaseURL` in Info.plist). On a phone, set `Config/Local.xcconfig` to the Mac's LAN address and run `php artisan serve --host=0.0.0.0 --port=8000`, because Valet only listens on 127.0.0.1.
 - The app key goes in the gitignored `Config/Secrets.xcconfig` (copy `Secrets.xcconfig.example`).
-- Sign in uses `POST mobile/login` and keeps the token in the Keychain (`Core/Auth`); `GET /app/api/profile` (wrapped in `data`) gives the profile and job positions; `GET mobile/permissions` gives permissions and roles, cached by `PermissionStore`.
+- Sign in uses `POST mobile/login` and keeps the token in the Keychain (`Core/Auth`); `GET mobile/profile` gives the name, job title, job positions and organisation (the role shown is the lead job position, then the job title); `GET mobile/permissions` gives permissions and roles, cached by `PermissionStore`.
 - Mobile routes sit under `/app/api/mobile` (`routes/api/grp/mobile.php`). They need the `X-Aiku-App-Key` header (one of the backend's `MOBILE_APP_KEYS`) and a Sanctum bearer token with the `mobile` ability; `login` returns the token.
 - App Transport Security: `NSAllowsLocalNetworking` covers LAN IP addresses but not `.test` hosts.
 

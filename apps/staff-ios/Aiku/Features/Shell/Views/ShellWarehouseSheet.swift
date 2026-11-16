@@ -128,9 +128,7 @@ struct ShellWarehouseSheet: View {
             if let warehouseID = choice.warehouseID {
                 warehouseStore.select(warehouseID)
             }
-            session.profile.organisation = choice.organisation
-            session.profile.warehouseName = choice.warehouseName
-            session.profile.warehouseCode = choice.warehouseCode
+            session.apply(warehouse: choice.warehouseName, code: choice.warehouseCode, organisation: choice.organisation)
             toasts.show("Switched to \(choice.organisation) · \(choice.warehouseName)")
         }
         onClose()

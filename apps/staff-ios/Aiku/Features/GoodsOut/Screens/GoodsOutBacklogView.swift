@@ -40,12 +40,55 @@ struct GoodsOutBacklogView: View {
                 packers
             }
         }
+        .loadsGoodsOut()
+        .task(id: GoodsOutListLoadKey(query: GoodsOutListQuery(), warehouseID: store.warehouseID, isRemote: store.isRemote)) {
+            await refresh()
+        }
+        .screenRefreshable {
+            await refresh()
+        }
+    }
+
+    private func refresh() async {
+        guard store.isRemote else { return }
+        async let personnel: Void = store.loadPersonnel()
+        await store.loadBacklogCounts()
+        await personnel
+    }
+
+    private func sessionAction(_ person: GoodsOutPersonActivity) -> (() -> Void)? {
+        if let id = person.sessionID {
+            return { router.open(DispatchRoute.pickingSessionID(id: id)) }
+        }
+        return person.sessionReference.map { reference in { router.open(DispatchRoute.pickingSession(reference: reference)) } }
+    }
+
+    private var pickerActivities: [GoodsOutPersonActivity] {
+        if store.isRemote { return store.pickersNow }
+        return store.pickers.enumerated().compactMap { index, picker in
+            GoodsOutResources.pickerActivity(picker, notes: store.notes).map {
+                GoodsOutPersonActivity(id: index, name: picker.name, subtitle: $0, sessionReference: picker.session)
+            }
+        }
+    }
+
+    private var packerActivities: [GoodsOutPersonActivity] {
+        if store.isRemote { return store.packersNow }
+        return GoodsOutBacklog.packers(for: store.notes).enumerated().map { index, packer in
+            GoodsOutPersonActivity(id: index, name: packer.name, subtitle: "\(packer.count) \(packer.count == 1 ? "order" : "orders") to pack", orders: packer.count)
+        }
     }
 
     @ViewBuilder
     private var channelCards: some View {
         let rows = store.backlogRows
-        if rows.isEmpty {
+        if let error = store.countsError, rows.isEmpty {
+            GoodsOutLoadProblem(title: "Couldn’t load the backlog", message: error) {
+                Task { await store.loadBacklogCounts() }
+            }
+        } else if store.isRemote, store.counts == nil {
+            GoodsOutSkeletonCard(rows: 2)
+        } else if rows.isEmpty {
             EmptyState(icon: .backlog, title: "Nothing in the backlog", message: "Every delivery note has been dispatched.")
         }
         ForEach(rows) { row in
@@ -58,24 +101,25 @@ struct GoodsOutBacklogView: View {
 
     @ViewBuilder
     private var pickersNow: some View {
-        let active = store.pickers.compactMap { picker in
-            GoodsOutResources.pickerActivity(picker, notes: store.notes).map { (picker, $0) }
-        }
+        let active = pickerActivities
         GoodsOutSectionTitle(title: "Pickers now")
-        if active.isEmpty {
+        if let error = store.personnelError, active.isEmpty {
+            GoodsOutLoadProblem(title: "Couldn’t load who is working", message: error) {
+                Task { await store.loadPersonnel() }
+            }
+        } else if active.isEmpty {
             EmptyState(icon: .person, title: "Nobody is picking", message: "Pickers appear here while they work.")
         } else {
             Card {
-                ForEach(Array(active.enumerated()), id: \.element.0.id) { index, item in
+                ForEach(Array(active.enumerated()), id: \.element.id) { index, person in
                     if index > 0 {
                         RowDivider()
                     }
-                    let picker = item.0
                     ListRow(
-                        picker.name,
-                        subtitle: item.1,
+                        person.name,
+                        subtitle: person.subtitle,
                         icon: .person,
-                        action: picker.session.map { reference in { router.open(DispatchRoute.pickingSession(reference: reference)) } }
+                        action: sessionAction(person)
                     )
                 }
             }
@@ -84,24 +128,24 @@ struct GoodsOutBacklogView: View {
 
     @ViewBuilder
     private var sessions: some View {
-        let withSessions = store.pickers.filter { $0.session != nil }
+        let withSessions = pickerActivities.filter { $0.sessionReference != nil }
         GoodsOutSectionTitle(title: "Picking sessions now")
         if withSessions.isEmpty {
             EmptyState(icon: .trolley, title: "No open picking sessions")
         } else {
             Card {
-                ForEach(Array(withSessions.enumerated()), id: \.element.id) { index, picker in
+                ForEach(Array(withSessions.enumerated()), id: \.element.id) { index, person in
                     if index > 0 {
                         RowDivider()
                     }
-                    if let reference = picker.session {
+                    if let reference = person.sessionReference {
                         ListRow(
                             reference,
-                            subtitle: "\(picker.name) · \(picker.sessionOrders) orders · \(picker.sessionTrolleys) trolleys",
+                            subtitle: "\(person.name) · \(person.subtitle)",
                             icon: .trolley,
                             showsChevron: true
                         ) {
-                            router.open(DispatchRoute.pickingSession(reference: reference))
+                            sessionAction(person)?()
                         }
                     }
                 }
@@ -114,24 +158,26 @@ struct GoodsOutBacklogView: View {
 
     @ViewBuilder
     private var packers: some View {
-        let packers = GoodsOutBacklog.packers(for: store.notes)
+        let packers = packerActivities
         GoodsOutSectionTitle(title: "Packers now")
         if packers.isEmpty {
             EmptyState(icon: .packed, title: "Nobody is packing", message: "Packers appear here while they work.")
         } else {
             Card {
-                ForEach(Array(packers.enumerated()), id: \.element.name) { index, packer in
+                ForEach(Array(packers.enumerated()), id: \.element.id) { index, packer in
                     if index > 0 {
                         RowDivider()
                     }
-                    ListRow(packer.name, subtitle: "\(packer.count) \(packer.count == 1 ? "order" : "orders") to pack", icon: .packed)
+                    ListRow(packer.name, subtitle: packer.subtitle, icon: .packed)
                 }
             }
         }
-        AikuButton("Packing queue · \(store.packingQueue.count) to pack", icon: .swipe, kind: .secondary) {
-            router.open(GoodsOutRoute.packingQueue)
+        if !store.isRemote {
+            AikuButton("Packing queue · \(store.packingQueue.count) to pack", icon: .swipe, kind: .secondary) {
+                router.open(GoodsOutRoute.packingQueue)
+            }
+            .accessibilityIdentifier("goodsOut.packingQueue")
         }
-        .accessibilityIdentifier("goodsOut.packingQueue")
     }
 }
 

@@ -37,13 +37,15 @@ struct GoodsOutScanToPickView: View {
                 location: line.pickLocation,
                 detail: "Each scan picks 1 · tap here to simulate a scan of \(line.sko)"
             ) {
-                scan(line.sko, in: note)
+                scan(line.barcode ?? line.sko, in: note)
             }
             .accessibilityIdentifier("goodsOut.simulateScan")
-            LinkButton("Simulate a scan of the wrong item", size: 13) {
-                scan(GoodsOutScanLogEntry.wrongItemCode(for: note), in: note)
+            if !note.isRemote {
+                LinkButton("Simulate a scan of the wrong item", size: 13) {
+                    scan(GoodsOutScanLogEntry.wrongItemCode(for: note), in: note)
+                }
+                .frame(minHeight: 44)
             }
-            .frame(minHeight: 44)
         }
         GoodsOutSectionTitle(title: "Scanned")
         if log.isEmpty {
@@ -90,10 +92,14 @@ struct GoodsOutScanToPickView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            AikuButton("Pick all \(line.remaining)", icon: .check) {
+            AikuButton("Pick all \(line.remaining)", icon: .check, isLoading: store.isWorking(on: note.reference)) {
+                amount = 1
+                if let lineID = line.apiID {
+                    GoodsOutRun.action(.pickAll(line: lineID, locationOrgStockID: line.defaultStockLocation?.locationOrgStockID), on: note.reference, fallback: "\(line.sko) picked ×\(line.remaining)", toasts: toasts)
+                    return
+                }
                 let previous = store.pickAll(note.reference, line: line.id)
                 GoodsOutFeedback.done("\(line.sko) picked ×\(line.remaining)", previous: previous, toasts: toasts)
-                amount = 1
             }
             .accessibilityIdentifier("goodsOut.scan.pickAll")
             HStack(spacing: 6) {
@@ -106,9 +112,17 @@ struct GoodsOutScanToPickView: View {
                     .accessibilityLabel("Amount \(pickAmount)")
                 stepButton("+", label: "More", isEnabled: pickAmount < line.remaining) { amount = pickAmount + 1 }
                 AikuButton("Pick \(pickAmount)", kind: .tertiary, size: .regular) {
+                    amount = 1
+                    if let lineID = line.apiID {
+                        guard let location = line.defaultStockLocation?.locationOrgStockID else {
+                            toasts.show("No location of \(line.sko) holds stock", tone: .warn)
+                            return
+                        }
+                        GoodsOutRun.action(.pick(line: lineID, locationOrgStockID: location, quantity: Double(pickAmount)), on: note.reference, fallback: "\(line.sko) picked ×\(pickAmount)", toasts: toasts)
+                        return
+                    }
                     let previous = store.pick(note.reference, line: line.id, quantity: pickAmount)
                     GoodsOutFeedback.done("\(line.sko) picked ×\(pickAmount)", previous: previous, toasts: toasts)
-                    amount = 1
                 }
                 .frame(maxWidth: .infinity)
                 .layoutPriority(1)
@@ -145,7 +159,36 @@ struct GoodsOutScanToPickView: View {
     }
 
     private func scan(_ code: String, in note: GoodsOutDeliveryNote) {
-        let outcome = store.scan(note.reference, code: code)
+        guard note.isRemote else {
+            record(store.scan(note.reference, code: code), code: code, in: note, message: nil)
+            return
+        }
+        let line = currentLine(note)
+        Task {
+            let result = await store.scanToPick(note.reference, code: code, line: line)
+            record(result.outcome, code: code, in: note, message: result.message)
+            if case .picked(let sko, _) = result.outcome, let updated = store.note(note.reference) {
+                focusLine = updated.lines.first { $0.sko == sko }?.id
+            }
+        }
+    }
+
+    private func record(_ outcome: GoodsOutScanOutcome, code: String, in note: GoodsOutDeliveryNote, message: String?) {
+        if let message {
+            switch outcome {
+            case .picked:
+                toasts.show(message, sticky: false)
+            case .lineComplete, .notPicking:
+                toasts.show(message, tone: .warn)
+            case .notOnNote:
+                toasts.show(message, tone: .danger, sticky: false)
+            }
+            log.insert(GoodsOutScanLogEntry(code: code, time: store.now(), outcome: outcome), at: 0)
+            if case .picked(let sko, _) = outcome {
+                scannedCounts[sko, default: 0] += 1
+            }
+            return
+        }
         log.insert(GoodsOutScanLogEntry(code: code, time: store.now(), outcome: outcome), at: 0)
         switch outcome {
         case .picked(let sko, _):

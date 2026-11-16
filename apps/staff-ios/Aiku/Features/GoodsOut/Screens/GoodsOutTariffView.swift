@@ -8,6 +8,15 @@ struct GoodsOutTariffView: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
+        if GoodsOutStore.shared.isRemote {
+            GoodsOutNotInTheAppScreen(title: "Tariff codes / Origin", message: "Tariff codes and countries of origin can’t be loaded from Aiku in the app yet.")
+        } else {
+            sampleBody
+        }
+    }
+
+    @ViewBuilder
+    private var sampleBody: some View {
         if let note = store.note(reference) {
             let rows = GoodsOutCustoms.rows(for: note, tradeUnits: store.tradeUnits, language: language)
             let missing = GoodsOutCustoms.missingCodes(rows)

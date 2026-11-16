@@ -22,6 +22,15 @@ struct GoodsOutManualShipmentView: View {
     }
 
     var body: some View {
+        if store.isRemote {
+            GoodsOutRemoteAddShipmentView(reference: reference)
+        } else {
+            sampleBody
+        }
+    }
+
+    @ViewBuilder
+    private var sampleBody: some View {
         if let note = store.note(reference) {
             AppScreen(title: "Add shipment", kicker: "Delivery note \(note.reference) · \(note.state.title)") {
                 GoodsOutStateStepper(state: note.state)

@@ -309,3 +309,254 @@ extension GoodsOutDeliveryNote {
         shipments = []
     }
 }
+
+enum GoodsOutFooterItem: Hashable, Sendable {
+    case button(GoodsOutAvailableAction, isPrimary: Bool)
+    case notice(GoodsOutAvailableAction)
+}
+
+extension GoodsOutDeliveryNote {
+    static let packingFooterKeys: [GoodsOutActionKey] = [
+        .setAsPacked, .startPacking, .addShipment, .getExternalShipment, .finaliseAndDispatch, .finalise, .dispatch, .takeOver
+    ]
+
+    var packer: String? { packingDetails?.packerName }
+
+    var remoteFooterActions: [GoodsOutAvailableAction] {
+        Self.packingFooterKeys.compactMap { key in
+            guard let action = action(key) else { return nil }
+            if key == .addShipment, !shipments.isEmpty { return nil }
+            if key == .takeOver, state == .packed { return nil }
+            return action
+        }
+    }
+
+    var remoteFooterItems: [GoodsOutFooterItem] {
+        let actions = remoteFooterActions
+        let primary = actions.first { $0.disabledReason == nil }
+        return actions.map { action in
+            action.disabledReason == nil ? .button(action, isPrimary: action == primary) : .notice(action)
+        }
+    }
+
+    var addAnotherShipment: GoodsOutAvailableAction? {
+        shipments.isEmpty ? nil : action(.addShipment)
+    }
+
+    var canPackLines: Bool {
+        guard let remote else { return state == .packing }
+        return (state == .packing || state == .packed) && remote.allowActions
+    }
+
+    var canScanToPack: Bool {
+        guard let remote else { return state == .packing }
+        return state == .packing && remote.allowActions && remote.settings.allowScanToPack && !remote.isDropshipping
+    }
+
+    var isShippingByExternal: Bool {
+        if let packingDetails { return packingDetails.isShippingByExternal }
+        return shipsViaPlatform
+    }
+
+    var externalEngine: String? {
+        packingDetails?.externalEngine ?? platform
+    }
+
+    var documents: [GoodsOutDocument] {
+        var list: [GoodsOutDocument] = [.deliveryNote]
+        if packingDetails?.hasBoxPackingList == true { list.append(.packingList) }
+        if packingDetails?.hasGiftMessage == true { list.append(.giftMessage) }
+        return list
+    }
+
+    var remoteFooterStatus: (title: String, detail: String) {
+        let stateTitle = remote?.stateLabel.isEmpty == false ? remote?.stateLabel ?? state.title : state.title
+        if let notice = remote?.readOnlyNotice { return (stateTitle, notice) }
+        if state == .packed, parcels.isEmpty { return (stateTitle, "Add at least one parcel before this delivery note can be finalised.") }
+        return (stateTitle, "There is nothing to do on this delivery note in the app right now.")
+    }
+
+    var packingFootNote: String? {
+        switch state {
+        case .packing where canPackLines:
+            return canScanToPack
+                ? "Scan to pack, or tap a line to pack part of it or unpack it. Every parcel needs its length, width and height before Set as packed."
+                : "Tap a line to pack it, pack part of it or unpack it. Every parcel needs its length, width and height before Set as packed."
+        case .packed, .finalised:
+            if action(.finalise) != nil {
+                return "Collection is set on the order. On a replacement delivery note it can be switched on the delivery note itself. Finalise for collection leaves it ready for the customer."
+            }
+            if action(.dispatch) != nil {
+                return isCollection
+                    ? "When the customer picks it up, set it as collected. That is the collection version of Dispatch."
+                    : "Dispatch when the parcel leaves the warehouse."
+            }
+            return nil
+        default:
+            return nil
+        }
+    }
+}
+
+struct GoodsOutParcelDraft: Identifiable, Hashable, Sendable {
+    let id: Int
+    var weight: String
+    var length: String
+    var width: String
+    var height: String
+    var boxes: String = ""
+
+    init(id: Int, weight: String = "", length: String = "", width: String = "", height: String = "", boxes: String = "") {
+        self.id = id
+        self.weight = weight
+        self.length = length
+        self.width = width
+        self.height = height
+        self.boxes = boxes
+    }
+
+    init(id: Int, parcel: GoodsOutParcel) {
+        self.init(
+            id: id,
+            weight: parcel.weightKg > 0 ? GoodsOutLinePacking.text(parcel.weightKg) : "",
+            length: parcel.length.map(String.init) ?? "",
+            width: parcel.width.map(String.init) ?? "",
+            height: parcel.height.map(String.init) ?? "",
+            boxes: parcel.boxes.map(String.init) ?? ""
+        )
+    }
+
+    static let maxWeightKg = 1000.0
+    static let maxSizeCm = 1000.0
+    static let maxParcels = 50
+
+    static func number(_ text: String) -> Double? {
+        Double(text.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "."))
+    }
+
+    var weightProblem: String? {
+        guard let value = Self.number(weight) else { return "Enter the weight." }
+        guard value > 0, value <= Self.maxWeightKg else { return "The weight must be more than 0 and at most 1000 kg." }
+        return nil
+    }
+
+    var sizeProblem: String? {
+        let values = [length, width, height].map(Self.number)
+        if values.contains(where: { $0 == nil }) { return "Enter the length, width and height." }
+        if values.contains(where: { ($0 ?? 0) <= 0 || ($0 ?? 0) > Self.maxSizeCm }) { return "Each size must be more than 0 and at most 1000 cm." }
+        return nil
+    }
+
+    var boxesProblem: String? {
+        let text = boxes.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return nil }
+        guard let value = Int(text), value >= 1 else { return "Boxes must be a whole number of 1 or more." }
+        return nil
+    }
+
+    var problem: String? { weightProblem ?? sizeProblem ?? boxesProblem }
+
+    var input: GoodsOutParcelInput? {
+        guard problem == nil, let weightKg = Self.number(weight) else { return nil }
+        let sizes = [length, width, height].compactMap(Self.number)
+        return GoodsOutParcelInput(weightKg: weightKg, dimensionsCm: sizes, boxes: Int(boxes.trimmingCharacters(in: .whitespaces)))
+    }
+
+    static func inputs(_ drafts: [GoodsOutParcelDraft]) -> Result<[GoodsOutParcelInput], GoodsOutProblem> {
+        if drafts.isEmpty { return .failure(GoodsOutProblem(message: "Add at least one parcel.")) }
+        if drafts.count > maxParcels { return .failure(GoodsOutProblem(message: "A delivery note can have at most 50 parcels.")) }
+        if let index = drafts.firstIndex(where: { $0.problem != nil }), let problem = drafts[index].problem {
+            return .failure(GoodsOutProblem(message: "Parcel \(index + 1): \(problem)"))
+        }
+        return .success(drafts.compactMap(\.input))
+    }
+}
+
+struct GoodsOutProblem: Error, Hashable, Sendable {
+    let message: String
+}
+
+struct GoodsOutBoxDraft: Identifiable, Hashable, Sendable {
+    let id: Int
+    var box: String
+    var quantity: String
+
+    static let maxBox = 999
+
+    static func inputs(_ drafts: [GoodsOutBoxDraft], picked: Double) -> Result<[GoodsOutLineBoxInput], GoodsOutProblem> {
+        var boxes: [GoodsOutLineBoxInput] = []
+        for draft in drafts {
+            guard let box = Int(draft.box.trimmingCharacters(in: .whitespaces)), (1...maxBox).contains(box) else {
+                return .failure(GoodsOutProblem(message: "Each box number must be from 1 to \(maxBox)."))
+            }
+            guard let quantity = GoodsOutParcelDraft.number(draft.quantity), quantity >= 0 else {
+                return .failure(GoodsOutProblem(message: "Enter a quantity of 0 or more for each box."))
+            }
+            boxes.append(GoodsOutLineBoxInput(box: box, quantity: quantity))
+        }
+        if boxes.reduce(0, { $0 + $1.quantity }) > picked + 0.0005 {
+            return .failure(GoodsOutProblem(message: "The boxes hold more than the \(GoodsOutLinePacking.text(picked)) picked."))
+        }
+        return .success(boxes)
+    }
+}
+
+enum GoodsOutShipmentRequest: Hashable, Sendable {
+    case add(shipperID: Int, tracking: String?, overrideLock: Bool)
+    case retry(shipperID: Int, address: GoodsOutAddressForm, overrideLock: Bool)
+
+    var action: GoodsOutNoteAction {
+        switch self {
+        case .add(let shipperID, let tracking, let overrideLock):
+            .addShipment(shipperID: shipperID, tracking: tracking, overrideLock: overrideLock)
+        case .retry(let shipperID, let address, let overrideLock):
+            .retryShipment(shipperID: shipperID, address: address, overrideLock: overrideLock)
+        }
+    }
+
+    var shipperID: Int {
+        switch self {
+        case .add(let shipperID, _, _), .retry(let shipperID, _, _): shipperID
+        }
+    }
+
+    var overrideLock: Bool {
+        switch self {
+        case .add(_, _, let overrideLock), .retry(_, _, let overrideLock): overrideLock
+        }
+    }
+
+    var overridingLock: GoodsOutShipmentRequest {
+        switch self {
+        case .add(let shipperID, let tracking, _): .add(shipperID: shipperID, tracking: tracking, overrideLock: true)
+        case .retry(let shipperID, let address, _): .retry(shipperID: shipperID, address: address, overrideLock: true)
+        }
+    }
+}
+
+enum GoodsOutShipmentFollowUp: Hashable, Sendable, Identifiable {
+    case confirmOverride(message: String, request: GoodsOutShipmentRequest)
+    case fixAddress(message: String, shipperID: Int, overrideLock: Bool)
+
+    var id: String {
+        switch self {
+        case .confirmOverride: "override"
+        case .fixAddress: "address"
+        }
+    }
+
+    static func after(_ request: GoodsOutShipmentRequest, errors: [String: String]) -> GoodsOutShipmentFollowUp? {
+        let override = errors["override_lock"]
+        let address = errors["address"] ?? errors.first { $0.key.hasPrefix("address.") }?.value
+        switch request {
+        case .add:
+            if let override { return .confirmOverride(message: override, request: request) }
+            if let address { return .fixAddress(message: address, shipperID: request.shipperID, overrideLock: request.overrideLock) }
+            return nil
+        case .retry:
+            if let override { return .confirmOverride(message: override, request: request) }
+            guard let message = address ?? errors.sorted(by: { $0.key < $1.key }).first?.value else { return nil }
+            return .fixAddress(message: message, shipperID: request.shipperID, overrideLock: request.overrideLock)
+        }
+    }
+}

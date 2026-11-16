@@ -18,6 +18,15 @@ struct GoodsOutCustomsView: View {
     }
 
     var body: some View {
+        if GoodsOutStore.shared.isRemote {
+            GoodsOutNotInTheAppScreen(title: "Customs items file", message: "The customs items file can’t be loaded from Aiku in the app yet.")
+        } else {
+            sampleBody
+        }
+    }
+
+    @ViewBuilder
+    private var sampleBody: some View {
         if let note = store.note(reference) {
             let rows = rows(note)
             let missing = GoodsOutCustoms.missingCodes(rows)
