@@ -62,6 +62,8 @@ class GetMobileWarehouses
             'supervise_goods_out' => $user->authTo("supervisor-dispatching.$warehouseId"),
             'view_fulfilment'     => $user->authTo(["fulfilment.$warehouseId.view", "supervisor-fulfilment.$warehouseId"]),
             'edit_fulfilment'     => $user->authTo(["fulfilment.$warehouseId.edit", "supervisor-fulfilment.$warehouseId"]),
+            'view_returns'        => $user->authTo(["incoming.$warehouseId.view", "returns.$warehouseId"]),
+            'handle_returns'      => $user->authTo(["incoming.$warehouseId.edit", "returns.$warehouseId"]),
         ];
     }
 

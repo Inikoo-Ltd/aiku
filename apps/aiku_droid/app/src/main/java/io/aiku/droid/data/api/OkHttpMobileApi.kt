@@ -24,7 +24,7 @@ class OkHttpMobileApi(
     private val client: OkHttpClient,
     baseUrl: String,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : AuthApi, WarehouseApi, ClockingApi, HrApi, GoodsOutApi, PickingSessionApi, StaffChatApi, InventoryApi {
+) : AuthApi, WarehouseApi, ClockingApi, HrApi, GoodsOutApi, PickingSessionApi, StaffChatApi, InventoryApi, GoodsInApi {
 
     private val apiBaseUrl = baseUrl.trimEnd('/')
     private val mobileApiUrl = "$apiBaseUrl/app/api/mobile"
@@ -428,6 +428,50 @@ class OkHttpMobileApi(
         val url = urlWith("$mobileApiUrl/warehouses/$warehouseId/org-stock-families/$familyId/skos", InventoryResponses.pageParameters(page, perPage))
         return execute(get(url, token))
             ?.let { (statusCode, responseBody) -> InventoryResponses.parseFamilySkos(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+    }
+
+    override suspend fun goodsInHub(token: String, warehouseId: Long): GoodsOutResult<List<GoodsInHubRow>> =
+        execute(get("$mobileApiUrl/warehouses/$warehouseId/goods-in-hub", token))
+            ?.let { (statusCode, responseBody) -> GoodsInResponses.parseHub(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun stockDeliveries(token: String, warehouseId: Long, query: StockDeliveryQuery): GoodsOutResult<StockDeliveryPage> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/stock-deliveries", GoodsInResponses.stockDeliveriesParameters(query)), token))
+            ?.let { (statusCode, responseBody) -> GoodsInResponses.parseStockDeliveries(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun stockDelivery(token: String, warehouseId: Long, stockDeliveryId: Long): GoodsOutResult<StockDelivery> =
+        execute(get("$mobileApiUrl/warehouses/$warehouseId/stock-deliveries/$stockDeliveryId", token))
+            ?.let { (statusCode, responseBody) -> GoodsInResponses.parseStockDelivery(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun writeStockDelivery(
+        token: String,
+        warehouseId: Long,
+        stockDeliveryId: Long,
+        write: StockDeliveryWrite,
+    ): GoodsOutResult<StockDeliveryOutcome> {
+        val baseUrl = "$mobileApiUrl/warehouses/$warehouseId/stock-deliveries/$stockDeliveryId"
+        return execute(writeRequest(baseUrl, GoodsInResponses.stockDeliveryWriteRequest(write), token))
+            ?.let { (statusCode, responseBody) -> GoodsInResponses.parseStockDeliveryWrite(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+    }
+
+    override suspend fun returns(token: String, warehouseId: Long, query: ReturnQuery): GoodsOutResult<ReturnPage> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/returns", GoodsInResponses.returnsParameters(query)), token))
+            ?.let { (statusCode, responseBody) -> GoodsInResponses.parseReturns(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun customerReturn(token: String, warehouseId: Long, returnId: Long): GoodsOutResult<CustomerReturn> =
+        execute(get("$mobileApiUrl/warehouses/$warehouseId/returns/$returnId", token))
+            ?.let { (statusCode, responseBody) -> GoodsInResponses.parseReturn(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun writeReturn(token: String, warehouseId: Long, returnId: Long, write: ReturnWrite): GoodsOutResult<ReturnOutcome> {
+        val baseUrl = "$mobileApiUrl/warehouses/$warehouseId/returns/$returnId"
+        return execute(writeRequest(baseUrl, GoodsInResponses.returnWriteRequest(write), token))
+            ?.let { (statusCode, responseBody) -> GoodsInResponses.parseReturnWrite(statusCode, responseBody) }
             ?: GoodsOutResult.Unreachable
     }
 

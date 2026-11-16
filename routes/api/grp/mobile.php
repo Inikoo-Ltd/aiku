@@ -33,6 +33,24 @@ use App\Actions\Api\Group\Clocking\UpdateMobileLeave;
 use App\Actions\Api\Group\Clocking\UpdateMobileOvertimeRequest;
 use App\Actions\Api\Group\GetMobileProfile;
 use App\Actions\Api\Group\GetMobileWarehouses;
+use App\Actions\Api\Group\GoodsIn\CheckAllMobileStockDeliveryItems;
+use App\Actions\Api\Group\GoodsIn\CheckMobileStockDeliveryItem;
+use App\Actions\Api\Group\GoodsIn\DamageMobileReturnItem;
+use App\Actions\Api\Group\GoodsIn\DeleteMobileReturnPut;
+use App\Actions\Api\Group\GoodsIn\GetMobileGoodsInHub;
+use App\Actions\Api\Group\GoodsIn\IndexMobileReturns;
+use App\Actions\Api\Group\GoodsIn\IndexMobileStockDeliveries;
+use App\Actions\Api\Group\GoodsIn\NotReturnMobileReturnItem;
+use App\Actions\Api\Group\GoodsIn\PlaceAllMobileStockDeliveryItem;
+use App\Actions\Api\Group\GoodsIn\PlaceMobileStockDeliveryItem;
+use App\Actions\Api\Group\GoodsIn\ReceiveMobileStockDelivery;
+use App\Actions\Api\Group\GoodsIn\RecordMobileStockDeliveryGoodsInCheck;
+use App\Actions\Api\Group\GoodsIn\ReturnMobileReturnItem;
+use App\Actions\Api\Group\GoodsIn\SetMobileReturnAsReturned;
+use App\Actions\Api\Group\GoodsIn\ShowMobileReturn;
+use App\Actions\Api\Group\GoodsIn\ShowMobileStockDelivery;
+use App\Actions\Api\Group\GoodsIn\StartMobileReturn;
+use App\Actions\Api\Group\GoodsIn\UnreceiveMobileStockDelivery;
 use App\Actions\Api\Group\GoodsOut\AddMobilePickingSessionDeliveryNotes;
 use App\Actions\Api\Group\GoodsOut\AttachMobilePickingSessionTrolley;
 use App\Actions\Api\Group\GoodsOut\AutoFinishMobileWaitingDeliveryNote;
@@ -194,6 +212,29 @@ Route::middleware(VerifyMobileAppKey::class)->group(function () {
         });
         Route::post('/location-org-stocks/{locationOrgStock:id}/move', MoveMobileLocationOrgStock::class)->name('location_org_stocks.move');
         Route::post('/location-org-stocks/{locationOrgStock:id}/consume', ConsumeMobileLocationOrgStock::class)->name('location_org_stocks.consume');
+
+        Route::get('/warehouses/{warehouse:id}/goods-in-hub', GetMobileGoodsInHub::class)->name('warehouses.goods_in_hub');
+        Route::get('/warehouses/{warehouse:id}/stock-deliveries', IndexMobileStockDeliveries::class)->name('warehouses.stock_deliveries');
+        Route::prefix('warehouses/{warehouse:id}/stock-deliveries/{stockDelivery:id}')->name('warehouses.stock_deliveries.')->withoutScopedBindings()->group(function () {
+            Route::get('/', ShowMobileStockDelivery::class)->name('show');
+            Route::post('/receive', ReceiveMobileStockDelivery::class)->name('receive');
+            Route::post('/unreceive', UnreceiveMobileStockDelivery::class)->name('unreceive');
+            Route::post('/check-all', CheckAllMobileStockDeliveryItems::class)->name('check_all');
+            Route::post('/checklist', RecordMobileStockDeliveryGoodsInCheck::class)->name('checklist');
+            Route::post('/items/{stockDeliveryItem:id}/check', CheckMobileStockDeliveryItem::class)->name('items.check');
+            Route::post('/items/{stockDeliveryItem:id}/place', PlaceMobileStockDeliveryItem::class)->name('items.place');
+            Route::post('/items/{stockDeliveryItem:id}/place-all', PlaceAllMobileStockDeliveryItem::class)->name('items.place_all');
+        });
+        Route::get('/warehouses/{warehouse:id}/returns', IndexMobileReturns::class)->name('warehouses.returns');
+        Route::prefix('warehouses/{warehouse:id}/returns/{returnDeliveryNote:id}')->name('warehouses.returns.')->withoutScopedBindings()->group(function () {
+            Route::get('/', ShowMobileReturn::class)->name('show');
+            Route::post('/start', StartMobileReturn::class)->name('start');
+            Route::post('/items/{returnDeliveryNoteItem:id}/returned', ReturnMobileReturnItem::class)->name('items.returned');
+            Route::post('/items/{returnDeliveryNoteItem:id}/damaged', DamageMobileReturnItem::class)->name('items.damaged');
+            Route::post('/items/{returnDeliveryNoteItem:id}/not-returned', NotReturnMobileReturnItem::class)->name('items.not_returned');
+            Route::delete('/puts/{sowing:id}', DeleteMobileReturnPut::class)->name('puts.delete');
+            Route::post('/set-as-returned', SetMobileReturnAsReturned::class)->name('set_as_returned');
+        });
 
         Route::get('/warehouses/{warehouse:id}/delivery-notes', GetMobileDeliveryNotes::class)->name('warehouses.delivery_notes');
         Route::get('/warehouses/{warehouse:id}/delivery-notes/counts', GetMobileDeliveryNoteCounts::class)->name('warehouses.delivery_notes.counts');

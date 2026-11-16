@@ -11,7 +11,9 @@ namespace App\Actions\Api\Group\GoodsOut;
 
 use App\Actions\Api\Group\GetMobileWarehouses;
 use App\Actions\Inventory\OrgStock\Json\ScanSkoBarcode;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
@@ -28,7 +30,7 @@ class GetMobileScan
     use WithMobileDeliveryNotes;
 
     /**
-     * @return array{code: string, type: string, sko: array<string, mixed>|null, location: array<string, mixed>|null, delivery_note: array<string, mixed>|null}
+     * @return array{code: string, type: string, sko: array<string, mixed>|null, location: array<string, mixed>|null, delivery_note: array<string, mixed>|null, stock_delivery: array<string, mixed>|null}
      */
     public function handle(Warehouse $warehouse, User $user, string $code): array
     {
@@ -40,6 +42,7 @@ class GetMobileScan
             'sko'           => null,
             'location'      => null,
             'delivery_note' => null,
+            'stock_delivery' => null,
         ];
 
         if ($can['view_inventory'] && $orgStock = ScanSkoBarcode::make()->handle($warehouse->organisation, $code)) {
@@ -52,6 +55,15 @@ class GetMobileScan
 
         if ($can['view_goods_out'] && $deliveryNote = $this->scannedDeliveryNote($warehouse, $user, $code)) {
             return array_merge($result, ['type' => 'delivery_note', 'delivery_note' => $this->deliveryNoteRow($deliveryNote)]);
+        }
+
+        if ($can['view_goods_in'] && $stockDelivery = $this->scannedStockDelivery($warehouse, $code)) {
+            return array_merge($result, ['type' => 'stock_delivery', 'stock_delivery' => [
+                'id'          => $stockDelivery->id,
+                'reference'   => $stockDelivery->reference,
+                'state'       => $stockDelivery->state->value,
+                'state_label' => StockDeliveryStateEnum::labels()[$stockDelivery->state->value],
+            ]]);
         }
 
         return $result;
@@ -125,12 +137,22 @@ class GetMobileScan
         return $deliveryNote;
     }
 
+    private function scannedStockDelivery(Warehouse $warehouse, string $code): ?StockDelivery
+    {
+        $scanned = fn (string $column) => StockDelivery::where('organisation_id', $warehouse->organisation_id)
+            ->whereRaw("lower($column) = lower(?)", [$code])
+            ->orderByDesc('id')
+            ->first();
+
+        return $scanned('reference') ?? $scanned('agent_reference');
+    }
+
     public function asController(Warehouse $warehouse, ActionRequest $request): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
         $can  = app(GetMobileWarehouses::class)->abilities($user, $warehouse);
-        abort_unless($warehouse->group_id === $user->group_id && ($can['view_goods_out'] || $can['view_inventory'] || $can['view_locations']), 403);
+        abort_unless($warehouse->group_id === $user->group_id && ($can['view_goods_out'] || $can['view_inventory'] || $can['view_locations'] || $can['view_goods_in'] || $can['view_returns']), 403);
 
         $validated = Validator::make($request->query(), [
             'code' => ['required', 'string', 'max:255'],

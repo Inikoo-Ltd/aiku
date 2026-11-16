@@ -1,9 +1,11 @@
 package io.aiku.droid.ui.goodsout.extra
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +34,7 @@ import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.CardShape
+import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.RequireAbility
@@ -43,7 +47,9 @@ import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.goodsout.pluralQuantity
 import io.aiku.droid.ui.goodsout.quantityText
 import io.aiku.droid.ui.navigation.DeliveryNotesRoute
+import io.aiku.droid.ui.navigation.GoodsInReturnRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
+import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.theme.LocalAikuColors
@@ -67,6 +73,7 @@ fun DeliveryNoteCancelledScreen(note: DeliveryNoteViewModel, reference: String) 
 @Composable
 private fun CancelledContent(reference: String, note: DeliveryNote?, problem: GoodsOutProblem?, onRetry: () -> Unit) {
     val navigator = LocalAppNavigator.current
+    val canViewReturns = LocalWarehouse.current.can.viewReturns
 
     AppScreen(
         header = { AppHeader(title = reference, kicker = stringResource(R.string.goodsout_extra_cancelled_kicker)) },
@@ -104,6 +111,9 @@ private fun CancelledContent(reference: String, note: DeliveryNote?, problem: Go
             returnNote = note.returnDeliveryNote?.let { returned ->
                 stringResource(R.string.goodsout_extra_cancelled_return, listOf(returned.reference, returned.stateLabel).filter { it.isNotBlank() }.joinToString(KICKER_SEPARATOR))
             },
+            onOpenReturn = note.returnDeliveryNote?.takeIf { canViewReturns }?.let { returned ->
+                { navigator.open(GoodsInReturnRoute(id = returned.id, reference = returned.reference)) }
+            },
         )
         if (picked.isNotEmpty()) {
             ListGroup {
@@ -128,7 +138,7 @@ private fun CancelledContent(reference: String, note: DeliveryNote?, problem: Go
 }
 
 @Composable
-private fun CancelledAlert(body: String, returnNote: String?) {
+private fun CancelledAlert(body: String, returnNote: String?, onOpenReturn: (() -> Unit)?) {
     val colors = LocalAikuColors.current
 
     Column(
@@ -150,7 +160,23 @@ private fun CancelledAlert(body: String, returnNote: String?) {
         )
         Text(text = body, fontSize = 14.sp, lineHeight = 20.sp, color = colors.textSecondary, textAlign = TextAlign.Center)
         if (returnNote != null) {
-            Text(text = returnNote, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, lineHeight = 20.sp, color = colors.text, textAlign = TextAlign.Center)
+            Text(
+                text = returnNote,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 20.sp,
+                color = if (onOpenReturn != null) colors.link else colors.text,
+                textAlign = TextAlign.Center,
+                modifier = if (onOpenReturn != null) {
+                    Modifier
+                        .heightIn(min = 44.dp)
+                        .clip(ControlShape)
+                        .clickable(role = Role.Button, onClick = onOpenReturn)
+                        .padding(horizontal = 12.dp, vertical = 12.dp)
+                } else {
+                    Modifier
+                },
+            )
         }
     }
 }

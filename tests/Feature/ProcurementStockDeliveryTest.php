@@ -102,6 +102,8 @@ use App\Models\Helpers\CurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\FetchCurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\WarmCurrencyExchanges;
+use App\Enums\Inventory\Location\LocationStatusEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Support\Facades\Cache;
@@ -2259,6 +2261,51 @@ test('stock delivery item that did not arrive is checked as zero SKOs', function
     $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['sko_quantity_checked' => 0]);
 
     expect($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::NOT_RECEIVED);
+});
+
+test('stock delivery items are placed only in a working location that holds stock, in a warehouse the user books in, and a new location link records who made it', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-GUARDS', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+
+    $warehouse      = Warehouse::where('organisation_id', $this->organisation->id)->oldest('id')->first() ?? StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+    $otherWarehouse = StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+    $broken         = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $noStock        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $working        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $elsewhere      = StoreLocation::make()->action($otherWarehouse, Location::factory()->definition());
+    $broken->update(['status' => LocationStatusEnum::BROKEN]);
+    $noStock->update(['allow_stocks' => false]);
+
+    foreach ([$broken, $noStock] as $location) {
+        expect(fn () => UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem->refresh(), ['quantity' => 1, 'location_id' => $location->id]))->toThrow(ValidationException::class);
+    }
+    expect(fn () => SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem->refresh(), ['location_id' => $broken->id]))->toThrow(ValidationException::class)
+        ->and(LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)->whereIn('location_id', [$broken->id, $noStock->id])->exists())->toBeFalse();
+
+    $clerk = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $clerk->stats()->create();
+    allowGoodsInOn($warehouse, $clerk);
+
+    expect(UpsertStockDeliveryItemPlaced::locationRefusal($stockDeliveryItem, null, $elsewhere->id, $clerk->refresh()))->toBe(['location_id', __('You can not book in stock in the warehouse of that location.')])
+        ->and(UpsertStockDeliveryItemPlaced::locationRefusal($stockDeliveryItem, null, $working->id, $clerk))->toBeNull();
+
+    $user = $this->adminGuest->getUser();
+    allowGoodsInOn($warehouse, $user);
+    actingAs($user->refresh());
+
+    $this->patchJson(route('grp.models.stock-delivery-item.place', $stockDeliveryItem->id), ['quantity' => 2, 'location_id' => $working->id])->assertOk();
+
+    $associate = DB::table('org_stock_movements')
+        ->where('org_stock_id', $stockDeliveryItem->org_stock_id)
+        ->where('location_id', $working->id)
+        ->where('type', OrgStockMovementTypeEnum::ASSOCIATE->value)
+        ->first();
+
+    expect($associate)->not->toBeNull()
+        ->and($associate->user_id)->toBe($user->id)
+        ->and((float) $stockDeliveryItem->refresh()->unit_quantity_placed)->toBeGreaterThan(0.0);
 });
 
 test('stock delivery item can not be placed without a location', function () {

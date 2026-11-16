@@ -344,14 +344,19 @@ class IndexStockDeliveries extends OrgAction
         return $query;
     }
 
+    public static function whereGlobalSearch($query, mixed $value): void
+    {
+        $query->where(function ($query) use ($value) {
+            $query->whereAnyWordStartWith('stock_deliveries.reference', $value)
+                ->orWhereAnyWordStartWith('stock_deliveries.agent_reference', $value)
+                ->orWhereAnyWordStartWith('stock_deliveries.parent_name', $value);
+        });
+    }
+
     public function handle($prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('stock_deliveries.reference', $value)
-                    ->orWhereAnyWordStartWith('stock_deliveries.agent_reference', $value)
-                    ->orWhereAnyWordStartWith('stock_deliveries.parent_name', $value);
-            });
+            self::whereGlobalSearch($query, $value);
         });
 
         if ($prefix) {

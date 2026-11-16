@@ -5,6 +5,7 @@ import io.aiku.droid.data.api.ScanLookup
 import io.aiku.droid.data.api.ScanMatch
 import io.aiku.droid.data.api.ScannedLocation
 import io.aiku.droid.data.api.ScannedSko
+import io.aiku.droid.data.api.ScannedStockDelivery
 import io.aiku.droid.ui.navigation.DeliveryNoteCancelledRoute
 import io.aiku.droid.ui.navigation.DeliveryNoteDispatchedRoute
 import io.aiku.droid.ui.navigation.DeliveryNotePackingRoute
@@ -13,6 +14,7 @@ import io.aiku.droid.ui.navigation.DeliveryNoteToDoRoute
 import io.aiku.droid.ui.navigation.LocationRoute
 import io.aiku.droid.ui.navigation.ScanResultRoute
 import io.aiku.droid.ui.navigation.SkuRoute
+import io.aiku.droid.ui.navigation.StockDeliveryRoute
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -24,11 +26,13 @@ class ScanDestinationTest {
         val location = ScanLookup(code = "a-01-03", type = ScanMatch.LOCATION, location = ScannedLocation(id = 220, code = "A-01-03"))
         val note = ScanLookup(code = "AR24811", type = ScanMatch.DELIVERY_NOTE, deliveryNote = DeliveryNoteRow(id = 9912, reference = "AR24811", state = "handling_blocked"))
         val unknown = ScanLookup(code = "", type = ScanMatch.UNKNOWN)
+        val delivery = ScanLookup(code = "SD-41", type = ScanMatch.STOCK_DELIVERY, stockDelivery = ScannedStockDelivery(id = 41, reference = "SD-41"))
 
         assertEquals(SkuRoute(id = 812, code = "AWO-12"), sko.destination("5060").route())
         assertEquals(LocationRoute(id = 220, code = "A-01-03"), location.destination("a-01-03").route())
         assertEquals(DeliveryNotePickingRoute(id = 9912, reference = "AR24811"), note.destination("AR24811").route())
         assertEquals(ScanResultRoute(code = "999"), unknown.destination("999").route())
+        assertEquals(StockDeliveryRoute(id = 41, reference = "SD-41"), delivery.destination("SD-41").route())
         assertEquals(ScanDestination.Unknown("5060"), ScanLookup(code = "5060", type = ScanMatch.SKO).destination("5060"))
     }
 

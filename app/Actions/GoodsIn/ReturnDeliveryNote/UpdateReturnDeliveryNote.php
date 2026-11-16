@@ -60,6 +60,12 @@ class UpdateReturnDeliveryNote extends OrgAction
 
     public function rules(): array
     {
+        if (!$this->asAction) {
+            return [
+                'handler_user_id' => ['bail', 'required', 'integer', 'min:1', 'max:32767', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)->where('status', true)],
+            ];
+        }
+
         return [
             'handler_user_id' => ['sometimes', 'nullable'],
             'reference'       => ['sometimes', 'string'],

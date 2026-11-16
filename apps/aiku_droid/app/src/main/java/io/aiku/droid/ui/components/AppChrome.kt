@@ -69,7 +69,7 @@ import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocalWarehouses
 import io.aiku.droid.ui.navigation.MainTab
-import io.aiku.droid.ui.navigation.ScanCameraRoute
+import io.aiku.droid.ui.navigation.ScanRoute
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
 
@@ -421,7 +421,7 @@ fun SearchScanField(
                     .size(36.dp)
                     .clip(ControlShape)
                     .background(colors.scan)
-                    .clickable(role = Role.Button, onClickLabel = scanDescription, onClick = onScan ?: { navigator.open(ScanCameraRoute) })
+                    .clickable(role = Role.Button, onClickLabel = scanDescription, onClick = onScan ?: { navigator.open(ScanRoute) })
                     .semantics { contentDescription = scanDescription },
             ) {
                 Icon(painter = painterResource(R.drawable.ic_ui_scan), contentDescription = null, tint = colors.onScan, modifier = Modifier.size(18.dp))

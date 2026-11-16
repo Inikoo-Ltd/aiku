@@ -13,9 +13,11 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -51,6 +53,36 @@ class UpsertStockDeliveryItemPlaced extends OrgAction
         if ($this->exceedsRemaining((float) $this->get('quantity'), $remaining)) {
             $validator->errors()->add('quantity', __('You can not place more than the checked quantity (:remaining remaining)', ['remaining' => round($remaining, 4)]));
         }
+
+        $refusal = self::locationRefusal($this->stockDeliveryItem, $this->get('location_org_stock_id'), $this->get('location_id'), $this->asAction ? null : request()->user());
+        if ($refusal) {
+            $validator->errors()->add($refusal[0], $refusal[1]);
+        }
+    }
+
+    /**
+     * @return array{0: string, 1: string}|null
+     */
+    public static function locationRefusal(StockDeliveryItem $stockDeliveryItem, mixed $locationOrgStockId, mixed $locationId, ?User $user): ?array
+    {
+        $key      = $locationOrgStockId ? 'location_org_stock_id' : 'location_id';
+        $location = $locationOrgStockId
+            ? Location::withTrashed()->find(LocationOrgStock::whereKey($locationOrgStockId)->value('location_id'))
+            : Location::withTrashed()->find($locationId);
+
+        if (!$location) {
+            return null;
+        }
+
+        if ($location->organisation_id !== $stockDeliveryItem->organisation_id || $location->trashed() || $location->status !== LocationStatusEnum::OPERATIONAL || !$location->allow_stocks) {
+            return [$key, __('Place stock only in a working location that holds stock.')];
+        }
+
+        if ($user && !$user->authTo(["procurement.$stockDeliveryItem->organisation_id.edit", "incoming.$location->warehouse_id.edit"])) {
+            return [$key, __('You can not book in stock in the warehouse of that location.')];
+        }
+
+        return null;
     }
 
     private function remainingSkos(StockDeliveryItem $stockDeliveryItem): float
@@ -81,7 +113,7 @@ class UpsertStockDeliveryItemPlaced extends OrgAction
 
             $locationId = Arr::pull($modelData, 'location_id');
             if ($locationId && !Arr::get($modelData, 'location_org_stock_id')) {
-                data_set($modelData, 'location_org_stock_id', $this->findOrAssociateLocation($stockDeliveryItem, $locationId)->id);
+                data_set($modelData, 'location_org_stock_id', $this->findOrAssociateLocation($stockDeliveryItem, $locationId, $user)->id);
             }
 
             if ($setAsPickingLocation) {
@@ -111,10 +143,10 @@ class UpsertStockDeliveryItemPlaced extends OrgAction
         return $stockDeliveryItem;
     }
 
-    private function findOrAssociateLocation(StockDeliveryItem $stockDeliveryItem, int $locationId): LocationOrgStock
+    private function findOrAssociateLocation(StockDeliveryItem $stockDeliveryItem, int $locationId, ?User $user): LocationOrgStock
     {
         return LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)->where('location_id', $locationId)->first()
-            ?? StoreLocationOrgStock::make()->action($stockDeliveryItem->orgStock, Location::findOrFail($locationId), []);
+            ?? StoreLocationOrgStock::make()->action($stockDeliveryItem->orgStock, Location::findOrFail($locationId), [], user: $user);
     }
 
     public function asController(StockDeliveryItem $stockDeliveryItem, ActionRequest $request): StockDeliveryItem

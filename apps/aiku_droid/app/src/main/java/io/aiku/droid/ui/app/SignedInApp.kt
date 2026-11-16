@@ -37,7 +37,10 @@ import io.aiku.droid.data.api.DeliveryNoteBucket
 import io.aiku.droid.data.api.DispatchChannel
 import io.aiku.droid.data.api.LocationTab
 import io.aiku.droid.data.api.PickedBay
+import io.aiku.droid.data.api.ReturnStateFilter
 import io.aiku.droid.data.api.SkoBucket
+import io.aiku.droid.data.api.StockDeliverySource
+import io.aiku.droid.data.api.StockDeliveryStateFilter
 import io.aiku.droid.data.api.Trolley
 import io.aiku.droid.data.api.WarehouseAccess
 import io.aiku.droid.data.session.StaffSession
@@ -86,18 +89,19 @@ import io.aiku.droid.ui.fulfilment.ReturnShipmentScreen
 import io.aiku.droid.ui.fulfilment.StoredItemAuditScreen
 import io.aiku.droid.ui.fulfilment.StoredItemsScreen
 import io.aiku.droid.ui.fulfilment.StoredPalletsScreen
-import io.aiku.droid.ui.goodsin.BookedInScreen
-import io.aiku.droid.ui.goodsin.BookingInScreen
 import io.aiku.droid.ui.goodsin.GoodsInBacklogScreen
+import io.aiku.droid.ui.goodsin.GoodsInBacklogViewModel
 import io.aiku.droid.ui.goodsin.GoodsInReturnScreen
 import io.aiku.droid.ui.goodsin.GoodsInReturnsScreen
-import io.aiku.droid.ui.goodsin.PlaceItemNoPickingLocationScreen
 import io.aiku.droid.ui.goodsin.PlaceItemScreen
+import io.aiku.droid.ui.goodsin.ReturnViewModel
+import io.aiku.droid.ui.goodsin.ReturnsViewModel
 import io.aiku.droid.ui.goodsin.ScanCameraScreen
 import io.aiku.droid.ui.goodsin.StockDeliveriesScreen
-import io.aiku.droid.ui.goodsin.StockDeliveryArrivingScreen
-import io.aiku.droid.ui.goodsin.StockDeliveryCheckingScreen
-import io.aiku.droid.ui.goodsin.StockDeliveryChecklistScreen
+import io.aiku.droid.ui.goodsin.StockDeliveriesViewModel
+import io.aiku.droid.ui.goodsin.StockDeliveryFilter
+import io.aiku.droid.ui.goodsin.StockDeliveryScreen
+import io.aiku.droid.ui.goodsin.StockDeliveryViewModel
 import io.aiku.droid.ui.goodsout.AddShipmentScreen
 import io.aiku.droid.ui.goodsout.DeliveryNoteDispatchedScreen
 import io.aiku.droid.ui.goodsout.DeliveryNoteFilter
@@ -162,8 +166,6 @@ import io.aiku.droid.ui.navigation.AppearanceRoute
 import io.aiku.droid.ui.navigation.AreaRoute
 import io.aiku.droid.ui.navigation.AreasRoute
 import io.aiku.droid.ui.navigation.AskCrmRoute
-import io.aiku.droid.ui.navigation.BookedInRoute
-import io.aiku.droid.ui.navigation.BookingInRoute
 import io.aiku.droid.ui.navigation.ChangePasswordRoute
 import io.aiku.droid.ui.navigation.ClockScanQrRoute
 import io.aiku.droid.ui.navigation.ClockingAdjustmentsRoute
@@ -217,7 +219,6 @@ import io.aiku.droid.ui.navigation.PickByLocationRoute
 import io.aiku.droid.ui.navigation.PickedBaysRoute
 import io.aiku.droid.ui.navigation.PickingSessionRoute
 import io.aiku.droid.ui.navigation.PickingSessionsRoute
-import io.aiku.droid.ui.navigation.PlaceItemNoPickingLocationRoute
 import io.aiku.droid.ui.navigation.PlaceItemRoute
 import io.aiku.droid.ui.navigation.ProfileRoute
 import io.aiku.droid.ui.navigation.ResolveConflictsRoute
@@ -226,7 +227,6 @@ import io.aiku.droid.ui.navigation.ReturnPickItemsRoute
 import io.aiku.droid.ui.navigation.ReturnPickPalletsRoute
 import io.aiku.droid.ui.navigation.ReturnPickedRoute
 import io.aiku.droid.ui.navigation.ReturnShipmentRoute
-import io.aiku.droid.ui.navigation.ScanCameraRoute
 import io.aiku.droid.ui.navigation.ScanResultRoute
 import io.aiku.droid.ui.navigation.ScanRoute
 import io.aiku.droid.ui.navigation.ScanToPickRoute
@@ -237,9 +237,8 @@ import io.aiku.droid.ui.navigation.SkuRoute
 import io.aiku.droid.ui.navigation.SkusRoute
 import io.aiku.droid.ui.navigation.StatePreviewRoute
 import io.aiku.droid.ui.navigation.StockDeliveriesRoute
-import io.aiku.droid.ui.navigation.StockDeliveryArrivingRoute
-import io.aiku.droid.ui.navigation.StockDeliveryCheckingRoute
-import io.aiku.droid.ui.navigation.StockDeliveryChecklistRoute
+import io.aiku.droid.ui.navigation.StockDeliveryRoute
+import io.aiku.droid.ui.navigation.StockDeliveryScanRoute
 import io.aiku.droid.ui.navigation.StockHistoryRoute
 import io.aiku.droid.ui.navigation.StoredItemAuditRoute
 import io.aiku.droid.ui.navigation.StoredItemsRoute
@@ -570,18 +569,50 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
                 skoCode = route.skoCode,
             )
         }
-        composable<GoodsInBacklogRoute> { GoodsInBacklogScreen() }
-        composable<StockDeliveriesRoute> { StockDeliveriesScreen() }
-        composable<StockDeliveryArrivingRoute> { entry -> entry.toRoute<StockDeliveryArrivingRoute>().let { route -> StockDeliveryArrivingScreen(route.reference) } }
-        composable<StockDeliveryCheckingRoute> { entry -> entry.toRoute<StockDeliveryCheckingRoute>().let { route -> StockDeliveryCheckingScreen(route.reference) } }
-        composable<ScanCameraRoute> { ScanCameraScreen() }
-        composable<StockDeliveryChecklistRoute> { entry -> entry.toRoute<StockDeliveryChecklistRoute>().let { route -> StockDeliveryChecklistScreen(route.reference) } }
-        composable<BookingInRoute> { entry -> entry.toRoute<BookingInRoute>().let { route -> BookingInScreen(route.reference) } }
-        composable<PlaceItemRoute> { entry -> entry.toRoute<PlaceItemRoute>().let { route -> PlaceItemScreen(route.reference, route.skuCode) } }
-        composable<PlaceItemNoPickingLocationRoute> { entry -> entry.toRoute<PlaceItemNoPickingLocationRoute>().let { route -> PlaceItemNoPickingLocationScreen(route.reference, route.skuCode) } }
-        composable<BookedInRoute> { entry -> entry.toRoute<BookedInRoute>().let { route -> BookedInScreen(route.reference) } }
-        composable<GoodsInReturnsRoute> { GoodsInReturnsScreen() }
-        composable<GoodsInReturnRoute> { entry -> entry.toRoute<GoodsInReturnRoute>().let { route -> GoodsInReturnScreen(route.reference) } }
+        composable<GoodsInBacklogRoute> {
+            val backlog: GoodsInBacklogViewModel = viewModel(
+                key = "goods-in-hub-$currentWarehouseId",
+                factory = viewModelFactory { initializer { GoodsInBacklogViewModel(container.goodsInApi, container.sessions, currentWarehouseId) } },
+            )
+            GoodsInBacklogScreen(backlog = backlog)
+        }
+        composable<StockDeliveriesRoute> { entry ->
+            val route = entry.toRoute<StockDeliveriesRoute>()
+            val filter = StockDeliveryFilter(
+                state = StockDeliveryStateFilter.ofKey(route.state) ?: StockDeliveryStateFilter.Active,
+                source = StockDeliverySource.ofKey(route.source),
+            )
+            val deliveries: StockDeliveriesViewModel = viewModel(
+                key = "stock-deliveries-$currentWarehouseId-${route.source}-${route.state}",
+                factory = viewModelFactory { initializer { StockDeliveriesViewModel(container.goodsInApi, container.sessions, currentWarehouseId, initialFilter = filter) } },
+            )
+            StockDeliveriesScreen(deliveries = deliveries)
+        }
+        composable<StockDeliveryRoute> { entry ->
+            entry.toRoute<StockDeliveryRoute>().let { route -> StockDeliveryScreen(rememberStockDelivery(container, currentWarehouseId, route.id), route.reference) }
+        }
+        composable<StockDeliveryScanRoute> { entry ->
+            entry.toRoute<StockDeliveryScanRoute>().let { route -> ScanCameraScreen(rememberStockDelivery(container, currentWarehouseId, route.id), route.reference) }
+        }
+        composable<PlaceItemRoute> { entry ->
+            entry.toRoute<PlaceItemRoute>().let { route -> PlaceItemScreen(rememberStockDelivery(container, currentWarehouseId, route.id), route.itemId, route.skoCode) }
+        }
+        composable<GoodsInReturnsRoute> { entry ->
+            val state = ReturnStateFilter.ofKey(entry.toRoute<GoodsInReturnsRoute>().state) ?: ReturnStateFilter.All
+            val returns: ReturnsViewModel = viewModel(
+                key = "returns-$currentWarehouseId-${state.key}",
+                factory = viewModelFactory { initializer { ReturnsViewModel(container.goodsInApi, container.sessions, currentWarehouseId, initialState = state) } },
+            )
+            GoodsInReturnsScreen(returns = returns)
+        }
+        composable<GoodsInReturnRoute> { entry ->
+            val route = entry.toRoute<GoodsInReturnRoute>()
+            val customerReturn: ReturnViewModel = viewModel(
+                key = "return-$currentWarehouseId-${route.id}",
+                factory = viewModelFactory { initializer { ReturnViewModel(container.goodsInApi, container.sessions, currentWarehouseId, route.id) } },
+            )
+            GoodsInReturnScreen(customerReturn = customerReturn, reference = route.reference)
+        }
         composable<GoodsOutBacklogRoute> {
             val backlog: GoodsOutBacklogViewModel = viewModel(
                 key = "backlog-$currentWarehouseId",
@@ -727,6 +758,16 @@ private fun rememberAreas(container: AppContainer, warehouseId: Long): AreasView
 private fun rememberLocation(container: AppContainer, warehouseId: Long, locationId: Long): LocationViewModel = viewModel(
     key = "location-$warehouseId-$locationId",
     factory = viewModelFactory { initializer { LocationViewModel(container.inventoryApi, container.sessions, warehouseId, locationId) } },
+)
+
+@Composable
+private fun rememberStockDelivery(container: AppContainer, warehouseId: Long, stockDeliveryId: Long): StockDeliveryViewModel = viewModel(
+    key = "stock-delivery-$warehouseId-$stockDeliveryId",
+    factory = viewModelFactory {
+        initializer {
+            StockDeliveryViewModel(container.goodsInApi, container.inventoryApi, container.sessions, warehouseId, stockDeliveryId, container.stockDeliveryHandoff)
+        }
+    },
 )
 
 @Composable
