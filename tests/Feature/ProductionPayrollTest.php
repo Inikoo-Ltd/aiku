@@ -1467,6 +1467,10 @@ describe('production reward pay bands', function () {
 
         actingAs($manager);
         $this->patch(route('grp.models.manufacture-payroll-adjustment.approve', $voided->id))->assertForbidden();
+        $headOfAccounts = $userWith(["org-supervisor.$organisationId", "accounting.$organisationId.view", "accounting.$organisationId.edit"]);
+        $headOfAccounts->assignRole(\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::ACCOUNTING_SUPERVISOR->value, $this->production->organisation));
+        expect(\App\Models\Production\ManufacturePayrollAdjustment::isAccountant($headOfAccounts->refresh(), $this->production))->toBeTrue()
+            ->and(\App\Models\Production\ManufacturePayrollAdjustment::isAccountant($manager, $this->production))->toBeFalse();
         actingAs($accountant);
         $this->patch(route('grp.models.manufacture-payroll-adjustment.approve', $voided->id))->assertSessionHasNoErrors();
         expect($voided->refresh()->approved_by_user_id)->toBe($accountant->id)
@@ -1495,6 +1499,11 @@ describe('production reward pay bands', function () {
             ->and($dayChange->change)->toBe('daily_hours')
             ->and($dayChange->after['resolution_reason'])->toBe('sick')
             ->and((float) $dayChange->amount_delta)->toBe(0.0);
+        \App\Actions\Production\ManufactureArtisanDay\ResolveManufactureArtisanDay::make()->action($day->refresh(), $manager, $answer + ['lock_reason' => 'Saved again']);
+        $sameAnswer = \App\Models\Production\ManufacturePayrollAdjustment::where('model_type', 'ManufactureArtisanDay')->where('model_id', $day->id)->latest('id')->first();
+        expect($sameAnswer->reason)->toBe('Saved again')
+            ->and($sameAnswer->before)->toBe([])
+            ->and($sameAnswer->needs_approval)->toBeFalse();
 
         $hr        = $userWith(["human-resources.$organisationId.edit"]);
         $paidDay   = \App\Models\HumanResources\Timesheet::where('subject_type', 'Employee')->where('subject_id', $employee->id)->whereDate('date', '2026-11-04')->first();

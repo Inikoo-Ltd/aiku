@@ -8,6 +8,7 @@
 
 namespace App\Models\Production;
 
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Model;
@@ -133,9 +134,20 @@ class ManufacturePayrollAdjustment extends Model implements Auditable
         return $user->authTo("accounting.$production->organisation_id.edit");
     }
 
+    /**
+     * Whoever holds an accounting position, even when also an organisation admin (the head of accounts), or else accounting
+     * edit without being the production manager.
+     */
     public static function isAccountant(User $user, Production $production): bool
     {
-        return self::canChangeLockedWeek($user, $production) && !$user->authTo('org-supervisor.'.$production->organisation_id);
+        if (!self::canChangeLockedWeek($user, $production)) {
+            return false;
+        }
+
+        return $user->hasRole([
+            RolesEnum::getRoleName(RolesEnum::ACCOUNTING_CLERK->value, $production->organisation),
+            RolesEnum::getRoleName(RolesEnum::ACCOUNTING_SUPERVISOR->value, $production->organisation),
+        ]) || !$user->authTo('org-supervisor.'.$production->organisation_id);
     }
 
     /**

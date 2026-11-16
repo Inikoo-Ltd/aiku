@@ -77,6 +77,10 @@ trait WithManufacturePayrollLock
         $now   = Arr::only($model->fresh()?->attributesToArray() ?? [], $fields);
         $diff  = array_values(array_filter($fields, fn (string $field) => ($was[$field] ?? null) != ($now[$field] ?? null)));
 
+        $hoursDelta  = round($after['working_hours'] - $before['working_hours'], 2);
+        $amountDelta = round($after['total'] - $before['total'], 2);
+        $changesNothing = !$diff && $hoursDelta == 0 && $amountDelta == 0;
+
         $adjustment = ManufacturePayrollAdjustment::create([
             'group_id'           => $production->group_id,
             'organisation_id'    => $production->organisation_id,
@@ -89,10 +93,10 @@ trait WithManufacturePayrollLock
             'before'             => Arr::only($was, $diff),
             'after'              => Arr::only($now, $diff),
             'reason'             => trim($lockReason),
-            'hours_delta'        => round($after['working_hours'] - $before['working_hours'], 2),
-            'amount_delta'       => round($after['total'] - $before['total'], 2),
+            'hours_delta'        => $hoursDelta,
+            'amount_delta'       => $amountDelta,
             'changed_by_user_id' => $this->payrollEditor->id,
-            'needs_approval'     => !ManufacturePayrollAdjustment::isAccountant($this->payrollEditor, $production),
+            'needs_approval'     => !$changesNothing && !ManufacturePayrollAdjustment::isAccountant($this->payrollEditor, $production),
         ]);
 
         if ($adjustment->needs_approval) {
