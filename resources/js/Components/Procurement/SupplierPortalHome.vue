@@ -130,7 +130,7 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 
 			<div class="relative flex flex-col gap-6 p-5 sm:p-7 md:flex-row md:items-center md:justify-between">
 				<div class="flex min-w-0 items-center gap-4">
-					<div class="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl text-lg font-bold" :style="{ backgroundColor: theme.badge }">
+					<div class="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl text-lg font-bold" :style="{ backgroundColor: theme.badge }">
 						<Image v-if="logo" :src="logo" class="absolute inset-0 h-full w-full object-cover" :alt="supplier.name" />
 						<template v-else>{{ initials(supplier.name) }}</template>
 					</div>

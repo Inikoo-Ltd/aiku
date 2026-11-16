@@ -103,7 +103,7 @@ const openCompanyDetails = () => {
 			:aria-label="ctrans('Your profile')"
 			@click="isOpen = true">
 			<span class="hidden max-w-[10rem] truncate font-medium sm:inline">{{ profile.display_name }}</span>
-			<span class="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold text-white" :style="{ backgroundColor: themeColour }">
+			<span class="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold text-white" :style="{ backgroundColor: themeColour }">
 				<span>{{ initials || "?" }}</span>
 				<Image v-if="picture" :src="picture" class="absolute inset-0 h-full w-full object-cover" :alt="profile.display_name" />
 			</span>
@@ -113,7 +113,7 @@ const openCompanyDetails = () => {
 			<div class="space-y-5 text-sm text-gray-700">
 				<p v-if="errors.preview" class="rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700">{{ errors.preview }}</p>
 				<div class="flex items-center gap-4">
-					<span class="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full text-lg font-semibold text-white" :style="{ backgroundColor: themeColour }">
+					<span class="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full text-2xl font-semibold text-white" :style="{ backgroundColor: themeColour }">
 						<span>{{ initials || "?" }}</span>
 						<Image v-if="picture" :src="picture" class="absolute inset-0 h-full w-full object-cover" :alt="profile.display_name" />
 					</span>
