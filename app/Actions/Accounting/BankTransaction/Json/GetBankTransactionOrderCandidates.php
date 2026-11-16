@@ -23,7 +23,8 @@ use Lorisleiva\Actions\ActionRequest;
  * currency, submitted or later and not cancelled, that still owe money, found by order number or customer name.
  * Searching by the payer looks for the first word of its name without the legal form ("Mahoni" for "Mahoni Health
  * GmbH"). Orders owing this amount within the bank fee come first, then those submitted nearest the day it arrived.
- * Only suggestions: paying still goes through the same checks.
+ * Only suggestions: paying still goes through the same checks. With paid, orders that already carry a payment instead,
+ * for marking a line already paid.
  */
 class GetBankTransactionOrderCandidates extends OrgAction
 {
@@ -32,7 +33,7 @@ class GetBankTransactionOrderCandidates extends OrgAction
     /**
      * @return list<array{id: int, reference: string, customer: string|null, shop: string|null, owed: float, total: float, currency_code: string, date: string|null, amount_matches: bool}>
      */
-    public function handle(BankTransaction $bankTransaction, string $search, bool $byPayer = false): array
+    public function handle(BankTransaction $bankTransaction, string $search, bool $byPayer = false, bool $paid = false): array
     {
         $matcher = MatchBankTransactions::make();
         $search  = $byPayer ? ($matcher->nameWords($bankTransaction->counterparty_name)[0] ?? '') : trim($search);
@@ -47,7 +48,11 @@ class GetBankTransactionOrderCandidates extends OrgAction
             ->where('orders.organisation_id', $bankTransaction->organisation_id)
             ->where('orders.currency_id', $bankTransaction->currency_id)
             ->whereNotIn('orders.state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING])
-            ->whereRaw('orders.total_amount - orders.payment_amount > 0.01')
+            ->when(
+                $paid,
+                fn (Builder $query) => $query->where('orders.payment_amount', '>', 0),
+                fn (Builder $query) => $query->whereRaw('orders.total_amount - orders.payment_amount > 0.01')
+            )
             ->join('customers', 'customers.id', 'orders.customer_id')
             ->join('shops', 'shops.id', 'orders.shop_id')
             ->join('currencies', 'currencies.id', 'orders.currency_id')
@@ -68,7 +73,7 @@ class GetBankTransactionOrderCandidates extends OrgAction
                 'shops.code as shop_code',
                 'currencies.code as currency_code',
             ])
-            ->map(function (Order $order) use ($received, $tolerance, $bookedAt) {
+            ->map(function (Order $order) use ($received, $tolerance, $bookedAt, $paid) {
                 $owed = round((float)$order->total_amount - (float)$order->payment_amount, 2);
 
                 return [
@@ -77,10 +82,11 @@ class GetBankTransactionOrderCandidates extends OrgAction
                     'customer'       => $order->customer_name,
                     'shop'           => $order->shop_code,
                     'owed'           => $owed,
+                    'paid'           => (float)$order->payment_amount,
                     'total'          => (float)$order->total_amount,
                     'currency_code'  => $order->currency_code,
                     'date'           => $order->date?->toDateString(),
-                    'amount_matches' => abs($owed - $received) <= $tolerance,
+                    'amount_matches' => abs(($paid ? (float)$order->payment_amount : $owed) - $received) <= $tolerance,
                     'days_away'      => abs($bookedAt->diffInDays($order->submitted_at ?? $order->date ?? $bookedAt)),
                 ];
             })
@@ -99,6 +105,6 @@ class GetBankTransactionOrderCandidates extends OrgAction
         $this->initialisation($organisation, $request);
         abort_unless($bankTransaction->organisation_id === $organisation->id, 404);
 
-        return $this->handle($bankTransaction, (string)$request->query('search', ''), $request->boolean('payer'));
+        return $this->handle($bankTransaction, (string)$request->query('search', ''), $request->boolean('payer'), $request->boolean('paid'));
     }
 }

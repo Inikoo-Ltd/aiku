@@ -2902,9 +2902,9 @@ test('a line naming no order suggests orders of a customer named like the payer,
     $paymentsBefore = \App\Models\Accounting\Payment::count();
     expect(fn () => \App\Actions\Accounting\BankTransaction\PayBankTransactionToOrder::make()->handle($otherPayer, ['order_id' => $owing->id, 'from_suggestion' => true]))
         ->toThrow(\Illuminate\Validation\ValidationException::class);
-    expect(fn () => \App\Actions\Accounting\BankTransaction\DismissBankTransaction::make()->handle($pays, ['note' => 'Already recorded on the order by hand', 'already_paid' => true, 'order_id' => $owing->id]))
+    expect(fn () => \App\Actions\Accounting\BankTransaction\DismissBankTransaction::make()->handle($pays, ['note' => 'Already recorded on the order by hand', 'already_paid' => true, 'order_id' => $owing->id, 'from_suggestion' => true]))
         ->toThrow(\Illuminate\Validation\ValidationException::class);
-    \App\Actions\Accounting\BankTransaction\DismissBankTransaction::make()->handle($alreadyPaid, ['note' => 'Already recorded on the order by hand', 'already_paid' => true, 'order_id' => $paidByHand->id]);
+    \App\Actions\Accounting\BankTransaction\DismissBankTransaction::make()->handle($alreadyPaid, ['note' => 'Already recorded on the order by hand', 'already_paid' => true, 'order_id' => $paidByHand->id, 'from_suggestion' => true]);
 
     $secondTransfer = $line('s8', 2454, $name.' Health GmbH');
     $namingIt       = $line('s13', 2454, $name.' Health GmbH');
@@ -2923,6 +2923,20 @@ test('a line naming no order suggests orders of a customer named like the payer,
     \App\Actions\Accounting\BankTransaction\RestoreBankTransaction::make()->handle($alreadyPaid);
     expect($alreadyPaid->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
         ->and($alreadyPaid->order_id)->toBeNull();
+    $paidCandidates = \App\Actions\Accounting\BankTransaction\Json\GetBankTransactionOrderCandidates::make()->handle($alreadyPaid, $name, paid: true);
+    expect(collect($paidCandidates)->pluck('id'))->toContain($paidByHand->id)->not->toContain($owing->id)
+        ->and(collect($paidCandidates)->firstWhere('id', $paidByHand->id))->toMatchArray(['paid' => 2454.0, 'amount_matches' => true]);
+
+    $handPick = fn (BankTransaction $bankTransaction, int $orderId) => \App\Actions\Accounting\BankTransaction\DismissBankTransaction::make()->handle($bankTransaction, ['note' => 'Already recorded on the order by hand', 'already_paid' => true, 'order_id' => $orderId]);
+    expect(fn () => $handPick($otherPayer->refresh(), $owing->id))->toThrow(\Illuminate\Validation\ValidationException::class);
+    $handPick($alreadyPaid, $paidByHand->id);
+    expect($alreadyPaid->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($alreadyPaid->order_id)->toBe($paidByHand->id)
+        ->and(fn () => $handPick($secondTransfer->refresh(), $paidByHand->id))->toThrow(\Illuminate\Validation\ValidationException::class, 'Another bank payment of this amount');
+
+    \App\Actions\Accounting\BankTransaction\RestoreBankTransaction::make()->handle($alreadyPaid);
+    $alreadyPaid->refresh()->update(['match_state' => BankTransactionMatchStateEnum::ALREADY_PAID, 'match_data' => ['order_ids' => [$paidByHand->id]]]);
+    expect(fn () => $handPick($secondTransfer->refresh(), $paidByHand->id))->toThrow(\Illuminate\Validation\ValidationException::class, 'Another bank payment of this amount');
 });
 
 test('an orderchamp payout is linked only to the one hand-paid order of its country and amount, everything else stays for staff', function () {

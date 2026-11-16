@@ -81,6 +81,7 @@ interface OrderCandidate {
 	customer: string | null
 	shop: string | null
 	owed: number
+	paid: number
 	total: number
 	currency_code: string
 	date: string | null
@@ -145,7 +146,7 @@ const confirmSuggestion = (line: BankLine, order: SuggestedOrder) => {
 	const [url, payload] =
 		order.kind === "pay"
 			? [route("grp.models.org.bank_transaction.pay_order", [props.organisationId, line.id]), { order_id: order.id, order_reference: order.reference, absorb_bank_fee: false, from_suggestion: true }]
-			: [route("grp.models.org.bank_transaction.dismiss", [props.organisationId, line.id]), { note: ALREADY_PAID_NOTE, already_paid: true, order_id: order.id }]
+			: [route("grp.models.org.bank_transaction.dismiss", [props.organisationId, line.id]), { note: ALREADY_PAID_NOTE, already_paid: true, order_id: order.id, from_suggestion: true }]
 	router.post(url, payload, {
 		preserveScroll: true,
 		onError: (errors: Record<string, string>) => (rowError.value = { id: line.id, message: Object.values(errors ?? {})[0] ?? ctrans("Something went wrong") }),
@@ -160,7 +161,7 @@ const restore = (line: BankLine) => {
 }
 
 const selected = ref<BankLine | null>(null)
-const action = ref<"pay" | "credit" | "dismiss" | null>(null)
+const action = ref<"pay" | "already_paid" | "credit" | "dismiss" | null>(null)
 const customerPick = ref<CustomerCandidate | string>("")
 const customerSuggestions = ref<CustomerCandidate[]>([])
 const payerCustomers = ref<CustomerCandidate[] | null>(null)
@@ -184,7 +185,9 @@ const visible = computed({
 const header = computed(() =>
 	action.value === "pay"
 		? ctrans("Record this bank payment on an order")
-		: action.value === "credit"
+		: action.value === "already_paid"
+			? ctrans("Which order already has this payment?")
+			: action.value === "credit"
 			? ctrans("Add this bank payment to a customer credit")
 			: ctrans("This bank payment does not pay an order")
 )
@@ -194,7 +197,7 @@ const pickedReference = computed(() => (typeof orderPick.value === "string" ? or
 const pickedCustomer = computed(() => (typeof customerPick.value === "string" ? null : customerPick.value))
 
 const canSubmit = computed(() =>
-	action.value === "pay" ? pickedReference.value !== "" : action.value === "credit" ? pickedCustomer.value !== null : note.value.trim() !== ""
+	action.value === "pay" ? pickedReference.value !== "" : action.value === "already_paid" ? typeof orderPick.value !== "string" : action.value === "credit" ? pickedCustomer.value !== null : note.value.trim() !== ""
 )
 
 const findCustomers = async (search: string): Promise<CustomerCandidate[]> => {
@@ -217,11 +220,18 @@ const loadPayerCustomers = async (line: BankLine) => {
 	}
 }
 
+const orderAmountLabel = (order: OrderCandidate) =>
+	action.value === "already_paid"
+		? ctrans("paid :amount", { amount: locale.currencyFormat(order.currency_code, order.paid) })
+		: ctrans("owes :amount", { amount: locale.currencyFormat(order.currency_code, order.owed) })
+
 const findOrders = async (search: string, payer = false): Promise<OrderCandidate[]> => {
 	if (!selected.value) {
 		return []
 	}
-	const response = await axios.get(route("grp.json.bank_transaction.order_candidates", [props.organisationId, selected.value.id]), { params: { search, payer: payer ? 1 : 0 } })
+	const response = await axios.get(route("grp.json.bank_transaction.order_candidates", [props.organisationId, selected.value.id]), {
+		params: { search, payer: payer ? 1 : 0, paid: action.value === "already_paid" ? 1 : 0 },
+	})
 	return response.data
 }
 
@@ -231,13 +241,14 @@ const searchOrders = async (event: { query: string }) => {
 
 const loadPayerOrders = async (line: BankLine) => {
 	payerOrders.value = null
+	const kind = action.value
 	const orders = line.counterparty_name ? await findOrders("", true) : []
-	if (selected.value?.id === line.id) {
+	if (selected.value?.id === line.id && action.value === kind) {
 		payerOrders.value = orders
 	}
 }
 
-const open = (line: BankLine, kind: "pay" | "credit" | "dismiss") => {
+const open = (line: BankLine, kind: "pay" | "already_paid" | "credit" | "dismiss") => {
 	selected.value = line
 	action.value = kind
 	orderPick.value = line.order_reference ?? ""
@@ -245,7 +256,7 @@ const open = (line: BankLine, kind: "pay" | "credit" | "dismiss") => {
 	absorbBankFee.value = false
 	note.value = ""
 	error.value = null
-	if (kind === "pay" && !line.order_reference) {
+	if ((kind === "pay" || kind === "already_paid") && !line.order_reference) {
 		loadPayerOrders(line)
 	}
 	if (kind === "credit") {
@@ -268,7 +279,9 @@ const submit = () => {
 						absorb_bank_fee: absorbBankFee.value,
 					},
 				]
-			: action.value === "credit"
+			: action.value === "already_paid"
+				? [route("grp.models.org.bank_transaction.dismiss", [organisationId, selected.value.id]), { note: ALREADY_PAID_NOTE, already_paid: true, order_id: typeof orderPick.value === "string" ? null : orderPick.value.id }]
+				: action.value === "credit"
 				? [route("grp.models.org.bank_transaction.customer_credit", [organisationId, selected.value.id]), { customer_id: pickedCustomer.value?.id }]
 				: [route("grp.models.org.bank_transaction.dismiss", [organisationId, selected.value.id]), { note: note.value.trim() }]
 
@@ -426,7 +439,7 @@ const submit = () => {
 						size="xs"
 						:label="ctrans('Already paid')"
 						v-tooltip="ctrans('Someone already recorded this payment on the order by hand')"
-						@click="markAlreadyPaid(item)"
+						@click="item.order_reference ? markAlreadyPaid(item) : open(item, 'already_paid')"
 					>
 						<template #icon>
 							<FontAwesomeIcon icon="fal fa-check-double" class="text-green-600" fixed-width aria-hidden="true" />
@@ -468,7 +481,7 @@ const submit = () => {
 				<div v-if="selected.reference" class="text-gray-500">{{ selected.reference }}</div>
 			</div>
 
-			<template v-if="action === 'pay'">
+			<template v-if="action === 'pay' || action === 'already_paid'">
 				<label class="block">
 					<span class="mb-1 block font-medium">{{ ctrans("Order") }} <span class="text-red-500">*</span></span>
 					<AutoComplete
@@ -484,13 +497,13 @@ const submit = () => {
 							<div class="flex w-full min-w-0 items-baseline gap-2">
 								<span class="whitespace-nowrap font-medium">{{ option.reference }}</span>
 								<span class="truncate text-gray-600">{{ option.customer ?? "—" }}</span>
-								<span class="ml-auto whitespace-nowrap tabular-nums text-gray-500">{{ ctrans("owes :amount", { amount: locale.currencyFormat(option.currency_code, option.owed) }) }}</span>
+								<span class="ml-auto whitespace-nowrap tabular-nums text-gray-500">{{ orderAmountLabel(option) }}</span>
 							</div>
 						</template>
 					</AutoComplete>
 				</label>
 				<div v-if="!selected.order_reference && selected.counterparty_name" class="space-y-1">
-					<span class="block text-xs font-medium text-gray-600">{{ ctrans("Unpaid orders of customers named like :payer", { payer: selected.counterparty_name }) }}</span>
+					<span class="block text-xs font-medium text-gray-600">{{ action === "already_paid" ? ctrans("Paid orders of customers named like :payer", { payer: selected.counterparty_name }) : ctrans("Unpaid orders of customers named like :payer", { payer: selected.counterparty_name }) }}</span>
 					<div v-if="payerOrders === null" class="skeleton h-8 rounded" />
 					<p v-else-if="payerOrders.length === 0" class="text-xs text-gray-500">{{ ctrans("None found: search by order number or customer name above") }}</p>
 					<button
@@ -505,10 +518,10 @@ const submit = () => {
 						<span class="whitespace-nowrap font-medium">{{ order.reference }}</span>
 						<span class="truncate text-gray-600">{{ order.customer ?? "—" }}</span>
 						<span v-if="order.amount_matches" class="whitespace-nowrap text-xs text-green-600">{{ ctrans("same amount") }}</span>
-						<span class="ml-auto whitespace-nowrap tabular-nums" :class="order.amount_matches ? 'font-medium text-gray-900' : 'text-gray-500'">{{ ctrans("owes :amount", { amount: locale.currencyFormat(order.currency_code, order.owed) }) }}</span>
+						<span class="ml-auto whitespace-nowrap tabular-nums" :class="order.amount_matches ? 'font-medium text-gray-900' : 'text-gray-500'">{{ orderAmountLabel(order) }}</span>
 					</button>
 				</div>
-				<label class="flex items-start gap-2">
+				<label v-if="action === 'pay'" class="flex items-start gap-2">
 					<Checkbox v-model="absorbBankFee" binary input-id="absorb-bank-fee" />
 					<span>
 						{{ ctrans("If it arrived a little short, absorb the bank fee so the order is paid") }}
@@ -575,10 +588,10 @@ const submit = () => {
 					</template>
 				</Button>
 				<Button
-					v-if="action === 'pay' || action === 'credit'"
+					v-if="action !== 'dismiss'"
 					type="primary"
 					full
-					:label="action === 'pay' ? ctrans('Record payment') : ctrans('Add to credit')"
+					:label="action === 'pay' ? ctrans('Record payment') : action === 'already_paid' ? ctrans('Already paid') : ctrans('Add to credit')"
 					:loading="isSaving"
 					:disabled="!canSubmit"
 					@click="submit"
