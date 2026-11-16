@@ -37,7 +37,7 @@ const isDetailOpen = ref(false)
                     v-tooltip="message"
                     class="line-clamp-3 whitespace-pre-line"
                     :class="status === 'fail' ? 'text-red-600' : 'text-gray-700'">
-                    {{ message ?? ctrans("The platform refused the product without saying why") }}
+                    {{ message ?? (status === "fail" ? ctrans("The platform refused the product without saying why") : ctrans("Accepted by the platform")) }}
                 </div>
 
                 <FontAwesomeIcon
