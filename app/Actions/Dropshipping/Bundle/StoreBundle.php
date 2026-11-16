@@ -45,7 +45,7 @@ class StoreBundle extends OrgAction
 
             $productData = [];
             $selectedProducts = Arr::pull($modelData, 'products');
-            $shopBundleDiscount = Arr::get($customerSalesChannel->shop->settings, 'discount.bundle_discount_percentage', 10);
+            $shopBundleDiscount = Bundle::discountPercentage($customerSalesChannel->shop);
 
             $productSelected = Product::where('shop_id', $customerSalesChannel->shop_id)
                 ->whereIn('id', Arr::pluck($selectedProducts, 'product_id'))
