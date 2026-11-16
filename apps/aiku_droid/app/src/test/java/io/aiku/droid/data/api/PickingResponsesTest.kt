@@ -10,7 +10,7 @@ class PickingResponsesTest {
 
     private val noteJson = """
         {"id":9912,"reference":"AR24811","state":"handling","state_label":"Picking","warehouse_id":1,
-        "shop":{"id":3,"name":"AW Dropship","type":"dropshipping"},"is_editable":true,"allow_actions":true,"can_handle":true,
+        "shop":{"id":3,"name":"AW Dropship","type":"dropshipping"},"is_editable":true,"allow_actions":true,"can_handle":true,"is_taken_over":true,
         "available_actions":[{"key":"take_over","label":"Take over"},{"key":"change_trolley","label":"Change trolley"}],
         "settings":{"allow_scan_to_pick":true,"allow_waiting":false,"allow_picker_set_not_picked":true,"allow_picker_choose_location":false},
         "incomplete_sets":[{"code":"SET-1","name":"Gift set","quantity":1,"quantity_label":"1","locations":["A-01-03"]}],
@@ -29,6 +29,7 @@ class PickingResponsesTest {
         assertEquals("Take over", note.action(NoteActionKey.TAKE_OVER)?.label)
         assertNull(note.action(NoteActionKey.START_PICKING))
         assertTrue(note.canHandle)
+        assertTrue(note.isTakenOver)
         assertTrue(note.isDropshipping)
         assertEquals(PickingSettings(allowScanToPick = true, allowWaiting = false, allowPickerSetNotPicked = true, allowPickerChooseLocation = false), note.settings)
         assertEquals(IncompleteSetPart(code = "SET-1", name = "Gift set", quantity = 1.0, quantityLabel = "1", locations = listOf("A-01-03")), note.incompleteSets.single())

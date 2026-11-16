@@ -60,6 +60,8 @@
     <string name="goodsout_line_picked">Picked</string>
     <string name="goodsout_line_packed">Packed</string>
     <string name="goodsout_change">Change</string>
+    <string name="goodsout_unlock">Unlock</string>
+    <string name="goodsout_unlocked_for_you">Unlocked for you</string>
     <string name="goodsout_role_picker">Picker</string>
     <string name="goodsout_role_packer">Packer</string>
     <string name="goodsout_picking_into">Picking into</string>

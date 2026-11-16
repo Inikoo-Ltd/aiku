@@ -434,6 +434,7 @@ object NoteActionKey {
     const val CHANGE_PICKED_BAY = "change_picked_bay"
     const val ASSIGN_PICKER = "assign_picker"
     const val REMOVE_PICKER = "remove_picker"
+    const val CHANGE_PICKER = "change_picker"
     const val START_PACKING = "start_packing"
     const val UNDO_PACKING = "undo_packing"
     const val UNPACK = "unpack"
@@ -506,6 +507,7 @@ data class DeliveryNote(
     val lines: List<DeliveryNoteLine> = emptyList(),
     @SerialName("available_actions") val availableActions: List<DeliveryNoteAction> = emptyList(),
     @SerialName("can_handle") val canHandle: Boolean = false,
+    @SerialName("is_taken_over") val isTakenOver: Boolean = false,
     val settings: PickingSettings = PickingSettings(),
     @SerialName("incomplete_sets") val incompleteSets: List<IncompleteSetPart> = emptyList(),
     val consumables: List<Consumable> = emptyList(),

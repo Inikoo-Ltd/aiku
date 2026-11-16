@@ -292,6 +292,18 @@ class DeliveryNoteViewModelTest {
     }
 
     @Test
+    fun `change picker opens the picker sheet, and unlocking a packed note stays on the packer row, off the footer`() {
+        val picking = note(state = "handling", actions = listOf(DeliveryNoteAction(NoteActionKey.TAKE_OVER, "Unlock to pick"), DeliveryNoteAction(NoteActionKey.CHANGE_PICKER, "Change picker")))
+        val packed = note(state = "packed", actions = listOf(DeliveryNoteAction(NoteActionKey.FINALISE_AND_DISPATCH, "Finalise and Dispatch"), DeliveryNoteAction(NoteActionKey.TAKE_OVER, "Unlock to pack")))
+
+        assertEquals(listOf(NoteActionKey.TAKE_OVER), picking.footerActions.map { it.key })
+        assertEquals(listOf(NoteActionKey.CHANGE_PICKER), picking.menuActions.map { it.key })
+        assertEquals(ActionStep.Sheet(NoteSheet.Picker), picking.stepFor(picking.menuActions.single()))
+        assertEquals(listOf(NoteActionKey.FINALISE_AND_DISPATCH), packed.footerActions.map { it.key })
+        assertEquals(ActionStep.Sheet(NoteSheet.Confirm(packed.action(NoteActionKey.TAKE_OVER)!!)), packed.stepFor(packed.action(NoteActionKey.TAKE_OVER)!!))
+    }
+
+    @Test
     fun `finalise and dispatch asks first, then opens the dispatched screen`() {
         val packed = note(state = "packed", actions = listOf(DeliveryNoteAction(NoteActionKey.UNPACK, "Unpack"), DeliveryNoteAction(NoteActionKey.FINALISE_AND_DISPATCH, "Finalise and Dispatch")))
         api.note = packed
