@@ -1173,7 +1173,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('data_feeds:save')->hourly()->timezone('UTC')->onOneServer()->sentryMonitor(
+                $schedule->command('data_feeds:save')->hourly()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'SaveDataFeeds',
                 ),
                 name: 'SaveDataFeeds',
