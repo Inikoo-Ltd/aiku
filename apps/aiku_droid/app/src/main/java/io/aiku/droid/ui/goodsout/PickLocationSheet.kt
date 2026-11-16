@@ -22,7 +22,6 @@ import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ProductPhoto
-import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.theme.LocalAikuColors
 
@@ -33,8 +32,15 @@ internal fun PickLocationSheet(line: DeliveryNoteLine, selectedId: Long?, onChoo
     val code = line.orgStock?.code?.takeIf { it.isNotBlank() } ?: stringResource(R.string.goodsout_line_unknown_sko)
     var showSetPickingLocation by remember { mutableStateOf(false) }
 
-    if (showSetPickingLocation) {
-        SetPickingLocationSheet(skuCode = code, onDismiss = { showSetPickingLocation = false })
+    val orgStock = line.orgStock
+    if (showSetPickingLocation && orgStock != null) {
+        SetPickingLocationSheet(
+            orgStockId = orgStock.id,
+            code = code,
+            name = orgStock.name.takeIf { it.isNotBlank() },
+            imageUrl = orgStock.imageUrl,
+            onDismiss = { showSetPickingLocation = false },
+        )
         return
     }
 
@@ -46,13 +52,13 @@ internal fun PickLocationSheet(line: DeliveryNoteLine, selectedId: Long?, onChoo
         ).joinToString(" · "),
         onDismiss = onBack,
         footer = {
-            if (can.moveStock) {
+            if (can.moveStock && orgStock != null) {
                 AikuButton(
                     text = stringResource(R.string.goodsout_change_picking_location),
                     onClick = { showSetPickingLocation = true },
                     style = ButtonStyle.Outline,
                     height = 52.dp,
-                    modifier = Modifier.fillMaxWidth().fakeData(cornerRadius = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
             AikuButton(

@@ -1,6 +1,7 @@
 package io.aiku.droid.ui.locations
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,20 +36,74 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
+import io.aiku.droid.data.api.LocationStockType
+import io.aiku.droid.data.api.LocationSummary
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.Tone
-import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.components.tone
+import io.aiku.droid.ui.inventory.stockText
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 internal const val LIST_SEPARATOR = " · "
 
 private val TileShape = RoundedCornerShape(10.dp)
 
+internal enum class LocationKind(@StringRes val label: Int, val tone: Tone) {
+    Stocks(R.string.locations_kind_stocks, Tone.Primary),
+    Fulfilment(R.string.locations_kind_fulfilment, Tone.Neutral),
+    Dropshipping(R.string.locations_scope_dropshipping, Tone.Neutral),
+    Broken(R.string.locations_status_broken, Tone.Danger),
+}
+
+internal fun LocationSummary.kind(): LocationKind? = when {
+    isBroken -> LocationKind.Broken
+    allowStocks -> LocationKind.Stocks
+    allowFulfilment -> LocationKind.Fulfilment
+    allowDropshipping -> LocationKind.Dropshipping
+    else -> null
+}
+
+@StringRes
+internal fun stockTypeLabel(type: LocationStockType?): Int? = when (type) {
+    LocationStockType.Picking -> R.string.locations_type_picking
+    LocationStockType.Storing -> R.string.locations_type_storing
+    null -> null
+}
+
+internal fun stockTypeTone(type: LocationStockType?): Tone = if (type == LocationStockType.Picking) Tone.Primary else Tone.Neutral
+
 @Composable
-internal fun LocationsHeading(text: String, modifier: Modifier = Modifier, sampleCount: String? = null) {
+internal fun statusLabel(location: LocationSummary): String =
+    stringResource(if (location.isBroken) R.string.locations_status_broken else R.string.locations_status_operational)
+
+@Composable
+internal fun capacityText(maxWeight: Double?, maxVolume: Double?): String? {
+    val parts = listOfNotNull(
+        maxWeight?.let { stringResource(R.string.locations_weight_kg, stockText(it)) },
+        maxVolume?.let { stringResource(R.string.locations_volume_m3, stockText(it)) },
+    )
+    return parts.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.locations_max, it.joinToString(LIST_SEPARATOR)) }
+}
+
+@Composable
+internal fun slotsText(location: LocationSummary): String? = location.numberOrgStockSlots.takeIf { it > 0 }?.let { slots ->
+    pluralStringResource(R.plurals.locations_slots, slots, slots, location.numberEmptyStockSlots)
+}
+
+@Composable
+internal fun locationSubtitle(location: LocationSummary, showArea: Boolean = true): String {
+    val slots = slotsText(location)
+    val pallets = location.numberPallets.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.locations_pallets, it, it) }
+    val empty = if (slots == null && pallets == null) stringResource(R.string.locations_empty) else null
+    val area = location.area?.label?.takeIf { showArea && it.isNotBlank() }
+
+    return listOfNotNull(area, slots, capacityText(location.maxWeight, location.maxVolume), pallets, empty).joinToString(LIST_SEPARATOR)
+}
+
+@Composable
+internal fun LocationsHeading(text: String, modifier: Modifier = Modifier, count: String? = null) {
     val colors = LocalAikuColors.current
 
     Row(verticalAlignment = Alignment.Bottom, modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
@@ -60,13 +115,8 @@ internal fun LocationsHeading(text: String, modifier: Modifier = Modifier, sampl
             color = colors.textTertiary,
             modifier = Modifier.weight(1f),
         )
-        if (sampleCount != null) {
-            Text(
-                text = sampleCount,
-                fontSize = 12.sp,
-                color = colors.textTertiary,
-                modifier = Modifier.fakeData(cornerRadius = 4.dp).padding(horizontal = 6.dp, vertical = 2.dp),
-            )
+        if (count != null) {
+            Text(text = count, fontSize = 12.sp, color = colors.textTertiary, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
         }
     }
 }
@@ -161,30 +211,28 @@ internal fun LocationsTileRow(
 }
 
 @Composable
-internal fun locationSubtitle(location: SampleLocation): String {
-    val slots = location.slots?.let { pluralStringResource(R.plurals.locations_slots, it, it, location.emptySlots) }
-    val pallets = location.pallets?.let { pluralStringResource(R.plurals.locations_pallets, it, it) }
-    val empty = if (location.isEmpty) stringResource(R.string.locations_empty) else null
+internal fun LocationRow(location: LocationSummary, onOpen: () -> Unit, showArea: Boolean = true) {
+    val kind = location.kind()
 
-    return listOfNotNull(location.area, slots, location.weight, location.volume, pallets, empty).joinToString(LIST_SEPARATOR)
+    LocationsTileRow(
+        icon = R.drawable.ic_ui_location,
+        title = location.code,
+        subtitle = locationSubtitle(location, showArea = showArea),
+        tone = if (kind == LocationKind.Broken) Tone.Danger else Tone.Primary,
+        chip = kind?.let { stringResource(it.label) },
+        chipTone = kind?.tone ?: Tone.Neutral,
+        onClick = onOpen,
+    )
 }
 
 @Composable
-internal fun LocationsList(locations: List<SampleLocation>, onOpen: (SampleLocation) -> Unit, modifier: Modifier = Modifier) {
+internal fun LocationsList(locations: List<LocationSummary>, onOpen: (LocationSummary) -> Unit, modifier: Modifier = Modifier, showArea: Boolean = true) {
     ListGroup(modifier = modifier) {
         locations.forEachIndexed { index, location ->
             if (index > 0) {
                 RowDivider()
             }
-            LocationsTileRow(
-                icon = R.drawable.ic_ui_location,
-                title = location.code,
-                subtitle = locationSubtitle(location),
-                tone = if (location.kind == LocationKind.Broken) Tone.Danger else Tone.Primary,
-                chip = stringResource(location.kind.label),
-                chipTone = location.kind.tone,
-                onClick = { onOpen(location) },
-            )
+            LocationRow(location = location, onOpen = { onOpen(location) }, showArea = showArea)
         }
     }
 }
@@ -225,6 +273,11 @@ internal fun TrailingCheckboxRow(
                 checked = checked,
                 onCheckedChange = null,
                 colors = CheckboxDefaults.colors(checkedColor = colors.primary, checkmarkColor = colors.onPrimary, uncheckedColor = colors.borderStrong),
+            )
+        } else {
+            StatusBadge(
+                text = stringResource(if (checked) R.string.locations_state_on else R.string.locations_state_off),
+                tone = if (checked) Tone.Success else Tone.Neutral,
             )
         }
     }

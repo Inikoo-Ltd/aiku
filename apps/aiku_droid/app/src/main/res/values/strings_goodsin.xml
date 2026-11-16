@@ -172,7 +172,6 @@
     <string name="goodsin_quantity">Quantity</string>
     <string name="goodsin_up_to">up to %1$d</string>
     <string name="goodsin_picking_location">Picking location</string>
-    <string name="goodsin_change">Change</string>
     <string name="goodsin_place_note">Place part here and the rest in another location by lowering the quantity.</string>
     <string name="goodsin_place_all">Place all</string>
     <string name="goodsin_place_in">Place %1$d in %2$s</string>

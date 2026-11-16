@@ -35,7 +35,6 @@ import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.fakeData
-import io.aiku.droid.ui.goodsout.SetPickingLocationSheet
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.MainTab
@@ -52,7 +51,6 @@ fun PlaceItemScreen(reference: String, skuCode: String) {
     val choices = GoodsInSamples.locationChoices
     var selectedLocation by remember { mutableStateOf(choices.first().code) }
     var quantity by remember { mutableIntStateOf(item.checked) }
-    var showPickingLocationSheet by remember { mutableStateOf(false) }
     val placedToast = stringResource(R.string.goodsin_toast_placed, quantity, item.code, selectedLocation)
     val placedAllToast = stringResource(R.string.goodsin_toast_placed, item.checked, item.code, selectedLocation)
 
@@ -138,19 +136,9 @@ fun PlaceItemScreen(reference: String, skuCode: String) {
                     title = stringResource(R.string.goodsin_picking_location),
                     subtitle = GoodsInSamples.PICKING_LOCATIONS,
                     tone = ActionTone.Primary,
-                    trailing = if (can.moveStock) stringResource(R.string.goodsin_change) else null,
-                    onClick = if (can.moveStock) {
-                        { showPickingLocationSheet = true }
-                    } else {
-                        null
-                    },
                 )
             }
             HelperNote(text = stringResource(R.string.goodsin_place_note))
         }
-    }
-
-    if (showPickingLocationSheet) {
-        SetPickingLocationSheet(skuCode = item.code, onDismiss = { showPickingLocationSheet = false })
     }
 }

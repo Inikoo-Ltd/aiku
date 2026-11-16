@@ -31,7 +31,6 @@ import io.aiku.droid.R
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.CardShape
-import io.aiku.droid.ui.components.ChipShape
 import io.aiku.droid.ui.components.GroupLabel
 import io.aiku.droid.ui.components.HeaderIconButton
 import io.aiku.droid.ui.components.ItemRow
@@ -54,7 +53,6 @@ import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.SearchRoute
 import io.aiku.droid.ui.navigation.SkusRoute
 import io.aiku.droid.ui.navigation.StockDeliveriesRoute
-import io.aiku.droid.ui.navigation.StockHistoryRoute
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 private data class ModuleShortcut(@StringRes val label: Int, @DrawableRes val icon: Int, val route: Any)
@@ -68,8 +66,8 @@ fun WarehouseDashboardScreen() {
     val warehouse = LocalWarehouse.current
     val can = warehouse.can
     val shortcuts = listOfNotNull(
-        ModuleShortcut(R.string.module_inventory, R.drawable.ic_ui_sko, SkusRoute).takeIf { can.viewInventory },
-        ModuleShortcut(R.string.module_locations, R.drawable.ic_ui_location, LocationsRoute).takeIf { can.viewLocations },
+        ModuleShortcut(R.string.module_inventory, R.drawable.ic_ui_sko, SkusRoute()).takeIf { can.viewInventory },
+        ModuleShortcut(R.string.module_locations, R.drawable.ic_ui_location, LocationsRoute()).takeIf { can.viewLocations },
         ModuleShortcut(R.string.module_goods_in, R.drawable.ic_ui_order, StockDeliveriesRoute).takeIf { can.viewGoodsIn },
         ModuleShortcut(R.string.module_goods_out, R.drawable.ic_ui_truck, DeliveryNotesRoute()).takeIf { can.viewGoodsOut },
         ModuleShortcut(R.string.dashboard_clocking, R.drawable.ic_ui_clock, ClockingRoute),
@@ -159,16 +157,7 @@ fun WarehouseDashboardScreen() {
                 counts = DashboardSamples.inventory,
                 onView = { navigator.open(InventoryDashboardRoute) },
             )
-            Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-                GroupLabel(text = stringResource(R.string.dashboard_stock_history_today), modifier = Modifier.weight(1f))
-                Text(
-                    text = stringResource(R.string.dashboard_all),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = colors.link,
-                    modifier = Modifier.clip(ChipShape).clickable(role = Role.Button) { navigator.open(StockHistoryRoute) }.padding(4.dp),
-                )
-            }
+            GroupLabel(text = stringResource(R.string.dashboard_stock_history_today), modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp))
             ListGroup(modifier = Modifier.fakeData()) {
                 DashboardSamples.movements.forEachIndexed { index, movement ->
                     if (index > 0) {

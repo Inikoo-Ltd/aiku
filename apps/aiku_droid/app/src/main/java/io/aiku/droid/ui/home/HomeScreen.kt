@@ -84,8 +84,8 @@ fun HomeScreen() {
     val shortcuts = listOfNotNull(
         Shortcut(R.string.module_goods_out, R.drawable.ic_ui_goods_out, DeliveryNotesRoute(), HomeSamples.GOODS_OUT_BADGE).takeIf { can.viewGoodsOut },
         Shortcut(R.string.module_goods_in, R.drawable.ic_ui_goods_in, StockDeliveriesRoute).takeIf { can.viewGoodsIn },
-        Shortcut(R.string.module_inventory, R.drawable.ic_ui_pallet, SkusRoute).takeIf { can.viewInventory },
-        Shortcut(R.string.module_locations, R.drawable.ic_ui_locations, LocationsRoute).takeIf { can.viewLocations },
+        Shortcut(R.string.module_inventory, R.drawable.ic_ui_pallet, SkusRoute()).takeIf { can.viewInventory },
+        Shortcut(R.string.module_locations, R.drawable.ic_ui_locations, LocationsRoute()).takeIf { can.viewLocations },
     )
 
     LaunchedEffect(Unit) { clocking.refresh() }

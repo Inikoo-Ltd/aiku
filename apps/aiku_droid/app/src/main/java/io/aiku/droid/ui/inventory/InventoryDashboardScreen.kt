@@ -1,41 +1,50 @@
 package io.aiku.droid.ui.inventory
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.R
 import io.aiku.droid.data.api.Ability
+import io.aiku.droid.data.api.InventoryDashboard
+import io.aiku.droid.data.api.SkoBucket
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.DetailCard
 import io.aiku.droid.ui.components.DetailLine
 import io.aiku.droid.ui.components.HeaderIconButton
-import io.aiku.droid.ui.components.ItemRow
-import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ModuleHeader
 import io.aiku.droid.ui.components.RequireAbility
-import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.components.SkeletonListCard
+import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.WarehouseSection
-import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.components.warehouseKicker
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.ScanCameraRoute
 import io.aiku.droid.ui.navigation.SkusRoute
-import io.aiku.droid.ui.navigation.StockHistoryRoute
+import io.aiku.droid.ui.states.SessionExpiredScreen
 
 @Composable
-fun InventoryDashboardScreen() {
+fun InventoryDashboardScreen(dashboard: InventoryDashboardViewModel) {
+    val state by dashboard.state.collectAsStateWithLifecycle()
+
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { dashboard.onStart() }
+
     RequireAbility(ability = Ability.ViewInventory, title = stringResource(R.string.module_inventory), activeTab = MainTab.Menu) {
-        InventoryDashboardContent()
+        if (state.isSessionExpired) {
+            SessionExpiredScreen(onSignIn = dashboard::signInAgain)
+        } else {
+            InventoryDashboardContent(state = state, onRetry = dashboard::retry)
+        }
     }
 }
 
 @Composable
-private fun InventoryDashboardContent() {
+private fun InventoryDashboardContent(state: InventoryDashboardUiState, onRetry: () -> Unit) {
     val navigator = LocalAppNavigator.current
-    val openSkos = { navigator.open(SkusRoute) }
 
     AppScreen(
         header = {
@@ -55,60 +64,76 @@ private fun InventoryDashboardContent() {
         activeTab = MainTab.Menu,
         showBar = true,
     ) {
-        InventoryStatGrid(
-            stats = sampleDashboardHeadlineTiles.map { tile -> dashboardStat(tile = tile, openSkos = openSkos) },
-            columns = 2,
-            modifier = Modifier.fakeData(10.dp),
-        )
-        InventoryStatGrid(
-            stats = sampleDashboardTiles.map { tile -> dashboardStat(tile = tile, openSkos = openSkos) },
-            columns = 2,
-            modifier = Modifier.fakeData(10.dp),
-        )
-        DetailCard(
-            title = warehouseKicker(),
-            lines = listOf(
-                DetailLine(icon = R.drawable.ic_ui_sko, text = stringResource(R.string.inventory_stock_value_line, SAMPLE_STOCK_VALUE)),
-                DetailLine(
-                    icon = R.drawable.ic_ui_location,
-                    text = pluralStringResource(
-                        R.plurals.inventory_location_utilisation,
-                        SAMPLE_LOCATIONS_TOTAL,
-                        SAMPLE_UTILISATION_PERCENT,
-                        SAMPLE_LOCATIONS_USED,
-                        SAMPLE_LOCATIONS_TOTAL,
-                    ),
-                ),
-            ),
-            modifier = Modifier.fakeData(),
-        )
-        InventorySectionHeading(
-            text = stringResource(R.string.inventory_history_today),
-            actionLabel = stringResource(R.string.inventory_all),
-            onAction = { navigator.open(StockHistoryRoute) },
-        )
-        ListGroup(modifier = Modifier.fakeData()) {
-            sampleTodayMovements.forEachIndexed { index, movement ->
-                if (index > 0) RowDivider()
-                ItemRow(
-                    code = movement.skoCode,
-                    subtitle = movement.detail,
-                    chip = stringResource(R.string.inventory_movement_chip, stringResource(movement.type.label), movement.quantity),
-                    chipTone = movement.tone,
-                )
-            }
+        val dashboard = state.dashboard
+        when {
+            dashboard != null -> DashboardBlocks(dashboard = dashboard)
+            state.problem != null -> StockLoadProblem(problem = state.problem, title = stringResource(R.string.inventory_dashboard_failed), onRetry = onRetry)
+            else -> SkeletonListCard(rows = 4)
         }
     }
 }
 
 @Composable
-private fun dashboardStat(tile: SampleDashboardTile, openSkos: () -> Unit): InventoryStat {
-    val labelArgument = tile.labelArgument
-    val label = if (labelArgument != null) stringResource(tile.label, labelArgument) else stringResource(tile.label)
-    return InventoryStat(
-        value = tile.value.toString(),
-        label = label,
-        tone = tile.tone,
-        onClick = if (tile.opensSkos) openSkos else null,
+private fun DashboardBlocks(dashboard: InventoryDashboard) {
+    val navigator = LocalAppNavigator.current
+
+    InventoryStatGrid(
+        stats = listOf(
+            InventoryStat(
+                value = countText(dashboard.numberCurrentOrgStocks),
+                label = stringResource(R.string.inventory_tile_current_skos),
+                onClick = { navigator.open(SkusRoute()) },
+            ),
+            InventoryStat(
+                value = countText(dashboard.numberAbnormalities),
+                label = stringResource(R.string.inventory_tile_abnormalities),
+                tone = if (dashboard.numberAbnormalities > 0) Tone.Danger else null,
+                onClick = { navigator.open(SkusRoute(bucket = SkoBucket.Abnormality.key)) },
+            ),
+            InventoryStat(
+                value = countText(dashboard.replenishmentsWholesale),
+                label = stringResource(R.string.inventory_tile_replenishments, dashboard.replenishmentsDropshipping),
+            ),
+            InventoryStat(value = countText(dashboard.lowStockAudits), label = stringResource(R.string.inventory_tile_low_stock_audits)),
+            InventoryStat(
+                value = countText(dashboard.belowMinimumStock),
+                label = pluralStringResource(R.plurals.inventory_tile_below_minimum, dashboard.numberWithMinimumStock, dashboard.numberWithMinimumStock),
+            ),
+            InventoryStat(
+                value = countText(dashboard.negativeStocks),
+                label = stringResource(R.string.inventory_tile_negative_stocks),
+                tone = if (dashboard.negativeStocks > 0) Tone.Danger else null,
+            ),
+            InventoryStat(
+                value = countText(dashboard.wrongWeights),
+                label = stringResource(R.string.inventory_tile_wrong_weights),
+                tone = if (dashboard.wrongWeights > 0) Tone.Warn else null,
+            ),
+            InventoryStat(
+                value = countText(dashboard.withoutProducts),
+                label = stringResource(R.string.inventory_tile_without_product),
+                tone = if (dashboard.withoutProducts > 0) Tone.Warn else null,
+            ),
+        ),
+        columns = 2,
     )
+    DetailCard(
+        title = warehouseKicker(),
+        lines = listOfNotNull(
+            DetailLine(icon = R.drawable.ic_ui_sko, text = stringResource(R.string.inventory_stock_value_line, moneyText(dashboard.stockValue, dashboard.currencyCode))),
+            dashboard.utilisation?.let { utilisation ->
+                DetailLine(
+                    icon = R.drawable.ic_ui_location,
+                    text = pluralStringResource(
+                        R.plurals.inventory_location_utilisation,
+                        dashboard.numberLocations,
+                        percentOf(utilisation),
+                        dashboard.usedLocations,
+                        dashboard.numberLocations,
+                    ),
+                )
+            },
+        ),
+    )
+    BoardFootnote(text = stringResource(R.string.inventory_dashboard_footnote))
 }
