@@ -8,9 +8,11 @@
 
 namespace App\Models\Dropshipping;
 
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -56,6 +58,11 @@ class Bundle extends Model implements Auditable
         'data' => '{}',
         'settings' => '{}'
     ];
+
+    public static function discountPercentage(Shop $shop): float
+    {
+        return (float) Arr::get($shop->settings, 'discount.bundle_discount_percentage', 10);
+    }
 
     public function bundleable(): MorphTo
     {

@@ -1204,6 +1204,21 @@ test('a delivery zone priced as to be confirmed says the price is confirmed late
         ->toContain(['title' => 'Delivery: Far away', 'body' => 'Far away: delivery price to be confirmed by customer service']);
 });
 
+test('a dropshipping shop tells the assistant its bundle discount, the default 10% when none is set', function () {
+    $shop = $this->shop->replicate();
+    $shop->type = \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING;
+    $shop->settings = [];
+
+    expect(\App\Actions\Chat\ChatSession\GetChatShopFacts::make()->shopFacts($shop))
+        ->toContain(['title' => 'Bundle discount', 'body' => 'A bundle a customer creates for their sales channel costs 10% less than its products bought separately, and its suggested retail price is also 10% below theirs']);
+
+    $shop->settings = ['discount' => ['bundle_discount_percentage' => 15]];
+    expect(collect(\App\Actions\Chat\ChatSession\GetChatShopFacts::make()->shopFacts($shop))->firstWhere('title', 'Bundle discount')['body'])->toContain('15% less');
+
+    $shop->type = \App\Enums\Catalogue\Shop\ShopTypeEnum::B2B;
+    expect(collect(\App\Actions\Chat\ChatSession\GetChatShopFacts::make()->shopFacts($shop))->firstWhere('title', 'Bundle discount'))->toBeNull();
+});
+
 test('each active charge is described with its amount and when the checkout adds it', function () {
     $facts  = \App\Actions\Chat\ChatSession\GetChatShopFacts::make();
     $money  = fn (float $amount) => \Illuminate\Support\Number::currency($amount, $this->shop->currency?->code ?? 'GBP');

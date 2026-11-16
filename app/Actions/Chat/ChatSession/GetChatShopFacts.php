@@ -15,10 +15,12 @@ use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Billables\Charge;
 use App\Models\Catalogue\Shop;
 use App\Models\Billables\ShippingZone;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\Bundle;
 use Illuminate\Support\Number;
 use Locale;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -51,6 +53,7 @@ class GetChatShopFacts
             ($bonus = $this->firstOrderBonus($shop, null)) ? ['title' => __('First order bonus'), 'body' => $bonus] : null,
             ($methods = $this->paymentMethods($shop)) ? ['title' => __('Payment methods'), 'body' => $methods] : null,
             ($charges = $this->charges($shop)) ? ['title' => __('Charges'), 'body' => $charges] : null,
+            ($bundles = $this->bundleDiscount($shop)) ? ['title' => __('Bundle discount'), 'body' => $bundles] : null,
         ]));
     }
 
@@ -111,6 +114,17 @@ class GetChatShopFacts
         return data_get($offer, 'active') && data_get($offer, 'min_amount')
             ? __('Free delivery from').' '.$this->money($shop, (float) data_get($offer, 'min_amount')).' '.__('of goods before VAT')
             : null;
+    }
+
+    private function bundleDiscount(Shop $shop): ?string
+    {
+        if ($shop->type !== ShopTypeEnum::DROPSHIPPING) {
+            return null;
+        }
+
+        $percentage = Number::format(Bundle::discountPercentage($shop));
+
+        return __('A bundle a customer creates for their sales channel costs :percentage% less than its products bought separately, and its suggested retail price is also :percentage% below theirs', ['percentage' => $percentage]);
     }
 
     private function paymentMethods(Shop $shop): ?string
