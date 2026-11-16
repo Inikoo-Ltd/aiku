@@ -184,6 +184,10 @@ class MatchBankTransactions
             return $this->decidePastpayPayout($bankTransaction);
         }
 
+        if (preg_match('/^orderchamp\b/i', (string)$bankTransaction->counterparty_name)) {
+            return $this->decideOrderchampPayout($bankTransaction);
+        }
+
         $marketplaceOrderReference = $this->marketplaceOrderReference($bankTransaction);
         if ($marketplaceOrderReference) {
             return $this->decideMarketplacePayout($bankTransaction, $marketplaceOrderReference);
@@ -580,6 +584,92 @@ class MatchBankTransactions
                 if ($sum + $net <= $ceiling) {
                     $this->searchPastpayPayout($candidates, $i + 1, $size, [...$picks, ['payment' => $candidates[$i], 'rate' => $rate]], $sum + $net, $received, $fees, $solutions);
                 }
+            }
+        }
+    }
+
+    public const float ORDERCHAMP_TOLERANCE = 0.50;
+
+    public const int ORDERCHAMP_DAYS = 75;
+
+    /**
+     * Orderchamp pays weekly per entity ("Orderchamp NL payment: STL233240-1"), naming its own payout number, never
+     * the orders, and staff record each order paid by hand. A payout is linked only when it is surely one order: the
+     * entity's customer (named "Orderchamp … (NL)") has exactly one order from the last 75 days, settled and claimed by
+     * no other line, within 0.50 of the amount, and no two or three such orders add up to it as well. Anything else
+     * stays unmatched for staff.
+     *
+     * @return array{0: BankTransactionMatchStateEnum, 1: Order|null, 2: array<string, mixed>}
+     */
+    private function decideOrderchampPayout(BankTransaction $bankTransaction): array
+    {
+        $received = round((float)$bankTransaction->amount, 2);
+        if (!preg_match('/orderchamp ([A-Z]{2}) payment/i', (string)$bankTransaction->reference, $matches)) {
+            return [BankTransactionMatchStateEnum::UNMATCHED, null, ['provider' => 'orderchamp', 'reason' => 'Orderchamp payout without its country']];
+        }
+        $country = strtolower($matches[1]);
+
+        $customerIds = Customer::where('organisation_id', $bankTransaction->organisation_id)
+            ->whereRaw('lower(name::text) like ?', ['orderchamp%('.$country.')'])
+            ->pluck('id');
+
+        $claimed = BankTransaction::where('id', '!=', $bankTransaction->id)
+            ->whereNotNull('order_id')
+            ->whereIn('match_state', [BankTransactionMatchStateEnum::ALREADY_PAID, BankTransactionMatchStateEnum::MATCHED])
+            ->select('order_id');
+
+        $candidates = Order::whereIn('customer_id', $customerIds)
+            ->where('currency_id', $bankTransaction->currency_id)
+            ->whereNotIn('state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING])
+            ->whereBetween('date', [$bankTransaction->booked_at->copy()->subDays(self::ORDERCHAMP_DAYS), $bankTransaction->booked_at])
+            ->whereNotIn('id', $claimed)
+            ->get()
+            ->filter(fn (Order $order) => $order->amountStillToPay() <= 0.01)
+            ->values();
+
+        $fits = [];
+        foreach ([1, 2, 3] as $size) {
+            foreach ($this->combinations($candidates->all(), $size) as $orders) {
+                if (abs(round(collect($orders)->sum('total_amount') - $received, 2)) <= self::ORDERCHAMP_TOLERANCE) {
+                    $fits[] = $orders;
+                }
+            }
+        }
+
+        if (count($fits) !== 1 || count($fits[0]) !== 1) {
+            return [BankTransactionMatchStateEnum::UNMATCHED, null, [
+                'provider' => 'orderchamp',
+                'reason'   => $fits ? 'several Orderchamp orders could make this amount' : 'no Orderchamp order of this amount',
+                'order_ids' => collect($fits)->flatten()->pluck('id')->unique()->values()->all(),
+            ]];
+        }
+
+        $order = $fits[0][0];
+
+        return [BankTransactionMatchStateEnum::ALREADY_PAID, $order, [
+            'provider'   => 'orderchamp',
+            'reason'     => 'the only Orderchamp order of this amount, already paid by hand',
+            'owed'       => round((float)$order->total_amount, 2),
+            'received'   => $received,
+            'difference' => round($received - (float)$order->total_amount, 2),
+        ]];
+    }
+
+    /**
+     * @param list<Order> $items
+     *
+     * @return \Generator<list<Order>>
+     */
+    private function combinations(array $items, int $size, int $from = 0): \Generator
+    {
+        if ($size === 0) {
+            yield [];
+
+            return;
+        }
+        for ($i = $from; $i <= count($items) - $size; $i++) {
+            foreach ($this->combinations($items, $size - 1, $i + 1) as $rest) {
+                yield [$items[$i], ...$rest];
             }
         }
     }

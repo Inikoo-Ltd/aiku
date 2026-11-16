@@ -2720,3 +2720,89 @@ test('auto-pay records a mapped payer, such as DPD CZ cash on delivery, on its o
         ->and($transferLine->refresh()->payment->payment_account_id)->toBe($bankAccount->id)
         ->and($codOrder->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID);
 });
+
+test('an orderchamp payout is linked only to the one hand-paid order of its country and amount, everything else stays for staff', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'ochand'.random_int(1000, 9999), 'name' => 'Orderchamp hand paid test']
+    );
+
+    $newCustomer = fn (string $customerName) => \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, array_merge(\App\Models\CRM\Customer::factory()->definition(), ['contact_name' => $customerName, 'company_name' => $customerName]));
+    $netherlands = $newCustomer('Orderchamp B.V. (NL)');
+    $germany     = $newCustomer('Orderchamp GmbH (DE)');
+
+    $order = function (\App\Models\CRM\Customer $customer, float $total, bool $paid = true, int $daysAgo = 20) use ($bankAccount) {
+        $order = bankMatchingOrder($customer, $total);
+        $order->updateQuietly(['date' => now()->subDays($daysAgo)]);
+        if ($paid) {
+            $payment = \App\Actions\Accounting\Payment\StorePayment::make()->action($order->customer, $bankAccount, [
+                'amount' => $total,
+                'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+                'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+            ]);
+            \App\Actions\Ordering\Order\AttachPaymentToOrder::make()->action($order, $payment, []);
+        }
+
+        return $order->refresh();
+    };
+
+    $line = fn (string $id, string $reference, float $amount, array $extra = []) => BankTransaction::create(array_merge([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $amount,
+        'currency_id'             => $this->shop->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => 'ORDERCHAMP BV',
+        'reference'               => $reference,
+        'booked_at'               => now(),
+    ], $extra));
+
+    $single = $order($netherlands, 116.08);
+    $order($netherlands, 99.60);
+    $order($netherlands, 101.76);
+    $order($netherlands, 201.40);
+    $order($netherlands, 80, paid: false);
+    $old     = $order($netherlands, 141.70, daysAgo: 100);
+    $claimed = $order($netherlands, 150);
+    $german  = $order($germany, 121.46);
+
+    $line('oc0', 'earlier line', 150, ['order_id' => $claimed->id, 'match_state' => BankTransactionMatchStateEnum::ALREADY_PAID]);
+
+    $lines = [
+        'single'  => $line('oc1', 'Orderchamp NL payment: STL228059-1/STL228059-1', 115.92),
+        'several' => $line('oc2', 'Orderchamp NL payment: STL228060-1/STL228060-1', 201.38),
+        'unpaid'  => $line('oc3', 'Orderchamp NL payment: STL228061-1/STL228061-1', 80),
+        'country' => $line('oc4', 'Orderchamp DE payment: STL228062-1/STL228062-1', 116.00),
+        'german'  => $line('oc5', 'Orderchamp DE payment: STL230552-1/STL230552-1', 121.81, ['counterparty_name' => 'Orderchamp GmbH']),
+        'claimed' => $line('oc6', 'Orderchamp NL payment: STL228063-1/STL228063-1', 150),
+        'old'     => $line('oc7', 'Orderchamp NL payment: STL228064-1/STL228064-1', 141.70),
+    ];
+    MatchBankTransactions::run($bankConnection);
+
+    foreach ($lines as $bankTransaction) {
+        $bankTransaction->refresh();
+    }
+
+    expect($lines['single']->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($lines['single']->order_id)->toBe($single->id)
+        ->and($lines['single']->match_data['difference'])->toBe(-0.16)
+        ->and($lines['german']->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($lines['german']->order_id)->toBe($german->id)
+        ->and($lines['several']->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($lines['several']->match_data['reason'])->toBe('several Orderchamp orders could make this amount')
+        ->and($lines['several']->match_data['order_ids'])->toHaveCount(3)
+        ->and($lines['unpaid']->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($lines['country']->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($lines['claimed']->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($lines['old']->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($lines['old']->order_id)->toBeNull()
+        ->and($old->refresh()->payment_amount)->toEqual(141.70);
+});
