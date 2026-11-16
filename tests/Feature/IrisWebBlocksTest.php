@@ -1617,7 +1617,7 @@ test('switching a variant off closes the page of a former leader that is not for
         ->and($webpage->refresh()->state)->toBe(WebpageStateEnum::CLOSED);
 });
 
-test('closing or reopening a page forgets its cached path even when a redirect already exists', function () {
+test('closing a page with an old redirect repoints it and forgets the cached path, as does reopening', function () {
     [, $product] = createProduct($this->shop);
     $this->website->refresh()->storefront->update(['state' => WebpageStateEnum::LIVE]);
 
@@ -1643,6 +1643,27 @@ test('closing or reopening a page forgets its cached path even when a redirect a
         'to_webpage_id' => $this->website->storefront->id,
     ]);
     expect(Cache::has($pathKey))->toBeFalse();
+
+    $familyWebpage = StoreProductCategoryWebpage::make()->action($product->family);
+    $familyWebpage->update(['state' => WebpageStateEnum::LIVE]);
+    ReopenWebpage::run($webpage->refresh());
+    $redirect = \App\Models\Web\Redirect::create([
+        'group_id'        => $webpage->group_id,
+        'organisation_id' => $webpage->organisation_id,
+        'shop_id'         => $webpage->shop_id,
+        'website_id'      => $webpage->website_id,
+        'type'            => RedirectTypeEnum::PERMANENT,
+        'from_path'       => $webpage->url,
+        'from_url'        => $webpage->canonical_url,
+        'from_webpage_id' => $webpage->id,
+        'to_webpage_id'   => $this->website->storefront->id,
+    ]);
+    CloseWebpage::make()->action($webpage->refresh(), [
+        'redirect_type' => RedirectTypeEnum::PERMANENT->value,
+        'to_webpage_id' => $familyWebpage->id,
+    ]);
+    expect($redirect->refresh()->to_webpage_id)->toBe($familyWebpage->id)
+        ->and($webpage->refresh()->redirect_webpage_id)->toBe($familyWebpage->id);
 
     Cache::put($pathKey, 0, 3600);
     ReopenWebpage::run($webpage->refresh());
