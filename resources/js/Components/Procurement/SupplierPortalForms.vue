@@ -47,7 +47,7 @@ export interface EditedSubmission {
 
 const props = defineProps<{
 	forms: PortalForms
-	products: { id: number; code: string; name: string; price?: number }[]
+	products: { id: number; code: string; name: string; price?: number; moq?: number | null }[]
 	currency: string | null
 	editing: EditedSubmission | null
 	initialType?: string
@@ -99,7 +99,7 @@ const blank = () => ({
 	proposed_price: null as number | null,
 	currency: props.currency ?? "",
 	unit_basis: "",
-	moq: "",
+	moq: null as string | number | null,
 	lead_time_days: null as number | null,
 	materials: "",
 	dimensions: "",
@@ -127,6 +127,7 @@ watch(
 		form.reset()
 		if (!editing && props.lockedType === "price_change" && props.products.length === 1) {
 			form.supplier_product_id = props.products[0].id
+			form.moq = props.products[0].moq ?? null
 		}
 		if (editing) {
 			type.value = editing.type
@@ -188,7 +189,7 @@ const fieldsFor: Record<string, string[]> = {
 	referral: ["company_name", "country", "contact_website", "contact_name", "email", "phone", "products_of_interest", "note", "permission_confirmed"],
 	product_proposal: ["name", "description", "proposed_price", "currency", "unit_basis", "moq", "lead_time_days", "materials", "dimensions", "packaging", "draft", "files"],
 	compliance_document: ["document_type", "supplier_product_id", "expires_on", "note", "files"],
-	price_change: ["supplier_product_id", "proposed_price", "effective_from", "effective_until", "reason"],
+	price_change: ["supplier_product_id", "proposed_price", "moq", "effective_from", "effective_until", "reason"],
 }
 
 const isoDate = (date: Date | null) => (date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : null)
@@ -338,6 +339,7 @@ const caption = "font-medium text-gray-700"
 						{{ ctrans("Price higher than inflation") }}
 					</span>
 				</label>
+				<label :class="label"><span :class="caption">{{ ctrans("MOQ, in cartons") }}</span><InputNumber v-model="form.moq" :min="1" :useGrouping="false" @input="(event) => (form.moq = typedNumber(event.value))" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Since") }}</span><DatePicker v-model="form.effective_from" dateFormat="dd M yy" showIcon /></label>
 				<div :class="label">
 					<label for="price-change-until" :class="caption">{{ ctrans("Until") }}</label>

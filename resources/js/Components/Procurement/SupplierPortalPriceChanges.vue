@@ -23,6 +23,7 @@ library.add(faImage, faPen, faTag)
 interface PriceChange extends EditedSubmission {
 	state_label: string
 	proposed_price: number
+	moq: number | null
 	effective_from: string | null
 	effective_until: string | null
 	reason: string | null
@@ -39,6 +40,7 @@ interface ProductRow {
 	status: "active" | "on_hold" | "discontinued"
 	status_label: string
 	cost: number
+	moq: number | null
 	price_change: PriceChange | null
 }
 
@@ -74,6 +76,7 @@ const selectState = (value: string | null) => {
 }
 
 const canChange = (row: ProductRow) => row.status !== "discontinued"
+const proposedMoq = (row: ProductRow) => (row.price_change?.editable && row.price_change.moq && row.price_change.moq !== row.moq ? row.price_change.moq : null)
 const locale = useLocaleStore()
 const price = (amount: number | null) => (amount === null ? "—" : locale.currencyFormatUnitCost(props.currency, amount))
 const day = (date: string | null) => (date ? useFormatTime(date) : "—")
@@ -117,6 +120,12 @@ const stateClass: Record<string, string> = {
 									</div>
 								</div>
 							</div>
+							<dl v-if="row.moq || proposedMoq(row)" class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm">
+								<dt class="text-gray-400">{{ ctrans("MOQ (cartons)") }}</dt>
+								<dd class="text-right tabular-nums text-gray-700">
+									{{ row.moq ?? "—" }}<span v-if="proposedMoq(row)" class="font-semibold text-gray-900"> → {{ proposedMoq(row) }}</span>
+								</dd>
+							</dl>
 							<template v-if="row.price_change">
 								<dl class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm">
 									<dt class="text-gray-400">{{ ctrans("Proposed price") }}</dt>
@@ -134,7 +143,7 @@ const stateClass: Record<string, string> = {
 								</dl>
 								<div v-if="row.price_change.feedback" class="rounded bg-gray-50 p-2 text-sm text-gray-700">{{ row.price_change.feedback }}</div>
 							</template>
-							<Button v-if="canChange(row)" type="tertiary" size="xs" :label="row.price_change?.editable ? ctrans('Edit') : ctrans('Change price')" @click="selected = row">
+							<Button v-if="canChange(row)" type="tertiary" size="xs" :label="row.price_change?.editable ? ctrans('Edit') : ctrans('Adjust price')" @click="selected = row">
 								<template #icon><FontAwesomeIcon :icon="row.price_change?.editable ? 'fal fa-pen' : 'fal fa-tag'" fixed-width aria-hidden="true" /></template>
 							</Button>
 						</li>
@@ -162,6 +171,11 @@ const stateClass: Record<string, string> = {
 				<template #cell(proposed_price)="{ item }: { item: ProductRow }">
 					<span v-if="item.price_change" class="whitespace-nowrap font-semibold tabular-nums">{{ price(item.price_change.proposed_price) }}</span>
 				</template>
+				<template #cell(moq)="{ item }: { item: ProductRow }">
+					<span class="whitespace-nowrap tabular-nums">
+						{{ item.moq ?? "—" }}<span v-if="proposedMoq(item)" class="font-semibold text-gray-900"> → {{ proposedMoq(item) }}</span>
+					</span>
+				</template>
 				<template #cell(effective_from)="{ item }: { item: ProductRow }">
 					<span v-if="item.price_change?.effective_from" class="whitespace-nowrap">{{ day(item.price_change.effective_from) }}</span>
 				</template>
@@ -178,14 +192,14 @@ const stateClass: Record<string, string> = {
 					<span class="text-xs text-gray-600">{{ item.price_change?.feedback ?? "" }}</span>
 				</template>
 				<template #cell(actions)="{ item }: { item: ProductRow }">
-					<Button v-if="canChange(item)" type="tertiary" size="xxs" :label="item.price_change?.editable ? ctrans('Edit') : ctrans('Change price')" @click="selected = item">
+					<Button v-if="canChange(item)" type="tertiary" size="xxs" :label="item.price_change?.editable ? ctrans('Edit') : ctrans('Adjust price')" @click="selected = item">
 						<template #icon><FontAwesomeIcon :icon="item.price_change?.editable ? 'fal fa-pen' : 'fal fa-tag'" fixed-width aria-hidden="true" /></template>
 					</Button>
 				</template>
 			</Table>
 		</div>
 
-		<Dialog v-model:visible="isOpen" modal :header="selected ? `${ctrans('Change price')} · ${selected.code}` : ''" class="w-[calc(100vw-2rem)] max-w-2xl">
+		<Dialog v-model:visible="isOpen" modal :header="selected ? `${ctrans('Adjust price')} · ${selected.code}` : ''" class="w-[calc(100vw-2rem)] max-w-2xl">
 			<div v-if="selected" class="mb-4 flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
 				<ZoomableImage v-if="selected.image" :src="selected.image" :full="selected.image_full" :alt="selected.code" class="h-24 w-24 shrink-0 bg-white" />
 				<div v-else class="flex h-24 w-24 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white">
@@ -200,7 +214,7 @@ const stateClass: Record<string, string> = {
 				v-if="selected"
 				:key="selected.id"
 				:forms="forms"
-				:products="[{ id: selected.id, code: selected.code, name: selected.name, price: selected.cost }]"
+				:products="[{ id: selected.id, code: selected.code, name: selected.name, price: selected.cost, moq: selected.moq }]"
 				:currency="currency"
 				:editing="editing"
 				locked-type="price_change"
