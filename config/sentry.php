@@ -21,6 +21,10 @@ return [
     // Example with dynamic git hash: trim(exec('git --git-dir ' . base_path('.git') . ' log --pretty="%h" -n1 HEAD'))
     'release' => env('RELEASE'),
 
+    'before_breadcrumb' => [App\Helpers\SentryScrubber::class, 'beforeBreadcrumb'],
+
+    'before_send_transaction' => [App\Helpers\SentryScrubber::class, 'beforeSendTransaction'],
+
     // When left empty or `null` the Laravel environment will be used (usually discovered from `APP_ENV` in your `.env`)
     'environment' => null,
 

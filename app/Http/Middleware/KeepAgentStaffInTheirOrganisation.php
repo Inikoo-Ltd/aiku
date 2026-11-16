@@ -42,6 +42,8 @@ class KeepAgentStaffInTheirOrganisation
         'grp.json.faire_skipped_badge',
         'grp.json.master_updated_badge',
         'grp.json.products_need_review_badge',
+        'grp.json.layout.badges',
+        'grp.json.layout.organisation_navigation',
         'grp.dashboard.show',
         'grp.tickets.',
         'grp.tasks.',

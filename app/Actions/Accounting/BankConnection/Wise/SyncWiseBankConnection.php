@@ -39,10 +39,15 @@ class SyncWiseBankConnection
 
     private const string JAR = 'jar';
 
-    private const int PARSER_VERSION = 3;
+    private const string TRANSFER_PREFIX = 'transfer:';
+
+    private const int PARSER_VERSION = 4;
 
     /** @var array<string, int|null> */
     private array $currencyIds = [];
+
+    /** @var array<string, Carbon>|null */
+    private ?array $balanceOpenedAt = null;
 
     /**
      * Wise filters since/until on updatedOn, so an incremental run also picks up older lines whose status changed.
@@ -85,7 +90,140 @@ class SyncWiseBankConnection
             $cursor = $page['cursor'] ?? null;
         } while ($cursor && $activities);
 
+        $synced += $this->addTransfersMissingFromFeed($bankConnection, $full ? null : $bankConnection->last_synced_at);
+
         return ['synced' => $synced, 'skipped' => $skipped, 'skipped_examples' => $skippedExamples];
+    }
+
+    /**
+     * Wise's activity feed leaves out some sent transfers (INI-241: a 50,000 EUR one on SK), while the transfers list has
+     * them. A sent transfer that no activity stands for becomes one outgoing line of what left our balance. Transfers to
+     * one of our own accounts (the targets of money we received) are incoming and never added. The amount is sourceValue,
+     * which leaves out a Wise fee (none on the same-currency sends seen so far).
+     */
+    private function addTransfersMissingFromFeed(BankConnection $bankConnection, ?Carbon $since): int
+    {
+        $transfers = [];
+        $offset    = 0;
+        do {
+            $page = $this->wiseGet($bankConnection->credentials, '/v1/transfers', array_filter([
+                'profile'          => $bankConnection->external_id,
+                'status'           => 'outgoing_payment_sent',
+                'createdDateStart' => $since?->copy()->subDays(30)->toDateString(),
+                'limit'            => 200,
+                'offset'           => $offset,
+            ])) ?? [];
+            $transfers = array_merge($transfers, $page);
+            $offset    += 200;
+        } while (count($page) === 200);
+
+        $transfers = collect($transfers)->filter(fn ($transfer) => ($transfer['status'] ?? null) === 'outgoing_payment_sent')->keyBy(fn ($transfer) => (string)$transfer['id']);
+        if ($transfers->isEmpty()) {
+            return 0;
+        }
+
+        $inFeed = BankTransaction::where('bank_connection_id', $bankConnection->id)
+            ->whereIn(DB::raw("data->'activity'->'resource'->>'id'"), $transfers->keys()->all())
+            ->selectRaw("data->'activity'->'resource'->>'id' as resource_id")
+            ->pluck('resource_id')
+            ->all();
+        $alreadyAdded = BankTransaction::where('bank_connection_id', $bankConnection->id)
+            ->whereIn('provider_transaction_id', $transfers->keys()->map(fn ($id) => self::TRANSFER_PREFIX.$id)->all())
+            ->pluck('provider_transaction_id')
+            ->all();
+        $ourAccounts = BankTransaction::where('bank_connection_id', $bankConnection->id)
+            ->where('direction', BankTransactionDirectionEnum::IN)
+            ->whereNotNull(DB::raw("data->'transfer'->>'targetAccount'"))
+            ->selectRaw("distinct data->'transfer'->>'targetAccount' as target_account")
+            ->pluck('target_account')
+            ->all();
+
+        $added = 0;
+        foreach ($transfers->except($inFeed) as $id => $transfer) {
+            if (in_array(self::TRANSFER_PREFIX.$id, $alreadyAdded)
+                || in_array((string)($transfer['targetAccount'] ?? ''), $ourAccounts)
+                || $this->sentBeforeBalanceExisted($bankConnection, ['' => [BankTransactionDirectionEnum::OUT, 0, $transfer['sourceCurrency']]], $transfer)) {
+                continue;
+            }
+            $currencyId = $this->currencyIds[$transfer['sourceCurrency']] ??= Currency::where('code', $transfer['sourceCurrency'])->value('id');
+            if (!$currencyId) {
+                continue;
+            }
+
+            BankTransaction::create([
+                'group_id'                => $bankConnection->group_id,
+                'organisation_id'         => $bankConnection->organisation_id,
+                'bank_connection_id'      => $bankConnection->id,
+                'provider_transaction_id' => self::TRANSFER_PREFIX.$id,
+                'provider_type'           => 'TRANSFER',
+                'direction'               => BankTransactionDirectionEnum::OUT,
+                'amount'                  => -round((float)$transfer['sourceValue'], 2),
+                'currency_id'             => $currencyId,
+                'status'                  => BankTransactionStatusEnum::BOOKED,
+                'counterparty_name'       => $this->recipientName($bankConnection, $transfer['targetAccount'] ?? null),
+                'reference'               => $this->plainText($transfer['reference'] ?? $transfer['details']['reference'] ?? null),
+                'booked_at'               => Carbon::parse($transfer['created'], 'UTC'),
+                'provider_updated_at'     => Carbon::parse($transfer['created'], 'UTC'),
+                'data'                    => ['transfer' => $transfer, 'missing_from_feed' => true, 'parser_version' => self::PARSER_VERSION],
+            ]);
+            $added++;
+        }
+
+        return $added;
+    }
+
+    private function recipientName(BankConnection $bankConnection, int|string|null $accountId): ?string
+    {
+        if (!$accountId) {
+            return null;
+        }
+
+        try {
+            return $this->plainText($this->wiseGet($bankConnection->credentials, '/v1/accounts/'.$accountId)['accountHolderName'] ?? null);
+        } catch (RequestException) {
+            return null;
+        }
+    }
+
+    /**
+     * Before Wise had balances (and before a currency's balance was opened) a transfer was paid in from a bank, so it never
+     * left a balance (INI-241: AW "Selling euros", 100,000 EUR in Jan 2015, the EUR balance opened Dec 2017).
+     */
+    private function sentBeforeBalanceExisted(BankConnection $bankConnection, array $legs, ?array $transfer): bool
+    {
+        if (!isset($transfer['created']) || count($legs) !== 1 || $legs[''][0] !== BankTransactionDirectionEnum::OUT) {
+            return false;
+        }
+
+        $openedAt = $this->balanceOpenedAt($bankConnection)[$legs[''][2]] ?? null;
+
+        return $openedAt && Carbon::parse($transfer['created'], 'UTC')->lt($openedAt);
+    }
+
+    /**
+     * @return array<string, Carbon> earliest creation of each currency's balance; closed balances are not listed, so they get no rule
+     */
+    private function balanceOpenedAt(BankConnection $bankConnection): array
+    {
+        if ($this->balanceOpenedAt === null) {
+            $this->balanceOpenedAt = [];
+            try {
+                $balances = $this->wiseGet($bankConnection->credentials, "/v4/profiles/$bankConnection->external_id/balances", ['types' => 'STANDARD,SAVINGS']) ?? [];
+            } catch (RequestException) {
+                $balances = [];
+            }
+            foreach ($balances as $balance) {
+                if (!isset($balance['currency'], $balance['creationTime'])) {
+                    continue;
+                }
+                $createdAt = Carbon::parse($balance['creationTime']);
+                if (!isset($this->balanceOpenedAt[$balance['currency']]) || $createdAt->lt($this->balanceOpenedAt[$balance['currency']])) {
+                    $this->balanceOpenedAt[$balance['currency']] = $createdAt;
+                }
+            }
+        }
+
+        return $this->balanceOpenedAt;
     }
 
     /**
@@ -118,6 +256,13 @@ class SyncWiseBankConnection
             $transfer = $this->fetchTransfer($bankConnection, $activity['resource']['id']);
         }
 
+        if ($this->sentBeforeBalanceExisted($bankConnection, $legs, $transfer)) {
+            if (!$stored) {
+                return false;
+            }
+            $legs = [];
+        }
+
         DB::transaction(fn () => $this->writeLegs($bankConnection, $activity, $legs, $currencyIds, $transfer));
 
         return true;
@@ -126,9 +271,9 @@ class SyncWiseBankConnection
     private function writeLegs(BankConnection $bankConnection, array $activity, array $legs, array $currencyIds, ?array $transfer): void
     {
         BankTransaction::where('bank_connection_id', $bankConnection->id)
-            ->whereIn('provider_transaction_id', array_map(
-                fn ($suffix) => $activity['id'].$suffix,
-                array_diff(['', self::CONVERSION_CREDIT_SUFFIX], array_keys($legs))
+            ->whereIn('provider_transaction_id', array_merge(
+                array_map(fn ($suffix) => $activity['id'].$suffix, array_diff(['', self::CONVERSION_CREDIT_SUFFIX], array_keys($legs))),
+                ($activity['resource']['type'] ?? null) === 'TRANSFER' ? [self::TRANSFER_PREFIX.$activity['resource']['id']] : []
             ))
             ->delete();
 

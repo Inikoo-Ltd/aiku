@@ -36,6 +36,7 @@ const getFactor = (unit: string) => {
 // Convert value to display
 const toDisplay = (val: any) => {
   if (!val) return createDefaultValue()
+  if (!val.h && !val.l && !val.w) val = { ...createDefaultValue(), ...val }
   const factor = getFactor(val.units)
   return {
     ...val,

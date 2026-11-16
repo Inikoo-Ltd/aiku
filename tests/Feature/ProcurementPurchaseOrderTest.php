@@ -519,6 +519,9 @@ test('agent manager only sees their own agent organisation', function () {
     actingAs($agentUser);
 
     $this->get(route('grp.org.agent.purchase_orders.index', $organisation->slug))->assertOk();
+    $this->getJson(route('grp.json.layout.badges'))->assertOk()->assertJsonStructure(['notifications', 'ticket_badges', 'task_badges']);
+    $this->getJson(route('grp.json.layout.organisation_navigation', $organisation->slug))->assertOk()->assertJsonStructure(['navigation' => ['agent_orders']]);
+    $this->getJson(route('grp.json.layout.organisation_navigation', $this->organisation->slug))->assertForbidden();
     $groupTicket = \App\Actions\Helpers\Ticket\StoreTicket::make()->action($this->group, ['subject' => 'HS codes for customs', 'reporter_type' => 'User', 'reporter_id' => $agentUser->id]);
     expect($groupTicket->organisation_id)->toBeNull();
     $this->get(route('grp.org.tickets.show', [$organisation->slug, $groupTicket->reference]))->assertOk();

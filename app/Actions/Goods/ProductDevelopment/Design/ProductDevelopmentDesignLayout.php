@@ -112,14 +112,8 @@ class ProductDevelopmentDesignLayout
             return [];
         }
 
-        $toMm  = match (Arr::get($dimensions, 'units', 'cm')) {
-            'mm' => 1,
-            'm' => 1000,
-            'inch' => 25.4,
-            default => 10,
-        };
         $sizes = collect(['width' => 'w', 'length' => 'l', 'height' => 'h'])
-            ->map(fn (string $key) => round((float) Arr::get($dimensions, $key, 0) * $toMm, 1));
+            ->map(fn (string $key) => round((float) Arr::get($dimensions, $key, 0) * 1000, 1));
 
         if ($sizes->contains(fn (float $size) => $size <= 0)) {
             return [];

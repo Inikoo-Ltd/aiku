@@ -31,6 +31,7 @@ use App\Models\Goods\ProductDevelopmentComponent;
 use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\User;
+use App\Helpers\DimensionsFormatter;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -270,6 +271,10 @@ class GetProductDevelopmentChecklistEditor
         $model = $targetField->isOnSupplierProduct() ? $item?->supplierProduct : $item?->tradeUnit;
 
         $value = $model?->getAttribute($targetField->column());
+
+        if ($targetField === ProductDevelopmentTargetFieldEnum::TRADE_UNIT_MARKETING_DIMENSIONS && is_array($value)) {
+            return DimensionsFormatter::fromMetres($value);
+        }
 
         return $value !== null && $targetField->storedPerUnit() !== 1 ? $value / $targetField->storedPerUnit() : $value;
     }
