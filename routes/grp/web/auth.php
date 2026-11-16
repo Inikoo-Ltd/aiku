@@ -32,6 +32,8 @@ use App\Actions\SupplyChain\SupplierShareLink\UI\PdfSupplierPortalLabels;
 use App\Actions\SupplyChain\SupplierShareLink\UI\SearchSupplierPortal;
 use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalPurchaseOrder;
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalProfile;
+use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierPortalPurchaseOrderDocument;
+use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalPurchaseOrderDocument;
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalPurchaseOrderProduction;
 use App\Actions\SupplyChain\SupplierShareLink\SendSupplierShareCode;
 use App\Actions\SupplyChain\SupplierSubmission\StoreSupplierPortalSubmission;
@@ -58,6 +60,8 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::get('products/{supplierProduct}/websites', GetSupplierPortalProductWebsites::class)->whereNumber('supplierProduct')->name('product_websites');
         Route::get('purchase-orders/{purchaseOrder}', ShowSupplierPortalPurchaseOrder::class)->whereNumber('purchaseOrder')->name('purchase_order');
         Route::post('purchase-orders/{purchaseOrder}/production', UpdateSupplierPortalPurchaseOrderProduction::class)->middleware('throttle:supplier-portal-submit')->whereNumber('purchaseOrder')->name('purchase_order.production');
+        Route::post('purchase-orders/{purchaseOrder}/documents', StoreSupplierPortalPurchaseOrderDocument::class)->middleware('throttle:supplier-portal-submit')->whereNumber('purchaseOrder')->name('purchase_order.documents.store');
+        Route::get('purchase-orders/{purchaseOrder}/documents/{media:ulid}', DownloadSupplierPortalPurchaseOrderDocument::class)->whereNumber('purchaseOrder')->name('purchase_order.document');
         Route::get('purchase-orders/{purchaseOrder}/receipts/{media:ulid}', DownloadSupplierPortalPaymentReceipt::class)->whereNumber('purchaseOrder')->name('purchase_order.receipt');
         Route::get('images/{media:ulid}', DownloadSupplierPortalImage::class)->name('image');
         Route::get('feedback-photos/{media:ulid}', DownloadSupplierPortalFeedbackPhoto::class)->name('feedback_photo');

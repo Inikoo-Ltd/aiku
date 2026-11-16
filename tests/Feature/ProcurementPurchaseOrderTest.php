@@ -1097,7 +1097,11 @@ test('a supplier behind an agent sees its sales at its own prices, its agent and
         ->assertInertia(fn ($page) => $page
             ->where('agent.name', $this->agent->name)
             ->where('valuation.measure', 'supplier')
-            ->loadDeferredProps(fn ($reload) => $reload->where('sales.top_sellers.0.sold', fn ($sold) => abs($sold - 10 * $pricePerSko) < 0.5)));
+            ->loadDeferredProps(fn ($reload) => $reload
+                ->where('sales.top_sellers.0.sold', fn ($sold) => abs($sold - 10 * $pricePerSko) < 0.5)
+                ->where('sales.by_organisation.'.$orgStock->organisation->code.'.top_sellers.0.sold', fn ($sold) => abs($sold - 10 * $pricePerSko) < 0.5)
+                ->where('sales.countries.0.top_sellers.0.sold', fn ($sold) => abs($sold - 10 * $pricePerSko) < 0.5)
+                ->where('sales.by_organisation.'.$orgStock->organisation->code.'.top_sellers.0.organisations', fn ($organisations) => collect($organisations)->pluck('code')->all() === [$orgStock->organisation->code])));
 });
 
 test('PO journey board marks stages on an agent purchase order and keeps QC for management', function (PurchaseOrder $purchaseOrder) {

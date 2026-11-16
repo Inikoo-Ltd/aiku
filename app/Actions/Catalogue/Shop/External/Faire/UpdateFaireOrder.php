@@ -15,7 +15,6 @@ use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromShipping;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\CRM\Customer\UpdateCustomer;
-use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteLineCreation;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
@@ -31,7 +30,6 @@ use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
@@ -74,11 +72,6 @@ class UpdateFaireOrder extends OrgAction
                 DeleteInvoice::run($invoice, [
                     'deleted_note' => 'Cancelled by Faire'
                 ]);
-            }
-            foreach ($order->deliveryNotes as $deliveryNote) {
-                if ($deliveryNote->state != DeliveryNoteStateEnum::CANCELLED) {
-                    CancelDeliveryNote::run($deliveryNote, null, false);
-                }
             }
 
             CancelOrder::run($order);

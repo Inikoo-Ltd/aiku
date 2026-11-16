@@ -18,9 +18,9 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArrowUp, faArrowDown, faBox, faBuilding, faChevronRight, faClipboard, faEnvelope, faEnvelopeOpenText, faExclamationTriangle, faCheckCircle, faClock, faMapMarkerAlt, faPhone, faStopwatch, faTrophy, faUsers, faUserTie } from "@fal"
+import { faArrowUp, faArrowDown, faBox, faBuilding, faChevronRight, faClipboard, faEnvelope, faEnvelopeOpenText, faExclamationTriangle, faCheckCircle, faClock, faMapMarkerAlt, faPhone, faStar, faStopwatch, faTrophy, faUsers, faUserTie } from "@fal"
 
-library.add(faArrowUp, faArrowDown, faBox, faBuilding, faChevronRight, faClipboard, faEnvelope, faEnvelopeOpenText, faExclamationTriangle, faCheckCircle, faClock, faMapMarkerAlt, faPhone, faStopwatch, faTrophy, faUsers, faUserTie)
+library.add(faArrowUp, faArrowDown, faBox, faBuilding, faChevronRight, faClipboard, faEnvelope, faEnvelopeOpenText, faExclamationTriangle, faCheckCircle, faClock, faMapMarkerAlt, faPhone, faStar, faStopwatch, faTrophy, faUsers, faUserTie)
 
 interface Person {
 	contact_name: string | null
@@ -61,6 +61,7 @@ const props = defineProps<{
 	contactsLoading?: boolean
 	summary?: PortalSummary
 	sales?: { products: number; selling: number }
+	feedback?: { customers: { rating: number | null; reviews: number; refund_percent: number | null; recent: { code: string; rating: number; message: string; date: string }[] } }
 	openOrders: number
 	orders?: { ribbons: JourneyRibbon[] }
 	theme: PortalTheme
@@ -68,13 +69,16 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-	go: [tab: "products" | "purchase_orders"]
+	go: [tab: "products" | "purchase_orders" | "sales"]
 	open: [purchaseOrderId: number]
 }>()
 
 const locale = useLocaleStore()
 
 const SHOWN_ORDERS = 5
+const SHOWN_REVIEWS = 3
+
+const stars = (rating: number) => "★".repeat(rating) + "☆".repeat(5 - rating)
 
 const greetingName = computed(() => {
 	const contactName = props.company?.contact_name?.trim()
@@ -83,7 +87,7 @@ const greetingName = computed(() => {
 })
 
 const money = (amount: number, currency: string | null) =>
-	currency ? new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 0 }).format(Math.round(amount)) : Math.round(amount).toString()
+	currency ? new Intl.NumberFormat(undefined, { style: "currency", currency, currencyDisplay: "narrowSymbol", maximumFractionDigits: 0 }).format(Math.round(amount)) : Math.round(amount).toString()
 
 const changeLabel = (change: number) =>
 	change >= 0 ? ctrans(":percent% more than the 12 months before", { percent: String(change) }) : ctrans(":percent% less than the 12 months before", { percent: String(Math.abs(change)) })
@@ -324,6 +328,34 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 			</div>
 
 			<aside class="flex min-w-0 flex-col gap-4 lg:gap-6">
+				<section v-if="feedback" class="rounded-lg border border-gray-200 bg-white shadow-sm">
+					<header class="flex items-center gap-2.5 border-b border-gray-100 px-4 py-3">
+						<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md" :style="{ backgroundColor: accent.tint, color: accent.colour }">
+							<FontAwesomeIcon icon="fal fa-star" fixed-width aria-hidden="true" />
+						</span>
+						<h2 class="flex-1 text-sm font-semibold text-gray-800">{{ ctrans("Customer feedback") }}</h2>
+						<button type="button" class="text-xs text-gray-500 hover:text-gray-700" @click="emit('go', 'sales')">{{ ctrans("See all") }}</button>
+					</header>
+					<div class="p-4">
+						<dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs tabular-nums">
+							<dt class="text-gray-500">{{ ctrans("Rating") }}</dt>
+							<dd class="text-right text-gray-800">{{ feedback.customers.rating === null ? "—" : feedback.customers.rating.toFixed(2) }} <span class="text-gray-400">({{ feedback.customers.reviews }})</span></dd>
+							<dt class="text-gray-500">{{ ctrans("Refunds %") }}</dt>
+							<dd class="text-right text-gray-800">{{ feedback.customers.refund_percent === null ? "—" : `${feedback.customers.refund_percent.toFixed(1)}%` }}</dd>
+						</dl>
+						<p v-if="!feedback.customers.recent.length" class="pt-3 text-center text-xs text-gray-400">{{ ctrans("No public reviews yet") }}</p>
+						<ul v-else class="mt-3 divide-y divide-gray-100 text-xs">
+							<li v-for="(review, index) in feedback.customers.recent.slice(0, SHOWN_REVIEWS)" :key="index" class="py-1.5">
+								<div class="flex items-baseline justify-between gap-2 text-gray-500">
+									<span><span class="text-amber-500">{{ stars(review.rating) }}</span> <span class="font-medium text-gray-700">{{ review.code }}</span></span>
+									<span class="tabular-nums text-gray-400">{{ useFormatTime(review.date) }}</span>
+								</div>
+								<p class="mt-0.5 line-clamp-3 text-gray-700">{{ review.message }}</p>
+							</li>
+						</ul>
+					</div>
+				</section>
+
 				<section v-if="contactsLoading || owner || agent || buyers?.length" class="rounded-lg border border-gray-200 bg-white shadow-sm">
 					<header class="flex items-center gap-2.5 border-b border-gray-100 px-4 py-3">
 						<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md" :style="{ backgroundColor: accent.tint, color: accent.colour }">

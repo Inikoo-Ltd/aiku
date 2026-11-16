@@ -72,6 +72,14 @@ class UnassignToProduceItems extends OrgAction
 
         $item->update(['job_order_id' => null]);
 
+        if ($jobOrderItems->isNotEmpty()) {
+            PartnerShoppingListItem::where('job_order_id', $jobOrder->id)
+                ->where('stock_id', $item->stock_id)
+                ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->get()
+                ->each(fn (PartnerShoppingListItem $sameProduct) => $sameProduct->update(['job_order_id' => null]));
+        }
+
         if (!$jobOrder->jobOrderItems()->exists()) {
             $jobOrder->delete();
         }

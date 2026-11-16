@@ -4274,3 +4274,32 @@ test('procurement is told about a delivery booked in without costs from a queue 
 
     $user->removeRole("procurement-clerk-{$this->organisation->id}");
 });
+
+test('a container straight from a supplier takes its other agreed orders, never another supplier\'s (HELP-4725)', function () {
+    [$orgSupplier, , $orgSupplierProduct]           = independentOrgSupplierFixture($this);
+    [$otherOrgSupplier, $otherSupplierProduct, $otherOrgSupplierProduct] = independentOrgSupplierFixture($this);
+
+    $firstOrder   = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 100);
+    $secondOrder  = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 1, 50);
+    $otherOrder   = createConfirmedAgentOrder($this, $otherOrgSupplier, $otherOrgSupplierProduct, 0, 30);
+
+    $container = StoreStockDeliveryFromPurchaseOrder::make()->action($firstOrder->refresh());
+    $addable   = \App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery::addablePurchaseOrders($container)->pluck('purchase_orders.id');
+
+    expect($container->parent_type)->toBe('OrgSupplier')
+        ->and(\App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery::acceptsPurchaseOrders($container))->toBeTrue()
+        ->and($addable->contains($secondOrder->id))->toBeTrue()
+        ->and($addable->contains($otherOrder->id))->toBeFalse()
+        ->and(StoreStockDeliveryFromPurchaseOrder::openAgentDeliveries($secondOrder)->pluck('id')->all())->toContain($container->id)
+        ->and(StoreStockDeliveryFromPurchaseOrder::openAgentDeliveries($otherOrder)->pluck('id')->all())->not->toContain($container->id);
+
+    \App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery::make()->action($container, ['purchase_order_ids' => [$secondOrder->id]]);
+
+    expect($container->refresh()->purchaseOrders()->pluck('purchase_orders.id')->sort()->values()->all())->toBe(collect([$firstOrder->id, $secondOrder->id])->sort()->values()->all())
+        ->and($container->number_purchase_orders)->toBe(2);
+
+    $unmatched = (new ReflectionMethod(\App\Actions\GoodsIn\StockDelivery\PreviewStockDeliveryItemsImport::class, 'unmatched'))
+        ->invoke(\App\Actions\GoodsIn\StockDelivery\PreviewStockDeliveryItemsImport::make(), $container, [$otherSupplierProduct->code]);
+
+    expect($unmatched[mb_strtolower($otherSupplierProduct->code)]['lines'])->toBeEmpty();
+});

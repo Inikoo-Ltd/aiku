@@ -27,8 +27,19 @@ enum PurchaseOrderAttachmentScopeEnum: string
     case PRODUCTION_PHOTO = 'Production photo';
     case QC_REPORT    = 'QC report';
     case BILL_OF_LADING = 'Bill of lading';
+    case CERTIFICATE_OF_ORIGIN = 'Certificate of origin';
     case SHIPPING_QUOTE = 'Shipping quote';
     case OTHER        = 'Other';
+
+    /**
+     * The shipping and customs documents a supplier uploads to its own order from its portal.
+     *
+     * @return list<self>
+     */
+    public static function supplierPortal(): array
+    {
+        return [self::PROFORMA, self::INVOICE, self::PACKING_LIST, self::BILL_OF_LADING, self::CERTIFICATE_OF_ORIGIN, self::OTHER];
+    }
 
     public static function labels(): array
     {
@@ -45,6 +56,7 @@ enum PurchaseOrderAttachmentScopeEnum: string
             'Production photo' => __('Production photo'),
             'QC report'    => __('QC report'),
             'Bill of lading' => __('Bill of lading'),
+            'Certificate of origin' => __('Certificate of origin'),
             'Shipping quote' => __('Shipping quote'),
             'Other'        => __('Other'),
         ];
@@ -72,6 +84,7 @@ enum PurchaseOrderAttachmentScopeEnum: string
             Str::contains($name, ['proforma', 'pro-forma', 'pro forma']) => self::PROFORMA,
             Str::contains($name, ['packing', 'packlist']) => self::PACKING_LIST,
             Str::contains($name, ['bill of lading', 'bill_of_lading', 'bill-of-lading', 'b/l']) => self::BILL_OF_LADING,
+            Str::contains($name, ['certificate of origin', 'certificate_of_origin', 'certificate-of-origin']) => self::CERTIFICATE_OF_ORIGIN,
             Str::contains($name, ['shipping quote', 'freight quote', 'quotation']) => self::SHIPPING_QUOTE,
             Str::contains($name, ['qc report', 'qc_report', 'qc-report', 'inspection report']) => self::QC_REPORT,
             Str::contains($name, ['bank statement', 'bank_statement', 'bank-statement', 'swift', 'remittance']) => self::BANK_STATEMENT,

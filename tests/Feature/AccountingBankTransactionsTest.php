@@ -2636,6 +2636,40 @@ test('a fio payment whose variable symbol is the order number without its prefix
         ->and($noSymbol->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
 });
 
+test('a payment quoting the invoice number instead of the order number is matched to the invoiced order', function () {
+    $order   = bankMatchingOrder(createCustomer($this->shop), 839.59);
+    $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($order->customer, \App\Models\Accounting\Invoice::factory()->definition());
+    $invoiceReference = 'TSi'.random_int(1000000, 9999999);
+    $invoice->updateQuietly(['reference' => $invoiceReference, 'order_id' => $order->id]);
+    $bankConnection = bankMatchingConnection($this->organisation);
+
+    $line = fn (string $id, string $reference) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 839.59,
+        'currency_id'             => $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => $reference,
+        'booked_at'               => now(),
+    ]);
+
+    $asWritten  = $line('inv1', $invoiceReference);
+    $upperCased = $line('inv2', 'Invoice '.strtoupper($invoiceReference));
+    $unknown    = $line('inv3', 'TSi'.random_int(1000000, 9999999).'0');
+
+    MatchBankTransactions::run($bankConnection);
+
+    expect($asWritten->refresh()->order_id)->toBe($order->id)
+        ->and($asWritten->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($upperCased->refresh()->order_id)->toBe($order->id)
+        ->and($upperCased->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($unknown->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
+});
+
 test('auto-pay records a mapped payer, such as DPD CZ cash on delivery, on its own account and everyone else on the bank account', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
 

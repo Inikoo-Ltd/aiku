@@ -221,13 +221,16 @@ class ShowAgentSales extends OrgAction
             ...$this->rankings($products),
             'countries'     => collect($countries)->sortBy('name')->map(fn (array $country) => [
                 ...$country,
-                ...$this->rankings($this->inCountry($products, $country['code'])),
+                ...$this->rankings($this->within($products, 'country', $country['code'])),
             ])->values()->all(),
+            'by_organisation' => collect($organisations)->mapWithKeys(fn (array $organisation) => [
+                $organisation['code'] => $this->rankings($this->within($products, 'code', $organisation['code'])),
+            ])->all(),
         ];
     }
 
     /**
-     * @return array{top_sellers: array<int, array<string, mixed>>, out: array, low: array, dead: array}
+     * @return array{top_sellers: array<int, array<string, mixed>>, out: array<string, mixed>, low: array<string, mixed>, dead: array<string, mixed>}
      */
     private function rankings(Collection $products): array
     {
@@ -240,13 +243,13 @@ class ShowAgentSales extends OrgAction
     }
 
     /**
-     * The products held by the organisations of one country, with what they sold there only.
+     * The products held by the organisations matching $key = $value (one company, or every company of a country), with what they sold there only.
      */
-    private function inCountry(Collection $products, string $countryCode): Collection
+    private function within(Collection $products, string $key, string $value): Collection
     {
         return $products
-            ->map(function (array $product) use ($countryCode) {
-                $organisations = collect($product['organisations'])->where('country', $countryCode)->values();
+            ->map(function (array $product) use ($key, $value) {
+                $organisations = collect($product['organisations'])->where($key, $value)->values();
 
                 return [...$product, 'organisations' => $organisations->all(), 'sold' => round($organisations->sum('sold'), 2)];
             })

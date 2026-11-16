@@ -8678,3 +8678,29 @@ test('the grouped tab of a picking session loads every delivery note in one go a
         $this->organisation->update(['settings' => $originalOrganisationSettings]);
     }
 });
+
+test('cancelling a packed order raises a cancellation return instead of crediting the shelf (HELP-4734)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($deliveryNote);
+    StorePacking::make()->action($deliveryNoteItem->refresh(), $this->user, []);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+
+    $pickingId        = $deliveryNoteItem->pickings()->where('type', \App\Enums\Dispatching\Picking\PickingTypeEnum::PICK)->first()->id;
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('org_stock_id', $deliveryNoteItem->org_stock_id)->first();
+    $shelfQuantity    = (float)$locationOrgStock->quantity;
+
+    \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($deliveryNote->orders()->first());
+
+    $deliveryNote       = $deliveryNote->refresh();
+    $returnDeliveryNote = $deliveryNote->returnedDeliveryNote()->first();
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::CANCELLED)
+        ->and(\App\Models\Dispatching\Picking::find($pickingId))->not->toBeNull()
+        ->and((float)$locationOrgStock->refresh()->quantity)->toBe($shelfQuantity)
+        ->and($returnDeliveryNote)->not->toBeNull()
+        ->and($returnDeliveryNote->type)->toBe(\App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum::CANCELLATION)
+        ->and((float)$returnDeliveryNote->returnDeliveryNoteItem()->first()->total_expected_qty)
+        ->toBe((float)$deliveryNoteItem->refresh()->quantity_picked);
+});

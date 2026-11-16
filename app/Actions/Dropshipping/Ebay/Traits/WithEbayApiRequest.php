@@ -1697,6 +1697,14 @@ trait WithEbayApiRequest
                 data_set($data, 'format', 'FIXED_PRICE');
             }
 
+            if (Arr::has($offerData, 'fulfillment_policy_from')) {
+                if (Arr::get($data, 'listingPolicies.fulfillmentPolicyId') !== Arr::get($offerData, 'fulfillment_policy_from')) {
+                    return ['skipped' => true];
+                }
+
+                data_set($data, 'listingPolicies.fulfillmentPolicyId', $this->fulfillment_policy_id);
+            }
+
             $useChannelPolicies = (bool) Arr::get($offerData, 'use_channel_policies');
 
             if ($useChannelPolicies || blank(Arr::get($data, 'merchantLocationKey'))) {
