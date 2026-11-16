@@ -9,7 +9,6 @@
 namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\CRM\Customer\StoreCustomerProductFromArtefact;
-use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Accounting\CreditTransaction\UI\IndexCreditTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
@@ -158,8 +157,7 @@ class ShowCustomer extends OrgAction
                 ],
                 'sales_channels'   => GetSalesChannelOptions::make()->getOptions($customer->shop),
                 'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B
-                    && $request->user()->authTo("orders.{$this->shop->id}.edit")
-                    && !StoreOrder::isPartnerBuyingFromHub($customer, $this->shop),
+                    && $request->user()->authTo("orders.{$this->shop->id}.edit"),
                 'can_email_customer' => $canEmailCustomer,
                 'email_templates'    => $canEmailCustomer ? $this->emailTemplates($customer) : [],
                 'email_template_values' => $canEmailCustomer ? GetCustomerEmailTemplateValues::run($customer, $request->user()) : [],

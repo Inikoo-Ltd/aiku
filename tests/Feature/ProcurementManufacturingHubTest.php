@@ -1601,8 +1601,10 @@ describe('partner shopping list', function () {
         $quantity = (float) $transaction->quantity_ordered;
 
         expect(fn () => $through('grp.models.customer.submitted_order.store', ['customer' => $order->customer]))->toThrow(ValidationException::class)
-            ->and(fn () => $through('grp.models.customer.order.store', ['customer' => $order->customer]))->toThrow(ValidationException::class)
+            ->and($through('grp.models.customer.order.store', ['customer' => $order->customer]))->toBe('passed')
             ->and(fn () => $through('grp.models.order.transaction.store', ['order' => $order]))->toThrow(ValidationException::class)
+            ->and(fn () => $through('grp.models.order.transaction.store', ['order' => $order, 'historicAsset' => new \App\Models\Catalogue\HistoricAsset(['model_type' => 'Product'])]))->toThrow(ValidationException::class)
+            ->and($through('grp.models.order.transaction.store', ['order' => $order, 'historicAsset' => new \App\Models\Catalogue\HistoricAsset(['model_type' => 'Service'])]))->toBe('passed')
             ->and(fn () => $through('grp.models.order.follow_up.store', ['order' => $order]))->toThrow(ValidationException::class)
             ->and($through('grp.models.transaction.update_quantity_ordered', ['transaction' => $transaction], ['quantity_ordered' => $quantity]))->toBe('passed')
             ->and(fn () => $through('grp.models.transaction.update_quantity_ordered', ['transaction' => $transaction], ['quantity_ordered' => $quantity + 1]))->toThrow(ValidationException::class)

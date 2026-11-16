@@ -56,6 +56,7 @@ class StoreOrder extends OrgAction
     public int $hydratorsDelay = 0;
 
     private CustomerClient|Customer $parent;
+    private bool $isBackOfficeOrder = false;
 
     /**
      * @throws \Throwable
@@ -339,9 +340,13 @@ class StoreOrder extends OrgAction
         }
     }
 
+    /**
+     * Staff still open orders for a partner by hand, but only for services (service invoices); the
+     * goods come through the shopping list, and EnsureHubPartnerOrderFromShoppingList refuses products on them.
+     */
     private function ensureNotPartnerOrderToHub(?Customer $customer, Shop $shop, ?int $salesChannelId): void
     {
-        if (!self::isPartnerBuyingFromHub($customer, $shop)) {
+        if ($this->isBackOfficeOrder || !self::isPartnerBuyingFromHub($customer, $shop)) {
             return;
         }
 
@@ -493,6 +498,7 @@ class StoreOrder extends OrgAction
     public function inCustomer(Customer $customer, ActionRequest $request): Order
     {
         $this->parent = $customer;
+        $this->isBackOfficeOrder = true;
         $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer, $this->validatedData);
