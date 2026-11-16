@@ -21,6 +21,7 @@ interface OrgSupplier {
 	org_supplier_slug: string
 	code: string
 	name: string
+	name_source: "company" | "contact" | null
 	nickname: string | null
 	location: object
 	status_icon: object
@@ -63,6 +64,14 @@ function purchaseOrdersRoute(orgSupplier: OrgSupplier) {
 	])
 }
 
+function nameSourceTooltip(orgSupplier: OrgSupplier): string | null {
+	if (orgSupplier.name_source === "company") {
+		return ctrans("Company name")
+	}
+
+	return orgSupplier.name_source === "contact" ? ctrans("Contact name") : null
+}
+
 function orgAgentRoute(orgSupplier: OrgSupplier) {
 	return route("grp.org.procurement.org_agents.show", [
 		route().params["organisation"],
@@ -81,6 +90,9 @@ function orgAgentRoute(orgSupplier: OrgSupplier) {
 				{{ orgSupplier["code"] }}
 			</Link>
 			<span v-if="orgSupplier.open_incidents" class="ml-1 rounded-full bg-gray-800 px-1.5 py-0.5 text-xs font-medium text-white tabular-nums" :title="ctrans('Open incidents')">{{ orgSupplier.open_incidents }}</span>
+		</template>
+		<template #cell(name)="{ item: orgSupplier }">
+			<span v-tooltip="nameSourceTooltip(orgSupplier)">{{ orgSupplier.name }}</span>
 		</template>
 		<template #cell(agent_code)="{ item: orgSupplier }">
 			<Link v-if="orgSupplier.org_agent_slug" :href="orgAgentRoute(orgSupplier)" class="secondaryLink" :title="orgSupplier.agent_name">

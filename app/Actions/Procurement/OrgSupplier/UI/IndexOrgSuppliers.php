@@ -30,6 +30,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexOrgSuppliers extends OrgAction
 {
@@ -100,10 +101,11 @@ class IndexOrgSuppliers extends OrgAction
         }
 
         return $queryBuilder
+            ->selectRaw("coalesce(nullif(suppliers.company_name, ''), suppliers.contact_name, suppliers.name) as official_name")
             ->defaultSort('suppliers.code')
             ->allowedSorts([
                 'code',
-                'name',
+                AllowedSort::field('name', 'official_name'),
                 'agent_code',
                 'location',
                 'number_org_supplier_products',
@@ -241,12 +243,11 @@ class IndexOrgSuppliers extends OrgAction
 
             $table
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'nickname', label: __('Nickname'), canBeHidden: false);
 
             if (!$agent) {
-                $table
-                    ->column(key: 'nickname', label: __('Nickname'), canBeHidden: false)
-                    ->column(key: 'agent_code', label: __('Agent'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'agent_code', label: __('Agent'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             $table
