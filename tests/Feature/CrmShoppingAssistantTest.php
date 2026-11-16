@@ -70,6 +70,7 @@ beforeAll(function () {
 beforeEach(function () {
     [$this->organisation, $this->user, $this->shop] = createShop();
     [, $this->product] = createProduct($this->shop);
+    DB::table('product_categories')->where('id', $this->product->family_id)->update(['is_in_website' => true]);
 
     config(['services.openrouter.api_key' => 'test', 'services.shopping_assistant.plain_search' => false, 'services.shopping_assistant.light_model' => null, 'services.shopping_assistant.premium_model' => null]);
     actingAs($this->user);
@@ -4041,4 +4042,40 @@ test('a second plain search in a row goes to the model, which can explain what t
 
     expect($again['message']->flags ?? [])->not->toContain('plain_search')
         ->and($again['reply'])->toStartWith('We have no niaouli');
+});
+
+test('products of a family kept off the website that holds products made for customers are shown only to a customer with one of their own there, and a search without the model keeps only the close matches', function () {
+    $suffix     = Str::lower(Str::random(5));
+    $word       = 'brelm'.$suffix;
+    $department = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $family     = \App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($department, array_merge(\App\Models\Catalogue\ProductCategory::factory()->definition(), ['type' => \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY->value, 'name' => 'Personalised '.$suffix]));
+    DB::table('product_categories')->where('id', $family->id)->update(['is_in_website' => false]);
+    $owner      = shoppingAssistantCustomer($this->shop);
+    $prospect   = shoppingAssistantCustomer($this->shop);
+    $theirs     = shoppingAssistantProduct($this->product);
+    $sibling    = shoppingAssistantProduct($this->product);
+    $public     = shoppingAssistantProduct($this->product);
+    $far        = shoppingAssistantProduct($this->product);
+    $theirs->update(['family_id' => $family->id, 'name' => ucfirst($word).' Soap Bar A']);
+    $sibling->update(['family_id' => $family->id, 'name' => ucfirst($word).' Soap Bar B']);
+    $public->update(['name' => ucfirst($word).' Soap Bar C']);
+    $far->update(['name' => 'Zinnober Poster '.$suffix]);
+    DB::table('product_has_exclusive_customers')->insert(['product_id' => $theirs->id, 'customer_id' => $owner->id, 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('products')->whereIn('id', [$theirs->id, $sibling->id, $public->id, $far->id])->update(['is_in_website' => true]);
+
+    $vector = fn (string $text) => array_replace(array_fill(0, 1024, 0.0), [str_contains(mb_strtolower($text), $word) ? 0 : 1 => 1.0]);
+    Http::fake([
+        '*' => fn ($request) => Http::response(['data' => collect($request['input'] ?? [])->map(fn ($text, $index) => ['index' => $index, 'embedding' => $vector($text)])->all()]),
+    ]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    $tools  = GetShoppingAssistantTools::make();
+    $shown  = fn (Customer $customer, array $arguments) => collect($tools->execute(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'search_products', $arguments)['products'])->pluck('id');
+    $toProspect = $shown($prospect, ['query' => $word.' soap']);
+    $toOwner    = $shown($owner, ['query' => $word.' soap']);
+    $closeOnly  = $shown($prospect, ['query' => $word.' soap', 'close_only' => true]);
+
+    expect($toProspect)->toContain($public->id)->not->toContain($sibling->id)->not->toContain($theirs->id)
+        ->and($toOwner)->toContain($public->id)->toContain($sibling->id)->toContain($theirs->id)
+        ->and($closeOnly)->toContain($public->id)->not->toContain($far->id)->not->toContain($sibling->id);
 });

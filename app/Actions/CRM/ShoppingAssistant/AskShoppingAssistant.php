@@ -1166,14 +1166,17 @@ class AskShoppingAssistant
     }
 
     /**
-     * The search tool run as the model would run it, recorded in a turn that made no model call.
+     * The search tool run as the model would run it, recorded in a turn that made no model call. Only
+     * the close matches are kept, since no model judges them: "sweet orange blossom" listed a food
+     * colorant and simmering granules under "Here is what we have" (HELP-4724). With too few left the
+     * message goes to the model.
      *
      * @return array{0: array<string, mixed>, 1: array<string, mixed>}
      */
     private function searchWithoutModel(ShoppingAssistantConversation $conversation, string $query): array
     {
         $turn       = ['answer' => null, 'found' => [], 'names' => [], 'basket' => [], 'facts' => [], 'families' => [], 'sources' => [], 'cleared' => false, 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
-        [, $result] = $this->runToolCall(GetShoppingAssistantTools::make(), $conversation, ['id' => 'direct_search', 'function' => ['name' => 'search_products', 'arguments' => json_encode(['query' => $query])]], $turn);
+        [, $result] = $this->runToolCall(GetShoppingAssistantTools::make(), $conversation, ['id' => 'direct_search', 'function' => ['name' => 'search_products', 'arguments' => json_encode(['query' => $query, 'close_only' => true])]], $turn);
 
         return [$turn, $result];
     }

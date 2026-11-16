@@ -561,6 +561,9 @@ class GetShoppingAssistantTools
         }
 
         $nearest = SearchCatalogueByMeaning::run($customer->shop, $discontinued->isNotEmpty() ? $discontinued->first()->name : $query, $customer, $limit + self::MAX_OUT_OF_STOCK, false);
+        if ($arguments['close_only'] ?? false) {
+            $nearest = $this->closeMatches($nearest);
+        }
 
         $outOfStock = (new EloquentCollection($byCode->concat($nearest->take(self::MAX_OUT_OF_STOCK))->reject($inStock)->unique('id')->take(self::MAX_OUT_OF_STOCK)->all()))->loadMissing('family');
 
