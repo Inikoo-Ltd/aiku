@@ -66,7 +66,7 @@ class GetStockDeliveryImportFile
             'deposit'            => __('Deposit payment'),
             'shipping_quotes'    => __('Shipping quotes'),
             'commercial_invoice' => __('Commercial invoice / Packing list'),
-            'bill_of_lading'     => __('Bill of lading'),
+            'bill_of_lading'     => __('Bill of lading / CMR / T1'),
             'balance_payment'    => __('Balance payment'),
             'original_documents' => __('Original documents received / sent'),
             'shipping_invoice'   => __('Shipping invoice'),

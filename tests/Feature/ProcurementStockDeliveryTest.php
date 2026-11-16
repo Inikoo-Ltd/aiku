@@ -4198,7 +4198,7 @@ test('import file details tick steps from aiku data, take marks that win over it
 
     expect($steps()->keys()->all())->toBe(GetStockDeliveryImportFile::STEPS)
         ->and($steps()['shipping_invoice'])->toMatchArray(['status' => 'done', 'is_auto' => true])
-        ->and($steps()['bill_of_lading']['status'])->toBe('na')
+        ->and($steps()['bill_of_lading'])->toMatchArray(['status' => 'na', 'label' => __('Bill of lading / CMR / T1')])
         ->and($steps()['original_documents']['status'])->toBe('na')
         ->and($steps()['shipping_quotes']['status'])->toBe('pending');
 
