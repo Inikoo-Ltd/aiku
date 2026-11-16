@@ -96,17 +96,17 @@ class ShowSeoBacklinks extends OrgAction
         ];
     }
 
-    private function referringDomains(string $domain): mixed
+    private function referringDomains(Shop $shop, string $domain): mixed
     {
         $runs     = SeoBacklinkSummary::where('domain', $domain)->orderByDesc('date')->limit(2)->pluck('date');
         $newSince = $runs->count() === 2 ? Carbon::parse($runs->first())->startOfDay() : null;
 
-        $referringDomains = IndexSeoReferringDomains::run($domain, $newSince, SeoBacklinksTabsEnum::REFERRING_DOMAINS->value);
+        $referringDomains = IndexSeoReferringDomains::run($shop, $domain, $newSince, SeoBacklinksTabsEnum::REFERRING_DOMAINS->value);
 
         $referringDomains->getCollection()->each(fn (SeoReferringDomain $referringDomain) => $referringDomain->setAttribute(
             'is_new',
             $newSince && $referringDomain->lost_at === null && $referringDomain->first_fetched_at->gte($newSince)
-        ));
+        )->setAttribute('currency_code', $shop->currency->code));
 
         return SeoReferringDomainResource::collection($referringDomains);
     }
@@ -174,7 +174,7 @@ class ShowSeoBacklinks extends OrgAction
 
                 SeoBacklinksTabsEnum::REFERRING_DOMAINS->value => $this->tabProp(
                     SeoBacklinksTabsEnum::REFERRING_DOMAINS,
-                    fn () => $domain ? $this->referringDomains($domain) : null
+                    fn () => $domain ? $this->referringDomains($shop, $domain) : null
                 ),
 
                 SeoBacklinksTabsEnum::BACKLINKS->value => $this->tabProp(
