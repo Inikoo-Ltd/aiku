@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
 use App\Actions\Dropshipping\Ebay\Product\ApplyPricingRuleToEbayPortfolios;
+use App\Actions\Dropshipping\Ebay\Product\MoveEbayOfferToChannelPostagePolicy;
 use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInEbayPortfolio;
 use App\Actions\Dropshipping\Ebay\UpdateReturnPolicyEbayUser;
@@ -116,11 +117,17 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
 
         $resetAllPrices = (bool) Arr::pull($modelData, 'pricing_reset_all');
 
+        $previousFulfillmentPolicyId = $platformUser->fulfillment_policy_id;
+
         if ($fulfillmentPolicyId) {
             data_forget($modelData, 'settings.shipping');
             UpdateEbayUser::run($platformUser, ['fulfillment_policy_id' => $fulfillmentPolicyId]);
         } elseif (filled($shippingService) || filled($shippingPrice) || filled($shippingDispatchTime)) {
             UpdateShippingPolicyEbayUser::run($platformUser, $modelData);
+        }
+
+        if (filled($previousFulfillmentPolicyId) && $platformUser->refresh()->fulfillment_policy_id !== $previousFulfillmentPolicyId) {
+            MoveEbayOfferToChannelPostagePolicy::dispatchForChannel($customerSalesChannel, $previousFulfillmentPolicyId);
         }
 
         if ($returnPolicyId) {
