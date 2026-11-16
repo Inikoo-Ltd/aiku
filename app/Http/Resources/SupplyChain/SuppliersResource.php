@@ -39,7 +39,8 @@ class SuppliersResource extends JsonResource
             'id'                       => $this->id,
             'slug'                     => $this->slug,
             'code'                     => $this->code,
-            'name'                     => $this->name,
+            'name'                     => $this->resource->officialName(),
+            'name_source'              => $this->nameSource(),
             'nickname'                 => $this->resource->nickname(),
             'agent_slug'               => $this->agent_slug ?? null,
             'agent_code'               => $this->agent_code ?? null,
@@ -53,6 +54,15 @@ class SuppliersResource extends JsonResource
             'open_incidents'           => (int) ($this->open_incidents ?? 0),
             'agreement'                => $this->agreement(),
         ];
+    }
+
+    protected function nameSource(): ?string
+    {
+        if ($this->company_name != '') {
+            return 'company';
+        }
+
+        return $this->contact_name != '' ? 'contact' : null;
     }
 
     /**

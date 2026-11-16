@@ -22,6 +22,7 @@ interface Supplier {
     slug: string
     code: string
     name: string
+    name_source: "company" | "contact" | null
     nickname: string | null
     agent_slug: string | null
     agent_code: string | null
@@ -54,6 +55,14 @@ function purchaseOrdersRoute(supplier: Supplier) {
     return route("grp.supply-chain.suppliers.purchase_orders.index", [supplier.slug])
 }
 
+function nameSourceTooltip(supplier: Supplier): string | null {
+    if (supplier.name_source === "company") {
+        return ctrans("Company name")
+    }
+
+    return supplier.name_source === "contact" ? ctrans("Contact name") : null
+}
+
 function agentRoute(supplier: Supplier) {
     return route("grp.supply-chain.agents.show", [supplier.agent_slug])
 }
@@ -69,6 +78,9 @@ function agentRoute(supplier: Supplier) {
                 {{ supplier["code"] }}
             </Link>
             <span v-if="supplier.open_incidents" class="ml-1 rounded-full bg-gray-800 px-1.5 py-0.5 text-xs font-medium text-white tabular-nums" :title="ctrans('Open incidents')">{{ supplier.open_incidents }}</span>
+        </template>
+        <template #cell(name)="{ item: supplier }">
+            <span v-tooltip="nameSourceTooltip(supplier)">{{ supplier.name }}</span>
         </template>
         <template #cell(agent_code)="{ item: supplier }">
             <Link v-if="supplier.agent_slug" :href="agentRoute(supplier)" class="secondaryLink" :title="supplier.agent_name">

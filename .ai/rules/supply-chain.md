@@ -19,3 +19,6 @@ Vika, 16 Nov 2026. grp.supply-chain.suppliers.index (IndexSuppliers) lists free 
 
 ## Archiving a supplier leaves its products alone
 Vika, 16 Nov 2026. A supplier is archived when suppliers.status = false and archived_at is set; that is the Archived filter on the supplier lists. DeactivateSupplier (agent change request, or the Archive button on the supplier page through grp.models.supplier.archive) and ReactivateSupplier (grp.models.supplier.unarchive) are the only paths. Both are open to group admins and to the org admins of any organisation with an org supplier for that supplier (DeactivateSupplier::canArchive). Archiving switches off the org suppliers and keeps their ids in suppliers.data.archived_org_supplier_ids, so unarchiving switches back on only those. Neither path touches supplier products, org supplier products or catalogue products: they stay active (decided by Vika).
+
+## suppliers.name holds the nickname when one is set
+Vika, 16 Nov 2026. suppliers.name is the nickname when staff set one, otherwise it is filled from company_name (or contact_name). Never show suppliers.name as "Name": use Supplier::officialName() for the real name and Supplier::nickname() for the nickname column. In SQL the official name is coalesce(nullif(company_name, ''), contact_name, name); IndexSuppliers sorts its Name column on that as official_name.

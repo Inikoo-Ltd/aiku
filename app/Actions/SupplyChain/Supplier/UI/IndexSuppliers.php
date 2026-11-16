@@ -31,6 +31,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexSuppliers extends OrgAction
 {
@@ -200,12 +201,13 @@ class IndexSuppliers extends OrgAction
                 'supplier_stats.number_purchase_orders',
                 'supplier_stats.number_stock_deliveries',
             ])
+            ->selectRaw("coalesce(nullif(suppliers.company_name, ''), suppliers.contact_name, suppliers.name) as official_name")
             ->selectRaw('coalesce(supplier_stats.number_open_purchase_orders, 0) + coalesce(supplier_stats.number_purchase_orders_state_in_process, 0) as number_open_purchase_orders')
             ->selectSub(ProcurementNote::openIncidentsOfSupplierQuery(), 'open_incidents')
             ->tap(fn ($query) => GetSupplierAgreementStatus::make()->selectStatus($query, $parent->group_id ?? $parent->id))
             ->allowedSorts([
                 'code',
-                'name',
+                AllowedSort::field('name', 'official_name'),
                 'agent_code',
                 'location',
                 'number_supplier_products',
