@@ -103,7 +103,8 @@ class PartialMoveLocationOrgStocks extends OrgAction
             'org_stocks'                        => ['required', 'array'],
             'org_stocks.*.org_stock_id'         => [
                 'required',
-                Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id)
+                'distinct',
+                Rule::exists('location_org_stocks', 'org_stock_id')->where('location_id', $this->location->id)
             ],
             'org_stocks.*.quantity'             => ['required', 'numeric'],
             'org_stocks.*.remove_after_move'    => ['sometimes', 'nullable', 'boolean'],
@@ -117,6 +118,8 @@ class PartialMoveLocationOrgStocks extends OrgAction
         return [
             'location_id.exists' => __('Move the stock to a working location of the same warehouse that holds stock.'),
             'location_id.not_in' => __('The source and the destination location must be different.'),
+            'org_stocks.*.org_stock_id.exists'   => __('That SKO is not in this location.'),
+            'org_stocks.*.org_stock_id.distinct' => __('Each SKO can be moved only once at a time.'),
         ];
     }
 

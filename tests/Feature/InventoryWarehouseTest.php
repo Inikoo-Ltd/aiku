@@ -593,6 +593,34 @@ test('moving stock out of a location records who moved it', function (Warehouse 
         ->and((clone $movements)->where(fn ($query) => $query->whereNull('user_id')->orWhere('user_id', '!=', $this->user->id))->count())->toBe(0);
 })->depends('create warehouse');
 
+test('moving stock out of a location with move some only takes the location\'s own SKOs, each once', function (Warehouse $warehouse) {
+    $source        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $target        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $otherLocation = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+
+    $orgStocks = collect(range(1, 2))->map(function () {
+        $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+
+        return StoreOrgStock::make()->action($this->organisation, $stock);
+    });
+
+    StoreLocationOrgStock::make()->action($orgStocks[0], $source, ['type' => LocationStockTypeEnum::PICKING])->update(['quantity' => 5]);
+    StoreLocationOrgStock::make()->action($orgStocks[1], $otherLocation, ['type' => LocationStockTypeEnum::PICKING]);
+
+    $lastMovementId = (int) DB::table('org_stock_movements')->max('id');
+    $moveSome       = route('grp.models.location.partial_move_stock', ['location' => $source->id]);
+
+    post($moveSome, ['location_id' => $target->id, 'reason' => 'transfer', 'org_stocks' => [['org_stock_id' => $orgStocks[1]->id, 'quantity' => 1]]])
+        ->assertSessionHasErrors('org_stocks.0.org_stock_id');
+    post($moveSome, ['location_id' => $target->id, 'reason' => 'transfer', 'org_stocks' => [
+        ['org_stock_id' => $orgStocks[0]->id, 'quantity' => 1],
+        ['org_stock_id' => $orgStocks[0]->id, 'quantity' => 1],
+    ]])->assertSessionHasErrors('org_stocks.1.org_stock_id');
+
+    expect((int) DB::table('org_stock_movements')->max('id'))->toBe($lastMovementId)
+        ->and((float) $source->locationOrgStocks()->where('org_stock_id', $orgStocks[0]->id)->value('quantity'))->toBe(5.0);
+})->depends('create warehouse');
+
 test('stock is only moved to a working location of the same warehouse that holds stock', function (Warehouse $warehouse) {
     $source        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
     $broken        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
