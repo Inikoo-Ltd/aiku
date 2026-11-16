@@ -9,15 +9,15 @@ import TabPanels from "primevue/tabpanels"
 import TabPanel from "primevue/tabpanel"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faShoppingBasket, faCheck } from "@far"
+import { faShoppingBasket, faCheck, faTimes } from "@far"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ctrans } from "@/Composables/useTrans"
 import { getStyles } from "@/Composables/styles"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
-import RenderProduct from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
+import RangeAdvisorProductCard from "@/Iris/Components/RangeAdvisorProductCard.vue"
 import { ProductResource } from "@/types/Iris/Products"
-library.add(faShoppingBasket, faCheck)
+library.add(faShoppingBasket, faCheck, faTimes)
 
 type Card = ProductResource & { assistant_reason: string, quantity_ordered?: number }
 type Pack = { family: { id: number, name: string, url: string | null }, items: Card[] }
@@ -28,7 +28,6 @@ type Panel = { shop_type: string | null, country: string | null, has_orders: boo
 const props = defineProps<{
     assistantName: string
     fieldValue?: Record<string, any>
-    productCardCode: string
     screenType: "mobile" | "tablet" | "desktop"
 }>()
 
@@ -60,6 +59,8 @@ const listLabel = (key: ListKey): string => ({
 }[key])
 
 const cardsOf = (list: List): Card[] => list.items ?? (list.packs ?? []).flatMap((pack) => pack.items)
+
+const activeListItems = computed<Card[]>(() => panel.value?.lists.find((list) => list.key === activeList.value)?.items ?? [])
 
 const shopLine = computed(() => {
     const details = [panel.value?.shop_type, panel.value?.country].filter(Boolean).join(", ")
@@ -194,118 +195,123 @@ onMounted(async () => {
 <template>
     <section v-if="isLoading || panel?.lists.length || panel?.remembered || (panel && !panel.shop_type)" class="range-panel">
         <div v-if="isLoading" class="flex flex-col gap-3" aria-hidden="true">
-            <div class="skeleton h-10 rounded" />
+            <div class="skeleton h-24 rounded-xl" />
+            <div class="skeleton h-10 w-2/3 rounded-full" />
             <div class="range-grid">
-                <div v-for="index in 4" :key="index" class="skeleton h-64 rounded" />
+                <div v-for="index in 4" :key="index" class="skeleton h-72 rounded-xl" />
             </div>
         </div>
 
         <template v-else-if="panel">
-            <div class="range-heading">
-                <h2 v-if="panel.lists.length" class="range-title">
-                    <MerlinIcon themed class="range-title-icon" />
-                    {{ ctrans(":name noticed", { name: assistantName }) }}
-                </h2>
-                <p v-if="panel.lists.length" class="range-subtitle">
-                    {{ shopLine }}
-                    {{ ctrans("In stock now, at your trade prices.") }}
-                </p>
-                <p v-if="panel.remembered" class="range-remembered">
-                    <span class="font-medium">{{ ctrans(":name remembers:", { name: assistantName }) }}</span>
-                    {{ panel.remembered }}
-                    <button type="button" class="range-tell ml-1" :disabled="isForgetting" @click="forget">{{ ctrans("Forget this") }}</button>
-                </p>
-                <p v-if="forgetError" class="text-xs text-red-500">{{ forgetError }}</p>
-                <button v-if="!panel.shop_type" type="button" class="range-tell" @click="emit('tellShop')">
-                    {{ ctrans("Tell :name what kind of shop you run to get better picks", { name: assistantName }) }}
-                </button>
-            </div>
+            <header class="range-header">
+                <span class="range-header-badge" aria-hidden="true">
+                    <MerlinIcon themed class="range-header-icon" />
+                </span>
+                <div class="range-header-text">
+                    <h2 v-if="panel.lists.length" class="range-title">{{ ctrans(":name noticed", { name: assistantName }) }}</h2>
+                    <p v-if="panel.lists.length" class="range-subtitle">
+                        {{ shopLine }}
+                        {{ ctrans("In stock now, at your trade prices.") }}
+                    </p>
+                    <div v-if="panel.remembered" class="range-remembered">
+                        <span class="range-remembered-label">{{ ctrans(":name remembers:", { name: assistantName }) }}</span>
+                        <span class="range-remembered-text">{{ panel.remembered }}</span>
+                        <Button type="tertiary" size="xs" :label="ctrans('Forget this')" :loading="isForgetting" :disabled="isForgetting" @click="forget">
+                            <template #icon>
+                                <FontAwesomeIcon icon="far fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                            </template>
+                        </Button>
+                    </div>
+                    <p v-if="forgetError" class="mt-1 text-xs text-red-500">{{ forgetError }}</p>
+                </div>
+                <Button
+                    v-if="!panel.shop_type"
+                    type="tertiary"
+                    size="s"
+                    class="range-tell"
+                    :label="ctrans('Tell :name what kind of shop you run to get better picks', { name: assistantName })"
+                    @click="emit('tellShop')"
+                >
+                    <template #icon>
+                        <MerlinIcon themed />
+                    </template>
+                </Button>
+            </header>
 
-            <div v-if="panel.lists.length && activeList" ref="tabsElement">
-            <Tabs v-model:value="activeList" scrollable lazy>
-                <TabList>
-                    <Tab v-for="list in panel.lists" :key="list.key" :value="list.key">
-                        <span class="whitespace-nowrap">{{ listLabel(list.key) }} <span class="range-count">{{ cardsOf(list).length }}</span></span>
-                    </Tab>
-                </TabList>
-                <TabPanels>
-                    <TabPanel v-for="list in panel.lists" :key="list.key" :value="list.key">
-                        <template v-if="list.key === 'starter_packs'">
-                            <div class="flex flex-col gap-4">
-                                <div v-for="pack in list.packs" :key="pack.family.id" class="range-pack">
-                                    <div class="range-pack-header">
-                                        <div class="min-w-0">
-                                            <a v-if="pack.family.url" :href="pack.family.url" class="range-pack-name">{{ pack.family.name }}</a>
-                                            <span v-else class="range-pack-name">{{ pack.family.name }}</span>
-                                            <p class="range-pack-meta">{{ ctrans("Best sellers from a family you don’t stock yet") }}</p>
-                                        </div>
-                                        <Button
-                                            type="tertiary"
-                                            size="xs"
-                                            class="shrink-0"
-                                            :label="notInBasket(pack.items).length ? ctrans('Add pack to basket') : ctrans('All in your basket')"
-                                            :disabled="!notInBasket(pack.items).length || adding !== null"
-                                            :loading="adding === `pack-${pack.family.id}`"
-                                            @click="addAll(`pack-${pack.family.id}`, pack.items)"
-                                        >
-                                            <template #icon>
-                                                <FontAwesomeIcon :icon="notInBasket(pack.items).length ? 'far fa-shopping-basket' : 'far fa-check'" class="text-green-600" fixed-width aria-hidden="true" />
-                                            </template>
-                                        </Button>
-                                    </div>
-                                    <p v-if="addErrors[`pack-${pack.family.id}`]" class="mb-2 text-xs text-red-500">{{ addErrors[`pack-${pack.family.id}`] }}</p>
-                                    <div class="range-grid">
-                                        <div v-for="card in pack.items" :key="`${card.id}-${cardsVersion}`" @click.capture="(event) => recordClick(event, list.key, card)">
-                                            <p class="range-reason" :title="card.assistant_reason">{{ card.assistant_reason }}</p>
-                                            <div :style="getStyles(fieldValue?.card_product?.properties, screenType)" class="relative flex justify-center rounded">
-                                                <RenderProduct :code="productCardCode" :product="card"
-                                                    :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
-                                                    :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
-                                                    :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
-                                                    :button="fieldValue?.button"
-                                                    :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])"
-                                                    :bestSeller="fieldValue?.bestseller" :screenType />
+            <div v-if="panel.lists.length && activeList" ref="tabsElement" class="range-body">
+                <Tabs v-model:value="activeList" scrollable lazy>
+                    <div class="range-toolbar">
+                        <TabList class="range-tabs">
+                            <Tab v-for="list in panel.lists" :key="list.key" :value="list.key">
+                                <span class="range-tab-label">{{ listLabel(list.key) }}</span>
+                                <span class="range-count">{{ cardsOf(list).length }}</span>
+                            </Tab>
+                        </TabList>
+                        <div v-if="activeList !== 'starter_packs'" class="range-toolbar-action">
+                            <Button
+                                type="tertiary"
+                                size="s"
+                                :label="notInBasket(activeListItems).length ? ctrans('Add all to basket') : ctrans('All in your basket')"
+                                :disabled="!notInBasket(activeListItems).length || adding !== null"
+                                :loading="adding === activeList"
+                                @click="addAll(activeList, activeListItems)"
+                            >
+                                <template #icon>
+                                    <FontAwesomeIcon :icon="notInBasket(activeListItems).length ? 'far fa-shopping-basket' : 'far fa-check'" class="text-green-600" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                            <p v-if="addErrors[activeList]" class="text-xs text-red-500">{{ addErrors[activeList] }}</p>
+                        </div>
+                    </div>
+                    <TabPanels>
+                        <TabPanel v-for="list in panel.lists" :key="list.key" :value="list.key">
+                            <template v-if="list.key === 'starter_packs'">
+                                <div class="flex flex-col gap-3">
+                                    <div v-for="pack in list.packs" :key="pack.family.id" class="range-pack">
+                                        <div class="range-pack-header">
+                                            <div class="min-w-0">
+                                                <a v-if="pack.family.url" :href="pack.family.url" class="range-pack-name">{{ pack.family.name }}</a>
+                                                <span v-else class="range-pack-name">{{ pack.family.name }}</span>
+                                                <p class="range-pack-meta">{{ ctrans("Best sellers from a family you don’t stock yet") }}</p>
                                             </div>
+                                            <Button
+                                                type="tertiary"
+                                                size="xs"
+                                                class="shrink-0"
+                                                :label="notInBasket(pack.items).length ? ctrans('Add pack to basket') : ctrans('All in your basket')"
+                                                :disabled="!notInBasket(pack.items).length || adding !== null"
+                                                :loading="adding === `pack-${pack.family.id}`"
+                                                @click="addAll(`pack-${pack.family.id}`, pack.items)"
+                                            >
+                                                <template #icon>
+                                                    <FontAwesomeIcon :icon="notInBasket(pack.items).length ? 'far fa-shopping-basket' : 'far fa-check'" class="text-green-600" fixed-width aria-hidden="true" />
+                                                </template>
+                                            </Button>
+                                        </div>
+                                        <p v-if="addErrors[`pack-${pack.family.id}`]" class="mb-2 text-xs text-red-500">{{ addErrors[`pack-${pack.family.id}`] }}</p>
+                                        <div class="range-grid">
+                                            <div v-for="card in pack.items" :key="`${card.id}-${cardsVersion}`" @click.capture="(event) => recordClick(event, list.key, card)">
+                                    <RangeAdvisorProductCard :product="card"
+                                        :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', card.id])"
+                                        :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
+                                        :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false) ?? undefined" />
+                                </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </template>
+                            </template>
 
-                        <template v-else>
-                            <div class="range-grid">
+                            <div v-else class="range-grid">
                                 <div v-for="card in list.items" :key="`${card.id}-${cardsVersion}`" @click.capture="(event) => recordClick(event, list.key, card)">
-                                    <p class="range-reason" :title="card.assistant_reason">{{ card.assistant_reason }}</p>
-                                    <div :style="getStyles(fieldValue?.card_product?.properties, screenType)" class="relative flex justify-center rounded">
-                                        <RenderProduct :code="productCardCode" :product="card"
-                                            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
-                                            :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
-                                            :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
-                                            :button="fieldValue?.button"
-                                            :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])"
-                                            :bestSeller="fieldValue?.bestseller" :screenType />
-                                    </div>
+                                    <RangeAdvisorProductCard :product="card"
+                                        :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', card.id])"
+                                        :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
+                                        :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false) ?? undefined" />
                                 </div>
                             </div>
-                            <div class="mt-4 flex flex-wrap items-center gap-2">
-                                <Button
-                                    type="tertiary"
-                                    size="xs"
-                                    :label="notInBasket(list.items ?? []).length ? ctrans('Add all to basket') : ctrans('All in your basket')"
-                                    :disabled="!notInBasket(list.items ?? []).length || adding !== null"
-                                    :loading="adding === list.key"
-                                    @click="addAll(list.key, list.items ?? [])"
-                                >
-                                    <template #icon>
-                                        <FontAwesomeIcon :icon="notInBasket(list.items ?? []).length ? 'far fa-shopping-basket' : 'far fa-check'" class="text-green-600" fixed-width aria-hidden="true" />
-                                    </template>
-                                </Button>
-                                <p v-if="addErrors[list.key]" class="text-xs text-red-500">{{ addErrors[list.key] }}</p>
-                            </div>
-                        </template>
-                    </TabPanel>
-                </TabPanels>
-            </Tabs>
+                        </TabPanel>
+                    </TabPanels>
+                </Tabs>
             </div>
         </template>
     </section>
@@ -315,65 +321,183 @@ onMounted(async () => {
 .range-panel {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 2rem 1rem 1rem;
+    padding: 2rem 1rem 1.5rem;
 }
 
-.range-heading {
-    margin-bottom: 0.75rem;
+.range-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 1px solid color-mix(in srgb, var(--theme-color-4) 18%, #e5e7eb);
+    border-radius: 1rem;
+    background:
+        radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--theme-color-4) 12%, transparent) 0%, transparent 60%),
+        color-mix(in srgb, var(--theme-color-4) 4%, #ffffff);
+}
+
+.range-header-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background-color: #ffffff;
+    box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--theme-color-4) 60%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-color-4) 20%, #e5e7eb);
+}
+
+.range-header-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+}
+
+.range-header-text {
+    flex: 1 1 16rem;
+    min-width: 0;
 }
 
 .range-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
     font-size: 1.25rem;
-    font-weight: 600;
+    font-weight: 700;
+    line-height: 1.3;
     color: #111827;
 }
 
-.range-title-icon {
-    width: 1.25em;
-    height: 1.25em;
-}
-
 .range-subtitle {
-    margin-top: 0.25rem;
+    margin-top: 0.125rem;
     font-size: 0.875rem;
     color: #4b5563;
 }
 
 .range-remembered {
-    margin-top: 0.5rem;
-    font-size: 0.875rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem 0.5rem;
+    margin-top: 0.625rem;
+    font-size: 0.8125rem;
     color: #374151;
 }
 
-.range-remembered .range-tell {
-    margin-top: 0;
+.range-remembered-label {
+    font-weight: 600;
+    color: color-mix(in srgb, var(--theme-color-4) 75%, #111827);
 }
 
 .range-tell {
-    margin-top: 0.5rem;
-    font-size: 0.875rem;
-    color: #374151;
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    flex-shrink: 0;
+    border-radius: 9999px;
 }
 
-.range-tell:hover {
+.range-body {
+    margin-top: 1.25rem;
+}
+
+.range-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.range-toolbar-action {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.range-tabs {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.range-tabs :deep(.p-tablist-content),
+.range-tabs :deep(.p-tablist-tab-list) {
+    background: transparent;
+    border: 0;
+}
+
+.range-tabs :deep(.p-tablist-tab-list) {
+    gap: 0.375rem;
+    padding: 0.25rem;
+    border-radius: 9999px;
+    background-color: #f3f4f6;
+    width: max-content;
+}
+
+.range-tabs :deep(.p-tablist-active-bar) {
+    display: none;
+}
+
+.range-tabs :deep(.p-tab) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.4375rem 0.875rem;
+    border: 0;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #4b5563;
+    background: transparent;
+    white-space: nowrap;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.range-tabs :deep(.p-tab:not(.p-tab-active):hover) {
     color: #111827;
+    background-color: #e5e7eb;
+}
+
+.range-tabs :deep(.p-tab-active) {
+    color: var(--theme-color-5);
+    background-color: var(--theme-color-4);
+    box-shadow: 0 4px 10px -6px color-mix(in srgb, var(--theme-color-4) 80%, transparent);
+}
+
+.range-tabs :deep(.p-tab:focus-visible) {
+    outline: 2px solid var(--theme-color-4);
+    outline-offset: 2px;
+}
+
+.range-tab-label {
+    white-space: nowrap;
 }
 
 .range-count {
-    margin-left: 0.25rem;
-    font-size: 0.75rem;
-    color: #6b7280;
+    min-width: 1.25rem;
+    padding: 0 0.375rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.25rem;
+    text-align: center;
+    color: #4b5563;
+    background-color: #ffffff;
+}
+
+.range-tabs :deep(.p-tab-active) .range-count {
+    color: var(--theme-color-4);
+    background-color: var(--theme-color-5);
+}
+
+.range-panel :deep(.p-tabpanels) {
+    padding: 0;
+    background: transparent;
 }
 
 .range-grid {
     display: grid;
-    gap: 1.5rem 1rem;
+    gap: 0.5rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
 }
 
 @media (min-width: 640px) {
@@ -385,52 +509,49 @@ onMounted(async () => {
 @media (min-width: 1024px) {
     .range-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.75rem;
     }
 }
 
-.range-reason {
-    margin-bottom: 0.25rem;
-    min-height: 2rem;
-    font-size: 0.75rem;
-    line-height: 1rem;
-    color: #4b5563;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+@media (min-width: 1280px) {
+    .range-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
 }
 
 .range-pack {
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
     padding: 0.75rem;
+    border: 1px solid #eceef1;
+    border-radius: 1rem;
+    background-color: color-mix(in srgb, var(--theme-color-4) 3%, #fafafa);
 }
 
 .range-pack-header {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
     margin-bottom: 0.75rem;
+    padding-left: 0.75rem;
+    border-left: 3px solid var(--theme-color-4);
 }
 
 .range-pack-name {
+    font-size: 1rem;
     font-weight: 600;
-    color: #374151;
+    color: #111827;
 }
 
-a.range-pack-name {
+a.range-pack-name:hover {
+    color: var(--theme-color-4);
     text-decoration: underline;
     text-underline-offset: 2px;
 }
 
-a.range-pack-name:hover {
-    color: #111827;
-}
-
 .range-pack-meta {
+    margin-top: 0.125rem;
     font-size: 0.75rem;
-    color: #4b5563;
+    color: #6b7280;
 }
 </style>
