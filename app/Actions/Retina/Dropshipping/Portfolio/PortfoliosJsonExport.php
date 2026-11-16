@@ -10,6 +10,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
+use App\Helpers\NaturalLanguage;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -120,7 +121,7 @@ class PortfoliosJsonExport
                 $unitRrp,
                 $row->marketing_weight,
                 $row->gross_weight,
-                $row->marketing_dimensions,
+                NaturalLanguage::make()->dimensions($row->marketing_dimensions),
                 $row->marketing_ingredients,
                 $row->description,
                 Str::of($row->description)->stripTags(),

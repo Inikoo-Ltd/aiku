@@ -757,7 +757,7 @@ test('uploading a portfolio creates a simple product shaped for the store and sa
     $channel = $wooCommerceUser->customerSalesChannel;
     $channel->update(['max_quantity_advertise' => 10, 'stock_threshold' => 2]);
 
-    $this->product->update(['available_quantity' => 64, 'gross_weight' => 1500, 'marketing_ingredients' => null]);
+    $this->product->update(['available_quantity' => 64, 'gross_weight' => 1500, 'marketing_ingredients' => null, 'marketing_dimensions' => ['type' => 'rectangular', 'units' => 'mm', 'l' => 0.12, 'w' => 0.08, 'h' => 0.05]]);
     expect($this->product->refresh()->isSellableThroughSalesChannels())->toBeTrue();
 
     $portfolio = wooPortfolio($channel, $this->product, null, 'aw-upload-1');
@@ -780,6 +780,7 @@ test('uploading a portfolio creates a simple product shaped for the store and sa
         ->and($body['stock_quantity'])->toBe(10)
         ->and($body['stock_status'])->toBe('instock')
         ->and($body['weight'])->toBe('1.5')
+        ->and($body['dimensions'])->toBe(['width' => '8', 'height' => '5', 'length' => '12'])
         ->and(collect($body['attributes'])->pluck('name'))->not->toContain('Ingredients');
 
     expect($portfolio->platform_product_id)->toBe('794')

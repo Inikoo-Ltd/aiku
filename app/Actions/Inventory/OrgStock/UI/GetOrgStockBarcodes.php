@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\Goods\Stock\UI\GetStockBarcodes;
+use App\Helpers\DimensionsFormatter;
 use App\Models\Inventory\OrgStock;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -43,7 +44,7 @@ class GetOrgStockBarcodes
                 'number'     => $orgStock->unit_barcode,
                 'quantity'   => 1,
                 'weight'     => $tradeUnit?->marketing_weight,
-                'dimensions' => $tradeUnit?->marketing_dimensions,
+                'dimensions' => $tradeUnit?->marketing_dimensions ? DimensionsFormatter::fromMetres($tradeUnit->marketing_dimensions) : null,
                 'packs'      => null,
                 'editable'   => (bool) $tradeUnit,
                 'warning'    => null,

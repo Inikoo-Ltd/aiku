@@ -21,6 +21,7 @@ use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
+use App\Helpers\DimensionsFormatter;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -89,9 +90,10 @@ class StoreWooCommerceProduct extends RetinaAction
 
             $attributes = [];
             $dimensions = [];
-            $w = Arr::get($product->marketing_dimensions, 'w');
-            $h = Arr::get($product->marketing_dimensions, 'h');
-            $l = Arr::get($product->marketing_dimensions, 'l');
+            $centimetres = DimensionsFormatter::fromMetres([...($product->marketing_dimensions ?? []), 'units' => 'cm']);
+            $w = Arr::get($centimetres, 'w');
+            $h = Arr::get($centimetres, 'h');
+            $l = Arr::get($centimetres, 'l');
 
             if ($w && $h && $l) {
                 $dimensions = [

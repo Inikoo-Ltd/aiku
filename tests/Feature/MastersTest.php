@@ -6514,3 +6514,10 @@ test('turning a master product for sale clears not_for_sale_since, turning it of
     UpdateMasterAsset::make()->action($leader, ['is_for_sale' => true]);
     expect($leader->refresh()->not_for_sale_since)->toBeNull();
 });
+
+test('competitor matching sends our size in its display unit, not the stored metres', function () {
+    $masterAsset = new MasterAsset(['name' => 'Incense box']);
+    $masterAsset->marketing_dimensions = ['type' => 'rectangular', 'units' => 'mm', 'l' => 0.12, 'w' => 0.08, 'h' => 0.05];
+
+    expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::state($masterAsset, collect())['our_product']['size'])->toBe('120x80x50 (mm)');
+});

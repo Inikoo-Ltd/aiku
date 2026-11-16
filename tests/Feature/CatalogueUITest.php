@@ -3363,3 +3363,12 @@ test('shop and organisation dashboard data answer only staff of the shop or orga
         getJson($url)->assertOk();
     }
 });
+
+test('products export prints the stored metres in the display unit', function () {
+    $row = (new \App\Exports\Catalogue\ProductsExport(new \App\Models\Catalogue\Shop()))->mapRow((object) [
+        'code'                 => 'X-1',
+        'marketing_dimensions' => json_encode(['type' => 'rectangular', 'units' => 'cm', 'l' => 0.1, 'w' => 0.05, 'h' => 0.02]),
+    ]);
+
+    expect($row)->toBe(['X-1', '10x5x2 (cm)']);
+});

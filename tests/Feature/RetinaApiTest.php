@@ -1325,3 +1325,13 @@ test('retina api json data feed gives the rrp per unit and per outer', function 
     expect((float) $row['product_unit_rrp'])->toBe(3.12)
         ->and((float) $row['product_rrp'])->toBe(18.72);
 });
+
+test('retina api json data feed gives the unit dimensions in their display unit, not the stored metres', function () {
+    $this->product->updateQuietly(['marketing_dimensions' => ['type' => 'rectangular', 'units' => 'cm', 'l' => 0.1, 'w' => 0.05, 'h' => 0.02]]);
+    StorePortfolio::make()->action($this->dropshippingChannel, $this->product, []);
+
+    $feed = \App\Actions\Retina\Dropshipping\Portfolio\PortfoliosJsonExport::run($this->dropshippingChannel);
+    $row  = collect($feed['data'])->first(fn ($row) => $row[1] === $this->product->code);
+
+    expect(array_combine(array_column($feed['schema'], 'field_code'), $row)['product_unit_dimensions'])->toBe('10x5x2 (cm)');
+});

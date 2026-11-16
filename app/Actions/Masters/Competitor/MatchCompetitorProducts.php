@@ -11,6 +11,7 @@ namespace App\Actions\Masters\Competitor;
 use App\Actions\Helpers\AI\AskJev;
 use App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum;
 use App\Models\Catalogue\Shop;
+use App\Helpers\NaturalLanguage;
 use App\Models\Masters\Competitor;
 use App\Models\Masters\CompetitorProduct;
 use App\Models\Masters\MasterAsset;
@@ -125,15 +126,13 @@ class MatchCompetitorProducts
      */
     public static function state(MasterAsset $masterAsset, Collection $candidates, bool $detailed = true, ?string $nameInTheirLanguage = null): array
     {
-        $dimensions = $masterAsset->marketing_dimensions ?? [];
-
         $ours = ['name' => $masterAsset->name]
             + ($nameInTheirLanguage && $nameInTheirLanguage !== $masterAsset->name ? ['name_in_their_language' => $nameInTheirLanguage] : [])
             + ['units_in_our_pack' => (float) $masterAsset->units];
         if ($detailed) {
             $ours += array_filter([
                 'family'      => $masterAsset->masterFamily?->name,
-                'size'        => implode(' x ', array_filter([$dimensions['l'] ?? null, $dimensions['w'] ?? null, $dimensions['h'] ?? null])).($dimensions ? ' '.($dimensions['units'] ?? '') : ''),
+                'size'        => NaturalLanguage::make()->dimensions($masterAsset->marketing_dimensions),
                 'weight_g'    => $masterAsset->marketing_weight,
                 'tariff_code' => $masterAsset->tariff_code,
                 'description' => mb_substr(trim(strip_tags((string) $masterAsset->description)), 0, 400),
