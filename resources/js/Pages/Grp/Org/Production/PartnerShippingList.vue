@@ -116,6 +116,7 @@ const props = defineProps<{
     hitchhikers?: { count: number, showing: boolean }
     pipeline?: { count: number, ignoring: boolean }
     canCreateJobOrder?: boolean
+    simpleBoard?: boolean
     manualJobOrder?: { reasons: string[], artefacts: { id: number, code: string, name: string, packed_in: number | null, stock_available: number | null, gross_weight: number | null, on_board: number }[] } | null
     groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, shop_name?: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null, published_labels?: PublishedLabel[] }[] }[] | null
 }>()
@@ -206,14 +207,24 @@ const freeStock = (item: BoardItem) => Math.max(0, Number(item.stock_available ?
 const LANE_BACKLOG = 0
 const LANE_PREPARING = 1
 const LANE_ASSIGNED = 2
+const LANE_PRODUCING = 3
+
+const queuedLane = computed(() => props.simpleBoard ? LANE_PRODUCING : LANE_ASSIGNED)
+
+function isLaneShown(laneIndex: number): boolean {
+    return !props.simpleBoard || (laneIndex !== LANE_PREPARING && laneIndex !== LANE_ASSIGNED)
+}
 
 function isDraggable(item: BoardItem, laneIndex: number): boolean {
-    return item.state === "open" && ((laneIndex >= LANE_BACKLOG && laneIndex <= LANE_PREPARING) || (laneIndex === LANE_ASSIGNED && isReassignable(item)))
+    if (item.state !== "open") return false
+    if (props.simpleBoard) return laneIndex === LANE_BACKLOG || (laneIndex === LANE_PRODUCING && isReassignable(item))
+    return (laneIndex >= LANE_BACKLOG && laneIndex <= LANE_PREPARING) || (laneIndex === LANE_ASSIGNED && isReassignable(item))
 }
 
 function dropTarget(laneIndex: number): boolean {
     const first = dragging.value[0]
     if (!first || first.kind === "mix") return false
+    if (props.simpleBoard) return first.job_order_id ? laneIndex === LANE_BACKLOG && isReassignable(first) : laneIndex === LANE_PRODUCING
     if (first.job_order_id) return laneIndex === LANE_PREPARING && isReassignable(first)
     if (laneIndex === LANE_BACKLOG) return !!first.preparing_at
     if (laneIndex === LANE_PREPARING) return !first.preparing_at
@@ -229,13 +240,28 @@ function unassign(items: BoardItem[]) {
     )
 }
 
+const assignError = ref<string | null>(null)
+
+type Run = { quantity: number, batch_code: string, expiry_date: string }
+
+const extraRuns = reactive<Record<number, Run[]>>({})
+
+function assignToMe(items: BoardItem[], runs: Record<number, Run[]> = {}) {
+    assignError.value = null
+    router.post(
+        route("grp.org.productions.show.to_produce.job_orders.store", [route().params["organisation"], route().params["production"]]),
+        { ids: items.map(item => item.id), assign_to_me: true, runs },
+        { preserveScroll: true, onSuccess: () => { selectedCards.value = [] }, onError: (errors) => assignError.value = errors.assign_to_me ?? Object.values(errors)[0] ?? null }
+    )
+}
+
 type PreparingLine = { id: number, quantity?: number | null, batch_code?: string | null, expiry_date?: string | null, expiry_applies_to_label?: boolean }
 
-function setPreparing(lines: PreparingLine[], preparing: boolean) {
+function setPreparing(lines: PreparingLine[], preparing: boolean, onPrepared?: () => void) {
     router.post(
         route("grp.org.productions.show.to_produce.items.preparing", [route().params["organisation"], route().params["production"]]),
         { preparing, lines },
-        { preserveScroll: true, onSuccess: () => { selectedCards.value = [] } }
+        { preserveScroll: true, onSuccess: () => { selectedCards.value = []; onPrepared?.() } }
     )
 }
 
@@ -263,12 +289,14 @@ function pipelineWarning(items: BoardItem[]) {
 
 function onDrop(laneIndex: number, event: DragEvent) {
     if (!dropTarget(laneIndex)) return
-    const warning = !dragging.value[0].job_order_id && (laneIndex === LANE_ASSIGNED || laneIndex === LANE_PREPARING) ? pipelineWarning(dragging.value) : null
+    const warning = !dragging.value[0].job_order_id && (laneIndex === LANE_ASSIGNED || laneIndex === LANE_PREPARING || laneIndex === LANE_PRODUCING) ? pipelineWarning(dragging.value) : null
     if (warning && !window.confirm(warning)) {
         dragging.value = []
         return
     }
-    if (dragging.value[0].job_order_id) {
+    if (props.simpleBoard && laneIndex === LANE_PRODUCING) {
+        openPicker("prepare", event)
+    } else if (dragging.value[0].job_order_id) {
         unassign(dragging.value)
         dragging.value = []
     } else if (laneIndex === LANE_ASSIGNED) {
@@ -336,6 +364,7 @@ function openPicker(mode: "prepare" | "assign" | "assign-mix", event: DragEvent)
     for (const key in pendingBatchCodes) delete pendingBatchCodes[key]
     for (const key in pendingExpiryDates) delete pendingExpiryDates[key]
     for (const key in originalExpiryDates) delete originalExpiryDates[key]
+    for (const key in extraRuns) delete extraRuns[key]
     dragging.value.forEach(item => {
         pendingQuantities[item.id] = Math.ceil(Number(item.quantity_to_produce ?? item.quantity))
         pendingBatchCodes[item.id] = item.run_batch_code ?? ""
@@ -361,14 +390,22 @@ function updatePreparingQuantity(item: BoardItem, event: Event) {
 function confirmPrepare() {
     if (!pendingItems.value.length) return
 
+    const prepared = [...pendingItems.value]
+    const runs: Record<number, Run[]> = {}
+    prepared.filter(item => extraRuns[item.id]?.length).forEach(item => {
+        runs[item.id] = [
+            { quantity: pendingQuantities[item.id], batch_code: pendingBatchCodes[item.id]?.trim() ?? "", expiry_date: pendingExpiryDates[item.id] ?? "" },
+            ...extraRuns[item.id].map(run => ({ ...run, batch_code: run.batch_code.trim() })),
+        ]
+    })
     setPreparing(pendingItems.value.map(item => ({
         id: item.id,
-        quantity: pendingQuantities[item.id],
+        quantity: runTotal(item),
         batch_code: pendingBatchCodes[item.id]?.trim() || null,
         expiry_date: pendingExpiryDates[item.id] || null,
         expiry_applies_to_label: expiryAppliesToLabel.value
             && (pendingExpiryDates[item.id] ?? "") !== (originalExpiryDates[item.id] ?? ""),
-    })), true)
+    })), true, props.simpleBoard ? () => assignToMe(prepared, runs) : undefined)
     pendingItems.value = []
 }
 
@@ -397,11 +434,24 @@ function assign(employeeId: number | null, plannedFor: string | null = null) {
     pendingItems.value = []
 }
 
-function jobUnits(item: BoardItem): number {
-    const units = Math.ceil(Math.round((Number(pendingQuantities[item.id]) || 0) * (Number(item.packed_in) || 1) * 1e6) / 1e6)
+function jobUnits(item: BoardItem, quantity: number = pendingQuantities[item.id]): number {
+    const units = Math.ceil(Math.round((Number(quantity) || 0) * (Number(item.packed_in) || 1) * 1e6) / 1e6)
     const batch = Number(item.batch_size) || 0
 
     return batch > 0 ? Math.ceil(units / batch) * batch : units
+}
+
+function runTotal(item: BoardItem): number {
+    return (Number(pendingQuantities[item.id]) || 0) + (extraRuns[item.id] ?? []).reduce((sum, run) => sum + (Number(run.quantity) || 0), 0)
+}
+
+function runUnits(item: BoardItem): number {
+    return jobUnits(item) + (extraRuns[item.id] ?? []).reduce((sum, run) => sum + jobUnits(item, run.quantity), 0)
+}
+
+function addRun(item: BoardItem) {
+    const missing = Math.ceil(Number(item.quantity)) - runTotal(item)
+    ;(extraRuns[item.id] ??= []).push({ quantity: Math.max(1, missing), batch_code: "", expiry_date: "" })
 }
 
 const autoMakerTooltip = ctrans("Picked for you: the least busy artisan in the area where this product is made, clocked in today first")
@@ -598,7 +648,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
 
     <Teleport to="body">
         <div v-if="pendingFirst" class="fixed inset-0 z-40" @click="pendingItems = []" />
-        <div v-if="pendingFirst" class="fixed z-50 w-80 rounded-lg border border-[var(--app-accent-muted)] bg-white p-3 text-xs shadow-xl dark:bg-gray-900" :style="{ left: pickerPosition.x + 'px', top: pickerPosition.y + 'px' }">
+        <div v-if="pendingFirst" class="fixed z-50 rounded-lg border border-[var(--app-accent-muted)] bg-white p-3 text-xs shadow-xl dark:bg-gray-900" :class="simpleBoard && pickerMode === 'prepare' ? 'w-96' : 'w-80'" :style="{ left: pickerPosition.x + 'px', top: pickerPosition.y + 'px' }">
             <div v-if="pendingItems.length === 1" class="mb-1.5 font-medium">{{ pendingFirst.stock_code }} <span class="font-normal text-gray-500">{{ pendingFirst.stock_name }}</span></div>
             <div v-else class="mb-1.5 font-medium">{{ ctrans(":count cards", { count: pendingItems.length }) }}</div>
 
@@ -611,9 +661,9 @@ function jobOrderHref(item: { job_order_slug: string }) {
             </template>
 
             <template v-if="pickerMode === 'prepare'">
-                <div class="mb-1 text-gray-500">{{ ctrans("How many to make? (labels)") }}</div>
+                <div v-if="!simpleBoard" class="mb-1 text-gray-500">{{ ctrans("How many to make? (labels)") }}</div>
                 <form @submit.prevent="confirmPrepare">
-                    <div class="flex max-h-64 flex-col gap-1 overflow-y-auto">
+                    <div v-if="!simpleBoard" class="flex max-h-64 flex-col gap-1 overflow-y-auto">
                         <label v-for="(item, index) in pendingItems" :key="item.id" class="flex items-center gap-2">
                             <span v-if="pendingItems.length > 1" class="w-24 truncate font-medium" :title="item.stock_name">{{ item.stock_code }}</span>
                             <input v-model.number="pendingQuantities[item.id]" type="number" min="1" step="1" :autofocus="index === 0" class="w-20 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
@@ -633,7 +683,11 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         </div>
                         <div v-for="item in pendingItems" :key="`texts-${item.id}`" class="space-y-1">
                             <div v-if="pendingItems.length > 1" class="truncate font-medium" :title="item.stock_name">{{ item.stock_code }}</div>
-                            <div class="grid grid-cols-2 gap-1.5">
+                            <div class="grid gap-1.5" :class="simpleBoard ? 'grid-cols-[4rem_1fr_1fr]' : 'grid-cols-2'">
+                                <label v-if="simpleBoard" class="flex min-w-0 flex-col gap-0.5">
+                                    <span class="text-gray-500">{{ ctrans("SKOs") }}</span>
+                                    <input v-model.number="pendingQuantities[item.id]" type="number" min="1" step="1" required class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
+                                </label>
                                 <label class="flex min-w-0 flex-col gap-0.5">
                                     <span class="text-gray-500">{{ ctrans("Batch code") }}</span>
                                     <input
@@ -656,6 +710,22 @@ function jobOrderHref(item: { job_order_slug: string }) {
                                         class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
                                 </label>
                             </div>
+                            <template v-if="simpleBoard">
+                                <div v-for="(run, runIndex) in extraRuns[item.id] ?? []" :key="runIndex" class="grid grid-cols-[4rem_1fr_1fr_auto] items-center gap-1.5">
+                                    <input v-model.number="run.quantity" type="number" min="1" step="1" required :aria-label="ctrans('SKOs')" class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
+                                    <input v-model="run.batch_code" type="text" maxlength="64" :required="labelsNeed(item, 'batch_code')" :aria-label="ctrans('Batch code')" :placeholder="labelsNeed(item, 'batch_code') ? ctrans('Printed on the label') : ctrans('From job order')" class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
+                                    <input v-model="run.expiry_date" type="date" :required="labelsNeed(item, 'expiry_date')" :aria-label="ctrans('Expiry date')" class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
+                                    <button type="button" class="px-1 text-gray-400 hover:text-red-600" :title="ctrans('Remove this batch')" @click="extraRuns[item.id].splice(runIndex, 1)">×</button>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" class="text-gray-500 hover:text-[var(--app-accent)]" @click="addRun(item)">+ {{ ctrans("Another batch") }}</button>
+                                    <span class="ml-auto text-gray-400">
+                                        {{ ctrans(":count SKOs", { count: runTotal(item) }) }}
+                                        <template v-if="runTotal(item) > Math.ceil(Number(item.quantity))">(+{{ runTotal(item) - Math.ceil(Number(item.quantity)) }} {{ ctrans("for stock") }})</template>
+                                        <template v-if="item.batch_size"> · {{ item.unit_name ? ctrans("makes :count :unit", { count: runUnits(item), unit: item.unit_name }) : ctransChoice("makes :count unit|makes :count units", runUnits(item)) }}</template>
+                                    </span>
+                                </div>
+                            </template>
                         </div>
 
                         <div v-if="changedExpiryItems.length" class="rounded border border-amber-200 bg-amber-50 p-1.5" role="group" :aria-label="ctrans('Keep the new expiry date?')">
@@ -675,7 +745,9 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         </div>
                     </div>
 
-                    <button type="submit" class="mt-2 w-full rounded bg-[var(--app-accent)] px-3 py-1 font-medium text-[var(--app-accent-text)] hover:bg-[var(--app-accent)]">{{ pendingItems.length > 1 ? ctrans("Prepare :count", { count: pendingItems.length }) : ctrans("Prepare") }}</button>
+                    <button type="submit" class="mt-2 w-full rounded bg-[var(--app-accent)] px-3 py-1 font-medium text-[var(--app-accent-text)] hover:bg-[var(--app-accent)]">{{ simpleBoard
+                        ? (pendingItems.length > 1 ? ctrans("Start making :count", { count: pendingItems.length }) : ctrans("Start making"))
+                        : (pendingItems.length > 1 ? ctrans("Prepare :count", { count: pendingItems.length }) : ctrans("Prepare")) }}</button>
                 </form>
                 <div class="mt-2 border-t border-gray-100 pt-2">
                     <button v-if="!isDismissing" type="button" class="w-full rounded border border-red-200 px-3 py-1 text-red-700 hover:bg-red-50" @click="isDismissing = true">{{ ctrans("Can't be done") }}</button>
@@ -788,9 +860,12 @@ function jobOrderHref(item: { job_order_slug: string }) {
         </Link>
     </div>
 
+    <div v-if="assignError" class="mx-4 mt-3 text-sm text-red-600">{{ assignError }}</div>
+
     <div v-if="groupBy === 'board' && groups" class="mx-4 mt-3 flex gap-3">
         <template v-for="(lane, laneIndex) in filteredGroups" :key="lane.label">
         <div
+            v-if="isLaneShown(laneIndex)"
             class="flex min-w-0 flex-1 flex-col rounded-lg border bg-gray-50 transition dark:bg-gray-800"
             :class="dropTarget(laneIndex) ? 'border-[var(--app-accent)] ring-2 ring-[var(--app-accent-muted)]' : 'border-gray-200 dark:border-gray-700'"
             @dragover="dropTarget(laneIndex) ? $event.preventDefault() : null"
@@ -868,9 +943,9 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     <div class="flex items-center gap-1 text-gray-400">
                         <span>{{ item.buyer_code ?? requesterWithOrder(item) ?? item.notes }}</span>
                         <span v-if="item.family">· {{ item.family }}</span>
-                        <span v-if="laneIndex === LANE_ASSIGNED && isReassignable(item)" class="ml-auto rounded bg-emerald-50 px-1 text-[10px] font-semibold uppercase text-emerald-700">{{ ctrans("Queued") }}</span>
-                        <span v-if="item.job_order_hold_reason" v-tooltip="item.job_order_hold_reason" class="rounded bg-yellow-100 px-1 text-[10px] font-semibold uppercase text-yellow-800" :class="laneIndex === LANE_ASSIGNED && isReassignable(item) ? '' : 'ml-auto'">{{ ctrans("On hold") }}</span>
-                        <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink" :class="(laneIndex === LANE_ASSIGNED && isReassignable(item)) || item.job_order_hold_reason ? '' : 'ml-auto'">{{ item.job_order_reference }}</Link>
+                        <span v-if="laneIndex === queuedLane && isReassignable(item)" class="ml-auto rounded bg-emerald-50 px-1 text-[10px] font-semibold uppercase text-emerald-700">{{ ctrans("Queued") }}</span>
+                        <span v-if="item.job_order_hold_reason" v-tooltip="item.job_order_hold_reason" class="rounded bg-yellow-100 px-1 text-[10px] font-semibold uppercase text-yellow-800" :class="laneIndex === queuedLane && isReassignable(item) ? '' : 'ml-auto'">{{ ctrans("On hold") }}</span>
+                        <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink" :class="(laneIndex === queuedLane && isReassignable(item)) || item.job_order_hold_reason ? '' : 'ml-auto'">{{ item.job_order_reference }}</Link>
                     </div>
                     <div v-if="laneIndex <= LANE_PREPARING" class="text-gray-400">
                         <span :class="freeStock(item) >= Number(item.quantity) ? 'text-emerald-600' : ''">{{ ctrans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>

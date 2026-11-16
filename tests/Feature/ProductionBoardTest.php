@@ -2031,3 +2031,106 @@ test('an order line whose step is set to assign automatically goes straight to a
     \App\Actions\Production\ManufactureTask\UpdateManufactureTask::make()->action($step, ['auto_assign_to' => null]);
     expect($step->refresh()->data)->not->toHaveKey('auto_assign');
 });
+
+test('a simple board has no preparing or assigned lane and gives a dragged card to whoever moved it', function () {
+    $production = StoreProduction::make()->action($this->organisation, ['code' => 'SMPL'.rand(100, 999), 'name' => 'One person factory']);
+    $production->update(['settings' => array_merge($production->settings ?? [], ['simple_board' => true])]);
+
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE])
+    );
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['quantity_in_locations' => 0]);
+    StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'SMPL-'.rand(1000, 9999), 'name' => 'Simple board tea', 'org_stock_id' => $orgStock->id]);
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stock->id,
+        'org_stock_id'    => $orgStock->id,
+        'quantity'        => 5,
+        'preparing_at'    => now(),
+    ]);
+
+    $user            = $this->guest->getUser();
+    $routeParameters = [$this->organisation->slug, $production->slug];
+    $lanes           = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))->assertOk()->viewData('page')['props']['groups'])
+        ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('id')->all()]);
+    actingAs($user);
+
+    expect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))->viewData('page')['props']['simpleBoard'])->toBeTrue()
+        ->and($lanes()['Backlog'])->toBe([$line->id])
+        ->and($lanes()['Preparing'])->toBe([]);
+
+    \Pest\Laravel\post(route('grp.org.productions.show.to_produce.job_orders.store', $routeParameters), ['ids' => [$line->id], 'assign_to_me' => true])
+        ->assertSessionHasErrors('assign_to_me');
+    expect($line->refresh()->job_order_id)->toBeNull();
+
+    $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+    $modelData['worker_number']   = 'W'.rand(1000, 9999);
+    $modelData['alias']           = 'Alias '.rand(1000, 9999);
+    $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+    $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+    $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+    $mover = StoreEmployee::make()->action($this->organisation, $modelData);
+    $user->employees()->attach($mover->id, ['group_id' => $this->group->id, 'organisation_id' => $this->organisation->id]);
+
+    try {
+        \Pest\Laravel\post(route('grp.org.productions.show.to_produce.job_orders.store', $routeParameters), ['ids' => [$line->id], 'assign_to_me' => true])
+            ->assertSessionHasNoErrors();
+
+        $jobOrder = \App\Models\Production\JobOrder::find($line->refresh()->job_order_id);
+        expect($jobOrder->employee_id)->toBe($mover->id)
+            ->and($lanes()['Producing'])->toBe([$line->id])
+            ->and($lanes()['Assigned'])->toBe([]);
+
+        $twoBatches = \App\Models\Procurement\PartnerShoppingListItem::create([
+            'group_id'        => $this->group->id,
+            'organisation_id' => $this->organisation->id,
+            'stock_id'        => $stock->id,
+            'org_stock_id'    => $orgStock->id,
+            'quantity'        => 36,
+        ]);
+        \Pest\Laravel\post(route('grp.org.productions.show.to_produce.job_orders.store', $routeParameters), ['ids' => [$twoBatches->id], 'assign_to_me' => true, 'runs' => [
+            $twoBatches->id => [
+                ['quantity' => 16, 'batch_code' => 'TEA-A', 'expiry_date' => '2027-06-30'],
+                ['quantity' => 20, 'batch_code' => 'TEA-B', 'expiry_date' => '2027-09-30'],
+            ],
+        ]])->assertSessionHasNoErrors();
+
+        $batches = \App\Models\Production\JobOrder::find($twoBatches->refresh()->job_order_id)->jobOrderItems()->orderBy('id')->get();
+        expect($batches->map(fn ($jobLine) => [$jobLine->data['demand_skos'], $jobLine->data['batch_code'], $jobLine->data['expiry_date']])->all())
+            ->toBe([[16, 'TEA-A', '2027-06-30'], [20, 'TEA-B', '2027-09-30']])
+            ->and(\App\Models\Procurement\PartnerShoppingListItem::where('parent_id', $twoBatches->id)->exists())->toBeFalse();
+
+        $short = \App\Models\Procurement\PartnerShoppingListItem::create([
+            'group_id'        => $this->group->id,
+            'organisation_id' => $this->organisation->id,
+            'stock_id'        => $stock->id,
+            'org_stock_id'    => $orgStock->id,
+            'quantity'        => 36,
+        ]);
+        \Pest\Laravel\post(route('grp.org.productions.show.to_produce.job_orders.store', $routeParameters), ['ids' => [$short->id], 'assign_to_me' => true, 'runs' => [
+            $short->id => [['quantity' => 16, 'batch_code' => 'TEA-C'], ['quantity' => 10, 'batch_code' => 'TEA-D']],
+        ]])->assertSessionHasNoErrors();
+
+        $stillToMake = \App\Models\Procurement\PartnerShoppingListItem::where('parent_id', $short->id)->sole();
+        expect((float) $short->refresh()->quantity)->toBe(26.0)
+            ->and($short->job_order_id)->not->toBeNull()
+            ->and((float) $stillToMake->quantity)->toBe(10.0)
+            ->and($stillToMake->job_order_id)->toBeNull()
+            ->and($lanes()['Backlog'])->toContain($stillToMake->id);
+
+        $leftOverCard = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))->viewData('page')['props']['groups'][0]['items'])
+            ->firstWhere('id', $stillToMake->id);
+        expect($leftOverCard)->not->toHaveKey('pipeline')
+            ->and($leftOverCard['is_hitchhiker'])->toBeFalse();
+
+        $production->update(['settings' => array_merge($production->settings, ['simple_board' => false])]);
+        expect($lanes()['Assigned'])->toContain($line->id)
+            ->and($lanes()['Producing'])->toBe([]);
+    } finally {
+        $user->employees()->detach($mover->id);
+    }
+});
