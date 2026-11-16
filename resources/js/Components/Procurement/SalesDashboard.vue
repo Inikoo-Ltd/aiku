@@ -67,6 +67,7 @@ interface Sales {
 	out: Ranking
 	low: Ranking
 	dead: Ranking
+	by_organisation?: Record<string, { top_sellers: ProductRow[]; out: Ranking; low: Ranking; dead: Ranking }>
 }
 
 const props = defineProps<{
@@ -90,9 +91,9 @@ const problemClass: Record<Problem, string> = {
 }
 
 const money = (amount: number) =>
-	new Intl.NumberFormat(undefined, { style: "currency", currency: props.sales?.currency ?? "GBP", maximumFractionDigits: 0 }).format(Math.round(amount))
+	new Intl.NumberFormat(undefined, { style: "currency", currency: props.sales?.currency ?? "GBP", currencyDisplay: "narrowSymbol", maximumFractionDigits: 0 }).format(Math.round(amount))
 const shortMoney = (amount: number) =>
-	new Intl.NumberFormat(undefined, { style: "currency", currency: props.sales?.currency ?? "GBP", notation: "compact", maximumFractionDigits: 1 }).format(amount)
+	new Intl.NumberFormat(undefined, { style: "currency", currency: props.sales?.currency ?? "GBP", currencyDisplay: "narrowSymbol", notation: "compact", maximumFractionDigits: 1 }).format(amount)
 const dateLocale = () => localesCode[props.language || getActiveLanguage()] ?? localesCode.en
 const monthName = (month: number) => format(new Date(props.sales?.year ?? 2000, month - 1, 1), "LLL", { locale: dateLocale() })
 const severityClass: Record<string, string> = {
@@ -202,6 +203,26 @@ const monthRows = computed(() =>
 	})
 )
 
+const quarterRows = computed(() =>
+	[0, 1, 2, 3].map((quarter) => {
+		const months = monthRows.value.slice(quarter * 3, quarter * 3 + 3)
+		const expected = (row: (typeof months)[number]) => (row.isPartial && forecast.value ? (forecast.value.months[row.month - 1] ?? row.sales) : row.sales)
+		const known = months.filter((row) => expected(row) !== null)
+		const sales = known.length ? known.reduce((sum, row) => sum + (expected(row) ?? 0), 0) : null
+		const lastYear = months.reduce((sum, row) => sum + row.lastYear, 0)
+		const isOpen = months.some((row) => row.isPartial || row.isForecast) || known.length < months.length
+
+		return {
+			quarter: quarter + 1,
+			isOpen,
+			isForecast: months.some((row) => row.isForecast || (row.isPartial && !!forecast.value)),
+			sales,
+			lastYear,
+			change: sales !== null && !isOpen && lastYear ? (sales / lastYear - 1) * 100 : null,
+		}
+	})
+)
+
 const monthLabels = computed(() => lastYear.value.map((_, index) => pointName(index + 1)))
 const forecastBands = (line: { expected: (number | null)[]; low: (number | null)[]; high: (number | null)[] }) => [
 	{ key: "forecast", label: ctrans("Forecast"), data: line.expected, borderColor: COLORS.thisYear, backgroundColor: COLORS.thisYear, borderDash: [4, 3], tension: 0, borderWidth: 1.5, pointRadius: 0 },
@@ -292,15 +313,18 @@ const totalSold = computed(() => (props.sales?.organisations ?? []).reduce((sum,
 const topSold = computed(() => Math.max(1, ...(props.sales?.organisations ?? []).map((organisation) => organisation.sold)))
 const problemTotal = (problem: Problem) => (props.sales?.organisations ?? []).reduce((sum, organisation) => sum + organisation.problems[problem], 0)
 
+const ranked = computed(() => (selected.value === "all" ? props.sales : props.sales?.by_organisation?.[selected.value] ?? props.sales))
+const selectedName = computed(() => props.sales?.organisations.find((organisation) => organisation.code === selected.value)?.name ?? null)
+
 const rankings = computed(() =>
-	props.sales
+	props.sales && ranked.value
 		? [
 				{
 				key: "top",
 					title: ctrans("Best sellers"),
-					hint: atSupplierPrices.value ? ctrans("Goods sold in the last 12 months at your prices, every organisation together") : atCost.value ? ctrans("Goods sold in the last 12 months at cost, every organisation together") : ctrans("Goods sold in the last 12 months at what customers paid, every organisation together"),
+					hint: selectedName.value ? ctrans("Goods sold in the last 12 months in :organisation", { organisation: selectedName.value }) : atSupplierPrices.value ? ctrans("Goods sold in the last 12 months at your prices, every organisation together") : atCost.value ? ctrans("Goods sold in the last 12 months at cost, every organisation together") : ctrans("Goods sold in the last 12 months at what customers paid, every organisation together"),
 					empty: ctrans("Nothing sold in the period"),
-					rows: props.sales.top_sellers,
+					rows: ranked.value.top_sellers,
 					count: null,
 					tone: "text-gray-700",
 					figure: "sold" as const,
@@ -310,8 +334,8 @@ const rankings = computed(() =>
 					title: ctrans("Out of stock"),
 					hint: ctrans("Nothing left to sell where shown; the best sellers there first"),
 					empty: ctrans("No product is out of stock"),
-					rows: props.sales.out.rows,
-					count: props.sales.out.count,
+					rows: ranked.value.out.rows,
+					count: ranked.value.out.count,
 					tone: "text-red-600",
 					figure: "sold" as const,
 				},
@@ -320,8 +344,8 @@ const rankings = computed(() =>
 					title: ctrans("About to run out"),
 					hint: ctrans("At the rate it sells, the stock will not last until a new order can arrive"),
 					empty: ctrans("No product is about to run out"),
-					rows: props.sales.low.rows,
-					count: props.sales.low.count,
+					rows: ranked.value.low.rows,
+					count: ranked.value.low.count,
 					tone: "text-amber-600",
 					figure: "sold" as const,
 				},
@@ -330,8 +354,8 @@ const rankings = computed(() =>
 					title: ctrans("In stock but not selling"),
 					hint: atSupplierPrices.value ? ctrans("Stock sitting in the warehouse with no sales expected, at your prices; the largest first") : ctrans("Stock sitting in the warehouse with no sales expected, at what it cost; the largest first"),
 					empty: ctrans("No product is sitting unsold"),
-					rows: props.sales.dead.rows,
-					count: props.sales.dead.count,
+					rows: ranked.value.dead.rows,
+					count: ranked.value.dead.count,
 					tone: "text-gray-500",
 					figure: "stock" as const,
 				},
@@ -423,6 +447,24 @@ const rankings = computed(() =>
 									</tr>
 								</tbody>
 							</table>
+							<table v-if="!inMonth" class="mt-4 w-full text-xs tabular-nums">
+								<thead class="text-gray-400">
+									<tr>
+										<th class="whitespace-nowrap py-0.5 text-left font-normal">{{ ctrans("Quarter") }}</th>
+										<th class="py-0.5 text-right font-normal">{{ sales.year }}</th>
+										<th class="py-0.5 text-right font-normal">{{ sales.year - 1 }}</th>
+										<th class="py-0.5 text-right font-normal">{{ ctrans("Difference") }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="row in quarterRows" :key="row.quarter" :class="row.isForecast ? 'italic text-gray-400' : 'text-gray-700'">
+										<td class="py-0.5">Q{{ row.quarter }}<span v-if="row.isForecast"> · {{ ctrans("forecast") }}</span><span v-else-if="row.isOpen && row.sales !== null" class="text-gray-400"> · {{ ctrans("so far") }}</span></td>
+										<td class="py-0.5 text-right">{{ row.sales === null ? "—" : money(row.sales) }}</td>
+										<td class="py-0.5 text-right text-gray-500">{{ money(row.lastYear) }}</td>
+										<td class="py-0.5 text-right" :class="row.change === null ? '' : row.change < 0 ? 'text-red-600' : 'text-green-600'">{{ row.change === null ? "" : signed(row.change) }}</td>
+									</tr>
+								</tbody>
+							</table>
 							<p v-if="forecast && inMonth" class="mt-3 text-xs text-gray-400">
 								{{ ctrans("Forecast: the rest of :last_year, scaled by how this month has run so far against the same days then. The band is the worst and the best of the last six full months.", { last_year: thenLabel }) }}
 							</p>
@@ -476,7 +518,10 @@ const rankings = computed(() =>
 							</tr>
 						</tfoot>
 					</table>
+					<p v-if="sales.organisations.length" class="mt-3 text-xs text-gray-400">{{ ctrans("Out of stock: nothing left to sell. About to run out: at the rate it sells, it will run out within about twice the delivery time, counting what is already on its way; some will run out before any new order can arrive. Not selling: in stock, but no sales expected.") }}</p>
 				</section>
+
+				<SegmentedToggle v-if="sales.organisations.length > 1" v-model="selected" :options="organisationOptions" :aria-label="ctrans('Organisation')" />
 
 				<div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
 					<section v-for="ranking in rankings" :key="ranking.key" class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">

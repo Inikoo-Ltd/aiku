@@ -280,6 +280,7 @@ onMounted(() => {
 					:contacts-loading="!loadedDetails"
 					:summary="summary"
 					:sales="sales"
+					:feedback="feedback"
 					:open-orders="openOrders"
 					:orders="purchase_order_stages"
 					:theme="navigationTheme"

@@ -213,11 +213,39 @@ class ShowAgentSales extends OrgAction
             'products'      => $products->count(),
             'selling'       => $products->where('sold', '>', 0)->count(),
             'organisations' => $organisations,
-            'top_sellers'   => $products->where('sold', '>', 0)->sortByDesc('sold')->take(self::RANKING)->values()->all(),
-            'out'           => $this->ranking($products, 'out', 'sold'),
-            'low'           => $this->ranking($products, 'low', 'sold'),
-            'dead'          => $this->ranking($products, 'dead', 'stock'),
+            ...$this->rankings($products),
+            'by_organisation' => collect($organisations)->mapWithKeys(fn (array $organisation) => [
+                $organisation['code'] => $this->rankings($this->inOrganisation($products, $organisation['code'])),
+            ])->all(),
         ];
+    }
+
+    /**
+     * @return array{top_sellers: array<int, array<string, mixed>>, out: array<string, mixed>, low: array<string, mixed>, dead: array<string, mixed>}
+     */
+    private function rankings(Collection $products): array
+    {
+        return [
+            'top_sellers' => $products->where('sold', '>', 0)->sortByDesc('sold')->take(self::RANKING)->values()->all(),
+            'out'         => $this->ranking($products, 'out', 'sold'),
+            'low'         => $this->ranking($products, 'low', 'sold'),
+            'dead'        => $this->ranking($products, 'dead', 'stock'),
+        ];
+    }
+
+    /**
+     * The products as one organisation sees them: its own figures only.
+     */
+    private function inOrganisation(Collection $products, string $code): Collection
+    {
+        return $products
+            ->map(function (array $product) use ($code) {
+                $organisations = collect($product['organisations'])->where('code', $code)->values();
+
+                return [...$product, 'organisations' => $organisations->all(), 'sold' => round($organisations->sum('sold'), 2)];
+            })
+            ->filter(fn (array $product) => $product['organisations'] !== [])
+            ->values();
     }
 
     /**
