@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\BankTransaction;
 
+use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Invoice\AttachPaymentToInvoice;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
@@ -17,6 +18,7 @@ use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
@@ -25,7 +27,9 @@ use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\BankConnection;
 use App\Models\Accounting\BankTransaction;
+use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
+use App\Models\CRM\Customer;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
@@ -188,6 +192,71 @@ class PayMatchedBankTransactions
         if ($paid) {
             $this->afterPayment($paid);
         }
+    }
+
+    /**
+     * A person chose to keep a bank payment that pays no order as the customer's credit: the money received is
+     * recorded as the customer's payment and the same amount is added to their balance, to spend on later orders.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     * @throws \Throwable
+     */
+    public function payToCustomerCredit(BankTransaction $bankTransaction, Customer $customer, string $paidBy): CreditTransaction
+    {
+        return DB::transaction(function () use ($bankTransaction, $customer, $paidBy) {
+            $bankTransaction = BankTransaction::lockForUpdate()->findOrFail($bankTransaction->id);
+            $customer        = Customer::lockForUpdate()->findOrFail($customer->id);
+
+            $problem = match (true) {
+                $bankTransaction->payment_id !== null => __('This bank payment is already recorded'),
+                MatchBankTransactions::make()->cardProcessorPayoutId($bankTransaction) !== null => __('This is a card processor payout of payments already on their orders'),
+                $bankTransaction->direction !== BankTransactionDirectionEnum::IN || $bankTransaction->status !== BankTransactionStatusEnum::BOOKED => __('Only money received and booked by the bank can be added to a customer credit'),
+                $customer->organisation_id !== $bankTransaction->organisation_id => __('The customer belongs to another organisation'),
+                $customer->shop->currency_id !== $bankTransaction->currency_id => __('The customer\'s shop sells in another currency'),
+                default => null,
+            };
+            $paymentAccount = $problem ? null : $this->paymentAccount($bankTransaction->bankConnection, $bankTransaction);
+            if (!$problem && !$paymentAccount) {
+                $problem = __('No payment account is set for :currency on this bank connection', ['currency' => $bankTransaction->currency->code]);
+            }
+            if ($problem) {
+                throw ValidationException::withMessages(['customer' => $problem]);
+            }
+
+            $received = round((float)$bankTransaction->amount, 2);
+            $payment  = StorePayment::make()->action($customer, $paymentAccount, [
+                'amount'    => $received,
+                'reference' => $bankTransaction->reference ? mb_substr($bankTransaction->reference, 0, 255) : null,
+                'status'    => PaymentStatusEnum::SUCCESS,
+                'state'     => PaymentStateEnum::COMPLETED,
+                'data'      => ['bank_transaction_id' => $bankTransaction->id],
+            ]);
+
+            $creditTransaction = StoreCreditTransaction::make()->action($customer, [
+                'amount'     => $received,
+                'type'       => CreditTransactionTypeEnum::TOP_UP,
+                'payment_id' => $payment->id,
+                'notes'      => trim('Bank transfer '.($bankTransaction->reference ?? '')),
+            ]);
+
+            $bankTransaction->update([
+                'match_state' => BankTransactionMatchStateEnum::MATCHED,
+                'order_id'    => null,
+                'payment_id'  => $payment->id,
+                'matched_at'  => now(),
+                'match_data'  => array_merge($bankTransaction->match_data ?? [], [
+                    'paid_by'               => $paidBy,
+                    'reason'                => null,
+                    'received'              => $received,
+                    'credit_customer_id'    => $customer->id,
+                    'credit_customer_name'  => $customer->name,
+                    'credit_transaction_id' => $creditTransaction->id,
+                    'paid_at'               => now()->toIso8601String(),
+                ]),
+            ]);
+
+            return $creditTransaction;
+        });
     }
 
     /**

@@ -145,6 +145,7 @@ use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProductMinimumOrders;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\Procurement\OrgSupplier\Json\GetOrgSuppliers;
+use App\Actions\Accounting\BankTransaction\Json\GetBankTransactionCustomerCandidates;
 use App\Actions\Accounting\BankTransaction\Json\GetBankTransactionOrderCandidates;
 use App\Actions\Inventory\OrgStock\Json\ScanSkoBarcode;
 use App\Actions\Goods\Barcode\Json\GetNextFreeBarcode;
@@ -309,6 +310,7 @@ Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->na
 Route::get('organisation/{organisation}/org-suppliers', GetOrgSuppliers::class)->name('org_suppliers.index');
 Route::get('organisation/{organisation:id}/bank-payee-link-options', App\Actions\Accounting\BankPayee\Json\GetBankPayeeLinkOptions::class)->name('bank_payee.link_options');
 Route::get('organisation/{organisation:id}/bank-transaction/{bankTransaction:id}/order-candidates', GetBankTransactionOrderCandidates::class)->name('bank_transaction.order_candidates')->withoutScopedBindings();
+Route::get('organisation/{organisation:id}/bank-transaction/{bankTransaction:id}/customer-candidates', GetBankTransactionCustomerCandidates::class)->name('bank_transaction.customer_candidates')->withoutScopedBindings();
 Route::get('organisation/{organisation}/org-supplier-products', GetOrgSupplierProducts::class)->name('org_supplier_products.index');
 Route::get('org-supplier-product/{orgSupplierProduct:id}/minimum-orders', GetOrgSupplierProductMinimumOrders::class)->name('org_supplier_product.minimum_orders');
 Route::get('organisation/{organisation:id}/org-stock/{orgStock:id}/batch-codes', GetBatchCodes::class)->name('org_stock.batch_codes.index');

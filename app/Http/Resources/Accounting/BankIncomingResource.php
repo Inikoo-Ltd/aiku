@@ -52,6 +52,7 @@ class BankIncomingResource extends JsonResource
             'counterparty_name' => $this->counterparty_name,
             'reference'         => $this->reference,
             'reason'            => match (true) {
+                $this->payment_id !== null && isset($this->match_data['credit_customer_name']) => __('Added to the credit of :customer by :name', ['customer' => $this->match_data['credit_customer_name'], 'name' => $this->match_data['paid_by'] ?? '']),
                 $this->payment_id !== null && isset($this->match_data['paid_by'])     => __('Recorded on the order by :name', ['name' => $this->match_data['paid_by']]),
                 $this->payment_id !== null                                            => __('Paid automatically'),
                 $this->match_state === BankTransactionMatchStateEnum::MATCHED         => isset($this->match_data['invoice_id']) ? __('Matches the invoice, not paid automatically') : __('Matches the order, not paid automatically'),

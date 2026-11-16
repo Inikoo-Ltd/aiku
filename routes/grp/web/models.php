@@ -84,6 +84,7 @@ use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Accounting\BankTransaction\DismissBankTransaction;
+use App\Actions\Accounting\BankTransaction\PayBankTransactionToCustomerCredit;
 use App\Actions\Accounting\BankTransaction\PayBankTransactionToOrder;
 use App\Actions\Accounting\BankTransaction\RestoreBankTransaction;
 use App\Actions\Accounting\Payment\CancelPayment;
@@ -1307,6 +1308,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
     Route::post('/bank-payee', App\Actions\Accounting\BankPayee\SetBankPayeeCategory::class)->name('bank_payee.set');
     Route::post('/bank-transaction/{bankTransaction:id}/pay-order', PayBankTransactionToOrder::class)->name('bank_transaction.pay_order')->withoutScopedBindings();
+    Route::post('/bank-transaction/{bankTransaction:id}/customer-credit', PayBankTransactionToCustomerCredit::class)->name('bank_transaction.customer_credit')->withoutScopedBindings();
     Route::post('/bank-transaction/{bankTransaction:id}/dismiss', DismissBankTransaction::class)->name('bank_transaction.dismiss')->withoutScopedBindings();
     Route::post('/bank-transaction/{bankTransaction:id}/restore', RestoreBankTransaction::class)->name('bank_transaction.restore')->withoutScopedBindings();
 });

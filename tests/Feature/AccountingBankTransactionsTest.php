@@ -45,6 +45,9 @@ use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\Http;
+use App\Actions\Accounting\BankTransaction\PayBankTransactionToCustomerCredit;
+use App\Http\Resources\Accounting\BankIncomingResource;
+use App\Models\Accounting\CreditTransaction;
 use App\Actions\Accounting\BankTransaction\PayBankTransactionToOrder;
 use Carbon\Carbon;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
@@ -889,6 +892,75 @@ test('staff record a bank payment from the review queue on the order they name, 
         ->and($ids(['currency' => $order->currency->code]))->toContain($toReview->id)
         ->and($ids(['currency' => $otherCurrencyLine->currency->code]))->not->toContain($toReview->id)
         ->and($ids(['from' => now()->subYears(3)->subDay()->toDateString(), 'to' => now()->subYears(2)->toDateString()]))->toContain($old->id)->not->toContain($toReview->id);
+});
+
+test('staff add a bank payment that pays no order to the customer credit', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $customer       = createCustomer($this->shop);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'wise'.random_int(1000, 9999), 'name' => 'Wise credit test']
+    );
+    SetBankConnectionAutoPay::run($bankConnection, [$this->shop->currency->code => $bankAccount->code]);
+    SetBankConnectionAutoPay::run($bankConnection->refresh(), [], off: true);
+    $bankConnection->refresh();
+
+    $line = fn (string $id, ?int $currencyId = null) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id.random_int(1000, 99999),
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 75.5,
+        'currency_id'             => $currencyId ?? $this->shop->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => 'Prepayment',
+        'counterparty_name'       => $customer->name,
+        'booked_at'               => now(),
+        'match_state'             => BankTransactionMatchStateEnum::REVIEW,
+        'match_data'              => ['reason' => 'no order number in the reference'],
+    ]);
+
+    $balanceBefore = (float)$customer->refresh()->balance;
+
+    expect(fn () => PayBankTransactionToCustomerCredit::make()->handle($line('c0', Currency::where('id', '!=', $this->shop->currency_id)->value('id')), ['customer_id' => $customer->id]))
+        ->toThrow(ValidationException::class);
+
+    $credited = $line('c1');
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    get(route('grp.json.bank_transaction.customer_candidates', [$this->organisation->id, $credited->id]))
+        ->assertOk()
+        ->assertJsonFragment(['id' => $customer->id]);
+    post(route('grp.models.org.bank_transaction.customer_credit', [$this->organisation->id, $credited->id]), ['customer_id' => $customer->id])
+        ->assertSessionHasNoErrors();
+
+    $credited->refresh();
+    expect($credited->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($credited->order_id)->toBeNull()
+        ->and((float)$credited->payment->amount)->toBe(75.5)
+        ->and($credited->payment->customer_id)->toBe($customer->id)
+        ->and($credited->match_data['credit_customer_id'])->toBe($customer->id)
+        ->and((float)$customer->refresh()->balance)->toBe(round($balanceBefore + 75.5, 2))
+        ->and(CreditTransaction::find($credited->match_data['credit_transaction_id'])->payment_id)->toBe($credited->payment_id)
+        ->and((new BankIncomingResource($credited))->toArray(request())['actionable'])->toBeFalse();
+
+    expect(fn () => PayBankTransactionToCustomerCredit::make()->handle($credited, ['customer_id' => $customer->id]))
+        ->toThrow(ValidationException::class);
+    expect((float)$customer->refresh()->balance)->toBe(round($balanceBefore + 75.5, 2));
+
+    expect(fn () => RefundPaymentToBalance::lockForRefund($credited->payment, null, 10))
+        ->toThrow(ValidationException::class);
+
+    CancelPayment::make()->handle($credited->payment);
+    $credited->refresh();
+    expect((float)$customer->refresh()->balance)->toBe(round($balanceBefore, 2))
+        ->and($credited->payment_id)->toBeNull()
+        ->and($credited->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($credited->match_data)->not->toHaveKey('credit_customer_name');
 });
 
 test('order numbers are read from bank references as whole words', function () {
