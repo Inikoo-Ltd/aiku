@@ -15,6 +15,7 @@ use App\Services\Gmail\GmailHistoryExpiredException;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -165,15 +166,23 @@ class FetchShopMailboxMessages
         return "gmail-message-dispatched:{$shop->id}:$messageId";
     }
 
+    /**
+     * Only the two gmail keys are written, in the database: a fetch takes seconds, and saving the
+     * whole settings read at its start wiped any shop setting saved meanwhile (HELP-4709).
+     */
     private function updateGmailSettings(Shop $shop, string $historyId): void
     {
-        $settings           = $shop->settings ?? [];
-        $settings['gmail']  = array_merge($settings['gmail'] ?? [], [
-            'history_id'      => $historyId,
-            'last_fetched_at' => now()->toIso8601String(),
+        $fetchedAt = now()->toIso8601String();
+
+        Shop::whereKey($shop->id)->update([
+            'settings' => DB::raw("jsonb_set(coalesce(settings, '{}'::jsonb), '{gmail}', coalesce(settings->'gmail', '{}'::jsonb) || ".DB::getPdo()->quote(json_encode(['history_id' => $historyId, 'last_fetched_at' => $fetchedAt]))."::jsonb)"),
         ]);
 
-        $shop->update(['settings' => $settings]);
+        $settings = $shop->settings ?? [];
+        data_set($settings, 'gmail.history_id', $historyId);
+        data_set($settings, 'gmail.last_fetched_at', $fetchedAt);
+        $shop->settings = $settings;
+        $shop->syncOriginalAttribute('settings');
     }
 
     public function asCommand(Command $command): int

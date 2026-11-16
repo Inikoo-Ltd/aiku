@@ -2284,3 +2284,30 @@ test('gmail mail is imported, answered and sent on the urgent queue, clear of th
     expect(collect(\Illuminate\Support\Facades\Queue::pushedJobs())->flatten(1)->pluck('queue')->all())
         ->toBe(['urgent', 'urgent', 'urgent', 'urgent']);
 });
+
+test('a mail fetch keeps the shop settings saved while it was reading the mailbox and only moves its own gmail keys', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '100'];
+    $this->shop->update(['settings' => $settings]);
+    \Illuminate\Support\Facades\Cache::flush();
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*'                   => \Illuminate\Support\Facades\Http::response(['access_token' => 'at', 'expires_in' => 3600]),
+        'gmail.googleapis.com/gmail/v1/users/me/history*' => \Illuminate\Support\Facades\Http::response(['history' => [], 'historyId' => '200']),
+        'gmail.googleapis.com/*'                    => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $readAtStartOfFetch = \App\Models\Catalogue\Shop::find($this->shop->id);
+    $savedMeanwhile     = \App\Models\Catalogue\Shop::find($this->shop->id);
+    $savedMeanwhile->update(['settings' => array_merge($savedMeanwhile->settings, ['assistant_questions' => ['user_id' => 7]])]);
+
+    \App\Actions\Comms\Mailbox\FetchShopMailboxMessages::run($readAtStartOfFetch);
+
+    $stored = $this->shop->fresh()->settings;
+    expect(Arr::get($stored, 'assistant_questions.user_id'))->toBe(7)
+        ->and(Arr::get($stored, 'gmail.history_id'))->toBe('200')
+        ->and(Arr::get($stored, 'gmail.email'))->toBe('care@shop.test')
+        ->and(Arr::get($stored, 'gmail.last_fetched_at'))->not->toBeNull()
+        ->and(Arr::get($readAtStartOfFetch->settings, 'gmail.history_id'))->toBe('200');
+});
