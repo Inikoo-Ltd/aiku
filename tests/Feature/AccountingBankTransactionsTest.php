@@ -2635,3 +2635,54 @@ test('a fio payment whose variable symbol is the order number without its prefix
         ->and($otherCurrency->refresh()->order_id)->toBeNull()
         ->and($noSymbol->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
 });
+
+test('auto-pay records a mapped payer, such as DPD CZ cash on delivery, on its own account and everyone else on the bank account', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $codOrder       = bankMatchingOrder(createCustomer($this->shop), 3354);
+    $transferOrder  = bankMatchingOrder(createCustomer($this->shop), 500);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'fio'.random_int(1000, 9999), 'name' => 'Fio test']
+    );
+    $codAccount = \App\Actions\Accounting\PaymentAccount\StorePaymentAccount::make()->action(
+        \App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider::make()->action(
+            paymentServiceProvider: PaymentServiceProvider::where('code', 'cond')->firstOrFail(),
+            organisation: $this->organisation,
+            modelData: ['code' => 'cod'.random_int(1000, 9999)]
+        ),
+        ['code' => 'cod'.random_int(1000, 9999), 'name' => 'COD CZK test', 'type' => PaymentAccountTypeEnum::CASH_ON_DELIVERY->value]
+    );
+
+    expect(fn () => SetBankConnectionAutoPay::run($bankConnection, [$codOrder->currency->code => $bankAccount->code], payerPaymentAccountCodes: ['Direct Parcel' => 'no-such-account']))
+        ->toThrow(ValidationException::class);
+
+    SetBankConnectionAutoPay::run($bankConnection->refresh(), [$codOrder->currency->code => $bankAccount->code], payerPaymentAccountCodes: ['Direct Parcel' => $codAccount->code]);
+    $bankConnection->refresh();
+
+    $line = fn (string $id, Order $order, string $payer) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => (float)$order->total_amount,
+        'currency_id'             => $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => $payer,
+        'reference'               => $order->reference,
+        'booked_at'               => now()->addMinute(),
+    ]);
+
+    $codLine      = $line('dpd1', $codOrder, 'Direct Parcel Distri');
+    $transferLine = $line('cus1', $transferOrder, 'NATURAL CENTRUM S.R.');
+
+    MatchBankTransactions::run($bankConnection);
+    expect(PayMatchedBankTransactions::run($bankConnection))->toBe(['paid' => 2])
+        ->and($codLine->refresh()->payment->payment_account_id)->toBe($codAccount->id)
+        ->and($transferLine->refresh()->payment->payment_account_id)->toBe($bankAccount->id)
+        ->and($codOrder->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID);
+});
