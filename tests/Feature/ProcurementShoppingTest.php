@@ -1205,14 +1205,42 @@ test('agent catalogue leaves out dead codes: every SKO discontinued, or the SKO 
 
     expect($oldCode->fresh()->state)->toBe(OrgSupplierProductStateEnum::DISCONTINUED->value)
         ->and($newCode->fresh()->state)->toBe(OrgSupplierProductStateEnum::ACTIVE->value)
-        ->and($oldCode->supplierProduct->fresh()->state)->not->toBe(SupplierProductStateEnum::DISCONTINUED);
+        ->and($oldCode->supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUED)
+        ->and($oldCode->supplierProduct->fresh()->discontinued_at)->not->toBeNull()
+        ->and($newCode->supplierProduct->fresh()->state)->not->toBe(SupplierProductStateEnum::DISCONTINUED);
+
+    $isDeadInGroup = fn (OrgSupplierProduct $orgSupplierProduct) => $discontinue->deadInGroup()->where('sp.id', $orgSupplierProduct->supplier_product_id)->exists();
+    DB::table('supplier_products')->where('id', $oldCode->supplier_product_id)->update(['state' => SupplierProductStateEnum::ACTIVE->value]);
+    DB::table('purchase_order_transactions')->where('id', $lineId)->update(['deleted_at' => null]);
+
+    expect($isDeadInGroup($oldCode))->toBeFalse();
+
+    DB::table('purchase_order_transactions')->where('id', $lineId)->update(['deleted_at' => now()]);
+
+    expect($isDeadInGroup($oldCode))->toBeTrue();
+
+    $heldId = DB::table('agent_warehouse_stocks')->insertGetId([
+        'group_id'            => $this->group->id,
+        'agent_id'            => $this->orgAgent->agent_id,
+        'organisation_id'     => $this->organisation->id,
+        'supplier_product_id' => $oldCode->supplier_product_id,
+        'state'               => 'received',
+        'quantity'            => 10,
+        'created_at'          => now(),
+        'updated_at'          => now(),
+    ]);
+
+    expect($isDeadInGroup($oldCode))->toBeFalse();
+
+    DB::table('agent_warehouse_stocks')->where('id', $heldId)->delete();
 
     $stock->update(['state' => StockStateEnum::ACTIVE]);
     $orgStock->update(['state' => OrgStockStateEnum::DISCONTINUED]);
     App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks::run($stock->id);
 
     expect($stock->fresh()->state)->toBe(StockStateEnum::DISCONTINUED)
-        ->and($newCode->fresh()->state)->toBe(OrgSupplierProductStateEnum::DISCONTINUED->value);
+        ->and($newCode->fresh()->state)->toBe(OrgSupplierProductStateEnum::DISCONTINUED->value)
+        ->and($newCode->supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUED);
 });
 
 test('agent stock groups read the lead time the ordering card reads and are never at risk past the overstock edge', function () {

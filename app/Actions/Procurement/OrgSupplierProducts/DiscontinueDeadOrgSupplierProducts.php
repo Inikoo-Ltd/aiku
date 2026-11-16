@@ -12,7 +12,11 @@ use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
+use App\Models\Procurement\AgentWarehouseStock;
 use App\Models\Procurement\OrgSupplierProduct;
+use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +29,8 @@ class DiscontinueDeadOrgSupplierProducts
 
     public const int MONTHS_WITHOUT_ORDERS = 24;
 
+    public int $discontinuedInGroup = 0;
+
     public string $commandSignature = 'procurement:discontinue-dead-org-supplier-products
         {--dry-run : only count what would be discontinued, per organisation and agent, "direct" for suppliers we buy from without one}
         {--organisation= : organisation slug, all organisations when left out}';
@@ -35,8 +41,8 @@ class DiscontinueDeadOrgSupplierProducts
      * nobody in the group has ordered one in two years or has one on an order still open. Their price and availability have not been
      * looked at since, so "active" is a lie that fills the catalogue with noise.
      *
-     * Only the organisation's own row changes. The supplier product is shared by the group, and
-     * discontinuing it there would hide it from an organisation that still buys it.
+     * Only the organisation's own row changes here. The supplier product is shared by the group, and
+     * is discontinued there only once no organisation holds it active (deadInGroup).
      *
      * Given a stock, only the supplier products of that stock are looked at: that is how a stock
      * going discontinued takes its dead supplier products with it, without waiting for the command.
@@ -81,6 +87,68 @@ class DiscontinueDeadOrgSupplierProducts
     }
 
     /**
+     * Supplier products the group still holds as active though every SKO they supply is discontinued, no organisation row stays
+     * active once its dead rows are discontinued, no live purchase order has a line of them and the agent holds none in its warehouse. These show as discontinued in the
+     * supplier portal and the supplier product lists only once the group row says so.
+     */
+    public function deadInGroup(?string $organisationSlug = null, ?int $stockId = null): Builder
+    {
+        return DB::table('supplier_products as sp')
+            ->join('suppliers as s', 's.id', 'sp.supplier_id')
+            ->whereIn('sp.state', [SupplierProductStateEnum::ACTIVE->value, SupplierProductStateEnum::DISCONTINUING->value])
+            ->whereNull('sp.deleted_at')
+            ->whereNull('s.deleted_at')
+            ->when($organisationSlug, fn (Builder $query) => $query->whereExists(fn (Builder $query) => $query->selectRaw('1')
+                ->from('org_supplier_products as org_osp')
+                ->join('organisations as org', 'org.id', 'org_osp.organisation_id')
+                ->whereColumn('org_osp.supplier_product_id', 'sp.id')
+                ->where('org.slug', $organisationSlug)))
+            ->whereNotExists(fn (Builder $query) => $query->selectRaw('1')
+                ->from('agent_warehouse_stocks')
+                ->whereColumn('agent_warehouse_stocks.supplier_product_id', 'sp.id')
+                ->where('agent_warehouse_stocks.quantity', '>', 0)
+                ->whereRaw(AgentWarehouseStock::heldQuantitySql().' > 0'))
+            ->when($stockId, fn (Builder $query) => $query->whereExists(fn (Builder $query) => $query->selectRaw('1')
+                ->from('stock_has_supplier_products as shs')
+                ->whereColumn('shs.supplier_product_id', 'sp.id')
+                ->where('shs.stock_id', $stockId)))
+            ->whereExists(fn (Builder $query) => $query->selectRaw('1')
+                ->from('stock_has_supplier_products as shs')
+                ->whereColumn('shs.supplier_product_id', 'sp.id'))
+            ->whereNotExists(fn (Builder $query) => $query->selectRaw('1')
+                ->from('stock_has_supplier_products as shs')
+                ->join('stocks as st', 'st.id', 'shs.stock_id')
+                ->whereColumn('shs.supplier_product_id', 'sp.id')
+                ->where('st.state', '!=', StockStateEnum::DISCONTINUED->value))
+            ->whereNotExists(fn (Builder $query) => $query->selectRaw('1')
+                ->from('org_supplier_products as active_osp')
+                ->whereColumn('active_osp.supplier_product_id', 'sp.id')
+                ->where('active_osp.state', OrgSupplierProductStateEnum::ACTIVE->value)
+                ->whereNotIn('active_osp.id', $this->dead($organisationSlug, $stockId)->select('osp.id')))
+            ->whereNotExists(fn (Builder $query) => $query->selectRaw('1')
+                ->from('purchase_order_transactions as pot')
+                ->join('purchase_orders as po', 'po.id', 'pot.purchase_order_id')
+                ->whereColumn('pot.supplier_product_id', 'sp.id')
+                ->whereNull('pot.deleted_at')
+                ->whereNull('po.deleted_at')
+                ->whereIn('po.state', PurchaseOrderStateEnum::liveValues()));
+    }
+
+    /**
+     * @return array<int, array{supplier: string, products: int}>
+     */
+    public function previewGroup(?string $organisationSlug = null): array
+    {
+        return $this->deadInGroup($organisationSlug)
+            ->groupBy('s.code')
+            ->orderBy('s.code')
+            ->selectRaw('s.code as supplier, count(*) as products')
+            ->get()
+            ->map(fn ($row) => ['supplier' => $row->supplier, 'products' => (int) $row->products])
+            ->all();
+    }
+
+    /**
      * @return array<int, array{organisation: string, agent: string, products: int}>
      */
     public function preview(?string $organisationSlug = null): array
@@ -106,6 +174,14 @@ class DiscontinueDeadOrgSupplierProducts
             }
         }, 'osp.id', 'id');
 
+        $this->discontinuedInGroup = 0;
+        $this->deadInGroup($organisationSlug, $stockId)->orderBy('sp.id')->select('sp.id')->chunkById(500, function ($rows) {
+            foreach (SupplierProduct::whereIn('id', $rows->pluck('id'))->get() as $supplierProduct) {
+                UpdateSupplierProduct::make()->action($supplierProduct, ['state' => SupplierProductStateEnum::DISCONTINUED->value], hydratorsDelay: 60);
+                $this->discontinuedInGroup++;
+            }
+        }, 'sp.id', 'id');
+
         return $discontinued;
     }
 
@@ -119,13 +195,17 @@ class DiscontinueDeadOrgSupplierProducts
         $command->table(['Organisation', 'Agent', 'Dead supplier products'], $preview);
         $command->info('Total: '.array_sum(array_column($preview, 'products')));
 
+        $groupPreview = $this->previewGroup($organisationSlug);
+        $command->table(['Supplier', 'Supplier products to discontinue in the group'], $groupPreview);
+        $command->info('Total in the group: '.array_sum(array_column($groupPreview, 'products')));
+
         if ($command->option('dry-run')) {
             $command->info('Dry run, nothing changed');
 
             return 0;
         }
 
-        $command->info('Discontinued '.$this->handle($organisationSlug).' for their organisation');
+        $command->info('Discontinued '.$this->handle($organisationSlug).' for their organisation, '.$this->discontinuedInGroup.' in the group');
 
         return 0;
     }

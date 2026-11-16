@@ -66,6 +66,10 @@ class UpdateSupplierProduct extends OrgAction
     public function handle(SupplierProduct $supplierProduct, array $modelData, bool $skipHistoric = false): SupplierProduct
     {
         if (Arr::exists($modelData, 'state')) {
+            if ($this->parseState($modelData['state']) === SupplierProductStateEnum::DISCONTINUED && $supplierProduct->state !== SupplierProductStateEnum::DISCONTINUED) {
+                $modelData['discontinued_at'] = now();
+            }
+
             if (in_array($this->parseState($modelData['state']), self::UNAVAILABLE_STATES, true)) {
                 $modelData['is_available'] = false;
             } elseif (!Arr::exists($modelData, 'is_available') && in_array($supplierProduct->state, self::UNAVAILABLE_STATES, true)) {
