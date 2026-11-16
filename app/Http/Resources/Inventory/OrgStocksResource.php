@@ -13,7 +13,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * @property string $code
  * @property number $quantity_in_locations
- * @property number $number_location
+ * @property number $number_locations
  * @property number $unit_value
  * @property string $slug
  * @property string $description
@@ -70,7 +70,7 @@ class OrgStocksResource extends JsonResource
             'quantity_in_locations'             => trimDecimalZeros($this->quantity_in_locations),
             'currency_code'                     => $this->currency_code,
             'stock_value'                       => $this->stock_value,
-            'number_locations'                  => $this->number_location,
+            'number_locations'                  => $this->number_locations,
             'quantity_locations'                => $this->quantity_in_locations,
             'family_slug'                       => $this->family_slug,
             'family_code'                       => $this->family_code,

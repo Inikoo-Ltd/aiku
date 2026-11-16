@@ -66,7 +66,7 @@ class IndexOrgStockMovements extends OrgAction
         ];
     }
 
-    public function handle(Organisation|OrgStock|Location $parent, $prefix = null, $bucket = null, OrgStockMovementTypeEnum|null $type = null): LengthAwarePaginator
+    public function handle(Organisation|OrgStock|Location $parent, $prefix = null, $bucket = null, OrgStockMovementTypeEnum|null $type = null, ?Warehouse $onlyWarehouse = null): LengthAwarePaginator
     {
         $this->parent = $parent;
 
@@ -115,6 +115,10 @@ class IndexOrgStockMovements extends OrgAction
             $queryBuilder->where('org_stock_movements.location_id', $parent->id);
         } else {
             $queryBuilder->where('org_stock_movements.organisation_id', $organisation->id);
+        }
+
+        if ($onlyWarehouse) {
+            $queryBuilder->where('org_stock_movements.warehouse_id', $onlyWarehouse->id);
         }
 
         $queryBuilder
