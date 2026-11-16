@@ -162,6 +162,14 @@ class GetGroupNavigation
                             ],
                         ],
                         [
+                            'label' => __('Payouts'),
+                            'icon'  => ['fal', 'fa-hand-holding-box'],
+                            'root'  => 'grp.financials.payouts.',
+                            'route' => [
+                                'name' => 'grp.financials.payouts.index',
+                            ],
+                        ],
+                        [
                             'label' => __('Receivables'),
                             'icon'  => ['fal', 'fa-hand-holding-usd'],
                             'root'  => 'grp.financials.receivables.',

@@ -141,6 +141,15 @@ trait WithLayoutNavigation
                             ]
                         ],
                         [
+                            'label' => __('Payouts'),
+                            'icon'  => ['fal', 'fa-hand-holding-box'],
+                            'root'  => 'grp.org.accounting.payouts.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.payouts.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
                             'label' => __('Receivables'),
                             'icon'  => ['fal', 'fa-hand-holding-usd'],
                             'root'  => 'grp.org.accounting.receivables.',
