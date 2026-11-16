@@ -189,7 +189,7 @@ class MatchBankTransactions
             return $this->decideMarketplacePayout($bankTransaction, $marketplaceOrderReference);
         }
 
-        $tokens = $this->orderReferenceTokens($bankTransaction->reference);
+        $tokens = $this->orderReferenceTokens($bankTransaction->reference) ?: $this->variableSymbolOrderReferences($bankTransaction);
         if (!$tokens) {
             return $this->decideInvoice($bankTransaction, []);
         }
@@ -702,6 +702,27 @@ class MatchBankTransactions
     /**
      * @return list<string> upper-cased order-number-shaped words, e.g. PL31515 or DEU123456; customers sometimes write PL 31515 or PL-31515
      */
+    /**
+     * Czech and Slovak payers (and DPD CZ cash on delivery) put the order number without its shop prefix in the
+     * variable symbol (VS 20921 for CZ20921), which Fio keeps in column 5. It names the orders of this organisation
+     * in the line's currency whose number is a prefix and those digits.
+     *
+     * @return list<string>
+     */
+    public function variableSymbolOrderReferences(BankTransaction $bankTransaction): array
+    {
+        $variableSymbol = (string)($bankTransaction->data['movement']['column5']['value'] ?? '');
+        if (!preg_match('/^[0-9]{3,8}$/', $variableSymbol)) {
+            return [];
+        }
+
+        return Order::where('organisation_id', $bankTransaction->organisation_id)
+            ->where('currency_id', $bankTransaction->currency_id)
+            ->whereRaw('reference ~ ?', ['^[A-Z]{2,5}'.$variableSymbol.'$'])
+            ->pluck('reference')
+            ->all();
+    }
+
     public function orderReferenceTokens(?string $reference): array
     {
         preg_match_all('/(?<![A-Za-z0-9])([A-Za-z]{2,5})[ -]?([0-9]{3,8})(?![A-Za-z0-9])/', (string)$reference, $matches, PREG_SET_ORDER);

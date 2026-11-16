@@ -2548,3 +2548,90 @@ test('bank outgoing: a transfer naming one of our orders is a customer refund, o
     post(route('grp.models.org.bank_payee.set', [$this->organisation->id]), ['payee_key' => $nameOnly->payee_key, 'category' => 'customer_refunds'])->assertSessionHasNoErrors();
     expect($nameOnly->refresh()->out_category)->toBe('customer_refunds');
 });
+
+function fioMovement(int $id, float $amount, ?string $counterAccount, ?string $message, string $currency = 'CZK'): array
+{
+    return [
+        'column22' => ['value' => $id, 'name' => 'ID pohybu', 'id' => 22],
+        'column0'  => ['value' => '2026-11-12+0100', 'name' => 'Datum', 'id' => 0],
+        'column1'  => ['value' => $amount, 'name' => 'Objem', 'id' => 1],
+        'column14' => ['value' => $currency, 'name' => 'Měna', 'id' => 14],
+        'column2'  => $counterAccount ? ['value' => $counterAccount, 'name' => 'Protiúčet', 'id' => 2] : null,
+        'column10' => $counterAccount ? ['value' => 'Jan Novák', 'name' => 'Název protiúčtu', 'id' => 10] : null,
+        'column16' => $message ? ['value' => $message, 'name' => 'Zpráva pro příjemce', 'id' => 16] : null,
+        'column8'  => ['value' => $counterAccount ? 'Bezhotovostní příjem' : 'Poplatek', 'name' => 'Typ', 'id' => 8],
+    ];
+}
+
+test('a fio account statement is mirrored once, transfers carry the message as reference and the closing balance is kept', function () {
+    $statement = fn (array $movements) => ['accountStatement' => [
+        'info'            => ['accountId' => '2900123456', 'currency' => 'CZK', 'closingBalance' => 15234.5],
+        'transactionList' => ['transaction' => $movements],
+    ]];
+    Http::fake([
+        'fioapi.fio.cz/*' => Http::sequence()
+            ->push($statement([fioMovement(1001, 2450.0, '123456789', 'CZ10234'), fioMovement(1002, -35.0, null, null)]))
+            ->push($statement([fioMovement(1002, -35.0, null, null), fioMovement(1003, 99.0, '987654321', null, 'XYZ')])),
+    ]);
+
+    $bankConnection = StoreBankConnection::run($this->organisation, [
+        'provider'    => BankConnectionProviderEnum::FIO,
+        'name'        => 'Fio CZK',
+        'credentials' => 'fio-test-token',
+    ]);
+
+    expect(SyncBankConnection::run($bankConnection, true))->toBe(['synced' => 2, 'skipped' => 0, 'skipped_examples' => []]);
+
+    $lines = BankTransaction::where('bank_connection_id', $bankConnection->id)->get()->keyBy('provider_transaction_id');
+    expect($bankConnection->refresh()->external_id)->toBe('2900123456')
+        ->and($lines)->toHaveCount(2)
+        ->and($lines['1001']->provider_type)->toBe('TRANSFER')
+        ->and($lines['1001']->direction)->toBe(BankTransactionDirectionEnum::IN)
+        ->and((float)$lines['1001']->amount)->toBe(2450.0)
+        ->and($lines['1001']->currency->code)->toBe('CZK')
+        ->and($lines['1001']->reference)->toBe('CZ10234')
+        ->and($lines['1001']->counterparty_name)->toBe('Jan Novák')
+        ->and($lines['1001']->booked_at->toDateString())->toBe('2026-11-12')
+        ->and($lines['1002']->provider_type)->toBe('OTHER')
+        ->and((float)$lines['1002']->amount)->toBe(-35.0)
+        ->and((float)\App\Models\Accounting\BankBalance::where('bank_connection_id', $bankConnection->id)->value('amount'))->toBe(15234.5);
+
+    expect(SyncBankConnection::run($bankConnection->refresh()))->toBe(['synced' => 0, 'skipped' => 1, 'skipped_examples' => ['1003: unknown currency: XYZ']])
+        ->and(BankTransaction::where('bank_connection_id', $bankConnection->id)->count())->toBe(2);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'fioapi.fio.cz/v1/rest/periods/fio-test-token/'));
+    expect(\App\Helpers\SentryScrubber::redact('GET https://fioapi.fio.cz/v1/rest/periods/fio-test-token/2026-08-19/2026-11-16/transactions.json'))
+        ->toBe('GET https://fioapi.fio.cz/v1/rest/periods/***/2026-08-19/2026-11-16/transactions.json');
+});
+
+test('a fio payment whose variable symbol is the order number without its prefix is matched to that order', function () {
+    $order          = bankMatchingOrder(createCustomer($this->shop), 4697.25);
+    $digits         = preg_replace('/^[A-Z]+/', '', $order->reference);
+    $bankConnection = bankMatchingConnection($this->organisation);
+
+    $line = fn (string $id, ?string $variableSymbol, ?int $currencyId = null) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 4697.25,
+        'currency_id'             => $currencyId ?? $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => '06585700897356',
+        'booked_at'               => now(),
+        'data'                    => ['movement' => ['column5' => ['value' => $variableSymbol]]],
+    ]);
+
+    $matched       = $line('vs1', $digits);
+    $otherCurrency = $line('vs2', $digits, Currency::where('id', '!=', $order->currency_id)->value('id'));
+    $noSymbol      = $line('vs3', null);
+
+    MatchBankTransactions::run($bankConnection);
+
+    expect($matched->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($matched->order_id)->toBe($order->id)
+        ->and($otherCurrency->refresh()->order_id)->toBeNull()
+        ->and($noSymbol->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
+});
