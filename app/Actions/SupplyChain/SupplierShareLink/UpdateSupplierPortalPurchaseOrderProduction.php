@@ -83,6 +83,6 @@ class UpdateSupplierPortalPurchaseOrderProduction
 
         $this->handle($link->supplier, $purchaseOrder, $validated);
 
-        return response()->json(ShowSupplierPortalPurchaseOrder::make()->handle($link->supplier, $purchaseOrder));
+        return response()->json(ShowSupplierPortalPurchaseOrder::make()->handle($link->supplier, $purchaseOrder, $token));
     }
 }

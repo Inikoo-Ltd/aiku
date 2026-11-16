@@ -18,10 +18,10 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faTag, faCheck, faPencil, faTimes, faLock, faExclamationCircle } from "@fal"
+import { faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faTag, faCheck, faPencil, faTimes, faLock, faExclamationCircle, faReceipt, faDownload } from "@fal"
 import { faCheckCircle } from "@fas"
 
-library.add(faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faTag, faCheck, faPencil, faTimes, faLock, faExclamationCircle, faCheckCircle)
+library.add(faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faTag, faCheck, faPencil, faTimes, faLock, faExclamationCircle, faReceipt, faDownload, faCheckCircle)
 
 type SegmentState = "done" | "skipped" | "untracked" | "overdue" | "at_risk" | "on_track" | "future"
 
@@ -32,6 +32,7 @@ interface Payment {
 	original_currency_code: string | null
 	reference: string | null
 	paid_by: string | null
+	receipt: { file_name: string | null; view_url: string; download_url: string } | null
 }
 
 interface PurchaseOrderDetail {
@@ -295,6 +296,15 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 										{{ locale.currencyFormat(payment.original_currency_code, payment.original_amount) }}
 									</div>
 									<div class="break-words text-gray-500">{{ payment.paid_by }}<template v-if="payment.reference"> · {{ payment.reference }}</template></div>
+									<div v-if="payment.receipt" class="mt-0.5 flex items-center gap-3">
+										<a :href="payment.receipt.view_url" target="_blank" rel="noopener" class="flex min-w-0 items-center gap-1 text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline" v-tooltip="payment.receipt.file_name">
+											<FontAwesomeIcon icon="fal fa-receipt" fixed-width aria-hidden="true" />
+											<span class="truncate">{{ ctrans("Transfer receipt") }}</span>
+										</a>
+										<a :href="payment.receipt.download_url" class="text-gray-500 hover:text-[var(--app-accent)]" v-tooltip="ctrans('Download')" :aria-label="ctrans('Download')">
+											<FontAwesomeIcon icon="fal fa-download" fixed-width aria-hidden="true" />
+										</a>
+									</div>
 								</li>
 							</ul>
 							<p v-else class="text-gray-400">{{ ctrans("No deposit paid yet") }}</p>
@@ -338,6 +348,15 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 											{{ locale.currencyFormat(payment.original_currency_code, payment.original_amount) }}
 										</div>
 										<div class="break-words text-gray-500">{{ payment.paid_by }}<template v-if="payment.reference"> · {{ payment.reference }}</template></div>
+										<div v-if="payment.receipt" class="mt-0.5 flex items-center gap-3">
+											<a :href="payment.receipt.view_url" target="_blank" rel="noopener" class="flex min-w-0 items-center gap-1 text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline" v-tooltip="payment.receipt.file_name">
+												<FontAwesomeIcon icon="fal fa-receipt" fixed-width aria-hidden="true" />
+												<span class="truncate">{{ ctrans("Transfer receipt") }}</span>
+											</a>
+											<a :href="payment.receipt.download_url" class="text-gray-500 hover:text-[var(--app-accent)]" v-tooltip="ctrans('Download')" :aria-label="ctrans('Download')">
+												<FontAwesomeIcon icon="fal fa-download" fixed-width aria-hidden="true" />
+											</a>
+										</div>
 									</li>
 								</ul>
 							</template>

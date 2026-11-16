@@ -23,6 +23,7 @@ use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
 use App\Actions\SupplyChain\SupplierPortalContact\SendSupplierPortalLink;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
 use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalImage;
+use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalPaymentReceipt;
 use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalLabelsPlan;
 use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalProductWebsites;
 use App\Actions\SupplyChain\SupplierShareLink\UI\IndexSupplierPortalProducts;
@@ -56,6 +57,7 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::get('products/{supplierProduct}/websites', GetSupplierPortalProductWebsites::class)->whereNumber('supplierProduct')->name('product_websites');
         Route::get('purchase-orders/{purchaseOrder}', ShowSupplierPortalPurchaseOrder::class)->whereNumber('purchaseOrder')->name('purchase_order');
         Route::post('purchase-orders/{purchaseOrder}/production', UpdateSupplierPortalPurchaseOrderProduction::class)->middleware('throttle:supplier-portal-submit')->whereNumber('purchaseOrder')->name('purchase_order.production');
+        Route::get('purchase-orders/{purchaseOrder}/receipts/{media:ulid}', DownloadSupplierPortalPaymentReceipt::class)->whereNumber('purchaseOrder')->name('purchase_order.receipt');
         Route::get('images/{media:ulid}', DownloadSupplierPortalImage::class)->name('image');
         Route::get('labels', PdfSupplierPortalLabels::class)->middleware('throttle:supplier-portal-labels')->name('labels');
         Route::get('labels/plan', GetSupplierPortalLabelsPlan::class)->name('labels.plan');
