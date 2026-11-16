@@ -23,6 +23,8 @@ enum PurchaseOrderAttachmentScopeEnum: string
     case CUSTOMS      = 'Customs declaration';
     case SERVICE_INVOICE = 'Service invoice';
     case BANK_STATEMENT = 'Bank statement';
+    case DEPOSIT_PAYMENT = 'Deposit payment';
+    case DUTY_PAYMENT = 'Import VAT / Duty paid';
     case SAMPLE_PHOTO = 'Sample photo';
     case PRODUCTION_PHOTO = 'Production photo';
     case QC_REPORT    = 'QC report';
@@ -52,6 +54,8 @@ enum PurchaseOrderAttachmentScopeEnum: string
             'Customs declaration' => __('Customs declaration'),
             'Service invoice' => __('Service invoice (freight, customs, local)'),
             'Bank statement' => __('Bank statement'),
+            'Deposit payment' => __('Deposit payment'),
+            'Import VAT / Duty paid' => __('Import VAT / Duty paid'),
             'Sample photo' => __('Sample photo'),
             'Production photo' => __('Production photo'),
             'QC report'    => __('QC report'),

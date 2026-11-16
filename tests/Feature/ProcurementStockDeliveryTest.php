@@ -4228,6 +4228,12 @@ test('import file details tick steps from aiku data, take marks that win over it
             ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.can_upload', true)
             ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.steps.0.files', []));
 
+    $attachUrl = route('grp.models.stock-delivery.attachment.attach', ['stockDelivery' => $stockDelivery->id]);
+    $this->post($attachUrl, ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('deposit.pdf', 10, 'application/pdf')], 'scope' => $steps()['deposit']['scope']])->assertSuccessful();
+    expect(collect($steps()['deposit']['files'])->pluck('caption')->all())->toBe(['deposit'])
+        ->and($steps()['balance_payment']['files'])->toBe([])
+        ->and($steps()['duty_paid']['files'])->toBe([]);
+
     $this->withExceptionHandling();
     $this->patch($url, ['step' => 'not_a_step', 'status' => 'done'])->assertSessionHasErrors('step');
 });

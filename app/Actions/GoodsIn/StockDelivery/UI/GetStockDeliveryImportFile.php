@@ -180,7 +180,9 @@ class GetStockDeliveryImportFile
     {
         return match ($key) {
             'proforma'           => PurchaseOrderAttachmentScopeEnum::PROFORMA,
-            'deposit', 'balance_payment', 'duty_paid' => PurchaseOrderAttachmentScopeEnum::BANK_STATEMENT,
+            'deposit'            => PurchaseOrderAttachmentScopeEnum::DEPOSIT_PAYMENT,
+            'balance_payment'    => PurchaseOrderAttachmentScopeEnum::BANK_STATEMENT,
+            'duty_paid'          => PurchaseOrderAttachmentScopeEnum::DUTY_PAYMENT,
             'shipping_quotes'    => PurchaseOrderAttachmentScopeEnum::SHIPPING_QUOTE,
             'commercial_invoice' => PurchaseOrderAttachmentScopeEnum::INVOICE,
             'bill_of_lading'     => PurchaseOrderAttachmentScopeEnum::BILL_OF_LADING,
