@@ -700,6 +700,16 @@ test('retina api data feeds are served from the stored build and rebuilt in the 
     'json' => ['retina.api.dropshipping.data_feed.json', 'json'],
 ]);
 
+test('shop data feed is built through a temporary file outside the shared storage', function () {
+    Storage::fake('data-feeds');
+    $shop = $this->product->shop;
+
+    \App\Actions\Retina\Dropshipping\Product\SaveDataFeeds::run($shop);
+
+    expect(config('excel.temporary_files.local_path'))->not->toStartWith(storage_path())
+        ->and(Storage::disk('data-feeds')->get(\App\Actions\Retina\Dropshipping\Product\SaveDataFeeds::path($shop)))->toContain($this->product->code);
+});
+
 // ---- Fulfilment: clients ----
 
 test('retina api fulfilment clients flow', function () {
