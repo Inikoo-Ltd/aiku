@@ -144,6 +144,7 @@ class WebUser extends Authenticatable implements HasMedia, Auditable
         'status',
         'is_root',
         'type',
+        'language_id',
     ];
 
     protected array $attributeModifiers = [

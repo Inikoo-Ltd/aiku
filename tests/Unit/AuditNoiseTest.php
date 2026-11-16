@@ -1,6 +1,7 @@
 <?php
 
 use App\Audits\Redactors\PasswordRedactor;
+use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Portfolio;
 
 it('skips credential keys from custom audits', function (string $key, bool $skipped) {
@@ -17,4 +18,10 @@ it('keeps platform sync flags and touch timestamps out of the portfolio audit al
     expect($auditInclude)
         ->not->toContain('platform_status', 'exist_in_platform', 'has_valid_platform_product_id', 'number_platform_possible_matches', 'last_added_at')
         ->toContain('status', 'sku');
+});
+
+it('audits the web user language so a change of dashboard language can be traced', function () {
+    $auditInclude = (new ReflectionClass(WebUser::class))->getDefaultProperties()['auditInclude'];
+
+    expect($auditInclude)->toContain('language_id');
 });
