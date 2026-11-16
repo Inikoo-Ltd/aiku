@@ -2134,3 +2134,76 @@ test('a simple board has no preparing or assigned lane and gives a dragged card 
         $user->employees()->detach($mover->id);
     }
 });
+
+test('a simple board finishes a producing card dropped on Done and receives it into the factory', function () {
+    $production = StoreProduction::make()->action($this->organisation, ['code' => 'SMPD'.rand(100, 999), 'name' => 'One person factory done']);
+    $production->update(['settings' => array_merge($production->settings ?? [], ['simple_board' => true])]);
+
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE])
+    );
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['quantity_in_locations' => 0]);
+    $artefact = StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'SMPD-'.rand(1000, 9999), 'name' => 'Simple board done tea', 'org_stock_id' => $orgStock->id]);
+    \App\Actions\Production\Artefact\AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => stepTestManufactureTask($production, 'TEA', 'Tea pouches')->id]);
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stock->id,
+        'org_stock_id'    => $orgStock->id,
+        'quantity'        => 5,
+    ]);
+
+    $warehouse       = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-SD'.rand(100, 999), 'name' => 'Simple board warehouse']);
+    $area            = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-SD'.rand(100, 999), 'name' => 'Simple board area']);
+    $factoryLocation = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-SD'.rand(100, 999), 'name' => 'Production room'] + \App\Models\Inventory\Location::factory()->definition());
+
+    $user            = $this->guest->getUser();
+    $routeParameters = [$this->organisation->slug, $production->slug];
+    $lanes           = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))->assertOk()->viewData('page')['props']['groups'])
+        ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('id')->all()]);
+    actingAs($user);
+
+    $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+    $modelData['worker_number']   = 'W'.rand(1000, 9999);
+    $modelData['alias']           = 'Alias '.rand(1000, 9999);
+    $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+    $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+    $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+    $mover = StoreEmployee::make()->action($this->organisation, $modelData);
+    $user->employees()->attach($mover->id, ['group_id' => $this->group->id, 'organisation_id' => $this->organisation->id]);
+
+    try {
+        \Pest\Laravel\post(route('grp.org.productions.show.to_produce.job_orders.store', $routeParameters), ['ids' => [$line->id], 'assign_to_me' => true])
+            ->assertSessionHasNoErrors();
+        $jobOrder = \App\Models\Production\JobOrder::find($line->refresh()->job_order_id);
+        $cards    = ['cards' => [['job_order_id' => $jobOrder->id, 'artefact_id' => $artefact->id]]];
+
+        \Pest\Laravel\post(route('grp.org.productions.show.to_produce.job_orders.finish', $routeParameters), $cards)
+            ->assertSessionHasErrors('job_order');
+        expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::IN_PROCESS)
+            ->and(ManufactureTaskSession::whereIn('job_order_item_task_id', $jobOrder->jobOrderItems()->first()->tasks()->pluck('id'))->exists())->toBeFalse();
+
+        $production->update(['factory_location_id' => $factoryLocation->id]);
+        \Pest\Laravel\post(route('grp.org.productions.show.to_produce.job_orders.finish', $routeParameters), $cards)
+            ->assertSessionHasNoErrors();
+
+        $jobLine = $jobOrder->jobOrderItems()->with('tasks')->sole();
+        expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
+            ->and($jobLine->isFinished())->toBeTrue()
+            ->and((float) $jobLine->quantity_received)->toBe((float) $jobLine->quantity)
+            ->and(ManufactureTaskSession::where('job_order_item_task_id', $jobLine->tasks->first()->id)->sole()->user_id)->toBe($user->id)
+            ->and(\App\Models\Inventory\LocationOrgStock::where('location_id', $factoryLocation->id)->where('org_stock_id', $orgStock->id)->exists())->toBeTrue()
+            ->and($lanes()['Done'])->not->toBeEmpty()
+            ->and($lanes()['Producing'])->toBe([]);
+        get(route('grp.org.productions.show.artisans.index', $routeParameters))->assertOk();
+
+        $production->update(['settings' => array_merge($production->settings, ['simple_board' => false])]);
+        \Pest\Laravel\post(route('grp.org.productions.show.to_produce.job_orders.finish', $routeParameters), $cards)
+            ->assertSessionHasErrors('job_order');
+    } finally {
+        $user->employees()->detach($mover->id);
+    }
+});

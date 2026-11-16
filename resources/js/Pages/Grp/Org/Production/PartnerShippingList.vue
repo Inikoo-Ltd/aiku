@@ -208,6 +208,7 @@ const LANE_BACKLOG = 0
 const LANE_PREPARING = 1
 const LANE_ASSIGNED = 2
 const LANE_PRODUCING = 3
+const LANE_DONE = 4
 
 const queuedLane = computed(() => props.simpleBoard ? LANE_PRODUCING : LANE_ASSIGNED)
 
@@ -216,20 +217,32 @@ function isLaneShown(laneIndex: number): boolean {
 }
 
 function isDraggable(item: BoardItem, laneIndex: number): boolean {
+    if (props.simpleBoard && laneIndex === LANE_PRODUCING) return !!item.job_order_id && !item.job_order_hold_reason
     if (item.state !== "open") return false
-    if (props.simpleBoard) return laneIndex === LANE_BACKLOG || (laneIndex === LANE_PRODUCING && isReassignable(item))
+    if (props.simpleBoard) return laneIndex === LANE_BACKLOG
     return (laneIndex >= LANE_BACKLOG && laneIndex <= LANE_PREPARING) || (laneIndex === LANE_ASSIGNED && isReassignable(item))
 }
 
 function dropTarget(laneIndex: number): boolean {
     const first = dragging.value[0]
     if (!first || first.kind === "mix") return false
-    if (props.simpleBoard) return first.job_order_id ? laneIndex === LANE_BACKLOG && isReassignable(first) : laneIndex === LANE_PRODUCING
+    if (props.simpleBoard && laneIndex === LANE_DONE) return dragging.value.every(item => item.job_order_id && item.artefact_id)
+    if (props.simpleBoard) return first.job_order_id ? laneIndex === LANE_BACKLOG && dragging.value.every(item => item.state === "open" && isReassignable(item)) : laneIndex === LANE_PRODUCING
     if (first.job_order_id) return laneIndex === LANE_PREPARING && isReassignable(first)
     if (laneIndex === LANE_BACKLOG) return !!first.preparing_at
     if (laneIndex === LANE_PREPARING) return !first.preparing_at
     if (laneIndex === LANE_ASSIGNED) return !!first.preparing_at
     return false
+}
+
+function finish(items: BoardItem[]) {
+    assignError.value = null
+    const cards = [...new Map(items.map(item => [`${item.job_order_id}-${item.artefact_id}`, { job_order_id: item.job_order_id, artefact_id: item.artefact_id }])).values()]
+    router.post(
+        route("grp.org.productions.show.to_produce.job_orders.finish", [route().params["organisation"], route().params["production"]]),
+        { cards },
+        { preserveScroll: true, onSuccess: () => { selectedCards.value = [] }, onError: (errors) => assignError.value = Object.values(errors)[0] ?? null }
+    )
 }
 
 function unassign(items: BoardItem[]) {
@@ -294,7 +307,10 @@ function onDrop(laneIndex: number, event: DragEvent) {
         dragging.value = []
         return
     }
-    if (props.simpleBoard && laneIndex === LANE_PRODUCING) {
+    if (props.simpleBoard && laneIndex === LANE_DONE) {
+        finish(dragging.value)
+        dragging.value = []
+    } else if (props.simpleBoard && laneIndex === LANE_PRODUCING) {
         openPicker("prepare", event)
     } else if (dragging.value[0].job_order_id) {
         unassign(dragging.value)
