@@ -48,6 +48,7 @@ class KeepAgentStaffInTheirOrganisation
         'grp.tickets.',
         'grp.tasks.',
         'grp.product_developments.',
+        'grp.supply-chain.suppliers.portal_preview',
         'grp.profile.',
         'grp.chat.staff.',
         'grp.clocking_employees.',
