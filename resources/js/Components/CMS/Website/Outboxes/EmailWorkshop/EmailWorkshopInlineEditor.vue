@@ -58,17 +58,17 @@ const buttonStyle = computed(() => buttonLinkStyle(props.module, props.isMobile)
 <template>
     <div class="email-inline-editor" :style="paddingStyle" @click.stop>
         <div v-if="module.type === MODULE_TYPES.heading" :style="[headingStyle, { '--email-link-decoration': linkDecoration }]" class="email-inline-text">
-            <EditorV2 v-model="text" :toggle="toggles" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" :linkUnderline="linkDecoration === 'underline'" />
+            <EditorV2 v-model="text" :toggle="toggles" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" stripPastedStyles :linkUnderline="linkDecoration === 'underline'" />
         </div>
 
         <div v-else-if="module.type === MODULE_TYPES.button" :style="{ textAlign: buttonAlign }">
             <div :style="buttonStyle" class="email-inline-text">
-                <EditorV2 v-model="text" :toggle="toggles" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" />
+                <EditorV2 v-model="text" :toggle="toggles" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" stripPastedStyles />
             </div>
         </div>
 
         <div v-else :style="textBlockStyle" class="email-inline-text">
-            <EditorV2 v-model="text" :toggle="toggles" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" :linkUnderline="linkDecoration === 'underline'" />
+            <EditorV2 v-model="text" :toggle="toggles" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" stripPastedStyles :linkUnderline="linkDecoration === 'underline'" />
         </div>
     </div>
 </template>

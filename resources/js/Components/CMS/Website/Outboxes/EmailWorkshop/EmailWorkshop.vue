@@ -8,7 +8,8 @@ import {
     faHeading, faParagraph, faListUl, faImage, faSquare, faMinus, faArrowsV, faShareAlt, faVideo, faCode,
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
     faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
-    faSpinnerThird, faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide, faSpellCheck,
+    faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide, faSpellCheck,
+    faArrowUp, faArrowDown,
 } from '@fal'
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
@@ -22,13 +23,14 @@ import EmailWorkshopPlaceholder from './EmailWorkshopPlaceholder.vue'
 import WritingQualityPanel from '@/Components/WritingQuality/WritingQualityPanel.vue'
 import { WritingQualityIssue, checkWritingQuality, replaceQuoteInHtml } from '@/Components/WritingQuality/writingQuality'
 import WorkshopShortcutsDialog from '@/Components/Workshop/WorkshopShortcutsDialog.vue'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { WorkshopShortcut, formatShortcutCombo, useWorkshopShortcuts } from '@/Composables/useWorkshopShortcuts'
 import { ctrans } from '@/Composables/useTrans'
 import {
-    EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
+    DELETE_SELECTION_COMBOS, UploadedImage, droppedImageFiles, isDraggingFiles, setModuleImage, EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
     columnWidthPercent, createDynamicBlockRows, createModule, createProductRows, createRow, dynamicContentSource, ProductCard, ProductCardAppearance, isEmptyMergeContent, duplicateWithNewUuids, normaliseEmailJson,
     UNSUBSCRIBE_BLOCK, emailHasUnsubscribeBlock, isTableModule, modulePlaceholder, isUnsubscribeMergeTag, isUnsubscribeModule, moduleDisplayName, paletteModuleTypes, getModuleText, setModuleText,
-    rowHasUnsubscribeBlock, rowLayouts, setSocialIconSources, hasCurrentVideoEmailThumbnail, videoEmailThumbnailKey, videoThumbnailFromUrl,
+    isRowLockedByUnsubscribe, isUnsubscribeModuleLocked, rowHasUnsubscribeBlock, rowLayouts, setSocialIconSources, hasCurrentVideoEmailThumbnail, videoEmailThumbnailKey, videoThumbnailFromUrl,
 } from './emailWorkshopBlocks'
 import { WebsiteTheme, applyThemeToModule } from './emailWorkshopTheme'
 import { columnWidth, createRenderContext, messageWidth, renderEmailHtml, renderModuleHtml, styleToString, withDerivedHtml } from './renderEmailHtml'
@@ -37,7 +39,8 @@ library.add(
     faHeading, faParagraph, faListUl, faImage, faSquare, faMinus, faArrowsV, faShareAlt, faVideo, faCode,
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
     faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
-    faSpinnerThird, faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide, faSpellCheck,
+    faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide, faSpellCheck,
+    faArrowUp, faArrowDown,
 )
 
 const props = withDefaults(defineProps<{
@@ -329,7 +332,7 @@ const duplicateRow = (row: EmailRow) => {
 
 const deleteRow = (row: EmailRow) => {
     const index = email.value.page.rows.indexOf(row)
-    if (index === -1 || rowHasUnsubscribeBlock(row)) {
+    if (index === -1 || isRowLockedByUnsubscribe(email.value, row)) {
         return
     }
     email.value.page.rows.splice(index, 1)
@@ -379,7 +382,7 @@ const duplicateSelectedModule = () => {
 
 const deleteSelectedModule = () => {
     const location = findModuleLocation(selectedModuleUuid.value)
-    if (!location || isUnsubscribeModule(location.module)) {
+    if (!location || isUnsubscribeModuleLocked(email.value, location.module)) {
         return
     }
     location.column.modules.splice(location.index, 1)
@@ -389,6 +392,10 @@ const deleteSelectedModule = () => {
 const isSelectionLocked = computed(() => selectedModule.value
     ? isUnsubscribeModule(selectedModule.value)
     : !!selectedRow.value && rowHasUnsubscribeBlock(selectedRow.value))
+
+const isSelectionDeleteLocked = computed(() => selectedModule.value
+    ? isUnsubscribeModuleLocked(email.value, selectedModule.value)
+    : !!selectedRow.value && isRowLockedByUnsubscribe(email.value, selectedRow.value))
 
 const duplicateSelection = () => {
     if (selectedModule.value) {
@@ -403,6 +410,101 @@ const deleteSelection = () => {
         deleteSelectedModule()
     } else if (selectedRow.value) {
         deleteRow(selectedRow.value)
+    }
+}
+
+const isDraggingRow = ref(false)
+
+const onRowDragStart = () => {
+    window.getSelection()?.removeAllRanges()
+    isDraggingRow.value = true
+}
+
+const isFileDragOver = ref(false)
+const uploadingImageCount = ref(0)
+const imageDropError = ref<string | null>(null)
+
+const uploadImages = async (files: File[]): Promise<UploadedImage[]> => {
+    const formData = new FormData()
+    files.forEach((file, index) => formData.append(`images[${index}]`, file))
+    const response = await axios.post(route(props.imagesUploadRoute!.name, props.imagesUploadRoute!.parameters), formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    return response.data?.data ?? []
+}
+
+const placeDroppedImages = (uploads: UploadedImage[], moduleUuid: string | null, rowUuid: string | null) => {
+    const location = findModuleLocation(moduleUuid)
+    const remaining = [...uploads]
+    if (location?.module.type === MODULE_TYPES.image && remaining.length) {
+        setModuleImage(location.module, remaining.shift()!)
+        selectModule(location.module, location.row)
+    }
+
+    const modules = remaining.map((upload) => {
+        const module = createThemedModule(MODULE_TYPES.image)
+        setModuleImage(module, upload)
+
+        return module
+    }).filter((module) => !!module.descriptor.image?.src)
+    if (!modules.length) {
+        return
+    }
+
+    if (location) {
+        location.column.modules.splice(location.index + 1, 0, ...modules)
+        selectModule(modules[modules.length - 1], location.row)
+        return
+    }
+
+    const row = createRow([12], `${contentWidth.value}px`)
+    row.columns[0].modules.push(...modules)
+    const rowIndex = email.value.page.rows.findIndex((candidate) => candidate.uuid === rowUuid)
+    email.value.page.rows.splice(rowIndex === -1 ? email.value.page.rows.length : rowIndex + 1, 0, row)
+    selectModule(modules[0], row)
+}
+
+const onCanvasDragOver = (event: DragEvent) => {
+    if (!props.imagesUploadRoute || !isDraggingFiles(event.dataTransfer)) {
+        return
+    }
+    event.preventDefault()
+    event.dataTransfer!.dropEffect = 'copy'
+    isFileDragOver.value = true
+}
+
+const onCanvasDragLeave = (event: DragEvent) => {
+    if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) {
+        isFileDragOver.value = false
+    }
+}
+
+const onCanvasDrop = async (event: DragEvent) => {
+    if (event.defaultPrevented || !props.imagesUploadRoute || !isDraggingFiles(event.dataTransfer)) {
+        return
+    }
+    event.preventDefault()
+    isFileDragOver.value = false
+    imageDropError.value = null
+
+    const files = droppedImageFiles(event.dataTransfer)
+    if (!files.length) {
+        imageDropError.value = ctrans('Only image files can be dropped into the email')
+        return
+    }
+
+    const target = event.target as HTMLElement | null
+    const moduleUuid = target?.closest<HTMLElement>('[data-module-uuid]')?.dataset.moduleUuid ?? null
+    const rowUuid = target?.closest<HTMLElement>('[data-row-uuid]')?.dataset.rowUuid ?? null
+
+    uploadingImageCount.value += files.length
+    try {
+        placeDroppedImages(await uploadImages(files), moduleUuid, rowUuid)
+    } catch {
+        imageDropError.value = ctrans('The image could not be uploaded, please try again')
+    } finally {
+        uploadingImageCount.value -= files.length
     }
 }
 
@@ -452,7 +554,7 @@ const chooseBlock = async (target: EmailModule) => {
         if (!selection) {
             return
         }
-        const rows = createDynamicBlockRows(selection.layout, `${contentWidth.value}px`)
+        const rows = createDynamicBlockRows(selection.layout, `${contentWidth.value}px`, emailHasUnsubscribeBlock(email.value))
         if (rows.length) {
             replaceModuleWithRows(target, rows)
         } else if (target.type === MODULE_TYPES.mergeContent) {
@@ -738,6 +840,27 @@ const moveSelectedModule = (direction: -1 | 1) => {
     location.column.modules.splice(target, 0, location.column.modules.splice(location.index, 1)[0])
 }
 
+const isFirstRow = (row: EmailRow) => email.value.page.rows[0] === row
+const isLastRow = (row: EmailRow) => email.value.page.rows[email.value.page.rows.length - 1] === row
+
+const moveRow = (row: EmailRow, direction: -1 | 1) => {
+    const rows = email.value.page.rows
+    const index = rows.indexOf(row)
+    const target = index + direction
+    if (index === -1 || target < 0 || target >= rows.length) {
+        return
+    }
+    rows.splice(target, 0, rows.splice(index, 1)[0])
+}
+
+const moveSelection = (direction: -1 | 1) => {
+    if (selectedModule.value) {
+        moveSelectedModule(direction)
+    } else if (selectedRow.value) {
+        moveRow(selectedRow.value, direction)
+    }
+}
+
 const hasSelection = () => !!selectedModule.value || !!selectedRow.value
 
 const shortcuts: WorkshopShortcut[] = [
@@ -758,16 +881,16 @@ const shortcuts: WorkshopShortcut[] = [
         run: () => duplicateSelection(), isAvailable: () => hasSelection() && !isSelectionLocked.value,
     },
     {
-        id: 'delete', group: 'Blocks', label: 'Delete selected block or row', combos: [['Delete'], ['Backspace']],
-        run: () => deleteSelection(), isAvailable: () => hasSelection() && !isSelectionLocked.value,
+        id: 'delete', group: 'Blocks', label: 'Delete selected block or row', combos: DELETE_SELECTION_COMBOS,
+        run: () => deleteSelection(), isAvailable: () => hasSelection() && !isSelectionDeleteLocked.value,
     },
     {
-        id: 'move-up', group: 'Blocks', label: 'Move selected block up', combos: [['Alt', 'ArrowUp']],
-        run: () => moveSelectedModule(-1), isAvailable: () => !!selectedModule.value,
+        id: 'move-up', group: 'Blocks', label: 'Move selected block or row up', combos: [['Alt', 'ArrowUp']],
+        run: () => moveSelection(-1), isAvailable: () => hasSelection(),
     },
     {
-        id: 'move-down', group: 'Blocks', label: 'Move selected block down', combos: [['Alt', 'ArrowDown']],
-        run: () => moveSelectedModule(1), isAvailable: () => !!selectedModule.value,
+        id: 'move-down', group: 'Blocks', label: 'Move selected block or row down', combos: [['Alt', 'ArrowDown']],
+        run: () => moveSelection(1), isAvailable: () => hasSelection(),
     },
     {
         id: 'deselect', group: 'Blocks', label: 'Deselect or exit full screen', combos: [['Escape']],
@@ -928,7 +1051,7 @@ defineExpose({
                     </button>
                     <span v-if="autoSaveRoute" class="ml-3 flex items-center gap-x-1.5 text-xs" aria-live="polite">
                         <template v-if="autoSaveStatus === 'saving'">
-                            <FontAwesomeIcon icon="fal fa-spinner-third" spin class="text-gray-400" fixed-width aria-hidden="true" />
+                            <LoadingIcon class="text-gray-400" />
                             <span class="text-gray-500">{{ ctrans('Saving') }}…</span>
                         </template>
                         <template v-else-if="autoSaveStatus === 'error'">
@@ -984,11 +1107,33 @@ defineExpose({
             </div>
 
             <div class="flex min-h-0 flex-1">
-                <main class="min-h-0 flex-1 overflow-auto py-1" :class="{ 'show-structure': isStructureVisible, 'mobile-canvas': device === 'mobile', 'desktop-canvas': device === 'desktop' }" :style="{ backgroundColor: canvasBackground }" @click.self="clearSelection">
+                <main class="relative min-h-0 flex-1 overflow-auto py-1" :class="{ 'show-structure': isStructureVisible, 'mobile-canvas': device === 'mobile', 'desktop-canvas': device === 'desktop', 'outline-dashed outline-2 -outline-offset-4 outline-[var(--app-accent)]': isFileDragOver, 'select-none': isDraggingRow }" :style="{ backgroundColor: canvasBackground }" @click.self="clearSelection"
+                    @dragover="onCanvasDragOver" @dragleave="onCanvasDragLeave" @drop="onCanvasDrop">
+                    <div v-if="isFileDragOver || uploadingImageCount || imageDropError" class="sticky top-0 z-20 mx-auto mb-1 flex w-fit items-center gap-x-2 rounded border bg-white px-3 py-1.5 text-xs shadow"
+                        :class="imageDropError && !isFileDragOver && !uploadingImageCount ? 'border-red-200 text-red-600' : 'border-[var(--app-accent-muted)] text-gray-700'" aria-live="polite">
+                        <template v-if="isFileDragOver">
+                            <FontAwesomeIcon icon="fal fa-image" fixed-width aria-hidden="true" />
+                            {{ ctrans('Drop the images onto an image block to replace it, or anywhere else to add them') }}
+                        </template>
+                        <template v-else-if="uploadingImageCount">
+                            <LoadingIcon />
+                            {{ ctrans('Uploading images') }}…
+                        </template>
+                        <template v-else>
+                            <FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                            {{ imageDropError }}
+                            <button type="button" class="ml-1 text-gray-400 hover:text-gray-600" v-tooltip="ctrans('Close')" @click="imageDropError = null">
+                                <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                            </button>
+                        </template>
+                    </div>
                     <div :style="emailFrameStyle">
-                        <draggable v-model="email.page.rows" item-key="uuid" group="email-rows" handle=".row-handle" ghost-class="opacity-40" class="min-h-[200px]">
+                        <draggable v-model="email.page.rows" item-key="uuid" group="email-rows" handle=".row-handle" ghost-class="email-row-ghost" class="min-h-[200px]"
+                            :force-fallback="true" fallback-class="email-row-drag-preview" :fallback-on-body="true"
+                            :scroll="true" :scroll-sensitivity="120" :scroll-speed="20" :bubble-scroll="true"
+                            @start="onRowDragStart" @end="isDraggingRow = false">
                             <template #item="{ element: row }">
-                                <div class="email-row group/row relative"
+                                <div class="email-row group/row relative" :data-row-uuid="row.uuid"
                                     :class="[isRowSelected(row) ? 'z-[1] outline outline-2 -outline-offset-2 outline-[var(--theme-color-4)]' : 'hover:outline hover:outline-2 hover:-outline-offset-2 hover:outline-[color-mix(in_srgb,var(--theme-color-4)_45%,white)]', isHiddenOnCurrentDevice(row.content?.computedStyle) ? 'opacity-40' : '']"
                                     :style="styleToString(row.container?.style)"
                                     @click.self="selectRow(row)">
@@ -998,16 +1143,20 @@ defineExpose({
                                         {{ ctrans('Row') }}
                                     </div>
 
-                                    <div v-if="isRowSelected(row)" class="absolute bottom-0 right-0 z-10 flex overflow-hidden rounded-tl bg-[var(--theme-color-4)] text-[var(--theme-color-5)]">
-                                        <template v-if="!rowHasUnsubscribeBlock(row)">
-                                            <button type="button" class="px-2 py-1 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Delete')" @click.stop="deleteRow(row)">
-                                                <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                                            </button>
-                                            <button type="button" class="px-2 py-1 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Duplicate')" @click.stop="duplicateRow(row)">
-                                                <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />
-                                            </button>
-                                        </template>
-                                        <span v-else class="px-2 py-1" v-tooltip="ctrans('This row holds the unsubscribe block, so it cannot be deleted or duplicated')">
+                                    <div v-if="isRowSelected(row)" class="absolute bottom-0 right-0 z-20 flex translate-y-full overflow-hidden rounded-b bg-[var(--theme-color-4)] text-[var(--theme-color-5)]">
+                                        <button type="button" class="px-2 py-1 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)] disabled:opacity-40" :disabled="isFirstRow(row)" v-tooltip="ctrans('Move up')" @click.stop="moveRow(row, -1)">
+                                            <FontAwesomeIcon icon="fal fa-arrow-up" fixed-width aria-hidden="true" />
+                                        </button>
+                                        <button type="button" class="px-2 py-1 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)] disabled:opacity-40" :disabled="isLastRow(row)" v-tooltip="ctrans('Move down')" @click.stop="moveRow(row, 1)">
+                                            <FontAwesomeIcon icon="fal fa-arrow-down" fixed-width aria-hidden="true" />
+                                        </button>
+                                        <button v-if="!isRowLockedByUnsubscribe(email, row)" type="button" class="px-2 py-1 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Delete')" @click.stop="deleteRow(row)">
+                                            <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                                        </button>
+                                        <button v-if="!rowHasUnsubscribeBlock(row)" type="button" class="px-2 py-1 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Duplicate')" @click.stop="duplicateRow(row)">
+                                            <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />
+                                        </button>
+                                        <span v-if="isRowLockedByUnsubscribe(email, row)" class="px-2 py-1" v-tooltip="ctrans('This row holds the unsubscribe block, so it cannot be deleted or duplicated')">
                                             <FontAwesomeIcon icon="fal fa-lock" fixed-width aria-hidden="true" />
                                         </span>
                                     </div>
@@ -1018,7 +1167,7 @@ defineExpose({
                                                 filter=".email-inline-editor" :prevent-on-filter="false"
                                                 @add="(event: any) => onModuleAdded(column.modules[event.newIndex], row)">
                                                 <template #item="{ element: module }">
-                                                    <div class="email-module group/module relative cursor-pointer"
+                                                    <div class="email-module group/module relative cursor-pointer" :data-module-uuid="module.uuid"
                                                         :class="[selectedModuleUuid === module.uuid ? 'z-[2] outline outline-2 -outline-offset-1 outline-[var(--theme-color-4)]' : 'hover:outline hover:outline-1 hover:-outline-offset-1 hover:outline-[var(--theme-color-4)]', isHiddenOnCurrentDevice(module.descriptor?.computedStyle) ? 'opacity-40' : '']"
                                                         @click.stop="selectModule(module, row)">
                                                         <div v-if="module.type === MODULE_TYPES.empty" class="p-4 text-center text-xs text-gray-400">
@@ -1037,15 +1186,13 @@ defineExpose({
                                                         </span>
 
                                                         <div v-if="selectedModuleUuid === module.uuid" class="absolute bottom-0 right-0 z-10 flex overflow-hidden rounded-tl bg-[var(--theme-color-4)] text-[11px] text-[var(--theme-color-5)]">
-                                                            <template v-if="!isUnsubscribeModule(module)">
-                                                                <button type="button" class="px-1.5 py-0.5 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Delete')" @click.stop="deleteSelectedModule">
-                                                                    <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                                                                </button>
-                                                                <button type="button" class="px-1.5 py-0.5 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Duplicate')" @click.stop="duplicateSelectedModule">
-                                                                    <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />
-                                                                </button>
-                                                            </template>
-                                                            <span v-else class="px-1.5 py-0.5" v-tooltip="ctrans('The unsubscribe block is required and cannot be deleted')">
+                                                            <button v-if="!isUnsubscribeModuleLocked(email, module)" type="button" class="px-1.5 py-0.5 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Delete')" @click.stop="deleteSelectedModule">
+                                                                <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                                                            </button>
+                                                            <button v-if="!isUnsubscribeModule(module)" type="button" class="px-1.5 py-0.5 hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" v-tooltip="ctrans('Duplicate')" @click.stop="duplicateSelectedModule">
+                                                                <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />
+                                                            </button>
+                                                            <span v-if="isUnsubscribeModuleLocked(email, module)" class="px-1.5 py-0.5" v-tooltip="ctrans('The unsubscribe block is required and cannot be deleted')">
                                                                 <FontAwesomeIcon icon="fal fa-lock" fixed-width aria-hidden="true" />
                                                             </span>
                                                             <span class="cursor-grab px-1.5 py-0.5" v-tooltip="ctrans('Drag to move')">
@@ -1093,15 +1240,13 @@ defineExpose({
                         <div class="flex h-12 shrink-0 items-center justify-between border-b border-gray-200 bg-gray-50 px-4">
                             <span class="text-[12px] font-semibold uppercase tracking-wider text-gray-800">{{ propertiesTitle }}</span>
                             <div class="flex items-center gap-x-1 text-gray-500">
-                                <template v-if="!isSelectionLocked">
-                                    <button type="button" class="h-7 w-7 rounded hover:bg-gray-100 hover:text-red-500" v-tooltip="ctrans('Delete')" @click="deleteSelection">
-                                        <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                                    </button>
-                                    <button type="button" class="h-7 w-7 rounded hover:bg-gray-100" v-tooltip="ctrans('Duplicate')" @click="duplicateSelection">
-                                        <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />
-                                    </button>
-                                </template>
-                                <span v-else class="flex h-7 w-7 items-center justify-center text-gray-400" v-tooltip="ctrans('Required for unsubscribe, cannot be deleted')">
+                                <button v-if="!isSelectionDeleteLocked" type="button" class="h-7 w-7 rounded hover:bg-gray-100 hover:text-red-500" v-tooltip="ctrans('Delete')" @click="deleteSelection">
+                                    <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                                </button>
+                                <button v-if="!isSelectionLocked" type="button" class="h-7 w-7 rounded hover:bg-gray-100" v-tooltip="ctrans('Duplicate')" @click="duplicateSelection">
+                                    <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />
+                                </button>
+                                <span v-if="isSelectionDeleteLocked" class="flex h-7 w-7 items-center justify-center text-gray-400" v-tooltip="ctrans('Required for unsubscribe, cannot be deleted')">
                                     <FontAwesomeIcon icon="fal fa-lock" fixed-width aria-hidden="true" />
                                 </span>
                                 <button type="button" class="h-7 w-7 rounded hover:bg-gray-100" v-tooltip="ctrans('Close')" @click="clearSelection">
@@ -1199,7 +1344,24 @@ defineExpose({
     </div>
 </template>
 
+<style>
+.email-row-drag-preview {
+    max-height: 72px !important;
+    overflow: hidden !important;
+    opacity: 0.85 !important;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.2);
+}
+</style>
+
 <style scoped>
+.email-row-ghost {
+    max-height: 72px;
+    overflow: hidden;
+    opacity: 0.4;
+    outline: 2px dashed var(--theme-color-4);
+    outline-offset: -2px;
+}
+
 .show-structure .email-row::after,
 .show-structure .email-column::after,
 .show-structure .email-module::after {
