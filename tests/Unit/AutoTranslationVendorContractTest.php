@@ -319,3 +319,16 @@ it('strips NUL characters from fresh and cached translations', function () {
 
     expect($translate->handle('hello', $english, $french, 'nul'))->toBe('bonjour');
 });
+
+it('translates several texts in one request, reusing cached ones and skipping empty ones', function () {
+    config()->set('auto-translations.drivers.fake', ['class' => FakeTranslationDriver::class]);
+    $polish  = (new App\Models\Helpers\Language())->forceFill(['code' => 'pl']);
+    $english = (new App\Models\Helpers\Language())->forceFill(['code' => 'en']);
+    Illuminate\Support\Facades\Cache::put('translate:fake:'.sha1('pl|en|Dzień dobry'), 'Good morning', 60);
+
+    $translated = App\Actions\Helpers\Translations\Translate::make()->many(['m1' => 'Dzień dobry', 'm2' => 'Czy wysyłacie próbki?', 'm3' => ' '], $polish, $english, 'fake');
+
+    expect($translated)->toBe(['m1' => 'Good morning', 'm2' => 'Czy wysyłacie próbki? [fr]'])
+        ->and(FakeTranslationDriver::$seenTexts)->toBe(['m2' => 'Czy wysyłacie próbki?'])
+        ->and(App\Actions\Helpers\Translations\Translate::make()->many(['m1' => 'Dzień dobry'], $polish, $polish, 'fake'))->toBe([]);
+});

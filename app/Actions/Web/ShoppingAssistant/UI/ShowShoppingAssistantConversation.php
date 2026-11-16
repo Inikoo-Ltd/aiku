@@ -10,6 +10,7 @@ namespace App\Actions\Web\ShoppingAssistant\UI;
 
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
+use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
@@ -27,10 +28,12 @@ use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantEvent;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantHandOver;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
+use App\Models\Helpers\Language;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -108,6 +111,7 @@ class ShowShoppingAssistantConversation extends OrgAction
         $amountColumn = $inShopCurrency ? 'net_amount' : 'grp_net_amount';
         $customer     = $conversation->customer;
         $title        = GetShoppingAssistantSettings::name($conversation->website);
+        $translateInto = $this->translateInto($conversation, $request->user());
 
         $productOutcomes = collect($report->selectWithAttribution(
             DB::table('shopping_assistant_conversations')
@@ -262,8 +266,46 @@ class ShowShoppingAssistantConversation extends OrgAction
                         ])->all(),
                 ],
                 'messages'         => $messages,
+                'translation_language' => $translateInto?->name,
+                'translations'     => $translateInto ? Inertia::defer(fn () => $this->translations($conversation, $storedMessages, $translateInto)) : [],
             ]
         );
+    }
+
+    /**
+     * Staff read a conversation in their own language when the customer wrote in another one.
+     */
+    public function translateInto(ShoppingAssistantConversation $conversation, ?User $user): ?Language
+    {
+        if (!$conversation->language_code || $conversation->wiped_at) {
+            return null;
+        }
+
+        $language = ($user?->language_id ? Language::find($user->language_id) : null) ?? Language::where('code', 'en')->first();
+
+        return $language && $language->code !== $conversation->language_code ? $language : null;
+    }
+
+    /**
+     * @return array<int, string> message id => the message in the staff member's language
+     */
+    public function translations(ShoppingAssistantConversation $conversation, Collection $messages, Language $into): array
+    {
+        $from = Language::where('code', $conversation->language_code)->first();
+        if (!$from) {
+            return [];
+        }
+
+        $translated = Translate::make()->many(
+            $messages->mapWithKeys(fn (ShoppingAssistantMessage $message) => ['m'.$message->id => (string) $message->body])->all(),
+            $from,
+            $into
+        );
+
+        return collect($translated)
+            ->mapWithKeys(fn (string $text, string $key) => [(int) substr($key, 1) => $text])
+            ->filter(fn (string $text, int $id) => $text !== (string) $messages->firstWhere('id', $id)?->body)
+            ->all();
     }
 
     public function getBreadcrumbs(ShoppingAssistantConversation $conversation, array $routeParameters): array

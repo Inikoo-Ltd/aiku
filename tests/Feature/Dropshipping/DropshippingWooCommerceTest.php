@@ -138,6 +138,7 @@ test('authorising a store stores the keys, checks the connection and registers t
             ->push(['id' => 142, 'name' => 'Order created', 'status' => 'active', 'topic' => 'order.created'], 201)
             ->push(['id' => 143, 'name' => 'Product deleted', 'status' => 'active', 'topic' => 'product.deleted'], 201),
         'GET settings/products/woocommerce_weight_unit' => Http::response(['id' => 'woocommerce_weight_unit', 'value' => 'lbs', 'group_id' => 'products']),
+        'GET settings/products/woocommerce_dimension_unit' => Http::response(['id' => 'woocommerce_dimension_unit', 'value' => 'in', 'group_id' => 'products']),
     ]);
 
     StoreTemporaryWooUser::run($customer, ['name' => 'My Woo Shop', 'url' => WOO_STORE_URL.'/']);
@@ -153,7 +154,9 @@ test('authorising a store stores the keys, checks the connection and registers t
         ->and($channel->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED)
         ->and($channel->platform_status)->toBeTrue()
         ->and(Arr::get($wooCommerceUser->settings, 'webhooks'))->toBe(['order_created' => 142, 'product_deleted' => 143])
-        ->and(Arr::get($wooCommerceUser->settings, 'weight_option'))->toBe('lbs');
+        ->and(Arr::get($wooCommerceUser->settings, 'weight_option'))->toBe('lbs')
+        ->and(Arr::get($wooCommerceUser->settings, 'dimension_option'))->toBe('in')
+        ->and(StoreWooCommerceProduct::dimensionUnit($wooCommerceUser))->toBe('inch');
 
     $webhooks = wooSent('POST', 'webhooks');
     expect($webhooks)->toHaveCount(2)

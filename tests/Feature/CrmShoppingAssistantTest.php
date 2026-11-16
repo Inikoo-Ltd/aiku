@@ -2762,6 +2762,34 @@ test('the transcript shows the answer kind, the cited sources, the offer, the ha
             ->where('messages.5.hand_over.chat_route', ['name' => 'grp.org.chat.inbox.conversation', 'parameters' => [$this->organisation->slug, $chatUlid]]));
 });
 
+test('a conversation in another language shows each message translated into the staff member language, and an English one is not translated', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    createWebsite($this->shop);
+    $at = CarbonImmutable::now()->subDays(3);
+
+    [$conversation, , $replies] = shoppingAssistantGeneralTurn(shoppingAssistantCustomer($this->shop), $at, 'Czy wysyłacie próbki?', [['body' => 'Nie wysyłamy próbek.']]);
+    $conversation->update(['language_code' => 'pl']);
+    $this->user->update(['language_id' => App\Models\Helpers\Language::where('code', 'en')->value('id')]);
+    $customerMessageId = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::CUSTOMER)->value('id');
+    $replyId           = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->value('id');
+
+    App\Actions\Helpers\Translations\Translate::mock()->shouldReceive('many')
+        ->withArgs(fn (array $texts, $from, $to) => $texts === ['m'.$customerMessageId => 'Czy wysyłacie próbki?', 'm'.$replyId => 'Nie wysyłamy próbek.'] && $from->code === 'pl' && $to->code === 'en')
+        ->andReturn(['m'.$customerMessageId => 'Do you send samples?', 'm'.$replyId => 'Nie wysyłamy próbek.']);
+
+    $this->withoutVite();
+    config(['inertia.testing.ensure_pages_exist' => false]);
+    $this->get(route('grp.websites.shopping_assistant.conversations.show', [$conversation->ulid]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('translation_language', 'English')
+            ->missing('translations')
+            ->loadDeferredProps(fn (AssertableInertia $reload) => $reload->where('translations', [$customerMessageId => 'Do you send samples?'])));
+
+    $conversation->update(['language_code' => 'en']);
+    $this->get(route('grp.websites.shopping_assistant.conversations.show', [$conversation->ulid]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('translation_language', null)->where('translations', []));
+});
+
 test('a mixed question answered without citing a source is replaced by the offer, keeping the sentence our code wrote but not the products the tools found', function () {
     shoppingAssistantClearKnowledge($this->shop);
     $customer = shoppingAssistantCustomer($this->shop);

@@ -57,6 +57,14 @@ class CheckWooChannel
                     ])
                 ]);
             }
+
+            if (blank(Arr::get($wooCommerceUser->settings, 'dimension_option'))) {
+                $this->update($wooCommerceUser, [
+                    'settings' => array_merge($wooCommerceUser->settings, [
+                        'dimension_option' => $wooCommerceUser->getProductDimensionSettings()
+                    ])
+                ]);
+            }
         }
 
         $data = array_merge([

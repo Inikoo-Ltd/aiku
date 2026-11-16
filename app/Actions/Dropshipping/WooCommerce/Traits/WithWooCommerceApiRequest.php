@@ -647,6 +647,13 @@ trait WithWooCommerceApiRequest
         return Arr::get($response, 'value', 'kg');
     }
 
+    public function getProductDimensionSettings(): string
+    {
+        $response = $this->makeWooCommerceRequest('GET', 'settings/products/woocommerce_dimension_unit');
+
+        return Arr::get($response, 'value', 'cm');
+    }
+
     /**
      * Connected means the store answers with data. Settings is the cheap probe, and when a key
      * cannot read settings the orders list is asked instead, because being able to read orders

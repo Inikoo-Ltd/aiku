@@ -67,7 +67,11 @@ beforeEach(function () {
     list($this->organisation, , $this->shop) = createShop();
     $this->wiseBalances       = [['currency' => 'EUR', 'amount' => ['value' => 0], 'reservedAmount' => ['value' => 0]]];
     $this->wiseBalancesStatus = 200;
-    Http::fake(['api.wise.com/v4/profiles/*/balances*' => fn () => Http::response($this->wiseBalances, $this->wiseBalancesStatus)]);
+    $this->wiseTransfers      = [];
+    Http::fake([
+        'api.wise.com/v4/profiles/*/balances*' => fn () => Http::response($this->wiseBalances, $this->wiseBalancesStatus),
+        'api.wise.com/v1/transfers?*'          => fn () => Http::response($this->wiseTransfers),
+    ]);
 });
 
 function wiseActivity(string $id, string $type, string $amount, string $title, string $status = 'COMPLETED', ?string $resourceId = null, string $updatedOn = '2026-11-10T10:05:00.071Z'): array
@@ -229,6 +233,55 @@ test('a full sync re-derives lines stored by an older parser, a jar move becomin
         ->and($lines['j1']->account_reference)->toBeNull()
         ->and((float)$lines['j1#in']->amount)->toBe(50000.0)
         ->and($lines['j1#in']->account_reference)->toBe('jar');
+});
+
+test('sent transfers missing from the wise feed are added from the transfers list, and transfers older than their balance moved no balance', function () {
+    $transfer = fn (int $id, float $value, int $targetAccount, string $created = '2026-07-13 18:04:26', string $reference = '') => [
+        'id' => $id, 'status' => 'outgoing_payment_sent', 'sourceCurrency' => 'EUR', 'sourceValue' => $value, 'targetAccount' => $targetAccount, 'created' => $created, 'reference' => $reference,
+    ];
+    $feed = [
+        wiseActivity('t1', 'TRANSFER', '120 EUR', 'Supplier Ltd', resourceId: '8001'),
+        wiseActivity('i1', 'TRANSFER', '<positive>+ 300 EUR</positive>', 'Customer', resourceId: '8002'),
+        wiseActivity('o1', 'TRANSFER', '100,000 EUR', 'Ourselves', resourceId: '8003'),
+    ];
+    Http::fake([
+        'api.wise.com/v2/profiles'                 => Http::response([['id' => 666, 'type' => 'BUSINESS']]),
+        'api.wise.com/v1/profiles/666/activities*' => Http::sequence()
+            ->push(['cursor' => null, 'activities' => $feed])
+            ->push(['cursor' => null, 'activities' => $feed])
+            ->push(['cursor' => null, 'activities' => [...$feed, wiseActivity('m1', 'TRANSFER', '50,000 EUR', 'Lender Ltd', resourceId: '8004')]]),
+        'api.wise.com/v1/transfers/8001'           => Http::response($transfer(8001, 120, 501)),
+        'api.wise.com/v1/transfers/8002'           => Http::response($transfer(8002, 300, 900)),
+        'api.wise.com/v1/transfers/8003'           => Http::response($transfer(8003, 100000, 502, '2015-01-19 10:56:53')),
+        'api.wise.com/v1/transfers/8004'           => Http::response($transfer(8004, 50000, 777, reference: 'Loan')),
+        'api.wise.com/v1/accounts/777'             => Http::response(['id' => 777, 'accountHolderName' => 'Lender Ltd']),
+    ]);
+    $this->wiseTransfers = [$transfer(8001, 120, 501), $transfer(8002, 300, 900), $transfer(8003, 100000, 502, '2015-01-19 10:56:53'), $transfer(8004, 50000, 777, reference: 'Loan'), $transfer(8005, 40, 900)];
+    $this->wiseBalances  = [['currency' => 'EUR', 'type' => 'STANDARD', 'creationTime' => '2017-12-05T10:00:00Z', 'amount' => ['value' => 0], 'reservedAmount' => ['value' => 0]]];
+
+    $bankConnection = StoreBankConnection::run($this->organisation, [
+        'provider'    => BankConnectionProviderEnum::WISE,
+        'name'        => 'Wise gaps',
+        'credentials' => 'gap-token',
+    ]);
+
+    expect(SyncBankConnection::run($bankConnection, true)['synced'])->toBe(3);
+    $lines = BankTransaction::where('bank_connection_id', $bankConnection->id)->get()->keyBy('provider_transaction_id');
+    expect($lines->keys()->sort()->values()->all())->toBe(['i1', 't1', 'transfer:8004'])
+        ->and((float)$lines['transfer:8004']->amount)->toBe(-50000.0)
+        ->and($lines['transfer:8004']->direction)->toBe(BankTransactionDirectionEnum::OUT)
+        ->and($lines['transfer:8004']->currency->code)->toBe('EUR')
+        ->and($lines['transfer:8004']->counterparty_name)->toBe('Lender Ltd')
+        ->and($lines['transfer:8004']->reference)->toBe('Loan')
+        ->and($lines['transfer:8004']->status)->toBe(BankTransactionStatusEnum::BOOKED)
+        ->and($lines['transfer:8004']->booked_at->toDateString())->toBe('2026-07-13');
+
+    expect(SyncBankConnection::run($bankConnection->refresh(), true)['synced'])->toBe(0)
+        ->and(BankTransaction::where('bank_connection_id', $bankConnection->id)->count())->toBe(3);
+
+    SyncBankConnection::run($bankConnection->refresh(), true);
+    expect(BankTransaction::where('bank_connection_id', $bankConnection->id)->pluck('provider_transaction_id')->sort()->values()->all())->toBe(['i1', 'm1', 't1'])
+        ->and((float)BankTransaction::where('bank_connection_id', $bankConnection->id)->where('provider_transaction_id', 'm1')->value('amount'))->toBe(-50000.0);
 });
 
 function bankMatchingOrder(\App\Models\CRM\Customer $customer, float $total): \App\Models\Ordering\Order
