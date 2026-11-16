@@ -457,6 +457,7 @@ test('the answer job stores the assistant reply and the conversation returns it 
         ->and($card['id'])->toBe($kept->id)
         ->and($card['code'])->toBe($kept->code)
         ->and($card['assistant_reason'])->toBe(GetShoppingAssistantTools::make()->reasonText('used_to_order', $customer, $conversation->language_code))
+        ->and($card['assistant_reason_code'])->toBe('used_to_order')
         ->and($card['assistant_message_id'])->toBe($messages[1]['id']);
 
     $after = $this->actingAs($webUser, 'retina')->getJson($url.'?after='.$customerMessage->id)->assertOk()->json('messages');
