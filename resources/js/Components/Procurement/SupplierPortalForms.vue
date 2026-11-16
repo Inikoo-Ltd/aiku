@@ -340,7 +340,7 @@ const caption = "font-medium text-gray-700"
 					</span>
 				</label>
 				<label :class="label"><span :class="caption">{{ ctrans("MOQ, in cartons") }}</span><InputNumber v-model="form.moq" :min="1" :useGrouping="false" @input="(event) => (form.moq = typedNumber(event.value))" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Since") }}</span><DatePicker v-model="form.effective_from" dateFormat="dd M yy" showIcon /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("From") }}</span><DatePicker v-model="form.effective_from" dateFormat="dd M yy" showIcon /></label>
 				<div :class="label">
 					<label for="price-change-until" :class="caption">{{ ctrans("Until") }}</label>
 					<DatePicker v-model="form.effective_until" inputId="price-change-until" dateFormat="dd M yy" :minDate="form.effective_from ?? undefined" showIcon showClear />
