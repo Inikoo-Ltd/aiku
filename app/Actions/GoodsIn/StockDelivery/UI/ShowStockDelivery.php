@@ -1602,7 +1602,7 @@ class ShowStockDelivery extends OrgAction
     /**
      * @return array<int, array{id: int, code: ?string, name: ?string}>
      */
-    private function getProductsNotOnPurchaseOrder(StockDelivery $stockDelivery): array
+    public function getProductsNotOnPurchaseOrder(StockDelivery $stockDelivery): array
     {
         return AddItemNotOnPurchaseOrderToStockDelivery::addableOrgSupplierProducts($stockDelivery)
             ->join('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id')

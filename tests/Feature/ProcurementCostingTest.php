@@ -3868,6 +3868,8 @@ test('a product the supplier sent that is on no purchase order is added to the d
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery->refresh());
     $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
 
+    expect(collect(ShowStockDelivery::make()->getProductsNotOnPurchaseOrder($stockDelivery))->pluck('id'))->toContain($orgSupplierProduct->id);
+
     expect(fn () => AddItemNotOnPurchaseOrderToStockDelivery::make()->action($stockDelivery, $user, ['org_supplier_product_id' => OrgSupplierProduct::where('organisation_id', $stockDelivery->organisation_id)->where('org_supplier_id', '!=', $stockDelivery->parent_id)->value('id'), 'sko_quantity' => 6]))
         ->toThrow(ValidationException::class);
 

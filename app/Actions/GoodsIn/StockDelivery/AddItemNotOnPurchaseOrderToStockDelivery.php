@@ -52,9 +52,9 @@ class AddItemNotOnPurchaseOrderToStockDelivery extends OrgAction
         };
 
         return OrgSupplierProduct::query()
-            ->where('organisation_id', $stockDelivery->organisation_id)
-            ->where('state', OrgSupplierProductStateEnum::ACTIVE->value)
-            ->when($parentColumn, fn (Builder $query) => $query->where($parentColumn, $stockDelivery->parent_id), fn (Builder $query) => $query->whereRaw('false'));
+            ->where('org_supplier_products.organisation_id', $stockDelivery->organisation_id)
+            ->where('org_supplier_products.state', OrgSupplierProductStateEnum::ACTIVE->value)
+            ->when($parentColumn, fn (Builder $query) => $query->where('org_supplier_products.'.$parentColumn, $stockDelivery->parent_id), fn (Builder $query) => $query->whereRaw('false'));
     }
 
     public static function acceptsItems(StockDelivery $stockDelivery): bool
