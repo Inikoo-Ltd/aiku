@@ -3799,3 +3799,51 @@ test('packing part of a stock sheet line splits it, the rest staying received, a
     expect(fn () => $pack->handle($receiptRow, 10))->toThrow(\Illuminate\Validation\ValidationException::class);
     expect($pack->handle($receiptRow)->state)->toBe($packed);
 });
+
+test('an agent steps through its supplier products by code, not through the same code bought by another organisation', function () {
+    $orgAgent          = createFreshOrgAgent($this);
+    $agent             = $orgAgent->agent;
+    $otherOrganisation = Organisation::where('code', 'prc2')->first()
+        ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
+    $otherOrgAgent     = OrgAgent::where('organisation_id', $otherOrganisation->id)->where('agent_id', $agent->id)->first()
+        ?? StoreOrgAgent::make()->action($otherOrganisation, $agent, []);
+
+    $supplier = StoreSupplier::make()->action($agent, Supplier::factory()->definition());
+    $token    = Str::upper(Str::random(6));
+
+    $products = collect(['A', 'B', 'C'])->mapWithKeys(function (string $letter) use ($supplier, $token, $orgAgent, $otherOrgAgent) {
+        $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+            'code'             => "NAV-$token-$letter",
+            'name'             => "Navigation $letter",
+            'cost'             => 10,
+            'stock_id'         => $this->stocks[0]->id,
+            'units_per_pack'   => 1,
+            'units_per_carton' => 10,
+        ]);
+
+        foreach ([$orgAgent, $otherOrgAgent] as $buyingOrgAgent) {
+            $orgSupplier = OrgSupplier::where('supplier_id', $supplier->id)->where('org_agent_id', $buyingOrgAgent->id)->firstOrFail();
+            OrgSupplierProduct::where('org_supplier_id', $orgSupplier->id)->where('supplier_product_id', $supplierProduct->id)->first()
+                ?? StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+        }
+
+        return [$letter => OrgSupplierProduct::where('supplier_product_id', $supplierProduct->id)
+            ->whereIn('org_agent_id', [$orgAgent->id, $otherOrgAgent->id])
+            ->orderBy('slug')
+            ->get()];
+    });
+
+    $openedInOtherOrganisation = $products['B']->firstWhere('organisation_id', $otherOrganisation->id);
+
+    $this->withoutVite()
+        ->get(route('grp.org.agent.org_supplier_products.show', [$agent->organisation->slug, $openedInOtherOrganisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.route.parameters.orgSupplierProduct', $products['A']->first()->slug)
+            ->where('navigation.next.route.parameters.orgSupplierProduct', $products['C']->first()->slug));
+
+    $this->get(route('grp.org.agent.org_supplier_products.show', [$agent->organisation->slug, $products['C']->last()->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.route.parameters.orgSupplierProduct', $products['B']->first()->slug)
+            ->where('navigation.next', null));
+});
