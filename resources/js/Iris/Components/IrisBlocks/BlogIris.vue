@@ -17,7 +17,7 @@ import {
 } from "@fortawesome/free-brands-svg-icons"
 
 import Image from "@common/Components/Image.vue"
-//import { useFormatTime } from "@/Composables/useFormatTime"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import { getStyles } from "@/Composables/styles"
 import { blogTitleInlineHtml, buildBlogTableOfContents, htmlToPlainText } from "@/Iris/Composables/useBlogTableOfContents"
 import { useHtmlWithScripts } from "@/Composables/useHtmlWithScripts"
@@ -46,11 +46,7 @@ const primaryColor = computed(() => {
   return layout?.iris?.theme?.color?.[4] || "#3b82f6"
 })
 
-const displayDate = computed(() => {
-  return props.fieldValue.published_date
-    ? new Date(props.fieldValue.published_date)
-    : new Date()
-})
+const displayDate = computed(() => useFormatTime(props.fieldValue.published_date))
 
 const contentRef = ref<HTMLElement | null>(null)
 const scriptContainer = ref<HTMLElement | null>(null)

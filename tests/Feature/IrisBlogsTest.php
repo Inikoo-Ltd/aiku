@@ -1,6 +1,8 @@
 <?php
 
 use App\Actions\Iris\Blog\IndexIrisBlogs;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlog;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlog;
 use App\Actions\Web\Webpage\Json\DiffWebpageSnapshotText;
 use App\Actions\Web\Webpage\Json\GetWebpageSnapshotsComparison;
 use App\Actions\Web\Webpage\UI\IndexBlogWebpages;
@@ -13,6 +15,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Redirect;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
@@ -108,6 +111,26 @@ test('iris blogs without a published date in the layout fall back to the webpage
 
     expect(IndexIrisBlogs::make()->handle($this->website)->pluck('id')->all())
         ->toBe([$withLayoutDate->id, $withoutLayoutDate->id]);
+});
+
+test('a blog article saved with an empty published date shows when it went live, and keeps a date it was given', function () {
+    Queue::fake();
+
+    $blog = createBlogWebpage($this->website, 'Blog saved without a date', ['state' => WebpageStateEnum::IN_PROCESS]);
+    PublishWebpage::make()->action($blog, ['comment' => 'first publish'], strict: false);
+    $blog->refresh();
+
+    $articleBlock = fn (?string $publishedDate) => Arr::get(publishedLayoutWithDate($publishedDate), 'web_blocks.0') + ['type' => 'blog'];
+    $liveSince    = $blog->liveSnapshot->published_at;
+
+    $withoutDate = GetIrisWebBlockBlog::run($blog, $articleBlock(null));
+    $withDate    = GetIrisWebBlockBlog::run($blog, $articleBlock('2012-08-31T14:01:00.000Z'));
+    $workshop    = GetWebBlockBlog::run($blog, $articleBlock(''));
+
+    expect($liveSince)->not->toBeNull()
+        ->and($withoutDate['structure']['published_date']->equalTo($liveSince))->toBeTrue()
+        ->and($withDate['structure']['published_date'])->toBe('2012-08-31T14:01:00.000Z')
+        ->and(Arr::get($workshop, 'web_block.layout.data.fieldValue.published_date')->equalTo($liveSince))->toBeTrue();
 });
 
 test('renaming a blog url refreshes its canonical url and only redirects the old url once the blog is live', function () {

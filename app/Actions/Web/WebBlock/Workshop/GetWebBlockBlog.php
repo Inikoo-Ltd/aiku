@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock\Workshop;
 
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlog;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -48,7 +49,7 @@ class GetWebBlockBlog
         }
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.published_date', $webpage->snapshots()->latest()->first()?->published_at, false);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.published_date', GetIrisWebBlockBlog::make()->publishedDate($webpage, $webBlock));
         data_set($webBlock, 'web_block.layout.data.fieldValue.latest_blogs', $latestBlogs);
 
         return $webBlock;

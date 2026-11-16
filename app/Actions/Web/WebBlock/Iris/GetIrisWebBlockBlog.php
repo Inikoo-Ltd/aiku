@@ -13,6 +13,7 @@ use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Webpage;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -48,7 +49,7 @@ class GetIrisWebBlockBlog
             ];
         }
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue.published_date', $webpage->snapshots()->latest()->first()?->published_at, false);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.published_date', $this->publishedDate($webpage, $webBlock));
         data_set($webBlock, 'web_block.layout.data.fieldValue.latest_blogs', $latestBlogs);
 
         return [
@@ -59,5 +60,11 @@ class GetIrisWebBlockBlog
                  []
              ),
          ];
+    }
+
+    public function publishedDate(Webpage $webpage, array $webBlock): CarbonInterface|string|null
+    {
+        return Arr::get($webBlock, 'web_block.layout.data.fieldValue.published_date')
+            ?: ($webpage->liveSnapshot?->published_at ?? $webpage->live_at);
     }
 }
