@@ -73,7 +73,6 @@ private val sectionIcons = mapOf(
     WarehouseSection.Skus to R.drawable.ic_ui_box,
     WarehouseSection.StoredPallets to R.drawable.ic_ui_box,
     WarehouseSection.StoredItems to R.drawable.ic_ui_box,
-    WarehouseSection.StockHistory to R.drawable.ic_ui_clock,
     WarehouseSection.WarehouseOverview to R.drawable.ic_ui_warehouse,
     WarehouseSection.Areas to R.drawable.ic_ui_areas,
     WarehouseSection.Locations to R.drawable.ic_ui_locations,

@@ -14,6 +14,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 trait WithMobileLocationsAccess
@@ -108,7 +109,7 @@ trait WithMobileLocationsAccess
     protected function locationSummaries(iterable $listed): array
     {
         $ids       = collect($listed)->pluck('id')->all();
-        $locations = Location::with(['stats', 'warehouseArea'])->findMany($ids)->keyBy('id');
+        $locations = Location::with(['stats', 'warehouseArea'])->withMax('locationOrgStocks', 'audited_at')->findMany($ids)->keyBy('id');
 
         return collect($ids)
             ->map(fn (int $id) => $locations->get($id))
@@ -148,6 +149,19 @@ trait WithMobileLocationsAccess
             'number_pallets'           => (int) ($stats?->number_pallets ?? 0),
             'stock_value'              => (float) $location->stock_value,
             'audited_at'               => $location->audited_at?->toIso8601String(),
+            'barcode'                  => $location->barcode,
+            'last_audited_at'          => $this->lastAuditedAt($location),
         ];
+    }
+
+    protected function lastAuditedAt(Location $location): ?string
+    {
+        if (!array_key_exists('location_org_stocks_max_audited_at', $location->getAttributes())) {
+            $location->loadMax('locationOrgStocks', 'audited_at');
+        }
+
+        $lastAuditedAt = $location->getAttribute('location_org_stocks_max_audited_at');
+
+        return $lastAuditedAt ? Carbon::parse($lastAuditedAt)->toIso8601String() : null;
     }
 }

@@ -229,7 +229,7 @@ class IndexOrgStocks extends OrgAction
         ];
     }
 
-    public function handle(OrgStockFamily|Organisation|OrgAgent|OrgPartner $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(OrgStockFamily|Organisation|OrgAgent|OrgPartner $parent, $prefix = null, $bucket = null, ?Warehouse $onlyWarehouse = null): LengthAwarePaginator
     {
         if ($bucket) {
             $this->bucket = $bucket;
@@ -377,7 +377,12 @@ class IndexOrgStocks extends OrgAction
             ->select($selects)
             ->leftJoin('organisations', 'org_stocks.organisation_id', 'organisations.id')
             ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
-            ->leftJoin('warehouses', 'warehouses.organisation_id', 'organisations.id')
+            ->leftJoin('warehouses', function ($join) use ($onlyWarehouse) {
+                $join->on('warehouses.organisation_id', 'organisations.id');
+                if ($onlyWarehouse) {
+                    $join->where('warehouses.id', $onlyWarehouse->id);
+                }
+            })
             ->leftJoin('org_stock_stats', 'org_stock_stats.org_stock_id', 'org_stocks.id')
             ->leftJoin('org_stock_families', 'org_stocks.org_stock_family_id', 'org_stock_families.id')
             ->allowedSorts($allowedSorts)

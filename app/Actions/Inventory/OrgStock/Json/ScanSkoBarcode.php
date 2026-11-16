@@ -85,7 +85,7 @@ class ScanSkoBarcode extends OrgAction
             'unit_barcode'          => $orgStock->unit_barcode,
             'packed_in'             => trimDecimalZeros($orgStock->packed_in),
             'quantity_in_locations' => trimDecimalZeros($orgStock->quantity_in_locations),
-            'image'                 => $orgStock->tradeUnits->first()?->imageSources(0, 384),
+            'image'                 => static::imageOf($orgStock),
             'locations'             => $locations,
             'route'                 => [
                 'name'       => 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show',
@@ -96,6 +96,11 @@ class ScanSkoBarcode extends OrgAction
                 ],
             ],
         ];
+    }
+
+    public static function imageOf(OrgStock $orgStock): ?array
+    {
+        return $orgStock->tradeUnits->first()?->imageSources(0, 384);
     }
 
     public static function matchedOn(OrgStock $orgStock, string $barcode): string

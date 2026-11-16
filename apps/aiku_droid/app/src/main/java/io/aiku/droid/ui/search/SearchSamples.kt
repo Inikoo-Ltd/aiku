@@ -23,21 +23,21 @@ internal object SearchSamples {
                 R.string.section_skos,
                 SearchScope.Skus,
                 listOf(
-                    SearchResult("SKO-00412", "Lavender essential oil 10ml", "1,240", true, SkuRoute("SKO-00412")),
-                    SearchResult("SKO-00734", "Bath bomb – lavender 180g", "210", true, SkuRoute("SKO-00734")),
-                    SearchResult("SKO-01190", "Soy candle – lavender", "96", true, SkuRoute("SKO-01190")),
-                    SearchResult("SKO-00733", "Bath bomb – rose 180g", "36", true, SkuRoute("SKO-00733")),
+                    SearchResult("SKO-00412", "Lavender essential oil 10ml", "1,240", true, SkuRoute(id = 0, code = "SKO-00412")),
+                    SearchResult("SKO-00734", "Bath bomb – lavender 180g", "210", true, SkuRoute(id = 0, code = "SKO-00734")),
+                    SearchResult("SKO-01190", "Soy candle – lavender", "96", true, SkuRoute(id = 0, code = "SKO-01190")),
+                    SearchResult("SKO-00733", "Bath bomb – rose 180g", "36", true, SkuRoute(id = 0, code = "SKO-00733")),
                 ),
             ),
             SearchGroup(
                 R.string.section_sko_families,
                 SearchScope.Skus,
-                listOf(SearchResult("Lavender range", "LV · 14 SKOs", null, false, SkuFamilyRoute("LV"))),
+                listOf(SearchResult("Lavender range", "LV · 14 SKOs", null, false, SkuFamilyRoute(id = 0, code = "LV"))),
             ),
             SearchGroup(
                 R.string.section_locations,
                 SearchScope.Locations,
-                listOf(SearchResult("A-03-02", "Area A · 6 SKOs", null, false, LocationRoute("A-03-02"))),
+                listOf(SearchResult("A-03-02", "Area A · 6 SKOs", null, false, LocationRoute(id = 0, code = "A-03-02"))),
             ),
             SearchGroup(
                 R.string.section_delivery_notes,

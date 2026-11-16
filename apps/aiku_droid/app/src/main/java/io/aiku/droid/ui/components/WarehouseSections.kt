@@ -24,7 +24,6 @@ import io.aiku.droid.ui.navigation.PickingSessionsRoute
 import io.aiku.droid.ui.navigation.SkuFamiliesRoute
 import io.aiku.droid.ui.navigation.SkusRoute
 import io.aiku.droid.ui.navigation.StockDeliveriesRoute
-import io.aiku.droid.ui.navigation.StockHistoryRoute
 import io.aiku.droid.ui.navigation.StoredItemsRoute
 import io.aiku.droid.ui.navigation.StoredPalletsRoute
 import io.aiku.droid.ui.navigation.TrolleysRoute
@@ -51,13 +50,12 @@ enum class WarehouseSection(
 ) {
     InventoryDashboard(WarehouseModule.Inventory, R.string.section_dashboard, InventoryDashboardRoute),
     SkuFamilies(WarehouseModule.Inventory, R.string.section_sko_families, SkuFamiliesRoute),
-    Skus(WarehouseModule.Inventory, R.string.section_skos, SkusRoute),
+    Skus(WarehouseModule.Inventory, R.string.section_skos, SkusRoute()),
     StoredPallets(WarehouseModule.Inventory, R.string.section_stored_pallets, StoredPalletsRoute, isFulfilment = true),
     StoredItems(WarehouseModule.Inventory, R.string.section_stored_items, StoredItemsRoute, isFulfilment = true),
-    StockHistory(WarehouseModule.Inventory, R.string.section_stock_history, StockHistoryRoute),
     WarehouseOverview(WarehouseModule.Locations, R.string.section_warehouse, WarehouseOverviewRoute),
     Areas(WarehouseModule.Locations, R.string.section_areas, AreasRoute),
-    Locations(WarehouseModule.Locations, R.string.section_locations, LocationsRoute),
+    Locations(WarehouseModule.Locations, R.string.section_locations, LocationsRoute()),
     GoodsInBacklog(WarehouseModule.GoodsIn, R.string.section_backlog, GoodsInBacklogRoute),
     StockDeliveries(WarehouseModule.GoodsIn, R.string.section_stock_deliveries, StockDeliveriesRoute),
     FulfilmentDeliveries(WarehouseModule.GoodsIn, R.string.section_fulfilment_deliveries, FulfilmentDeliveriesRoute, isFulfilment = true),

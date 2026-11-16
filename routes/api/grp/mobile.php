@@ -98,8 +98,17 @@ use App\Actions\Api\Group\GoodsOut\UpdateMobileDeliveryNoteParcels;
 use App\Actions\Api\Group\GoodsOut\UpdateMobileDeliveryNotePicker;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\WorkSchedule\IndexShiftSchedules;
+use App\Actions\Api\Group\Inventory\AuditMobileOrgStock;
+use App\Actions\Api\Group\Inventory\ConsumeMobileLocationOrgStock;
+use App\Actions\Api\Group\Inventory\GetMobileInventoryDashboard;
 use App\Actions\Api\Group\Inventory\IndexMobileOrgStockFamilies;
 use App\Actions\Api\Group\Inventory\IndexMobileOrgStockFamilySkos;
+use App\Actions\Api\Group\Inventory\IndexMobileOrgStockMovements;
+use App\Actions\Api\Group\Inventory\IndexMobileOrgStocks;
+use App\Actions\Api\Group\Inventory\MoveMobileLocationOrgStock;
+use App\Actions\Api\Group\Inventory\RemoveMobileOrgStockLocations;
+use App\Actions\Api\Group\Inventory\ShowMobileOrgStock;
+use App\Actions\Api\Group\Inventory\StoreMobileOrgStockLocation;
 use App\Actions\Api\Group\Locations\AuditMobileLocation;
 use App\Actions\Api\Group\Locations\GetMobileLocationsOverview;
 use App\Actions\Api\Group\Locations\GetMobileStockMovementReasons;
@@ -173,6 +182,18 @@ Route::middleware(VerifyMobileAppKey::class)->group(function () {
         Route::post('/locations/{location:id}/remove-org-stocks', RemoveMobileLocationOrgStocks::class)->name('locations.remove_org_stocks');
         Route::patch('/location-org-stocks/{locationOrgStock:id}', UpdateMobileLocationOrgStock::class)->name('location_org_stocks.update');
         Route::get('/stock-movement-reasons', GetMobileStockMovementReasons::class)->name('stock_movement_reasons');
+
+        Route::get('/warehouses/{warehouse:id}/inventory-dashboard', GetMobileInventoryDashboard::class)->name('warehouses.inventory_dashboard');
+        Route::get('/warehouses/{warehouse:id}/org-stocks', IndexMobileOrgStocks::class)->name('warehouses.org_stocks');
+        Route::prefix('warehouses/{warehouse:id}/org-stocks/{orgStock:id}')->name('warehouses.org_stocks.')->withoutScopedBindings()->group(function () {
+            Route::get('/', ShowMobileOrgStock::class)->name('show');
+            Route::get('/stock-movements', IndexMobileOrgStockMovements::class)->name('stock_movements');
+            Route::post('/audit', AuditMobileOrgStock::class)->name('audit');
+            Route::post('/locations', StoreMobileOrgStockLocation::class)->name('locations.store');
+            Route::post('/remove-locations', RemoveMobileOrgStockLocations::class)->name('remove_locations');
+        });
+        Route::post('/location-org-stocks/{locationOrgStock:id}/move', MoveMobileLocationOrgStock::class)->name('location_org_stocks.move');
+        Route::post('/location-org-stocks/{locationOrgStock:id}/consume', ConsumeMobileLocationOrgStock::class)->name('location_org_stocks.consume');
 
         Route::get('/warehouses/{warehouse:id}/delivery-notes', GetMobileDeliveryNotes::class)->name('warehouses.delivery_notes');
         Route::get('/warehouses/{warehouse:id}/delivery-notes/counts', GetMobileDeliveryNoteCounts::class)->name('warehouses.delivery_notes.counts');

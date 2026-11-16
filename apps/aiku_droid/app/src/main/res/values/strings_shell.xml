@@ -54,7 +54,6 @@
     <string name="dashboard_dispatched_today">Dispatched today</string>
     <string name="dashboard_incoming_hub">Incoming hub</string>
     <string name="dashboard_stock_history_today">Stock history · today</string>
-    <string name="dashboard_all">All</string>
     <string name="dashboard_my_work_note">Your assigned work is in My work.</string>
 
     <string name="scan_title">Scan</string>

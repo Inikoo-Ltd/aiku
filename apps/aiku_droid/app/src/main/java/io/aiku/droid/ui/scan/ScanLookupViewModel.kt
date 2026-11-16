@@ -18,8 +18,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 sealed interface ScanDestination {
-    data class Sko(val code: String) : ScanDestination
-    data class Location(val code: String) : ScanDestination
+    data class Sko(val id: Long, val code: String) : ScanDestination
+    data class Location(val id: Long, val code: String) : ScanDestination
     data class DeliveryNote(val note: DeliveryNoteRow) : ScanDestination
     data class Unknown(val code: String) : ScanDestination
 }
@@ -29,16 +29,16 @@ fun ScanLookup.destination(scannedCode: String): ScanDestination {
     val location = location
     val note = deliveryNote
     return when {
-        type == ScanMatch.SKO && sko != null -> ScanDestination.Sko(sko.code)
-        type == ScanMatch.LOCATION && location != null -> ScanDestination.Location(location.code)
+        type == ScanMatch.SKO && sko != null -> ScanDestination.Sko(id = sko.id, code = sko.code)
+        type == ScanMatch.LOCATION && location != null -> ScanDestination.Location(id = location.id, code = location.code)
         type == ScanMatch.DELIVERY_NOTE && note != null -> ScanDestination.DeliveryNote(note)
         else -> ScanDestination.Unknown(code.ifBlank { scannedCode })
     }
 }
 
 fun ScanDestination.route(): Any = when (this) {
-    is ScanDestination.Sko -> SkuRoute(code = code)
-    is ScanDestination.Location -> LocationRoute(code = code)
+    is ScanDestination.Sko -> SkuRoute(id = id, code = code)
+    is ScanDestination.Location -> LocationRoute(id = id, code = code)
     is ScanDestination.DeliveryNote -> deliveryNoteRoute(id = note.id, reference = note.reference, state = note.state)
     is ScanDestination.Unknown -> ScanResultRoute(code = code)
 }

@@ -107,6 +107,8 @@
     <string name="goodsout_set_picking_location_note">Same as Stocks management on the web. Only users who can edit stock can change it.</string>
     <string name="goodsout_save_picking_locations">Save picking locations</string>
     <string name="goodsout_picking_locations_saved">Picking locations saved for %1$s</string>
+    <string name="goodsout_picking_locations_none">This SKO has no location in this warehouse.</string>
+    <string name="goodsout_picking_locations_failed">Couldn’t load the SKO’s locations</string>
 
     <plurals name="goodsout_scan_kicker">
         <item quantity="one">Delivery note %1$s · %2$d / %3$d picked</item>
