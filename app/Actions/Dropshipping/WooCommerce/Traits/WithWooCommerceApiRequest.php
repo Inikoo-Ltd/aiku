@@ -647,11 +647,11 @@ trait WithWooCommerceApiRequest
         return Arr::get($response, 'value', 'kg');
     }
 
-    public function getProductDimensionSettings(): string
+    public function getProductDimensionSettings(): ?string
     {
-        $response = $this->makeWooCommerceRequest('GET', 'settings/products/woocommerce_dimension_unit');
+        $unit = Arr::get($this->makeWooCommerceRequest('GET', 'settings/products/woocommerce_dimension_unit') ?? [], 'value');
 
-        return Arr::get($response, 'value', 'cm');
+        return in_array($unit, ['m', 'cm', 'mm', 'in', 'yd'], true) ? $unit : null;
     }
 
     /**
