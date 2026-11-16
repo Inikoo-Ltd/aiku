@@ -3671,6 +3671,31 @@ test('a pick edited or deleted before its queued movement runs is taken off the 
     expect((float)$locationOrgStock->refresh()->quantity)->toBe(99.0);
 });
 
+test('the stock page names the delivery note a pick was for, in its latest movements and its stock history, HELP-4738', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $picking    = $item->pickings()->where('type', PickingTypeEnum::PICK)->first();
+    $parameters = [$this->organisation->slug, $this->warehouse->slug, $picking->orgStock->slug];
+    actingAs($this->user);
+
+    get(route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show', $parameters))
+        ->assertOk()
+        ->assertInertia(function (AssertableInertia $page) use ($picking, $deliveryNote) {
+            $movement = collect($page->toArray()['props']['showcase']['latest_movements'])->firstWhere('id', $picking->org_stock_movement_id);
+            expect($movement['parent_reference'])->toBe($deliveryNote->reference);
+        });
+
+    get(route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.stock_history', $parameters))
+        ->assertOk()
+        ->assertInertia(function (AssertableInertia $page) use ($picking, $deliveryNote) {
+            $movement = collect($page->toArray()['props']['stock_history']['data'])->firstWhere('id', $picking->org_stock_movement_id);
+            expect($movement['parent_type'])->toBe('DeliveryNote')
+                ->and($movement['parent_reference'])->toBe($deliveryNote->reference);
+        });
+
+    get(route('grp.majordomo.redirect_org_stock_movement_parent', [$picking->org_stock_movement_id]))
+        ->assertRedirect(route('grp.org.warehouses.show.dispatching.delivery_notes.show', [$this->organisation->slug, $this->warehouse->slug, $deliveryNote->slug]));
+});
+
 test('a pick edited after its location was counted is given back and picked again after the count', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
     $picking          = $item->pickings()->where('type', PickingTypeEnum::PICK)->first();

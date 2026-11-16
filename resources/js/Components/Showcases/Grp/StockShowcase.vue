@@ -118,6 +118,7 @@ const props = defineProps < {
             location_code: string | null
             user_name: string | null
             reason_label: string | null
+            parent_reference: string | null
         }[]
         stock_history_route?: routeType
         supplier_products?: InstanceType<typeof SupplierProductsShowcaseBox>["$props"]["supplierProducts"]
@@ -622,7 +623,7 @@ const saveBarcode = (value: string | null) => {
                     <div class="flex-1" />
                     <span v-if="data.stock_history_route" @click.stop>
                         <Link :href="route(data.stock_history_route.name, data.stock_history_route.parameters)"
-                            class="text-xs font-medium text-[--app-accent] hover:text-[--app-accent-strong]">
+                            class="text-xs font-medium text-[var(--app-accent)] hover:text-[var(--app-accent-strong)]">
                             {{ ctrans("View all") }}
                         </Link>
                     </span>
@@ -639,6 +640,9 @@ const saveBarcode = (value: string | null) => {
                         <div class="min-w-0 flex-1">
                             <div class="truncate font-medium text-gray-700">
                                 {{ movement.type_label }}
+                                <Link v-if="movement.parent_reference"
+                                    :href="route('grp.majordomo.redirect_org_stock_movement_parent', [movement.id])"
+                                    class="primaryLink whitespace-nowrap">{{ movement.parent_reference }}</Link>
                                 <span v-if="movement.reason_label" class="font-normal text-gray-500">· {{ movement.reason_label }}</span>
                             </div>
                             <div class="truncate text-xs text-gray-400">

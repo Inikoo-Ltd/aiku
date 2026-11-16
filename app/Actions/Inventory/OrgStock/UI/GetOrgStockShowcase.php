@@ -284,7 +284,7 @@ class GetOrgStockShowcase
     {
         return $orgStock->orgStockMovements()
             ->whereNot('class', OrgStockMovementClassEnum::GARBAGE)
-            ->with(['location', 'user'])
+            ->with(['location', 'user', 'parent'])
             ->orderByDesc('date')
             ->limit(5)
             ->get()
@@ -303,6 +303,7 @@ class GetOrgStockShowcase
                     'location_code'                         => $orgStockMovement->location?->code,
                     'user_name'                             => $orgStockMovement->user?->contact_name,
                     'reason_label'                          => $orgStockMovement->reason?->label(),
+                    'parent_reference'                      => $orgStockMovement->parent?->reference,
                 ];
             })->toArray();
     }
