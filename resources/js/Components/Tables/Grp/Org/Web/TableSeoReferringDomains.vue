@@ -16,6 +16,11 @@ type ReferringDomainRow = {
     referring_domain: string
     rank: number | null
     backlinks: number
+    visits: number
+    customers: number
+    orders: number
+    revenue: number
+    currency_code: string
     is_own_website: boolean
     first_seen: string | null
     lost_at: string | null
@@ -60,6 +65,22 @@ const statuses = [
 
             <template #cell(backlinks)="{ item: referringDomain }: { item: ReferringDomainRow }">
                 <span class="tabular-nums">{{ locale.number(referringDomain.backlinks) }}</span>
+            </template>
+
+            <template #cell(visits)="{ item: referringDomain }: { item: ReferringDomainRow }">
+                <span class="tabular-nums">{{ locale.number(referringDomain.visits) }}</span>
+            </template>
+
+            <template #cell(customers)="{ item: referringDomain }: { item: ReferringDomainRow }">
+                <span class="tabular-nums">{{ locale.number(referringDomain.customers) }}</span>
+            </template>
+
+            <template #cell(orders)="{ item: referringDomain }: { item: ReferringDomainRow }">
+                <span class="tabular-nums">{{ locale.number(referringDomain.orders) }}</span>
+            </template>
+
+            <template #cell(revenue)="{ item: referringDomain }: { item: ReferringDomainRow }">
+                <span class="tabular-nums">{{ locale.currencyFormat(referringDomain.currency_code, referringDomain.revenue) }}</span>
             </template>
 
             <template #cell(first_seen)="{ item: referringDomain }: { item: ReferringDomainRow }">
