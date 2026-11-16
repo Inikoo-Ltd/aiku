@@ -3530,7 +3530,7 @@ test('UI show stock delivery lists its purchase orders in a tab', function () {
 
     $this->withoutExceptionHandling();
     $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]))
-        ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.'.StockDeliveryTabsEnum::PURCHASE_ORDERS->value));
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('tabs.navigation.'.StockDeliveryTabsEnum::PURCHASE_ORDERS->value));
 
     $stockDelivery->purchaseOrders()->syncWithoutDetaching([$this->purchaseOrder->id]);
 

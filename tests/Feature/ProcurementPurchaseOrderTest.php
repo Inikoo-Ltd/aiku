@@ -1100,7 +1100,7 @@ test('a supplier behind an agent sees its sales at its own prices, its agent and
             ->loadDeferredProps(fn ($reload) => $reload
                 ->where('sales.top_sellers.0.sold', fn ($sold) => abs($sold - 10 * $pricePerSko) < 0.5)
                 ->where('sales.by_organisation.'.$orgStock->organisation->code.'.top_sellers.0.sold', fn ($sold) => abs($sold - 10 * $pricePerSko) < 0.5)
-                ->where('sales.countries.0.top_sellers.0.sold', fn ($sold) => abs($sold - 10 * $pricePerSko) < 0.5)
+                ->where('sales.countries', fn ($countries) => abs(data_get(collect($countries)->firstWhere('code', $orgStock->organisation->country->code), 'top_sellers.0.sold') - 10 * $pricePerSko) < 0.5)
                 ->where('sales.by_organisation.'.$orgStock->organisation->code.'.top_sellers.0.organisations', fn ($organisations) => collect($organisations)->pluck('code')->all() === [$orgStock->organisation->code])));
 });
 

@@ -5378,6 +5378,8 @@ test('an exclusive product can be added only by its own customer, and only while
     $line = StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 4]);
     SyncBasketLinesWithProductStock::run($exclusive->fresh());
     expect((float) $line->fresh()->quantity_ordered)->toBe(4.0);
+
+    $exclusive->exclusiveCustomers()->detach();
 });
 
 test('discontinued products are removed from baskets only when run live, submitted orders keep them', function () {
