@@ -8,6 +8,7 @@
 
 namespace App\Actions\Api\Group\Locations;
 
+use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
@@ -43,7 +44,16 @@ class GetMobileLocationsOverview
             'number_locations_partially_empty' => (int) $stats?->number_locations_stock_slots_partial_empty,
             'stock_value'                      => (float) $stats?->stock_value,
             'empty_locations_removal'          => GetMobileEmptyLocationsRemoval::run($warehouse, $canEditStocks),
+            'utilisation'                      => $this->utilisation($warehouse),
+            'currency_code'                    => $warehouse->organisation->currency->code,
         ];
+    }
+
+    private function utilisation(Warehouse $warehouse): ?float
+    {
+        $utilisation = ShowInventoryDashboard::locationUtilisation($warehouse);
+
+        return $utilisation === null ? null : (float) $utilisation;
     }
 
     public function asController(Warehouse $warehouse, ActionRequest $request): JsonResponse

@@ -26909,5 +26909,16 @@
     "Should I start selling on :platform too?": "Devrais-je aussi vendre sur :platform ?",
     "e.g. What should I add to my :platform store for Christmas, and how do I get more sales?": "ex. Que dois-je ajouter à ma boutique :platform pour Noël, et comment vendre plus ?",
     "Your dropshipping coach": "Votre coach en dropshipping",
-    "A question, your store, what you need – the more :name knows, the better the answer.": "Une question, votre boutique, ce dont vous avez besoin : plus :name en sait, meilleure est la réponse."
+    "A question, your store, what you need – the more :name knows, the better the answer.": "Une question, votre boutique, ce dont vous avez besoin : plus :name en sait, meilleure est la réponse.",
+    "I have added this to your question for our team.": "J'ai ajouté ceci à votre question pour notre équipe.",
+    "You are welcome, :name! I am here whenever you need me.": "Avec plaisir, :name ! Je suis là dès que vous avez besoin de moi.",
+    "You are welcome! I am here whenever you need me.": "Avec plaisir ! Je suis là dès que vous avez besoin de moi.",
+    "Barcode :barcode": "Code-barres :barcode",
+    ":quantity in stock": ":quantity en stock",
+    ":name is brewing a potion…": ":name prépare une potion…",
+    ":name is looking it up in his spellbook…": ":name cherche dans son grimoire…",
+    ":name is casting a spell…": ":name lance un sort…",
+    ":name is gazing into his crystal ball…": ":name scrute sa boule de cristal…",
+    "This one needs a little more thought. Nearly there…": "Celle-ci demande un peu plus de réflexion. Presque fini…",
+    "Usually takes about :seconds seconds": "Prend en général environ :seconds secondes"
 }

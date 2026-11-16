@@ -16,11 +16,15 @@ struct InventoryDestination: View {
         case .abnormalities:
             InventorySkoListScreen(scope: .abnormalities)
         case .sko(let reference):
-            InventorySkoDetailScreen(reference: reference)
+            InventorySkoDetailScreen(target: .reference(reference))
+        case .skoID(let id):
+            InventorySkoDetailScreen(target: .id(id))
         case .stockHistory:
             InventoryStockHistoryScreen()
         case .skoHistory(let reference):
-            InventoryStockHistoryScreen(skoReference: reference)
+            InventoryStockHistoryScreen(target: .reference(reference), skoReference: reference)
+        case .skoHistoryID(let id, let reference):
+            InventoryStockHistoryScreen(target: .id(id), skoReference: reference)
         }
     }
 }

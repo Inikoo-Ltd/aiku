@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\Magento\ReAuthorizeMagentoUser;
 use App\Actions\Dropshipping\ShopifyUser\ClaimShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\Wix\User\AuthenticateWixAccount;
+use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
@@ -31,7 +32,10 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
     use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel, ?ActionRequest $request): ?string
+    /**
+     * A WooCommerce store that moved to a new domain is reconnected with the address it has now.
+     */
+    public function handle(CustomerSalesChannel $customerSalesChannel, ?ActionRequest $request, ?string $newStoreUrl = null): ?string
     {
         /** @var MagentoUser|ShopifyUser|WooCommerceUser|EbayUser $platformUser */
         $platformUser = $customerSalesChannel->user;
@@ -42,7 +46,7 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
 
         return match ($customerSalesChannel->platform->type) {
             PlatformTypeEnum::SHOPIFY => ClaimShopifyUser::make()->authenticateUrl($customerSalesChannel->customer, $platformUser->name),
-            PlatformTypeEnum::WOOCOMMERCE => ReAuthorizeRetinaWooCommerceUser::run($platformUser),
+            PlatformTypeEnum::WOOCOMMERCE => ReAuthorizeRetinaWooCommerceUser::run($platformUser, 3600, $newStoreUrl),
             PlatformTypeEnum::MAGENTO => ReAuthorizeMagentoUser::run($platformUser),
             PlatformTypeEnum::EBAY => ReAuthorizeRetinaEbayUser::make()->action($platformUser, $request),
             PlatformTypeEnum::ALLEGRO => AuthenticateAllegroAccount::make()->redirectToAllegro($customerSalesChannel->customer),
@@ -56,6 +60,30 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
     {
         $this->initialisation($request);
 
-        return $this->handle($customerSalesChannel, $request);
+        return $this->handle($customerSalesChannel, $request, $this->get('url'));
+    }
+
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        if ($request->filled('url')) {
+            $this->set('url', AuthorizeRetinaWooCommerceUser::storeHomeUrl($request->input('url')));
+        }
+    }
+
+    public function rules(): array
+    {
+        return [
+            'url' => [
+                'bail',
+                'sometimes',
+                'nullable',
+                'string',
+                'url',
+                'regex:/^https:\/\//',
+                function ($attribute, $value, $fail) {
+                    AuthorizeRetinaWooCommerceUser::make()->validateStoreIsReachable(rtrim($value, '/'), $fail);
+                }
+            ],
+        ];
     }
 }

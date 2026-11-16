@@ -212,7 +212,8 @@ test('calculate bundle item price details', function () {
         ->and($result['products'])->toHaveCount(2)
         ->and($result['total_price'])->toBeFloat()
         ->and($result['total_rrp'])->toBeFloat()
-        ->and($result)->toHaveKeys(['products', 'total_price', 'total_bundle_price', 'total_rrp', 'profit', 'profit_percentage']);
+        ->and($result)->toHaveKeys(['products', 'total_price', 'total_bundle_price', 'total_rrp', 'profit', 'profit_percentage'])
+        ->and($result['total_bundle_price'])->toEqual(round($result['total_price'] * (1 - Bundle::discountPercentage($this->customerSalesChannel->shop) / 100), 2));
 });
 
 test('update bundle on manual platform sets platform flags', function () {

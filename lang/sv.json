@@ -9961,5 +9961,16 @@
     "Should I start selling on :platform too?": "Borde jag börja sälja på :platform också?",
     "e.g. What should I add to my :platform store for Christmas, and how do I get more sales?": "t.ex. Vad ska jag lägga till i min :platform-butik inför julen, och hur säljer jag mer?",
     "Your dropshipping coach": "Din dropshipping-coach",
-    "A question, your store, what you need – the more :name knows, the better the answer.": "En fråga, din butik, vad du behöver – ju mer :name vet, desto bättre svar."
+    "A question, your store, what you need – the more :name knows, the better the answer.": "En fråga, din butik, vad du behöver – ju mer :name vet, desto bättre svar.",
+    "I have added this to your question for our team.": "Jag har lagt till det här i din fråga till vårt team.",
+    "You are welcome, :name! I am here whenever you need me.": "Varsågod, :name! Jag finns här när du behöver mig.",
+    "You are welcome! I am here whenever you need me.": "Varsågod! Jag finns här när du behöver mig.",
+    "Barcode :barcode": "Streckkod :barcode",
+    ":quantity in stock": ":quantity i lager",
+    ":name is brewing a potion…": ":name brygger en trolldryck…",
+    ":name is looking it up in his spellbook…": ":name slår upp det i sin trollbok…",
+    ":name is casting a spell…": ":name kastar en trollformel…",
+    ":name is gazing into his crystal ball…": ":name tittar i sin kristallkula…",
+    "This one needs a little more thought. Nearly there…": "Den här kräver lite mer eftertanke. Nästan klart…",
+    "Usually takes about :seconds seconds": "Tar oftast runt :seconds sekunder"
 }

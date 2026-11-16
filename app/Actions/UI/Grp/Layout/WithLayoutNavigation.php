@@ -141,6 +141,15 @@ trait WithLayoutNavigation
                             ]
                         ],
                         [
+                            'label' => __('Payouts'),
+                            'icon'  => ['fal', 'fa-hand-holding-box'],
+                            'root'  => 'grp.org.accounting.payouts.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.payouts.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
                             'label' => __('Receivables'),
                             'icon'  => ['fal', 'fa-hand-holding-usd'],
                             'root'  => 'grp.org.accounting.receivables.',
@@ -155,6 +164,15 @@ trait WithLayoutNavigation
                             'root'  => 'grp.org.accounting.payables.',
                             'route' => [
                                 'name'       => 'grp.org.accounting.payables.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
+                            'label' => __('Profit and loss'),
+                            'icon'  => ['fal', 'fa-balance-scale'],
+                            'root'  => 'grp.org.accounting.profit_and_loss.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.profit_and_loss.index',
                                 'parameters' => [$organisation->slug],
                             ]
                         ],

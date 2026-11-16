@@ -2039,7 +2039,7 @@ test('group financials shows bank incoming of every organisation the user may se
         ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Accounting/BankIncomingDashboard')->where('orgCurrency', $group->currency->code))
         ->viewData('page')['props']['dashboard'];
     expect(collect($dashboard['organisations'])->pluck('label')->all())->toContain($this->organisation->name, $otherOrganisation->name);
-    get(route('grp.financials.dashboard'))->assertRedirect('/financials/bank-incoming');
+    get(route('grp.financials.dashboard'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Accounting/FinancialsDashboard'));
     expect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::make()->handle($admin))->toHaveKey('financials');
 
     setPermissionsTeamId($group->id);

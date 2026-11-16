@@ -101,7 +101,7 @@ class ApplySupplierSubmission
     }
 
     /**
-     * @return array{previous_cost: float, cost: float}
+     * @return array{previous_cost: float, cost: float, previous_minimum_carton_order?: int|null, minimum_carton_order?: int}
      */
     private function priceChange(SupplierSubmission $supplierSubmission, array $data): array
     {
@@ -109,11 +109,21 @@ class ApplySupplierSubmission
         if (!$supplierProduct) {
             throw ValidationException::withMessages(['state' => __('The product of this price change no longer exists')]);
         }
-        $previousCost = (float) $supplierProduct->cost;
+        $previousCost               = (float) $supplierProduct->cost;
+        $previousMinimumCartonOrder = $supplierProduct->minimum_carton_order;
+        $minimumCartonOrder         = isset($data['moq']) ? (int) $data['moq'] : null;
 
-        UpdateSupplierProduct::make()->action($supplierProduct, ['cost' => $data['proposed_price'], ...$this->liftPriceChangeHoldFields($supplierProduct)], strict: false);
+        UpdateSupplierProduct::make()->action($supplierProduct, [
+            'cost' => $data['proposed_price'],
+            ...($minimumCartonOrder ? ['minimum_carton_order' => $minimumCartonOrder] : []),
+            ...$this->liftPriceChangeHoldFields($supplierProduct),
+        ], strict: false);
 
-        return ['previous_cost' => $previousCost, 'cost' => (float) $data['proposed_price']];
+        return [
+            'previous_cost' => $previousCost,
+            'cost'          => (float) $data['proposed_price'],
+            ...($minimumCartonOrder ? ['previous_minimum_carton_order' => $previousMinimumCartonOrder, 'minimum_carton_order' => $minimumCartonOrder] : []),
+        ];
     }
 
     public function liftPriceChangeHold(SupplierProduct $supplierProduct): void

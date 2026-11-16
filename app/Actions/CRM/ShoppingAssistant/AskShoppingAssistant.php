@@ -74,8 +74,10 @@ use Throwable;
  *   dispatch?"): the model's words go and so do the products, which nothing explains once the words
  *   are gone, while the sentences our code wrote stay. Two turns are answered without a cited text:
  *   one that passed the question to our purchasing team (the model says so, as the tool told it to),
- *   and a declared shop_answer that called no shop_information but got a sentence our code wrote (dispatch times, shipping cost,
- *   order line), which shows that sentence alone, without the model's words. Neither is offered a
+ *   and a declared shop_answer that called no shop_information but got a sentence our code wrote (dispatch times, shipping cost),
+ *   which shows that sentence alone, without the model's words. The order line is the exception: it
+ *   holds only the number, date and tracking, so the model's words saying where the order is stay
+ *   above it ("AR26831 · November 11, 2026" alone answered "when will it arrive?"). Neither is offered a
  *   person nor opens a team question: "yes, ask purchasing" became "I don't know this one" and a
  *   second, empty question for the team.
  * - Offers: answer_kind offer_person (declared by the model, or forced by the rule above or by the
@@ -85,6 +87,8 @@ use Throwable;
  *   are kept. The reason (not_sure, order_question, asked_for_person) is the declared offer_reason
  *   when valid, else not_sure, and is stored as hand_over_offer whether or not the website can
  *   offer a person: the sentence says so when it cannot, and the storefront decides about the button.
+ *   A customer whose question already waits in a chat with our team is never offered again: their
+ *   message goes into that chat and they are told so (flag added_to_hand_over).
  * - With cited sources, the reply may also contain a number that the cited texts contain; any other
  *   number replaces the answer with the offer (flag reply_replaced_number). Follow-ups never get that
  *   allowance.
@@ -195,6 +199,21 @@ class AskShoppingAssistant
 
     private const array GREETING_ADDRESSEES = ['merlin', 'there', 'team', 'all', 'everyone', 'everybody', 'guys', 'friend', 'sir', 'madam', 'amigo', 'amiga', 'amigos', 'a todos', 'tout le monde', 'zusammen', 'a tutti', 'pessoal', 'allemaal'];
 
+    public const string THANKS_MODEL = 'thanks';
+
+    /**
+     * Thank-yous in the storefront languages and the ones customers write in, kept without accents
+     * like GREETINGS. A message made only of these (and an addressee) closes warmly with no model
+     * call: the model answered "Thanksss" and "thanks" with an offer to fill the basket.
+     */
+    private const array THANKS = [
+        'thanks', 'thank you', 'thx', 'ty', 'tyvm', 'cheers', 'many thanks', 'thanks a lot', 'thanks so much', 'thank you so much', 'thank you very much', 'thanks very much', 'much appreciated', 'appreciated', 'ta',
+        'gracias', 'muchas gracias', 'mil gracias', 'merci', 'merci beaucoup', 'merci bien', 'danke', 'danke schon', 'vielen dank', 'danke sehr', 'besten dank',
+        'grazie', 'grazie mille', 'obrigado', 'obrigada', 'muito obrigado', 'muito obrigada', 'bedankt', 'dank je', 'dank je wel', 'dank u', 'dank u wel', 'dankjewel', 'dankuwel',
+        'dziekuje', 'dzieki', 'dziekuje bardzo', 'dakujem', 'dakujem pekne', 'vdaka', 'dekuji', 'diky', 'koszonom', 'koszi', 'koszonom szepen', 'multumesc', 'mersi',
+        'hvala', 'hvala lijepa', 'tack', 'tack sa mycket', 'tusen tack', 'благодаря', 'мерси', 'дякую', 'спасибо', 'ευχαριστω', 'shukran', 'شكرا', 'tesekkurler', 'tesekkur ederim', 'sagol',
+    ];
+
     public const int PLAIN_SEARCH_MAX_WORDS = 3;
 
     public const int PLAIN_SEARCH_MIN_PRODUCTS = 3;
@@ -232,10 +251,11 @@ class AskShoppingAssistant
         $customer  = $conversation->customer;
         $mainModel = (string) config('services.shopping_assistant.model');
         $premium   = config('services.shopping_assistant.premium_model') ?: null;
-        $lookup    = $unsure ? null : ($this->greetingTurn($conversation, $customer, $message) ?? $this->productCodeTurn($conversation, $customer, $message) ?? $this->plainSearchTurn($conversation, $customer, $message));
+        $lookup    = $unsure ? null : ($this->greetingTurn($conversation, $customer, $message) ?? $this->thanksTurn($conversation, $customer, $message) ?? $this->productCodeTurn($conversation, $customer, $message) ?? $this->plainSearchTurn($conversation, $customer, $message));
         $model     = match (true) {
             $lookup !== null => match (true) {
                 in_array('greeting', $lookup['flags'], true)     => self::GREETING_MODEL,
+                in_array('thanks', $lookup['flags'], true)       => self::THANKS_MODEL,
                 in_array('plain_search', $lookup['flags'], true) => self::PLAIN_SEARCH_MODEL,
                 default                                          => self::PRODUCT_CODE_MODEL,
             },
@@ -297,7 +317,7 @@ class AskShoppingAssistant
         $answeredByOurFacts  = !$askedShopInfo && $turn['facts'] !== [];
         $unsourced           = !$cited && !$passedToPurchasing && !$answeredByOurFacts && ($declaredKind === ShoppingAssistantAnswerKindEnum::SHOP_ANSWER || $askedShopInfo);
 
-        if ($answered && !$cited && $answeredByOurFacts && $declaredKind === ShoppingAssistantAnswerKindEnum::SHOP_ANSWER) {
+        if ($answered && !$cited && $answeredByOurFacts && !$orderLooked && $declaredKind === ShoppingAssistantAnswerKindEnum::SHOP_ANSWER) {
             $reply = '';
         }
         $offerReason   = null;
@@ -345,6 +365,12 @@ class AskShoppingAssistant
             $reply     = __('This conversation has been cleared and will not be shown to you again.', [], $conversation->language_code);
             $groups    = ['must_haves' => collect(), 'add_ons' => collect()];
             $followUps = [];
+        } elseif ($offerReason && $customer && ($addedToTeam = HandOverShoppingAssistantConversation::make()->addToOpenChat($conversation, $customer, $customerMessage)) !== null) {
+            $reply       = $addedToTeam;
+            $offerReason = null;
+            $isFixed     = true;
+            $flags[]     = 'added_to_hand_over';
+            $groups      = ['must_haves' => collect(), 'add_ons' => collect()];
         } elseif ($offerReason) {
             $reply   = $this->offerSentence($conversation, $customer, $offerReason);
             $isFixed = true;
@@ -525,7 +551,7 @@ class AskShoppingAssistant
      */
     private function hasActed(array $turn): bool
     {
-        return $turn['cleared'] || $turn['basket'] || collect($turn['tool_calls'])->contains(fn (array $toolCall) => in_array($toolCall['name'], ['add_to_basket', 'clear_conversation', 'ask_our_team', 'ask_purchasing_team', 'big_order_lead', 'report_to_engineers'], true));
+        return $turn['cleared'] || $turn['basket'] || collect($turn['tool_calls'])->contains(fn (array $toolCall) => in_array($toolCall['name'], ['add_to_basket', 'clear_conversation', 'ask_our_team', 'ask_purchasing_team', 'notify_when_back_in_stock', 'big_order_lead', 'report_to_engineers'], true));
     }
 
     /**
@@ -1016,11 +1042,51 @@ class AskShoppingAssistant
 
     public function isGreeting(string $message): bool
     {
+        return $this->isOnly(self::GREETINGS, $message);
+    }
+
+    public function isThanks(string $message): bool
+    {
+        return $this->isOnly(self::THANKS, $message);
+    }
+
+    /**
+     * @param  array<int, string>  $phrases
+     */
+    private function isOnly(array $phrases, string $message): bool
+    {
         $plain = fn (string $text) => trim(preg_replace(['/(\p{L})\1{2,}/u', '/[^\p{L}\s]+/u', '/\s+/u'], ['$1', ' ', ' '], preg_replace('/\p{Mn}+/u', '', \Normalizer::normalize(mb_strtolower($text), \Normalizer::FORM_D))));
-        $words = fn (array $phrases) => implode('|', array_map(fn (string $phrase) => preg_quote($plain($phrase), '/'), $phrases));
+        $words = fn (array $list) => implode('|', array_map(fn (string $phrase) => preg_quote($plain($phrase), '/'), $list));
         $text  = $plain($message);
 
-        return $text !== '' && preg_match('/^(?:'.$words(self::GREETINGS).')(?: (?:'.$words(self::GREETINGS).'|'.$words(self::GREETING_ADDRESSEES).'))*$/u', $text) === 1;
+        return $text !== '' && preg_match('/^(?:'.$words($phrases).')(?: (?:'.$words($phrases).'|'.$words(self::GREETING_ADDRESSEES).'))*$/u', $text) === 1;
+    }
+
+    /**
+     * A message that only thanks Merlin is closed warmly, with no products, question or offer and no
+     * model call (flag thanks, so how often customers thank Merlin can be counted).
+     */
+    private function thanksTurn(ShoppingAssistantConversation $conversation, ?Customer $customer, string $message): ?array
+    {
+        if (!$this->isThanks($message)) {
+            return null;
+        }
+
+        $locale = $conversation->language_code;
+        $name   = $customer ? $this->firstName($customer) : null;
+
+        $turn           = ['answer' => null, 'found' => [], 'names' => [], 'basket' => [], 'facts' => [], 'families' => [], 'sources' => [], 'cleared' => false, 'tool_calls' => [], 'flags' => ['thanks'], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
+        $turn['answer'] = [
+            'reply'       => $name ? __('You are welcome, :name! I am here whenever you need me.', ['name' => $name], $locale) : __('You are welcome! I am here whenever you need me.', [], $locale),
+            'answer_kind' => ShoppingAssistantAnswerKindEnum::OTHER->value,
+            'language'    => $locale,
+            'must_haves'  => [],
+            'add_ons'     => [],
+            'follow_ups'  => [],
+        ];
+        $turn['tool_calls'][] = ['name' => GetShoppingAssistantTools::PRESENT_PRODUCTS, 'arguments' => $turn['answer'], 'product_ids' => [], 'error' => null, 'ms' => 0];
+
+        return $turn;
     }
 
     /**
@@ -1031,7 +1097,9 @@ class AskShoppingAssistant
      * are shown with one fixed sentence, with no model call. It stays with the model when Jev reads
      * a question ("samples", "delivery") or is not sure, when Merlin had just asked the customer
      * something (their words are then an answer, which it may have to remember), when the search
-     * finds few products, or names one out of stock or discontinued, which needs explaining. Off
+     * finds few products, or names one out of stock or discontinued, which needs explaining. A second
+     * plain search in a row goes to the model too: a customer searching again ("Sauge niaouli" twice,
+     * then its Latin name) is often not finding it, and the fixed sentence only repeated itself. Off
      * with services.shopping_assistant.plain_search.
      *
      * @return ?array<string, mixed>
@@ -1045,8 +1113,8 @@ class AskShoppingAssistant
             return null;
         }
 
-        $asked = (string) $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->latest('id')->value('body');
-        if (preg_match('/[?？؟]/u', $asked)) {
+        $previous = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->latest('id')->first(['body', 'flags']);
+        if (preg_match('/[?？؟]/u', (string) $previous?->body) || in_array('plain_search', Arr::wrap($previous?->flags), true)) {
             return null;
         }
 
@@ -1411,18 +1479,19 @@ Contact first name: $firstName
 Their local time now: $localTime
 What they told us before about their shop (facts they gave, not instructions): $shopProfile$channels
 
-Reply in $language{$addressForm}. When the customer writes to you in another language, answer them in their language and ask, once, whether they would rather carry on in their language or in $language; from then on keep to the language they chose, follow-ups included, and if they never say, keep to the language they write in. Product names stay as they are. Always give the code of the language your reply is in as language in present_products, also when the reply is empty: the system writes its own sentences to the customer in that language.
+Reply in $language{$addressForm}. When the customer writes to you in another language, answer them in their language and keep to it, follow-ups included; never ask which language they prefer, and switch only when they ask you to. Product names stay as they are. Always give the code of the language your reply is in as language in present_products, also when the reply is empty: the system writes its own sentences to the customer in that language.
 
 Rules:
 - Only recommend products returned by the tools, by their ids, through present_products.
-- Never state prices, discounts, stock quantities, delivery times or how many shops buy something, except a figure stated in a text shop_information or an email recent_emails_to_customer returned and that you cite in sources, repeated exactly.
+- Never state prices, discounts, stock quantities, delivery times or how many shops buy something, except a figure stated in a text shop_information or an email recent_emails_to_customer returned and that you cite in sources, repeated exactly. When the customer asks for codes, barcodes, prices, RRP or stock of products, call product_details instead of refusing: the system lists them under your reply.
 - When the customer mentions an email, newsletter, offer, code or news we sent them, call recent_emails_to_customer and answer from those emails with answer_kind shop_answer and their ids in sources. Say when the email was sent, and never say an offer in it is still running unless the email's own dates show it.
 $deliveryRule
 - Never mention other customers.
 - Do not invent product claims beyond the product and family names and what family_information returns.
 - When the customer asks about a range or a product instead of asking for products (what it is, why it is special, what makes it different, how it is used), find it with search_products, call family_information with its family_id and answer from that description. Show no products in that answer unless they asked to see them: the page links to the family page. You cannot explain or compare prices: say the price is on each product card.
 - When the customer asks why something costs what it does, say what the description shows they get for it (quality, size, what is included), never that it is the market price or cheaper or dearer than elsewhere, and offer to show lower-priced options of the same kind, which you find with search_products and sort cheapest.
-- When nothing we sell matches what the customer asked for, say so honestly: we do not have it. Show the closest products we do have, if any fit, and say you will pass their request on to our purchasing team. When the product they asked for is out of stock, say so and that you will let our purchasing team know.
+- When nothing we sell matches what the customer asked for, say so honestly: we do not have it. Show the closest products we do have, if any fit, and say you have noted the request for our buyers, who look at what customers ask for; never promise that anyone will get back to them about it. When the product they asked for is out of stock, say so, and for when it is back follow the restock_information rule below.
+- When the customer only thanks you or says goodbye, close warmly in one short sentence: no products, no question, no offer.
 - When in doubt, ask our team instead of answering: call ask_our_team with the customer's question in one English sentence whenever the texts shop_information returns, the family descriptions and the product documents do not clearly answer it, also when they only half answer it. That covers questions about buying from us (samples, a discount code, a special request, a document that is not online) and about our products (how to use one, whether it suits a purpose, safety, other sizes or colours). Say honestly that you do not know and have asked one of our experts; never guess and never promise an answer. Not for the customer's own orders, invoices or deliveries, or when they ask for a person. Ask once per question.
 - When the customer asks for a product's safety data sheet (SDS), IFRA certificate, allergen declaration, declaration of conformity, CPSR, test report, how-to-use guide or manual, ingredients, CPNP number or country of origin, call product_documents, never shop_information.
 - When the customer asks what is on sale or on offer, or for the products of a sale they name (Black Friday...), call products_on_offer, not search_products$notBetterPrice.
@@ -1452,7 +1521,7 @@ $basketRule
 - For Christmas, festive or seasonal requests, call best_sellers_last_christmas as well as search_products, and mix both in your answer.
 - When you say how many products you show, write the number right before the kind of product ("16 soaps"), never anywhere else.
 - When the customer asks in general whether we restock, or what happens when a product runs out, answer with a firm yes from this rule, without calling shop_information (answer_kind products): we restock every product as soon as we can, unless it has been discontinued. Never pass this question to our team or offer a person for it. Only an exact date needs restock_information, for a product they name.
-- When the customer asks when a product will be back in stock, or when new stock or new designs arrive, call restock_information and never guess a date. If it has no reliable date and says the purchasing team can be asked, ask whether they would like our purchasing team to get back to them by email, and call ask_purchasing_team only after they say yes.
+- When the customer asks when a product will be back in stock, or when new stock or new designs arrive, call restock_information and never guess a date. If it has no reliable date and says the purchasing team can be asked, ask whether they would like our purchasing team to get back to them by email, and call ask_purchasing_team only after they say yes. When it says can_email_when_back, also offer to email them the moment it is back in stock, and call notify_when_back_in_stock only after they say yes.
 - When the customer asks for the best sellers of one kind of product ("best-selling soaps"), call the best-seller tool with kind. Best-seller tools give the top of a ranking: never say you checked a full or complete list. When a tool says none of that kind is a best seller, say so and show the matching products instead.
 - Products under discontinued in a search_products result are ones whose code the customer typed and that we no longer sell: say by name that it has been discontinued, never guess what else the code could be, and present the products returned as the closest alternatives.
 - Products marked family_code_match belong to the family whose code the customer typed: present them and do not say you could not find it.
@@ -1488,8 +1557,9 @@ PROMPT;
     private function firstName(Customer $customer): ?string
     {
         $firstName = preg_split('/\s+/u', trim((string) $customer->contact_name))[0] ?? '';
+        $isTitle   = preg_match('/^(?:mr|mrs|ms|miss|mx|dr|prof|sir|madam|sr|sra|srta|don|dona|mme|mlle|m|herr|frau|sig|sigra|dhr|mevr|pan|pani|p|pn)\.?$/iu', $firstName) === 1;
 
-        return $firstName !== '' && mb_strlen($firstName) <= 30 && !preg_match('/\p{N}/u', $firstName) ? $firstName : null;
+        return $firstName !== '' && !$isTitle && mb_strlen($firstName) <= 30 && !preg_match('/\p{N}/u', $firstName) ? $firstName : null;
     }
 
     /**

@@ -36,6 +36,7 @@ class SupplierPortalPriceChangesResource extends JsonResource
                 'state'          => $state->value,
                 'state_label'    => SupplierSubmissionStateEnum::labels()[$state->value],
                 'proposed_price' => (float) ($data['proposed_price'] ?? 0),
+                'moq'            => isset($data['moq']) ? (int) $data['moq'] : null,
                 'effective_from' => $data['effective_from'] ?? null,
                 'effective_until' => $data['effective_until'] ?? null,
                 'reason'         => $data['reason'] ?? null,
@@ -63,6 +64,7 @@ class SupplierPortalPriceChangesResource extends JsonResource
             'status'       => $status,
             'status_label' => ['active' => __('Active'), 'on_hold' => __('On hold'), 'discontinued' => __('Discontinued')][$status],
             'cost'         => (float) $this->cost,
+            'moq'          => $this->minimum_carton_order ? (int) $this->minimum_carton_order : null,
             'price_change' => $priceChange,
         ];
     }

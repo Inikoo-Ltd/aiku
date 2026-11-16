@@ -66,7 +66,8 @@ trait WithMobilePickingActions
             DeliveryNoteStateEnum::HANDLING_BLOCKED => $isEditable ? $this->handlingBlockedActions($deliveryNote, $user, $canHandle) : [],
             DeliveryNoteStateEnum::PICKED           => $isEditable ? $this->pickedActions($deliveryNote, $canHandle) : [],
             DeliveryNoteStateEnum::PACKING          => $isEditable ? $this->packingActions($deliveryNote, $canHandle) : [],
-            DeliveryNoteStateEnum::PACKED           => $this->packedActions($deliveryNote, $isEditable, $canShip),
+            DeliveryNoteStateEnum::PACKED           => $this->packedActions($deliveryNote, $isEditable, $canShip)
+                + ($isEditable && !$canHandle && !$isInPickingSession ? ['take_over' => __('Unlock to pack')] : []),
             DeliveryNoteStateEnum::FINALISED        => $this->finalisedActions($deliveryNote, $isEditable, $canShip),
             default                                 => [],
         };
@@ -80,6 +81,10 @@ trait WithMobilePickingActions
     private function editingActions(DeliveryNote $deliveryNote, User $user, bool $isEditable, bool $canShip, bool $isInPickingSession): array
     {
         $actions = [];
+        if ($isEditable && !$isInPickingSession && $deliveryNote->state === DeliveryNoteStateEnum::HANDLING) {
+            $actions['change_picker'] = __('Change picker');
+        }
+
         if ($isEditable && !$isInPickingSession && in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKING, DeliveryNoteStateEnum::PACKED], true)) {
             $actions['change_packer'] = __('Change packer');
         }

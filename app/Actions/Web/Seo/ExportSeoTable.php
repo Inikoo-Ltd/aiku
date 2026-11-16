@@ -456,14 +456,18 @@ class ExportSeoTable extends OrgAction
         $runs     = SeoBacklinkSummary::where('domain', $domain)->orderByDesc('date')->limit(2)->pluck('date');
         $newSince = $runs->count() === 2 ? Carbon::parse($runs->first())->startOfDay() : null;
 
-        $rows = $this->allRows('referring_domains', fn () => IndexSeoReferringDomains::make()->handle($domain, $newSince, 'referring_domains'));
+        $rows = $this->allRows('referring_domains', fn () => IndexSeoReferringDomains::make()->handle($website->shop, $domain, $newSince, 'referring_domains'));
 
         return [
-            ['Referring domain', 'Rank', 'Backlinks', 'First seen', 'Our website', 'Lost'],
+            ['Referring domain', 'Rank', 'Backlinks', 'Visits', 'Customers', 'Orders', 'Revenue', 'First seen', 'Our website', 'Lost'],
             $rows->map(fn ($row) => [
                 $row->referring_domain,
                 $row->rank,
                 (int) $row->backlinks,
+                (int) $row->visits,
+                round((float) $row->customers, 2),
+                round((float) $row->orders, 2),
+                round((float) $row->revenue, 2),
                 self::date($row->first_seen),
                 $row->is_own_website ? 'yes' : 'no',
                 self::date($row->lost_at),

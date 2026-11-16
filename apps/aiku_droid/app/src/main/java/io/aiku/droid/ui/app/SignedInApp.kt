@@ -35,7 +35,9 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.ChatContextKind
 import io.aiku.droid.data.api.DeliveryNoteBucket
 import io.aiku.droid.data.api.DispatchChannel
+import io.aiku.droid.data.api.LocationTab
 import io.aiku.droid.data.api.PickedBay
+import io.aiku.droid.data.api.SkoBucket
 import io.aiku.droid.data.api.Trolley
 import io.aiku.droid.data.api.WarehouseAccess
 import io.aiku.droid.data.session.StaffSession
@@ -127,18 +129,30 @@ import io.aiku.droid.ui.goodsout.extra.TrolleysScreen
 import io.aiku.droid.ui.home.HomeScreen
 import io.aiku.droid.ui.inbox.InboxScreen
 import io.aiku.droid.ui.inventory.InventoryDashboardScreen
-import io.aiku.droid.ui.inventory.SkuAbnormalitiesScreen
+import io.aiku.droid.ui.inventory.InventoryDashboardViewModel
+import io.aiku.droid.ui.inventory.InventoryServices
+import io.aiku.droid.ui.inventory.LocalInventoryServices
+import io.aiku.droid.ui.inventory.MovementSource
+import io.aiku.droid.ui.inventory.SkoFamiliesViewModel
+import io.aiku.droid.ui.inventory.SkoFamilyViewModel
+import io.aiku.droid.ui.inventory.SkoViewModel
+import io.aiku.droid.ui.inventory.SkosViewModel
 import io.aiku.droid.ui.inventory.SkuFamiliesScreen
 import io.aiku.droid.ui.inventory.SkuFamilyScreen
 import io.aiku.droid.ui.inventory.SkuScreen
 import io.aiku.droid.ui.inventory.SkusScreen
 import io.aiku.droid.ui.inventory.StockHistoryScreen
+import io.aiku.droid.ui.inventory.StockMovementsViewModel
 import io.aiku.droid.ui.locations.AreaScreen
 import io.aiku.droid.ui.locations.AreasScreen
+import io.aiku.droid.ui.locations.AreasViewModel
 import io.aiku.droid.ui.locations.LocationScreen
 import io.aiku.droid.ui.locations.LocationSkuScreen
+import io.aiku.droid.ui.locations.LocationViewModel
 import io.aiku.droid.ui.locations.LocationsScreen
+import io.aiku.droid.ui.locations.LocationsViewModel
 import io.aiku.droid.ui.locations.WarehouseOverviewScreen
+import io.aiku.droid.ui.locations.WarehouseOverviewViewModel
 import io.aiku.droid.ui.menu.MenuScreen
 import io.aiku.droid.ui.mywork.MyWorkScreen
 import io.aiku.droid.ui.navigation.AddShipmentRoute
@@ -217,7 +231,6 @@ import io.aiku.droid.ui.navigation.ScanResultRoute
 import io.aiku.droid.ui.navigation.ScanRoute
 import io.aiku.droid.ui.navigation.ScanToPickRoute
 import io.aiku.droid.ui.navigation.SearchRoute
-import io.aiku.droid.ui.navigation.SkuAbnormalitiesRoute
 import io.aiku.droid.ui.navigation.SkuFamiliesRoute
 import io.aiku.droid.ui.navigation.SkuFamilyRoute
 import io.aiku.droid.ui.navigation.SkuRoute
@@ -384,6 +397,7 @@ private fun WarehouseApp(
         LocalTabHandoff provides remember { TabHandoff() },
         LocalScanController provides container.scans,
         LocalImageSource provides container.images,
+        LocalInventoryServices provides remember(container) { InventoryServices(container.inventoryApi, container.sessions) },
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AppNavHost(
@@ -470,19 +484,92 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
         composable<NoTasksRoute> { NoTasksScreen() }
         composable<StatePreviewRoute> { entry -> entry.toRoute<StatePreviewRoute>().let { route -> StatePreviewScreen(route.kind) } }
         composable<NotDesignedRoute> { entry -> entry.toRoute<NotDesignedRoute>().let { route -> NotDesignedScreen(route.title) } }
-        composable<InventoryDashboardRoute> { InventoryDashboardScreen() }
-        composable<SkuFamiliesRoute> { SkuFamiliesScreen() }
-        composable<SkuFamilyRoute> { entry -> entry.toRoute<SkuFamilyRoute>().let { route -> SkuFamilyScreen(route.code) } }
-        composable<SkusRoute> { SkusScreen() }
-        composable<SkuAbnormalitiesRoute> { SkuAbnormalitiesScreen() }
-        composable<SkuRoute> { entry -> entry.toRoute<SkuRoute>().let { route -> SkuScreen(route.code) } }
-        composable<StockHistoryRoute> { StockHistoryScreen() }
-        composable<WarehouseOverviewRoute> { WarehouseOverviewScreen() }
-        composable<AreasRoute> { AreasScreen() }
-        composable<AreaRoute> { entry -> entry.toRoute<AreaRoute>().let { route -> AreaScreen(route.code) } }
-        composable<LocationsRoute> { LocationsScreen() }
-        composable<LocationRoute> { entry -> entry.toRoute<LocationRoute>().let { route -> LocationScreen(route.code) } }
-        composable<LocationSkuRoute> { entry -> entry.toRoute<LocationSkuRoute>().let { route -> LocationSkuScreen(route.locationCode, route.skuCode) } }
+        composable<InventoryDashboardRoute> {
+            val dashboard: InventoryDashboardViewModel = viewModel(
+                key = "inventory-dashboard-$currentWarehouseId",
+                factory = viewModelFactory { initializer { InventoryDashboardViewModel(container.inventoryApi, container.sessions, currentWarehouseId) } },
+            )
+            InventoryDashboardScreen(dashboard = dashboard)
+        }
+        composable<SkuFamiliesRoute> {
+            val families: SkoFamiliesViewModel = viewModel(
+                key = "sko-families-$currentWarehouseId",
+                factory = viewModelFactory { initializer { SkoFamiliesViewModel(container.inventoryApi, container.sessions, currentWarehouseId) } },
+            )
+            SkuFamiliesScreen(families = families)
+        }
+        composable<SkuFamilyRoute> { entry ->
+            val route = entry.toRoute<SkuFamilyRoute>()
+            val family: SkoFamilyViewModel = viewModel(
+                key = "sko-family-$currentWarehouseId-${route.id}",
+                factory = viewModelFactory { initializer { SkoFamilyViewModel(container.inventoryApi, container.sessions, currentWarehouseId, route.id) } },
+            )
+            SkuFamilyScreen(family = family, code = route.code)
+        }
+        composable<SkusRoute> { entry ->
+            val route = entry.toRoute<SkusRoute>()
+            val bucket = SkoBucket.ofKey(route.bucket) ?: SkoBucket.Current
+            val skos: SkosViewModel = viewModel(
+                key = "skos-$currentWarehouseId-${bucket.key}",
+                factory = viewModelFactory { initializer { SkosViewModel(container.inventoryApi, container.sessions, currentWarehouseId, initialBucket = bucket) } },
+            )
+            SkusScreen(skos = skos)
+        }
+        composable<SkuRoute> { entry ->
+            val route = entry.toRoute<SkuRoute>()
+            val sko: SkoViewModel = viewModel(
+                key = "sko-$currentWarehouseId-${route.id}",
+                factory = viewModelFactory { initializer { SkoViewModel(container.inventoryApi, container.sessions, currentWarehouseId, route.id) } },
+            )
+            SkuScreen(sko = sko, code = route.code)
+        }
+        composable<StockHistoryRoute> { entry ->
+            val route = entry.toRoute<StockHistoryRoute>()
+            val locationId = route.locationId
+            val source = if (locationId != null) MovementSource.Location(locationId) else MovementSource.Sko(currentWarehouseId, route.orgStockId ?: 0)
+            val movements: StockMovementsViewModel = viewModel(
+                key = "movements-$source",
+                factory = viewModelFactory { initializer { StockMovementsViewModel(container.inventoryApi, container.sessions, source) } },
+            )
+            StockHistoryScreen(movements = movements, code = route.code, isLocation = locationId != null)
+        }
+        composable<WarehouseOverviewRoute> {
+            val overview: WarehouseOverviewViewModel = viewModel(
+                key = "locations-overview-$currentWarehouseId",
+                factory = viewModelFactory { initializer { WarehouseOverviewViewModel(container.inventoryApi, container.sessions, currentWarehouseId) } },
+            )
+            WarehouseOverviewScreen(overview = overview)
+        }
+        composable<AreasRoute> { AreasScreen(areas = rememberAreas(container, currentWarehouseId)) }
+        composable<AreaRoute> { entry ->
+            val route = entry.toRoute<AreaRoute>()
+            val locations: LocationsViewModel = viewModel(
+                key = "area-locations-$currentWarehouseId-${route.id}",
+                factory = viewModelFactory { initializer { LocationsViewModel(container.inventoryApi, container.sessions, currentWarehouseId, areaId = route.id) } },
+            )
+            AreaScreen(areas = rememberAreas(container, currentWarehouseId), locations = locations, areaId = route.id, code = route.code)
+        }
+        composable<LocationsRoute> { entry ->
+            val tab = LocationTab.ofKey(entry.toRoute<LocationsRoute>().tab)
+            val locations: LocationsViewModel = viewModel(
+                key = "locations-$currentWarehouseId-$tab",
+                factory = viewModelFactory { initializer { LocationsViewModel(container.inventoryApi, container.sessions, currentWarehouseId, initialTab = tab) } },
+            )
+            LocationsScreen(locations = locations)
+        }
+        composable<LocationRoute> { entry ->
+            val route = entry.toRoute<LocationRoute>()
+            LocationScreen(location = rememberLocation(container, currentWarehouseId, route.id), code = route.code)
+        }
+        composable<LocationSkuRoute> { entry ->
+            val route = entry.toRoute<LocationSkuRoute>()
+            LocationSkuScreen(
+                location = rememberLocation(container, currentWarehouseId, route.locationId),
+                locationOrgStockId = route.locationOrgStockId,
+                locationCode = route.locationCode,
+                skoCode = route.skoCode,
+            )
+        }
         composable<GoodsInBacklogRoute> { GoodsInBacklogScreen() }
         composable<StockDeliveriesRoute> { StockDeliveriesScreen() }
         composable<StockDeliveryArrivingRoute> { entry -> entry.toRoute<StockDeliveryArrivingRoute>().let { route -> StockDeliveryArrivingScreen(route.reference) } }
@@ -629,6 +716,18 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
         composable<ClockingErrorRoute> { entry -> entry.toRoute<ClockingErrorRoute>().let { route -> ClockingErrorScreen(route.kind, route.message, route.scanned) } }
     }
 }
+
+@Composable
+private fun rememberAreas(container: AppContainer, warehouseId: Long): AreasViewModel = viewModel(
+    key = "areas-$warehouseId",
+    factory = viewModelFactory { initializer { AreasViewModel(container.inventoryApi, container.sessions, warehouseId) } },
+)
+
+@Composable
+private fun rememberLocation(container: AppContainer, warehouseId: Long, locationId: Long): LocationViewModel = viewModel(
+    key = "location-$warehouseId-$locationId",
+    factory = viewModelFactory { initializer { LocationViewModel(container.inventoryApi, container.sessions, warehouseId, locationId) } },
+)
 
 @Composable
 private fun rememberDeliveryNote(container: AppContainer, deliveryNoteId: Long): DeliveryNoteViewModel = viewModel(

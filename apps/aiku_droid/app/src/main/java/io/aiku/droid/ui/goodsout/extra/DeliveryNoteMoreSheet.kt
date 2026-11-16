@@ -18,7 +18,7 @@ import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.Tone
 
-private val pickerKeys = setOf(NoteActionKey.ASSIGN_PICKER, NoteActionKey.REMOVE_PICKER)
+private val pickerKeys = setOf(NoteActionKey.ASSIGN_PICKER, NoteActionKey.REMOVE_PICKER, NoteActionKey.CHANGE_PICKER)
 private val packerKeys = setOf(NoteActionKey.CHANGE_PACKER)
 private val equipmentKeys = setOf(NoteActionKey.CHANGE_TROLLEY, NoteActionKey.CHANGE_PICKED_BAY)
 private val undoKeys = setOf(NoteActionKey.UNDO_SET_AS_PICKED, NoteActionKey.UNDO_PACKING, NoteActionKey.UNPACK)

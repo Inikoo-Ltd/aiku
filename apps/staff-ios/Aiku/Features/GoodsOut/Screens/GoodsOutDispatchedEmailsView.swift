@@ -6,6 +6,15 @@ struct GoodsOutDispatchedEmailsView: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
+        if GoodsOutStore.shared.isRemote {
+            GoodsOutNotInTheAppScreen(title: "Dispatched emails", message: "The emails sent to the customer can’t be loaded from Aiku in the app yet.")
+        } else {
+            sampleBody
+        }
+    }
+
+    @ViewBuilder
+    private var sampleBody: some View {
         if let note = store.note(reference) {
             AppScreen(title: "Dispatched emails", kicker: "Delivery note \(note.reference)") {
                 if note.emails.isEmpty {

@@ -18,9 +18,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,7 +48,6 @@ import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChipShape
 import io.aiku.droid.ui.components.ControlShape
-import io.aiku.droid.ui.components.FilterOption
 import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.animateFocusProgress
@@ -93,7 +93,7 @@ private fun InventoryStatTile(stat: InventoryStat, modifier: Modifier = Modifier
             .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
             .padding(12.dp),
     ) {
-        Text(text = stat.value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = valueColor)
+        Text(text = stat.value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = valueColor, maxLines = 1)
         Text(text = stat.label, fontSize = 12.sp, color = colors.textTertiary)
     }
 }
@@ -103,7 +103,6 @@ internal fun InventorySectionHeading(
     text: String,
     modifier: Modifier = Modifier,
     trailingText: String? = null,
-    trailingModifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
 ) {
@@ -119,7 +118,7 @@ internal fun InventorySectionHeading(
             modifier = Modifier.weight(1f),
         )
         if (trailingText != null) {
-            Text(text = trailingText, fontSize = 12.sp, color = colors.textTertiary, modifier = trailingModifier)
+            Text(text = trailingText, fontSize = 12.sp, color = colors.textTertiary, modifier = Modifier.padding(horizontal = 4.dp))
         }
         if (actionLabel != null && onAction != null) {
             Text(
@@ -128,6 +127,7 @@ internal fun InventorySectionHeading(
                 fontWeight = FontWeight.SemiBold,
                 color = colors.link,
                 modifier = Modifier
+                    .heightIn(min = 44.dp)
                     .clip(ChipShape)
                     .clickable(role = Role.Button, onClick = onAction)
                     .padding(horizontal = 8.dp, vertical = 13.dp),
@@ -240,69 +240,20 @@ internal fun SheetGroupLabel(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-internal fun SheetQuantityRow(
-    value: Int,
-    onValueChange: (Int) -> Unit,
+internal fun SheetTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
     modifier: Modifier = Modifier,
-    min: Int = 1,
-    max: Int = Int.MAX_VALUE,
+    isNumber: Boolean = false,
+    isError: Boolean = false,
+    helper: String? = null,
 ) {
-    val colors = LocalAikuColors.current
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(TileShape)
-            .border(1.dp, colors.border, TileShape)
-            .padding(start = 14.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
-    ) {
-        Text(text = stringResource(R.string.inventory_quantity), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.text, modifier = Modifier.weight(1f))
-        QuantityStepButton(
-            symbol = "−",
-            description = stringResource(R.string.stepper_decrease),
-            isEnabled = value > min,
-            onClick = { onValueChange(value - 1) },
-        )
-        Text(
-            text = value.toString(),
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = colors.text,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.width(56.dp),
-        )
-        QuantityStepButton(
-            symbol = "+",
-            description = stringResource(R.string.stepper_increase),
-            isEnabled = value < max,
-            onClick = { onValueChange(value + 1) },
-        )
-    }
-}
-
-@Composable
-private fun QuantityStepButton(symbol: String, description: String, isEnabled: Boolean, onClick: () -> Unit) {
-    val colors = LocalAikuColors.current
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(44.dp)
-            .clip(ControlShape)
-            .clickable(enabled = isEnabled, role = Role.Button, onClickLabel = description, onClick = onClick)
-            .semantics { contentDescription = description },
-    ) {
-        Text(text = symbol, fontSize = 22.sp, color = if (isEnabled) colors.textSecondary else colors.faint)
-    }
-}
-
-@Composable
-internal fun SheetTextField(value: String, onValueChange: (String) -> Unit, label: String, modifier: Modifier = Modifier) {
     val colors = LocalAikuColors.current
     val fieldInteraction = remember { MutableInteractionSource() }
     val isFieldFocused by fieldInteraction.collectIsFocusedAsState()
     val fieldFocusProgress = animateFocusProgress(isFieldFocused)
+    val idleBorder = if (isError) colors.danger else lerp(colors.borderStrong, colors.focus, fieldFocusProgress)
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(text = label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
@@ -313,6 +264,7 @@ internal fun SheetTextField(value: String, onValueChange: (String) -> Unit, labe
             textStyle = TextStyle(fontFamily = Inter, fontSize = 15.sp, color = colors.text),
             cursorBrush = SolidColor(colors.primary),
             interactionSource = fieldInteraction,
+            keyboardOptions = if (isNumber) KeyboardOptions(keyboardType = KeyboardType.Decimal) else KeyboardOptions.Default,
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = label },
             decorationBox = { inner ->
                 Box(
@@ -323,13 +275,16 @@ internal fun SheetTextField(value: String, onValueChange: (String) -> Unit, labe
                         .focusHalo(progress = fieldFocusProgress, color = colors.focus, cornerRadius = 8.dp)
                         .clip(ControlShape)
                         .background(colors.surface)
-                        .border(1.dp, lerp(colors.borderStrong, colors.focus, fieldFocusProgress), ControlShape)
+                        .border(1.dp, idleBorder, ControlShape)
                         .padding(horizontal = 12.dp),
                 ) {
                     inner()
                 }
             },
         )
+        if (helper != null) {
+            Text(text = helper, fontSize = 12.sp, color = if (isError) colors.danger else colors.textTertiary)
+        }
     }
 }
 
@@ -356,25 +311,13 @@ internal fun SheetButtons(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
     confirmStyle: ButtonStyle = ButtonStyle.Primary,
+    isWorking: Boolean = false,
+    showConfirm: Boolean = true,
 ) {
     Column(modifier = modifier.fillMaxWidth().padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        AikuButton(text = confirmLabel, onClick = onConfirm, style = confirmStyle, height = 52.dp, modifier = Modifier.fillMaxWidth())
+        if (showConfirm) {
+            AikuButton(text = confirmLabel, onClick = onConfirm, style = confirmStyle, isLoading = isWorking, height = 52.dp, modifier = Modifier.fillMaxWidth())
+        }
         AikuButton(text = stringResource(R.string.dialog_cancel), onClick = onCancel, style = ButtonStyle.Outline, height = 52.dp, modifier = Modifier.fillMaxWidth())
     }
-}
-
-internal fun skoSubtitle(sko: SampleSko): String = listOfNotNull(sko.name, sko.detail).joinToString(" · ")
-
-@Composable
-internal fun locationChip(location: SampleSkoLocation): String {
-    val kind = stringResource(location.kind.label)
-    val channel = location.channel ?: return kind
-    return stringResource(R.string.inventory_pair, kind, stringResource(channel.label))
-}
-
-@Composable
-internal fun countChipOptions(counts: List<SampleCount>): List<FilterOption> = counts.map { sample ->
-    val label = stringResource(sample.label)
-    val count = sample.count
-    FilterOption(label = if (count != null) stringResource(R.string.inventory_chip_with_count, label, count) else label)
 }

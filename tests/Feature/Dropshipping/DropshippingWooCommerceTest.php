@@ -52,6 +52,7 @@ use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooProduct;
 use App\Actions\Dropshipping\WooCommerce\ReviveInActiveWooChannel;
 use Illuminate\Http\Client\ConnectionException;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ReconnectRetinaCustomerSalesChannel;
 use App\Actions\Dropshipping\WooCommerce\StoreTemporaryWooUser;
 use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
 use App\Actions\Maintenance\Dropshipping\RepairWooChannelReconnects;
@@ -83,6 +84,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 use function Pest\Laravel\actingAs;
@@ -435,6 +437,57 @@ test('re-authorisation answers WooCommerce without waiting for the store', funct
     CheckWooChannel::assertPushed(fn (CheckWooChannel $job, array $arguments) => $arguments[0]->id === $wooCommerceUser->id);
 });
 
+test('a store that moved is reconnected at its new address on the same channel, which changes only once the new store sends its keys', function () {
+    Queue::fake();
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $channelId       = $wooCommerceUser->customer_sales_channel_id;
+    $wooCommerceUser->update(['settings' => ['webhooks' => ['order_created' => 1], 'weight_option' => 'kg']]);
+
+    $link = ReAuthorizeRetinaWooCommerceUser::run($wooCommerceUser, 3600, 'https://Moved.Example.test/');
+    parse_str((string) parse_url($link, PHP_URL_QUERY), $query);
+
+    expect($link)->toStartWith('https://moved.example.test/wc-auth/v1/authorize?')
+        ->and($wooCommerceUser->fresh()->store_url)->toBe(WOO_STORE_URL);
+
+    postJson(route('webhooks.woo.callback'), [
+        'user_id'         => $query['user_id'],
+        'consumer_key'    => 'ck_moved',
+        'consumer_secret' => 'cs_moved',
+        'key_permissions' => 'read_write',
+    ])->assertSuccessful();
+
+    $wooCommerceUser->refresh();
+    expect($wooCommerceUser->store_url)->toBe('https://moved.example.test')
+        ->and($wooCommerceUser->consumer_key)->toBe('ck_moved')
+        ->and($wooCommerceUser->customer_sales_channel_id)->toBe($channelId)
+        ->and(Arr::get($wooCommerceUser->settings, 'webhooks'))->toBeNull()
+        ->and(Arr::get($wooCommerceUser->settings, 'weight_option'))->toBe('kg');
+});
+
+test('reconnecting without a new address keeps the stored one, and an address another channel uses is refused', function () {
+    $customer        = wooCustomer($this->shop);
+    $wooCommerceUser = wooConnect($customer);
+    wooConnect($customer, ['name' => 'other-store', 'store_url' => 'https://other.example.test']);
+
+    expect(ReAuthorizeRetinaWooCommerceUser::run($wooCommerceUser))->toStartWith(WOO_STORE_URL.'/wc-auth/v1/authorize?');
+
+    expect(fn () => ReAuthorizeRetinaWooCommerceUser::run($wooCommerceUser, 3600, 'https://OTHER.example.test/'))
+        ->toThrow(ValidationException::class);
+});
+
+test('a new store address on reconnect must be https and answer as a WooCommerce store', function () {
+    Http::fake([
+        'https://moved.example.test/*'  => Http::response(['namespace' => 'wc/v3']),
+        'https://not-woo.example.test/*' => Http::response('<html></html>', 404),
+    ]);
+    $rules = ReconnectRetinaCustomerSalesChannel::make()->rules();
+
+    expect(Validator::make(['url' => 'https://moved.example.test'], $rules)->passes())->toBeTrue()
+        ->and(Validator::make(['url' => 'http://moved.example.test'], $rules)->errors()->has('url'))->toBeTrue()
+        ->and(Validator::make(['url' => 'https://not-woo.example.test'], $rules)->errors()->has('url'))->toBeTrue()
+        ->and(Validator::make([], $rules)->passes())->toBeTrue();
+});
+
 test('the order webhook only queues a fetch, its payload is never trusted', function () {
     Queue::fake();
     $wooCommerceUser = wooConnect(wooCustomer($this->shop));
@@ -704,7 +757,7 @@ test('uploading a portfolio creates a simple product shaped for the store and sa
     $channel = $wooCommerceUser->customerSalesChannel;
     $channel->update(['max_quantity_advertise' => 10, 'stock_threshold' => 2]);
 
-    $this->product->update(['available_quantity' => 64, 'gross_weight' => 1500, 'marketing_ingredients' => null]);
+    $this->product->update(['available_quantity' => 64, 'gross_weight' => 1500, 'marketing_ingredients' => null, 'marketing_dimensions' => ['type' => 'rectangular', 'units' => 'mm', 'l' => 0.12, 'w' => 0.08, 'h' => 0.05]]);
     expect($this->product->refresh()->isSellableThroughSalesChannels())->toBeTrue();
 
     $portfolio = wooPortfolio($channel, $this->product, null, 'aw-upload-1');
@@ -727,6 +780,7 @@ test('uploading a portfolio creates a simple product shaped for the store and sa
         ->and($body['stock_quantity'])->toBe(10)
         ->and($body['stock_status'])->toBe('instock')
         ->and($body['weight'])->toBe('1.5')
+        ->and($body['dimensions'])->toBe(['width' => '8', 'height' => '5', 'length' => '12'])
         ->and(collect($body['attributes'])->pluck('name'))->not->toContain('Ingredients');
 
     expect($portfolio->platform_product_id)->toBe('794')

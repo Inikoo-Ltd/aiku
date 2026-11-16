@@ -9127,5 +9127,16 @@
     "Should I start selling on :platform too?": "Kezdjek el a :platform felületen is eladni?",
     "e.g. What should I add to my :platform store for Christmas, and how do I get more sales?": "pl. Mit tegyek a :platform boltomba karácsonyra, és hogyan adhatok el többet?",
     "Your dropshipping coach": "A dropshipping-tanácsadód",
-    "A question, your store, what you need – the more :name knows, the better the answer.": "Egy kérdés, a boltod, amire szükséged van – minél többet tud :name, annál jobb a válasz."
+    "A question, your store, what you need – the more :name knows, the better the answer.": "Egy kérdés, a boltod, amire szükséged van – minél többet tud :name, annál jobb a válasz.",
+    "I have added this to your question for our team.": "Ezt hozzáadtam a csapatunknak feltett kérdéséhez.",
+    "You are welcome, :name! I am here whenever you need me.": "Szívesen, :name! Itt vagyok, amikor csak szüksége van rám.",
+    "You are welcome! I am here whenever you need me.": "Szívesen! Itt vagyok, amikor csak szüksége van rám.",
+    "Barcode :barcode": "Vonalkód :barcode",
+    ":quantity in stock": ":quantity raktáron",
+    ":name is brewing a potion…": ":name bájitalt főz…",
+    ":name is looking it up in his spellbook…": ":name a varázskönyvében keresi…",
+    ":name is casting a spell…": ":name varázsol…",
+    ":name is gazing into his crystal ball…": ":name a kristálygömbjébe néz…",
+    "This one needs a little more thought. Nearly there…": "Ez egy kicsit több gondolkodást igényel. Mindjárt kész…",
+    "Usually takes about :seconds seconds": "Általában kb. :seconds másodperc"
 }

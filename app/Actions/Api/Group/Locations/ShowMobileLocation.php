@@ -9,14 +9,17 @@
 namespace App\Actions\Api\Group\Locations;
 
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInWarehouse;
+use App\Actions\Inventory\OrgStock\Json\ScanSkoBarcode;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInLocation;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\Models\Fulfilment\Pallet;
 use App\Http\Resources\Inventory\OrgStocksInLocationResource;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
+use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
@@ -40,13 +43,16 @@ class ShowMobileLocation
 
         $orgStocks = $this->allWebPages(fn () => IndexOrgStocksInLocation::make()->handle($location));
         $links     = LocationOrgStock::whereIn('id', $orgStocks->pluck('location_org_stock_id'))->get()->keyBy('id');
+        $skos      = OrgStock::with('tradeUnits.image')->findMany($orgStocks->pluck('id'))->keyBy('id');
+        $pickCodes = Location::whereIn('id', $skos->pluck('picking_location_id')->merge($skos->pluck('picking_dropshipping_location_id'))->filter()->unique())->pluck('code', 'id');
 
         return array_merge($this->locationSummary($location), [
             'pallets'    => $this->pallets($location),
             'org_stocks' => $orgStocks
-                ->map(function ($orgStock) use ($links) {
+                ->map(function ($orgStock) use ($links, $skos, $pickCodes) {
                     /** @var LocationOrgStock|null $link */
                     $link = $links->get($orgStock->location_org_stock_id);
+                    $sko  = $skos->get($orgStock->id);
 
                     return array_merge(OrgStocksInLocationResource::make($orgStock)->resolve(), [
                         'default_wholesale_picking_location'    => (bool) $link?->default_wholesale_picking_location,
@@ -55,11 +61,20 @@ class ShowMobileLocation
                         'max_stock'                             => $link?->settings['max_stock'] ?? null,
                         'replenishment_stock'                   => $link?->settings['replenishment_stock'] ?? null,
                         'audited_at'                            => $link?->audited_at ? Carbon::parse($link->audited_at)->toIso8601String() : null,
+                        'image_url'                             => $sko ? Arr::get(ScanSkoBarcode::imageOf($sko) ?? [], 'original') : null,
+                        'picking_location'                      => $this->pickLocation($sko?->picking_location_id, $pickCodes->all()),
+                        'picking_dropshipping_location'         => $this->pickLocation($sko?->picking_dropshipping_location_id, $pickCodes->all()),
+                        'quantity_value'                        => (float) $orgStock->quantity,
                     ]);
                 })
                 ->values()
                 ->all(),
         ]);
+    }
+
+    private function pickLocation(?int $locationId, array $codes): ?array
+    {
+        return $locationId && isset($codes[$locationId]) ? ['id' => $locationId, 'code' => $codes[$locationId]] : null;
     }
 
     /**

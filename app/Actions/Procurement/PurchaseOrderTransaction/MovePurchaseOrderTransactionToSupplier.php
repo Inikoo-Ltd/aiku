@@ -172,7 +172,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
 
             $sourcePurchaseOrder->refresh();
             $isSourceEmpty   = $sourcePurchaseOrder->purchaseOrderTransactions()->whereIn('state', [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])->doesntExist();
-            $depositPaid     = $sourcePurchaseOrder->depositPayments()->exists();
+            $depositPaid     = $sourcePurchaseOrder->isDepositPaid();
             $sourceCancelled = $isSourceEmpty && !$depositPaid && $this->cancelWhenEmpty($sourcePurchaseOrder);
 
             return [

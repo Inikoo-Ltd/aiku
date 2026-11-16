@@ -24,7 +24,16 @@ struct GoodsOutCancelledStateView: View {
         if !picked.isEmpty {
             GoodsOutLinesCard(lines: picked, showsChip: false, detail: { "Picked from \($0.pickLocation)" })
         }
-        HelperText("If the order is replaced, these picks can be reused on the new delivery note. Cancelling needs a dispatching supervisor, an org admin, or order/CRM edit rights.")
+        if note.isRemote {
+            if let reference = note.packingDetails?.returnReference {
+                Card {
+                    ListRow("Picked items go back through return \(reference)", subtitle: note.packingDetails?.returnStateLabel, icon: .undo, iconTone: .warn)
+                }
+            }
+            HelperText("Take the goods off the trolley or bay. If the order is sent again, the new delivery note can reuse them.")
+        } else {
+            HelperText("If the order is replaced, these picks can be reused on the new delivery note. Cancelling needs a dispatching supervisor, an org admin, or order/CRM edit rights.")
+        }
         AikuButton("Back to delivery notes") {
             router.back()
         }
@@ -33,7 +42,7 @@ struct GoodsOutCancelledStateView: View {
 
     private var stopText: String {
         let units = note.pickedUnits
-        guard units > 0 else { return "Stop picking. Nothing was picked yet." }
+        guard units > 0 else { return note.isRemote ? "Nothing was picked for it." : "Stop picking. Nothing was picked yet." }
         let skos = note.pickedLines.count
         return "Stop picking. \(units) \(units == 1 ? "unit is" : "units are") already picked (\(skos) \(skos == 1 ? "SKO" : "SKOs"))."
     }

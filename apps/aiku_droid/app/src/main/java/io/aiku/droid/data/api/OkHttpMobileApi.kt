@@ -24,7 +24,7 @@ class OkHttpMobileApi(
     private val client: OkHttpClient,
     baseUrl: String,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : AuthApi, WarehouseApi, ClockingApi, HrApi, GoodsOutApi, PickingSessionApi, StaffChatApi {
+) : AuthApi, WarehouseApi, ClockingApi, HrApi, GoodsOutApi, PickingSessionApi, StaffChatApi, InventoryApi {
 
     private val apiBaseUrl = baseUrl.trimEnd('/')
     private val mobileApiUrl = "$apiBaseUrl/app/api/mobile"
@@ -336,6 +336,101 @@ class OkHttpMobileApi(
     override suspend fun downloadInsertPdf(token: String, deliveryNoteId: Long, leafletId: Long, target: File): AttachmentDownload =
         downloadTo(post("$mobileApiUrl/delivery-notes/$deliveryNoteId/${GoodsOutResponses.insertPdfPath(leafletId)}", body = "{}", bearerToken = token), target)
 
+    override suspend fun locationsOverview(token: String, warehouseId: Long): GoodsOutResult<LocationsOverview> =
+        execute(get("$mobileApiUrl/warehouses/$warehouseId/locations-overview", token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseOverview(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun setEmptyLocationsRemoval(token: String, warehouseId: Long, enabled: Boolean): GoodsOutResult<EmptyLocationsRemoval> =
+        execute(patch("$mobileApiUrl/warehouses/$warehouseId/empty-locations-removal", InventoryResponses.emptyLocationsRemovalBody(enabled).toString(), token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseEmptyLocationsRemoval(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun areas(token: String, warehouseId: Long, search: String?): GoodsOutResult<List<WarehouseArea>> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/areas", InventoryResponses.areasParameters(search)), token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseAreas(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun locations(token: String, warehouseId: Long, query: LocationQuery): GoodsOutResult<LocationPage> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/locations", InventoryResponses.locationsParameters(query)), token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseLocations(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun location(token: String, locationId: Long): GoodsOutResult<LocationDetail> =
+        execute(get("$mobileApiUrl/locations/$locationId", token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseLocation(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun locationMovements(token: String, locationId: Long, page: Int, perPage: Int): GoodsOutResult<MovementPage> =
+        execute(get(urlWith("$mobileApiUrl/locations/$locationId/stock-movements", InventoryResponses.pageParameters(page, perPage)), token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseMovements(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun writeLocation(token: String, locationId: Long, write: LocationWrite): GoodsOutResult<LocationWriteOutcome> {
+        val url = "$mobileApiUrl/locations/$locationId/${InventoryResponses.locationWritePath(write)}"
+        return execute(post(url, InventoryResponses.locationWriteBody(write).toString(), bearerToken = token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseLocationWrite(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+    }
+
+    override suspend fun updateLocationOrgStock(token: String, locationOrgStockId: Long, update: LocationOrgStockUpdate): GoodsOutResult<LocationDetail> =
+        execute(patch("$mobileApiUrl/location-org-stocks/$locationOrgStockId", InventoryResponses.locationOrgStockUpdateBody(update).toString(), token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseLocation(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun stockMovementReasons(token: String): GoodsOutResult<StockMovementReasons> =
+        execute(get("$mobileApiUrl/stock-movement-reasons", token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseReasons(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun inventoryDashboard(token: String, warehouseId: Long): GoodsOutResult<InventoryDashboard> =
+        execute(get("$mobileApiUrl/warehouses/$warehouseId/inventory-dashboard", token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseDashboard(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun orgStocks(token: String, warehouseId: Long, query: SkoQuery): GoodsOutResult<OrgStockPage> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/org-stocks", InventoryResponses.orgStocksParameters(query)), token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseOrgStocks(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun orgStock(token: String, warehouseId: Long, orgStockId: Long): GoodsOutResult<OrgStockDetail> =
+        execute(get("$mobileApiUrl/warehouses/$warehouseId/org-stocks/$orgStockId", token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseOrgStock(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun orgStockMovements(
+        token: String,
+        warehouseId: Long,
+        orgStockId: Long,
+        flow: MovementFlow?,
+        page: Int,
+        perPage: Int,
+    ): GoodsOutResult<MovementPage> {
+        val url = urlWith("$mobileApiUrl/warehouses/$warehouseId/org-stocks/$orgStockId/stock-movements", InventoryResponses.movementParameters(flow, page, perPage))
+        return execute(get(url, token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseMovements(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+    }
+
+    override suspend fun writeOrgStock(token: String, warehouseId: Long, orgStockId: Long, write: OrgStockWrite): GoodsOutResult<OrgStockWriteOutcome> {
+        val url = "$mobileApiUrl/${InventoryResponses.orgStockWritePath(warehouseId, orgStockId, write)}"
+        return execute(post(url, InventoryResponses.orgStockWriteBody(write).toString(), bearerToken = token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseOrgStockWrite(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+    }
+
+    override suspend fun families(token: String, warehouseId: Long, query: FamilyQuery): GoodsOutResult<FamilyPage> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/org-stock-families", InventoryResponses.familiesParameters(query)), token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseFamilies(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun familySkos(token: String, warehouseId: Long, familyId: Long, page: Int, perPage: Int): GoodsOutResult<FamilySkoPage> {
+        val url = urlWith("$mobileApiUrl/warehouses/$warehouseId/org-stock-families/$familyId/skos", InventoryResponses.pageParameters(page, perPage))
+        return execute(get(url, token))
+            ?.let { (statusCode, responseBody) -> InventoryResponses.parseFamilySkos(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+    }
+
     private fun urlWith(path: String, parameters: List<Pair<String, String>>): String = path.toHttpUrl().newBuilder()
         .apply { parameters.forEach { (name, value) -> addQueryParameter(name, value) } }
         .build()
@@ -392,6 +487,12 @@ class OkHttpMobileApi(
     private fun get(url: String, bearerToken: String): Request = Request.Builder()
         .url(url)
         .get()
+        .header("Authorization", "Bearer $bearerToken")
+        .build()
+
+    private fun patch(url: String, body: String, bearerToken: String): Request = Request.Builder()
+        .url(url)
+        .patch(body.toRequestBody(jsonMediaType))
         .header("Authorization", "Bearer $bearerToken")
         .build()
 

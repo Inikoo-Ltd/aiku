@@ -20,6 +20,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property \Illuminate\Support\Carbon $first_fetched_at
  * @property \Illuminate\Support\Carbon|null $lost_at
  * @property bool|null $is_new
+ * @property int $visits
+ * @property float $customers
+ * @property float $orders
+ * @property float $revenue
+ * @property string $currency_code
  */
 class SeoReferringDomainResource extends JsonResource
 {
@@ -32,6 +37,11 @@ class SeoReferringDomainResource extends JsonResource
             'referring_domain' => $this->referring_domain,
             'rank'             => $this->rank,
             'backlinks'        => (int) $this->backlinks,
+            'visits'           => (int) $this->visits,
+            'customers'        => round((float) $this->customers, 2),
+            'orders'           => round((float) $this->orders, 2),
+            'revenue'          => round((float) $this->revenue, 2),
+            'currency_code'    => $this->currency_code,
             'is_own_website'   => $this->is_own_website,
             'first_seen'       => $this->first_seen?->toDateString(),
             'lost_at'          => $this->lost_at?->toDateString(),

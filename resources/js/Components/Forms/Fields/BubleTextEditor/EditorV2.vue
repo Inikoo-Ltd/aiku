@@ -26,6 +26,7 @@ import { Youtube } from "@tiptap/extension-youtube"
 import { HorizontalRule } from "@tiptap/extension-horizontal-rule"
 import { Table, TableHeader, TableRow, TableCell } from "@tiptap/extension-table"
 import { TextStyle, Color, FontFamily, FontSize } from '@tiptap/extension-text-style'
+import { formattedClipboardContent, stripPastedFormatting } from './pastedHtml'
 import customLink from '@/Components/Forms/Fields/BubleTextEditor/CustomLink/CustomLinkExtension.js'
 import Highlight from '@tiptap/extension-highlight'
 import UtilsColorPicker from '@/Components/Utils/ColorPicker.vue'
@@ -37,7 +38,7 @@ import Iframe from "@/Components/Forms/Fields/BubleTextEditor/Iframe/IframeExten
 import { CtaButton, CTA_BUTTON_NODE } from "@/Components/Forms/Fields/BubleTextEditor/CtaButton/CtaButtonExtension"
 import TiptapCtaButtonDialog from "@/Components/Forms/Fields/BubleTextEditor/CtaButton/TiptapCtaButtonDialog.vue"
 import { type CtaButtonAlignment, type CtaButtonAttributes, defaultCtaButtonAttributes } from "@/Components/Forms/Fields/BubleTextEditor/CtaButton/ctaButtonLayout"
-import { DEFAULT_EDITOR_TOOLS } from "@/Components/Forms/Fields/BubleTextEditor/editorTools"
+import { DEFAULT_EDITOR_TOOLS, fontSizeInPixels } from "@/Components/Forms/Fields/BubleTextEditor/editorTools"
 
 import {
     faUndo,
@@ -62,7 +63,7 @@ import {
     faPaintBrushAlt,
     faTextSize,
 } from "@far"
-import { faTable, faPalette, faUnlink, faTimes, faEllipsisH, faChevronDown, faFont, faHeading, faBracketsCurly, faSlidersH, faExchange, faTrashAlt, faHandPointer } from "@fal"
+import { faTable, faPalette, faUnlink, faTimes, faEllipsisH, faChevronDown, faFont, faHeading, faBracketsCurly, faSlidersH, faExchange, faTrashAlt, faHandPointer, faPaste } from "@fal"
 import { faEraser, faTint, faTable as fasTable, } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
@@ -97,6 +98,7 @@ const props = withDefaults(defineProps<{
     mergeTags?: Array<{ name: string, value: string }>
     linkUnderline?: boolean
     readyMadeLinks?: ReadyMadeLink[]
+    stripPastedStyles?: boolean
 }>(), {
     editable: true,
     type: 'Bubble',
@@ -161,6 +163,7 @@ const editorInstance = useEditor({
         attributes: {
             class: "editor-class",
         },
+        transformPastedHTML: (html: string) => props.stripPastedStyles ? stripPastedFormatting(html) : html,
     },
     extensions: [
         Paragraph,
@@ -397,6 +400,21 @@ const editorInstance = useEditor({
         emits('update:modelValue', editor.getHTML())
     },
 })
+
+const pasteWithFormattingError = ref<string | null>(null)
+
+const pasteWithFormatting = async () => {
+    pasteWithFormattingError.value = null
+    try {
+        const html = await formattedClipboardContent(await navigator.clipboard.read())
+        const content = html ?? await navigator.clipboard.readText()
+        if (content) {
+            editorInstance.value?.chain().focus().insertContent(content).run()
+        }
+    } catch {
+        pasteWithFormattingError.value = ctrans('The browser did not allow reading the clipboard. Allow clipboard access for this site, or paste with Ctrl+V to paste without formatting.')
+    }
+}
 
 const keyLinkCustomDialog = ref(uniqueId('link-custom-dialog-'))
 function openLinkDialogCustom() {
@@ -733,12 +751,6 @@ const tableBorderWidthOptions = [
     }
 ]
 
-const convertRemToPx = (remString) => {
-    if (!remString || typeof remString !== 'string') return ''
-    const remValue = parseFloat(remString)
-    return isNaN(remValue) ? '' : Math.round(remValue * 16).toString()
-}
-
 const fontSizeOptions = ['8', '9', '12', '14', '16', '18', '20', '24', '28', '36', '44', '52', '64']
 
 const toRemFontSize = (fontSize: string) => (parseInt(fontSize) / 16).toFixed(4) + 'rem'
@@ -1014,7 +1026,7 @@ onMounted(async () => {
                                     <FontAwesomeIcon :icon="faTextSize" class="h-4 w-4" fixed-width />
                                     <span v-if="editorInstance?.getAttributes('textStyle').fontSize"
                                         class="text-xs font-semibold">
-                                        {{ convertRemToPx(editorInstance?.getAttributes('textStyle').fontSize) }}
+                                        {{ fontSizeInPixels(editorInstance?.getAttributes('textStyle').fontSize) }}
                                     </span>
                                     <FontAwesomeIcon :icon="faChevronDown" class="h-2.5 w-2.5 opacity-60" fixed-width />
                                 </template>
@@ -1202,6 +1214,10 @@ onMounted(async () => {
                             <TiptapToolbarButton :label="ctrans('Clear formatting')"
                                 @click="editorInstance?.chain().focus().unsetAllMarks().run()">
                                 <FontAwesomeIcon :icon="faEraser" class="h-4 w-4" fixed-width />
+                            </TiptapToolbarButton>
+                            <TiptapToolbarButton v-if="stripPastedStyles" :label="ctrans('Paste with formatting')"
+                                @click="pasteWithFormatting">
+                                <FontAwesomeIcon :icon="faPaste" class="h-4 w-4" fixed-width />
                             </TiptapToolbarButton>
                         </TiptapToolbarGroup>
 
@@ -1489,6 +1505,7 @@ onMounted(async () => {
             <slot name="editor-content" :editor="editorInstance" :onEditorClick="onEditorClick">
                 <EditorContent @click.stop="onEditorClick" :editor="editorInstance" />
             </slot>
+            <p v-if="pasteWithFormattingError" class="mt-1 text-xs text-red-500" role="alert">{{ pasteWithFormattingError }}</p>
         </div>
 
         <TiptapTableDialog

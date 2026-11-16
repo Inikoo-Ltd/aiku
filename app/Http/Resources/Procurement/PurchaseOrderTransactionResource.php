@@ -327,8 +327,8 @@ class PurchaseOrderTransactionResource extends JsonResource
      */
     private function containersOfLine(PurchaseOrderTransaction $transaction, $request, bool $canRemove): array
     {
-        $viewingOrganisationId = $this->viewingOrganisationId($request);
-        $isAgentViewing        = $viewingOrganisationId !== null && $viewingOrganisationId !== $transaction->organisation_id;
+        $viewingOrganisation = $this->viewingOrganisation($request);
+        $isAgentViewing      = $viewingOrganisation instanceof Organisation && $viewingOrganisation->id !== $transaction->organisation_id;
 
         return collect(json_decode($transaction->getAttribute('agent_containers') ?? '[]', true))
             ->map(fn (array $container) => [
@@ -352,10 +352,15 @@ class PurchaseOrderTransactionResource extends JsonResource
 
     private function viewingOrganisationId($request): ?int
     {
+        return $this->viewingOrganisation($request)?->id;
+    }
+
+    private function viewingOrganisation($request): ?Organisation
+    {
         $route        = $request->route();
         $organisation = $route?->hasParameters() ? $route->parameter('organisation') : null;
 
-        return $organisation instanceof Organisation ? $organisation->id : null;
+        return $organisation instanceof Organisation ? $organisation : null;
     }
 
     /**

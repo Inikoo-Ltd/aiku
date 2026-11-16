@@ -41,7 +41,11 @@ use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\Mailshot;
+use App\Models\Comms\Outbox;
 use App\Models\Comms\MailshotRecipient;
 use Illuminate\Support\Str;
 use App\Models\CRM\Customer;
@@ -136,6 +140,8 @@ class GetShoppingAssistantTools
     public const array ONLY_FOR_DROPSHIPPING = ['products_not_in_store'];
 
     private const int MAX_NOT_IN_STORE = 10;
+
+    public const int MAX_DETAILS = 20;
 
     public const int PRIORITY_AFTER_HOURS = 24;
 
@@ -278,7 +284,8 @@ class GetShoppingAssistantTools
                 'add_to_basket',
                 'Put products in the customer\'s basket, one of each, only when the customer asks you to. Without product_ids it adds every product of your previous answer. Only products shown in this conversation, or returned by a tool in this same turn, can be added: when the customer names a product to add, search for it first, then add it by its id. Returns the names added, already in the basket and those that could not be added. Returns no products.',
                 [
-                    'product_ids' => ['type' => 'array', 'items' => ['type' => 'integer'], 'maxItems' => self::MAX_PER_GROUP * 2, 'description' => 'Ids of shown products to add, when the customer asked for only some of them.'],
+                    'product_ids'     => ['type' => 'array', 'items' => ['type' => 'integer'], 'maxItems' => self::MAX_PER_GROUP * 2, 'description' => 'Ids of shown products to add, when the customer asked for only some of them.'],
+                    'same_quantities' => ['type' => 'boolean', 'description' => 'True when the customer wants to reorder: products they ordered before go in at the quantity of their last order.'],
                 ]
             ),
             $this->tool(
@@ -355,6 +362,23 @@ class GetShoppingAssistantTools
                     'query' => ['type' => 'string', 'description' => 'The product the customer asked about, by name or code, in their words.'],
                 ],
                 ['query']
+            ),
+            $this->tool(
+                'product_details',
+                'The code, barcode, price, RRP and stock of products, as lines the system writes under your reply. Use it whenever the customer asks for codes, barcodes, prices, RRP or how many are in stock, or wants products as a list or table. Pass the ids of products shown in this conversation or returned by a tool in this turn. You get no figures. Returns no products.',
+                [
+                    'product_ids' => ['type' => 'array', 'items' => ['type' => 'integer'], 'maxItems' => self::MAX_DETAILS, 'description' => 'Ids of the products to list.'],
+                ],
+                ['product_ids']
+            ),
+            $this->tool(
+                'notify_when_back_in_stock',
+                'Email the customer the moment an out of stock product is back in stock, through the shop\'s back in stock email. Offer it whenever a product they want is out of stock and call it only after they say yes. Returns whether the reminder was set. Returns no products.',
+                [
+                    'query'           => ['type' => 'string', 'description' => 'The out of stock product, by name or code, as restock_information or search_products named it.'],
+                    'customer_agreed' => ['type' => 'boolean', 'description' => 'True only when the customer said yes to an email when it is back.'],
+                ],
+                ['query', 'customer_agreed']
             ),
             $this->tool(
                 'ask_purchasing_team',
@@ -458,6 +482,8 @@ class GetShoppingAssistantTools
                 'big_order_lead'                 => $this->bigOrderLead($conversation, $arguments),
                 'restock_information'            => $this->restockInformation($customer, $arguments, $conversation->language_code),
                 'ask_purchasing_team'            => $this->askPurchasingTeam($conversation, $customer, $arguments),
+                'notify_when_back_in_stock'      => $this->notifyWhenBackInStock($customer, $arguments),
+                'product_details'                => $this->productDetails($conversation, $customer, $arguments, $foundProductIds),
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
                 'products_not_in_store'          => $this->productsNotInStore($customer, $conversation->language_code),
                 'order_status'                   => $this->orderStatus($customer, $arguments, $conversation->language_code),
@@ -545,6 +571,12 @@ class GetShoppingAssistantTools
             isset($familyIds[$item['id']]) => $item + ['family_code_match' => true],
             default                        => $item,
         }, $result['content']['products']);
+        $orderedBefore = self::isDropshipping($customer) ? collect() : $this->lastOrdered($customer, array_column($result['content']['products'], 'id'));
+        if ($orderedBefore->isNotEmpty()) {
+            $result['content']['products'] = array_map(fn (array $item) => isset($orderedBefore[$item['id']]) ? $item + ['ordered_before' => $orderedBefore[$item['id']]['month']] : $item, $result['content']['products']);
+            $result['products']            = array_map(fn (array $found) => isset($orderedBefore[$found['id']]) ? ['id' => $found['id'], 'reason_code' => 'used_to_order', 'reason' => $this->reasonText('used_to_order', $customer, $locale)] : $found, $result['products']);
+            $result['content']['ordered_before_note'] = 'Products with ordered_before are ones this customer has bought (year and month of the last order). When they want to reorder, add them with add_to_basket and same_quantities true: each goes in at the quantity of their last order.';
+        }
         if ($byFamily['families']) {
             $result['content']['matched_families'] = $byFamily['families'];
         }
@@ -893,7 +925,8 @@ class GetShoppingAssistantTools
             : collect();
         $toAdd    = $ids->diff($inBasket)->values();
 
-        $lines = $toAdd->isEmpty() ? collect() : collect(StoreEcomBasketTransactions::make()->handle($customer, $toAdd->map(fn (int $id) => ['product_id' => $id, 'quantity' => 1])->all())['lines']);
+        $lastOrdered = filter_var($arguments['same_quantities'] ?? false, FILTER_VALIDATE_BOOLEAN) ? $this->lastOrdered($customer, $toAdd->all()) : collect();
+        $lines       = $toAdd->isEmpty() ? collect() : collect(StoreEcomBasketTransactions::make()->handle($customer, $toAdd->map(fn (int $id) => ['product_id' => $id, 'quantity' => $lastOrdered[$id]['quantity'] ?? 1])->all())['lines']);
         $added = $lines->where('status', 'added');
 
         if ($added->isNotEmpty()) {
@@ -912,7 +945,7 @@ class GetShoppingAssistantTools
                 'added'             => $namesOf($added->pluck('product_id')),
                 'already_in_basket' => $namesOf($inBasket),
                 'could_not_add'     => $namesOf($lines->where('status', 'failed')->pluck('product_id')),
-                'note'              => 'One of each was added. Tell the customer what happened in one or two sentences, without counts; they set quantities on the product cards or in the basket.',
+                'note'              => ($lastOrdered->isNotEmpty() ? 'Products they ordered before went in at the quantity of their last order, the rest one of each.' : 'One of each was added.').' Tell the customer what happened in one or two sentences, without counts; they can change quantities on the product cards or in the basket.',
             ],
             'products' => [],
             'error'    => null,
@@ -1597,6 +1630,7 @@ class GetShoppingAssistantTools
             'content'  => [
                 'out_of_stock_products'    => $items,
                 'purchasing_follow_up'     => $followUp,
+                'can_email_when_back'      => $items !== [] && $this->sendsBackInStockEmails($customer),
                 'note'                     => match (true) {
                     $items === []                                                   => 'No out of stock product matches. If they named a product, it may be in stock: check with search_products.',
                     $followUp                                                       => 'Sentences with the expected periods are added under your reply: never repeat their dates. For a product with no_reliable_date, say we do not have a reliable date and ask whether they would like our purchasing team to get back to them by email; call ask_purchasing_team only after they say yes. Never guess a date.',
@@ -1612,6 +1646,115 @@ class GetShoppingAssistantTools
         }
 
         return $result;
+    }
+
+    /**
+     * Codes, barcodes, prices, RRP and stock written by code under the reply, one line a product, so a
+     * customer who wants a list ("5 best sellers with codes, stock, price and RRP") gets one without
+     * the model writing a figure: it was refusing ("I can't give codes, stock levels, prices").
+     *
+     * @param  array<string, mixed>  $arguments
+     * @param  array<int, int>  $foundProductIds
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
+     */
+    private function productDetails(ShoppingAssistantConversation $conversation, Customer $customer, array $arguments, array $foundProductIds): array
+    {
+        $ids   = collect(is_array($arguments['product_ids'] ?? null) ? $arguments['product_ids'] : [])->filter(fn ($id) => is_numeric($id))->map(fn ($id) => (int) $id);
+        $shown = $conversation->events()->where('type', ShoppingAssistantEventTypeEnum::SHOWN)->pluck('product_id');
+        $ids   = $ids->intersect($shown->merge($foundProductIds))->unique()->take(self::MAX_DETAILS)->values();
+
+        if ($ids->isEmpty()) {
+            return $this->error('No product shown in this conversation matches. Show products first, then list them.');
+        }
+
+        $locale   = $conversation->language_code;
+        $currency = $customer->shop->currency->code;
+        $money    = fn ($amount) => Number::currency((float) $amount, $currency, $locale);
+        $products = Product::where('shop_id', $customer->shop_id)->whereIn('id', $ids)->get()->sortBy(fn (Product $product) => $ids->search($product->id))->values();
+
+        $lines = $products->map(fn (Product $product) => implode(' · ', array_filter([
+            $product->code,
+            $product->name,
+            $money($product->price),
+            (float) $product->rrp > 0 ? __('RRP :amount', ['amount' => $money($product->rrp)], $locale) : null,
+            filled($product->barcode) ? __('Barcode :barcode', ['barcode' => $product->barcode], $locale) : null,
+            $product->available_quantity > 0 ? __(':quantity in stock', ['quantity' => (int) $product->available_quantity], $locale) : __('Out of stock', [], $locale),
+        ])));
+
+        return [
+            'content' => ['listed' => $products->pluck('name')->all(), 'note' => 'A line for each product (code, name, price before tax, RRP, barcode, stock) is added under your reply. Introduce it in one sentence and write no figure yourself.'],
+            'products' => [],
+            'error'    => null,
+            'fact'     => $lines->implode("\n"),
+        ];
+    }
+
+    /**
+     * The shop's own back in stock reminder, the one the bell on a product card sets: the customer is
+     * emailed by the shop's out of stock notification run when the product is back.
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string}
+     */
+    private function notifyWhenBackInStock(Customer $customer, array $arguments): array
+    {
+        if (!filter_var($arguments['customer_agreed'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            return $this->error('Ask the customer first whether they want an email when it is back; call this only after they say yes.');
+        }
+
+        if (!$this->sendsBackInStockEmails($customer)) {
+            return $this->error('This shop sends no back in stock emails: do not offer one.');
+        }
+
+        $query   = is_string($arguments['query'] ?? null) ? trim($arguments['query']) : '';
+        $product = $this->outOfStockMatches($customer, $query)->first(fn (Product $product) => $product->state !== ProductStateEnum::DISCONTINUED);
+        if (!$product) {
+            return $this->error('No out of stock product matches that; it may be in stock or discontinued. Check with search_products.');
+        }
+
+        StoreBackInStockReminder::make()->action($customer, $product, []);
+
+        return ['content' => ['reminder_set' => true, 'product' => $product->name, 'note' => 'Say in one sentence that we will email them as soon as it is back in stock, without promising when.'], 'products' => [], 'error' => null];
+    }
+
+    /**
+     * The year and month and the quantity of the last placed order line of each of these products for
+     * this customer: what "reorder my usual" puts back in the basket.
+     *
+     * @param  array<int, int>  $productIds
+     *
+     * @return Collection<int, array{month: string, quantity: int}>
+     */
+    private function lastOrdered(Customer $customer, array $productIds): Collection
+    {
+        if ($productIds === []) {
+            return collect();
+        }
+
+        return DB::table('transactions')
+            ->join('orders', 'orders.id', '=', 'transactions.order_id')
+            ->where('orders.customer_id', $customer->id)
+            ->whereNotIn('orders.state', [OrderStateEnum::CREATING->value, OrderStateEnum::CANCELLED->value])
+            ->whereNotNull('orders.submitted_at')
+            ->where('transactions.model_type', 'Product')
+            ->whereIn('transactions.model_id', $productIds)
+            ->where('transactions.is_gift', false)
+            ->where('transactions.quantity_ordered', '>', 0)
+            ->orderByDesc('orders.submitted_at')
+            ->orderByDesc('transactions.id')
+            ->get(['transactions.model_id', 'transactions.quantity_ordered', 'orders.submitted_at'])
+            ->unique('model_id')
+            ->mapWithKeys(fn (object $line) => [(int) $line->model_id => ['month' => Carbon::parse($line->submitted_at)->format('Y-m'), 'quantity' => max(1, (int) round((float) $line->quantity_ordered))]]);
+    }
+
+    private function sendsBackInStockEmails(Customer $customer): bool
+    {
+        return Outbox::where('shop_id', $customer->shop_id)
+            ->where('code', OutboxCodeEnum::OOS_NOTIFICATION)
+            ->where('state', OutboxStateEnum::ACTIVE)
+            ->exists();
     }
 
     /**

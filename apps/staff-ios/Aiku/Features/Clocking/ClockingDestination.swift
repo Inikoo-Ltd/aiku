@@ -8,6 +8,7 @@ struct ClockingDestination: View {
         case .clocking: ClockingView()
         case .timesheets: ClockingTimesheetsView()
         case .leave: ClockingLeaveView()
+        case .adjustments: ClockingAdjustmentsView()
         case .overtime: ClockingOvertimeView()
         case .calendar: ClockingCalendarView()
         case .day(let date): ClockingDayView(date: date)

@@ -381,7 +381,7 @@ private fun NoteSheets(
         )
         NoteSheet.Picker -> PickerSheet(
             note = note,
-            assign = note.action(NoteActionKey.ASSIGN_PICKER),
+            assign = note.action(NoteActionKey.ASSIGN_PICKER) ?: note.action(NoteActionKey.CHANGE_PICKER),
             remove = note.action(NoteActionKey.REMOVE_PICKER),
             pickers = state.pickers,
             isWorking = isWorking,
@@ -549,7 +549,7 @@ private fun TakeOverNotice(note: DeliveryNote) {
     if (note.action(NoteActionKey.TAKE_OVER) == null) {
         return
     }
-    if (note.stage == DeliveryNoteStage.Packing) {
+    if (note.stage == DeliveryNoteStage.Packing || note.stage == DeliveryNoteStage.Packed) {
         (note.packer ?: note.picker)?.name?.takeIf { it.isNotBlank() }?.let { packer ->
             AssignedElsewhereCard(title = stringResource(R.string.goodsout_packed_by, packer), body = stringResource(R.string.goodsout_packing_elsewhere))
         }
@@ -686,8 +686,12 @@ private fun PeopleAndEquipment(note: DeliveryNote, onAction: (DeliveryNoteAction
     val changeLabel = stringResource(R.string.goodsout_change)
     val picker = personName(note.picker)
     val packer = personName(note.packer)
-    val pickerAction = note.action(NoteActionKey.ASSIGN_PICKER) ?: note.action(NoteActionKey.REMOVE_PICKER)
+    val pickerAction = note.action(NoteActionKey.ASSIGN_PICKER) ?: note.action(NoteActionKey.REMOVE_PICKER) ?: note.action(NoteActionKey.CHANGE_PICKER)
     val packerAction = note.action(NoteActionKey.CHANGE_PACKER)
+    val isPackingStage = stage == DeliveryNoteStage.Packing || stage == DeliveryNoteStage.Packed
+    val takeOver = note.action(NoteActionKey.TAKE_OVER)
+    val unlockLabel = stringResource(R.string.goodsout_unlock)
+    val unlockedChip = if (note.isTakenOver) stringResource(R.string.goodsout_unlocked_for_you) else null
     val trolleyAction = note.action(NoteActionKey.CHANGE_TROLLEY)
     val bayAction = note.action(NoteActionKey.CHANGE_PICKED_BAY)
     val showPicker = picker != null || stage.isPicking || pickerAction != null
@@ -701,8 +705,11 @@ private fun PeopleAndEquipment(note: DeliveryNote, onAction: (DeliveryNoteAction
                 icon = R.drawable.ic_ui_person,
                 title = picker ?: stringResource(R.string.goodsout_no_picker),
                 subtitle = stringResource(R.string.goodsout_role_picker),
+                chip = unlockedChip?.takeIf { !isPackingStage },
                 actionLabel = pickerAction?.let { changeLabel },
                 onAction = pickerAction?.let { action -> { onAction(action) } },
+                secondaryActionLabel = takeOver?.takeIf { !isPackingStage }?.let { unlockLabel },
+                onSecondaryAction = takeOver?.takeIf { !isPackingStage }?.let { action -> { onAction(action) } },
             )
         }
     }
@@ -712,8 +719,11 @@ private fun PeopleAndEquipment(note: DeliveryNote, onAction: (DeliveryNoteAction
                 icon = R.drawable.ic_ui_person,
                 title = packer ?: picker?.let { stringResource(R.string.goodsout_packer_same_as, it) } ?: stringResource(R.string.goodsout_no_packer),
                 subtitle = stringResource(R.string.goodsout_role_packer),
+                chip = unlockedChip?.takeIf { isPackingStage },
                 actionLabel = packerAction?.let { changeLabel },
                 onAction = packerAction?.let { action -> { onAction(action) } },
+                secondaryActionLabel = takeOver?.takeIf { isPackingStage }?.let { unlockLabel },
+                onSecondaryAction = takeOver?.takeIf { isPackingStage }?.let { action -> { onAction(action) } },
             )
         }
     }

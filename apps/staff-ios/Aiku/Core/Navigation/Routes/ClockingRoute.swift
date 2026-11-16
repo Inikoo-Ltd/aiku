@@ -4,6 +4,7 @@ enum ClockingRoute: Hashable, Sendable {
     case clocking
     case timesheets
     case leave
+    case adjustments
     case overtime
     case calendar
     case day(date: String)

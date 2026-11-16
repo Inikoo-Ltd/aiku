@@ -123,6 +123,7 @@ class GetMobileDeliveryNote
             'waiting_crm_count'       => (int) $header['number_items_waiting_crm'],
             'is_editable'             => $isEditable,
             'can_handle'              => $canHandle,
+            'is_taken_over'           => $canHandle && self::deliveryNoteHandlerId($deliveryNote) !== $user->id,
             'allow_actions'           => $isEditable && $canHandle,
             'can_edit_contact'        => $deliveryNote->canBeWorkedOnBy($user),
             'available_actions'       => $availableActions,

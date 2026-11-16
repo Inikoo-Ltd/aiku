@@ -38,7 +38,7 @@ class ProjectOrganisationStockOuts
 
     public const int DAYS = 56;
 
-    private const float BAND_Z = 1.2816;
+    public const float BAND_Z = 1.2816;
 
     public const int REORDER_DAYS = 30;
 
@@ -110,7 +110,7 @@ class ProjectOrganisationStockOuts
      *
      * @return array{0: float, 1: float}
      */
-    private function dailyDemand(object $sko, Carbon $today): array
+    public static function dailyDemand(object $sko, Carbon $today): array
     {
         $weeks = $sko->weeks ? json_decode($sko->weeks, true) : null;
         if ($sko->forecast_source === 'timesfm' && is_array($weeks) && $weeks && $sko->forecast_from && Carbon::parse($sko->forecast_from)->gte($today->copy()->subDay())) {

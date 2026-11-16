@@ -9,6 +9,7 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
+use App\Helpers\DimensionsFormatter;
 use App\Models\SupplyChain\SupplierProduct;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -40,7 +41,7 @@ class GetSupplierProductBarcodes
         ];
 
         return [
-            $card('unit', 'Unit EAN13', $tradeUnit?->barcode, 1, $tradeUnit?->marketing_weight, $tradeUnit?->marketing_dimensions),
+            $card('unit', 'Unit EAN13', $tradeUnit?->barcode, 1, $tradeUnit?->marketing_weight, $tradeUnit?->marketing_dimensions ? DimensionsFormatter::fromMetres($tradeUnit->marketing_dimensions) : null),
             $card('sko', 'SKO (outer packing, CODE 128)', null, $supplierProduct->units_per_pack ? (float) $supplierProduct->units_per_pack : null),
             $card('carton', 'Carton (supplier outer box, same in every organisation)', null, $supplierProduct->units_per_carton ? (float) $supplierProduct->units_per_carton : null),
         ];

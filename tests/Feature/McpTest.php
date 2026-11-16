@@ -2408,6 +2408,13 @@ describe('competitor match review tool', function () {
             ->and($typed->units_verified)->toBeFalse()
             ->and($typed->check_note)->toBe('The same box we sell as one unit.');
     });
+
+    test('our size is shown in its display unit, not as the stored metres', function () {
+        $this->matchMasterAsset->updateQuietly(['marketing_dimensions' => ['type' => 'rectangular', 'units' => 'cm', 'l' => 0.1, 'w' => 0.05, 'h' => 0.02]]);
+        ($this->newMatch)(7.8);
+
+        expect(($this->queued)()->first()['ours']['size'])->toBe('10x5x2 (cm)');
+    });
 });
 
 describe('master prices tool', function () {

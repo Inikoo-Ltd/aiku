@@ -26,13 +26,15 @@ class UpdateLocationOrgStock extends OrgAction
     use WithActionUpdate;
     use WithLocationOrgStockActionAuthorisation;
 
-    private LocationOrgStock $locationOrgStock;
-
     private bool $fromRequest = false;
 
 
     public function handle(LocationOrgStock $locationOrgStock, array $modelData): LocationOrgStock
     {
+        if (Arr::get($modelData, 'type') == LocationStockTypeEnum::PICKING->value) {
+            $this->turnOtherPickingLocationsIntoStoring($locationOrgStock);
+        }
+
 
         $dropshippingPriority = Arr::pull($modelData, 'set_as_priority_dropshipping');
         if ($dropshippingPriority) {
@@ -81,15 +83,13 @@ class UpdateLocationOrgStock extends OrgAction
         return $locationOrgStock;
     }
 
-    public function prepareForValidation(): void
+    private function turnOtherPickingLocationsIntoStoring(LocationOrgStock $locationOrgStock): void
     {
-        if ($this->has('type') && $this->get('type') == LocationStockTypeEnum::PICKING->value) {
-            foreach (
-                LocationOrgStock::where('type', LocationStockTypeEnum::PICKING->value)->where('org_stock_id', $this->locationOrgStock->org_stock_id)
-                    ->where('id', '!=', $this->locationOrgStock->id)->get() as $locationOrgStock
-            ) {
-                UpdateLocationOrgStock::make()->action($locationOrgStock, ['type' => LocationStockTypeEnum::STORING->value]);
-            }
+        foreach (
+            LocationOrgStock::where('type', LocationStockTypeEnum::PICKING->value)->where('org_stock_id', $locationOrgStock->org_stock_id)
+                ->where('id', '!=', $locationOrgStock->id)->get() as $otherLocationOrgStock
+        ) {
+            UpdateLocationOrgStock::make()->action($otherLocationOrgStock, ['type' => LocationStockTypeEnum::STORING->value]);
         }
     }
 
@@ -131,7 +131,6 @@ class UpdateLocationOrgStock extends OrgAction
         $this->hydratorsDelay   = $hydratorsDelay;
         $this->strict           = $strict;
         $this->asAction         = true;
-        $this->locationOrgStock = $locationOrgStock;
         $this->initialisation($locationOrgStock->organisation, $modelData);
 
         return $this->handle($locationOrgStock, $this->validatedData);
@@ -140,8 +139,6 @@ class UpdateLocationOrgStock extends OrgAction
     public function asController(LocationOrgStock $locationOrgStock, ActionRequest $request): LocationOrgStock
     {
         $this->fromRequest      = true;
-        $this->asAction         = true;
-        $this->locationOrgStock = $locationOrgStock;
         $this->initialisation($locationOrgStock->organisation, $request);
 
         return $this->handle($locationOrgStock, $this->validatedData);

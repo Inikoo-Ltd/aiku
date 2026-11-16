@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\Helpers\Images\ShortenImgProxyUrls;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Helpers\DimensionsFormatter;
 use App\Helpers\ImgProxy\Image;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -69,7 +70,7 @@ class ProductsExport implements FromArray, ShouldAutoSize, WithHeadings
             'currency'              => ['heading' => 'Currency', 'select' => 'currencies.code'],
             'marketing_weight'      => ['heading' => 'Unit weight (marketing)', 'select' => 'products.marketing_weight'],
             'gross_weight'          => ['heading' => 'Gross weight', 'select' => 'products.gross_weight'],
-            'marketing_dimensions'  => ['heading' => 'Unit dimensions', 'select' => self::dimensionsExpression()],
+            'marketing_dimensions'  => ['heading' => 'Unit dimensions', 'select' => 'products.marketing_dimensions'],
             'marketing_ingredients' => ['heading' => 'Materials/Ingredients', 'select' => 'products.marketing_ingredients'],
             'description_title'     => ['heading' => 'Webpage description title', 'select' => 'products.description_title'],
             'description'           => ['heading' => 'Webpage description (html)', 'select' => 'products.description'],
@@ -128,18 +129,6 @@ class ProductsExport implements FromArray, ShouldAutoSize, WithHeadings
             .'JOIN brands ON brands.id = model_has_brands.brand_id '
             ."WHERE model_has_brands.model_type = 'Product' "
             .'AND model_has_brands.model_id = products.id)';
-    }
-
-    protected static function dimensionsExpression(): string
-    {
-        return "NULLIF(CONCAT_WS(' ', "
-            ."NULLIF(CONCAT_WS(' x ', "
-            ."products.marketing_dimensions->>'l', "
-            ."products.marketing_dimensions->>'w', "
-            ."products.marketing_dimensions->>'h'"
-            ."), ''), "
-            ."products.marketing_dimensions->>'units'"
-            ."), '')";
     }
 
     protected static function imagesExpression(): string
@@ -249,6 +238,10 @@ class ProductsExport implements FromArray, ShouldAutoSize, WithHeadings
      */
     public function mapRow(object $row): array
     {
+        if (property_exists($row, 'marketing_dimensions')) {
+            $row->marketing_dimensions = $row->marketing_dimensions ? DimensionsFormatter::make()->dimensions($row->marketing_dimensions) : null;
+        }
+
         if (!$this->imagesAsJpg) {
             return array_values((array) $row);
         }

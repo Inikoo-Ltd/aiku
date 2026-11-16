@@ -9,6 +9,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { shoppingAssistantConversationKey } from "@/Iris/Composables/useShoppingAssistant"
+import MerlinThinking from "@/Iris/Components/MerlinThinking.vue"
 
 type Card = { id: number, name: string, url?: string | null, web_images?: any }
 type Message = {
@@ -258,10 +259,7 @@ onBeforeUnmount(stopPolling)
                 </div>
             </template>
 
-            <div v-if="isPending" class="flex items-center gap-2 text-xs text-gray-500">
-                <LoadingIcon />
-                {{ ctrans(":name is thinking…", { name: assistantName }) }}
-            </div>
+            <MerlinThinking v-if="isPending" :name="assistantName" :expected-seconds="layout?.iris?.shopping_assistant?.expected_seconds" />
             <p v-if="errorMessage" class="text-xs text-red-600">{{ errorMessage }}</p>
         </div>
 

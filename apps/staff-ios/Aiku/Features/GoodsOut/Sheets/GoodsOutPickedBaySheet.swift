@@ -21,7 +21,17 @@ struct GoodsOutPickedBaySheet: View {
 
     var body: some View {
         SheetScaffold(title: "Select picked bay", subtitle: "Delivery note \(note.reference) · leave the picked goods here for packing") {
-            ForEach(store.bayChoices(for: note.reference)) { choice in
+            let choices = store.bayChoices(for: note.reference)
+            if let error = store.resourcesError, choices.isEmpty {
+                GoodsOutLoadProblem(title: "Couldn’t load picked bays", message: error) {
+                    Task { await store.loadPickedBays() }
+                }
+            } else if store.isRemote, store.isLoadingResources, choices.isEmpty {
+                GoodsOutSkeletonCard(rows: 2)
+            } else if store.isRemote, choices.isEmpty {
+                HelperText("This warehouse has no picked bays.")
+            }
+            ForEach(choices) { choice in
                 RadioCard(choice.title, subtitle: choice.subtitle, isSelected: selected == choice.id) {
                     selected = choice.id
                 }
@@ -32,6 +42,12 @@ struct GoodsOutPickedBaySheet: View {
                 router.open(DispatchRoute.pickedBays)
             }
         } footer: {
+            if store.isRemote {
+                AikuButton(primaryTitle, isLoading: store.isWorking(on: note.reference)) {
+                    sendRemote()
+                }
+                .accessibilityIdentifier("goodsOut.confirmPickedBay")
+            } else {
             AikuButton(primaryTitle) {
                 guard let bay = selected else { return }
                 if setsPicked {
@@ -54,12 +70,36 @@ struct GoodsOutPickedBaySheet: View {
             }
             .disabled(selected == nil)
             .accessibilityIdentifier("goodsOut.confirmPickedBay")
+            }
             AikuButton("Cancel", kind: .tertiary, action: close)
+        }
+        .task {
+            guard store.isRemote else { return }
+            await store.loadPickedBays()
+            let choices = store.bayChoices(for: note.reference)
+            if selected == nil || !choices.contains(where: { $0.id == selected }) {
+                selected = note.pickedBay.flatMap { bay in choices.first { $0.id == bay }?.id } ?? choices.first?.id
+            }
+        }
+    }
+
+    private func sendRemote() {
+        let bayID = store.pickedBayID(named: selected)
+        let reference = note.reference
+        let action: GoodsOutNoteAction = setsPicked ? .setAsPicked(pickedBayID: bayID) : .changePickedBay(pickedBayID: bayID)
+        let fallback = setsPicked ? "\(reference) set as picked" : "Picked goods moved to \(selected ?? "no bay")"
+        GoodsOutRun.action(action, on: reference, fallback: fallback, toasts: toasts) {
+            close()
+            if setsPicked, let updated = store.note(reference) {
+                onDone?(updated)
+            }
         }
     }
 
     private var primaryTitle: String {
-        let bay = selected ?? "bay"
+        guard let bay = selected else {
+            return setsPicked ? "Set as picked" : "No picked bay"
+        }
         return setsPicked ? "Set as picked · \(bay)" : "Move to \(bay)"
     }
 }

@@ -4,6 +4,7 @@ enum GoodsOutRoute: Hashable, Sendable {
     case backlog
     case deliveryNotes
     case deliveryNote(reference: String)
+    case deliveryNoteID(id: Int)
     case fastPicking(reference: String)
     case packingQueue
     case scanToPick(reference: String)

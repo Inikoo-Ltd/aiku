@@ -98,9 +98,10 @@ class MoveOrgStockToMultipleLocations extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(LocationOrgStock $sourceLocationOrgStock, array $modelData): LocationOrgStock
+    public function action(LocationOrgStock $sourceLocationOrgStock, array $modelData, ?User $user = null): LocationOrgStock
     {
         $this->asAction               = true;
+        $this->user                   = $user;
         $this->sourceLocationOrgStock = $sourceLocationOrgStock;
         $this->initialisation($sourceLocationOrgStock->organisation, $modelData);
 

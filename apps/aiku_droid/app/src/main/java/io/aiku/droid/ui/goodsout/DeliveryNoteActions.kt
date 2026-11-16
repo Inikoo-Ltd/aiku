@@ -62,6 +62,7 @@ private val footerActionKeys = listOf(
 private val menuActionKeys = listOf(
     NoteActionKey.ASSIGN_PICKER,
     NoteActionKey.REMOVE_PICKER,
+    NoteActionKey.CHANGE_PICKER,
     NoteActionKey.CHANGE_PACKER,
     NoteActionKey.CHANGE_TROLLEY,
     NoteActionKey.CHANGE_PICKED_BAY,
@@ -72,7 +73,9 @@ private val menuActionKeys = listOf(
 )
 
 internal val DeliveryNote.footerActions: List<DeliveryNoteAction>
-    get() = footerActionKeys.mapNotNull(::action).filterNot { it.key == NoteActionKey.ADD_SHIPMENT && shipments.isNotEmpty() }
+    get() = footerActionKeys.mapNotNull(::action).filterNot {
+        (it.key == NoteActionKey.ADD_SHIPMENT && shipments.isNotEmpty()) || (it.key == NoteActionKey.TAKE_OVER && stage == DeliveryNoteStage.Packed)
+    }
 
 internal val DeliveryNote.menuActions: List<DeliveryNoteAction> get() = menuActionKeys.mapNotNull(::action)
 
@@ -110,7 +113,7 @@ internal sealed interface NoteSheet {
 internal fun DeliveryNoteAction.sheet(): NoteSheet = when (key) {
     NoteActionKey.START_PICKING, NoteActionKey.CHANGE_TROLLEY -> NoteSheet.Trolley(this)
     NoteActionKey.SET_AS_PICKED, NoteActionKey.CHANGE_PICKED_BAY -> NoteSheet.PickedBay(this)
-    NoteActionKey.ASSIGN_PICKER, NoteActionKey.REMOVE_PICKER -> NoteSheet.Picker
+    NoteActionKey.ASSIGN_PICKER, NoteActionKey.REMOVE_PICKER, NoteActionKey.CHANGE_PICKER -> NoteSheet.Picker
     NoteActionKey.CHANGE_PACKER -> NoteSheet.Packer(this)
     NoteActionKey.CANCEL -> NoteSheet.Cancel(this)
     NoteActionKey.EDIT_DELIVERY_ADDRESS -> NoteSheet.Address(this)
@@ -231,7 +234,7 @@ internal fun ActionConfirmSheet(
 
 @Composable
 internal fun TakeOverSheet(note: DeliveryNote, action: DeliveryNoteAction, isWorking: Boolean, problem: String?, onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    val isPacking = note.stage == DeliveryNoteStage.Packing
+    val isPacking = note.stage == DeliveryNoteStage.Packing || note.stage == DeliveryNoteStage.Packed
     val handler = (if (isPacking) note.packer ?: note.picker else note.picker)?.name?.takeIf { it.isNotBlank() }
     val subtitle = when {
         handler == null -> stringResource(if (isPacking) R.string.goodsout_no_packer else R.string.goodsout_no_picker)

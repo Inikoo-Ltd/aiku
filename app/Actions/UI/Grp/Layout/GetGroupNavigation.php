@@ -133,10 +133,18 @@ class GetGroupNavigation
                 'icon'    => ['fal', 'fa-file-invoice-dollar'],
                 'root'    => 'grp.financials.',
                 'route'   => [
-                    'name' => 'grp.financials.bank_incoming.index',
+                    'name' => 'grp.financials.dashboard',
                 ],
                 'topMenu' => [
                     'subSections' => [
+                        [
+                            'label' => __('Dashboard'),
+                            'icon'  => ['fal', 'fa-tachometer-alt'],
+                            'root'  => 'grp.financials.dashboard',
+                            'route' => [
+                                'name' => 'grp.financials.dashboard',
+                            ],
+                        ],
                         [
                             'label' => __('Bank incoming'),
                             'icon'  => ['fal', 'fa-university'],
@@ -162,6 +170,14 @@ class GetGroupNavigation
                             ],
                         ],
                         [
+                            'label' => __('Payouts'),
+                            'icon'  => ['fal', 'fa-hand-holding-box'],
+                            'root'  => 'grp.financials.payouts.',
+                            'route' => [
+                                'name' => 'grp.financials.payouts.index',
+                            ],
+                        ],
+                        [
                             'label' => __('Receivables'),
                             'icon'  => ['fal', 'fa-hand-holding-usd'],
                             'root'  => 'grp.financials.receivables.',
@@ -175,6 +191,14 @@ class GetGroupNavigation
                             'root'  => 'grp.financials.payables.',
                             'route' => [
                                 'name' => 'grp.financials.payables.index',
+                            ],
+                        ],
+                        [
+                            'label' => __('Profit and loss'),
+                            'icon'  => ['fal', 'fa-balance-scale'],
+                            'root'  => 'grp.financials.profit_and_loss.',
+                            'route' => [
+                                'name' => 'grp.financials.profit_and_loss.index',
                             ],
                         ],
                     ],
@@ -581,14 +605,6 @@ class GetGroupNavigation
                         'root'  => 'grp.supply-chain.agents.',
                         'route' => [
                             'name' => 'grp.supply-chain.agents.index',
-                        ]
-                    ],
-                    [
-                        'label' => __('Agent Suppliers'),
-                        'icon'  => ['fal', 'fa-people-arrows'],
-                        'root'  => 'grp.supply-chain.agent_suppliers.',
-                        'route' => [
-                            'name' => 'grp.supply-chain.agent_suppliers.index',
                         ]
                     ],
                     [

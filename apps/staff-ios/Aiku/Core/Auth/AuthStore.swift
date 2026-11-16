@@ -3,14 +3,20 @@ import Observation
 
 struct AuthService: Sendable {
     var login: @Sendable (MobileLoginRequest) async throws -> MobileLoginResponse
-    var fetchProfile: @Sendable () async throws -> ProfileResponse
+    var fetchProfile: @Sendable () async throws -> MobileProfileResponse
     var logout: @Sendable () async throws -> Void
+    var changePassword: @Sendable (PasswordChangeBody) async throws -> Void = { _ in }
+    var sendResetCode: @Sendable (String) async throws -> Void = { _ in }
+    var resetPassword: @Sendable (PasswordResetBody) async throws -> Void = { _ in }
 
     static func live(_ client: APIClient) -> AuthService {
         AuthService(
             login: { try await client.login($0) },
-            fetchProfile: { try await client.fetchProfile() },
-            logout: { try await client.logout() }
+            fetchProfile: { try await client.fetchMobileProfile() },
+            logout: { try await client.logout() },
+            changePassword: { try await client.changePassword($0) },
+            sendResetCode: { try await client.sendPasswordResetCode(login: $0) },
+            resetPassword: { try await client.resetPassword($0) }
         )
     }
 }
@@ -26,6 +32,7 @@ enum DeviceName {
 final class AuthStore {
     private(set) var isSignedIn: Bool
     private(set) var profile: ProfileResponse?
+    private(set) var mobileProfile: MobileProfileResponse?
     private(set) var isRefreshingProfile = false
     private(set) var lastProfileError: String?
 
@@ -60,7 +67,7 @@ final class AuthStore {
         isRefreshingProfile = true
         defer { isRefreshingProfile = false }
         do {
-            profile = try await service.fetchProfile()
+            mobileProfile = try await service.fetchProfile()
             lastProfileError = nil
         } catch APIError.unauthorized {
             endSession()
@@ -81,7 +88,54 @@ final class AuthStore {
     func endSession() {
         tokens.clear()
         profile = nil
+        mobileProfile = nil
         lastProfileError = nil
         isSignedIn = false
+    }
+
+    var userID: Int? { mobileProfile?.id ?? profile?.id }
+
+    func changePassword(current: String, password: String, confirmation: String) async -> PasswordFormError? {
+        if let error = PasswordRules.changeErrors(current: current, password: password, confirmation: confirmation) {
+            return error
+        }
+        do {
+            try await service.changePassword(PasswordChangeBody(currentPassword: current, password: password, passwordConfirmation: confirmation))
+            return nil
+        } catch APIError.unauthorized {
+            endSession()
+            return PasswordFormError(message: "Your session has ended. Sign in again.")
+        } catch {
+            return PasswordFormError(error, offlineMessage: "Changing your password needs internet — check Wi-Fi and try again.")
+        }
+    }
+
+    func sendPasswordResetCode(login: String) async -> PasswordFormError? {
+        if let error = PasswordRules.loginError(login) {
+            return error
+        }
+        do {
+            try await service.sendResetCode(login.trimmingCharacters(in: .whitespacesAndNewlines))
+            return nil
+        } catch {
+            return PasswordFormError(error, offlineMessage: "Resetting your password needs internet — check Wi-Fi and try again.")
+        }
+    }
+
+    func resetPassword(login: String, code: String, password: String, confirmation: String) async -> PasswordFormError? {
+        if let error = PasswordRules.resetErrors(code: code, password: password, confirmation: confirmation) {
+            return error
+        }
+        do {
+            try await service.resetPassword(PasswordResetBody(
+                login: login.trimmingCharacters(in: .whitespacesAndNewlines),
+                code: code.trimmingCharacters(in: .whitespacesAndNewlines),
+                password: password,
+                passwordConfirmation: confirmation
+            ))
+            return nil
+        } catch {
+            return PasswordFormError(error, offlineMessage: "Resetting your password needs internet — check Wi-Fi and try again.")
+        }
     }
 }

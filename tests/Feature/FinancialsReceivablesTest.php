@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\Accounting\ProfitAndLoss\GetProfitAndLoss;
 use App\Actions\Accounting\Receivables\UI\ShowReceivablesDashboard;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -280,4 +281,272 @@ test('group financials shows receivables of the organisations the user may see, 
     expect(collect($receivables()['organisations'])->pluck('value')->all())->toBe([$otherOrganisation->slug])
         ->and($receivables()['receivables']['total']['amount'])->toEqual(90)
         ->and($ids())->toBe([$theirs->id]);
+});
+
+test('payouts show per provider and currency what customers paid, what was paid out with its fees, and what is still held, as not seen where payouts never reach a connected bank', function () {
+    $currency    = fn (string $code) => \App\Models\Helpers\Currency::where('code', $code)->firstOrFail();
+    $pastpayCode = $currency('CHF');
+    $checkoutCur = $currency('JPY');
+    $psp         = fn (string $code) => \App\Models\Accounting\PaymentServiceProvider::where('code', $code)->firstOrFail();
+    $account     = fn (string $code) => \App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount::make()->action($this->organisation, $psp($code), ['code' => $code.random_int(1000, 9999), 'name' => "$code payouts"]);
+    $pastpay     = $account('pastpay');
+    $checkout    = $account('checkout');
+    $customer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $pay         = function ($paymentAccount, float $amount, $currencyModel, bool $invoiced) use ($customer) {
+        $order   = StoreOrder::make()->action($customer, [
+            'date'             => date('Y-m-d'),
+            'delivery_address' => new Address(Address::factory()->definition()),
+            'billing_address'  => new Address(Address::factory()->definition()),
+        ]);
+        $payment = \App\Actions\Accounting\Payment\StorePayment::make()->action($customer, $paymentAccount, [
+            'amount' => $amount,
+            'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+            'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+        ]);
+        \App\Actions\Ordering\Order\AttachPaymentToOrder::make()->action($order, $payment, ['amount' => $amount]);
+        DB::table('payments')->where('id', $payment->id)->update(['currency_id' => $currencyModel->id, 'date' => now()->subDays(10)]);
+        if ($invoiced) {
+            DB::table('invoices')->where('id', receivableInvoice($customer, 5, $amount, $amount, ['pay_status' => 'paid'])->id)->update(['order_id' => $order->id]);
+        }
+
+        return $payment;
+    };
+    $settled  = $pay($pastpay, 100, $pastpayCode, true);
+    $held     = $pay($pastpay, 200, $pastpayCode, true);
+    $reserved = $pay($pastpay, 50, $pastpayCode, false);
+    DB::table('payments')->where('id', $held->id)->update(['total_refund' => 20]);
+    $pay($checkout, 30, $checkoutCur, false);
+
+    $bankConnection = BankConnection::create([
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'provider'        => BankConnectionProviderEnum::WISE,
+        'name'            => 'Wise payouts',
+        'external_id'     => (string) random_int(1000, 9999),
+    ]);
+    $line = fn (float $amount, array $more) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => 'pay'.uniqid(),
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $amount,
+        'currency_id'             => $pastpayCode->id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'booked_at'               => now()->subDays(2),
+        ...$more,
+    ]);
+    $line(95.75, ['match_state' => BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT, 'match_data' => ['provider' => 'pastpay', 'reconciled_at' => now()->toIso8601String(), 'processor_fees' => 4.25, 'bank_fee' => 0, 'payment_ids' => [$settled->id]]]);
+    $line(12.34, ['match_state' => BankTransactionMatchStateEnum::UNMATCHED, 'match_data' => ['reason' => 'PastPay payout, no PastPay order of this amount']]);
+
+    $codBefore = collect(\App\Actions\Accounting\BankTransaction\UI\ShowPayouts::make()->handle($this->organisation, collect([$this->organisation]))['rows'])->firstWhere('key', "cod|{$this->organisation->id}|{$this->shop->currency->code}");
+    receivableInvoice($customer, 3, 70, 0, ['is_cash_on_delivery' => true]);
+    receivableInvoice($customer, 200, 40, 0, ['is_cash_on_delivery' => true]);
+
+    $payouts = \App\Actions\Accounting\BankTransaction\UI\ShowPayouts::make()->handle($this->organisation, collect([$this->organisation]));
+    $row     = fn (string $key) => collect($payouts['rows'])->firstWhere('key', $key);
+    $pastpayRow  = $row("pastpay|{$this->organisation->id}|CHF");
+    $checkoutRow = $row("checkout|{$this->organisation->id}|JPY");
+    $codRow      = $row("cod|{$this->organisation->id}|{$this->shop->currency->code}");
+
+    expect($pastpayRow['paid']['native'])->toEqual(350)
+        ->and($pastpayRow['paid']['count'])->toBe(3)
+        ->and($pastpayRow['paid_out']['native'])->toEqual(108.09)
+        ->and($pastpayRow['paid_out']['count'])->toBe(2)
+        ->and($pastpayRow['fees']['native'])->toEqual(4.25)
+        ->and($pastpayRow['held']['status'])->toBe('known')
+        ->and($pastpayRow['held']['native'])->toEqual(180)
+        ->and($pastpayRow['held']['count'])->toBe(1)
+        ->and($pastpayRow['not_reconciled']['count'])->toBe(1)
+        ->and($pastpayRow['route']['name'])->toBe('grp.org.accounting.bank_incoming.payment_accounts')
+        ->and($pastpayRow['route']['parameters']['provider'])->toBe('pastpay')
+        ->and($checkoutRow['paid']['native'])->toEqual(30)
+        ->and($checkoutRow['held']['status'])->toBe('not_seen')
+        ->and($checkoutRow['held']['amount'])->toBeNull()
+        ->and(round($codRow['held']['native'] - ($codBefore['held']['native'] ?? 0), 2))->toBe(70.0)
+        ->and(round($codRow['held']['stale']['native'] - ($codBefore['held']['stale']['native'] ?? 0), 2))->toBe(40.0)
+        ->and($reserved->id)->not->toBe($held->id);
+
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    get(route('grp.org.accounting.payouts.index', [$this->organisation->slug, 'period' => '1y']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Accounting/Payouts')
+            ->where('isGroup', false)
+            ->where('payouts.period', '1y')
+            ->where('payouts.rows', fn ($rows) => collect($rows)->contains('key', "pastpay|{$this->organisation->id}|CHF")));
+
+    $group = $this->organisation->group;
+    setPermissionsTeamId($group->id);
+    $viewer = StoreGuest::make()->action($group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $viewer->givePermissionTo(['financials', "accounting.{$this->organisation->id}.view"]);
+    $viewer->refresh();
+    actingAs($viewer);
+    get(route('grp.financials.payouts.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Accounting/Payouts')
+            ->where('isGroup', true)
+            ->where('currency', $group->currency->code)
+            ->where('payouts.rows', fn ($rows) => collect($rows)->contains(fn ($row) => $row['key'] === "pastpay|{$this->organisation->id}|CHF" && $row['route']['name'] === 'grp.financials.bank_incoming.payment_accounts')));
+    expect(collect(GetGroupNavigation::make()->handle($viewer)['financials']['topMenu']['subSections'])->pluck('route.name')->all())->toContain('grp.financials.payouts.index');
+});
+
+test('profit and loss by month: sales, cost of goods picked, fees and costs read from the banks, beside the same month a year before', function () {
+    $group    = $this->organisation->group;
+    $currency = $this->organisation->currency_id;
+    $other    = StoreOrganisation::make()->action($group, array_merge(Organisation::factory()->definition(), ['code' => 'pl'.random_int(1000, 9999), 'type' => OrganisationTypeEnum::SHOP]));
+    $customer = createCustomer($this->shop);
+    $company  = createCustomer($this->shop);
+    DB::table('customers')->where('id', $company->id)->update(['as_organisation_id' => $other->id]);
+
+    $sale = fn (string $date, float $net, array $more = []) => receivableInvoice($customer, 0, $net, 0, ['date' => $date, 'org_net_amount' => $net, 'grp_net_amount' => $net * 2, ...$more]);
+    $sale('2001-03-10', 1000);
+    $sale('2001-03-11', -100, ['type' => 'refund']);
+    $sale('2001-03-12', 500, ['as_organisation_id' => $other->id]);
+    $sale('2001-03-13', 9999, ['deleted_at' => now()]);
+    $sale('2001-03-14', 9999, ['in_process' => true]);
+    $sale('2000-03-10', 800);
+
+    $orgStock     = createOrgStocks($this->organisation, createStocks($group))[0];
+    $deliveryNote = fn (Customer $for) => DB::table('delivery_notes')->insertGetId([
+        'group_id' => $group->id, 'organisation_id' => $this->organisation->id, 'warehouse_id' => createWarehouse()->id, 'shop_id' => $this->shop->id,
+        'customer_id' => $for->id, 'reference' => 'pl-'.random_int(100000, 999999), 'slug' => 'pl-'.random_int(100000, 999999), 'date' => '2001-03-12', 'data' => '{}',
+    ]);
+    $moved = fn (string $date, string $type, float $amount, ?int $deliveryNoteId = null) => DB::table('org_stock_movements')->insert([
+        'group_id' => $group->id, 'organisation_id' => $this->organisation->id, 'warehouse_id' => createWarehouse()->id, 'org_stock_id' => $orgStock->id,
+        'date' => $date, 'class' => 'movement', 'type' => $type, 'flow' => $amount < 0 ? 'out' : 'in', 'org_amount' => $amount, 'grp_amount' => $amount * 2, 'data' => '{}',
+        'parent_type' => $deliveryNoteId ? 'DeliveryNote' : null, 'parent_id' => $deliveryNoteId,
+    ]);
+    $moved('2001-03-10', 'picked', -400);
+    $moved('2001-03-11', 'cancel-picked', 50);
+    $moved('2001-03-12', 'picked', -200, $deliveryNote($company));
+    $moved('2001-03-12', 'audit', -999);
+    $moved('2000-03-10', 'picked', -300);
+
+    $bankConnection = BankConnection::create(['group_id' => $group->id, 'organisation_id' => $this->organisation->id, 'provider' => BankConnectionProviderEnum::WISE, 'name' => 'Wise P&L', 'external_id' => (string) random_int(1000, 9999)]);
+    $line           = fn (float $amount, array $more = []) => BankTransaction::create(array_merge([
+        'group_id' => $group->id, 'organisation_id' => $this->organisation->id, 'bank_connection_id' => $bankConnection->id,
+        'provider_transaction_id' => 'pl-'.random_int(1, PHP_INT_MAX), 'provider_type' => 'TRANSFER', 'direction' => $amount < 0 ? BankTransactionDirectionEnum::OUT : BankTransactionDirectionEnum::IN,
+        'amount' => $amount, 'currency_id' => $currency, 'status' => BankTransactionStatusEnum::BOOKED, 'booked_at' => '2001-03-15 10:00:00',
+    ], $more));
+    $line(-60, ['out_category' => 'services', 'fee_amount' => 2]);
+    $line(-300, ['out_category' => 'staff']);
+    $line(-25, ['out_category' => 'needs_person']);
+    $line(-5, ['out_category' => 'bank_fees']);
+    $line(-700, ['out_category' => 'suppliers', 'fee_amount' => 3]);
+    $line(-90, ['out_category' => 'own_companies']);
+    $line(-40, ['out_category' => 'customer_refunds']);
+    $line(-120, ['out_category' => 'tax']);
+    $line(-50, ['provider_type' => 'INTERBALANCE']);
+    $line(970, ['match_state' => BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT, 'match_data' => ['reconciled_at' => '2001-03-16', 'processor_fees' => 30]]);
+    $line(400, ['match_state' => BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT]);
+    $line(80, ['match_state' => BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE, 'match_data' => ['commission' => 20]]);
+    $line(-1, ['out_category' => 'staff', 'status' => BankTransactionStatusEnum::PENDING]);
+
+    $organisationView = GetProfitAndLoss::make()->handle($this->organisation, collect([$this->organisation]), Carbon::parse('2001-03-01'), Carbon::parse('2001-04-30'));
+    [$march, $april]  = $organisationView['months'];
+
+    expect($march)->toMatchArray([
+        'month' => '2001-03', 'sales' => 1400.0, 'cost_of_goods' => 550.0, 'gross_margin' => 850.0,
+        'bank_fees' => 10.0, 'provider_fees' => 30.0, 'provider_fees_unknown' => 1, 'marketplace_fees' => 20.0,
+        'staff' => 300.0, 'services' => 58.0, 'other' => 0.0, 'unclassified' => 25.0, 'tax_paid' => 120.0, 'result' => 407.0,
+    ])
+        ->and($march['last_year'])->toMatchArray(['sales' => 800.0, 'cost_of_goods' => 300.0, 'gross_margin' => 500.0, 'bank_fees' => null, 'result' => null])
+        ->and($april)->toMatchArray(['sales' => 0.0, 'staff' => null, 'result' => null])
+        ->and($organisationView['total'])->toMatchArray(['sales' => 1400.0, 'staff' => 300.0, 'result' => null])
+        ->and($organisationView['currency'])->toBe($this->organisation->currency->code);
+
+    $groupMarch = GetProfitAndLoss::make()->handle($group, collect([$this->organisation]), Carbon::parse('2001-03-01'), Carbon::parse('2001-03-31'))['months'][0];
+    expect($groupMarch)->toMatchArray(['sales' => 1800.0, 'cost_of_goods' => 700.0]);
+});
+
+test('profit and loss shows in the organisation accounting and in group financials, with its under construction banner data, only to those who may see it', function () {
+    $group = $this->organisation->group;
+
+    setPermissionsTeamId($group->id);
+    $viewer = StoreGuest::make()->action($group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $viewer->givePermissionTo(['financials', "accounting.{$this->organisation->id}.view"]);
+    $viewer->refresh();
+    actingAs($viewer);
+
+    get(route('grp.financials.profit_and_loss.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Accounting/ProfitAndLoss')
+            ->where('isGroup', true)
+            ->where('profitAndLoss.currency', $group->currency->code)
+            ->where('profitAndLoss.months', fn ($months) => collect($months)->count() === 12 && collect($months)->last()["month"] === now()->format("Y-m"))
+            ->where('notConnected', fn ($banks) => collect($banks)->contains('Tatra banka')));
+    get(route('grp.org.accounting.profit_and_loss.index', [$this->organisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('isGroup', false)->where('profitAndLoss.currency', $this->organisation->currency->code));
+    expect(collect(GetGroupNavigation::make()->handle($viewer)['financials']['topMenu']['subSections'])->pluck('route.name')->all())->toContain('grp.financials.profit_and_loss.index');
+
+    setPermissionsTeamId($group->id);
+    $outsider = StoreGuest::make()->action($group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    actingAs($outsider);
+    get(route('grp.financials.profit_and_loss.index'))->assertForbidden();
+    get(route('grp.org.accounting.profit_and_loss.index', [$this->organisation->slug]))->assertForbidden();
+});
+
+test('payouts show a marketplace shop with its payouts, the commission kept and short payouts, and payouts naming an order not found apart', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $shopType = $this->shop->type;
+    DB::table('shops')->where('id', $this->shop->id)->update(['type' => 'external']);
+
+    try {
+        $order = fn () => StoreOrder::make()->action($customer, [
+            'date'             => date('Y-m-d'),
+            'delivery_address' => new Address(Address::factory()->definition()),
+            'billing_address'  => new Address(Address::factory()->definition()),
+        ]);
+        $paid   = $order();
+        $unpaid = $order();
+        DB::table('invoices')->where('id', receivableInvoice($customer, 5, 100)->id)->update(['order_id' => $paid->id]);
+        DB::table('invoices')->where('id', receivableInvoice($customer, 5, 60)->id)->update(['order_id' => $unpaid->id]);
+
+        $payouts = fn () => collect(\App\Actions\Accounting\BankTransaction\UI\ShowPayouts::make()->handle($this->organisation, collect([$this->organisation]))['rows']);
+        $before  = $payouts();
+
+        $bankConnection = BankConnection::create([
+            'group_id'        => $this->organisation->group_id,
+            'organisation_id' => $this->organisation->id,
+            'provider'        => BankConnectionProviderEnum::WISE,
+            'name'            => 'Wise marketplace payouts',
+            'external_id'     => (string) random_int(1000, 9999),
+        ]);
+        $line = fn (float $amount, array $more) => BankTransaction::create([
+            'group_id'                => $bankConnection->group_id,
+            'organisation_id'         => $bankConnection->organisation_id,
+            'bank_connection_id'      => $bankConnection->id,
+            'provider_transaction_id' => 'mkt'.uniqid(),
+            'provider_type'           => 'TRANSFER',
+            'direction'               => BankTransactionDirectionEnum::IN,
+            'amount'                  => $amount,
+            'currency_id'             => $this->shop->currency_id,
+            'status'                  => BankTransactionStatusEnum::BOOKED,
+            'booked_at'               => now()->subDay(),
+            ...$more,
+        ]);
+        $line(83, ['order_id' => $paid->id, 'match_state' => BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE, 'match_data' => ['owed' => 85, 'received' => 83, 'difference' => -2, 'commission' => 15]]);
+        $line(40, ['match_state' => BankTransactionMatchStateEnum::UNMATCHED, 'match_data' => ['reason' => 'marketplace order not found', 'tokens' => ['NOTOURS1']]]);
+
+        $after = $payouts();
+        $shop  = fn ($rows) => $rows->firstWhere('key', "marketplace|{$this->shop->id}");
+        $lost  = $after->firstWhere('key', "marketplace|unknown|{$this->organisation->id}|{$this->shop->currency->code}");
+
+        expect($shop($after)['held']['status'])->toBe('known')
+            ->and(round($shop($after)['paid_out']['native'] - ($shop($before)['paid_out']['native'] ?? 0), 2))->toBe(83.0)
+            ->and(round($shop($after)['fees']['native'] - ($shop($before)['fees']['native'] ?? 0), 2))->toBe(17.0)
+            ->and($shop($after)['not_reconciled']['count'] - ($shop($before)['not_reconciled']['count'] ?? 0))->toBe(1)
+            ->and(round(($shop($before)['held']['native'] ?? 0) - $shop($after)['held']['native'], 2))->toBe(100.0)
+            ->and($shop($after)['route']['name'])->toBe('grp.org.accounting.bank_incoming.marketplaces')
+            ->and($lost['held']['status'])->toBe('not_seen')
+            ->and($lost['held']['amount'])->toBeNull()
+            ->and($lost['not_reconciled']['count'])->toBeGreaterThanOrEqual(1);
+    } finally {
+        DB::table('shops')->where('id', $this->shop->id)->update(['type' => $shopType->value]);
+    }
 });

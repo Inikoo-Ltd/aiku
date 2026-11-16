@@ -87,7 +87,9 @@ export const UNSUBSCRIBE_URL_TAG = '[Unsubscribe Url]'
 export const TABLE_BLOCK = 'aiku-table'
 export const PRODUCTS_BLOCK = 'aiku-products'
 
-export const DEFAULT_FONT_FAMILY = 'Arial, Helvetica Neue, Helvetica, sans-serif'
+export const DELETE_SELECTION_COMBOS: string[][] = [['Delete']]
+
+export const DEFAULT_FONT_FAMILY ='Arial, Helvetica Neue, Helvetica, sans-serif'
 export const DEFAULT_MESSAGE_WIDTH = '650px'
 
 export const shortModuleType = (type: string): string => type.replace(MODULE_PREFIX, '')
@@ -601,6 +603,32 @@ export const emailHasUnsubscribeBlock = (email: EmailJson): boolean =>
 export const rowHasUnsubscribeBlock = (row: EmailRow): boolean =>
     row.columns.some((column) => column.modules.some(isUnsubscribeModule))
 
+const rowUnsubscribeBlockCount = (row: EmailRow): number =>
+    row.columns.reduce((count, column) => count + column.modules.filter(isUnsubscribeModule).length, 0)
+
+export const unsubscribeBlockCount = (email: EmailJson): number =>
+    email.page.rows.reduce((count, row) => count + rowUnsubscribeBlockCount(row), 0)
+
+export const isUnsubscribeModuleLocked = (email: EmailJson, module: EmailModule | null | undefined): boolean =>
+    isUnsubscribeModule(module) && unsubscribeBlockCount(email) <= 1
+
+export const isRowLockedByUnsubscribe = (email: EmailJson, row: EmailRow): boolean => {
+    const rowCount = rowUnsubscribeBlockCount(row)
+
+    return rowCount > 0 && unsubscribeBlockCount(email) - rowCount < 1
+}
+
+export const withoutUnsubscribeBlocks = (rows: EmailRow[]): EmailRow[] =>
+    rows
+        .filter((row) => !row.columns.every((column) => column.modules.length > 0 && column.modules.every(isUnsubscribeModule)))
+        .map((row) => {
+            row.columns.forEach((column) => {
+                column.modules = column.modules.filter((module) => !isUnsubscribeModule(module))
+            })
+
+            return row
+        })
+
 export const createUnsubscribeModule = (): EmailModule => ({
     type: MODULE_TYPES.html,
     uuid: uuidv4(),
@@ -646,7 +674,29 @@ export const createModule = (type: string): EmailModule => {
     }
 }
 
-export const isEmptyMergeContent = (module: EmailModule | null | undefined): boolean =>
+export type UploadedImage = { source?: { original?: string }, alt?: string | null, name?: string | null }
+
+export const isDraggingFiles = (dataTransfer: DataTransfer | null | undefined): boolean =>
+    Array.from(dataTransfer?.types ?? []).includes('Files')
+
+export const droppedImageFiles = (dataTransfer: DataTransfer | null | undefined): File[] =>
+    Array.from(dataTransfer?.files ?? []).filter((file) => file.type.startsWith('image/'))
+
+export const uploadedImageSource = (upload: UploadedImage): { src: string, alt: string } | null =>
+    upload?.source?.original ? { src: upload.source.original, alt: upload.alt || upload.name || '' } : null
+
+export const setModuleImage = (module: EmailModule, upload: UploadedImage): void => {
+    const image = uploadedImageSource(upload)
+    if (!image || module.type !== MODULE_TYPES.image) {
+        return
+    }
+    module.descriptor.image.src = image.src
+    if (!module.descriptor.image.alt) {
+        module.descriptor.image.alt = image.alt
+    }
+}
+
+export const isEmptyMergeContent =(module: EmailModule | null | undefined): boolean =>
     module?.type === MODULE_TYPES.mergeContent && !String(module.descriptor?.mergeContent?.value ?? '').trim()
 
 export type DynamicContentSource = 'products' | 'blocks'
@@ -869,12 +919,14 @@ export const normaliseEmailJson = (source: any): EmailJson => {
     return email
 }
 
-export const createDynamicBlockRows = (layout: any, width: string): EmailRow[] => {
+export const createDynamicBlockRows = (layout: any, width: string, hasUnsubscribeBlock = false): EmailRow[] => {
     if (!layout?.page?.body || !Array.isArray(layout.page.rows)) {
         return []
     }
 
-    return duplicateWithNewUuids(normaliseEmailJson(layout).page.rows).map((row) => {
+    const rows = duplicateWithNewUuids(normaliseEmailJson(layout).page.rows)
+
+    return (hasUnsubscribeBlock ? withoutUnsubscribeBlocks(rows) : rows).map((row) => {
         row.content.style.width = width
 
         return row

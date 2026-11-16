@@ -41,6 +41,8 @@ final class Session {
     var access: AccessLevel
     var assignedCount: Int
     var unreadCount: Int
+    var hasWarehouseContext = false
+    var modules: ModuleAccess = .everything
 
     init(profile: StaffProfile = .sample, access: AccessLevel = .all, assignedCount: Int = 6, unreadCount: Int = 3) {
         self.profile = profile
@@ -49,9 +51,10 @@ final class Session {
         self.unreadCount = unreadCount
     }
 
-    var hasWarehouseAccess: Bool { access == .all }
-    var hasFulfilmentAccess: Bool { access == .all }
-    var canScan: Bool { hasWarehouseAccess || hasFulfilmentAccess }
+    var visibleModules: ModuleAccess { access == .all ? modules : .nothing }
+    var hasWarehouseAccess: Bool { visibleModules.hasWarehouseModules }
+    var hasFulfilmentAccess: Bool { visibleModules.fulfilment }
+    var canScan: Bool { visibleModules.canScan }
 
     func apply(_ response: ProfileResponse) {
         let employee = response.employee?.first
@@ -68,6 +71,30 @@ final class Session {
         } else {
             profile.role = "Staff"
         }
+    }
+
+    func apply(_ response: MobileProfileResponse) {
+        let name = response.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        profile.name = name.isEmpty ? response.username : name
+        profile.username = response.username
+        profile.jobPositions = response.displayedJobPositions
+        if let position = profile.jobPositions.first {
+            profile.role = position
+        } else if let jobTitle = response.jobTitle, !jobTitle.isEmpty {
+            profile.role = jobTitle
+        } else {
+            profile.role = "Staff"
+        }
+        if !hasWarehouseContext, let organisation = response.organisation?.name {
+            profile.organisation = organisation
+        }
+    }
+
+    func apply(warehouse name: String, code: String, organisation: String) {
+        profile.warehouseName = name
+        profile.warehouseCode = code
+        profile.organisation = organisation
+        hasWarehouseContext = true
     }
 
     var warehouseLabel: String { "\(profile.warehouseName) · \(profile.warehouseCode)" }

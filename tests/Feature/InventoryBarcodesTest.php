@@ -484,3 +484,16 @@ test('fill carton barcodes from the sko barcode or the agreed unit ean, never ov
     UpdateOrgStock::make()->action($orgStock->refresh(), ['carton_barcode' => '']);
     expect($fromSko->refresh()->carton_barcode)->toBeNull();
 });
+
+test('the unit barcode card shows the trade unit size in its display unit, not the stored metres', function () {
+    $tradeUnit = new \App\Models\Goods\TradeUnit();
+    $tradeUnit->marketing_dimensions = ['type' => 'rectangular', 'units' => 'cm', 'l' => 0.1, 'w' => 0.05, 'h' => 0.02];
+
+    $supplierProduct = (new \App\Models\SupplyChain\SupplierProduct())->setRelation('tradeUnits', collect([$tradeUnit]));
+    $orgStock        = (new \App\Models\Inventory\OrgStock(['is_single_trade_unit' => true]))->setRelation('tradeUnits', collect([$tradeUnit]))->setRelation('stock', null);
+
+    $expected = ['type' => 'rectangular', 'units' => 'cm', 'l' => 10.0, 'w' => 5.0, 'h' => 2.0];
+
+    expect(collect(\App\Actions\SupplyChain\SupplierProduct\UI\GetSupplierProductBarcodes::run($supplierProduct))->firstWhere('level', 'unit')['dimensions'])->toBe($expected)
+        ->and(collect(\App\Actions\Inventory\OrgStock\UI\GetOrgStockBarcodes::run($orgStock, 12))->firstWhere('level', 'unit')['dimensions'])->toBe($expected);
+});

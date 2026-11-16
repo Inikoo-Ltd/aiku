@@ -1090,7 +1090,13 @@ test('artwork is uploaded per SKU in each section, sent back with a required com
     unlink($zipPath);
     expect($names)->toBe([$first->tradeUnit->code.'_Box_V2.pdf', $second->tradeUnit->code.'_Box_V2.pdf']);
 
-    \App\Actions\Goods\ProductDevelopment\Design\DeleteProductDevelopmentDesignSection::make()->action($tag->fresh(), $people['designer']);
+    actingAs($people['designer']);
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'design']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('design.can_manage', true)
+            ->where('design.sections.0.can_delete', false)
+            ->where('design.sections.2.can_delete', true));
+    delete(route('grp.models.product_development.design_section.delete', ['productDevelopmentDesignSection' => $tag->id]))->assertRedirect();
     expect($productDevelopment->designSections()->count())->toBe(2);
 
     actingAs(newGuestUser($this));

@@ -60,7 +60,7 @@ class UpdateBundle extends OrgAction
             /** @var Product $product */
             $product = $bundle->bundleable;
             $portfolio = Portfolio::where('bundle_id', $bundle->id)->first();
-            $shopBundleDiscount = Arr::get($product->shop->settings, 'discount.bundle_discount_percentage', 10);
+            $shopBundleDiscount = Bundle::discountPercentage($product->shop);
 
             $this->update($product, Arr::only($modelData, ['name', 'description', 'rrp']));
 

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Bundle;
 
+use App\Models\Dropshipping\Bundle;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Catalogue\Product;
@@ -34,7 +35,7 @@ class CalculateBundleItemPriceDetails extends OrgAction
             $productData = [];
 
             $selectedProducts = Arr::pull($modelData, 'products');
-            $bundleDiscount = Arr::get($shop->settings, 'discount.bundle_discount_percentage');
+            $bundleDiscount = Bundle::discountPercentage($shop);
 
             foreach ($selectedProducts as $selectedProduct) {
                 $quantity = Arr::get($selectedProduct, 'quantity');

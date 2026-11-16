@@ -15,7 +15,6 @@ import SupplierPortalSearch from "@/Components/Procurement/SupplierPortalSearch.
 import SupplierPortalHome, { type PortalSummary } from "@/Components/Procurement/SupplierPortalHome.vue"
 import StockDeliveryFeedbackCards, { type FeedbackCard } from "@/Components/Procurement/StockDeliveryFeedbackCards.vue"
 import Image from "@common/Components/Image.vue"
-import type { Image as ImageProxy } from "@/types/Image"
 import { useColorTheme } from "@/Composables/useStockList"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import { useAppAccentVariables } from "@/Composables/useAppAccent"
@@ -24,12 +23,13 @@ import type { PortalForms } from "@/Components/Procurement/SupplierPortalForms.v
 import type { Valuation } from "@/Components/Procurement/AgentSalesValuation.vue"
 import { ctrans } from "@/Composables/useTrans"
 import SupplierPortalPurchaseOrderDialog from "@/Components/Procurement/SupplierPortalPurchaseOrderDialog.vue"
+import SupplierPortalOrderPlan, { type OrderPlan } from "@/Components/Procurement/SupplierPortalOrderPlan.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHeart, faComputerClassic } from "@fas"
-import { faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faEye, faFileSignature, faStar } from "@fal"
+import { faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faEye, faFileSignature, faStar, faCalendarAlt } from "@fal"
 
-library.add(faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic, faEye, faFileSignature, faStar)
+library.add(faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic, faEye, faFileSignature, faStar, faCalendarAlt)
 
 defineOptions({ layout: (_h: unknown, page: unknown) => page })
 
@@ -50,7 +50,6 @@ const props = defineProps<{
 	forms?: PortalForms
 	submitted?: string | null
 	group: string
-	group_logo?: ImageProxy | null
 	language: string
 	routes: { send_code: string; verify: string; profile: string; search: string }
 	profile?: PortalProfile
@@ -71,7 +70,9 @@ const props = defineProps<{
 	products_route?: string
 	product_websites_route?: string
 	purchase_order_route?: string
+	purchase_order_production_route?: string
 	agreement?: PortalAgreement | null
+	order_plan?: OrderPlan
 }>()
 
 const code = ref("")
@@ -121,7 +122,7 @@ const initials = (name: string) =>
 		.join("")
 		.toUpperCase()
 
-type Tab = "home" | "sales" | "purchase_orders" | "purchase_order_list" | "products" | "price_changes" | "feedback" | "agreement" | "grow"
+type Tab = "home" | "sales" | "purchase_orders" | "purchase_order_list" | "order_plan" | "products" | "price_changes" | "feedback" | "agreement" | "grow"
 
 const fullWidthTabs: Tab[] = ["purchase_orders", "purchase_order_list"]
 
@@ -130,8 +131,9 @@ const menu = computed<{ key: Tab; label: string; icon: string; shortcut?: boolea
 	{ key: "sales", label: ctrans("Sales"), icon: "fal fa-chart-line" },
 	{ key: "purchase_orders", label: ctrans("Purchase orders"), icon: "fal fa-clipboard" },
 	{ key: "purchase_order_list", label: ctrans("Purchase order list"), icon: "fal fa-list", shortcut: true },
-	{ key: "products", label: ctrans("Products"), icon: "fal fa-box" },
-	{ key: "price_changes", label: ctrans("Price changes"), icon: "fal fa-tags" },
+	{ key: "order_plan", label: ctrans("Plan for next orders"), icon: "fal fa-calendar-alt" },
+	{ key: "products", label: ctrans("Your Products"), icon: "fal fa-box" },
+	{ key: "price_changes", label: ctrans("Current prices/MOQ"), icon: "fal fa-tags" },
 	{ key: "feedback", label: ctrans("Delivery feedback"), icon: "fal fa-star" },
 	{ key: "agreement", label: ctrans("Agreement"), icon: "fal fa-handshake" },
 	{ key: "grow", label: ctrans("Grow together"), icon: "fal fa-seedling" },
@@ -271,7 +273,6 @@ onMounted(() => {
 					:supplier="supplier"
 					:group="group"
 					:logo="profile?.company_logo"
-					:group-logo="group_logo"
 					:company="company"
 					:agent="agent"
 					:owner="owner"
@@ -298,6 +299,8 @@ onMounted(() => {
 					<TableSupplierPortalPurchaseOrders v-if="purchase_orders" :data="purchase_orders" tab="purchase_orders" @open="openPurchaseOrderId = $event" />
 				</div>
 
+				<SupplierPortalOrderPlan v-else-if="tab === 'order_plan'" :plan="order_plan" :accent="accent" @open="openPurchaseOrderId = $event" />
+
 				<SupplierPortalPriceChanges
 					v-else-if="tab === 'price_changes' && price_changes && forms"
 					:data="price_changes"
@@ -321,7 +324,7 @@ onMounted(() => {
 			</div>
 		</main>
 
-		<SupplierPortalPurchaseOrderDialog v-if="purchase_order_route" v-model="openPurchaseOrderId" :purchase-order-route="purchase_order_route" />
+		<SupplierPortalPurchaseOrderDialog v-if="purchase_order_route" v-model="openPurchaseOrderId" :purchase-order-route="purchase_order_route" :production-route="purchase_order_production_route" />
 
 		<footer class="fixed bottom-0 left-0 z-20 flex h-6 w-screen items-center justify-between gap-x-4 bg-black px-4 text-xs text-slate-400">
 			<a href="https://aiku.io/" target="_blank" rel="noopener" class="flex shrink-0 items-center gap-x-1.5 whitespace-nowrap hover:text-white">

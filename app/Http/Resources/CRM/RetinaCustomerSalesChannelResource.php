@@ -81,7 +81,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             $wooUser = $customerSalesChannels->user;
 
             if ($wooUser) {
-                $siteUrl = Arr::get($wooUser->settings, 'credentials.store_url');
+                $siteUrl = $wooUser->store_url;
             }
         }
 

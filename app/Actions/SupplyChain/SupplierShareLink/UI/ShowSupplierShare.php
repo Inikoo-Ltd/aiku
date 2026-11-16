@@ -107,16 +107,6 @@ class ShowSupplierShare
     }
 
     /**
-     * @return array<string, mixed>|null
-     */
-    public function ancientWisdomLogo(Supplier $supplier): ?array
-    {
-        $ancientWisdom = $supplier->group->organisations()->where('slug', 'aw')->first();
-
-        return $ancientWisdom?->imageSources(96, 96) ?? $supplier->group->imageSources(96, 96);
-    }
-
-    /**
      * Everything the supplier sees once in, the same whether the supplier or staff previewing it is looking.
      *
      * @return array<string, mixed>
@@ -127,7 +117,6 @@ class ShowSupplierShare
 
         return [
             'needs_code'           => false,
-            'group_logo'           => $this->ancientWisdomLogo($supplier),
             'company'              => $this->company($supplier),
             'agent'                => $this->agent($supplier),
             'owner'                => GetSupplierPortalDetails::make()->owner($supplier),
@@ -136,6 +125,7 @@ class ShowSupplierShare
             'valuation'            => $valuation->valuation($supplier),
             'open_purchase_orders' => IndexSupplierPortalPurchaseOrders::make()->openCount($supplier),
             'purchase_order_stages' => Inertia::defer(fn () => IndexSupplierPortalPurchaseOrderStages::make()->handle($supplier), 'stages'),
+            'order_plan'           => Inertia::defer(fn () => GetSupplierPortalOrderPlan::make()->handle($supplier), 'order_plan'),
             'purchase_orders'      => SupplierPortalPurchaseOrdersResource::collection(IndexSupplierPortalPurchaseOrders::make()->handle($supplier, 'purchase_orders'))
                 ->additional(IndexSupplierPortalPurchaseOrders::make()->facets($supplier, 'purchase_orders')),
             'price_changes'        => SupplierPortalPriceChangesResource::collection(IndexSupplierPortalPriceChanges::make()->handle($supplier, 'price_changes'))
@@ -159,6 +149,9 @@ class ShowSupplierShare
             'purchase_order_route' => $token === null
                 ? route('grp.supply-chain.suppliers.portal_preview.purchase_order', [$supplier, 'purchaseOrderId' => 0])
                 : route('grp.supplier_share.purchase_order', ['token' => $token, 'purchaseOrder' => 0]),
+            'purchase_order_production_route' => $token === null
+                ? route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'path' => 'purchase-orders/0/production'])
+                : route('grp.supplier_share.purchase_order.production', ['token' => $token, 'purchaseOrder' => 0]),
         ];
     }
 

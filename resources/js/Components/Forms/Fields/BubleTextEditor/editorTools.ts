@@ -5,3 +5,15 @@ export const DEFAULT_EDITOR_TOOLS: string[] = [
 ]
 
 export const BLOG_EDITOR_TOOLS: string[] = [...DEFAULT_EDITOR_TOOLS, "ctaButton"]
+
+export const fontSizeInPixels = (fontSize: unknown): string => {
+	if (!fontSize || typeof fontSize !== "string") {
+		return ""
+	}
+	const size = parseFloat(fontSize)
+	if (isNaN(size)) {
+		return ""
+	}
+
+	return Math.round(/px\s*$/i.test(fontSize) ? size : size * 16).toString()
+}

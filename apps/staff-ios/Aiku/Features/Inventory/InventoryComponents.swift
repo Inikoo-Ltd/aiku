@@ -4,15 +4,27 @@ struct InventorySkoRow: View {
     let reference: String
     let chip: Chip?
     let subtitle: String
-    var quantity: Int?
+    var quantityText: String?
     var action: (() -> Void)?
+
+    init(reference: String, chip: Chip?, subtitle: String, quantity: Int?, action: (() -> Void)? = nil) {
+        self.init(reference: reference, chip: chip, subtitle: subtitle, quantityText: quantity?.grouped, action: action)
+    }
+
+    init(reference: String, chip: Chip?, subtitle: String, quantityText: String?, action: (() -> Void)? = nil) {
+        self.reference = reference
+        self.chip = chip
+        self.subtitle = subtitle
+        self.quantityText = quantityText
+        self.action = action
+    }
 
     var body: some View {
         ListRow(reference, subtitle: subtitle, chips: chip.map { [$0] } ?? [], action: action) {
             ProductThumb(size: 48, label: "Product photo of \(reference)")
         } trailing: {
-            if let quantity {
-                Text(quantity.grouped)
+            if let quantityText {
+                Text(quantityText)
                     .font(.aiku(15, .bold))
                     .foregroundStyle(AikuColor.text)
                     .monospacedDigit()
@@ -25,18 +37,17 @@ struct InventorySkoRow: View {
 }
 
 struct InventoryMovementRow: View {
-    let movement: InventoryStockMovement
-    var usesTodaySummary = false
+    let movement: InventoryMovementDisplay
     var action: (() -> Void)?
 
     var body: some View {
         ListRow(
-            movement.skoReference,
-            subtitle: usesTodaySummary ? (movement.todaySummary ?? movement.summary) : movement.summary,
+            movement.title,
+            subtitle: movement.subtitle,
             chips: [movement.chip],
             action: action
         ) {
-            ProductThumb(size: 48, label: "Product photo of \(movement.skoReference)")
+            ProductThumb(size: 48, label: "Product photo of \(movement.title)")
         } trailing: {
             EmptyView()
         }
@@ -86,6 +97,7 @@ struct InventorySearchField: View {
     var placeholder: String
     var isFocused: FocusState<Bool>.Binding
     var onScan: (() -> Void)?
+    var onSubmit: (() -> Void)?
 
     var body: some View {
         FieldBox(isFocused: isFocused.wrappedValue, height: 46) {
@@ -101,6 +113,7 @@ struct InventorySearchField: View {
                 .autocorrectionDisabled()
                 .submitLabel(.search)
                 .focused(isFocused)
+                .onSubmit { onSubmit?() }
                 .padding(.horizontal, 10)
                 .accessibilityLabel(placeholder)
             if !text.isEmpty {
@@ -190,5 +203,34 @@ struct InventoryQuantityField: View {
             FieldLabel(title)
             QuantityStepper(value: $value, range: range)
         }
+    }
+}
+
+struct InventoryLoadAlert: View {
+    let title: String
+    let message: String
+    let retry: () -> Void
+
+    var body: some View {
+        InlineAlert(tone: .danger, title: title, message: message) {
+            LinkButton("Try again", size: 13, action: retry)
+                .frame(minHeight: 44, alignment: .leading)
+        }
+    }
+}
+
+struct InventorySkeletonCard: View {
+    var rows = 4
+
+    var body: some View {
+        Card {
+            ForEach(0..<rows, id: \.self) { index in
+                if index > 0 {
+                    RowDivider()
+                }
+                SkeletonRow()
+            }
+        }
+        .accessibilityLabel("Loading")
     }
 }

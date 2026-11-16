@@ -88,6 +88,8 @@ To fix it:
 3. If it still does not work, press <b>Test Connection</b> to check the connection again.
 4. As a last step, press <b>Delete</b> and connect the store again. Your products and orders come back when you use the same store address.
 
+If your store moved to a new web address, type the new address in the box under <b>Try to reconnect</b> before you press it. Approve on your store at its new address. Your channel keeps its products and orders, and from then on we use the new address. Do not delete the channel and connect the new address as a new store: that starts an empty channel.
+
 If your store keeps failing for a long time, we stop checking it. It starts working again when you reconnect it.
 
 <!-- screenshot: the not connected warning on a WooCommerce channel with the Try to reconnect, Test Connection and Delete buttons -->

@@ -10,6 +10,7 @@ private actor LeaveCalls {
 private let options = [
     LeavesResponse.TypeOption(code: "holiday-vacation", label: "Holiday / Vacation", category: "annual", maxDaysPerYear: 14, value: 1),
     LeavesResponse.TypeOption(code: "hd-morning", label: "Halfday Morning", category: "annual", maxDaysPerYear: 14, value: 0.5),
+    LeavesResponse.TypeOption(code: "sick", label: "Sick leave", category: "medical", maxDaysPerYear: nil, value: 1),
 ]
 
 private func leave(_ id: Int, status: String, start: String, end: String) -> LeaveResponse {
@@ -30,7 +31,7 @@ private func response(leaves: [LeaveResponse] = []) -> LeavesResponse {
 private func service(calls: LeaveCalls = LeaveCalls(), list: LeavesResponse = response(), refuse: APIError? = nil) -> LeaveService {
     LeaveService(
         list: { list },
-        request: { body in
+        request: { body, _ in
             await calls.record(body)
             if let refuse { throw refuse }
             return leave(99, status: "pending", start: body.startDate, end: body.endDate)

@@ -28,6 +28,7 @@ export interface CustomerSalesChannel {
     user_data: string
 
     reconnect_route: routeType
+    store_url?: string | null
 
     can_connect_to_platform: boolean
     exist_in_platform: boolean

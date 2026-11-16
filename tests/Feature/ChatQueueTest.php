@@ -2020,7 +2020,7 @@ test('with no mailbox the hand-over is a website chat answered later, and with n
     [$bareWebsite, $bareCustomer, $bareWebUser] = handOverTestStorefront(false, false);
     $bareOffer = handOverTestOffer($bareCustomer, $bareWebsite, $bareWebUser);
 
-    expect(\App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings::run($bareWebsite, $bareCustomer))->toBe(['name' => 'Aura', 'hand_over' => false]);
+    expect(\App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings::run($bareWebsite, $bareCustomer))->toBe(['name' => 'Aura', 'hand_over' => false, 'expected_seconds' => \App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings::EXPECTED_SECONDS]);
     $this->actingAs($bareWebUser, 'retina')->postJson(handOverTestUrl($bareWebsite), ['conversation' => $bareOffer->conversation->ulid, 'offer_message_id' => $bareOffer->id])->assertNotFound();
     expect($bareOffer->conversation->handOvers()->count())->toBe(0);
 
@@ -2054,6 +2054,34 @@ test('tapping twice gives one hand-over and one chat, and a second question join
         ->and($conversation->handOvers()->pluck('route')->map->value->unique()->all())->toBe(['live_chat'])
         ->and($session->messages()->orderBy('id')->pluck('message_text')->all())->toBe(['Do you deliver to Jersey?', 'Can I pay by cheque?'])
         ->and(ChatSession::where('shopping_assistant_conversation_id', $conversation->id)->count())->toBe(1);
+
+    outOfHoursTestCleanUp($schedule, [$session]);
+});
+
+test('a customer whose question already waits with our team is not offered a person again: what they add goes into that chat once and they are told when the team replies', function () {
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+    config(['services.openrouter.api_key' => 'test', 'services.shopping_assistant.plain_search' => false, 'services.shopping_assistant.light_model' => null, 'services.shopping_assistant.premium_model' => null]);
+    [$website, $customer, $webUser, $shop] = handOverTestStorefront(true, false);
+    $schedule = outOfHoursTestSchedule($shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
+    $offer        = handOverTestOffer($customer, $website, $webUser);
+    $conversation = $offer->conversation;
+    $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['conversation' => $conversation->ulid, 'offer_message_id' => $offer->id])->assertOk();
+    $session = $conversation->handOvers()->sole()->chatSession;
+
+    $offerAgain = ['choices' => [['finish_reason' => 'tool_calls', 'message' => ['role' => 'assistant', 'content' => null, 'tool_calls' => [['id' => 'call_present', 'type' => 'function', 'function' => ['name' => 'present_products', 'arguments' => json_encode(['reply' => 'I understand. Our team can look into it.', 'answer_kind' => 'offer_person', 'offer_reason' => 'order_question', 'language' => 'en'])]]]]]], 'usage' => ['prompt_tokens' => 10, 'completion_tokens' => 5, 'cost' => 0.01]];
+    \Illuminate\Support\Facades\Http::fake(['*chat/completions' => \Illuminate\Support\Facades\Http::response($offerAgain)]);
+
+    $added    = \App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant::run($conversation->fresh(), 'Please make sure they do');
+    $repeated = \App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant::run($conversation->fresh(), 'Do you deliver to Jersey?');
+
+    expect($added['reply'])->toStartWith('I have added this to your question for our team. Our team is back on Friday at ')
+        ->and($added['reply'])->toEndWith(' and will reply in the chat on this website.')
+        ->and($added['message']->hand_over_offer)->toBeNull()
+        ->and($added['message']->flags)->toContain('added_to_hand_over')
+        ->and($repeated['message']->hand_over_offer)->toBeNull()
+        ->and($session->messages()->orderBy('id')->pluck('message_text')->all())->toBe(['Do you deliver to Jersey?', 'Please make sure they do'])
+        ->and($conversation->handOvers()->count())->toBe(1);
 
     outOfHoursTestCleanUp($schedule, [$session]);
 });

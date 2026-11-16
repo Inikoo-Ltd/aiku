@@ -14,9 +14,11 @@ use App\Actions\Inventory\LocationOrgStock\MoveOrgStockToOtherLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
+use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Inventory\Location;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +34,8 @@ class MassMoveLocationOrgStocks extends OrgAction
      * @var \App\Models\Inventory\Location
      */
     private Location $location;
+
+    private ?User $user = null;
 
     /**
      * @throws \Throwable
@@ -50,7 +54,7 @@ class MassMoveLocationOrgStocks extends OrgAction
                         'picking_priority',
                         'type',
                     ]);
-                    $targetLocationOrgStock = StoreLocationOrgStock::make()->action($locationOrgStock->orgStock, $targetLocation, $movedData);
+                    $targetLocationOrgStock = StoreLocationOrgStock::make()->action($locationOrgStock->orgStock, $targetLocation, $movedData, user: $this->user);
                 }
 
                 if ($locationOrgStock->quantity > 0) {
@@ -58,11 +62,11 @@ class MassMoveLocationOrgStocks extends OrgAction
                         'quantity' => $locationOrgStock->quantity,
                         'reason'   => Arr::get($modelData, 'reason'),
                         'note'     => Arr::get($modelData, 'note'),
-                    ]);
+                    ], $this->user);
                 }
 
                 if (Arr::get($modelData, 'remove_after_move', false)) {
-                    DeleteLocationOrgStock::make()->action($locationOrgStock);
+                    DeleteLocationOrgStock::make()->action($locationOrgStock, $this->user);
                 }
             }
         });
@@ -87,12 +91,24 @@ class MassMoveLocationOrgStocks extends OrgAction
         return [
             'location_id'       => [
                 'required',
-                Rule::exists('locations', 'id')->where('organisation_id', $this->organisation->id),
+                Rule::exists('locations', 'id')
+                    ->where('warehouse_id', $this->location->warehouse_id)
+                    ->where('status', LocationStatusEnum::OPERATIONAL->value)
+                    ->where('allow_stocks', true)
+                    ->whereNull('deleted_at'),
                 'not_in:'.$this->location->id
             ],
             'remove_after_move' => ['sometimes', 'nullable', 'boolean'],
             'reason'            => [ 'required', new Enum(OrgStockMovementReasonEnum::class)],
             'note'              => ['sometimes', 'nullable', 'string'],
+        ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'location_id.exists' => __('Move the stock to a working location of the same warehouse that holds stock.'),
+            'location_id.not_in' => __('The source and the destination location must be different.'),
         ];
     }
 
@@ -102,6 +118,7 @@ class MassMoveLocationOrgStocks extends OrgAction
     public function asController(Location $location, ActionRequest $request): Location
     {
         $this->location = $location;
+        $this->user     = $request->user();
         $this->initialisationFromWarehouse($location->warehouse, $request);
 
         return $this->handle($location, $this->validatedData);

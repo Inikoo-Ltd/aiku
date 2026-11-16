@@ -18,7 +18,17 @@ private let sampleProfile = ProfileResponse(
     employee: [.init(contactName: "Alex Morgan", organisationSlug: "aw", workerNumber: "12", jobTitle: "Picker", email: nil)]
 )
 
-private func makeService(log: CallLog, login: Result<MobileLoginResponse, APIError>, profile: Result<ProfileResponse, APIError> = .success(sampleProfile)) -> AuthService {
+private let sampleMobileProfile = MobileProfileResponse(
+    id: 214,
+    username: "artha",
+    name: "Artha",
+    position: "Developer",
+    jobTitle: "Developer",
+    jobPositions: [.init(code: "gp-hd", name: "Engineer"), .init(code: "gp-hd-m", name: "Lead engineer"), .init(code: "gp-qa", name: "QA")],
+    organisation: .init(id: 2, code: "aw", name: "AW Advantage")
+)
+
+private func makeService(log: CallLog, login: Result<MobileLoginResponse, APIError>, profile: Result<MobileProfileResponse, APIError> = .success(sampleMobileProfile)) -> AuthService {
     AuthService(
         login: { request in
             await log.record(request)

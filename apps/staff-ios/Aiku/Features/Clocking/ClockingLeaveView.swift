@@ -6,6 +6,7 @@ struct ClockingLeaveView: View {
     @State private var store = LeaveStore.shared
     @State private var isAdjusting = false
     @State private var isRequesting = false
+    @State private var replacingCertificate: LeaveResponse?
 
     var body: some View {
         AppScreen(title: "Leave", kicker: "Clocking & HR · \(ClockingStore.shared.organisationName ?? session.profile.organisation)") {
@@ -45,6 +46,14 @@ struct ClockingLeaveView: View {
                 isRequesting = false
                 if leave != nil {
                     toasts.show("Leave requested · your manager will check it")
+                }
+            }
+        }
+        .aikuSheet(item: $replacingCertificate) { leave in
+            ClockingCertificateSheet(store: store, leave: leave) { didSave in
+                replacingCertificate = nil
+                if didSave {
+                    toasts.show("Medical certificate replaced")
                 }
             }
         }
@@ -129,6 +138,19 @@ struct ClockingLeaveView: View {
                     .font(.aiku(13))
                     .foregroundStyle(AikuColor.text2)
             }
+            ClockingAttachmentList(attachments: leave.attachments ?? [])
+            if store.canReplaceCertificate(leave) {
+                Button {
+                    replacingCertificate = leave
+                } label: {
+                    Text("Upload medical certificate")
+                        .font(.aiku(13, .semibold))
+                        .foregroundStyle(AikuColor.link)
+                        .frame(minHeight: 36)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("leave.certificate.\(leave.id)")
+            }
             if status == .rejected, let rejection = leave.rejectionReason, !rejection.isEmpty {
                 Text("Rejected: \(rejection)")
                     .font(.aiku(12))
@@ -153,6 +175,7 @@ struct ClockingLeaveRequestSheet: View {
     @State private var start = Calendar.current.startOfDay(for: .now)
     @State private var end = Calendar.current.startOfDay(for: .now)
     @State private var reason = ""
+    @State private var files: [UploadFile] = []
     @State private var error: LeaveFormError?
     @State private var isSending = false
 
@@ -189,6 +212,9 @@ struct ClockingLeaveRequestSheet: View {
                 .font(.aiku(13))
                 .foregroundStyle(AikuColor.text3)
             AikuTextArea("Reason", text: $reason, placeholder: "Family event")
+            if store.isMedical(type) {
+                AttachmentPicker("Medical certificate", files: $files)
+            }
             if let error {
                 InlineAlert(tone: .danger, title: "Can’t send this request", message: error.message)
             }
@@ -196,7 +222,7 @@ struct ClockingLeaveRequestSheet: View {
             AikuButton("Request leave", isLoading: isSending) {
                 isSending = true
                 Task {
-                    switch await store.request(type: type, start: startText, end: endText, reason: reason) {
+                    switch await store.request(type: type, start: startText, end: endText, reason: reason, attachments: files) {
                     case .success(let leave):
                         onClose(leave)
                     case .failure(let failure):
@@ -210,6 +236,39 @@ struct ClockingLeaveRequestSheet: View {
         }
         .onChange(of: start) { _, newStart in
             if end < newStart { end = newStart }
+        }
+    }
+}
+
+struct ClockingCertificateSheet: View {
+    let store: LeaveStore
+    let leave: LeaveResponse
+    let onClose: (Bool) -> Void
+    @State private var files: [UploadFile] = []
+    @State private var error: LeaveFormError?
+    @State private var isSaving = false
+
+    var body: some View {
+        SheetScaffold(title: "Replace medical certificate", subtitle: "The files you upload replace the current ones.") {
+            if !(leave.attachments ?? []).isEmpty {
+                SheetSectionLabel("Current files")
+                ClockingAttachmentList(attachments: leave.attachments ?? [])
+            }
+            AttachmentPicker("Medical certificate", files: $files)
+            if let error {
+                InlineAlert(tone: .danger, title: "Couldn’t save the certificate", message: error.message)
+            }
+        } footer: {
+            AikuButton("Save certificate", isLoading: isSaving) {
+                isSaving = true
+                Task {
+                    error = await store.replaceCertificate(of: leave, with: files)
+                    isSaving = false
+                    if error == nil { onClose(true) }
+                }
+            }
+            .accessibilityIdentifier("leave.certificate.save")
+            AikuButton("Cancel", kind: .tertiary, size: .small) { onClose(false) }
         }
     }
 }

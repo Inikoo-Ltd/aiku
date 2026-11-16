@@ -2,23 +2,31 @@ import SwiftUI
 
 struct InventoryAuditSheet: View {
     let sko: InventorySko
+    let reasonChoices: (Int) -> [InventoryReasonChoice]
+    let reasonsError: String?
     let onCancel: () -> Void
-    let onSave: (InventoryAuditDraft) throws -> String
+    let onSave: ([String: Int], [String: String]) async throws -> String
     let onDone: (String) -> Void
-    @State private var draft: InventoryAuditDraft
+    @State private var counts: [String: Int]
+    @State private var reasons: [String: String] = [:]
     @State private var error: String?
+    @State private var isSaving = false
 
     init(
         sko: InventorySko,
+        reasonChoices: @escaping (Int) -> [InventoryReasonChoice],
+        reasonsError: String? = nil,
         onCancel: @escaping () -> Void,
-        onSave: @escaping (InventoryAuditDraft) throws -> String,
+        onSave: @escaping ([String: Int], [String: String]) async throws -> String,
         onDone: @escaping (String) -> Void
     ) {
         self.sko = sko
+        self.reasonChoices = reasonChoices
+        self.reasonsError = reasonsError
         self.onCancel = onCancel
         self.onSave = onSave
         self.onDone = onDone
-        _draft = State(initialValue: InventoryAuditDraft(sko: sko))
+        _counts = State(initialValue: Dictionary(uniqueKeysWithValues: sko.locations.map { ($0.code, max(0, $0.quantity)) }))
     }
 
     var body: some View {
@@ -31,31 +39,55 @@ struct InventoryAuditSheet: View {
                     locationRow(location)
                 }
             }
-            ForEach(draft.changedLocations(in: sko)) { location in
+            ForEach(changedLocations) { location in
                 reasonSection(location)
+            }
+            if let reasonsError, !changedLocations.isEmpty {
+                FieldError(reasonsError)
             }
             if let error {
                 FieldError(error)
             }
         } footer: {
-            AikuButton("Save audit") {
+            AikuButton(isSaving ? "Saving…" : "Save audit") {
                 save()
             }
-            .disabled(!draft.canSave(sko))
+            .disabled(!canSave || isSaving)
             .accessibilityIdentifier("inventory.audit.save")
             AikuButton("Cancel", kind: .tertiary, action: onCancel)
         }
     }
 
+    private func counted(_ location: InventorySkoLocation) -> Int {
+        counts[location.code] ?? max(0, location.quantity)
+    }
+
+    private func change(_ location: InventorySkoLocation) -> Int {
+        counted(location) - location.quantity
+    }
+
+    private var changedLocations: [InventorySkoLocation] {
+        sko.locations.filter { change($0) != 0 }
+    }
+
+    private func validReason(_ location: InventorySkoLocation) -> String? {
+        guard let reason = reasons[location.code], reasonChoices(change(location)).contains(where: { $0.id == reason }) else { return nil }
+        return reason
+    }
+
+    private var canSave: Bool {
+        !sko.locations.isEmpty && changedLocations.allSatisfy { validReason($0) != nil }
+    }
+
     private func locationRow(_ location: InventorySkoLocation) -> some View {
-        let change = draft.change(for: location)
+        let change = change(location)
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(location.code)
                         .font(.aiku(15, .bold))
                         .foregroundStyle(AikuColor.text)
-                    Text("was \(location.quantity) · counted \(draft.counted(location))")
+                    Text("was \(location.quantityText) · counted \(counted(location))")
                         .font(.aiku(13))
                         .foregroundStyle(AikuColor.text3)
                 }
@@ -74,12 +106,12 @@ struct InventoryAuditSheet: View {
     }
 
     private func reasonSection(_ location: InventorySkoLocation) -> some View {
-        let change = draft.change(for: location)
+        let change = change(location)
         return VStack(alignment: .leading, spacing: 8) {
             SheetSectionLabel("Reason for \(location.code) (\(change < 0 ? "decrease" : "increase"))")
-            ForEach(InventoryAuditReason.reasons(forChange: change), id: \.self) { reason in
-                RadioCard(reason.title, isSelected: draft.validReason(for: location) == reason) {
-                    draft.reasons[location.code] = reason
+            ForEach(reasonChoices(change)) { reason in
+                RadioCard(reason.title, isSelected: validReason(location) == reason.id) {
+                    reasons[location.code] = reason.id
                     error = nil
                 }
             }
@@ -88,20 +120,26 @@ struct InventoryAuditSheet: View {
 
     private func countBinding(_ location: InventorySkoLocation) -> Binding<Int> {
         Binding {
-            draft.counted(location)
+            counted(location)
         } set: { newValue in
-            draft.counts[location.code] = newValue
+            counts[location.code] = newValue
             error = nil
         }
     }
 
     private func save() {
-        do {
-            onDone(try onSave(draft))
-        } catch let failure as InventoryStockError {
-            error = failure.message
-        } catch {
-            self.error = "Couldn’t save the audit."
+        if let missing = changedLocations.first(where: { validReason($0) == nil }) {
+            error = InventoryStockError.missingReason(missing.code).message
+            return
+        }
+        isSaving = true
+        Task {
+            defer { isSaving = false }
+            do {
+                onDone(try await onSave(counts, reasons))
+            } catch {
+                self.error = InventoryLive.message(for: error)
+            }
         }
     }
 }

@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Group\GoodsOut;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUnassigned;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -33,7 +34,7 @@ class UpdateMobileDeliveryNotePicker
         /** @var User $user */
         $user = $request->user();
         $this->ensureCanWork($deliveryNote, $user);
-        $this->ensureState($deliveryNote, [DeliveryNoteStateEnum::UNASSIGNED, DeliveryNoteStateEnum::QUEUED]);
+        $this->ensureState($deliveryNote, [DeliveryNoteStateEnum::UNASSIGNED, DeliveryNoteStateEnum::QUEUED, DeliveryNoteStateEnum::HANDLING]);
         $this->ensureNotInPickingSession($deliveryNote);
 
         $data = Validator::make($request->all(), [
@@ -43,6 +44,10 @@ class UpdateMobileDeliveryNotePicker
         $before = $this->noteSnapshot($deliveryNote);
 
         if (empty($data['user_id'])) {
+            if ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
+                $this->refuseState(__('A delivery note being picked keeps a picker. Choose who picks it instead.'));
+            }
+
             if ($deliveryNote->state != DeliveryNoteStateEnum::QUEUED) {
                 $this->refuseState(__('This delivery note has no picker to remove.'));
             }
@@ -55,6 +60,16 @@ class UpdateMobileDeliveryNotePicker
         $isPicker = app(IndexMobilePickers::class)->pickers($deliveryNote->warehouse)->contains('user_id', (int) $data['user_id']);
         if (!$isPicker) {
             throw ValidationException::withMessages(['user_id' => __('Choose one of the pickers.')]);
+        }
+
+        if ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
+            $pickerBefore = $deliveryNote->picker_user_id;
+
+            UpdateDeliveryNote::make()->action($deliveryNote, ['picker_user_id' => (int) $data['user_id']]);
+
+            return $pickerBefore === (int) $data['user_id']
+                ? $this->respondWith($deliveryNote, $user, 'nothing_changed', __('Nothing changed.'))
+                : $this->respondWith($deliveryNote, $user, 'done', __('Picker changed.'));
         }
 
         UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, User::findOrFail($data['user_id']));

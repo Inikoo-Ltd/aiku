@@ -4,7 +4,7 @@ import Testing
 
 struct ShellTests {
     @Test func menuForFullAccessListsEveryGroupAndFulfilmentRows() {
-        let groups = ShellMenuCatalog.groups(hasWarehouseAccess: true, hasFulfilmentAccess: true)
+        let groups = ShellMenuCatalog.groups(for: .everything)
         let itemIDs = groups.flatMap(\.items).map(\.id)
 
         #expect(groups.map(\.id) == ["inventory", "locations", "goodsIn", "goodsOut", "clocking"])
@@ -13,14 +13,16 @@ struct ShellTests {
     }
 
     @Test func menuForStaffWithoutWarehouseAccessOnlyShowsClockingAndHr() {
-        let groups = ShellMenuCatalog.groups(hasWarehouseAccess: false, hasFulfilmentAccess: false)
+        let groups = ShellMenuCatalog.groups(for: .nothing)
 
         #expect(groups.map(\.id) == ["clocking"])
         #expect(groups.first?.items.map(\.id) == ["clocking.clocking", "clocking.timesheets"])
     }
 
     @Test func menuWithWarehouseButNoFulfilmentHidesFulfilmentRows() {
-        let items = ShellMenuCatalog.groups(hasWarehouseAccess: true, hasFulfilmentAccess: false).flatMap(\.items)
+        var modules = ModuleAccess.everything
+        modules.fulfilment = false
+        let items = ShellMenuCatalog.groups(for: modules).flatMap(\.items)
 
         #expect(items.allSatisfy { $0.requirement != .fulfilment })
         #expect(items.contains { $0.id == "goodsOut.deliveryNotes" })
@@ -85,30 +87,6 @@ struct ShellTests {
         let recents = ShellSearch.remembering("a-12-03", in: ["AR24817", "A-12-03", "bath bomb"])
 
         #expect(recents == ["a-12-03", "AR24817", "bath bomb"])
-    }
-
-    @Test func scanCodesAreClassifiedByFormat() {
-        #expect(ShellScanCatalog.classify("A-03-02") == .location)
-        #expect(ShellScanCatalog.classify(" sko-00733 ") == .sko)
-        #expect(ShellScanCatalog.classify("AR24811") == .deliveryNote)
-        #expect(ShellScanCatalog.classify("SDaw-0093") == .stockDelivery)
-        #expect(ShellScanCatalog.classify("acme-p0231") == .pallet)
-        #expect(ShellScanCatalog.classify("5060123456789") == .unknown)
-    }
-
-    @Test func scanTargetsOpenTheRightScreen() {
-        #expect(ShellScanCatalog.target(for: "A-03-02")?.link == .locations(.location(code: "A-03-02")))
-        #expect(ShellScanCatalog.target(for: "A-03-02")?.detail == "Area A · 6 SKOs · Operational")
-        #expect(ShellScanCatalog.target(for: "SKO-00733")?.link == .inventory(.sko(reference: "SKO-00733")))
-        #expect(ShellScanCatalog.target(for: "AR24811")?.link == .goodsOut(.deliveryNote(reference: "AR24811")))
-        #expect(ShellScanCatalog.target(for: "SDaw-0093")?.link == .goodsIn(.stockDelivery(reference: "SDaw-0093")))
-        #expect(ShellScanCatalog.target(for: "5060123456789") == nil)
-    }
-
-    @Test func scanCycleWrapsAroundTheSampleCodes() {
-        var cycle = ShellScanCycle(codes: ["A", "B"])
-
-        #expect([cycle.next(), cycle.next(), cycle.next()] == ["A", "B", "A"])
     }
 
     @MainActor

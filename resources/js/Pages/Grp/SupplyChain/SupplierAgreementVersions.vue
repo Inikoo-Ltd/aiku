@@ -75,8 +75,8 @@ const cards = [
 			<div class="text-xs text-gray-500">{{ ctrans(card.label) }}</div>
 			<div class="text-2xl font-semibold tabular-nums" :class="card.class">{{ supplier_counts[card.key] }}</div>
 			<div class="flex flex-wrap gap-x-2 text-xs text-gray-500">
-				<Link :href="route('grp.supply-chain.suppliers.index', { 'elements[agreement]': card.key })" class="hover:underline">{{ ctrans("No agent") }}</Link>
-				<Link :href="route('grp.supply-chain.agent_suppliers.index', { 'elements[agreement]': card.key })" class="hover:underline">{{ ctrans("Through agent") }}</Link>
+				<Link :href="route('grp.supply-chain.suppliers.index', { 'elements[type]': 'free', 'elements[agreement]': card.key })" class="hover:underline">{{ ctrans("No agent") }}</Link>
+				<Link :href="route('grp.supply-chain.suppliers.index', { 'elements[type]': 'through_agent', 'elements[agreement]': card.key })" class="hover:underline">{{ ctrans("Through agent") }}</Link>
 			</div>
 		</div>
 	</div>

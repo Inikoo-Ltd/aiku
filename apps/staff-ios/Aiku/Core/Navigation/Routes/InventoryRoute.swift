@@ -9,4 +9,6 @@ enum InventoryRoute: Hashable, Sendable {
     case sko(reference: String)
     case stockHistory
     case skoHistory(reference: String)
+    case skoID(id: Int)
+    case skoHistoryID(id: Int, reference: String)
 }

@@ -5,6 +5,7 @@ struct ShellShortcut: Identifiable, Hashable, Sendable {
     let title: String
     let icon: AppIcon
     var badge: Int?
+    let requirement: ShellAccessRequirement
     let link: ShellLink
 }
 
@@ -26,11 +27,15 @@ enum ShellHomeContent {
     static let staffWorkplace = "Customer services"
 
     static let shortcuts: [ShellShortcut] = [
-        ShellShortcut(id: "goodsOut", title: "Goods out", icon: .goodsOut, badge: 12, link: .goodsOut(.deliveryNotes)),
-        ShellShortcut(id: "goodsIn", title: "Goods in", icon: .goodsIn, link: .goodsIn(.stockDeliveries)),
-        ShellShortcut(id: "inventory", title: "Inventory", icon: .inventory, link: .inventory(.skos)),
-        ShellShortcut(id: "locations", title: "Locations", icon: .locations, link: .locations(.locations))
+        ShellShortcut(id: "goodsOut", title: "Goods out", icon: .goodsOut, badge: 12, requirement: .goodsOut, link: .goodsOut(.deliveryNotes)),
+        ShellShortcut(id: "goodsIn", title: "Goods in", icon: .goodsIn, requirement: .goodsIn, link: .goodsIn(.stockDeliveries)),
+        ShellShortcut(id: "inventory", title: "Inventory", icon: .inventory, requirement: .inventory, link: .inventory(.skos)),
+        ShellShortcut(id: "locations", title: "Locations", icon: .locations, requirement: .locations, link: .locations(.locations))
     ]
+
+    static func shortcuts(for modules: ModuleAccess) -> [ShellShortcut] {
+        shortcuts.filter { $0.requirement.isMet(by: modules) }
+    }
 
     static func greeting(hour: Int, firstName: String) -> String {
         let part = switch hour {

@@ -115,6 +115,16 @@ enum InventoryArea: String, CaseIterable, Hashable, Sendable {
     }
 }
 
+struct InventoryLocationLink: Hashable, Sendable {
+    let linkID: Int
+    let locationID: Int
+    let exactQuantity: Double
+    let quantityLabel: String
+    var isDefaultWholesale = false
+    var isDefaultDropshipping = false
+    var levels: String?
+}
+
 struct InventorySkoLocation: Identifiable, Hashable, Sendable {
     let code: String
     var type: InventoryLocationType
@@ -124,15 +134,25 @@ struct InventorySkoLocation: Identifiable, Hashable, Sendable {
     var maximum: Int?
     var replenish: Int?
     var lastAudited: String?
+    var link: InventoryLocationLink? = nil
 
     var id: String { code }
 
     var area: InventoryArea? { InventoryArea(locationCode: code) }
 
+    var quantityText: String { link?.quantityLabel ?? quantity.grouped }
+
     var chip: Chip {
+        if let link {
+            let defaults = [
+                link.isDefaultWholesale ? InventoryChannel.wholesale.title : nil,
+                link.isDefaultDropshipping ? InventoryChannel.dropshipping.title : nil,
+            ]
+            return Chip(([type.title] + defaults.compactMap { $0 }).joined(separator: " · "), type == .picking ? .info : .neutral)
+        }
         switch type {
-        case .picking: Chip(["Picking", channel?.title].compactMap { $0 }.joined(separator: " · "), .info)
-        case .storing: Chip("Storing", .neutral)
+        case .picking: return Chip(["Picking", channel?.title].compactMap { $0 }.joined(separator: " · "), .info)
+        case .storing: return Chip("Storing", .neutral)
         }
     }
 
@@ -140,7 +160,9 @@ struct InventorySkoLocation: Identifiable, Hashable, Sendable {
 
     var settingsLine: String {
         var parts: [String] = []
-        if type == .picking {
+        if let link {
+            if let levels = link.levels { parts.append(levels) }
+        } else if type == .picking {
             if let minimum { parts.append("min \(minimum)") }
             if let maximum { parts.append("max \(maximum)") }
         } else if let replenish {
@@ -151,6 +173,17 @@ struct InventorySkoLocation: Identifiable, Hashable, Sendable {
     }
 }
 
+struct InventorySkoLiveFacts: Hashable, Sendable {
+    let id: Int
+    var stateLabel: String
+    var familyTitle: String?
+    var stockLabel: String
+    var stockIsNegative: Bool
+    var reservedLabel: String
+    var toBePickedLabel: String
+    var canEditStocks: Bool
+}
+
 struct InventorySko: Identifiable, Hashable, Sendable {
     let reference: String
     var name: String
@@ -158,12 +191,12 @@ struct InventorySko: Identifiable, Hashable, Sendable {
     var state: InventorySkoState
     var supplierCode: String?
     var unitsPerSko: Int
-    var barcode: String
-    var unitBarcode: String
+    var barcode: String?
+    var unitBarcode: String?
     var pickerNote: String?
     var reserved: Int
     var toBePicked: Int
-    var coverDays: Int
+    var coverDays: Int?
     var isOnDemand: Bool
     var unitValue: Decimal
     var criticalAt: Int
@@ -171,6 +204,8 @@ struct InventorySko: Identifiable, Hashable, Sendable {
     var excessAt: Int
     var abnormalityNote: String?
     var locations: [InventorySkoLocation]
+    var packerNote: String? = nil
+    var live: InventorySkoLiveFacts? = nil
 
     var id: String { reference }
 
@@ -203,13 +238,20 @@ struct InventorySko: Identifiable, Hashable, Sendable {
         return "\(name) · \(locationCountLabel)"
     }
 
-    var listChip: Chip { isAbnormal ? Chip("Abnormality", .danger) : status.chip }
+    var listChip: Chip {
+        if isAbnormal { return Chip(live?.stateLabel ?? "Abnormality", .danger) }
+        if let live { return Chip(live.stateLabel, state == .active ? .success : .warn) }
+        return status.chip
+    }
 
     var canMoveStock: Bool { locations.count >= 2 && locations.contains { $0.quantity > 0 } }
 
     var canConsume: Bool { locations.contains { $0.quantity > 0 } }
 
-    var coverLabel: String { coverDays == 1 ? "1 day" : "\(coverDays) days" }
+    var coverLabel: String {
+        guard let coverDays else { return "–" }
+        return coverDays == 1 ? "1 day" : "\(coverDays.grouped) days"
+    }
 
     func location(_ code: String) -> InventorySkoLocation? {
         locations.first { $0.code == code }
@@ -278,26 +320,49 @@ struct InventoryFamily: Identifiable, Hashable, Sendable {
 struct InventoryLocationOption: Identifiable, Hashable, Sendable {
     let code: String
     let detail: String
+    var locationID: Int? = nil
 
     var id: String { code }
 }
 
+struct InventoryReasonChoice: Identifiable, Hashable, Sendable {
+    let id: String
+    let title: String
+}
+
+struct InventorySkoListItem: Identifiable, Hashable, Sendable {
+    let id: Int
+    let reference: String
+    let subtitle: String
+    let chip: Chip?
+    let quantityText: String?
+}
+
 struct InventoryDashboardSummary: Hashable, Sendable {
-    var urgentAudits: Int
-    var toReplenish: Int
-    var toReplenishDropshipping: Int
-    var replenishments: Int
+    var currentSkos: Int
+    var abnormalities: Int
+    var replenishmentsWholesale: Int
+    var replenishmentsDropshipping: Int
     var lowStockAudits: Int
     var belowMinimum: Int
+    var withMinimum: Int
     var negativeStocks: Int
     var wrongWeights: Int
     var withoutProduct: Int
     var stockValueLabel: String
-    var utilisationPercent: Int
+    var utilisationPercent: Int?
     var usedLocations: Int
     var totalLocations: Int
 
-    var utilisationLine: String {
-        "Location utilisation \(utilisationPercent)% · \(usedLocations.formatted(.number.locale(Locale(identifier: "en_GB")))) of \(totalLocations.formatted(.number.locale(Locale(identifier: "en_GB")))) locations used"
+    var replenishmentsLabel: String { "Replenishments · dropshipping \(replenishmentsDropshipping.grouped)" }
+
+    var belowMinimumLabel: String {
+        "Below minimum stock · of \(withMinimum.grouped) \(withMinimum == 1 ? "SKO" : "SKOs") with a minimum"
+    }
+
+    var utilisationLine: String? {
+        guard let utilisationPercent else { return nil }
+        let noun = totalLocations == 1 ? "location" : "locations"
+        return "Location utilisation \(utilisationPercent)% · \(usedLocations.grouped) of \(totalLocations.grouped) \(noun) used"
     }
 }

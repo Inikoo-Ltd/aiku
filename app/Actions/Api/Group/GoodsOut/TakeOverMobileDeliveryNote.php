@@ -26,7 +26,7 @@ class TakeOverMobileDeliveryNote
         /** @var User $user */
         $user = $request->user();
         $this->ensureCanWork($deliveryNote, $user);
-        $this->ensureState($deliveryNote, [DeliveryNoteStateEnum::HANDLING, DeliveryNoteStateEnum::HANDLING_BLOCKED, DeliveryNoteStateEnum::PACKING]);
+        $this->ensureState($deliveryNote, [DeliveryNoteStateEnum::HANDLING, DeliveryNoteStateEnum::HANDLING_BLOCKED, DeliveryNoteStateEnum::PACKING, DeliveryNoteStateEnum::PACKED]);
 
         if ($this->canHandleDeliveryNote($deliveryNote)) {
             $this->refuseState(__('You are already handling this delivery note.'));
@@ -34,7 +34,7 @@ class TakeOverMobileDeliveryNote
 
         self::claimMobileDeliveryNoteHandling($deliveryNote, $user);
 
-        return $this->respondWith($deliveryNote, $user, 'done', $deliveryNote->state == DeliveryNoteStateEnum::PACKING
+        return $this->respondWith($deliveryNote, $user, 'done', in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKING, DeliveryNoteStateEnum::PACKED], true)
             ? __('You can work on this delivery note for the next hour. The packer stays the same.')
             : __('You can work on this delivery note for the next hour. The picker stays the same.'));
     }

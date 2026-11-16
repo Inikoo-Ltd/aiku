@@ -155,9 +155,10 @@ class StoreLocationOrgStock extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(OrgStock $orgStock, Location $location, array $modelData, int $hydratorsDelay = 0, bool $strict = true): LocationOrgStock
+    public function action(OrgStock $orgStock, Location $location, array $modelData, int $hydratorsDelay = 0, bool $strict = true, ?User $user = null): LocationOrgStock
     {
         $this->asAction       = true;
+        $this->user           = $user;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
         $this->location       = $location;

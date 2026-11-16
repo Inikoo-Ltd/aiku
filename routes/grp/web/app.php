@@ -154,7 +154,7 @@ Route::middleware(
     Route::prefix("financials")
         ->name("financials.")
         ->group(function () {
-            Route::redirect('/', '/financials/bank-incoming')->name('dashboard');
+            Route::get('/', [App\Actions\Accounting\UI\ShowFinancialsDashboard::class, 'inGroup'])->name('dashboard');
             Route::prefix('bank-incoming')->name('bank_incoming.')->group(function () {
                 Route::get('/', [App\Actions\Accounting\BankTransaction\UI\ShowBankIncomingDashboard::class, 'inGroup'])->name('index');
                 foreach (['customers' => 'customers', 'marketplaces' => 'marketplaces', 'payment-accounts' => 'payment_accounts', 'other' => 'other', 'needs-a-person' => 'needs_person'] as $path => $name) {
@@ -168,6 +168,8 @@ Route::middleware(
                 }
             });
             Route::get('/cash', [App\Actions\Accounting\BankBalance\UI\ShowCash::class, 'inGroup'])->name('cash.index');
+            Route::get('/payouts', [App\Actions\Accounting\BankTransaction\UI\ShowPayouts::class, 'inGroup'])->name('payouts.index');
+            Route::get('/profit-and-loss', [App\Actions\Accounting\ProfitAndLoss\UI\ShowProfitAndLoss::class, 'inGroup'])->name('profit_and_loss.index');
             Route::prefix('payables')->name('payables.')->group(function () {
                 Route::get('/', [App\Actions\Accounting\Payables\ShowPayablesDashboard::class, 'inGroup'])->name('index');
                 foreach (array_keys(App\Actions\Accounting\Payables\IndexPayables::sections()) as $section) {

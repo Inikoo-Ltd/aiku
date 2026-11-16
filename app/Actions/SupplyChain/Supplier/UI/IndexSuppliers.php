@@ -27,7 +27,6 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -41,8 +40,6 @@ class IndexSuppliers extends OrgAction
     use WithSupplyChainAuthorisation;
 
     private Group|Agent $parent;
-
-    private bool $onlyFreeSuppliers = false;
 
     protected function getSupplierElementGroups(Group|Agent $parent): array
     {
@@ -128,19 +125,11 @@ class IndexSuppliers extends OrgAction
     }
 
     /**
-     * The list of independent suppliers filters only on the agreement; the others on type and agreement.
-     *
      * @return array<string, array<string, mixed>>
      */
     protected function elementGroups(Group|Agent $parent): array
     {
-        if (!$this->onlyFreeSuppliers) {
-            return $this->getSupplierElementGroups($parent);
-        }
-
-        $agreement = $this->agreementElementGroup($parent);
-
-        return $agreement ? ['agreement' => $agreement] : [];
+        return $this->getSupplierElementGroups($parent);
     }
 
     /**
@@ -151,8 +140,7 @@ class IndexSuppliers extends OrgAction
     protected function agreementElementGroup(Group|Agent $parent): ?array
     {
         return GetSupplierAgreementStatus::make()->elementGroup($parent->group_id ?? $parent->id, fn ($query) => $query
-            ->when($parent instanceof Agent, fn ($query) => $query->where('agent_id', $parent->id), fn ($query) => $query->where('group_id', $parent->id))
-            ->when($this->onlyFreeSuppliers, fn ($query) => $query->whereNull('agent_id')));
+            ->when($parent instanceof Agent, fn ($query) => $query->where('agent_id', $parent->id), fn ($query) => $query->where('group_id', $parent->id)));
     }
 
     public function handle(Group|Agent $parent, $prefix = null): LengthAwarePaginator
@@ -160,7 +148,11 @@ class IndexSuppliers extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('suppliers.code', $value)
-                    ->orWhereAnyWordStartWith('suppliers.name', $value);
+                    ->orWhereAnyWordStartWith('suppliers.name', $value)
+                    ->orWhereAnyWordStartWith('suppliers.company_name', $value)
+                    ->orWhereAnyWordStartWith('suppliers.contact_name', $value)
+                    ->orWhereStartWith('agents.code', $value)
+                    ->orWhereHas('supplierProducts', fn ($query) => $query->whereStartWith('supplier_products.code', $value));
             });
         });
 
@@ -169,18 +161,13 @@ class IndexSuppliers extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Supplier::class)
-            ->leftJoin('supplier_stats', 'supplier_stats.supplier_id', 'suppliers.id');
+            ->leftJoin('supplier_stats', 'supplier_stats.supplier_id', 'suppliers.id')
+            ->leftJoin('agents', 'agents.id', 'suppliers.agent_id');
 
         if ($parent instanceof Agent) {
             $queryBuilder->where('suppliers.agent_id', $parent->id);
         } else {
             $queryBuilder->where('suppliers.group_id', $parent->id);
-
-            if ($this->onlyFreeSuppliers) {
-                $queryBuilder
-                    ->whereNull('suppliers.agent_id')
-                    ->where('suppliers.status', true);
-            }
         }
 
         foreach ($this->elementGroups($parent) as $key => $elementGroup) {
@@ -199,18 +186,25 @@ class IndexSuppliers extends OrgAction
                 'suppliers.slug',
                 'suppliers.code',
                 'suppliers.name',
+                'suppliers.company_name',
+                'suppliers.contact_name',
                 'suppliers.location',
                 'suppliers.status',
                 'suppliers.agent_id',
+                'agents.slug as agent_slug',
+                'agents.code as agent_code',
+                'agents.name as agent_name',
                 'supplier_stats.number_supplier_products',
                 'supplier_stats.number_purchase_orders',
                 'supplier_stats.number_stock_deliveries',
             ])
+            ->selectRaw('coalesce(supplier_stats.number_open_purchase_orders, 0) + coalesce(supplier_stats.number_purchase_orders_state_in_process, 0) as number_open_purchase_orders')
             ->selectSub(ProcurementNote::openIncidentsOfSupplierQuery(), 'open_incidents')
             ->tap(fn ($query) => GetSupplierAgreementStatus::make()->selectStatus($query, $parent->group_id ?? $parent->id))
             ->allowedSorts([
                 'code',
                 'name',
+                'agent_code',
                 'location',
                 'number_supplier_products',
                 'number_purchase_orders',
@@ -244,13 +238,17 @@ class IndexSuppliers extends OrgAction
                 ->withLabelRecord([__('Supplier'), __('Suppliers')])
                 ->withEmptyState($this->getEmptyState($parent));
 
-            if (!$this->onlyFreeSuppliers) {
-                $table->column(key: 'status', label: '', canBeHidden: false, searchable: true, type: 'icon');
+            $table
+                ->column(key: 'status', label: '', canBeHidden: false, searchable: true, type: 'icon')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'nickname', label: __('Nickname'), canBeHidden: false);
+
+            if ($parent instanceof Group) {
+                $table->column(key: 'agent_code', label: __('Agent'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             $table
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location', label: __('Supplier location'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_supplier_products', label: __("Supplier's Products"), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
@@ -285,11 +283,9 @@ class IndexSuppliers extends OrgAction
         }
 
         return [
-            'title'       => $this->onlyFreeSuppliers ? __('No Free Suppliers') : __('No Suppliers'),
+            'title'       => __('No Suppliers'),
             'description' => $this->canEdit ? __('Get started by creating a new supplier.') : null,
-            'count'       => $this->onlyFreeSuppliers
-                ? $parent->supplyChainStats->number_active_independent_suppliers
-                : $parent->supplyChainStats->number_suppliers,
+            'count'       => $parent->supplyChainStats->number_suppliers,
             'action'      => $this->canEdit ? [
                 'type'    => 'button',
                 'style'   => 'create',
@@ -303,15 +299,10 @@ class IndexSuppliers extends OrgAction
         ];
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator|RedirectResponse
+    public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        if ($request->routeIs('grp.supply-chain.suppliers.index') && $request->input('elements.type') === 'through_agent') {
-            return redirect()->route('grp.supply-chain.agent_suppliers.index', ['sort' => 'code']);
-        }
-
         $group        = app('group');
         $this->parent = $group;
-        $this->onlyFreeSuppliers = $request->routeIs('grp.supply-chain.suppliers.index');
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group);
@@ -330,12 +321,8 @@ class IndexSuppliers extends OrgAction
         return SuppliersResource::collection($suppliers);
     }
 
-    public function htmlResponse(LengthAwarePaginator|RedirectResponse $suppliers, ActionRequest $request): Response|RedirectResponse
+    public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
-        if ($suppliers instanceof RedirectResponse) {
-            return $suppliers;
-        }
-
         $title         = __('Suppliers');
         $icon          = [
             'icon'  => ['fal', 'fa-person-dolly'],
@@ -384,10 +371,6 @@ class IndexSuppliers extends OrgAction
             ]));
         } else {
             $subNavigation = $this->getSuppliersSubNavigation();
-            if ($this->onlyFreeSuppliers) {
-                $title = __('Free Suppliers');
-                $icon['title'] = __('Free Suppliers');
-            }
 
             $actions = [
                 [
@@ -465,7 +448,7 @@ class IndexSuppliers extends OrgAction
                     [
                         'type'   => 'simple',
                         'simple' => [
-                            'label' => $this->onlyFreeSuppliers ? __('Free Suppliers') : __('Suppliers'),
+                            'label' => __('Suppliers'),
                             'icon'  => 'fal fa-bars',
                             'route' => [
                                 'name'       => $routeName,

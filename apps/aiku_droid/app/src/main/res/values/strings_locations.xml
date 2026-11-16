@@ -3,27 +3,40 @@
     <string name="locations_stat_locations">Locations</string>
     <string name="locations_stat_empty_locations">Empty locations</string>
     <string name="locations_stat_utilisation">Utilisation</string>
+    <string name="locations_stat_stock_value">Stock value</string>
     <string name="locations_stat_empty">Empty</string>
     <string name="locations_stat_picking_order">Picking order</string>
+    <string name="locations_percent">%1$d%%</string>
+    <string name="locations_overview_failed">Couldn’t load the warehouse</string>
 
     <string name="locations_heading_empty_locations">Empty locations</string>
     <string name="locations_auto_remove">Remove empty locations automatically</string>
     <string name="locations_auto_remove_changed">Changed by %1$s · %2$s</string>
+    <string name="locations_auto_remove_changed_by">Changed by %1$s</string>
+    <string name="locations_auto_remove_changed_on">Changed %1$s</string>
+    <string name="locations_auto_remove_on">Empty locations are now removed automatically</string>
+    <string name="locations_auto_remove_off">Empty locations are no longer removed automatically</string>
+    <string name="locations_state_on">On</string>
+    <string name="locations_state_off">Off</string>
     <string name="locations_to_remove_now">To remove now</string>
     <string name="locations_removed_last_week">Removed, last 7 days</string>
     <string name="locations_auto_remove_help">Every hour, an SKO that has run out in a location loses that location. Active picking locations, current pick locations, locations marked “never remove empty SKOs”, SKOs with goods waiting to be placed and anything moved in the last hour are kept. Changing it needs stock edit rights.</string>
 
     <string name="locations_areas_search">Code or name</string>
     <string name="locations_areas_no_match">No areas match “%1$s”</string>
-    <plurals name="locations_area_subtitle">
-        <item quantity="one">Picking order %1$d · %2$s · %3$d empty · %4$s</item>
-        <item quantity="other">Picking order %1$d · %2$s · %3$d empty · %4$s</item>
+    <string name="locations_areas_none">This warehouse has no areas.</string>
+    <string name="locations_areas_failed">Couldn’t load the areas</string>
+    <string name="locations_picking_order">Picking order %1$s</string>
+    <plurals name="locations_empty_count">
+        <item quantity="one">%1$,d empty</item>
+        <item quantity="other">%1$,d empty</item>
     </plurals>
     <plurals name="locations_location_count">
-        <item quantity="one">%1$d location</item>
-        <item quantity="other">%1$d locations</item>
+        <item quantity="one">%1$,d location</item>
+        <item quantity="other">%1$,d locations</item>
     </plurals>
     <string name="locations_area_kicker">Warehouse area · code %1$s</string>
+    <string name="locations_area_none">This area has no locations.</string>
     <string name="locations_heading_locations">Locations</string>
 
     <string name="locations_kind_stocks">Stocks</string>
@@ -39,13 +52,22 @@
         <item quantity="other">%1$d pallets</item>
     </plurals>
     <string name="locations_empty">empty</string>
+    <string name="locations_max">Max %1$s</string>
+    <string name="locations_weight_kg">%1$s kg</string>
+    <string name="locations_volume_m3">%1$s m³</string>
 
-    <string name="locations_tab_all">All %1$s</string>
-    <string name="locations_tab_empty">Empty %1$s</string>
-    <string name="locations_tab_partially_empty">Partially empty %1$s</string>
+    <string name="locations_tab_all">All</string>
+    <string name="locations_tab_empty">Empty</string>
+    <string name="locations_tab_partially_empty">Partially empty</string>
     <string name="locations_search">Location code (starts with)</string>
     <string name="locations_no_match">No locations start with “%1$s”</string>
+    <string name="locations_none">No locations to show.</string>
+    <string name="locations_list_failed">Couldn’t load the locations</string>
+    <string name="locations_list_more_failed">Couldn’t load more locations</string>
     <string name="locations_scan_hint">Scan a location label (Code 128) to open it.</string>
+    <string name="locations_scan_no_location">No location in this warehouse for %1$s</string>
+    <string name="locations_filters_clear">Clear</string>
+    <string name="locations_sorted">sorted</string>
 
     <string name="locations_filter_title">Filter locations</string>
     <string name="locations_filter_area">Area</string>
@@ -62,11 +84,14 @@
     <string name="locations_sort_weight">Weight</string>
     <string name="locations_sort_cbm">CBM</string>
     <plurals name="locations_filter_show">
-        <item quantity="one">Show %1$d location</item>
-        <item quantity="other">Show %1$d locations</item>
+        <item quantity="one">Show %1$,d location</item>
+        <item quantity="other">Show %1$,d locations</item>
     </plurals>
+    <string name="locations_filter_show_unknown">Show locations</string>
 
-    <string name="locations_location_kicker">Location · %1$s · %2$s</string>
+    <string name="locations_location_kicker">Location · %1$s</string>
+    <string name="locations_location_kicker_short">Location</string>
+    <string name="locations_location_failed">Couldn’t load the location</string>
     <string name="locations_audit_location">Audit location</string>
     <string name="locations_overview">Overview</string>
     <string name="locations_allow">Allow %1$s</string>
@@ -74,10 +99,11 @@
     <string name="locations_flag_dropshipping">dropshipping</string>
     <string name="locations_flag_fulfilment">fulfilment</string>
     <string name="locations_flag_not">not %1$s</string>
-    <string name="locations_capacity">Max %1$s · %2$s · %3$s</string>
     <string name="locations_barcode">Barcode %1$s (Code 128)</string>
     <string name="locations_audited">Audited %1$s</string>
+    <string name="locations_never_audited">Never audited</string>
     <string name="locations_heading_skos">SKOs</string>
+    <string name="locations_no_skos">No SKOs in this location.</string>
     <string name="locations_type_picking">Picking</string>
     <string name="locations_type_storing">Storing</string>
     <string name="locations_heading_actions">Location actions</string>
@@ -90,27 +116,37 @@
     <string name="locations_stock_movements">Stock movements</string>
     <string name="locations_stock_movements_body">History of this location</string>
     <string name="locations_detail_help">Status is operational or broken. Moving and removing need location edit rights. SKOs are added to a location from the SKO page.</string>
+    <string name="locations_in_location">%1$s in location</string>
 
     <string name="locations_audit_title">Audit %1$s</string>
     <string name="locations_audit_subtitle">Count every SKO in this location</string>
-    <string name="locations_audit_was">was %1$d</string>
-    <string name="locations_audit_help">Each difference needs a reason: decreases such as Count shortage or Damaged stock, increases such as Count gain (stock found). A note is optional.</string>
-    <string name="locations_audit_save">Save audit</string>
+    <string name="locations_audit_one_subtitle">Count this SKO in this location</string>
     <string name="locations_audit_saved">Audit of %1$s saved</string>
 
-    <string name="locations_move_title">Move all SKOs from %1$s</string>
-    <string name="locations_move_subtitle">Or choose some SKOs and quantities to move</string>
+    <string name="locations_move_all_title">Move all SKOs from %1$s</string>
+    <string name="locations_move_all_subtitle">Every SKO and all its stock moves to the target location</string>
+    <string name="locations_move_some_title">Move SKOs from %1$s</string>
+    <string name="locations_move_some_subtitle">Choose how much of each SKO to move</string>
+    <string name="locations_move_target_label">Target location</string>
     <string name="locations_move_target">Target location code</string>
+    <string name="locations_move_quantities">Quantities to move</string>
     <string name="locations_move_remove_source">Remove %1$s from these SKOs after moving</string>
-    <string name="locations_move_reason_transfer">Warehouse transfer</string>
-    <string name="locations_move_reason">Reason</string>
+    <string name="locations_move_remove_after">Remove %1$s from this SKO after moving</string>
     <string name="locations_move_confirm">Move all to %1$s</string>
+    <string name="locations_move_all">Move all</string>
+    <string name="locations_move_some">Move</string>
+    <plurals name="locations_move_some_confirm">
+        <item quantity="one">Move %1$d SKO to %2$s</item>
+        <item quantity="other">Move %1$d SKOs to %2$s</item>
+    </plurals>
+    <string name="locations_move_target_missing">Choose a target location.</string>
+    <string name="locations_move_quantity_missing">Set a quantity for at least one SKO.</string>
     <string name="locations_move_done">SKOs moved to %1$s</string>
 
     <string name="locations_remove_title">Remove SKOs from %1$s</string>
     <string name="locations_remove_subtitle">Choose the SKOs to remove</string>
-    <string name="locations_remove_row">%1$s · %2$d in location</string>
     <string name="locations_remove_warning">Stock left in the location is written off when the SKO is removed from it.</string>
+    <string name="locations_remove_missing">Choose at least one SKO.</string>
     <plurals name="locations_remove_confirm">
         <item quantity="one">Remove %1$d SKO</item>
         <item quantity="other">Remove %1$d SKOs</item>
@@ -122,16 +158,22 @@
 
     <string name="locations_sko_kicker">SKO in location</string>
     <string name="locations_sko_title">%1$s in %2$s</string>
-    <string name="locations_sko_summary">%1$s · %2$d in location</string>
+    <string name="locations_sko_summary">%1$s · %2$s in location</string>
+    <string name="locations_sko_gone">%1$s is no longer in %2$s.</string>
     <string name="locations_heading_type">Type</string>
     <string name="locations_type_picking_help">The SKO’s other picking location becomes storing</string>
     <string name="locations_heading_active_picking">Active picking location</string>
     <string name="locations_channel_wholesale">Wholesale</string>
     <string name="locations_channel_wholesale_help">Pickers of wholesale orders come here</string>
     <string name="locations_channel_dropshipping">Dropshipping</string>
+    <string name="locations_channel_dropshipping_help">Pickers of dropshipping orders come here</string>
     <string name="locations_channel_current">Currently %1$s</string>
+    <string name="locations_default_help">Tap a channel to make this location its default. A default can’t be switched off: make another location the default instead.</string>
     <string name="locations_min_stock">Min stock</string>
     <string name="locations_max_stock">Max stock</string>
+    <string name="locations_replenishment_stock">Replenishment quantity</string>
+    <string name="locations_level_invalid">Enter a number of 0 or more</string>
+    <string name="locations_level_none">None</string>
     <string name="locations_note">Note</string>
     <string name="locations_sko_help">Storing locations have a replenishment quantity instead of min and max. Needs stock edit rights.</string>
     <string name="locations_sko_move">Move</string>

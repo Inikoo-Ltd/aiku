@@ -365,7 +365,7 @@ test('the storefront assistant is on only for an enabled B2B website and a custo
     $website  = shoppingAssistantStorefront($this);
     $customer = shoppingAssistantCustomer($this->shop);
 
-    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava', 'hand_over' => false])
+    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava', 'hand_over' => false, 'expected_seconds' => GetShoppingAssistantSettings::EXPECTED_SECONDS])
         ->and(GetShoppingAssistantSettings::run($website, null))->toBeNull();
 
     UpdateWebsite::make()->action($website, ['shopping_assistant_enabled' => false]);
@@ -909,10 +909,10 @@ test('the assistant budget is the config default unless the website sets one, an
     UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => 0]);
     expect(shoppingAssistantBudget($website))->toMatchArray(['monthly' => 0.0, 'paused' => true])
         ->and(GetShoppingAssistantSettings::run($website->refresh(), $customer, true))->toBeNull()
-        ->and(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava', 'hand_over' => false]);
+        ->and(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava', 'hand_over' => false, 'expected_seconds' => GetShoppingAssistantSettings::EXPECTED_SECONDS]);
 
     UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => 1000]);
-    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer, true))->toBe(['name' => 'Ava', 'hand_over' => false]);
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer, true))->toBe(['name' => 'Ava', 'hand_over' => false, 'expected_seconds' => GetShoppingAssistantSettings::EXPECTED_SECONDS]);
 
     $settings = $website->settings;
     DB::table('websites')->where('id', $website->id)->update(['settings' => json_encode(data_set($settings, 'shopping_assistant.monthly_budget', 0))]);
@@ -1014,22 +1014,22 @@ test('the assistant is called Merlin unless the group sets a name, and a website
     $customer = shoppingAssistantCustomer($this->shop);
     $group    = $website->group;
 
-    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava', 'hand_over' => false]);
+    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava', 'hand_over' => false, 'expected_seconds' => GetShoppingAssistantSettings::EXPECTED_SECONDS]);
 
     UpdateWebsite::make()->action($website, ['shopping_assistant_name' => null]);
     UpdateGroupSettings::make()->action($group, ['shopping_assistant_name' => null]);
-    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Merlin', 'hand_over' => false]);
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Merlin', 'hand_over' => false, 'expected_seconds' => GetShoppingAssistantSettings::EXPECTED_SECONDS]);
 
     UpdateGroupSettings::make()->action($group, ['shopping_assistant_name' => 'Sage']);
-    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Sage', 'hand_over' => false])
+    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Sage', 'hand_over' => false, 'expected_seconds' => GetShoppingAssistantSettings::EXPECTED_SECONDS])
         ->and(data_get($group->refresh()->settings, 'shopping_assistant.name'))->toBe('Sage');
 
     UpdateWebsite::make()->action($website, ['shopping_assistant_name' => 'Ava']);
-    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Ava', 'hand_over' => false]);
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Ava', 'hand_over' => false, 'expected_seconds' => GetShoppingAssistantSettings::EXPECTED_SECONDS]);
 
     UpdateGroupSettings::make()->action($group, ['shopping_assistant_name' => '  ']);
     UpdateWebsite::make()->action($website, ['shopping_assistant_name' => null]);
-    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Merlin', 'hand_over' => false])
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Merlin', 'hand_over' => false, 'expected_seconds' => GetShoppingAssistantSettings::EXPECTED_SECONDS])
         ->and(data_get($group->refresh()->settings, 'shopping_assistant.name'))->toBeNull();
 });
 
@@ -1732,8 +1732,8 @@ test('the assistant prompt lists the families ordered in the last 12 months apar
         ->and($prompt)->toContain('Product families they used to order but not in the last 12 months: '.$oldFamily->name."\n")
         ->and($prompt)->toContain('Always finish with present_products')
         ->and($prompt)->toContain('When in doubt, ask our team instead of answering')
-        ->and($prompt)->toContain('say you will pass their request on to our purchasing team')
-        ->and($prompt)->toContain('When the customer writes to you in another language, answer them in their language and ask, once, whether they would rather carry on in their language')
+        ->and($prompt)->toContain('say you have noted the request for our buyers')
+        ->and($prompt)->toContain('When the customer writes to you in another language, answer them in their language and keep to it')
         ->and($present['function']['description'])->toContain('also when you show no products')
         ->and(collect($request['tools'])->firstWhere('function.name', 'best_sellers_last_christmas')['function']['parameters']['properties'])->toHaveKey('kind');
 });
@@ -3075,7 +3075,7 @@ test('on a dropshipping shop the assistant is on, coaches and sells with the cus
         $channel->update(['name' => 'Moon Gifts', 'number_portfolios' => 3, 'number_orders' => 0, 'connection_status' => \App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum::ERROR]);
 
         $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => false])]);
-        expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Ava', 'hand_over' => false]);
+        expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Ava', 'hand_over' => false, 'expected_seconds' => GetShoppingAssistantSettings::EXPECTED_SECONDS]);
 
         Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantPresent(['reply' => 'Dropshipping means your buyers order from your store and we send the parcel for you.', 'answer_kind' => 'coaching', 'follow_ups' => ['Best sellers for my store']]))]);
         $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
@@ -3758,7 +3758,7 @@ test('one to three words that only name what the customer wants to see are answe
     \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
 
     $verdict = fn (string $choice, float $probability) => ['choice' => $choice, 'probabilities' => [$choice => $probability]];
-    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('choice')->times(3)->andReturn($verdict('product_search', 0.95), $verdict('question', 0.9), $verdict('product_search', 0.5));
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('choice')->times(2)->andReturn($verdict('product_search', 0.95), $verdict('product_search', 0.5));
     $modelCalls = fn () => collect(Http::recorded())->filter(fn (array $pair) => str_contains($pair[0]->url(), 'chat/completions'))->count();
 
     $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
@@ -3851,4 +3851,165 @@ test('a message that is only a greeting, formal or informal in any storefront la
         ->and($greeted['message']->flags)->toBe(['greeting'])
         ->and($greeted['reply'])->toBe('¡Hola, Achraf! ¿Qué está buscando hoy?')
         ->and($greeted['groups']['must_haves'])->toBeEmpty();
+});
+
+test('a thank-you is closed warmly with no model call, no products and no offer, and a title is never taken for a first name', function () {
+    $assistant = AskShoppingAssistant::make();
+    foreach (['thanks', 'Thanksss', 'thank you so much!', 'Thanks Merlin', 'cheers', 'Danke', 'muchas gracias', 'Dziękuję', 'ďakujem', 'Köszönöm', 'tack så mycket', 'Благодаря', 'grazie mille'] as $thanks) {
+        expect($assistant->isThanks($thanks))->toBeTrue($thanks);
+    }
+    foreach (['no thanks', 'yes thanks', 'thanks, do you have samples?', 'thank you cards', 'ok', ''] as $other) {
+        expect($assistant->isThanks($other))->toBeFalse($other);
+    }
+
+    Http::fake();
+    $customer     = shoppingAssistantCustomer($this->shop, ['contact_name' => 'Achraf Test']);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'es']);
+    $titled       = shoppingAssistantCustomer($this->shop, ['contact_name' => 'Mrs Pemberton']);
+    $polite       = StartShoppingAssistantConversation::run($titled, ShoppingAssistantEntryPointEnum::COMMAND);
+    $polite->update(['language_code' => 'en']);
+
+    $thanked = AskShoppingAssistant::run($conversation, 'Thanksss');
+    $titledThanks = AskShoppingAssistant::run($polite, 'thanks');
+
+    expect(collect(Http::recorded())->filter(fn (array $pair) => str_contains($pair[0]->url(), 'chat/completions')))->toBeEmpty()
+        ->and($thanked['message']->model)->toBe(AskShoppingAssistant::THANKS_MODEL)
+        ->and($thanked['message']->flags)->toBe(['thanks'])
+        ->and($thanked['message']->hand_over_offer)->toBeNull()
+        ->and($thanked['reply'])->toBe('¡De nada, Achraf! Aquí estoy siempre que me necesite.')
+        ->and($thanked['groups']['must_haves'])->toBeEmpty()
+        ->and($titledThanks['reply'])->toBe('You are welcome! I am here whenever you need me.');
+});
+
+test('a shop answer about the customer\'s order keeps Merlin\'s words above the order line, and the prompt neither promises a purchasing reply nor asks which language to use', function () {
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'en']);
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, ['reference' => 'CZ-'.Str::upper(Str::random(8)), 'date' => date('Y-m-d'), 'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()), 'billing_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition())]);
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::PACKED, 'submitted_at' => '2026-11-11 09:00:00']);
+    $line = $order->reference.' · '.\Carbon\Carbon::parse('2026-11-11')->locale('en')->isoFormat('LL');
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('order_status', [])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'Good news: it is packed and waiting for the courier to collect it. The details are below.', 'answer_kind' => 'shop_answer', 'language' => 'en']))]);
+
+    $answer  = AskShoppingAssistant::run($conversation, 'When can I expect delivery of my order please?');
+    $prompt  = collect(Http::recorded())->first()[0]['messages'][0]['content'];
+
+    expect($answer['reply'])->toBe("Good news: it is packed and waiting for the courier to collect it. The details are below.\n\n".$line)
+        ->and($answer['message']->hand_over_offer)->toBeNull()
+        ->and($prompt)->toContain('say you have noted the request for our buyers')
+        ->and($prompt)->toContain('never promise that anyone will get back to them about it')
+        ->and($prompt)->not->toContain('you will pass their request on to our purchasing team')
+        ->and($prompt)->toContain('never ask which language they prefer')
+        ->and($prompt)->not->toContain('whether they would rather carry on in their language')
+        ->and($prompt)->toContain('close warmly in one short sentence')
+        ->and($prompt)->toContain('call product_details instead of refusing');
+});
+
+test('Merlin lists codes, barcodes, prices, RRP and stock of shown products as lines written by the system, and only of products shown or found', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $listed   = shoppingAssistantProduct($this->product);
+    $listed->update(['rrp' => 24.5, 'barcode' => '5056368302749', 'available_quantity' => 14]);
+    $empty    = shoppingAssistantProduct($this->product);
+    $empty->update(['available_quantity' => 0, 'rrp' => null]);
+    $hidden   = shoppingAssistantProduct($this->product);
+    $message  = shoppingAssistantShown($customer, [$listed->id, $empty->id]);
+    $conversation = $message->conversation;
+    $conversation->update(['language_code' => 'en']);
+    $money    = fn ($amount) => \Illuminate\Support\Number::currency($amount, $this->shop->currency->code, 'en');
+
+    $result  = GetShoppingAssistantTools::make()->execute($conversation, 'product_details', ['product_ids' => [$listed->id, $empty->id, $hidden->id]]);
+    $nothing = GetShoppingAssistantTools::make()->execute($conversation, 'product_details', ['product_ids' => [$hidden->id]]);
+
+    expect($result['error'])->toBeNull()
+        ->and($result['fact'])->toBe(
+            $listed->code.' · '.$listed->name.' · '.$money(10).' · RRP '.$money(24.5).' · Barcode 5056368302749 · 14 in stock'."\n"
+            .$empty->code.' · '.$empty->name.' · '.$money(10).' · Out of stock'
+        )
+        ->and(json_encode($result['content']))->not->toContain('5056368302749')
+        ->and($result['fact'])->not->toContain($hidden->code)
+        ->and($nothing['error'])->toContain('No product shown');
+});
+
+test('a product a customer bought before is marked in the search and goes back in the basket at the quantity of their last order when they reorder', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $usual    = shoppingAssistantLiveProduct($this->product);
+    $usual->update(['name' => 'Himalayan Bath Salts Lavender']);
+    $other    = shoppingAssistantLiveProduct($this->product);
+    shoppingAssistantOrderLine($customer, $usual, '2026-03-02 10:00:00', 30, ['quantity_ordered' => 3]);
+    shoppingAssistantOrderLine($customer, $usual, '2026-08-14 10:00:00', 60, ['quantity_ordered' => 6]);
+    $conversation = shoppingAssistantShown($customer, [$usual->id, $other->id])->conversation;
+    $tools        = GetShoppingAssistantTools::make();
+
+    \App\Actions\Catalogue\Search\SearchCatalogueByMeaning::mock()->shouldReceive('handle')->andReturn(collect([$usual->fresh(), $other->fresh()]));
+    $found = $tools->execute($conversation, 'search_products', ['query' => 'bath salts']);
+    $marks = collect($found['content']['products'])->keyBy('id');
+
+    expect($marks[$usual->id]['ordered_before'])->toBe('2026-08')
+        ->and($marks[$other->id])->not->toHaveKey('ordered_before')
+        ->and(collect($found['products'])->firstWhere('id', $usual->id)['reason_code'])->toBe('used_to_order')
+        ->and($found['content']['ordered_before_note'])->toContain('same_quantities');
+
+    $added = $tools->execute($conversation, 'add_to_basket', ['product_ids' => [$usual->id, $other->id], 'same_quantities' => true]);
+    $basket = \App\Models\Ordering\Order::where('customer_id', $customer->id)->where('state', \App\Enums\Ordering\Order\OrderStateEnum::CREATING)->latest('id')->first();
+    $quantities = \App\Models\Ordering\Transaction::where('order_id', $basket->id)->where('model_type', 'Product')->pluck('quantity_ordered', 'model_id')->map(fn ($quantity) => (int) $quantity);
+
+    expect($added['content']['note'])->toContain('quantity of their last order')
+        ->and($quantities[$usual->id])->toBe(6)
+        ->and($quantities[$other->id])->toBe(1);
+});
+
+test('Merlin offers an email when an out of stock product is back only where the shop sends them, and sets the reminder only after a yes', function () {
+    $orgStock = shoppingAssistantOrgStock($this);
+    $missing  = shoppingAssistantProductOn($this, [$orgStock->id]);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools    = GetShoppingAssistantTools::make();
+    $outbox   = \App\Models\Comms\Outbox::where('shop_id', $this->shop->id)->where('code', \App\Enums\Comms\Outbox\OutboxCodeEnum::OOS_NOTIFICATION)->first();
+    $original = $outbox?->state;
+
+    try {
+        $outbox?->update(['state' => \App\Enums\Comms\Outbox\OutboxStateEnum::SUSPENDED]);
+        $off   = $tools->execute($conversation, 'restock_information', ['query' => $missing->code]);
+        $offed = $tools->execute($conversation, 'notify_when_back_in_stock', ['query' => $missing->code, 'customer_agreed' => true]);
+
+        expect($off['content']['can_email_when_back'])->toBeFalse()
+            ->and($offed['error'])->toContain('no back in stock emails');
+
+        if (!$outbox) {
+            return;
+        }
+
+        $outbox->update(['state' => \App\Enums\Comms\Outbox\OutboxStateEnum::ACTIVE]);
+        $on      = $tools->execute($conversation, 'restock_information', ['query' => $missing->code]);
+        $notYet  = $tools->execute($conversation, 'notify_when_back_in_stock', ['query' => $missing->code, 'customer_agreed' => false]);
+        $set     = $tools->execute($conversation, 'notify_when_back_in_stock', ['query' => $missing->code, 'customer_agreed' => true]);
+        $setAgain = $tools->execute($conversation, 'notify_when_back_in_stock', ['query' => $missing->code, 'customer_agreed' => true]);
+
+        expect($on['content']['can_email_when_back'])->toBeTrue()
+            ->and($notYet['error'])->toContain('Ask the customer first')
+            ->and($set['content']['reminder_set'])->toBeTrue()
+            ->and($setAgain['content']['reminder_set'])->toBeTrue()
+            ->and(\App\Models\Comms\BackInStockReminder::where('customer_id', $customer->id)->where('product_id', $missing->id)->count())->toBe(1);
+    } finally {
+        $outbox?->update(['state' => $original]);
+    }
+});
+
+test('a second plain search in a row goes to the model, which can explain what the first search missed', function () {
+    config(['services.shopping_assistant.plain_search' => true]);
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH);
+    AskShoppingAssistant::make()->storeCustomerMessage($conversation, 'Sauge niaouli');
+    $conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'Here is what we have for "Sauge niaouli".', 'flags' => ['plain_search']]);
+    $jev = \App\Actions\Helpers\AI\AskJev::mock();
+    $jev->shouldNotReceive('choice');
+
+    Http::fake(['*chat/completions' => Http::response(shoppingAssistantPresent(['reply' => 'We have no niaouli; the closest are our sage smudge sticks.', 'answer_kind' => 'products', 'language' => 'en']))]);
+    $again = AskShoppingAssistant::run($conversation->fresh(), 'Sauge niaouli');
+
+    expect($again['message']->flags ?? [])->not->toContain('plain_search')
+        ->and($again['reply'])->toStartWith('We have no niaouli');
 });

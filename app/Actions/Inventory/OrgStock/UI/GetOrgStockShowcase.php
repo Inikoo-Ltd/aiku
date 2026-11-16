@@ -143,32 +143,7 @@ class GetOrgStockShowcase
                     ],
                     'cover'           => $this->getCover($orgStock),
                     'stock_cost'      => $this->getStockCost($orgStock),
-                    'summary'         => [
-                        'quantity_in_locations' => [
-                            'icon_state' => [
-                                'icon'    => 'fas fa-inventory',
-                                'tooltip' => __("Stock in locations"),
-                            ],
-                            'value'            => $orgStock->quantity_in_locations,
-                            'value_fractional' => $this->getFractionalQuantity($orgStock->quantity_in_locations, $orgStock->packed_in),
-                        ],
-                        'quantity_in_submitted_orders' => [
-                            'icon_state' => [
-                                'icon'    => 'fas fa-shopping-cart',
-                                'tooltip' => __("Reserved paid parts in process by customer services"),
-                            ],
-                            'value'            => $orgStock->quantity_in_submitted_orders,
-                            'value_fractional' => $this->getFractionalQuantity($orgStock->quantity_in_submitted_orders, $orgStock->packed_in),
-                        ],
-                        'quantity_to_be_picked'        => [
-                            'icon_state' => [
-                                'icon'    => 'fas fa-shopping-basket',
-                                'tooltip' => __("Parts to be picked"),
-                            ],
-                            'value'            => $orgStock->quantity_to_be_picked,
-                            'value_fractional' => $this->getFractionalQuantity($orgStock->quantity_to_be_picked, $orgStock->packed_in),
-                        ],
-                    ],
+                    'summary'         => $this->getSummary($orgStock),
                     'locations'       => $locations,
                     'qty_in_location'               => $orgStock->quantity_in_locations,
                     'qty_in_location_fractional'    => $this->getFractionalQuantity($orgStock->quantity_in_locations, $orgStock->packed_in),
@@ -178,13 +153,43 @@ class GetOrgStockShowcase
     }
 
 
+    public function getSummary(OrgStock $orgStock): array
+    {
+        return [
+            'quantity_in_locations' => [
+                'icon_state' => [
+                    'icon'    => 'fas fa-inventory',
+                    'tooltip' => __("Stock in locations"),
+                ],
+                'value'            => $orgStock->quantity_in_locations,
+                'value_fractional' => $this->getFractionalQuantity($orgStock->quantity_in_locations, $orgStock->packed_in),
+            ],
+            'quantity_in_submitted_orders' => [
+                'icon_state' => [
+                    'icon'    => 'fas fa-shopping-cart',
+                    'tooltip' => __("Reserved paid parts in process by customer services"),
+                ],
+                'value'            => $orgStock->quantity_in_submitted_orders,
+                'value_fractional' => $this->getFractionalQuantity($orgStock->quantity_in_submitted_orders, $orgStock->packed_in),
+            ],
+            'quantity_to_be_picked'        => [
+                'icon_state' => [
+                    'icon'    => 'fas fa-shopping-basket',
+                    'tooltip' => __("Parts to be picked"),
+                ],
+                'value'            => $orgStock->quantity_to_be_picked,
+                'value_fractional' => $this->getFractionalQuantity($orgStock->quantity_to_be_picked, $orgStock->packed_in),
+            ],
+        ];
+    }
+
     /**
      * Days of cover and the date the shelf empties at the forecast rate, as
      * OrgStockHydrateOutOfStockForecast last worked them out.
      *
      * @return array{days: int, out_at: ?string, daily_usage: ?float}|null
      */
-    private function getCover(OrgStock $orgStock): ?array
+    public function getCover(OrgStock $orgStock): ?array
     {
         $stats = $orgStock->stats;
 

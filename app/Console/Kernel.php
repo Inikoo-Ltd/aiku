@@ -541,15 +541,6 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('google-merchant:sync-cogs')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'SyncShopGoogleMerchantCostOfGoodsSold',
-                ),
-                name: 'SyncShopGoogleMerchantCostOfGoodsSold',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
                 $schedule->command('warehouse:hydrate_picking_packing_speed')->dailyAt('02:45')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'WarehouseHydratePickingPackingSpeed',
                 ),
@@ -1193,7 +1184,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('data_feeds:save')->hourly()->timezone('UTC')->onOneServer()->sentryMonitor(
+                $schedule->command('data_feeds:save')->hourly()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'SaveDataFeeds',
                 ),
                 name: 'SaveDataFeeds',

@@ -2,8 +2,7 @@ package io.aiku.droid.ui.locations
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,60 +12,59 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
+import io.aiku.droid.data.api.LocationDetail
 import io.aiku.droid.ui.components.AikuBottomSheet
-import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChoiceRow
-import io.aiku.droid.ui.components.LocalToasts
-import io.aiku.droid.ui.components.ToastKind
-import io.aiku.droid.ui.components.fakeData
+import io.aiku.droid.ui.inventory.SheetButtons
+import io.aiku.droid.ui.inventory.stockText
+import io.aiku.droid.ui.theme.LocalAikuColors
 
 @Composable
-fun RemoveSkusSheet(locationCode: String, onDismiss: () -> Unit) {
-    val toasts = LocalToasts.current
-    val removableSkos = LocationsSamples.removableSkos
-    var selectedCodes by remember { mutableStateOf(removableSkos.map { it.code }.toSet()) }
-    val selectedCount = selectedCodes.size
-    val removedText = pluralStringResource(R.plurals.locations_removed, selectedCount, selectedCount, locationCode)
+fun RemoveSkusSheet(
+    detail: LocationDetail,
+    isWorking: Boolean,
+    errorText: String?,
+    onRemove: (List<Long>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = LocalAikuColors.current
+    var selected by remember { mutableStateOf(emptySet<Long>()) }
+    var isMissing by remember { mutableStateOf(false) }
 
     AikuBottomSheet(
-        title = stringResource(R.string.locations_remove_title, locationCode),
+        title = stringResource(R.string.locations_remove_title, detail.code),
         onDismiss = onDismiss,
         subtitle = stringResource(R.string.locations_remove_subtitle),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fakeData(cornerRadius = 10.dp)) {
-            removableSkos.forEach { sko ->
-                val isSelected = sko.code in selectedCodes
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier) {
+            detail.orgStocks.forEach { sko ->
+                val isSelected = sko.id in selected
+                val type = stockTypeLabel(sko.stockType)?.let { stringResource(it) }
                 ChoiceRow(
                     title = sko.code,
                     selected = isSelected,
-                    onClick = { selectedCodes = if (isSelected) selectedCodes - sko.code else selectedCodes + sko.code },
-                    subtitle = stringResource(R.string.locations_remove_row, stringResource(sko.type.label), sko.quantity),
+                    onClick = {
+                        isMissing = false
+                        selected = if (isSelected) selected - sko.id else selected + sko.id
+                    },
+                    subtitle = listOfNotNull(type, stringResource(R.string.locations_in_location, stockText(sko.stock))).joinToString(LIST_SEPARATOR),
                 )
             }
         }
         DangerNote(text = stringResource(R.string.locations_remove_warning))
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
-            AikuButton(
-                text = pluralStringResource(R.plurals.locations_remove_confirm, selectedCount, selectedCount),
-                onClick = {
-                    if (selectedCount > 0) {
-                        toasts.show(text = removedText, kind = ToastKind.Success)
-                    }
-                    onDismiss()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                style = ButtonStyle.Danger,
-                height = 52.dp,
-            )
-            AikuButton(
-                text = stringResource(R.string.dialog_cancel),
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-                style = ButtonStyle.Outline,
-                height = 52.dp,
-            )
+        if (isMissing) {
+            Text(text = stringResource(R.string.locations_remove_missing), fontSize = 13.sp, color = colors.danger)
         }
+        errorText?.let { Text(text = it, fontSize = 13.sp, color = colors.danger) }
+        SheetButtons(
+            confirmLabel = pluralStringResource(R.plurals.locations_remove_confirm, selected.size, selected.size),
+            onConfirm = { if (selected.isEmpty()) isMissing = true else onRemove(selected.toList()) },
+            onCancel = onDismiss,
+            confirmStyle = ButtonStyle.Danger,
+            isWorking = isWorking,
+        )
     }
 }

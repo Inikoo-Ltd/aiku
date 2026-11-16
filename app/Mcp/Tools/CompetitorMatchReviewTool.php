@@ -12,6 +12,7 @@ use App\Actions\Masters\Competitor\ReadCompetitorListings;
 use App\Actions\Masters\Competitor\UI\WithCompetitorPriceComparison;
 use App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum;
 use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
+use App\Helpers\NaturalLanguage;
 use App\Models\Masters\Competitor;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterAssetCompetitorProduct;
@@ -160,7 +161,6 @@ class CompetitorMatchReviewTool extends Tool
             'matches'   => $rows->map(function (object $row) use ($masterAssets, $staffUnits) {
                 /** @var MasterAsset $masterAsset */
                 $masterAsset = $masterAssets[$row->master_asset_id];
-                $dimensions  = $masterAsset->marketing_dimensions ?? [];
                 $data        = json_decode((string) $row->competitor_data, true) ?: [];
 
                 return [
@@ -175,7 +175,7 @@ class CompetitorMatchReviewTool extends Tool
                         'units'       => (float) $masterAsset->units,
                         'trade_units' => $masterAsset->tradeUnits->map(fn ($tradeUnit) => ['code' => $tradeUnit->code, 'name' => $tradeUnit->name, 'quantity' => (float) $tradeUnit->pivot->quantity])->all(),
                         'weight_g'    => $masterAsset->marketing_weight,
-                        'size'        => trim(implode(' x ', array_filter([$dimensions['l'] ?? null, $dimensions['w'] ?? null, $dimensions['h'] ?? null])).' '.($dimensions['units'] ?? '')),
+                        'size'        => NaturalLanguage::make()->dimensions($masterAsset->marketing_dimensions),
                         'family'      => $masterAsset->masterFamily?->name,
                         'description' => mb_substr(trim(strip_tags((string) $masterAsset->description)), 0, 600),
                         'image'       => data_get($masterAsset->web_images, 'main.gallery.png') ?? data_get($masterAsset->web_images, 'all.0.gallery.png'),

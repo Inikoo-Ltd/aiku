@@ -1140,12 +1140,12 @@ test('UI Index suppliers', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('SupplyChain/Suppliers')
-            ->where('title', 'Free Suppliers')
+            ->where('title', 'Suppliers')
             ->has('pageHead')
             ->has('pageHead.actions', 1)
             ->where('pageHead.actions.0.route.name', 'grp.supply-chain.suppliers.create')
             ->has('data')
-            ->where('queryBuilderProps.default.elementGroups', [])
+            ->has('queryBuilderProps.default.elementGroups.type')
             ->has('breadcrumbs', 3);
     });
 });
@@ -1164,7 +1164,7 @@ test('UI Index agent suppliers', function () {
     });
 });
 
-test('free and agent supplier routes return separate datasets', function () {
+test('suppliers list shows free and agent suppliers and searches by supplier product code', function () {
     $freeCode = fake()->unique()->numerify('SPLIT-FREE-#####');
     $freeSupplier = StoreSupplier::make()->action(
         parent: $this->group,
@@ -1187,21 +1187,20 @@ test('free and agent supplier routes return separate datasets', function () {
             ->etc());
     $this->get(route('grp.supply-chain.suppliers.index', ['filter[global]' => $agentCode]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('data.data', fn ($suppliers) => !collect($suppliers)->pluck('id')->contains($agentSupplier->id))
+            ->where('data.data', fn ($suppliers) => collect($suppliers)->firstWhere('id', $agentSupplier->id)['agent_code'] === $agent->code)
             ->etc());
-    $this->get(route('grp.supply-chain.agent_suppliers.index', ['filter[global]' => $agentCode]))
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('data.data', fn ($suppliers) => collect($suppliers)->pluck('id')->contains($agentSupplier->id))
-            ->etc());
-    $this->get(route('grp.supply-chain.agent_suppliers.index', ['filter[global]' => $freeCode]))
+    $this->get(route('grp.supply-chain.suppliers.index', ['elements[type]' => 'through_agent', 'filter[global]' => $freeCode]))
+        ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('data.data', fn ($suppliers) => !collect($suppliers)->pluck('id')->contains($freeSupplier->id))
             ->etc());
-});
 
-test('legacy through agent supplier filter redirects to agent suppliers', function () {
-    $this->get(route('grp.supply-chain.suppliers.index', ['elements[type]' => 'through_agent']))
-        ->assertRedirect(route('grp.supply-chain.agent_suppliers.index', ['sort' => 'code']));
+    $productCode = fake()->unique()->numerify('SPLIT-SP-#####');
+    StoreSupplierProduct::make()->action($freeSupplier, array_merge(SupplierProduct::factory()->definition(), ['code' => $productCode]));
+    $this->get(route('grp.supply-chain.suppliers.index', ['filter[global]' => $productCode]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($suppliers) => collect($suppliers)->pluck('id')->all() === [$freeSupplier->id])
+            ->etc());
 });
 
 test('majordomo redirect supplier link', function () {
@@ -1368,9 +1367,9 @@ test('UI supply chain overview', function () {
             ->has('dashboardCards', 5)
             ->where('dashboardCards.0.route.name', 'grp.supply-chain.agents.index')
             ->where('dashboardCards.1.route.name', 'grp.supply-chain.suppliers.index')
-            ->where('dashboardCards.1.metrics.0.route.name', 'grp.supply-chain.agent_suppliers.index')
-            ->missing('dashboardCards.1.route.parameters._query.elements[type]')
-            ->missing('dashboardCards.1.metrics.0.route.parameters._query.elements[type]')
+            ->where('dashboardCards.1.metrics.0.route.name', 'grp.supply-chain.suppliers.index')
+            ->where('dashboardCards.1.route.parameters._query.elements[type]', 'free')
+            ->where('dashboardCards.1.metrics.0.route.parameters._query.elements[type]', 'through_agent')
             ->where('dashboardCards.2.route.name', 'grp.supply-chain.supplier_products.index')
             ->where('dashboardCards.3.route.name', 'grp.supply-chain.control.dashboard')
             ->where('dashboardCards.4.route.name', 'grp.supply-chain.shopping_list.board')
@@ -1415,15 +1414,14 @@ test('UI supply chain overview stock levels match the stock cover buckets and pi
     }
 });
 
-test('supply chain navigation separates agent suppliers from free suppliers', function () {
+test('supply chain navigation lists every supplier in one menu', function () {
     $navigation = GetGroupNavigation::run($this->adminGuest->getUser());
 
     expect(data_get($navigation, 'supply-chain.route.name'))->toBe('grp.supply-chain.overview')
         ->and(data_get($navigation, 'supply-chain.topMenu.subSections.0.route.name'))->toBe('grp.supply-chain.overview')
         ->and(data_get($navigation, 'supply-chain.topMenu.subSections.1.route.name'))->toBe('grp.supply-chain.dashboard')
+        ->and(collect(data_get($navigation, 'supply-chain.topMenu.subSections'))->pluck('route.name'))->not->toContain('grp.supply-chain.agent_suppliers.index')
         ->and(data_get($navigation, 'supply-chain.topMenu.subSections.3.route'))->toBe([
-        'name' => 'grp.supply-chain.agent_suppliers.index',
-    ])->and(data_get($navigation, 'supply-chain.topMenu.subSections.4.route'))->toBe([
         'name'       => 'grp.supply-chain.suppliers.index',
         'parameters' => [
             '_query' => [

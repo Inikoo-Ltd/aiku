@@ -9,6 +9,15 @@ struct MobileWarehouse: Decodable, Sendable, Equatable {
     struct Abilities: Decodable, Sendable, Equatable {
         let viewLocations: Bool
         let editLocations: Bool
+        var viewGoodsOut = false
+        var pickAndPack = false
+        var superviseGoodsOut = false
+        var viewInventory = false
+        var moveStock = false
+        var viewGoodsIn = false
+        var bookIn = false
+        var viewFulfilment = false
+        var editFulfilment = false
     }
 
     let id: Int
@@ -16,6 +25,27 @@ struct MobileWarehouse: Decodable, Sendable, Equatable {
     let name: String
     let organisation: Organisation
     let can: Abilities
+}
+
+extension MobileWarehouse.Abilities {
+    private enum CodingKeys: String, CodingKey {
+        case viewLocations, editLocations, viewGoodsOut, pickAndPack, superviseGoodsOut, viewInventory, moveStock, viewGoodsIn, bookIn, viewFulfilment, editFulfilment
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        viewLocations = try container.decode(Bool.self, forKey: .viewLocations)
+        editLocations = try container.decode(Bool.self, forKey: .editLocations)
+        viewGoodsOut = try container.decodeIfPresent(Bool.self, forKey: .viewGoodsOut) ?? false
+        pickAndPack = try container.decodeIfPresent(Bool.self, forKey: .pickAndPack) ?? false
+        superviseGoodsOut = try container.decodeIfPresent(Bool.self, forKey: .superviseGoodsOut) ?? false
+        viewInventory = try container.decodeIfPresent(Bool.self, forKey: .viewInventory) ?? false
+        moveStock = try container.decodeIfPresent(Bool.self, forKey: .moveStock) ?? false
+        viewGoodsIn = try container.decodeIfPresent(Bool.self, forKey: .viewGoodsIn) ?? false
+        bookIn = try container.decodeIfPresent(Bool.self, forKey: .bookIn) ?? false
+        viewFulfilment = try container.decodeIfPresent(Bool.self, forKey: .viewFulfilment) ?? false
+        editFulfilment = try container.decodeIfPresent(Bool.self, forKey: .editFulfilment) ?? false
+    }
 }
 
 struct MobileLocationsOverview: Decodable, Sendable, Equatable {

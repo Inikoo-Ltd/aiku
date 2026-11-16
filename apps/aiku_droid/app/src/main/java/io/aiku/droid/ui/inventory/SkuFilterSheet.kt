@@ -1,78 +1,81 @@
 package io.aiku.droid.ui.inventory
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import io.aiku.droid.R
+import io.aiku.droid.data.api.OrgStockFamily
+import io.aiku.droid.data.api.SkoSort
 import io.aiku.droid.ui.components.FilterSheet
 import io.aiku.droid.ui.components.FilterSheetOption
 import io.aiku.droid.ui.components.FilterSheetSection
-import io.aiku.droid.ui.components.Tone
-import io.aiku.droid.ui.components.tone
-import io.aiku.droid.ui.theme.LocalAikuColors
+
+private val sortOptions = SkoSort.entries
+
+private fun SkoFilter.selection(families: List<OrgStockFamily>): List<Set<Int>> = listOfNotNull(
+    families.takeIf { it.isNotEmpty() }?.let { options -> setOfNotNull(options.indexOfFirst { it.id == familyId }.takeIf { it >= 0 }) },
+    setOf(sortOptions.indexOf(sort ?: SkoSort.Code)),
+)
+
+private fun SkoFilter.withSelection(selection: List<Set<Int>>, families: List<OrgStockFamily>): SkoFilter {
+    val hasFamilies = families.isNotEmpty()
+    val chosenSort = selection[if (hasFamilies) 1 else 0].firstOrNull()?.let { sortOptions[it] }
+    return copy(
+        familyId = if (hasFamilies) selection[0].firstOrNull()?.let { families[it].id } else familyId,
+        sort = chosenSort?.takeIf { it != SkoSort.Code },
+    )
+}
 
 @Composable
-fun SkuFilterSheet(onDismiss: () -> Unit) {
-    val colors = LocalAikuColors.current
+fun SkuFilterSheet(
+    filter: SkoFilter,
+    families: List<OrgStockFamily>?,
+    totalFor: (SkoFilter) -> Int?,
+    onDraftChange: (SkoFilter) -> Unit,
+    onApply: (SkoFilter) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var draft by remember { mutableStateOf(filter) }
+    val familyOptions = families.orEmpty()
+    val total = totalFor(draft)
+    val sortLabels = mapOf(
+        SkoSort.Code to stringResource(R.string.inventory_sort_reference),
+        SkoSort.Name to stringResource(R.string.inventory_sort_name),
+        SkoSort.StockLowFirst to stringResource(R.string.inventory_sort_stock),
+        SkoSort.StockValue to stringResource(R.string.inventory_sort_stock_value),
+        SkoSort.Family to stringResource(R.string.inventory_sort_family),
+    )
+
+    LaunchedEffect(draft) { onDraftChange(draft) }
 
     FilterSheet(
         title = stringResource(R.string.inventory_filter_title),
-        sections = listOf(
-            FilterSheetSection(
-                label = stringResource(R.string.inventory_filter_sko_state),
-                options = listOf(
-                    FilterSheetOption(label = stringResource(R.string.inventory_state_active), dot = colors.tone(Tone.Success).content),
-                    FilterSheetOption(label = stringResource(R.string.inventory_state_discontinuing), dot = colors.tone(Tone.Warn).content),
-                    FilterSheetOption(label = stringResource(R.string.inventory_state_discontinued), dot = colors.dangerDot),
-                    FilterSheetOption(label = stringResource(R.string.inventory_state_suspended), dot = colors.faint),
-                    FilterSheetOption(label = stringResource(R.string.inventory_state_abnormality), dot = colors.danger),
-                ),
-            ),
-            FilterSheetSection(
-                label = stringResource(R.string.inventory_filter_stock_status),
-                options = listOf(
-                    FilterSheetOption(label = stringResource(R.string.inventory_status_excess), dot = colors.tone(Tone.Primary).content),
-                    FilterSheetOption(label = stringResource(R.string.inventory_status_ideal), dot = colors.tone(Tone.Success).content),
-                    FilterSheetOption(label = stringResource(R.string.inventory_status_low), dot = colors.tone(Tone.Warn).content),
-                    FilterSheetOption(label = stringResource(R.string.inventory_status_critical), dot = colors.tone(Tone.Orange).content),
-                    FilterSheetOption(label = stringResource(R.string.inventory_status_out_of_stock), dot = colors.dangerDot),
-                    FilterSheetOption(label = stringResource(R.string.inventory_status_error), dot = colors.dangerInk),
-                ),
-            ),
-            FilterSheetSection(
-                label = stringResource(R.string.inventory_filter_family),
-                options = sampleFilterFamilies.map { FilterSheetOption(label = it) },
-                isSample = true,
-            ),
-            FilterSheetSection(
-                label = stringResource(R.string.inventory_filter_area),
-                options = sampleFilterAreas.map { FilterSheetOption(label = it) },
-                isSample = true,
-                initiallySelected = setOf(0),
-            ),
-            FilterSheetSection(
-                label = stringResource(R.string.inventory_filter_location_type),
-                options = listOf(
-                    FilterSheetOption(label = stringResource(R.string.inventory_location_picking)),
-                    FilterSheetOption(label = stringResource(R.string.inventory_location_storing)),
-                ),
-                initiallySelected = setOf(0),
-            ),
+        sections = listOfNotNull(
+            familyOptions.takeIf { it.isNotEmpty() }?.let { options ->
+                FilterSheetSection(
+                    label = stringResource(R.string.inventory_filter_family),
+                    options = options.map { FilterSheetOption(label = stringResource(R.string.inventory_pair, it.code, it.name)) },
+                    isAtMostOne = true,
+                )
+            },
             FilterSheetSection(
                 label = stringResource(R.string.inventory_filter_sort),
-                options = listOf(
-                    FilterSheetOption(label = stringResource(R.string.inventory_sort_reference)),
-                    FilterSheetOption(label = stringResource(R.string.inventory_sort_name)),
-                    FilterSheetOption(label = stringResource(R.string.inventory_sort_stock)),
-                    FilterSheetOption(label = stringResource(R.string.inventory_sort_stock_value)),
-                    FilterSheetOption(label = stringResource(R.string.inventory_sort_family)),
-                ),
+                options = sortOptions.map { FilterSheetOption(label = sortLabels.getValue(it)) },
                 isSingleChoice = true,
                 isSort = true,
-                initiallySelected = setOf(0),
             ),
         ),
-        sampleTotal = SAMPLE_CURRENT_SKOS,
-        showLabel = R.plurals.inventory_filter_show,
+        selection = draft.selection(familyOptions),
+        onSelectionChange = { selection -> draft = draft.withSelection(selection, familyOptions) },
+        activeFilterCount = draft.activeFilterCount,
+        showText = total?.let { pluralStringResource(R.plurals.inventory_filter_show, it, it) } ?: stringResource(R.string.inventory_filter_show_unknown),
+        onShow = { onApply(draft) },
+        onReset = { draft = draft.cleared() },
         onDismiss = onDismiss,
     )
 }

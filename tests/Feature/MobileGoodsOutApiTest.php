@@ -372,11 +372,11 @@ test('mobile delivery note offers the picking actions of the web, by state and b
     [$theirs] = goodsOutPickingNote($this, [2], $colleague);
     [$mine, [$line]] = goodsOutPickingNote($this, [2], $clerk);
 
-    expect(goodsOutActionKeys($theirs))->toBe(['take_over', 'edit_delivery_address'])
-        ->and(goodsOutActionKeys($mine))->toBe(['change_trolley', 'edit_delivery_address']);
+    expect(goodsOutActionKeys($theirs))->toBe(['take_over', 'change_picker', 'edit_delivery_address'])
+        ->and(goodsOutActionKeys($mine))->toBe(['change_trolley', 'change_picker', 'edit_delivery_address']);
 
     postGoodsOut('grp.api.mobile.delivery_notes.lines.pick_all', [$mine->id, $line->id])->assertOk();
-    expect(goodsOutActionKeys($mine))->toBe(['set_as_picked', 'change_trolley', 'edit_delivery_address']);
+    expect(goodsOutActionKeys($mine))->toBe(['set_as_picked', 'change_trolley', 'change_picker', 'edit_delivery_address']);
 
     postGoodsOut('grp.api.mobile.delivery_notes.set_as_picked', $mine->id)->assertOk()->assertJsonPath('data.state', 'picked');
     expect(goodsOutActionKeys($mine))->toBe(['start_packing', 'undo_set_as_picked', 'change_trolley', 'change_picked_bay', 'edit_delivery_address']);
@@ -690,14 +690,14 @@ test('mobile put back clears the parts of a set sold only complete when another 
                 'locations'      => [goodsOutLineLocation($found)->location->code],
             ]]);
         expect(collect($page->json('data.available_actions'))->pluck('label', 'key')->all())
-            ->toBe(['put_back_incomplete_sets' => 'Parts put back', 'change_trolley' => 'Change trolley', 'edit_delivery_address' => 'Edit delivery address']);
+            ->toBe(['put_back_incomplete_sets' => 'Parts put back', 'change_trolley' => 'Change trolley', 'change_picker' => 'Change picker', 'edit_delivery_address' => 'Edit delivery address']);
 
         postGoodsOut('grp.api.mobile.delivery_notes.put_back_incomplete_sets', $deliveryNote->id)->assertOk()
             ->assertJsonPath('result.status', 'done')
             ->assertJsonPath('data.incomplete_sets', []);
         expect((float) $found->refresh()->quantity_picked)->toBe(0.0)
             ->and((float) $found->quantity_not_picked)->toBe(2.0)
-            ->and(goodsOutActionKeys($deliveryNote))->toBe(['set_as_picked', 'change_trolley', 'edit_delivery_address']);
+            ->and(goodsOutActionKeys($deliveryNote))->toBe(['set_as_picked', 'change_trolley', 'change_picker', 'edit_delivery_address']);
     } finally {
         $product->update(['is_indivisible' => false]);
     }

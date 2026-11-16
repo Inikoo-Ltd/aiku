@@ -152,14 +152,17 @@ async function onSave(tradeUnit: TradeUnit) {
     }
 }
 
+const perMetre: Record<string, number> = { mm: 1000, cm: 100, m: 1, inch: 39.3701 }
+
 const formatDimensions = (dims: any): string => {
     if (!dims || !Object.keys(dims).length) return ''
+    const unit = dims.units ?? 'm'
+    const inUnit = (metres: number) => Number((metres * (perMetre[unit] ?? 1)).toFixed(2))
     const parts = []
-    if (dims.l != null) parts.push(`L: ${dims.l}`)
-    if (dims.w != null) parts.push(`W: ${dims.w}`)
-    if (dims.h != null) parts.push(`H: ${dims.h}`)
-    const unit = dims.units ?? ''
-    return parts.join(' × ') + (unit ? ` ${unit}` : '')
+    if (dims.l != null) parts.push(`L: ${inUnit(dims.l)}`)
+    if (dims.w != null) parts.push(`W: ${inUnit(dims.w)}`)
+    if (dims.h != null) parts.push(`H: ${inUnit(dims.h)}`)
+    return parts.length ? `${parts.join(' × ')} ${unit}` : ''
 }
 
 function tradeUnitHref(tradeUnit: TradeUnit) {
@@ -278,7 +281,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     </button>
                 </template>
                 <template v-else>
-                    <span>{{ savedValues[tradeUnit.id]?.marketing_dimensions ? formatDimensions(savedValues[tradeUnit.id]?.marketing_dimensions ?? tradeUnit["marketing_dimensions"]) : canEditDimensions ? '' : '-'}}</span>
+                    <span>{{ formatDimensions(savedValues[tradeUnit.id]?.marketing_dimensions ?? tradeUnit["marketing_dimensions"]) || (canEditDimensions ? '' : '-') }}</span>
                     <button v-if="canEditDimensions" @click="onEdit(tradeUnit, 'marketing_dimensions')" class="text-gray-400 hover:text-gray-600">
                         <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" fixed-width />
                     </button>

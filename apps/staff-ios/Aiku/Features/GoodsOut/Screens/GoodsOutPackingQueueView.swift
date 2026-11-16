@@ -16,6 +16,15 @@ struct GoodsOutPackingQueueView: View {
     private var packed: [GoodsOutDeliveryNote] { items.filter { $0.state == .packed } }
 
     var body: some View {
+        if GoodsOutStore.shared.isRemote {
+            GoodsOutNotInTheAppScreen(title: "Packing queue", message: "Open picked delivery notes from the delivery notes list and start packing there. Quick packing from a queue isn’t available in the app yet.")
+        } else {
+            sampleBody
+        }
+    }
+
+    @ViewBuilder
+    private var sampleBody: some View {
         ScreenScaffold(showsTabBar: false, spacing: 12) {
             header
         } content: {

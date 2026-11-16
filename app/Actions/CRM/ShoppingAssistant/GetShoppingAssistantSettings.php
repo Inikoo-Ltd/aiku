@@ -21,13 +21,15 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * off costs no query. Where a new question is offered or accepted ($forNewQuestion) the website's
  * monthly AI budget must not be spent, nor a never-invoiced customer's own allowance; reading an answer, clicks and basket adds stay on.
  * hand_over says whether a person can be offered at all (see GetShoppingAssistantHandOverRoute::isOffered).
+ * expected_seconds is how long a question answered by the model usually takes on this website, for
+ * the waiting animation's honest progress bar.
  */
 class GetShoppingAssistantSettings
 {
     use AsAction;
 
     /**
-     * @return array{name: string, hand_over: bool}|null
+     * @return array{name: string, hand_over: bool, expected_seconds: int}|null
      */
     public function handle(Website $website, ?Customer $customer, bool $forNewQuestion = false): ?array
     {
@@ -39,7 +41,7 @@ class GetShoppingAssistantSettings
             return null;
         }
 
-        return ['name' => self::name($website), 'hand_over' => GetShoppingAssistantHandOverRoute::isOffered($website, $customer)];
+        return ['name' => self::name($website), 'hand_over' => GetShoppingAssistantHandOverRoute::isOffered($website, $customer), 'expected_seconds' => self::expectedSeconds($website)];
     }
 
     /**
@@ -52,6 +54,30 @@ class GetShoppingAssistantSettings
         return data_get($website->settings, 'shopping_assistant.name')
             ?: self::groupName($website->group_id)
             ?: (string) config('services.shopping_assistant.name');
+    }
+
+    public const int EXPECTED_SECONDS = 10;
+
+    /**
+     * The median time of the last 7 days' answers written by the model on this website, kept an
+     * hour; answers that need no model (plain searches, codes, greetings, thanks, hand-overs) are left
+     * out because they come back at once. EXPECTED_SECONDS until there are enough answers.
+     */
+    public static function expectedSeconds(Website $website): int
+    {
+        return Cache::remember('shopping_assistant_expected_seconds:'.$website->id, 3600, function () use ($website) {
+            $row = DB::table('shopping_assistant_messages')
+                ->join('shopping_assistant_conversations', 'shopping_assistant_conversations.id', '=', 'shopping_assistant_messages.shopping_assistant_conversation_id')
+                ->where('shopping_assistant_conversations.website_id', $website->id)
+                ->where('shopping_assistant_messages.role', 'assistant')
+                ->where('shopping_assistant_messages.created_at', '>=', now()->subDays(7))
+                ->whereNotNull('shopping_assistant_messages.latency_ms')
+                ->where('shopping_assistant_messages.model_calls', '>', 0)
+                ->selectRaw('count(*) as answers, percentile_cont(0.5) within group (order by shopping_assistant_messages.latency_ms) as median_ms')
+                ->first();
+
+            return $row && $row->answers >= 20 ? max(3, (int) round($row->median_ms / 1000)) : self::EXPECTED_SECONDS;
+        });
     }
 
     public static function nameInGroup(int $groupId): string

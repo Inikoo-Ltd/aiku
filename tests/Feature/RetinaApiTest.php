@@ -700,6 +700,16 @@ test('retina api data feeds are served from the stored build and rebuilt in the 
     'json' => ['retina.api.dropshipping.data_feed.json', 'json'],
 ]);
 
+test('shop data feed is built through a temporary file outside the shared storage', function () {
+    Storage::fake('data-feeds');
+    $shop = $this->product->shop;
+
+    \App\Actions\Retina\Dropshipping\Product\SaveDataFeeds::run($shop);
+
+    expect(config('excel.temporary_files.local_path'))->not->toStartWith(storage_path())
+        ->and(Storage::disk('data-feeds')->get(\App\Actions\Retina\Dropshipping\Product\SaveDataFeeds::path($shop)))->toContain($this->product->code);
+});
+
 // ---- Fulfilment: clients ----
 
 test('retina api fulfilment clients flow', function () {
@@ -1324,4 +1334,14 @@ test('retina api json data feed gives the rrp per unit and per outer', function 
 
     expect((float) $row['product_unit_rrp'])->toBe(3.12)
         ->and((float) $row['product_rrp'])->toBe(18.72);
+});
+
+test('retina api json data feed gives the unit dimensions in their display unit, not the stored metres', function () {
+    $this->product->updateQuietly(['marketing_dimensions' => ['type' => 'rectangular', 'units' => 'cm', 'l' => 0.1, 'w' => 0.05, 'h' => 0.02]]);
+    StorePortfolio::make()->action($this->dropshippingChannel, $this->product, []);
+
+    $feed = \App\Actions\Retina\Dropshipping\Portfolio\PortfoliosJsonExport::run($this->dropshippingChannel);
+    $row  = collect($feed['data'])->first(fn ($row) => $row[1] === $this->product->code);
+
+    expect(array_combine(array_column($feed['schema'], 'field_code'), $row)['product_unit_dimensions'])->toBe('10x5x2 (cm)');
 });

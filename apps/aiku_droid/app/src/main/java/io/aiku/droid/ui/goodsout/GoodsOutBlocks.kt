@@ -165,6 +165,8 @@ internal fun IconInfoRow(
     actionModifier: Modifier = Modifier,
     onAction: (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
+    secondaryActionLabel: String? = null,
+    onSecondaryAction: (() -> Unit)? = null,
 ) {
     val colors = LocalAikuColors.current
 
@@ -197,6 +199,9 @@ internal fun IconInfoRow(
                 Text(text = subtitle, fontSize = 13.sp, color = colors.textTertiary)
             }
         }
+        if (secondaryActionLabel != null && onSecondaryAction != null) {
+            RowActionText(text = secondaryActionLabel, color = colors.link, onClick = onSecondaryAction)
+        }
         if (actionLabel != null) {
             Text(
                 text = actionLabel,
@@ -215,6 +220,21 @@ internal fun IconInfoRow(
             )
         }
     }
+}
+
+@Composable
+private fun RowActionText(text: String, color: Color, onClick: () -> Unit) {
+    Text(
+        text = text,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = color,
+        modifier = Modifier
+            .heightIn(min = 44.dp)
+            .clip(ChipShape)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 12.dp),
+    )
 }
 
 @Composable

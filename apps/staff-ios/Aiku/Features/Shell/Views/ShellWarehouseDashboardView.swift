@@ -5,6 +5,8 @@ struct ShellWarehouseDashboardView: View {
     @Environment(Session.self) private var session
     @State private var isChoosingWarehouse = false
 
+    private var modules: ModuleAccess { session.visibleModules }
+
     var body: some View {
         AppScreen(
             title: "Dashboard",
@@ -22,30 +24,36 @@ struct ShellWarehouseDashboardView: View {
                 .accessibilityIdentifier("shell.dashboard.changeWarehouse")
             }
             tiles
-            panel(ShellDashboardContent.goodsOut, columns: 4) {
-                VStack(spacing: 10) {
-                    HStack {
-                        Text("Dispatched today")
-                            .foregroundStyle(AikuColor.text3)
-                        Spacer()
-                        Text("\(ShellDashboardContent.dispatchedToday) of \(ShellDashboardContent.dispatchTarget)")
-                            .bold()
-                            .foregroundStyle(AikuColor.text)
+            if modules.goodsOut {
+                panel(ShellDashboardContent.goodsOut, columns: 4) {
+                    VStack(spacing: 10) {
+                        HStack {
+                            Text("Dispatched today")
+                                .foregroundStyle(AikuColor.text3)
+                            Spacer()
+                            Text("\(ShellDashboardContent.dispatchedToday) of \(ShellDashboardContent.dispatchTarget)")
+                                .bold()
+                                .foregroundStyle(AikuColor.text)
+                        }
+                        .font(.aiku(12))
+                        ProgressBar(value: ShellDashboardContent.dispatchedFraction, height: 6)
                     }
-                    .font(.aiku(12))
-                    ProgressBar(value: ShellDashboardContent.dispatchedFraction, height: 6)
                 }
             }
-            panel(ShellDashboardContent.goodsIn, columns: 4) { EmptyView() }
-            panel(ShellDashboardContent.inventory, columns: 3) { EmptyView() }
-            SectionHeading("Stock history · today", actionTitle: "All") {
-                router.open(InventoryRoute.stockHistory)
+            if modules.goodsIn {
+                panel(ShellDashboardContent.goodsIn, columns: 4) { EmptyView() }
             }
-            CardList(ShellDashboardContent.movements) { movement in
-                ListRow(movement.sko, subtitle: movement.detail, chips: [movement.change]) {
-                    ProductThumb(size: 48, label: "Product photo of \(movement.sko)")
-                } trailing: {
-                    EmptyView()
+            if modules.inventory {
+                panel(ShellDashboardContent.inventory, columns: 3) { EmptyView() }
+                SectionHeading("Stock history · today", actionTitle: "All") {
+                    router.open(InventoryRoute.stockHistory)
+                }
+                CardList(ShellDashboardContent.movements) { movement in
+                    ListRow(movement.sko, subtitle: movement.detail, chips: [movement.change]) {
+                        ProductThumb(size: 48, label: "Product photo of \(movement.sko)")
+                    } trailing: {
+                        EmptyView()
+                    }
                 }
             }
             HelperText("Your assigned work is in My work.")
@@ -55,7 +63,7 @@ struct ShellWarehouseDashboardView: View {
 
     private var tiles: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 8) {
-            ForEach(ShellDashboardContent.tiles) { tile in
+            ForEach(ShellDashboardContent.tiles(for: modules)) { tile in
                 Button {
                     router.shellFollow(tile.link)
                 } label: {

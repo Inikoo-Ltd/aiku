@@ -45,6 +45,7 @@ use App\Actions\Inventory\Warehouse\UpdateWarehouse;
 use App\Actions\Inventory\WarehouseArea\StoreWarehouseArea;
 use App\Actions\Inventory\WarehouseArea\UpdateWarehouseArea;
 use App\Enums\Goods\Stock\StockStateEnum;
+use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Inventory\OrgStock\LostAndFoundOrgStockStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -561,6 +562,125 @@ test('remove selected org stocks from a location writes off the stock left in it
     expect($writeOff)->not->toBeNull()
         ->and((float) $writeOff->quantity)->toBe(-5.0)
         ->and($writeOff->user_id)->toBe($this->user->id);
+})->depends('create warehouse');
+
+test('moving stock out of a location records who moved it', function (Warehouse $warehouse) {
+    $source = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $target = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+
+    $orgStocks = collect(range(1, 2))->map(function () {
+        $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+
+        return StoreOrgStock::make()->action($this->organisation, $stock);
+    });
+
+    StoreLocationOrgStock::make()->action($orgStocks[0], $source, ['type' => LocationStockTypeEnum::PICKING])->update(['quantity' => 5]);
+    StoreLocationOrgStock::make()->action($orgStocks[1], $source, ['type' => LocationStockTypeEnum::PICKING])->update(['quantity' => 3]);
+
+    $lastMovementId = (int) DB::table('org_stock_movements')->max('id');
+
+    post(route('grp.models.location.partial_move_stock', ['location' => $source->id]), ['location_id' => $target->id, 'reason' => 'transfer', 'org_stocks' => [['org_stock_id' => $orgStocks[0]->id, 'quantity' => 2]]])
+        ->assertSessionHasNoErrors();
+    post(route('grp.models.location.mass_move_stock', ['location' => $source->id]), ['location_id' => $target->id, 'reason' => 'transfer', 'remove_after_move' => true])
+        ->assertSessionHasNoErrors();
+
+    expect((float) $target->locationOrgStocks()->where('org_stock_id', $orgStocks[0]->id)->value('quantity'))->toBe(5.0)
+        ->and((float) $target->locationOrgStocks()->where('org_stock_id', $orgStocks[1]->id)->value('quantity'))->toBe(3.0)
+        ->and($source->locationOrgStocks()->exists())->toBeFalse();
+
+    $movements = DB::table('org_stock_movements')->where('id', '>', $lastMovementId)->whereIn('location_id', [$source->id, $target->id]);
+    expect((clone $movements)->count())->toBeGreaterThan(0)
+        ->and((clone $movements)->where(fn ($query) => $query->whereNull('user_id')->orWhere('user_id', '!=', $this->user->id))->count())->toBe(0);
+})->depends('create warehouse');
+
+test('moving stock out of a location with move some only takes the location\'s own SKOs, each once', function (Warehouse $warehouse) {
+    $source        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $target        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $otherLocation = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+
+    $orgStocks = collect(range(1, 2))->map(function () {
+        $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+
+        return StoreOrgStock::make()->action($this->organisation, $stock);
+    });
+
+    StoreLocationOrgStock::make()->action($orgStocks[0], $source, ['type' => LocationStockTypeEnum::PICKING])->update(['quantity' => 5]);
+    StoreLocationOrgStock::make()->action($orgStocks[1], $otherLocation, ['type' => LocationStockTypeEnum::PICKING]);
+
+    $lastMovementId = (int) DB::table('org_stock_movements')->max('id');
+    $moveSome       = route('grp.models.location.partial_move_stock', ['location' => $source->id]);
+
+    post($moveSome, ['location_id' => $target->id, 'reason' => 'transfer', 'org_stocks' => [['org_stock_id' => $orgStocks[1]->id, 'quantity' => 1]]])
+        ->assertSessionHasErrors('org_stocks.0.org_stock_id');
+    post($moveSome, ['location_id' => $target->id, 'reason' => 'transfer', 'org_stocks' => [
+        ['org_stock_id' => $orgStocks[0]->id, 'quantity' => 1],
+        ['org_stock_id' => $orgStocks[0]->id, 'quantity' => 1],
+    ]])->assertSessionHasErrors('org_stocks.1.org_stock_id');
+
+    expect((int) DB::table('org_stock_movements')->max('id'))->toBe($lastMovementId)
+        ->and((float) $source->locationOrgStocks()->where('org_stock_id', $orgStocks[0]->id)->value('quantity'))->toBe(5.0);
+})->depends('create warehouse');
+
+test('stock is only moved to a working location of the same warehouse that holds stock', function (Warehouse $warehouse) {
+    $source        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $broken        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $noStock       = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $working       = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $otherWarehouse = StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+    $elsewhere     = StoreLocation::make()->action($otherWarehouse, Location::factory()->definition());
+    $broken->update(['status' => LocationStatusEnum::BROKEN]);
+    $noStock->update(['allow_stocks' => false]);
+
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+    StoreLocationOrgStock::make()->action($orgStock, $source, ['type' => LocationStockTypeEnum::PICKING])->update(['quantity' => 4]);
+
+    $moveSome = route('grp.models.location.partial_move_stock', ['location' => $source->id]);
+    $moveAll  = route('grp.models.location.mass_move_stock', ['location' => $source->id]);
+
+    foreach ([$elsewhere, $broken, $noStock] as $target) {
+        post($moveSome, ['location_id' => $target->id, 'reason' => 'transfer', 'org_stocks' => [['org_stock_id' => $orgStock->id, 'quantity' => 1]]])
+            ->assertSessionHasErrors('location_id');
+        post($moveAll, ['location_id' => $target->id, 'reason' => 'transfer'])->assertSessionHasErrors('location_id');
+    }
+    expect((float) $source->locationOrgStocks()->where('org_stock_id', $orgStock->id)->value('quantity'))->toBe(4.0)
+        ->and(LocationOrgStock::whereIn('location_id', [$elsewhere->id, $broken->id, $noStock->id])->exists())->toBeFalse();
+
+    post($moveAll, ['location_id' => $working->id, 'reason' => 'transfer'])->assertSessionHasNoErrors();
+    expect((float) $working->locationOrgStocks()->where('org_stock_id', $orgStock->id)->value('quantity'))->toBe(4.0);
+})->depends('create warehouse');
+
+test('editing an SKO in a location needs stock edit rights, and a refused edit changes nothing', function (Warehouse $warehouse) {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+    $picking  = StoreLocationOrgStock::make()->action($orgStock, StoreLocation::make()->action($warehouse, Location::factory()->definition()), ['type' => LocationStockTypeEnum::PICKING]);
+    $storing  = StoreLocationOrgStock::make()->action($orgStock, StoreLocation::make()->action($warehouse, Location::factory()->definition()), ['type' => LocationStockTypeEnum::STORING]);
+
+    $user = $this->guest->getUser();
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $reset         = function (array $roles) use ($user) {
+        setPermissionsTeamId($user->group_id);
+        $user->syncRoles($roles);
+        Cache::tags('auth-user:'.$user->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        actingAs($user->refresh());
+    };
+    $url = route('grp.models.location_org_stock.update', ['locationOrgStock' => $storing->id]);
+
+    $reset([RolesEnum::getRoleName('warehouse-viewer', $warehouse)]);
+    $this->patchJson($url, ['type' => LocationStockTypeEnum::PICKING->value, 'notes' => 'Changed by a viewer'])->assertForbidden();
+    expect($storing->refresh()->type)->toBe(LocationStockTypeEnum::STORING)
+        ->and($storing->notes)->not->toBe('Changed by a viewer')
+        ->and($picking->refresh()->type)->toBe(LocationStockTypeEnum::PICKING);
+
+    $reset([RolesEnum::getRoleName('stock-controller', $warehouse)]);
+    $this->patchJson($url, ['type' => LocationStockTypeEnum::PICKING->value, 'notes' => 'Changed by a stock controller'])->assertOk();
+    expect($storing->refresh()->type)->toBe(LocationStockTypeEnum::PICKING)
+        ->and($storing->notes)->toBe('Changed by a stock controller')
+        ->and($picking->refresh()->type)->toBe(LocationStockTypeEnum::STORING);
+
+    $reset($originalRoles);
 })->depends('create warehouse');
 
 test('update location', function ($location) {

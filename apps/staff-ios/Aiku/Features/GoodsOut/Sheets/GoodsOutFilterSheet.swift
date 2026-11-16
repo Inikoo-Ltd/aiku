@@ -19,6 +19,7 @@ struct GoodsOutFilterSheet: View {
     ]
 
     private var resultCount: Int {
+        guard !store.isRemote else { return 0 }
         var query = store.listQuery
         query.apply(draft)
         return query.results(in: store.notes, currentUser: store.currentUser).count
@@ -32,22 +33,31 @@ struct GoodsOutFilterSheet: View {
                     .frame(minHeight: 44)
             }
             .padding(.top, -12)
-            section("State", values: GoodsOutDeliveryNoteState.listTabs, selected: draft.states, title: \.title, dot: { Self.stateDots[$0] }) { draft.states.formSymmetricDifference([$0]) }
-            section("Picker", values: GoodsOutPickerFilter.allCases, selected: draft.pickers, title: \.title) { draft.pickers.formSymmetricDifference([$0]) }
-            section("Channel", values: GoodsOutChannel.allCases, selected: draft.channels, title: \.title) { draft.channels.formSymmetricDifference([$0]) }
-            section("Shipper", values: GoodsOutShipper.allCases, selected: draft.shippers, title: \.title) { draft.shippers.formSymmetricDifference([$0]) }
-            section("Date", values: GoodsOutDateFilter.allCases, selected: draft.dates, title: \.title) { draft.dates.formSymmetricDifference([$0]) }
+            section("State", values: GoodsOutDeliveryNoteState.listTabs, selected: draft.states, title: \.title, dot: { Self.stateDots[$0] }) { draft.states = toggled(draft.states, $0) }
+            section("Picker", values: GoodsOutPickerFilter.allCases, selected: draft.pickers, title: \.title) { draft.pickers = toggled(draft.pickers, $0) }
+            section("Channel", values: GoodsOutChannel.allCases.filter { store.isRemote || $0 != .fulfilment }, selected: draft.channels, title: \.title) { draft.channels = toggled(draft.channels, $0) }
+            if !store.isRemote {
+                section("Shipper", values: GoodsOutShipper.allCases, selected: draft.shippers, title: \.title) { draft.shippers.formSymmetricDifference([$0]) }
+            }
+            section("Date", values: GoodsOutDateFilter.allCases.filter { !store.isRemote || $0 != .overdue }, selected: draft.dates, title: \.title) { draft.dates = toggled(draft.dates, $0) }
             section("Sort by", hint: "Choose one", values: GoodsOutSort.allCases, selected: [draft.sort], title: \.title) { draft.sort = $0 }
         } footer: {
             Text(draft.summary)
                 .font(.aiku(12))
                 .foregroundStyle(AikuColor.text3)
                 .frame(maxWidth: .infinity)
-            AikuButton("Show \(resultCount) delivery \(resultCount == 1 ? "note" : "notes")") {
+            AikuButton(store.isRemote ? "Show delivery notes" : "Show \(resultCount) delivery \(resultCount == 1 ? "note" : "notes")") {
                 onApply(draft)
             }
             .accessibilityIdentifier("goodsOut.filter.apply")
         }
+    }
+
+    private func toggled<Value: Hashable>(_ selection: Set<Value>, _ value: Value) -> Set<Value> {
+        if store.isRemote {
+            return selection.contains(value) ? [] : [value]
+        }
+        return selection.symmetricDifference([value])
     }
 
     private func section<Value: Hashable>(
@@ -66,7 +76,7 @@ struct GoodsOutFilterSheet: View {
                     .tracking(0.5)
                     .foregroundStyle(AikuColor.text3)
                 Spacer()
-                Text(hint ?? (selected.isEmpty ? "Any" : "\(selected.count) selected"))
+                Text(hint ?? (selected.isEmpty ? "Any" : (store.isRemote ? "Choose one" : "\(selected.count) selected")))
                     .font(.aiku(12))
                     .foregroundStyle(AikuColor.text4)
             }

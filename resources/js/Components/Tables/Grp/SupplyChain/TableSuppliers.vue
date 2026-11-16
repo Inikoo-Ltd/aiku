@@ -22,10 +22,15 @@ interface Supplier {
     slug: string
     code: string
     name: string
+    nickname: string | null
+    agent_slug: string | null
+    agent_code: string | null
+    agent_name: string | null
     location: object
     status_icon: object
     number_supplier_products: number
     number_purchase_orders: number
+    number_open_purchase_orders: number
     number_stock_deliveries: number
     agreement: { status: string, label: string, colour: string, icon: string } | null
 }
@@ -40,6 +45,18 @@ const locale = useLocaleStore()
 function supplierRoute(supplier: Supplier) {
     return route("grp.majordomo.redirect_supplier", [supplier.id])
 }
+
+function supplierProductsRoute(supplier: Supplier) {
+    return route("grp.supply-chain.suppliers.supplier_products.index", [supplier.slug])
+}
+
+function purchaseOrdersRoute(supplier: Supplier) {
+    return route("grp.supply-chain.suppliers.purchase_orders.index", [supplier.slug])
+}
+
+function agentRoute(supplier: Supplier) {
+    return route("grp.supply-chain.agents.show", [supplier.agent_slug])
+}
 </script>
 
 <template>
@@ -53,14 +70,26 @@ function supplierRoute(supplier: Supplier) {
             </Link>
             <span v-if="supplier.open_incidents" class="ml-1 rounded-full bg-gray-800 px-1.5 py-0.5 text-xs font-medium text-white tabular-nums" :title="ctrans('Open incidents')">{{ supplier.open_incidents }}</span>
         </template>
+        <template #cell(agent_code)="{ item: supplier }">
+            <Link v-if="supplier.agent_slug" :href="agentRoute(supplier)" class="secondaryLink" :title="supplier.agent_name">
+                {{ supplier.agent_code }}
+            </Link>
+        </template>
         <template #cell(location)="{ item: supplier }">
             <AddressLocation :data="supplier['location']" />
         </template>
         <template #cell(number_supplier_products)="{ item: supplier }">
-            {{ locale.number(supplier.number_supplier_products) }}
+            <Link :href="supplierProductsRoute(supplier)" class="secondaryLink">
+                {{ locale.number(supplier.number_supplier_products) }}
+            </Link>
         </template>
         <template #cell(number_purchase_orders)="{ item: supplier }">
-            {{ locale.number(supplier.number_purchase_orders) }}
+            <Link :href="purchaseOrdersRoute(supplier)" class="secondaryLink">
+                {{ locale.number(supplier.number_purchase_orders) }}
+            </Link>
+            <span v-if="supplier.number_open_purchase_orders" class="ml-1 text-xs text-gray-500 tabular-nums" :title="ctrans('Open purchase orders')">
+                ({{ ctrans(":count open", { count: locale.number(supplier.number_open_purchase_orders) }) }})
+            </span>
         </template>
         <template #cell(number_stock_deliveries)="{ item: supplier }">
             {{ locale.number(supplier.number_stock_deliveries) }}

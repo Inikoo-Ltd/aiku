@@ -158,7 +158,7 @@ class ShowInventoryDashboard extends OrgAction
                         'metaRight'       => [
                             'tooltip' => __('Set minimum stock levels'),
                             'icon'    => ['icon' => 'fal fa-sliders-h', 'class' => 'mr-1'],
-                            'count'   => OrgStock::where('organisation_id', $this->organisation->id)->where('state', OrgStockStateEnum::ACTIVE)->whereNotNull('minimum_stock')->count(),
+                            'count'   => self::numberOrgStocksWithMinimumStock($this->organisation),
                             'route'   => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stocks.below_minimum_stock.levels',
                                 'parameters' => $routeParameters
@@ -174,7 +174,7 @@ class ShowInventoryDashboard extends OrgAction
                             'parameters' => $routeParameters
                         ],
                         'icon'  => 'fal fa-exclamation-triangle',
-                        'value' => LocationOrgStock::where('warehouse_id', $this->warehouse->id)->where('quantity', '<', 0)->count(),
+                        'value' => self::numberNegativeStocks($this->warehouse),
                     ],
                     [
                         'label' => __('Wrong Weights'),
@@ -183,7 +183,7 @@ class ShowInventoryDashboard extends OrgAction
                             'parameters' => $routeParameters
                         ],
                         'icon'  => 'fal fa-weight-hanging',
-                        'value' => OrgStock::where('organisation_id', $this->organisation->id)->where('has_wrong_weight', true)->count(),
+                        'value' => self::numberWrongWeights($this->organisation),
                     ],
                     [
                         'label' => __('SKOs Without Product'),
@@ -257,10 +257,7 @@ class ShowInventoryDashboard extends OrgAction
     {
         $dashboard = [];
         foreach ($this->organisation->warehouses as $warehouse) {
-            $utilization = 0;
-            if ($warehouse->stats->number_locations) {
-                $utilization = ($warehouse->stats->number_locations - $warehouse->stats->number_empty_locations) / $warehouse->stats->number_locations * 100;
-            }
+            $utilization = (self::locationUtilisation($warehouse) ?? 0) * 100;
             $dashboard['columns'][] = [
                 'widgets' => [
                     [
@@ -276,6 +273,32 @@ class ShowInventoryDashboard extends OrgAction
         }
 
         return $dashboard;
+    }
+
+    public static function numberOrgStocksWithMinimumStock(Organisation $organisation): int
+    {
+        return OrgStock::where('organisation_id', $organisation->id)->where('state', OrgStockStateEnum::ACTIVE)->whereNotNull('minimum_stock')->count();
+    }
+
+    public static function numberNegativeStocks(Warehouse $warehouse): int
+    {
+        return LocationOrgStock::where('warehouse_id', $warehouse->id)->where('quantity', '<', 0)->count();
+    }
+
+    public static function numberWrongWeights(Organisation $organisation): int
+    {
+        return OrgStock::where('organisation_id', $organisation->id)->where('has_wrong_weight', true)->count();
+    }
+
+    public static function locationUtilisation(Warehouse $warehouse): int|float|null
+    {
+        $stats = $warehouse->stats;
+
+        if (!$stats?->number_locations) {
+            return null;
+        }
+
+        return ($stats->number_locations - $stats->number_empty_locations) / $stats->number_locations;
     }
 
     public function getDashboardStats(): array

@@ -23,17 +23,16 @@ import kotlinx.serialization.Serializable
 @Serializable data class NotDesignedRoute(val title: String)
 @Serializable data object InventoryDashboardRoute
 @Serializable data object SkuFamiliesRoute
-@Serializable data class SkuFamilyRoute(val code: String)
-@Serializable data object SkusRoute
-@Serializable data object SkuAbnormalitiesRoute
-@Serializable data class SkuRoute(val code: String)
-@Serializable data object StockHistoryRoute
+@Serializable data class SkuFamilyRoute(val id: Long, val code: String)
+@Serializable data class SkusRoute(val bucket: String? = null)
+@Serializable data class SkuRoute(val id: Long, val code: String)
+@Serializable data class StockHistoryRoute(val code: String, val orgStockId: Long? = null, val locationId: Long? = null)
 @Serializable data object WarehouseOverviewRoute
 @Serializable data object AreasRoute
-@Serializable data class AreaRoute(val code: String)
-@Serializable data object LocationsRoute
-@Serializable data class LocationRoute(val code: String)
-@Serializable data class LocationSkuRoute(val locationCode: String, val skuCode: String)
+@Serializable data class AreaRoute(val id: Long, val code: String)
+@Serializable data class LocationsRoute(val tab: String? = null)
+@Serializable data class LocationRoute(val id: Long, val code: String)
+@Serializable data class LocationSkuRoute(val locationId: Long, val locationOrgStockId: Long, val locationCode: String, val skoCode: String)
 @Serializable data object GoodsInBacklogRoute
 @Serializable data object StockDeliveriesRoute
 @Serializable data class StockDeliveryArrivingRoute(val reference: String)
