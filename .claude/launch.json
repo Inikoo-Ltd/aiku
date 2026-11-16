@@ -6,6 +6,17 @@
             "url": "https://app.aiku.test"
         },
         {
+            "name": "grp-vite",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev.grp",
+                "--",
+                "--force"
+            ],
+            "port": 5173
+        },
+        {
             "name": "iris-vite",
             "runtimeExecutable": "npm",
             "runtimeArgs": [
