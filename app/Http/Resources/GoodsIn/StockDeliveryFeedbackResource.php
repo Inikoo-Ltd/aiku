@@ -23,8 +23,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
 
 /**
- * A feedback card, the same on the delivery page and the supplier portal. Never carries money. Photos are left out
- * on the supplier's own link, as their download route is staff only.
+ * A feedback card, the same on the delivery page and the supplier portal. Never carries money. On the supplier's own
+ * link the photos open through that link, as the staff media route needs a login.
  */
 class StockDeliveryFeedbackResource extends JsonResource
 {
@@ -56,7 +56,7 @@ class StockDeliveryFeedbackResource extends JsonResource
             'author'             => $forSupplier ? null : ($feedback->author?->contact_name ?? $feedback->author?->username),
             'author_id'          => $forSupplier ? null : $feedback->author_id,
             'created_at'         => $feedback->created_at,
-            'photos'             => $forSupplier ? [] : self::photos($feedback),
+            'photos'             => self::photos($feedback, $forSupplier ? $request->route('token') : null),
             'instruction'        => $note ? [
                 'id'    => $note->id,
                 'body'  => $note->body,
@@ -113,9 +113,9 @@ class StockDeliveryFeedbackResource extends JsonResource
     }
 
     /**
-     * @return array<int, array{media_ulid: string, caption: string|null, file_type: string|null, download_route: array<string, mixed>}>
+     * @return array<int, array{media_ulid: string, caption: string|null, file_type: string|null, url: string}>
      */
-    public static function photos(StockDeliveryFeedback $feedback): array
+    public static function photos(StockDeliveryFeedback $feedback, ?string $token = null): array
     {
         return DB::table('model_has_attachments')
             ->join('media', 'media.id', 'model_has_attachments.media_id')
@@ -128,7 +128,9 @@ class StockDeliveryFeedbackResource extends JsonResource
                 'media_ulid'     => $media->ulid,
                 'caption'        => $media->caption,
                 'file_type'      => $media->file_name ? strtolower(pathinfo($media->file_name, PATHINFO_EXTENSION)) : null,
-                'download_route' => ['name' => 'grp.media.download', 'parameters' => [$media->ulid]],
+                'url'            => $token === null
+                    ? route('grp.media.download', ['media' => $media->ulid, 'inline' => true])
+                    : route('grp.supplier_share.feedback_photo', ['token' => $token, 'media' => $media->ulid, 'inline' => true]),
             ])->all();
     }
 }

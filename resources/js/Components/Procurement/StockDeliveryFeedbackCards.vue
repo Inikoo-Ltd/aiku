@@ -27,7 +27,7 @@ export interface FeedbackCard {
 	purchase_orders: string[]
 	author: string | null
 	created_at: string
-	photos?: { media_ulid: string; caption: string | null; file_type: string | null; download_route: routeType }[]
+	photos?: { media_ulid: string; caption: string | null; file_type: string | null; url: string }[]
 	instruction: { id: number; body: string; state: string } | null
 	open_discrepancies?: { id: number; code: string | null; expected: number; received: number; outcome: string | null; outcome_label: string | null; claim_state: string | null }[]
 	make_instruction_route?: routeType | null
@@ -114,8 +114,8 @@ const submitInstruction = () => {
 			<p v-if="card.comment" class="mt-3 whitespace-pre-line text-gray-800">{{ card.comment }}</p>
 
 			<div v-if="card.photos?.length" class="mt-3 flex flex-wrap gap-2">
-				<a v-for="photo in card.photos" :key="photo.media_ulid" :href="route(photo.download_route.name, photo.download_route.parameters)" target="_blank" rel="noopener" class="flex h-16 w-16 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-400" :title="photo.caption ?? ctrans('Photo')">
-					<img v-if="isImage(photo.file_type)" :src="route(photo.download_route.name, photo.download_route.parameters)" :alt="photo.caption ?? ctrans('Photo')" loading="lazy" class="h-full w-full object-cover" />
+				<a v-for="photo in card.photos" :key="photo.media_ulid" :href="photo.url" target="_blank" rel="noopener" class="flex h-16 w-16 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-400" :title="photo.caption ?? ctrans('Photo')">
+					<img v-if="isImage(photo.file_type)" :src="photo.url" :alt="photo.caption ?? ctrans('Photo')" loading="lazy" class="h-full w-full object-cover" />
 					<span v-else class="flex flex-col items-center text-xxs uppercase">
 						<FontAwesomeIcon :icon="faPaperclip" class="text-base" aria-hidden="true" />
 						{{ photo.file_type }}

@@ -22,6 +22,7 @@ use App\Actions\SysAdmin\User\UpdateUserPasswordViaEmail;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
 use App\Actions\SupplyChain\SupplierPortalContact\SendSupplierPortalLink;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
+use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalFeedbackPhoto;
 use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalImage;
 use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalPaymentReceipt;
 use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalLabelsPlan;
@@ -59,6 +60,7 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::post('purchase-orders/{purchaseOrder}/production', UpdateSupplierPortalPurchaseOrderProduction::class)->middleware('throttle:supplier-portal-submit')->whereNumber('purchaseOrder')->name('purchase_order.production');
         Route::get('purchase-orders/{purchaseOrder}/receipts/{media:ulid}', DownloadSupplierPortalPaymentReceipt::class)->whereNumber('purchaseOrder')->name('purchase_order.receipt');
         Route::get('images/{media:ulid}', DownloadSupplierPortalImage::class)->name('image');
+        Route::get('feedback-photos/{media:ulid}', DownloadSupplierPortalFeedbackPhoto::class)->name('feedback_photo');
         Route::get('labels', PdfSupplierPortalLabels::class)->middleware('throttle:supplier-portal-labels')->name('labels');
         Route::get('labels/plan', GetSupplierPortalLabelsPlan::class)->name('labels.plan');
     });
