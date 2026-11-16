@@ -23,7 +23,7 @@ import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { useLocaleStore } from "@/Stores/locale"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import RenderProduct from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
+import RangeAdvisorProductCard from "@/Iris/Components/RangeAdvisorProductCard.vue"
 import RenderProductDropshiping from "@/Iris/Components/IrisBlocks/Products/ds/RenderProductDropshiping.vue"
 import RangeAdvisorPanel from "@/Iris/Components/RangeAdvisorPanel.vue"
 import { ProductResource } from "@/types/Iris/Products"
@@ -1013,21 +1013,20 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                             <TabPanel v-for="tab in tabs" :key="tab.key" :value="tab.key">
                                                 <div class="assistant-grid">
                                                     <div v-for="card in tab.cards" :key="`${card.id}-${cardsVersion}`" @click.capture="(event) => recordClick(event, card)">
-                                                        <p class="mb-1 text-xs text-gray-600">{{ card.assistant_reason }}</p>
-                                                        <div :style="getStyles(fieldValue?.card_product?.properties, screenType)" class="relative flex justify-center rounded">
-                                                            <RenderProductDropshiping v-if="isDropshipping" :code="productCardCode" :product="card"
+                                                        <template v-if="isDropshipping">
+                                                            <p class="mb-1 text-xs text-gray-600">{{ card.assistant_reason }}</p>
+                                                            <div :style="getStyles(fieldValue?.card_product?.properties, screenType)" class="relative flex justify-center rounded">
+                                                                <RenderProductDropshiping :code="productCardCode" :product="card"
                                                                 :productHasPortfolio="card.portfolio_channels ?? []"
                                                                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
                                                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
                                                                 :bestSeller="fieldValue?.bestseller" :screenType />
-                                                            <RenderProduct v-else :code="productCardCode" :product="card"
-                                                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
-                                                                :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
-                                                                :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
-                                                                :button="fieldValue?.button"
-                                                                :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])"
-                                                                :bestSeller="fieldValue?.bestseller" :screenType />
-                                                        </div>
+                                                            </div>
+                                                        </template>
+                                                        <RangeAdvisorProductCard v-else :product="card"
+                                                            :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', card.id])"
+                                                            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
+                                                            :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false) ?? undefined" />
                                                     </div>
                                                 </div>
                                             </TabPanel>
@@ -2057,8 +2056,9 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
 .assistant-grid {
     display: grid;
-    gap: 1.5rem 1rem;
+    gap: 0.75rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
 }
 
 @media (min-width: 640px) {
