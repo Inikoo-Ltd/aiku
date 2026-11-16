@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\SupplierSubmission\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalSummary;
+use App\Actions\SupplyChain\SupplierSubmission\EscalateOverdueSupplierPlanningNotes;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
@@ -18,6 +19,7 @@ use App\Http\Resources\SupplyChain\SupplierSubmissionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SupplyChain\SupplierSubmission;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -160,7 +162,13 @@ class IndexSupplierSubmissions extends OrgAction
             'data'        => SupplierSubmissionsResource::collection($submissions),
             'portalSettings' => [
                 'can'    => $this->canEdit,
-                'values' => GetSupplierPortalSummary::choSettings($this->group),
+                'values' => [
+                    ...GetSupplierPortalSummary::choSettings($this->group),
+                    'planning_days'     => EscalateOverdueSupplierPlanningNotes::settings($this->group)['days'],
+                    'planning_user_ids' => EscalateOverdueSupplierPlanningNotes::settings($this->group)['user_ids'],
+                ],
+                'users'  => User::where('group_id', $this->group->id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])
+                    ->map(fn (User $user) => ['value' => $user->id, 'label' => $user->contact_name ?: $user->username])->values()->all(),
                 'starts' => collect(GetSupplierPortalSummary::choStartLabels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => ucfirst($label)])->values()->all(),
                 'route'  => ['name' => 'grp.models.supplier_portal_settings.update', 'parameters' => []],
             ],

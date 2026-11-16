@@ -11,6 +11,7 @@ namespace App\Actions\SupplyChain\SupplierSubmission;
 use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Actions\Procurement\OrgSupplierProducts\NotifyPurchasingOfSupplierProductAvailability;
 use App\Actions\SupplyChain\SupplierPortalContact\SyncSupplierPortalContact;
+use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalOrderPlan;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductAvailabilityStatusEnum;
@@ -35,6 +36,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * changes until staff accept it, except a price change: its product goes on hold (no purchase order can be raised)
  * and its buyers are told, again each time the supplier edits it. A new product idea can be kept as a draft, a
  * submission we asked more about can be completed and sent again, and a price change edited until we decide.
+ * Material planning sent from the Plan for next orders page keeps the plan of its product as it was when sent, and
+ * tells the product's buyers each time it is sent with something new; it never approves any compliance.
  */
 class StoreSupplierPortalSubmission
 {
@@ -58,6 +61,11 @@ class StoreSupplierPortalSubmission
         $files   = Arr::pull($modelData, 'files', []);
         $isDraft = $type === SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL && filter_var(Arr::pull($modelData, 'draft'), FILTER_VALIDATE_BOOLEAN);
         $state   = $isDraft ? SupplierSubmissionStateEnum::DRAFT : SupplierSubmissionStateEnum::RECEIVED;
+        $before  = $submission ? Arr::except($submission->data ?? [], ['plan', 'escalated_for']) : null;
+
+        if ($type === SupplierSubmissionTypeEnum::MATERIAL_PLANNING) {
+            $modelData['plan'] = $this->planOf($link, (int) $modelData['supplier_product_id']);
+        }
 
         $fields = [
             'supplier_product_id' => Arr::pull($modelData, 'supplier_product_id'),
@@ -96,7 +104,30 @@ class StoreSupplierPortalSubmission
             $this->holdForPriceChange($submission);
         }
 
+        $isNews = $before === null || $files || Arr::except($submission->data ?? [], ['plan', 'escalated_for']) != $before;
+        if ($type === SupplierSubmissionTypeEnum::MATERIAL_PLANNING && $isNews) {
+            NotifyPurchasingOfSupplierPlanningNote::run($submission);
+        }
+
         return $submission;
+    }
+
+    /**
+     * The product's line of the Plan for next orders when the note is sent, so buyers read the note against it.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function planOf(SupplierShareLink $link, int $supplierProductId): ?array
+    {
+        $product = collect(GetSupplierPortalOrderPlan::make()->handle($link->supplier)['products'])->firstWhere('id', $supplierProductId);
+        if (!$product) {
+            return null;
+        }
+
+        return [
+            'as_of' => now()->toDateString(),
+            ...Arr::only($product, ['status', 'reason', 'order_from', 'order_to', 'arrive_from', 'arrive_to', 'units_low', 'units_high', 'cartons_low', 'cartons_high']),
+        ];
     }
 
     /**
@@ -194,6 +225,13 @@ class StoreSupplierPortalSubmission
                 'effective_from'      => ['nullable', 'date'],
                 'effective_until'     => ['nullable', 'date', request()->filled('effective_from') ? 'after_or_equal:effective_from' : 'after_or_equal:today'],
                 'reason'              => ['required', 'string', 'max:2000'],
+            ],
+            SupplierSubmissionTypeEnum::MATERIAL_PLANNING => [
+                'supplier_product_id' => $this->submission ? ['required', Rule::in([$this->submission->supplier_product_id])] : ['required', ...array_slice($product, 1)],
+                'material'            => ['required', 'string', 'max:255'],
+                'reserve_by'          => ['nullable', 'date', 'after_or_equal:today'],
+                'note'                => $text(2000),
+                ...$files('pdf,jpg,jpeg,png', false),
             ],
             SupplierSubmissionTypeEnum::CONTACT => [
                 'designation' => ['required', Rule::enum(SupplierPortalContactDesignationEnum::class)],

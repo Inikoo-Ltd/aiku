@@ -40,6 +40,7 @@ class ShowSupplierSubmission extends OrgAction
             SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT => trim(Arr::get($data, 'document_type', '').($submission->expires_on ? ' · '.__('expires :date', ['date' => $submission->expires_on->toDateString()]) : '')),
             SupplierSubmissionTypeEnum::PRICE_CHANGE => trim(($productCode ?? '').' → '.Arr::get($data, 'proposed_price', '')),
             SupplierSubmissionTypeEnum::CONTACT => trim(Arr::get($data, 'name', '').' · '.Arr::get($data, 'email', ''), ' ·'),
+            SupplierSubmissionTypeEnum::MATERIAL_PLANNING => trim(($productCode ?? '').' · '.Arr::get($data, 'material', ''), ' ·'),
         };
     }
 

@@ -89,6 +89,8 @@ const fieldLabels: Record<string, string> = {
 	effective_from: ctrans("From"),
 	effective_until: ctrans("Until"),
 	reason: ctrans("Why"),
+	material: ctrans("Material"),
+	reserve_by: ctrans("Reserved until"),
 	permission_confirmed: ctrans("Permission to share confirmed"),
 	designation: ctrans("Designation"),
 	mobile: ctrans("Mobile number"),
@@ -111,6 +113,13 @@ const fieldValue = (field: string, value: unknown) => {
 	}
 	return value
 }
+
+const HIDDEN_FIELDS = ["plan", "escalated_for"]
+const shownData = computed(() => Object.fromEntries(Object.entries(props.submission.data).filter(([field]) => !HIDDEN_FIELDS.includes(field))))
+
+const plan = computed(() => props.submission.data.plan as { as_of: string; status: string; order_from: string | null; order_to: string | null; arrive_from: string | null; arrive_to: string | null; units_low: number; units_high: number; cartons_low: number | null; cartons_high: number | null } | undefined)
+const planDay = (date: string | null) => (date ? useFormatTime(date, { formatTime: "dd MMM yyyy" }) : "—")
+const planSpan = (low: number | null, high: number | null) => (low === high ? locale.number(low ?? 0) : `${locale.number(low ?? 0)} – ${locale.number(high ?? 0)}`)
 
 const save = () => form.post(route(props.decide.route.name, props.decide.route.parameters), { preserveScroll: true })
 </script>
@@ -145,13 +154,29 @@ const save = () => form.post(route(props.decide.route.name, props.decide.route.p
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-gray-100">
-							<tr v-for="(value, field) in submission.data" :key="field">
+							<tr v-for="(value, field) in shownData" :key="field">
 								<td class="w-48 py-1.5 pr-3 align-top text-gray-500">{{ fieldLabels[field] ?? field }}</td>
 								<td v-if="submission.type === 'company_details'" class="py-1.5 pr-3 align-top text-gray-500">{{ submission.current[field] ?? "—" }}</td>
 								<td class="whitespace-pre-line py-1.5 align-top text-gray-800">{{ fieldValue(field, value) }}</td>
 							</tr>
 						</tbody>
 					</table>
+				</div>
+
+				<div v-if="plan" class="rounded-lg border border-gray-200 bg-white p-4 text-sm">
+					<h2 class="mb-2 text-xs font-semibold text-gray-600">{{ ctrans("Plan for next orders when it was sent, :date", { date: planDay(plan.as_of) }) }}</h2>
+					<p v-if="plan.status !== 'estimate'" class="text-gray-600">{{ ctrans("No order currently indicated") }}</p>
+					<dl v-else class="grid gap-x-6 gap-y-1 sm:grid-cols-3">
+						<div><dt class="text-xs text-gray-400">{{ ctrans("Order window") }}</dt><dd>{{ planDay(plan.order_from) }} – {{ planDay(plan.order_to) }}</dd></div>
+						<div><dt class="text-xs text-gray-400">{{ ctrans("Delivery window") }}</dt><dd>{{ planDay(plan.arrive_from) }} – {{ planDay(plan.arrive_to) }}</dd></div>
+						<div>
+							<dt class="text-xs text-gray-400">{{ ctrans("Quantity") }}</dt>
+							<dd class="tabular-nums">
+								{{ ctrans(":units units", { units: planSpan(plan.units_low, plan.units_high) }) }}
+								<span v-if="plan.cartons_low !== null" class="text-xs text-gray-500">· {{ ctrans(":cartons cartons", { cartons: planSpan(plan.cartons_low, plan.cartons_high) }) }}</span>
+							</dd>
+						</div>
+					</dl>
 				</div>
 
 				<div v-if="submission.files.length" class="rounded-lg border border-gray-200 bg-white p-4 text-sm">
@@ -204,6 +229,7 @@ const save = () => form.post(route(props.decide.route.name, props.decide.route.p
 						<p v-if="submission.type === 'contact'" class="text-xs text-gray-500">{{ ctrans("The email is added to the supplier's emails: the person can sign in to the supplier page and gets the newsletter.") }}</p>
 						<p v-if="submission.type === 'price_change'" class="text-xs text-gray-500">{{ ctrans("The proposed price becomes the product cost, and the product is no longer on hold.") }}</p>
 					</template>
+					<p v-else-if="isAccepting && submission.type === 'material_planning'" class="text-xs text-gray-500">{{ ctrans("Accepting a planning note changes nothing in aiku and approves no compliance: the documents stay on this note only.") }}</p>
 					<p v-else-if="isAccepting" class="text-xs text-gray-500">{{ ctrans("Accepting changes nothing in aiku by itself: create the product by hand.") }}</p>
 
 					<div v-if="Object.keys(form.errors).length" class="rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700">

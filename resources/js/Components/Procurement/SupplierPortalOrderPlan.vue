@@ -8,6 +8,9 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import InputText from "primevue/inputtext"
+import Dialog from "primevue/dialog"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import SupplierPortalForms, { type EditedSubmission, type PortalForms } from "@/Components/Procurement/SupplierPortalForms.vue"
 import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
 import Image from "@common/Components/Image.vue"
@@ -19,9 +22,9 @@ import { ctrans } from "@/Composables/useTrans"
 import type { Image as ImageProxy } from "@/types/Image"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCalendarAlt, faInfoCircle, faSearch, faBoxes, faCoins, faCube, faExclamationTriangle, faClipboard } from "@fal"
+import { faCalendarAlt, faInfoCircle, faSearch, faBoxes, faCoins, faCube, faExclamationTriangle, faClipboard, faTree, faPen, faPaperclip } from "@fal"
 
-library.add(faCalendarAlt, faInfoCircle, faSearch, faBoxes, faCoins, faCube, faExclamationTriangle, faClipboard)
+library.add(faCalendarAlt, faInfoCircle, faSearch, faBoxes, faCoins, faCube, faExclamationTriangle, faClipboard, faTree, faPen, faPaperclip)
 
 type PlanStatus = "estimate" | "no_order"
 type NoOrderReason = "covered" | "out_of_season" | "no_sales" | "no_forecast"
@@ -54,6 +57,15 @@ export interface OrderPlanProduct {
 	monthly_units: number
 	organisations: { name: string; status: PlanStatus; reason: NoOrderReason | null; order_on: string | null; order_from: string | null; order_to: string | null; units_low: number; units_high: number }[]
 	open_orders: { id: number; reference: string; units: number }[]
+	planning_notes: PlanningNote[]
+}
+
+export interface PlanningNote extends EditedSubmission {
+	state_label: string
+	editable: boolean
+	sent_at: string | null
+	files: number
+	data: { material?: string; reserve_by?: string; note?: string; supplier_product_id?: number }
 }
 
 export interface OrderPlan {
@@ -67,7 +79,24 @@ export interface OrderPlan {
 const props = defineProps<{
 	plan?: OrderPlan
 	accent: { colour: string; tint: string }
+	forms?: PortalForms
 }>()
+
+const planningFor = ref<OrderPlanProduct | null>(null)
+const editingNote = ref<PlanningNote | null>(null)
+const isPlanningOpen = computed({
+	get: () => planningFor.value !== null,
+	set: (open: boolean) => {
+		if (!open) {
+			planningFor.value = null
+			editingNote.value = null
+		}
+	},
+})
+const planMaterials = (product: OrderPlanProduct, note: PlanningNote | null = null) => {
+	planningFor.value = product
+	editingNote.value = note
+}
 
 const emit = defineEmits<{ open: [purchaseOrderId: number] }>()
 
@@ -156,6 +185,16 @@ const quantity = (product: OrderPlanProduct) => span(product.units_low, product.
 
 const cartons = (product: OrderPlanProduct) =>
 	product.cartons_high ? span(product.cartons_low ?? 0, product.cartons_high, (count) => locale.number(count)) : null
+
+const noteLine = (note: PlanningNote) =>
+	[
+		note.sent_at ? day(note.sent_at) : null,
+		note.state_label,
+		note.data.reserve_by ? ctrans("reserved until :date", { date: day(note.data.reserve_by) }) : null,
+		note.files ? ctrans(":count files", { count: String(note.files) }) : null,
+	]
+		.filter(Boolean)
+		.join(" · ")
 
 const organisationLine = (organisation: OrderPlanProduct["organisations"][number]) =>
 	organisation.status === "estimate"
@@ -251,6 +290,7 @@ const organisationLine = (organisation: OrderPlanProduct["organisations"][number
 								<th class="px-4 py-2.5 text-right">{{ ctrans("Sells per month") }}</th>
 								<th class="px-4 py-2.5">{{ ctrans("Our companies") }}</th>
 								<th class="px-4 py-2.5">{{ ctrans("Open orders") }}</th>
+								<th class="px-4 py-2.5">{{ ctrans("Material planning") }}</th>
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-gray-100">
@@ -310,6 +350,19 @@ const organisationLine = (organisation: OrderPlanProduct["organisations"][number
 									</button>
 									<span v-if="!product.open_orders.length" class="text-gray-300">—</span>
 								</td>
+								<td class="min-w-[12rem] space-y-2 px-4 py-3 text-xs">
+									<div v-for="note in product.planning_notes" :key="note.id" class="space-y-0.5">
+										<div class="text-gray-800">{{ note.data.material }}</div>
+										<div class="text-gray-400">{{ noteLine(note) }}</div>
+										<div v-if="note.feedback" class="text-gray-600">{{ ctrans("Our reply: :reply", { reply: note.feedback }) }}</div>
+										<Button v-if="note.editable && forms" type="tertiary" size="xxs" :label="ctrans('Edit')" @click="planMaterials(product, note)">
+											<template #icon><FontAwesomeIcon icon="fal fa-pen" fixed-width aria-hidden="true" /></template>
+										</Button>
+									</div>
+									<Button v-if="forms" type="tertiary" size="xxs" :label="ctrans('Plan materials')" @click="planMaterials(product)">
+										<template #icon><FontAwesomeIcon icon="fal fa-tree" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+									</Button>
+								</td>
 							</tr>
 						</tbody>
 					</table>
@@ -368,9 +421,40 @@ const organisationLine = (organisation: OrderPlanProduct["organisations"][number
 								{{ order.reference }} · {{ locale.number(order.units) }}
 							</button>
 						</div>
+						<div class="space-y-2 text-xs">
+							<div v-for="note in product.planning_notes" :key="note.id" class="space-y-0.5 rounded border border-gray-100 p-2">
+								<div class="text-gray-800">{{ note.data.material }}</div>
+								<div class="text-gray-400">{{ noteLine(note) }}</div>
+								<div v-if="note.feedback" class="text-gray-600">{{ ctrans("Our reply: :reply", { reply: note.feedback }) }}</div>
+								<Button v-if="note.editable && forms" type="tertiary" size="xxs" :label="ctrans('Edit')" @click="planMaterials(product, note)">
+									<template #icon><FontAwesomeIcon icon="fal fa-pen" fixed-width aria-hidden="true" /></template>
+								</Button>
+							</div>
+							<Button v-if="forms" type="tertiary" size="xxs" :label="ctrans('Plan materials')" @click="planMaterials(product)">
+								<template #icon><FontAwesomeIcon icon="fal fa-tree" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+							</Button>
+						</div>
 					</li>
 				</ul>
 			</template>
 		</div>
+
+		<Dialog v-model:visible="isPlanningOpen" modal :header="planningFor ? `${ctrans('Material planning')} · ${planningFor.code ?? ''}` : ''" class="w-[calc(100vw-2rem)] max-w-2xl">
+			<div v-if="planningFor" class="mb-4 space-y-0.5 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+				<p class="text-sm font-medium text-gray-900">{{ planningFor.name }}</p>
+				<p v-if="planningFor.status === 'estimate'">{{ ctrans("Order window") }}: {{ dateSpan(planningFor.order_from, planningFor.order_to) }} · {{ ctrans(":units units", { units: quantity(planningFor) }) }}</p>
+				<p v-else>{{ ctrans("No order currently indicated") }}<template v-if="planningFor.reason"> · {{ reasonLabels[planningFor.reason] }}</template></p>
+				<p class="text-gray-400">{{ ctrans("For planning only. This is not a purchase order or authority to buy materials or begin production. Quantities and dates may change.") }}</p>
+			</div>
+			<SupplierPortalForms
+				v-if="planningFor && forms"
+				:key="`${planningFor.id}-${editingNote?.id ?? 'new'}`"
+				:forms="forms"
+				:products="[{ id: planningFor.id, code: planningFor.code ?? '', name: planningFor.name ?? '' }]"
+				:currency="plan?.currency ?? null"
+				:editing="editingNote"
+				locked-type="material_planning"
+				@done="isPlanningOpen = false" />
+		</Dialog>
 	</div>
 </template>

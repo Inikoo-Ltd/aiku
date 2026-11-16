@@ -21,6 +21,7 @@ enum SupplierSubmissionTypeEnum: string
     case COMPLIANCE_DOCUMENT = 'compliance_document';
     case PRICE_CHANGE = 'price_change';
     case CONTACT = 'contact';
+    case MATERIAL_PLANNING = 'material_planning';
 
     public static function labels(): array
     {
@@ -32,6 +33,7 @@ enum SupplierSubmissionTypeEnum: string
             'compliance_document' => __('Compliance document'),
             'price_change'        => __('Price change request'),
             'contact'             => __('New contact'),
+            'material_planning'   => __('Material planning'),
         ];
     }
 }
