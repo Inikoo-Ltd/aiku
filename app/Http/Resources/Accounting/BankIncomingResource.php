@@ -33,6 +33,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $organisation_slug
  * @property string $organisation_code
  * @property string|null $provider_type
+ * @property list<array<string, mixed>>|null $suggested_orders
  */
 class BankIncomingResource extends JsonResource
 {
@@ -55,6 +56,7 @@ class BankIncomingResource extends JsonResource
                 $this->payment_id !== null                                            => __('Paid automatically'),
                 $this->match_state === BankTransactionMatchStateEnum::MATCHED         => isset($this->match_data['invoice_id']) ? __('Matches the invoice, not paid automatically') : __('Matches the order, not paid automatically'),
                 $this->match_state === BankTransactionMatchStateEnum::DISMISSED       => $this->match_data['dismissed_note'] ?? null,
+                $this->match_state === BankTransactionMatchStateEnum::ALREADY_PAID && isset($this->match_data['dismissed_note']) => $this->match_data['dismissed_note'],
                 $this->match_state === BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT => null,
                 $this->match_state === BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE => __('Faire payout of this order'),
                 $this->match_state === null => in_array($this->provider_type, MatchBankTransactions::CUSTOMER_TRANSFER_TYPES, true)
@@ -63,6 +65,8 @@ class BankIncomingResource extends JsonResource
                 default                                                               => $this->match_data['reason'] ?? null,
             },
             'is_dismissed'      => $this->match_state === BankTransactionMatchStateEnum::DISMISSED,
+            'can_bring_back'    => !$this->read_only && $this->payment_id === null && ($this->match_state === BankTransactionMatchStateEnum::DISMISSED
+                || ($this->match_state === BankTransactionMatchStateEnum::ALREADY_PAID && isset($this->match_data['dismissed_at']))),
             'actionable'        => !$this->read_only && $this->payment_id === null && in_array($this->match_state, [BankTransactionMatchStateEnum::REVIEW, BankTransactionMatchStateEnum::UNMATCHED, BankTransactionMatchStateEnum::MATCHED], true),
             'payout'            => $this->match_state === BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT ? [
                 'provider'         => $this->match_data['provider'] ?? 'checkout',
@@ -79,6 +83,7 @@ class BankIncomingResource extends JsonResource
                 'not_recorded'     => $this->match_data['payments_not_recorded'] ?? [],
             ] : null,
             'owed'              => $this->match_data['owed'] ?? null,
+            'suggested_orders'  => $this->suggested_orders ?? [],
             'order_reference'   => $this->order_reference,
             'order_slug'        => $this->order_slug,
             'shop_slug'         => $this->shop_slug,

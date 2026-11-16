@@ -2721,6 +2721,135 @@ test('auto-pay records a mapped payer, such as DPD CZ cash on delivery, on its o
         ->and($codOrder->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID);
 });
 
+test('a line naming no order suggests orders of a customer named like the payer, by amount and date, and staff confirm it with one click', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'sugg'.random_int(1000, 9999), 'name' => 'Suggestion test']
+    );
+    $name        = 'Zorvak'.random_int(100000, 999999);
+    $newCustomer = fn (string $customerName) => \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, array_merge(\App\Models\CRM\Customer::factory()->definition(), ['contact_name' => $customerName, 'company_name' => $customerName]));
+    $customer    = $newCustomer($name);
+
+    $paidByHand = bankMatchingOrder($customer, 2454);
+    $paidByHand->updateQuietly(['submitted_at' => now()->addHour()]);
+    $payment = \App\Actions\Accounting\Payment\StorePayment::make()->action($customer, $bankAccount, [
+        'amount' => 2454,
+        'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+        'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+    ]);
+    \App\Actions\Ordering\Order\AttachPaymentToOrder::make()->action($paidByHand, $payment, []);
+    $paidByHand->updateQuietly(['total_amount' => 1472.40]);
+
+    $owing = bankMatchingOrder($customer, 310.50);
+    $owing->updateQuietly(['submitted_at' => now()->subDays(3)]);
+
+    $line = fn (string $id, float $amount, string $payer) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $amount,
+        'currency_id'             => $paidByHand->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => null,
+        'counterparty_name'       => $payer,
+        'booked_at'               => now(),
+    ]);
+
+    bankMatchingOrder($newCustomer('Jo'.$name), 55.55)->updateQuietly(['submitted_at' => now()]);
+
+    $twinName = 'Quillon'.random_int(100000, 999999);
+    bankMatchingOrder($newCustomer($twinName.' Twin'), 77.77)->updateQuietly(['submitted_at' => now()]);
+    bankMatchingOrder($newCustomer($twinName.' Twin Studio'), 77.77)->updateQuietly(['submitted_at' => now()]);
+
+    $sharedWord = 'Brannoch'.random_int(100000, 999999);
+    bankMatchingOrder($newCustomer($sharedWord), 66.66)->updateQuietly(['submitted_at' => now()]);
+    $newCustomer($sharedWord.' Garden Shop');
+
+    $partPaid = bankMatchingOrder($newCustomer('Tessaly'.random_int(100000, 999999)), 200);
+    $partPaid->updateQuietly(['submitted_at' => now()]);
+    $firstHalf = \App\Actions\Accounting\Payment\StorePayment::make()->action($partPaid->customer, $bankAccount, [
+        'amount' => 100,
+        'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+        'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+    ]);
+    \App\Actions\Ordering\Order\AttachPaymentToOrder::make()->action($partPaid, $firstHalf, []);
+    $firstHalf->updateQuietly(['date' => now()->subDays(20)]);
+
+    $smith = 'Smithwick'.random_int(100000, 999999);
+    $newCustomer($smith.' Ltd');
+    bankMatchingOrder($newCustomer('J. '.$smith), 120)->updateQuietly(['submitted_at' => now()]);
+
+    $jong = 'Jongbloed'.random_int(100000, 999999);
+    $newCustomer('De Vries '.$jong);
+    bankMatchingOrder($newCustomer('De '.$jong), 85)->updateQuietly(['submitted_at' => now()]);
+
+    bankMatchingOrder($customer, 99.99)->updateQuietly(['submitted_at' => now()->subDays(45)]);
+
+    $alreadyPaid  = $line('s1', 2454, $name.' Health GmbH');
+    $pays         = $line('s2', 310.50, strtoupper($name).' Health Ltd');
+    $otherPayer   = $line('s3', 310.50, 'Somebody Else Ltd');
+    $feeShort     = $line('s4', 310.00, $name.' Health GmbH');
+    $substring    = $line('s5', 55.55, $name.' Ltd');
+    $twoCustomers = $line('s6', 77.77, $twinName.' Twin Ltd');
+    $firstWordOnly = $line('s9', 66.66, $sharedWord.' Health');
+    $secondHalf    = $line('s10', 100, $partPaid->customer->company_name.' Ltd');
+    $tooOld       = $line('s7', 99.99, $name);
+    $smithPayer   = $line('s11', 120, $smith.' Ltd');
+    $particle     = $line('s12', 85, 'De '.$jong.' Bloemen BV');
+    MatchBankTransactions::run($bankConnection);
+
+    $matcher = MatchBankTransactions::make();
+    expect($alreadyPaid->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($alreadyPaid->order_id)->toBeNull()
+        ->and($matcher->suggestedOrders($alreadyPaid))->sequence(fn ($suggestion) => $suggestion->toMatchArray(['id' => $paidByHand->id, 'kind' => 'already_paid']))
+        ->and($matcher->suggestedOrders($pays->refresh()))->sequence(fn ($suggestion) => $suggestion->toMatchArray(['id' => $owing->id, 'kind' => 'pay']))
+        ->and($matcher->suggestedOrders($otherPayer->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($feeShort->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($substring->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($twoCustomers->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($firstWordOnly->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($secondHalf->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($tooOld->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($smithPayer->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($particle->refresh()))->toBe([]);
+
+    $dialogCandidates = \App\Actions\Accounting\BankTransaction\Json\GetBankTransactionOrderCandidates::make()->handle($pays, '', byPayer: true);
+    expect($dialogCandidates[0])->toMatchArray(['id' => $owing->id, 'amount_matches' => true])
+        ->and(collect($dialogCandidates)->where('amount_matches', true)->count())->toBe(1);
+
+    $paymentsBefore = \App\Models\Accounting\Payment::count();
+    expect(fn () => \App\Actions\Accounting\BankTransaction\PayBankTransactionToOrder::make()->handle($otherPayer, ['order_id' => $owing->id, 'from_suggestion' => true]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect(fn () => \App\Actions\Accounting\BankTransaction\DismissBankTransaction::make()->handle($pays, ['note' => 'Already recorded on the order by hand', 'already_paid' => true, 'order_id' => $owing->id]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    \App\Actions\Accounting\BankTransaction\DismissBankTransaction::make()->handle($alreadyPaid, ['note' => 'Already recorded on the order by hand', 'already_paid' => true, 'order_id' => $paidByHand->id]);
+
+    $secondTransfer = $line('s8', 2454, $name.' Health GmbH');
+    $namingIt       = $line('s13', 2454, $name.' Health GmbH');
+    $namingIt->update(['reference' => $paidByHand->reference]);
+    MatchBankTransactions::run($bankConnection);
+    expect($secondTransfer->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($namingIt->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($namingIt->match_data['reason'])->toBe('another bank line already accounts for the payment of this amount on the order');
+    expect($alreadyPaid->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($alreadyPaid->order_id)->toBe($paidByHand->id)
+        ->and(\App\Models\Accounting\Payment::count())->toBe($paymentsBefore)
+        ->and($matcher->suggestedOrders($secondTransfer))->toBe([])
+        ->and(fn () => \App\Actions\Accounting\BankTransaction\DismissBankTransaction::make()->handle($secondTransfer, ['note' => 'Already recorded on the order by hand', 'already_paid' => true, 'order_id' => $paidByHand->id]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    \App\Actions\Accounting\BankTransaction\RestoreBankTransaction::make()->handle($alreadyPaid);
+    expect($alreadyPaid->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($alreadyPaid->order_id)->toBeNull();
+});
+
 test('an orderchamp payout is linked only to the one hand-paid order of its country and amount, everything else stays for staff', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
 
