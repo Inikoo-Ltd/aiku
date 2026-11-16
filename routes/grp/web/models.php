@@ -721,6 +721,8 @@ use App\Actions\Reviews\ReviewReply\UpdateReviewReply;
 use App\Actions\Reviews\UpdateReview;
 use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\ImportSupplierPurchaseOrders;
 use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\PreviewSupplierPurchaseOrderImport;
+use App\Actions\SupplyChain\Supplier\DeactivateSupplier;
+use App\Actions\SupplyChain\Supplier\ReactivateSupplier;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierPortalContact\StoreSupplierPortalEmail;
@@ -1823,6 +1825,8 @@ Route::name('customer_client.')->prefix('customer-client/{customerClient:id}')->
 
 Route::post('/supplier', StoreSupplier::class)->name('supplier.store');
 Route::patch('/supplier/{supplier:id}', UpdateSupplier::class)->name('supplier.update');
+Route::patch('/supplier/{supplier:id}/archive', DeactivateSupplier::class)->name('supplier.archive');
+Route::patch('/supplier/{supplier:id}/unarchive', ReactivateSupplier::class)->name('supplier.unarchive');
 Route::post('/supplier/{supplier:id}/share-links', StoreSupplierShareLink::class)->name('supplier.share_links.store');
 Route::post('/supplier-share-links/{supplierShareLink:id}/revoke', RevokeSupplierShareLink::class)->name('supplier_share_link.revoke');
 Route::post('/supplier/{supplier:id}/portal-emails', StoreSupplierPortalEmail::class)->name('supplier.portal_emails.store');
