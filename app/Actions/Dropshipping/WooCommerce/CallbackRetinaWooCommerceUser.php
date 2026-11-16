@@ -38,12 +38,23 @@ class CallbackRetinaWooCommerceUser extends OrgAction
      * own timeout, so the store check runs on the queue: a store that drops our connections would
      * otherwise hold the callback for two connect timeouts, longer than the proxy in front allows.
      */
-    public function handleReAuthorization(WooCommerceUser $wooCommerceUser, array $modelData): void
+    /**
+     * A store that moved to a new domain gets its new address only now, once that store has
+     * issued keys. Its webhooks were registered on the old store, so they are registered again.
+     */
+    public function handleReAuthorization(WooCommerceUser $wooCommerceUser, array $modelData, ?string $newStoreUrl = null): void
     {
-        $this->update($wooCommerceUser, [
+        $changes = [
             'consumer_key' => Arr::get($modelData, 'consumer_key'),
             'consumer_secret' => Arr::get($modelData, 'consumer_secret'),
-        ]);
+        ];
+
+        if (filled($newStoreUrl) && $newStoreUrl !== $wooCommerceUser->store_url) {
+            $changes['store_url'] = $newStoreUrl;
+            $changes['settings']  = Arr::except($wooCommerceUser->settings ?? [], 'webhooks');
+        }
+
+        $this->update($wooCommerceUser, $changes);
 
         CheckWooChannel::dispatch($wooCommerceUser);
     }
@@ -68,7 +79,7 @@ class CallbackRetinaWooCommerceUser extends OrgAction
             $wooCommerceUser = WooCommerceUser::findOrFail($wooCommerceUserId);
             $this->initialisationFromShop($wooCommerceUser->customer->shop, $request);
 
-            $this->handleReAuthorization($wooCommerceUser, $this->validatedData);
+            $this->handleReAuthorization($wooCommerceUser, $this->validatedData, Arr::get($tokenPayload, 'store_url'));
 
             return 'success';
         }

@@ -1932,6 +1932,29 @@ test('an on-demand stock never caps a product, and the shop products json report
         expect($product->is_on_demand)->toBeFalse()
             ->and($product->available_quantity)->toBe(7)
             ->and($shelfRow())->toMatchArray(['is_on_demand' => false, 'stock' => 7, 'shelf_quantity' => 0]);
+
+        $stockedStock->update(['quantity_available' => 13]);
+        $product->orgStocks()->sync([$stockedStock->id => ['quantity' => 0.16666667]]);
+        ProductHydrateAvailableQuantity::run($product->refresh());
+
+        expect($product->refresh()->available_quantity)->toBe(78)
+            ->and(ProductHydrateAvailableQuantity::wholeProducts(12.999, 0.16666667))->toBe(77)
+            ->and(ProductHydrateAvailableQuantity::wholeProducts(22.166, 0.16666667))->toBe(132)
+            ->and(ProductHydrateAvailableQuantity::wholeProducts('69.997', '1.00000000'))->toBe(69)
+            ->and(ProductHydrateAvailableQuantity::wholeProducts('365.960', '0.00666667'))->toBe(54894)
+            ->and(ProductHydrateAvailableQuantity::wholeProducts('4.350', '0.01000000'))->toBe(435)
+            ->and(ProductHydrateAvailableQuantity::wholeProducts('7', '2.00000000'))->toBe(3);
+
+        expect($stockedStock->products()->where('products.id', $product->id)->whereRaw(
+            'products.available_quantity is distinct from '.ProductHydrateAvailableQuantity::wholeProductsSql('?::numeric'),
+            [13, 13]
+        )->exists())->toBeFalse();
+
+        $onDemandStock->update(['quantity_available' => 13]);
+        $product->orgStocks()->sync([$onDemandStock->id => ['quantity' => 0.16666667]]);
+        ProductHydrateAvailableQuantity::run($product->refresh());
+
+        expect($shelfRow())->toMatchArray(['is_on_demand' => true, 'shelf_quantity' => 78]);
     } finally {
         $onDemandStock->update($originalOnDemand);
         $stockedStock->update($originalStocked);

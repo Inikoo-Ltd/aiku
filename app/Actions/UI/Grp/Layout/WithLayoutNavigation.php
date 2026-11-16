@@ -159,6 +159,15 @@ trait WithLayoutNavigation
                             ]
                         ],
                         [
+                            'label' => __('Profit and loss'),
+                            'icon'  => ['fal', 'fa-balance-scale'],
+                            'root'  => 'grp.org.accounting.profit_and_loss.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.profit_and_loss.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
                             'label' => __('Invoices'),
                             'icon'  => ['fal', 'fa-file-invoice-dollar'],
                             'root'  => 'grp.org.accounting.invoices.',

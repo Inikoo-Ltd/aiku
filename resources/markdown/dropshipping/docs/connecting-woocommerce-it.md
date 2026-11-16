@@ -87,6 +87,8 @@ Per risolvere:
 3. Se ancora non funziona, premi <b>Test Connection</b> per controllare di nuovo la connessione.
 4. Come ultimo passo, premi <b>Delete</b> e collega di nuovo il negozio. I tuoi prodotti e ordini tornano quando usi lo stesso indirizzo di negozio.
 
+Se il tuo negozio si è spostato a un nuovo indirizzo web, scrivi il nuovo indirizzo nel campo sotto <b>Try to reconnect</b> prima di premerlo. Approva sul tuo negozio al nuovo indirizzo. Il canale mantiene i suoi prodotti e ordini, e da quel momento usiamo il nuovo indirizzo. Non eliminare il canale per collegare il nuovo indirizzo come un nuovo negozio: così si crea un canale vuoto.
+
 Se il tuo negozio continua a fallire a lungo, smettiamo di controllarlo. Ricomincia a funzionare quando lo ricolleghi.
 
 <!-- screenshot: l'avviso di non collegato su un canale WooCommerce con i pulsanti Try to reconnect, Test Connection e Delete -->

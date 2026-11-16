@@ -87,6 +87,8 @@ Zo lost u het op:
 3. Werkt het nog niet, druk dan op <b>Test Connection</b> om de verbinding opnieuw te controleren.
 4. Als laatste stap drukt u op <b>Delete</b> en koppelt u de winkel opnieuw. Uw producten en bestellingen komen terug wanneer u hetzelfde winkeladres gebruikt.
 
+Is uw winkel naar een nieuw webadres verhuisd, typ dan het nieuwe adres in het vak onder <b>Try to reconnect</b> voordat u erop drukt. Keur goed in uw winkel op het nieuwe adres. Uw kanaal houdt zijn producten en bestellingen, en vanaf dan gebruiken we het nieuwe adres. Verwijder het kanaal niet om het nieuwe adres als nieuwe winkel te koppelen: dan krijgt u een leeg kanaal.
+
 Blijft uw winkel lange tijd mislukken, dan stoppen wij met controleren. Het werkt weer zodra u opnieuw koppelt.
 
 <!-- screenshot: de waarschuwing "niet verbonden" op een WooCommerce-kanaal met de knoppen Try to reconnect, Test Connection en Delete -->

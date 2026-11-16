@@ -101,6 +101,12 @@ const welcome = computed(() => [
 	ctrans("Thank you for your care and attention to products supplied to :group. Together we can sell more of your products.", { group: props.group }),
 ])
 
+const brandLogos = [
+	{ name: "ancient-wisdom-logo", alt: "Ancient Wisdom" },
+	{ name: "aw-artisan-logo", alt: "AW Artisan" },
+	{ name: "aw-gifts-logo", alt: "AW Gifts" },
+]
+
 const openRibbons = computed(() => (props.orders?.ribbons ?? []).filter((ribbon) => ribbon.status !== "completed"))
 const needsAttention = computed(() => openRibbons.value.filter((ribbon) => ribbon.status === "overdue" || ribbon.status === "at_risk").length)
 const shownRibbons = computed(() => openRibbons.value.slice(0, SHOWN_ORDERS))
@@ -173,20 +179,32 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 				</div>
 				<FontAwesomeIcon icon="fal fa-envelope-open-text" class="hidden text-xl sm:block" :style="{ color: accent.colour }" aria-hidden="true" />
 			</header>
-			<div class="px-5 py-5 sm:px-6" :style="{ backgroundColor: theme.soft }">
-				<div class="flex items-start justify-between gap-4">
-					<div class="flex max-w-3xl flex-col gap-3 text-sm leading-relaxed text-gray-700">
-						<p class="font-semibold text-gray-900">{{ ctrans("Dear :supplier,", { supplier: greetingName }) }}</p>
+			<div class="grid gap-6 px-5 py-6 sm:px-8 sm:py-7 lg:grid-cols-[minmax(0,1fr)_13rem] lg:gap-10" :style="{ backgroundColor: theme.soft }">
+				<div class="flex max-w-prose flex-col text-sm leading-relaxed text-gray-700">
+					<p class="text-base font-semibold text-gray-900">{{ ctrans("Dear :supplier,", { supplier: greetingName }) }}</p>
+					<div class="mt-3 flex flex-col gap-3">
 						<p>{{ ctrans("Thank you for trading with :group.", { group }) }}</p>
 						<p>{{ welcome[0] }}</p>
-						<p class="border-l-2 pl-3 font-medium text-gray-900" :style="{ borderColor: theme.background }">{{ welcome[1] }}</p>
 					</div>
-					<img src="/art/ancient-wisdom-logo.png" class="h-16 w-auto shrink-0 object-contain md:h-24" :alt="group" />
+					<blockquote class="mt-5 border-l-[3px] py-1 pl-4 font-medium text-gray-900" :style="{ borderColor: theme.background }">
+						{{ welcome[1] }}
+					</blockquote>
+					<footer class="mt-6 border-t border-black/5 pt-4">
+						<p class="text-gray-500">{{ ctrans("With warm regards,") }}</p>
+						<p class="mt-1 font-serif text-lg italic text-gray-900">{{ ctrans("The :group team", { group }) }}</p>
+					</footer>
 				</div>
-				<footer class="mt-4 text-sm">
-					<p class="text-gray-500">{{ ctrans("With warm regards,") }}</p>
-					<p class="mt-1 font-serif text-base italic text-gray-900">{{ ctrans("The :group team", { group }) }}</p>
-				</footer>
+				<aside class="self-start">
+					<!-- <p class="text-center text-[11px] font-semibold uppercase tracking-wider text-gray-400">{{ ctrans("Our brands") }}</p> -->
+					<ul class="mt-3 grid grid-cols-3 items-center gap-3 lg:grid-cols-1 lg:gap-0 lg:divide-y lg:divide-dashed lg:divide-black/15">
+						<li v-for="logo in brandLogos" :key="logo.name" class="flex justify-center lg:py-4 lg:first:pt-0 lg:last:pb-0">
+							<picture>
+								<source :srcset="`/art/${logo.name}.avif`" type="image/avif" />
+								<img :src="`/art/${logo.name}.webp`" :alt="logo.alt" width="140" height="56" decoding="async" class="h-10 w-full max-w-[8.75rem] object-contain sm:h-12 lg:h-14" />
+							</picture>
+						</li>
+					</ul>
+				</aside>
 			</div>
 		</article>
 
