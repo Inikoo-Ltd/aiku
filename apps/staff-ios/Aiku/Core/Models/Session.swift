@@ -42,6 +42,7 @@ final class Session {
     var assignedCount: Int
     var unreadCount: Int
     var hasWarehouseContext = false
+    var modules: ModuleAccess = .everything
 
     init(profile: StaffProfile = .sample, access: AccessLevel = .all, assignedCount: Int = 6, unreadCount: Int = 3) {
         self.profile = profile
@@ -50,9 +51,10 @@ final class Session {
         self.unreadCount = unreadCount
     }
 
-    var hasWarehouseAccess: Bool { access == .all }
-    var hasFulfilmentAccess: Bool { access == .all }
-    var canScan: Bool { hasWarehouseAccess || hasFulfilmentAccess }
+    var visibleModules: ModuleAccess { access == .all ? modules : .nothing }
+    var hasWarehouseAccess: Bool { visibleModules.hasWarehouseModules }
+    var hasFulfilmentAccess: Bool { visibleModules.fulfilment }
+    var canScan: Bool { visibleModules.canScan }
 
     func apply(_ response: ProfileResponse) {
         let employee = response.employee?.first

@@ -45,6 +45,11 @@ struct RootView: View {
                 session.apply(warehouse: warehouse.name, code: warehouse.code, organisation: warehouse.organisation.name)
             }
         }
+        .onChange(of: resolvedModules, initial: true) { _, modules in
+            if let modules {
+                session.modules = modules
+            }
+        }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
             Task {
@@ -52,6 +57,10 @@ struct RootView: View {
                 await refreshPermissionsIfSignedIn()
             }
         }
+    }
+
+    private var resolvedModules: ModuleAccess? {
+        ModuleAccess.resolve(warehouse: warehouseStore.selected, permissions: permissionStore.current)
     }
 
     private func refreshPermissionsIfSignedIn() async {
@@ -62,6 +71,7 @@ struct RootView: View {
     private func signOut() {
         permissionStore.clear()
         warehouseStore.reset()
+        session.modules = .everything
         LocationsStore.shared.resetToSample()
         InventoryFamiliesFeed.shared.reset()
         Task { await authStore.signOut() }

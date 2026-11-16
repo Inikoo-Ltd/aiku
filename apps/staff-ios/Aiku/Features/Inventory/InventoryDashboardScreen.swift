@@ -4,49 +4,43 @@ struct InventoryDashboardScreen: View {
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
     @State private var isScanning = false
+    @State private var warehouseStore = WarehouseStore.shared
+    @State private var feed = InventoryDashboardFeed.shared
     private let store = InventoryStore.shared
 
+    private var warehouse: MobileWarehouse? { warehouseStore.selected }
+
     var body: some View {
-        let summary = store.dashboard
         AppScreen(
             title: "Inventory dashboard",
             kicker: "Inventory · \(session.warehouseLabel)",
-            actions: [HeaderAction(.scan, label: "Manage barcodes") { isScanning = true }]
+            actions: [HeaderAction(.scan, label: "Manage barcodes") { scan() }]
         ) {
             ModuleTabs(.inventory, current: .inventoryDashboard)
         } content: {
-            StatGrid(columns: 2) {
-                StatTile("\(summary.urgentAudits)", label: "Urgent audit · low stock", tone: .warn) { openSkos() }
-                StatTile(
-                    "\(summary.toReplenish)",
-                    label: "To replenish · wholesale (dropshipping \(summary.toReplenishDropshipping))",
-                    tone: .info
-                ) { openSkos() }
-            }
-            StatGrid(columns: 2) {
-                StatTile("\(summary.replenishments)", label: "Replenishments")
-                StatTile("\(summary.lowStockAudits)", label: "Low stock audits")
-                StatTile("\(summary.belowMinimum)", label: "Below minimum stock")
-                StatTile("\(summary.negativeStocks)", label: "Negative stocks", tone: .danger) { openSkos() }
-                StatTile("\(summary.wrongWeights)", label: "Wrong weights", tone: .warn)
-                StatTile("\(summary.withoutProduct)", label: "SKOs without product", tone: .warn)
-            }
-            InventoryInfoCard(title: session.warehouseLabel, lines: [
-                InventoryInfoLine(icon: .sko, text: "Stock value \(summary.stockValueLabel)"),
-                InventoryInfoLine(icon: .locations, text: summary.utilisationLine)
-            ])
-            SectionHeading("Stock history · today", actionTitle: "All") {
-                router.open(InventoryRoute.stockHistory)
-            }
-            if store.recentMovements.isEmpty {
-                EmptyState(icon: .history, title: "No stock movements today")
+            if warehouse != nil {
+                liveContent
             } else {
-                CardList(store.recentMovements) { movement in
-                    InventoryMovementRow(movement: movement, usesTodaySummary: true) {
-                        router.open(InventoryRoute.sko(reference: movement.skoReference))
+                blocks(store.dashboard)
+                SectionHeading("Stock history · today", actionTitle: "All") {
+                    router.open(InventoryRoute.stockHistory)
+                }
+                if store.recentMovements.isEmpty {
+                    EmptyState(icon: .history, title: "No stock movements today")
+                } else {
+                    CardList(store.recentMovements) { movement in
+                        InventoryMovementRow(movement: movement.display(usesTodaySummary: true)) {
+                            router.open(InventoryRoute.sko(reference: movement.skoReference))
+                        }
                     }
                 }
             }
+        }
+        .screenRefreshable {
+            await reload()
+        }
+        .task(id: warehouse?.id) {
+            await reload()
         }
         .fullScreenCover(isPresented: $isScanning) {
             InventoryScanCover(
@@ -58,13 +52,61 @@ struct InventoryDashboardScreen: View {
                 },
                 onTypeCode: {
                     isScanning = false
-                    openSkos()
+                    router.open(InventoryRoute.skos)
                 }
             )
         }
     }
 
-    private func openSkos() {
-        router.open(InventoryRoute.skos)
+    @ViewBuilder
+    private var liveContent: some View {
+        if let message = feed.loadError {
+            InventoryLoadAlert(title: "Couldn’t load the inventory dashboard", message: message) {
+                Task { await reload() }
+            }
+        }
+        if let summary = feed.summary, feed.loadedWarehouseID == warehouse?.id {
+            blocks(summary)
+            HelperText("Same figures as the web inventory dashboard. Current SKOs and Abnormalities open the SKO list.")
+        } else if feed.loadError == nil {
+            InventorySkeletonCard()
+        }
+    }
+
+    @ViewBuilder
+    private func blocks(_ summary: InventoryDashboardSummary) -> some View {
+        StatGrid(columns: 2) {
+            StatTile(summary.currentSkos.grouped, label: "Current SKOs") {
+                router.open(InventoryRoute.skos)
+            }
+            StatTile(summary.abnormalities.grouped, label: "Abnormalities", tone: summary.abnormalities > 0 ? .danger : nil) {
+                router.open(InventoryRoute.abnormalities)
+            }
+        }
+        StatGrid(columns: 2) {
+            StatTile(summary.replenishmentsWholesale.grouped, label: summary.replenishmentsLabel, tone: .info)
+            StatTile(summary.lowStockAudits.grouped, label: "Low stock audits")
+            StatTile(summary.belowMinimum.grouped, label: summary.belowMinimumLabel)
+            StatTile(summary.negativeStocks.grouped, label: "Negative stocks", tone: summary.negativeStocks > 0 ? .danger : nil)
+            StatTile(summary.wrongWeights.grouped, label: "Wrong weights", tone: summary.wrongWeights > 0 ? .warn : nil)
+            StatTile(summary.withoutProduct.grouped, label: "SKOs without product", tone: summary.withoutProduct > 0 ? .warn : nil)
+        }
+        InventoryInfoCard(title: session.warehouseLabel, lines: [
+            InventoryInfoLine(icon: .sko, text: "Stock value \(summary.stockValueLabel)"),
+            summary.utilisationLine.map { InventoryInfoLine(icon: .locations, text: $0) }
+        ].compactMap { $0 })
+    }
+
+    private func scan() {
+        if warehouse != nil {
+            router.select(.scan)
+        } else {
+            isScanning = true
+        }
+    }
+
+    private func reload() async {
+        guard let warehouse else { return }
+        await feed.load(warehouseID: warehouse.id)
     }
 }

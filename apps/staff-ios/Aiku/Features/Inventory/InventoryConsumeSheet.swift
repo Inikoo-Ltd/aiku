@@ -3,17 +3,18 @@ import SwiftUI
 struct InventoryConsumeSheet: View {
     let sko: InventorySko
     let onCancel: () -> Void
-    let onSave: (String, Int, String) throws -> String
+    let onSave: (String, Int, String) async throws -> String
     let onDone: (String) -> Void
     @State private var location: String
     @State private var quantity = 1
     @State private var note = ""
     @State private var error: String?
+    @State private var isSaving = false
 
     init(
         sko: InventorySko,
         onCancel: @escaping () -> Void,
-        onSave: @escaping (String, Int, String) throws -> String,
+        onSave: @escaping (String, Int, String) async throws -> String,
         onDone: @escaping (String) -> Void
     ) {
         self.sko = sko
@@ -29,7 +30,7 @@ struct InventoryConsumeSheet: View {
             subtitle: "Stock used inside the company (showroom, samples…)"
         ) {
             ForEach(sko.locations.filter { $0.quantity > 0 }) { option in
-                RadioCard(option.code, subtitle: "\(option.quantity) in location", isSelected: option.code == location) {
+                RadioCard(option.code, subtitle: "\(option.quantityText) in location", isSelected: option.code == location) {
                     location = option.code
                     quantity = min(quantity, max(1, option.quantity))
                     error = nil
@@ -41,10 +42,10 @@ struct InventoryConsumeSheet: View {
                 FieldError(error)
             }
         } footer: {
-            AikuButton("Record consumption") {
+            AikuButton(isSaving ? "Recording…" : "Record consumption") {
                 save()
             }
-            .disabled(location.isEmpty || quantity > available)
+            .disabled(location.isEmpty || quantity > available || isSaving)
             .accessibilityIdentifier("inventory.consume.save")
             AikuButton("Cancel", kind: .tertiary, action: onCancel)
         }
@@ -55,12 +56,14 @@ struct InventoryConsumeSheet: View {
     }
 
     private func save() {
-        do {
-            onDone(try onSave(location, quantity, note))
-        } catch let failure as InventoryStockError {
-            error = failure.message
-        } catch {
-            self.error = "Couldn’t record the consumption."
+        isSaving = true
+        Task {
+            defer { isSaving = false }
+            do {
+                onDone(try await onSave(location, quantity, note))
+            } catch {
+                self.error = InventoryLive.message(for: error)
+            }
         }
     }
 }

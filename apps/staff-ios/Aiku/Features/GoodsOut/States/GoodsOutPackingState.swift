@@ -106,6 +106,7 @@ struct GoodsOutPackingFooter: View {
 struct GoodsOutRemotePackingStateView: View {
     let note: GoodsOutDeliveryNote
     let present: (GoodsOutNoteSheet) -> Void
+    @Environment(ToastCenter.self) private var toasts
     @State private var opener = GoodsOutDocumentOpener()
     @State private var isScanning = false
 
@@ -131,6 +132,7 @@ struct GoodsOutRemotePackingStateView: View {
                 isScanning = true
             }
             .accessibilityIdentifier("goodsOut.scanToPack")
+            .hardwareScanner(isEnabled: !isScanning, onCode: packScanned)
         }
         GoodsOutSectionTitle(title: "Lines", detail: note.packedProgress)
         GoodsOutPackLinesCard(lines: note.packableLines, onTap: note.canPackLines ? { present(.packLine(line: $0.id)) } : nil)
@@ -149,5 +151,16 @@ struct GoodsOutRemotePackingStateView: View {
             .fullScreenCover(isPresented: $isScanning) {
                 GoodsOutPackScanScreen(reference: note.reference) { isScanning = false }
             }
+    }
+
+    private func packScanned(_ code: String) {
+        Task {
+            switch await GoodsOutStore.shared.scanToPack(note.reference, barcode: code) {
+            case .packed(let sko, let message, let lineDone):
+                toasts.show(message ?? (lineDone ? "\(sko) · line packed" : "\(sko) +1"), sticky: false)
+            case .refused(let message):
+                toasts.show(message, tone: .danger, sticky: false)
+            }
+        }
     }
 }

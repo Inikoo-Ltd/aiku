@@ -130,6 +130,7 @@ struct ClockingAdjustmentResponse: Decodable, Equatable, Identifiable, Sendable 
     let status: String?
     let statusLabel: String?
     let approvalComment: String?
+    var attachments: [ClockingAttachment]? = nil
 }
 
 struct ClockingAdjustmentsResponse: Decodable, Sendable {
@@ -172,8 +173,22 @@ extension APIClient {
         try await send(.jsonBody("mobile/clocking/qr", method: .post, request), as: ClockingQrResponse.self)
     }
 
-    func requestClockingAdjustment(_ body: ClockingAdjustmentRequestBody) async throws -> ClockingAdjustmentResponse {
-        try await send(.jsonBody("mobile/clocking/adjustments", method: .post, body), as: DataEnvelope<ClockingAdjustmentResponse>.self).value
+    func requestClockingAdjustment(_ body: ClockingAdjustmentRequestBody, attachments: [UploadFile] = []) async throws -> ClockingAdjustmentResponse {
+        if attachments.isEmpty {
+            return try await send(.jsonBody("mobile/clocking/adjustments", method: .post, body), as: DataEnvelope<ClockingAdjustmentResponse>.self).value
+        }
+        var form = MultipartForm()
+        form.add("date", body.date)
+        form.add("timesheet_id", body.timesheetId.map(String.init))
+        form.add("requested_start_at", body.requestedStartAt)
+        form.add("requested_end_at", body.requestedEndAt)
+        form.add("reason", body.reason)
+        form.add(files: attachments, as: "attachments[]")
+        return try await send(form.endpoint("mobile/clocking/adjustments"), as: DataEnvelope<ClockingAdjustmentResponse>.self).value
+    }
+
+    func cancelClockingAdjustment(id: Int) async throws {
+        _ = try await send(Endpoint(path: "mobile/clocking/adjustments/\(id)", method: .delete))
     }
 
     func clockingAdjustments() async throws -> [ClockingAdjustmentResponse] {

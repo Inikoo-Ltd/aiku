@@ -150,7 +150,9 @@ private struct InventoryRemoteFamilyDetail: View {
                             .filter { !$0.isEmpty }
                             .joined(separator: " · "),
                         quantity: sko.quantityInLocations?.value.map { Int($0.rounded(.towardZero)) }
-                    )
+                    ) {
+                        router.open(InventoryRoute.skoID(id: sko.id))
+                    }
                 }
                 if feed.hasMorePages {
                     LocationsLoadMoreRow(isLoading: feed.isLoadingMore, page: feed.currentPage) {

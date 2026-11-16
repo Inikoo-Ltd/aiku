@@ -2,12 +2,13 @@ import Foundation
 
 enum InventorySampleData {
     static let dashboard = InventoryDashboardSummary(
-        urgentAudits: 14,
-        toReplenish: 22,
-        toReplenishDropshipping: 3,
-        replenishments: 9,
+        currentSkos: 7,
+        abnormalities: 2,
+        replenishmentsWholesale: 22,
+        replenishmentsDropshipping: 3,
         lowStockAudits: 14,
         belowMinimum: 31,
+        withMinimum: 412,
         negativeStocks: 2,
         wrongWeights: 5,
         withoutProduct: 3,

@@ -284,6 +284,7 @@ struct DispatchCameraScan<Panel: View>: View {
                 }
             }
             .task { hasCamera = await CameraPermission.request() }
+            .hardwareScanner(onCode: onCode)
             .accessibilityIdentifier("dispatch.camera")
         } else {
             CameraScanScreen(
@@ -300,6 +301,7 @@ struct DispatchCameraScan<Panel: View>: View {
                 AikuButton("Done", kind: .tertiary, action: onClose)
                     .accessibilityIdentifier("dispatch.scan.done")
             }
+            .hardwareScanner(onCode: onCode)
         }
     }
 

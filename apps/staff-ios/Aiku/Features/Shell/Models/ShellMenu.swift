@@ -2,14 +2,20 @@ import Foundation
 
 enum ShellAccessRequirement: Hashable, Sendable {
     case allStaff
-    case warehouse
+    case inventory
+    case locations
+    case goodsIn
+    case goodsOut
     case fulfilment
 
-    func isMet(hasWarehouseAccess: Bool, hasFulfilmentAccess: Bool) -> Bool {
+    func isMet(by modules: ModuleAccess) -> Bool {
         switch self {
         case .allStaff: true
-        case .warehouse: hasWarehouseAccess
-        case .fulfilment: hasFulfilmentAccess
+        case .inventory: modules.inventory
+        case .locations: modules.locations
+        case .goodsIn: modules.goodsIn
+        case .goodsOut: modules.goodsOut
+        case .fulfilment: modules.fulfilment
         }
     }
 }
@@ -42,32 +48,32 @@ struct ShellMenuGroup: Identifiable, Hashable, Sendable {
 enum ShellMenuCatalog {
     static let allGroups: [ShellMenuGroup] = [
         ShellMenuGroup(id: "inventory", title: "Inventory", icon: .inventory, items: [
-            ShellMenuItem(id: "inventory.dashboard", title: "Dashboard", icon: .dashboard, requirement: .warehouse, link: .inventory(.dashboard)),
-            ShellMenuItem(id: "inventory.families", title: "SKO families", icon: .skoFamilies, requirement: .warehouse, link: .inventory(.families)),
-            ShellMenuItem(id: "inventory.skos", title: "SKOs", icon: .sko, badge: .pill(Chip("17 low", .warn)), requirement: .warehouse, link: .inventory(.skos)),
+            ShellMenuItem(id: "inventory.dashboard", title: "Dashboard", icon: .dashboard, requirement: .inventory, link: .inventory(.dashboard)),
+            ShellMenuItem(id: "inventory.families", title: "SKO families", icon: .skoFamilies, requirement: .inventory, link: .inventory(.families)),
+            ShellMenuItem(id: "inventory.skos", title: "SKOs", icon: .sko, badge: .pill(Chip("17 low", .warn)), requirement: .inventory, link: .inventory(.skos)),
             ShellMenuItem(id: "inventory.pallets", title: "Stored pallets", icon: .sko, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.pallets)),
             ShellMenuItem(id: "inventory.storedItems", title: "Stored items", icon: .sko, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.storedItems)),
-            ShellMenuItem(id: "inventory.history", title: "Stock history", icon: .history, requirement: .warehouse, link: .inventory(.stockHistory))
+            ShellMenuItem(id: "inventory.history", title: "Stock history", icon: .history, requirement: .inventory, link: .inventory(.stockHistory))
         ]),
         ShellMenuGroup(id: "locations", title: "Locations", icon: .locations, items: [
-            ShellMenuItem(id: "locations.warehouse", title: "Warehouse", icon: .warehouse, requirement: .warehouse, link: .locations(.warehouse)),
-            ShellMenuItem(id: "locations.areas", title: "Areas", icon: .areas, requirement: .warehouse, link: .locations(.areas)),
-            ShellMenuItem(id: "locations.locations", title: "Locations", icon: .locations, requirement: .warehouse, link: .locations(.locations))
+            ShellMenuItem(id: "locations.warehouse", title: "Warehouse", icon: .warehouse, requirement: .locations, link: .locations(.warehouse)),
+            ShellMenuItem(id: "locations.areas", title: "Areas", icon: .areas, requirement: .locations, link: .locations(.areas)),
+            ShellMenuItem(id: "locations.locations", title: "Locations", icon: .locations, requirement: .locations, link: .locations(.locations))
         ]),
         ShellMenuGroup(id: "goodsIn", title: "Goods in", icon: .goodsIn, items: [
-            ShellMenuItem(id: "goodsIn.backlog", title: "Backlog", icon: .backlog, requirement: .warehouse, link: .goodsIn(.backlog)),
-            ShellMenuItem(id: "goodsIn.stockDeliveries", title: "Stock deliveries", icon: .stockDelivery, badge: .pill(Chip("2 received", .success)), requirement: .warehouse, link: .goodsIn(.stockDeliveries)),
+            ShellMenuItem(id: "goodsIn.backlog", title: "Backlog", icon: .backlog, requirement: .goodsIn, link: .goodsIn(.backlog)),
+            ShellMenuItem(id: "goodsIn.stockDeliveries", title: "Stock deliveries", icon: .stockDelivery, badge: .pill(Chip("2 received", .success)), requirement: .goodsIn, link: .goodsIn(.stockDeliveries)),
             ShellMenuItem(id: "goodsIn.fulfilmentDeliveries", title: "Fulfilment deliveries", icon: .stockDelivery, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.deliveries)),
-            ShellMenuItem(id: "goodsIn.returns", title: "Returns", icon: .stockDelivery, requirement: .warehouse, link: .goodsIn(.returns))
+            ShellMenuItem(id: "goodsIn.returns", title: "Returns", icon: .stockDelivery, requirement: .goodsIn, link: .goodsIn(.returns))
         ]),
         ShellMenuGroup(id: "goodsOut", title: "Goods out", icon: .goodsOut, items: [
-            ShellMenuItem(id: "goodsOut.backlog", title: "Backlog", icon: .backlog, badge: .pill(Chip("12 unassigned", .neutral)), requirement: .warehouse, link: .goodsOut(.backlog)),
-            ShellMenuItem(id: "goodsOut.deliveryNotes", title: "Delivery notes", icon: .deliveryNote, requirement: .warehouse, link: .goodsOut(.deliveryNotes)),
+            ShellMenuItem(id: "goodsOut.backlog", title: "Backlog", icon: .backlog, badge: .pill(Chip("12 unassigned", .neutral)), requirement: .goodsOut, link: .goodsOut(.backlog)),
+            ShellMenuItem(id: "goodsOut.deliveryNotes", title: "Delivery notes", icon: .deliveryNote, requirement: .goodsOut, link: .goodsOut(.deliveryNotes)),
             ShellMenuItem(id: "goodsOut.fulfilmentReturns", title: "Fulfilment returns", icon: .deliveryNote, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.returns)),
-            ShellMenuItem(id: "goodsOut.pickingSessions", title: "Picking sessions", icon: .deliveryNote, requirement: .warehouse, link: .dispatch(.pickingSessions)),
-            ShellMenuItem(id: "goodsOut.shippers", title: "Shippers", icon: .shipment, requirement: .warehouse, link: .dispatch(.shippers)),
-            ShellMenuItem(id: "goodsOut.trolleys", title: "Trolleys", icon: .shipment, requirement: .warehouse, link: .dispatch(.trolleys)),
-            ShellMenuItem(id: "goodsOut.pickedBays", title: "Picked bays", icon: .shipment, requirement: .warehouse, link: .dispatch(.pickedBays))
+            ShellMenuItem(id: "goodsOut.pickingSessions", title: "Picking sessions", icon: .deliveryNote, requirement: .goodsOut, link: .dispatch(.pickingSessions)),
+            ShellMenuItem(id: "goodsOut.shippers", title: "Shippers", icon: .shipment, requirement: .goodsOut, link: .dispatch(.shippers)),
+            ShellMenuItem(id: "goodsOut.trolleys", title: "Trolleys", icon: .shipment, requirement: .goodsOut, link: .dispatch(.trolleys)),
+            ShellMenuItem(id: "goodsOut.pickedBays", title: "Picked bays", icon: .shipment, requirement: .goodsOut, link: .dispatch(.pickedBays))
         ]),
         ShellMenuGroup(id: "clocking", title: "Clocking & HR", icon: .clock, note: "All staff", items: [
             ShellMenuItem(id: "clocking.clocking", title: "Clocking", subtitle: "Clocked in since 08:02", subtitleTone: .success, icon: .clock, iconTone: .success, requirement: .allStaff, link: .clocking(.clocking)),
@@ -75,11 +81,9 @@ enum ShellMenuCatalog {
         ])
     ]
 
-    static func groups(hasWarehouseAccess: Bool, hasFulfilmentAccess: Bool) -> [ShellMenuGroup] {
+    static func groups(for modules: ModuleAccess) -> [ShellMenuGroup] {
         allGroups.compactMap { group in
-            let visible = group.items.filter {
-                $0.requirement.isMet(hasWarehouseAccess: hasWarehouseAccess, hasFulfilmentAccess: hasFulfilmentAccess)
-            }
+            let visible = group.items.filter { $0.requirement.isMet(by: modules) }
             guard !visible.isEmpty else { return nil }
             return ShellMenuGroup(id: group.id, title: group.title, icon: group.icon, note: group.note, items: visible)
         }

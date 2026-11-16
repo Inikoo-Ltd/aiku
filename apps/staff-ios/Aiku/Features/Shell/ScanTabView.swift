@@ -26,6 +26,10 @@ struct ScanTabView: View {
         }
         .fullScreenCover(isPresented: $isCameraOpen) {
             camera
+                .hardwareScanner(onCode: scannedWithCamera)
+        }
+        .hardwareScanner(isEnabled: session.canScan && !isCameraOpen) { code in
+            look(up: code)
         }
         .shellWarehouseSheet(isPresented: $isChoosingWarehouse)
         .sensoryFeedback(.success, trigger: scanCount) { _, _ in vibrates }

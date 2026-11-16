@@ -24,12 +24,16 @@ struct ShellStockMovement: Identifiable, Hashable, Sendable {
 
 enum ShellDashboardContent {
     static let tiles: [ShellShortcut] = [
-        ShellShortcut(id: "inventory", title: "Inventory", icon: .sko, link: .inventory(.skos)),
-        ShellShortcut(id: "locations", title: "Locations", icon: .locations, link: .locations(.locations)),
-        ShellShortcut(id: "goodsIn", title: "Goods in", icon: .order, link: .goodsIn(.stockDeliveries)),
-        ShellShortcut(id: "goodsOut", title: "Goods out", icon: .deliveryNote, link: .goodsOut(.deliveryNotes)),
-        ShellShortcut(id: "clocking", title: "Clocking", icon: .clock, link: .clocking(.clocking))
+        ShellShortcut(id: "inventory", title: "Inventory", icon: .sko, requirement: .inventory, link: .inventory(.skos)),
+        ShellShortcut(id: "locations", title: "Locations", icon: .locations, requirement: .locations, link: .locations(.locations)),
+        ShellShortcut(id: "goodsIn", title: "Goods in", icon: .order, requirement: .goodsIn, link: .goodsIn(.stockDeliveries)),
+        ShellShortcut(id: "goodsOut", title: "Goods out", icon: .deliveryNote, requirement: .goodsOut, link: .goodsOut(.deliveryNotes)),
+        ShellShortcut(id: "clocking", title: "Clocking", icon: .clock, requirement: .allStaff, link: .clocking(.clocking))
     ]
+
+    static func tiles(for modules: ModuleAccess) -> [ShellShortcut] {
+        tiles.filter { $0.requirement.isMet(by: modules) }
+    }
 
     static let goodsOut = ShellDashboardPanel(title: "Goods out", subtitle: "Dispatching backlog", stats: [
         ShellStat(value: "47", label: "To do", tone: .neutral),

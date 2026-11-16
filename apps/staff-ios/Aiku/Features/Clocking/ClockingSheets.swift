@@ -80,6 +80,7 @@ struct ClockingAdjustmentSheet: View {
     @State private var checkIn: Date
     @State private var checkOut: Date
     @State private var reason = ""
+    @State private var files: [UploadFile] = []
     @State private var error: ClockingAdjustmentError?
     @State private var isSending = false
 
@@ -131,6 +132,7 @@ struct ClockingAdjustmentSheet: View {
                 .font(.aiku(13))
                 .foregroundStyle(AikuColor.text3)
             AikuTextArea("Reason", text: $reason, placeholder: "Please explain what happened")
+            AttachmentPicker(files: $files)
             ForEach(store.adjustments(for: dateText)) { request in
                 InlineAlert(tone: request.tone, icon: .bell, title: "Already requested · \(request.statusLabel ?? request.status ?? "")", message: request.summary)
             }
@@ -141,7 +143,7 @@ struct ClockingAdjustmentSheet: View {
             AikuButton("Submit request", isLoading: isSending) {
                 isSending = true
                 Task {
-                    switch await store.requestAdjustment(date: dateText, start: startText, end: endText, reason: reason) {
+                    switch await store.requestAdjustment(date: dateText, start: startText, end: endText, reason: reason, attachments: files) {
                     case .success:
                         onClose(true)
                     case .failure(let failure):

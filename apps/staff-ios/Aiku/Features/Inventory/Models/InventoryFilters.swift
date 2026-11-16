@@ -15,6 +15,24 @@ enum InventorySkoScope: String, CaseIterable, Hashable, Sendable {
         }
     }
 
+    var bucket: String {
+        switch self {
+        case .current: "current"
+        case .discontinued: "discontinued"
+        case .abnormalities: "abnormality"
+        case .all: "all"
+        }
+    }
+
+    func count(in counts: MobileOrgStocksPage.Counts) -> Int {
+        switch self {
+        case .current: counts.current
+        case .discontinued: counts.discontinued
+        case .abnormalities: counts.abnormality
+        case .all: counts.all
+        }
+    }
+
     func includes(_ sko: InventorySko) -> Bool {
         switch self {
         case .current: sko.state != .discontinued && sko.state != .abnormality
@@ -40,6 +58,40 @@ enum InventorySkoSort: String, CaseIterable, Hashable, Sendable {
         case .stockValue: "Stock value"
         case .family: "Family"
         }
+    }
+
+    var remoteValue: String? {
+        switch self {
+        case .reference: nil
+        case .name: "name"
+        case .stockLowFirst: "quantity_available"
+        case .stockValue: "-stock_value"
+        case .family: "family_code"
+        }
+    }
+}
+
+struct InventoryLiveSkoFilter: Hashable, Sendable {
+    var familyID: Int?
+    var familyCode: String?
+    var sort: InventorySkoSort = .reference
+
+    var activeCount: Int { familyID == nil ? 0 : 1 }
+
+    var summary: String {
+        let filters = activeCount == 0 ? "No filters" : "1 filter"
+        return "\(filters) · sorted by \(sort.title.lowercased())"
+    }
+
+    func query(scope: InventorySkoScope, search: String, page: Int = 1, perPage: Int = 50) -> MobileOrgStocksQuery {
+        MobileOrgStocksQuery(
+            bucket: scope.bucket,
+            familyID: familyID,
+            search: search.trimmingCharacters(in: .whitespacesAndNewlines),
+            sort: sort.remoteValue,
+            page: page,
+            perPage: perPage
+        )
     }
 }
 

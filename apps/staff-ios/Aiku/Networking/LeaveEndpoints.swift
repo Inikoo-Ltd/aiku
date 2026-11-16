@@ -45,6 +45,7 @@ struct LeaveResponse: Decodable, Equatable, Identifiable, Sendable {
     let approvalTotalSteps: Int?
     let approvalCompletedSteps: Int?
     let approverName: String?
+    var attachments: [ClockingAttachment]? = nil
 }
 
 struct LeaveRequestBody: Encodable, Sendable {
@@ -59,7 +60,22 @@ extension APIClient {
         try await send(Endpoint(path: "mobile/clocking/leaves", queryItems: [URLQueryItem(name: "per_page", value: "100")]), as: DataEnvelope<LeavesResponse>.self).value
     }
 
-    func requestLeave(_ body: LeaveRequestBody) async throws -> LeaveResponse {
-        try await send(.jsonBody("mobile/clocking/leaves", method: .post, body), as: DataEnvelope<LeaveResponse>.self).value
+    func requestLeave(_ body: LeaveRequestBody, attachments: [UploadFile] = []) async throws -> LeaveResponse {
+        if attachments.isEmpty {
+            return try await send(.jsonBody("mobile/clocking/leaves", method: .post, body), as: DataEnvelope<LeaveResponse>.self).value
+        }
+        var form = MultipartForm()
+        form.add("type", body.type)
+        form.add("start_date", body.startDate)
+        form.add("end_date", body.endDate)
+        form.add("reason", body.reason)
+        form.add(files: attachments, as: "attachments[]")
+        return try await send(form.endpoint("mobile/clocking/leaves"), as: DataEnvelope<LeaveResponse>.self).value
+    }
+
+    func replaceLeaveAttachments(leaveID: Int, attachments: [UploadFile]) async throws -> LeaveResponse {
+        var form = MultipartForm()
+        form.add(files: attachments, as: "attachments[]")
+        return try await send(form.endpoint("mobile/clocking/leaves/\(leaveID)"), as: DataEnvelope<LeaveResponse>.self).value
     }
 }
