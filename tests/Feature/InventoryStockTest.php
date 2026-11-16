@@ -211,6 +211,36 @@ describe('warehouse instrumentation', function () {
         DB::table('organisations')->where('id', $this->organisation->id)->update(['is_aiku_stock_control' => $isAikuStockControl]);
     });
 
+    test('the stock page links what is held for picking to the delivery notes still waiting, HELP-4738', function () {
+        [$deliveryNote, $deliveryNoteItem] = packedDeliveryNote($this);
+        $orgStock = $deliveryNoteItem->orgStock;
+        $parameters = [$this->organisation->slug, $this->warehouse->slug, $orgStock->slug];
+        $references = fn (AssertableInertia $page) => collect($page->toArray()['props']['data']['data'])->pluck('reference')->all();
+
+        $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING]);
+        $deliveryNoteItem->update(['state' => DeliveryNoteItemStateEnum::HANDLING]);
+
+        $this->get(route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show', $parameters))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('showcase.stocks_management.waiting_delivery_notes_route.name', 'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.delivery_notes')
+                ->where('showcase.stocks_management.waiting_delivery_notes_route.parameters.elements.state', 'waiting')
+                ->etc());
+
+        $this->get(route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.delivery_notes', [...$parameters, 'elements' => ['state' => 'waiting']]))
+            ->assertOk()
+            ->assertInertia(function (AssertableInertia $page) use ($references, $deliveryNote, $deliveryNoteItem) {
+                expect($references($page))->toContain($deliveryNote->reference);
+                $row = collect($page->toArray()['props']['data']['data'])->firstWhere('reference', $deliveryNote->reference);
+                expect($row['customer_name'])->toBe($deliveryNote->customer->name)
+                    ->and($row['product_code'])->toBe($deliveryNoteItem->transaction->asset->code);
+            });
+
+        $this->get(route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.delivery_notes', [...$parameters, 'elements' => ['state' => 'done']]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => expect($references($page))->not->toContain($deliveryNote->reference));
+    });
+
     test('lines swept up by marking a whole note packed are flagged so rates can exclude them', function () {
         [$deliveryNote] = packedDeliveryNote($this, markWholeNotePacked: true);
 

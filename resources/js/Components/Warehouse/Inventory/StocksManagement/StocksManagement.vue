@@ -51,6 +51,15 @@ const props = defineProps<{
     org_stock_id: number
 }>()
 
+function summaryLink(key: string | number, item: { value?: number | string }): string | undefined {
+    const waitingRoute = props.stocks_management.waiting_delivery_notes_route
+    if (key !== "quantity_to_be_picked" || !waitingRoute || !Number(item.value)) {
+        return undefined
+    }
+    return route(waitingRoute.name, waitingRoute.parameters)
+}
+
+
 const layout = inject('layout', layoutStructure)
 
 const reloadStocksManagement = debounce(() => router.reload({ only: ['showcase'] }), 600)
@@ -541,15 +550,17 @@ const onAddLocationShow = () => {
         <!-- Section: Summary Stats -->
         <div class="grid grid-cols-7 gap-1 py-2">
             <div class="grid grid-cols-3 gap-2 text-center col-span-6">
-                <div v-for="(item, key) in stocks_management.summary" class="bg-gray-100 p-2 rounded" v-tooltip="item.icon_state.tooltip">
+                <component :is="summaryLink(key, item) ? Link : 'div'" v-for="(item, key) in stocks_management.summary" :key="key" :href="summaryLink(key, item)"
+                    class="bg-gray-100 p-2 rounded" :class="{ 'hover:bg-[var(--app-accent-soft)]': summaryLink(key, item) }"
+                    v-tooltip="summaryLink(key, item) ? ctrans('Parts to be picked: see the delivery notes waiting for them') : item.icon_state.tooltip">
                     <span>
                         <Icon :data="{...item.icon_state, tooltip : null}" />
                     </span>
-                    <span class="ml-2 text-lg font-bold inline-flex align-middle">
+                    <span class="ml-2 text-lg font-bold inline-flex align-middle" :class="{ 'underline decoration-gray-400 underline-offset-4': summaryLink(key, item) }">
                         <FractionDisplay v-if="item.value_fractional" :fractionData="item.value_fractional" />
                         <template v-else>{{ locale.number(item.value ?? 0) }}</template>
                     </span>
-                </div>
+                </component>
             </div>
 
             <div class="grid align-item-middle border-l">

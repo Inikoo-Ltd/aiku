@@ -65,6 +65,7 @@ export interface StockManagementRoutes {
 export interface StocksManagementTS {
     can_edit?: boolean
     routes: StockManagementRoutes
+    waiting_delivery_notes_route?: routeType
     summary: {
         [key: string]: {
             icon_state: IconTS

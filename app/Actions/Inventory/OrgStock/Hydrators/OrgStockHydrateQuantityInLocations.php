@@ -165,12 +165,7 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
      */
     public function getQuantityToBePicked(int $orgStockId): float
     {
-        $openStates = [
-            DeliveryNoteStateEnum::UNASSIGNED->value,
-            DeliveryNoteStateEnum::QUEUED->value,
-            DeliveryNoteStateEnum::HANDLING->value,
-            DeliveryNoteStateEnum::HANDLING_BLOCKED->value,
-        ];
+        $openStates = $this->openDeliveryNoteStates();
 
         return (float)DB::table('delivery_note_items')
             ->join('delivery_notes', 'delivery_notes.id', 'delivery_note_items.delivery_note_id')
@@ -179,6 +174,19 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
             ->whereIn('delivery_notes.state', $openStates)
             ->whereNull('delivery_notes.deleted_at')
             ->sum(DB::raw('greatest(delivery_note_items.quantity_required - coalesce(delivery_note_items.quantity_picked, 0) - coalesce(delivery_note_items.quantity_not_picked, 0), 0)'));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function openDeliveryNoteStates(): array
+    {
+        return [
+            DeliveryNoteStateEnum::UNASSIGNED->value,
+            DeliveryNoteStateEnum::QUEUED->value,
+            DeliveryNoteStateEnum::HANDLING->value,
+            DeliveryNoteStateEnum::HANDLING_BLOCKED->value,
+        ];
     }
 
     public function asCommand(Command $command): int

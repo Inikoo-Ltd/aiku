@@ -45,6 +45,10 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
             </div>
         </template>
 
+        <template #cell(product_code)="{ item }">
+            <span class="whitespace-nowrap">{{ item.product_code }}</span>
+        </template>
+
         <template #cell(date)="{ item }">
             {{
                 useFormatTime(item.date, {
