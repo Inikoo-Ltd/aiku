@@ -10,7 +10,7 @@ namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
-use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
+use App\Actions\Traits\Authorisations\SupplierPortalPermissions;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +26,12 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class ShowSupplierPortalPreview extends OrgAction
 {
-    use WithSupplyChainAuthorisation;
+    public function authorize(ActionRequest $request): bool
+    {
+        $supplier = $request->route('supplier');
+
+        return $supplier instanceof Supplier && SupplierPortalPermissions::canView($request->user(), $supplier);
+    }
 
     public function asController(Supplier $supplier, ActionRequest $request): Response
     {

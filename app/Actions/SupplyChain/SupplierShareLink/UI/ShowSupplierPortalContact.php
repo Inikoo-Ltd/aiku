@@ -9,10 +9,12 @@
 namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
+use App\Actions\Traits\Authorisations\WithSupplierPortalAuthorisation;
 use App\Enums\UI\SupplyChain\SupplierPortalAccessTabsEnum;
+use App\Models\Procurement\OrgSupplier;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierPortalContact;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -21,7 +23,8 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowSupplierPortalContact extends OrgAction
 {
-    use WithSupplyChainAuthorisation;
+    use WithAgentSupplierPortal;
+    use WithSupplierPortalAuthorisation;
 
     private Supplier $supplier;
 
@@ -34,11 +37,20 @@ class ShowSupplierPortalContact extends OrgAction
         return $supplierPortalContact;
     }
 
+    public function inAgentOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, SupplierPortalContact $supplierPortalContact, ActionRequest $request): SupplierPortalContact
+    {
+        abort_if($supplierPortalContact->supplier_id !== $orgSupplier->supplier_id, 404);
+        $this->supplier = $orgSupplier->supplier;
+        $this->initialisationInAgentOrgSupplier($organisation, $orgSupplier, $request)->withTab(SupplierPortalAccessTabsEnum::values());
+
+        return $supplierPortalContact;
+    }
+
     public function htmlResponse(SupplierPortalContact $contact): Response
     {
         $name = $contact->profile?->name ?? $contact->name;
 
-        return ShowSupplierDirectLink::make()->page($this->supplier, $contact, $this->tab, __('Self log-in'), 'fal fa-envelope', $contact->email, [
+        return ShowSupplierDirectLink::make()->withAgentOrgSupplier($this->agentOrgSupplier ? $this->organisation : null, $this->agentOrgSupplier)->page($this->supplier, $contact, $this->tab, __('Self log-in'), 'fal fa-envelope', $contact->email, [
             ['label' => __('Status'), 'type' => 'state', 'value' => $contact->revoked_at ? 'stopped' : 'active'],
             ['label' => __('Name'), 'type' => 'text', 'value' => $name],
             ['label' => __('Allowed'), 'type' => 'date', 'value' => $contact->created_at, 'note' => $contact->authorisedBy?->contact_name],

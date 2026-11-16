@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Models\SupplyChain\SupplierShareLink;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\SupplierPortalPermissions;
 
 class RevokeSupplierShareLink extends OrgAction
 {
@@ -26,7 +27,7 @@ class RevokeSupplierShareLink extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo('supply-chain.edit');
+        return SupplierPortalPermissions::canEdit($request->user(), $request->route('supplierShareLink')->supplier);
     }
 
     public function asController(SupplierShareLink $supplierShareLink, ActionRequest $request): SupplierShareLink

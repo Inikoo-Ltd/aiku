@@ -95,6 +95,9 @@ use App\Actions\SupplyChain\DepositRequest\UI\IndexAgentMoneyRequests;
 use App\Actions\SupplyChain\AspoDeposit\UI\IndexAgentDeposits;
 use App\Actions\SupplyChain\AspoDeposit\UI\ShowAgentAccountingDashboard;
 use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
+use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierDirectLink;
+use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalAccess;
+use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalContact;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Procurement\AgentOrder\ExportCombinedSupplierSheet;
 use App\Actions\Procurement\AgentOrder\UI\IndexAgentSharedSuppliers;
@@ -121,6 +124,9 @@ Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
     Route::get('{orgSupplier}/purchase-orders', [IndexPurchaseOrders::class, 'inOrgSupplier'])->name('show.purchase_orders.index');
     Route::get('{orgSupplier}/containers', [IndexStockDeliveries::class, 'inOrgSupplier'])->name('show.stock_deliveries.index');
     Route::get('{orgSupplier}/repair', IndexRepairSupplierProducts::class)->name('show.repair_supplier_products.index');
+    Route::get('{orgSupplier}/supplier-portal', [ShowSupplierPortalAccess::class, 'inAgentOrgSupplier'])->name('show.supplier_portal');
+    Route::get('{orgSupplier}/supplier-portal/links/{supplierShareLink}', [ShowSupplierDirectLink::class, 'inAgentOrgSupplier'])->name('show.supplier_portal.links.show')->withoutScopedBindings();
+    Route::get('{orgSupplier}/supplier-portal/emails/{supplierPortalContact}', [ShowSupplierPortalContact::class, 'inAgentOrgSupplier'])->name('show.supplier_portal.emails.show')->withoutScopedBindings();
 });
 
 Route::prefix('supplier-products')->as('org_supplier_products.')->group(function () {
