@@ -15,6 +15,8 @@ use App\Actions\CRM\RangeAdvisor\GetCustomerRangeGaps;
 use App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers;
 use App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales;
 use App\Actions\CRM\RangeAdvisor\WithRecommendableProducts;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Actions\Iris\Basket\StoreEcomBasketTransactions;
 use App\Actions\Tasks\GetAikuAssistant;
@@ -29,17 +31,26 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Actions\Ordering\Order\UpdateOrderPremiumDispatch;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Chat\ChatKnowledgeEntry;
+use App\Enums\Comms\Mailshot\MailshotStateEnum;
+use App\Enums\Comms\Mailshot\MailshotTypeEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Comms\Mailshot;
+use App\Models\Comms\MailshotRecipient;
+use Illuminate\Support\Str;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Number;
@@ -94,10 +105,16 @@ use Throwable;
  *
  * shop_information answers a general question about buying from the shop (payment, delivery rules,
  * returns, ordering, the account, terms) from the shop's knowledge base, found by meaning
- * (SearchShopKnowledge): up to four texts, each with its id, and `sources` for the turn, which
+ * (SearchShopKnowledge, with the customer's words and an English version): up to six texts, each with its id, and `sources` for the turn, which
  * AskShoppingAssistant checks the answer cites. With no text it tells the model to offer a person,
  * and when the search is not available it returns the tool error, so the model never answers a
  * shop question from its own knowledge.
+ *
+ * recent_emails_to_customer gives the newsletters and marketing emails this customer was sent in the
+ * last RECENT_EMAIL_DAYS days (their mailshot_recipients rows), newest first, as plain text with the
+ * date sent, so "the offer in your email" is answered from what they actually received. Each email
+ * is a source the answer cites like a shop_information text, so its figures pass the number rule;
+ * its id is the mailshot id negated, which never collides with a knowledge entry id.
  *
  * dispatch_times and shipping_cost never give the model a figure: each returns a `fact`, a sentence
  * written here from our data in the shop's language, which AskShoppingAssistant puts under the
@@ -108,6 +125,28 @@ class GetShoppingAssistantTools
 {
     use AsAction;
     use WithRecommendableProducts;
+
+    /**
+     * Dropshipping customers have no basket to fill or ship: they add products to the portfolios of
+     * their sales channels on the product cards, and each order is one of their own customers', so
+     * there is no order size to talk terms about and no call from our team to offer.
+     */
+    public const array NOT_FOR_DROPSHIPPING = ['add_to_basket', 'shipping_cost', 'big_order_lead', 'better_price_options'];
+
+    public const array ONLY_FOR_DROPSHIPPING = ['products_not_in_store'];
+
+    private const int MAX_NOT_IN_STORE = 10;
+
+    public const int PRIORITY_AFTER_HOURS = 24;
+
+    public const int PRIORITY_PER_DAY = 3;
+
+    private const array ORDER_OPEN_STATES = [
+        OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::HANDLING, OrderStateEnum::HANDLING_BLOCKED,
+        OrderStateEnum::PICKED, OrderStateEnum::PACKING, OrderStateEnum::PACKED, OrderStateEnum::FINALISED,
+    ];
+
+    public const array ENGINEER_TICKET_KINDS = ['bug', 'support', 'data_integrity'];
 
     public const string PRESENT_PRODUCTS = 'present_products';
 
@@ -137,6 +176,12 @@ class GetShoppingAssistantTools
 
     public const int SHOP_PROFILE_MAX_LENGTH = 500;
 
+    public const int RECENT_EMAIL_DAYS = 30;
+
+    private const int RECENT_EMAIL_LIMIT = 5;
+
+    private const int RECENT_EMAIL_CHARACTERS = 6000;
+
     private const array SEGMENT_REASON_CODES = [
         RebuildRangeAdvisorSales::LEVEL_TYPE_AREA    => 'similar_shops_area',
         RebuildRangeAdvisorSales::LEVEL_TYPE_COUNTRY => 'similar_shops_country',
@@ -151,7 +196,17 @@ class GetShoppingAssistantTools
     /**
      * @return array<int, array{type: string, function: array{name: string, description: string, parameters: array<string, mixed>}}>
      */
-    public function definitions(): array
+    public function definitions(bool $dropshipping = false): array
+    {
+        $excluded = $dropshipping ? self::NOT_FOR_DROPSHIPPING : self::ONLY_FOR_DROPSHIPPING;
+
+        return array_values(array_filter($this->everyDefinition(), fn (array $tool) => !in_array($tool['function']['name'], $excluded, true)));
+    }
+
+    /**
+     * @return array<int, array{type: string, function: array{name: string, description: string, parameters: array<string, mixed>}}>
+     */
+    private function everyDefinition(): array
     {
         $limit = [
             'type'        => 'integer',
@@ -175,7 +230,7 @@ class GetShoppingAssistantTools
         return [
             $this->tool(
                 'search_products',
-                'Search the catalogue for products matching what the customer is looking for. Use it whenever the customer names a product, a product code, a theme, an occasion or a kind of item. Returns products with id, name, family and why; exact_code_match marks the product whose code the customer typed and family_code_match the products of the family whose code they typed; matched_families names that family even when none of its products can be shown. It may also return out_of_stock: products we sell that match but cannot be ordered right now. With sort the matches come ordered by price; with sort and an empty query, the whole catalogue.',
+                'Search the catalogue for products matching what the customer is looking for. Use it whenever the customer names a product, a product code, a theme, an occasion or a kind of item. Returns products with id, name, family and why; exact_code_match marks the product whose code the customer typed and family_code_match the products of the family whose code they typed; matched_families names that family even when none of its products can be shown. It may also return out_of_stock: products we sell that match but cannot be ordered right now. With sort the matches come ordered by price; with sort and an empty query, the whole catalogue. A customer who wants products for their own label, private label or white label, or without our brand, is looking for our ranges named Unlabelled or White Label: search for those words with the kind of product ("unlabelled fragrance oil", "white label essential oil").',
                 [
                     'query' => ['type' => 'string', 'description' => 'What the customer is looking for, in their words. May be empty only together with sort.'],
                     'sort'  => ['type' => 'string', 'enum' => self::PRICE_SORTS, 'description' => 'Only when the customer asks for the cheapest or the most expensive: order the matches by price instead of by relevance.'],
@@ -195,7 +250,7 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'missing_from_range',
-                'Products that sell well in the shops closest to this customer (the same kind of shop when we know theirs, otherwise every shop) but that this customer has never ordered. Each product\'s why says exactly which shops it is about. Use it when the customer asks what they are missing or how to widen their range. Returns products with id, name, family and why.',
+                'Products that sell well in the shops closest to this customer (the same kind of shop when we know theirs, otherwise every shop) but that this customer has never ordered and, on a dropshipping shop, does not list in their stores. Each product\'s why says exactly which shops it is about. Use it when the customer asks what they are missing or how to widen their range. Returns products with id, name, family and why.',
                 ['limit' => $limit]
             ),
             $this->tool(
@@ -235,12 +290,30 @@ class GetShoppingAssistantTools
                 ['family_id']
             ),
             $this->tool(
+                'ask_our_team',
+                'Ask a person in our team, whenever you are in doubt, a question our texts, family descriptions and product documents do not clearly answer: about buying from us (samples, a discount code, a document that is not online, a special request) or about our products (how to use one, whether it suits a purpose, safety, other sizes or colours). Better to ask than to guess: their answer is kept so you can answer it yourself next time. Not for the customer\'s own orders, invoices or deliveries, and not when they ask for a person. Returns whether it was passed on and whether the answer can still appear in this conversation within minutes. Returns no products.',
+                [
+                    'question' => ['type' => 'string', 'description' => 'The customer\'s question in one sentence, in English.'],
+                ],
+                ['question']
+            ),
+            $this->tool(
                 'product_documents',
                 'The public documents of one product and its compliance details: SDS (safety data sheet), IFRA certificate, allergen declaration, declaration of conformity, CPSR, test reports and how-to-use guides, plus its CPNP number, ingredients and countries of origin. Use it whenever the customer asks for any of these, for a product or a kind of product. The download links, the CPNP number and the ingredients are added under your reply by the system; you get only which documents exist. Returns no products.',
                 [
                     'query' => ['type' => 'string', 'description' => 'The product the customer asked about, by name or code, in their words.'],
                 ],
                 ['query']
+            ),
+            $this->tool(
+                'order_status',
+                'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, why it has not been dispatched yet, whether it was sent, or for its tracking. Pass the order number they wrote as reference (ours or their own); without one you get their oldest order not dispatched yet, else their latest, so never ask for the number first. It also says when an order waits for payment, and an order still waiting to be picked a day after it was placed is moved to premium dispatch free of charge. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
+                ['reference' => ['type' => 'string', 'description' => 'The order number the customer wrote, exactly as written. Leave it out when they gave none.']]
+            ),
+            $this->tool(
+                'products_not_in_store',
+                'The products the customer added to one of their sales channels that are not in their store yet: not sent to it, or not matched with a listing they already have there, so stock is not updated and orders for them cannot reach us. Use it when they ask which products are not linked, are missing from their store or do not sync, or why an order placed in their store did not arrive. The system adds the list under your reply; you get no names. Returns no products.',
+                []
             ),
             $this->tool(
                 'dispatch_times',
@@ -294,12 +367,30 @@ class GetShoppingAssistantTools
                 ['question', 'customer_agreed']
             ),
             $this->tool(
-                'shop_information',
-                'What our own pages, shop settings and customer service notes say about buying from this shop: payment, delivery and its cost rules, returns, ordering, minimum order, the customer\'s account, our terms. Use it for every general question about the shop that is not a request for products. Returns up to 4 texts, each with an id. Answer only from these texts and list the ids you used in sources. Returns no products.',
+                'report_to_engineers',
+                'Send a real problem straight to our engineers as a ticket, skipping customer services: something broken on our side that only our engineers can fix (a bug on our website or in their account, an integration with their store or marketplace that misbehaves on our side, products or stock not syncing, orders not arriving, records of ours that look wrong), after the customer tried the fix shop_information gives. The system checks it independently and only raises the ticket when it is sure; otherwise it tells you to offer a person. Not for how-to questions, product questions, user mistakes, settings the customer can change, problems on their own store or platform, the customer\'s own order status or delivery, or complaints about a product. Call it once per problem. The system writes the ticket reference under your reply. Returns no products.',
                 [
-                    'question' => ['type' => 'string', 'description' => 'The customer\'s question, in their words.'],
+                    'tried_fix'   => ['type' => 'boolean', 'description' => 'True only when the customer said they already followed the fix our texts give for this problem, or our texts have none and they followed your steps.'],
+                    'why_only_us' => ['type' => 'string', 'maxLength' => 500, 'description' => 'In English, the evidence that only our engineers can fix it (e.g. "orders stopped for a store that shows connected and was reconnected"). Empty when you are not sure; never guess.'],
+                    'summary' => ['type' => 'string', 'maxLength' => 200, 'description' => 'One English sentence naming the problem for an engineer, e.g. "Shopify orders stopped arriving since Monday".'],
+                    'details' => ['type' => 'string', 'maxLength' => 2000, 'description' => 'In English: what the customer reported, which platform, store and products, since when, what they already tried and what you checked.'],
+                    'kind'    => ['type' => 'string', 'enum' => self::ENGINEER_TICKET_KINDS, 'description' => 'bug: something on our side does not work; support: their integration or account needs an engineer to look at it; data_integrity: our records look wrong and need checking.'],
+                ],
+                ['tried_fix', 'why_only_us', 'summary', 'details', 'kind']
+            ),
+            $this->tool(
+                'shop_information',
+                'What our own pages, shop settings and customer service notes say about buying from this shop: payment, delivery and its cost rules, returns, ordering, minimum order, the customer\'s account, our terms. Use it for every general question about the shop that is not a request for products; for a question with two parts (delivery cost and VAT), call it once per part. Returns up to 6 texts, each with an id. Answer only from these texts and list the ids you used in sources. Returns no products.',
+                [
+                    'question'            => ['type' => 'string', 'description' => 'The customer\'s question, in their words.'],
+                    'question_in_english' => ['type' => 'string', 'description' => 'The same question in one sentence in English, when the customer did not write in English.'],
                 ],
                 ['question']
+            ),
+            $this->tool(
+                'recent_emails_to_customer',
+                'The newsletters and marketing emails we sent this customer in the last month, newest first, each with an id, the date sent and its text. Use it when the customer mentions an email, newsletter, offer, code or news we sent them. Answer only from these emails and list the ids you used in sources. Returns no products.',
+                []
             ),
             $this->tool(
                 'clear_conversation',
@@ -311,8 +402,9 @@ class GetShoppingAssistantTools
                 'Give your final answer. Call it once, as your last step, every time: also when you show no products, ask a question or decline (leave must_haves and add_ons empty), so the customer always gets follow_ups to tap. Use only ids returned by the other tools.',
                 [
                     'reply'        => ['type' => 'string', 'description' => 'Two or three short sentences for the customer, with no ids, prices, discounts or stock, and no numbers other than figures stated in the texts you cite in sources.'],
-                    'answer_kind'  => ['type' => 'string', 'enum' => ShoppingAssistantAnswerKindEnum::declarable(), 'description' => 'products when you show or talk about products or ranges; shop_answer when you answer a general question from texts shop_information returned (sources is then required); question when you only ask the customer something; offer_person when you cannot answer and a person should (offer_reason is then required); off_topic when you decline something that has nothing to do with this shop.'],
-                    'sources'      => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Ids of the shop_information texts your answer rests on. Required with answer_kind shop_answer.'],
+                    'language'     => ['type' => 'string', 'description' => 'The two-letter ISO 639-1 code of the language your reply is written in (en, fr, ro, lv...): the customer\'s own language when they write in another one than the shop\'s. The system writes its own sentences to the customer in it.'],
+                    'answer_kind'  => ['type' => 'string', 'enum' => ShoppingAssistantAnswerKindEnum::declarable(), 'description' => 'products when you show or talk about products or ranges; shop_answer when you answer a general question from texts shop_information returned or a question about an email from recent_emails_to_customer (sources is then required); question when you only ask the customer something; offer_person when you cannot answer and a person should (offer_reason is then required); off_topic when you decline something that has nothing to do with this shop; coaching when, on a dropshipping shop, you explain a general dropshipping or online selling idea from your own knowledge.'],
+                    'sources'      => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Ids, exactly as given, of the shop_information texts or recent_emails_to_customer emails your answer rests on. Required with answer_kind shop_answer.'],
                     'offer_reason' => ['type' => 'string', 'enum' => array_column(ShoppingAssistantHandOverReasonEnum::cases(), 'value'), 'description' => 'not_sure: you could not answer from the texts or have none; order_question: the customer asks about their own order, invoice, payment, refund or delivery; asked_for_person: the customer asks for a person.'],
                     'must_haves' => $productIds('Ids of products that fit the request or sell well for similar shops, usually up to '.self::USUAL_PER_GROUP.', at most '.self::MAX_PER_GROUP.' when the customer asks for more.'),
                     'add_ons'    => $productIds('Ids of complementary or previously ordered products, usually up to '.self::USUAL_PER_GROUP.', at most '.self::MAX_PER_GROUP.' when the customer asks for more.'),
@@ -323,7 +415,7 @@ class GetShoppingAssistantTools
                         'description' => 'Two or three short questions the customer could ask next, about products you can find for them. Always give them, also when you decline or show nothing.',
                     ],
                 ],
-                ['reply', 'answer_kind']
+                ['reply', 'answer_kind', 'language']
             ),
         ];
     }
@@ -340,6 +432,14 @@ class GetShoppingAssistantTools
 
         if (!$customer) {
             return $this->error('This conversation has no customer.');
+        }
+
+        if (in_array($name, self::NOT_FOR_DROPSHIPPING, true) && self::isDropshipping($customer)) {
+            return $this->error("$name is not available on a dropshipping shop.");
+        }
+
+        if (in_array($name, self::ONLY_FOR_DROPSHIPPING, true) && !self::isDropshipping($customer)) {
+            return $this->error("$name is only available on a dropshipping shop.");
         }
 
         try {
@@ -359,10 +459,15 @@ class GetShoppingAssistantTools
                 'restock_information'            => $this->restockInformation($customer, $arguments, $conversation->language_code),
                 'ask_purchasing_team'            => $this->askPurchasingTeam($conversation, $customer, $arguments),
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
+                'products_not_in_store'          => $this->productsNotInStore($customer, $conversation->language_code),
+                'order_status'                   => $this->orderStatus($customer, $arguments, $conversation->language_code),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'product_documents'              => $this->productDocuments($customer, $arguments, $conversation->language_code),
+                'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
+                'report_to_engineers'            => $this->reportToEngineers($conversation, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
                 'shop_information'               => $this->shopInformation($customer, $arguments),
+                'recent_emails_to_customer'      => $this->recentEmailsToCustomer($customer),
                 default                          => $this->error("Unknown tool $name."),
             };
         } catch (Throwable $exception) {
@@ -867,7 +972,8 @@ class GetShoppingAssistantTools
     private function shopInformation(Customer $customer, array $arguments): array
     {
         $question = is_string($arguments['question'] ?? null) ? $arguments['question'] : '';
-        $entries  = SearchShopKnowledge::run($customer->shop, $question);
+        $english  = is_string($arguments['question_in_english'] ?? null) ? $arguments['question_in_english'] : '';
+        $entries  = SearchShopKnowledge::run($customer->shop, array_filter([$question, $english]));
 
         if ($entries === null) {
             return $this->error('The shop information is not available right now. Do not answer from your own knowledge: answer with answer_kind offer_person and offer_reason not_sure.');
@@ -902,6 +1008,68 @@ class GetShoppingAssistantTools
     }
 
     /**
+     * @return array{content: array<string, mixed>, products: array{}, error: null, sources: array<int, array{id: int, kind: string, source_type: string, source_id: string, title: string, url: null, body: string}>}
+     */
+    private function recentEmailsToCustomer(Customer $customer): array
+    {
+        $emails = Mailshot::query()
+            ->whereIn('id', MailshotRecipient::query()->where('recipient_type', $customer->getMorphClass())->where('recipient_id', $customer->id)->select('mailshot_id'))
+            ->whereIn('type', [MailshotTypeEnum::NEWSLETTER, MailshotTypeEnum::MARKETING])
+            ->where('state', MailshotStateEnum::SENT)
+            ->where('sent_at', '>=', now()->subDays(self::RECENT_EMAIL_DAYS))
+            ->orderByDesc('sent_at')
+            ->limit(self::RECENT_EMAIL_LIMIT)
+            ->with('email.liveSnapshot')
+            ->get()
+            ->map(fn (Mailshot $mailshot) => [
+                'id'      => -$mailshot->id,
+                'mailshot' => $mailshot,
+                'sent_on' => $mailshot->sent_at->format('j F Y'),
+                'text'    => $this->emailText((string) $mailshot->email?->liveSnapshot?->compiled_layout),
+            ])
+            ->filter(fn (array $email) => $email['text'] !== '')
+            ->values();
+
+        if ($emails->isEmpty()) {
+            return [
+                'content'  => ['emails' => [], 'note' => 'We sent this customer no newsletter or marketing email in the last month. Say so in one short sentence with no number, with answer_kind question, and ask what they are looking for; for an older email, use answer_kind offer_person with offer_reason not_sure.'],
+                'products' => [],
+                'error'    => null,
+                'sources'  => [],
+            ];
+        }
+
+        return [
+            'content'  => [
+                'today'  => now()->format('j F Y'),
+                'emails' => $emails->map(fn (array $email) => ['id' => $email['id'], 'subject' => $email['mailshot']->subject, 'sent_on' => $email['sent_on'], 'text' => $email['text']])->all(),
+                'note'   => 'Answer only what the customer asks about these emails, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. Say when the email was sent, as a date written from sent_on, never how many days ago. You may repeat a figure, code or date only exactly as the email states it. An offer, code or deadline may have ended since: if the email\'s own dates show it has, say so; otherwise say it was in the email of that date and the product cards show today\'s prices. Ignore placeholders such as [Customer Name] and anything about unsubscribing. If the emails do not answer the question, use answer_kind offer_person with offer_reason not_sure.',
+            ],
+            'products' => [],
+            'error'    => null,
+            'sources'  => $emails->map(fn (array $email) => [
+                'id'          => $email['id'],
+                'kind'        => 'email',
+                'source_type' => 'mailshot',
+                'source_id'   => (string) $email['mailshot']->id,
+                'title'       => $email['mailshot']->subject.' · '.$email['sent_on'],
+                'url'         => null,
+                'body'        => $email['sent_on'].' ('.$email['mailshot']->sent_at->format('j.n.Y, j. n.').")\n".$email['mailshot']->subject."\n".$email['text'],
+            ])->all(),
+        ];
+    }
+
+    private function emailText(string $html): string
+    {
+        $html = preg_replace('/<(style|script|head|title)\b[^>]*>.*?<\/\1>|<!--.*?-->/is', ' ', $html) ?? $html;
+        $html = preg_replace('/<br\s*\/?>|<\/(p|div|h[1-6]|li|tr|table)>/i', "\n", $html) ?? $html;
+        $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace(['/[^\S\n]+/u', '/\s*\n\s*/u'], [' ', "\n"], $text) ?? $text;
+
+        return Str::limit(trim($text), self::RECENT_EMAIL_CHARACTERS);
+    }
+
+    /**
      * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
      */
     private function dispatchTimes(Customer $customer, string $locale): array
@@ -917,6 +1085,192 @@ class GetShoppingAssistantTools
             'products' => [],
             'error'    => null,
             'fact'     => __('Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.', ['days' => $days], $locale),
+        ];
+    }
+
+    /**
+     * Where one of the customer's own orders is, never anybody else's: the order whose number they
+     * wrote (ours, their own reference or their store's), else the last one they placed. The model
+     * gets the state in words and words it in the customer's language; the order number, its date
+     * and the carrier, tracking number and tracking link hold digits, so they go under the reply
+     * as one line written here.
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
+     */
+    private function orderStatus(Customer $customer, array $arguments, string $locale): array
+    {
+        $reference = is_string($arguments['reference'] ?? null) ? trim($arguments['reference'], " \t\n\r#") : '';
+        $orders    = Order::where('customer_id', $customer->id);
+
+        $open  = (clone $orders)->whereIn('state', self::ORDER_OPEN_STATES)->orderBy('submitted_at')->orderBy('id')->get();
+        $order = $reference !== ''
+            ? $orders->where(fn ($query) => $query->where('reference', $reference)->orWhere('customer_reference', $reference)->orWhere('platform_order_id', $reference))->latest('id')->first()
+            : ($open->first() ?? $orders->where('state', '!=', OrderStateEnum::CREATING)->latest('submitted_at')->latest('id')->first());
+
+        if (!$order) {
+            return ['content' => ['found' => false, 'note' => $reference !== ''
+                ? 'No order with that number in their account. Say so and ask them to check the number; offer a person only when they are sure of it.'
+                : 'They have not placed an order yet. Say so; a basket is not an order until it is placed.'], 'products' => [], 'error' => null];
+        }
+
+        $state = match ($order->state) {
+            OrderStateEnum::CREATING                          => 'still a basket: it has not been placed yet',
+            OrderStateEnum::SUBMITTED                         => in_array($order->pay_status, Order::PAY_SETTLED_STATUSES, true)
+                ? 'placed and paid, on its way to the warehouse queue'
+                : 'placed but not paid yet: it goes to the warehouse queue once the payment is in',
+            OrderStateEnum::IN_WAREHOUSE                      => 'in our warehouse, in the queue waiting to be picked',
+            OrderStateEnum::HANDLING                          => 'being picked in our warehouse',
+            OrderStateEnum::HANDLING_BLOCKED                  => 'in our warehouse but on hold, waiting on something on our side: our team can say what',
+            OrderStateEnum::PICKED                            => 'picked, waiting to be packed',
+            OrderStateEnum::PACKING                           => 'being packed',
+            OrderStateEnum::PACKED, OrderStateEnum::FINALISED => 'packed and ready, waiting for the courier to collect it',
+            OrderStateEnum::DISPATCHED                        => 'dispatched',
+            OrderStateEnum::CANCELLED                         => 'cancelled',
+        };
+
+        $date     = match ($order->state) {
+            OrderStateEnum::DISPATCHED => $order->dispatched_at,
+            OrderStateEnum::CANCELLED  => $order->cancelled_at,
+            default                    => $order->submitted_at,
+        } ?? $order->created_at;
+        $tracking = $order->state === OrderStateEnum::DISPATCHED
+            ? $this->trackingOf($order->deliveryNotes()->with('shipments.shipper')->get()->flatMap->shipments->unique('id'))
+            : collect();
+
+        $line = implode(' · ', array_filter([
+            $order->reference.(filled($order->customer_reference) && $order->customer_reference !== $order->reference ? ' ('.$order->customer_reference.')' : ''),
+            $date ? (Carbon::parse($date)->locale($locale)->isoFormat('LL') ?: Carbon::parse($date)->isoFormat('LL')) : null,
+            ...$tracking->all(),
+        ]));
+
+        $priority = $this->priorityFor($order);
+
+        return [
+            'content'  => array_filter([
+                'found'        => true,
+                'state'        => $state,
+                'priority'     => $priority,
+                'busy_season'  => in_array(now()->month, [11, 12], true) && in_array($order->state, self::ORDER_OPEN_STATES, true)
+                    ? 'It is our Christmas rush, our busiest weeks of the year. Be honest about it: we are working through every order as fast as we can.'
+                    : null,
+                'other_open_orders' => $reference === '' && $open->count() > 1
+                    ? ($open->count() - 1).' more of their orders are not dispatched yet; this is the oldest. Ask for the order number if they meant another.'
+                    : null,
+                'has_tracking' => $tracking->isNotEmpty(),
+                'line_shows'   => match ($order->state) {
+                    OrderStateEnum::DISPATCHED => 'the order number, the date it was dispatched'.($tracking->isNotEmpty() ? ', the carrier with the tracking number and the tracking link' : ''),
+                    OrderStateEnum::CANCELLED  => 'the order number and the date it was cancelled',
+                    default                    => 'the order number and the date it was placed',
+                },
+                'note'         => 'A line with what line_shows says is added under your reply by the system. Be warm and honest: tell the customer in two or three sentences where the order is, from state, and that the details are below; write no number, date or tracking yourself and never promise a delivery or dispatch date. When priority is given, say sorry for the wait and that, as a thank-you for their patience, we have just moved it to premium dispatch free of charge, so it goes to the front of the picking queue. When it is waiting for payment, say that is what holds it. When it is dispatched without tracking, say there is no tracking number on it. When they need more than this (a late or lost parcel, a change, a cancellation, a refund, a payment problem, an invoice), or the order is on hold, also offer our team: answer_kind offer_person, offer_reason order_question; a plain wait in the queue needs no person.',
+            ], fn ($value) => $value !== null),
+            'products' => [],
+            'error'    => null,
+            'fact'     => $line,
+        ];
+    }
+
+    /**
+     * A customer asking about an order still waiting to be picked a day after it was placed gets
+     * premium dispatch free, which puts it at the front of the picking queue: earns their heart.
+     *
+     * At most PRIORITY_PER_DAY orders a day in each organisation.
+     *
+     * ponytail: counted in the cache, so a cache flush resets the day's count; count audits if that ever matters.
+     */
+    private function priorityFor(Order $order): ?string
+    {
+        if ($order->is_premium_dispatch) {
+            return in_array($order->state, self::ORDER_OPEN_STATES, true) ? 'It already has premium dispatch, so it is at the front of the picking queue.' : null;
+        }
+
+        $waiting = $order->state === OrderStateEnum::IN_WAREHOUSE
+            || ($order->state === OrderStateEnum::SUBMITTED && in_array($order->pay_status, Order::PAY_SETTLED_STATUSES, true));
+
+        if (!$waiting || !$order->submitted_at || $order->submitted_at->gt(now()->subHours(self::PRIORITY_AFTER_HOURS))) {
+            return null;
+        }
+
+        $given = 'shopping_assistant:priority_given:'.$order->organisation_id.':'.now()->toDateString();
+        if ((int) Cache::get($given, 0) >= self::PRIORITY_PER_DAY) {
+            return null;
+        }
+
+        UpdateOrderPremiumDispatch::make()->action($order, ['is_premium_dispatch' => true], charged: false);
+        Cache::add($given, 0, now()->endOfDay());
+        Cache::increment($given);
+
+        return 'Given now: premium dispatch, free of charge, as an apology for the wait.';
+    }
+
+    /**
+     * One text per parcel: the carrier, the tracking number and its tracking link when there is one.
+     *
+     * @param  \Illuminate\Support\Collection<int, \App\Models\Dispatching\Shipment>  $shipments
+     *
+     * @return \Illuminate\Support\Collection<int, string>
+     */
+    public function trackingOf(\Illuminate\Support\Collection $shipments): \Illuminate\Support\Collection
+    {
+        return $shipments->flatMap(function ($shipment) {
+            $carrier = trim((string) ($shipment->shipper?->trade_as ?: $shipment->shipper?->name));
+            $numbers = array_filter((array) $shipment->trackings) ?: array_filter([$shipment->tracking]);
+
+            return collect($numbers)->map(fn ($number, $key) => trim($carrier.' '.$number.' '.Arr::get((array) $shipment->tracking_urls, $key)))->values();
+        })->filter()->unique()->values();
+    }
+
+    /**
+     * What "some products are not in the store yet" means, by name: the active products of each
+     * open store channel (never the manual one, which has no store) that were not sent to the
+     * store or matched with a listing there, newest first, at most MAX_NOT_IN_STORE a channel with
+     * how many more. Product codes hold digits, so the list goes under the reply as written here.
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
+     */
+    private function productsNotInStore(Customer $customer, string $locale): array
+    {
+        $channels = DB::table('customer_sales_channels')
+            ->join('platforms', 'platforms.id', '=', 'customer_sales_channels.platform_id')
+            ->where('customer_sales_channels.customer_id', $customer->id)
+            ->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)
+            ->where('platforms.type', '!=', PlatformTypeEnum::MANUAL->value)
+            ->orderByDesc('customer_sales_channels.number_orders')
+            ->limit(6)
+            ->get(['customer_sales_channels.id', 'customer_sales_channels.name', 'platforms.name as platform']);
+
+        $facts = [];
+        foreach ($channels as $channel) {
+            $missing = fn () => DB::table('portfolios')
+                ->where('customer_sales_channel_id', $channel->id)
+                ->where('item_type', 'Product')
+                ->where('status', true)
+                ->where('platform_status', false);
+            $count = $missing()->count();
+            if ($count === 0) {
+                continue;
+            }
+
+            $names = $missing()->orderByDesc('id')->limit(self::MAX_NOT_IN_STORE)->get(['item_name', 'item_code'])
+                ->map(fn ($item) => trim($item->item_name.' ('.$item->item_code.')'))
+                ->implode(', ');
+            $store = filled($channel->name) ? $channel->platform.' "'.$channel->name.'"' : $channel->platform;
+
+            $facts[] = __(':store, in My Products but not in your store yet: :products.', ['store' => $store, 'products' => $names], $locale)
+                .($count > self::MAX_NOT_IN_STORE ? ' '.__('And :count more.', ['count' => Number::format($count - self::MAX_NOT_IN_STORE, locale: $locale)], $locale) : '');
+        }
+
+        if (!$facts) {
+            return ['content' => ['found' => false, 'note' => 'Every product in their sales channels is in their store. Say so; when an order still did not arrive, look for the fix with shop_information.'], 'products' => [], 'error' => null];
+        }
+
+        return [
+            'content'  => ['found' => true, 'note' => 'The products are listed under your reply by the system. In one or two sentences, with no names or counts: these were added to the sales channel but are not in the store yet, so their stock is not updated and orders for them cannot reach us; under My Products of that channel they can send them to the store or match them with listings they already have (shop_information has the guide for their platform).'],
+            'products' => [],
+            'error'    => null,
+            'fact'     => implode("\n", $facts),
         ];
     }
 
@@ -1005,6 +1359,79 @@ class GetShoppingAssistantTools
             'error'    => null,
             'fact'     => implode(' ', $facts),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string}
+     */
+    /**
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
+     */
+    private function reportToEngineers(ShoppingAssistantConversation $conversation, array $arguments): array
+    {
+        $summary = is_string($arguments['summary'] ?? null) ? trim($arguments['summary']) : '';
+        $details = is_string($arguments['details'] ?? null) ? trim($arguments['details']) : '';
+        $kind    = in_array($arguments['kind'] ?? null, self::ENGINEER_TICKET_KINDS, true) ? TicketKindEnum::from($arguments['kind']) : null;
+
+        if ($summary === '' || $details === '' || !$kind) {
+            return $this->error('summary, details and kind (one of '.implode(', ', self::ENGINEER_TICKET_KINDS).') are required.');
+        }
+
+        $whyOnlyUs = is_string($arguments['why_only_us'] ?? null) ? mb_substr(trim($arguments['why_only_us']), 0, 500) : '';
+        $result    = StoreShoppingAssistantEngineerTicket::run($conversation, $summary, mb_substr($details, 0, 2000), $kind, $whyOnlyUs, ($arguments['tried_fix'] ?? false) === true);
+
+        if (!$result['ticket']) {
+            return [
+                'content'  => ['reported' => false, 'note' => 'Not raised: it is not certain this is a problem only our engineers can fix. If the customer has not tried the fix from shop_information, give it; otherwise answer with answer_kind offer_person and offer_reason not_sure so a person in customer services helps them. Never mention tickets or engineers.'],
+                'products' => [],
+                'error'    => null,
+            ];
+        }
+
+        $fact = StoreShoppingAssistantEngineerTicket::customerSentence($conversation, $result['ticket'], $result['status'] === 'already_reported');
+
+        return [
+            'content' => ['reported' => true, 'already_open' => $result['status'] === 'already_reported', 'note' => 'The ticket reference is added under your reply. Say in one or two sentences that our engineers will look into it, without promising a time or a fix, and offer to help with anything else meanwhile.'],
+            'products' => [],
+            'error'    => null,
+            'fact'     => $fact,
+        ];
+    }
+
+    private function askOurTeam(ShoppingAssistantConversation $conversation, array $arguments): array
+    {
+        $question = is_string($arguments['question'] ?? null) ? trim($arguments['question']) : '';
+        if ($question === '') {
+            return $this->error('question must be the customer\'s question in one English sentence.');
+        }
+
+        $words  = (string) $conversation->messages()->where('role', 'customer')->latest('id')->value('body');
+        $result = StoreShoppingAssistantTeamQuestion::run($conversation, $question, $words ?: $question);
+
+        if ($result['status'] === 'to_engineers') {
+            return [
+                'content'  => ['passed_on' => true, 'to_engineers' => true, 'note' => 'This is a fault, so it went to our engineers, not to a person in our team; the ticket reference is added under your reply. Say in one or two sentences that our engineers will look into it, without promising a time or a fix, and offer to help with anything else meanwhile.'],
+                'products' => [],
+                'error'    => null,
+                'fact'     => StoreShoppingAssistantEngineerTicket::customerSentence($conversation, $result['ticket'], $result['already_reported']),
+            ];
+        }
+
+        $note = match (true) {
+            $result['status'] === 'off', $result['status'] === 'limit' => 'Our team cannot be asked now: say you are not sure and offer a person (answer_kind offer_person, offer_reason not_sure).',
+            $result['live']                                            => 'Passed on to a person. Say honestly, in one or two sentences, that you do not know and have asked one of our experts; if someone is free in the next few minutes their answer will appear here, otherwise we will get back to them as soon as we can. Never promise an answer or a time, and never guess the answer.',
+            default                                                    => 'Passed on to a person. Say honestly, in one sentence, that you do not know and have passed it to one of our experts, who will get back to them as soon as they can. Never promise an answer or a time, and never guess the answer.',
+        };
+
+        if (in_array($result['status'], ['off', 'limit'], true)) {
+            return ['content' => ['passed_on' => false, 'note' => $note], 'products' => [], 'error' => 'not passed on'];
+        }
+
+        return ['content' => ['passed_on' => true, 'answer_may_come_here' => $result['live'], 'note' => $note], 'products' => [], 'error' => null];
     }
 
     /**
@@ -1270,6 +1697,7 @@ class GetShoppingAssistantTools
         $seen    = [];
         $content = [];
         $found   = [];
+        $listed  = self::isDropshipping($customer) && $products->isNotEmpty() ? array_flip(GetCustomerRangeGaps::listedProductIds($customer)) : [];
 
         foreach ($products as $product) {
             if (isset($seen[$product->id])) {
@@ -1288,12 +1716,20 @@ class GetShoppingAssistantTools
             if ($withLastOrdered) {
                 $item['last_ordered'] = $product->customer_last_ordered_at?->format('Y-m');
             }
+            if (isset($listed[$product->id])) {
+                $item['already_listed'] = true;
+            }
 
             $content[] = $item;
             $found[]   = ['id' => $product->id, 'reason_code' => $reasonCode, 'reason' => $this->reasonText($reasonCode, $customer, $locale)];
         }
 
-        return ['content' => ['products' => $content], 'products' => $found, 'error' => null];
+        $result = ['content' => ['products' => $content], 'products' => $found, 'error' => null];
+        if ($listed && collect($content)->contains('already_listed', true)) {
+            $result['content']['already_listed_note'] = 'Products marked already_listed are already in the customer\'s stores: never present them as new or as something to add; leave them out unless the customer asked for that product.';
+        }
+
+        return $result;
     }
 
     public function segmentReasonCode(Product $product): string
@@ -1333,5 +1769,10 @@ class GetShoppingAssistantTools
         }
 
         return ['type' => 'function', 'function' => ['name' => $name, 'description' => $description, 'parameters' => $parameters]];
+    }
+
+    public static function isDropshipping(Customer $customer): bool
+    {
+        return $customer->shop->type === ShopTypeEnum::DROPSHIPPING;
     }
 }

@@ -77,7 +77,7 @@ class GetMcpChangeSnapshot
             McpChangeTypeEnum::PRODUCTION_SETUP => $this->productionSetup($target),
             McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS => $this->supplierProductLinks($target),
             McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING => $this->orgStockAutoOrdering($target),
-            McpChangeTypeEnum::PACKING_SPECS => $this->packingSpecs($target),
+            McpChangeTypeEnum::PRODUCT_PACKAGING => $this->productPackaging($target),
             McpChangeTypeEnum::INFO_WEBSITE_CONTENT => GetStaticWebsiteContentState::run(
                 StaticWebsite::find($target['static_website_id']),
                 $target['pages'] ?? [],
@@ -120,11 +120,10 @@ class GetMcpChangeSnapshot
                 ->implode(', ');
         }
 
-        if ($type === McpChangeTypeEnum::PACKING_SPECS) {
-            return collect($snapshot['specs'])
-                ->groupBy('supplier_product')
-                ->map(fn ($specs, string $code) => $code.': '.$specs->map(fn (array $spec) => 'v'.$spec['version'].' '.$spec['status'])->implode(', '))
-                ->implode('; ') ?: 'no packing specs';
+        if ($type === McpChangeTypeEnum::PRODUCT_PACKAGING) {
+            return collect($snapshot['trade_units'])
+                ->map(fn (array $tradeUnit) => $tradeUnit['code'].': '.($tradeUnit['packaging_family'] ?? 'no packaging'))
+                ->implode('; ');
         }
 
         if ($type === McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS) {
@@ -502,15 +501,15 @@ class GetMcpChangeSnapshot
         ];
     }
 
-    private function packingSpecs(array $target): array
+    private function productPackaging(array $target): array
     {
         return [
-            'specs' => DB::table('supplier_product_packing_specs')
-                ->join('supplier_products', 'supplier_products.id', '=', 'supplier_product_packing_specs.supplier_product_id')
-                ->whereIn('supplier_product_packing_specs.supplier_product_id', $target['supplier_product_ids'])
-                ->orderBy('supplier_product_packing_specs.id')
-                ->get(['supplier_product_packing_specs.id', 'supplier_products.code', 'supplier_product_packing_specs.version', 'supplier_product_packing_specs.status'])
-                ->mapWithKeys(fn ($row) => [$row->id => ['supplier_product' => $row->code, 'version' => $row->version, 'status' => $row->status]])
+            'trade_units' => DB::table('trade_units')
+                ->leftJoin('packaging_families', 'packaging_families.id', '=', 'trade_units.packaging_family_id')
+                ->whereIn('trade_units.id', $target['trade_unit_ids'])
+                ->orderBy('trade_units.id')
+                ->get(['trade_units.id', 'trade_units.code', 'trade_units.packaging_family_id', 'packaging_families.code as packaging_family'])
+                ->mapWithKeys(fn ($row) => [$row->id => ['code' => $row->code, 'packaging_family_id' => $row->packaging_family_id, 'packaging_family' => $row->packaging_family]])
                 ->all(),
         ];
     }

@@ -102,6 +102,7 @@ class EditOrgAgent extends OrgAction
         ];
 
         if (!$this->ownsAgent($orgAgent)) {
+            $blueprint[] = $this->agentFeeSection($orgAgent);
             $blueprint[] = $this->moneyRequestSection($orgAgent);
         }
 
@@ -143,6 +144,31 @@ class EditOrgAgent extends OrgAction
                 ],
             ]
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function agentFeeSection(OrgAgent $orgAgent): array
+    {
+        return [
+            'label'  => __('Agent fee'),
+            'title'  => __('Agent fee'),
+            'icon'   => 'fal fa-percent',
+            'fields' => [
+                'cho_penalty_percentage' => [
+                    'type'        => 'input_number',
+                    'bind'        => ['step' => '0.5', 'maxFractionDigits' => 2, 'min' => 0, 'max' => 100, 'suffix' => '%'],
+                    'label'       => __('CHO penalty'),
+                    'information' => __('Points taken off the agent fee on the goods of an order that missed clean hand over (CHO), never below 0%. Empty or 0 is no penalty. Applies to agent invoices issued after the change.'),
+                    'value'       => $orgAgent->cho_penalty_percentage !== null ? (float) $orgAgent->cho_penalty_percentage : null,
+                    'updateRoute' => [
+                        'name'       => 'grp.models.org_agent.update',
+                        'parameters' => $orgAgent->id,
+                    ],
+                ],
+            ],
+        ];
     }
 
     /**

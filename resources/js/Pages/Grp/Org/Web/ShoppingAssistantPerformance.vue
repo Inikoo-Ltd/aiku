@@ -21,9 +21,9 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { Navigation } from "@/types/Tabs"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faComments, faShoppingCart, faMoneyBillWave, faPercentage, faCoins, faUndo, faTimes, faRobot, faUserHeadset, faExclamationTriangle } from "@fal"
+import { faComments, faShoppingCart, faMoneyBillWave, faPercentage, faCoins, faUndo, faTimes, faRobot, faUserHeadset, faExclamationTriangle, faHeadSideBrain } from "@fal"
 
-library.add(faComments, faShoppingCart, faMoneyBillWave, faPercentage, faCoins, faUndo, faTimes, faRobot, faUserHeadset, faExclamationTriangle)
+library.add(faComments, faShoppingCart, faMoneyBillWave, faPercentage, faCoins, faUndo, faTimes, faRobot, faUserHeadset, faExclamationTriangle, faHeadSideBrain)
 
 type Metric = { value: number; previous: number | null }
 type Option = { value: string | number; label: string }
@@ -51,7 +51,7 @@ type Overview = {
         top_zero_queries?: { query: string; searches: number; rescued: number }[]
     }
     assistant_reach?: { available?: Metric; offered?: Metric; asked?: Metric }
-    refusals?: { rate_limit?: Metric; budget?: Metric }
+    refusals?: { rate_limit?: Metric; budget?: Metric; customer_cap?: Metric }
     general?: {
         questions: Metric
         answered: Metric
@@ -74,6 +74,18 @@ type Overview = {
         untagged: number
         by_type: { type: string; label: string; conversations: number }[]
         top: { type: string; label: string; topic: string; conversations: number; quote: string | null; conversation: string }[]
+    }
+    gurus?: {
+        asked: number
+        answered: number
+        answered_live: number
+        closed: number
+        open: number
+        kept: number
+        median_minutes: number | null
+        routed: Record<string, number>
+        people: { name: string; answered: number; median_minutes: number | null; declined: number; passed: number }[]
+        latest: { reference: string; question: string; shop: string; status: "open" | "answered" | "closed"; by: string | null; minutes: number | null; url: string }[]
     }
 }
 
@@ -107,7 +119,7 @@ const props = defineProps<{
     currency: string
     cost_currency?: string
     attribution_days: number
-    budgets: { website: string; monthly: number; spent: number; paused: boolean; resumes_on: string }[]
+    budgets: { website: string; monthly: number; spent: number; paused: boolean; resumes_on: string; projected: number }[]
     sales_leads?: {
         reference: string
         kind: "big_order" | "restock"
@@ -261,12 +273,22 @@ const generalFilterLabel = (value: string | null): string => {
     return value
 }
 
-const budgetRows = computed(() =>
-    (props.budgets ?? []).map((budget) => {
-        const used = budget.monthly > 0 ? budget.spent / budget.monthly : 1
-        return { ...budget, width: Math.min(100, used * 100), warning: !budget.paused && used >= 0.8 }
-    })
-)
+const budgetRow = (budget: { website: string; monthly: number; spent: number; paused: boolean; resumes_on: string; projected: number }, isTotal = false) => {
+    const used = budget.monthly > 0 ? budget.spent / budget.monthly : 1
+    return { ...budget, isTotal, width: Math.min(100, used * 100), warning: !budget.paused && used >= 0.8, over: !budget.paused && budget.projected > budget.monthly }
+}
+
+const allBudgetRows = computed(() => (props.budgets ?? []).map((budget) => budgetRow(budget)))
+
+const budgetRows = computed(() => {
+    if (props.filters.website_locked || allBudgetRows.value.length < 2) {
+        return allBudgetRows.value
+    }
+    const sum = (key: "monthly" | "spent" | "projected") => allBudgetRows.value.reduce((total, budget) => total + budget[key], 0)
+    const total = budgetRow({ website: ctrans("All websites"), monthly: sum("monthly"), spent: sum("spent"), projected: sum("projected"), paused: false, resumes_on: "" }, true)
+
+    return [total, ...allBudgetRows.value.filter((budget) => budget.paused || budget.warning || budget.over)]
+})
 
 const salesLeads = computed(() => props.sales_leads ?? [])
 const leadContact = (lead: { kind: string; agreed_to_call: boolean; answer_channel: string | null }) =>
@@ -607,11 +629,21 @@ const assistantReach = computed(() => {
 })
 
 const feedback = computed(() => props.overview?.feedback ?? null)
+const gurus = computed(() => (props.overview?.gurus?.asked ? props.overview.gurus : null))
+const guruRouteLabels = computed<Record<string, string>>(() => ({
+    guru: ctrans("the guru"),
+    backup: ctrans("the backup guru"),
+    customer_services: ctrans("customer services, gurus offline"),
+    nobody_online: ctrans("waited, nobody online"),
+}))
+const guruStatusLabel = (status: string) => ({ open: ctrans("Waiting"), answered: ctrans("Answered"), closed: ctrans("Not answered") }[status] ?? status)
+const guruStatusClass = (status: string) => ({ open: "text-amber-700", answered: "text-green-700", closed: "text-red-700" }[status] ?? "text-gray-600")
 const challenges = computed(() => props.overview?.challenges ?? null)
 
 const refusals = computed(() => ({
     rateLimit: props.overview?.refusals?.rate_limit?.value ?? 0,
     budget: props.overview?.refusals?.budget?.value ?? 0,
+    customerCap: props.overview?.refusals?.customer_cap?.value ?? 0,
 }))
 
 const conversationsTable = computed(() => props.conversations)
@@ -696,7 +728,7 @@ const conversationsTable = computed(() => props.conversations)
                         <p v-for="line in card.lines" :key="line" class="mt-0.5 truncate text-xs text-gray-500" :title="line">{{ line }}</p>
                     </div>
                 </div>
-                <div v-if="budgetRows.length && filters.website_locked" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                <div v-if="budgetRows.length" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
                     <h3 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("AI budget this month") }}</h3>
                     <table class="w-full text-sm">
                         <thead class="whitespace-nowrap text-xs text-gray-400">
@@ -704,22 +736,25 @@ const conversationsTable = computed(() => props.conversations)
                                 <th v-if="!(budgetRows.length === 1 && filters.website_locked)" class="pb-1 pr-3 text-left font-medium">{{ ctrans("Website") }}</th>
                                 <th class="pb-1 font-medium" />
                                 <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Spent") }}</th>
+                                <th class="pb-1 pl-4 text-right font-medium" :title="ctrans('What will be spent by the end of the month at the pace of the last 7 days')">{{ ctrans("Projected") }}</th>
                                 <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Budget") }}</th>
                                 <th class="pb-1 pl-4 text-left font-medium" />
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="budget in budgetRows" :key="budget.website">
-                                <td v-if="!(budgetRows.length === 1 && filters.website_locked)" class="whitespace-nowrap py-1 pr-3 text-gray-700">{{ budget.website }}</td>
+                                <td v-if="!(budgetRows.length === 1 && filters.website_locked)" class="whitespace-nowrap py-1 pr-3 text-gray-700" :class="{ 'font-semibold': budget.isTotal }">{{ budget.website }}</td>
                                 <td class="w-full py-1">
                                     <div class="h-2 rounded-sm bg-gray-100">
                                         <div class="h-2 rounded-sm" :class="budget.paused ? 'bg-red-500' : budget.warning ? 'bg-amber-500' : 'bg-[var(--app-accent)]'" :style="{ width: budget.width + '%' }" />
                                     </div>
                                 </td>
                                 <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-900">{{ money(budget.spent, "USD") }}</td>
+                                <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums" :class="budget.over ? 'font-semibold text-amber-700' : 'text-gray-900'">{{ money(budget.projected, "USD") }}</td>
                                 <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-500">{{ money(budget.monthly, "USD") }}</td>
                                 <td class="whitespace-nowrap py-1 pl-4 text-xs">
                                     <span v-if="budget.paused" class="text-red-600">{{ ctrans("Paused until :date", { date: shortDate(budget.resumes_on) }) }}</span>
+                                    <span v-else-if="budget.over" class="text-amber-700">{{ ctrans("Over budget before the month ends") }}</span>
                                     <span v-else-if="budget.warning" class="text-amber-700">{{ ctrans("80% used") }}</span>
                                 </td>
                             </tr>
@@ -976,9 +1011,74 @@ const conversationsTable = computed(() => props.conversations)
                             </tr>
                         </tbody>
                     </table>
-                    <p v-if="refusals.rateLimit > 0 || refusals.budget > 0" class="mt-2 text-xs text-gray-500">
-                        {{ ctrans("Questions refused: :rate_limit by the rate limit, :budget by the budget", { rate_limit: locale.number(refusals.rateLimit), budget: locale.number(refusals.budget) }) }}
+                    <p v-if="refusals.rateLimit > 0 || refusals.budget > 0 || refusals.customerCap > 0" class="mt-2 text-xs text-gray-500">
+                        {{ ctrans("Questions refused: :rate_limit by the rate limit, :budget by the budget, :customer_cap by the new customer allowance", { rate_limit: locale.number(refusals.rateLimit), budget: locale.number(refusals.budget), customer_cap: locale.number(refusals.customerCap) }) }}
                     </p>
+                </div>
+
+                <div v-if="gurus" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                    <h3 class="mb-2 text-sm font-semibold text-gray-700">
+                        <FontAwesomeIcon icon="fal fa-head-side-brain" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />
+                        {{ ctrans("Questions for the gurus") }}
+                    </h3>
+                    <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                        <span><span class="text-gray-500">{{ ctrans("Asked") }}</span> <span class="ml-1 font-semibold tabular-nums">{{ locale.number(gurus.asked) }}</span></span>
+                        <span><span class="text-gray-500">{{ ctrans("Answered") }}</span> <span class="ml-1 font-semibold tabular-nums">{{ locale.number(gurus.answered) }}</span>
+                            <span class="ml-1 text-xs text-gray-400">{{ ctrans(":count while the customer waited", { count: locale.number(gurus.answered_live) }) }}</span></span>
+                        <span><span class="text-gray-500">{{ ctrans("Typical answer time") }}</span> <span class="ml-1 font-semibold tabular-nums">{{ waitLabel(gurus.median_minutes) }}</span></span>
+                        <span><span class="text-gray-500">{{ ctrans("Not answered") }}</span> <span class="ml-1 font-semibold tabular-nums" :class="gurus.closed ? 'text-red-700' : ''">{{ locale.number(gurus.closed) }}</span></span>
+                        <span><span class="text-gray-500">{{ ctrans("Waiting") }}</span> <span class="ml-1 font-semibold tabular-nums" :class="gurus.open ? 'text-amber-700' : ''">{{ locale.number(gurus.open) }}</span></span>
+                        <span><span class="text-gray-500">{{ ctrans("Kept for Merlin") }}</span> <span class="ml-1 font-semibold tabular-nums">{{ locale.number(gurus.kept) }}</span></span>
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500">
+                        {{ ctrans("First sent to:") }}
+                        <span v-for="(count, route) in gurus.routed" :key="route" class="mr-3 whitespace-nowrap">{{ guruRouteLabels[route] ?? route }} {{ locale.number(count) }}</span>
+                    </p>
+
+                    <div class="mt-3 grid gap-3 lg:grid-cols-2">
+                        <table v-if="gurus.people.length" class="w-full text-sm">
+                            <thead class="whitespace-nowrap text-xs text-gray-400">
+                                <tr>
+                                    <th class="py-1 text-left font-normal">{{ ctrans("Person") }}</th>
+                                    <th class="py-1 pl-4 text-right font-normal">{{ ctrans("Answered") }}</th>
+                                    <th class="py-1 pl-4 text-right font-normal">{{ ctrans("Typical time") }}</th>
+                                    <th class="py-1 pl-4 text-right font-normal">{{ ctrans("Did not want to") }}</th>
+                                    <th class="py-1 pl-4 text-right font-normal">{{ ctrans("Passed on") }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="person in gurus.people" :key="person.name">
+                                    <td class="py-1 text-gray-900">{{ person.name }}</td>
+                                    <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-900">{{ locale.number(person.answered) }}</td>
+                                    <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-700">{{ waitLabel(person.median_minutes) }}</td>
+                                    <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums" :class="person.declined ? 'text-red-700' : 'text-gray-400'">{{ locale.number(person.declined) }}</td>
+                                    <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-700">{{ locale.number(person.passed) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="w-full text-sm">
+                            <thead class="whitespace-nowrap text-xs text-gray-400">
+                                <tr>
+                                    <th class="py-1 text-left font-normal">{{ ctrans("Latest questions") }}</th>
+                                    <th class="py-1 pl-4 text-left font-normal">{{ ctrans("Status") }}</th>
+                                    <th class="py-1 pl-4 text-right font-normal">{{ ctrans("Time") }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="question in gurus.latest" :key="question.reference">
+                                    <td class="py-1">
+                                        <a :href="question.url" class="primaryLink">{{ question.question }}</a>
+                                        <span class="ml-1 whitespace-nowrap text-xs text-gray-400">{{ question.shop }}</span>
+                                    </td>
+                                    <td class="whitespace-nowrap py-1 pl-4 text-xs">
+                                        <span :class="guruStatusClass(question.status)">{{ guruStatusLabel(question.status) }}</span>
+                                        <span v-if="question.by" class="text-gray-500"> · {{ question.by }}</span>
+                                    </td>
+                                    <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-xs text-gray-500">{{ waitLabel(question.minutes) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div v-if="feedback" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">

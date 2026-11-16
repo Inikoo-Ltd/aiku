@@ -11,12 +11,14 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseAndDispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
+use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -34,16 +36,17 @@ use RuntimeException;
  * Staging only: walks a paid dropshipping test order through the warehouse (pick, pack, a shipment
  * with a test tracking number on a shipper with no carrier API, finalise and dispatch), so a
  * customer testing the API on the staging mirror can see a dispatched order with tracking
- * (PRE-88, CUS-1790). What can be checked is checked before the first write, and the warehouse
+ * (PRE-88, CUS-1790). With $withNotPickedLine the first line is marked not picked (out of stock)
+ * and the rest dispatched, so the API shows a partial dispatch (CUS-1831). What can be checked is checked before the first write, and the warehouse
  * steps run in one transaction, so a step that still refuses leaves the order as it was.
  */
 class DispatchTestOrder
 {
     use AsAction;
 
-    public string $commandSignature = 'order:dispatch_test {order : Order id (not reference: staging references clash with production)} {user : Username doing the warehouse steps} {--tracking= : Test tracking number}';
+    public string $commandSignature = 'order:dispatch_test {order : Order id (not reference: staging references clash with production)} {user : Username doing the warehouse steps} {--tracking= : Test tracking number} {--partial : Mark the first line not picked}';
 
-    public function handle(Order $order, User $user, string $tracking): Order
+    public function handle(Order $order, User $user, string $tracking, bool $withNotPickedLine = false): Order
     {
         if (app()->isProduction()) {
             throw new RuntimeException('Test orders are only dispatched outside production');
@@ -67,13 +70,15 @@ class DispatchTestOrder
             throw new RuntimeException('The order has no delivery note left to dispatch');
         }
 
+        $notPickedItem = $withNotPickedLine ? $this->notPickedItem($deliveryNotes) : null;
+
         foreach ($deliveryNotes as $deliveryNote) {
-            $this->ensureDispatchable($deliveryNote);
+            $this->ensureDispatchable($deliveryNote, $notPickedItem);
         }
 
-        DB::transaction(function () use ($deliveryNotes, $user, $shipper, $tracking) {
+        DB::transaction(function () use ($deliveryNotes, $user, $shipper, $tracking, $notPickedItem) {
             foreach ($deliveryNotes as $deliveryNote) {
-                $this->dispatchDeliveryNote($deliveryNote, $user, $shipper, $tracking);
+                $this->dispatchDeliveryNote($deliveryNote, $user, $shipper, $tracking, $notPickedItem);
             }
         });
 
@@ -107,22 +112,49 @@ class DispatchTestOrder
         return $shipper;
     }
 
-    private function ensureDispatchable(DeliveryNote $deliveryNote): void
+    /**
+     * @param Collection<int, DeliveryNote> $deliveryNotes
+     */
+    private function notPickedItem(Collection $deliveryNotes): DeliveryNoteItem
+    {
+        $itemsToPick = $deliveryNotes->flatMap(fn (DeliveryNote $deliveryNote) => $this->itemsToPick($deliveryNote));
+
+        if ($itemsToPick->count() < 2) {
+            throw new RuntimeException('A partial dispatch needs an order with at least two lines left to pick');
+        }
+
+        return $itemsToPick->first();
+    }
+
+    private function ensureDispatchable(DeliveryNote $deliveryNote, ?DeliveryNoteItem $notPickedItem): void
     {
         if ($deliveryNote->hasBlockingItems()) {
             throw new RuntimeException("$deliveryNote->reference has items waiting for the warehouse or customer services");
         }
 
         foreach ($this->itemsToPick($deliveryNote) as $deliveryNoteItem) {
+            if ($deliveryNoteItem->id == $notPickedItem?->id) {
+                continue;
+            }
             if ($this->stockLocations($deliveryNote, $deliveryNoteItem)->sum('quantity') < $this->outstanding($deliveryNoteItem)) {
                 throw new RuntimeException("Not enough stock in the warehouse to pick an item of $deliveryNote->reference");
             }
         }
     }
 
-    private function dispatchDeliveryNote(DeliveryNote $deliveryNote, User $user, Shipper $shipper, string $tracking): void
+    private function dispatchDeliveryNote(DeliveryNote $deliveryNote, User $user, Shipper $shipper, string $tracking, ?DeliveryNoteItem $notPickedItem): void
     {
         $deliveryNote = StartHandlingDeliveryNote::make()->action($deliveryNote, $user);
+
+        if ($notPickedItem?->delivery_note_id == $deliveryNote->id) {
+            $notPicked = StoreNotPickPicking::make()->action($notPickedItem->refresh(), $user, [
+                'quantity'          => $this->outstanding($notPickedItem),
+                'not_picked_reason' => PickingNotPickedReasonEnum::OUT_OF_STOCK,
+            ]);
+            if (!$notPicked) {
+                throw new RuntimeException("The line not to pick of $deliveryNote->reference could not be marked");
+            }
+        }
 
         foreach ($this->itemsToPick($deliveryNote) as $deliveryNoteItem) {
             foreach ($this->stockLocations($deliveryNote, $deliveryNoteItem) as $locationOrgStock) {
@@ -158,6 +190,7 @@ class DispatchTestOrder
     {
         return $deliveryNote->deliveryNoteItems()
             ->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
+            ->orderBy('id')
             ->get()
             ->filter(fn (DeliveryNoteItem $deliveryNoteItem) => $this->outstanding($deliveryNoteItem) > 0);
     }
@@ -166,6 +199,7 @@ class DispatchTestOrder
     {
         return (float)$deliveryNoteItem->quantity_required
             - (float)$deliveryNoteItem->quantity_picked
+            - (float)$deliveryNoteItem->quantity_not_picked
             - (float)$deliveryNoteItem->quantity_waiting_warehouse
             - (float)$deliveryNoteItem->quantity_waiting_crm;
     }
@@ -187,7 +221,7 @@ class DispatchTestOrder
         $order = Order::findOrFail($command->argument('order'));
         $user  = User::where('username', $command->argument('user'))->firstOrFail();
 
-        $order = $this->handle($order, $user, $command->option('tracking') ?: 'TEST-'.$order->reference);
+        $order = $this->handle($order, $user, $command->option('tracking') ?: 'TEST-'.$order->reference, (bool)$command->option('partial'));
 
         $command->info("$order->reference is {$order->state->value}, tracking: $order->tracking_number");
 

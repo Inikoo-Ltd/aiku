@@ -1,16 +1,5 @@
 package io.aiku.droid.ui.clocking
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.mlkit.vision.MlKitAnalyzer
-import androidx.camera.view.CameraController
-import androidx.camera.view.LifecycleCameraController
-import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -36,12 +25,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,7 +44,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -70,14 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.LifecycleResumeEffect
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.common.Barcode
 import io.aiku.droid.R
 import io.aiku.droid.data.api.QrClocking
 import io.aiku.droid.ui.components.ControlShape
@@ -86,9 +65,13 @@ import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.animateFocusProgress
 import io.aiku.droid.ui.navigation.ClockingErrorRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
+import io.aiku.droid.ui.scan.BarcodeSet
+import io.aiku.droid.ui.scan.CameraBarcodePreview
+import io.aiku.droid.ui.scan.ScanEffect
+import io.aiku.droid.ui.scan.rememberCameraAccess
 import io.aiku.droid.ui.theme.Inter
-import java.time.ZoneId
 import kotlinx.coroutines.delay
+import java.time.ZoneId
 
 private const val SUCCESS_AUTO_CLOSE_MILLIS = 6000L
 private const val VIEWFINDER_VERTICAL_BIAS = -0.2f
@@ -136,36 +119,16 @@ fun ClockScanQrScreen() {
     }
 }
 
-private fun isCameraAllowed(context: Context): Boolean =
-    ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-
 @Composable
 private fun ClockScanCamera(isSending: Boolean, onScanned: (String) -> Unit) {
-    val context = LocalContext.current
-    var isAllowed by remember { mutableStateOf(isCameraAllowed(context)) }
-    var isRefused by rememberSaveable { mutableStateOf(false) }
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        isAllowed = granted
-        isRefused = !granted
-    }
+    val cameraAccess = rememberCameraAccess()
 
-    LaunchedEffect(Unit) {
-        if (!isAllowed && !isRefused) {
-            permissionLauncher.launch(Manifest.permission.CAMERA)
-        }
-    }
-    LifecycleResumeEffect(Unit) {
-        if (isCameraAllowed(context)) {
-            isAllowed = true
-            isRefused = false
-        }
-        onPauseOrDispose { }
-    }
+    ScanEffect(enabled = !isSending) { scan -> onScanned(scan.code) }
 
-    if (isRefused && !isAllowed) {
+    if (cameraAccess.isRefused) {
         ClockingErrorScreen(error = ClockingErrorKind.CameraBlocked, message = null, scanned = null)
     } else {
-        ClockScanViewfinder(showCamera = isAllowed, isSending = isSending, onScanned = onScanned)
+        ClockScanViewfinder(showCamera = cameraAccess.isAllowed, isSending = isSending, onScanned = onScanned)
     }
 }
 
@@ -205,7 +168,7 @@ private fun ClockScanViewfinder(showCamera: Boolean, isSending: Boolean, onScann
         }
         Box(modifier = Modifier.weight(1f).fillMaxWidth().background(camera.border)) {
             if (showCamera) {
-                ClockScanCameraPreview(onScanned = onScanned, modifier = Modifier.fillMaxSize())
+                CameraBarcodePreview(barcodes = BarcodeSet.Clocking, onScanned = onScanned, modifier = Modifier.fillMaxSize(), isSingleShot = true)
             }
             Box(
                 modifier = Modifier
@@ -274,51 +237,6 @@ private fun ClockScanViewfinder(showCamera: Boolean, isSending: Boolean, onScann
                 .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 48.dp),
         )
     }
-}
-
-@Composable
-private fun ClockScanCameraPreview(onScanned: (String) -> Unit, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val currentOnScanned by rememberUpdatedState(onScanned)
-    val controller = remember(context) { LifecycleCameraController(context) }
-
-    DisposableEffect(controller, lifecycleOwner) {
-        val executor = ContextCompat.getMainExecutor(context)
-        val scanner = BarcodeScanning.getClient(BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build())
-        var hasScanned = false
-
-        controller.cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-        controller.setEnabledUseCases(CameraController.IMAGE_ANALYSIS)
-        controller.setImageAnalysisAnalyzer(
-            executor,
-            MlKitAnalyzer(listOf(scanner), ImageAnalysis.COORDINATE_SYSTEM_ORIGINAL, executor) { result ->
-                val code = result.getValue(scanner)?.firstNotNullOfOrNull { barcode -> barcode.rawValue?.takeIf { it.isNotBlank() } }
-                if (code != null && !hasScanned) {
-                    hasScanned = true
-                    controller.clearImageAnalysisAnalyzer()
-                    currentOnScanned(code)
-                }
-            },
-        )
-        controller.bindToLifecycle(lifecycleOwner)
-
-        onDispose {
-            controller.clearImageAnalysisAnalyzer()
-            controller.unbind()
-            scanner.close()
-        }
-    }
-
-    AndroidView(
-        factory = { viewContext ->
-            PreviewView(viewContext).apply {
-                scaleType = PreviewView.ScaleType.FILL_CENTER
-                this.controller = controller
-            }
-        },
-        modifier = modifier,
-    )
 }
 
 @Composable

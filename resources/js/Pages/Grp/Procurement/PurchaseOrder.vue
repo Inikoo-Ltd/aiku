@@ -148,7 +148,7 @@ const props = defineProps < {
         date: string | null
         number_purchase_orders: number
     }[]
-    stages?: { stages: InstanceType<typeof PurchaseOrderStages>["$props"]["stages"]; route: routeType; upload_route: routeType | null; skip_route?: routeType | null; deposit: InstanceType<typeof PurchaseOrderStages>["$props"]["deposit"]; sample: InstanceType<typeof PurchaseOrderStages>["$props"]["sample"] } | null
+    stages?: { stages: InstanceType<typeof PurchaseOrderStages>["$props"]["stages"]; route: routeType; upload_route: routeType | null; skip_route?: routeType | null; deposit: InstanceType<typeof PurchaseOrderStages>["$props"]["deposit"]; sample: InstanceType<typeof PurchaseOrderStages>["$props"]["sample"]; cho?: InstanceType<typeof PurchaseOrderStages>["$props"]["cho"] } | null
     ready_checks?: { packing: ReadyCheckItems; qc: ReadyCheckItems } | null
     stage_containers?: { containers: InstanceType<typeof PurchaseOrderStageContainers>["$props"]["containers"]; items_to_add: InstanceType<typeof PurchaseOrderStageContainers>["$props"]["itemsToAdd"] } | null
     agent_receiving?: InstanceType<typeof AgentPurchaseOrderGoodsReceipts>["$props"]["receiving"] | null
@@ -1289,7 +1289,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	</PageHeading>
 	<p v-if="actionError" class="mx-4 mt-2 text-xs text-red-600">{{ actionError }}</p>
 
-	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :skipRoute="stages.skip_route" :deposit="stages.deposit" :sample="stages.sample">
+	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :skipRoute="stages.skip_route" :deposit="stages.deposit" :sample="stages.sample" :cho="stages.cho">
 		<template v-if="agent_money && !stageActions.deposit_paid" #stage-deposit_paid>
 			<AgentPurchaseOrderMoney :money="agent_money" />
 		</template>

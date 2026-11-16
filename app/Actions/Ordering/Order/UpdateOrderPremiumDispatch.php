@@ -26,10 +26,12 @@ class UpdateOrderPremiumDispatch extends OrgAction
     use WithChargeTransactions;
 
 
-    public function handle(Order $order, array $modelData): void
+    public function handle(Order $order, array $modelData, bool $charged = true): void
     {
         $order = $this->update($order, $modelData);
-        $this->syncOrderOptionCharge($order, ChargeTypeEnum::PREMIUM, (bool) Arr::get($modelData, 'is_premium_dispatch', false));
+        if ($charged) {
+            $this->syncOrderOptionCharge($order, ChargeTypeEnum::PREMIUM, (bool) Arr::get($modelData, 'is_premium_dispatch', false));
+        }
 
         $order->deliveryNotes()
             ->whereNotIn('state', [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED])
@@ -47,12 +49,12 @@ class UpdateOrderPremiumDispatch extends OrgAction
     }
 
 
-    public function action(Order $order, array $modelData): void
+    public function action(Order $order, array $modelData, bool $charged = true): void
     {
         $this->asAction = true;
         $this->initialisationFromShop($order->shop, $modelData);
 
-        $this->handle($order, $modelData);
+        $this->handle($order, $modelData, $charged);
     }
 
 

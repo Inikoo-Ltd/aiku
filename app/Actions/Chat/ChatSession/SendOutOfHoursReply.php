@@ -20,6 +20,7 @@ use App\Enums\CRM\Livechat\ChatNoiseVerdictEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
@@ -70,7 +71,7 @@ class SendOutOfHoursReply implements ShouldBeUnique
             || $chatSession->is_spam
             || $chatSession->is_rubbish
             || ($chatSession instanceof ChatSession && ($chatSession->is_carrier || $chatSession->is_colleague))
-            || IsWithinWorkingHours::make()->chatHours()->handle($shop, now())
+            || IsChatStaffed::run($shop)
             || $this->lastAgentMessageAt($chatSession)?->gt(now()->subHour())) {
             return false;
         }
@@ -136,7 +137,7 @@ class SendOutOfHoursReply implements ShouldBeUnique
      * ponytail: every out of hours message re-reads the wait until a claim is found; store how far
      * it read if the model calls ever show up on the bill.
      *
-     * @param  array{order_reference: ?string, photos: int, text: string}  $details
+     * @param  array{order_reference: ?string, customer: ?Customer, photos: int, text: string}  $details
      * @return array<int, string>|null
      */
     private function claimDetailsToAskFor(ChatSession|MetaChatSession $chatSession, array $details): ?array
@@ -154,10 +155,23 @@ class SendOutOfHoursReply implements ShouldBeUnique
         $locale = $chatSession->shop->language?->code;
 
         return array_values(array_filter([
-            $details['order_reference'] ? null : __('your order number', [], $locale),
+            $details['order_reference'] ? null : $this->askForOrderNumber($details['customer'], $locale),
             $claim['names_items'] ? null : __('which items are affected and how many', [], $locale),
             $details['photos'] ? null : __('photos of the items and of the box they came in', [], $locale),
         ]));
+    }
+
+    /**
+     * A customer with a single order dispatched within the claim window is most likely writing
+     * about it, so it is named for them to confirm rather than asked for blind.
+     */
+    private function askForOrderNumber(?Customer $customer, ?string $locale): string
+    {
+        $recent = $customer ? GetChatClaimDetails::onlyRecentOrder($customer) : null;
+
+        return $recent
+            ? __('your order number (is it :reference?)', ['reference' => $recent], $locale)
+            : __('your order number', [], $locale);
     }
 
     /**

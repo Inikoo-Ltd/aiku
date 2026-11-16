@@ -33,7 +33,7 @@ enum McpChangeTypeEnum: string
     case SUPPLIER_PRODUCT_LINKS = 'supplier_product_links';
     case ORG_STOCK_AUTO_ORDERING = 'org_stock_auto_ordering';
     case INFO_WEBSITE_CONTENT = 'info_website_content';
-    case PACKING_SPECS = 'packing_specs';
+    case PRODUCT_PACKAGING = 'product_packaging';
 
     public static function labels(): array
     {
@@ -57,7 +57,7 @@ enum McpChangeTypeEnum: string
             'supplier_product_links' => __('SKOs attached to suppliers'),
             'org_stock_auto_ordering' => __('SKOs kept out of order suggestions'),
             'info_website_content'  => __('Info website pages and shared parts'),
-            'packing_specs'         => __('Packing specs'),
+            'product_packaging'     => __('Product packaging weighed'),
         ];
     }
 
@@ -69,13 +69,13 @@ enum McpChangeTypeEnum: string
         return match ($this) {
             McpChangeTypeEnum::RELATED_PRODUCTS, McpChangeTypeEnum::WEBSITE_REDIRECTS => 'can_use_mcp_web',
             McpChangeTypeEnum::ORG_STOCK_STATE, McpChangeTypeEnum::SUPPLIER_PRODUCT_AVAILABILITY => 'can_use_mcp_discontinue',
-            McpChangeTypeEnum::PARTNER_SHOPPING_LIST, McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS, McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING, McpChangeTypeEnum::PACKING_SPECS => 'can_use_mcp_procurement',
+            McpChangeTypeEnum::PARTNER_SHOPPING_LIST, McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS, McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING => 'can_use_mcp_procurement',
             McpChangeTypeEnum::PRODUCTION_RECORD, McpChangeTypeEnum::PRODUCTION_RECIPE, McpChangeTypeEnum::PRODUCTION_SETUP => 'can_use_mcp_production',
             McpChangeTypeEnum::PLACED_ORDER => 'can_use_mcp_place_orders',
             McpChangeTypeEnum::MASTER_PRICES => 'can_use_mcp_prices',
             McpChangeTypeEnum::STOCK_DELIVERY_COSTS => 'can_use_mcp_costing',
             McpChangeTypeEnum::CUSTOMER_SERVICE, McpChangeTypeEnum::CHAT_SPAM, McpChangeTypeEnum::CHAT_CLOSED => 'can_use_mcp_customer_service',
-            McpChangeTypeEnum::TRADE_UNIT_PROPERTIES => 'can_use_mcp_goods',
+            McpChangeTypeEnum::TRADE_UNIT_PROPERTIES, McpChangeTypeEnum::PRODUCT_PACKAGING => 'can_use_mcp_goods',
             McpChangeTypeEnum::STOCK_LOCATIONS => 'can_use_mcp_locations',
             McpChangeTypeEnum::INFO_WEBSITE_CONTENT => 'can_use_mcp_info_websites',
         };

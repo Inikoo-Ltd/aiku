@@ -12,6 +12,8 @@ use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\Permission;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -162,6 +164,19 @@ class EditProcurementSettings extends OrgAction
                                 ] : []),
                             ],
                         ],
+                        [
+                            'label'  => __('Delivery feedback'),
+                            'icon'   => 'fal fa-clipboard-check',
+                            'fields' => [
+                                'delivery_buyer_id' => [
+                                    'type'        => 'select',
+                                    'label'       => __('Delivery buyer'),
+                                    'information' => __('Owns delivery discrepancies and is told of delivery feedback when no buyer can be told from the purchase orders.'),
+                                    'options'     => $this->procurementUsers($organisation),
+                                    'value'       => Arr::get($organisation->settings, 'procurement.delivery_buyer_id'),
+                                ],
+                            ],
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [
@@ -172,6 +187,18 @@ class EditProcurementSettings extends OrgAction
                 ],
             ]
         );
+    }
+
+    /**
+     * @return array<int, array{value: int, label: string}>
+     */
+    private function procurementUsers(Organisation $organisation): array
+    {
+        $permissions = Permission::whereIn('name', ["procurement.$organisation->id", "procurement.$organisation->id.edit"])->pluck('name')->all();
+
+        return ($permissions ? User::permission($permissions)->where('status', true)->orderBy('contact_name')->get(['users.id', 'users.username', 'users.contact_name']) : collect())
+            ->map(fn (User $user) => ['value' => $user->id, 'label' => $user->contact_name ?: $user->username])
+            ->all();
     }
 
     private function templateFetchStatus(array $whatsapp, string $key): string

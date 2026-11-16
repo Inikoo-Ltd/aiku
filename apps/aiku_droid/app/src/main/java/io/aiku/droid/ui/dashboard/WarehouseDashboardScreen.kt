@@ -71,7 +71,7 @@ fun WarehouseDashboardScreen() {
         ModuleShortcut(R.string.module_inventory, R.drawable.ic_ui_sko, SkusRoute).takeIf { can.viewInventory },
         ModuleShortcut(R.string.module_locations, R.drawable.ic_ui_location, LocationsRoute).takeIf { can.viewLocations },
         ModuleShortcut(R.string.module_goods_in, R.drawable.ic_ui_order, StockDeliveriesRoute).takeIf { can.viewGoodsIn },
-        ModuleShortcut(R.string.module_goods_out, R.drawable.ic_ui_truck, DeliveryNotesRoute).takeIf { can.viewGoodsOut },
+        ModuleShortcut(R.string.module_goods_out, R.drawable.ic_ui_truck, DeliveryNotesRoute()).takeIf { can.viewGoodsOut },
         ModuleShortcut(R.string.dashboard_clocking, R.drawable.ic_ui_clock, ClockingRoute),
     )
 

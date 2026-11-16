@@ -46,6 +46,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $group_id
  * @property int|null $agent_id
  * @property string|null $advance_percentage share of an order the agent asks the client for in advance; null is the default 30
+ * @property string|null $agent_fee_percentage share of this supplier's goods the agent charges as its fee; null is the client's agent fee
  * @property string $scope_type Group|Organisation used to indicate private org suppliers
  * @property int $scope_id
  * @property bool $status

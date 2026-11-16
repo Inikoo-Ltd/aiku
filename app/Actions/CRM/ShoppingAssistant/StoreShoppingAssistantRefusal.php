@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * A storefront question the assistant refused, because of the rate limit or because the website's
- * monthly budget is spent. Written after the response, only for a signed-in customer of the
+ * A storefront question the assistant refused, because of the rate limit, because the website's
+ * monthly budget is spent or because a never-invoiced customer used their own allowance. Written after the response, only for a signed-in customer of the
  * website's shop and only while the website's assistant switch is on, at most one row per
  * customer, reason and minute, in one statement.
  */
@@ -25,6 +25,8 @@ class StoreShoppingAssistantRefusal
     public const string RATE_LIMIT = 'rate_limit';
 
     public const string BUDGET = 'budget';
+
+    public const string CUSTOMER_CAP = 'customer_cap';
 
     public const int MAX_QUESTION = 1000;
 

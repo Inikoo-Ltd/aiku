@@ -25,7 +25,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property bool $is_same_item
  * @property string|null $confidence Jev's probability for the pick
  * @property string|null $competitor_units units in their pack for this match when it differs from the competitor product's own: staff set it, or 1 when our product is a set. Null uses the competitor product's units.
- * @property bool $units_verified the AI check read their listing and competitor_units counts their pack in our units, so the comparison takes it as it is
+ * @property bool $units_verified competitor_units counts their pack in our units for certain (the AI check read their listing, or both sizes are known, HELP-4691), so the comparison takes it as it is
  * @property \Illuminate\Support\Carbon|null $checked_at when the AI check last looked at this match
  * @property string|null $check_note what the AI check found, shown to staff on the match
  * @property MasterAssetCompetitorProductStatusEnum $status

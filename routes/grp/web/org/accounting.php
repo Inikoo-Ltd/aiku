@@ -41,7 +41,10 @@ use App\Actions\Accounting\PaymentAccountShop\UI\EditPaymentAccountShop;
 use App\Actions\Accounting\PaymentAccountShop\UI\IndexPaymentAccountShops;
 use App\Actions\Accounting\PaymentAccountShop\UI\ShowPaymentAccountShop;
 use App\Actions\Accounting\Reports\BankFees\IndexBankFees;
-use App\Actions\Accounting\BankTransaction\UI\IndexBankTransactionsToReview;
+use App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming;
+use App\Actions\Accounting\BankTransaction\UI\IndexBankOutgoing;
+use App\Actions\Accounting\BankTransaction\UI\ShowBankOutgoingDashboard;
+use App\Actions\Accounting\BankTransaction\UI\ShowBankIncomingDashboard;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
 use App\Actions\Accounting\UI\IndexInvoicesPerShop;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
@@ -52,7 +55,34 @@ Route::get('/', ShowAccountingDashboard::class)->name('dashboard');
 
 Route::get('/per-store', IndexInvoicesPerShop::class)->name('invoices-shop');
 
-Route::get('/bank-review', IndexBankTransactionsToReview::class)->name('bank_review.index');
+Route::prefix('bank-incoming')->as('bank_incoming.')->group(function () {
+    Route::get('/', ShowBankIncomingDashboard::class)->name('index');
+    Route::get('/customers', [IndexBankIncoming::class, 'customers'])->name('customers');
+    Route::get('/marketplaces', [IndexBankIncoming::class, 'marketplaces'])->name('marketplaces');
+    Route::get('/payment-accounts', [IndexBankIncoming::class, 'paymentAccounts'])->name('payment_accounts');
+    Route::get('/other', [IndexBankIncoming::class, 'other'])->name('other');
+    Route::get('/needs-a-person', IndexBankIncoming::class)->name('needs_person');
+});
+Route::prefix('bank-outgoing')->as('bank_outgoing.')->group(function () {
+    Route::get('/', ShowBankOutgoingDashboard::class)->name('index');
+    foreach (IndexBankOutgoing::SECTIONS as $section) {
+        Route::get('/'.($section === 'needs_person' ? 'needs-a-person' : str_replace('_', '-', $section)), IndexBankOutgoing::class)->name($section);
+    }
+});
+Route::get('/cash', App\Actions\Accounting\BankBalance\UI\ShowCash::class)->name('cash.index');
+Route::prefix('payables')->as('payables.')->group(function () {
+    Route::get('/', App\Actions\Accounting\Payables\ShowPayablesDashboard::class)->name('index');
+    foreach (array_keys(App\Actions\Accounting\Payables\IndexPayables::sections()) as $section) {
+        Route::get('/'.str_replace('_', '-', $section), App\Actions\Accounting\Payables\IndexPayables::class)->name($section);
+    }
+});
+Route::prefix('receivables')->as('receivables.')->group(function () {
+    Route::get('/', App\Actions\Accounting\Receivables\UI\ShowReceivablesDashboard::class)->name('index');
+    foreach (App\Actions\Accounting\Receivables\UI\IndexReceivables::SECTIONS as $section) {
+        Route::get("/$section", App\Actions\Accounting\Receivables\UI\IndexReceivables::class)->name($section);
+    }
+});
+Route::redirect('/bank-review', '/org/{organisation}/accounting/bank-incoming');
 
 
 

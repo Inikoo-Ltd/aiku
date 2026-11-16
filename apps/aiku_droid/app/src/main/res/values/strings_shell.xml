@@ -57,18 +57,18 @@
     <string name="dashboard_all">All</string>
     <string name="dashboard_my_work_note">Your assigned work is in My work.</string>
 
-    <string name="scan_result_title">Result</string>
-    <string name="scan_result_kicker">Scan</string>
-    <string name="scan_result_scanned_prefix">Scanned </string>
-    <string name="scan_result_scanned_location_suffix"> · it’s a location</string>
-    <string name="scan_result_open_location">Open location</string>
-    <string name="scan_result_audit_location">Audit location</string>
-    <string name="scan_result_move_skos">Move SKOs</string>
-    <string name="scan_result_what_opens">What a scan can open</string>
-    <string name="scan_result_opens_sko">SKO barcode → SKO detail</string>
-    <string name="scan_result_opens_location">Location label → Location detail</string>
-    <string name="scan_result_opens_delivery_note">Delivery note → Delivery note detail</string>
-    <string name="scan_result_opens_stock_delivery">Stock delivery → Stock delivery detail</string>
+    <string name="scan_title">Scan</string>
+    <string name="scan_close">Close scanner</string>
+    <string name="scan_torch_on">Turn torch on</string>
+    <string name="scan_torch_off">Turn torch off</string>
+    <string name="scan_hint">Point at a SKO, location or delivery note barcode. A scanner device works too, without tapping anything.</string>
+    <string name="scan_type_code">Type code</string>
+    <string name="scan_listening">Listening · camera or scanner device</string>
+    <string name="scan_looking_up">Looking up %1$s…</string>
+    <string name="scan_failed_offline">Couldn’t look up %1$s · no connection</string>
+    <string name="scan_failed_forbidden">You can’t look up %1$s in this warehouse</string>
+    <string name="scan_failed_server">Couldn’t look up %1$s · aiku is having trouble</string>
+    <string name="scan_camera_off_body">Turn the camera on in your phone settings. A scanner device works without it.</string>
 
     <string name="sync_title">Offline &amp; sync</string>
     <string name="sync_kicker">Profile</string>

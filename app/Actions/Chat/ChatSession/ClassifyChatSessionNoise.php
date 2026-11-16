@@ -10,7 +10,6 @@ namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Chat\MetaChatSession\SendMetaChatGreeting;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatEvent;
-use App\Actions\Chat\Reports\IsWithinWorkingHours;
 use App\Actions\Comms\Mailbox\ProcessInboundEmail;
 use App\Actions\Helpers\AI\AskToAi;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
@@ -95,7 +94,7 @@ class ClassifyChatSessionNoise
         $nothingToRead = !$hasSubstance && (!$rule || $rule['verdict'] === ChatNoiseVerdictEnum::SUPPLIER_CIRCULAR);
 
         // Out of hours the closed-now reply has already asked what they want.
-        $closedReplyAsked = config('chat.out_of_hours_reply') && !IsWithinWorkingHours::make()->chatHours()->handle($chatSession->shop, now());
+        $closedReplyAsked = config('chat.out_of_hours_reply') && !IsChatStaffed::run($chatSession->shop);
 
         if ($nothingToRead && $chatSession instanceof MetaChatSession && config('chat.noise.greet_bare_hello') && !$closedReplyAsked) {
             SendMetaChatGreeting::run($chatSession);

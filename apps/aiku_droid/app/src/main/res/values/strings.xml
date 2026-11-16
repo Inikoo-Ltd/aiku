@@ -107,7 +107,6 @@
     <string name="section_delivery_notes">Delivery notes</string>
     <string name="section_picking_sessions">Picking sessions</string>
     <string name="section_fulfilment_returns">Fulfilment returns</string>
-    <string name="section_shippers">Shippers</string>
     <string name="section_trolleys">Trolleys</string>
     <string name="section_picked_bays">Picked bays</string>
     <string name="dn_state_to_do">To do</string>
@@ -146,8 +145,13 @@
     <string name="sign_out">Sign out</string>
 
     <string name="dialog_cancel">Cancel</string>
+    <string name="file_open_no_app">No app on this phone can open this file.</string>
+    <string name="file_open_offline">No connection. The file was not downloaded.</string>
+    <string name="file_open_failed">The file could not be downloaded. Try again in a moment.</string>
+    <string name="file_open_refused">You can’t open this file.</string>
     <string name="loading">Loading…</string>
     <string name="stepper_decrease">Decrease</string>
+    <string name="scan_panel_close">Close the scan panel</string>
     <string name="stepper_increase">Increase</string>
 
     <string name="switcher_current">%1$s · current</string>

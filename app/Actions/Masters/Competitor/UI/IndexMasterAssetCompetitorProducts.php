@@ -71,6 +71,8 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
             'all'       => $query->where(fn ($query) => $query->where('master_asset_competitor_products.status', '!=', MasterAssetCompetitorProductStatusEnum::REJECTED)
                 ->orWhereNotNull('master_asset_competitor_products.reviewed_by_user_id')
                 ->orWhereNotNull('master_asset_competitor_products.checked_at')),
+            'not_rejected_by_staff' => $query->where(fn ($query) => $query->where('master_asset_competitor_products.status', '!=', MasterAssetCompetitorProductStatusEnum::REJECTED)
+                ->orWhere(fn ($query) => $query->whereNull('master_asset_competitor_products.reviewed_by_user_id')->whereNotNull('master_asset_competitor_products.checked_at'))),
             default     => $query->where('master_asset_competitor_products.status', MasterAssetCompetitorProductStatusEnum::SUGGESTED),
         };
 

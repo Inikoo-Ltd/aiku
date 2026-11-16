@@ -44,6 +44,12 @@ use App\Actions\Accounting\Invoice\PdfInvoice;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromCharge;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromShipping;
+use App\Actions\Billables\ShippingZone\StoreShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
+use App\Actions\Billables\Charge\StoreCharge;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
@@ -1960,6 +1966,45 @@ test('refund pdf lines include shipping and charge refunds', function () {
     expect($renderedPdfHtml($refund->refresh()))->not->toContain(__('Discount').'</td>')
         ->and(PdfInvoice::make()->processDataExportPdf($invoice)->headers->get('Content-Disposition'))->toBe('inline; filename="'.$invoice->slug.'-invoice.pdf"')
         ->and(PdfInvoice::make()->processDataExportPdf($refund)->headers->get('Content-Disposition'))->toBe('inline; filename="'.$refund->slug.'-credit-note.pdf"');
+});
+
+test('shipping and charge invoice lines point to the asset of the zone and of the charge, not to their ids', function () {
+    $invoice = StoreInvoice::make()->action(createCustomer($this->shop), Invoice::factory()->definition());
+
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ['name' => 'invoice asset schema']);
+    $shippingZone       = StoreShippingZone::make()->action($shippingZoneSchema, [
+        'code'        => 'ZONE-INV-ASSET',
+        'name'        => 'Invoice asset zone',
+        'status'      => true,
+        'price'       => ['type' => 'TBC'],
+        'territories' => [],
+        'position'    => 1,
+        'is_failover' => false,
+    ]);
+    $charge = StoreCharge::make()->action($this->shop, [
+        'code'        => 'INV-ASSET-'.$this->shop->code,
+        'name'        => 'Invoice asset charge',
+        'description' => 'Invoice asset charge',
+        'state'       => ChargeStateEnum::ACTIVE,
+        'trigger'     => ChargeTriggerEnum::PAYMENT_ACCOUNT,
+        'type'        => ChargeTypeEnum::PAYMENT,
+    ]);
+
+    $noProductData = [
+        'tax_category_id' => $invoice->tax_category_id,
+        'quantity'        => 1,
+        'gross_amount'    => 10,
+        'net_amount'      => 10,
+    ];
+    $shippingLine = StoreInvoiceTransactionFromShipping::make()->action($invoice, $shippingZone, $noProductData);
+    $chargeLine   = StoreInvoiceTransactionFromCharge::make()->action($invoice, $charge, $noProductData);
+
+    expect($shippingZone->asset_id)->not->toBe($shippingZone->id)
+        ->and($charge->asset_id)->not->toBe($charge->id)
+        ->and($shippingLine->asset_id)->toBe($shippingZone->asset_id)
+        ->and($shippingLine->historic_asset_id)->toBe($shippingZone->current_historic_asset_id)
+        ->and($chargeLine->asset_id)->toBe($charge->asset_id)
+        ->and($chargeLine->historic_asset_id)->toBe($charge->current_historic_asset_id);
 });
 
 test('refunding a line already refunded in full totals the refund at zero and refuses to finalise it', function () {

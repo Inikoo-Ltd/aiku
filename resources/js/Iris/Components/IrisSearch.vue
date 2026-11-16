@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
 import { ref, computed, watch, onBeforeMount, defineAsyncComponent, nextTick, inject } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { router } from "@inertiajs/vue3"
@@ -6,13 +7,14 @@ import axios from "axios"
 import { debounce } from "lodash-es"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSearch, faSparkles } from "@far"
+import { faSearch } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Popover from "primevue/popover"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { searchRoute } from "@/Iris/Composables/useSearchRoute"
 import { useSearchFeaturedItems } from "@/Iris/Composables/useSearchFeaturedItems"
 import { useShoppingAssistant } from "@/Iris/Composables/useShoppingAssistant"
-library.add(faSearch, faSparkles)
+library.add(faSearch)
 
 const SearchResultCatalogue = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogue.vue"))
 const SearchFeatured = defineAsyncComponent(() => import("@/Iris/Components/SearchFeatured.vue"))
@@ -28,7 +30,7 @@ const layout = inject('layout', retinaLayoutStructure)
 
 const inputValue = ref('')
 
-const { assistant, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
+const { assistant, askLabel, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
 
 const askAssistant = () => {
     closePopover()
@@ -241,20 +243,35 @@ const visitSearchPage = () => {
 </script>
 
 <template>
-    <div class="iris-search-box w-full relative group">
-        <input
-            ref="inputRef"
-            :value="inputValue"
-            @input="onSearchInput"
-            @focus="onFocus"
-            @mouseup="onMouseUp"
-            @blur="onBlur"
-            class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
-            :id="id || 'inputIrisSearch'"
-            :placeholder="fieldValueSearch?.placeholder ?? ctrans('Search')"
-            @keydown.enter="() => visitSearchPage()"
-        />
-        <FontAwesomeIcon icon="far fa-search" class="group-focus-within:text-gray-700 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
+    <div class="iris-search-box flex w-full min-w-28 items-center gap-1 md:min-w-0">
+        <div class="group relative flex h-12 min-w-0 flex-1 items-center rounded-full border border-[#d1d5db] bg-white focus-within:border-transparent focus-within:ring-2 focus-within:ring-gray-700">
+            <input
+                ref="inputRef"
+                :value="inputValue"
+                @input="onSearchInput"
+                @focus="onFocus"
+                @mouseup="onMouseUp"
+                @blur="onBlur"
+                class="h-full min-w-0 flex-1 rounded-full border-0 bg-transparent pl-10 pr-3 focus:border-0 focus:ring-0 disabled:cursor-not-allowed disabled:bg-gray-200"
+                :id="id || 'inputIrisSearch'"
+                :placeholder="fieldValueSearch?.placeholder ?? ctrans('Search')"
+                @keydown.enter="() => visitSearchPage()"
+            />
+            <FontAwesomeIcon icon="far fa-search" class="group-focus-within:text-gray-700 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
+        </div>
+        <Button
+            v-if="assistant"
+            :label="askLabel"
+            :title="askLabel"
+            :aria-label="askLabel"
+            type="tertiary"
+            class="iris-search-ask !h-12 shrink-0 !gap-1.5 !rounded-full !border-transparent !bg-transparent !px-4 text-sm font-medium"
+            @click="askAssistant"
+        >
+            <template #icon>
+                <MerlinIcon class="iris-search-ask-icon" />
+            </template>
+        </Button>
 
         <!-- Catalogue results in a centered popover with an arrow to the input -->
         <Popover
@@ -280,7 +297,7 @@ const visitSearchPage = () => {
                     class="flex w-full items-center gap-3 border-b border-gray-200 px-4 pb-3 pt-4 text-left text-sm hover:bg-gray-50"
                     @click="askAssistant"
                 >
-                    <FontAwesomeIcon icon="far fa-sparkles" class="text-[var(--theme-color-0)]" fixed-width aria-hidden="true" />
+                    <MerlinIcon />
                     <span class="min-w-0 flex-1 truncate">
                         <span class="font-semibold">{{ offerLabel }}</span>
                         <span class="text-gray-500"> &ldquo;{{ inputValue.trim() }}&rdquo;</span>
@@ -301,6 +318,104 @@ const visitSearchPage = () => {
 </template>
 
 <style lang="scss">
+.iris-search-box {
+    container-type: inline-size;
+}
+
+.iris-search-box .iris-search-ask {
+    position: relative;
+    overflow: hidden;
+    color: var(--theme-color-4) !important;
+    transition: background-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.iris-search-box .iris-search-ask .iris-search-ask-icon,
+.iris-search-box .iris-search-ask > span {
+    color: var(--theme-color-4) !important;
+}
+
+.iris-search-box .iris-search-ask .iris-search-ask-icon {
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.iris-search-box .iris-search-ask::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.85) 50%, transparent 70%);
+    transform: translateX(-120%);
+    pointer-events: none;
+}
+
+.iris-search-box .iris-search-ask:hover {
+    background-color: color-mix(in srgb, var(--theme-color-4) 12%, white) !important;
+    box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--theme-color-4) 45%, transparent);
+    transform: translateY(-1px);
+}
+
+.iris-search-box .iris-search-ask:hover .iris-search-ask-icon {
+    transform: rotate(20deg) scale(1.2);
+    animation: iris-search-ask-twinkle 1.2s ease-in-out 0.4s infinite;
+}
+
+.iris-search-box .iris-search-ask:hover::after {
+    transform: translateX(120%);
+    transition: transform 0.7s ease;
+}
+
+.iris-search-box .iris-search-ask:active {
+    transform: translateY(0) scale(0.97);
+}
+
+@keyframes iris-search-ask-twinkle {
+    0%, 100% {
+        transform: rotate(20deg) scale(1.2);
+        opacity: 1;
+    }
+
+    50% {
+        transform: rotate(-10deg) scale(1);
+        opacity: 0.7;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .iris-search-box .iris-search-ask,
+    .iris-search-box .iris-search-ask .iris-search-ask-icon {
+        transition: background-color 0.15s;
+        animation: none !important;
+        transform: none !important;
+    }
+
+    .iris-search-box .iris-search-ask::after {
+        display: none;
+    }
+}
+
+.iris-search-box .iris-search-ask:focus-visible {
+    outline: 2px solid var(--theme-color-4);
+    outline-offset: 2px;
+}
+
+.iris-search-box .iris-search-ask > span {
+    max-width: 10rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@container (max-width: 26rem) {
+    .iris-search-box .iris-search-ask > span {
+        display: none;
+    }
+
+    .iris-search-box .iris-search-ask {
+        width: 3rem;
+        justify-content: center;
+        padding-inline: 0 !important;
+    }
+}
+
 /* Search popover: full-width panel pinned to the viewport */
 .iris-search-popover.p-popover {
     max-width: none !important;

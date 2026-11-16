@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Dispatching\DeliveryNoteItem\StoreMissingDeliveryNoteItemsOfProduct;
 use App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
@@ -47,6 +48,8 @@ class UpdateTradeUnitsForExternalProduct extends OrgAction
         ProductHydrateAvailableQuantity::run($product);
 
         $this->productHydrators($product, false);
+
+        StoreMissingDeliveryNoteItemsOfProduct::run($product);
 
         return $product;
     }

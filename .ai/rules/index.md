@@ -7,8 +7,10 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/Procurement/** | .ai/rules/actions-procurement.md |
 | app/Actions/**/*TimeSeries*.php, app/Actions/** | .ai/rules/actions.md |
 | app/Actions/SupplyChain/AgentPayment/** | .ai/rules/agent-payment.md |
+| app/Actions/Dropshipping/Allegro/** | .ai/rules/allegro.md |
 | apps/** | .ai/rules/apps.md |
 | app/Actions/Production/Artisan/** | .ai/rules/artisan.md |
+| config/blueprint/job_positions.php | .ai/rules/blueprint.md |
 | app/Actions/Chat/** | .ai/rules/chat.md |
 | app/Actions/Web/Website/Cloudflare/** | .ai/rules/cloudflare.md |
 | app/Actions/CRM/Customer/** | .ai/rules/crm.md |
@@ -26,6 +28,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/Comms/Mailshot/** | .ai/rules/mailshot.md |
 | app/Actions/Production/ManufactureArtisanDay/**, app/Actions/Production/ManufactureTaskSession/GetManufacturePayroll.php | .ai/rules/manufacture-artisan-day.md |
 | app/Actions/Production/ManufactureOvertime/** | .ai/rules/manufacture-overtime.md |
+| app/Http/Middleware/Handle*InertiaRequests.php | .ai/rules/middleware.md |
 | app/Actions/Ordering/**, resources/js/Pages/Grp/Org/Ordering/** | .ai/rules/ordering.md |
 | app/Actions/Inventory/OrgStock/** | .ai/rules/org-stock.md |
 | routes/grp/web/org/** | .ai/rules/org.md |

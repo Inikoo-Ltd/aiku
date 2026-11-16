@@ -159,7 +159,7 @@ function removeFromContainer() {
 <template>
 	<div class="mt-2 space-y-2 text-xs">
 		<ul v-if="containers.length" class="space-y-1">
-			<li v-for="container in containers" :key="container.id" class="flex flex-wrap items-baseline justify-between gap-x-2">
+			<li v-for="container in containers" :key="container.id" class="min-w-0">
 				<div class="flex min-w-0 items-center gap-1">
 					<FontAwesomeIcon
 						v-if="container.state_icon"
@@ -169,7 +169,7 @@ function removeFromContainer() {
 						fixed-width
 						aria-hidden="true"
 					/>
-					<Link :href="route(container.show_route.name, container.show_route.parameters)" class="whitespace-nowrap font-medium text-[var(--app-accent)] hover:underline">
+					<Link :href="route(container.show_route.name, container.show_route.parameters)" class="min-w-0 truncate whitespace-nowrap font-medium text-[var(--app-accent)] hover:underline" v-tooltip="container.reference">
 						{{ container.reference }}
 					</Link>
 					<button
@@ -191,23 +191,21 @@ function removeFromContainer() {
 						<FontAwesomeIcon :icon="faPaperclip" fixed-width aria-hidden="true" />
 						0
 					</span>
-				</div>
-				<span class="ml-auto flex items-baseline gap-1">
-					<span class="flex flex-wrap justify-end gap-x-1 text-right tabular-nums text-gray-500">
-						<span class="whitespace-nowrap">{{ ctrans(":count items", { count: String(container.number_lines) }) }},</span>
-						<span class="whitespace-nowrap">{{ ctrans(":units units", { units: locale.number(container.unit_quantity) }) }}</span>
-					</span>
 					<button
 						v-if="container.remove_route"
 						type="button"
-						class="shrink-0 rounded px-0.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+						class="ml-auto shrink-0 rounded px-0.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
 						v-tooltip="ctrans('Take this order out of :container', { container: container.reference })"
 						:aria-label="ctrans('Take this order out of :container', { container: container.reference })"
 						@click="askRemove(container)"
 					>
 						<FontAwesomeIcon :icon="faTrashAlt" fixed-width aria-hidden="true" />
 					</button>
-				</span>
+				</div>
+				<div class="flex flex-wrap gap-x-1 tabular-nums text-gray-500" :class="{ 'pl-5': container.state_icon }">
+					<span class="whitespace-nowrap">{{ ctrans(":count items", { count: String(container.number_lines) }) }},</span>
+					<span class="whitespace-nowrap">{{ ctrans(":units units", { units: locale.number(container.unit_quantity) }) }}</span>
+				</div>
 			</li>
 		</ul>
 		<p v-else class="text-gray-400">{{ ctrans("No item in a container yet") }}</p>

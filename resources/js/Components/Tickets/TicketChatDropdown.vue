@@ -6,15 +6,16 @@
 -->
 
 <script setup lang="ts">
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { onMounted, ref } from "vue"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faChevronDown, faComments, faPaperclip, faSpinner, faUser } from "@fal"
+import { faChevronDown, faComments, faPaperclip, faUser } from "@fal"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
-library.add(faChevronDown, faComments, faPaperclip, faSpinner, faUser)
+library.add(faChevronDown, faComments, faPaperclip, faUser)
 
 const props = defineProps<{
     ticketId: number | string
@@ -146,7 +147,7 @@ const isFromUs = (line: ChatLine) => ["agent", "ai", "system", "system_campaign"
 
         <div v-if="isOpen" class="border-t border-gray-200">
             <div v-if="isLoading" class="flex items-center gap-2 px-3 py-4 text-xs text-gray-400">
-                <FontAwesomeIcon :icon="['fal', 'spinner']" spin fixed-width aria-hidden="true" />
+                <LoadingIcon />
                 {{ ctrans("Loading the conversation") }}
             </div>
 

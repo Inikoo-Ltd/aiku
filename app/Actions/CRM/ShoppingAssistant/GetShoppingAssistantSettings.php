@@ -17,9 +17,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * The storefront gate of the shopping assistant: on only when the website switch is on, the shop
- * sells B2B and the customer belongs to that shop. The switch is read first, so a website with it
+ * sells B2B or dropshipping and the customer belongs to that shop. The switch is read first, so a website with it
  * off costs no query. Where a new question is offered or accepted ($forNewQuestion) the website's
- * monthly AI budget must not be spent; reading an answer, clicks and basket adds stay on.
+ * monthly AI budget must not be spent, nor a never-invoiced customer's own allowance; reading an answer, clicks and basket adds stay on.
  * hand_over says whether a person can be offered at all (see GetShoppingAssistantHandOverRoute::isOffered).
  */
 class GetShoppingAssistantSettings
@@ -31,11 +31,11 @@ class GetShoppingAssistantSettings
      */
     public function handle(Website $website, ?Customer $customer, bool $forNewQuestion = false): ?array
     {
-        if (!data_get($website->settings, 'shopping_assistant.enabled') || !$customer || $customer->shop_id !== $website->shop_id || $website->shop->type !== ShopTypeEnum::B2B) {
+        if (!data_get($website->settings, 'shopping_assistant.enabled') || !$customer || $customer->shop_id !== $website->shop_id || !in_array($website->shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING], true)) {
             return null;
         }
 
-        if ($forNewQuestion && GetShoppingAssistantBudget::run($website)['paused']) {
+        if ($forNewQuestion && (GetShoppingAssistantBudget::run($website)['paused'] || GetShoppingAssistantBudget::isCustomerCapped($website, $customer))) {
             return null;
         }
 

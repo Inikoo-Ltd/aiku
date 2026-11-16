@@ -9,6 +9,8 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Comms\Email\RemindChannelOrdersOnHold;
+use App\Actions\Comms\Email\SendChannelOrderOnHoldEmail;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
@@ -332,6 +334,32 @@ test('webhook for an awaiting shipment order creates the client, the address and
         && $request->hasHeader('x-tts-access-token', 'access-token'));
 
     return [$tiktokUser, $order];
+});
+
+test('an order shipped by tiktok is submitted with its shipping note but never charged, held or reminded', function () {
+    Queue::fake();
+    $tiktokUser = tiktokChannel($this->customer);
+    $portfolio  = tiktokListedPortfolio($tiktokUser, $this->product, 'TT-BY-TIKTOK');
+    $orderId    = '5764614130387859'.random_int(10, 99);
+
+    fakeTiktokOrderIntake(
+        [tiktokOrder($orderId, [['product_id' => 'TT-BY-TIKTOK']], ['shipping_type' => 'TIKTOK'])],
+        ['TT-BY-TIKTOK' => ['external_product_id' => (string) $portfolio->id]]
+    );
+
+    HandleOrderIncomingTiktok::run(tiktokWebhookPayload($tiktokUser, $orderId));
+
+    $order = Order::where('customer_id', $this->customer->id)->where('platform_order_id', $orderId)->first();
+
+    expect($order->is_shipping_by_external)->toBeTrue()
+        ->and($order->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and((float) $order->payment_amount)->toBe(0.0)
+        ->and($order->shipping_notes)->toContain("We're unable to ship this order");
+
+    SendChannelOrderOnHoldEmail::assertNotPushed();
+
+    $unpaidChannelOrders = (new ReflectionMethod(RemindChannelOrdersOnHold::class, 'unpaidChannelOrders'))->invoke(RemindChannelOrdersOnHold::make(), $order->shop);
+    expect($unpaidChannelOrders->where('orders.id', $order->id)->exists())->toBeFalse();
 });
 
 test('the same webhook delivered twice does not create a second order', function () {
@@ -989,9 +1017,15 @@ test('an expired access token is refreshed before the call and a failed refresh 
         ->and($tiktokUser->access_token)->toBe('renewed-access')
         ->and($tiktokUser->refresh_token)->toBe('renewed-refresh');
 
+    expect($tiktokUser->customerSalesChannel->refresh()->platform_status)->toBeTrue();
+
     $tiktokUser->update(['refresh_token_expire_in' => (string) now()->subMinute()->timestamp]);
-    $tiktokUser->getAuthorizedShop();
-    expect(Http::recorded(fn (Request $request) => str_contains($request->url(), '/api/v2/token/refresh'))->count())->toBe(2);
+    $shops = $tiktokUser->getAuthorizedShop();
+    expect(Http::recorded(fn (Request $request) => str_contains($request->url(), '/api/v2/token/refresh'))->count())->toBe(2)
+        ->and(Arr::get($shops, 'error'))->toBeTrue()
+        ->and(Arr::get($shops, 'data'))->toContain('authorisation of this channel has expired')
+        ->and($tiktokUser->customerSalesChannel->refresh()->platform_status)->toBeFalse()
+        ->and(fn () => GetTiktokOrdersApi::make()->handle($tiktokUser))->toThrow(\Exception::class, 'authorisation of this channel has expired');
 });
 
 test('closing the channel soft deletes the tiktok user and stops the webhook from finding the shop', function () {

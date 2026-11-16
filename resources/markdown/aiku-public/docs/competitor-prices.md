@@ -43,6 +43,8 @@ Once a month, open their website as a buyer in the EU, look up our exposed produ
 
 The listing becomes a confirmed match, so it counts on the dashboard, in the **Confirmed** price comparison and in the price tips like any other. Every check is also kept: the **Price checks** tab lists them newest first, with their price per unit, yours, the difference, the change since the check before for the same listing, the delivery days, who checked and the screenshot (click it to see it full size). Adding the same link again next month adds a new row, so the history shows whether they are getting cheaper.
 
+Price checks are not only for marketplaces: any competitor whose website is read has the same **Add price check** button, for a size or product their catalogue or search misses or reads wrong. A product with a price check is kept when their catalogue is read again.
+
 ## What the dashboard shows
 
 **Masters › Competitors** opens on the dashboard:
@@ -62,6 +64,8 @@ Until the first competitor is added, the dashboard explains what to do instead.
 After every read the AI compares each of their products with yours. A match it is sure of is **confirmed by itself** (marked *auto*); the others wait under **Prices to review**. Each row shows your product, your price per unit, their product with a link, their price per unit, and the difference: red when they are cheaper, green when they are dearer. Both prices are in their currency, yours taken from your price in that currency (an AW class price in euros for a competitor in euros); only when you have no price in their currency are both converted to the group currency.
 
 **Units in their pack** under their product is what their price is divided by. Packs are not always counted the same way on both sides: your box of 12 packets may be held as 1 unit while theirs is entered as 12, or their box of 12 may be read as 1. When that would put their price per unit under 40% or over 250% of yours while pack against pack the two prices are close, aiku takes the packs to be the same and compares them pack against pack; the row then says *Compared pack against pack*. A difference that is still very large after that is a real gap or a wrong match: open their link and check.
+
+**Other sizes.** Only your main product is matched by the AI; your other sizes of it (for example 50 ml, 100 ml and 500 ml of a fragrance oil) are matched every morning to the competitor's sizes of the same product, once your main is matched to it as the same item, with the same status. Each size takes their equal size, or their nearest one between half and double yours, and is compared per ml or g: their 125 g against your 100 ml counts as 1.25 of your packs (shown as *units verified*). A size with nothing in that range on their side is left out.
 
 An **AI check** also goes through the matches on a schedule, the doubtful ones first: it reads their listing, says whether it is the same item and counts how many of your units their pack holds. What it finds is applied at once and shown under their product as *AI check* with its reason; *units verified* means it read the count on their listing, and those units are then compared as they are. It never changes a match a person ticked, crossed or entered units on: there it only leaves its note. Matches it turns down are listed under **Rejected by AI** with its reason, and a tick there brings one back. Change the units or click the tick or the cross and your answer stands.
 

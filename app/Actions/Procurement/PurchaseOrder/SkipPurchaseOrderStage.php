@@ -65,7 +65,7 @@ class SkipPurchaseOrderStage extends OrgAction
 
         MarkPurchaseOrderStage::auditOverride($purchaseOrder, "skip_$key", $had ? 'skipped' : null, $skipped ? 'skipped' : null, $modelData['reason']);
 
-        if ($skipped && in_array($key, ['qc', 'compliance', 'sample'])) {
+        if (in_array($key, ['qc', 'compliance', 'sample'])) {
             $purchaseOrder = RecordPurchaseOrderHandedOverWhenReady::run($purchaseOrder);
         }
         BroadcastAgentIncomingPurchaseOrdersChanged::dispatchFor($purchaseOrder);

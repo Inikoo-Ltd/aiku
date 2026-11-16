@@ -22,3 +22,10 @@ chat_ai_drafts.claim_check (MeasureChatAiClaim, chat:measure-claims nightly, als
 
 ## Chats handed over by the AI shopping assistant stay out of chat figures
 INI-245 (12 Nov 2026): a chat the assistant handed over carries chat_sessions.shopping_assistant_conversation_id. GetChatAiCoverage and the default GetChatReports figures (fromAssistant false) exclude it, because it would read as an unanswered chat overnight and as CS-assistant work; the chat reports page shows only those chats with from_assistant=1, and the AI Assistant report counts hand-overs from shopping_assistant_hand_overs. The assistant transcript is read from the assistant's own tables by GetChatAssistantTranscript and never copied into chat_messages, because GetChatReports counts an ai message as the first reply. These chats stay in the normal inbox, unclaimed queue and alerts (WithUnclaimedChatSessions and AlertUnclaimedChatSessions are untouched on purpose).
+
+## Knowledge notes reach a shop, an organisation or the group
+Raul, 14 Nov 2026 (INI-257). A staff note (chat_knowledge_entries, is_manual) reaches one shop (shop_id set), every shop of an organisation (shop_id null, organisation_id set) or the whole group (both null); forShop reads all three.
+- Shop notes: anyone who acts on the shop's chat.
+- Organisation notes: org admins or group admins only. Group notes: group admins only (UpdateShopChatKnowledgeNote::canManageReach). Editing needs rights on both the old and the new reach.
+- A proposed note (waiting for a second yes) cannot be widened.
+- rules() is skipped for DELETE and the status route: laravel-actions applies rules() to every route of the action, so asking for title/body there refused every Remove and Use it.

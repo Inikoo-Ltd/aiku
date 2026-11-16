@@ -21,7 +21,6 @@ import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocationsRoute
 import io.aiku.droid.ui.navigation.PickedBaysRoute
 import io.aiku.droid.ui.navigation.PickingSessionsRoute
-import io.aiku.droid.ui.navigation.ShippersRoute
 import io.aiku.droid.ui.navigation.SkuFamiliesRoute
 import io.aiku.droid.ui.navigation.SkusRoute
 import io.aiku.droid.ui.navigation.StockDeliveriesRoute
@@ -64,10 +63,9 @@ enum class WarehouseSection(
     FulfilmentDeliveries(WarehouseModule.GoodsIn, R.string.section_fulfilment_deliveries, FulfilmentDeliveriesRoute, isFulfilment = true),
     GoodsInReturns(WarehouseModule.GoodsIn, R.string.section_returns, GoodsInReturnsRoute),
     GoodsOutBacklog(WarehouseModule.GoodsOut, R.string.section_backlog, GoodsOutBacklogRoute),
-    DeliveryNotes(WarehouseModule.GoodsOut, R.string.section_delivery_notes, DeliveryNotesRoute),
+    DeliveryNotes(WarehouseModule.GoodsOut, R.string.section_delivery_notes, DeliveryNotesRoute()),
     PickingSessions(WarehouseModule.GoodsOut, R.string.section_picking_sessions, PickingSessionsRoute),
     FulfilmentReturns(WarehouseModule.GoodsOut, R.string.section_fulfilment_returns, FulfilmentReturnsRoute, isFulfilment = true),
-    Shippers(WarehouseModule.GoodsOut, R.string.section_shippers, ShippersRoute),
     Trolleys(WarehouseModule.GoodsOut, R.string.section_trolleys, TrolleysRoute),
     PickedBays(WarehouseModule.GoodsOut, R.string.section_picked_bays, PickedBaysRoute),
     ;

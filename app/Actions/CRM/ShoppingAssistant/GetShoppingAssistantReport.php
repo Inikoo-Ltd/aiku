@@ -21,6 +21,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -129,6 +130,78 @@ class GetShoppingAssistantReport
                 'previous' => $this->feedback($filters, $previousFrom, $previousTo),
             ],
             'challenges'      => $this->challenges($filters, $from, $to),
+            'gurus'           => $this->gurus($filters, $from, $to),
+        ];
+    }
+
+    /**
+     * The questions Merlin passed to a guru (StoreShoppingAssistantTeamQuestion) in the conversations
+     * in scope: how many were answered, in time for the customer still on the page, how fast, who
+     * answered, declined or passed them on, where they were routed, and the latest ones.
+     *
+     * @param  Filters  $filters
+     *
+     * @return array<string, mixed>
+     */
+    public function gurus(array $filters, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $conversations = $this->conversationsQuery($filters, $from, $to);
+        $tasks         = collect(DB::select(
+            <<<SQL
+            with convs as ({$conversations->toSql()})
+            select tasks.reference, tasks.created_at, tasks.data
+            from staff_tasks tasks
+            join convs on convs.id = (tasks.data->>'conversation_id')::bigint
+            where tasks.data->>'kind' = ?
+            order by tasks.created_at desc
+            SQL,
+            [...$conversations->getBindings(), StoreShoppingAssistantTeamQuestion::TASK_KIND]
+        ))->map(fn ($row) => ['reference' => $row->reference, 'created_at' => CarbonImmutable::parse($row->created_at), 'data' => json_decode($row->data, true) ?: []]);
+
+        $minutes  = fn (array $task) => isset($task['data']['answered_at']) ? max(0, $task['created_at']->diffInSeconds(CarbonImmutable::parse($task['data']['answered_at'])) / 60) : null;
+        $answered = $tasks->filter(fn (array $task) => isset($task['data']['answered_at']) && empty($task['data']['unanswered']));
+        $median   = fn ($values) => $values->isEmpty() ? null : (float) $values->median();
+        $userIds  = $tasks->flatMap(fn (array $task) => [$task['data']['answered_by'] ?? null, ...($task['data']['declined_by'] ?? []), ...array_column($task['data']['passed'] ?? [], 'from')])->filter()->unique();
+        $names    = User::whereIn('id', $userIds)->get(['id', 'contact_name', 'username', 'nickname'])->mapWithKeys(fn (User $user) => [$user->id => $user->chatName()]);
+
+        $people = [];
+        foreach ($tasks as $task) {
+            if (isset($task['data']['answered_by']) && empty($task['data']['unanswered'])) {
+                $people[$task['data']['answered_by']]['answered'][] = $minutes($task);
+            }
+            foreach ($task['data']['declined_by'] ?? [] as $userId) {
+                $people[$userId]['declined'] = ($people[$userId]['declined'] ?? 0) + 1;
+            }
+            foreach ($task['data']['passed'] ?? [] as $pass) {
+                $people[$pass['from']]['passed'] = ($people[$pass['from']]['passed'] ?? 0) + 1;
+            }
+        }
+
+        return [
+            'asked'          => $tasks->count(),
+            'answered'       => $answered->count(),
+            'answered_live'  => $answered->filter(fn (array $task) => isset($task['data']['wait_until']) && $task['data']['answered_at'] <= $task['data']['wait_until'])->count(),
+            'closed'         => $tasks->filter(fn (array $task) => !empty($task['data']['unanswered']))->count(),
+            'open'           => $tasks->filter(fn (array $task) => !isset($task['data']['answered_at']))->count(),
+            'kept'           => $answered->filter(fn (array $task) => !empty($task['data']['kept_for_everyone']))->count(),
+            'median_minutes' => $median($answered->map($minutes)->values()),
+            'routed'         => $tasks->countBy(fn (array $task) => $task['data']['routed_to'] ?? 'guru')->all(),
+            'people'         => collect($people)->map(fn (array $person, int $userId) => [
+                'name'           => $names[$userId] ?? '#'.$userId,
+                'answered'       => count($person['answered'] ?? []),
+                'median_minutes' => $median(collect($person['answered'] ?? [])),
+                'declined'       => $person['declined'] ?? 0,
+                'passed'         => $person['passed'] ?? 0,
+            ])->sortByDesc('answered')->values()->all(),
+            'latest'         => $tasks->take(10)->map(fn (array $task) => [
+                'reference' => $task['reference'],
+                'question'  => (string) ($task['data']['question'] ?? ''),
+                'shop'      => (string) ($task['data']['shop_code'] ?? ''),
+                'status'    => !isset($task['data']['answered_at']) ? 'open' : (!empty($task['data']['unanswered']) ? 'closed' : 'answered'),
+                'by'        => isset($task['data']['answered_by']) && empty($task['data']['unanswered']) ? ($names[$task['data']['answered_by']] ?? null) : null,
+                'minutes'   => empty($task['data']['unanswered']) ? $minutes($task) : null,
+                'url'       => route('grp.tasks.show', $task['reference']),
+            ])->values()->all(),
         ];
     }
 
@@ -423,7 +496,10 @@ class GetShoppingAssistantReport
                 select distinct transactions.id, transactions.order_id, transactions.{$amountColumn} as amount
                 from shopping_assistant_events events
                 join convs on convs.id = events.shopping_assistant_conversation_id
-                join transactions on transactions.id = events.transaction_id
+                join transactions on transactions.order_id = events.order_id
+                    and transactions.model_type = 'Product'
+                    and transactions.model_id = events.product_id
+                    and transactions.is_gift = false
                 where events.type = 'added'
                     and transactions.submitted_at is not null
                     and transactions.state not in (?, ?)
@@ -755,7 +831,7 @@ class GetShoppingAssistantReport
     }
 
     /**
-     * Questions refused by the rate limit or a spent monthly budget, staff customers left out. Only
+     * Questions refused by the rate limit, a spent monthly budget or a new customer's spent allowance, staff customers left out. Only
      * the dates, the website and the language (of the website's shop) apply; the entry point, shop
      * type and country filters are not applied.
      *
@@ -776,7 +852,7 @@ class GetShoppingAssistantReport
         $current  = $counts($from, $to);
         $previous = $counts($previousFrom, $previousTo);
 
-        return collect([StoreShoppingAssistantRefusal::RATE_LIMIT, StoreShoppingAssistantRefusal::BUDGET])
+        return collect([StoreShoppingAssistantRefusal::RATE_LIMIT, StoreShoppingAssistantRefusal::BUDGET, StoreShoppingAssistantRefusal::CUSTOMER_CAP])
             ->mapWithKeys(fn (string $reason) => [$reason => ['value' => (int) ($current[$reason] ?? 0), 'previous' => (int) ($previous[$reason] ?? 0)]])
             ->all();
     }
@@ -799,6 +875,7 @@ class GetShoppingAssistantReport
             'note'      => __('Staff notes'),
             'verified'  => __('Verified facts'),
             'learned'   => __('Learned rules'),
+            'email'     => __('Our emails'),
         ];
     }
 

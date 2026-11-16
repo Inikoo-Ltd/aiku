@@ -33,6 +33,9 @@ use App\Actions\Dispatching\Shipper\UI\CreateShipper;
 use App\Actions\Dispatching\Shipper\UI\EditShipper;
 use App\Actions\Dispatching\Shipper\UI\IndexShippers;
 use App\Actions\Dispatching\Shipper\UI\ShowShipper;
+use App\Actions\Dispatching\PackingBench\UI\CreatePackingBench;
+use App\Actions\Dispatching\PackingBench\UI\EditPackingBench;
+use App\Actions\Dispatching\PackingBench\UI\IndexPackingBenches;
 use App\Actions\Dispatching\Trolley\UI\CreateTrolley;
 use App\Actions\Dispatching\Trolley\UI\EditTrolley;
 use App\Actions\Dispatching\Trolley\UI\IndexTrolleys;
@@ -138,4 +141,10 @@ Route::prefix('picked-bays')->as('picked_bays.')->group(function () {
     Route::get('create', CreatePickedBay::class)->name('create');
     Route::get('{pickedBay}', ShowPickedBay::class)->name('show');
     Route::get('{pickedBay}/edit', EditPickedBay::class)->name('edit');
+});
+
+Route::prefix('packing-benches')->as('packing_benches.')->group(function () {
+    Route::get('', IndexPackingBenches::class)->name('index');
+    Route::get('create', CreatePackingBench::class)->name('create');
+    Route::get('{packingBench}/edit', EditPackingBench::class)->name('edit');
 });

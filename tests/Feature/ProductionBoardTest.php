@@ -1812,6 +1812,8 @@ test('a bottle filled to order puts a fill line on To Produce, holds the whole o
     \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => 3]));
     $orgStock->update(['quantity_in_locations' => 100, 'quantity_available' => 100]);
 
+    expect(\App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::make()->handle($order->refresh(), fromPartnerPurchaseOrder: true))->toBe([]);
+
     $lines = \App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::run($order->refresh());
     expect($lines)->toHaveCount(1)
         ->and((float) $lines[0]->quantity)->toBe(3.0)

@@ -41,6 +41,8 @@ enum RolesEnum: string
     case GOODS_MANAGER = 'goods-manager';
     case GOODS_VIEWER = 'goods-viewer';
 
+    case FINANCIALS_VIEWER = 'financials-viewer';
+
     case MASTERS_MANAGER = 'masters-manager';
     case MASTERS_MEDIA = 'masters-media';
     case MASTERS_CLERK = 'masters-clerk';
@@ -175,6 +177,7 @@ enum RolesEnum: string
             RolesEnum::ORGANISATIONS_MANAGER => __('Organisations manager'),
             RolesEnum::GOODS_MANAGER => __('Goods manager'),
             RolesEnum::GOODS_VIEWER => __('Goods viewer'),
+            RolesEnum::FINANCIALS_VIEWER => __('Financials viewer'),
             RolesEnum::MASTERS_MANAGER => __('Masters manager'),
             RolesEnum::MASTERS_MEDIA => __('Masters media'),
             RolesEnum::MASTERS_CLERK => __('Masters clerk'),
@@ -267,6 +270,9 @@ enum RolesEnum: string
             ],
             RolesEnum::GOODS_VIEWER => [
                 GroupPermissionsEnum::GOODS_VIEW
+            ],
+            RolesEnum::FINANCIALS_VIEWER => [
+                GroupPermissionsEnum::FINANCIALS
             ],
             RolesEnum::MASTERS_MANAGER => [
                 GroupPermissionsEnum::MASTERS
@@ -665,6 +671,7 @@ enum RolesEnum: string
             RolesEnum::SUPPLY_CHAIN_WORKER,
             RolesEnum::GOODS_MANAGER,
             RolesEnum::GOODS_VIEWER,
+            RolesEnum::FINANCIALS_VIEWER,
             RolesEnum::MASTERS_MANAGER,
             RolesEnum::MASTERS_MEDIA,
             RolesEnum::MASTERS_CLERK,

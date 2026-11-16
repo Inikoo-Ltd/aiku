@@ -380,7 +380,7 @@ test('help desk staff and QA can raise engineering tickets with an INI reference
 
     actingAs($engineer);
     get(route('grp.tickets.create'))->assertOk()->assertInertia(
-        fn (AssertableInertia $page) => $page->where('types', fn ($types) => collect($types)->pluck('value')->all() === ['help', 'engineer', 'customer', 'premonition'])
+        fn (AssertableInertia $page) => $page->where('types', fn ($types) => collect($types)->pluck('value')->all() === ['help', 'engineer', 'customer', 'premonition', 'merlin'])
     );
     post(route('grp.models.ticket.store'), ['subject' => 'Refactor the queue', 'type' => 'engineer'])->assertRedirect()->assertSessionHasNoErrors();
     expect(Ticket::where('subject', 'Refactor the queue')->value('reference'))->toStartWith('INI-');

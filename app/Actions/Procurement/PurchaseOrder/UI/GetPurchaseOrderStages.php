@@ -18,6 +18,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum as Stage;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\AgentGoodsReceipt;
 use App\Models\Procurement\AgentGoodsReceiptItem;
@@ -38,8 +39,9 @@ use Lorisleiva\Actions\Concerns\AsObject;
  * Handed over (Clean Hand Over) means the order is ready to be put on a shipment. It is done when the agent marked it,
  * when every Ready to Roll check is done (RecordPurchaseOrderHandedOverWhenReady records it), when a delivery is
  * dispatched (noting the checks it went without) and, for an agent that sends goods on the next container (cho_mode),
- * when every item is in a container, so that mode does not offer the mark: agents read it as the supplier handing the
- * goods to them (HELP-4292). A date already marked can still be cleared.
+ * when every line is received in full and packed in the agent warehouse, or every item is in a container, so that
+ * mode does not offer the mark: agents read it as the supplier handing the goods to them (HELP-4292). A date already
+ * marked can still be cleared.
  * On an order through an agent, Ready is also reached once every line is in a container, packed first or not: the QC
  * mark is then optional. With the agent warehouse, production done is filled by the goods receipts, so it shows under
  * In warehouse and is never marked by hand.
@@ -122,6 +124,34 @@ class GetPurchaseOrderStages
     }
 
     /**
+     * When the goods were handed over against the Clean Hand Over date expected for them: the buyer's approved ready
+     * date, or else the plan the PO journey board draws. Null until the goods are handed over or while no date is expected.
+     *
+     * @return array{handed_over_at: Carbon, expected_at: Carbon, days_late: int}|null
+     */
+    public function handOverTiming(PurchaseOrder $purchaseOrder): ?array
+    {
+        $handedOver = $this->handedOverStage($purchaseOrder, $this->liveDeliveries($purchaseOrder));
+        if (!$handedOver['recorded'] || !$handedOver['date']) {
+            return null;
+        }
+
+        $expectedAt = $purchaseOrder->approved_ready_at ?? ($this->expectedDates($purchaseOrder)[Stage::HANDED_OVER->value]['planned'] ?? null);
+        if (!$expectedAt) {
+            return null;
+        }
+
+        $handedOverAt = Carbon::parse($handedOver['date'])->startOfDay();
+        $expectedAt   = Carbon::parse($expectedAt)->startOfDay();
+
+        return [
+            'handed_over_at' => $handedOverAt,
+            'expected_at'    => $expectedAt,
+            'days_late'      => max(0, (int) $expectedAt->diffInDays($handedOverAt, false)),
+        ];
+    }
+
+    /**
      * @return array{recorded: bool, date: ?Carbon, user_id: ?int, deliveries: null}
      */
     private function handedOverStage(PurchaseOrder $purchaseOrder, Collection $deliveries): array
@@ -131,14 +161,16 @@ class GetPurchaseOrderStages
             ? in_array(StockDeliveryStateEnum::tryFrom((string) $purchaseOrder->delivery_state?->value), self::SHIPPED_STATES)
             : $dispatched->isNotEmpty();
         $dispatchedAt = $dispatched->pluck('dispatched_at')->filter()->min();
-        $onContainers = $purchaseOrder->choMode() === 'next_container' ? $this->allOnContainersAt($purchaseOrder) : null;
+        $sendsOnNextContainer = $purchaseOrder->choMode() === 'next_container';
+        $onContainers         = $sendsOnNextContainer ? $this->allOnContainersAt($purchaseOrder) : null;
+        $packedAt             = $sendsOnNextContainer ? $this->warehouseDates($purchaseOrder)['warehouse_packed_at'] : null;
 
-        $date = $onContainers
-            ? collect([$purchaseOrder->handed_over_at, $onContainers, $dispatchedAt])->filter()->min()
+        $date = $onContainers || $packedAt
+            ? collect([$purchaseOrder->handed_over_at, $onContainers, $packedAt, $dispatchedAt])->filter()->min()
             : ($purchaseOrder->handed_over_at ?? $dispatchedAt);
 
         return [
-            'recorded'   => $purchaseOrder->handed_over_at !== null || $isDispatched || $onContainers !== null,
+            'recorded'   => $purchaseOrder->handed_over_at !== null || $isDispatched || $onContainers !== null || $packedAt !== null,
             'date'       => $date,
             'user_id'    => $purchaseOrder->stageMarkUserId('handed_over_at'),
             'deliveries' => null,
@@ -257,7 +289,7 @@ class GetPurchaseOrderStages
             'sample'       => $purchaseOrder->sample_approved_at !== null,
             'in_warehouse' => (bool) ($stages['in_warehouse']['recorded'] ?? false),
             'qc'           => (bool) ($stages['ready']['recorded'] ?? false),
-            'compliance'   => $purchaseOrder->compliance_complete_at !== null,
+            'compliance'   => true,
             'handed_over'  => (bool) ($stages['handed_over']['recorded'] ?? false),
             default        => false,
         };
@@ -320,17 +352,22 @@ class GetPurchaseOrderStages
             'by'          => $names->get($stages[$stage->value]['user_id']),
             'expected'    => $expected[$stage->value]['date'] ?? null,
             'expected_note' => $expected[$stage->value]['note'] ?? null,
+            'planned'     => $expected[$stage->value]['planned'] ?? null,
+            'planned_note' => $expected[$stage->value]['planned_note'] ?? null,
             'days_late'   => !$stages[$stage->value]['reached'] && isset($expected[$stage->value]) && Carbon::parse($expected[$stage->value]['date'])->lt($today)
                 ? (int) Carbon::parse($expected[$stage->value]['date'])->diffInDays($today)
                 : 0,
             'deliveries'  => $stages[$stage->value]['deliveries'],
             'note'        => match (true) {
                 $stage === Stage::SUBMITTED && (bool) $purchaseOrder->agent_reference => __('Agent\'s number: :number', ['number' => $purchaseOrder->agent_reference]),
+                $stage === Stage::DEPOSIT_PAID && ($paidByAgent = $this->paidByAgentNote($purchaseOrder)) !== null => $paidByAgent,
                 $stage === Stage::READY && $purchaseOrder->qc_passed_at === null && $this->allOnContainersAt($purchaseOrder) !== null => __('Every item is in a container, QC not recorded'),
                 $stage === Stage::HANDED_OVER && RecordPurchaseOrderHandedOverWhenReady::wasRecordedAutomatically($purchaseOrder) => __('Recorded when every Ready to Roll check was done'),
-                $stage === Stage::HANDED_OVER && $purchaseOrder->handed_over_at === null && $stages[$stage->value]['recorded'] => $purchaseOrder->choMode() === 'next_container'
-                    ? __('Every item is in a container')
-                    : $this->dispatchedWithoutHandOverNote($purchaseOrder, $deliveries),
+                $stage === Stage::HANDED_OVER && $purchaseOrder->handed_over_at === null && $stages[$stage->value]['recorded'] => match (true) {
+                    $purchaseOrder->choMode() !== 'next_container'    => $this->dispatchedWithoutHandOverNote($purchaseOrder, $deliveries),
+                    $this->allOnContainersAt($purchaseOrder) !== null => __('Every item is in a container'),
+                    default                                           => __('Received in full and packed in the agent warehouse'),
+                },
                 default => null,
             },
             'checks'      => $stage === Stage::READY ? $this->readyChecks($purchaseOrder) : null,
@@ -344,6 +381,7 @@ class GetPurchaseOrderStages
                 'note'  => $this->stepNote($step, $steps[$stage->value] ?? []),
                 'expected' => $step['key'] === 'approved_ready_at' && $step['date'] === null ? ($expected[Stage::HANDED_OVER->value]['date'] ?? null) : null,
                 'expected_note' => $step['key'] === 'approved_ready_at' && $step['date'] === null ? ($expected[Stage::HANDED_OVER->value]['note'] ?? null) : null,
+                'days_to_cho' => $step['key'] === 'approved_ready_at' ? $this->daysToHandOver($step['date'] ?? ($expected[Stage::HANDED_OVER->value]['date'] ?? null), $stages, $today) : null,
             ])->all(),
             'evidence'    => collect($stage->evidence())->map(fn (PurchaseOrderAttachmentScopeEnum $scope) => [
                 'scope' => $scope->value,
@@ -386,12 +424,52 @@ class GetPurchaseOrderStages
     }
 
     /**
+     * On an agent order the agent pays the supplier from its ledger: what it paid against the goods value.
+     */
+    private function paidByAgentNote(PurchaseOrder $purchaseOrder): ?string
+    {
+        if (!$purchaseOrder->isAgentOrder()) {
+            return null;
+        }
+
+        $paid = round((float) DB::table('agent_payments')
+            ->where('purchase_order_id', $purchaseOrder->id)
+            ->whereIn('type', AgentPaymentTypeEnum::supplierPaymentValues())
+            ->whereNull('deleted_at')
+            ->whereNotNull('date')
+            ->sum('amount'), 2);
+
+        if ($paid <= 0) {
+            return null;
+        }
+
+        $goods       = round((float) $purchaseOrder->cost_items, 2);
+        $replacement = ['paid' => number_format($paid, 2), 'goods' => number_format($goods, 2), 'currency' => $purchaseOrder->currency->code];
+
+        return $goods > 0 && $paid >= $goods
+            ? __('Paid by the agent: :currency :paid of :goods, paid in full', $replacement)
+            : __('Paid by the agent: :currency :paid of :goods, part paid', $replacement);
+    }
+
+    /**
+     * Days left until the Clean Hand Over date, negative once it has gone by; null when the order was handed over or has no date for it.
+     */
+    private function daysToHandOver(Carbon|string|null $handOverDate, array $stages, Carbon $today): ?int
+    {
+        if (!$handOverDate || ($stages[Stage::HANDED_OVER->value]['reached'] ?? false)) {
+            return null;
+        }
+
+        return (int) $today->diffInDays(Carbon::parse($handOverDate)->startOfDay(), false);
+    }
+
+    /**
      * Each stage's expected date, from the plan the PO journey board draws for the order: the agent's or
      * supplier's lead time stretched over the stages, and the proposed ready date for QC and Clean Hand Over. The board works the
      * shipping date back from the arrival estimate, so a stage is never expected before the one ahead of it.
      * Each date carries a note saying where it came from, so a buyer can tell a plan from a promise.
      *
-     * @return array<string, array{date: string, note: string}>
+     * @return array<string, array{date: string, note: string, planned?: string, planned_note?: string}>
      */
     public function expectedDates(PurchaseOrder $purchaseOrder): array
     {
@@ -413,15 +491,19 @@ class GetPurchaseOrderStages
 
             if ($previous && $previous['date'] > $date) {
                 $expected[$stage->value] = [
-                    'date' => $previous['date'],
-                    'note' => __('The plan puts it before :stage, so it takes that stage\'s date.', ['stage' => Stage::labels()[$previous['stage']]]),
+                    'date'         => $previous['date'],
+                    'note'         => __('The plan puts it before :stage, so it takes that stage\'s date.', ['stage' => Stage::labels()[$previous['stage']]]),
+                    'planned'      => max($segment['planned_at'], $previous['date']),
+                    'planned_note' => $this->expectedNote($segment['planned_from'], $ribbon),
                 ];
                 continue;
             }
 
             $expected[$stage->value] = [
-                'date' => $date,
-                'note' => $segment['done_at'] ? __('The date the PO journey board recorded for this stage.') : $this->expectedNote($segment['planned_from'], $ribbon),
+                'date'         => $date,
+                'note'         => $segment['done_at'] ? __('The date the PO journey board recorded for this stage.') : $this->expectedNote($segment['planned_from'], $ribbon),
+                'planned'      => $segment['planned_at'],
+                'planned_note' => $this->expectedNote($segment['planned_from'], $ribbon),
             ];
             $previous = ['stage' => $stage->value, 'date' => $date];
         }
@@ -501,7 +583,7 @@ class GetPurchaseOrderStages
             ->pluck('reference')
             ->implode(', ');
         $missing = collect($this->readyChecks($purchaseOrder) ?? [])
-            ->reject(fn (array $check) => $check['done'])
+            ->reject(fn (array $check) => $check['done'] || !$check['required'])
             ->pluck('label')
             ->implode(', ');
 
@@ -523,9 +605,10 @@ class GetPurchaseOrderStages
      * packing for an agent warehouse, otherwise the production done date. With an agent warehouse QC is also done once
      * every item received is checked, when nobody recorded the QC itself.
      *
-     * A QC or compliance check a person skipped counts as done, dated by the skip.
+     * A QC check a person skipped counts as done, dated by the skip. Compliance is done only once completed and shows
+     * as skipped until then; it is not required, as not every item needs it, so it never holds anything up.
      *
-     * @return array<int, array{key: string, label: string, done: bool, date: ?Carbon, skipped: bool}>|null
+     * @return array<int, array{key: string, label: string, done: bool, date: ?Carbon, skipped: bool, required: bool}>|null
      */
     public function readyChecks(PurchaseOrder $purchaseOrder): ?array
     {
@@ -542,14 +625,26 @@ class GetPurchaseOrderStages
                 default                                                         => $purchaseOrder->{Stage::READY_CHECK_FIELDS[$key]},
             };
 
-            $skip = in_array($key, ['qc', 'compliance']) && $date === null ? $purchaseOrder->stageSkip($key) : null;
+            if ($key === 'compliance') {
+                return [
+                    'key'      => $key,
+                    'label'    => $labels[$key],
+                    'done'     => $date !== null,
+                    'date'     => $date,
+                    'skipped'  => $date === null,
+                    'required' => false,
+                ];
+            }
+
+            $skip = $key === 'qc' && $date === null ? $purchaseOrder->stageSkip($key) : null;
 
             return [
-                'key'     => $key,
-                'label'   => $labels[$key],
-                'done'    => $date !== null || $skip !== null,
-                'date'    => $date ?? ($skip ? Carbon::parse($skip['at']) : null),
-                'skipped' => $skip !== null,
+                'key'      => $key,
+                'label'    => $labels[$key],
+                'done'     => $date !== null || $skip !== null,
+                'date'     => $date ?? ($skip ? Carbon::parse($skip['at']) : null),
+                'skipped'  => $skip !== null,
+                'required' => true,
             ];
         })->all();
     }

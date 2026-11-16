@@ -107,8 +107,8 @@ class ShowCompetitor extends OrgAction
                     : Inertia::optional(fn () => $this->dossier($competitor)),
 
                 CompetitorTabsEnum::MATCHES->value => $this->tab == CompetitorTabsEnum::MATCHES->value
-                    ? fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($competitor, 'all', CompetitorTabsEnum::MATCHES->value))
-                    : Inertia::optional(fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($competitor, 'all', CompetitorTabsEnum::MATCHES->value))),
+                    ? fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($competitor, 'not_rejected_by_staff', CompetitorTabsEnum::MATCHES->value))
+                    : Inertia::optional(fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($competitor, 'not_rejected_by_staff', CompetitorTabsEnum::MATCHES->value))),
 
                 CompetitorTabsEnum::PRODUCTS->value => $this->tab == CompetitorTabsEnum::PRODUCTS->value
                     ? fn () => CompetitorProductsResource::collection(IndexCompetitorProducts::run($competitor, CompetitorTabsEnum::PRODUCTS->value))
@@ -126,13 +126,13 @@ class ShowCompetitor extends OrgAction
 
     /**
      * A competitor checked by hand has nothing crawled, so no dossier, products read or policies; one
-     * read by itself has no price checks.
+     * read by itself also takes price checks for what the reading misses (HELP-4691).
      */
     private static function tabs(Competitor $competitor): array
     {
         return $competitor->prices_by_hand
             ? CompetitorTabsEnum::navigationOnly([CompetitorTabsEnum::PRICE_CHECKS->value, CompetitorTabsEnum::MATCHES->value])
-            : CompetitorTabsEnum::navigationExcept([CompetitorTabsEnum::PRICE_CHECKS]);
+            : CompetitorTabsEnum::navigation();
     }
 
     /**

@@ -2,7 +2,7 @@
 title: Trabajar la pantalla de planta
 summary: La guía del artesano - la pantalla Mis tareas, la lista de trabajos que se actualiza sola, START y DONE, qué pulsar cuando hiciste menos de lo pedido, y tomarte un descanso.
 date: 2026-11-03
-source_date: 2026-11-12
+source_date: 2026-11-13
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -45,6 +45,10 @@ Una fila con una ▶ verde y una hora es la que estás trabajando, y cuándo la 
 5. Pulsa <b>DONE</b> (Terminado).
 
 ¿Hiciste todo lo que se pedía? Eso es todo. La tarea se cierra, la orden de trabajo termina y se avisa al almacén de que hay algo que guardar - ver [Guardar la producción terminada](/docs/putting-away-finished-production-es).
+
+## Códigos de lote de materias primas
+
+Algunas salas de producción llevan un registro de qué paquete de cada materia prima entró en lo que se fabricó. Donde el jefe de producción lo ha activado (<b>Raw material batches</b> (Lotes de materias primas) en la página <b>Performance</b> (Rendimiento)), el trabajo en el que estás lista las materias primas de su paso bajo <b>Raw materials used</b> (Materias primas usadas), cada una con una casilla <b>Batch code</b> (Código de lote) y un calendario <b>Expiry date</b> (Fecha de caducidad). Cópialos del envase antes de pulsar <b>DONE</b>. Las casillas empiezan vacías cada vez, así que cópialos del paquete que estás usando. Son opcionales: deja una fila vacía y DONE sigue funcionando. Lo que escribas aparece en la orden de trabajo bajo <b>Raw material batches</b>, con quién lo registró y cuándo. Un paso cuya receta no lista materias primas no muestra casillas; pide al jefe de producción que las añada a la receta.
 
 ## Qué cuentan los números
 

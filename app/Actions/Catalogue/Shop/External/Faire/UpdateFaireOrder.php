@@ -16,7 +16,7 @@ use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromShippin
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
-use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteQuantitySync;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteLineCreation;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
@@ -32,14 +32,10 @@ use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\Ordering\Transaction\TransactionStateEnum;
-use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\Product;
-use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Currency;
@@ -55,7 +51,7 @@ use App\Actions\Traits\Authorisations\Ordering\WithOrderPaymentAuthorisation;
 
 class UpdateFaireOrder extends OrgAction
 {
-    use WithDeliveryNoteQuantitySync;
+    use WithDeliveryNoteLineCreation;
     use WithOrderPaymentAuthorisation;
 
     /**
@@ -633,61 +629,6 @@ class UpdateFaireOrder extends OrgAction
     public function addTransaction($item, $shop, $transactionCommissionsFactor): array
     {
         return GetFaireOrdersInShop::make()->processFaireOrderItem($item, $shop, $transactionCommissionsFactor);
-    }
-
-    public function createDeliveryNoteItem(Order $order, Transaction $transaction): void
-    {
-        DB::transaction(function () use ($order, $transaction) {
-            $deliveryNote = $this->lockWorkableDeliveryNote($order);
-            if (!$deliveryNote) {
-                return;
-            }
-
-            $transactionData = [
-                'state'           => TransactionStateEnum::IN_WAREHOUSE,
-                'status'          => TransactionStatusEnum::PROCESSING,
-                'in_warehouse_at' => now()
-            ];
-            if ($transaction->in_warehouse_at == null) {
-                data_set($transactionData, 'in_warehouse_at', now());
-            }
-            $transaction->update($transactionData);
-
-            $product = Product::find($transaction->model_id);
-
-
-            foreach ($product->orgStocks as $orgStock) {
-                $quantity             = DeliveryNoteItem::requiredQuantity((float) $orgStock->pivot->quantity, (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus);
-                $deliveryNoteItemData = [
-                    'org_stock_id'               => $orgStock->id,
-                    'transaction_id'             => $transaction->id,
-                    'quantity_required'          => $quantity,
-                    'original_quantity_required' => $quantity,
-                ];
-
-                StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
-            }
-
-            /*
-             * A line the warehouse has never seen cannot be picked from a note that is already
-             * packed, so the note goes back far enough for the new line to be worked.
-             */
-            $this->walkDeliveryNoteBackToPicking($deliveryNote->refresh(), true, null);
-        });
-    }
-
-    /**
-     * Walking a note back deletes packings and moves the order's state, and this runs unattended
-     * over every Faire order, so the note is locked for the duration and the whole walk commits or
-     * none of it does. Without it a throw further down the poll leaves a half unpacked note.
-     */
-    protected function lockWorkableDeliveryNote(Order $order): ?DeliveryNote
-    {
-        return $order->deliveryNotes()->whereNotIn('state', [
-            DeliveryNoteStateEnum::CANCELLED,
-            DeliveryNoteStateEnum::DISPATCHED,
-            DeliveryNoteStateEnum::FINALISED,
-        ])->where('type', DeliveryNoteTypeEnum::ORDER)->lockForUpdate()->first();
     }
 
     public function updateDeliveryNoteItem(Order $order, Transaction $transaction): void

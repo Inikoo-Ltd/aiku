@@ -392,6 +392,11 @@ class StockDelivery extends Model implements HasMedia, Auditable
         return $this->hasMany(StockDeliveryClaim::class);
     }
 
+    public function feedbacks(): HasMany
+    {
+        return $this->hasMany(StockDeliveryFeedback::class);
+    }
+
     /**
      * The costs procurement still owes on a delivery: the agent or supplier invoice, the shipping and the duty
      * each need an amount, an estimate or a not applicable. They never hold the warehouse back; procurement is

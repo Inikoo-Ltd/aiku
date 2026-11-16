@@ -43,7 +43,6 @@ use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
-use App\Enums\SupplyChain\PackingSpec\PackingSpecStatusEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\GoodsIn\StockDelivery;
@@ -57,7 +56,6 @@ use App\Models\Masters\MasterProductCategory;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SupplyChain\SupplierProduct;
-use App\Models\SupplyChain\SupplierProductPackingSpec;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactStepTarget;
 use App\Models\Production\ManufactureTask;
@@ -129,7 +127,7 @@ class RevertMcpChange
                 McpChangeTypeEnum::PRODUCTION_SETUP => $this->revertProductionSetup($target, $mcpChange->before),
                 McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS => $this->revertSupplierProductLinks($mcpChange),
                 McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING => $this->revertOrgStockAutoOrdering($mcpChange->before),
-                McpChangeTypeEnum::PACKING_SPECS => $this->revertPackingSpecs($mcpChange->before, $mcpChange->after),
+                McpChangeTypeEnum::PRODUCT_PACKAGING => $this->revertProductPackaging($mcpChange->before),
                 McpChangeTypeEnum::INFO_WEBSITE_CONTENT => RevertStaticWebsiteChange::run($mcpChange),
             };
 
@@ -282,13 +280,13 @@ class RevertMcpChange
     }
 
     /**
-     * Versions the change added are superseded, never deleted, so a delivery checked against one keeps its record;
-     * the versions it superseded get their status back.
+     * The trade units go back to the packaging family they had; the measured family stays for any other trade unit
+     * packed the same way.
      */
-    private function revertPackingSpecs(array $before, array $after): void
+    private function revertProductPackaging(array $before): void
     {
-        foreach ($after['specs'] as $specId => $spec) {
-            SupplierProductPackingSpec::whereKey($specId)->update(['status' => $before['specs'][$specId]['status'] ?? PackingSpecStatusEnum::SUPERSEDED->value]);
+        foreach ($before['trade_units'] as $tradeUnitId => $tradeUnit) {
+            UpdateTradeUnit::make()->action(TradeUnit::findOrFail($tradeUnitId), ['packaging_family_id' => $tradeUnit['packaging_family_id']]);
         }
     }
 

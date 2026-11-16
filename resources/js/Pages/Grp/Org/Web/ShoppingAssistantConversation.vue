@@ -7,6 +7,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import Image from "@common/Components/Image.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck } from "@fas"
@@ -20,6 +21,7 @@ type Product = {
     id: number
     code: string
     name: string
+    image: Record<string, any> | null
     group: "must_haves" | "add_ons" | null
     reason: string | null
     clicked: boolean
@@ -206,6 +208,7 @@ const detailLine = (message: Message) =>
                         <table class="w-full text-xs">
                             <thead class="whitespace-nowrap border-b border-gray-200 text-gray-400">
                                 <tr>
+                                    <th class="w-12 pb-1 pr-2"></th>
                                     <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("Code") }}</th>
                                     <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("Product") }}</th>
                                     <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("Group") }}</th>
@@ -217,6 +220,11 @@ const detailLine = (message: Message) =>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
                                 <tr v-for="product in message.products" :key="product.id" class="align-top">
+                                    <td class="py-1 pr-2">
+                                        <span class="block h-10 w-10 overflow-hidden rounded bg-gray-50">
+                                            <Image v-if="product.image" :src="product.image" :alt="product.name" class="h-full w-full object-contain" />
+                                        </span>
+                                    </td>
                                     <td class="whitespace-nowrap py-1 pr-3">
                                         <Link v-if="routeHref(product.route)" :href="routeHref(product.route) ?? ''" class="primaryLink">{{ product.code }}</Link>
                                         <span v-else class="font-medium text-gray-900">{{ product.code }}</span>

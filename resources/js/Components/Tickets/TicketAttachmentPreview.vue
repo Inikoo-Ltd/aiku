@@ -63,14 +63,15 @@ export const attachmentIconFor = (file: TicketAttachment) => {
 </script>
 
 <script setup lang="ts">
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { computed, nextTick, ref, shallowRef, watch, onBeforeUnmount } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faChevronLeft, faChevronRight, faExternalLink, faSpinner, faDownload, faFolder, faFile, faSearchPlus, faSearchMinus } from "@fal"
+import { faTimes, faChevronLeft, faChevronRight, faExternalLink, faDownload, faFolder, faFile, faSearchPlus, faSearchMinus } from "@fal"
 
-library.add(faTimes, faChevronLeft, faChevronRight, faExternalLink, faSpinner, faDownload, faFolder, faFile, faSearchPlus, faSearchMinus)
+library.add(faTimes, faChevronLeft, faChevronRight, faExternalLink, faDownload, faFolder, faFile, faSearchPlus, faSearchMinus)
 
 const props = defineProps<{
     files: TicketAttachment[]
@@ -363,7 +364,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                 <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width />
             </button>
             <div v-if="previewState === 'loading'" class="flex h-[85vh] w-full max-w-5xl items-center justify-center rounded bg-white text-sm text-gray-500">
-                <FontAwesomeIcon icon="fal fa-spinner" spin class="mr-2" fixed-width />{{ ctrans("Loading") }}
+                <LoadingIcon class="mr-2" />{{ ctrans("Loading") }}
             </div>
             <div v-else-if="previewState === 'unavailable'" class="flex h-[85vh] w-full max-w-5xl items-center justify-center rounded bg-white text-sm text-gray-500">
                 <div class="max-w-md px-6 text-center">

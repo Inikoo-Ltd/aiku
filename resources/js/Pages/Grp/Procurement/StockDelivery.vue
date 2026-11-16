@@ -31,6 +31,7 @@ import StockDeliveryServiceInvoices from "@/Components/Procurement/StockDelivery
 import AgentContainerInvoicePanel from "@/Components/Procurement/AgentContainerInvoicePanel.vue"
 import AgreedTermDifferences from "@/Components/Procurement/AgreedTermDifferences.vue"
 import StockDeliveryAddItems from "@/Components/Procurement/StockDeliveryAddItems.vue"
+import StockDeliveryAddItemNotOnPurchaseOrder from "@/Components/Procurement/StockDeliveryAddItemNotOnPurchaseOrder.vue"
 import StockDeliveryImportItems from "@/Components/Procurement/StockDeliveryImportItems.vue"
 import ModalAcceptResponsibility from "@/Components/Procurement/ModalAcceptResponsibility.vue"
 import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
@@ -40,6 +41,8 @@ import StockDeliveryImportFile from "@/Components/Procurement/StockDeliveryImpor
 import StockDeliveryTariffCodes from "@/Components/Procurement/StockDeliveryTariffCodes.vue"
 import StockDeliveryGoodsInChecklist from "@/Components/Procurement/StockDeliveryGoodsInChecklist.vue"
 import StockDeliveryPackingChecks from "@/Components/Procurement/StockDeliveryPackingChecks.vue"
+import StockDeliveryFeedbackCards from "@/Components/Procurement/StockDeliveryFeedbackCards.vue"
+import StockDeliveryFeedbackDialog, { type FeedbackOptions } from "@/Components/Procurement/StockDeliveryFeedbackDialog.vue"
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
@@ -60,10 +63,11 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSpinnerThird } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList, faBalanceScale, faPassport, faCheckCircle, faTimes, faCheck, faSquare, faChevronRight, faChevronDown, faShip, faHashtag, faTrashAlt, faPlus, faContainerStorage, faUpload, faTasks, faTruckContainer, faFileCsv, faWeight, faShippingFast, faFileExcel, faFolderOpen } from "@fal"
+import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList, faBalanceScale, faPassport, faCheckCircle, faTimes, faCheck, faSquare, faChevronRight, faChevronDown, faShip, faHashtag, faTrashAlt, faPlus, faContainerStorage, faUpload, faTasks, faTruckContainer, faFileCsv, faWeight, faShippingFast, faFileExcel, faFolderOpen, faStar } from "@fal"
 import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle, faBoxFull, faCheckSquare } from "@fas"
 
 library.add(
+	faStar,
 	faWeight,
 	faFolderOpen,
 	faFileCsv,
@@ -133,6 +137,8 @@ const props = defineProps<{
 		}[]
 	} | null
 	add_purchase_order_items?: InstanceType<typeof StockDeliveryAddItems>["$props"]["data"]
+	add_item_not_on_purchase_order?: routeType | null
+	products_not_on_purchase_order?: { id: number; code: string | null; name: string | null }[] | null
 	remove_purchase_orders: Record<number, {
 		reference: string
 		route: routeType
@@ -258,6 +264,8 @@ const props = defineProps<{
 	agentInvoice?: InstanceType<typeof AgentContainerInvoicePanel>["$props"]["data"] | null
 	service_invoices: InstanceType<typeof StockDeliveryServiceInvoices>["$props"]["data"] | null
 	agreed_term_differences?: InstanceType<typeof AgreedTermDifferences>["$props"]["differences"] | null
+	give_feedback?: FeedbackOptions | null
+	feedback?: InstanceType<typeof StockDeliveryFeedbackCards>["$props"]["data"]
 	notes?: {}
 	note_store_route?: routeType
 	note_form?: object
@@ -287,6 +295,7 @@ const component = computed(() => {
 		import_file: StockDeliveryImportFile,
 		purchase_orders: TablePurchaseOrders,
 		attachments: TableAttachments,
+		feedback: StockDeliveryFeedbackCards,
 		notes: TableProcurementNotes,
 		history: TableHistories,
 	}
@@ -294,11 +303,20 @@ const component = computed(() => {
 	return components[currentTab.value]
 })
 
+const giveFeedbackOpen = ref(false)
+
 const addItemsOpen = ref(false)
 
 const openAddItems = () => {
 	addItemsOpen.value = true
 	router.reload({ only: ["add_purchase_order_items"] })
+}
+
+const addItemNotOnPurchaseOrderOpen = ref(false)
+
+const openAddItemNotOnPurchaseOrder = () => {
+	addItemNotOnPurchaseOrderOpen.value = true
+	router.reload({ only: ["products_not_on_purchase_order"] })
 }
 
 const importItemsOpen = ref(false)
@@ -885,6 +903,13 @@ const confirmDeleteStockDelivery = (action: any) => {
 	<PageHeading :data="pageHeadWithoutSettings">
 		<template #otherBefore>
 			<Action v-if="settingsAction" :action="settingsAction" />
+			<span v-if="add_item_not_on_purchase_order" v-tooltip="ctrans('The supplier sent a product that is on none of the purchase orders')">
+				<Button type="tertiary" :label="ctrans('Add item not ordered')" @click="openAddItemNotOnPurchaseOrder">
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+			</span>
 			<div v-if="add_purchase_orders" class="inline-flex divide-x divide-gray-300 overflow-hidden rounded-md border border-gray-300">
 				<span v-tooltip="add_purchase_orders.purchase_orders.length === 0 ? ctrans('No confirmed purchase orders of this agent are waiting for a container') : ctrans('Add whole purchase orders, or pick single items of them and how many of each')">
 					<Button
@@ -1042,6 +1067,16 @@ const confirmDeleteStockDelivery = (action: any) => {
 				:tooltip="action.tooltip"
 				:loading="estimatedDeliveryDateLoading"
 				@click="() => openEstimatedDeliveryDateModal(action)"
+			/>
+		</template>
+
+		<template #button-give-feedback="{ action }">
+			<Button
+				v-if="give_feedback?.suppliers?.length"
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				@click="giveFeedbackOpen = true"
 			/>
 		</template>
 
@@ -1559,6 +1594,12 @@ const confirmDeleteStockDelivery = (action: any) => {
 	</Dialog>
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+	<StockDeliveryAddItemNotOnPurchaseOrder
+		v-if="add_item_not_on_purchase_order"
+		v-model:visible="addItemNotOnPurchaseOrderOpen"
+		:addRoute="add_item_not_on_purchase_order"
+		:products="products_not_on_purchase_order"
+	/>
 	<StockDeliveryAddItems v-if="add_purchase_orders" v-model:visible="addItemsOpen" :data="add_purchase_order_items" :purchaseOrders="add_purchase_orders.purchase_orders" />
 	<StockDeliveryImportItems v-if="add_purchase_orders" v-model:visible="importItemsOpen" :previewRoute="add_purchase_orders.import.preview_route" :addRoute="add_purchase_orders.import.add_route" />
 	<component
@@ -1571,6 +1612,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 		:updateRoute="currentTab === 'attachments' ? attachmentRoutes.updateRoute : undefined"
 		:scopeOptions="currentTab === 'attachments' ? attachmentScopes : undefined"
 		:readonly="currentTab === 'attachments' ? !attachmentRoutes.canChange : undefined"
+		:options="currentTab === 'feedback' ? give_feedback : undefined"
 		:storeRoute="currentTab === 'notes' && note_form?.can_write !== false ? note_store_route : undefined"
 			:agreement="currentTab === 'notes' ? note_form : undefined"
 		:removablePurchaseOrderIds="currentTab === 'purchase_orders' ? removablePurchaseOrderIds : undefined"
@@ -1732,6 +1774,8 @@ const confirmDeleteStockDelivery = (action: any) => {
 			</Button>
 		</template>
 	</Dialog>
+
+	<StockDeliveryFeedbackDialog v-if="give_feedback" v-model:visible="giveFeedbackOpen" :options="give_feedback" @saved="handleTabUpdate('feedback')" />
 
 	<ConfirmDialog group="stock-delivery" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }">
 		<template #container="{ message, acceptCallback, rejectCallback }">

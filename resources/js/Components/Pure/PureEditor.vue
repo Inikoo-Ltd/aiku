@@ -1,22 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/vue-3'
+import { useEditor, EditorContent } from '@tiptap/vue-3'
+import { BubbleMenu } from '@tiptap/vue-3/menus'
 import StarterKit from '@tiptap/starter-kit'
-import TextStyle from '@tiptap/extension-text-style'
+import { TextStyle, Color, FontFamily, FontSize } from '@tiptap/extension-text-style'
 import Underline from '@tiptap/extension-underline'
 import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
-import BulletList from '@tiptap/extension-bullet-list'
-import ListItem from '@tiptap/extension-list-item'
+import { BulletList, ListItem } from '@tiptap/extension-list'
 import Heading from '@tiptap/extension-heading'
 import TextAlign from '@tiptap/extension-text-align'
 import Highlight from '@tiptap/extension-highlight'
-import { Color } from '@tiptap/extension-color'
-import FontSize from 'tiptap-extension-font-size'
 import Link from '@tiptap/extension-link'
 import EditorMenu from '@/Components/Pure/Supports/EditorMenu.vue'
-import Placeholder from '@tiptap/extension-placeholder'
-import FontFamily from '@tiptap/extension-font-family'
+import { Placeholder } from '@tiptap/extensions'
 import "@/../css/Iris/blockTextContent.css"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faText, faUndoAlt, faRedoAlt } from '@far'
@@ -78,7 +75,14 @@ const editor = useEditor({
         emits('update:modelValue', editor.getHTML())
     },
     extensions: [
-        StarterKit,
+        StarterKit.configure({
+            heading: false,
+            bulletList: false,
+            listItem: false,
+            link: false,
+            underline: false,
+            trailingNode: false,
+        }),
         Underline,
         Subscript,
         Superscript,
@@ -201,7 +205,7 @@ defineExpose({
 
 <template>
     <div class="pt-1">
-        <BubbleMenu v-if="type == 'Bubble' && editor" :editor="editor" :tippy-options="{ duration: 100 }">
+        <BubbleMenu v-if="type == 'Bubble' && editor" :editor="editor">
             <section
                 class="buttons text-gray-700 flex text-xs items-center flex-wrap gap-x-4 border-t border-l border-r border-gray-400 p-1 bg-gray-200">
                 <EditorMenu v-for="action in toggleList" :key="action.key" :editor="editor" :action="action" />

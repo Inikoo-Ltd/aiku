@@ -1283,16 +1283,16 @@ test('an agent user marks hand over through the order page and the PO journey bo
     $this->patch($stageRoute, ['field' => 'sample_approved_at', 'date' => $today, 'reason' => 'Agent saw the sample'])->assertSessionHasErrors('field');
     $this->patch($stageRoute, ['field' => 'handed_over_at', 'date' => $today, 'reason' => 'Handed to the shipping agent'])->assertSessionHasNoErrors();
     $this->patch($stageRoute, ['field' => 'approved_ready_at', 'date' => $today])->assertSessionHasErrors('field');
-    $this->patch($stageRoute, ['field' => 'compliance_complete_at', 'date' => $today])->assertSessionHasErrors('field');
+    $this->patch($stageRoute, ['field' => 'compliance_complete_at', 'date' => $today])->assertSessionHasNoErrors();
 
     $purchaseOrder->refresh();
     expect($purchaseOrder->qc_passed_at)->toBeNull()
         ->and($purchaseOrder->sample_approved_at)->toBeNull()
         ->and($purchaseOrder->handed_over_at)->not->toBeNull()
         ->and($purchaseOrder->approved_ready_at)->toBeNull()
-        ->and($purchaseOrder->compliance_complete_at)->toBeNull();
+        ->and($purchaseOrder->compliance_complete_at)->not->toBeNull();
 
-    $purchaseOrder->updateQuietly(['handed_over_at' => null]);
+    $purchaseOrder->updateQuietly(['handed_over_at' => null, 'compliance_complete_at' => null]);
 
     $this->patch($journeyRoute, ['stage' => 'ready', 'date' => $today, 'reason' => 'Agent checked the goods'])->assertForbidden();
     $this->patch($journeyRoute, ['stage' => 'handed_over', 'date' => $today, 'reason' => 'Handed to the shipping agent'])->assertSessionHasNoErrors();
@@ -1394,7 +1394,8 @@ test('agent marks only its own stages and the order shows its slowest delivery',
     $this->patch($route, ['field' => 'production_started_at', 'date' => $today, 'reason' => 'Supplier started before the deposit'])->assertSessionHasNoErrors();
     $this->patch($route, ['field' => 'qc_passed_at', 'date' => $today, 'reason' => 'x'])->assertSessionHasErrors('field');
     $this->patch($route, ['field' => 'sample_approved_at', 'date' => $today])->assertSessionHasErrors('field');
-    $this->patch($route, ['field' => 'compliance_complete_at', 'date' => $today])->assertSessionHasErrors('field');
+    $this->patch($route, ['field' => 'compliance_complete_at', 'date' => $today])->assertSessionHasNoErrors();
+    $purchaseOrder->updateQuietly(['compliance_complete_at' => null]);
     actingAs($this->adminGuest->getUser());
 
     expect($purchaseOrder->refresh()->stageMarkUserId('production_started_at'))->toBe($agent->id);
@@ -3785,6 +3786,41 @@ test('an agent order the agent keeps a ledger for shows its goods, money request
     actingAs($this->adminGuest->getUser());
 });
 
+test('supplier payments in the agent ledger pay the order\'s deposit and balance, and the repair dates orders paid before the ledger did (INI-240)', function () {
+    $orgAgent = createFreshOrgAgent($this);
+    $order    = UpdatePurchaseOrderStateToSubmitted::make()->action(collect(createAgentPurchaseOrders($this, $orgAgent, 1))->first()->refresh())->refresh();
+    $agent    = $orgAgent->agent;
+    $client   = $order->organisation;
+    $agent->organisation->update(['currency_id' => $order->currency_id]);
+    $goods    = round((float) $order->cost_items, 2);
+    $paidOn   = now()->subDays(3)->toDateString();
+    $deposit  = round($goods / 3, 2);
+    expect($goods)->toBeGreaterThan(0.0);
+
+    \App\Models\SupplyChain\AgentPayment::create(['group_id' => $agent->group_id, 'agent_id' => $agent->id, 'organisation_id' => $client->id, 'type' => 'supplier_deposit', 'date' => $paidOn, 'amount' => $deposit, 'currency_id' => $order->currency_id, 'purchase_order_id' => $order->id]);
+
+    $repair = \App\Actions\Maintenance\Procurement\RepairPurchaseOrdersPaidFromAgentLedger::make();
+    expect($repair->handle(false, [$order->id])->first())->toMatchArray(['deposit_paid_at' => $paidOn, 'balance_paid_at' => null])
+        ->and($order->refresh()->deposit_paid_at)->toBeNull();
+
+    $repair->handle(true, [$order->id]);
+    $depositStage = fn () => collect(\App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages::make()->forUi($order->refresh(), []))->firstWhere('key', 'deposit_paid');
+
+    expect($order->refresh()->deposit_paid_at->toDateString())->toBe($paidOn)
+        ->and($order->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+        ->and($order->balance_paid_at)->toBeNull()
+        ->and($depositStage()['reached'])->toBeTrue()
+        ->and($depositStage()['note'])->toContain('Paid by the agent')->toContain('part paid')
+        ->and($repair->handle(false, [$order->id]))->toBeEmpty();
+
+    \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'type' => 'supplier_balance', 'date' => date('Y-m-d'), 'amount' => round($goods - $deposit, 2), 'purchase_order_id' => $order->id]);
+
+    expect($order->refresh()->balance_paid_at->toDateString())->toBe(date('Y-m-d'))
+        ->and($order->deposit_paid_at->toDateString())->toBe($paidOn)
+        ->and($order->depositPayments()->count())->toBe(0)
+        ->and($depositStage()['note'])->toContain('paid in full');
+});
+
 test('the agent sees the factories several clients order from at once and downloads one combined sheet with a block per client (HELP-4097)', function () {
     $orgAgent          = createFreshOrgAgent($this);
     $agentOrganisation = $orgAgent->agent->organisation;
@@ -4562,7 +4598,7 @@ test('clean hand over is recorded on its own, dated by the last ready to roll ch
     $orgAgent             = createFreshOrgAgent($this);
     [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
     $order                = createConfirmedAgentOrder($this, $supplier, $product, 0, 4)->refresh();
-    $checks               = $orgAgent->agent->poJourney()['ready_checks'];
+    $checks               = array_values(array_diff($orgAgent->agent->poJourney()['ready_checks'], ['compliance']));
     $fields               = array_map(fn (string $key) => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum::READY_CHECK_FIELDS[$key], $checks);
     $lastField            = array_pop($fields);
     $order->updateQuietly(['handed_over_at' => null, 'sample_approved_at' => now(), ...array_fill_keys($fields, now()->subDays(3))]);
@@ -4885,4 +4921,52 @@ test('a line goods-in counted as not received is marked not received once its de
     expect($missing->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
         ->and($arrived->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
         ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::HANDED_OVER);
+});
+
+test('the buyer changes a quantity on an agreed order straight to a supplier and the old quantity is kept', function () {
+    [$orgSupplier, , $orgSupplierProduct] = independentOrgSupplierFixture($this);
+    $admin = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($admin, ["procurement.{$this->organisation->id}.view", "procurement.{$this->organisation->id}.edit"]);
+
+    $order = StorePurchaseOrder::make()->action($orgSupplier, []);
+    $line  = StorePurchaseOrderTransaction::make()->action($order, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 120]);
+    UpdatePurchaseOrderStateToSubmitted::make()->action($order->refresh());
+    $order = UpdatePurchaseOrderStateToConfirmed::make()->action($order->refresh());
+    expect($order->isAgentOrder())->toBeFalse()
+        ->and($order->state->isAgreed())->toBeTrue();
+
+    $unitCost  = (float) $line->refresh()->unit_cost;
+    $askRoute  = route('grp.models.purchase-order.transaction.quantity_change.ask', [$order->id, $line->id]);
+    $buyerLine = fn () => collect($this->get(route('grp.org.procurement.purchase_orders.show', [$order->organisation->slug, $order->slug, 'tab' => 'items']))->assertOk()->viewData('page')['props']['items']['data'])->firstWhere('id', $line->id);
+
+    actingAs($admin);
+    expect($buyerLine())
+        ->quantity_changed_by_buyer->toBeTrue()
+        ->askQuantityRoute->name->toBe('grp.models.purchase-order.transaction.quantity_change.ask')
+        ->answerQuantityRoute->toBeNull();
+
+    $this->patch(route('grp.models.purchase-order.transaction.update', [$order->id, $line->id]), ['quantity_ordered' => 240])->assertSessionHasErrors('purchase_order_transaction');
+    $this->post($askRoute, ['quantity_ordered' => 0])->assertSessionHasErrors('quantity_ordered');
+    $this->post($askRoute, ['quantity_ordered' => 240, 'note' => 'Final invoice 1109/26'])->assertSessionHasNoErrors();
+
+    $line->refresh();
+    expect((float) $line->quantity_ordered)->toEqual(240.0)
+        ->and((float) $line->unit_cost)->toEqual($unitCost)
+        ->and((float) $line->net_amount)->toEqual(round($unitCost * 240, 2))
+        ->and($line->quantity_query_state)->toBe(PurchaseOrderTransactionQuantityQueryStateEnum::ACCEPTED)
+        ->and((float) $line->quantity_query_previous_quantity)->toEqual(120.0)
+        ->and($line->quantity_query_note)->toBe('Final invoice 1109/26')
+        ->and($line->quantity_queried_by_id)->toBe($admin->id)
+        ->and((float) $order->refresh()->cost_items)->toEqual(round($unitCost * 240, 2));
+    expect($buyerLine()['quantity_query'])
+        ->state->toBe('accepted')
+        ->and((float) $buyerLine()['quantity_query']['previous_quantity'])->toEqual(120.0);
+
+    $viewer = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($viewer, ["procurement.{$this->organisation->id}.view"]);
+    actingAs($viewer);
+    $this->post($askRoute, ['quantity_ordered' => 100])->assertForbidden();
+    expect((float) $line->refresh()->quantity_ordered)->toEqual(240.0);
+
+    actingAs($this->adminGuest->getUser());
 });

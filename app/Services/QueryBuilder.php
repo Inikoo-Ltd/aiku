@@ -301,9 +301,22 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
 
     private function processPagination(?string $prefix, ?int $numberOfRecords = null, $tableName = null, $queryName = 'perPage', $userType = 'user'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
+        if ($prefix === null) {
+            $prefix = '';
+        }
 
+        return $this->paginate(
+            perPage: static::recordsPerPage($prefix, $numberOfRecords, $tableName, $queryName, $userType),
+            pageName: $prefix ? $prefix . 'Page' : 'page'
+        );
+    }
 
-
+    /**
+     * How many rows a table shows: what the request asks for, else what this user last chose for
+     * that table, else the default, kept within the allowed range and remembered for next time.
+     */
+    public static function recordsPerPage(?string $prefix, ?int $numberOfRecords = null, $tableName = null, $queryName = 'perPage', $userType = 'user'): int
+    {
         if ($prefix === null) {
             $prefix = '';
         }
@@ -338,11 +351,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             Cache::put($keyRppCache, $perPage, 60 * 60 * 24 * 180); // 6 months in seconds
         }
 
-
-        return $this->paginate(
-            perPage: $perPage,
-            pageName: $prefix ? $prefix . 'Page' : 'page'
-        );
+        return (int) $perPage;
     }
 
     public function withTimeSeriesAggregation(

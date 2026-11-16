@@ -21,7 +21,7 @@ function weightSteps(array $steps): array
     return ['type' => 'Step Order Estimated Weight', 'steps' => $steps];
 }
 
-test('our shipping zones become Shopify zones with weight rates, a country covered by postcode takes its dearest zone and TBC gets no rate', function () {
+test('our shipping zones become Shopify zones with weight rates, a country covered by postcode takes its zone without postcode rules and TBC gets no rate', function () {
     $ukSteps = fn (float $heavy) => weightSteps([
         ['from' => 0, 'to' => 0.1, 'price' => 2.79],
         ['from' => 0.1, 'to' => 2, 'price' => 2.99],
@@ -45,9 +45,10 @@ test('our shipping zones become Shopify zones with weight rates, a country cover
     $prices = fn (array $zone) => array_column(array_column(array_column($zone['methodDefinitionsToCreate'], 'rateDefinition'), 'price'), 'amount');
     $weights = fn (array $zone) => array_map(fn (array $method) => array_map(fn (array $condition) => [$condition['operator'], $condition['criteria']['value']], $method['weightConditionsToCreate'] ?? []), $zone['methodDefinitionsToCreate']);
 
-    expect(array_column($result, 'name'))->toBe(['Zone 2', 'Zone 3', 'Zone 4', 'Zone 6'])
-        ->and($result[0]['countries'])->toBe([['code' => 'GB', 'includeAllProvinces' => true]])
-        ->and($result[1]['countries'])->toBe([['code' => 'IM', 'includeAllProvinces' => true]])
+    expect(array_column($result, 'name'))->toBe(['Zone 3', 'Zone 1', 'Zone 4', 'Zone 6'])
+        ->and($result[0]['countries'])->toBe([['code' => 'IM', 'includeAllProvinces' => true]])
+        ->and($result[1]['countries'])->toBe([['code' => 'GB', 'includeAllProvinces' => true]])
+        ->and($prices($result[1]))->toBe(['2.79', '2.99', '5.99'])
         ->and($result[0]['methodDefinitionsToCreate'][0])->toBe([
             'name'                     => 'AW Standard',
             'active'                   => true,
@@ -82,4 +83,21 @@ test('a priced rest of the world becomes the rest of world zone and prices go th
         ->and($result[0]['methodDefinitionsToCreate'][0]['rateDefinition']['price'])->toBe(['amount' => '5.90', 'currencyCode' => 'USD'])
         ->and($result[0]['methodDefinitionsToCreate'][0])->not->toHaveKey('weightConditionsToCreate')
         ->and($result[1]['countries'])->toBe([['restOfWorld' => true]]);
+});
+
+test('italy takes its plain zone rates, not the islands or remote areas surcharge, and a country only by postcode takes its cheapest zone', function () {
+    $zones = [
+        shippingZoneForProfile('Italy - remote areas', [['country_code' => 'IT', 'included_postal_codes' => '/^(22060|23030)$/']], weightSteps([['from' => 0, 'to' => 'INF', 'price' => 73.9]])),
+        shippingZoneForProfile('Italy - islands', [['country_code' => 'IT', 'included_postal_codes' => '/^(07|08|09|9[0-8])/']], weightSteps([['from' => 0, 'to' => 'INF', 'price' => 27.3]])),
+        shippingZoneForProfile('Zone 24 (Italy)', [['country_code' => 'IT']], weightSteps([['from' => 0, 'to' => 'INF', 'price' => 8.9]])),
+        shippingZoneForProfile('Canarias', [['country_code' => 'ES', 'included_postal_codes' => '/^(35|38)/']], weightSteps([['from' => 0, 'to' => 'INF', 'price' => 30]])),
+        shippingZoneForProfile('Peninsula', [['country_code' => 'ES', 'excluded_postal_codes' => '/^(35|38)/']], weightSteps([['from' => 0, 'to' => 'INF', 'price' => 6]])),
+    ];
+
+    $result = SyncShopifyDeliveryProfile::zonesToCreate($zones, 'EUR', fn ($amount) => number_format((float) $amount, 2, '.', ''));
+
+    expect(array_column($result, 'name'))->toBe(['Zone 24 (Italy)', 'Peninsula'])
+        ->and($result[0]['countries'])->toBe([['code' => 'IT', 'includeAllProvinces' => true]])
+        ->and($result[0]['methodDefinitionsToCreate'][0]['rateDefinition']['price']['amount'])->toBe('8.90')
+        ->and($result[1]['countries'])->toBe([['code' => 'ES', 'includeAllProvinces' => true]]);
 });

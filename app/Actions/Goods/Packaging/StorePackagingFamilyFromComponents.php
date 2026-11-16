@@ -19,7 +19,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * The packaging family for a set of components read from a supplier sheet. Packaging is entered once: a part
  * packed exactly like one already known gets that family, and a component already known (the same bottle,
- * the same carton) is shared rather than copied.
+ * the same carton) is shared rather than copied. Measured packaging keeps families of its own, so a trade unit weighed
+ * at our warehouse never lands on a family a supplier declared.
  */
 class StorePackagingFamilyFromComponents
 {
@@ -28,12 +29,13 @@ class StorePackagingFamilyFromComponents
     public const array COMPONENT_FIELDS = [
         'packaging_level', 'name', 'material', 'material_id_code', 'material_category', 'weight_g', 'recycled_content_pct',
         'recycled_content_evidence', 'recyclability', 'separable', 'marks', 'national_marks', 'artwork_owner', 'notes',
+        'polymer', 'weight_is_measured',
     ];
 
     /**
      * @param list<array<string, mixed>> $components as CheckSupplierProductSheet::packaging() returns them
      */
-    public function handle(Group $group, string $code, ?string $name, array $components): PackagingFamily
+    public function handle(Group $group, string $code, ?string $name, array $components, PackagingFamilySourceEnum $source = PackagingFamilySourceEnum::SUPPLIER): PackagingFamily
     {
         $lines = [];
         foreach ($components as $component) {
@@ -45,7 +47,8 @@ class StorePackagingFamilyFromComponents
         }
         ksort($lines);
 
-        $familySignature = sha1(json_encode(array_map(fn (array $line) => [$line['quantity'], round($line['quantity_per_unit'], 6)], $lines)));
+        $familyLines     = array_map(fn (array $line) => [$line['quantity'], round($line['quantity_per_unit'], 6)], $lines);
+        $familySignature = sha1(json_encode($source === PackagingFamilySourceEnum::SUPPLIER ? $familyLines : [$source->value, $familyLines]));
 
         $family = PackagingFamily::where('group_id', $group->id)->where('signature', $familySignature)->first();
         if ($family) {
@@ -57,13 +60,13 @@ class StorePackagingFamilyFromComponents
             'code'      => $code,
             'name'      => $name,
             'signature' => $familySignature,
-            'source'    => PackagingFamilySourceEnum::SUPPLIER,
+            'source'    => $source,
         ]);
 
         foreach ($lines as $signature => $line) {
             $packagingComponent = PackagingComponent::firstOrCreate(
                 ['group_id' => $group->id, 'signature' => $signature],
-                [...$line['attributes'], 'polymer' => PackagingPolymerEnum::fromMaterialCode($line['attributes']['material_id_code'] ?? null)]
+                [...$line['attributes'], 'polymer' => $line['attributes']['polymer'] ?? PackagingPolymerEnum::fromMaterialCode($line['attributes']['material_id_code'] ?? null)]
             );
             $family->components()->attach($packagingComponent->id, [
                 'quantity'          => $line['quantity'],

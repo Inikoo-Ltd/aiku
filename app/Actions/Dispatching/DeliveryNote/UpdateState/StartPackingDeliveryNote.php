@@ -23,7 +23,9 @@ use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StartPackingDeliveryNote extends OrgAction
@@ -36,7 +38,10 @@ class StartPackingDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(DeliveryNote $deliveryNote, User $user): DeliveryNote
+    private DeliveryNote $deliveryNote;
+    private bool $isPackingBenchRequired = false;
+
+    public function handle(DeliveryNote $deliveryNote, User $user, ?int $packingBenchId = null): DeliveryNote
     {
         $oldState = $deliveryNote->state;
 
@@ -65,6 +70,9 @@ class StartPackingDeliveryNote extends OrgAction
         data_set($modelData, 'packing_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::PACKING->value);
         data_set($modelData, 'packer_user_id', $user->id);
+        if ($packingBenchId) {
+            data_set($modelData, 'packing_bench_id', $packingBenchId);
+        }
 
 
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData, $oldState) {
@@ -113,18 +121,35 @@ class StartPackingDeliveryNote extends OrgAction
             return $notification;
         }
 
+        $this->deliveryNote          = $deliveryNote;
+        $this->isPackingBenchRequired = $deliveryNote->warehouse->packingBenches()->where('status', true)->exists();
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
-        return $this->handle($deliveryNote, $request->user());
+        return $this->handle($deliveryNote, $request->user(), Arr::get($this->validatedData, 'packing_bench'));
+    }
+
+    public function rules(): array
+    {
+        return [
+            'packing_bench' => [
+                $this->isPackingBenchRequired ? 'required' : 'nullable',
+                'integer',
+                Rule::exists('packing_benches', 'id')
+                    ->where('warehouse_id', $this->deliveryNote->warehouse_id)
+                    ->where('status', true)
+                    ->whereNull('deleted_at'),
+            ],
+        ];
     }
 
     /**
      * @throws \Throwable
      */
-    public function action(DeliveryNote $deliveryNote, User $user): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, User $user, array $modelData = []): DeliveryNote
     {
-        $this->initialisationFromShop($deliveryNote->shop, []);
+        $this->deliveryNote = $deliveryNote;
+        $this->initialisationFromShop($deliveryNote->shop, $modelData);
 
-        return $this->handle($deliveryNote, $user);
+        return $this->handle($deliveryNote, $user, Arr::get($this->validatedData, 'packing_bench'));
     }
 }

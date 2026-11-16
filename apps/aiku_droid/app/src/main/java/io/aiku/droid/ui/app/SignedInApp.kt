@@ -32,6 +32,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import io.aiku.droid.AppContainer
 import io.aiku.droid.R
+import io.aiku.droid.data.api.ChatContextKind
+import io.aiku.droid.data.api.DeliveryNoteBucket
+import io.aiku.droid.data.api.DispatchChannel
+import io.aiku.droid.data.api.PickedBay
+import io.aiku.droid.data.api.Trolley
 import io.aiku.droid.data.api.WarehouseAccess
 import io.aiku.droid.data.session.StaffSession
 import io.aiku.droid.ui.asText
@@ -57,6 +62,7 @@ import io.aiku.droid.ui.clocking.TimesheetsScreen
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.FullScreenMessage
+import io.aiku.droid.ui.components.LocalImageSource
 import io.aiku.droid.ui.components.LocalTabHandoff
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.TabHandoff
@@ -91,37 +97,32 @@ import io.aiku.droid.ui.goodsin.StockDeliveryArrivingScreen
 import io.aiku.droid.ui.goodsin.StockDeliveryCheckingScreen
 import io.aiku.droid.ui.goodsin.StockDeliveryChecklistScreen
 import io.aiku.droid.ui.goodsout.AddShipmentScreen
-import io.aiku.droid.ui.goodsout.DeliveryNoteAllPickedScreen
-import io.aiku.droid.ui.goodsout.DeliveryNoteCollectedScreen
-import io.aiku.droid.ui.goodsout.DeliveryNoteCollectionScreen
 import io.aiku.droid.ui.goodsout.DeliveryNoteDispatchedScreen
+import io.aiku.droid.ui.goodsout.DeliveryNoteFilter
 import io.aiku.droid.ui.goodsout.DeliveryNoteFinalisedScreen
 import io.aiku.droid.ui.goodsout.DeliveryNotePackingScreen
 import io.aiku.droid.ui.goodsout.DeliveryNotePickedScreen
 import io.aiku.droid.ui.goodsout.DeliveryNotePickingScreen
 import io.aiku.droid.ui.goodsout.DeliveryNoteToDoScreen
+import io.aiku.droid.ui.goodsout.DeliveryNoteViewModel
 import io.aiku.droid.ui.goodsout.DeliveryNotesScreen
-import io.aiku.droid.ui.goodsout.FastPickingScreen
+import io.aiku.droid.ui.goodsout.DeliveryNotesViewModel
 import io.aiku.droid.ui.goodsout.GoodsOutBacklogScreen
-import io.aiku.droid.ui.goodsout.ManualShipmentScreen
-import io.aiku.droid.ui.goodsout.PackingQueueScreen
+import io.aiku.droid.ui.goodsout.GoodsOutBacklogViewModel
 import io.aiku.droid.ui.goodsout.ScanToPickScreen
-import io.aiku.droid.ui.goodsout.ShipmentsScreen
+import io.aiku.droid.ui.goodsout.SessionTarget
 import io.aiku.droid.ui.goodsout.extra.AskCrmScreen
-import io.aiku.droid.ui.goodsout.extra.CustomsFileScreen
 import io.aiku.droid.ui.goodsout.extra.DeliveryNoteCancelledScreen
-import io.aiku.droid.ui.goodsout.extra.DeliveryNoteIncompleteSetScreen
-import io.aiku.droid.ui.goodsout.extra.DeliveryNoteTakeOverScreen
-import io.aiku.droid.ui.goodsout.extra.DeliveryNoteWaitingScreen
-import io.aiku.droid.ui.goodsout.extra.DispatchedEmailsScreen
 import io.aiku.droid.ui.goodsout.extra.ExternalShipmentScreen
 import io.aiku.droid.ui.goodsout.extra.PackByScanScreen
 import io.aiku.droid.ui.goodsout.extra.PickByLocationScreen
 import io.aiku.droid.ui.goodsout.extra.PickedBaysScreen
+import io.aiku.droid.ui.goodsout.extra.EquipmentListViewModel
 import io.aiku.droid.ui.goodsout.extra.PickingSessionScreen
+import io.aiku.droid.ui.goodsout.extra.PickingSessionViewModel
 import io.aiku.droid.ui.goodsout.extra.PickingSessionsScreen
-import io.aiku.droid.ui.goodsout.extra.ShippersScreen
-import io.aiku.droid.ui.goodsout.extra.TariffCodesScreen
+import io.aiku.droid.ui.goodsout.extra.PickingSessionsViewModel
+import io.aiku.droid.ui.goodsout.extra.StaffChatViewModel
 import io.aiku.droid.ui.goodsout.extra.TrolleysScreen
 import io.aiku.droid.ui.home.HomeScreen
 import io.aiku.droid.ui.inbox.InboxScreen
@@ -156,24 +157,15 @@ import io.aiku.droid.ui.navigation.ClockingCalendarRoute
 import io.aiku.droid.ui.navigation.ClockingErrorRoute
 import io.aiku.droid.ui.navigation.ClockingRoute
 import io.aiku.droid.ui.navigation.ConflictRoute
-import io.aiku.droid.ui.navigation.CustomsFileRoute
-import io.aiku.droid.ui.navigation.DeliveryNoteAllPickedRoute
 import io.aiku.droid.ui.navigation.DeliveryNoteCancelledRoute
-import io.aiku.droid.ui.navigation.DeliveryNoteCollectedRoute
-import io.aiku.droid.ui.navigation.DeliveryNoteCollectionRoute
 import io.aiku.droid.ui.navigation.DeliveryNoteDispatchedRoute
 import io.aiku.droid.ui.navigation.DeliveryNoteFinalisedRoute
-import io.aiku.droid.ui.navigation.DeliveryNoteIncompleteSetRoute
 import io.aiku.droid.ui.navigation.DeliveryNotePackingRoute
 import io.aiku.droid.ui.navigation.DeliveryNotePickedRoute
 import io.aiku.droid.ui.navigation.DeliveryNotePickingRoute
-import io.aiku.droid.ui.navigation.DeliveryNoteTakeOverRoute
 import io.aiku.droid.ui.navigation.DeliveryNoteToDoRoute
-import io.aiku.droid.ui.navigation.DeliveryNoteWaitingRoute
 import io.aiku.droid.ui.navigation.DeliveryNotesRoute
-import io.aiku.droid.ui.navigation.DispatchedEmailsRoute
 import io.aiku.droid.ui.navigation.ExternalShipmentRoute
-import io.aiku.droid.ui.navigation.FastPickingRoute
 import io.aiku.droid.ui.navigation.FulfilmentBookInRoute
 import io.aiku.droid.ui.navigation.FulfilmentBookedInRoute
 import io.aiku.droid.ui.navigation.FulfilmentDeliveriesRoute
@@ -197,7 +189,6 @@ import io.aiku.droid.ui.navigation.LocationRoute
 import io.aiku.droid.ui.navigation.LocationSkuRoute
 import io.aiku.droid.ui.navigation.LocationsRoute
 import io.aiku.droid.ui.navigation.MainTab
-import io.aiku.droid.ui.navigation.ManualShipmentRoute
 import io.aiku.droid.ui.navigation.MenuRoute
 import io.aiku.droid.ui.navigation.MyWorkRoute
 import io.aiku.droid.ui.navigation.NoTasksRoute
@@ -206,7 +197,6 @@ import io.aiku.droid.ui.navigation.NotDesignedRoute
 import io.aiku.droid.ui.navigation.OnlineOnlyRoute
 import io.aiku.droid.ui.navigation.OvertimeRoute
 import io.aiku.droid.ui.navigation.PackByScanRoute
-import io.aiku.droid.ui.navigation.PackingQueueRoute
 import io.aiku.droid.ui.navigation.PalletIncidentsRoute
 import io.aiku.droid.ui.navigation.PalletRoute
 import io.aiku.droid.ui.navigation.PickByLocationRoute
@@ -224,10 +214,9 @@ import io.aiku.droid.ui.navigation.ReturnPickedRoute
 import io.aiku.droid.ui.navigation.ReturnShipmentRoute
 import io.aiku.droid.ui.navigation.ScanCameraRoute
 import io.aiku.droid.ui.navigation.ScanResultRoute
+import io.aiku.droid.ui.navigation.ScanRoute
 import io.aiku.droid.ui.navigation.ScanToPickRoute
 import io.aiku.droid.ui.navigation.SearchRoute
-import io.aiku.droid.ui.navigation.ShipmentsRoute
-import io.aiku.droid.ui.navigation.ShippersRoute
 import io.aiku.droid.ui.navigation.SkuAbnormalitiesRoute
 import io.aiku.droid.ui.navigation.SkuFamiliesRoute
 import io.aiku.droid.ui.navigation.SkuFamilyRoute
@@ -243,7 +232,6 @@ import io.aiku.droid.ui.navigation.StoredItemAuditRoute
 import io.aiku.droid.ui.navigation.StoredItemsRoute
 import io.aiku.droid.ui.navigation.StoredPalletsRoute
 import io.aiku.droid.ui.navigation.SyncQueueRoute
-import io.aiku.droid.ui.navigation.TariffCodesRoute
 import io.aiku.droid.ui.navigation.TimesheetDayRoute
 import io.aiku.droid.ui.navigation.TimesheetsRoute
 import io.aiku.droid.ui.navigation.TrolleysRoute
@@ -255,7 +243,10 @@ import io.aiku.droid.ui.profile.ChangePasswordViewModel
 import io.aiku.droid.ui.profile.LanguageScreen
 import io.aiku.droid.ui.profile.ProfileDetailsViewModel
 import io.aiku.droid.ui.profile.ProfileScreen
+import io.aiku.droid.ui.scan.LocalScanController
+import io.aiku.droid.ui.scan.ScanLookupViewModel
 import io.aiku.droid.ui.scan.ScanResultScreen
+import io.aiku.droid.ui.scan.ScanScreen
 import io.aiku.droid.ui.search.SearchScreen
 import io.aiku.droid.ui.states.LoadingScreen
 import io.aiku.droid.ui.states.NoTasksScreen
@@ -270,6 +261,7 @@ import io.aiku.droid.ui.sync.OnlineOnlyScreen
 import io.aiku.droid.ui.sync.ResolveConflictsScreen
 import io.aiku.droid.ui.sync.SyncQueueScreen
 import io.aiku.droid.ui.theme.Appearance
+import java.time.LocalDate
 
 @Composable
 fun SignedInApp(container: AppContainer, session: StaffSession) {
@@ -390,9 +382,16 @@ private fun WarehouseApp(
         LocalOvertime provides overtimeViewModel,
         LocalClockingCalendar provides calendarViewModel,
         LocalTabHandoff provides remember { TabHandoff() },
+        LocalScanController provides container.scans,
+        LocalImageSource provides container.images,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            AppNavHost(navController, container)
+            AppNavHost(
+                navController = navController,
+                container = container,
+                warehouseId = selected?.id,
+                today = { clockingViewModel.state.value.today },
+            )
             ToastHost(
                 state = toasts,
                 modifier = Modifier
@@ -419,7 +418,9 @@ private fun WarehouseApp(
 }
 
 @Composable
-private fun AppNavHost(navController: NavHostController, container: AppContainer) {
+private fun AppNavHost(navController: NavHostController, container: AppContainer, warehouseId: Long?, today: () -> LocalDate) {
+    val currentWarehouseId = warehouseId ?: NoWarehouseAccess.id
+
     NavHost(
         navController = navController,
         startDestination = HomeRoute,
@@ -430,7 +431,14 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
     ) {
         composable<HomeRoute> { HomeScreen() }
         composable<MyWorkRoute> { MyWorkScreen() }
-        composable<ScanResultRoute> { ScanResultScreen() }
+        composable<ScanRoute> {
+            val lookup: ScanLookupViewModel = viewModel(
+                key = "scan-$currentWarehouseId",
+                factory = viewModelFactory { initializer { ScanLookupViewModel(container.goodsOutApi, container.sessions, currentWarehouseId) } },
+            )
+            ScanScreen(lookup = lookup)
+        }
+        composable<ScanResultRoute> { entry -> entry.toRoute<ScanResultRoute>().let { route -> ScanResultScreen(route.code) } }
         composable<InboxRoute> { InboxScreen() }
         composable<MenuRoute> { MenuScreen() }
         composable<SearchRoute> { SearchScreen() }
@@ -487,39 +495,114 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
         composable<BookedInRoute> { entry -> entry.toRoute<BookedInRoute>().let { route -> BookedInScreen(route.reference) } }
         composable<GoodsInReturnsRoute> { GoodsInReturnsScreen() }
         composable<GoodsInReturnRoute> { entry -> entry.toRoute<GoodsInReturnRoute>().let { route -> GoodsInReturnScreen(route.reference) } }
-        composable<GoodsOutBacklogRoute> { GoodsOutBacklogScreen() }
-        composable<DeliveryNotesRoute> { DeliveryNotesScreen() }
-        composable<DeliveryNoteToDoRoute> { entry -> entry.toRoute<DeliveryNoteToDoRoute>().let { route -> DeliveryNoteToDoScreen(route.reference) } }
-        composable<DeliveryNotePickingRoute> { entry -> entry.toRoute<DeliveryNotePickingRoute>().let { route -> DeliveryNotePickingScreen(route.reference) } }
-        composable<ScanToPickRoute> { entry -> entry.toRoute<ScanToPickRoute>().let { route -> ScanToPickScreen(route.reference) } }
-        composable<FastPickingRoute> { entry -> entry.toRoute<FastPickingRoute>().let { route -> FastPickingScreen(route.reference) } }
-        composable<DeliveryNoteAllPickedRoute> { entry -> entry.toRoute<DeliveryNoteAllPickedRoute>().let { route -> DeliveryNoteAllPickedScreen(route.reference) } }
-        composable<DeliveryNotePickedRoute> { entry -> entry.toRoute<DeliveryNotePickedRoute>().let { route -> DeliveryNotePickedScreen(route.reference) } }
-        composable<DeliveryNotePackingRoute> { entry -> entry.toRoute<DeliveryNotePackingRoute>().let { route -> DeliveryNotePackingScreen(route.reference) } }
-        composable<PackingQueueRoute> { PackingQueueScreen() }
-        composable<AddShipmentRoute> { entry -> entry.toRoute<AddShipmentRoute>().let { route -> AddShipmentScreen(route.reference) } }
-        composable<ManualShipmentRoute> { entry -> entry.toRoute<ManualShipmentRoute>().let { route -> ManualShipmentScreen(route.reference) } }
-        composable<ShipmentsRoute> { entry -> entry.toRoute<ShipmentsRoute>().let { route -> ShipmentsScreen(route.reference) } }
-        composable<DeliveryNoteCollectionRoute> { entry -> entry.toRoute<DeliveryNoteCollectionRoute>().let { route -> DeliveryNoteCollectionScreen(route.reference) } }
-        composable<DeliveryNoteCollectedRoute> { entry -> entry.toRoute<DeliveryNoteCollectedRoute>().let { route -> DeliveryNoteCollectedScreen(route.reference) } }
-        composable<DeliveryNoteFinalisedRoute> { entry -> entry.toRoute<DeliveryNoteFinalisedRoute>().let { route -> DeliveryNoteFinalisedScreen(route.reference) } }
-        composable<DeliveryNoteDispatchedRoute> { entry -> entry.toRoute<DeliveryNoteDispatchedRoute>().let { route -> DeliveryNoteDispatchedScreen(route.reference) } }
-        composable<DeliveryNoteWaitingRoute> { entry -> entry.toRoute<DeliveryNoteWaitingRoute>().let { route -> DeliveryNoteWaitingScreen(route.reference) } }
-        composable<DeliveryNoteCancelledRoute> { entry -> entry.toRoute<DeliveryNoteCancelledRoute>().let { route -> DeliveryNoteCancelledScreen(route.reference) } }
-        composable<DeliveryNoteIncompleteSetRoute> { entry -> entry.toRoute<DeliveryNoteIncompleteSetRoute>().let { route -> DeliveryNoteIncompleteSetScreen(route.reference) } }
-        composable<DeliveryNoteTakeOverRoute> { entry -> entry.toRoute<DeliveryNoteTakeOverRoute>().let { route -> DeliveryNoteTakeOverScreen(route.reference) } }
-        composable<AskCrmRoute> { entry -> entry.toRoute<AskCrmRoute>().let { route -> AskCrmScreen(route.reference) } }
-        composable<ExternalShipmentRoute> { entry -> entry.toRoute<ExternalShipmentRoute>().let { route -> ExternalShipmentScreen(route.reference) } }
-        composable<TariffCodesRoute> { entry -> entry.toRoute<TariffCodesRoute>().let { route -> TariffCodesScreen(route.reference) } }
-        composable<CustomsFileRoute> { entry -> entry.toRoute<CustomsFileRoute>().let { route -> CustomsFileScreen(route.reference) } }
-        composable<DispatchedEmailsRoute> { entry -> entry.toRoute<DispatchedEmailsRoute>().let { route -> DispatchedEmailsScreen(route.reference) } }
-        composable<ShippersRoute> { ShippersScreen() }
-        composable<PickingSessionsRoute> { PickingSessionsScreen() }
-        composable<PickingSessionRoute> { entry -> entry.toRoute<PickingSessionRoute>().let { route -> PickingSessionScreen(route.reference) } }
-        composable<PickByLocationRoute> { entry -> entry.toRoute<PickByLocationRoute>().let { route -> PickByLocationScreen(route.reference) } }
-        composable<PackByScanRoute> { entry -> entry.toRoute<PackByScanRoute>().let { route -> PackByScanScreen(route.reference) } }
-        composable<TrolleysRoute> { TrolleysScreen() }
-        composable<PickedBaysRoute> { PickedBaysScreen() }
+        composable<GoodsOutBacklogRoute> {
+            val backlog: GoodsOutBacklogViewModel = viewModel(
+                key = "backlog-$currentWarehouseId",
+                factory = viewModelFactory { initializer { GoodsOutBacklogViewModel(container.goodsOutApi, container.pickingSessionApi, container.sessions, currentWarehouseId) } },
+            )
+            GoodsOutBacklogScreen(backlog = backlog)
+        }
+        composable<DeliveryNotesRoute> { entry ->
+            val route = entry.toRoute<DeliveryNotesRoute>()
+            val notes: DeliveryNotesViewModel = viewModel(
+                key = "delivery-notes-$currentWarehouseId",
+                factory = viewModelFactory {
+                    initializer {
+                        DeliveryNotesViewModel(
+                            api = container.goodsOutApi,
+                            sessions = container.sessions,
+                            warehouseId = currentWarehouseId,
+                            today = today,
+                            pickingSessions = container.pickingSessionApi,
+                            initialFilter = DeliveryNoteFilter(
+                                bucket = DeliveryNoteBucket.ofKey(route.bucket) ?: DeliveryNoteBucket.Unassigned,
+                                channel = DispatchChannel.ofKey(route.channel) ?: DispatchChannel.All,
+                            ),
+                            addToSession = route.sessionId?.let { id -> SessionTarget(id = id, reference = route.sessionReference.orEmpty()) },
+                            sessionHandoff = container.pickingSessionHandoff,
+                        )
+                    }
+                },
+            )
+            DeliveryNotesScreen(notes = notes)
+        }
+        composable<DeliveryNoteToDoRoute> { entry ->
+            entry.toRoute<DeliveryNoteToDoRoute>().let { route -> DeliveryNoteToDoScreen(rememberDeliveryNote(container, route.id), route.reference) }
+        }
+        composable<DeliveryNotePickingRoute> { entry ->
+            entry.toRoute<DeliveryNotePickingRoute>().let { route -> DeliveryNotePickingScreen(rememberDeliveryNote(container, route.id), route.reference) }
+        }
+        composable<ScanToPickRoute> { entry ->
+            entry.toRoute<ScanToPickRoute>().let { route -> ScanToPickScreen(route.reference, route.id?.let { rememberDeliveryNote(container, it) }) }
+        }
+        composable<DeliveryNotePickedRoute> { entry ->
+            entry.toRoute<DeliveryNotePickedRoute>().let { route -> DeliveryNotePickedScreen(rememberDeliveryNote(container, route.id), route.reference) }
+        }
+        composable<DeliveryNotePackingRoute> { entry ->
+            entry.toRoute<DeliveryNotePackingRoute>().let { route -> DeliveryNotePackingScreen(rememberDeliveryNote(container, route.id), route.reference) }
+        }
+        composable<AddShipmentRoute> { entry ->
+            entry.toRoute<AddShipmentRoute>().let { route -> AddShipmentScreen(rememberDeliveryNote(container, route.id), route.reference) }
+        }
+        composable<DeliveryNoteFinalisedRoute> { entry ->
+            entry.toRoute<DeliveryNoteFinalisedRoute>().let { route -> DeliveryNoteFinalisedScreen(rememberDeliveryNote(container, route.id), route.reference) }
+        }
+        composable<DeliveryNoteDispatchedRoute> { entry ->
+            entry.toRoute<DeliveryNoteDispatchedRoute>().let { route -> DeliveryNoteDispatchedScreen(rememberDeliveryNote(container, route.id), route.reference) }
+        }
+        composable<DeliveryNoteCancelledRoute> { entry ->
+            entry.toRoute<DeliveryNoteCancelledRoute>().let { route -> DeliveryNoteCancelledScreen(rememberDeliveryNote(container, route.id), route.reference) }
+        }
+        composable<AskCrmRoute> { entry ->
+            val route = entry.toRoute<AskCrmRoute>()
+            val kind = ChatContextKind.ofKey(route.context) ?: ChatContextKind.DeliveryNote
+            val chat: StaffChatViewModel = viewModel(
+                key = "chat-${route.context}-${route.id}",
+                factory = viewModelFactory { initializer { StaffChatViewModel(container.staffChatApi, container.sessions, kind, route.id) } },
+            )
+            AskCrmScreen(chat = chat, kind = kind, reference = route.reference)
+        }
+        composable<ExternalShipmentRoute> { entry ->
+            entry.toRoute<ExternalShipmentRoute>().let { route -> ExternalShipmentScreen(rememberDeliveryNote(container, route.id), route.reference) }
+        }
+        composable<PickingSessionsRoute> {
+            val sessions: PickingSessionsViewModel = viewModel(
+                key = "picking-sessions-$currentWarehouseId",
+                factory = viewModelFactory { initializer { PickingSessionsViewModel(container.pickingSessionApi, container.sessions, currentWarehouseId) } },
+            )
+            PickingSessionsScreen(sessions = sessions)
+        }
+        composable<PickingSessionRoute> { entry ->
+            entry.toRoute<PickingSessionRoute>().let { route -> PickingSessionScreen(rememberPickingSession(container, route.id, currentWarehouseId), route.reference) }
+        }
+        composable<PickByLocationRoute> { entry ->
+            entry.toRoute<PickByLocationRoute>().let { route ->
+                PickByLocationScreen(
+                    session = rememberPickingSession(container, route.id, currentWarehouseId),
+                    reference = route.reference,
+                    rememberNote = { id -> rememberDeliveryNote(container, id) },
+                )
+            }
+        }
+        composable<PackByScanRoute> { entry ->
+            entry.toRoute<PackByScanRoute>().let { route -> PackByScanScreen(rememberPickingSession(container, route.id, currentWarehouseId), route.reference) }
+        }
+        composable<TrolleysRoute> {
+            val trolleys: EquipmentListViewModel<Trolley> = viewModel(
+                key = "trolleys-$currentWarehouseId",
+                factory = viewModelFactory {
+                    initializer { EquipmentListViewModel(container.sessions) { token -> container.goodsOutApi.trolleys(token, currentWarehouseId, availableOnly = false) } }
+                },
+            )
+            TrolleysScreen(trolleys = trolleys)
+        }
+        composable<PickedBaysRoute> {
+            val bays: EquipmentListViewModel<PickedBay> = viewModel(
+                key = "picked-bays-$currentWarehouseId",
+                factory = viewModelFactory { initializer { EquipmentListViewModel(container.sessions) { token -> container.goodsOutApi.pickedBays(token, currentWarehouseId) } } },
+            )
+            PickedBaysScreen(bays = bays)
+        }
         composable<FulfilmentDeliveriesRoute> { FulfilmentDeliveriesScreen() }
         composable<FulfilmentDeliveryRoute> { entry -> entry.toRoute<FulfilmentDeliveryRoute>().let { route -> FulfilmentDeliveryScreen(route.reference) } }
         composable<FulfilmentBookInRoute> { entry -> entry.toRoute<FulfilmentBookInRoute>().let { route -> FulfilmentBookInScreen(route.reference) } }
@@ -547,6 +630,22 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
     }
 }
 
+@Composable
+private fun rememberDeliveryNote(container: AppContainer, deliveryNoteId: Long): DeliveryNoteViewModel = viewModel(
+    key = "delivery-note-$deliveryNoteId",
+    factory = viewModelFactory { initializer { DeliveryNoteViewModel(container.goodsOutApi, container.sessions, deliveryNoteId, container.deliveryNoteHandoff) } },
+)
+
+@Composable
+private fun rememberPickingSession(container: AppContainer, sessionId: Long, warehouseId: Long): PickingSessionViewModel = viewModel(
+    key = "picking-session-$sessionId",
+    factory = viewModelFactory {
+        initializer {
+            PickingSessionViewModel(container.pickingSessionApi, container.goodsOutApi, container.sessions, sessionId, warehouseId, container.pickingSessionHandoff)
+        }
+    },
+)
+
 private class NavControllerNavigator(
     private val navController: NavHostController,
     private val onShowSwitcher: () -> Unit,
@@ -572,7 +671,7 @@ private class NavControllerNavigator(
         val route: Any = when (tab) {
             MainTab.Home -> HomeRoute
             MainTab.MyWork -> MyWorkRoute
-            MainTab.Scan -> ScanResultRoute
+            MainTab.Scan -> ScanRoute
             MainTab.Inbox -> InboxRoute
             MainTab.Menu -> MenuRoute
         }

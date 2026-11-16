@@ -12,6 +12,7 @@ use App\Actions\Accounting\Invoice\AttachPaymentToInvoice;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
+use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
@@ -24,6 +25,7 @@ use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\BankConnection;
 use App\Models\Accounting\BankTransaction;
+use App\Models\Accounting\Invoice;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
@@ -90,6 +92,10 @@ class PayMatchedBankTransactions
                 return 'no payment account for this currency';
             }
 
+            if (!$bankTransaction->order_id && isset($bankTransaction->match_data['invoice_id'])) {
+                return $this->payInvoice($bankTransaction, $paymentAccount);
+            }
+
             Order::lockForUpdate()->findOrFail($bankTransaction->order_id);
 
             [$state, $order, $matchData] = MatchBankTransactions::make()->decide($bankTransaction);
@@ -107,6 +113,11 @@ class PayMatchedBankTransactions
             return $this->recordLine($bankConnection, $bankTransaction, $order, $paymentAccount, $matchData['received'], round($matchData['owed'] - $matchData['received'], 2), []);
         });
 
+        if ($paid instanceof Invoice) {
+            ProcessInvoicePaidNotification::dispatch($paid->id);
+
+            return 'paid';
+        }
         if (!$paid instanceof Order) {
             return $paid ?? 'skipped';
         }
@@ -133,6 +144,7 @@ class PayMatchedBankTransactions
 
             $problem = match (true) {
                 $bankTransaction->payment_id !== null => __('This bank payment is already recorded on an order'),
+                MatchBankTransactions::make()->cardProcessorPayoutId($bankTransaction) !== null => __('This is a card processor payout of payments already on their orders'),
                 $bankTransaction->direction !== BankTransactionDirectionEnum::IN || $bankTransaction->status !== BankTransactionStatusEnum::BOOKED => __('Only money received and booked by the bank can pay an order'),
                 $order->organisation_id !== $bankTransaction->organisation_id => __('The order belongs to another organisation'),
                 $order->currency_id !== $bankTransaction->currency_id => __('The order is in another currency'),
@@ -141,6 +153,12 @@ class PayMatchedBankTransactions
                 $order->amountStillToPay() <= 0.01 => __('The order owes nothing'),
                 default => null,
             };
+            if (!$problem && $order->shop->isFaire()) {
+                $this->acceptMarketplacePayout($bankTransaction, $order, $paidBy);
+
+                return null;
+            }
+
             $paymentAccount = $problem ? null : $this->paymentAccount($bankConnection, $bankTransaction);
             if (!$problem && !$paymentAccount) {
                 $problem = __('No payment account is set for :currency on this bank connection', ['currency' => $bankTransaction->currency->code]);
@@ -167,7 +185,36 @@ class PayMatchedBankTransactions
             return $paid;
         });
 
-        $this->afterPayment($paid);
+        if ($paid) {
+            $this->afterPayment($paid);
+        }
+    }
+
+    /**
+     * The retailer paid the marketplace, so its payout to us is not a customer payment: the line is linked to the
+     * order, which reads as paid by the marketplace, whatever commission the marketplace kept.
+     */
+    private function acceptMarketplacePayout(BankTransaction $bankTransaction, Order $order, string $paidBy): void
+    {
+        $received = round((float)$bankTransaction->amount, 2);
+        $owed     = round((float)$order->total_amount - (float)$order->commission_amount, 2);
+
+        $bankTransaction->update([
+            'match_state' => BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE,
+            'order_id'    => $order->id,
+            'matched_at'  => now(),
+            'match_data'  => array_merge($bankTransaction->match_data, [
+                'paid_by'    => $paidBy,
+                'reason'     => null,
+                'owed'       => $owed,
+                'received'   => $received,
+                'difference' => round($received - $owed, 2),
+                'commission' => round((float)$order->commission_amount, 2),
+                'paid_at'    => now()->toIso8601String(),
+            ]),
+        ]);
+
+        UpdateOrderPaymentsStatus::run($order);
     }
 
     /**
@@ -202,6 +249,42 @@ class PayMatchedBankTransactions
         ]);
 
         return $order;
+    }
+
+    /**
+     * A fulfilment invoice is paid with exactly the money that arrived, decided again under the invoice's lock.
+     */
+    private function payInvoice(BankTransaction $bankTransaction, PaymentAccount $paymentAccount): Invoice|string
+    {
+        $invoice = Invoice::lockForUpdate()->findOrFail($bankTransaction->match_data['invoice_id']);
+
+        $matcher = MatchBankTransactions::make();
+        [$state, , $matchData] = $matcher->decideInvoice($bankTransaction, $matcher->orderReferenceTokens($bankTransaction->reference));
+        if ($state !== BankTransactionMatchStateEnum::MATCHED || $matchData['invoice_id'] !== $invoice->id) {
+            $bankTransaction->update([
+                'match_state' => $state,
+                'match_data'  => array_merge($matchData, ['decided_again_at_pay_time' => true]),
+                'matched_at'  => now(),
+            ]);
+
+            return 'decided again: '.$state->value;
+        }
+
+        $payment = StorePayment::make()->action($invoice->customer, $paymentAccount, [
+            'amount'    => $matchData['received'],
+            'reference' => $bankTransaction->reference ? mb_substr($bankTransaction->reference, 0, 255) : null,
+            'status'    => PaymentStatusEnum::SUCCESS,
+            'state'     => PaymentStateEnum::COMPLETED,
+            'data'      => ['bank_transaction_id' => $bankTransaction->id],
+        ]);
+        AttachPaymentToInvoice::make()->action($invoice, $payment, []);
+
+        $bankTransaction->update([
+            'payment_id' => $payment->id,
+            'match_data' => array_merge($bankTransaction->match_data, ['paid_at' => now()->toIso8601String()]),
+        ]);
+
+        return $invoice;
     }
 
     private function paymentAccount(BankConnection $bankConnection, BankTransaction $bankTransaction): ?PaymentAccount

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Actions\CRM\ShoppingAssistant\TellShoppingAssistantCustomerTicketReply;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
@@ -65,6 +66,10 @@ class StoreTicketComment extends OrgAction
             NotifyTicketUsers::make()->commented($ticket, $author, $comment->body);
         }
 
+        if ($author instanceof User && !$comment->is_internal && Arr::get($modelData, 'to_customer')) {
+            TellShoppingAssistantCustomerTicketReply::run($ticket, $comment->body);
+        }
+
         if ($author instanceof User && $notifyUsers && $comment->is_internal) {
             NotifyTicketUsers::make()->mentionedInEngineeringNote($ticket, $author, $comment->body);
         }
@@ -92,6 +97,7 @@ class StoreTicketComment extends OrgAction
         return [
             'body'        => ['required_without:images', 'nullable', 'string', 'max:10000'],
             'is_internal' => ['sometimes', 'boolean'],
+            'to_customer' => ['sometimes', 'boolean'],
             'type'        => ['sometimes', 'in:'.TicketCommentTypeEnum::COMMENT->value.','.TicketCommentTypeEnum::POST_MORTEM->value],
             'images'   => ['sometimes', 'array', 'max:5'],
             'images.*' => Ticket::ticketFileRules(),

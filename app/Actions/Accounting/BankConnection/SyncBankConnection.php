@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\BankConnection;
 
+use App\Actions\Accounting\BankPayee\ClassifyBankOutgoing;
 use App\Actions\Accounting\BankConnection\Wise\SyncWiseBankConnection;
 use App\Actions\Accounting\BankTransaction\MatchBankTransactions;
 use App\Actions\Accounting\BankTransaction\PayMatchedBankTransactions;
@@ -83,9 +84,17 @@ class SyncBankConnection
             'sync_data'      => array_merge($bankConnection->sync_data, ['last_result' => $result]),
         ]);
 
+        FetchBankConnectionBalances::run($bankConnection);
+
         try {
             MatchBankTransactions::run($bankConnection);
             PayMatchedBankTransactions::run($bankConnection->refresh());
+        } catch (Throwable $exception) {
+            Sentry::captureException($exception);
+        }
+
+        try {
+            ClassifyBankOutgoing::run($bankConnection->group);
         } catch (Throwable $exception) {
             Sentry::captureException($exception);
         }

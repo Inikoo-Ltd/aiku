@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\Agent\UI;
 
 use App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt;
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
 use App\Models\Procurement\AgentGoodsReceipt;
 use App\Models\Procurement\PurchaseOrder;
@@ -107,6 +108,38 @@ class GetAgentCleanHandoverScore
             && $purchaseOrder->qc_passed_at !== null
             && $purchaseOrder->compliance_complete_at !== null
             && $purchaseOrder->not_received_at === null;
+    }
+
+    /**
+     * Why an agent order missed Clean Hand Over (empty when it made it), or null when the order is left out of the
+     * score or its agent asks for no checks. Once the goods are handed over and a CHO date is expected, only the timing
+     * counts: on or before that date passes, later fails. Before that, the Ready to Roll checks still not done are
+     * listed. Compliance never counts: it is skipped unless completed, as not every item needs it.
+     *
+     * @return list<string>|null
+     */
+    public function cleanHandoverMisses(PurchaseOrder $purchaseOrder): ?array
+    {
+        $stages = GetPurchaseOrderStages::make();
+        $checks = $purchaseOrder->chs_excluded ? null : $stages->readyChecks($purchaseOrder);
+        if (!$checks) {
+            return null;
+        }
+
+        $timing = $stages->handOverTiming($purchaseOrder);
+        if ($timing !== null) {
+            return match (true) {
+                $timing['days_late'] === 0 => [],
+                $timing['days_late'] === 1 => [__('Handed over 1 day late')],
+                default                    => [__('Handed over :days days late', ['days' => $timing['days_late']])],
+            };
+        }
+
+        return collect($checks)
+            ->reject(fn (array $check) => $check['done'] || !$check['required'])
+            ->map(fn (array $check) => __(':check not done', ['check' => $check['label']]))
+            ->values()
+            ->all();
     }
 
     /**

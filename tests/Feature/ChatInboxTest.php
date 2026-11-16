@@ -1578,6 +1578,39 @@ test('email does not sit under the website tab', function () {
     }
 });
 
+test('the mail tab stays open for a shop with a mailbox when no email is open', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+    $settings = $this->shop->settings;
+
+    $agent = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $agent->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $openEmails = ChatSession::where('shop_id', $this->shop->id)->where('channel', ChatChannelEnum::EMAIL->value)
+        ->whereIn('status', [ChatSessionStatusEnum::WAITING->value, ChatSessionStatusEnum::ACTIVE->value])->pluck('status', 'id');
+
+    $emailAvailable = function () use ($agent): bool {
+        $inboxes = $this->actingAs($agent)
+            ->get(route('grp.org.shops.show.chat.inbox', [$this->organisation->slug, $this->shop->slug]))
+            ->assertOk()
+            ->viewData('page')['props']['inboxes'];
+
+        return collect(collect($inboxes)->firstWhere('slug', $this->shop->slug)['channels'])->firstWhere('key', 'email')['available'];
+    };
+
+    try {
+        ChatSession::whereIn('id', $openEmails->keys())->update(['status' => ChatSessionStatusEnum::CLOSED->value, 'closed_at' => now()->subDays(2)]);
+
+        $this->shop->update(['settings' => array_merge($settings ?? [], ['gmail' => ['email' => 'info@example.test']])]);
+        expect($emailAvailable())->toBeTrue();
+
+    } finally {
+        $this->shop->update(['settings' => $settings]);
+        $openEmails->each(fn ($status, $id) => ChatSession::where('id', $id)->update(['status' => $status, 'closed_at' => null]));
+    }
+});
+
 test('GetChatReports counts only conversations the visitor wrote in and measures the first reply', function () {
     $this->freezeTime();
     [, , $reportShop] = createOwnShop(__FILE__.':chat-reports');

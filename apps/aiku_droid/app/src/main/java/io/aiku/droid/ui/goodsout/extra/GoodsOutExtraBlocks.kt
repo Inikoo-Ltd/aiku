@@ -12,13 +12,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
@@ -29,61 +27,34 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
-import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.ControlShape
-import io.aiku.droid.ui.components.HeaderIconButton
 import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.animateFocusProgress
 import io.aiku.droid.ui.components.focusHalo
-import io.aiku.droid.ui.components.rememberTabIndication
 import io.aiku.droid.ui.components.tone
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 private val TileShape = RoundedCornerShape(10.dp)
-private val SegmentsShape = RoundedCornerShape(10.dp)
-private val SegmentShape = RoundedCornerShape(7.dp)
 
 internal const val KICKER_SEPARATOR = " · "
 
 @Composable
 internal fun deliveryNoteKicker(vararg parts: String): String =
     (listOf(stringResource(R.string.goodsout_extra_delivery_note)) + parts).joinToString(KICKER_SEPARATOR)
-
-internal fun progressTone(done: Int, required: Int): Tone? = when {
-    done >= required -> Tone.Success
-    done > 0 -> Tone.Primary
-    else -> null
-}
-
-@Composable
-internal fun DeliveryNoteMoreButton(onClick: () -> Unit) {
-    HeaderIconButton(
-        icon = R.drawable.ic_ui_more,
-        description = stringResource(R.string.more_actions),
-        onClick = onClick,
-        filled = true,
-    )
-}
 
 @Composable
 internal fun ExtraIconTile(@DrawableRes icon: Int, tone: Tone) {
@@ -106,6 +77,7 @@ internal fun ExtraRow(
     chip: String? = null,
     chipTone: Tone = Tone.Neutral,
     trailing: (@Composable () -> Unit)? = null,
+    role: Role = Role.Button,
     onClick: (() -> Unit)? = null,
 ) {
     val colors = LocalAikuColors.current
@@ -116,7 +88,7 @@ internal fun ExtraRow(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 60.dp)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.clickable(role = role, onClick = onClick) else Modifier)
             .padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
         leading?.invoke()
@@ -141,43 +113,6 @@ internal fun ExtraRow(
         }
         trailing?.invoke()
     }
-}
-
-@Composable
-internal fun QuantityText(done: Int, required: Int, tone: Tone?) {
-    val colors = LocalAikuColors.current
-    val doneColor = tone?.let { colors.tone(it).content } ?: colors.text
-
-    Text(
-        text = buildAnnotatedString {
-            withStyle(SpanStyle(color = doneColor)) { append(done.toString()) }
-            withStyle(SpanStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = colors.textTertiary)) { append(" / $required") }
-        },
-        fontSize = 16.sp,
-        fontWeight = FontWeight.Bold,
-    )
-}
-
-@Composable
-internal fun RowLink(text: String, onClick: (() -> Unit)? = null) {
-    val colors = LocalAikuColors.current
-
-    Text(
-        text = text,
-        fontSize = 14.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = colors.link,
-        maxLines = 1,
-        modifier = if (onClick != null) {
-            Modifier
-                .clip(ControlShape)
-                .clickable(role = Role.Button, onClick = onClick)
-                .heightIn(min = 44.dp)
-                .padding(horizontal = 4.dp, vertical = 12.dp)
-        } else {
-            Modifier
-        },
-    )
 }
 
 @Composable
@@ -219,93 +154,6 @@ internal fun HintText(text: String, modifier: Modifier = Modifier) {
         color = LocalAikuColors.current.textQuaternary,
         modifier = modifier.padding(horizontal = 4.dp),
     )
-}
-
-@Composable
-internal fun ScanTargetCard(
-    title: String,
-    caption: String,
-    target: String,
-    modifier: Modifier = Modifier,
-    detail: String? = null,
-    onScan: (() -> Unit)? = null,
-) {
-    val colors = LocalAikuColors.current
-
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(CardShape)
-            .background(colors.scan)
-            .then(if (onScan != null) Modifier.clickable(role = Role.Button, onClickLabel = title, onClick = onScan) else Modifier)
-            .padding(14.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(painter = painterResource(R.drawable.ic_ui_scan), contentDescription = null, tint = colors.onScan, modifier = Modifier.size(20.dp))
-            Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onScan)
-        }
-        Text(text = caption, fontSize = 13.sp, color = colors.onScan)
-        Text(text = target, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = colors.onScan)
-        if (detail != null) {
-            Text(text = detail, fontSize = 13.sp, color = colors.onScan)
-        }
-    }
-}
-
-@Composable
-internal fun SegmentTabs(
-    options: List<String>,
-    selectedIndex: Int,
-    onSelect: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    fontSize: TextUnit = 13.sp,
-    segmentHeight: Dp = 36.dp,
-) {
-    val colors = LocalAikuColors.current
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(SegmentsShape)
-            .background(colors.border)
-            .padding(horizontal = 4.dp),
-    ) {
-        options.forEachIndexed { index, option ->
-            val isSelected = index == selectedIndex
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(segmentHeight + 8.dp)
-                    .selectable(
-                        selected = isSelected,
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = rememberTabIndication(cornerRadius = 8.dp),
-                        role = Role.Tab,
-                        onClick = { onSelect(index) },
-                    )
-                    .padding(vertical = 4.dp),
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(SegmentShape)
-                        .background(if (isSelected) colors.surface else Color.Transparent),
-                ) {
-                    Text(
-                        text = option,
-                        fontSize = fontSize,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isSelected) colors.link else colors.textTertiary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -363,17 +211,6 @@ internal fun SheetButtons(content: @Composable ColumnScope.() -> Unit) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
         content = content,
-    )
-}
-
-@Composable
-internal fun FooterCaption(text: String) {
-    Text(
-        text = text,
-        fontSize = 12.sp,
-        color = LocalAikuColors.current.textQuaternary,
-        modifier = Modifier.fillMaxWidth(),
-        textAlign = TextAlign.Center,
     )
 }
 

@@ -24,6 +24,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * has tens of entries. There is no distance threshold: the answering model decides whether the
  * texts answer the question, and AskShoppingAssistant checks that the answer cites one of them.
  *
+ * The question can be searched in more than one wording (the customer's words and an English
+ * version): a short question in another language sometimes misses a fact an English wording finds
+ * (INI-257). Each entry keeps its nearest distance over the wordings.
+ *
  * Null means the search is not available (an empty question, no embeddings key, or the provider
  * failed): the caller must not treat it as "nothing written about this".
  */
@@ -33,29 +37,37 @@ class SearchShopKnowledge
 
     private const int MAX_QUESTION = 500;
 
+    public const int LIMIT = 6;
+
     /**
+     * @param  string|array<int, string>  $questions
      * @return ?Collection<int, ChatKnowledgeEntry>
      */
-    public function handle(Shop $shop, string $question, int $limit = 4): ?Collection
+    public function handle(Shop $shop, string|array $questions, int $limit = self::LIMIT): ?Collection
     {
-        $question = mb_substr(trim($question), 0, self::MAX_QUESTION);
+        $questions = array_values(array_unique(array_filter(array_map(fn (string $question) => mb_substr(trim($question), 0, self::MAX_QUESTION), (array) $questions))));
 
-        if ($question === '') {
+        if (!$questions) {
             return null;
         }
 
-        $vector = EmbedTexts::run([$question])[0] ?? null;
+        $vectors = EmbedTexts::run($questions);
 
-        if ($vector === null) {
+        if (!$vectors || in_array(null, $vectors, true)) {
             return null;
         }
 
-        return ChatKnowledgeEntry::forShop($shop)
-            ->whereNotNull('embedding')
-            ->select('chat_knowledge_entries.*')
-            ->selectVectorDistance('embedding', $vector, 'distance')
-            ->orderByVectorDistance('embedding', $vector)
-            ->limit($limit)
-            ->get();
+        return collect($vectors)
+            ->flatMap(fn (array $vector) => ChatKnowledgeEntry::forShop($shop)
+                ->whereNotNull('embedding')
+                ->select('chat_knowledge_entries.*')
+                ->selectVectorDistance('embedding', $vector, 'distance')
+                ->orderByVectorDistance('embedding', $vector)
+                ->limit($limit)
+                ->get())
+            ->sortBy('distance')
+            ->unique('id')
+            ->take($limit)
+            ->values();
     }
 }

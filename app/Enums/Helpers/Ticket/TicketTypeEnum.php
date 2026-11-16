@@ -18,6 +18,7 @@ enum TicketTypeEnum: string
     case ENGINEER = 'engineer';
     case CUSTOMER = 'customer';
     case PREMONITION = 'premonition';
+    case MERLIN = 'merlin';
 
     public static function labels(): array
     {
@@ -26,6 +27,7 @@ enum TicketTypeEnum: string
             'engineer' => __('Engineering'),
             'customer' => __('Customer support'),
             'premonition' => __('Premonition'),
+            'merlin'   => __('Merlin, for the Archmages'),
         ];
     }
 
@@ -36,6 +38,7 @@ enum TicketTypeEnum: string
             self::ENGINEER => ['icon' => 'fal fa-toolbox', 'tooltip' => self::labels()['engineer']],
             self::CUSTOMER => ['icon' => 'fal fa-user-headset', 'tooltip' => self::labels()['customer']],
             self::PREMONITION => ['icon' => 'fal fa-bowling-ball', 'tooltip' => self::labels()['premonition']],
+            self::MERLIN => ['icon' => 'fal fa-hat-wizard', 'tooltip' => self::labels()['merlin']],
         };
     }
 
@@ -46,6 +49,7 @@ enum TicketTypeEnum: string
             self::ENGINEER => 'INI',
             self::CUSTOMER => 'CUS',
             self::PREMONITION => 'PRE',
+            self::MERLIN => 'MER',
         };
     }
 
@@ -66,6 +70,7 @@ enum TicketTypeEnum: string
             self::ENGINEER => 3,
             self::CUSTOMER => 3,
             self::PREMONITION => 2,
+            self::MERLIN => 2,
         };
     }
 

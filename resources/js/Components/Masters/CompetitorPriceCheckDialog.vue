@@ -22,6 +22,7 @@ const props = defineProps<{
     route: routeType
     competitorName: string
     currencyCode: string
+    pricesByHand: boolean
 }>()
 
 const visible = defineModel<boolean>("visible", { default: false })
@@ -135,7 +136,8 @@ function submit() {
                 </div>
                 <p v-if="errors.screenshot" class="mt-1 text-xs text-red-500">{{ errors.screenshot }}</p>
             </div>
-            <p class="text-xs text-gray-500">{{ ctrans("Only add a listing that is the same item as ours: it counts in the price comparison. Use the price for buyers in the EU, VAT included, with delivery if they charge it. Checking the same link again next month adds a new row to the history.") }}</p>
+            <p v-if="pricesByHand" class="text-xs text-gray-500">{{ ctrans("Only add a listing that is the same item as ours: it counts in the price comparison. Use the price for buyers in the EU, VAT included, with delivery if they charge it. Checking the same link again next month adds a new row to the history.") }}</p>
+            <p v-else class="text-xs text-gray-500">{{ ctrans("Only add a listing that is the same item as ours: it counts in the price comparison. Use the price their website shows for this size, in :currency, as their other prices are read. Add it for a size or product their website is not read for, or read wrong. Checking the same link again later adds a new row to the history.", { currency: currencyCode }) }}</p>
         </div>
 
         <template #footer>

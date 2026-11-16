@@ -122,6 +122,7 @@ use App\Actions\Procurement\UI\IndexPreOrdersBySupplier;
 use App\Actions\Procurement\UpdatePreOrdersForSupplier;
 use App\Actions\Procurement\ExportOrganisationStockCoverItems;
 use App\Http\Middleware\EnsurePartnerIsManufacturingHub;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\UI\IndexBuyerDeliveryDiscrepancies;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowProcurementDashboard::class)->name('dashboard');
@@ -130,6 +131,7 @@ Route::get('/stock-cover/export', ExportOrganisationStockCoverItems::class)->nam
 Route::get('/pre-orders', IndexPreOrdersBySupplier::class)->name('pre_orders.index');
 Route::get('/service-invoices', IndexStockDeliveryServiceInvoices::class)->name('service_invoices.index');
 Route::get('/supplier-incidents', IndexSupplierIncidents::class)->name('supplier_incidents.index');
+Route::get('/delivery-discrepancies', IndexBuyerDeliveryDiscrepancies::class)->name('delivery_discrepancies.index');
 Route::patch('/pre-orders', UpdatePreOrdersForSupplier::class)->name('pre_orders.update');
 
 Route::prefix('settings')->as('settings.')->group(function () {

@@ -311,8 +311,8 @@ class ShowMasterProduct extends OrgAction
                 'can_edit' => $this->canEdit,
 
                 MasterAssetTabsEnum::COMPETITORS->value => $this->tab == MasterAssetTabsEnum::COMPETITORS->value ?
-                    fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($masterAsset, 'all', MasterAssetTabsEnum::COMPETITORS->value))
-                    : Inertia::optional(fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($masterAsset, 'all', MasterAssetTabsEnum::COMPETITORS->value))),
+                    fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($masterAsset, 'not_rejected_by_staff', MasterAssetTabsEnum::COMPETITORS->value))
+                    : Inertia::optional(fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($masterAsset, 'not_rejected_by_staff', MasterAssetTabsEnum::COMPETITORS->value))),
 
                 MasterAssetTabsEnum::TRADE_UNITS->value => $this->tab == MasterAssetTabsEnum::TRADE_UNITS->value ?
                     fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))

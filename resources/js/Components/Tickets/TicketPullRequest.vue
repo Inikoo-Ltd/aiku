@@ -6,6 +6,7 @@
 -->
 
 <script setup lang="ts">
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { computed, nextTick, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import axios from "axios"
@@ -13,9 +14,9 @@ import { ctrans } from "@/Composables/useTrans"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExternalLink, faPencil, faSave, faSpinner, faTimes, faCodeBranch, faCodeCommit, faChevronDown } from "@fal"
+import { faExternalLink, faPencil, faSave, faTimes, faCodeBranch, faCodeCommit, faChevronDown } from "@fal"
 
-library.add(faExternalLink, faPencil, faSave, faSpinner, faTimes, faCodeBranch, faCodeCommit, faChevronDown)
+library.add(faExternalLink, faPencil, faSave, faTimes, faCodeBranch, faCodeCommit, faChevronDown)
 
 type RouteData = { name: string; parameters: Record<string, unknown> }
 
@@ -229,7 +230,7 @@ const toggleDeployedCommit = (hash: string) => {
                     @keydown.enter.prevent="save"
                     @keydown.esc.prevent="cancelEdit" />
                 <button v-tooltip="ctrans('Save')" type="button" class="rounded p-1.5 text-green-600 transition duration-200 hover:bg-gray-100 disabled:opacity-60" :disabled="isSaving" @click="save">
-                    <FontAwesomeIcon :icon="isSaving ? 'fal fa-spinner' : 'fal fa-save'" :spin="isSaving" fixed-width />
+                    <LoadingIcon v-if="isSaving" /><FontAwesomeIcon v-else icon="fal fa-save" fixed-width />
                 </button>
                 <button v-tooltip="ctrans('Cancel')" type="button" class="rounded p-1.5 text-gray-400 transition duration-200 hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400" :disabled="isSaving" @click="cancelEdit">
                     <FontAwesomeIcon icon="fal fa-times" fixed-width />
@@ -250,21 +251,21 @@ const toggleDeployedCommit = (hash: string) => {
         <div v-else-if="isFetching" aria-busy="true" :class="!compact && 'space-y-2'">
             <template v-if="compact">
                 <div class="flex items-center gap-2">
-                    <div class="h-3.5 w-2/3 animate-pulse rounded bg-gray-200" />
-                    <div class="h-3.5 w-14 animate-pulse rounded bg-gray-200" />
+                    <div class="h-3.5 w-2/3 skeleton rounded" />
+                    <div class="h-3.5 w-14 skeleton rounded" />
                 </div>
             </template>
             <template v-else>
-                <div class="h-4 w-3/4 animate-pulse rounded bg-gray-200" />
-                <div class="h-3 w-1/3 animate-pulse rounded bg-gray-100" />
+                <div class="h-4 w-3/4 skeleton rounded" />
+                <div class="h-3 w-1/3 skeleton rounded" />
                 <div class="flex items-center gap-2">
-                    <div class="h-6 w-6 animate-pulse rounded-full bg-gray-200" />
-                    <div class="h-3 w-24 animate-pulse rounded bg-gray-100" />
+                    <div class="h-6 w-6 skeleton rounded-full" />
+                    <div class="h-3 w-24 skeleton rounded" />
                 </div>
-                <div class="h-12 w-full animate-pulse rounded bg-gray-100" />
+                <div class="h-12 w-full skeleton rounded" />
             </template>
             <p class="mt-1 text-xs text-gray-400">
-                <FontAwesomeIcon icon="fal fa-spinner" spin fixed-width class="mr-1" aria-hidden="true" />{{ ctrans("We're currently fetching PR data") }}
+                <LoadingIcon class="mr-1" />{{ ctrans("We're currently fetching PR data") }}
             </p>
         </div>
 

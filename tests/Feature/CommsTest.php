@@ -5529,7 +5529,7 @@ test('Whatsapp campaign sends run on their own queue lane, apart from email', fu
         ->and((new \App\Actions\Comms\WhatsappCampaign\ProcessSendWhatsappCampaign())->jobQueue)->toBe($lane)
         ->and(config("horizon.defaults.$lane.queue"))->toBe([$lane])
         ->and(config("horizon.environments.production.$lane.maxProcesses"))->toBeGreaterThan(0)
-        ->and(config("horizon.environments.local.$lane.maxProcesses"))->toBeGreaterThan(0)
+        ->and(config("horizon.environments.local.redis.queue"))->toContain($lane)
         ->and(config('horizon.environments.staging.redis.queue'))->toContain($lane);
 });
 

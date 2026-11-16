@@ -89,7 +89,7 @@ onMounted(refresh)
 
 <template>
     <div v-if="recentTickets === null" class="space-y-2 p-4">
-        <div v-for="placeholder in 4" :key="placeholder" class="h-6 animate-pulse rounded bg-gray-100" />
+        <div v-for="placeholder in 4" :key="placeholder" class="h-6 skeleton rounded" />
     </div>
     <TicketMiniList v-else flat :title="ctrans('Latest first')" :tickets="recentTickets" :empty="recentScope === 'unread' ? ctrans('All caught up') : ctrans('Nothing here yet')" date-key="notified_at" sort-key="notified_at" :per-page="10" :class="isLoading && 'opacity-60 transition-opacity duration-200'">
         <template #filters>

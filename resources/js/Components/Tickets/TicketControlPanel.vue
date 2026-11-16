@@ -90,7 +90,8 @@ const summaryPeople = computed(() => (props.ticket.collaborators ?? []) as { id:
                 <span v-if="!isOpen" class="flex flex-col items-end gap-1.5">
                     <span class="flex items-center gap-1.5">
                         <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                            <Icon :data="ticket.status_icon" />{{ ticket.status_label }}
+                            <img v-if="ticket.status === 'in_progress'" src="/art/ticket-in-progress-icon.gif" alt="" class="-my-0.5 h-5 w-5 rounded-full" />
+                            <Icon v-else :data="ticket.status_icon" />{{ ticket.status_label }}
                         </span>
                         <span v-if="ticket.qa_status" class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
                             <Icon :data="ticket.qa_status_icon" />{{ ticket.qa_status_label }}

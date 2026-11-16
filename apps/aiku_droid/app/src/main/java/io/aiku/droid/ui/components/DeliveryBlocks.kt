@@ -133,6 +133,7 @@ fun NoteCard(
     @DrawableRes icon: Int,
     modifier: Modifier = Modifier,
     isWarning: Boolean = false,
+    iconModifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
 ) {
     val colors = LocalAikuColors.current
@@ -152,7 +153,7 @@ fun NoteCard(
             modifier = Modifier.fillMaxWidth().background(headerBackground).padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             Text(text = title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = headerContent, modifier = Modifier.weight(1f))
-            Icon(painter = painterResource(icon), contentDescription = null, tint = headerContent, modifier = Modifier.size(16.dp))
+            Icon(painter = painterResource(icon), contentDescription = null, tint = headerContent, modifier = iconModifier.size(16.dp))
         }
         if (text.isNullOrBlank()) {
             Text(
@@ -206,6 +207,7 @@ fun DetailCard(
     lines: List<DetailLine>,
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
+    actionModifier: Modifier = Modifier,
     onAction: (() -> Unit)? = null,
 ) {
     val colors = LocalAikuColors.current
@@ -236,7 +238,7 @@ fun DetailCard(
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = colors.link,
-                modifier = Modifier.clip(ChipShape).clickable(role = Role.Button, onClick = onAction).padding(vertical = 6.dp),
+                modifier = actionModifier.clip(ChipShape).clickable(role = Role.Button, onClick = onAction).padding(vertical = 6.dp),
             )
         }
     }
@@ -264,7 +266,7 @@ fun PlatformChip(name: String, modifier: Modifier = Modifier) {
     }
 }
 
-data class QuickAction(val label: String, @DrawableRes val icon: Int, val onClick: () -> Unit)
+data class QuickAction(val label: String, @DrawableRes val icon: Int, val onClick: () -> Unit, val modifier: Modifier = Modifier)
 
 @Composable
 fun QuickActions(actions: List<QuickAction>, modifier: Modifier = Modifier) {
@@ -278,6 +280,7 @@ fun QuickActions(actions: List<QuickAction>, modifier: Modifier = Modifier) {
                 verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
                 modifier = Modifier
                     .weight(1f)
+                    .then(action.modifier)
                     .heightIn(min = 60.dp)
                     .clip(shape)
                     .background(colors.surface)

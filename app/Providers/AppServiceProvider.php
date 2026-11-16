@@ -228,6 +228,7 @@ class AppServiceProvider extends ServiceProvider
                 'PollReply'                        => 'App\Models\CRM\PollReply',
                 'Prospect'                         => 'App\Models\CRM\Prospect',
                 'WebUser'                          => 'App\Models\CRM\WebUser',
+                'ShoppingAssistantConversation'    => 'App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation',
 
                 // Dispatching
                 'Box'                              => 'App\Models\Dispatching\Box',
@@ -351,6 +352,7 @@ class AppServiceProvider extends ServiceProvider
                 // Inventory
                 'OrgStockAudit'                    => 'App\Models\Inventory\OrgStockAudit',
                 'PickedBay'                        => 'App\Models\Inventory\PickedBay',
+                'PackingBench'                     => 'App\Models\Dispatching\PackingBench',
                 'Warehouse'                        => 'App\Models\Inventory\Warehouse',
                 'WarehouseArea'                    => 'App\Models\Inventory\WarehouseArea',
                 'Location'                         => 'App\Models\Inventory\Location',

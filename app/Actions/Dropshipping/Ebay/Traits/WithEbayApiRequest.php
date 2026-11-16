@@ -1672,6 +1672,7 @@ trait WithEbayApiRequest
                 'storeCategoryNames',
                 'tax',
             ]);
+            $data = array_filter($data, fn ($value) => $value !== []);
 
             if (filled(Arr::get($offerData, 'description'))) {
                 data_set($data, 'listingDescription', Arr::get($offerData, 'description'));
@@ -1700,6 +1701,10 @@ trait WithEbayApiRequest
 
             if ($useChannelPolicies || blank(Arr::get($data, 'merchantLocationKey'))) {
                 data_set($data, 'merchantLocationKey', $this->location_key);
+            }
+
+            if (filled(Arr::get($offerData, 'merchant_location_key'))) {
+                data_set($data, 'merchantLocationKey', Arr::get($offerData, 'merchant_location_key'));
             }
 
             if ($useChannelPolicies || blank(Arr::get($data, 'listingPolicies'))) {

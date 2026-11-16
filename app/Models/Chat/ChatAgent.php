@@ -264,22 +264,27 @@ class ChatAgent extends Model
         }
 
         if ($shopId) {
-            $permissionNames = ["chat.{$shopId}"];
-
-            $fulfilmentId = Fulfilment::where('shop_id', $shopId)->value('id');
-            if ($fulfilmentId) {
-                $permissionNames[] = "fulfilment-chat.{$fulfilmentId}";
-            }
-
-            $query->whereIn('user_id', DB::table('model_has_roles')
-                ->join('role_has_permissions', 'role_has_permissions.role_id', '=', 'model_has_roles.role_id')
-                ->join('permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
-                ->where('model_has_roles.model_type', 'User')
-                ->whereIn('permissions.name', $permissionNames)
-                ->select('model_has_roles.model_id'));
+            $query->forShop($shopId);
         }
 
         return $query->inRandomOrder()->first();
+    }
+
+    public function scopeForShop($query, int $shopId)
+    {
+        $permissionNames = ["chat.{$shopId}"];
+
+        $fulfilmentId = Fulfilment::where('shop_id', $shopId)->value('id');
+        if ($fulfilmentId) {
+            $permissionNames[] = "fulfilment-chat.{$fulfilmentId}";
+        }
+
+        return $query->whereIn('user_id', DB::table('model_has_roles')
+            ->join('role_has_permissions', 'role_has_permissions.role_id', '=', 'model_has_roles.role_id')
+            ->join('permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
+            ->where('model_has_roles.model_type', 'User')
+            ->whereIn('permissions.name', $permissionNames)
+            ->select('model_has_roles.model_id'));
     }
 
 

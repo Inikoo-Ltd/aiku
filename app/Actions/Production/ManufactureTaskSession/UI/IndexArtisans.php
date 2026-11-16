@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Production\Artisan\GetArtisanWorkAreas;
 use App\Actions\Production\Artisan\SetArtisanPayType;
 use App\Actions\Production\ManufactureArtisanDay\HydrateManufactureArtisanDays;
+use App\Actions\Production\Production\SetProductionRawMaterialBatches;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
 use App\Enums\Production\Artisan\ArtisanPayTypeEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
@@ -340,6 +341,13 @@ class IndexArtisans extends OrgAction
                 'preparation_reasons_route' => $this->canEdit ? [
                     'name'       => 'grp.models.production.preparation_reasons.update',
                     'parameters' => ['production' => $production->id],
+                ] : null,
+                'raw_material_batches'      => SetProductionRawMaterialBatches::canSet($request->user(), $production) ? [
+                    'enabled' => $production->recordsRawMaterialBatches(),
+                    'route'   => [
+                        'name'       => 'grp.models.production.raw_material_batches.update',
+                        'parameters' => ['production' => $production->id],
+                    ],
                 ] : null,
                 'activity_totals'           => $activity && $activity != 'production' ? $this->activityTotals($sessions) : null,
                 'break_overrun'             => $breakOverrunOnly,

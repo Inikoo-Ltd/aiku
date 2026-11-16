@@ -75,6 +75,10 @@ class EditOrgSupplier extends OrgAction
             'parameters' => $supplier->id,
         ];
 
+        if ($supplier->agent && $supplier->agent->organisation_id === $this->organisation->id) {
+            $blueprint[] = $this->supplierAgentFeeSection($supplier);
+        }
+
         if ($request->user()->authTo('supply-chain.edit')) {
             $blueprint[] = $this->supplierAgentSection($supplier);
         }

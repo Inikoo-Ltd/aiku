@@ -34,6 +34,8 @@ use App\Mcp\Tools\StockLocationsTool;
 use App\Mcp\Tools\ProductionSetupTool;
 use App\Mcp\Tools\StockDeliveryCostsTool;
 use App\Mcp\Tools\CarrierQuoteTool;
+use App\Mcp\Tools\MerlinQuestionWriteTool;
+use App\Mcp\Tools\MerlinQuestionsTool;
 use App\Mcp\Tools\HubOrderPlanningTool;
 use App\Mcp\Tools\HubShoppingListTool;
 use App\Mcp\Tools\FamilySalesTool;
@@ -62,7 +64,7 @@ use App\Mcp\Tools\InfoWebsitePreviewTool;
 use App\Mcp\Tools\InfoWebsiteWriteTool;
 use App\Mcp\Tools\SupplierProductAvailabilityTool;
 use App\Mcp\Tools\SupplierProductLinkTool;
-use App\Mcp\Tools\PackingSpecTool;
+use App\Mcp\Tools\ProductPackagingTool;
 use App\Mcp\Tools\OrgStockSalesTool;
 use App\Mcp\Tools\PartnerRescueOrderTool;
 use App\Mcp\Tools\SupplierPurchaseOrderTool;
@@ -148,7 +150,7 @@ class AikuServer extends Server
         OrgStockDiscontinueTool::class,
         SupplierProductAvailabilityTool::class,
         SupplierProductLinkTool::class,
-        PackingSpecTool::class,
+        ProductPackagingTool::class,
         FamilyRelatedProductsTool::class,
         WebsiteRedirectsPreviewTool::class,
         WebsiteRedirectsTool::class,
@@ -161,6 +163,8 @@ class AikuServer extends Server
         ProductionSetupTool::class,
         StockDeliveryCostsTool::class,
         CarrierQuoteTool::class,
+        MerlinQuestionsTool::class,
+        MerlinQuestionWriteTool::class,
         FamilyPricingReviewTool::class,
         CompetitorMatchReviewTool::class,
         HubOrderPlanningTool::class,

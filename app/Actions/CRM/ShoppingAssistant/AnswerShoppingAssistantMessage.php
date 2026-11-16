@@ -58,5 +58,7 @@ class AnswerShoppingAssistantMessage
             $calls->update(['shopping_assistant_message_id' => $fallback->id]);
             $conversation->increment('messages_count', 1, ['last_message_at' => now()]);
         }
+
+        rescue(fn () => AlertShoppingAssistantHeavyCustomer::run($conversation));
     }
 }

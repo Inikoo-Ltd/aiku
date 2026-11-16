@@ -47,6 +47,11 @@ class ShowDispatchHub extends OrgAction
     use WithDispatchingAuthorisation;
     use WithDashboardCurrencyTypeSettings;
 
+    public const array CURRENT_WORK = [
+        'pickers' => ['user_column' => 'picker_user_id', 'states' => ['handling', 'handling_blocked']],
+        'packers' => ['user_column' => 'packer_user_id', 'states' => ['packing']],
+    ];
+
     public function handle(Warehouse $warehouse): Warehouse
     {
         return $warehouse;
@@ -122,8 +127,8 @@ class ShowDispatchHub extends OrgAction
                 ],
                 'delivery_note'   => DashboardDispatchHubDashboardResource::make(GetDispatchHubShowcase::make()->handle($warehouse)),
                 'picking_session' => $this->getPickingSessionStats($warehouse),
-                'pickers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'picker_user_id', ['handling', 'handling_blocked'], 'pickers_current')),
-                'packers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'packer_user_id', ['packing'], 'packers_current')),
+                'pickers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'pickers', 'pickers_current')),
+                'packers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'packers', 'packers_current')),
                 'partner_staging' => $partnerStaging,
                 'production_output' => $productionOutput === null ? null : JsonResource::collection(IndexProductionOutputItems::run($productionOutput, 'production_output')),
                 'production_materials' => $hasFactory ? JsonResource::collection(IndexProductionMaterialRequestItems::run($warehouse, 'production_materials')) : null,
@@ -239,14 +244,23 @@ class ShowDispatchHub extends OrgAction
             ->withQueryString();
     }
 
-    private function currentWork(Warehouse $warehouse, string $userColumn, array $states, string $prefix): LengthAwarePaginator
+    public static function currentWorkDeliveryNotes(Warehouse $warehouse, string $role): \Illuminate\Database\Query\Builder
     {
-        $base = DB::table('delivery_notes')
-            ->leftJoin('users', 'users.id', '=', "delivery_notes.$userColumn")
-            ->leftJoin('trolleys', 'trolleys.current_delivery_note_id', '=', 'delivery_notes.id')
+        $userColumn = self::CURRENT_WORK[$role]['user_column'];
+
+        return DB::table('delivery_notes')
             ->where('delivery_notes.warehouse_id', $warehouse->id)
             ->whereNotNull("delivery_notes.$userColumn")
-            ->whereIn('delivery_notes.state', $states)
+            ->whereIn('delivery_notes.state', self::CURRENT_WORK[$role]['states']);
+    }
+
+    private function currentWork(Warehouse $warehouse, string $role, string $prefix): LengthAwarePaginator
+    {
+        $userColumn = self::CURRENT_WORK[$role]['user_column'];
+
+        $base = self::currentWorkDeliveryNotes($warehouse, $role)
+            ->leftJoin('users', 'users.id', '=', "delivery_notes.$userColumn")
+            ->leftJoin('trolleys', 'trolleys.current_delivery_note_id', '=', 'delivery_notes.id')
             ->groupBy("delivery_notes.$userColumn", 'users.contact_name')
             ->select([
                 "delivery_notes.$userColumn as user_id",

@@ -357,6 +357,11 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.catalog.related_product_follow_master', Arr::pull($modelData, 'related_product_follow_master'));
         }
 
+        if (Arr::has($modelData, 'assistant_questions_user_id')) {
+            $guruId = Arr::pull($modelData, 'assistant_questions_user_id');
+            data_set($modelData, 'settings.assistant_questions.user_id', $guruId ? (int) $guruId : null);
+        }
+
         if (Arr::has($modelData, 'shopkeeper_in_charge_id')) {
             data_set($modelData, 'settings.catalog.shopkeeper_in_charge_id', Arr::pull($modelData, 'shopkeeper_in_charge_id'));
         }
@@ -429,6 +434,7 @@ class UpdateShop extends OrgAction
                     'gads_login_customer_id' => 'settings.google_ads.login_customer_id',
                     'gads_user_list_id' => 'settings.google_ads.user_list_id',
                     'gads_audience_scope' => 'settings.google_ads.audience_scope',
+                    'gmc_merchant_id' => 'settings.google_merchant.merchant_id',
                     'meta_ads_ad_account_id' => 'settings.meta_ads.ad_account_id',
                     'meta_ads_access_token' => 'settings.meta_ads.access_token',
                     'meta_ads_campaign_name_prefix' => 'settings.meta_ads.campaign_name_prefix',
@@ -497,6 +503,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'gads_login_customer_id');
         data_forget($modelData, 'gads_user_list_id');
         data_forget($modelData, 'gads_audience_scope');
+        data_forget($modelData, 'gmc_merchant_id');
         data_forget($modelData, 'meta_ads_ad_account_id');
         data_forget($modelData, 'meta_ads_access_token');
         data_forget($modelData, 'meta_ads_campaign_name_prefix');
@@ -1127,6 +1134,7 @@ class UpdateShop extends OrgAction
             'gads_login_customer_id'                                  => ['sometimes', 'nullable', 'string'],
             'gads_user_list_id'                                       => ['sometimes', 'nullable', 'string'],
             'gads_audience_scope'                                     => ['sometimes', 'nullable', 'in:subscribed,all'],
+            'gmc_merchant_id'                                         => ['sometimes', 'nullable', 'string'],
             'meta_ads_ad_account_id'                                  => ['sometimes', 'nullable', 'string'],
             'meta_ads_access_token'                                   => ['sometimes', 'nullable', 'string'],
             'meta_ads_campaign_name_prefix'                           => ['sometimes', 'nullable', 'string'],
@@ -1205,6 +1213,7 @@ class UpdateShop extends OrgAction
             'product_follow_master'                                   => ['sometimes', 'boolean'],
             'related_product_follow_master'                           => ['sometimes', 'boolean'],
             'shopkeeper_in_charge_id'                                 => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
+            'assistant_questions_user_id'                             => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->shop->group_id)->where('status', true)],
             'related_product_categories_follow_master'                => ['sometimes', 'boolean'],
             'family_indexing_follow_master'                           => ['sometimes', 'boolean'],
             'family_order_follow_master'                              => ['sometimes', 'boolean'],

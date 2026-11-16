@@ -36,10 +36,7 @@ class HandleIrisInertiaRequests extends Middleware
         $firstLoadOnlyProps = [];
 
         if (!$request->inertia() || Session::get('reloadLayout')) {
-            $websiteTheme = Arr::get($website->published_layout, 'theme');
-
-
-
+            $locale = app()->getLocale();
 
             $firstLoadOnlyProps = [
                 'currency'    => $request->input('currency_data'),
@@ -51,7 +48,7 @@ class HandleIrisInertiaRequests extends Middleware
                 },
 
                 'use_chat' => $website->settings['enable_chat'] ?? false,
-                'iris'     => array_merge($this->getIrisData($website), [
+                'iris'     => fn () => array_merge($this->getIrisData($website, $locale), [
                     'google' => [
                         'client_id' => config('services.google.client_id'),
                     ],
@@ -60,8 +57,8 @@ class HandleIrisInertiaRequests extends Middleware
                     'type'         => $request->input('shop_type'),
                     'organisation' => $website?->organisation?->slug,
                 ],
-                "layout"   => [
-                    "app_theme" => Arr::get($websiteTheme, 'color'),
+                "layout"   => fn () => [
+                    "app_theme" => Arr::get(Arr::get($website->published_layout, 'theme'), 'color'),
                 ],
                 'outboxes' => fn () => $this->getOutboxes($website),
             ];
@@ -81,16 +78,11 @@ class HandleIrisInertiaRequests extends Middleware
                 'notification' => fn () => $request->session()->get('notification'),
                 'modal'        => fn () => $request->session()->get('modal')
             ],
-            'announcements' => $website ? $this->getAnnouncements($website) : [],
-            'website_dialogs' => $website ? GetIrisWebsiteDialogs::run($website) : [],
+            'announcements' => fn () => $website ? $this->getAnnouncements($website) : [],
+            'website_dialogs' => fn () => $website ? GetIrisWebsiteDialogs::run($website) : [],
             'show_contact_options_panel' => Arr::get($website?->settings ?? [], 'view_contact_options_panel', false),
             'contact_options_panel'      => Arr::get($website?->settings ?? [], 'data_contact_options_panel', []),
-            'appointment_types'          => $website?->shop?->appointmentTypes()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'meeting_mode'])
-                ->map(fn ($appointmentType) => [
-                    'id'           => $appointmentType->id,
-                    'name'         => $appointmentType->name,
-                    'meeting_mode' => $appointmentType->meeting_mode->value,
-                ])->all() ?? [],
+            'appointment_types'          => fn () => $this->getAppointmentTypes($website),
             'canonical_url' => $this->canonicalUrl($request),
             'phpComponent'  => app()->environment('local') ? str_replace('\\', '/', $request->route()->getActionName()) : null,
         ];
@@ -121,6 +113,19 @@ class HandleIrisInertiaRequests extends Middleware
                 ],
             ])
             ->toArray() ?? [];
+    }
+
+    /**
+     * @return array<int, array{id: int, name: string, meeting_mode: string}>
+     */
+    public function getAppointmentTypes(?Website $website): array
+    {
+        return $website?->shop?->appointmentTypes()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'meeting_mode'])
+            ->map(fn ($appointmentType) => [
+                'id'           => $appointmentType->id,
+                'name'         => $appointmentType->name,
+                'meeting_mode' => $appointmentType->meeting_mode->value,
+            ])->all() ?? [];
     }
 
     public function getAnnouncements(Website $website): array

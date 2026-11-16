@@ -1,4 +1,5 @@
 <script setup lang='ts'>
+import MerlinIcon from '@/Iris/Components/MerlinIcon.vue'
 import { inject, ref, computed, watch, onBeforeMount, onMounted, onBeforeUnmount } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import axios from 'axios'
@@ -20,8 +21,6 @@ import { ProductResource } from '@/types/Iris/Products'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useShoppingAssistant } from '@/Iris/Composables/useShoppingAssistant'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faSparkles } from '@far'
-library.add(faSparkles)
 
 interface InternalCatalogueItem {
     id: number
@@ -488,7 +487,11 @@ const isMobileFilterOpen = ref(false)
 
                         <div v-if="showAssistantBanner" class="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-gray-200 bg-white px-4 py-3 text-sm">
                             <span class="min-w-0 flex-1">{{ offerLabel }}</span>
-                            <Button :label="askLabel" icon="far fa-sparkles" size="sm" @click="openAssistant(searchQuery)" />
+                            <Button :label="askLabel" size="sm" @click="openAssistant(searchQuery)">
+                                <template #icon>
+                                    <MerlinIcon mono />
+                                </template>
+                            </Button>
                         </div>
 
                         <!-- Your orders: only present for a signed in customer -->

@@ -21,6 +21,8 @@ enum OrderPayDetailedStatusEnum: string
     case OVERPAID = 'overpaid';
     case REFUNDED = 'refunded';
     case UNKNOWN = 'unknown';
+    case TO_BE_PAID_BY_MARKETPLACE = 'to_be_paid_by_marketplace';
+    case PAID_BY_MARKETPLACE = 'paid_by_marketplace';
 
     public static function labels(): array
     {
@@ -31,6 +33,8 @@ enum OrderPayDetailedStatusEnum: string
             'partially_paid' => __('Partially Paid'),
             'overpaid' => __('Overpaid'),
             'refunded' => __('Refunded'),
+            'to_be_paid_by_marketplace' => __('To be paid by marketplace'),
+            'paid_by_marketplace' => __('Paid by marketplace'),
         ];
     }
 
@@ -94,6 +98,26 @@ enum OrderPayDetailedStatusEnum: string
                 'color'   => 'question-circle',
                 'app'     => [
                     'name' => 'seedling',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'to_be_paid_by_marketplace' => [
+                'tooltip' => __('To be paid by marketplace'),
+                'icon'    => 'fal fa-hourglass-half',
+                'class'   => 'text-amber-500',
+                'color'   => 'amber',
+                'app'     => [
+                    'name' => 'hourglass-half',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'paid_by_marketplace' => [
+                'tooltip' => __('Paid by marketplace'),
+                'icon'    => 'fal fa-check-circle',
+                'class'   => 'text-green-600',
+                'color'   => 'lime',
+                'app'     => [
+                    'name' => 'check-circle',
                     'type' => 'font-awesome-5'
                 ]
             ],

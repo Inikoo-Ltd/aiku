@@ -8,7 +8,7 @@
 
 namespace App\Actions\CRM\ShoppingAssistant;
 
-use App\Actions\Chat\Reports\IsWithinWorkingHours;
+use App\Actions\Chat\ChatSession\IsChatStaffed;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverRouteEnum;
 use App\Models\Chat\ChatAgent;
 use App\Models\CRM\Customer;
@@ -39,7 +39,7 @@ class GetShoppingAssistantHandOverRoute
     {
         $shop           = $website->shop;
         $chatIsOn       = self::chatIsOn($website);
-        $inHours        = IsWithinWorkingHours::make()->chatHours()->handle($shop, now());
+        $inHours        = IsChatStaffed::run($shop);
         $agentAvailable = $chatIsOn && $inHours && ChatAgent::findAvailableAgent(null, $shop->id) !== null;
 
         return [

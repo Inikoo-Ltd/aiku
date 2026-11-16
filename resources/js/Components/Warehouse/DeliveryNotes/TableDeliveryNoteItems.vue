@@ -202,6 +202,8 @@ const refreshRow = async (itemId: number, withSameStockRows = true) => {
             }
         }
 
+        router.replace({ preserveScroll: true, preserveState: true })
+
         if (withSameStockRows && orgStockId) {
             rows
                 .filter((row: { id: number, org_stock_id?: number }) => row.org_stock_id === orgStockId && row.id !== itemId)
@@ -222,7 +224,10 @@ const onRowActionStart = (itemId: number) => {
     stateBeforeRowAction = props.state
     rowsClicked.add(itemId)
 }
-const onRowActionError = (itemId: number) => rowsClicked.delete(itemId)
+const onRowActionError = (itemId: number) => {
+    rowsClicked.delete(itemId)
+    refreshRow(itemId)
+}
 const onRowActionSuccess = (page: { props: { delivery_note?: { state?: string } } }) => {
     const itemIds = [...rowsClicked]
     rowsClicked.clear()
@@ -416,6 +421,7 @@ const initSocketListener = () => {
                 })
             );
             Object.assign(itemToSet, response.data.data);
+            router.replace({ preserveScroll: true, preserveState: true })
         }
     })
 

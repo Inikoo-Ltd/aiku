@@ -42,7 +42,7 @@ class GetMobileWarehouses
             ->all();
     }
 
-    private function abilities(User $user, Warehouse $warehouse): array
+    public function abilities(User $user, Warehouse $warehouse): array
     {
         $warehouseId    = $warehouse->id;
         $organisationId = $warehouse->organisation_id;

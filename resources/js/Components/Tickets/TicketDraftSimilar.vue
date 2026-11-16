@@ -6,6 +6,7 @@
 -->
 
 <script setup lang="ts">
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { computed, onBeforeUnmount, ref, watch } from "vue"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
@@ -104,17 +105,17 @@ onBeforeUnmount(() => {
                 :disabled="isSearching || !isLongEnough"
                 class="rounded p-0.5 text-gray-400 transition duration-200 hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
                 @click="search(true)">
-                <FontAwesomeIcon icon="fal fa-sync-alt" fixed-width :spin="isSearching" />
+                <LoadingIcon v-if="isSearching" /><FontAwesomeIcon v-else icon="fal fa-sync-alt" fixed-width />
             </button>
         </div>
 
         <div v-if="isSearching" aria-live="polite">
             <p class="mb-2 flex items-center gap-1.5 text-xs text-[--app-accent-strong]">
-                <FontAwesomeIcon icon="fal fa-spinner" spin fixed-width />
+                <LoadingIcon />
                 {{ ctrans("Looking for related tickets…") }}
             </p>
             <div class="space-y-1.5">
-                <div v-for="placeholder in 3" :key="placeholder" class="h-7 animate-pulse rounded bg-gray-100" />
+                <div v-for="placeholder in 3" :key="placeholder" class="h-7 skeleton rounded" />
             </div>
         </div>
         <p v-else-if="!isLongEnough" class="text-xs text-gray-400">{{ ctrans("Start writing the subject or details to see tickets that may already cover it.") }}</p>

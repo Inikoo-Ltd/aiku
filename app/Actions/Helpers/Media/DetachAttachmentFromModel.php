@@ -40,6 +40,13 @@ class DetachAttachmentFromModel extends OrgAction
         $scope = $model->attachments()->where('media.id', $attachment->id)->first()?->pivot->scope;
         $model->attachments()->detach($attachment->id);
         $model->refresh();
+        if (($model instanceof TradeUnit || $model instanceof TradeUnitFamily) && in_array($scope, TradeAttachmentScopeEnum::publicScopes())) {
+            $attachment->setCustomProperty('detached_from', array_merge($attachment->getCustomProperty('detached_from', []), [[
+                'model_type' => $model->getMorphClass(),
+                'model_id'   => $model->id,
+                'scope'      => $scope,
+            ]]))->save();
+        }
         if ($model instanceof TradeUnit) {
             foreach ($model->products as $product) {
                 CloneProductAttachmentsFromTradeUnits::run($product);

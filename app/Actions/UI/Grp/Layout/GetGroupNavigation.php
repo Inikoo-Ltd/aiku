@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
@@ -122,6 +123,61 @@ class GetGroupNavigation
                 'root'  => 'grp.marketing.',
                 'route' => [
                     'name' => 'grp.marketing.dashboard',
+                ],
+            ];
+        }
+
+        if (IndexBankIncoming::accountingOrganisations($user->group, $user)->isNotEmpty()) {
+            $groupNavigation['financials'] = [
+                'label'   => __('Financials'),
+                'icon'    => ['fal', 'fa-file-invoice-dollar'],
+                'root'    => 'grp.financials.',
+                'route'   => [
+                    'name' => 'grp.financials.bank_incoming.index',
+                ],
+                'topMenu' => [
+                    'subSections' => [
+                        [
+                            'label' => __('Bank incoming'),
+                            'icon'  => ['fal', 'fa-university'],
+                            'root'  => 'grp.financials.bank_incoming.',
+                            'route' => [
+                                'name' => 'grp.financials.bank_incoming.index',
+                            ],
+                        ],
+                        [
+                            'label' => __('Bank outgoing'),
+                            'icon'  => ['fal', 'fa-money-check-alt'],
+                            'root'  => 'grp.financials.bank_outgoing.',
+                            'route' => [
+                                'name' => 'grp.financials.bank_outgoing.index',
+                            ],
+                        ],
+                        [
+                            'label' => __('Cash'),
+                            'icon'  => ['fal', 'fa-coins'],
+                            'root'  => 'grp.financials.cash.',
+                            'route' => [
+                                'name' => 'grp.financials.cash.index',
+                            ],
+                        ],
+                        [
+                            'label' => __('Receivables'),
+                            'icon'  => ['fal', 'fa-hand-holding-usd'],
+                            'root'  => 'grp.financials.receivables.',
+                            'route' => [
+                                'name' => 'grp.financials.receivables.index',
+                            ],
+                        ],
+                        [
+                            'label' => __('Payables'),
+                            'icon'  => ['fal', 'fa-file-invoice'],
+                            'root'  => 'grp.financials.payables.',
+                            'route' => [
+                                'name' => 'grp.financials.payables.index',
+                            ],
+                        ],
+                    ],
                 ],
             ];
         }
@@ -286,7 +342,7 @@ class GetGroupNavigation
         }
 
         if (!$user->hasGroupAccess()) {
-            $modules = $user->worksOnlyForAgents() ? ['tickets'] : ['tickets', 'projects'];
+            $modules = $user->worksOnlyForAgents() ? ['tickets'] : ['tickets', 'projects', 'financials'];
             if ($canSeeProductDevelopments) {
                 $modules[] = 'product-developments';
             }

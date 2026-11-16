@@ -2822,3 +2822,73 @@ test('a supervisor-only shipper is hidden from and refused to dispatch clerks (P
     request()->setUserResolver(fn () => null);
     actingAsUserWithRoles($user, $originalRoles);
 });
+
+test('repairing a channel location moves its offers onto the shop warehouse location and keeps the rest of each offer', function () {
+    $ebayUser = ebayChannel($this, ['location_key' => 'dssk-warehouse-DE']);
+    listedEbayPortfolio($this, $ebayUser, '111', 'offer-old');
+    $locationKey = $this->shop->slug.'-warehouse-GB';
+
+    $offer = fn (string $offerId, string $key) => [
+        'offerId'             => $offerId,
+        'sku'                 => 'sku-'.$offerId,
+        'merchantLocationKey' => $key,
+        'listingDescription'  => 'Seller text',
+        'pricingSummary'      => ['price' => ['value' => '28.56', 'currency' => 'EUR']],
+        'listingPolicies'     => ['fulfillmentPolicyId' => 'fp-seller'],
+        'categoryId'          => '123',
+        'format'              => 'FIXED_PRICE',
+        'status'              => 'PUBLISHED',
+    ];
+
+    fakeEbay($this, [
+        '/sell/inventory/v1/location/'.$locationKey => fn () => Http::response(null, 204),
+        '/sell/inventory/v1/offer/offer-old'        => fn (Request $request) => $request->method() === 'PUT' ? Http::response([]) : Http::response($offer('offer-old', 'dssk-warehouse-DE')),
+    ]);
+
+    $this->artisan('repair:ebay_location_address', ['customerSalesChannel' => $ebayUser->customerSalesChannel->slug])->assertSuccessful();
+
+    $put = sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-old')->data();
+
+    expect(sentEbayRequest('POST', '/sell/inventory/v1/location/'.$locationKey)->data()['location']['address']['country'])->toBe('GB')
+        ->and($put['merchantLocationKey'])->toBe($locationKey)
+        ->and($put['listingDescription'])->toBe('Seller text')
+        ->and($put['pricingSummary']['price']['value'])->toBe('28.56')
+        ->and($put['listingPolicies'])->toBe(['fulfillmentPolicyId' => 'fp-seller'])
+        ->and($ebayUser->refresh()->location_key)->toBe($locationKey);
+});
+
+test('an offer eBay returns with an empty price block is sent back without it, not as a list', function () {
+    $ebayUser = ebayChannel($this, ['location_key' => 'dssk-warehouse-DE']);
+    listedEbayPortfolio($this, $ebayUser, '111', 'offer-sparse');
+    $locationKey = $this->shop->slug.'-warehouse-GB';
+
+    fakeEbay($this, [
+        '/sell/inventory/v1/location/'.$locationKey => fn () => Http::response(null, 204),
+        '/sell/inventory/v1/offer/offer-sparse'     => fn (Request $request) => $request->method() === 'PUT'
+            ? Http::response([])
+            : Http::response('{"offerId":"offer-sparse","sku":"sku-sparse","format":"FIXED_PRICE","pricingSummary":{},"listingPolicies":{"eBayPlusIfEligible":false},"status":"PUBLISHED"}'),
+    ]);
+
+    $result = UpdateEbayUserData::make()->moveToWarehouseLocation($ebayUser);
+    $body   = sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-sparse')->body();
+
+    expect($result['moved'])->toBe(1)
+        ->and($body)->not->toContain('"pricingSummary":[]')
+        ->and(json_decode($body, true))->toMatchArray(['merchantLocationKey' => $locationKey, 'listingPolicies' => ['eBayPlusIfEligible' => false]]);
+});
+
+test('repairing a channel location leaves draft offers that never went live alone', function () {
+    $ebayUser = ebayChannel($this, ['location_key' => 'dssk-warehouse-DE']);
+    listedEbayPortfolio($this, $ebayUser, '111', 'offer-draft');
+    $locationKey = $this->shop->slug.'-warehouse-GB';
+
+    fakeEbay($this, [
+        '/sell/inventory/v1/location/'.$locationKey => fn () => Http::response(null, 204),
+        '/sell/inventory/v1/offer/offer-draft'      => fn () => Http::response(['offerId' => 'offer-draft', 'status' => 'UNPUBLISHED', 'pricingSummary' => []]),
+    ]);
+
+    $result = UpdateEbayUserData::make()->moveToWarehouseLocation($ebayUser);
+
+    expect($result)->toMatchArray(['location_key' => $locationKey, 'moved' => 0, 'drafts' => 1, 'failed' => []]);
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'PUT');
+});

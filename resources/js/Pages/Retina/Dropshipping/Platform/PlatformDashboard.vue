@@ -128,7 +128,7 @@ const canReconnect = computed(() => {
 
 	const type = props.customer_sales_channel?.type
 
-	return type === 'wix' ? props.platform_status : ['ebay', 'allegro'].includes(type) && !props.platform_status
+	return type === 'wix' ? props.platform_status : ['ebay', 'allegro', 'tiktok'].includes(type) && !props.platform_status
 })
 
 const locale = inject('locale', aikuLocaleStructure)

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Iris\Portfolio;
 
+use App\Actions\CRM\ShoppingAssistant\RecordShoppingAssistantBasketAdd;
 use App\Actions\IrisAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
@@ -25,14 +26,17 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
      */
     private ?ProductCategory $productCategory = null;
 
-    public function handle(Customer $customer, array $modelData): void
+    /**
+     * @return array<int, int> the products newly added to at least one channel
+     */
+    public function handle(Customer $customer, array $modelData): array
     {
         $channels = $customer->customerSalesChannels()
             ->whereIn('id', Arr::get($modelData, 'customer_sales_channel_ids'))
             ->where('status', CustomerSalesChannelStatusEnum::OPEN)
             ->get();
 
-        StoreIrisPortfolioItemsToChannels::run($channels, Arr::get($modelData, 'item_id'));
+        return StoreIrisPortfolioItemsToChannels::run($channels, Arr::get($modelData, 'item_id'));
     }
 
     public function rules(): array
@@ -61,7 +65,10 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
 
         $this->initialisation($request);
 
-        $this->handle($user->customer, $this->validatedData);
+        RecordShoppingAssistantBasketAdd::afterResponse($this->website, $user->customer, array_map(
+            fn (int $productId) => ['product_id' => $productId, 'transaction_id' => null, 'quantity' => 1],
+            $this->handle($user->customer, $this->validatedData)
+        ));
     }
 
     public function inProductCategory(ProductCategory $productCategory, ActionRequest $request): void

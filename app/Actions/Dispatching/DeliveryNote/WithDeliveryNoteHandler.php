@@ -8,6 +8,9 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\SysAdmin\User;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 trait WithDeliveryNoteHandler
 {
@@ -32,9 +35,7 @@ trait WithDeliveryNoteHandler
             return false;
         }
 
-        $handler = $deliveryNote->state->isPickedOrLater()
-            ? $deliveryNote->packer_user_id ?? $deliveryNote->picker_user_id
-            : $deliveryNote->picker_user_id;
+        $handler = self::deliveryNoteHandlerId($deliveryNote);
 
         if ($handler && $handler == request()->user()?->id) {
             return true;
@@ -42,17 +43,56 @@ trait WithDeliveryNoteHandler
 
         $tempHandler = session('temp_handling_delivery_note') ?? [];
 
-        if (data_get($tempHandler, 'value') != $deliveryNote->id) {
+        if (data_get($tempHandler, 'value') == $deliveryNote->id && now()->lt(data_get($tempHandler, 'expires_at'))) {
+            self::claimDeliveryNoteHandling($deliveryNote);
+
+            return true;
+        }
+
+        return self::useMobileDeliveryNoteClaim($deliveryNote, request()->user());
+    }
+
+    public static function mobileDeliveryNoteClaimKey(User $user): string
+    {
+        return 'mobile_handling_delivery_note:'.$user->id;
+    }
+
+    public static function claimMobileDeliveryNoteHandling(DeliveryNote $deliveryNote, User $user): void
+    {
+        $expiresAt = now()->addMinutes(self::TEMP_HANDLING_MINUTES);
+
+        Cache::put(self::mobileDeliveryNoteClaimKey($user), [
+            'delivery_note_id' => $deliveryNote->id,
+            'expires_at'       => $expiresAt->toIso8601String(),
+        ], $expiresAt);
+    }
+
+    public static function useMobileDeliveryNoteClaim(DeliveryNote $deliveryNote, mixed $user): bool
+    {
+        if (!$user instanceof User) {
             return false;
         }
 
-        if (now()->gte(data_get($tempHandler, 'expires_at'))) {
+        $claim = Cache::get(self::mobileDeliveryNoteClaimKey($user));
+
+        if (data_get($claim, 'delivery_note_id') != $deliveryNote->id || !data_get($claim, 'expires_at')) {
             return false;
         }
 
-        self::claimDeliveryNoteHandling($deliveryNote);
+        if (now()->gte(Carbon::parse(data_get($claim, 'expires_at')))) {
+            return false;
+        }
+
+        self::claimMobileDeliveryNoteHandling($deliveryNote, $user);
 
         return true;
+    }
+
+    public static function deliveryNoteHandlerId(DeliveryNote $deliveryNote): ?int
+    {
+        return $deliveryNote->state->isPickedOrLater()
+            ? $deliveryNote->packer_user_id ?? $deliveryNote->picker_user_id
+            : $deliveryNote->picker_user_id;
     }
 
     public static function claimDeliveryNoteHandling(DeliveryNote $deliveryNote): void

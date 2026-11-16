@@ -31,14 +31,7 @@ class DetectIrisWebsite
         if (config('iris.cache.website.ttl') == 0) {
             $websiteData = $this->getWebsiteData($domain);
         } else {
-            $key         = config('iris.cache.website.prefix').'_domain:'.$domain;
-            $websiteData = Cache::remember(
-                $key,
-                config('iris.cache.website.ttl'),
-                function () use ($domain) {
-                    return $this->getWebsiteData($domain);
-                }
-            );
+            $websiteData = $this->getCachedWebsiteData($domain);
         }
         $this->applyWebsiteData($request, $websiteData);
 
@@ -53,6 +46,45 @@ class DetectIrisWebsite
         }
 
         return $response;
+    }
+
+    /**
+     * The cached website is about 340KB, read on every storefront request from a Redis on another
+     * host, so it is stored deflated, about a fifth of the size. An array is an entry written
+     * before this was introduced.
+     */
+    public function getCachedWebsiteData(string $domain): array
+    {
+        $key    = config('iris.cache.website.prefix').'_domain:'.$domain;
+        $cached = Cache::get($key);
+
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        if (is_string($cached)) {
+            $websiteData = $this->decompressWebsiteData($cached);
+            if ($websiteData !== null) {
+                return $websiteData;
+            }
+        }
+
+        $websiteData = $this->getWebsiteData($domain);
+        Cache::put($key, $this->compressWebsiteData($websiteData), config('iris.cache.website.ttl'));
+
+        return $websiteData;
+    }
+
+    public function compressWebsiteData(array $websiteData): string
+    {
+        return gzcompress(serialize($websiteData));
+    }
+
+    public function decompressWebsiteData(string $compressed): ?array
+    {
+        $websiteData = @unserialize((string) @gzuncompress($compressed));
+
+        return is_array($websiteData) ? $websiteData : null;
     }
 
     public function getWebsiteData(string $domain): array

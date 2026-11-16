@@ -4,7 +4,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useEditor, EditorContent } from "@tiptap/vue-3"
 import StarterKit from "@tiptap/starter-kit"
 import Underline from "@tiptap/extension-underline"
-import Placeholder from "@tiptap/extension-placeholder"
+import { Placeholder } from "@tiptap/extensions"
 import Image from "@tiptap/extension-image"
 import Link from "@tiptap/extension-link"
 import { keepBlankLines, plainTextSlice } from "@/Components/Chat/chatPaste"
@@ -37,7 +37,7 @@ const editor = useEditor({
     content: markupToEditorHtml(props.modelValue, props.pictureSource),
     editable: !props.disabled,
     extensions: [
-        StarterKit.configure({ heading: false, blockquote: false, codeBlock: false, horizontalRule: false }),
+        StarterKit.configure({ heading: false, blockquote: false, codeBlock: false, horizontalRule: false, link: false, underline: false, trailingNode: false }),
         Underline,
         Placeholder.configure({ placeholder: () => props.placeholder }),
         ...(props.allowLink
@@ -100,7 +100,7 @@ const editor = useEditor({
 watch(() => props.modelValue, (value) => {
     if (!editor.value || (value ?? "") === lastEmitted) return
     lastEmitted = value ?? ""
-    editor.value.commands.setContent(markupToEditorHtml(value, props.pictureSource), false)
+    editor.value.commands.setContent(markupToEditorHtml(value, props.pictureSource), { emitUpdate: false })
 })
 
 watch(() => props.disabled, (disabled) => editor.value?.setEditable(!disabled))
@@ -112,7 +112,7 @@ defineExpose({
     focus: () => editor.value?.commands.focus(),
     insertText: (text: string) => editor.value?.chain().focus().insertContent(text).run(),
     insertMarkup: (markup: string) => editor.value?.chain().focus().insertContent(markupToEditorHtml(markup, props.pictureSource)).run(),
-    refresh: () => editor.value?.commands.setContent(markupToEditorHtml(lastEmitted, props.pictureSource), false),
+    refresh: () => editor.value?.commands.setContent(markupToEditorHtml(lastEmitted, props.pictureSource), { emitUpdate: false }),
     insertPicture: (src: string, pictureId: string) => editor.value?.chain().focus()
         .insertContent({ type: "image", attrs: { src, pictureId, alt: ctrans("Pasted picture") } }).run(),
 })

@@ -4471,77 +4471,65 @@ describe('changing info websites through the assistant', function () {
     });
 });
 
-describe('packing spec tool', function () {
+describe('product packaging tool', function () {
     beforeEach(function () {
         createStocks($this->group);
         $this->orgStock = createOrgStocks($this->organisation, $this->group->stocks()->orderBy('id')->limit(1)->get()->all())[0];
-        $this->orgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
-        DB::table('org_stock_has_org_supplier_products')->where('org_stock_id', $this->orgStock->id)->delete();
-        $this->supplier = App\Actions\SupplyChain\Supplier\StoreSupplier::make()->action($this->group, App\Models\SupplyChain\Supplier::factory()->definition());
-        $this->user->update(['can_use_mcp_procurement' => true]);
-        App\Actions\Goods\Packaging\SyncPackingDropdownComponents::run($this->group);
-
-        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\SupplierProductLinkTool::class, [
-            'organisation' => $this->organisation->code,
-            'items'        => [['sko' => $this->orgStock->code, 'supplier' => $this->supplier->code, 'cost' => 5, 'units_per_carton' => 24]],
-            'request_text' => 'attach it',
-        ])->assertOk()->assertSee('"result":"created"');
-        $this->supplierProduct = App\Models\SupplyChain\SupplierProduct::where('supplier_id', $this->supplier->id)->where('code', $this->orgStock->code)->firstOrFail();
+        $this->tradeUnit = App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, App\Models\Goods\TradeUnit::factory()->definition());
+        $this->orgStock->tradeUnits()->sync([$this->tradeUnit->id => ['quantity' => 1]]);
+        $this->user->update(['can_use_mcp_goods' => true]);
     });
 
-    test('records measured packaging as a new spec version, keeps the carton, skips repeats and reverts', function () {
-        $call = fn (array $lines) => AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\PackingSpecTool::class, [
+    test('records weighed packaging on the trade unit, skips repeats, shares pieces in a multi-unit SKO and reverts', function () {
+        $call = fn (array $lines) => AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\ProductPackagingTool::class, [
             'organisation' => $this->organisation->code,
             'items'        => [['sko' => $this->orgStock->code, 'lines' => $lines]],
-            'request_text' => 'enter the measured packaging',
+            'request_text' => 'enter the weighed packaging',
         ]);
-        $lines = fn ($spec) => $spec->lines()->with('packagingComponent')->orderBy('position')->get()
-            ->map(fn ($line) => [$line->packagingComponent->dropdown_key, $line->level->value, (float) $line->weight_g_each, $line->weight_is_measured])->all();
+        $pieces = fn () => $this->tradeUnit->refresh()->packagingFamily()->first()->components()->orderBy('name')->orderBy('weight_g')->get()
+            ->map(fn ($component) => [$component->name, $component->material_category->value, $component->polymer?->value, (float) $component->weight_g, $component->weight_is_measured, (float) $component->pivot->quantity_per_unit])->all();
+        $legacy = App\Models\Goods\PackagingFamily::create(['group_id' => $this->group->id, 'code' => 'LEGACY-'.$this->tradeUnit->code, 'source' => 'legacy_uk_2026']);
+        $this->tradeUnit->update(['packaging_family_id' => $legacy->id]);
 
         $call([['material' => 'other', 'weight_g' => 0.13]])->assertOk()->assertSee('needs a description');
-        expect($this->supplierProduct->packingSpecs()->count())->toBe(0);
-
-        $call([['material' => 'pack_box', 'weight_g' => 40]])->assertOk()->assertSee('"result":"recorded"');
-        $first = $this->supplierProduct->refresh()->livePackingSpec;
-        expect($first->version)->toBe(1)
-            ->and($first->packed_by->value)->toBe('supplier')
-            ->and($first->materials_weighed)->toBeTrue()
-            ->and($lines($first))->toBe([['pack_box', 'per_pack', 40.0, true]]);
-
-        $carton = App\Models\Goods\PackagingComponent::where('dropdown_key', 'master_carton')->first();
-        App\Actions\SupplyChain\PackingSpec\StorePackingSpec::make()->handle($this->supplierProduct, [
-            'packed_by' => 'agent',
-            'lines'     => [['packaging_component_id' => $carton->id, 'level' => 'per_carton', 'quantity' => 1, 'weight_g_each' => 900]],
-        ]);
+        expect($this->tradeUnit->refresh()->packaging_family_id)->toBe($legacy->id);
 
         $measured = [
             ['material' => 'pack_box', 'weight_g' => 46.44],
             ['material' => 'pe_bag', 'weight_g' => 3.39],
+            ['material' => 'pe_bag', 'weight_g' => 2.92],
+            ['material' => 'label_insert', 'weight_g' => 0.21, 'description' => 'paper tag'],
             ['material' => 'other', 'weight_g' => 0.13, 'description' => 'rubber band'],
         ];
         $call($measured)->assertOk()->assertSee('"result":"recorded"');
 
-        $live = $this->supplierProduct->refresh()->livePackingSpec;
-        expect($live->version)->toBe(3)
-            ->and($live->packed_by->value)->toBe('agent')
-            ->and($live->materials_weighed)->toBeFalse()
-            ->and($lines($live))->toBe([
-                ['master_carton', 'per_carton', 900.0, false],
-                ['pack_box', 'per_pack', 46.44, true],
-                ['pe_bag', 'per_pack', 3.39, true],
-                ['other', 'per_pack', 0.13, true],
+        $family = $this->tradeUnit->refresh()->packagingFamily;
+        expect($family->source->value)->toBe('measured')
+            ->and($pieces())->toBe([
+                ['Pack box (cardboard)', 'paper_cardboard', null, 46.44, true, 1.0],
+                ['Plastic bag (PE)', 'plastic', 'ldpe', 2.92, true, 1.0],
+                ['Plastic bag (PE)', 'plastic', 'ldpe', 3.39, true, 1.0],
+                ['paper tag', 'paper_cardboard', null, 0.21, true, 1.0],
+                ['rubber band', 'other', null, 0.13, true, 1.0],
             ]);
 
         $call($measured)->assertOk()->assertSee('"result":"unchanged"');
-        expect($this->supplierProduct->packingSpecs()->count())->toBe(3);
+        expect($this->tradeUnit->refresh()->packaging_family_id)->toBe($family->id);
 
-        $mcpChange = App\Models\SysAdmin\McpChange::where('type', App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PACKING_SPECS)->latest('id')->first();
+        $this->orgStock->tradeUnits()->updateExistingPivot($this->tradeUnit->id, ['quantity' => 6]);
+        $call([['material' => 'pack_box', 'weight_g' => 60]])->assertOk()->assertSee('"result":"recorded"');
+        expect($pieces())->toBe([['Pack box (cardboard)', 'paper_cardboard', null, 60.0, true, round(1 / 6, 6)]])
+            ->and($this->tradeUnit->packagingFamily->components()->first()->packaging_level->value)->toBe('grouped');
+
+        $mcpChange = App\Models\SysAdmin\McpChange::where('type', App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PRODUCT_PACKAGING)->latest('id')->first();
         AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\AiChangesTool::class, [
             'revert_id'    => $mcpChange->id,
             'request_text' => 'undo that',
         ])->assertOk()->assertSee('reverted_at');
 
-        expect($this->supplierProduct->refresh()->livePackingSpec->version)->toBe(2)
-            ->and($this->supplierProduct->packingSpecs()->count())->toBe(3);
+        expect($this->tradeUnit->refresh()->packaging_family_id)->toBe($family->id);
+
+        $this->orgStock->tradeUnits()->syncWithoutDetaching([App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, App\Models\Goods\TradeUnit::factory()->definition())->id => ['quantity' => 1]]);
+        $call($measured)->assertOk()->assertSee('one trade unit');
     });
 });

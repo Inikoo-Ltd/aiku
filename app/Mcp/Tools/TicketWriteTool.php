@@ -16,9 +16,13 @@ use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Helpers\Ticket\UpdateTicketComment;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
+use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
+use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\Helpers\Ticket;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
@@ -28,7 +32,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you, optionally with files: uploads from ticket-upload-link-tool, or small attachments as base64; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), correct a comment you already posted by passing its comment_id with the rewritten comment instead of posting a follow-up, rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags, or ask QA to check it (ask_qa with QA usernames, comma separated, or anyone, comment as the note). Without a reference: creates a new HELP ticket (or an INI engineer ticket with type=engineer, or a PRE premonition ticket with type=premonition for something found broken in aiku while serving customers) with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Anyone can raise a HELP ticket and comment on tickets they raised; every other change is for engineers, lead engineers and QA.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you, optionally with files: uploads from ticket-upload-link-tool, or small attachments as base64; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), correct a comment you already posted by passing its comment_id with the rewritten comment instead of posting a follow-up, rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags, or ask QA to check it (ask_qa with QA usernames, comma separated, or anyone, comment as the note). Without a reference: creates a new HELP ticket (or an INI engineer ticket with type=engineer, or a PRE premonition ticket with type=premonition for something found broken in aiku while serving customers, or a MER ticket with type=merlin and conversation = the ULID of a Merlin (AI shopping assistant) conversation, for a problem of that customer from that conversation that only engineers can fix: it is tied to the customer, shop and conversation) with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Anyone can raise a HELP ticket and comment on tickets they raised; every other change is for engineers, lead engineers and QA.')]
 class TicketWriteTool extends Tool
 {
     public function shouldRegister(Request $request): bool
@@ -45,12 +49,14 @@ class TicketWriteTool extends Tool
             'comment'     => ['sometimes', 'string'],
             'comment_id'  => ['sometimes', 'integer'],
             'internal'    => ['sometimes', 'boolean'],
+            'to_customer' => ['sometimes', 'boolean'],
             'post_mortem' => ['sometimes', 'boolean'],
             'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,pending_deploy,cancelled'],
             'priority'    => ['sometimes', 'in:low,normal,high,urgent'],
             'assignee'    => ['sometimes', 'nullable', 'string'],
             'kind'        => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class)],
-            'type'        => ['sometimes', 'nullable', 'in:help,engineer,premonition'],
+            'type'        => ['sometimes', 'nullable', 'in:help,engineer,premonition,merlin'],
+            'conversation' => ['required_if:type,merlin', 'nullable', 'string', 'max:26'],
             'module'      => ['sometimes', 'nullable', 'string'],
             'tags'        => ['sometimes', 'array'],
             'tags.*'      => ['string', 'max:64'],
@@ -69,7 +75,7 @@ class TicketWriteTool extends Tool
         $uploaderId = $user->id;
 
         $isStaffReporter = !Ticket::canUseAssistant($user);
-        if ($isStaffReporter && $request->hasAny(['acting_as', 'subject', 'description', 'status', 'priority', 'kind', 'module', 'assignee', 'tags', 'internal', 'post_mortem', 'ask_qa', 'commit', 'type']) && $request->filled('reference')) {
+        if ($isStaffReporter && $request->hasAny(['acting_as', 'subject', 'description', 'status', 'priority', 'kind', 'module', 'assignee', 'tags', 'internal', 'to_customer', 'post_mortem', 'ask_qa', 'commit', 'type']) && $request->filled('reference')) {
             return Response::error('On a ticket you raised you can add comments and attachments. Changing tickets is for engineers and QA.');
         }
         if ($isStaffReporter && $request->filled('acting_as')) {
@@ -89,11 +95,28 @@ class TicketWriteTool extends Tool
         }
 
         if (!$request->filled('reference')) {
-            if (in_array($request->get('type'), [TicketTypeEnum::ENGINEER->value, TicketTypeEnum::PREMONITION->value], true) && !Ticket::canChooseType($user)) {
-                return Response::error('Only the help desk and QA can raise engineer (INI) or premonition (PRE) tickets.');
+            if (in_array($request->get('type'), [TicketTypeEnum::ENGINEER->value, TicketTypeEnum::PREMONITION->value, TicketTypeEnum::MERLIN->value], true) && !Ticket::canChooseType($user)) {
+                return Response::error('Only the help desk and QA can raise engineer (INI), premonition (PRE) or Merlin (MER) tickets.');
             }
 
-            $ticket = StoreTicket::make()->action($user->group, array_filter([
+            $merlin = [];
+            if ($request->get('type') === TicketTypeEnum::MERLIN->value) {
+                $conversation = ShoppingAssistantConversation::with('customer.shop')->where('ulid', $request->string('conversation')->toString())->first();
+                if (!$conversation?->customer || $conversation->customer->group_id !== $user->group_id) {
+                    return Response::error('No Merlin conversation with that ULID. Nothing was created.');
+                }
+                $merlin = [
+                    'organisation_id' => $conversation->customer->organisation_id,
+                    'shop_id'         => $conversation->customer->shop_id,
+                    'customer_id'     => $conversation->customer_id,
+                    'source_type'     => 'ShoppingAssistantConversation',
+                    'source_id'       => $conversation->id,
+                    'module'          => $request->get('module') ?? ($conversation->customer->shop->type === ShopTypeEnum::DROPSHIPPING ? TicketModuleEnum::DROPSHIPPING->value : null),
+                    'tags'            => array_values(array_unique([...(array) $request->get('tags', []), 'merlin'])),
+                ];
+            }
+
+            $ticket = StoreTicket::make()->action($user->group, array_filter($merlin) + array_filter([
                 'subject'       => $request->string('subject')->toString(),
                 'description'   => $request->get('description'),
                 'type'          => $request->get('type'),
@@ -126,6 +149,9 @@ class TicketWriteTool extends Tool
         }
         if ($request->boolean('post_mortem') && !$ticket->canContributeBy($user)) {
             return Response::error('Only the assignee, collaborators and lead engineers can write incident post-mortems.');
+        }
+        if ($request->boolean('to_customer') && ($request->boolean('internal') || $request->input('status') === TicketStatusEnum::PENDING_DEPLOY->value || $ticket->source_type !== 'ShoppingAssistantConversation')) {
+            return Response::error('to_customer is only for a public comment on a MER ticket, posted now: not with internal, and not held for a deployment.');
         }
         if ($request->boolean('internal') && !$ticket->canContributeBy($user)) {
             return Response::error('Only the assignee, collaborators and lead engineers can write internal notes.');
@@ -227,6 +253,7 @@ class TicketWriteTool extends Tool
             StoreTicketComment::make()->action($ticket, $user, [
                 'body'        => $request->string('comment')->toString(),
                 'is_internal' => $request->boolean('internal'),
+                'to_customer' => $request->boolean('to_customer'),
                 'type'        => $request->boolean('post_mortem') ? TicketCommentTypeEnum::POST_MORTEM->value : TicketCommentTypeEnum::COMMENT->value,
                 'images'      => $attachments,
             ]);
@@ -276,11 +303,13 @@ class TicketWriteTool extends Tool
             'comment'     => $schema->string()->description('Comment to add to the ticket, posted as you. With comment_id, the text that replaces that comment'),
             'comment_id'  => $schema->integer()->description('Id of one of your own comments on this ticket: its text is replaced by comment, rather than a new comment being added. Use it to correct something you already posted instead of following it with a correction'),
             'internal'    => $schema->boolean()->description('true = internal comment, visible to the help desk only. Use it for technical notes (ids repaired, commands run, root cause) so the public thread stays readable for the reporter'),
+            'to_customer' => $schema->boolean()->description('MER tickets only: true = this comment is a reply to the customer. It is translated into their language, added to their Merlin conversation and emailed to them (or customer services is asked to pass it on). Write it to the customer, in plain words, nothing technical'),
             'post_mortem' => $schema->boolean()->description('true = the comment is an incident post-mortem (what broke, who was affected, root cause, fix, how it is prevented), shown highlighted in red on the ticket. Combine with internal for a help-desk-only post-mortem'),
             'status'      => $schema->string()->description('open, in_progress, waiting, resolved, pending_deploy or cancelled. pending_deploy = close after next deployment (fix already on main): the comment and its files are held and posted when the deployment closes the ticket; a second pending_deploy comment replaces the held one. Pass commit too'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
             'assignee'    => $schema->string()->description('Username to assign, empty string to unassign'),
-            'type'        => $schema->string()->description('New tickets only: help (HELP-n, default), engineer (INI-n, engineering work such as upgrades, refactors and tech debt) or premonition (PRE-n, aiku found to be wrong while serving customers: records that contradict what happened, stuck statuses, wrong data)'),
+            'type'        => $schema->string()->description('New tickets only: help (HELP-n, default), engineer (INI-n, engineering work such as upgrades, refactors and tech debt), premonition (PRE-n, aiku found to be wrong while serving customers: records that contradict what happened, stuck statuses, wrong data) or merlin (MER-n, a customer\'s problem from a Merlin conversation that only engineers can fix; pass conversation)'),
+            'conversation' => $schema->string()->description('For type merlin: the ULID of the Merlin conversation (the last part of its /websites/ai-assistant/conversations/ link)'),
             'kind'        => $schema->string()->description('escalation, bug, feature, task (engineer to engineer) or qa (engineer to QA)'),
             'module'      => $schema->string()->description('Aiku module slug, e.g. dispatching'),
             'tags'        => $schema->array()->description('Full tag list to set, e.g. ["not a bug"]')->items($schema->string()),

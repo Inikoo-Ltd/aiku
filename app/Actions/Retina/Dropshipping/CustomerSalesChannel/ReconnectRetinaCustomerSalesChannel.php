@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
 use App\Actions\Dropshipping\Ebay\ReAuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\ReAuthorizeMagentoUser;
 use App\Actions\Dropshipping\ShopifyUser\ClaimShopifyUser;
+use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\Wix\User\AuthenticateWixAccount;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\RetinaAction;
@@ -46,6 +47,7 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
             PlatformTypeEnum::EBAY => ReAuthorizeRetinaEbayUser::make()->action($platformUser, $request),
             PlatformTypeEnum::ALLEGRO => AuthenticateAllegroAccount::make()->redirectToAllegro($customerSalesChannel->customer),
             PlatformTypeEnum::WIX => AuthenticateWixAccount::make()->redirectToWix($customerSalesChannel->customer),
+            PlatformTypeEnum::TIKTOK => AuthenticateTiktokAccount::make()->redirectToTikTok($customerSalesChannel->customer),
             default => null
         };
     }

@@ -724,93 +724,25 @@ return [
                 'nice'            => 0,
             ],
         ],
-        'local'      => [
-            'normal'               => [
-                'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 3),
-            ],
-            'price_change'         => [
-                'maxProcesses' => env('HORIZON_PRICE_CHANGE_WORKERS', 10),
-            ],
-            'common'               => [
-                'maxProcesses' => env('HORIZON_COMMON_WORKERS', 1),
-            ],
-            'hydrators-slave'      => [
-                'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_WORKERS', 2),
-            ],
-            'hydrators-slave-low-priority' => [
-                'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_LOW_PRIORITY_WORKERS', 1),
-            ],
-            'aurora'               => [
-                'maxProcesses' => env('HORIZON_NORMAL_AURORA', 2),
-            ],
-            'analytics'            => [
-                'maxProcesses' => env('HORIZON_ANALYTICS_WORKERS', 4),
-            ],
-            'sales'                => [
-                'maxProcesses' => env('HORIZON_SALES_WORKERS', 2),
-            ],
-            'sales_slave'          => [
-                'maxProcesses' => env('HORIZON_SALES_SLAVE_WORKERS', 3),
-            ],
-            'sales_slave_historic' => [
-                'maxProcesses' => env('HORIZON_SALES_SLAVE_HISTORIC_WORKERS', 1),
-            ],
-            'search'               => [
-                'maxProcesses' => env('HORIZON_SEARCH_WORKERS', 5),
-            ],
-            'urgent'               => [
-                'maxProcesses' => env('HORIZON_URGENT_WORKERS', 5),
-            ],
-            'stock-control'               => [
-                'maxProcesses' => env('HORIZON_STOCK_COMTROL_WORKERS', 2),
-            ],
-            'low-priority'         => [
-                'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 2),
-            ],
-            'dropshipping'         => [
-                'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 2),
-            ],
-            'dropshipping-long'    => [
-                'maxProcesses' => env('HORIZON_DROPSHIPPING_LONG_WORKERS', 1),
-            ],
-            'long-running'         => [
-                'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
-            ],
-            'long-high-priority'   => [
-                'maxProcesses' => env('HORIZON_LONG_HIGH_PRIORITY', 1),
-            ],
-            'long-low-priority'   => [
-                'maxProcesses' => env('HORIZON_LONG_LOW_PRIORITY', 1),
-            ],
-            'ses'                  => [
-                'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
-            ],
-            'ses-send'                  => [
-                'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 2),
-            ],
-            'whatsapp-send'             => [
-                'maxProcesses' => env('HORIZON_WHATSAPP_SEND_WORKERS', 2),
-            ],
-            'ses-low'                  => [
-                'maxProcesses' => env('HORIZON_SES_LOW_WORKERS', 1),
-            ],
-            'ses-analytics'        => [
-                'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
-            ],
-            'stock-history'        => [
-                'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 4),
-            ],
-            'cache-warming'        => [
-                'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 1),
-            ],
-            'shopify-slave' => [
-                'maxProcesses' => env('HORIZON_SHOPIFY_SLAVE_WORKERS', 1),
-            ],
-            'woo-probe'     => [
-                'maxProcesses' => 1,
-            ],
-
-
-        ],
+        'local'      => array_map(fn () => ['maxProcesses' => 0], $supervisorDefaults) + collect($supervisorDefaults)
+            ->groupBy('connection')
+            ->map(fn ($supervisors, string $connection) => [
+                'connection'   => $connection,
+                'queue'        => $supervisors->pluck('queue')->flatten()->unique()->sortBy(fn (string $queue) => $queue !== 'urgent')->values()->all(),
+                'balance'      => false,
+                'maxProcesses' => $connection === 'redis' ? (int) env('HORIZON_LOCAL_WORKERS', 2) : 1,
+                'maxTime'      => 0,
+                'maxJobs'      => 0,
+                'memory'       => 1280,
+                'tries'        => 3,
+                'timeout'      => match ($connection) {
+                    'redis-long-running' => 10800,
+                    'redis-aurora'       => 36000,
+                    'redis-analytics'    => 60,
+                    default              => 3600,
+                },
+                'nice'         => 0,
+            ])
+            ->all(),
     ],
 ];

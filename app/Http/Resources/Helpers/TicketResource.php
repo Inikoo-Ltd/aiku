@@ -15,6 +15,7 @@ use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
 use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\User;
 use App\Models\Chat\MetaChatSession;
+use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
@@ -85,7 +86,7 @@ class TicketResource extends JsonResource
             'subject'        => $this->subject,
             'search_snippet' => $this->search_snippet ? str_replace(['[[', ']]', '~~'], ['<mark>', '</mark>', ' … '], e($this->search_snippet)) : null,
             'description'    => $this->description,
-            'reporter'       => $this->reporter?->contact_name ?: $this->reporter?->username,
+            'reporter'       => $this->reporter_id ? ($this->reporter?->contact_name ?: $this->reporter?->username) : __('System'),
             'reporter_roles' => $request->routeIs('retina.*') ? [] : $this->reporterRoles(),
             'blocks_source'  => (bool) $this->blocks_source,
             'closes_source'  => (bool) $this->closes_source,
@@ -93,7 +94,11 @@ class TicketResource extends JsonResource
             'reporter_key'   => $this->reporter_id ? $this->reporter_type.'-'.$this->reporter_id : null,
             'reporter_username' => $this->reporter_type === 'User' ? $this->reporter?->username : null,
             'reporter_profile_url' => $this->reporter_type === 'User' ? $this->profileUrl($request, $this->reporter) : null,
-            'reporter_short' => $this->reporter_type === 'User' ? $this->reporter?->username : ($this->reporter?->contact_name ?: $this->reporter?->username),
+            'reporter_short' => match (true) {
+                !$this->reporter_id                => __('System'),
+                $this->reporter_type === 'User' => $this->reporter?->username,
+                default                            => $this->reporter?->contact_name ?: $this->reporter?->username,
+            },
             'reporter_avatar' => $this->reporter_type === 'User' ? $this->avatar($this->reporter) : null,
             'is_from_slack'  => (bool) data_get($this->data, 'slack'),
             'reference_url'  => data_get($this->data, 'reference_url'),
@@ -166,7 +171,10 @@ class TicketResource extends JsonResource
 
         $session  = $this->source;
         $channel  = $this->source_channel;
-        $customer = $session instanceof MetaChatSession ? $session->customer : $session?->webUser?->customer;
+        $customer = match (true) {
+            $session instanceof MetaChatSession, $session instanceof ShoppingAssistantConversation => $session->customer,
+            default                                                                                => $session?->webUser?->customer,
+        };
 
         return [
             'channel'       => $channel?->value,
@@ -186,6 +194,10 @@ class TicketResource extends JsonResource
 
     private function sourceUrl(mixed $session): ?string
     {
+        if ($session instanceof ShoppingAssistantConversation) {
+            return route('grp.websites.shopping_assistant.conversations.show', $session->ulid);
+        }
+
         $organisationSlug = $this->organisation?->slug ?? $session?->shop?->organisation?->slug;
 
         if (!$organisationSlug || !$session?->ulid) {

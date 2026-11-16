@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { computed, onMounted, ref } from "vue"
 import axios from "axios"
 import { useForm, router } from "@inertiajs/vue3"
@@ -20,10 +21,10 @@ import TicketUserHoverCard from "@/Components/Tickets/TicketUserHoverCard.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPencil, faTrashAlt, faUser, faShieldCheck, faShieldAlt, faForward, faSpinner } from "@fal"
+import { faPencil, faTrashAlt, faUser, faShieldCheck, faShieldAlt, faForward } from "@fal"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 
-library.add(faPencil, faTrashAlt, faUser, faShieldCheck, faShieldAlt, faForward, faSpinner)
+library.add(faPencil, faTrashAlt, faUser, faShieldCheck, faShieldAlt, faForward)
 
 const qaVerdictBadgeClass: Record<string, string> = {
     passed: "bg-green-200 text-green-900",
@@ -38,7 +39,7 @@ const qaVerdictIcon: Record<string, string> = {
 }
 
 const props = withDefaults(defineProps<{
-    ticket: { id?: number; subject: string; description: string | null; reporter: string | null; reporter_roles?: { key: string; label: string }[]; reporter_avatar?: Record<string, string> | null; reporter_username?: string | null; reporter_key?: string | null; reporter_profile_url?: string | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: (Record<string, string> & { ulid?: string })[]; attachments?: { name: string; url: string; ulid?: string; mime?: string | null }[] }
+    ticket: { id?: number; type?: string; subject: string; description: string | null; reporter: string | null; reporter_roles?: { key: string; label: string }[]; reporter_avatar?: Record<string, string> | null; reporter_username?: string | null; reporter_key?: string | null; reporter_profile_url?: string | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: (Record<string, string> & { ulid?: string })[]; attachments?: { name: string; url: string; ulid?: string; mime?: string | null }[] }
     contentRoute?: { name: string; parameters: Record<string, unknown> } | null
     comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; type?: string; has_qa_verdict?: string | null; qa_verdict_label?: string | null; author_avatar?: Record<string, string> | null; author_username?: string | null; author_key?: string | null; author_profile_url?: string | null; author_roles?: { key: string; label: string }[]; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: (Record<string, string> & { ulid?: string })[]; attachments?: { name: string; url: string; ulid?: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
@@ -56,7 +57,7 @@ const emit = defineEmits<{
     (e: "update:commentsNewestFirst", value: boolean): void
 }>()
 
-const form = useForm<{ body: string; images: File[]; is_internal: boolean; type: string }>({ body: "", images: [], is_internal: false, type: "comment" })
+const form = useForm<{ body: string; images: File[]; is_internal: boolean; to_customer: boolean; type: string }>({ body: "", images: [], is_internal: false, to_customer: false, type: "comment" })
 
 const composer = ref<{ appendMention: (username: string) => void } | null>(null)
 
@@ -287,6 +288,11 @@ const submit = () => {
                     {{ ctrans("Engineering note") }}
                     <span class="text-xs font-normal text-gray-400">{{ ctrans("staff only, shown collapsed") }}</span>
                 </label>
+                <label v-if="canCommentInternally && ticket.type === 'merlin' && !form.is_internal" class="flex cursor-pointer select-none items-center gap-2 text-sm transition duration-200" :class="form.to_customer ? 'font-semibold text-gray-900' : 'text-gray-500 hover:text-gray-700'">
+                    <input v-model="form.to_customer" type="checkbox" class="cursor-pointer rounded border-gray-300 text-[var(--app-accent)] focus:ring-[var(--app-accent)]" />
+                    {{ ctrans("Send to the customer") }}
+                    <span class="text-xs font-normal text-gray-400">{{ ctrans("in their Merlin chat, by email") }}</span>
+                </label>
                 <label v-if="canCommentInternally" class="flex cursor-pointer select-none items-center gap-2 text-sm transition duration-200" :class="form.type === 'post_mortem' ? 'font-semibold text-red-700' : 'text-gray-500 hover:text-gray-700'">
                     <input v-model="form.type" type="checkbox" true-value="post_mortem" false-value="comment" class="cursor-pointer rounded border-gray-300 text-red-500 focus:ring-red-400" />
                     {{ ctrans("Incident post-mortem") }}
@@ -333,7 +339,7 @@ const submit = () => {
                     <span class="ml-auto flex items-center gap-1">
                         <Button v-if="comment.can_toggle_visibility" type="tertiary" size="xs" :disabled="isCommentBusy(comment.id)" :label="comment.is_lead_only ? ctrans('Unhide') : ctrans('Hide')" @click="toggleVisibility(comment.id)" />
                         <button v-if="comment.can_edit" v-tooltip="ctrans('Edit')" type="button" class="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-40 disabled:hover:text-gray-500" :disabled="isCommentBusy(comment.id)" @click="startEdit(comment)">
-                            <FontAwesomeIcon :icon="savingEditId === comment.id ? 'fal fa-spinner' : 'fal fa-pencil'" :spin="savingEditId === comment.id" fixed-width />
+                            <LoadingIcon v-if="savingEditId === comment.id" /><FontAwesomeIcon v-else icon="fal fa-pencil" fixed-width />
                         </button>
                         <ModalConfirmation
                             v-if="comment.can_delete"
@@ -341,7 +347,7 @@ const submit = () => {
                             :description="comment.can_edit ? ctrans('The comment will be removed from the ticket.') : ctrans('This is not your comment. It will be removed for everyone, including its images and files, and cannot be undone. The ticket history will note that you removed it.')">
                             <template #default="{ changeModel }">
                                 <button v-tooltip="ctrans('Delete')" type="button" class="p-1 text-gray-500 hover:text-red-600 disabled:opacity-40 disabled:hover:text-gray-500" :disabled="isCommentBusy(comment.id)" @click="changeModel">
-                                    <FontAwesomeIcon :icon="deletingId === comment.id ? 'fal fa-spinner' : 'fal fa-trash-alt'" :spin="deletingId === comment.id" fixed-width />
+                                    <LoadingIcon v-if="deletingId === comment.id" /><FontAwesomeIcon v-else icon="fal fa-trash-alt" fixed-width />
                                 </button>
                             </template>
                             <template #btn-yes="{ closeModal }">

@@ -62,6 +62,9 @@ class ShowManufactureFloor extends OrgAction
     /** @var array<string, array<string, mixed>|null> what each mix covers, by mix pool key */
     private array $mixPools = [];
 
+    /** @var Collection<string, Collection<int, JobOrderItemTask>> open lines of this production's pools, by mix pool key */
+    private Collection $mixPoolLines;
+
     private ?Collection $packSizes = null;
 
     private bool $canCombine = false;
@@ -168,6 +171,14 @@ class ShowManufactureFloor extends OrgAction
         $this->trialRunsNeedingFormulation = RecordTrialRunFormulation::jobOrdersNeedingFormulation($openTasks->pluck('jobOrder')->push($openSession?->jobOrderItemTask?->jobOrder)->filter());
 
         $openTasks = $this->collapseSharedMixes($this->collapseCombined($openTasks), $openTasksByJobOrderItem);
+
+        $this->mixPoolLines = ShareMixPool::make()->tasksNeedingByPool(
+            $production->id,
+            $openTasks->concat([$openSession?->jobOrderItemTask])->filter()
+                ->filter(fn (JobOrderItemTask $task) => $task->production_id == $production->id)
+                ->map(fn (JobOrderItemTask $task) => ShareMixPool::poolKey($task))->filter()->unique()->values()->all(),
+            ['jobOrder', 'jobOrderItem.artefact']
+        );
 
         $stepsByJobOrderItem = JobOrderItemTask::whereIn('job_order_item_id', $openTasksByJobOrderItem->keys())
             ->with([
@@ -318,6 +329,7 @@ class ShowManufactureFloor extends OrgAction
                         'parameters' => ['manufactureTaskSession' => $openSession->id],
                         'method'     => 'patch',
                     ],
+                    'raw_material_batches' => $this->rawMaterialBatches($openSession),
                     'band_feedback' => $this->bandFeedback($openSession),
                     'break_minutes' => (int) $openSession->break_minutes,
                     'left_open_after_shift_at' => $openSession->left_open_after_shift_at,
@@ -483,6 +495,37 @@ class ShowManufactureFloor extends OrgAction
     }
 
     /**
+     * The raw materials of the step being worked, for the artisan to type the batch code and expiry date read on each
+     * pack (HELP-4699). They start empty every time: a value carried over would be saved as if read off the pack.
+     *
+     * @return array<int, array{raw_material_id: int, code: string, name: string, batch_code: string|null, expiry_date: string|null}>|null
+     */
+    protected function rawMaterialBatches(ManufactureTaskSession $session): ?array
+    {
+        if ($session->production_id != $this->production->id || !$this->production->recordsRawMaterialBatches()) {
+            return null;
+        }
+
+        $members      = $session->is_combined ? $session->jobOrderItemTask->combinedGroup() : collect([$session->jobOrderItemTask]);
+        $rawMaterials = $members->flatMap(fn (JobOrderItemTask $member) => $member->recipeStep?->rawMaterials()->with('rawMaterial')->get() ?? collect())
+            ->map(fn ($line) => $line->rawMaterial)
+            ->filter()
+            ->unique('id')
+            ->values();
+        if ($rawMaterials->isEmpty()) {
+            return null;
+        }
+
+        return $rawMaterials->map(fn ($rawMaterial) => [
+            'raw_material_id' => $rawMaterial->id,
+            'code'            => $rawMaterial->code,
+            'name'            => $rawMaterial->description,
+            'batch_code'      => null,
+            'expiry_date'     => null,
+        ])->all();
+    }
+
+    /**
      * @param Collection<int, JobOrderItemTask> $steps
      * @return array<int, array{id: int, task_name: string, state: JobOrderItemTaskStateEnum, quantity_made: float, quantity_required: float, blocked_by_step: string|null, worked_by: string[], working_on_by: string[], seconds: int}>
      */
@@ -597,7 +640,9 @@ class ShowManufactureFloor extends OrgAction
 
         return $this->mixPools[$poolKey] ??= (function () use ($task, $poolKey) {
             $pool     = ShareMixPool::make();
-            $lines    = $pool->tasksNeeding($task->production_id, $poolKey)->load(['jobOrder', 'jobOrderItem.artefact']);
+            $lines    = $task->production_id == $this->production->id && isset($this->mixPoolLines[$poolKey])
+                ? $this->mixPoolLines[$poolKey]
+                : $pool->tasksNeeding($task->production_id, $poolKey)->load(['jobOrder', 'jobOrderItem.artefact']);
             $needed   = round($lines->sum(fn (JobOrderItemTask $line) => (float) $line->quantity_required - (float) $line->quantity_made), 3);
             $isMaking = ShareMixPool::isMakingKey($poolKey);
             $batchKg  = $isMaking ? null : $task->mixBatchKg();

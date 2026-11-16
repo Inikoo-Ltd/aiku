@@ -838,8 +838,7 @@ test('new purchase orders use the default warehouse address and show empty physi
         strict: false
     );
 
-    expect(Arr::get($purchaseOrder->data, 'delivery_address'))->toBe($address->formatted_address);
-    $purchaseOrder->update(['data' => []]);
+    expect(Arr::get($purchaseOrder->data, 'delivery_address'))->toBeNull();
 
     $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
@@ -2088,7 +2087,8 @@ test('UI stock delivery partial reload refreshes item state filters and tabs', f
 
     $response->assertOk()
         ->assertJsonPath('props.queryBuilderProps.items.elementGroups.state.elements.placed.1', 1)
-        ->assertJsonCount(10, 'props.tabs.navigation')
+        ->assertJsonCount(11, 'props.tabs.navigation')
+        ->assertJsonPath('props.tabs.navigation.'.StockDeliveryTabsEnum::FEEDBACK->value.'.title', StockDeliveryTabsEnum::FEEDBACK->blueprint()['title'])
         ->assertJsonPath(
             'props.tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value.'.title',
             StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->blueprint()['title']

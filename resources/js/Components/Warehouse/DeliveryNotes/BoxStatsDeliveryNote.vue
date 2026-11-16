@@ -29,6 +29,7 @@ import Select from 'primevue/select';
 import Dialog from "primevue/dialog"
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import { faExchangeAlt, faLock , faLockOpen} from "@far"
+import { faVideo } from "@fal"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 
@@ -730,6 +731,18 @@ function returnNoteRoute(returnDeliveryNote) {
                         />
                     </div>
                     
+                    <!-- Section: Packing bench -->
+                    <dl v-if="boxStats?.packing_bench" v-tooltip="ctrans('Bench the order was packed on, check its camera for claims')"
+                        class="!mt-1.5 border-l-4 border-gray-300 bg-gray-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                        <dt class="flex-none">
+                            <FontAwesomeIcon :icon="faVideo" fixed-width aria-hidden="true" class="text-gray-500" />
+                            {{ ctrans("Packing bench") }}:
+                        </dt>
+                        <dd class="font-bold whitespace-nowrap">
+                            {{ boxStats.packing_bench }}
+                        </dd>
+                    </dl>
+
                     <div class="!mt-2 border-t border-gray-300 w-full" />
 
 

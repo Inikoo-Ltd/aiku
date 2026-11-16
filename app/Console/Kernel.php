@@ -127,6 +127,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('accounting:refresh-invoice-countries-dashboard')->everySixHours()->onOneServer()->withoutOverlapping()->runInBackground();
         $schedule->command('procurement:send-minimum-poke-digests')->everyFifteenMinutes()->onOneServer()->withoutOverlapping();
         $schedule->command('bank-connections:sync')->everyFifteenMinutes()->onOneServer()->withoutOverlapping(60)->runInBackground();
+        $schedule->command('bank-transactions:cod-payouts --commit --days=30')->hourlyAt(20)->onOneServer()->withoutOverlapping(60)->runInBackground();
         $schedule->command('staff-tasks:remind-due')->hourly()->onOneServer();
         $schedule->command('product-developments:remind')->dailyAt('08:00')->timezone('Europe/London')->onOneServer();
         $schedule->command('appointments:close-past')->everyFifteenMinutes()->onOneServer()->withoutOverlapping();
@@ -175,6 +176,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('shopping-assistant:wipe-old')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping(60);
         $schedule->command('shopping-assistant:weekly-summary')->weeklyOn(1, '07:00')->timezone('Europe/London')->onOneServer();
         $schedule->command('shopping-assistant:unmet-needs')->weeklyOn(1, '07:05')->timezone('Europe/London')->onOneServer();
+        $schedule->command('shopping-assistant:morning-round')->everyFifteenMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping(10);
+        $schedule->command('shopping-assistant:close-unanswered-questions')->hourlyAt(15)->onOneServer()->withoutOverlapping(30);
+        $schedule->command('shopping-assistant:tell-waiting-customers')->everyFiveMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping(10);
         $schedule->command('catalogue:embed-search')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping(120)->runInBackground();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('nightowl:freeze-cold-partitions')->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
@@ -532,6 +536,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'MasterAssetHydrateEffectiveCost',
                 ),
                 name: 'MasterAssetHydrateEffectiveCost',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('google-merchant:sync-cogs')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'SyncShopGoogleMerchantCostOfGoodsSold',
+                ),
+                name: 'SyncShopGoogleMerchantCostOfGoodsSold',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

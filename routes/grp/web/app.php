@@ -151,6 +151,36 @@ Route::middleware(
     Route::prefix("sysadmin")
         ->name("sysadmin.")
         ->group(__DIR__."/sysadmin.php");
+    Route::prefix("financials")
+        ->name("financials.")
+        ->group(function () {
+            Route::redirect('/', '/financials/bank-incoming')->name('dashboard');
+            Route::prefix('bank-incoming')->name('bank_incoming.')->group(function () {
+                Route::get('/', [App\Actions\Accounting\BankTransaction\UI\ShowBankIncomingDashboard::class, 'inGroup'])->name('index');
+                foreach (['customers' => 'customers', 'marketplaces' => 'marketplaces', 'payment-accounts' => 'payment_accounts', 'other' => 'other', 'needs-a-person' => 'needs_person'] as $path => $name) {
+                    Route::get("/$path", [App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming::class, 'inGroup'])->name($name);
+                }
+            });
+            Route::prefix('bank-outgoing')->name('bank_outgoing.')->group(function () {
+                Route::get('/', [App\Actions\Accounting\BankTransaction\UI\ShowBankOutgoingDashboard::class, 'inGroup'])->name('index');
+                foreach (App\Actions\Accounting\BankTransaction\UI\IndexBankOutgoing::SECTIONS as $section) {
+                    Route::get('/'.($section === 'needs_person' ? 'needs-a-person' : str_replace('_', '-', $section)), [App\Actions\Accounting\BankTransaction\UI\IndexBankOutgoing::class, 'inGroup'])->name($section);
+                }
+            });
+            Route::get('/cash', [App\Actions\Accounting\BankBalance\UI\ShowCash::class, 'inGroup'])->name('cash.index');
+            Route::prefix('payables')->name('payables.')->group(function () {
+                Route::get('/', [App\Actions\Accounting\Payables\ShowPayablesDashboard::class, 'inGroup'])->name('index');
+                foreach (array_keys(App\Actions\Accounting\Payables\IndexPayables::sections()) as $section) {
+                    Route::get('/'.str_replace('_', '-', $section), [App\Actions\Accounting\Payables\IndexPayables::class, 'inGroup'])->name($section);
+                }
+            });
+            Route::prefix('receivables')->name('receivables.')->group(function () {
+                Route::get('/', [App\Actions\Accounting\Receivables\UI\ShowReceivablesDashboard::class, 'inGroup'])->name('index');
+                foreach (App\Actions\Accounting\Receivables\UI\IndexReceivables::SECTIONS as $section) {
+                    Route::get("/$section", [App\Actions\Accounting\Receivables\UI\IndexReceivables::class, 'inGroup'])->name($section);
+                }
+            });
+        });
     Route::prefix("marketing")
         ->name("marketing.")
         ->group(function () {

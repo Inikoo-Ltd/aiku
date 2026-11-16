@@ -27,6 +27,7 @@ use App\Actions\SupplyChain\AgentInvoice\UpdateAgentInvoiceCharges;
 use App\Actions\SupplyChain\StockDeliveryInvoice\StoreActualStockDeliveryInvoice;
 use App\Models\SysAdmin\User;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\AddItemNotOnPurchaseOrderToStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
 use App\Actions\GoodsIn\Sowing\DeleteSowing;
@@ -3814,11 +3815,16 @@ test('a flagged line is closed by a recount, a unit correction that uncovers a s
 
     $surplus = ResolveStockDeliveryItemDiscrepancy::make()->action($surplus, $user, ['outcome' => 'surplus_accepted']);
     expect($surplus->discrepancy_outcome)->toBe(StockDeliveryItemDiscrepancyOutcomeEnum::SURPLUS_ACCEPTED)
-        ->and($surplus->discrepancy_resolved_at)->not->toBeNull();
+        ->and($surplus->discrepancy_resolved_at)->not->toBeNull()
+        ->and((float) $surplus->unit_quantity)->toBe(202.0)
+        ->and((float) $surplus->net_amount)->toBe(27270.0)
+        ->and((float) $surplus->cost_items)->toBe(27270.0)
+        ->and($surplus->data['surplus_accepted']['unit_quantity'])->toEqual(200)
+        ->and($surplus->data['surplus_accepted']['net_amount'])->toEqual(27000);
 
     $stockDelivery->refresh();
     expect($stockDelivery->number_stock_delivery_items_under_delivered)->toBe(1)
-        ->and($stockDelivery->number_stock_delivery_items_over_delivered)->toBe(1)
+        ->and($stockDelivery->number_stock_delivery_items_over_delivered)->toBe(0)
         ->and($stockDelivery->number_stock_delivery_items_possible_unit_mismatch)->toBe(0);
 
     $stockDelivery->updateQuietly(['state' => StockDeliveryStateEnum::BOOKED_IN]);
@@ -3831,6 +3837,41 @@ test('a flagged line is closed by a recount, a unit correction that uncovers a s
         ->and($row['outcome'])->toBe('supplier_claim')
         ->and($row['claim']['state'])->toBe('credit_received')
         ->and($row['claim']['credit_note_amount'])->toEqual(5060);
+});
+
+test('a product the supplier sent that is on no purchase order is added to the delivery as received and counted, at the supplier price (HELP-4705)', function () {
+    $user          = $this->adminGuest->getUser();
+    $stockDelivery = createStockDeliveryWithItems($this, 'EXTRA-'.Str::random(6), [80]);
+    $stockDelivery->update(['org_exchange' => 1, 'grp_exchange' => 1]);
+    $orgSupplierProduct = OrgSupplierProduct::where('organisation_id', $stockDelivery->organisation_id)->where('supplier_product_id', $stockDelivery->items()->value('supplier_product_id'))->firstOrFail();
+    AttachOrgSupplierProductToOrgStock::make()->action($stockDelivery->items()->first()->orgStock, $orgSupplierProduct);
+
+    expect(fn () => AddItemNotOnPurchaseOrderToStockDelivery::make()->action($stockDelivery, $user, ['org_supplier_product_id' => $orgSupplierProduct->id, 'sko_quantity' => 6]))
+        ->toThrow(ValidationException::class);
+
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery->refresh());
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    expect(fn () => AddItemNotOnPurchaseOrderToStockDelivery::make()->action($stockDelivery, $user, ['org_supplier_product_id' => OrgSupplierProduct::where('organisation_id', $stockDelivery->organisation_id)->where('org_supplier_id', '!=', $stockDelivery->parent_id)->value('id'), 'sko_quantity' => 6]))
+        ->toThrow(ValidationException::class);
+
+    $item     = AddItemNotOnPurchaseOrderToStockDelivery::make()->action($stockDelivery->refresh(), $user, ['org_supplier_product_id' => $orgSupplierProduct->id, 'sko_quantity' => 6]);
+    $packedIn = (float) ($item->orgStock->packed_in ?: 1);
+
+    expect($item->stock_delivery_id)->toBe($stockDelivery->id)
+        ->and($item->state)->toBe(StockDeliveryItemStateEnum::CHECKED)
+        ->and((float) $item->unit_quantity)->toBe(6 * $packedIn)
+        ->and((float) $item->unit_quantity_checked)->toBe(6 * $packedIn)
+        ->and((float) $item->net_amount)->toEqual(100 * 6 * $packedIn)
+        ->and($item->checked_at)->not->toBeNull()
+        ->and($item->discrepancy())->toBeNull()
+        ->and($item->data['not_on_purchase_order']['by'])->toBe($user->id)
+        ->and($item->orgStockMovementCost()['cost_per_sku'])->toEqual(100 * $packedIn)
+        ->and($stockDelivery->refresh()->items()->count())->toBe(2);
+
+    $stockDelivery->update(['is_costed' => true]);
+    expect(fn () => AddItemNotOnPurchaseOrderToStockDelivery::make()->action($stockDelivery->refresh(), $user, ['org_supplier_product_id' => $orgSupplierProduct->id, 'sko_quantity' => 1]))
+        ->toThrow(ValidationException::class);
 });
 
 test('duty is shared by customs line: a duty-free line takes none, items on no line share what the lines leave (HELP-3863)', function () {

@@ -30,7 +30,8 @@ use Lorisleiva\Actions\ActionRequest;
  * so it becomes the competitor's product and a confirmed same-item match, and the usual
  * price comparison and dashboard count it, and every check is kept as history with the link to the
  * listing and a screenshot of it showing the price, so anyone can see it with their own eyes, also
- * after the listing changes or disappears.
+ * after the listing changes or disappears. A competitor read by its feed or search takes price checks too, for the
+ * sizes and products the reading misses (HELP-4691); the feed import keeps them.
  */
 class StoreCompetitorPriceCheck extends OrgAction
 {
@@ -138,7 +139,6 @@ class StoreCompetitorPriceCheck extends OrgAction
 
     public function asController(Competitor $competitor, ActionRequest $request): CompetitorPriceCheck
     {
-        abort_unless($competitor->prices_by_hand, 404);
         $this->competitor = $competitor;
         $this->initialisationFromGroup(group(), $request);
 

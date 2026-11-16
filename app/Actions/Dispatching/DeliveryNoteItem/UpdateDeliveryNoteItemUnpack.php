@@ -90,4 +90,13 @@ class UpdateDeliveryNoteItemUnpack extends OrgAction
 
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }
+
+    public function action(DeliveryNoteItem $deliveryNoteItem, User $user): DeliveryNoteItem
+    {
+        $this->user = $user;
+
+        $this->initialisationFromShop($deliveryNoteItem->shop, []);
+
+        return $this->handle($deliveryNoteItem, $this->validatedData);
+    }
 }

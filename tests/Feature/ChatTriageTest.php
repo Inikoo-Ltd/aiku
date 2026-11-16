@@ -715,7 +715,7 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
     ]);
     \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-26 11:00', 'Europe/London'));
 
-    $session = noiseTestWhatsappSession($this->shop->fresh(), '+447500000004', 'Hello');
+    $session = tap(noiseTestWhatsappSession($this->shop->fresh(), '+447500000004', 'Hello'), fn ($chatSession) => $chatSession->forceFill(['customer_id' => $order->customer_id])->save());
     $reply   = \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make();
 
     // A bare hello is not read by the model: it just gets the closed-now reply, asking what they need.
@@ -762,9 +762,14 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
     expect(\App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($session->refresh()))->toBeNull()
         ->and(\App\Actions\Chat\ChatSession\GetChatClaimDetails::forList(noiseTestWhatsappSession($this->shop, '+447500000005', 'Hi')))->toBeNull();
 
+    // PRE-107: an order number given only in the email subject counts from the customer's own address, never from a stranger's.
+    expect(\App\Actions\Chat\ChatSession\GetChatClaimDetails::run(noiseTestEmailSession($this->shop, (string) $order->customer->email, "Order {$order->reference} - Broken Bath Bombs", '3 broken bath bombs'))['order_reference'])->toBe($order->reference)
+        ->and(\App\Actions\Chat\ChatSession\GetChatClaimDetails::run(noiseTestEmailSession($this->shop, (string) $order->customer->email, "Order $digits - Broken", '3 broken bath bombs'))['order_reference'])->toBe($order->reference)
+        ->and(\App\Actions\Chat\ChatSession\GetChatClaimDetails::run(noiseTestEmailSession($this->shop, 'stranger@example.com', "Order $digits - Broken", '3 broken bath bombs'))['order_reference'])->toBeNull();
+
     // PRE-98: items and quantities already named are not asked for again.
     $modelSays = '{"claim": true, "names_items": true}';
-    $named     = noiseTestWhatsappSession($this->shop->fresh(), '+447500000006', "Order $digits: I ordered 2x6 Moonstone candles and only 1x6 arrived");
+    $named     = tap(noiseTestWhatsappSession($this->shop->fresh(), '+447500000006', "Order $digits: I ordered 2x6 Moonstone candles and only 1x6 arrived"), fn ($chatSession) => $chatSession->forceFill(['customer_id' => $order->customer_id])->save());
 
     expect($reply->handle($named))->toBeTrue();
     $asked = $named->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->latest('id')->first();
@@ -772,7 +777,7 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
         ->and($asked->message_text)->not->toContain('which items are affected and how many')
         ->and($asked->message_text)->not->toContain('your order number');
 
-    $complete = noiseTestWhatsappSession($this->shop->fresh(), '+447500000007', "Order $digits: I ordered 2x6 Moonstone candles and only 1x6 arrived");
+    $complete = tap(noiseTestWhatsappSession($this->shop->fresh(), '+447500000007', "Order $digits: I ordered 2x6 Moonstone candles and only 1x6 arrived"), fn ($chatSession) => $chatSession->forceFill(['customer_id' => $order->customer_id])->save());
     $complete->messages()->create([
         'meta_channel_id' => $complete->meta_channel_id,
         'message_type'    => ChatMessageTypeEnum::IMAGE,
@@ -1090,4 +1095,53 @@ test('the reply promise says when the shop opens, turns overdue an hour later, a
         ->and($dashboard['promises']['kept'])->toBeGreaterThanOrEqual(1);
 
     outOfHoursTestCleanUp($schedule, [$waiting, $keptCase, $olderPlain]);
+});
+
+test('the order number a customer gave is found however they wrote it, and their own order wins', function () {
+    $claimDetails = \App\Actions\Chat\ChatSession\GetChatClaimDetails::class;
+    $base         = createOrder($this->customer, Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1]);
+    $stranger     = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $sibling      = \App\Models\Catalogue\Shop::where('organisation_id', $this->shop->organisation_id)->whereKeyNot($this->shop->id)->first();
+
+    $order = fn (string $reference, Customer $customer, ?int $shopId = null) => tap($base->replicate(['ulid', 'slug']), fn ($copy) => $copy->forceFill([
+        'reference'     => $reference,
+        'slug'          => Str::slug($reference).'-'.Str::random(4),
+        'customer_id'   => $customer->id,
+        'shop_id'       => $shopId ?? $this->shop->id,
+        'state'         => \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED,
+        'dispatched_at' => now()->subDays(3),
+    ])->save());
+
+    $theirs = $order('PRX870101', $this->customer);
+    $order('PRX870202', $stranger);
+    $order('PRX2025', $stranger);
+
+    expect($claimDetails::orderReference($this->shop, 'Order PRX870202 and also OrderPRX870101', $this->customer))->toBe($theirs->reference)
+        ->and($claimDetails::orderReference($this->shop, 'call me on 870202 about 870101', $this->customer))->toBe($theirs->reference)
+        ->and($claimDetails::orderReference($this->shop, 'Order PRX870202 and also PRX870101'))->toBe('PRX870202')
+        ->and($claimDetails::orderReference($this->shop, 'Problem with PRX - 870202'))->toBe('PRX870202')
+        ->and($claimDetails::orderReference($this->shop, 'call me on 870202'))->toBeNull()
+        ->and($claimDetails::orderReference($this->shop, 'ordered on 12/03/2025, broken'))->toBeNull()
+        ->and($claimDetails::orderReference($this->shop, 'ordered on 12/03/2025, broken', $stranger))->toBeNull();
+
+    if ($sibling) {
+        $twin = \App\Actions\CRM\Customer\StoreCustomer::make()->action($sibling, ['email' => $this->customer->email] + Customer::factory()->definition());
+        $order('SIB870303', $twin, $sibling->id);
+
+        expect($claimDetails::orderReference($this->shop, 'Order SIB870303 received', $this->customer))->toBe('SIB870303')
+            ->and($claimDetails::orderReference($this->shop, 'Order SIB870303 received', $stranger))->toBeNull()
+            ->and($claimDetails::orderReference($this->shop, 'Order SIB870303 received'))->toBeNull();
+    }
+
+    $thread = noiseTestEmailSession($this->shop, 'buyer@example.com', 'Broken items', 'Two arrived broken');
+    $thread->messages()->create([
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::GUEST,
+        'message_text' => 'Photos to follow',
+        'metadata'     => ['email_subject' => 'Re: Broken items, PRX870202'],
+    ]);
+
+    expect($claimDetails::run($thread)['order_reference'])->toBe('PRX870202')
+        ->and($claimDetails::onlyRecentOrder($this->customer))->toBe($theirs->reference)
+        ->and($claimDetails::onlyRecentOrder($stranger))->toBeNull();
 });

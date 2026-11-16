@@ -138,6 +138,47 @@ test('a customer service viewer sees the shop knowledge notes but not the contro
     $note->delete();
 });
 
+test('a note can reach the shop, its organisation or the group, and only admins of that reach may set, change or remove it', function () {
+    actingAs($this->user);
+    $parameters = [$this->organisation->slug, $this->shop->slug];
+    $policies   = fn () => get(route('grp.org.shops.show.chat.settings', $parameters).'?tab=policies')->viewData('page')['props']['policies'];
+
+    expect($policies()['note_reaches'])->toContain('shop', 'organisation');
+    $this->post(route('grp.org.shops.show.chat.settings.knowledge.store', $parameters), ['title' => 'What an outer is', 'body' => 'An outer is the pack the price is for.', 'reach' => 'organisation'])->assertRedirect();
+    $outer = \App\Models\Chat\ChatKnowledgeEntry::where('title', 'What an outer is')->latest('id')->first();
+
+    expect($outer->shop_id)->toBeNull()
+        ->and($outer->organisation_id)->toBe($this->shop->organisation_id)
+        ->and(\App\Models\Chat\ChatKnowledgeEntry::forShop($this->shop)->whereKey($outer->id)->exists())->toBeTrue()
+        ->and(collect($policies()['notes'])->firstWhere('id', $outer->id))->toMatchArray(['reach' => 'organisation', 'can_edit' => true]);
+
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($this->user, [RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop)]);
+
+    expect($policies()['note_reaches'])->toBe(['shop'])
+        ->and(collect($policies()['notes'])->firstWhere('id', $outer->id))->toMatchArray(['reach' => 'organisation', 'can_edit' => false]);
+    $this->post(route('grp.org.shops.show.chat.settings.knowledge.store', $parameters), ['title' => 'Samples', 'body' => 'No free samples.', 'reach' => 'organisation'])->assertForbidden();
+    $this->patch(route('grp.org.shops.show.chat.settings.knowledge.update', [...$parameters, $outer->id]), ['title' => 'Outer', 'body' => 'Changed.'])->assertForbidden();
+    $this->delete(route('grp.org.shops.show.chat.settings.knowledge.delete', [...$parameters, $outer->id]))->assertForbidden();
+    $this->post(route('grp.org.shops.show.chat.settings.knowledge.store', $parameters), ['title' => 'Samples', 'body' => 'No free samples.'])->assertRedirect();
+
+    actingAsUserWithRoles($this->user, $originalRoles);
+    expect($outer->refresh()->body)->toBe('An outer is the pack the price is for.')
+        ->and(\App\Models\Chat\ChatKnowledgeEntry::where('title', 'Samples')->latest('id')->first()->shop_id)->toBe($this->shop->id);
+
+    $samples = \App\Models\Chat\ChatKnowledgeEntry::where('title', 'Samples')->latest('id')->first();
+    $samples->update(['status' => 'proposed', 'created_by_user_id' => null]);
+    $this->patch(route('grp.org.shops.show.chat.settings.knowledge.update', [...$parameters, $samples->id]), ['title' => 'Samples', 'body' => 'No free samples.', 'reach' => 'organisation'])->assertSessionHasErrors('reach');
+    expect($samples->refresh()->shop_id)->toBe($this->shop->id);
+    $this->patch(route('grp.org.shops.show.chat.settings.knowledge.status', [...$parameters, $samples->id]), ['status' => 'active'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($samples->refresh()->status)->toBe('active');
+
+    $this->delete(route('grp.org.shops.show.chat.settings.knowledge.delete', [...$parameters, $outer->id]))->assertRedirect()->assertSessionHasNoErrors();
+    expect(\App\Models\Chat\ChatKnowledgeEntry::whereKey($outer->id)->exists())->toBeFalse();
+
+    $samples->delete();
+});
+
 test('a departed staff member is never a chat agent', function () {
     $session = ChatSession::create([
         'ulid'             => (string) \Illuminate\Support\Str::ulid(),

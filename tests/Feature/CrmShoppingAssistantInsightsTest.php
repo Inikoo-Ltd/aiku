@@ -10,7 +10,10 @@
 
 use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\CRM\ShoppingAssistant\AlertShoppingAssistantHeavyCustomer;
 use App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport;
 use App\Actions\CRM\ShoppingAssistant\SendShoppingAssistantUnmetNeeds;
 use App\Actions\CRM\ShoppingAssistant\SendShoppingAssistantWeeklySummary;
@@ -28,6 +31,7 @@ use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
+use App\Notifications\ShoppingAssistantHeavyCustomerNotification;
 use App\Notifications\ShoppingAssistantUnmetNeedsNotification;
 use App\Notifications\ShoppingAssistantWeeklySummaryNotification;
 use Carbon\CarbonImmutable;
@@ -352,4 +356,62 @@ test('the group settings page offers the weekly summary recipients and the reten
         ->assertInertia(fn ($page) => $page
             ->where('formData.blueprint.5.fields.shopping_assistant_weekly_summary_user_ids.value', [$this->user->id])
             ->where('formData.blueprint.5.fields.shopping_assistant_retention_months.value', 18));
+});
+
+function insightsSpend(Website $website, Customer $customer, float $cost): ShoppingAssistantConversation
+{
+    $conversation = insightsConversation($customer, [['customer', 'Ideas'], ['assistant', 'Here you go.']]);
+    $conversation->update(['website_id' => $website->id]);
+    DB::table('shopping_assistant_model_calls')->insert(['shopping_assistant_conversation_id' => $conversation->id, 'cost' => $cost, 'created_at' => now()]);
+    GetShoppingAssistantBudget::forget($website);
+    GetShoppingAssistantBudget::forgetCustomer($website, $customer);
+
+    return $conversation;
+}
+
+test('a customer who never bought stops getting new answers once their own monthly allowance is spent, one who bought does not, and the refusal is logged as customer_cap', function () {
+    config(['services.shopping_assistant.non_buyer_monthly_budget' => 1]);
+    $website = insightsWebsite($this);
+    UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => 1000]);
+    $website  = $website->refresh();
+    $newcomer = insightsCustomer($this);
+    $buyer    = insightsCustomer($this);
+    $buyer->stats()->update(['number_invoices_type_invoice' => 1]);
+
+    insightsSpend($website, $newcomer, 0.99);
+    expect(GetShoppingAssistantSettings::run($website, $newcomer->refresh(), true))->not->toBeNull();
+
+    insightsSpend($website, $newcomer, 0.02);
+    insightsSpend($website, $buyer, 5);
+    expect(GetShoppingAssistantSettings::run($website, $newcomer->refresh(), true))->toBeNull()
+        ->and(GetShoppingAssistantSettings::run($website, $newcomer))->not->toBeNull()
+        ->and(GetShoppingAssistantSettings::run($website, $buyer->refresh(), true))->not->toBeNull();
+
+    $this->actingAs(insightsWebUser($newcomer), 'retina')->postJson('http://'.$website->domain.'/json/shopping-assistant/ask', ['message' => 'More ideas'])->assertNotFound();
+    expect(DB::table('shopping_assistant_refusals')->where('customer_id', $newcomer->id)->pluck('reason')->all())->toBe(['customer_cap']);
+});
+
+test('one customer passing the heavy share of a website budget emails the weekly summary recipients once a month without blocking them', function () {
+    Notification::fake();
+    config(['services.shopping_assistant.heavy_customer_share' => 0.2]);
+    $website = insightsWebsite($this);
+    GetShoppingAssistantBudget::forget($website);
+    $budget = GetShoppingAssistantBudget::run($website)['spent'] + 10;
+    UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => $budget]);
+    $website  = $website->refresh();
+    $customer = insightsCustomer($this);
+    $customer->stats()->update(['number_invoices_type_invoice' => 1]);
+    UpdateGroupSettings::make()->action($this->organisation->group, ['shopping_assistant_weekly_summary_user_ids' => [$this->user->id]]);
+
+    $conversation = insightsSpend($website, $customer, $budget * 0.2 - 0.01);
+    expect(AlertShoppingAssistantHeavyCustomer::run($conversation->refresh()))->toBe(0);
+
+    insightsSpend($website, $customer, 0.02);
+    expect(AlertShoppingAssistantHeavyCustomer::run($conversation->refresh()))->toBe(1)
+        ->and(AlertShoppingAssistantHeavyCustomer::run($conversation))->toBe(0);
+    expect(GetShoppingAssistantSettings::run($website, $customer->refresh(), true))->not->toBeNull();
+
+    Notification::assertSentToTimes($this->user, ShoppingAssistantHeavyCustomerNotification::class, 1);
+    Notification::assertSentTo($this->user, ShoppingAssistantHeavyCustomerNotification::class, fn (ShoppingAssistantHeavyCustomerNotification $notification) => str_contains($notification->title(), '20%')
+        && str_contains(implode("\n", $notification->toMail($this->user)->introLines), $customer->name));
 });

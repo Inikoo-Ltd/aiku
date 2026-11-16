@@ -20,6 +20,7 @@ use App\Actions\Procurement\OrgPartner\GetPartnerSellingProduct;
 use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
 use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
+use App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
@@ -41,8 +42,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * A purchase order to a partner that is not the manufacturing hub becomes an order in the
- * partner's shop: it is sent to the partner's warehouse at once, the delivery note makes the stock
- * delivery here, and the partner's invoice costs it when it is dispatched.
+ * partner's shop: what the partner makes and has not got in stock goes on its To Produce list, the
+ * order is sent to the partner's warehouse at once, the delivery note makes the stock delivery here,
+ * and the partner's invoice costs it when it is dispatched.
  */
 class SendPartnerPurchaseOrderToSeller
 {
@@ -189,7 +191,10 @@ class SendPartnerPurchaseOrderToSeller
 
         $order->refresh();
         if ($order->state === OrderStateEnum::CREATING) {
-            DB::transaction(fn () => SendPartnerOrderToWarehouse::make()->action($order));
+            DB::transaction(function () use ($order) {
+                StoreToProduceItemsFromOrder::make()->handle($order, fromPartnerPurchaseOrder: true);
+                SendPartnerOrderToWarehouse::make()->action($order);
+            });
         }
 
         DB::transaction(function () use ($purchaseOrder, $order) {

@@ -54,7 +54,7 @@ class ResolveStockDeliveryItemDiscrepancy extends OrgAction
                 StockDeliveryItemDiscrepancyOutcomeEnum::RECOUNT_REQUESTED    => $this->requestRecount($stockDeliveryItem, $user, $modelData),
                 StockDeliveryItemDiscrepancyOutcomeEnum::UNIT_ERROR_CORRECTED => $this->correctUnitError($stockDeliveryItem, $user, $modelData),
                 StockDeliveryItemDiscrepancyOutcomeEnum::SUPPLIER_CLAIM       => $this->claim($stockDeliveryItem, $user, $modelData),
-                StockDeliveryItemDiscrepancyOutcomeEnum::SURPLUS_ACCEPTED     => $this->setOutcome($stockDeliveryItem, $user, $outcome),
+                StockDeliveryItemDiscrepancyOutcomeEnum::SURPLUS_ACCEPTED     => $this->acceptSurplus($stockDeliveryItem, $user),
             };
         });
 
@@ -95,12 +95,45 @@ class ResolveStockDeliveryItemDiscrepancy extends OrgAction
 
     private function correctUnitError(StockDeliveryItem $stockDeliveryItem, User $user, array $modelData): void
     {
-        $unitQuantity = (float) $modelData['unit_quantity'];
-        $netAmount    = (float) Arr::get($modelData, 'net_amount', $stockDeliveryItem->net_amount);
-        $orgExchange  = (float) ($stockDeliveryItem->org_exchange ?? 1);
-        $grpExchange  = (float) ($stockDeliveryItem->grp_exchange ?? 1);
+        $correction = $this->rewriteExpected($stockDeliveryItem, $user, (float) $modelData['unit_quantity'], (float) Arr::get($modelData, 'net_amount', $stockDeliveryItem->net_amount));
 
-        $correction = [
+        $stillFlagged = StockDeliveryItemDiscrepancyEnum::isFlagged($stockDeliveryItem->refresh()->discrepancy());
+
+        $this->setOutcome(
+            $stockDeliveryItem,
+            $user,
+            $stillFlagged ? null : StockDeliveryItemDiscrepancyOutcomeEnum::UNIT_ERROR_CORRECTED,
+            ['unit_corrections' => [...Arr::get($stockDeliveryItem->data, 'unit_corrections', []), $correction]]
+        );
+
+        $this->recost($stockDeliveryItem);
+    }
+
+    /**
+     * The supplier sent more and we keep it: the line now expects what arrived, at the same price per unit, so
+     * its value, the delivery total and the costing all count the extra units.
+     */
+    private function acceptSurplus(StockDeliveryItem $stockDeliveryItem, User $user): void
+    {
+        $unitPrice = (float) $stockDeliveryItem->net_amount / max((float) $stockDeliveryItem->unit_quantity, 0.0001);
+        $received  = (float) $stockDeliveryItem->unit_quantity_checked;
+
+        $before = $this->rewriteExpected($stockDeliveryItem, $user, $received, round($unitPrice * $received, 2));
+
+        $this->setOutcome($stockDeliveryItem->refresh(), $user, StockDeliveryItemDiscrepancyOutcomeEnum::SURPLUS_ACCEPTED, ['surplus_accepted' => $before]);
+
+        $this->recost($stockDeliveryItem);
+    }
+
+    /**
+     * @return array{unit_quantity: float, net_amount: float, by: int, at: string} what the line expected before
+     */
+    private function rewriteExpected(StockDeliveryItem $stockDeliveryItem, User $user, float $unitQuantity, float $netAmount): array
+    {
+        $orgExchange = (float) ($stockDeliveryItem->org_exchange ?? 1);
+        $grpExchange = (float) ($stockDeliveryItem->grp_exchange ?? 1);
+
+        $before = [
             'unit_quantity' => (float) $stockDeliveryItem->unit_quantity,
             'net_amount'    => (float) $stockDeliveryItem->net_amount,
             'by'            => $user->id,
@@ -120,15 +153,11 @@ class ResolveStockDeliveryItemDiscrepancy extends OrgAction
             ...($isCostItemsFromNet ? ['cost_items' => $netAmount] : []),
         ]);
 
-        $stillFlagged = StockDeliveryItemDiscrepancyEnum::isFlagged($stockDeliveryItem->refresh()->discrepancy());
+        return $before;
+    }
 
-        $this->setOutcome(
-            $stockDeliveryItem,
-            $user,
-            $stillFlagged ? null : StockDeliveryItemDiscrepancyOutcomeEnum::UNIT_ERROR_CORRECTED,
-            ['unit_corrections' => [...Arr::get($stockDeliveryItem->data, 'unit_corrections', []), $correction]]
-        );
-
+    private function recost(StockDeliveryItem $stockDeliveryItem): void
+    {
         $stockDelivery = $stockDeliveryItem->stockDelivery;
         if ($stockDelivery->costs()->exists()) {
             EvaluateStockDeliveryCosting::run($stockDelivery);
@@ -189,9 +218,11 @@ class ResolveStockDeliveryItemDiscrepancy extends OrgAction
         }
 
         match ($outcome) {
-            StockDeliveryItemDiscrepancyOutcomeEnum::SURPLUS_ACCEPTED => (float) $item->unit_quantity_checked <= (float) $item->unit_quantity
-                ? $validator->errors()->add('outcome', __('Only a line that arrived over what was expected has a surplus'))
-                : null,
+            StockDeliveryItemDiscrepancyOutcomeEnum::SURPLUS_ACCEPTED => match (true) {
+                (float) $item->unit_quantity_checked <= (float) $item->unit_quantity => $validator->errors()->add('outcome', __('Only a line that arrived over what was expected has a surplus')),
+                (bool) $stockDelivery->is_costed => $validator->errors()->add('outcome', __('The delivery is costed: reopen the costing before accepting the surplus')),
+                default => null,
+            },
             StockDeliveryItemDiscrepancyOutcomeEnum::SUPPLIER_CLAIM => (float) $item->unit_quantity_checked >= (float) $item->unit_quantity && !$item->claim
                 ? $validator->errors()->add('outcome', __('Only a line that arrived short can be claimed'))
                 : null,

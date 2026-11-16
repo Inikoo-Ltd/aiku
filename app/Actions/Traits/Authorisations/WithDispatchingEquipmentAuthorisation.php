@@ -8,6 +8,8 @@
 
 namespace App\Actions\Traits\Authorisations;
 
+use App\Models\Inventory\Warehouse;
+use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithDispatchingEquipmentAuthorisation
@@ -24,12 +26,17 @@ trait WithDispatchingEquipmentAuthorisation
         ]);
         $this->canDelete = $this->canEdit;
 
-        return $request->user()->authTo([
-            "org-admin.{$this->organisation->id}",
-            "dispatching.{$this->warehouse->id}.view",
-            "fulfilment.{$this->warehouse->id}.view",
-            "supervisor-locations.{$this->warehouse->id}",
-            "locations.{$this->warehouse->id}.view",
+        return self::canViewDispatchingEquipment($request->user(), $this->warehouse);
+    }
+
+    public static function canViewDispatchingEquipment(User $user, Warehouse $warehouse): bool
+    {
+        return $user->authTo([
+            "org-admin.$warehouse->organisation_id",
+            "dispatching.$warehouse->id.view",
+            "fulfilment.$warehouse->id.view",
+            "supervisor-locations.$warehouse->id",
+            "locations.$warehouse->id.view",
         ]);
     }
 }

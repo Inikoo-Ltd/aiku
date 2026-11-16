@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Allegro\Traits;
 
 use DOMDocument;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -70,7 +71,7 @@ trait WithAllegroApiServices
                 if ($errorCode === 'ProductDuplicate') {
                     $existingId = Arr::get($firstError, 'metadata.existingProductId');
                     if ($existingId) {
-                        return ['id' => $existingId];
+                        return ['id' => $existingId, 'existing_product' => true];
                     }
                 }
 
@@ -135,6 +136,16 @@ trait WithAllegroApiServices
     public function getOffer(string $offerId): array
     {
         return $this->makeApiRequest('GET', "/sale/product-offers/$offerId");
+    }
+
+    public function getOfferResponse(string $offerId): Response
+    {
+        return $this->restApi()->get("/sale/product-offers/$offerId");
+    }
+
+    public function getOfferPublicationTasks(string $commandId): array
+    {
+        return $this->makeApiRequest('GET', "/sale/offer-publication-commands/$commandId/tasks");
     }
 
     public function createOffer(array $offerData): array

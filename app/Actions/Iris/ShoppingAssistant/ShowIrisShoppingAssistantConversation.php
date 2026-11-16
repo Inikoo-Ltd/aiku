@@ -8,6 +8,9 @@
 
 namespace App\Actions\Iris\ShoppingAssistant;
 
+use Illuminate\Support\Facades\DB;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantTeamQuestion;
 use App\Models\Web\Webpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\ProductCategory;
@@ -69,6 +72,16 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
                 ->get()
         )->resolve())->keyBy('id');
 
+        if ($cards->isNotEmpty() && $conversation->customer && $conversation->shop->type === ShopTypeEnum::DROPSHIPPING) {
+            $channels = DB::table('portfolios')
+                ->where('item_type', 'Product')
+                ->where('customer_id', $conversation->customer_id)
+                ->whereIn('item_id', $cards->keys())
+                ->get(['item_id', 'customer_sales_channel_id'])
+                ->groupBy('item_id');
+            $cards = $cards->map(fn (array $card) => [...$card, 'portfolio_channels' => $channels->get($card['id'], collect())->pluck('customer_sales_channel_id')->all()]);
+        }
+
         $familyIds   = $messages->flatMap(fn (ShoppingAssistantMessage $message) => collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['family_ids'] ?? []))->unique();
         $familyLinks = $familyIds->isEmpty() ? collect() : ProductCategory::whereIn('product_categories.id', $familyIds)
             ->where('product_categories.shop_id', $conversation->shop_id)
@@ -82,6 +95,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
             'conversation' => $conversation->ulid,
             'status'       => $conversation->status->value,
             'pending'      => $conversation->isPending(),
+            'awaiting_team' => ($teamQuestion = StoreShoppingAssistantTeamQuestion::openFor($conversation)) !== null && StoreShoppingAssistantTeamQuestion::isAwaited($teamQuestion),
             'hand_over_available' => $conversation->website && $conversation->customer && GetShoppingAssistantHandOverRoute::isOffered($conversation->website, $conversation->customer),
             'messages'     => $messages->map(function (ShoppingAssistantMessage $message) use ($events, $cards, $familyLinks, $handedOverOfferIds) {
                 $data = [

@@ -38,6 +38,13 @@ trait IsDeliveryNotesIndex
 
     public function handle(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false, $replacementsOnly = false): LengthAwarePaginator
     {
+        return $this->deliveryNotesQuery($parent, $prefix, $bucket, $shopType, $isReturn, $replacementsOnly)
+            ->withPaginator($prefix, $this->getRecordsPerPage(), tableName: request()->route()->getName())
+            ->withQueryString();
+    }
+
+    public function deliveryNotesQuery(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false, $replacementsOnly = false): QueryBuilder
+    {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereWith('delivery_notes.reference', $value)
@@ -306,9 +313,7 @@ trait IsDeliveryNotesIndex
                 'parcels'
             ])
             ->allowedFilters($allowedFilters)
-            ->withBetweenDates(['date'])
-            ->withPaginator($prefix, $this->getRecordsPerPage(), tableName: request()->route()->getName())
-            ->withQueryString();
+            ->withBetweenDates(['date']);
     }
 
     protected function getRecordsPerPage(): ?int

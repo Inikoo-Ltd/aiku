@@ -21,6 +21,7 @@ enum ShoppingAssistantAnswerKindEnum: string
     case QUESTION = 'question';
     case OFFER_PERSON = 'offer_person';
     case OFF_TOPIC = 'off_topic';
+    case COACHING = 'coaching';
     case OTHER = 'other';
 
     /**
@@ -31,7 +32,7 @@ enum ShoppingAssistantAnswerKindEnum: string
      */
     public static function declarable(): array
     {
-        return [self::PRODUCTS->value, self::SHOP_ANSWER->value, self::QUESTION->value, self::OFFER_PERSON->value, self::OFF_TOPIC->value];
+        return [self::PRODUCTS->value, self::SHOP_ANSWER->value, self::QUESTION->value, self::OFFER_PERSON->value, self::OFF_TOPIC->value, self::COACHING->value];
     }
 
     /**
@@ -41,7 +42,7 @@ enum ShoppingAssistantAnswerKindEnum: string
      */
     public static function general(): array
     {
-        return [self::SHOP_ANSWER->value, self::FAMILY_DESCRIPTION->value, self::TOOL->value, self::OFFER_PERSON->value];
+        return [self::SHOP_ANSWER->value, self::FAMILY_DESCRIPTION->value, self::TOOL->value, self::OFFER_PERSON->value, self::COACHING->value];
     }
 
     /**
@@ -57,6 +58,7 @@ enum ShoppingAssistantAnswerKindEnum: string
             self::QUESTION->value           => __('Asked the customer a question'),
             self::OFFER_PERSON->value       => __('Offered a person'),
             self::OFF_TOPIC->value          => __('Declined'),
+            self::COACHING->value           => __('Dropshipping coaching'),
             self::OTHER->value              => __('Other'),
         ];
     }

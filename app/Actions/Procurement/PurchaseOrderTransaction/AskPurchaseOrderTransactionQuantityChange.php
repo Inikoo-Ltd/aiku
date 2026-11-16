@@ -21,18 +21,27 @@ use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator as ValidatorFacade;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
  * The agent asks the buying organisation to change the quantity ordered on a line, before or after confirming the
- * order, as long as none of the line is shipped yet.
+ * order, as long as none of the line is shipped yet. On an order straight to a supplier there is no agent: the buyer
+ * changes the quantity to what the supplier confirmed and it applies at once, keeping the old quantity on the line.
  */
 class AskPurchaseOrderTransactionQuantityChange extends OrgAction
 {
     use WithActionUpdate;
 
     private PurchaseOrderTransaction $purchaseOrderTransaction;
+
+    public static function isChangedByBuyer(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->parent_type === 'OrgSupplier' && $purchaseOrder->agent_id === null;
+    }
 
     public static function isQuantityChangeable(PurchaseOrderTransaction $purchaseOrderTransaction): bool
     {
@@ -83,6 +92,10 @@ class AskPurchaseOrderTransactionQuantityChange extends OrgAction
 
     public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData, ?User $user = null): PurchaseOrderTransaction
     {
+        if (self::isChangedByBuyer($purchaseOrderTransaction->purchaseOrder)) {
+            return $this->changeByBuyer($purchaseOrderTransaction, $modelData, $user);
+        }
+
         return $this->update($purchaseOrderTransaction, [
             'quantity_query_state'             => PurchaseOrderTransactionQuantityQueryStateEnum::PENDING,
             'quantity_query_quantity'          => round((float) $modelData['quantity_ordered'], 3),
@@ -94,13 +107,52 @@ class AskPurchaseOrderTransactionQuantityChange extends OrgAction
         ]);
     }
 
+    /**
+     * The order is locked as containers lock it when they take its items, and the quantity checked again against the
+     * line as it is now.
+     */
+    private function changeByBuyer(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData, ?User $user): PurchaseOrderTransaction
+    {
+        return DB::transaction(function () use ($purchaseOrderTransaction, $modelData, $user) {
+            PurchaseOrder::whereKey($purchaseOrderTransaction->purchase_order_id)->lockForUpdate()->first();
+            $purchaseOrderTransaction = $purchaseOrderTransaction->refresh();
+            $quantity                 = round((float) $modelData['quantity_ordered'], 3);
+
+            $validator = ValidatorFacade::make([], []);
+            self::addQuantityErrors($validator, $purchaseOrderTransaction, $quantity, 'quantity_ordered');
+            if ($validator->errors()->isNotEmpty()) {
+                throw new ValidationException($validator);
+            }
+
+            $previousQuantity         = $purchaseOrderTransaction->quantity_ordered;
+            $purchaseOrderTransaction = UpdatePurchaseOrderTransaction::make()->action($purchaseOrderTransaction, [
+                'quantity_ordered' => $quantity,
+            ]);
+
+            return $this->update($purchaseOrderTransaction, [
+                'quantity_query_state'             => PurchaseOrderTransactionQuantityQueryStateEnum::ACCEPTED,
+                'quantity_query_quantity'          => $quantity,
+                'quantity_query_previous_quantity' => $previousQuantity,
+                'quantity_query_note'              => $modelData['note'] ?? null,
+                'quantity_queried_by_id'           => $user?->id,
+                'quantity_queried_at'              => now(),
+                'quantity_query_answered_at'       => now(),
+            ]);
+        });
+    }
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
             return true;
         }
 
-        $purchaseOrder       = $this->purchaseOrderTransaction->purchaseOrder;
+        $purchaseOrder = $this->purchaseOrderTransaction->purchaseOrder;
+        if (self::isChangedByBuyer($purchaseOrder)) {
+            return $request->user()->authTo("procurement.$purchaseOrder->organisation_id.edit");
+        }
+
+
         $agentOrganisationId = $purchaseOrder->isAgentOrder() ? $purchaseOrder->agent?->organisation_id : null;
 
         return $agentOrganisationId !== null && $request->user()->authTo("procurement.$agentOrganisationId.edit");
@@ -139,6 +191,10 @@ class AskPurchaseOrderTransactionQuantityChange extends OrgAction
         $this->initialisation($purchaseOrderTransaction->organisation, $request);
 
         $purchaseOrderTransaction = $this->handle($purchaseOrderTransaction, $this->validatedData, $request->user());
+
+        if (self::isChangedByBuyer($purchaseOrder)) {
+            return back();
+        }
 
         NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), fn () => __('the agent asks to order :new units of :code, was :old', [
             'code' => $purchaseOrderTransaction->supplierProduct?->code ?? $purchaseOrderTransaction->orgStock?->code,

@@ -33,10 +33,14 @@ class PayBankTransactionToOrder extends OrgAction
     public function handle(BankTransaction $bankTransaction, array $modelData): BankTransaction
     {
         $orders = Order::where('organisation_id', $bankTransaction->organisation_id)
-            ->where('reference', strtoupper(trim($modelData['order_reference'])))
+            ->when(
+                $modelData['order_id'] ?? null,
+                fn ($query, $orderId) => $query->where('id', $orderId),
+                fn ($query) => $query->where('reference', strtoupper(trim($modelData['order_reference'])))
+            )
             ->get();
         if ($orders->isEmpty()) {
-            throw ValidationException::withMessages(['order' => __('No order :reference in this organisation', ['reference' => $modelData['order_reference']])]);
+            throw ValidationException::withMessages(['order' => __('No order :reference in this organisation', ['reference' => $modelData['order_reference'] ?? ''])]);
         }
         $order = $orders->count() === 1 ? $orders->first() : $orders->firstWhere('id', $bankTransaction->order_id);
         if (!$order) {
@@ -56,7 +60,8 @@ class PayBankTransactionToOrder extends OrgAction
     public function rules(): array
     {
         return [
-            'order_reference' => ['required', 'string', 'max:64'],
+            'order_id'        => ['sometimes', 'nullable', 'integer'],
+            'order_reference' => ['required_without:order_id', 'nullable', 'string', 'max:64'],
             'absorb_bank_fee' => ['sometimes', 'boolean'],
         ];
     }

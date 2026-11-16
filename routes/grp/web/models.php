@@ -389,6 +389,7 @@ use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrderItemsToNewAgentContainer;
 use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrderItemsToStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\AddItemNotOnPurchaseOrderToStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\PreviewStockDeliveryItemsImport;
 use App\Actions\GoodsIn\StockDelivery\RemovePurchaseOrderFromStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\RemovePurchaseOrderItemFromStockDelivery;
@@ -423,6 +424,9 @@ use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCustomsLine;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCustoms;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryImportFile;
 use App\Actions\GoodsIn\StockDeliveryClaim\UpdateStockDeliveryClaim;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\CreateSupplierInstructionFromFeedback;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\StoreStockDeliveryFeedback;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\UpdateStockDeliveryFeedback;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemBatches;
 use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
@@ -653,6 +657,7 @@ use App\Actions\Production\Artefact\CancelArtefactDevelopment;
 use App\Actions\Production\Artefact\DecideArtefactDevelopmentReview;
 use App\Actions\Production\Artefact\StoreArtefactDevelopmentFeedback;
 use App\Actions\Production\Production\SetDevelopmentReviewSettings;
+use App\Actions\Production\Production\SetProductionRawMaterialBatches;
 use App\Actions\Production\JobOrder\StoreTrialRunJobOrder;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
 use App\Actions\Production\Artefact\SetArtefactsShelfLife;
@@ -748,6 +753,7 @@ use App\Actions\SupplyChain\DepositRequest\UnapproveAgentMoneyRequest;
 use App\Actions\SupplyChain\DepositRequest\RejectAgentMoneyRequest;
 use App\Actions\SupplyChain\DepositRequest\PayAgentMoneyRequest;
 use App\Actions\SupplyChain\Supplier\UpdateSupplierAdvancePercentage;
+use App\Actions\SupplyChain\Supplier\UpdateSupplierAgentFeePercentage;
 use App\Actions\GoodsIn\StockDelivery\AcknowledgeStockDeliveriesCostingReminder;
 use App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryDepositApplication;
@@ -1298,6 +1304,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
     Route::patch('/payment/{payment:id}/cancel', CancelPayment::class)->name('payment.cancel')->withoutScopedBindings();
 
+    Route::post('/bank-payee', App\Actions\Accounting\BankPayee\SetBankPayeeCategory::class)->name('bank_payee.set');
     Route::post('/bank-transaction/{bankTransaction:id}/pay-order', PayBankTransactionToOrder::class)->name('bank_transaction.pay_order')->withoutScopedBindings();
     Route::post('/bank-transaction/{bankTransaction:id}/dismiss', DismissBankTransaction::class)->name('bank_transaction.dismiss')->withoutScopedBindings();
     Route::post('/bank-transaction/{bankTransaction:id}/restore', RestoreBankTransaction::class)->name('bank_transaction.restore')->withoutScopedBindings();
@@ -1920,6 +1927,7 @@ Route::post('/production/{production:id}/development-time', AddManufactureDevelo
 Route::patch('/production/{production:id}/artisan/{employee:id}/development-on-tablet', SetArtisanDevelopmentOnTablet::class)->name('production.artisan.development_on_tablet.update')->withoutScopedBindings();
 Route::patch('/production/{production:id}/preparation-reasons', UpdateManufacturePreparationReasons::class)->name('production.preparation_reasons.update')->withoutScopedBindings();
 Route::patch('/production/{production:id}/mix-batch-sizes', UpdateProductionMixBatchSizes::class)->name('production.mix_batch_sizes.update')->withoutScopedBindings();
+Route::patch('/production/{production:id}/raw-material-batches', SetProductionRawMaterialBatches::class)->name('production.raw_material_batches.update')->withoutScopedBindings();
 Route::patch('/production/{production:id}/development-review-settings', SetDevelopmentReviewSettings::class)->name('production.development_review_settings.update')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/development-review', DecideArtefactDevelopmentReview::class)->name('artefact.development_review.decide')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/development-feedback', StoreArtefactDevelopmentFeedback::class)->name('artefact.development_feedback.store')->withoutScopedBindings();
@@ -2006,6 +2014,7 @@ Route::patch('deposit-request/{depositRequest:id}/reject', RejectAgentMoneyReque
 Route::post('deposit-request/{depositRequest:id}/pay', PayAgentMoneyRequest::class)->name('deposit_request.pay');
 Route::post('deposit-request/{depositRequest:id}/remind', RemindAgentMoneyRequest::class)->name('deposit_request.remind');
 Route::patch('supplier/{supplier:id}/advance-percentage', UpdateSupplierAdvancePercentage::class)->name('supplier.advance_percentage.update');
+Route::patch('supplier/{supplier:id}/agent-fee', UpdateSupplierAgentFeePercentage::class)->name('supplier.agent_fee.update');
 Route::patch('procurement-note/{procurementNote:id}', [UpdateProcurementNote::class, 'update'])->name('procurement_note.update');
 Route::post('supplier/{supplier:id}/agreed-term', [StoreSupplierAgreedTerm::class, 'inSupplier'])->name('supplier.agreed_term.store');
 Route::post('supplier-product/{supplierProduct:id}/agreed-term', [StoreSupplierAgreedTerm::class, 'inSupplierProduct'])->name('supplier-product.agreed_term.store');
@@ -2033,6 +2042,7 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::patch('cancel', CancelStockDelivery::class)->name('cancel');
     Route::post('purchase-orders', AddPurchaseOrdersToStockDelivery::class)->name('purchase_orders.add');
     Route::post('purchase-order-items', AddPurchaseOrderItemsToStockDelivery::class)->name('purchase_order_items.add');
+    Route::post('items-not-on-purchase-order', AddItemNotOnPurchaseOrderToStockDelivery::class)->name('items_not_on_purchase_order.add');
     Route::post('purchase-order-items/import/preview', PreviewStockDeliveryItemsImport::class)->name('purchase_order_items.import.preview');
     Route::delete('purchase-order-items/{purchaseOrderTransaction:id}', RemovePurchaseOrderItemFromStockDelivery::class)->name('purchase_order_items.remove')->withoutScopedBindings();
     Route::delete('purchase-orders/{purchaseOrder:id}', RemovePurchaseOrderFromStockDelivery::class)->name('purchase_orders.remove')->withoutScopedBindings();
@@ -2048,6 +2058,7 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::delete('unbacked-costs', RemoveStockDeliveryUnbackedCosts::class)->name('unbacked-costs.remove');
     Route::post('cost/invoice', AttachStockDeliveryCostInvoice::class)->name('cost.invoice.attach');
     Route::post('deposit/apply', ApplyStockDeliveryDeposit::class)->name('deposit.apply');
+    Route::post('feedback', StoreStockDeliveryFeedback::class)->name('feedback.store');
     Route::delete('', DeleteStockDelivery::class)->name('delete');
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inStockDelivery'])->name('attachment.attach');
     Route::post('invoice/{media:id}/read', ReadStockDeliveryInvoice::class)->name('invoice.read')->withoutScopedBindings();
@@ -2092,6 +2103,11 @@ Route::name('stock-delivery-item.')->prefix('stock-delivery-item/{stockDeliveryI
 });
 
 Route::post('stock-delivery-claim/{stockDeliveryClaim:id}/update', UpdateStockDeliveryClaim::class)->name('stock-delivery-claim.update');
+
+Route::name('stock-delivery-feedback.')->prefix('stock-delivery-feedback/{stockDeliveryFeedback:id}')->group(function () {
+    Route::patch('', UpdateStockDeliveryFeedback::class)->name('update');
+    Route::post('instruction', CreateSupplierInstructionFromFeedback::class)->name('instruction.store');
+});
 
 Route::name('org-supplier.')->prefix('org-supplier/{orgSupplier:id}')->group(function () {
     Route::post('purchase-order/store', [StorePurchaseOrder::class, 'inOrgSupplier'])->name('purchase-order.store');

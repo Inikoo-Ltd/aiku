@@ -81,6 +81,8 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'delivery_notes.reference as delivery_note_reference',
                 'delivery_notes.state as delivery_note_state',
                 'locations.sort_code as picking_position',
+                'locations.id as picking_location_id',
+                'locations.code as picking_location_code',
                 'warehouse_areas.code as warehouse_area_code',
                 'warehouse_areas.picking_position as warehouse_area_picking_position',
                 'delivery_notes.is_premium_dispatch as delivery_note_is_premium_dispatch',

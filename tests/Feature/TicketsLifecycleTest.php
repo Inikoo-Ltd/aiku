@@ -99,6 +99,15 @@ test('a premonition ticket gets a PRE reference with its own numbering', functio
     }
 });
 
+test('a Merlin ticket gets a MER reference with its own numbering and the wizard hat', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders stopped arriving', 'type' => TicketTypeEnum::MERLIN->value]);
+    $next   = StoreTicket::make()->action($this->group, ['subject' => 'eBay stock not updating', 'type' => TicketTypeEnum::MERLIN->value]);
+
+    expect($ticket->reference)->toBe('MER-'.str_pad((string) $ticket->number, 2, '0', STR_PAD_LEFT))
+        ->and($next->number)->toBe($ticket->number + 1)
+        ->and(TicketTypeEnum::MERLIN->icon()['icon'])->toBe('fal fa-hat-wizard');
+});
+
 test('customer ticket from retina gets an AD reference and the customer attached', function () {
     $ticket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'API returns 500', 'priority' => 'high']);
 

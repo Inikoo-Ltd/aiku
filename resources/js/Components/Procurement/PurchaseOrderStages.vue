@@ -24,6 +24,7 @@ interface Step {
     note?: string | null
     expected?: string | null
     expected_note?: string | null
+    days_to_cho?: number | null
 }
 
 interface Mark {
@@ -50,6 +51,7 @@ interface Check {
     done: boolean
     date: string | null
     skipped?: boolean
+    required?: boolean
 }
 
 interface Evidence {
@@ -72,6 +74,8 @@ interface Stage {
     expected: string | null
     expected_note: string | null
     days_late: number
+    planned?: string | null
+    planned_note?: string | null
     deliveries: { reached: number, total: number } | null
     not_required?: boolean
     unpaid?: boolean
@@ -90,6 +94,7 @@ const props = defineProps<{
     skipRoute?: routeType | null
     deposit?: { not_needed: boolean, agrees?: boolean, route: routeType } | null
     sample?: { required: boolean, approved: boolean, override_reason: string | null, skipped?: boolean, route: routeType | null } | null
+    cho?: { passed: boolean, misses: string[], penalty_percentage: number } | null
 }>()
 
 const slots = useSlots()
@@ -129,9 +134,73 @@ const groupGridClass = (count: number): string => {
 
 const isComplete = (stage: Stage): boolean => stage.reached || !!stage.not_required
 
-const hasCheckDetail = (check: Check) => !!slots[`check-${check.key}`]
+const stageMarks = (stage: Stage) => stage.marks.filter((mark) => !(mark.field === "compliance_complete_at" && stage.checks?.some((check) => check.key === "compliance")))
+const isRequiredSkip = (check: Check) => check.skipped && check.required !== false
+const checkMark = (stage: Stage, check: Check) => check.key === "compliance" ? stage.marks.find((mark) => mark.field === "compliance_complete_at") ?? null : null
+const hasCheckDetail = (check: Check, stage?: Stage) => !!slots[`check-${check.key}`] || (!!stage && (!!checkMark(stage, check) || (!!props.skipRoute && !!stage.skips?.some((skip) => skip.key === check.key && skip.skipped))))
 
 const openedCheck = ref<Check | null>(null)
+const openedCheckMark = ref<Mark | null>(null)
+const openedCheckSkip = ref<Skip | null>(null)
+const openCheck = (stage: Stage, check: Check) => {
+    openedCheck.value = check
+    openedCheckMark.value = checkMark(stage, check)
+    openedCheckSkip.value = props.skipRoute ? stage.skips?.find((skip) => skip.key === check.key && skip.skipped) ?? null : null
+}
+const undoSkipFromCheck = (skip: Skip) => {
+    openedCheck.value = null
+    openSkip(skip, false)
+}
+const markFromCheck = (mark: Mark) => {
+    openedCheck.value = null
+    openMark(mark)
+}
+
+const choStage = ref<Stage | null>(null)
+const choChecks = computed(() => props.stages.find((stage) => stage.key === "ready")?.checks ?? [])
+const choMark = computed(() => choStage.value?.marks.find((mark) => mark.field === "handed_over_at") ?? null)
+const startOfDay = (date: string | Date): Date => {
+    const day = new Date(date)
+    day.setHours(0, 0, 0, 0)
+    return day
+}
+const daysBetween = (from: string | Date, to: string | Date): number => Math.round((startOfDay(to).getTime() - startOfDay(from).getTime()) / 86400000)
+const expectedCho = computed<{ date: string, note: string | null } | null>(() => {
+    if (!choStage.value) {
+        return null
+    }
+    const approvedReady = props.stages.flatMap((stage) => stage.steps).find((step) => step.key === "approved_ready_at")
+    if (approvedReady?.date) {
+        return { date: approvedReady.date, note: ctrans("Expected Clean Hand Over date, set by the buyer's procurement team.") }
+    }
+    if (!choStage.value.reached && choStage.value.expected) {
+        return { date: choStage.value.expected, note: choStage.value.expected_note ?? null }
+    }
+    if (choStage.value.planned) {
+        return { date: choStage.value.planned, note: choStage.value.planned_note ?? null }
+    }
+    return null
+})
+const choLateness = computed<{ days: number, since: Date } | null>(() => {
+    if (!expectedCho.value || !choStage.value) {
+        return null
+    }
+    const until = choStage.value.reached ? choStage.value.date : new Date()
+    if (!until) {
+        return null
+    }
+    const days = daysBetween(expectedCho.value.date, until)
+    if (days <= 0) {
+        return null
+    }
+    const since = startOfDay(expectedCho.value.date)
+    since.setDate(since.getDate() + 1)
+    return { days, since }
+})
+const markFromCho = (mark: Mark, clearing = false) => {
+    choStage.value = null
+    clearing ? openClear(mark) : openMark(mark)
+}
 
 const savingDeposit = ref(false)
 const depositError = ref<string | null>(null)
@@ -210,7 +279,7 @@ async function upload(evidence: Evidence, event: Event) {
     }
 }
 
-const formatDate = (date: string | null) => date ? useFormatTime(date, { formatTime: "d MMM yyyy" }) : null
+const formatDate = (date: string | Date | null) => date ? useFormatTime(date, { formatTime: "d MMM yyyy" }) : null
 
 const toIso = (date: Date | null) => date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : null
 
@@ -363,16 +432,26 @@ function save() {
         <div
             v-for="stage in group.stages"
             :key="stage.key"
-            class="row-span-2 grid grid-rows-subgrid gap-0 p-3 text-sm"
+            class="row-span-2 grid min-w-0 grid-cols-1 grid-rows-subgrid gap-0 p-3 text-sm"
             :class="stage.unpaid ? 'bg-amber-50' : isComplete(stage) ? 'bg-green-50' : 'bg-white'"
         >
             <div class="min-h-9">
-                <div class="flex items-center gap-2 font-medium" :class="isComplete(stage) ? 'text-gray-800' : 'text-gray-400'" v-tooltip="stage.description">
+                <component
+                    :is="stage.key === 'handed_over' ? 'button' : 'div'"
+                    :type="stage.key === 'handed_over' ? 'button' : undefined"
+                    class="flex items-center gap-2 text-left font-medium"
+                    :class="[
+                        isComplete(stage) ? 'text-gray-800' : 'text-gray-400',
+                        stage.key === 'handed_over' ? 'cursor-pointer rounded hover:text-[var(--app-accent)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--app-accent)]' : '',
+                    ]"
+                    v-tooltip="stage.description"
+                    @click="stage.key === 'handed_over' && (choStage = stage)"
+                >
                     <FontAwesomeIcon v-if="stage.unpaid" icon="fal fa-exclamation-circle" class="text-amber-600" fixed-width aria-hidden="true" />
                     <FontAwesomeIcon v-else-if="isComplete(stage)" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
                     <span v-else class="w-4 text-center tabular-nums">{{ stage.number }}</span>
                     {{ stage.label }}
-                </div>
+                </component>
                 <div v-if="stage.caption" class="text-xs text-gray-400 italic">{{ stage.caption }}</div>
             </div>
 
@@ -394,6 +473,21 @@ function save() {
 
             <div v-if="stage.note" class="mt-0.5 text-xs text-gray-500">{{ stage.note }}</div>
 
+            <div v-if="stage.key === 'handed_over' && stage.reached && cho" class="mt-1 cursor-pointer" @click="choStage = stage">
+                <span v-if="cho.passed" class="inline-flex items-center gap-1 rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700">
+                    <FontAwesomeIcon icon="fas fa-check-circle" fixed-width aria-hidden="true" />
+                    {{ ctrans("CHO passed") }}
+                </span>
+                <template v-else>
+                    <span class="inline-flex items-center gap-1 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700">
+                        <FontAwesomeIcon icon="fal fa-exclamation-circle" fixed-width aria-hidden="true" />
+                        <template v-if="cho.penalty_percentage > 0">{{ ctrans("CHO failed: agent fee −:penalty%", { penalty: cho.penalty_percentage }) }}</template>
+                        <template v-else>{{ ctrans("CHO failed") }}</template>
+                    </span>
+                    <div class="mt-0.5 text-xs text-red-600">{{ cho.misses.join(", ") }}</div>
+                </template>
+            </div>
+
             <div v-if="stage.deliveries && stage.deliveries.total" class="mt-1 flex items-center gap-1 text-xs text-gray-500">
                 <FontAwesomeIcon icon="fal fa-truck" fixed-width aria-hidden="true" />
                 {{ ctrans(":reached of :total deliveries", { reached: stage.deliveries.reached, total: stage.deliveries.total }) }}
@@ -409,23 +503,30 @@ function save() {
                         <template v-if="!step.date && step.expected">{{ ctrans("Expected :date", { date: formatDate(step.expected) as string }) }}</template>
                         <template v-else>{{ formatDate(step.date) ?? "-" }}</template>
                         <div v-if="step.note" class="text-gray-500">{{ step.note }}</div>
+                        <div v-if="step.days_to_cho != null" :class="step.days_to_cho < 0 ? 'text-red-600' : step.days_to_cho <= 7 ? 'text-amber-700' : 'text-gray-500'">
+                            <template v-if="step.days_to_cho > 1">{{ ctrans(":days days to CHO", { days: step.days_to_cho }) }}</template>
+                            <template v-else-if="step.days_to_cho === 1">{{ ctrans("1 day to CHO") }}</template>
+                            <template v-else-if="step.days_to_cho === 0">{{ ctrans("CHO today") }}</template>
+                            <template v-else-if="step.days_to_cho === -1">{{ ctrans("CHO 1 day late") }}</template>
+                            <template v-else>{{ ctrans("CHO :days days late", { days: -step.days_to_cho }) }}</template>
+                        </div>
                     </dd>
                 </div>
             </dl>
 
             <div v-if="stage.checks?.length" class="mt-2 flex flex-wrap gap-1">
                 <component
-                    :is="hasCheckDetail(check) ? 'button' : 'span'"
+                    :is="hasCheckDetail(check, stage) ? 'button' : 'span'"
                     v-for="check in stage.checks"
                     :key="check.key"
-                    :type="hasCheckDetail(check) ? 'button' : undefined"
+                    :type="hasCheckDetail(check, stage) ? 'button' : undefined"
                     class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
                     :class="[
-                        check.done ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-50 text-gray-500',
-                        hasCheckDetail(check) ? 'cursor-pointer hover:border-[var(--app-accent-muted)] hover:bg-[var(--app-accent-soft)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--app-accent)]' : '',
+                        isRequiredSkip(check) ? 'border-amber-200 bg-amber-50 text-amber-700' : check.done ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-50 text-gray-500',
+                        hasCheckDetail(check, stage) ? 'cursor-pointer hover:border-[var(--app-accent-muted)] hover:bg-[var(--app-accent-soft)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--app-accent)]' : '',
                     ]"
-                    v-tooltip="check.skipped ? ctrans('Skipped :date', { date: formatDate(check.date) as string }) : check.date ? formatDate(check.date) : ctrans('Not done yet')"
-                    @click="hasCheckDetail(check) && (openedCheck = check)"
+                    v-tooltip="check.skipped && check.date ? ctrans('Skipped :date', { date: formatDate(check.date) as string }) : check.skipped ? ctrans('Skipped') : check.date ? formatDate(check.date) : ctrans('Not done yet')"
+                    @click="hasCheckDetail(check, stage) && openCheck(stage, check)"
                 >
                     <FontAwesomeIcon :icon="check.skipped ? 'fal fa-forward' : check.done ? 'fal fa-check' : 'fal fa-circle'" fixed-width aria-hidden="true" />
                     {{ check.label }}
@@ -447,8 +548,8 @@ function save() {
                 <p v-if="uploadError && stage.evidence.some((evidence) => evidence.scope === uploadError?.scope)" class="text-red-600">{{ uploadError.message }}</p>
             </div>
 
-            <div v-if="stage.marks.length" class="mt-2 flex flex-col gap-1">
-                <template v-for="mark in stage.marks" :key="mark.field">
+            <div v-if="stageMarks(stage).length" class="mt-2 flex flex-col gap-1">
+                <template v-for="mark in stageMarks(stage)" :key="mark.field">
                     <span v-if="mark.blocked" class="block" v-tooltip="mark.blocked">
                         <Button type="tertiary" size="xs" full disabled :label="markLabel(mark)">
                             <template #icon>
@@ -577,6 +678,91 @@ function save() {
     </div>
 
     <Dialog
+        :visible="!!choStage"
+        modal
+        :header="choStage?.label"
+        :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }"
+        :draggable="false"
+        @update:visible="(visible: boolean) => !visible && (choStage = null)"
+    >
+        <div v-if="choStage" class="space-y-3 text-sm">
+            <p class="flex items-center gap-1" :class="choStage.reached ? 'text-green-700' : 'text-gray-500'">
+                <FontAwesomeIcon :icon="choStage.reached ? 'fal fa-check-circle' : 'fal fa-circle'" fixed-width aria-hidden="true" />
+                <template v-if="choStage.reached && choStage.date">{{ ctrans("Handed over :date", { date: formatDate(choStage.date) as string }) }}</template>
+                <template v-else-if="choStage.reached">{{ ctrans("Handed over") }}</template>
+                <template v-else>{{ ctrans("Not handed over yet") }}</template>
+            </p>
+
+            <div v-if="expectedCho" class="rounded px-2 py-1.5 text-xs" :class="choLateness ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-600'">
+                <div class="w-fit cursor-help tabular-nums" v-tooltip="expectedCho.note">
+                    {{ ctrans("Expected CHO :date", { date: formatDate(expectedCho.date) as string }) }}
+                </div>
+                <div v-if="choLateness" class="font-medium tabular-nums">
+                    <template v-if="choStage.reached">
+                        {{ choLateness.days === 1 ? ctrans("Handed over 1 day late") : ctrans("Handed over :days days late", { days: choLateness.days }) }}
+                    </template>
+                    <template v-else>
+                        {{ choLateness.days === 1 ? ctrans("1 day late") : ctrans(":days days late", { days: choLateness.days }) }}
+                    </template>
+                    · {{ ctrans("late since :date", { date: formatDate(choLateness.since) as string }) }}
+                </div>
+                <div v-else-if="!choStage.reached" class="tabular-nums">
+                    <template v-if="daysBetween(new Date(), expectedCho.date) === 0">{{ ctrans("CHO today") }}</template>
+                    <template v-else-if="daysBetween(new Date(), expectedCho.date) === 1">{{ ctrans("1 day to CHO") }}</template>
+                    <template v-else>{{ ctrans(":days days to CHO", { days: daysBetween(new Date(), expectedCho.date) }) }}</template>
+                </div>
+                <div v-else class="tabular-nums text-green-700">
+                    <template v-if="choStage.date && daysBetween(choStage.date, expectedCho.date) > 0">{{ ctrans("Handed over on time, :days days early", { days: daysBetween(choStage.date, expectedCho.date) }) }}</template>
+                    <template v-else>{{ ctrans("Handed over on time") }}</template>
+                </div>
+            </div>
+
+            <div v-if="choChecks.length">
+                <div class="mb-1 text-xs font-medium text-gray-500">{{ ctrans("Ready to Roll") }}</div>
+                <ul class="space-y-1">
+                    <li v-for="check in choChecks" :key="check.key" class="flex items-center gap-2" :class="isRequiredSkip(check) ? 'text-amber-700' : check.done ? 'text-green-700' : 'text-gray-500'">
+                        <FontAwesomeIcon :icon="check.skipped ? 'fal fa-forward' : check.done ? 'fal fa-check' : 'fal fa-circle'" fixed-width aria-hidden="true" />
+                        <span>{{ check.label }}</span>
+                        <span v-if="check.required === false" class="text-xs text-gray-400">{{ ctrans("(optional, does not count for CHO)") }}</span>
+                        <span v-else-if="check.done && check.date" class="text-xs text-gray-400 tabular-nums">{{ formatDate(check.date) }}</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div v-if="cho && choStage.reached" class="rounded px-2 py-1.5 text-xs" :class="cho.passed ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'">
+                <template v-if="cho.passed">{{ ctrans("CHO passed") }}</template>
+                <template v-else>
+                    <div class="font-medium">
+                        <template v-if="cho.penalty_percentage > 0">{{ ctrans("CHO failed: agent fee −:penalty%", { penalty: cho.penalty_percentage }) }}</template>
+                        <template v-else>{{ ctrans("CHO failed") }}</template>
+                    </div>
+                    <div>{{ cho.misses.join(", ") }}</div>
+                </template>
+            </div>
+
+            <div v-if="choMark" class="flex flex-col gap-1">
+                <span v-if="choMark.blocked" class="block" v-tooltip="choMark.blocked">
+                    <Button type="tertiary" full disabled :label="markLabel(choMark)">
+                        <template #icon>
+                            <FontAwesomeIcon icon="fal fa-lock" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                </span>
+                <Button v-else type="tertiary" full :label="markLabel(choMark)" :tooltip="markTooltip(choMark)" @click="markFromCho(choMark)">
+                    <template #icon>
+                        <FontAwesomeIcon :icon="choMark.date ? 'fal fa-pencil' : 'fal fa-check'" class="text-green-600" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+                <Button v-if="choMark.date && clearLabels[choMark.field]" type="negative" full :label="ctrans(clearLabels[choMark.field].label)" @click="markFromCho(choMark, true)">
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-undo" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+            </div>
+        </div>
+    </Dialog>
+
+    <Dialog
         :visible="!!openedCheck"
         modal
         :header="openedCheck?.label"
@@ -585,12 +771,37 @@ function save() {
         @update:visible="(visible: boolean) => !visible && (openedCheck = null)"
     >
         <div v-if="openedCheck" class="space-y-3 text-sm">
-            <p class="flex items-center gap-1" :class="openedCheck.done ? 'text-green-700' : 'text-gray-500'">
-                <FontAwesomeIcon :icon="openedCheck.done ? 'fal fa-check-circle' : 'fal fa-circle'" fixed-width aria-hidden="true" />
-                <template v-if="openedCheck.done && openedCheck.date">{{ ctrans("Done :date", { date: formatDate(openedCheck.date) as string }) }}</template>
+            <p class="flex items-center gap-1" :class="isRequiredSkip(openedCheck) ? 'text-amber-700' : openedCheck.done ? 'text-green-700' : 'text-gray-500'">
+                <FontAwesomeIcon :icon="openedCheck.skipped ? 'fal fa-forward' : openedCheck.done ? 'fal fa-check-circle' : 'fal fa-circle'" fixed-width aria-hidden="true" />
+                <template v-if="isRequiredSkip(openedCheck) && openedCheck.date">{{ ctrans("Skipped :date", { date: formatDate(openedCheck.date) as string }) }}</template>
+                <template v-else-if="openedCheck.done && openedCheck.date">{{ ctrans("Done :date", { date: formatDate(openedCheck.date) as string }) }}</template>
                 <template v-else-if="openedCheck.done">{{ ctrans("Done") }}</template>
+                <template v-else-if="openedCheck.required === false">{{ ctrans("Skipped") }}</template>
                 <template v-else>{{ ctrans("Not done yet") }}</template>
             </p>
+            <p v-if="openedCheck.required === false" class="text-xs text-gray-500">
+                {{ ctrans("Not every item needs it, so it does not count for clean hand over (CHO). Complete it when the order has it.") }}
+            </p>
+            <Button
+                v-if="openedCheckSkip"
+                type="tertiary"
+                :label="ctrans('Undo :check skip', { check: openedCheck.label })"
+                @click="undoSkipFromCheck(openedCheckSkip)"
+            >
+                <template #icon>
+                    <FontAwesomeIcon icon="fal fa-undo" class="text-amber-600" fixed-width aria-hidden="true" />
+                </template>
+            </Button>
+            <Button
+                v-if="openedCheckMark"
+                type="tertiary"
+                :label="openedCheckMark.date ? ctrans('Change date') : ctrans('Mark :check complete', { check: openedCheck.label })"
+                @click="markFromCheck(openedCheckMark)"
+            >
+                <template #icon>
+                    <FontAwesomeIcon :icon="openedCheckMark.date ? 'fal fa-pencil' : 'fal fa-check'" class="text-green-600" fixed-width aria-hidden="true" />
+                </template>
+            </Button>
             <slot :name="`check-${openedCheck.key}`" :check="openedCheck" :close="() => (openedCheck = null)" />
         </div>
     </Dialog>

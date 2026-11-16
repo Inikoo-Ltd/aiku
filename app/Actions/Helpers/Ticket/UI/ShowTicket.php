@@ -231,7 +231,9 @@ class ShowTicket extends OrgAction
 
     public function controlProps(Ticket $ticket): array
     {
-        $user = request()->user();
+        $user      = request()->user();
+        $engineers = GetTicketBadgeData::engineers($ticket->group_id)->loadMissing('image');
+        $qaUsers   = GetTicketBadgeData::qaUsers($ticket->group_id)->loadMissing('image');
 
         return [
             'ticket'  => array_merge(TicketResource::make($ticket)->toArray(request()), [
@@ -252,28 +254,28 @@ class ShowTicket extends OrgAction
                     ->get(['id', 'name'])
                     ->map(fn (TicketProject $project) => ['label' => $project->name, 'value' => $project->id]),
                 'milestones' => $ticket->project?->milestones()->get(['id', 'name'])->map(fn ($milestone) => ['label' => $milestone->name, 'value' => $milestone->id])->values() ?? [],
-                'qa_users'      => GetTicketBadgeData::qaUsers($ticket->group_id)
+                'qa_users'      => $qaUsers
                     ->map(fn (User $person) => [
                         'label'  => strtok((string) ($person->contact_name ?: $person->username), ' '),
                         'value'  => $person->id,
                         'avatar' => $person->imageSources(48, 48),
                     ])->sortBy('label')->values(),
-                'collaborators' => GetTicketBadgeData::engineers($ticket->group_id)
-                    ->merge(GetTicketBadgeData::qaUsers($ticket->group_id))
+                'collaborators' => $engineers
+                    ->merge($qaUsers)
                     ->unique('id')
                     ->map(fn (User $person) => [
                         'label'  => $person->contact_name ?: $person->username,
                         'value'  => $person->id,
                         'avatar' => $person->imageSources(48, 48),
                     ])->sortBy('label')->values(),
-                'assignees'  => GetTicketBadgeData::engineers($ticket->group_id)
+                'assignees'  => $engineers
                     ->map(fn (User $engineer) => [
                         'label'  => strtok((string) ($engineer->contact_name ?: $engineer->username), ' '),
                         'value'  => $engineer->id,
                         'avatar' => $engineer->imageSources(48, 48),
                         'is_me'  => $engineer->id === $user->id,
                     ])->sortBy('label')->values(),
-                'developers' => GetTicketBadgeData::engineers($ticket->group_id)
+                'developers' => $engineers
                     ->map(fn (User $engineer) => [
                         'username' => $engineer->username,
                         'name'     => $engineer->contact_name ?: $engineer->username,

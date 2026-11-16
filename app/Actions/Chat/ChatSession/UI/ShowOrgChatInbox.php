@@ -320,7 +320,8 @@ class ShowOrgChatInbox extends OrgAction
             // Every shop shows the same three columns so the rail reads down as one table;
             // a channel nothing arrives on is held open and empty rather than dropped, which
             // used to shift the icons a row out of line from one shop to the next.
-            $hasEmail    = isset($counts["{$shop->id}.email.customer"]) || isset($counts["{$shop->id}.email.guest"]);
+            $hasMailbox  = GmailClient::isShopMailboxUsable($shop);
+            $hasEmail    = $hasMailbox || isset($counts["{$shop->id}.email.customer"]) || isset($counts["{$shop->id}.email.guest"]);
             $hasWhatsapp = (bool) Arr::get($shop->settings, 'whatsapp.enabled', false);
 
             $channels = [
@@ -345,7 +346,7 @@ class ShowOrgChatInbox extends OrgAction
                 'is_read_only' => !$this->userCanActOnChatOnShop($user, $shop),
                 // A shop with no mailbox connected can send nothing, so the inbox does not offer
                 // to write from it. The customer still has to have an address of their own.
-                'can_start_email' => GmailClient::isShopMailboxUsable($shop),
+                'can_start_email' => $hasMailbox,
                 'can_create_template' => $user->authTo([
                     "chat-m.{$shop->id}",
                     "crm.{$shop->id}.edit",

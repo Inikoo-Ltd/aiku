@@ -19,4 +19,6 @@ enum BankTransactionMatchStateEnum: string
     case REVIEW = 'review';
     case UNMATCHED = 'unmatched';
     case DISMISSED = 'dismissed';
+    case PAID_BY_MARKETPLACE = 'paid_by_marketplace';
+    case CARD_PROCESSOR_PAYOUT = 'card_processor_payout';
 }

@@ -1,7 +1,7 @@
 ---
 title: Working the floor screen
 summary: The artisan's guide - the My tasks screen, the job list that updates on its own, START and DONE, what to press when you made fewer than asked, and taking a break.
-date: 2026-11-12
+date: 2026-11-13
 tags: production, floor, artisan
 category: production
 help_routes: grp.org.productions.show.floor
@@ -45,6 +45,10 @@ A row with a green ▶ and a time is the one you are working on, and when you st
 5. Press **DONE**.
 
 Made everything that was asked? That is it. The task closes, the job order is finished and the warehouse is told there is something to put away - see [Putting away finished production](/docs/putting-away-finished-production).
+
+## Raw material batch codes
+
+Some production rooms keep a record of which pack of each raw material went into what they made. Where the production manager has switched this on (**Raw material batches** on the **Performance** page), the job you are working on lists the raw materials of its step under **Raw materials used**, each with a **Batch code** box and an **Expiry date** calendar. Copy them from the packaging before pressing **DONE**. The boxes start empty every time, so copy them from the pack you are using. They are optional: leave a row empty and DONE still works. What you type shows on the job order under **Raw material batches**, with who recorded it and when. A step whose recipe lists no raw materials shows no boxes; ask the production manager to add them to the recipe.
 
 ## What the numbers count
 

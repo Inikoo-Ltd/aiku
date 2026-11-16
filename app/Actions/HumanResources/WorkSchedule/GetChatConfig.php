@@ -2,6 +2,7 @@
 
 namespace App\Actions\HumanResources\WorkSchedule;
 
+use App\Actions\Chat\ChatSession\IsChatStaffed;
 use App\Actions\Chat\Reports\IsWithinWorkingHours;
 use App\Models\Catalogue\Shop;
 use Carbon\Carbon;
@@ -46,7 +47,7 @@ class GetChatConfig
         }
 
         $chatHours           = IsWithinWorkingHours::make()->chatHours();
-        $config['is_online'] = $chatHours->handle($shop, now());
+        $config['is_online'] = IsChatStaffed::run($shop);
 
         $now = Carbon::now($timezone);
         $dayOfWeek = $now->dayOfWeekIso;

@@ -98,6 +98,11 @@ class ScanSkoBarcode extends OrgAction
         ];
     }
 
+    public static function matchedOn(OrgStock $orgStock, string $barcode): string
+    {
+        return $orgStock->barcode === trim($barcode) || GetOrgStockUnifiedLabelData::parseGs1($barcode) ? 'sko' : 'unit';
+    }
+
     public function rules(): array
     {
         return [
@@ -115,7 +120,7 @@ class ScanSkoBarcode extends OrgAction
         return [
             'barcode'    => trim($barcode),
             'found'      => (bool) $orgStock,
-            'matched_on' => $orgStock ? ($orgStock->barcode === trim($barcode) || GetOrgStockUnifiedLabelData::parseGs1($barcode) ? 'sko' : 'unit') : null,
+            'matched_on' => $orgStock ? static::matchedOn($orgStock, $barcode) : null,
             'org_stock'  => $orgStock ? static::card($warehouse, $orgStock) : null,
         ];
     }

@@ -22,8 +22,9 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * From the bank review queue: the line pays no order (a marketplace payout, a refund, recorded by hand already) and
- * leaves the queue with the reason. Matching never takes it up again.
+ * From the bank review queue: the line pays no order (a marketplace payout, a refund) and leaves the queue with the
+ * reason, or, marked already paid, its order already carries the payment staff recorded by hand. Matching never takes it
+ * up again.
  */
 class DismissBankTransaction extends OrgAction
 {
@@ -36,9 +37,13 @@ class DismissBankTransaction extends OrgAction
         return DB::transaction(function () use ($bankTransaction, $modelData) {
             $bankTransaction = BankTransaction::lockForUpdate()->findOrFail($bankTransaction->id);
 
+            $alreadyPaid = (bool) ($modelData['already_paid'] ?? false);
+
             $problem = match (true) {
                 $bankTransaction->payment_id !== null => __('This bank payment is already recorded on an order'),
                 $bankTransaction->direction !== BankTransactionDirectionEnum::IN || $bankTransaction->status !== BankTransactionStatusEnum::BOOKED => __('Only money received and booked by the bank is reviewed here'),
+                $alreadyPaid && !$bankTransaction->order => __('No order is named in this bank payment'),
+                $alreadyPaid && $bankTransaction->order->payment_amount <= 0 => __('No payment is recorded on :order yet', ['order' => $bankTransaction->order->reference]),
                 default => null,
             };
             if ($problem) {
@@ -46,7 +51,7 @@ class DismissBankTransaction extends OrgAction
             }
 
             $bankTransaction->update([
-                'match_state' => BankTransactionMatchStateEnum::DISMISSED,
+                'match_state' => $alreadyPaid ? BankTransactionMatchStateEnum::ALREADY_PAID : BankTransactionMatchStateEnum::DISMISSED,
                 'match_data'  => array_merge($bankTransaction->match_data, [
                     'dismissed_note' => $modelData['note'],
                     'dismissed_by'   => $this->user?->contact_name ?? $this->user?->username ?? 'staff',
@@ -63,6 +68,7 @@ class DismissBankTransaction extends OrgAction
     {
         return [
             'note' => ['required', 'string', 'max:500'],
+            'already_paid' => ['sometimes', 'boolean'],
         ];
     }
 

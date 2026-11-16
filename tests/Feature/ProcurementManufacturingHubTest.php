@@ -891,6 +891,13 @@ describe('partner shopping list', function () {
         expect($row['purchase_order_transaction_id'])->toBe($line->id)
             ->and($row['saveRoute']['name'])->toBe('grp.models.purchase-order.transaction.update');
 
+        $production = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'PPOP', 'name' => 'Partner PO factory']);
+        if (!Artefact::where('organisation_id', $seller->id)->where('org_stock_id', $sellerOrgStock->id)->exists()) {
+            StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'PPO-'.$sellerOrgStock->id, 'name' => 'Partner PO artefact', 'org_stock_id' => $sellerOrgStock->id]);
+        }
+        $sellerOrgStock->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
+
         $purchaseOrder->update(['source_id' => '3:999999']);
         UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
         $purchaseOrder->refresh();
@@ -908,6 +915,12 @@ describe('partner shopping list', function () {
             ->and($stockDelivery)->not->toBeNull()
             ->and($stockDelivery->delivery_note_id)->toBe($order->deliveryNotes()->first()->id)
             ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id);
+
+        $toProduce = PartnerShoppingListItem::where('transaction_id', $order->transactions()->first()->id)->get();
+        expect($toProduce)->toHaveCount(1)
+            ->and($toProduce->first()->organisation_id)->toBe($seller->id)
+            ->and($toProduce->first()->org_stock_id)->toBe($sellerOrgStock->id)
+            ->and((float) $toProduce->first()->quantity)->toBe(3 * (float) $sellerOrgStock->pivot->quantity);
 
         expect((float) $line->refresh()->net_amount)->toBe((float) $order->transactions()->first()->net_amount)
             ->and((float) $purchaseOrder->cost_items)->toBe((float) $order->transactions()->first()->net_amount);

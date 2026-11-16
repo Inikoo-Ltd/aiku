@@ -436,7 +436,7 @@ fun NoTasksState(modifier: Modifier = Modifier) {
             if (can.viewGoodsOut && can.pickAndPack) {
                 StatesButton(
                     text = stringResource(R.string.states_tasks_pick_from_queue),
-                    onClick = { navigator.open(DeliveryNotesRoute) },
+                    onClick = { navigator.open(DeliveryNotesRoute()) },
                 )
             }
             StatesButton(

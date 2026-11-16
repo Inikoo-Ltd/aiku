@@ -22,9 +22,11 @@ use Illuminate\Support\Facades\DB;
 class StoreIrisPortfolioItemsToChannels extends IrisAction
 {
     /**
+     * @return array<int, int> the products newly added to at least one of the channels
+     *
      * @throws \Throwable
      */
-    public function handle(Collection $channels, array $itemIds): void
+    public function handle(Collection $channels, array $itemIds): array
     {
         $channels = $channels->filter(
             fn ($customerSalesChannel) => $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL
@@ -32,7 +34,7 @@ class StoreIrisPortfolioItemsToChannels extends IrisAction
         );
 
         if ($channels->isEmpty()) {
-            return;
+            return [];
         }
 
         $items = Product::whereIn('id', $itemIds)
@@ -46,19 +48,22 @@ class StoreIrisPortfolioItemsToChannels extends IrisAction
             ->get()
             ->keyBy(fn ($p) => "$p->customer_sales_channel_id-$p->item_id");
 
-        $newPortfolioIds = DB::transaction(function () use ($channels, $items, $existingPortfolios) {
+        $newProductIds   = [];
+        $newPortfolioIds = DB::transaction(function () use ($channels, $items, $existingPortfolios, &$newProductIds) {
             $newPortfolioIds = [];
-            $channels->each(function ($customerSalesChannel) use ($items, $existingPortfolios, &$newPortfolioIds) {
-                $items->each(function ($item) use ($customerSalesChannel, $existingPortfolios, &$newPortfolioIds) {
+            $channels->each(function ($customerSalesChannel) use ($items, $existingPortfolios, &$newPortfolioIds, &$newProductIds) {
+                $items->each(function ($item) use ($customerSalesChannel, $existingPortfolios, &$newPortfolioIds, &$newProductIds) {
                     $compositeKey = $customerSalesChannel->id . '-' . $item->id;
                     if ($existingPortfolios->has($compositeKey)) {
                         /** @var Portfolio $portfolio */
                         $portfolio = $existingPortfolios->get($compositeKey);
                         if (!$portfolio->status) {
                             UpdatePortfolio::make()->action($portfolio, ['status' => true]);
+                            $newProductIds[] = $item->id;
                         }
                     } else {
                         $newPortfolioIds[$customerSalesChannel->id][] = StorePortfolio::make()->action($customerSalesChannel, $item, [], checkInPlatform: false)->id;
+                        $newProductIds[]                              = $item->id;
                     }
                 });
             });
@@ -71,5 +76,7 @@ class StoreIrisPortfolioItemsToChannels extends IrisAction
                 CheckNewPortfoliosInPlatform::dispatch($customerSalesChannel, $newPortfolioIds[$customerSalesChannel->id])->afterCommit();
             }
         });
+
+        return array_values(array_unique($newProductIds));
     }
 }

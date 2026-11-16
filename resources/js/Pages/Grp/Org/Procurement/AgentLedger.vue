@@ -23,6 +23,7 @@ import { faCheckCircle as fasCheckCircle } from "@fas"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
+import AgentFeeCalculationInfo from "@/Components/Procurement/AgentFeeCalculationInfo.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
@@ -41,6 +42,16 @@ interface Wallet {
 	paid: number
 	balance: number
 	org_agent_id: number | null
+	agent_fee_percentage: number | null
+	cho_penalty_percentage: number
+	suppliers: SupplierFee[]
+	suppliers_with_different_fee: SupplierFee[]
+}
+
+interface SupplierFee {
+	id: number
+	code: string
+	name: string | null
 	agent_fee_percentage: number | null
 }
 
@@ -86,9 +97,11 @@ const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	wallets: Wallet[]
+	agent_fee_explained: string[]
 	form: {
 		store_route: routeType
 		agent_fee_route_name: string
+		supplier_agent_fee_route_name: string
 		currency_code: string
 		clients: { id: number; label: string; currency_code: string }[]
 		types: { value: string; label: string; money_in: boolean; needs_order: boolean; needs_receipt: boolean }[]
@@ -122,6 +135,61 @@ const saveFee = () => {
 		preserveScroll: true,
 		onSuccess: () => (feeWallet.value = null),
 		onError: (errors) => (feeError.value = firstError(errors)),
+	})
+}
+
+const supplierFeeWallet = ref<Wallet | null>(null)
+const supplierFeeSupplierId = ref<number | null>(null)
+const supplierFeePercentage = ref<number | null>(null)
+const supplierFeeError = ref<string | null>(null)
+const supplierFeeSaving = ref(false)
+const isSupplierFeeOpen = computed({ get: () => supplierFeeWallet.value !== null, set: (open: boolean) => !open && (supplierFeeWallet.value = null) })
+const clientFee = (wallet: Wallet | null) => wallet?.agent_fee_percentage ?? 2
+const supplierOptions = computed(() =>
+	(supplierFeeWallet.value?.suppliers ?? []).map((supplier) => ({
+		value: supplier.id,
+		label: [supplier.code, supplier.name].filter(Boolean).join(" · ") + (supplier.agent_fee_percentage !== null ? ` (${supplier.agent_fee_percentage}%)` : ""),
+	})),
+)
+const openSupplierFees = (wallet: Wallet) => {
+	supplierFeeWallet.value = wallet
+	supplierFeeSupplierId.value = null
+	supplierFeePercentage.value = null
+	supplierFeeError.value = null
+}
+const pickSupplierFee = (supplier: SupplierFee) => {
+	supplierFeeSupplierId.value = supplier.id
+	supplierFeePercentage.value = supplier.agent_fee_percentage
+	supplierFeeError.value = null
+}
+watch(supplierFeeSupplierId, (supplierId) => {
+	const supplier = supplierFeeWallet.value?.suppliers.find((option) => option.id === supplierId)
+	supplierFeePercentage.value = supplier?.agent_fee_percentage ?? null
+})
+const removingSupplierFeeId = ref<number | null>(null)
+const saveSupplierFee = () => {
+	if (!supplierFeeSupplierId.value) return
+	supplierFeeSaving.value = true
+	patchSupplierFee(supplierFeeSupplierId.value, supplierFeePercentage.value, () => (supplierFeeSaving.value = false))
+}
+const removeSupplierFee = (supplier: SupplierFee) => {
+	removingSupplierFeeId.value = supplier.id
+	patchSupplierFee(supplier.id, null, () => (removingSupplierFeeId.value = null))
+}
+const patchSupplierFee = (supplierId: number, percentage: number | null, onFinish: () => void) => {
+	if (!props.form) return
+	router.patch(route(props.form.supplier_agent_fee_route_name, { supplier: supplierId }), { agent_fee_percentage: percentage }, {
+		preserveScroll: true,
+		onSuccess: () => {
+			const organisationId = supplierFeeWallet.value?.organisation_id
+			const currencyCode = supplierFeeWallet.value?.currency_code
+			supplierFeeWallet.value = props.wallets.find((wallet) => wallet.organisation_id === organisationId && wallet.currency_code === currencyCode) ?? null
+			supplierFeeSupplierId.value = null
+			supplierFeePercentage.value = null
+			supplierFeeError.value = null
+		},
+		onError: (errors) => (supplierFeeError.value = firstError(errors)),
+		onFinish,
 	})
 }
 
@@ -327,11 +395,24 @@ const confirmRemove = (row: EntryRow) =>
 				</div>
 			</div>
 			<div v-if="wallet.org_agent_id" class="mt-2 flex items-center justify-between border-t border-gray-100 pt-2 text-xs text-gray-500">
-				<span>{{ ctrans("Agent fee") }} {{ wallet.agent_fee_percentage ?? 2 }}%</span>
+				<span>
+					{{ ctrans("Agent fee") }} {{ wallet.agent_fee_percentage ?? 2 }}%
+					<span v-if="wallet.cho_penalty_percentage > 0" class="text-gray-400" v-tooltip="ctrans('Taken off the agent fee on the goods of an order that missed clean hand over. Set by the client.')">· {{ ctrans("CHO penalty −:penalty%", { penalty: wallet.cho_penalty_percentage }) }}</span>
+				</span>
 				<button v-if="form" type="button" class="text-gray-400 hover:text-gray-700" :title="ctrans('Edit')" :aria-label="ctrans('Edit')" @click="openFee(wallet)">
 					<FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
 				</button>
 			</div>
+			<button
+				v-if="wallet.org_agent_id && (wallet.suppliers_with_different_fee.length || (form && wallet.suppliers.length))"
+				type="button"
+				class="mt-1 text-left text-xs text-[var(--app-accent)] hover:underline"
+				@click="openSupplierFees(wallet)">
+				<template v-if="wallet.suppliers_with_different_fee.length">
+					{{ ctrans(":count suppliers with a different agent fee", { count: wallet.suppliers_with_different_fee.length }) }}
+				</template>
+				<template v-else>{{ ctrans("Set a supplier's agent fee") }}</template>
+			</button>
 		</div>
 	</div>
 
@@ -504,6 +585,7 @@ const confirmRemove = (row: EntryRow) =>
 			<span class="text-gray-600">{{ ctrans("Share of the goods of each container (empty is 2%)") }}</span>
 			<InputNumber v-model="feePercentage" :min="0" :max="100" :maxFractionDigits="2" suffix="%" class="mt-1 w-full" :class="fieldFocusClass" :pt="fullWidthInput" />
 		</label>
+		<AgentFeeCalculationInfo :items="agent_fee_explained" class="mt-3" />
 		<p v-if="feeError" class="mt-2 text-xs text-red-600">{{ feeError }}</p>
 		<template #footer>
 			<div class="flex w-full gap-2">
@@ -513,6 +595,81 @@ const confirmRemove = (row: EntryRow) =>
 					</template>
 				</Button>
 				<Button type="primary" full :label="ctrans('Save')" @click="saveFee">
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+			</div>
+		</template>
+	</Dialog>
+
+	<Dialog v-model:visible="isSupplierFeeOpen" modal :header="ctrans('Supplier agent fees for :client', { client: supplierFeeWallet?.code ?? '' })" :style="{ width: '34rem', maxWidth: 'calc(100vw - 2rem)' }">
+		<div class="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-sm">
+			<span class="text-gray-600">{{ ctrans(":client agent fee", { client: supplierFeeWallet?.code ?? "" }) }}</span>
+			<span class="font-semibold text-gray-900">{{ clientFee(supplierFeeWallet) }}%</span>
+		</div>
+		<div class="mt-4 text-sm font-medium text-gray-700">{{ ctrans("Suppliers with their own fee") }}</div>
+		<ul v-if="supplierFeeWallet?.suppliers_with_different_fee.length" class="mt-2 divide-y divide-gray-100 rounded-md border border-gray-200">
+			<li v-for="supplier in supplierFeeWallet.suppliers_with_different_fee" :key="supplier.id" class="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+				<span class="min-w-0 truncate">
+					<span class="font-semibold uppercase text-gray-700">{{ supplier.code }}</span>
+					<span v-if="supplier.name" class="ml-2 text-gray-500">{{ supplier.name }}</span>
+				</span>
+				<span class="flex shrink-0 items-center gap-2">
+					<span class="font-semibold text-gray-900">{{ supplier.agent_fee_percentage }}%</span>
+					<button v-if="form" type="button" class="text-gray-400 hover:text-gray-700" :title="ctrans('Edit')" :aria-label="ctrans('Edit')" @click="pickSupplierFee(supplier)">
+						<FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+					</button>
+					<button
+						v-if="form"
+						type="button"
+						class="text-gray-400 hover:text-red-600 disabled:opacity-50"
+						:disabled="removingSupplierFeeId === supplier.id"
+						:title="ctrans('Remove agent fee')"
+						:aria-label="ctrans('Remove agent fee')"
+						@click="removeSupplierFee(supplier)">
+						<FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+					</button>
+				</span>
+			</li>
+		</ul>
+		<p v-else class="mt-2 text-sm text-gray-400">{{ ctrans("No supplier has a different agent fee.") }}</p>
+		<AgentFeeCalculationInfo :items="agent_fee_explained" class="mt-3" />
+
+		<div v-if="form" class="mt-5 border-t border-gray-100 pt-4">
+			<div class="text-sm font-medium text-gray-700">{{ ctrans("Set a supplier's agent fee") }}</div>
+			<div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_8rem]">
+				<Select
+					v-model="supplierFeeSupplierId"
+					:options="supplierOptions"
+					optionLabel="label"
+					optionValue="value"
+					filter
+					:placeholder="ctrans('Select a supplier')"
+					class="w-full"
+					:class="fieldFocusClass" />
+				<InputNumber
+					v-model="supplierFeePercentage"
+					:min="0"
+					:max="100"
+					:maxFractionDigits="2"
+					suffix="%"
+					:placeholder="`${clientFee(supplierFeeWallet)}%`"
+					:disabled="!supplierFeeSupplierId"
+					:class="fieldFocusClass"
+					:pt="fullWidthInput" />
+			</div>
+			<p class="mt-2 text-xs text-gray-400">{{ ctrans("Empty follows each client's agent fee. A supplier's fee applies to every client that buys from it.") }}</p>
+			<p v-if="supplierFeeError" class="mt-2 text-xs text-red-600">{{ supplierFeeError }}</p>
+		</div>
+		<template #footer>
+			<div class="flex w-full gap-2">
+				<Button type="tertiary" :class="form ? 'shrink-0' : ''" :full="!form" :label="ctrans('Close')" @click="supplierFeeWallet = null">
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+				<Button v-if="form" type="primary" full :label="ctrans('Save')" :disabled="!supplierFeeSupplierId" :loading="supplierFeeSaving" @click="saveSupplierFee">
 					<template #icon>
 						<FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
 					</template>

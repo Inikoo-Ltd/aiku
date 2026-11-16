@@ -3121,6 +3121,51 @@ test('a step priced TBC leaves the shipping to be confirmed instead of free', fu
         ->and((float)$shippingTransaction->net_amount)->toBe(0.0);
 })->depends('shipping zone with territories wins over a catch all zone placed above it');
 
+test('a new shipping line points to the zone that priced it, even when that zone shares another zone asset', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, [
+        'name' => 'shared asset schema',
+    ]);
+
+    $ukZone = StoreShippingZone::make()->action($shippingZoneSchema, [
+        'code'        => 'ZONE-UK',
+        'name'        => 'United Kingdom',
+        'status'      => true,
+        'price'       => ['type' => 'Step Order Items Net Amount', 'steps' => [['from' => 0, 'to' => 'INF', 'price' => 20]]],
+        'territories' => [['country_code' => 'GB']],
+        'position'    => 1,
+        'is_failover' => false,
+    ]);
+
+    $greeceZone = StoreShippingZone::make()->action($shippingZoneSchema, [
+        'code'        => 'ZONE-GR',
+        'name'        => 'Greece',
+        'status'      => true,
+        'price'       => ['type' => 'Step Order Items Net Amount', 'steps' => [['from' => 0, 'to' => 'INF', 'price' => 6.1]]],
+        'territories' => [['country_code' => 'GR']],
+        'position'    => 2,
+        'is_failover' => false,
+    ]);
+    $greeceZone->updateQuietly(['asset_id' => $ukZone->asset_id, 'current_historic_asset_id' => $ukZone->current_historic_asset_id]);
+
+    $this->shop->update(['shipping_zone_schema_id' => $shippingZoneSchema->id]);
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->deliveryAddress->update(['country_code' => 'GR', 'postal_code' => '54454']);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+
+    $order = CalculateOrderShipping::make()->handle($order->refresh());
+
+    $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();
+
+    expect($order->shipping_zone_id)->toBe($greeceZone->id)
+        ->and($shippingTransaction->model_id)->toBe($greeceZone->id)
+        ->and((float)$shippingTransaction->net_amount)->toBe(6.1);
+});
+
 test('repricing a basket picks up a shipping price that changed since it was created', function () {
     $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, [
         'name' => 'stale basket schema',
@@ -5964,6 +6009,21 @@ test('catalogue meaning search embeds website products once and returns the near
         ->and(\App\Actions\Catalogue\Search\SearchCatalogueByMeaning::run($this->shop, ' '))->toBeEmpty();
 });
 
+test('catalogue meaning search embeds the brand with the product name, so a brand the name does not carry is found', function () {
+    [, $product] = createProduct($this->shop);
+    DB::table('products')->where('id', $product->id)->update(['is_in_website' => true]);
+    $brand = \App\Models\Helpers\Brand::create(['group_id' => $this->shop->group_id, 'name' => 'Agnes + Cat', 'reference' => 'agnes-cat-'.uniqid(), 'slug' => 'agnes-cat-'.uniqid()]);
+    $product->brands()->attach($brand->id);
+
+    config(['services.openrouter.api_key' => 'test']);
+    Http::fake(['*' => fn ($request) => Http::response(['data' => collect($request['input'])->map(fn ($text, $index) => ['index' => $index, 'embedding' => array_fill(0, 1024, 0.5)])->all()])]);
+
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+    $texts = collect(Http::recorded())->flatMap(fn ($pair) => $pair[0]['input'] ?? [])->filter(fn ($text) => str_starts_with($text, $product->name));
+
+    expect($texts->first())->toStartWith($product->name."\nAgnes + Cat");
+});
+
 test('adds from the customer dashboard are logged per section and counted as ordered once the basket is submitted', function () {
     $website = createWebsite($this->shop);
     $website->update(['status' => true]);
@@ -7241,6 +7301,8 @@ test('adding and removing basket lines keeps totals, discounts, shipping and cha
         'in_basket'  => 112.0,
     ]);
 
+    $this->actingAs($webUser->fresh(), 'retina')->get('http://'.$website->domain.'/app/basket')->assertOk();
+
     $line          = $basket->transactions()->where('model_type', 'Product')->where('model_id', $products[2]->id)->first();
     $deleteQueries = $queriesOf(fn () => $this->actingAs($webUser->fresh(), 'retina')
         ->delete('http://'.$website->domain.'/app/models/transaction/'.$line->id)
@@ -7278,7 +7340,7 @@ test('adding and removing basket lines keeps totals, discounts, shipping and cha
         ->and($storeQueries[1])->toBeLessThan(119)
         ->and($storeQueries[2])->toBeLessThan(126)
         ->and($deleteQueries)->toBeLessThan(131)
-        ->and($showQueries)->toBeLessThan(71);
+        ->and($showQueries)->toBeLessThan(69);
 
     $rowVersions = fn () => DB::table('transactions')->where('order_id', $basket->id)->orderBy('id')->selectRaw('id, xmin::text as row_version')->pluck('row_version', 'id')->all();
     $versionsBefore = $rowVersions();

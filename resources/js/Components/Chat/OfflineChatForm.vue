@@ -4,8 +4,9 @@ import axios from "axios"
 import { Textarea, InputText } from "primevue"
 import Button from "../Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faMessage, faPaperPlane, faPaperclip, faXmark } from "@fortawesome/free-solid-svg-icons"
+import { faMessage, faPaperPlane, faPaperclip, faXmark, faWandMagicSparkles } from "@fortawesome/free-solid-svg-icons"
 import { ctrans } from "@/Composables/useTrans"
+import { useShoppingAssistant } from "@/Iris/Composables/useShoppingAssistant"
 
 const props = defineProps({
     isOnline: Boolean,
@@ -23,10 +24,13 @@ const props = defineProps({
     },
 })
 
-const emit = defineEmits(["session-created"])
+const emit = defineEmits(["session-created", "ask-merlin"])
 
 const layout: any = inject("layout")
 const baseUrl = layout?.appUrl ?? ""
+
+const { assistant } = useShoppingAssistant()
+const assistantName = computed(() => assistant.value?.name || "Merlin")
 
 const loading = ref(false)
 const success = ref(false)
@@ -118,9 +122,20 @@ const submitOffline = async () => {
 <template>
     <div class="flex flex-col h-full min-h-0 bg-white">
 
+        <div v-if="assistant" class="px-4 py-5 text-center border-b shrink-0">
+            <p class="text-base font-semibold text-gray-800">
+                {{ ctrans("We are closed now, but :name never sleeps.", { name: assistantName }) }}
+            </p>
+            <p class="text-sm text-gray-600 mt-1 mb-3">
+                {{ ctrans(":name, our AI assistant, can help you right now with products, delivery, how things work and more.", { name: assistantName }) }}
+            </p>
+            <Button type="primary" full :label="ctrans('Ask :name now', { name: assistantName })" :icon="faWandMagicSparkles"
+                class="justify-center" @click="emit('ask-merlin')" />
+        </div>
+
         <!-- Info -->
         <div class="px-4 py-6 text-center border-b bg-gray-50 shrink-0">
-            <p class="text-sm text-gray-600">
+            <p v-if="!assistant" class="text-sm text-gray-600">
                 {{ ctrans("Sorry, we aren't online at the moment.") }}
             </p>
             <p v-if="showNextOpening" class="text-sm text-gray-600">

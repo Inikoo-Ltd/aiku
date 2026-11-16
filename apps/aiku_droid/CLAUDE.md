@@ -12,7 +12,7 @@ Most screens are still skeletons built on sample data, so developers can see how
 - Every block that shows sample data carries it.
 - Sample data lives in `private` values in the screen file, or in an area's `*Samples.kt`.
 - When you wire a block to real data, remove its sample data and its `fakeData()` outline together.
-- Never outline real data. Today that is: the signed-in user (`LocalStaff`), the warehouses and their permissions (`LocalWarehouse`, `LocalWarehouses`) and appearance (`LocalAppearanceController`), clocking (`LocalClocking`: status, sessions, methods, code, timesheets, target), and Clocking & HR (`LocalLeave`, `LocalClockingAdjustments`, `LocalOvertime`, `LocalClockingCalendar`).
+- Never outline real data. Today that is: the signed-in user (`LocalStaff`), the warehouses and their permissions (`LocalWarehouse`, `LocalWarehouses`) and appearance (`LocalAppearanceController`), clocking (`LocalClocking`: status, sessions, methods, code, timesheets, target), Clocking & HR (`LocalLeave`, `LocalClockingAdjustments`, `LocalOvertime`, `LocalClockingCalendar`), the profile card (`GET /profile`), and Goods out (`GoodsOutApi`: the delivery note list, its counts and backlog, the delivery note screens, the scan lookup, picking (the footer and ⋯ actions from `available_actions`, their sheets, the line actions and scan to pick), packing and dispatch (line packing, scan to pack, boxes, parcels, consumables, inserts, Add shipment, the shipments block, the external shipment, finalise and dispatch, and the Documents sheet), and the 2e extras (`PickingSessionApi`: picking sessions, pick by location, pack by scan, multi-select into a session, pickers and packers now; trolleys and picked bays; cancel, note, packer and address edits; Ask CRM through `StaffChatApi`)).
 - The outline is dashed on purpose, so it is not confused with the solid red border of a field in error.
 
 ## Backend
@@ -33,6 +33,7 @@ Most screens are still skeletons built on sample data, so developers can see how
 - Wrap each module screen in `RequireAbility(ability = Ability.…)`. When access is missing, the no-access screen names the permission (`Ability.permission`). `Ability` and `WarehouseAbilities.allows()` live in `data/api/WarehouseApi.kt`.
 - **Hide** tabs, menu rows, dashboard sections and actions the user cannot use. Never grey them out.
 - Only the actions allowed for the record's state AND the user's rights appear, exactly as on the web. With none, a short status line (`FooterStatus`) says what is missing.
+- The one exception: an `available_actions` key with a `disabled_reason` shows that reason in place of its button (`DisabledActionNotice`), because the server says why it cannot be used yet.
 - Picker/packer roles (Dispatch clerk) get goods out, picking/packing and location viewing, but not the SKO screens: the web does not give them those either.
 - Clocking & HR is for every signed-in staff member, with no ability check.
 - Staff with no warehouse role get Home's staff variant (clocking, profile) and no Scan slot. For them `LocalWarehouses` is empty and `LocalWarehouse` is `NoWarehouseAccess`, whose abilities are all false. Hide warehouse-only parts when `LocalWarehouses.current.isEmpty()`.
@@ -80,6 +81,16 @@ Release builds use `https://app.aiku.io` and none of the development settings.
 - Type is Inter, with a Bitter wordmark and a Caveat tagline. The fonts are OFL, and their licences ship in `assets/licenses`.
 - The sign-in watercolour backgrounds are rendered from the canvas's own SVG (`login_background`, `login_background_dark`).
 - Icons are the canvas's own SVGs converted to vector drawables, named `ic_<area>_<name>` for area icons. The shared icon set (C23) is `ic_fa_<font-awesome name>`, and the feedback icons are `ic_feedback_*`.
+
+## Scanning
+
+- Scans arrive through one `ScanController` (`LocalScanController`, `ScanEffect`), from the camera (`CameraBarcodePreview`) or a hardware scanner that types like a keyboard (`HardwareScanDetector`, fed by a `Window.Callback` in `MainActivity`). A burst of 3 or more characters, 50 ms or less apart and ending in Enter, is a scan; slower typing and anything typed into a focused text field are left alone.
+- Each scan goes to the topmost screen that listens, and only while that screen is resumed. Only warehouse screens and clocking listen; elsewhere a scan does nothing.
+- `GET /warehouses/{id}/scan` resolves a code to an SKO, a location or a delivery note. Each kind is returned only with its own view right, so a dispatch clerk without inventory view gets `unknown` for an SKO.
+- Every scan counts 1. The shared `ScanPanel` (C26) offers "Pick all N" and − / + for amounts.
+- Scan to pick (`POST /delivery-notes/{id}/scan-pick`) listens on the picking screen and on `ScanToPickScreen`, only while the note is in handling, the user can act on it, the organisation allows scan to pick and the note is not dropshipping. Scans queue one at a time in `DeliveryNoteViewModel`.
+- Scan to pack (`POST /delivery-notes/{id}/scan-pack`) listens on the delivery note screen only while the note is in packing, the user can act on it, the organisation allows scan to pack and the note is not dropshipping. It shares the scan queue and `ScanPanel` with scan to pick.
+- In a picking session, Pick by location and Pack by scan listen only while the session offers `scan_pick` / `scan_pack`, and post to `/picking-sessions/{id}/scan-pick` / `scan-pack` through their own queue in `PickingSessionViewModel`.
 
 ## Focus state
 

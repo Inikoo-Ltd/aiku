@@ -2,7 +2,7 @@
 title: Lucrul cu ecranul de fabrică
 summary: Ghidul meșteșugarului - ecranul Sarcinile mele, lista de sarcini care se actualizează singură, START și DONE, ce apeși dacă ai făcut mai puțin decât ți s-a cerut, și cum iei o pauză.
 date: 2026-11-03
-source_date: 2026-11-12
+source_date: 2026-11-13
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -45,6 +45,10 @@ Un rând cu ▶ verde și o oră e cel la care lucrezi, și ora la care l-ai în
 5. Apasă <b>DONE</b>.
 
 Ai făcut tot ce ți s-a cerut? Gata. Sarcina se închide, ordinul de lucru e terminat și depozitul e anunțat că are ceva de pus la locul lui - vezi [Punerea la loc a producției terminate](/docs/putting-away-finished-production-ro).
+
+## Codurile loturilor de materii prime
+
+Unele săli de producție țin evidența pachetului din fiecare materie primă care a intrat în ce s-a făcut. Unde managerul de producție a activat asta (<b>Raw material batches</b> (Loturi de materii prime) pe pagina <b>Performance</b> (Performanță)), lucrarea la care lucrezi enumeră materiile prime ale pasului ei sub <b>Raw materials used</b> (Materii prime folosite), fiecare cu o căsuță <b>Batch code</b> (Cod lot) și un calendar <b>Expiry date</b> (Data expirării). Copiază-le de pe ambalaj înainte să apeși <b>DONE</b>. Căsuțele sunt goale de fiecare dată, așa că copiază-le de pe pachetul pe care îl folosești. Sunt opționale: lasă un rând gol și DONE funcționează în continuare. Ce scrii apare în ordinul de lucru sub <b>Raw material batches</b>, cu cine a înregistrat și când. Un pas a cărui rețetă nu enumeră materii prime nu arată căsuțe; cere managerului de producție să le adauge în rețetă.
 
 ## Ce numără cifrele
 

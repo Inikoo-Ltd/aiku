@@ -114,11 +114,47 @@ trait WithLayoutNavigation
                             ]
                         ],
                         [
-                            'label' => __('Bank review'),
+                            'label' => __('Bank incoming'),
                             'icon'  => ['fal', 'fa-university'],
-                            'root'  => 'grp.org.accounting.bank_review.',
+                            'root'  => 'grp.org.accounting.bank_incoming.',
                             'route' => [
-                                'name'       => 'grp.org.accounting.bank_review.index',
+                                'name'       => 'grp.org.accounting.bank_incoming.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
+                            'label' => __('Bank outgoing'),
+                            'icon'  => ['fal', 'fa-money-check-alt'],
+                            'root'  => 'grp.org.accounting.bank_outgoing.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.bank_outgoing.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
+                            'label' => __('Cash'),
+                            'icon'  => ['fal', 'fa-coins'],
+                            'root'  => 'grp.org.accounting.cash.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.cash.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
+                            'label' => __('Receivables'),
+                            'icon'  => ['fal', 'fa-hand-holding-usd'],
+                            'root'  => 'grp.org.accounting.receivables.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.receivables.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
+                            'label' => __('Payables'),
+                            'icon'  => ['fal', 'fa-file-invoice'],
+                            'root'  => 'grp.org.accounting.payables.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.payables.index',
                                 'parameters' => [$organisation->slug],
                             ]
                         ],

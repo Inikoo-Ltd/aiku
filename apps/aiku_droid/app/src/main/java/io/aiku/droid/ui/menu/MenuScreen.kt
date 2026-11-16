@@ -85,7 +85,6 @@ private val sectionIcons = mapOf(
     WarehouseSection.DeliveryNotes to R.drawable.ic_ui_delivery_note,
     WarehouseSection.PickingSessions to R.drawable.ic_ui_delivery_note,
     WarehouseSection.FulfilmentReturns to R.drawable.ic_ui_delivery_note,
-    WarehouseSection.Shippers to R.drawable.ic_ui_shipper,
     WarehouseSection.Trolleys to R.drawable.ic_ui_shipper,
     WarehouseSection.PickedBays to R.drawable.ic_ui_shipper,
 )

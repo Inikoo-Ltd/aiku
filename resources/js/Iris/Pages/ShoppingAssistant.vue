@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import axios from "axios"
-import { router } from "@inertiajs/vue3"
+import { router, usePage } from "@inertiajs/vue3"
 import { get } from "lodash-es"
 import Textarea from "primevue/textarea"
 import Tabs from "primevue/tabs"
@@ -11,7 +12,7 @@ import TabPanels from "primevue/tabpanels"
 import TabPanel from "primevue/tabpanel"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faSparkles, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset } from "@far"
+import { faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset } from "@far"
 import { faThumbsUp, faThumbsDown } from "@far"
 import { faThumbsUp as fasThumbsUp, faThumbsDown as fasThumbsDown } from "@fas"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
@@ -22,6 +23,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import RenderProduct from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
+import RenderProductDropshiping from "@/Iris/Components/IrisBlocks/Products/ds/RenderProductDropshiping.vue"
 import RangeAdvisorPanel from "@/Iris/Components/RangeAdvisorPanel.vue"
 import { ProductResource } from "@/types/Iris/Products"
 import {
@@ -29,11 +31,12 @@ import {
     shoppingAssistantQuestionKey,
     useShoppingAssistant,
 } from "@/Iris/Composables/useShoppingAssistant"
-library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faSparkles, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset, faThumbsUp, faThumbsDown, fasThumbsUp, fasThumbsDown)
+library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset, faThumbsUp, faThumbsDown, fasThumbsUp, fasThumbsDown)
 
 type Card = ProductResource & {
     assistant_reason: string
     assistant_message_id: number
+    portfolio_channels?: number[]
 }
 
 type Message =
@@ -67,6 +70,7 @@ const fieldValue = computed(() => props.web_block_family?.fieldValue)
 const productCardCode = computed(() => props.web_block_family_code || "products-1")
 
 const layout: any = inject("layout", retinaLayoutStructure)
+const isDropshipping = computed(() => layout?.retina?.type === "dropshipping")
 const screenType = inject("screenType", ref<"mobile" | "tablet" | "desktop">("desktop"))
 
 const { assistant } = useShoppingAssistant()
@@ -97,6 +101,7 @@ const handingOver = ref<number | "link" | null>(null)
 const handOverErrors = ref<Record<number, string>>({})
 
 const hasPanelProducts = ref(true)
+const hasForgottenProducts = ref(false)
 
 const focusLandingTextarea = () => {
     const textarea = document.querySelector<HTMLTextAreaElement>(".landing-textarea")
@@ -111,30 +116,83 @@ const isLandingVisible = computed(() => showLanding.value && !!assistant.value)
 const isChatVisible = computed(() => !isLandingVisible.value && (!!assistant.value || messages.value.length > 0 || isPending.value))
 const isMerlin = computed(() => assistantName.value.trim().toLowerCase() === "merlin")
 
-const knowsTheRange = computed(() => props.products_in_range
-    ? ctrans(":name knows all :count+ products in our range and what shops like yours buy most.", {
-        name: assistantName.value,
-        count: locale.number(props.products_in_range),
-    })
-    : ctrans(":name knows every product in our range and what shops like yours buy most.", { name: assistantName.value }))
+const knowsTheRange = computed(() => isDropshipping.value
+    ? (props.products_in_range
+        ? ctrans(":name knows all :count+ products you can sell from us and what sells best for online sellers like you.", {
+            name: assistantName.value,
+            count: locale.number(props.products_in_range),
+        })
+        : ctrans(":name knows every product you can sell from us and what sells best for online sellers like you.", { name: assistantName.value }))
+    : (props.products_in_range
+        ? ctrans(":name knows all :count+ products in our range and what shops like yours buy most.", {
+            name: assistantName.value,
+            count: locale.number(props.products_in_range),
+        })
+        : ctrans(":name knows every product in our range and what shops like yours buy most.", { name: assistantName.value })))
 
-const starterQuestions = computed(() => [
+const landingIntro = computed(() => isDropshipping.value
+    ? ctrans(":name is your dropshipping coach. Ask in your own words and your own language: how to start, how to connect your Shopify, eBay, WooCommerce, TikTok Shop or Wix store, which products to list, how to price them, and how orders and delivery to your buyers work. When :name is not sure, one of our experts answers.", { name: assistantName.value })
+    : ctrans(":name is a new way to work with us. Ask in your own words and your own language: what sells for shops like yours, a product, offers, delivery, samples or product documents. When :name is not sure, one of our experts answers.", { name: assistantName.value }))
+
+const landingFooter = computed(() => isDropshipping.value
+    ? ctrans("Something not working with your store or orders? :name passes it straight to our engineers.", { name: assistantName.value })
+    : ctrans("Planning a big order? :name passes it to our team.", { name: assistantName.value }))
+
+const PLATFORM_NAMES: Record<string, string> = { shopify: "Shopify", ebay: "eBay", woocommerce: "WooCommerce", tiktok: "TikTok Shop", wix: "Wix", amazon: "Amazon", magento: "Magento", allegro: "Allegro" }
+const NEXT_PLATFORMS = ["shopify", "tiktok", "ebay", "woocommerce"]
+
+const connectedPlatforms = computed<string[]>(() => {
+    const channels = layout?.user?.customerSalesChannels ?? (usePage().props as any)?.auth?.customerSalesChannels ?? {}
+    return [...new Set(Object.values(channels).map((channel: any) => channel?.platform_slug).filter((slug: string) => slug && PLATFORM_NAMES[slug]))] as string[]
+})
+
+const nextPlatform = computed(() => NEXT_PLATFORMS.find((slug) => !connectedPlatforms.value.includes(slug)) ?? null)
+
+const starterQuestions = computed(() => isDropshipping.value ? (connectedPlatforms.value.length ? [
+    ...connectedPlatforms.value.slice(0, 2).map((slug) => ctrans("Best sellers to add to my :platform store", { platform: PLATFORM_NAMES[slug] })),
+    ctrans("How do I get more sales on :platform?", { platform: PLATFORM_NAMES[connectedPlatforms.value[0]] }),
+    ...(nextPlatform.value ? [ctrans("Should I start selling on :platform too?", { platform: PLATFORM_NAMES[nextPlatform.value] })] : []),
+    ctrans("How should I set my selling prices?"),
+    ctrans("How fast do you send orders to my buyers?"),
+] : [
+    ctrans("I am new to dropshipping – how do I start?"),
+    ctrans("How do I connect my Shopify store?"),
+    ctrans("Best sellers to list on eBay"),
+    ctrans("How should I set my selling prices?"),
+    ctrans("What sells well for a crystal store?"),
+    ctrans("How fast do you send orders to my buyers?"),
+]) : [
     ctrans("I run a crystal shop – what am I missing?"),
     ctrans("Low-priced Christmas gifts that sell well"),
     ctrans("Help me start bath & body"),
-    ctrans("What did I use to order that still sells?"),
+    ...(hasForgottenProducts.value ? [ctrans("What did I use to order that still sells?")] : []),
+    ctrans("Do you send samples?"),
+    ctrans("How fast do you deliver?"),
 ])
 
 const steps = computed(() => [
-    { title: ctrans("Tell us about your shop"), body: ctrans("What you sell, where you are, your customers and what you’d like to try.") },
-    { title: ctrans("Get picks with a reason"), body: ctrans("Must-haves and add-ons to your range, each with a one-line reason – all live and in stock.") },
-    { title: ctrans("Add to basket or keep chatting"), body: ctrans("Add them all in one click, ask a follow-up question or start a new conversation.") },
+    isDropshipping.value
+        ? { title: ctrans("Ask anything"), body: ctrans("Starting out, your store, a product or a problem – in your own words.") }
+        : { title: ctrans("Ask anything"), body: ctrans("A question, your shop or what you need – in your own words.") },
+    isDropshipping.value
+        ? { title: ctrans("Get clear steps and products to list"), body: ctrans("What to do next for your store, and products picked for online sellers, each with a one-line reason.") }
+        : { title: ctrans("Get picks with a reason"), body: ctrans("Must-haves and add-ons to your range, each with a one-line reason – all live and in stock.") },
+    isDropshipping.value
+        ? { title: ctrans("Add to your store or keep chatting"), body: ctrans("Send products to your sales channels from each card, ask how to set up your store or start a new conversation.") }
+        : { title: ctrans("Add to basket or keep chatting"), body: ctrans("Add them all in one click, ask a follow-up question or start a new conversation.") },
 ])
 
-const promises = computed(() => [
+const promises = computed(() => isDropshipping.value ? [
+    ctrans("Help to set up and connect your store"),
+    ctrans("Products to list, with a reason for each"),
+    ctrans("Tips to get your first sales and grow"),
+    ctrans("Here day and night, also when our team is closed"),
+] : [
     ctrans("Only products in stock now"),
     ctrans("Your own trade prices on every card"),
     ctrans("A reason for every suggestion"),
+    ctrans("Here day and night, also when our team is closed"),
+    ctrans("Problems with your account or our website go straight to our engineers"),
 ])
 
 const latestAssistantId = computed(() => [...messages.value].reverse().find((message) => message.role === "assistant")?.id ?? null)
@@ -180,11 +238,36 @@ const POLL_LIMIT_MS = 150_000
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 let generation = 0
 
+const TEAM_POLL_INTERVAL_MS = 8000
+let teamTimer: ReturnType<typeof setTimeout> | null = null
+
 const stopPolling = () => {
     if (pollTimer !== null) {
         clearTimeout(pollTimer)
         pollTimer = null
     }
+    if (teamTimer !== null) {
+        clearTimeout(teamTimer)
+        teamTimer = null
+    }
+}
+
+const waitForTeam = () => {
+    if (teamTimer !== null) {
+        return
+    }
+    const teamGeneration = generation
+    teamTimer = setTimeout(async () => {
+        teamTimer = null
+        if (teamGeneration !== generation) {
+            return
+        }
+        if (pollTimer === null) {
+            await fetchConversation(lastMessageId()).catch(() => null)
+        } else {
+            waitForTeam()
+        }
+    }, TEAM_POLL_INTERVAL_MS)
 }
 
 const forgetConversation = () => {
@@ -218,6 +301,10 @@ const fetchConversation = async (after?: number): Promise<{ pending: boolean, ha
     messages.value = [...messages.value, ...incoming].sort((first, second) => first.id - second.id)
     if (after && incoming.some((message) => message.role === "assistant" && message.basket_added?.length)) {
         await refreshBasket()
+    }
+
+    if (data.awaiting_team) {
+        waitForTeam()
     }
 
     return { pending: !!data.pending, hasNewAnswer: incoming.some((message) => message.role === "assistant") }
@@ -317,6 +404,8 @@ const isHistoryOpen = ref(false)
 const isSidebarCollapsed = ref(false)
 const sidebarCollapsedKey = "shopping_assistant_sidebar_collapsed"
 
+const landingHistory = computed(() => history.value.slice(0, 5))
+
 const toggleHistory = () => {
     if (window.matchMedia("(min-width: 1024px)").matches) {
         isSidebarCollapsed.value = !isSidebarCollapsed.value
@@ -410,8 +499,14 @@ const send = async (text: string) => {
     isPending.value = true
     const requestGeneration = generation
     try {
-        const { data } = await axios.post(askUrl(), { message, conversation: conversation.value })
+        const { data } = await axios.post(askUrl(), { message, conversation: conversation.value, can_hand_over: true })
         if (requestGeneration !== generation) {
+            return
+        }
+        if (data.accept_offer) {
+            isPending.value = false
+            draft.value = ""
+            await handOver(data.accept_offer)
             return
         }
         const isNewConversation = conversation.value !== data.conversation
@@ -649,19 +744,24 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                 auto-resize
                                 maxlength="1000"
                                 class="landing-textarea"
-                                :aria-label="ctrans('Describe your shop')"
-                                :placeholder="ctrans('e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.')"
+                                :aria-label="ctrans('Ask anything')"
+                                :placeholder="isDropshipping && connectedPlatforms.length
+                                    ? ctrans('e.g. What should I add to my :platform store for Christmas, and how do I get more sales?', { platform: PLATFORM_NAMES[connectedPlatforms[0]] })
+                                    : isDropshipping
+                                    ? ctrans('e.g. I’m starting a Shopify store for crystals. What should I list first, and how do I connect my store?')
+                                    : ctrans('e.g. We’re a small crystal shop in York. What Christmas gifts should we stock, and do you send samples?')"
                                 @keydown.enter="sendOnEnter"
                             />
                             <div class="landing-ask-footer">
-                                <p class="landing-hint">{{ ctrans("Write as much as you like – the more :name knows, the better the picks.", { name: assistantName }) }}</p>
+                                <p class="landing-hint">{{ isDropshipping ? ctrans("A question, your store, what you need – the more :name knows, the better the answer.", { name: assistantName }) : ctrans("A question, your shop, what you need – the more :name knows, the better the answer.", { name: assistantName }) }}</p>
                                 <button
                                     type="button"
                                     class="landing-ask-button"
                                     :disabled="!!assistant && !draft.trim()"
                                     @click="askFromLanding(draft)"
                                 >
-                                    <FontAwesomeIcon :icon="assistant ? 'far fa-sparkles' : 'far fa-sign-in-alt'" fixed-width aria-hidden="true" />
+                                    <MerlinIcon v-if="assistant" mono />
+                                    <FontAwesomeIcon v-else icon="far fa-sign-in-alt" fixed-width aria-hidden="true" />
                                     {{ assistant ? ctrans("Ask :name", { name: assistantName }) : ctrans("Log in to ask :name", { name: assistantName }) }}
                                 </button>
                             </div>
@@ -729,24 +829,47 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                 </div>
                             </div>
                         </div>
+
+                        <div v-if="isHistoryLoading || history.length" class="landing-history">
+                            <p class="landing-history-title">{{ ctrans("Recent conversations") }}</p>
+                            <div v-if="isHistoryLoading && !history.length" class="flex flex-col gap-1.5">
+                                <div v-for="index in 3" :key="index" class="skeleton h-6 rounded" />
+                            </div>
+                            <nav v-else class="landing-history-list" :aria-label="ctrans('Recent conversations')">
+                                <button
+                                    v-for="item in landingHistory"
+                                    :key="item.conversation"
+                                    type="button"
+                                    class="landing-history-item"
+                                    @click="openConversation(item.conversation)"
+                                >
+                                    <FontAwesomeIcon icon="far fa-comment-alt" class="landing-history-icon" fixed-width aria-hidden="true" />
+                                    <span class="landing-history-text">{{ item.title }}</span>
+                                    <span class="landing-history-date">{{ historyDate(item.last_message_at) }}</span>
+                                </button>
+                            </nav>
+                        </div>
                     </div>
 
                     <aside class="landing-hero-info">
-                        <div class="landing-eyebrow-row">
-                            <span class="landing-badge" aria-hidden="true">
-                                <FontAwesomeIcon icon="far fa-sparkles" fixed-width />
-                            </span>
-                            <p class="landing-eyebrow">{{ ctrans("Meet :name · Your range advisor", { name: assistantName }) }}</p>
-                        </div>
+                        <div class="landing-hero-heading">
+                            <MerlinIcon large class="landing-hero-logo" />
+                            <div class="min-w-0">
+                                <div class="landing-eyebrow-row">
+                                    <p class="landing-eyebrow">{{ ctrans("Meet :name · Ask us anything", { name: assistantName }) }}</p>
+                                    <span class="beta-tag" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
+                                </div>
 
-                        <h1 class="landing-title">
-                            {{ ctrans("Tell :name about your shop.", { name: assistantName }) }}<br>
-                            {{ ctrans(":name will find what sells.", { name: assistantName }) }}
-                        </h1>
+                                <h1 class="landing-title">
+                                    {{ ctrans("Ask :name anything.", { name: assistantName }) }}<br>
+                                    {{ ctrans("This is not just a search.") }}
+                                </h1>
+                            </div>
+                        </div>
 
                         <p class="landing-intro">
                             {{ knowsTheRange }}
-                            {{ ctrans("Describe your shop – what you sell, where you are, who your customers are and what you’d like to try – and :name will suggest must-haves and add-ons from what is in stock now, each with a reason why.", { name: assistantName }) }}
+                            {{ landingIntro }}
                         </p>
 
                         <p v-if="isMerlin" class="landing-legend">
@@ -765,19 +888,19 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
                         <ul class="landing-promises">
                             <li v-for="promise in promises" :key="promise">✓ {{ promise }}</li>
-                            <li>{{ ctrans("Planning a big order? :name passes it to our team.", { name: assistantName }) }}</li>
+                            <li>{{ landingFooter }}</li>
                         </ul>
                     </aside>
                 </div>
             </section>
 
             <RangeAdvisorPanel
-                v-if="isLayoutReady && layout.iris?.is_logged_in"
+                v-if="isLayoutReady && layout.iris?.is_logged_in && !isDropshipping"
                 :assistantName
                 :fieldValue
                 :productCardCode
                 :screenType
-                @loaded="(hasProducts) => hasPanelProducts = hasProducts"
+                @loaded="(hasProducts, hasForgotten) => { hasPanelProducts = hasProducts; hasForgottenProducts = hasForgotten }"
                 @tellShop="focusLandingTextarea"
             />
         </div>
@@ -786,7 +909,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
             <aside class="chat-sidebar" :class="{ 'chat-sidebar-open': isHistoryOpen }">
                 <div class="chat-sidebar-top">
                     <span class="chat-sidebar-brand">
-                        <FontAwesomeIcon icon="far fa-sparkles" class="chat-sidebar-brand-icon" fixed-width aria-hidden="true" />
+                        <MerlinIcon class="chat-sidebar-brand-icon" />
                         {{ assistantName }}
                     </span>
                     <button
@@ -840,10 +963,13 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     >
                         <FontAwesomeIcon :icon="isHistoryOpen ? 'far fa-times' : 'far fa-bars'" fixed-width aria-hidden="true" />
                     </button>
-                    <span class="assistant-avatar" aria-hidden="true"><FontAwesomeIcon icon="far fa-sparkles" fixed-width /></span>
+                    <span class="assistant-avatar" aria-hidden="true"><MerlinIcon /></span>
                     <div class="min-w-0 flex-1">
-                        <p class="chat-header-name">{{ assistantName }}</p>
-                        <p class="chat-header-role">{{ ctrans("Your range advisor") }}</p>
+                        <p class="chat-header-name">
+                            {{ assistantName }}
+                            <span class="beta-tag" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
+                        </p>
+                        <p class="chat-header-role">{{ isDropshipping ? ctrans("Your dropshipping coach") : ctrans("Your range advisor") }}</p>
                     </div>
                     <button
                         v-if="canTalkToAPerson"
@@ -870,7 +996,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                         </div>
 
                         <div v-else class="flex gap-3">
-                            <div class="assistant-avatar" aria-hidden="true"><FontAwesomeIcon icon="far fa-sparkles" fixed-width /></div>
+                            <div class="assistant-avatar" aria-hidden="true"><MerlinIcon /></div>
                             <div class="min-w-0 flex-1">
                                 <p class="chat-text whitespace-pre-line">{{ message.body }}</p>
 
@@ -889,7 +1015,12 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                                     <div v-for="card in tab.cards" :key="`${card.id}-${cardsVersion}`" @click.capture="(event) => recordClick(event, card)">
                                                         <p class="mb-1 text-xs text-gray-600">{{ card.assistant_reason }}</p>
                                                         <div :style="getStyles(fieldValue?.card_product?.properties, screenType)" class="relative flex justify-center rounded">
-                                                            <RenderProduct :code="productCardCode" :product="card"
+                                                            <RenderProductDropshiping v-if="isDropshipping" :code="productCardCode" :product="card"
+                                                                :productHasPortfolio="card.portfolio_channels ?? []"
+                                                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
+                                                                :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
+                                                                :bestSeller="fieldValue?.bestseller" :screenType />
+                                                            <RenderProduct v-else :code="productCardCode" :product="card"
                                                                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
                                                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
                                                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
@@ -902,7 +1033,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                             </TabPanel>
                                         </TabPanels>
                                     </Tabs>
-                                    <div v-if="tabs.length" class="mt-3 flex flex-wrap items-center gap-2">
+                                    <div v-if="tabs.length && !isDropshipping" class="mt-3 flex flex-wrap items-center gap-2">
                                         <Button
                                             type="tertiary"
                                             size="xs"
@@ -980,7 +1111,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     </template>
 
                     <div v-if="isPending" class="flex gap-3">
-                        <div class="assistant-avatar" aria-hidden="true"><FontAwesomeIcon icon="far fa-sparkles" fixed-width /></div>
+                        <div class="assistant-avatar" aria-hidden="true"><MerlinIcon /></div>
                         <div class="min-w-0 flex-1">
                             <p class="text-sm text-gray-600">
                                 <LoadingIcon />
@@ -1035,7 +1166,9 @@ const sendOnEnter = (event: KeyboardEvent) => {
                             maxlength="1000"
                             class="landing-textarea chat-composer-input"
                             :aria-label="ctrans('Describe what your shop needs')"
-                            :placeholder="ctrans('Ask :name a follow-up or describe what your shop needs', { name: assistantName })"
+                            :placeholder="isDropshipping
+                                ? ctrans('Ask :name a follow-up or tell it about your store', { name: assistantName })
+                                : ctrans('Ask :name a follow-up or describe what your shop needs', { name: assistantName })"
                             @keydown.enter="sendChatOnEnter"
                         />
                         <button
@@ -1049,8 +1182,10 @@ const sendOnEnter = (event: KeyboardEvent) => {
                         </button>
                     </div>
                     <p v-if="errorMessage" class="mt-1 text-xs text-red-500">{{ errorMessage }}</p>
-                    <p v-else class="chat-composer-hint">{{ ctrans("Enter to send, Shift + Enter for a new line.") }}</p>
-                    <p class="chat-composer-hint">{{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}</p>
+                    <p class="chat-composer-hint">
+                        <span v-if="!errorMessage">{{ ctrans("Enter to send, Shift + Enter for a new line.") }}</span>
+                        {{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}
+                    </p>
                 </div>
             </section>
         </div>
@@ -1080,8 +1215,14 @@ const sendOnEnter = (event: KeyboardEvent) => {
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    background-color: var(--theme-color-4);
-    color: var(--theme-color-5);
+    background-color: #fff;
+    border: 1px solid #ece6df;
+}
+
+.assistant-avatar .merlin-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    vertical-align: middle;
 }
 
 .assistant-bubble {
@@ -1261,6 +1402,22 @@ const sendOnEnter = (event: KeyboardEvent) => {
     line-height: 1.2;
 }
 
+.beta-tag {
+    display: inline-block;
+    margin-left: 0.375rem;
+    padding: 0.0625rem 0.375rem;
+    border: 1px solid #d1d5db;
+    border-radius: 9999px;
+    color: #6b7280;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+    text-transform: uppercase;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
 .chat-header-role {
     font-size: 0.75rem;
     font-weight: 700;
@@ -1356,6 +1513,79 @@ const sendOnEnter = (event: KeyboardEvent) => {
     gap: 0.375rem;
 }
 
+.landing-history {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e3ddd6;
+}
+
+.landing-history-title {
+    margin-bottom: 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8a7f74;
+}
+
+.landing-history-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.landing-history-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: calc(100% + 1rem);
+    margin: 0 -0.5rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.5rem;
+    text-align: left;
+    transition: background-color 0.15s;
+}
+
+.landing-history-item:hover {
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+.landing-history-item:focus-visible {
+    outline: 2px solid var(--theme-color-4);
+    outline-offset: 1px;
+}
+
+.landing-history-icon {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: #b3a89c;
+    transition: color 0.15s;
+}
+
+.landing-history-item:hover .landing-history-icon {
+    color: var(--theme-color-4);
+}
+
+.landing-history-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    color: #1f1f1f;
+}
+
+.landing-history-item:hover .landing-history-text {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.landing-history-date {
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    color: #8a7f74;
+}
+
 .landing-talk-box {
     margin-top: 0.75rem;
     background-color: white;
@@ -1395,7 +1625,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .chat-composer {
-    padding: 0.75rem var(--chat-gutter) 1.25rem;
+    padding: 0.5rem var(--chat-gutter) 0.625rem;
     background-color: white;
 }
 
@@ -1403,7 +1633,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     display: flex;
     align-items: flex-end;
     gap: 0.5rem;
-    padding: 0.625rem 0.625rem 0.625rem 1rem;
+    padding: 0.3125rem 0.3125rem 0.3125rem 0.75rem;
     border: 1px solid #e3ddd6;
     border-radius: 1rem;
     background-color: white;
@@ -1421,9 +1651,15 @@ const sendOnEnter = (event: KeyboardEvent) => {
     resize: none;
 }
 
+.chat-composer-box .chat-composer-input {
+    min-height: 2.25rem;
+    padding: 0.375rem 0.25rem;
+    font-size: 0.9375rem;
+}
+
 .chat-send {
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 2.25rem;
+    height: 2.25rem;
     flex-shrink: 0;
     border-radius: 9999px;
     display: flex;
@@ -1443,9 +1679,10 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .chat-composer-hint {
-    margin-top: 0.5rem;
+    margin-top: 0.375rem;
     text-align: center;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
+    line-height: 1.4;
     color: #888;
 }
 
@@ -1555,17 +1792,44 @@ const sendOnEnter = (event: KeyboardEvent) => {
     gap: 0.75rem;
 }
 
-.landing-badge {
-    width: 2.5rem;
-    height: 2.5rem;
-    flex-shrink: 0;
-    border-radius: 9999px;
+.landing-hero-heading {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    background-color: #1f1f1f;
-    color: var(--theme-color-4);
+    gap: 1rem;
+}
+
+.landing-hero-heading .landing-hero-logo {
+    width: 3.75rem;
+    height: 3.75rem;
+    filter: drop-shadow(0 8px 16px rgba(234, 84, 14, 0.2));
+    animation: landing-hero-logo-float 4s ease-in-out infinite;
+}
+
+.landing-hero-info .landing-hero-heading .landing-title {
+    margin-top: 0.5rem;
+}
+
+@media (min-width: 640px) {
+    .landing-hero-heading .landing-hero-logo {
+        width: 4.75rem;
+        height: 4.75rem;
+    }
+}
+
+@keyframes landing-hero-logo-float {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+        transform: translateY(-6px) rotate(-3deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .landing-hero-heading .landing-hero-logo {
+        animation: none;
+    }
 }
 
 .landing-eyebrow {

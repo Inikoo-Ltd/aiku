@@ -20,7 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 /**
  * Staff say whether the AI matched our product to the right competitor product, and how many units
  * their pack holds when the name does not say. A tick is staff saying it is the same item, also when
- * the AI only called it similar, so it counts in the price comparison.
+ * the AI only called it similar, so it counts in the price comparison; a cross clears it.
  */
 class ReviewMasterAssetCompetitorProduct extends OrgAction
 {
@@ -35,7 +35,11 @@ class ReviewMasterAssetCompetitorProduct extends OrgAction
         if (isset($modelData['status'])) {
             $masterAssetCompetitorProduct->update([
                 'status'              => $modelData['status'],
-                'is_same_item'        => $masterAssetCompetitorProduct->is_same_item || $modelData['status'] === MasterAssetCompetitorProductStatusEnum::CONFIRMED->value,
+                'is_same_item'        => match ($modelData['status']) {
+                    MasterAssetCompetitorProductStatusEnum::CONFIRMED->value => true,
+                    MasterAssetCompetitorProductStatusEnum::REJECTED->value  => false,
+                    default                                                   => $masterAssetCompetitorProduct->is_same_item,
+                },
                 'reviewed_by_user_id' => $user?->id,
                 'reviewed_at'         => now(),
             ]);
@@ -48,7 +52,7 @@ class ReviewMasterAssetCompetitorProduct extends OrgAction
     {
         return [
             'status'           => ['required_without:competitor_units', Rule::enum(MasterAssetCompetitorProductStatusEnum::class)],
-            'competitor_units' => ['required_without:status', 'numeric', 'min:1', 'max:100000'],
+            'competitor_units' => ['required_without:status', 'numeric', 'min:0.001', 'max:100000'],
         ];
     }
 

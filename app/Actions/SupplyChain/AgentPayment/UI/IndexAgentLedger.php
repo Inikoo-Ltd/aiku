@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\AgentPayment\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
 use App\Actions\SupplyChain\AgentPayment\DeleteAgentPayment;
 use App\Actions\SupplyChain\AgentPayment\ImportAgentLedgerExcel;
 use App\Actions\SupplyChain\AspoDeposit\UI\ShowAgentAccountingDashboard;
@@ -152,7 +153,7 @@ class IndexAgentLedger extends OrgAction
     /**
      * What each client sent and what was paid from it, by currency; a client with no lines yet shows at zero.
      *
-     * @return list<array{organisation_id: int, code: string, name: string, currency_code: string, received: float, paid: float, balance: float}>
+     * @return list<array{organisation_id: int, code: string, name: string, currency_code: string, received: float, paid: float, balance: float, org_agent_id: int|null, agent_fee_percentage: float|null, cho_penalty_percentage: float}>
      */
     public function wallets(Agent $agent): array
     {
@@ -169,7 +170,7 @@ class IndexAgentLedger extends OrgAction
             ->groupBy('organisation_id');
 
         $agentCurrency = $agent->organisation->currency->code;
-        $orgAgents     = OrgAgent::where('agent_id', $agent->id)->get(['id', 'organisation_id', 'agent_fee_percentage'])->keyBy('organisation_id');
+        $orgAgents     = OrgAgent::where('agent_id', $agent->id)->get(['id', 'organisation_id', 'agent_fee_percentage', 'cho_penalty_percentage'])->keyBy('organisation_id');
 
         return $this->clients($agent)->flatMap(function (Organisation $client) use ($sums, $agentCurrency, $orgAgents) {
             $rows = $sums->get($client->id) ?? collect([(object) ['currency_code' => $agentCurrency, 'received' => 0, 'paid' => 0]]);
@@ -184,8 +185,54 @@ class IndexAgentLedger extends OrgAction
                 'balance'         => round((float) $row->received - (float) $row->paid, 2),
                 'org_agent_id'    => $orgAgents->get($client->id)?->id,
                 'agent_fee_percentage' => $orgAgents->get($client->id)?->agent_fee_percentage !== null ? (float) $orgAgents->get($client->id)->agent_fee_percentage : null,
+                'cho_penalty_percentage' => (float) $orgAgents->get($client->id)?->cho_penalty_percentage,
             ]);
         })->values()->all();
+    }
+
+    /**
+     * The wallets with, for each client, the agent's suppliers it buys and those whose own agent fee differs from the client's.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function walletsWithSupplierFees(Agent $agent): array
+    {
+        $suppliersByClient = $this->suppliersByClient($agent);
+
+        return array_map(function (array $wallet) use ($suppliersByClient) {
+            $clientFee = $wallet['agent_fee_percentage'] ?? SyncAgentInvoiceChargesFromLedger::DEFAULT_AGENT_FEE_PERCENTAGE;
+            $suppliers = $suppliersByClient->get($wallet['organisation_id']) ?? collect();
+
+            return $wallet + [
+                'suppliers'                    => $suppliers->all(),
+                'suppliers_with_different_fee' => $suppliers
+                    ->filter(fn (array $supplier) => $supplier['agent_fee_percentage'] !== null && abs($supplier['agent_fee_percentage'] - $clientFee) > 0.001)
+                    ->values()
+                    ->all(),
+            ];
+        }, $this->wallets($agent));
+    }
+
+    /**
+     * The agent's suppliers each client buys, with the agent fee the supplier carries (null follows the client's).
+     *
+     * @return Collection<int, Collection<int, array{id: int, code: string, name: string|null, agent_fee_percentage: float|null}>>
+     */
+    private function suppliersByClient(Agent $agent): Collection
+    {
+        return DB::table('suppliers')
+            ->join('org_suppliers', 'org_suppliers.supplier_id', '=', 'suppliers.id')
+            ->where('suppliers.agent_id', $agent->id)
+            ->where('suppliers.status', true)
+            ->orderBy('suppliers.code')
+            ->get(['org_suppliers.organisation_id', 'suppliers.id', 'suppliers.code', 'suppliers.name', 'suppliers.agent_fee_percentage'])
+            ->groupBy('organisation_id')
+            ->map(fn (Collection $rows) => $rows->unique('id')->map(fn ($row) => [
+                'id'                   => $row->id,
+                'code'                 => $row->code,
+                'name'                 => $row->name,
+                'agent_fee_percentage' => $row->agent_fee_percentage !== null ? (float) $row->agent_fee_percentage : null,
+            ])->values());
     }
 
     public function tableStructure(?string $prefix = null): Closure
@@ -309,10 +356,12 @@ class IndexAgentLedger extends OrgAction
                     'icon'  => ['title' => __('Ledger'), 'icon' => 'fal fa-book'],
                     'title' => __('Ledger'),
                 ],
-                'wallets'     => $this->wallets($this->agent),
+                'wallets'     => $this->walletsWithSupplierFees($this->agent),
+                'agent_fee_explained' => SyncAgentInvoiceChargesFromLedger::feeCalculationExplained(),
                 'form'        => $canEdit ? [
                     'store_route'     => ['name' => 'grp.models.agent.ledger_entry.store', 'parameters' => ['agent' => $this->agent->id]],
                     'agent_fee_route_name' => 'grp.models.org_agent.agent_fee.update',
+                    'supplier_agent_fee_route_name' => 'grp.models.supplier.agent_fee.update',
                     'currency_code'   => $this->organisation->currency->code,
                     'clients'         => $clients->map(fn (Organisation $client) => [
                         'id'            => $client->id,

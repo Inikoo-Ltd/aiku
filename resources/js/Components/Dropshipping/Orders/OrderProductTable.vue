@@ -9,7 +9,7 @@ import { Table as TableTS } from "@/types/Table"
 import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt, faPlus, faMinus } from "@far"
 import { faBarcode, faGift, faRepeat, faStore, faTrash, faUndo } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
+import Dialog from "primevue/dialog"
 import { debounce, get, set, toInteger } from "lodash-es"
 import Modal from "@/Components/Utils/Modal.vue"
 import ProductsSelectorAutoSelect from "@/Components/Dropshipping/ProductsSelectorAutoSelect.vue"
@@ -143,6 +143,12 @@ function onCancel(item: ProductRow) {
     editingIds.value.delete(item.id)
 }
 
+const errorMessage = ref<string | null>(null)
+const showError = (errors: unknown, fallback: string) => {
+    const messages = errors && typeof errors === "object" ? Object.values(errors).flat() : [errors]
+    errorMessage.value = messages.filter(Boolean).join(" ") || fallback
+}
+
 // --- Update Logic ---
 const onUpdateQuantity = (
     routeUpdate: routeType,
@@ -164,11 +170,7 @@ const onUpdateQuantity = (
         {
             onError: (e: any) => {
                 refusedQuantityCount[idTransaction] = (refusedQuantityCount[idTransaction] ?? 0) + 1
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: e.message || e.quantity_ordered,
-                    type: "error"
-                })
+                showError(e, ctrans("Please try again or contact administrator"))
             },
             onStart: () => (isLoading.value = "quantity" + idTransaction),
             onFinish: () => (isLoading.value = null),
@@ -237,18 +239,9 @@ async function onSave() {
                 // clear state
                 Object.keys(createNewQty).forEach((k) => delete createNewQty[k])
                 editingIds.value.clear()
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Changes saved successfully"),
-                    type: "success"
-                })
             },
             onError: (e: any) => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: e.message,
-                    type: "error"
-                })
+                showError(e, ctrans("Please try again or contact administrator"))
             },
             preserveScroll: true
         }
@@ -272,8 +265,7 @@ const addNewProduct = (products) => {
             {
                 onStart: () => (loadingsaveModify.value = true),
                 onFinish: () => (loadingsaveModify.value = false),
-                onSuccess: () => notify({ title: ctrans("Success"), text: ctrans("Products added to the order"), type: "success" }),
-                onError: (e: any) => notify({ title: ctrans("Something went wrong"), text: Object.values(e).join(' '), type: "error" }),
+                onError: (e: any) => showError(e, ctrans("Please try again or contact administrator")),
                 preserveScroll: true
             }
         )
@@ -354,18 +346,9 @@ const updateQuantityOrdered = (item: ProductRow, is_cut_view: boolean) => {
         onFinish: () => (loadingsaveModify.value = false),
         onSuccess: () => {
             editingIds.value.delete(item.id)
-            notify({
-                title: ctrans("Success"),
-                text: ctrans("Quantity updated, warehouse has been notified"),
-                type: "success"
-            })
         },
         onError: (errors) => {
-            notify({
-                title: ctrans("Something went wrong"),
-                text: Object.values(errors).join(", ") || ctrans("Failed to update quantity"),
-                type: "error"
-            })
+            showError(errors, ctrans("Failed to update quantity"))
         }
     })
 }
@@ -394,19 +377,8 @@ const removeDiscount = (item) => {
             preserveState: true,
             onStart: () => {
             },
-            onSuccess: () => {
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Successfully removed discount from the product"),
-                    type: "success"
-                })
-            },
             onError: errors => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: errors?.discretionary_offer || ctrans("Failed to remove discount for the product. Try again"),
-                    type: "error"
-                })
+                showError(errors, ctrans("Failed to remove discount for the product. Try again"))
             },
             onFinish: () => {
             }
@@ -430,19 +402,10 @@ const restoreDiscount = (item) => {
                 isLoadingSubmitNetAmount.value = true
             },
             onSuccess: () => {
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Successfully restored submitted discount data"),
-                    type: "success"
-                })
                 onCloseModalNetAmount()
             },
             onError: errors => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: errors?.discretionary_offer || ctrans("Failed to set restore submitted discount data. Try again"),
-                    type: "error"
-                })
+                showError(errors, ctrans("Failed to set restore submitted discount data. Try again"))
             },
             onFinish: () => {
                 isLoadingSubmitNetAmount.value = false
@@ -472,19 +435,10 @@ const onSubmitEditNetAmount = () => {
                 isLoadingSubmitNetAmount.value = true
             },
             onSuccess: () => {
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Successfully set discretionary discount percentage"),
-                    type: "success"
-                })
                 onCloseModalNetAmount()
             },
             onError: errors => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: errors?.discretionary_offer || ctrans("Failed to set discretionary discount percentage. Try again"),
-                    type: "error"
-                })
+                showError(errors, ctrans("Failed to set discretionary discount percentage. Try again"))
             },
             onFinish: () => {
                 isLoadingSubmitNetAmount.value = false
@@ -510,11 +464,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
 
             },
             onError: (error: any) => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: error.message || ctrans("Please try again or contact administrator"),
-                    type: 'error'
-                })
+                showError(error, ctrans("Please try again or contact administrator"))
             },
             onFinish: () => {
                 set(proxyItem, 'is_transaction_loading', false)
@@ -1035,5 +985,12 @@ const isOffersData = (offersData: any): boolean => {
                 :routeFetch="props.routesProductsListModification" :isLoadingSubmit="false" :listLoadingProducts="false"
                 withQuantity @submit="addNewProduct" />
         </Modal>
+
+        <Dialog :visible="!!errorMessage" @update:visible="errorMessage = null" modal :header="ctrans('This change was not saved')" class="w-full max-w-md">
+            <p class="text-sm text-gray-700 whitespace-pre-line">{{ errorMessage }}</p>
+            <div class="mt-4 flex justify-end">
+                <Button type="tertiary" :label="ctrans('Close')" @click="errorMessage = null" />
+            </div>
+        </Dialog>
     </div>
 </template>

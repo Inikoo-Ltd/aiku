@@ -21,11 +21,18 @@ class StoreToProduceItemsFromOrder
 {
     use AsAction;
 
-    /** @return array<int, PartnerShoppingListItem> */
-    public function handle(Order $order): array
+    /**
+     * Intercompany orders are left out, since a hub's partner orders are cut from lines already on its
+     * To Produce list. The exception is a purchase order to a partner that is not the hub, which
+     * arrives as a plain order. That order leaves out bottles filled to order: a fill line holds the
+     * order until it is filled, and the partner purchase order needs the delivery note at once.
+     *
+     * @return array<int, PartnerShoppingListItem>
+     */
+    public function handle(Order $order, bool $fromPartnerPurchaseOrder = false): array
     {
         $items = [];
-        if ($order->salesChannel?->code === 'intercompany') {
+        if (!$fromPartnerPurchaseOrder && $order->salesChannel?->code === 'intercompany') {
             return $items;
         }
 
@@ -43,6 +50,9 @@ class StoreToProduceItemsFromOrder
             }
 
             if ($fillArtefact = FillToOrder::make()->artefactFor($product)) {
+                if ($fromPartnerPurchaseOrder) {
+                    continue;
+                }
                 $items[] = PartnerShoppingListItem::create([
                     'group_id'        => $order->group_id,
                     'organisation_id' => $order->organisation_id,

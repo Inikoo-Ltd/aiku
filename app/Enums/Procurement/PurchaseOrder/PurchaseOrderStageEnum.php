@@ -99,18 +99,20 @@ enum PurchaseOrderStageEnum: string
     ];
 
     /**
-     * Stages 1 to 5 belong to the agent: it marks its own sample, production, quality check and hand over.
+     * Stages 1 to 5 belong to the agent: it marks its own sample, production, quality check and hand over. It also
+     * completes compliance when the order has it, as compliance is optional and holds nothing up.
      */
     public const array AGENT_MARKABLE_FIELDS = [
         'production_started_at',
         'produced_at',
+        'compliance_complete_at',
         'handed_over_at',
     ];
 
     public const array READY_CHECK_FIELDS = [
         'balance'    => 'balance_paid_at',
-        'packing'    => 'produced_at',
         'qc'         => 'qc_passed_at',
+        'packing'    => 'produced_at',
         'compliance' => 'compliance_complete_at',
     ];
 
@@ -123,8 +125,8 @@ enum PurchaseOrderStageEnum: string
     {
         return [
             'balance'    => __('Balance'),
-            'packing'    => __('Packing'),
             'qc'         => __('QC'),
+            'packing'    => __('Packing'),
             'compliance' => __('Compliance'),
         ];
     }

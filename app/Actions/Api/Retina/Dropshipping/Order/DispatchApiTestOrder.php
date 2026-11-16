@@ -10,12 +10,16 @@ namespace App\Actions\Api\Retina\Dropshipping\Order;
 
 use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
 use App\Actions\Dispatching\DeliveryNote\DispatchTestOrder;
+use App\Actions\Ordering\Order\UpdateState\CancelOrder;
+use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\RetinaApiAction;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
@@ -25,12 +29,14 @@ use RuntimeException;
  * with a TEST- tracking number, instead of asking us in the chat. Production answers 404.
  * The warehouse steps run as the staff command does, with no request user: the staff guards in
  * StoreShipment would otherwise read the customer's sales channel as the user.
+ * outcome (CUS-1831): dispatched (default), partial (first line not picked, the rest dispatched)
+ * or cancelled (the order is cancelled and what was paid goes to the customer's balance).
  */
 class DispatchApiTestOrder extends RetinaApiAction
 {
     use AsAction;
 
-    public function handle(Order $order): Order|JsonResponse
+    public function handle(Order $order, string $outcome = 'dispatched'): Order|JsonResponse
     {
         if ($order->customer_id != $this->customer->id || $order->customer_sales_channel_id != $this->customerSalesChannel->id) {
             return response()->json(['message' => 'Unable to make modifications for this order'], 403);
@@ -50,7 +56,14 @@ class DispatchApiTestOrder extends RetinaApiAction
         request()->setUserResolver(fn () => null);
 
         try {
-            return DispatchTestOrder::run($order, $user, 'TEST-'.$order->reference);
+            if ($outcome == 'cancelled') {
+                return CancelOrder::make()->action($order, [
+                    'cancellation_reason' => OrderCancellationReasonEnum::OTHER,
+                    'cancellation_notes'  => 'Staging test cancellation',
+                ]);
+            }
+
+            return DispatchTestOrder::run($order, $user, 'TEST-'.$order->reference, $outcome == 'partial');
         } catch (RuntimeException $e) {
             if (get_class($e) !== RuntimeException::class) {
                 throw $e;
@@ -70,8 +83,17 @@ class DispatchApiTestOrder extends RetinaApiAction
         }
 
         return OrderApiResource::make($result)->additional([
-            'message' => 'Test order dispatched with a test tracking number. Nothing was shipped.',
+            'message' => $result->state == OrderStateEnum::CANCELLED
+                ? 'Test order cancelled. What was paid went to the customer balance.'
+                : 'Test order dispatched with a test tracking number. Nothing was shipped.',
         ]);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'outcome' => ['sometimes', Rule::in(['dispatched', 'partial', 'cancelled'])],
+        ];
     }
 
     public function asController(Order $order, ActionRequest $request): Order|JsonResponse
@@ -79,6 +101,6 @@ class DispatchApiTestOrder extends RetinaApiAction
         abort_if(app()->isProduction(), 404);
         $this->initialisationFromDropshipping($request);
 
-        return $this->handle($order);
+        return $this->handle($order, $this->validatedData['outcome'] ?? 'dispatched');
     }
 }

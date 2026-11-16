@@ -238,6 +238,15 @@ class GetOrganisationNavigation
                                 'parameters' => [$organisation->slug],
                             ]
                         ],
+                        [
+                            'label' => __('Delivery discrepancies'),
+                            'icon'  => ['fal', 'fa-clipboard-check'],
+                            'root'  => 'grp.org.procurement.delivery_discrepancies.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.delivery_discrepancies.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
                     ]
                 ]
             ];

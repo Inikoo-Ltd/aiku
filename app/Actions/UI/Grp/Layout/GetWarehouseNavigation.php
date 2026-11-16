@@ -331,6 +331,19 @@ class GetWarehouseNavigation
                             ]
                         ],
                         [
+                            'label' => __('P. Benches'),
+                            'tooltip' => __('Packing benches'),
+                            'icon'  => ['fal', 'fa-video'],
+                            'root'  => 'grp.org.warehouses.show.dispatching.packing_benches.',
+                            'route' => [
+                                "name"       => "grp.org.warehouses.show.dispatching.packing_benches.index",
+                                "parameters" => [
+                                    $warehouse->organisation->slug,
+                                    $warehouse->slug
+                                ],
+                            ]
+                        ],
+                        [
                             'label' => __('Reports'),
                             'tooltip' => __('Pickers and packers performance reports'),
                             'icon'  => ['fal', 'fa-chart-line'],

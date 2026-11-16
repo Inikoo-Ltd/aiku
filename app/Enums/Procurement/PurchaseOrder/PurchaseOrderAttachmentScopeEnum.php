@@ -19,6 +19,7 @@ enum PurchaseOrderAttachmentScopeEnum: string
     case INVOICE      = 'Invoice';
     case PACKING_LIST = 'Packing list';
     case CLAIM        = 'Claim';
+    case FEEDBACK     = 'Delivery feedback';
     case CUSTOMS      = 'Customs declaration';
     case SERVICE_INVOICE = 'Service invoice';
     case BANK_STATEMENT = 'Bank statement';
@@ -36,6 +37,7 @@ enum PurchaseOrderAttachmentScopeEnum: string
             'Invoice'      => __('Invoice'),
             'Packing list' => __('Packing list'),
             'Claim'        => __('Claim'),
+            'Delivery feedback' => __('Delivery feedback'),
             'Customs declaration' => __('Customs declaration'),
             'Service invoice' => __('Service invoice (freight, customs, local)'),
             'Bank statement' => __('Bank statement'),

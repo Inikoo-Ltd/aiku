@@ -26,7 +26,9 @@ class MatchPortfolioToCurrentAllegroProduct extends OrgAction
 
         $portfolio->update([
             'platform_product_id'         => $allegroProductId,
-            'platform_product_variant_id' => $allegroProductId
+            'platform_product_variant_id' => $allegroProductId,
+            'has_valid_platform_product_id' => true,
+            'exist_in_platform'           => true,
         ]);
 
         $portfolio->refresh();
