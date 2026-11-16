@@ -899,7 +899,6 @@ const sendOnEnter = (event: KeyboardEvent) => {
                 v-if="isLayoutReady && layout.iris?.is_logged_in && !isDropshipping"
                 :assistantName
                 :fieldValue
-                :productCardCode
                 :screenType
                 @loaded="(hasProducts, hasForgotten) => { hasPanelProducts = hasProducts; hasForgottenProducts = hasForgotten }"
                 @tellShop="focusLandingTextarea"

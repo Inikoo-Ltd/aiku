@@ -1975,7 +1975,7 @@ test('a big order lead nobody has taken is raised again to the manager in workin
         return (int) data_get($task->fresh()->data, 'reminders', 0);
     };
 
-    Carbon::setTestNow(CarbonImmutable::parse('2030-01-09 08:30', $timezone));
+    Carbon::setTestNow(CarbonImmutable::parse('2030-01-09 07:30', $timezone));
     $beforeWork = $remind();
     Carbon::setTestNow(CarbonImmutable::parse('2030-01-09 10:00', $timezone));
     $first = $remind();

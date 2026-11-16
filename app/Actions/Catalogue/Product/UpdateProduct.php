@@ -35,16 +35,12 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithMasterAssetTradeUnits;
-use App\Actions\Web\Webpage\CloseWebpage;
-use App\Actions\Web\Webpage\ReopenWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Web\Redirect\RedirectTypeEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
 use App\Rules\AlphaDashDot;
@@ -244,20 +240,7 @@ class UpdateProduct extends OrgAction
                 MasterAssetHydrateAssets::run($product->master_product_id);
             }
 
-            // Only reopen if it's also not in_process/discontinued
-            if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED && !in_array($product->state, [ProductStateEnum::IN_PROCESS, ProductStateEnum::DISCONTINUED])) {
-                ReopenWebpage::run($product->webpage);
-            }
-
-            if (!$product->is_for_sale && $product->webpage->state == WebPageStateEnum::LIVE) {
-                CloseWebpage::make()->action(
-                    $product->webpage,
-                    [
-                        'redirect_type' => RedirectTypeEnum::PERMANENT,
-                        'to_webpage_id' => $product->webpage->website->storefront_id
-                    ]
-                );
-            }
+            SyncProductWebpageWithForSale::run($product, true);
         }
 
 
@@ -447,7 +430,7 @@ class UpdateProduct extends OrgAction
                 CloseDiscontinuedWebpage::run($product->webpage);
             }
 
-            if ($product->state == ProductStateEnum::ACTIVE && $oldState == ProductStateEnum::DISCONTINUED) {
+            if ($product->state == ProductStateEnum::ACTIVE && $oldState == ProductStateEnum::DISCONTINUED && ($product->is_for_sale || $product->is_variant_leader)) {
                 ReopenDiscontinuedWebpage::run($product->webpage);
             }
 
