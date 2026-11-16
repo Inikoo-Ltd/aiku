@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Shopify\FulfilmentService;
 use App\Actions\Dropshipping\Shopify\Product\WithShopifyStoreCurrency;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Billables\ShippingZone;
@@ -32,7 +33,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * no "to be confirmed" rate, so a band or a rest of the world priced TBC gets no rate at all and checkout
  * offers no shipping there, as we can not promise a price. Overlapping bands are cut where the earlier one
  * ends, as CalculateOrderShipping takes the first band that matches. What we bill the merchant is
- * unchanged: the order is still priced by our own schema.
+ * unchanged: the order is still priced by our own schema. A country the shop does not deliver to at all gets no
+ * zone, or the buyer pays shipping for a fulfilment request we then reject (PRE-113); one banned only by
+ * postcode keeps its zone.
  * Each variant belongs to one profile, so the merchant's own locations do not ship these products.
  *
  * A store still on shipping profiles keeps the merchant's rates: the aiku- location joins the profiles the
@@ -45,6 +48,7 @@ class SyncShopifyDeliveryProfile
     use AsAction;
     use WithShopifyApi;
     use WithShopifyStoreCurrency;
+    use WithOrderForbiddenCountryCheck;
 
     public const string PROFILE_NAME = 'AW Connect shipping';
 
@@ -97,7 +101,11 @@ class SyncShopifyDeliveryProfile
                 $priceError ??= $error;
 
                 return $price;
-            }
+            },
+            array_keys(array_filter(
+                $this->getBannedCountriesTarget($shop)->bannedDeliveryCountries(),
+                fn ($bannedCountry) => blank(data_get($bannedCountry, 'postcode'))
+            ))
         );
 
         if ($priceError) {
@@ -376,9 +384,10 @@ class SyncShopifyDeliveryProfile
     /**
      * @param  list<ShippingZone>  $shippingZones  live zones, highest position first
      * @param  callable(mixed): mixed  $price  turns an amount in the shop's currency into the store's
+     * @param  list<string>  $bannedCountryCodes  countries the shop does not deliver to at all
      * @return list<array<string, mixed>>
      */
-    public static function zonesToCreate(array $shippingZones, string $currencyCode, callable $price): array
+    public static function zonesToCreate(array $shippingZones, string $currencyCode, callable $price, array $bannedCountryCodes = []): array
     {
         usort($shippingZones, fn (ShippingZone $a, ShippingZone $b) => (empty($a->territories) ? 1 : 0) <=> (empty($b->territories) ? 1 : 0));
 
@@ -392,7 +401,7 @@ class SyncShopifyDeliveryProfile
         foreach ($shippingZones as $index => $shippingZone) {
             foreach ($methodsByZone[$index] === [] ? [] : ($shippingZone->territories ?? []) as $territory) {
                 $countryCode = Arr::get($territory, 'country_code');
-                if (!$countryCode) {
+                if (!$countryCode || in_array($countryCode, $bannedCountryCodes, true)) {
                     continue;
                 }
                 $candidateZones[$countryCode][] = $index;
