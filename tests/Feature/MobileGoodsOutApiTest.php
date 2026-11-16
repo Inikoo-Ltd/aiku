@@ -352,6 +352,11 @@ test('mobile scan hides each kind without its view right', function () {
         ->and($scanType($deliveryNote->reference))->toBe('unknown');
 
     actingAsGoodsOutUser($this->group, $this->warehouse, permissions: ["incoming.$warehouseId.view"]);
+    expect($scanType($orgStock->barcode))->toBe('unknown')
+        ->and($scanType($location->code))->toBe('unknown')
+        ->and($scanType($deliveryNote->reference))->toBe('unknown');
+
+    actingAsGoodsOutUser($this->group, $this->warehouse);
     getGoodsOut('grp.api.mobile.warehouses.scan', $this->warehouse->id, ['code' => $deliveryNote->reference])->assertForbidden();
 });
 
