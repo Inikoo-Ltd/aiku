@@ -291,6 +291,34 @@ class StockDelivery extends Model implements HasMedia, Auditable
     }
 
     /**
+     * Booked in is the warehouse's last step and procurement places the delivery from it, so until
+     * then the warehouse can still undo a put-away, which takes the delivery back to booking in (HELP-4722).
+     */
+    public function acceptsPutAwayUndo(): bool
+    {
+        return $this->isInGoodsIn() || $this->state === StockDeliveryStateEnum::BOOKED_IN;
+    }
+
+    /**
+     * @return array{unplaced: int, discrepancies: int}
+     */
+    public function bookingInLinesLeft(): array
+    {
+        return once(function () {
+            $counts = $this->items()
+                ->whereNotIn('state', [StockDeliveryItemStateEnum::CANCELLED, StockDeliveryItemStateEnum::NOT_RECEIVED])
+                ->selectRaw('count(*) filter (where state <> ?) as unplaced', [StockDeliveryItemStateEnum::PLACED->value])
+                ->selectRaw('count(*) filter (where unit_quantity_checked <> unit_quantity) as discrepancies')
+                ->first();
+
+            return [
+                'unplaced'      => (int) $counts->unplaced,
+                'discrepancies' => (int) $counts->discrepancies,
+            ];
+        });
+    }
+
+    /**
      * Still with the agent or supplier: being filled, confirmed or ready to ship.
      */
     public function isStaged(): bool

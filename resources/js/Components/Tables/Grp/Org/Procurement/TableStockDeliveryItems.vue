@@ -75,6 +75,41 @@ function confirmChangeState(event: MouseEvent, item: any, stateRoute: any, messa
     })
 }
 
+function confirmFinishBookingIn(item: any, place: () => void) {
+    confirm.require({
+        group: 'stock-delivery',
+        header: ctrans('Finish booking in?'),
+        message: ctransChoice('This is the last item to put away. The delivery will be booked in with :count line over or under delivered. Is the delivery done?|This is the last item to put away. The delivery will be booked in with :count lines over or under delivered. Is the delivery done?', item.finishes_booking_in_with_discrepancies),
+        acceptProps: { label: ctrans('Yes, delivery is done') },
+        rejectProps: { label: ctrans('Cancel') },
+        accept: place,
+    })
+}
+
+function placeAllAndFinish(item: any, proxyItem: any) {
+    confirmFinishBookingIn(item, () => router[item.placeAllRoute.method](
+        route(item.placeAllRoute.name, item.placeAllRoute.parameters),
+        placedAdditionalData(item),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onError: (errors: Record<string, string>) => proxyItem.errors = Object.values(errors),
+        },
+    ))
+}
+
+const placeTypedQuantity = debounce((item: any, quantity: number, save: () => void) => {
+    if (!quantity) {
+        return
+    }
+
+    if (quantity >= Number(item.placement_remaining)) {
+        confirmFinishBookingIn(item, save)
+    } else {
+        save()
+    }
+}, 1000)
+
 async function changeState(item: any, stateRoute: any, body: Record<string, unknown> = {}) {
     if (!stateRoute) {
         return
@@ -1050,7 +1085,7 @@ async function savePackedInside(item: any, outerItemId: number | null) {
                         </div>
                     </div>
 
-                    <div v-if="item.is_editable">
+                    <div v-if="item.can_undo_sowings">
                         <ButtonWithLink
                             v-if="sowing.quantity"
                             v-tooltip="ctrans('Undo sowing :qtyPicked items', { qtyPicked: Number(sowing.quantity).toString() })"
@@ -1076,7 +1111,12 @@ async function savePackedInside(item: any, outerItemId: number | null) {
                         proxyItem.errors = Object.values(error || {})
                     }"
                     :modelValue="0"
-                    @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
+                    @update:modelValue="(quantity: number, save: () => void) => {
+                        proxyItem.errors = null
+                        if (item.finishes_booking_in_with_discrepancies) {
+                            placeTypedQuantity(item, quantity, save)
+                        }
+                    }"
                     saveOnForm
                     isUseAxios
                     :routeSubmit="item.placedRoute"
@@ -1087,12 +1127,24 @@ async function savePackedInside(item: any, outerItemId: number | null) {
                         max: Number(item.placement_remaining)
                     }"
                     :additionalData="placedAdditionalData(item)"
-                    autoSave
+                    :autoSave="!item.finishes_booking_in_with_discrepancies"
                     @onSuccess="onCheckedSaved"
                 >
                     <template #save="{ isProcessing }">
                         <div class="flex gap-x-8 w-fit">
+                            <Button
+                                v-if="item.finishes_booking_in_with_discrepancies"
+                                v-tooltip="ctrans('Place all remaining quantity in location :xlocation', { xlocation: selectedOtherLocation[item.id]?.code || findLocation(item.locations, selectedLocationCode[item.id] ?? null)?.location_code || '-' })"
+                                icon="fal fa-check"
+                                :size="screenType != 'mobile' ? 'xs' : 'md'"
+                                type="positive"
+                                :loading="isProcessing"
+                                class="py-0"
+                                :label="formatQuantity(Number(item.placement_remaining))"
+                                @click="placeAllAndFinish(item, proxyItem)"
+                            />
                             <ButtonWithLink
+                                v-else
                                 v-tooltip="ctrans('Place all remaining quantity in location :xlocation', { xlocation: selectedOtherLocation[item.id]?.code || findLocation(item.locations, selectedLocationCode[item.id] ?? null)?.location_code || '-' })"
                                 icon="fal fa-check"
                                 :size="screenType != 'mobile' ? 'xs' : 'md'"

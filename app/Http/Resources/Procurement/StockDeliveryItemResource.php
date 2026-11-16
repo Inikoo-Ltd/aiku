@@ -141,6 +141,9 @@ class StockDeliveryItemResource extends JsonResource
             && !in_array($item->state, [StockDeliveryItemStateEnum::CANCELLED, StockDeliveryItemStateEnum::NOT_RECEIVED], true);
 
         $canPlace = $isEditable && $checked >= 1 && $placed < $checked;
+
+        $linesLeft             = $canPlace ? $item->stockDelivery->bookingInLinesLeft() : null;
+        $finishingDiscrepancies = $linesLeft && $linesLeft['unplaced'] === 1 && $linesLeft['discrepancies'] > 0 ? $linesLeft['discrepancies'] : null;
         $canCheck = in_array($item->state, [
             StockDeliveryItemStateEnum::RECEIVED,
             StockDeliveryItemStateEnum::CHECKED,
@@ -231,6 +234,8 @@ class StockDeliveryItemResource extends JsonResource
             'placement_remaining'   => round(max(0, $checked - $placed) / $unitsPerSko, 4),
             'has_available_qty'     => $checked - $placed > 0,
             'is_editable'           => $isEditable,
+            'can_undo_sowings'      => $item->state !== StockDeliveryItemStateEnum::CANCELLED && (bool) $item->stockDelivery?->acceptsPutAwayUndo(),
+            'finishes_booking_in_with_discrepancies' => $finishingDiscrepancies,
             'locations'             => $locations,
             'has_picking_location'  => $locations->contains(fn ($location) => $location->default_wholesale_picking_location || $location->default_dropshipping_picking_location),
             'warehouse_area'        => $warehouseArea,
