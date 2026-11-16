@@ -58,10 +58,10 @@ class CheckWooChannel
                 ]);
             }
 
-            if (blank(Arr::get($wooCommerceUser->settings, 'dimension_option'))) {
+            if (blank(Arr::get($wooCommerceUser->settings, 'dimension_option')) && $dimensionOption = $wooCommerceUser->getProductDimensionSettings()) {
                 $this->update($wooCommerceUser, [
                     'settings' => array_merge($wooCommerceUser->settings, [
-                        'dimension_option' => $wooCommerceUser->getProductDimensionSettings()
+                        'dimension_option' => $dimensionOption
                     ])
                 ]);
             }

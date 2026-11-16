@@ -3370,5 +3370,6 @@ test('products export prints the stored metres in the display unit', function ()
         'marketing_dimensions' => json_encode(['type' => 'rectangular', 'units' => 'cm', 'l' => 0.1, 'w' => 0.05, 'h' => 0.02]),
     ]);
 
-    expect($row)->toBe(['X-1', '10x5x2 (cm)']);
+    expect($row)->toBe(['X-1', '10x5x2 (cm)'])
+        ->and(\App\Helpers\DimensionsFormatter::make()->dimensions(json_encode(['type' => 'rectangular', 'units' => 'inch', 'l' => 0.0254, 'w' => 0.0508, 'h' => 0.0762])))->toBe('1x2x3 (inch)');
 });

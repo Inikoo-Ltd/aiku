@@ -1897,3 +1897,15 @@ test('an 8 product bulk upload keeps the store at 4 creates at once and finishes
         ->and(Redis::llen(DispatchWooUploadQueue::queueKey($wooCommerceUser)))->toBe(0)
         ->and((int) Cache::get('lanes_success'))->toBe(8);
 });
+
+test('a store whose size unit cannot be read keeps it unset, so the next check asks again', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+
+    wooFakeForPing(['GET settings/products/woocommerce_dimension_unit' => Http::response(['code' => 'woocommerce_rest_cannot_view'], 403)]);
+    CheckWooChannel::run($wooCommerceUser->refresh());
+    expect(Arr::get($wooCommerceUser->refresh()->settings, 'dimension_option'))->toBeNull();
+
+    wooFakeForPing(['GET settings/products/woocommerce_dimension_unit' => Http::response(['value' => 'mm'])]);
+    CheckWooChannel::run($wooCommerceUser->refresh());
+    expect(Arr::get($wooCommerceUser->refresh()->settings, 'dimension_option'))->toBe('mm');
+});

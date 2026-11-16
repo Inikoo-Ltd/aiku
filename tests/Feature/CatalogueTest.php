@@ -1943,7 +1943,10 @@ test('an on-demand stock never caps a product, and the shop products json report
             ->and(ProductHydrateAvailableQuantity::wholeProducts('69.997', '1.00000000'))->toBe(69)
             ->and(ProductHydrateAvailableQuantity::wholeProducts('365.960', '0.00666667'))->toBe(54894)
             ->and(ProductHydrateAvailableQuantity::wholeProducts('4.350', '0.01000000'))->toBe(435)
-            ->and(ProductHydrateAvailableQuantity::wholeProducts('7', '2.00000000'))->toBe(3);
+            ->and(ProductHydrateAvailableQuantity::wholeProducts('7', '2.00000000'))->toBe(3)
+            ->and(ProductHydrateAvailableQuantity::wholeProducts('378.400', '0.40000000'))->toBe(946)
+            ->and(ProductHydrateAvailableQuantity::wholeProducts('2.800', '0.40000000'))->toBe(7)
+            ->and(ProductHydrateAvailableQuantity::wholeProducts('2.799', '0.40000000'))->toBe(6);
 
         expect($stockedStock->products()->where('products.id', $product->id)->whereRaw(
             'products.available_quantity is distinct from '.ProductHydrateAvailableQuantity::wholeProductsSql('?::numeric'),
