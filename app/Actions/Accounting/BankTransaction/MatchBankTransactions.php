@@ -196,6 +196,9 @@ class MatchBankTransactions
 
         $orders = Order::where('organisation_id', $bankTransaction->organisation_id)->whereIn('reference', $tokens)->get();
         if ($orders->isEmpty()) {
+            $orders = $this->invoicedOrders($bankTransaction, $tokens);
+        }
+        if ($orders->isEmpty()) {
             return $this->decideInvoice($bankTransaction, $tokens);
         }
         $releasedFromThisLine = Payment::query()
@@ -700,8 +703,29 @@ class MatchBankTransactions
     }
 
     /**
-     * @return list<string> upper-cased order-number-shaped words, e.g. PL31515 or DEU123456; customers sometimes write PL 31515 or PL-31515
+     * Customers often quote the invoice instead of the order (ARi2216969 for order AR26463): the order of the shop
+     * invoice of that number. Fulfilment invoices have no order and are decided by decideInvoice.
+     *
+     * @param list<string> $tokens
+     *
+     * @return Collection<int, Order>
      */
+    private function invoicedOrders(BankTransaction $bankTransaction, array $tokens): Collection
+    {
+        $invoiceReferences = array_values(array_filter(array_map(fn (string $token) => preg_match('/^([A-Z]{1,4})I([0-9]+)$/', $token, $match) ? $match[1].'i'.$match[2] : null, $tokens)));
+        if (!$invoiceReferences) {
+            return collect();
+        }
+
+        return Order::where('organisation_id', $bankTransaction->organisation_id)
+            ->whereIn('id', Invoice::where('organisation_id', $bankTransaction->organisation_id)
+                ->where('type', InvoiceTypeEnum::INVOICE)
+                ->whereIn('reference', $invoiceReferences)
+                ->whereNotNull('order_id')
+                ->select('order_id'))
+            ->get();
+    }
+
     /**
      * Czech and Slovak payers (and DPD CZ cash on delivery) put the order number without its shop prefix in the
      * variable symbol (VS 20921 for CZ20921), which Fio keeps in column 5. It names the orders of this organisation
@@ -723,6 +747,9 @@ class MatchBankTransactions
             ->all();
     }
 
+    /**
+     * @return list<string> upper-cased order-number-shaped words, e.g. PL31515 or DEU123456; customers sometimes write PL 31515 or PL-31515
+     */
     public function orderReferenceTokens(?string $reference): array
     {
         preg_match_all('/(?<![A-Za-z0-9])([A-Za-z]{2,5})[ -]?([0-9]{3,8})(?![A-Za-z0-9])/', (string)$reference, $matches, PREG_SET_ORDER);
