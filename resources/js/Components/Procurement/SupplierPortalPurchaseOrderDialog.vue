@@ -46,6 +46,7 @@ interface PurchaseOrderDetail {
 		delivery_label: string | null
 		open: boolean
 		submitted_at: string | null
+		submitted_by: string | null
 		confirmed_at: string | null
 		estimated_received_at: string | null
 		settled_at: string | null
@@ -282,6 +283,11 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 									<template v-if="segmentsByKey[stage.key].state === 'overdue'"> · {{ ctrans(":days days late", { days: String(segmentsByKey[stage.key].days_overdue) }) }}</template>
 								</div>
 							</template>
+						</div>
+
+						<div v-if="stage.key === 'submitted' && detail.order.submitted_by" class="mt-2 text-xs">
+							<div class="text-gray-500">{{ ctrans("Submitted by") }}</div>
+							<div class="break-words text-gray-700">{{ detail.order.submitted_by }}</div>
 						</div>
 
 						<div v-if="stage.key === 'deposit_paid'" class="mt-2 text-xs">

@@ -32,7 +32,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * One purchase order sent to the supplier, as the supplier sees it: what the order document it received already says
- * (products, quantities, its own prices, terms) and how far the order is up to hand over. Who placed it, our costs,
+ * (products, quantities, its own prices, terms), who submitted it and how far the order is up to hand over. Our costs,
  * extra costs, notes, deliveries and containers stay out. The supplier sees the money paid to it for the order, by
  * the buyer (deposit payments) or by the agent from its ledger: a ledger entry typed deposit or balance is that, any
  * other payment is the deposit when it is the first and the balance after it, and sets its own production dates while the order is open.
@@ -75,6 +75,7 @@ class ShowSupplierPortalPurchaseOrder
                 'delivery_label'        => $open && $purchaseOrder->delivery_state ? (PurchaseOrderDeliveryStateEnum::labels()[$purchaseOrder->delivery_state->value] ?? null) : null,
                 'open'                  => $open,
                 'submitted_at'          => $purchaseOrder->submitted_at,
+                'submitted_by'          => $this->submittedBy($purchaseOrder),
                 'confirmed_at'          => $purchaseOrder->confirmed_at,
                 'estimated_received_at' => $open ? $purchaseOrder->estimated_received_at : null,
                 'settled_at'            => $purchaseOrder->state === PurchaseOrderStateEnum::SETTLED ? $purchaseOrder->settled_at : null,
@@ -95,6 +96,24 @@ class ShowSupplierPortalPurchaseOrder
             'production' => $this->production($purchaseOrder),
             'lines'      => $lines->map(fn (PurchaseOrderTransaction $line) => $this->line($line, $purchaseOrder))->values()->all(),
         ];
+    }
+
+    /**
+     * The person who sent the order: the user on the audit that moved it to submitted, else its buyer.
+     */
+    private function submittedBy(PurchaseOrder $purchaseOrder): ?string
+    {
+        $submitter = DB::table('audits')
+            ->join('users', 'users.id', 'audits.user_id')
+            ->where('audits.auditable_type', 'PurchaseOrder')
+            ->where('audits.auditable_id', $purchaseOrder->id)
+            ->where('audits.user_type', 'User')
+            ->whereRaw("audits.new_values->>'state' = ?", [PurchaseOrderStateEnum::SUBMITTED->value])
+            ->orderByDesc('audits.id')
+            ->first(['users.contact_name', 'users.username'])
+            ?? $purchaseOrder->buyer()->first(['contact_name', 'username']);
+
+        return $submitter ? ($submitter->contact_name ?: $submitter->username) : null;
     }
 
     /**
