@@ -87,6 +87,8 @@ So beheben Sie es:
 3. Funktioniert es weiterhin nicht, drücken Sie <b>Test Connection</b>, um die Verbindung erneut zu prüfen.
 4. Drücken Sie als letzten Schritt <b>Delete</b> und verbinden Sie den Shop erneut. Ihre Produkte und Bestellungen kommen zurück, wenn Sie dieselbe Shop-Adresse verwenden.
 
+Wenn Ihr Shop zu einer neuen Webadresse umgezogen ist, geben Sie die neue Adresse in das Feld unter <b>Try to reconnect</b> ein, bevor Sie darauf drücken. Bestätigen Sie in Ihrem Shop unter der neuen Adresse. Ihr Kanal behält seine Produkte und Bestellungen, und ab dann verwenden wir die neue Adresse. Löschen Sie den Kanal nicht, um die neue Adresse als neuen Shop zu verbinden: Dadurch entsteht ein leerer Kanal.
+
 Schlägt Ihr Shop dauerhaft fehl, hören wir auf, ihn zu prüfen. Er funktioniert wieder, sobald Sie ihn erneut verbinden.
 
 <!-- screenshot: die Warnmeldung "not connected" bei einem WooCommerce-Kanal mit den Schaltflächen Try to reconnect, Test Connection und Delete -->

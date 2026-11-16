@@ -87,6 +87,8 @@ Para arreglarlo:
 3. Si sigue sin funcionar, pulsa <b>Prueba de conexión</b> para comprobar la conexión otra vez.
 4. Como último paso, pulsa <b>Borrar</b> y conecta la tienda de nuevo. Tus productos y pedidos vuelven cuando usas la misma dirección de tienda.
 
+Si tu tienda se mudó a una nueva dirección web, escribe la nueva dirección en el recuadro bajo <b>Intenta reconectarte</b> antes de pulsarlo. Aprueba en tu tienda en su nueva dirección. Tu canal conserva sus productos y pedidos, y desde entonces usamos la nueva dirección. No borres el canal para conectar la nueva dirección como una tienda nueva: eso crea un canal vacío.
+
 Si tu tienda sigue fallando durante mucho tiempo, dejamos de comprobarla. Vuelve a funcionar en cuanto la reconectas.
 
 <!-- screenshot: el aviso de no conectado en un canal de WooCommerce con los botones Try to reconnect, Test Connection y Delete -->

@@ -132,8 +132,8 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
             $outOfSyncProducts = $orgStock->products()
                 ->where('product_has_org_stocks.quantity', '>', 0)
                 ->whereRaw(
-                    'products.available_quantity is distinct from floor(?::numeric / product_has_org_stocks.quantity)',
-                    [$quantityAvailable]
+                    'products.available_quantity is distinct from '.ProductHydrateAvailableQuantity::wholeProductsSql('?::numeric'),
+                    [$quantityAvailable, $quantityAvailable]
                 )->get();
 
             foreach ($outOfSyncProducts as $product) {

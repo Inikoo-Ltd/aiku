@@ -98,7 +98,7 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
     /**
      * @param \Closure(string):void $fail
      */
-    protected function validateStoreIsReachable(string $storeUrl, \Closure $fail): void
+    public function validateStoreIsReachable(string $storeUrl, \Closure $fail): void
     {
         $endpoint = $storeUrl . '/wp-json/wc/v3';
 

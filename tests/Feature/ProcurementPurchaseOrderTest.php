@@ -4970,3 +4970,34 @@ test('the buyer changes a quantity on an agreed order straight to a supplier and
 
     actingAs($this->adminGuest->getUser());
 });
+
+test('an agent order pulls part or all of a line from another order of the agent, even once production started, and an emptied order the agent paid through its ledger stays open', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $into                 = createConfirmedAgentOrder($this, $supplier, $product, 0, 5)->refresh();
+    $source               = createConfirmedAgentOrder($this, $supplier, $product, 0, 8)->refresh();
+    $paid                 = createConfirmedAgentOrder($this, $supplier, $product, 0, 4)->refresh();
+    $sourceLine           = $source->purchaseOrderTransactions()->firstOrFail();
+    $paidLine             = $paid->purchaseOrderTransactions()->firstOrFail();
+    $source->update(['production_started_at' => now()]);
+    \App\Models\SupplyChain\AgentPayment::create(['group_id' => $paid->group_id, 'agent_id' => $orgAgent->agent_id, 'organisation_id' => $paid->organisation_id, 'type' => 'supplier_deposit', 'date' => now()->toDateString(), 'amount' => 1, 'currency_id' => $paid->currency_id, 'purchase_order_id' => $paid->id]);
+    expect($paid->refresh()->depositPayments()->exists())->toBeFalse();
+
+    $sources = collect($this->getJson(route('grp.models.purchase-order.transaction.pull.sources', [$into->id]))->assertOk()->json('orders'));
+    expect($sources->firstWhere('id', $paid->id)['deposit_paid'])->toBeTrue()
+        ->and($sources->firstWhere('id', $source->id))->toMatchArray(['deposit_paid' => false, 'production_started' => true, 'movable_items' => 1]);
+
+    $pullRoute = route('grp.models.purchase-order.transaction.pull', [$into->id]);
+    $this->post($pullRoute, ['source_purchase_order_id' => $source->id, 'lines' => [['id' => $sourceLine->id, 'quantity' => 9]]])->assertSessionHasErrors("lines.$sourceLine->id.quantity");
+    $this->post($pullRoute, ['source_purchase_order_id' => $source->id, 'lines' => [['id' => $sourceLine->id, 'quantity' => 3]]])->assertSessionHasNoErrors();
+    expect((float) $sourceLine->refresh()->quantity_ordered)->toBe(5.0)
+        ->and($into->purchaseOrderTransactions()->where('quantity_ordered', 3)->value('data')['moved_from']['purchase_order_id'] ?? null)->toBe($source->id);
+
+    $this->post($pullRoute, ['source_purchase_order_id' => $source->id, 'lines' => [['id' => $sourceLine->id, 'quantity' => 5]]])->assertSessionHasNoErrors();
+    expect($sourceLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
+        ->and($source->refresh()->state)->toBe(PurchaseOrderStateEnum::CANCELLED);
+
+    $this->post($pullRoute, ['source_purchase_order_id' => $paid->id, 'lines' => [['id' => $paidLine->id, 'quantity' => 4]]])->assertSessionHasNoErrors();
+    expect($paidLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
+        ->and($paid->refresh()->state)->not->toBe(PurchaseOrderStateEnum::CANCELLED);
+});

@@ -32,7 +32,7 @@ class GetPurchaseOrderPullSources extends OrgAction
     public function handle(PurchaseOrder $purchaseOrder, User $user): array
     {
         $orders = MovePurchaseOrderTransactionToSupplier::purchaseOrdersToPullFromQuery($purchaseOrder)
-            ->withExists('depositPayments')
+            ->withExists(['depositPayments', 'agentSupplierPayments'])
             ->orderByRaw('parent_id = ? desc', [$purchaseOrder->parent_id])
             ->orderBy('parent_code')
             ->orderByDesc('id')
@@ -54,7 +54,7 @@ class GetPurchaseOrderPullSources extends OrgAction
                 'supplier_code'          => $purchaseOrder->parent_code,
                 'currency'               => $purchaseOrder->currency?->code,
                 'production_started'     => $purchaseOrder->hasProductionStarted(),
-                'deposit_paid'           => $purchaseOrder->depositPayments()->exists(),
+                'deposit_paid'           => $purchaseOrder->isDepositPaid(),
                 'accepts_supplier_price' => $user->authTo("procurement.$purchaseOrder->organisation_id.edit"),
             ],
             'orders' => $orders->map(fn (PurchaseOrder $sourcePurchaseOrder) => [
@@ -69,7 +69,7 @@ class GetPurchaseOrderPullSources extends OrgAction
                 'number_of_items'    => (int) $liveItemsCounts->get($sourcePurchaseOrder->id, 0),
                 'movable_items'      => (int) $movableItemsCounts->get($sourcePurchaseOrder->id, 0),
                 'production_started' => $sourcePurchaseOrder->hasProductionStarted(),
-                'deposit_paid'       => (bool) $sourcePurchaseOrder->deposit_payments_exists,
+                'deposit_paid'       => $sourcePurchaseOrder->deposit_paid_at !== null || $sourcePurchaseOrder->deposit_payments_exists || $sourcePurchaseOrder->agent_supplier_payments_exists,
             ])->values()->all(),
         ];
     }

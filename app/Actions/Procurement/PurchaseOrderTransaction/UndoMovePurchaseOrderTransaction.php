@@ -172,7 +172,7 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
             return 'deleted';
         }
 
-        if ($purchaseOrder->depositPayments()->exists()
+        if ($purchaseOrder->isDepositPaid()
             || $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists()) {
             return null;
         }

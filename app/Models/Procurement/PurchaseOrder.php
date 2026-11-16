@@ -18,7 +18,9 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionQuant
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Address;
+use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Models\SupplyChain\Agent;
+use App\Models\SupplyChain\AgentPayment;
 use App\Models\SupplyChain\AspoDeposit;
 use App\Models\Helpers\Currency;
 use App\Models\SysAdmin\Organisation;
@@ -526,5 +528,23 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     public function depositPayments(): HasMany
     {
         return $this->hasMany(PurchaseOrderDepositPayment::class);
+    }
+
+    /**
+     * What the agent paid the supplier for this order from its ledger (INI-240): on an agent order the deposit is
+     * recorded here, not in depositPayments.
+     */
+    public function agentSupplierPayments(): HasMany
+    {
+        return $this->hasMany(AgentPayment::class)->whereIn('type', AgentPaymentTypeEnum::supplierPaymentValues());
+    }
+
+    /**
+     * Money went to the supplier for this order, wherever it was recorded: marked on the order, a deposit payment or a
+     * supplier payment in the agent's ledger.
+     */
+    public function isDepositPaid(): bool
+    {
+        return $this->deposit_paid_at !== null || $this->depositPayments()->exists() || $this->agentSupplierPayments()->exists();
     }
 }
