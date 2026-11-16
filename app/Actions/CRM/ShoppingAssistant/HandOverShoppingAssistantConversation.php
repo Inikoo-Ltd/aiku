@@ -126,7 +126,7 @@ class HandOverShoppingAssistantConversation
             return $existing;
         }
 
-        $this->sendQuestion($result['chat_session'], $result['hand_over']);
+        $this->sendQuestion($result['chat_session'], (string) $result['hand_over']->question);
 
         return $result;
     }
@@ -165,10 +165,40 @@ class HandOverShoppingAssistantConversation
         );
     }
 
-    private function sendQuestion(ChatSession $session, ShoppingAssistantHandOver $handOver): void
+    /**
+     * A customer whose question is already with our team, in a chat still waiting or open, is not
+     * offered a person again ("Please make sure they do" got the same offer back): what they add goes
+     * into that chat, unless it repeats the question word for word, and they are told so, with when
+     * the team replies. Null when they have no such chat.
+     */
+    public function addToOpenChat(ShoppingAssistantConversation $conversation, Customer $customer, ShoppingAssistantMessage $customerMessage): ?string
+    {
+        $website  = $conversation->website;
+        $handOver = $website ? $this->handOversOf($customer, $website)->whereNotNull('chat_session_id')->orderByDesc('id')->first() : null;
+        $session  = $handOver ? ChatSession::whereKey($handOver->chat_session_id)
+            ->whereIn('status', [ChatSessionStatusEnum::WAITING->value, ChatSessionStatusEnum::ACTIVE->value])
+            ->first() : null;
+
+        if (!$session) {
+            return null;
+        }
+
+        $text = trim((string) $customerMessage->body);
+        if ($text !== '' && $text !== trim((string) $handOver->question)) {
+            $this->sendQuestion($session, $text);
+        }
+
+        $added = __('I have added this to your question for our team.', [], $conversation->language_code);
+
+        return $handOver->route === ShoppingAssistantHandOverRouteEnum::LIVE_CHAT
+            ? $added
+            : $added.' '.$this->whenTheyReply($conversation, $handOver->route, GetShoppingAssistantHandOverRoute::run($website, $customer)['in_hours']);
+    }
+
+    private function sendQuestion(ChatSession $session, string $text): void
     {
         SendChatMessage::run($session, [
-            'message_text' => $handOver->question,
+            'message_text' => $text,
             'message_type' => ChatMessageTypeEnum::TEXT->value,
             'sender_type'  => $session->web_user_id ? ChatSenderTypeEnum::USER->value : ChatSenderTypeEnum::GUEST->value,
             'sender_id'    => $session->web_user_id,
@@ -255,6 +285,19 @@ class HandOverShoppingAssistantConversation
 
     private function tellCustomer(ShoppingAssistantConversation $conversation, ShoppingAssistantHandOverRouteEnum $route, bool $inHours): ShoppingAssistantMessage
     {
+        $message = $conversation->messages()->create([
+            'role'  => ShoppingAssistantMessageRoleEnum::ASSISTANT,
+            'body'  => $this->whenTheyReply($conversation, $route, $inHours),
+            'model' => 'hand-over',
+            'flags' => ['handed_over'],
+        ]);
+        $conversation->increment('messages_count', 1, ['last_message_at' => now()]);
+
+        return $message;
+    }
+
+    private function whenTheyReply(ShoppingAssistantConversation $conversation, ShoppingAssistantHandOverRouteEnum $route, bool $inHours): string
+    {
         $locale  = $conversation->language_code;
         $shop    = $conversation->shop;
         $opening = $inHours ? null : IsWithinWorkingHours::make()->chatHours()->nextOpening($shop, now());
@@ -263,7 +306,7 @@ class HandOverShoppingAssistantConversation
             'time' => $shop->organisation->formatClockTime($opening['opens']),
         ] : [];
 
-        $body = match ($route) {
+        return match ($route) {
             ShoppingAssistantHandOverRouteEnum::LIVE_CHAT  => __('I am passing you to our team. Your chat with them is opening now.', [], $locale),
             ShoppingAssistantHandOverRouteEnum::EMAIL_CHAT => $opening
                 ? __('Our team is back on :day at :time and will reply by email, to the address on your account.', $replace, $locale)
@@ -272,16 +315,6 @@ class HandOverShoppingAssistantConversation
                 ? __('Our team is back on :day at :time and will reply in the chat on this website.', $replace, $locale)
                 : __('Nobody from our team is free right now. They will reply in the chat on this website.', [], $locale),
         };
-
-        $message = $conversation->messages()->create([
-            'role'  => ShoppingAssistantMessageRoleEnum::ASSISTANT,
-            'body'  => $body,
-            'model' => 'hand-over',
-            'flags' => ['handed_over'],
-        ]);
-        $conversation->increment('messages_count', 1, ['last_message_at' => now()]);
-
-        return $message;
     }
 
     private function validatedOffer(ShoppingAssistantConversation $conversation, ?ShoppingAssistantMessage $offerMessage): ShoppingAssistantMessage
@@ -346,7 +379,7 @@ class HandOverShoppingAssistantConversation
         }
 
         if (!$session->messages()->exists()) {
-            $this->sendQuestion($session, $handOver);
+            $this->sendQuestion($session, (string) $handOver->question);
         }
 
         return ['hand_over' => $handOver, 'message' => $message, 'chat_session' => $session];

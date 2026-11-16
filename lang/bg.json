@@ -9518,5 +9518,16 @@
     "Should I start selling on :platform too?": "Да започна ли да продавам и в :platform?",
     "e.g. What should I add to my :platform store for Christmas, and how do I get more sales?": "напр. Какво да добавя в магазина си в :platform за Коледа и как да продавам повече?",
     "Your dropshipping coach": "Вашият съветник за дропшипинг",
-    "A question, your store, what you need – the more :name knows, the better the answer.": "Въпрос, вашият магазин, от какво имате нужда – колкото повече знае :name, толкова по-добър е отговорът."
+    "A question, your store, what you need – the more :name knows, the better the answer.": "Въпрос, вашият магазин, от какво имате нужда – колкото повече знае :name, толкова по-добър е отговорът.",
+    "I have added this to your question for our team.": "Добавих това към въпроса Ви към нашия екип.",
+    "You are welcome, :name! I am here whenever you need me.": "Няма защо, :name! Тук съм винаги, когато имате нужда от мен.",
+    "You are welcome! I am here whenever you need me.": "Няма защо! Тук съм винаги, когато имате нужда от мен.",
+    "Barcode :barcode": "Баркод :barcode",
+    ":quantity in stock": ":quantity в наличност",
+    ":name is brewing a potion…": ":name вари отвара…",
+    ":name is looking it up in his spellbook…": ":name търси в книгата си със заклинания…",
+    ":name is casting a spell…": ":name прави заклинание…",
+    ":name is gazing into his crystal ball…": ":name се взира в кристалната си топка…",
+    "This one needs a little more thought. Nearly there…": "Това изисква малко повече мисъл. Почти готово…",
+    "Usually takes about :seconds seconds": "Обикновено отнема около :seconds секунди"
 }
