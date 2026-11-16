@@ -203,7 +203,7 @@ onMounted(async () => {
         <template v-else-if="panel">
             <div class="range-heading">
                 <h2 v-if="panel.lists.length" class="range-title">
-                    <MerlinIcon class="range-title-icon" />
+                    <MerlinIcon themed class="range-title-icon" />
                     {{ ctrans(":name noticed", { name: assistantName }) }}
                 </h2>
                 <p v-if="panel.lists.length" class="range-subtitle">

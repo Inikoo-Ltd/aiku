@@ -367,7 +367,7 @@ const askAssistant = () => {
                 class="shrink-0 flex items-center gap-3 border-b border-gray-200 px-4 py-3 text-left text-sm"
                 @click="askAssistant"
             >
-                <MerlinIcon />
+                <MerlinIcon themed />
                 <span class="min-w-0 flex-1">
                     <span class="font-semibold">{{ offerLabel }}</span>
                     <span class="line-clamp-2 text-gray-500">&ldquo;{{ inputValue.trim() }}&rdquo;</span>

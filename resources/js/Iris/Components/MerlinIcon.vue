@@ -5,22 +5,24 @@ import merlinLogoLarge from "@/../art/merlin-large.png"
 
 const props = withDefaults(defineProps<{
     mono?: boolean
+    themed?: boolean
     large?: boolean
 }>(), {
     mono: false,
+    themed: false,
     large: false,
 })
 
 const logoSource = computed(() => props.large ? merlinLogoLarge : merlinLogo)
 
-const monoStyle = {
-    WebkitMaskImage: `url("${merlinLogo}")`,
-    maskImage: `url("${merlinLogo}")`,
-}
+const maskStyle = computed(() => ({
+    WebkitMaskImage: `url("${logoSource.value}")`,
+    maskImage: `url("${logoSource.value}")`,
+}))
 </script>
 
 <template>
-    <span v-if="mono" class="merlin-icon merlin-icon-mono" :style="monoStyle" aria-hidden="true" />
+    <span v-if="mono || themed" class="merlin-icon merlin-icon-mono" :class="{ 'merlin-icon-themed': themed }" :style="maskStyle" aria-hidden="true" />
     <img v-else :src="logoSource" alt="" aria-hidden="true" draggable="false" class="merlin-icon" />
 </template>
 
@@ -43,5 +45,9 @@ const monoStyle = {
     mask-size: contain;
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
+}
+
+.merlin-icon-themed {
+    background-color: var(--theme-color-4, #ef7d22);
 }
 </style>
