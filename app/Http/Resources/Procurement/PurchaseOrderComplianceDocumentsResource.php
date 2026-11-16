@@ -26,6 +26,10 @@ class PurchaseOrderComplianceDocumentsResource extends JsonResource
             'id'   => $tradeUnit->id,
             'code' => $tradeUnit->code,
             'name' => $tradeUnit->name,
+            'route' => [
+                'name'       => 'grp.trade_units.units.show',
+                'parameters' => [$tradeUnit->slug],
+            ],
             ...collect(GetPurchaseOrderCompliance::make()->documents($tradeUnit)['documents'])->keyBy('scope')->all(),
         ];
     }
