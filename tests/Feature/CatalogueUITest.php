@@ -3049,6 +3049,38 @@ test('a compliance editor declares the non-packaging materials of a trade unit a
     $tradeUnit->update(['gross_weight' => $originalGrossWeight]);
 });
 
+test('a compliance editor declares the packaging materials of a trade unit by material category', function () {
+    setPermissionsTeamId($this->group->id);
+    $compliance = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $compliance->givePermissionTo(['compliance.view', 'compliance.edit']);
+    actingAs($compliance);
+
+    $tradeUnit = $this->product->tradeUnits()->first();
+    $tradeUnit->update(['compliance' => ['brand' => 'Kept brand']]);
+
+    get(route('grp.goods.trade-units.edit', [$tradeUnit->slug, 'section' => 'packaging_materials']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions.0.route.parameters.tab', 'compliance')
+            ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->firstWhere('key', 'packaging_materials')['fields']['packaging_weight_xps']['label'] === 'Plastics excluding PET – XPS'));
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['packaging_weight_cardboard' => 40, 'packaging_weight_xps' => 2.5])->assertSessionHasNoErrors();
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['packaging_weight_glass' => -1])->assertSessionHasErrors('packaging_weight_glass');
+    expect($tradeUnit->refresh()->compliance)->toEqual(['brand' => 'Kept brand', 'packaging_materials' => ['cardboard' => 40, 'xps' => 2.5]]);
+
+    get(route('grp.goods.trade-units.show', [$tradeUnit->slug, 'tab' => 'compliance']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('compliance.packaging_edit_route.parameters.section', 'packaging_materials')
+            ->where('compliance.packaging_materials', [
+                ['category' => 'Plastics excluding PET', 'material' => 'XPS', 'weight_g' => 2.5],
+                ['category' => 'Paper and cardboard', 'material' => 'Cardboard', 'weight_g' => 40],
+            ]));
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['packaging_weight_cardboard' => 0, 'packaging_weight_xps' => null])->assertSessionHasNoErrors();
+    expect($tradeUnit->refresh()->compliance)->toEqual(['brand' => 'Kept brand', 'packaging_materials' => []]);
+});
+
 test('a compliance editor declares the battery type of a trade unit and the compliance tab shows it', function () {
     setPermissionsTeamId($this->group->id);
     $compliance = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
