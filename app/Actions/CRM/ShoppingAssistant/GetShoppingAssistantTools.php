@@ -1142,7 +1142,7 @@ class GetShoppingAssistantTools
 
         $open  = (clone $orders)->whereIn('state', self::ORDER_OPEN_STATES)->orderBy('submitted_at')->orderBy('id')->get();
         $order = $reference !== ''
-            ? $orders->where(fn ($query) => $query->where('reference', $reference)->orWhere('customer_reference', $reference)->orWhere('platform_order_id', $reference))->latest('id')->first()
+            ? $orders->where(fn ($query) => $query->whereRaw('upper(reference) = ?', [mb_strtoupper($reference)])->orWhereRaw('upper(customer_reference) = ?', [mb_strtoupper($reference)])->orWhereRaw('upper(platform_order_id) = ?', [mb_strtoupper($reference)]))->latest('id')->first()
             : ($open->first() ?? $orders->where('state', '!=', OrderStateEnum::CREATING)->latest('submitted_at')->latest('id')->first());
 
         if (!$order) {

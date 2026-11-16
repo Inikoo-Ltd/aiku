@@ -3606,6 +3606,7 @@ test('Merlin says where the customer\'s own order is, with the order number, dat
 
     $picking = $tools->execute($conversation, 'order_status', []);
     $byTheirReference = $tools->execute($conversation, 'order_status', ['reference' => '#MY-77']);
+    $lowercase = $tools->execute($conversation, 'order_status', ['reference' => Str::lower($order->reference)]);
     $notTheirs = $tools->execute($conversation, 'order_status', ['reference' => $theirs->reference]);
 
     $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED, 'dispatched_at' => '2026-11-12 15:00:00']);
@@ -3619,6 +3620,7 @@ test('Merlin says where the customer\'s own order is, with the order number, dat
         ->and(json_encode($picking['content']))->not->toContain($order->reference)
         ->and($picking['fact'])->toBe($order->reference.' (MY-77) · '.\Carbon\Carbon::parse('2026-11-10')->locale($locale)->isoFormat('LL'))
         ->and($byTheirReference['fact'])->toBe($picking['fact'])
+        ->and($lowercase['fact'])->toBe($picking['fact'])
         ->and($notTheirs['content']['found'])->toBeFalse()
         ->and($sent['content']['state'])->toBe('dispatched')
         ->and($sent['content']['has_tracking'])->toBeFalse()
