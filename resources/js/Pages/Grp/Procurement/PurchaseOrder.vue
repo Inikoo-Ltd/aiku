@@ -251,7 +251,7 @@ const props = defineProps < {
             expenses_by_agent?: boolean
         }
 	}
-	items?: {}
+	items?: { this_order_only?: boolean }
 	agent_ordering?: {
 		orgAgent: { id: number, slug: string, currency: string }
 		addRoute: { name: string, parameters: (string | number)[] }
@@ -878,17 +878,19 @@ const productBucketLabels = computed(() =>
 	Object.fromEntries((props.products?.ordering?.cover ?? []).map((bucket) => [bucket.value, { label: bucket.title, tone: bucket.tone }]))
 )
 
-const filterProducts = (key: "cover" | "rank" | "hide_ordered", value: string | null) => {
+const filterTab = (tab: "products" | "items", key: string, value: string | null) => {
 	const query = qs.parse(location.search.substring(1))
-	const filters = { ...((query.products_filter as Record<string, unknown>) ?? {}), [key]: value }
-	delete query.productsPage
+	const filters = { ...((query[`${tab}_filter`] as Record<string, unknown>) ?? {}), [key]: value }
+	delete query[`${tab}Page`]
 
 	router.get(
-		location.pathname + "?" + qs.stringify({ ...query, tab: "products", products_filter: filters }, { encodeValuesOnly: true, skipNulls: true }),
+		location.pathname + "?" + qs.stringify({ ...query, tab, [`${tab}_filter`]: filters }, { encodeValuesOnly: true, skipNulls: true }),
 		{},
-		{ only: ["products"], preserveState: true, preserveScroll: true, replace: true }
+		{ only: [tab], preserveState: true, preserveScroll: true, replace: true }
 	)
 }
+
+const filterProducts = (key: "cover" | "rank" | "hide_ordered", value: string | null) => filterTab("products", key, value)
 
 const component = computed(() => {
 	const components: Component = {
@@ -1659,9 +1661,13 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 						{{ ctrans("Hide what is already on order") }}
 					</label>
 				</template>
+				<label v-else-if="currentTab === 'items'" class="inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1 text-xs" :class="items?.this_order_only ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-white text-gray-600'">
+					<Checkbox :modelValue="!!items?.this_order_only" binary size="small" @update:modelValue="(value: boolean) => filterTab('items', 'this_order', value ? '1' : null)" />
+					{{ ctrans("Hide what only other organisations ordered") }}
+				</label>
 				<SegmentedToggle v-model="currentLevel" class="ml-auto" :options="productsLevelOptions" :ariaLabel="ctrans('Order in cartons, SKOs or units')" />
 			</div>
-			<AgentOrderingItems :key="currentTab === 'products' ? `products-${products?.ordering?.active.cover}-${products?.ordering?.active.rank}-${products?.ordering?.active.hide_ordered}` : currentTab" :items="props[currentTab as keyof typeof props]" v-bind="agent_ordering" :tableName="currentTab" :level="currentLevel" />
+			<AgentOrderingItems :key="currentTab === 'products' ? `products-${products?.ordering?.active.cover}-${products?.ordering?.active.rank}-${products?.ordering?.active.hide_ordered}` : `${currentTab}-${!!items?.this_order_only}`" :items="props[currentTab as keyof typeof props]" v-bind="agent_ordering" :tableName="currentTab" :level="currentLevel" />
 		</template>
 		<div v-else-if="currentTab === 'products' && products?.ordering" class="mt-4">
 			<div class="mx-4 mb-3 flex flex-wrap items-center gap-2">

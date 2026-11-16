@@ -59,6 +59,8 @@ class IndexAgentCoverBucketItems extends OrgAction
 
     private bool $onAnyDraftOnly = false;
 
+    private bool $onThisOrderOnly = false;
+
     private bool $hideDiscontinued = false;
 
     private ?string $prefix = null;
@@ -80,6 +82,7 @@ class IndexAgentCoverBucketItems extends OrgAction
         $this->onAnyDraftOnly = true;
         $this->prefix         = $prefix;
         $this->draftPurchaseOrderId    = $draftPurchaseOrderId;
+        $this->onThisOrderOnly         = $draftPurchaseOrderId !== null && request()->boolean($prefix.'_filter.this_order');
 
         InertiaTable::updateQueryBuilderParameters($prefix);
 
@@ -174,6 +177,13 @@ class IndexAgentCoverBucketItems extends OrgAction
                     ->join('purchase_order_transactions as pot', fn ($join) => $join->on('pot.purchase_order_id', 'po.id')->whereNull('pot.deleted_at'))
                     ->whereColumn('pot.supplier_product_id', 'osp.supplier_product_id')
             ))
+            ->when($this->onThisOrderOnly, fn ($query) => $query->whereExists(
+                fn ($lines) => $lines->selectRaw('1')
+                    ->from('purchase_order_transactions as pot')
+                    ->where('pot.purchase_order_id', $this->draftPurchaseOrderId)
+                    ->whereNull('pot.deleted_at')
+                    ->whereColumn('pot.supplier_product_id', 'osp.supplier_product_id')
+            ))
             ->select([
                 'osp.id',
                 'osp.slug',
@@ -216,7 +226,7 @@ class IndexAgentCoverBucketItems extends OrgAction
                     $sortBy('name', 'sp.name'),
                     $sortBy('supplier_code', 'sup.code collate "C"'),
                 ])
-                ->allowedFilters([$globalSearch, $supplierFilter, ...array_map(fn (string $applied) => AllowedFilter::callback($applied, fn () => null), ['cover', 'rank', 'hide_ordered'])])
+                ->allowedFilters([$globalSearch, $supplierFilter, ...array_map(fn (string $applied) => AllowedFilter::callback($applied, fn () => null), ['cover', 'rank', 'hide_ordered', 'this_order'])])
                 ->orderBy('osp.id')
                 ->withPaginator($this->prefix, tableName: request()->route()?->getName())
                 ->withQueryString()

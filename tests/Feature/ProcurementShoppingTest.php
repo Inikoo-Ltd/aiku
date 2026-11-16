@@ -2463,6 +2463,13 @@ test('UI agent browse shows what the other organisations hold on their drafts fo
             ->where('agent_ordering.addRoute.name', 'grp.org.procurement.org_agents.show.shopping.drafts.line')
             ->where('items.data', fn ($items) => collect($items)->pluck('code')->all() === [$supplierProduct->code]
                 && $items[0]['other_organisations_drafts'][0]['organisation_code'] === $otherOrganisation->code)
+            ->where('items.this_order_only', false)
+            ->etc());
+
+    $this->get(route('grp.org.procurement.org_agents.show.purchase-orders.show', [$this->organisation->slug, $this->orgAgent->slug, $ourDraft->slug]).'?tab=items&'.http_build_query(['items_filter' => ['this_order' => 1]]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('items.this_order_only', true)
+            ->where('items.data', [])
             ->etc());
 
     $this->get(route('grp.org.procurement.org_agents.show.purchase-orders.show', [$this->organisation->slug, $this->orgAgent->slug, $ourDraft->slug]).'?tab=products')
