@@ -500,8 +500,6 @@ const rankings = computed(() =>
 					</table>
 				</section>
 
-				<SegmentedToggle v-if="countries.length > 1" v-model="selectedCountry" :options="countryOptions" :aria-label="ctrans('Country')" />
-
 				<div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
 					<section v-for="ranking in rankings" :key="ranking.key" class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
 						<div class="flex items-baseline justify-between gap-2">
@@ -517,6 +515,7 @@ const rankings = computed(() =>
 							</span>
 						</div>
 						<p class="mt-0.5 text-xs text-gray-500">{{ ranking.hint }}</p>
+						<SegmentedToggle v-if="countries.length > 1" v-model="selectedCountry" :options="countryOptions" :aria-label="ctrans('Country')" soft class="mt-2" />
 						<p v-if="!ranking.rows.length" class="py-6 text-center text-xs text-gray-400">{{ ranking.empty }}</p>
 						<ul v-else class="mt-3 divide-y divide-gray-100 text-sm">
 							<li v-for="product in ranking.rows" :key="product.code" class="flex items-center gap-3 py-1.5">
