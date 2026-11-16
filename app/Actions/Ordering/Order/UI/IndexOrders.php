@@ -8,7 +8,6 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
-use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrderProductionReview;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
@@ -992,7 +991,7 @@ class IndexOrders extends OrgAction
                 ),
                 'title'          => __('orders'),
                 'sales_channels' => GetSalesChannelOptions::make()->getOptions($shop),
-                'can_add_order'  => $this->canEdit && $shop?->type == ShopTypeEnum::B2B && !($this->parent instanceof Customer && StoreOrder::isPartnerBuyingFromHub($this->parent, $shop)),
+                'can_add_order'  => $this->canEdit && $shop?->type == ShopTypeEnum::B2B,
                 'pageHead'       => [
                     'title'         => $title,
                     'icon'          => $icon,

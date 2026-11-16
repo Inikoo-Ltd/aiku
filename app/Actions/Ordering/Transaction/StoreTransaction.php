@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Transaction;
 
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\LogBasketEvent;
+use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
@@ -47,6 +48,8 @@ class StoreTransaction extends OrgAction
 
     public function handle(Order $order, HistoricAsset $historicAsset, array $modelData, $calculateShipping = true): Transaction
     {
+        $this->ensureNoPartnerGoodsOutsideShoppingList($order, $historicAsset);
+
         if ($this->strict && $historicAsset->asset->model_type == 'Product' && !Arr::get($modelData, 'is_gift')) {
             if (in_array($order->state, [
                 OrderStateEnum::CREATING,
@@ -235,5 +238,21 @@ class StoreTransaction extends OrgAction
         $this->historicAsset = $historicAsset;
         $this->initialisationFromShop($order->shop, $request);
         $this->handle($order, $historicAsset, $this->validatedData);
+    }
+
+    /**
+     * Staff open orders for a partner by hand only to invoice services. Goods reach a partner only on
+     * intercompany orders from its shopping list, so a product can not slip onto a service order from
+     * the website basket or a follow-on applied at submit (HELP-3848).
+     */
+    private function ensureNoPartnerGoodsOutsideShoppingList(Order $order, HistoricAsset $historicAsset): void
+    {
+        if ($historicAsset->model_type !== 'Product' || $order->salesChannel?->code === 'intercompany') {
+            return;
+        }
+
+        if (StoreOrder::isPartnerBuyingFromHub($order->customer, $order->shop)) {
+            throw StoreOrder::partnerBuyingFromHubError($order->customer, $order->shop);
+        }
     }
 }
