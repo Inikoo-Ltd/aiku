@@ -163,8 +163,8 @@ test('mobile delivery note offers the packing and dispatch actions of the web, b
     $collection->update(['collection_address_id' => $collection->address_id]);
     [$finalised] = finalisedDeliveryNote($this);
 
-    expect(goodsOutActionKeys($packed))->toBe(['finalise_and_dispatch', 'add_shipment', 'unpack', 'change_packer', 'edit_delivery_address'])
-        ->and(goodsOutActionKeys($collection))->toBe(['finalise', 'unpack', 'change_packer', 'edit_delivery_address']);
+    expect(goodsOutActionKeys($packed))->toBe(['finalise_and_dispatch', 'add_shipment', 'unpack', 'take_over', 'change_packer', 'edit_delivery_address'])
+        ->and(goodsOutActionKeys($collection))->toBe(['finalise', 'unpack', 'take_over', 'change_packer', 'edit_delivery_address']);
     getGoodsOut('grp.api.mobile.delivery_notes.show', $finalised->id)->assertOk()
         ->assertJsonPath('data.available_actions', [
             ['key' => 'dispatch', 'label' => 'Dispatch'],
@@ -679,4 +679,38 @@ test('mobile packing writes are refused on a note locked in Aurora', function ()
 
     expect($picked->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
         ->and((float) $line->refresh()->packings()->sum('quantity'))->toBe(0.0);
+});
+
+test('mobile changes the picker while picking and unlocks a note being picked, packed or ready, like the web lock', function () {
+    $picker = goodsOutPickerUser($this);
+    $clerk  = actingAsGoodsOutUser($this->group, $this->warehouse, [RolesEnum::DISPATCH_CLERK]);
+    [$deliveryNote] = goodsOutPickingNote($this, [2], $clerk);
+
+    getGoodsOut('grp.api.mobile.delivery_notes.show', $deliveryNote->id)->assertOk()
+        ->assertJsonPath('data.is_taken_over', false)
+        ->assertJsonPath('data.available_actions.1', ['key' => 'change_picker', 'label' => 'Change picker']);
+
+    postGoodsOut('grp.api.mobile.delivery_notes.picker', $deliveryNote->id, ['user_id' => $picker->id])->assertOk()
+        ->assertJsonPath('result.status', 'done')
+        ->assertJsonPath('result.message', 'Picker changed.')
+        ->assertJsonPath('data.state', 'handling')
+        ->assertJsonPath('data.picker.id', $picker->id)
+        ->assertJsonPath('data.can_handle', false)
+        ->assertJsonPath('data.available_actions.0.key', 'take_over');
+    postGoodsOut('grp.api.mobile.delivery_notes.picker', $deliveryNote->id, ['user_id' => $picker->id])->assertOk()
+        ->assertJsonPath('result.status', 'nothing_changed');
+    postGoodsOut('grp.api.mobile.delivery_notes.picker', $deliveryNote->id, ['user_id' => null])->assertUnprocessable()->assertJsonValidationErrors(['state']);
+
+    postGoodsOut('grp.api.mobile.delivery_notes.take_over', $deliveryNote->id)->assertOk()
+        ->assertJsonPath('data.can_handle', true)
+        ->assertJsonPath('data.is_taken_over', true)
+        ->assertJsonPath('data.picker.id', $picker->id);
+
+    [$packed] = packedDeliveryNote($this, true);
+    expect(goodsOutActionKeys($packed))->toContain('take_over');
+    postGoodsOut('grp.api.mobile.delivery_notes.take_over', $packed->id)->assertOk()
+        ->assertJsonPath('result.message', 'You can work on this delivery note for the next hour. The packer stays the same.')
+        ->assertJsonPath('data.can_handle', true)
+        ->assertJsonPath('data.is_taken_over', true);
+    expect(goodsOutActionKeys($packed))->not->toContain('take_over');
 });
