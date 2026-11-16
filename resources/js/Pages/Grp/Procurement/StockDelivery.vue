@@ -911,7 +911,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 				</Button>
 			</span>
 			<div v-if="add_purchase_orders" class="inline-flex divide-x divide-gray-300 overflow-hidden rounded-md border border-gray-300">
-				<span v-tooltip="add_purchase_orders.purchase_orders.length === 0 ? ctrans('No confirmed purchase orders of this agent are waiting for a container') : ctrans('Add whole purchase orders, or pick single items of them and how many of each')">
+				<span v-tooltip="add_purchase_orders.purchase_orders.length === 0 ? ctrans('No confirmed purchase orders are waiting for a container') : ctrans('Add whole purchase orders, or pick single items of them and how many of each')">
 					<Button
 						type="tertiary"
 						:label="ctrans('Add to container')"
@@ -924,7 +924,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 						</template>
 					</Button>
 				</span>
-				<span v-tooltip="add_purchase_orders.purchase_orders.length === 0 ? ctrans('No confirmed purchase orders of this agent are waiting for a container') : ctrans('Upload the container list or proforma: choose its tab, check the preview and the purchase order of each item, then add')">
+				<span v-tooltip="add_purchase_orders.purchase_orders.length === 0 ? ctrans('No confirmed purchase orders are waiting for a container') : ctrans('Upload the container list or proforma: choose its tab, check the preview and the purchase order of each item, then add')">
 					<Button
 						type="tertiary"
 						:label="ctrans('Import from Excel')"

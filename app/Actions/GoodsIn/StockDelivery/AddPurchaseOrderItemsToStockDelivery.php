@@ -95,7 +95,7 @@ class AddPurchaseOrderItemsToStockDelivery extends OrgAction
     public function afterValidator(Validator $validator): void
     {
         if (!AddPurchaseOrdersToStockDelivery::acceptsPurchaseOrders($this->stockDelivery)) {
-            $validator->errors()->add('items', __('Items can only be added to an agent container in process'));
+            $validator->errors()->add('items', __('Items can only be added to a container in process'));
         }
     }
 

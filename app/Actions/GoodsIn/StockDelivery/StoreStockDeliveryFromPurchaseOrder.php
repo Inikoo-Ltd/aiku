@@ -367,7 +367,8 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
 
     /**
      * An agent ships the orders of many of its suppliers in one container, so an agent order can
-     * join a delivery the agent already has in process, as long as both are in the same currency.
+     * join a delivery the agent already has in process, as long as both are in the same currency. An order straight
+     * from a supplier joins that supplier's containers in process the same way (HELP-4725).
      *
      * @return Collection<int, StockDelivery>
      */
@@ -381,12 +382,17 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
      */
     public static function openAgentDeliveriesQuery(PurchaseOrder $purchaseOrder): EloquentBuilder
     {
-        $orgAgent = $purchaseOrder->isAgentOrder() ? $purchaseOrder->orgAgentOfOrder() : null;
+        $isDirectSupplierOrder = $purchaseOrder->parent_type === 'OrgSupplier' && $purchaseOrder->agent_id === null;
+        $orgAgent              = $purchaseOrder->isAgentOrder() ? $purchaseOrder->orgAgentOfOrder() : null;
 
         return StockDelivery::query()
-            ->when(!$orgAgent, fn (EloquentBuilder $query) => $query->whereRaw('false'))
-            ->where('parent_type', 'OrgAgent')
-            ->where('parent_id', $orgAgent?->id)
+            ->when(
+                $isDirectSupplierOrder,
+                fn (EloquentBuilder $query) => $query->where('parent_type', 'OrgSupplier')->where('parent_id', $purchaseOrder->parent_id)->whereNull('agent_id')->whereNull('delivery_note_id'),
+                fn (EloquentBuilder $query) => $query->when(!$orgAgent, fn (EloquentBuilder $query) => $query->whereRaw('false'))
+                    ->where('parent_type', 'OrgAgent')
+                    ->where('parent_id', $orgAgent?->id)
+            )
             ->where('state', StockDeliveryStateEnum::IN_PROCESS)
             ->where('currency_id', $purchaseOrder->currency_id)
             ->orderByDesc('id');

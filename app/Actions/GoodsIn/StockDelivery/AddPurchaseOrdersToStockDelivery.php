@@ -45,9 +45,16 @@ class AddPurchaseOrdersToStockDelivery extends OrgAction
 
     public static function acceptsPurchaseOrders(StockDelivery $stockDelivery): bool
     {
-        return $stockDelivery->parent_type === 'OrgAgent'
-            && $stockDelivery->agent_id
-            && $stockDelivery->state === StockDeliveryStateEnum::IN_PROCESS;
+        return $stockDelivery->state === StockDeliveryStateEnum::IN_PROCESS
+            && (($stockDelivery->parent_type === 'OrgAgent' && $stockDelivery->agent_id) || self::isDirectSupplierContainer($stockDelivery));
+    }
+
+    /**
+     * A container straight from a supplier, no agent: it takes other agreed orders of that same supplier only (HELP-4725).
+     */
+    public static function isDirectSupplierContainer(StockDelivery $stockDelivery): bool
+    {
+        return $stockDelivery->parent_type === 'OrgSupplier' && $stockDelivery->agent_id === null && !$stockDelivery->isManagedByPartner();
     }
 
     /**
@@ -69,8 +76,12 @@ class AddPurchaseOrdersToStockDelivery extends OrgAction
         return PurchaseOrder::query()
             ->when(!self::acceptsPurchaseOrders($stockDelivery), fn (Builder $query) => $query->whereRaw('false'))
             ->where('organisation_id', $stockDelivery->organisation_id)
-            ->where('agent_id', $stockDelivery->agent_id)
             ->where('parent_type', 'OrgSupplier')
+            ->when(
+                self::isDirectSupplierContainer($stockDelivery),
+                fn (Builder $query) => $query->whereNull('agent_id')->where('parent_id', $stockDelivery->parent_id),
+                fn (Builder $query) => $query->where('agent_id', $stockDelivery->agent_id)
+            )
             ->whereIn('state', PurchaseOrderStateEnum::agreed())
             ->where('currency_id', $stockDelivery->currency_id)
             ->whereHas('purchaseOrderTransactions', $itemsAwaitingDelivery)
@@ -95,7 +106,7 @@ class AddPurchaseOrdersToStockDelivery extends OrgAction
     public function afterValidator(Validator $validator): void
     {
         if (!self::acceptsPurchaseOrders($this->stockDelivery)) {
-            $validator->errors()->add('purchase_order_ids', __('Purchase orders can only be added to an agent container in process'));
+            $validator->errors()->add('purchase_order_ids', __('Purchase orders can only be added to a container in process'));
         }
     }
 
