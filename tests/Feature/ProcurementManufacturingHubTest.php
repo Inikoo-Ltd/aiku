@@ -451,8 +451,12 @@ describe('partner shopping list', function () {
         $jobOrderItemId = $jobOrder->jobOrderItems()->first()->id;
         expect(\App\Models\Production\JobOrderItemTask::where('job_order_item_id', $jobOrderItemId)->count())->toBeGreaterThan(0);
 
+        $sameProduct = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 2]);
+        $sameProduct->update(['job_order_id' => $jobOrder->id]);
+
         \App\Actions\Production\PartnerShippingList\UnassignToProduceItems::make()->action($production, [$item->id]);
         expect($item->fresh()->job_order_id)->toBeNull()
+            ->and($sameProduct->fresh()->job_order_id)->toBeNull()
             ->and(JobOrder::withTrashed()->find($jobOrder->id)->jobOrderItems()->count())->toBe(0)
             ->and(\App\Models\Production\JobOrderItemTask::where('job_order_item_id', $jobOrderItemId)->count())->toBe(0);
     });
