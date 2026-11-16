@@ -67,6 +67,14 @@ struct ShellProfileView: View {
                     ShellValueRow(title: "Version", value: appVersion)
                 }
             }
+            section("Security") {
+                Card {
+                    ShellValueRow(title: "Change password") {
+                        router.open(ShellRoute.changePassword)
+                    }
+                    .accessibilityIdentifier("shell.profile.changePassword")
+                }
+            }
             AikuButton("Log out", icon: .logout, kind: .danger) {
                 signOut()
             }
@@ -87,26 +95,9 @@ struct ShellProfileView: View {
                 Text(session.profile.name)
                     .font(.aiku(17, .bold))
                     .foregroundStyle(AikuColor.text)
-                Text(session.profile.username)
+                Text("\(session.profile.username) · \(session.profile.role)")
                     .font(.aiku(13))
                     .foregroundStyle(AikuColor.text3)
-                if !session.profile.jobPositions.isEmpty {
-                    FlowLayout(spacing: 6, lineSpacing: 6) {
-                        ForEach(session.profile.jobPositions, id: \.self) { position in
-                            StatusChip(position, tone: .info)
-                        }
-                    }
-                    .padding(.vertical, 2)
-                } else {
-                    Text(session.profile.role)
-                        .font(.aiku(13))
-                        .foregroundStyle(AikuColor.text3)
-                }
-                if let email = session.profile.email {
-                    Text(email)
-                        .font(.aiku(13))
-                        .foregroundStyle(AikuColor.text3)
-                }
                 if let error = authStore.lastProfileError {
                     Text("Couldn’t refresh: \(error)")
                         .font(.aiku(12))

@@ -92,6 +92,12 @@ final class APIClient: Sendable {
     }
 
     func send(_ endpoint: Endpoint) async throws -> Data {
+        let (data, response) = try await perform(endpoint)
+        try check(response, data: data)
+        return data
+    }
+
+    func perform(_ endpoint: Endpoint) async throws -> (Data, HTTPURLResponse) {
         let data: Data
         let response: URLResponse
         do {
@@ -102,9 +108,13 @@ final class APIClient: Sendable {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
+        return (data, httpResponse)
+    }
+
+    func check(_ httpResponse: HTTPURLResponse, data: Data) throws {
         switch httpResponse.statusCode {
         case 200..<300:
-            return data
+            return
         case 401:
             throw APIError.unauthorized
         case 422:

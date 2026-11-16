@@ -14,13 +14,13 @@ struct GoodsOutPickLocationSheet: View {
         self.line = line
         self.present = present
         self.close = close
-        let locations = GoodsOutSampleData.stockLocations(for: line, channel: note.channel)
+        let locations = Self.locations(for: line, note: note)
         let preferred = locations.first { !$0.isEmpty && $0.code != line.location } ?? locations.first { !$0.isEmpty }
         _selected = State(initialValue: preferred?.code)
     }
 
     var body: some View {
-        let locations = GoodsOutSampleData.stockLocations(for: line, channel: note.channel)
+        let locations = Self.locations(for: line, note: note)
         SheetScaffold(title: "Location list for \(line.sko)", subtitle: "\(line.name) · \(line.remaining) still to pick") {
             HStack(spacing: 12) {
                 ProductThumb(size: 56, label: "Product photo of \(line.sko)")
@@ -48,6 +48,12 @@ struct GoodsOutPickLocationSheet: View {
         } footer: {
             AikuButton(selected.map { "Pick from \($0)" } ?? "Pick from another location") {
                 guard let selected else { return }
+                if let lineID = line.apiID {
+                    guard let location = locations.first(where: { $0.code == selected })?.locationOrgStockID else { return }
+                    let action = GoodsOutNoteAction.pick(line: lineID, locationOrgStockID: location, quantity: line.remainingQuantity)
+                    GoodsOutRun.action(action, on: note.reference, fallback: "\(line.sko) picked ×\(line.remaining) from \(selected)", toasts: toasts) { close() }
+                    return
+                }
                 let previous = store.pick(note.reference, line: line.id, quantity: line.remaining, from: selected)
                 close()
                 GoodsOutFeedback.done("\(line.sko) picked ×\(line.remaining) from \(selected)", previous: previous, toasts: toasts)
@@ -63,5 +69,9 @@ struct GoodsOutPickLocationSheet: View {
                 present(.itemActions(line: line.id))
             }
         }
+    }
+
+    static func locations(for line: GoodsOutLine, note: GoodsOutDeliveryNote) -> [GoodsOutStockLocation] {
+        note.isRemote ? line.stockLocations : GoodsOutSampleData.stockLocations(for: line, channel: note.channel)
     }
 }

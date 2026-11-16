@@ -5,6 +5,8 @@ struct GoodsOutDestination: View {
 
     var body: some View {
         switch route {
+        case .deliveryNoteID(let id):
+            GoodsOutDeliveryNoteByIDScreen(id: id)
         case .backlog:
             GoodsOutBacklogView()
         case .deliveryNotes:
@@ -22,7 +24,7 @@ struct GoodsOutDestination: View {
         case .manualShipment(let reference):
             GoodsOutManualShipmentView(reference: reference)
         case .askCRM(let reference):
-            GoodsOutAskCRMView(reference: reference)
+            GoodsOutAskCRMView(reference: reference, deliveryNoteID: GoodsOutStore.shared.noteID(for: reference))
         case .tariffCodes(let reference):
             GoodsOutTariffView(reference: reference)
         case .customsFile(let reference):

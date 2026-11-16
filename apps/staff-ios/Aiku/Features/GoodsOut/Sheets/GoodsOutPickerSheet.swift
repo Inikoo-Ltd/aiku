@@ -12,7 +12,12 @@ struct GoodsOutPickerSheet: View {
     init(note: GoodsOutDeliveryNote, close: @escaping () -> Void) {
         self.note = note
         self.close = close
-        _selected = State(initialValue: note.picker ?? GoodsOutStore.shared.currentUser)
+        let store = GoodsOutStore.shared
+        if store.isRemote {
+            _selected = State(initialValue: (note.pickerID ?? store.userID).map(String.init) ?? "")
+        } else {
+            _selected = State(initialValue: note.picker ?? store.currentUser)
+        }
         _packerSameAsPicker = State(initialValue: note.packerSameAsPicker)
     }
 
@@ -37,11 +42,16 @@ struct GoodsOutPickerSheet: View {
                     selected = choice.id
                 }
             }
-            SheetSectionLabel("Packer")
-            RadioCard("Same as picker", subtitle: "Change it later from the delivery note", isSelected: packerSameAsPicker) {
-                packerSameAsPicker.toggle()
+            if !store.isRemote {
+                SheetSectionLabel("Packer")
+                RadioCard("Same as picker", subtitle: "Change it later from the delivery note", isSelected: packerSameAsPicker) {
+                    packerSameAsPicker.toggle()
+                }
             }
         } footer: {
+            if store.isRemote {
+                remoteFooter
+            } else {
             AikuButton("Assign \(selected)") {
                 let previous = store.assignPicker(note.reference, picker: selected, packerSameAsPicker: packerSameAsPicker)
                 close()
@@ -55,7 +65,42 @@ struct GoodsOutPickerSheet: View {
                     GoodsOutFeedback.done("Picker removed · \(note.reference) is back to To do", tone: .info, previous: previous, toasts: toasts)
                 }
             }
+            }
             AikuButton("Cancel", kind: .tertiary, action: close)
+        }
+        .task {
+            guard store.isRemote else { return }
+            async let personnel: Void = store.loadPersonnel()
+            await store.loadPickers()
+            await personnel
+        }
+    }
+
+    private var selectedTitle: String {
+        store.pickerChoices().first { $0.id == selected }?.title ?? "picker"
+    }
+
+    @ViewBuilder
+    private var remoteFooter: some View {
+        let working = store.isWorking(on: note.reference)
+        if store.isRemote, store.isLoadingResources, store.pickers.isEmpty {
+            GoodsOutSkeletonCard(rows: 1)
+        }
+        if let error = store.resourcesError, store.pickers.isEmpty {
+            GoodsOutLoadProblem(title: "Couldn’t load pickers", message: error) {
+                Task { await store.loadPickers() }
+            }
+        }
+        if let userID = Int(selected) {
+            AikuButton("Assign \(selectedTitle)", isLoading: working) {
+                GoodsOutRun.action(.setPicker(userID: userID), on: note.reference, fallback: "\(selectedTitle) is picking \(note.reference)", toasts: toasts, onDone: { close() })
+            }
+            .accessibilityIdentifier("goodsOut.assignPicker")
+        }
+        if note.action(.removePicker) != nil {
+            AikuButton("Remove picker", kind: .danger) {
+                GoodsOutRun.action(.setPicker(userID: nil), on: note.reference, fallback: "Picker removed · \(note.reference) is back to To do", toasts: toasts, onDone: { close() })
+            }
         }
     }
 }

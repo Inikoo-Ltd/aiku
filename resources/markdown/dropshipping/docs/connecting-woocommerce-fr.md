@@ -87,6 +87,8 @@ Pour réparer cela :
 3. Si cela ne fonctionne toujours pas, appuyez sur <b>Test de connexion</b> pour vérifier à nouveau la connexion.
 4. En dernier recours, appuyez sur <b>Supprimer</b> et reconnectez la boutique. Vos produits et commandes reviennent quand vous utilisez la même adresse de boutique.
 
+Si votre boutique a changé d'adresse web, tapez la nouvelle adresse dans le champ sous <b>Essayez de vous reconnecter</b> avant d'appuyer dessus. Approuvez sur votre boutique à sa nouvelle adresse. Votre canal garde ses produits et commandes, et nous utilisons ensuite la nouvelle adresse. Ne supprimez pas le canal pour connecter la nouvelle adresse comme une nouvelle boutique : cela crée un canal vide.
+
 Si votre boutique continue d'échouer pendant longtemps, nous arrêtons de la vérifier. Elle recommence à fonctionner quand vous la reconnectez.
 
 <!-- screenshot: l'avertissement de non-connexion sur un canal WooCommerce avec les boutons Try to reconnect, Test Connection et Delete -->

@@ -4,144 +4,73 @@ import Observation
 @MainActor
 @Observable
 final class DispatchStore {
-    static let shared = DispatchStore()
+    static let shared = DispatchStore(service: .live(.shared))
 
     let shippers: [DispatchShipper]
-    private(set) var sessions: [DispatchPickingSession]
-    private(set) var bays: [DispatchPickedBay]
     private(set) var reports: [DispatchProblemReport] = []
-    private let trolleyCodes: [String]
-    private let trolleyNotes: [String: String]
+    private(set) var trolleys: [MobileSessionTrolley] = []
+    private(set) var bays: [MobileSessionPickedBay] = []
+    private(set) var trolleysState = DispatchListState()
+    private(set) var baysState = DispatchListState()
 
-    init(
-        shippers: [DispatchShipper] = DispatchSampleData.shippers,
-        sessions: [DispatchPickingSession] = DispatchSampleData.sessions,
-        bays: [DispatchPickedBay] = DispatchSampleData.bays,
-        trolleyCodes: [String] = DispatchSampleData.trolleyCodes,
-        trolleyNotes: [String: String] = DispatchSampleData.trolleyNotes
-    ) {
+    @ObservationIgnored private let service: PickingSessionService
+
+    init(service: PickingSessionService, shippers: [DispatchShipper] = DispatchSampleData.shippers) {
+        self.service = service
         self.shippers = shippers
-        self.sessions = sessions
-        self.bays = bays
-        self.trolleyCodes = trolleyCodes
-        self.trolleyNotes = trolleyNotes
     }
 
-    func session(_ reference: String) -> DispatchPickingSession? {
-        sessions.first { $0.reference == reference } ?? sessions.first
-    }
-
-    func sessions(of kind: DispatchSessionKind) -> [DispatchPickingSession] {
-        sessions.filter { $0.kind == kind }
-    }
-
-    var trolleys: [DispatchTrolley] {
-        trolleyCodes.map { code in
-            if let note = trolleyNotes[code] {
-                return DispatchTrolley(code: code, holder: .deliveryNote(note))
-            }
-            if let holder = sessions.first(where: { $0.isStarted && $0.state != .packed && $0.trolleys.contains(code) }) {
-                return DispatchTrolley(code: code, holder: .session(holder.reference))
-            }
-            return DispatchTrolley(code: code, holder: .free)
+    func loadTrolleys(warehouseID: Int) async {
+        if trolleysState.warehouseID != warehouseID { trolleys = [] }
+        trolleysState.begin(warehouseID)
+        do {
+            trolleys = try await service.trolleys(warehouseID, false)
+            trolleysState.finish()
+        } catch where error.isCancellation {
+            trolleysState.isLoading = false
+        } catch {
+            trolleysState.fail(PickingSessionErrorText.message(error, offline: "Trolleys need internet. Check Wi-Fi and try again."))
         }
     }
 
-    func startPicking(_ reference: String) {
-        update(reference) { session in
-            session.isStarted = true
+    func loadBays(warehouseID: Int) async {
+        if baysState.warehouseID != warehouseID { bays = [] }
+        baysState.begin(warehouseID)
+        do {
+            bays = try await service.pickedBays(warehouseID)
+            baysState.finish()
+        } catch where error.isCancellation {
+            baysState.isLoading = false
+        } catch {
+            baysState.fail(PickingSessionErrorText.message(error, offline: "Picked bays need internet. Check Wi-Fi and try again."))
         }
-    }
-
-    @discardableResult
-    func scanPick(_ reference: String) -> DispatchPickNote? {
-        guard let location = session(reference)?.currentLocation,
-              let note = location.notes.first(where: \.isOpen) else { return nil }
-        pick(reference, at: location.location, amount: 1)
-        return note
-    }
-
-    func pick(_ reference: String, at location: String, amount: Int) {
-        guard amount > 0 else { return }
-        update(reference) { session in
-            guard let index = session.locations.firstIndex(where: { $0.location == location }) else { return }
-            session.isStarted = true
-            var left = amount
-            for noteIndex in session.locations[index].notes.indices where left > 0 {
-                let note = session.locations[index].notes[noteIndex]
-                guard note.isOpen else { continue }
-                let take = min(left, note.required - note.picked)
-                session.locations[index].notes[noteIndex].picked += take
-                left -= take
-            }
-        }
-        settle(reference)
-    }
-
-    func pickAll(_ reference: String, at location: String) {
-        guard let remaining = session(reference)?.locations.first(where: { $0.location == location })?.remaining else { return }
-        pick(reference, at: location, amount: remaining)
-    }
-
-    func setWaiting(_ reference: String, at location: String) {
-        update(reference) { session in
-            guard let index = session.locations.firstIndex(where: { $0.location == location }),
-                  let noteIndex = session.locations[index].notes.firstIndex(where: \.isOpen) else { return }
-            session.locations[index].notes[noteIndex].isWaiting = true
-        }
-        settle(reference)
-    }
-
-    @discardableResult
-    func scanPack(_ reference: String) -> DispatchPackNote? {
-        guard let note = session(reference)?.currentPackNote else { return nil }
-        pack(reference, deliveryNote: note.deliveryNote, amount: 1)
-        return note
-    }
-
-    func pack(_ reference: String, deliveryNote: String, amount: Int) {
-        guard amount > 0 else { return }
-        update(reference) { session in
-            guard session.state == .pickingFinished,
-                  let index = session.packNotes.firstIndex(where: { $0.deliveryNote == deliveryNote }) else { return }
-            let note = session.packNotes[index]
-            session.packNotes[index].packed = min(note.items, note.packed + amount)
-        }
-    }
-
-    func packAll(_ reference: String, deliveryNote: String) {
-        guard let note = session(reference)?.packNotes.first(where: { $0.deliveryNote == deliveryNote }) else { return }
-        pack(reference, deliveryNote: deliveryNote, amount: note.remaining)
     }
 
     func submit(_ report: DispatchProblemReport) {
         reports.append(report)
     }
+}
 
-    private func settle(_ reference: String) {
-        guard let current = sessions.first(where: { $0.reference == reference }) else { return }
-        switch current.state {
-        case .pickingFinished where current.packNotes.isEmpty:
-            update(reference) { session in
-                session.packNotes = session.deliveryNoteLines
-            }
-        case .waiting where current.bay == nil:
-            guard let bayIndex = bays.firstIndex(where: \.isFree) else { return }
-            let waitingNotes = Set(current.allNotes.filter(\.isWaiting).map(\.deliveryNote))
-            var notes: [DispatchBayNote] = []
-            for note in current.allNotes where !notes.contains(where: { $0.deliveryNote == note.deliveryNote }) {
-                notes.append(DispatchBayNote(deliveryNote: note.deliveryNote, isWaiting: waitingNotes.contains(note.deliveryNote)))
-            }
-            bays[bayIndex].notes = notes
-            let bayName = bays[bayIndex].name
-            update(reference) { $0.bay = bayName }
-        default:
-            break
-        }
+struct DispatchListState: Equatable, Sendable {
+    var warehouseID: Int?
+    var isLoading = false
+    var hasLoaded = false
+    var error: String?
+
+    mutating func begin(_ warehouseID: Int) {
+        if self.warehouseID != warehouseID { hasLoaded = false }
+        self.warehouseID = warehouseID
+        isLoading = true
+        error = nil
     }
 
-    private func update(_ reference: String, _ change: (inout DispatchPickingSession) -> Void) {
-        guard let index = sessions.firstIndex(where: { $0.reference == reference }) else { return }
-        change(&sessions[index])
+    mutating func finish() {
+        isLoading = false
+        hasLoaded = true
+    }
+
+    mutating func fail(_ message: String) {
+        isLoading = false
+        error = message
     }
 }

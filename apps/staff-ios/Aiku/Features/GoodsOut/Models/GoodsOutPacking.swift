@@ -47,6 +47,7 @@ struct GoodsOutParcel: Identifiable, Hashable, Sendable {
     var length: Int?
     var width: Int?
     var height: Int?
+    var boxes: Int?
 
     var id: Int { number }
     var title: String { "Parcel \(number)" }
@@ -62,7 +63,13 @@ struct GoodsOutParcel: Identifiable, Hashable, Sendable {
 
     var weightText: String { GoodsOutWeight.text(weightKg) }
 
-    var summary: String { "\(weightText) · \(dimensionsText ?? "dimensions missing")" }
+    var summary: String {
+        var parts = [weightText, dimensionsText ?? "dimensions missing"]
+        if let boxes {
+            parts.append("\(boxes) \(boxes == 1 ? "box" : "boxes")")
+        }
+        return parts.joined(separator: " · ")
+    }
 }
 
 enum GoodsOutBox: String, CaseIterable, Hashable, Sendable {
@@ -122,6 +129,17 @@ struct GoodsOutShipment: Identifiable, Hashable, Sendable {
     var cost: String?
     var source: GoodsOutShipmentSource
     var labelPrinted = false
+    var trackingNumbers: [String] = []
+    var trackingURLs: [String?] = []
+    var isPrintable = false
+    var label: GoodsOutShipmentLabel = .none
+    var canDelete = true
+    var isRemote = false
+
+    func trackingURL(at index: Int) -> URL? {
+        guard trackingURLs.indices.contains(index), let text = trackingURLs[index], !text.isEmpty else { return nil }
+        return URL(string: text)
+    }
 
     var chip: Chip {
         switch source {
@@ -149,9 +167,129 @@ struct GoodsOutShipperOption: Identifiable, Hashable, Sendable {
 struct GoodsOutLeaflet: Identifiable, Hashable, Sendable {
     let id: String
     var isPrinted = false
+    var apiID: Int?
+    var name: String?
+    var copies = 1
+    var stateLabel: String?
+    var canOpenPdf = false
 
-    var title: String { "Leaflet · \(id)" }
-    var chip: Chip { isPrinted ? Chip("Printed", .success) : Chip("Not printed", .warn) }
+    var title: String { name ?? "Leaflet · \(id)" }
+    var chip: Chip { Chip(stateLabel ?? (isPrinted ? "Printed" : "Not printed"), isPrinted ? .success : .warn) }
+    var copiesText: String { "\(copies) \(copies == 1 ? "copy" : "copies") · goes in the parcel" }
+}
+
+enum GoodsOutShipmentLabel: Hashable, Sendable {
+    case none
+    case download
+    case external(URL)
+}
+
+struct GoodsOutLineBox: Hashable, Sendable {
+    var box: Int
+    var quantity: Double
+}
+
+struct GoodsOutLinePacking: Hashable, Sendable {
+    var quantityPicked: Double = 0
+    var quantityPacked: Double = 0
+    var quantityToPack: Double = 0
+    var pickedLabel: String?
+    var packedLabel: String?
+    var toPackLabel: String?
+    var isDonePacking = false
+    var boxes: [GoodsOutLineBox] = []
+    var noteToPackers: String?
+
+    static func text(_ quantity: Double, label: String? = nil) -> String {
+        if let label, !label.isEmpty { return label }
+        if quantity.rounded() == quantity { return String(Int(quantity)) }
+        return quantity.formatted(.number.precision(.fractionLength(0...3)).locale(Locale(identifier: "en_GB")))
+    }
+
+    var packedText: String { Self.text(quantityPacked, label: packedLabel) }
+    var pickedText: String { Self.text(quantityPicked, label: pickedLabel) }
+    var toPackText: String { Self.text(quantityToPack, label: toPackLabel) }
+}
+
+struct GoodsOutShipperDirective: Hashable, Sendable {
+    var lockedShipperID: Int?
+    var preferredShipperID: Int?
+    var lockedBy: String?
+    var canOverrideLock = false
+    var trackingChannel: String?
+
+    var chosenShipperID: Int? { lockedShipperID ?? preferredShipperID }
+    var isLockedByCustomer: Bool { lockedBy == "customer" }
+}
+
+struct GoodsOutShipperChoice: Identifiable, Hashable, Sendable {
+    let id: Int
+    let name: String
+    let isAPI: Bool
+    let needsTracking: Bool
+    let isLockedOut: Bool
+    var code = ""
+
+    var detail: String {
+        if isAPI { return "Creates the label and the tracking number" }
+        return needsTracking ? "No API · tracking number required" : "No API · tracking number optional"
+    }
+
+    var option: GoodsOutShipperOption {
+        GoodsOutShipperOption(id: String(id), title: name, detail: detail, hasAPI: isAPI)
+    }
+}
+
+struct GoodsOutShipperList: Hashable, Sendable {
+    var shippers: [GoodsOutShipperChoice] = []
+    var directive = GoodsOutShipperDirective()
+
+    var available: [GoodsOutShipperChoice] { shippers.filter { !$0.isLockedOut } }
+    var apiShippers: [GoodsOutShipperChoice] { available.filter(\.isAPI) }
+    var manualShippers: [GoodsOutShipperChoice] { available.filter { !$0.isAPI } }
+
+    func badge(for shipper: GoodsOutShipperChoice) -> String? {
+        if shipper.id == directive.lockedShipperID { return "Locked" }
+        if shipper.id == directive.preferredShipperID { return "Preferred" }
+        return nil
+    }
+
+    var lockNotice: (title: String, message: String?)? {
+        guard let lockedID = directive.lockedShipperID, let name = shippers.first(where: { $0.id == lockedID })?.name else { return nil }
+        let title = directive.isLockedByCustomer ? "The customer chose \(name)" : "Shipping rules lock this delivery note to \(name)"
+        return (title, directive.canOverrideLock ? "You can still choose another shipper; you are asked to confirm." : nil)
+    }
+
+    func defaultChoice() -> GoodsOutShipperChoice? {
+        let shown = apiShippers + manualShippers
+        return shown.first { $0.id == directive.chosenShipperID }
+    }
+}
+
+struct GoodsOutNotePackingDetails: Hashable, Sendable {
+    var packerID: Int?
+    var packerName: String?
+    var isEditable = false
+    var parcelsEditable = false
+    var hasBoxPackingList = false
+    var numberBoxes: Int?
+    var missingBoxesMessage: String?
+    var packagingName: String?
+    var insertsLabel: String?
+    var canPrintAllInserts = false
+    var showsInserts = false
+    var canPrintLabels = false
+    var directive = GoodsOutShipperDirective()
+    var isShippingByExternal = false
+    var externalEngine: String?
+    var hasGiftMessage = false
+    var address = GoodsOutAddressForm()
+    var canEditContact = false
+    var editableNotes: Set<String> = []
+    var returnReference: String?
+    var returnStateLabel: String?
+
+    func canEdit(_ field: GoodsOutNoteField) -> Bool { editableNotes.contains(field.rawValue) }
 }
 
 struct GoodsOutPrinter: Identifiable, Hashable, Sendable {
@@ -333,13 +471,31 @@ enum GoodsOutPackScanOutcome: Hashable, Sendable {
 }
 
 extension GoodsOutLine {
-    var packed: Int { packedInto.values.reduce(0, +) }
-    var packRemaining: Int { max(0, picked - packed) }
+    var packed: Int {
+        if let packing { return Int(packing.quantityPacked.rounded()) }
+        return packedInto.values.reduce(0, +)
+    }
+
+    var packRemaining: Int {
+        if let packing { return Int(max(0, packing.quantityToPack).rounded(.up)) }
+        return max(0, picked - packed)
+    }
+
     var isPackable: Bool { picked > 0 }
-    var isFullyPacked: Bool { isPackable && packRemaining == 0 }
+
+    var isFullyPacked: Bool {
+        if let packing { return isPackable && (packing.isDonePacking || packing.quantityToPack <= 0) }
+        return isPackable && packRemaining == 0
+    }
+
     var parcelNumbers: [Int] { packedInto.filter { $0.value > 0 }.keys.sorted() }
 
     var parcelText: String {
+        if let packing {
+            let boxes = packing.boxes.filter { $0.quantity > 0 }.map(\.box).sorted()
+            if boxes.isEmpty { return "\(packing.packedText) of \(packing.pickedText) packed" }
+            return (boxes.count == 1 ? "Box " : "Boxes ") + boxes.map(String.init).joined(separator: ", ")
+        }
         let numbers = parcelNumbers
         guard let first = numbers.first else { return "no parcel yet" }
         if numbers.count == 1 { return "Parcel \(first)" }

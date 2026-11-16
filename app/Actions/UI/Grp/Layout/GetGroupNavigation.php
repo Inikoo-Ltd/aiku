@@ -177,6 +177,14 @@ class GetGroupNavigation
                                 'name' => 'grp.financials.payables.index',
                             ],
                         ],
+                        [
+                            'label' => __('Profit and loss'),
+                            'icon'  => ['fal', 'fa-balance-scale'],
+                            'root'  => 'grp.financials.profit_and_loss.',
+                            'route' => [
+                                'name' => 'grp.financials.profit_and_loss.index',
+                            ],
+                        ],
                     ],
                 ],
             ];

@@ -168,6 +168,7 @@ Route::middleware(
                 }
             });
             Route::get('/cash', [App\Actions\Accounting\BankBalance\UI\ShowCash::class, 'inGroup'])->name('cash.index');
+            Route::get('/profit-and-loss', [App\Actions\Accounting\ProfitAndLoss\UI\ShowProfitAndLoss::class, 'inGroup'])->name('profit_and_loss.index');
             Route::prefix('payables')->name('payables.')->group(function () {
                 Route::get('/', [App\Actions\Accounting\Payables\ShowPayablesDashboard::class, 'inGroup'])->name('index');
                 foreach (array_keys(App\Actions\Accounting\Payables\IndexPayables::sections()) as $section) {

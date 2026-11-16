@@ -6,17 +6,18 @@ struct ScanTabView: View {
     @Environment(ToastCenter.self) private var toasts
     @AppStorage(ScanSettingsKey.inputMode) private var inputMode = ScanInputMode.automatic
     @AppStorage(ScanSettingsKey.vibrate) private var vibrates = true
+    @State private var lookup = ShellScanLookup.live(.shared)
+    @State private var warehouseStore = WarehouseStore.shared
     @State private var isCameraOpen = false
-    @State private var cycle = ShellScanCycle()
+    @State private var isChoosingWarehouse = false
     @State private var lastCode: String?
-    @State private var cameraMissCode: String?
     @State private var typedCode = ""
     @State private var scanCount = 0
     @State private var missCount = 0
     @FocusState private var isTypingCode: Bool
 
     var body: some View {
-        AppScreen(title: lastCode == nil ? "Scan" : "Result", kicker: "Scan · \(session.warehouseLabel)", back: .none, spacing: 16) {
+        AppScreen(title: lookup.outcome == nil ? "Scan" : "Result", kicker: "Scan · \(session.warehouseLabel)", back: .none, spacing: 16) {
             if session.canScan {
                 content
             } else {
@@ -26,10 +27,11 @@ struct ScanTabView: View {
         .fullScreenCover(isPresented: $isCameraOpen) {
             camera
         }
+        .shellWarehouseSheet(isPresented: $isChoosingWarehouse)
         .sensoryFeedback(.success, trigger: scanCount) { _, _ in vibrates }
         .sensoryFeedback(.error, trigger: missCount) { _, _ in vibrates }
         .onAppear {
-            if inputMode == .camera, lastCode == nil, session.canScan {
+            if inputMode == .camera, lookup.outcome == nil, session.canScan {
                 isCameraOpen = true
             }
         }
@@ -37,16 +39,17 @@ struct ScanTabView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let lastCode {
-            if let target = ShellScanCatalog.target(for: lastCode) {
-                ShellScanResultContent(target: target)
-            } else {
-                ShellScanNotFoundCard(code: lastCode) {
-                    isTypingCode = true
-                } onReport: {
-                    report(lastCode)
-                }
+        if warehouseStore.selectedID == nil, lookup.outcome != .needsWarehouse {
+            ShellScanNeedsWarehouse { isChoosingWarehouse = true }
+        }
+        ShellScanOutcomeContent(lookup: lookup) {
+            isTypingCode = true
+        } onRetry: {
+            if let lastCode {
+                look(up: lastCode)
             }
+        } onChooseWarehouse: {
+            isChoosingWarehouse = true
         }
         listeningCard
         typeCodeField
@@ -62,10 +65,10 @@ struct ScanTabView: View {
                 Text(listeningTitle)
                     .font(.aiku(14, .bold))
             }
-            Text("SKO, location, delivery note, pallet. Opens the right screen.")
+            Text("SKO, location or delivery note. Opens the right screen.")
                 .font(.aiku(13))
             AikuButton("Scan with camera", icon: .camera, kind: .primary, size: .regular) {
-                cameraMissCode = nil
+                lookup.clear()
                 isCameraOpen = true
             }
             .accessibilityIdentifier("shell.scan.camera")
@@ -93,7 +96,7 @@ struct ScanTabView: View {
                     .foregroundStyle(AikuColor.text4)
                     .padding(.leading, 14)
                     .accessibilityHidden(true)
-                TextField("SKO, location, delivery note or pallet", text: $typedCode)
+                TextField("SKO, location or delivery note", text: $typedCode)
                     .font(.aiku(15))
                     .foregroundStyle(AikuColor.text)
                     .textInputAutocapitalization(.characters)
@@ -114,41 +117,29 @@ struct ScanTabView: View {
     }
 
     private var camera: some View {
-        CameraScanScreen(
+        ShellScanCameraView(
             kicker: session.warehouseLabel,
-            title: "Scan",
-            hint: "Point at the barcode",
+            lookup: lookup,
+            onCode: scannedWithCamera,
             onClose: { isCameraOpen = false },
             onUseScanner: {
                 inputMode = .scannerDevice
                 isCameraOpen = false
                 toasts.show("Bluetooth scanner selected", tone: .info)
             },
-            onSimulateScan: simulateScan
-        ) {
-            if let cameraMissCode {
-                ShellScanNotFoundCard(code: cameraMissCode) {
-                    isCameraOpen = false
-                    isTypingCode = true
-                } onReport: {
-                    report(cameraMissCode)
-                }
+            onTypeCode: {
+                isCameraOpen = false
+                isTypingCode = true
             }
-        } panel: {
-            HelperText("Tap the viewfinder to scan a sample code.")
-        }
+        )
     }
 
-    private func simulateScan() {
-        let code = cycle.next()
-        if ShellScanCatalog.target(for: code) == nil {
-            cameraMissCode = code
-            missCount += 1
-        } else {
-            cameraMissCode = nil
-            show(code)
-            isCameraOpen = false
+    private func scannedWithCamera(_ rawCode: String) {
+        let code = rawCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        if lookup.outcome == .notFound(code: code), lastCode == code {
+            return
         }
+        look(up: code, closingCamera: true)
     }
 
     private func submitTypedCode() {
@@ -156,20 +147,24 @@ struct ScanTabView: View {
         guard !code.isEmpty else { return }
         isTypingCode = false
         typedCode = ""
-        if ShellScanCatalog.target(for: code) == nil {
-            missCount += 1
-            lastCode = code
-        } else {
-            show(code)
-        }
+        look(up: code)
     }
 
-    private func show(_ code: String) {
+    private func look(up code: String, closingCamera: Bool = false) {
         lastCode = code
-        scanCount += 1
-    }
-
-    private func report(_ code: String) {
-        toasts.show("Reported \(code)")
+        Task {
+            let outcome = await lookup.lookUp(code, warehouseID: warehouseStore.selectedID)
+            switch outcome {
+            case .found:
+                scanCount += 1
+                if closingCamera {
+                    isCameraOpen = false
+                }
+            case .some:
+                missCount += 1
+            case nil:
+                break
+            }
+        }
     }
 }

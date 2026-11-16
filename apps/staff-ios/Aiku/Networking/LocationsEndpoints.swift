@@ -9,6 +9,9 @@ struct MobileWarehouse: Decodable, Sendable, Equatable {
     struct Abilities: Decodable, Sendable, Equatable {
         let viewLocations: Bool
         let editLocations: Bool
+        var viewGoodsOut = false
+        var pickAndPack = false
+        var superviseGoodsOut = false
     }
 
     let id: Int
@@ -16,6 +19,21 @@ struct MobileWarehouse: Decodable, Sendable, Equatable {
     let name: String
     let organisation: Organisation
     let can: Abilities
+}
+
+extension MobileWarehouse.Abilities {
+    private enum CodingKeys: String, CodingKey {
+        case viewLocations, editLocations, viewGoodsOut, pickAndPack, superviseGoodsOut
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        viewLocations = try container.decode(Bool.self, forKey: .viewLocations)
+        editLocations = try container.decode(Bool.self, forKey: .editLocations)
+        viewGoodsOut = try container.decodeIfPresent(Bool.self, forKey: .viewGoodsOut) ?? false
+        pickAndPack = try container.decodeIfPresent(Bool.self, forKey: .pickAndPack) ?? false
+        superviseGoodsOut = try container.decodeIfPresent(Bool.self, forKey: .superviseGoodsOut) ?? false
+    }
 }
 
 struct MobileLocationsOverview: Decodable, Sendable, Equatable {

@@ -25,6 +25,23 @@ struct GoodsOutDeliveryNotesView: View {
                 }
             }
         }
+        .loadsGoodsOut()
+        .task(id: GoodsOutListLoadKey(query: store.listQuery, warehouseID: store.warehouseID, isRemote: store.isRemote)) {
+            guard store.isRemote else { return }
+            if store.listPage > 0 {
+                try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled else { return }
+            }
+            async let counts: Void = store.loadCounts()
+            await store.loadList()
+            await counts
+        }
+        .screenRefreshable {
+            guard store.isRemote else { return }
+            async let counts: Void = store.loadCounts()
+            await store.loadList()
+            await counts
+        }
         .aikuSheet(isPresented: $isFiltering) {
             GoodsOutFilterSheet(store: store, initial: store.listQuery.filter) { filter in
                 store.listQuery.apply(filter)
@@ -58,7 +75,13 @@ struct GoodsOutDeliveryNotesView: View {
             }
         }
         let results = store.listResults
-        if results.isEmpty {
+        if let error = store.listError, results.isEmpty {
+            GoodsOutLoadProblem(title: "Couldn’t load delivery notes", message: error) {
+                Task { await store.loadList() }
+            }
+        } else if store.isRemote, store.isLoadingList, results.isEmpty {
+            GoodsOutSkeletonCard()
+        } else if results.isEmpty {
             EmptyState(
                 icon: .deliveryNote,
                 title: "No delivery notes",
@@ -73,6 +96,16 @@ struct GoodsOutDeliveryNotesView: View {
                     row(note)
                 }
             }
+            if let error = store.listError {
+                GoodsOutLoadProblem(title: "Couldn’t load more delivery notes", message: error) {
+                    Task { await store.loadMoreList() }
+                }
+            } else if store.hasMoreList {
+                AikuButton("Show more", kind: .tertiary, isLoading: store.isLoadingList) {
+                    Task { await store.loadMoreList() }
+                }
+                .accessibilityIdentifier("goodsOut.loadMore")
+            }
         }
         HelperText("The reference is the order reference. Select several To do notes to put them in a picking session.")
     }
@@ -85,7 +118,7 @@ struct GoodsOutDeliveryNotesView: View {
                     Button {
                         store.listQuery.select(tab: state)
                     } label: {
-                        Text(state == .dispatched ? state.title : "\(state.title) \(store.listCount(state))")
+                        Text(state == .dispatched || !store.hasCounts ? state.title : "\(state.title) \(store.listCount(state))")
                             .font(.aiku(13, .semibold))
                             .foregroundStyle(isSelected ? AikuColor.onPrimary : AikuColor.text2)
                             .padding(.horizontal, 12)
@@ -108,9 +141,10 @@ struct GoodsOutDeliveryNotesView: View {
     @ViewBuilder
     private func row(_ note: GoodsOutDeliveryNote) -> some View {
         let subtitle = note.listSubtitle(currentUser: store.currentUser)
-        if note.state == .todo {
+        let chips = rowChips(note)
+        if note.state == .todo, note.remote?.canAddToPickingSession ?? true {
             let isSelected = store.selectedForSession.contains(note.reference)
-            ListRow(note.reference, subtitle: subtitle, chips: [note.state.chip]) {
+            ListRow(note.reference, subtitle: subtitle, chips: chips) {
                 router.open(GoodsOutRoute.deliveryNote(reference: note.reference))
             } trailing: {
                 Button {
@@ -134,10 +168,25 @@ struct GoodsOutDeliveryNotesView: View {
                 .accessibilityLabel(isSelected ? "Deselect \(note.reference)" : "Select \(note.reference) for a picking session")
             }
         } else {
-            ListRow(note.reference, subtitle: subtitle, chips: [note.state.chip]) {
+            ListRow(note.reference, subtitle: subtitle, chips: chips) {
                 router.open(GoodsOutRoute.deliveryNote(reference: note.reference))
             }
         }
+    }
+
+    private func rowChips(_ note: GoodsOutDeliveryNote) -> [Chip] {
+        var chips = [note.state.chip]
+        guard let remote = note.remote else { return chips }
+        if remote.isPriority {
+            chips.append(Chip("Priority", .orange))
+        }
+        if remote.isCustomerVip {
+            chips.append(Chip("VIP", .lime))
+        }
+        if remote.waitingCount > 0 {
+            chips.append(Chip("\(remote.waitingCount) waiting", .warn))
+        }
+        return chips
     }
 
     @ViewBuilder
@@ -150,4 +199,10 @@ struct GoodsOutDeliveryNotesView: View {
         }
         .accessibilityIdentifier("goodsOut.createPickingSession")
     }
+}
+
+struct GoodsOutListLoadKey: Hashable {
+    let query: GoodsOutListQuery
+    let warehouseID: Int?
+    let isRemote: Bool
 }

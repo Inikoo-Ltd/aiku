@@ -10,12 +10,16 @@ struct GoodsOutPickedStateView: View {
             InlineAlert(tone: .danger, icon: .warning, title: "Handling blocked", message: "Set as waiting from the packing queue. A supervisor needs to look at it before packing.")
         }
         Card {
-            ListRow(note.pickedBay ?? "No picked bay", subtitle: "Picked goods are waiting here for packing", icon: .warehouse) {
-                present(.pickedBay(setsPicked: false))
-            } trailing: {
-                Text("Change")
-                    .font(.aiku(14, .semibold))
-                    .foregroundStyle(AikuColor.link)
+            if note.allows(.changePickedBay) {
+                ListRow(note.pickedBay ?? "No picked bay", subtitle: "Picked goods are waiting here for packing", icon: .warehouse) {
+                    present(.pickedBay(setsPicked: false))
+                } trailing: {
+                    Text("Change")
+                        .font(.aiku(14, .semibold))
+                        .foregroundStyle(AikuColor.link)
+                }
+            } else {
+                ListRow(note.pickedBay ?? "No picked bay", subtitle: "Picked goods are waiting here for packing", icon: .warehouse)
             }
             RowDivider()
             ListRow("Packer", subtitle: packerText, icon: .person)
@@ -37,6 +41,14 @@ struct GoodsOutPickedFooter: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
+        if note.isRemote {
+            GoodsOutRemotePackingFooter(note: note)
+        } else {
+            sampleFooter
+        }
+    }
+
+    private var sampleFooter: some View {
         AikuButton("Start packing", icon: .sko) {
             let previous = store.startPacking(note.reference)
             GoodsOutFeedback.done("Packing started for \(note.reference)", previous: previous, toasts: toasts)

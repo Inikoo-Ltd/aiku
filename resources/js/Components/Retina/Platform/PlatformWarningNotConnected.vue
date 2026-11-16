@@ -6,7 +6,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCheck, faTimes, faRedoAlt, faExternalLink, faSpinnerThird, faStoreAltSlash } from '@fal'
 import axios from 'axios'
 import { ctrans } from '@/Composables/useTrans'
-import { Message } from 'primevue'
+import { InputText, Message } from 'primevue'
 import CloseSalesChannel from "@/Components/Retina/Platform/CloseSalesChannel.vue"
 import { router } from '@inertiajs/vue3'
 import { computed, onBeforeUnmount, ref } from "vue";
@@ -20,6 +20,7 @@ const props = defineProps<{
 }>()
 
 const reconnectError = ref<string | null>(null)
+const newStoreUrl = ref('')
 const testResult = ref<{ tone: 'success' | 'info' | 'error', text: string } | null>(null)
 
 // Method: Platform reconnect
@@ -31,7 +32,10 @@ const onClickReconnect = async () => {
         const response = await axios[props.customer_sales_channel.reconnect_route.method || 'get'](
             route(
                 props.customer_sales_channel.reconnect_route.name,
-                props.customer_sales_channel.reconnect_route.parameters
+                {
+                    ...props.customer_sales_channel.reconnect_route.parameters,
+                    ...(newStoreUrl.value.trim() ? { url: newStoreUrl.value.trim() } : {})
+                }
             )
         )
         if (response.status !== 200) {
@@ -46,7 +50,10 @@ const onClickReconnect = async () => {
         }
     } catch (error: any) {
         reconnectTab?.close()
-        reconnectError.value = error.message || ctrans('Something went wrong, please try again later.')
+        reconnectError.value = error.response?.data?.errors?.url?.[0]
+            || error.response?.data?.message
+            || error.message
+            || ctrans('Something went wrong, please try again later.')
     }
 }
 
@@ -169,6 +176,19 @@ const onClickTestConnection = async () => {
                 </Button>
                 <p v-if="reconnectError" class="mt-1 text-xs text-red-600">{{ reconnectError }}</p>
             </div>
+        </div>
+        <div v-if="customer_sales_channel.type === 'woocommerce' && customer_sales_channel?.reconnect_route?.name" class="ml-2 mt-3 font-normal">
+            <label for="woo-new-store-url" class="block text-sm">
+                {{ ctrans('Did your store move to a new address? Type it here, then click Try to reconnect.') }}
+            </label>
+            <InputText
+                id="woo-new-store-url"
+                v-model="newStoreUrl"
+                type="url"
+                size="small"
+                class="mt-1 w-full sm:w-96"
+                :placeholder="customer_sales_channel.store_url || 'https://'"
+            />
         </div>
     </Message>
 

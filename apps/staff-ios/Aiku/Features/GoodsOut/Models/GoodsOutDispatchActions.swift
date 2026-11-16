@@ -165,3 +165,105 @@ extension GoodsOutStore {
         update(reference) { $0.partsPutBack() }
     }
 }
+
+struct GoodsOutWriteResult: Equatable, Sendable {
+    var outcome: GoodsOutActionOutcome
+    var fieldErrors: [String: String] = [:]
+    var warning: String?
+    var status: String?
+    var item: GoodsOutActionItemDTO?
+
+    var isDone: Bool { outcome.isDone }
+
+    var failureMessage: String? {
+        if case .failed(let message) = outcome, !message.isEmpty { return message }
+        return nil
+    }
+}
+
+enum GoodsOutPackScanResult: Equatable, Sendable {
+    case packed(code: String, message: String?, lineDone: Bool)
+    case refused(message: String)
+}
+
+extension GoodsOutStore {
+    func write(_ action: GoodsOutNoteAction, on reference: String) async -> GoodsOutWriteResult {
+        guard isRemote else { return GoodsOutWriteResult(outcome: .failed(message: "Sign in and choose a warehouse to work on delivery notes.")) }
+        guard let id = noteID(for: reference) else { return GoodsOutWriteResult(outcome: .failed(message: "This delivery note is not in the selected warehouse.")) }
+        guard !isWorking(on: reference) else { return GoodsOutWriteResult(outcome: .failed(message: "Still working on the last action.")) }
+        setWorking(reference, true)
+        defer { setWorking(reference, false) }
+        do {
+            let response = try await (service.write ?? service.perform)(id, action)
+            store(response.data)
+            let message = response.result?.message.flatMap(GoodsOutMapper.nonEmpty)
+            return GoodsOutWriteResult(
+                outcome: response.isNothingChanged ? .nothingChanged(message: message) : .done(message: message),
+                warning: response.result?.warning.flatMap(GoodsOutMapper.nonEmpty),
+                status: response.result?.status,
+                item: response.result?.item
+            )
+        } catch let formError as FormValidationError {
+            return GoodsOutWriteResult(outcome: .failed(message: formError.message), fieldErrors: formError.fields)
+        } catch {
+            if error.isCancellation { return GoodsOutWriteResult(outcome: .failed(message: "")) }
+            return GoodsOutWriteResult(outcome: .failed(message: GoodsOutMapper.message(for: error)))
+        }
+    }
+
+    func scanToPack(_ reference: String, barcode: String, quantity: Double? = 1, lineID: Int? = nil) async -> GoodsOutPackScanResult {
+        let code = barcode.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !code.isEmpty else { return .refused(message: "Scan a barcode first.") }
+        let result = await write(.scanPack(barcode: code, quantity: quantity, lineID: lineID), on: reference)
+        if let message = result.failureMessage { return .refused(message: message) }
+        let message = {
+            if case .done(let text) = result.outcome { return text }
+            if case .nothingChanged(let text) = result.outcome { return text }
+            return nil
+        }()
+        let sko = result.item?.code.flatMap(GoodsOutMapper.nonEmpty) ?? code
+        switch result.status {
+        case "packed":
+            return .packed(code: sko, message: message, lineDone: (result.item?.quantityToPack ?? 1) <= 0)
+        case "already_packed":
+            return .refused(message: message ?? "\(sko) is already packed")
+        case "nothing_to_pack":
+            return .refused(message: message ?? "Nothing is left to pack on this delivery note")
+        case "wrong_state":
+            return .refused(message: message ?? "\(reference) is not being packed")
+        default:
+            return .refused(message: message ?? "\(code) is not on this delivery note")
+        }
+    }
+
+    func shipperList(for reference: String) async -> Result<GoodsOutShipperList, GoodsOutProblem> {
+        guard isRemote, let id = noteID(for: reference) else { return .failure(GoodsOutProblem(message: "This delivery note is not in the selected warehouse.")) }
+        guard let shippers = service.shippers else { return .failure(GoodsOutProblem(message: "Shippers can’t be loaded here.")) }
+        do {
+            return .success(GoodsOutMapper.shipperList(try await shippers(id)))
+        } catch where error.isCancellation {
+            return .failure(GoodsOutProblem(message: ""))
+        } catch {
+            return .failure(GoodsOutProblem(message: GoodsOutMapper.message(for: error)))
+        }
+    }
+
+    func download(_ document: GoodsOutDocument, of reference: String, into folder: URL = FileManager.default.temporaryDirectory.appending(path: "aiku-documents")) async -> Result<URL, GoodsOutProblem> {
+        guard isRemote, let id = noteID(for: reference) else { return .failure(GoodsOutProblem(message: "This delivery note is not in the selected warehouse.")) }
+        guard let fetch = service.document else { return .failure(GoodsOutProblem(message: "Documents can’t be opened here.")) }
+        do {
+            let data = try await fetch(id, document)
+            guard data.starts(with: Data("%PDF".utf8)) else {
+                return .failure(GoodsOutProblem(message: "Aiku sent something that is not a PDF."))
+            }
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let file = folder.appending(path: document.fileName(reference: reference))
+            try data.write(to: file, options: .atomic)
+            return .success(file)
+        } catch where error.isCancellation {
+            return .failure(GoodsOutProblem(message: ""))
+        } catch {
+            return .failure(GoodsOutProblem(message: GoodsOutMapper.message(for: error)))
+        }
+    }
+}

@@ -7,6 +7,15 @@ struct GoodsOutPackingStateView: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
+        if note.isRemote {
+            GoodsOutRemotePackingStateView(note: note, present: present)
+        } else {
+            sampleBody
+        }
+    }
+
+    @ViewBuilder
+    private var sampleBody: some View {
         GoodsOutStateStepper(state: note.state)
         if !note.packingMaterials.isEmpty {
             GoodsOutPackerMustAdd(materials: note.packingMaterials)
@@ -77,7 +86,9 @@ struct GoodsOutPackingFooter: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
-        if let blocker = note.packingBlocker {
+        if note.isRemote {
+            GoodsOutRemotePackingFooter(note: note)
+        } else if let blocker = note.packingBlocker {
             GoodsOutFooterStatus(title: blocker, detail: "Pack every line into a parcel and enter its dimensions. Then Set as packed appears.")
         } else {
             AikuButton("Set as packed") {
@@ -89,5 +100,54 @@ struct GoodsOutPackingFooter: View {
             }
             .accessibilityIdentifier("goodsOut.setAsPacked")
         }
+    }
+}
+
+struct GoodsOutRemotePackingStateView: View {
+    let note: GoodsOutDeliveryNote
+    let present: (GoodsOutNoteSheet) -> Void
+    @State private var opener = GoodsOutDocumentOpener()
+    @State private var isScanning = false
+
+    var body: some View {
+        GoodsOutStateStepper(state: note.state)
+        if !note.packingMaterials.isEmpty {
+            GoodsOutPackerMustAdd(materials: note.packingMaterials)
+        }
+        Card {
+            ListRow(note.pickedBay ?? "No picked bay", subtitle: "Picked bay", icon: .warehouse)
+            RowDivider()
+            ListRow("Packer", subtitle: note.packer ?? "No packer yet", icon: .person)
+        }
+        GoodsOutInsertsBlock(note: note, opener: opener)
+        GoodsOutBoxPackingListBlock(note: note, opener: opener)
+        if note.canScanToPack {
+            GoodsOutScanPromptCard(
+                title: "Scan to pack",
+                location: note.nextLineToPack?.sko ?? "Every line is packed",
+                detail: note.nextLineToPack.map { "\($0.packing?.toPackText ?? String($0.packRemaining)) left to pack · tap to open the camera" } ?? "Nothing is left to pack on this delivery note",
+                caption: "Camera or Bluetooth scanner"
+            ) {
+                isScanning = true
+            }
+            .accessibilityIdentifier("goodsOut.scanToPack")
+        }
+        GoodsOutSectionTitle(title: "Lines", detail: note.packedProgress)
+        GoodsOutPackLinesCard(lines: note.packableLines, onTap: note.canPackLines ? { present(.packLine(line: $0.id)) } : nil)
+        if note.packingDetails?.parcelsEditable == true {
+            GoodsOutRemoteParcelsEditor(note: note)
+        } else if !note.parcels.isEmpty {
+            GoodsOutSectionTitle(title: "Parcels (\(note.parcels.count))")
+            GoodsOutParcelsCard(parcels: note.parcels)
+        }
+        if let footNote = note.packingFootNote {
+            HelperText(footNote)
+        }
+        Color.clear
+            .frame(height: 0)
+            .goodsOutDocumentPreview(opener)
+            .fullScreenCover(isPresented: $isScanning) {
+                GoodsOutPackScanScreen(reference: note.reference) { isScanning = false }
+            }
     }
 }

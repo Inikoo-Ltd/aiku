@@ -2,8 +2,18 @@ import SwiftUI
 
 struct GoodsOutFinalisedStateView: View {
     let note: GoodsOutDeliveryNote
+    var present: (GoodsOutNoteSheet) -> Void = { _ in }
 
     var body: some View {
+        if note.isRemote {
+            GoodsOutRemoteShippingStateView(note: note, present: present)
+        } else {
+            sampleBody
+        }
+    }
+
+    @ViewBuilder
+    private var sampleBody: some View {
         GoodsOutStateStepper(state: note.state)
         if note.isCollection {
             GoodsOutSummaryCard(title: "Ready for the customer to collect", detail: "\(note.parcelCountText) · \(note.shippedWeightText)")
@@ -28,6 +38,15 @@ struct GoodsOutFinalisedFooter: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
+        if note.isRemote {
+            GoodsOutRemotePackingFooter(note: note)
+        } else {
+            sampleFooter
+        }
+    }
+
+    @ViewBuilder
+    private var sampleFooter: some View {
         if note.isCollection {
             AikuButton("Set as collected", icon: .check) {
                 let previous = store.dispatch(note.reference)
@@ -56,6 +75,7 @@ struct GoodsOutFinalisedFooter: View {
 struct GoodsOutDispatchedStateView: View {
     @Environment(AppRouter.self) private var router
     let note: GoodsOutDeliveryNote
+    @State private var opener = GoodsOutDocumentOpener()
     private let store = GoodsOutStore.shared
 
     var body: some View {
@@ -81,7 +101,9 @@ struct GoodsOutDispatchedStateView: View {
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
         AikuButton("Next delivery note") {
-            if let next = store.nextNoteToDispatch(after: note.reference) {
+            if note.isRemote {
+                router.replace(with: GoodsOutRoute.deliveryNotes)
+            } else if let next = store.nextNoteToDispatch(after: note.reference) {
                 router.replace(with: GoodsOutRoute.deliveryNote(reference: next.reference))
             } else {
                 router.replace(with: GoodsOutRoute.deliveryNotes)
@@ -91,7 +113,10 @@ struct GoodsOutDispatchedStateView: View {
         AikuButton("Back to the backlog", kind: .tertiary) {
             router.replace(with: GoodsOutRoute.backlog)
         }
-        if !note.emails.isEmpty {
+        if note.isRemote {
+            GoodsOutRemoteShipmentsBlock(note: note, opener: opener)
+                .goodsOutDocumentPreview(opener)
+        } else if !note.emails.isEmpty {
             Card {
                 ListRow("Dispatched emails", subtitle: emailsText, icon: .email, iconTone: .success, showsChevron: true) {
                     router.open(GoodsOutRoute.dispatchedEmails(reference: note.reference))

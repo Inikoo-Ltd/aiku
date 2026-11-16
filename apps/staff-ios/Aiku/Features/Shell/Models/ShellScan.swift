@@ -1,21 +1,16 @@
 import Foundation
+import Observation
 
 enum ShellScanKind: String, Hashable, Sendable {
     case location
     case sko
     case deliveryNote
-    case stockDelivery
-    case pallet
-    case unknown
 
     var article: String {
         switch self {
         case .location: "a location"
         case .sko: "a SKO"
         case .deliveryNote: "a delivery note"
-        case .stockDelivery: "a stock delivery"
-        case .pallet: "a pallet"
-        case .unknown: "unknown"
         }
     }
 
@@ -24,9 +19,6 @@ enum ShellScanKind: String, Hashable, Sendable {
         case .location: .locations
         case .sko: .sko
         case .deliveryNote: .deliveryNote
-        case .stockDelivery: .stockDelivery
-        case .pallet: .pallet
-        case .unknown: .question
         }
     }
 
@@ -35,9 +27,6 @@ enum ShellScanKind: String, Hashable, Sendable {
         case .location: "Open location"
         case .sko: "Open SKO"
         case .deliveryNote: "Open delivery note"
-        case .stockDelivery: "Open stock delivery"
-        case .pallet: "Open pallet"
-        case .unknown: "Type code"
         }
     }
 
@@ -46,17 +35,14 @@ enum ShellScanKind: String, Hashable, Sendable {
         case .location: "Location"
         case .sko: "SKO"
         case .deliveryNote: "Delivery note"
-        case .stockDelivery: "Stock delivery"
-        case .pallet: "Pallet"
-        case .unknown: ""
         }
     }
 }
 
-struct ShellScanAction: Identifiable, Hashable, Sendable {
+struct ShellScanRow: Identifiable, Hashable, Sendable {
     var id: String { title }
     let title: String
-    let icon: AppIcon
+    let detail: String
     let link: ShellLink
 }
 
@@ -64,82 +50,134 @@ struct ShellScanTarget: Hashable, Sendable {
     let code: String
     let kind: ShellScanKind
     let detail: String
-    let link: ShellLink
-    let actions: [ShellScanAction]
+    let link: ShellLink?
+    var rows: [ShellScanRow] = []
 }
 
-struct ShellScanCycle: Hashable, Sendable {
-    static let sampleCodes = ["A-03-02", "SKO-00733", "AR24811", "SDaw-0093", "5060123456789"]
-
-    private(set) var index = 0
-    let codes: [String]
-
-    init(codes: [String] = ShellScanCycle.sampleCodes) {
-        self.codes = codes
-    }
-
-    mutating func next() -> String {
-        let code = codes[index % codes.count]
-        index = (index + 1) % codes.count
-        return code
-    }
+enum ShellScanOutcome: Hashable, Sendable {
+    case found(ShellScanTarget)
+    case notFound(code: String)
+    case failed(code: String, message: String)
+    case needsWarehouse
+    case sessionExpired
 }
 
 enum ShellScanCatalog {
     static let capabilities: [(icon: AppIcon, text: String)] = [
-        (.sko, "SKO barcode → SKO detail"),
+        (.sko, "SKO barcode → SKO and its locations"),
         (.locations, "Location label → Location detail"),
-        (.deliveryNote, "Delivery note → Delivery note detail"),
-        (.stockDelivery, "Stock delivery → Stock delivery detail")
+        (.deliveryNote, "Delivery note or tracking number → Delivery note detail")
     ]
 
-    private static let details: [String: String] = [
-        "A-03-02": "Area A · 6 SKOs · Operational",
-        "A-12-03": "Area A · 4 SKOs · Audit requested",
-        "B-01-04": "Area B · 2 SKOs · Operational",
-        "SKO-00733": "Bath bomb – rose 180g",
-        "SKO-00412": "Lavender essential oil 10ml · 1,240 in stock",
-        "AR24811": "To pick · 14 items · aisle A–C",
-        "AR24790": "To pack · 6 items",
-        "SDAW-0093": "Received · 6 items to check",
-        "ACME-P0231": "Storing · [Customer A] · D-02-01"
-    ]
-
-    static func classify(_ rawCode: String) -> ShellScanKind {
-        let code = rawCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        if code.wholeMatch(of: /[A-Z]-\d{2}-\d{2}/) != nil { return .location }
-        if code.wholeMatch(of: /SKO-\d{3,}/) != nil { return .sko }
-        if code.wholeMatch(of: /AR\d{4,}/) != nil { return .deliveryNote }
-        if code.wholeMatch(of: /SD[A-Z]*-\d{3,}/) != nil { return .stockDelivery }
-        if code.wholeMatch(of: /[A-Z]+-P\d{3,}/) != nil { return .pallet }
-        return .unknown
-    }
-
-    static func target(for rawCode: String) -> ShellScanTarget? {
-        let code = rawCode.trimmingCharacters(in: .whitespacesAndNewlines)
-        let kind = classify(code)
-        let detail = details[code.uppercased()] ?? kind.fallbackDetail
-        switch kind {
-        case .location:
-            let link = ShellLink.locations(.location(code: code.uppercased()))
-            return ShellScanTarget(code: code.uppercased(), kind: kind, detail: detail, link: link, actions: [
-                ShellScanAction(title: "Audit location", icon: .audit, link: link),
-                ShellScanAction(title: "Move SKOs", icon: .transfer, link: link)
-            ])
+    static func target(from result: MobileScanResult) -> ShellScanTarget? {
+        switch result.scanType {
         case .sko:
-            let link = ShellLink.inventory(.sko(reference: code.uppercased()))
-            return ShellScanTarget(code: code.uppercased(), kind: kind, detail: detail, link: link, actions: [
-                ShellScanAction(title: "Audit stock", icon: .audit, link: link),
-                ShellScanAction(title: "Stock history", icon: .history, link: .inventory(.stockHistory))
-            ])
+            return result.sko.map(skoTarget)
+        case .location:
+            return result.location.map(locationTarget)
         case .deliveryNote:
-            return ShellScanTarget(code: code.uppercased(), kind: kind, detail: detail, link: .goodsOut(.deliveryNote(reference: code.uppercased())), actions: [])
-        case .stockDelivery:
-            return ShellScanTarget(code: code, kind: kind, detail: detail, link: .goodsIn(.stockDelivery(reference: code)), actions: [])
-        case .pallet:
-            return ShellScanTarget(code: code.lowercased(), kind: kind, detail: detail, link: .fulfilment(.pallet(reference: code.lowercased())), actions: [])
+            return result.deliveryNote.map(deliveryNoteTarget)
         case .unknown:
             return nil
         }
+    }
+
+    private static func skoTarget(_ sko: MobileScannedSko) -> ShellScanTarget {
+        let name = sko.name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let stock = sko.quantityInLocations.map { "\($0.trimmed) in locations" }
+        let detail = [name?.isEmpty == false ? name : ShellScanKind.sko.fallbackDetail, stock].compactMap { $0 }.joined(separator: " · ")
+        let rows = sko.locations.map { location in
+            ShellScanRow(
+                title: location.code,
+                detail: location.quantity.map { "\($0.trimmed) here" } ?? "Location",
+                link: .locations(.location(code: location.code))
+            )
+        }
+        return ShellScanTarget(code: sko.code, kind: .sko, detail: detail, link: nil, rows: rows)
+    }
+
+    private static func locationTarget(_ location: MobileScannedLocation) -> ShellScanTarget {
+        let area = location.warehouseArea.flatMap { area in
+            [area.name, area.code].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.first { !$0.isEmpty }
+        }
+        let skos = location.numberOrgStocks.map { count in count == 1 ? "1 SKO" : "\(Int(count).grouped) SKOs" }
+        let parts = [area.map { "Area \($0)" }, skos].compactMap { $0 }
+        return ShellScanTarget(
+            code: location.code,
+            kind: .location,
+            detail: parts.isEmpty ? ShellScanKind.location.fallbackDetail : parts.joined(separator: " · "),
+            link: .locations(.location(code: location.code))
+        )
+    }
+
+    private static func deliveryNoteTarget(_ note: MobileScannedDeliveryNote) -> ShellScanTarget {
+        let items = note.numberItems.map { count in count == 1 ? "1 item" : "\(Int(count).grouped) items" }
+        let parts = [note.stateLabel, note.customerName, items].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        return ShellScanTarget(
+            code: note.reference,
+            kind: .deliveryNote,
+            detail: parts.isEmpty ? ShellScanKind.deliveryNote.fallbackDetail : parts.joined(separator: " · "),
+            link: .goodsOut(.deliveryNoteID(id: note.id))
+        )
+    }
+
+    static func problem(_ error: Error) -> String {
+        switch error as? APIError {
+        case .offline: "Scanning needs internet. Check Wi-Fi and try again."
+        case .http(403): "You can’t look codes up in this warehouse."
+        default: error.localizedDescription
+        }
+    }
+}
+
+@MainActor
+@Observable
+final class ShellScanLookup {
+    typealias Service = @Sendable (Int, String) async throws -> MobileScanResult
+
+    private(set) var outcome: ShellScanOutcome?
+    private(set) var lookingUpCode: String?
+
+    @ObservationIgnored private let service: Service
+
+    init(service: @escaping Service) {
+        self.service = service
+    }
+
+    static func live(_ client: APIClient) -> ShellScanLookup {
+        ShellScanLookup { try await client.scan(warehouseID: $0, code: $1) }
+    }
+
+    var isLookingUp: Bool { lookingUpCode != nil }
+
+    @discardableResult
+    func lookUp(_ rawCode: String, warehouseID: Int?) async -> ShellScanOutcome? {
+        let code = rawCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !code.isEmpty, !isLookingUp else { return nil }
+        guard let warehouseID else {
+            outcome = .needsWarehouse
+            return outcome
+        }
+        lookingUpCode = code
+        defer { lookingUpCode = nil }
+        let result: ShellScanOutcome
+        do {
+            let response = try await service(warehouseID, code)
+            result = ShellScanCatalog.target(from: response).map(ShellScanOutcome.found) ?? .notFound(code: response.code.isEmpty ? code : response.code)
+        } catch APIError.unauthorized {
+            result = .sessionExpired
+        } catch APIError.http(statusCode: 404) {
+            result = .notFound(code: code)
+        } catch where error.isCancellation {
+            return nil
+        } catch {
+            result = .failed(code: code, message: ShellScanCatalog.problem(error))
+        }
+        outcome = result
+        return result
+    }
+
+    func clear() {
+        outcome = nil
     }
 }

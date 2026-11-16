@@ -2,13 +2,28 @@ import SwiftUI
 
 struct GoodsOutAskCRMView: View {
     let reference: String
+    var deliveryNoteID: Int?
     @Environment(ToastCenter.self) private var toasts
     @State private var message = ""
     @State private var isAddingTask = false
     @FocusState private var isMessageFocused: Bool
     private let store = GoodsOutStore.shared
 
+    init(reference: String, deliveryNoteID: Int? = nil) {
+        self.reference = reference
+        self.deliveryNoteID = deliveryNoteID
+    }
+
     var body: some View {
+        if let deliveryNoteID {
+            StaffChatView(kind: .deliveryNote, contextID: deliveryNoteID, title: reference)
+        } else {
+            sampleConversation
+        }
+    }
+
+    @ViewBuilder
+    private var sampleConversation: some View {
         if let note = store.note(reference) {
             AppScreen(title: "Ask CRM", kicker: "Delivery note \(note.reference) · \(note.state.title)") {
                 if note.messages.isEmpty, note.tasks.isEmpty {

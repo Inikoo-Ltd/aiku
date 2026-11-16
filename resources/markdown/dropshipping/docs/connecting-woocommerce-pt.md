@@ -87,6 +87,8 @@ Para resolver:
 3. Se continuar a não funcionar, clica em <b>Test Connection</b> para verificar a ligação de novo.
 4. Como último passo, clica em <b>Delete</b> e liga a loja de novo. Os teus produtos e encomendas voltam quando usas o mesmo endereço de loja.
 
+Se a tua loja mudou para um novo endereço web, escreve o novo endereço na caixa por baixo de <b>Try to reconnect</b> antes de clicares. Aprova na tua loja no novo endereço. O teu canal mantém os produtos e encomendas, e a partir daí usamos o novo endereço. Não apagues o canal para ligar o novo endereço como uma loja nova: isso cria um canal vazio.
+
 Se a tua loja continuar a falhar durante muito tempo, deixamos de a verificar. Volta a funcionar quando a reconectas.
 
 <!-- screenshot: o aviso de não ligado num canal WooCommerce com os botões Try to reconnect, Test Connection e Delete -->

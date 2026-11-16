@@ -92,9 +92,9 @@ struct GoodsOutFastPickingView: View {
                     rowID: line.id,
                     open: $open,
                     leadingActions: line.isHandled ? [] : [pickAction(note, line)],
-                    trailingActions: line.isHandled ? [] : [partialAction(line), notPickedAction(note, line)],
+                    trailingActions: line.isHandled ? [] : (allowsNotPicked(note) ? [partialAction(line), notPickedAction(note, line)] : [partialAction(line)]),
                     fullLeading: line.isHandled ? nil : { pickAll(note, line) },
-                    fullTrailing: line.isHandled ? nil : { notPicked(note, line) }
+                    fullTrailing: line.isHandled || !allowsNotPicked(note) ? nil : { notPicked(note, line) }
                 ) {
                     GoodsOutFastPickRow(line: line) {
                         open = nil
@@ -113,8 +113,10 @@ struct GoodsOutFastPickingView: View {
     private func footer(_ note: GoodsOutDeliveryNote) -> some View {
         if note.state == .picking {
             if note.allLinesHandled {
-                AikuButton("All handled · Go to packing") {
-                    if note.channel.skipsPacking || note.hasWaitingLines {
+                AikuButton("All handled · Go to packing", isLoading: store.isWorking(on: note.reference)) {
+                    if note.isRemote {
+                        finishRemote(note)
+                    } else if note.channel.skipsPacking || note.hasWaitingLines {
                         let previous = store.setAsPicked(note.reference, bay: nil)
                         GoodsOutFeedback.done("\(note.reference) set as \(store.note(note.reference)?.state.title.lowercased() ?? "picked")", previous: previous, toasts: toasts)
                         router.replace(with: GoodsOutRoute.deliveryNote(reference: note.reference))
@@ -135,7 +137,29 @@ struct GoodsOutFastPickingView: View {
         }
     }
 
+    private func allowsNotPicked(_ note: GoodsOutDeliveryNote) -> Bool {
+        note.remote?.settings.allowPickerSetNotPicked ?? true
+    }
+
+    private func finishRemote(_ note: GoodsOutDeliveryNote) {
+        let reference = note.reference
+        if note.action(.setAsPicked) != nil {
+            activeSheet = .pickedBay(setsPicked: true)
+        } else if let action = note.action(.putBackIncompleteSets) ?? note.action(.setAsPacked) {
+            let request: GoodsOutNoteAction = action.key == GoodsOutActionKey.setAsPacked.rawValue ? .post("set-as-packed") : .putBackIncompleteSets
+            GoodsOutRun.action(request, on: reference, fallback: action.label, toasts: toasts) {
+                router.replace(with: GoodsOutRoute.deliveryNote(reference: reference))
+            }
+        } else {
+            router.replace(with: GoodsOutRoute.deliveryNote(reference: reference))
+        }
+    }
+
     private func goToPacking(_ note: GoodsOutDeliveryNote) {
+        if note.isRemote {
+            router.replace(with: GoodsOutRoute.deliveryNote(reference: note.reference))
+            return
+        }
         if note.state == .picked {
             store.startPacking(note.reference)
         }
@@ -161,11 +185,19 @@ struct GoodsOutFastPickingView: View {
     }
 
     private func pickAll(_ note: GoodsOutDeliveryNote, _ line: GoodsOutLine) {
+        if let lineID = line.apiID {
+            GoodsOutRun.action(.pickAll(line: lineID, locationOrgStockID: line.defaultStockLocation?.locationOrgStockID), on: note.reference, fallback: "\(line.sko) picked ×\(line.remaining)", toasts: toasts)
+            return
+        }
         let previous = store.pickAll(note.reference, line: line.id)
         GoodsOutFeedback.done("\(line.sko) picked ×\(line.remaining)", previous: previous, toasts: toasts)
     }
 
     private func notPicked(_ note: GoodsOutDeliveryNote, _ line: GoodsOutLine) {
+        if let lineID = line.apiID {
+            GoodsOutRun.action(.notPicked(line: lineID, quantity: nil, reason: .outOfStock, note: nil), on: note.reference, fallback: "\(line.sko) not picked · out of stock", toasts: toasts)
+            return
+        }
         let previous = store.markNotPicked(note.reference, line: line.id, reason: .outOfStock)
         GoodsOutFeedback.done("\(line.sko) not picked · out of stock", tone: .danger, previous: previous, toasts: toasts)
     }

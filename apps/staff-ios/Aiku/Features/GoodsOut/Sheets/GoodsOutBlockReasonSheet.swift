@@ -29,7 +29,12 @@ struct GoodsOutBlockReasonSheet: View {
             AikuTextArea("Note", text: $text, placeholder: "Location empty, check overstock")
             HelperText("When picking finishes with waiting lines, the delivery note moves to Waiting.")
         } footer: {
-            AikuButton("Set as waiting", icon: .pause) {
+            AikuButton("Set as waiting", icon: .pause, isLoading: store.isWorking(on: note.reference)) {
+                if note.isRemote {
+                    guard let action = line.waitingAction(kind: reason == .warehouse ? .warehouse : .crm, note: text) else { return }
+                    GoodsOutRun.action(action, on: note.reference, fallback: "\(line.sko) set as \(reason.chipText.lowercased())", toasts: toasts) { close() }
+                    return
+                }
                 let previous = store.setWaiting(note.reference, line: line.id, reason: reason, note: text)
                 close()
                 GoodsOutFeedback.done("\(line.sko) set as \(reason.chipText.lowercased())", tone: .warn, previous: previous, toasts: toasts)

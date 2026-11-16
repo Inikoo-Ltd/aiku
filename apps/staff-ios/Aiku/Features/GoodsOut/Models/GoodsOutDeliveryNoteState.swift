@@ -46,6 +46,35 @@ enum GoodsOutDeliveryNoteState: String, CaseIterable, Hashable, Sendable {
 
     var isInBacklog: Bool { self != .dispatched && self != .cancelled }
 
+    var apiBucket: String? {
+        switch self {
+        case .todo: "unassigned"
+        case .picking: "handling"
+        case .waiting: "handling_blocked"
+        case .picked: "picked"
+        case .packing: "packing"
+        case .packed: "packed"
+        case .finalised: "finalised"
+        case .dispatched: "dispatched"
+        case .cancelled: nil
+        }
+    }
+
+    init?(apiState: String) {
+        switch apiState {
+        case "unassigned", "queued": self = .todo
+        case "handling": self = .picking
+        case "handling_blocked": self = .waiting
+        case "picked": self = .picked
+        case "packing": self = .packing
+        case "packed": self = .packed
+        case "finalised": self = .finalised
+        case "dispatched": self = .dispatched
+        case "cancelled": self = .cancelled
+        default: return nil
+        }
+    }
+
     static let flow: [GoodsOutDeliveryNoteState] = [.todo, .picking, .picked, .packing, .packed, .finalised, .dispatched]
     static let listTabs: [GoodsOutDeliveryNoteState] = [.todo, .picking, .waiting, .picked, .packing, .packed, .finalised, .dispatched]
     static let backlogColumns: [GoodsOutDeliveryNoteState] = [.todo, .picking, .waiting, .picked, .packing, .packed, .finalised]
@@ -93,6 +122,7 @@ enum GoodsOutChannel: String, CaseIterable, Hashable, Sendable {
     case b2c
     case marketplaces
     case partners
+    case fulfilment
 
     var title: String {
         switch self {
@@ -101,7 +131,24 @@ enum GoodsOutChannel: String, CaseIterable, Hashable, Sendable {
         case .b2c: "B2C"
         case .marketplaces: "Marketplaces"
         case .partners: "Partners"
+        case .fulfilment: "Fulfilment"
         }
+    }
+
+    var apiKey: String {
+        switch self {
+        case .wholesale: "b2b"
+        case .dropshipping: "dropshipping"
+        case .b2c: "b2c"
+        case .marketplaces: "external"
+        case .partners: "partners"
+        case .fulfilment: "fulfilment"
+        }
+    }
+
+    init?(apiKey: String?) {
+        guard let match = Self.allCases.first(where: { $0.apiKey == apiKey }) else { return nil }
+        self = match
     }
 
     var skipsPacking: Bool { self == .dropshipping }

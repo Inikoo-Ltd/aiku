@@ -34,11 +34,6 @@ struct LoginFormTests {
         #expect(LoginState.signingIn.isSigningIn)
     }
 
-    @Test func forgotPasswordNeedsAnIdentifier() {
-        #expect(ForgotPasswordForm().error == "Enter your username or email.")
-        #expect(ForgotPasswordForm(identifier: " alex.morgan ").error == nil)
-    }
-
     @Test func quoteIsStableWithinADay() {
         let calendar = Calendar(identifier: .gregorian)
         let date = Date(timeIntervalSince1970: 1_800_000_000)

@@ -15,6 +15,8 @@ enum GoodsOutNoteSheet: Identifiable, Hashable {
     case printDeliveryNote
     case editAddress
     case cancelNote
+    case packer
+    case editNote(GoodsOutNoteField)
 
     var id: String { String(describing: self) }
 }
@@ -27,15 +29,37 @@ struct GoodsOutDeliveryNoteScreen: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
-        if let note = store.note(reference) {
-            screen(note)
-                .aikuSheet(item: $activeSheet) { sheet in
-                    GoodsOutNoteSheetView(sheet: sheet, reference: note.reference, present: present, close: { activeSheet = nil })
+        Group {
+            if let note = store.note(reference), note.isDetailed {
+                screen(note)
+                    .aikuSheet(item: $activeSheet) { sheet in
+                        GoodsOutNoteSheetView(sheet: sheet, reference: note.reference, present: present, close: { activeSheet = nil })
+                    }
+            } else if store.isRemote, let error = store.noteError(reference: reference) {
+                AppScreen(title: reference, kicker: "Delivery note") {
+                    GoodsOutLoadProblem(title: "Couldn’t load \(reference)", message: error) {
+                        Task { await store.loadNote(reference: reference) }
+                    }
                 }
-        } else {
-            AppScreen(title: reference) {
-                EmptyState(icon: .deliveryNote, title: "Delivery note not found", message: "It may have been removed.")
+            } else if store.isRemote || store.note(reference) != nil {
+                AppScreen(title: reference, kicker: "Delivery note") {
+                    GoodsOutSkeletonCard(rows: 2)
+                    GoodsOutSkeletonCard()
+                }
+            } else {
+                AppScreen(title: reference) {
+                    EmptyState(icon: .deliveryNote, title: "Delivery note not found", message: "It may have been removed.")
+                }
             }
+        }
+        .loadsGoodsOut()
+        .task(id: GoodsOutNoteLoadKey(reference: reference, warehouseID: store.warehouseID, isRemote: store.isRemote)) {
+            guard store.isRemote else { return }
+            await store.loadNote(reference: reference)
+        }
+        .screenRefreshable {
+            guard store.isRemote else { return }
+            await store.loadNote(reference: reference)
         }
     }
 
@@ -61,7 +85,7 @@ struct GoodsOutDeliveryNoteScreen: View {
     }
 
     private func actions(_ note: GoodsOutDeliveryNote) -> [HeaderAction] {
-        guard note.state != .cancelled else { return [] }
+        guard note.state != .cancelled || note.isRemote else { return [] }
         return [HeaderAction(.more, label: "More actions") { GoodsOutMoreActions.present(present) }]
     }
 
@@ -89,6 +113,7 @@ struct GoodsOutDeliveryNoteScreen: View {
 
     @ViewBuilder
     private func content(_ note: GoodsOutDeliveryNote) -> some View {
+        GoodsOutRemoteNotices(note: note)
         switch note.state {
         case .todo:
             GoodsOutTodoStateView(note: note, present: present)
@@ -113,7 +138,7 @@ struct GoodsOutDeliveryNoteScreen: View {
         case .packed:
             GoodsOutPackedStateView(note: note, present: present)
         case .finalised:
-            GoodsOutFinalisedStateView(note: note)
+            GoodsOutFinalisedStateView(note: note, present: present)
         case .dispatched:
             GoodsOutDispatchedStateView(note: note)
         }
@@ -188,6 +213,10 @@ struct GoodsOutNoteSheetView: View {
                 GoodsOutAddressSheet(note: note, close: close)
             case .cancelNote:
                 GoodsOutCancelSheet(note: note, present: present, close: close)
+            case .packer:
+                GoodsOutPackerSheet(note: note, close: close)
+            case .editNote(let field):
+                GoodsOutEditNoteSheet(note: note, field: field, close: close)
             }
         }
     }
@@ -201,5 +230,61 @@ struct GoodsOutNoteSheetView: View {
                 AikuButton("Close", kind: .tertiary, action: close)
             }
         }
+    }
+}
+
+struct GoodsOutNoteLoadKey: Hashable {
+    let reference: String
+    let warehouseID: Int?
+    let isRemote: Bool
+}
+
+struct GoodsOutRemoteNotices: View {
+    let note: GoodsOutDeliveryNote
+
+    var body: some View {
+        if let notice = note.remote?.readOnlyNotice {
+            InlineAlert(tone: .info, title: "Read only", message: notice)
+        }
+        if let warning = note.remote?.warning {
+            InlineAlert(tone: .warn, title: "Warning", message: warning)
+        }
+    }
+}
+
+struct GoodsOutDeliveryNoteByIDScreen: View {
+    let id: Int
+    private let store = GoodsOutStore.shared
+
+    var body: some View {
+        Group {
+            if let reference = loadedReference {
+                GoodsOutDeliveryNoteScreen(reference: reference)
+            } else if let error = store.noteError(id: id) {
+                AppScreen(title: "Delivery note", kicker: "Goods out") {
+                    GoodsOutLoadProblem(title: "Couldn’t load the delivery note", message: error) {
+                        Task { await store.loadNote(id: id) }
+                    }
+                }
+            } else if store.isRemote || store.isLoadingNote(id: id) {
+                AppScreen(title: "Delivery note", kicker: "Goods out") {
+                    GoodsOutSkeletonCard(rows: 2)
+                    GoodsOutSkeletonCard()
+                }
+            } else {
+                AppScreen(title: "Delivery note", kicker: "Goods out") {
+                    EmptyState(icon: .deliveryNote, title: "Sign in to open this delivery note", message: "Delivery notes come from the selected warehouse.")
+                }
+            }
+        }
+        .loadsGoodsOut()
+        .task(id: GoodsOutLoadKey(userID: id, warehouseID: store.warehouseID)) {
+            guard store.isRemote, loadedReference == nil else { return }
+            await store.loadNote(id: id)
+        }
+    }
+
+    private var loadedReference: String? {
+        store.knownIDs.first { $0.value == id }?.key
     }
 }

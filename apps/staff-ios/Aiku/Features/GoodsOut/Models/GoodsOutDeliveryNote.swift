@@ -101,9 +101,25 @@ struct GoodsOutDeliveryNote: Identifiable, Hashable, Sendable {
     var messages: [GoodsOutChatMessage] = []
     var tasks: [GoodsOutTask] = []
     var incompleteSet: GoodsOutIncompleteSet?
+    var apiID: Int?
+    var pickerID: Int?
+    var addressText: String?
+    var remote: GoodsOutRemoteDetails?
+    var packingDetails: GoodsOutNotePackingDetails?
 
     var id: String { reference }
-    var address: String { deliveryAddress.singleLine }
+    var address: String { addressText ?? deliveryAddress.singleLine }
+    var isRemote: Bool { remote != nil }
+    var isDetailed: Bool { remote?.isDetailed ?? true }
+
+    func action(_ key: GoodsOutActionKey) -> GoodsOutAvailableAction? {
+        remote?.actions.first { $0.key == key.rawValue }
+    }
+
+    func allows(_ key: GoodsOutActionKey) -> Bool {
+        guard let remote else { return true }
+        return remote.actions.contains { $0.key == key.rawValue && $0.disabledReason == nil }
+    }
 
     var units: Int { lines.reduce(0) { $0 + $1.required } }
     var pickedUnits: Int { lines.reduce(0) { $0 + $1.picked } }
@@ -126,7 +142,13 @@ struct GoodsOutDeliveryNote: Identifiable, Hashable, Sendable {
     var finishPickingTitle: String { channel.skipsPacking ? "Set as packed" : "Set as picked" }
 
     var undoStep: GoodsOutUndoStep? {
-        switch state {
+        if isRemote {
+            if action(.undoSetAsPicked) != nil { return .setAsPicked }
+            if action(.undoPacking) != nil { return .packing }
+            if action(.unpack) != nil { return .unpack }
+            return nil
+        }
+        return switch state {
         case .picked: .setAsPicked
         case .packing: .packing
         case .packed: .unpack
@@ -136,7 +158,10 @@ struct GoodsOutDeliveryNote: Identifiable, Hashable, Sendable {
     }
 
     func needsTakeOver(by user: String) -> Bool {
-        state == .picking && picker != nil && picker != user
+        if let remote {
+            return state == .picking && !remote.canHandle && action(.takeOver) != nil
+        }
+        return state == .picking && picker != nil && picker != user
     }
 
     func line(_ id: GoodsOutLine.ID) -> GoodsOutLine? {

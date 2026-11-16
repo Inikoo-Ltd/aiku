@@ -87,8 +87,16 @@ struct GoodsOutLine: Identifiable, Hashable, Sendable {
     var locationStock: Int?
     var outcome: GoodsOutLineOutcome?
     var packedInto: [Int: Int] = [:]
+    var apiID: Int?
+    var stockLocations: [GoodsOutStockLocation] = []
+    var pickings: [GoodsOutLinePicking] = []
+    var quantityToPick: Double?
+    var quantityWaitingWarehouse: Double = 0
+    var noteToPickers: String?
+    var barcode: String?
+    var packing: GoodsOutLinePacking?
 
-    var id: String { sko }
+    var id: String { apiID.map { "line-\($0)" } ?? sko }
     var remaining: Int { max(0, required - picked) }
     var isComplete: Bool { remaining == 0 }
     var isHandled: Bool { isComplete || outcome != nil }

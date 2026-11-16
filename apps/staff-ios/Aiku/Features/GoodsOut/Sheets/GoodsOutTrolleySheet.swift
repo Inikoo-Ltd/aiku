@@ -24,7 +24,13 @@ struct GoodsOutTrolleySheet: View {
         let unavailable = choices.filter { !$0.isAvailable }
         SheetScaffold(title: startsPicking ? "Select trolley to start picking" : "Change trolley", subtitle: "Delivery note \(note.reference)") {
             SheetSectionLabel("Available trolleys")
-            if available.isEmpty {
+            if let error = store.resourcesError, choices.isEmpty {
+                GoodsOutLoadProblem(title: "Couldn’t load trolleys", message: error) {
+                    Task { await store.loadTrolleys() }
+                }
+            } else if store.isRemote, store.isLoadingResources, choices.isEmpty {
+                GoodsOutSkeletonCard(rows: 2)
+            } else if available.isEmpty {
                 HelperText("Every trolley is in use.")
             }
             ForEach(available) { choice in
@@ -48,6 +54,9 @@ struct GoodsOutTrolleySheet: View {
                 router.open(DispatchRoute.trolleys)
             }
         } footer: {
+            if store.isRemote {
+                remoteButtons(hasAvailable: !available.isEmpty)
+            } else {
             AikuButton(primaryTitle) {
                 if startsPicking {
                     let previous = store.startPicking(note.reference, trolley: selected)
@@ -60,8 +69,39 @@ struct GoodsOutTrolleySheet: View {
                 }
             }
             .accessibilityIdentifier("goodsOut.confirmTrolley")
+            }
             AikuButton("Cancel", kind: .tertiary, action: close)
         }
+        .task {
+            guard store.isRemote else { return }
+            await store.loadTrolleys()
+            if selected == nil || !store.trolleyChoices(for: note.reference).contains(where: { $0.id == selected && $0.isAvailable }) {
+                let available = store.trolleyChoices(for: note.reference).filter(\.isAvailable)
+                selected = note.trolley.flatMap { code in available.first { $0.id == code }?.id } ?? available.first?.id
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func remoteButtons(hasAvailable: Bool) -> some View {
+        let working = store.isWorking(on: note.reference)
+        if hasAvailable, let selected {
+            AikuButton(startsPicking ? "Start picking with \(selected)" : "Use \(selected)", isLoading: working) {
+                send(store.trolleyID(named: selected), label: selected)
+            }
+            .accessibilityIdentifier("goodsOut.confirmTrolley")
+        }
+        if startsPicking || note.trolley != nil {
+            AikuButton(startsPicking ? "Start without a trolley" : "Remove the trolley", kind: hasAvailable ? .tertiary : .primary, isLoading: working && !hasAvailable) {
+                send(nil, label: nil)
+            }
+        }
+    }
+
+    private func send(_ trolleyID: Int?, label: String?) {
+        let action: GoodsOutNoteAction = startsPicking ? .startPicking(trolleyID: trolleyID) : .changeTrolley(trolleyID: trolleyID)
+        let fallback = startsPicking ? "Picking \(note.reference)\(label.map { " with \($0)" } ?? "")" : "Picking into \(label ?? "no trolley")"
+        GoodsOutRun.action(action, on: note.reference, fallback: fallback, toasts: toasts, onDone: { close() })
     }
 
     private var primaryTitle: String {

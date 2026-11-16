@@ -6,6 +6,15 @@ struct GoodsOutPackedStateView: View {
     let present: (GoodsOutNoteSheet) -> Void
 
     var body: some View {
+        if note.isRemote {
+            GoodsOutRemoteShippingStateView(note: note, present: present)
+        } else {
+            sampleBody
+        }
+    }
+
+    @ViewBuilder
+    private var sampleBody: some View {
         GoodsOutStateStepper(state: note.state)
         if note.isCollection {
             GoodsOutSummaryCard(title: "Collection", detail: "The customer collects it from the warehouse. No shipping, no shipment.", icon: .locations)
@@ -57,6 +66,15 @@ struct GoodsOutPackedFooter: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
+        if note.isRemote {
+            GoodsOutRemotePackingFooter(note: note)
+        } else {
+            sampleFooter
+        }
+    }
+
+    @ViewBuilder
+    private var sampleFooter: some View {
         if note.needsShipment, note.shipments.isEmpty {
             if note.shipsViaPlatform, let platform = note.platform {
                 AikuButton("Get shipment from \(platform)", icon: .deliveryNote) {
@@ -98,5 +116,51 @@ struct GoodsOutPackedFooter: View {
                 .accessibilityIdentifier("goodsOut.finaliseAndDispatch")
             }
         }
+    }
+}
+
+struct GoodsOutRemoteShippingStateView: View {
+    let note: GoodsOutDeliveryNote
+    let present: (GoodsOutNoteSheet) -> Void
+    @State private var opener = GoodsOutDocumentOpener()
+
+    var body: some View {
+        GoodsOutStateStepper(state: note.state)
+        if note.state == .finalised {
+            GoodsOutSummaryCard(
+                title: note.isCollection ? "Ready for the customer to collect" : "Ready to dispatch",
+                detail: [note.shipperTitle, note.parcelCountText, note.shippedWeightText].joined(separator: " · ")
+            )
+        }
+        if note.isCollection {
+            GoodsOutSummaryCard(title: "Collection", detail: "The customer collects it from the warehouse. No shipping, no shipment.", icon: .locations)
+        } else if note.shipments.isEmpty {
+            if note.isShippingByExternal {
+                let engine = note.externalEngine ?? "the platform"
+                GoodsOutSummaryCard(title: "Shipped by \(engine)", detail: "The shipment and its label come from \(engine). If it isn’t there yet, try again in a moment. Then print the label and finalise as usual.", icon: .deliveryNote)
+            } else if note.allows(.addShipment) {
+                Card {
+                    ListRow("No shipment yet", subtitle: "Add a shipment to create the label", icon: .deliveryNote, iconTone: .warn)
+                }
+            }
+        }
+        GoodsOutRemoteShipmentsBlock(note: note, opener: opener)
+        GoodsOutBoxPackingListBlock(note: note, opener: opener)
+        if note.state == .packed, note.packingDetails?.parcelsEditable == true {
+            GoodsOutRemoteParcelsEditor(note: note)
+        } else if !note.parcels.isEmpty {
+            GoodsOutSectionTitle(title: "Parcels (\(note.parcels.count))")
+            GoodsOutParcelsCard(parcels: note.parcels)
+        }
+        if !note.packableLines.isEmpty {
+            GoodsOutSectionTitle(title: "Lines", detail: note.packedProgress)
+            GoodsOutPackLinesCard(lines: note.packableLines, onTap: note.canPackLines ? { present(.packLine(line: $0.id)) } : nil)
+        }
+        if let footNote = note.packingFootNote {
+            HelperText(footNote)
+        }
+        Color.clear
+            .frame(height: 0)
+            .goodsOutDocumentPreview(opener)
     }
 }

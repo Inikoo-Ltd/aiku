@@ -40,9 +40,33 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
     {
         return DB::table('product_has_org_stocks')
             ->join('org_stocks', 'org_stocks.id', '=', 'product_has_org_stocks.org_stock_id')
-            ->selectRaw('greatest(min(floor(org_stocks.quantity_available / product_has_org_stocks.quantity)), 0)')
+            ->selectRaw('greatest(min('.self::wholeProductsSql('org_stocks.quantity_available').'), 0)')
             ->whereColumn('product_has_org_stocks.product_id', 'products.id')
             ->where('product_has_org_stocks.quantity', '>', 0);
+    }
+
+    /**
+     * A product that is 1/n of an SKO stores its ratio rounded to 8 decimals (1/6 as 0.16666667),
+     * so dividing by it falls just short of whole numbers: 13 SKOs gave 77 products, not 78.
+     * When the ratio is 1/n rounded, count with n itself; any other ratio divides as stored.
+     */
+    public static function wholeProducts(float|string $skoQuantity, float|string $productToOrgStockRatio): int
+    {
+        $productsPerSko = round(1 / $productToOrgStockRatio);
+        if ($productsPerSko > 0 && abs(round(1 / $productsPerSko, 8) - $productToOrgStockRatio) < 1e-12) {
+            return intdiv((int) round($skoQuantity * 1000) * (int) $productsPerSko, 1000);
+        }
+
+        return (int) floor($skoQuantity / $productToOrgStockRatio);
+    }
+
+    /** The SQL twin of wholeProducts(); $skoQuantity is a column or a placeholder, used twice. */
+    public static function wholeProductsSql(string $skoQuantity): string
+    {
+        $ratio = 'product_has_org_stocks.quantity';
+
+        return "(case when round(1 / $ratio) > 0 and round(1 / round(1 / $ratio), 8) = $ratio"
+            ." then floor($skoQuantity * round(1 / $ratio)) else floor($skoQuantity / $ratio) end)";
     }
 
     public function getJobUniqueId(Product $product): string
@@ -106,7 +130,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
             $numberOrgStocksChecked++;
 
             if (!$orgStock->is_on_demand) {
-                $quantitiesFromStockedOrgStocks[] = floor($orgStock->quantity_available / $productToOrgStockRatio);
+                $quantitiesFromStockedOrgStocks[] = self::wholeProducts($orgStock->quantity_available, $productToOrgStockRatio);
             }
         }
 
