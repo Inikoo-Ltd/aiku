@@ -154,7 +154,7 @@ Route::middleware(
     Route::prefix("financials")
         ->name("financials.")
         ->group(function () {
-            Route::redirect('/', '/financials/bank-incoming')->name('dashboard');
+            Route::get('/', [App\Actions\Accounting\UI\ShowFinancialsDashboard::class, 'inGroup'])->name('dashboard');
             Route::prefix('bank-incoming')->name('bank_incoming.')->group(function () {
                 Route::get('/', [App\Actions\Accounting\BankTransaction\UI\ShowBankIncomingDashboard::class, 'inGroup'])->name('index');
                 foreach (['customers' => 'customers', 'marketplaces' => 'marketplaces', 'payment-accounts' => 'payment_accounts', 'other' => 'other', 'needs-a-person' => 'needs_person'] as $path => $name) {

@@ -133,10 +133,18 @@ class GetGroupNavigation
                 'icon'    => ['fal', 'fa-file-invoice-dollar'],
                 'root'    => 'grp.financials.',
                 'route'   => [
-                    'name' => 'grp.financials.bank_incoming.index',
+                    'name' => 'grp.financials.dashboard',
                 ],
                 'topMenu' => [
                     'subSections' => [
+                        [
+                            'label' => __('Dashboard'),
+                            'icon'  => ['fal', 'fa-tachometer-alt'],
+                            'root'  => 'grp.financials.dashboard',
+                            'route' => [
+                                'name' => 'grp.financials.dashboard',
+                            ],
+                        ],
                         [
                             'label' => __('Bank incoming'),
                             'icon'  => ['fal', 'fa-university'],
