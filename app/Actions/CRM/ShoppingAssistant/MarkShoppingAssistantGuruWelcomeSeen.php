@@ -11,6 +11,8 @@ namespace App\Actions\CRM\ShoppingAssistant;
 use App\Actions\SysAdmin\User\NotifyUserOnChosenChannels;
 use App\Actions\Tasks\GetAikuAssistant;
 use App\Enums\SysAdmin\User\UserNotificationEnum;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Notifications\ShoppingAssistantGuruRefusedNotification;
 use Illuminate\Support\Facades\Log;
@@ -44,15 +46,36 @@ class MarkShoppingAssistantGuruWelcomeSeen
         }
 
         foreach (GetShoppingAssistantTeamQuestionsForUser::guruOrganisations($user) as $organisation) {
-            $notification = new ShoppingAssistantGuruRefusedNotification($user, $organisation);
-            foreach (StoreShoppingAssistantSalesLead::managersOf($organisation, GetAikuAssistant::run($organisation->group_id)) as $manager) {
-                try {
-                    NotifyUserOnChosenChannels::run($manager, UserNotificationEnum::ASSISTANT_QUESTION, $notification, $notification->title(), $notification->body(), $notification->url());
-                } catch (Throwable $exception) {
-                    Log::warning('Telling manager '.$manager->id.' that a guru refused failed: '.$exception->getMessage());
+            $assistant = GetAikuAssistant::run($organisation->group_id);
+            $managers  = StoreShoppingAssistantSalesLead::managersOf($organisation, $assistant)
+                ->reject(fn (User $manager) => in_array($manager->id, [$user->id, $assistant->id]));
+
+            foreach ($this->notifications($user, $organisation) as $notification) {
+                foreach ($managers as $manager) {
+                    try {
+                        NotifyUserOnChosenChannels::run($manager, UserNotificationEnum::ASSISTANT_QUESTION, $notification, $notification->title(), $notification->body(), $notification->url());
+                    } catch (Throwable $exception) {
+                        Log::warning('Telling manager '.$manager->id.' that a guru refused failed: '.$exception->getMessage());
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * @return array<int, ShoppingAssistantGuruRefusedNotification>
+     */
+    private function notifications(User $user, Organisation $organisation): array
+    {
+        if (in_array($user->id, [data_get($organisation->settings, 'assistant_questions.user_id'), data_get($organisation->settings, 'assistant_questions.backup_user_id')])) {
+            return [new ShoppingAssistantGuruRefusedNotification($user, $organisation)];
+        }
+
+        return $organisation->shops()
+            ->whereRaw("settings->'assistant_questions'->>'user_id' = ?", [(string) $user->id])
+            ->get()
+            ->map(fn (Shop $shop) => new ShoppingAssistantGuruRefusedNotification($user, $organisation, $shop))
+            ->all();
     }
 
     public function rules(): array
