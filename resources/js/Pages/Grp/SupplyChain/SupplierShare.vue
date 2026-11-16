@@ -15,7 +15,6 @@ import SupplierPortalSearch from "@/Components/Procurement/SupplierPortalSearch.
 import SupplierPortalHome, { type PortalSummary } from "@/Components/Procurement/SupplierPortalHome.vue"
 import StockDeliveryFeedbackCards, { type FeedbackCard } from "@/Components/Procurement/StockDeliveryFeedbackCards.vue"
 import Image from "@common/Components/Image.vue"
-import type { Image as ImageProxy } from "@/types/Image"
 import { useColorTheme } from "@/Composables/useStockList"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import { useAppAccentVariables } from "@/Composables/useAppAccent"
@@ -50,7 +49,6 @@ const props = defineProps<{
 	forms?: PortalForms
 	submitted?: string | null
 	group: string
-	group_logo?: ImageProxy | null
 	language: string
 	routes: { send_code: string; verify: string; profile: string; search: string }
 	profile?: PortalProfile
@@ -271,7 +269,6 @@ onMounted(() => {
 					:supplier="supplier"
 					:group="group"
 					:logo="profile?.company_logo"
-					:group-logo="group_logo"
 					:company="company"
 					:agent="agent"
 					:owner="owner"

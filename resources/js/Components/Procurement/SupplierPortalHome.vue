@@ -53,7 +53,6 @@ const props = defineProps<{
 	supplier: { code: string; name: string }
 	group: string
 	logo?: ImageProxy | null
-	groupLogo?: ImageProxy | null
 	company?: Person & { name: string; location: string | null; currency: string | null }
 	agent?: (Person & { name: string }) | null
 	owner?: { name: string | null; email: string | null } | null
@@ -175,18 +174,18 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 				<FontAwesomeIcon icon="fal fa-envelope-open-text" class="hidden text-xl sm:block" :style="{ color: accent.colour }" aria-hidden="true" />
 			</header>
 			<div class="px-5 py-5 sm:px-6" :style="{ backgroundColor: theme.soft }">
-				<div class="flex max-w-3xl flex-col gap-3 text-sm leading-relaxed text-gray-700">
-					<p class="font-semibold text-gray-900">{{ ctrans("Dear :supplier,", { supplier: greetingName }) }}</p>
-					<p>{{ ctrans("Thank you for trading with :group.", { group }) }}</p>
-					<p>{{ welcome[0] }}</p>
-					<p class="border-l-2 pl-3 font-medium text-gray-900" :style="{ borderColor: theme.background }">{{ welcome[1] }}</p>
-				</div>
-				<footer class="mt-4 md:mt-0 flex items-end justify-between gap-4 text-sm">
-					<div>
-						<p class="text-gray-500">{{ ctrans("With warm regards,") }}</p>
-						<p class="mt-1 font-serif text-base italic text-gray-900">{{ ctrans("The :group team", { group }) }}</p>
+				<div class="flex items-start justify-between gap-4">
+					<div class="flex max-w-3xl flex-col gap-3 text-sm leading-relaxed text-gray-700">
+						<p class="font-semibold text-gray-900">{{ ctrans("Dear :supplier,", { supplier: greetingName }) }}</p>
+						<p>{{ ctrans("Thank you for trading with :group.", { group }) }}</p>
+						<p>{{ welcome[0] }}</p>
+						<p class="border-l-2 pl-3 font-medium text-gray-900" :style="{ borderColor: theme.background }">{{ welcome[1] }}</p>
 					</div>
-					<Image v-if="groupLogo" :src="groupLogo" class="flex h-16 md:h-24 w-16 md:w-24 shrink-0 items-center justify-center [&_img]:max-h-full [&_img]:max-w-full [&_img]:object-contain" :alt="group" />
+					<img src="/art/ancient-wisdom-logo.png" class="h-16 w-auto shrink-0 object-contain md:h-24" :alt="group" />
+				</div>
+				<footer class="mt-4 text-sm">
+					<p class="text-gray-500">{{ ctrans("With warm regards,") }}</p>
+					<p class="mt-1 font-serif text-base italic text-gray-900">{{ ctrans("The :group team", { group }) }}</p>
 				</footer>
 			</div>
 		</article>
