@@ -563,6 +563,39 @@ test('remove selected org stocks from a location writes off the stock left in it
         ->and($writeOff->user_id)->toBe($this->user->id);
 })->depends('create warehouse');
 
+test('editing an SKO in a location needs stock edit rights, and a refused edit changes nothing', function (Warehouse $warehouse) {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+    $picking  = StoreLocationOrgStock::make()->action($orgStock, StoreLocation::make()->action($warehouse, Location::factory()->definition()), ['type' => LocationStockTypeEnum::PICKING]);
+    $storing  = StoreLocationOrgStock::make()->action($orgStock, StoreLocation::make()->action($warehouse, Location::factory()->definition()), ['type' => LocationStockTypeEnum::STORING]);
+
+    $user = $this->guest->getUser();
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $reset         = function (array $roles) use ($user) {
+        setPermissionsTeamId($user->group_id);
+        $user->syncRoles($roles);
+        Cache::tags('auth-user:'.$user->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        actingAs($user->refresh());
+    };
+    $url = route('grp.models.location_org_stock.update', ['locationOrgStock' => $storing->id]);
+
+    $reset([RolesEnum::getRoleName('warehouse-viewer', $warehouse)]);
+    $this->patchJson($url, ['type' => LocationStockTypeEnum::PICKING->value, 'notes' => 'Changed by a viewer'])->assertForbidden();
+    expect($storing->refresh()->type)->toBe(LocationStockTypeEnum::STORING)
+        ->and($storing->notes)->not->toBe('Changed by a viewer')
+        ->and($picking->refresh()->type)->toBe(LocationStockTypeEnum::PICKING);
+
+    $reset([RolesEnum::getRoleName('stock-controller', $warehouse)]);
+    $this->patchJson($url, ['type' => LocationStockTypeEnum::PICKING->value, 'notes' => 'Changed by a stock controller'])->assertOk();
+    expect($storing->refresh()->type)->toBe(LocationStockTypeEnum::PICKING)
+        ->and($storing->notes)->toBe('Changed by a stock controller')
+        ->and($picking->refresh()->type)->toBe(LocationStockTypeEnum::STORING);
+
+    $reset($originalRoles);
+})->depends('create warehouse');
+
 test('update location', function ($location) {
     $location = UpdateLocation::make()->action($location, ['code' => 'AE-3']);
     expect($location->code)->toBe('AE-3');
