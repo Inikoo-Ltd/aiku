@@ -23,12 +23,13 @@ import type { PortalForms } from "@/Components/Procurement/SupplierPortalForms.v
 import type { Valuation } from "@/Components/Procurement/AgentSalesValuation.vue"
 import { ctrans } from "@/Composables/useTrans"
 import SupplierPortalPurchaseOrderDialog from "@/Components/Procurement/SupplierPortalPurchaseOrderDialog.vue"
+import SupplierPortalOrderPlan, { type OrderPlan } from "@/Components/Procurement/SupplierPortalOrderPlan.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHeart, faComputerClassic } from "@fas"
-import { faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faEye, faFileSignature, faStar } from "@fal"
+import { faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faEye, faFileSignature, faStar, faCalendarAlt } from "@fal"
 
-library.add(faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic, faEye, faFileSignature, faStar)
+library.add(faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic, faEye, faFileSignature, faStar, faCalendarAlt)
 
 defineOptions({ layout: (_h: unknown, page: unknown) => page })
 
@@ -70,6 +71,7 @@ const props = defineProps<{
 	product_websites_route?: string
 	purchase_order_route?: string
 	agreement?: PortalAgreement | null
+	order_plan?: OrderPlan
 }>()
 
 const code = ref("")
@@ -119,7 +121,7 @@ const initials = (name: string) =>
 		.join("")
 		.toUpperCase()
 
-type Tab = "home" | "sales" | "purchase_orders" | "purchase_order_list" | "products" | "price_changes" | "feedback" | "agreement" | "grow"
+type Tab = "home" | "sales" | "purchase_orders" | "purchase_order_list" | "order_plan" | "products" | "price_changes" | "feedback" | "agreement" | "grow"
 
 const fullWidthTabs: Tab[] = ["purchase_orders", "purchase_order_list"]
 
@@ -128,6 +130,7 @@ const menu = computed<{ key: Tab; label: string; icon: string; shortcut?: boolea
 	{ key: "sales", label: ctrans("Sales"), icon: "fal fa-chart-line" },
 	{ key: "purchase_orders", label: ctrans("Purchase orders"), icon: "fal fa-clipboard" },
 	{ key: "purchase_order_list", label: ctrans("Purchase order list"), icon: "fal fa-list", shortcut: true },
+	{ key: "order_plan", label: ctrans("Plan for next orders"), icon: "fal fa-calendar-alt" },
 	{ key: "products", label: ctrans("Products"), icon: "fal fa-box" },
 	{ key: "price_changes", label: ctrans("Price changes"), icon: "fal fa-tags" },
 	{ key: "feedback", label: ctrans("Delivery feedback"), icon: "fal fa-star" },
@@ -294,6 +297,8 @@ onMounted(() => {
 					<p class="px-4 pt-4 text-sm text-gray-500">{{ ctrans("Every order we sent you. Open orders show the labels to print.") }}</p>
 					<TableSupplierPortalPurchaseOrders v-if="purchase_orders" :data="purchase_orders" tab="purchase_orders" @open="openPurchaseOrderId = $event" />
 				</div>
+
+				<SupplierPortalOrderPlan v-else-if="tab === 'order_plan'" :plan="order_plan" :accent="accent" />
 
 				<SupplierPortalPriceChanges
 					v-else-if="tab === 'price_changes' && price_changes && forms"
