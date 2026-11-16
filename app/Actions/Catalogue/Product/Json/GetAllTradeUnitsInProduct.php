@@ -42,7 +42,18 @@ class GetAllTradeUnitsInProduct extends OrgAction
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->where('trade_units.group_id', $product->group_id);
-        $queryBuilder->where('status', TradeUnitStatusEnum::ACTIVE);
+        $queryBuilder->where(function ($query) {
+            $query->where('trade_units.status', TradeUnitStatusEnum::ACTIVE)
+                ->orWhere(function ($query) {
+                    $query->where('trade_units.status', TradeUnitStatusEnum::IN_PROCESS)
+                        ->whereExists(function ($query) {
+                            $query->select(DB::raw(1))
+                                ->from('model_has_trade_units as org_stock_links')
+                                ->whereColumn('org_stock_links.trade_unit_id', 'trade_units.id')
+                                ->where('org_stock_links.model_type', 'OrgStock');
+                        });
+                });
+        });
 
         return $queryBuilder
             ->defaultSort('trade_units.code')

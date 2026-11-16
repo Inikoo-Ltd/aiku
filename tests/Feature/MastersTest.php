@@ -190,6 +190,24 @@ test('JSON Get All Trade Units in Master Product Category', function () {
     ]);
 });
 
+test('all trade units picker lists new trade units still in process that have an SKO, not stockless or discontinued ones, HELP-4718', function () {
+    $prefix       = 'H4718'.strtoupper(substr(uniqid(), -5));
+    $orgStock     = createOrgStocks($this->organisation, createStocks($this->group))[0];
+    $inProcess    = StoreTradeUnit::make()->action($this->group, array_merge(TradeUnit::factory()->definition(), ['code' => $prefix.'-01']));
+    $discontinued = StoreTradeUnit::make()->action($this->group, array_merge(TradeUnit::factory()->definition(), ['code' => $prefix.'-02']));
+    $stockless    = StoreTradeUnit::make()->action($this->group, array_merge(TradeUnit::factory()->definition(), ['code' => $prefix.'-03']));
+    $inProcess->update(['status' => \App\Enums\Goods\TradeUnit\TradeUnitStatusEnum::IN_PROCESS]);
+    $stockless->update(['status' => \App\Enums\Goods\TradeUnit\TradeUnitStatusEnum::IN_PROCESS]);
+    $discontinued->update(['status' => \App\Enums\Goods\TradeUnit\TradeUnitStatusEnum::DISCONTINUED]);
+    $inProcess->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+    $discontinued->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+
+    $codes = collect(getJson(route('grp.json.master_product_category.all_trade_units', ['filter' => ['global' => $prefix]]))
+        ->assertSuccessful()->json('data'))->pluck('code');
+
+    expect($codes->all())->toBe([$prefix.'-01']);
+});
+
 test('JSON Get Recommended Trade Units in Master Product Category', function () {
     $masterProductCategory = ensureMasterProductCategory();
 
