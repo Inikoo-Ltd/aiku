@@ -11,22 +11,30 @@ namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierUnitEnum;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\Procurement\PurchaseOrderDepositPayment;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierShareLink;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * One purchase order sent to the supplier, as the supplier sees it: what the order document it received already says
  * (products, quantities, its own prices, terms) and how far the order is up to hand over. Who placed it, our costs,
- * extra costs, notes, deliveries and containers stay out.
+ * extra costs, notes, deliveries and containers stay out. The supplier sees the money paid to it for the order, by
+ * the buyer (deposit payments) or by the agent from its ledger: a ledger entry typed deposit or balance is that, any
+ * other payment is the deposit when it is the first and the balance after it, and sets its own production dates while the order is open.
  */
 class ShowSupplierPortalPurchaseOrder
 {
@@ -43,7 +51,7 @@ class ShowSupplierPortalPurchaseOrder
     ];
 
     /**
-     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, lines: list<array<string, mixed>>}
+     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, payments: array<string, mixed>, production: array<string, mixed>, lines: list<array<string, mixed>>}
      */
     public function handle(Supplier $supplier, int $purchaseOrderId): array
     {
@@ -81,8 +89,114 @@ class ShowSupplierPortalPurchaseOrder
                     ? collect(PdfPurchaseOrderLabels::LEVELS)->mapWithKeys(fn (string $level) => [$level => PdfPurchaseOrderLabels::make()->url($purchaseOrder, [$level])])->all()
                     : null,
             ],
-            'journey' => IndexSupplierPortalPurchaseOrderStages::make()->forPurchaseOrder($supplier, $purchaseOrder->id),
-            'lines'   => $lines->map(fn (PurchaseOrderTransaction $line) => $this->line($line, $purchaseOrder))->values()->all(),
+            'journey'    => IndexSupplierPortalPurchaseOrderStages::make()->forPurchaseOrder($supplier, $purchaseOrder->id),
+            'payments'   => $this->payments($purchaseOrder),
+            'production' => $this->production($purchaseOrder),
+            'lines'      => $lines->map(fn (PurchaseOrderTransaction $line) => $this->line($line, $purchaseOrder))->values()->all(),
+        ];
+    }
+
+    /**
+     * @return array{currency_code: string, total: float, paid: float, left: float, deposit_paid_at: mixed, balance_paid_at: mixed, deposit: list<array<string, mixed>>, balance: list<array<string, mixed>>}
+     */
+    private function payments(PurchaseOrder $purchaseOrder): array
+    {
+        $payments = $this->buyerPayments($purchaseOrder)
+            ->concat($purchaseOrder->isAgentOrder() ? $this->agentPayments($purchaseOrder) : [])
+            ->sortBy([['date', 'asc'], ['sort', 'asc']])
+            ->values();
+
+        $total = round((float) $purchaseOrder->cost_items, 2);
+        $paid  = round((float) $payments->sum('amount'), 2);
+
+        $isDeposit = fn (array $payment, int $index) => match ($payment['type']) {
+            AgentPaymentTypeEnum::SUPPLIER_DEPOSIT->value => true,
+            AgentPaymentTypeEnum::SUPPLIER_BALANCE->value => false,
+            default                                       => $index === 0,
+        };
+        [$deposit, $balance] = $payments->partition($isDeposit);
+
+        $present = fn (Collection $rows) => $rows->map(fn (array $payment) => Arr::except($payment, ['type', 'sort']))->values()->all();
+
+        return [
+            'currency_code'   => $purchaseOrder->currency->code,
+            'total'           => $total,
+            'paid'            => $paid,
+            'left'            => max(0, round($total - $paid, 2)),
+            'deposit_paid_at' => $purchaseOrder->deposit_paid_at,
+            'balance_paid_at' => $purchaseOrder->balance_paid_at,
+            'deposit'         => $present($deposit),
+            'balance'         => $present($balance),
+        ];
+    }
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function buyerPayments(PurchaseOrder $purchaseOrder): Collection
+    {
+        return $purchaseOrder->depositPayments()
+            ->with('originalCurrency:id,code')
+            ->get()
+            ->map(fn (PurchaseOrderDepositPayment $payment) => [
+                'type'                   => null,
+                'sort'                   => $payment->id,
+                'date'                   => $payment->date->toDateString(),
+                'amount'                 => round((float) $payment->amount, 2),
+                'original_amount'        => $payment->original_amount !== null ? round((float) $payment->original_amount, 2) : null,
+                'original_currency_code' => $payment->originalCurrency?->code,
+                'reference'              => $payment->reference,
+                'paid_by'                => $purchaseOrder->organisation->name,
+            ]);
+    }
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function agentPayments(PurchaseOrder $purchaseOrder): Collection
+    {
+        return DB::table('agent_payments')
+            ->leftJoin('currencies as original_currencies', 'original_currencies.id', 'agent_payments.original_currency_id')
+            ->where('agent_payments.purchase_order_id', $purchaseOrder->id)
+            ->whereIn('agent_payments.type', AgentPaymentTypeEnum::supplierPaymentValues())
+            ->whereNull('agent_payments.deleted_at')
+            ->whereNotNull('agent_payments.date')
+            ->get(['agent_payments.id', 'agent_payments.type', 'agent_payments.date', 'agent_payments.amount', 'agent_payments.original_amount', 'original_currencies.code as original_currency_code', 'agent_payments.reference'])
+            ->map(fn (object $payment) => [
+                'type'                   => $payment->type,
+                'sort'                   => $payment->id,
+                'date'                   => substr((string) $payment->date, 0, 10),
+                'amount'                 => round((float) $payment->amount, 2),
+                'original_amount'        => $payment->original_amount !== null ? round((float) $payment->original_amount, 2) : null,
+                'original_currency_code' => $payment->original_currency_code,
+                'reference'              => $payment->reference,
+                'paid_by'                => $purchaseOrder->agent?->organisation?->name,
+            ]);
+    }
+
+    /**
+     * The supplier's own production dates. It records them once the terms are agreed, until the goods are handed over.
+     *
+     * @return array{started_at: mixed, expected_finish_at: string|null, editable: bool, blocked: string|null}
+     */
+    public function production(PurchaseOrder $purchaseOrder): array
+    {
+        $open    = in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true);
+        $blocked = null;
+        if ($open) {
+            $stages  = GetPurchaseOrderStages::run($purchaseOrder);
+            $blocked = match (true) {
+                $purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED => __('Production can be set once the order is agreed.'),
+                $stages[PurchaseOrderStageEnum::HANDED_OVER->value]['reached'] ?? false => __('The goods are handed over.'),
+                default => null,
+            };
+        }
+
+        return [
+            'started_at'         => $purchaseOrder->production_started_at,
+            'expected_finish_at' => Arr::get($purchaseOrder->data ?? [], 'estimated_production_date'),
+            'editable'           => $open && $blocked === null,
+            'blocked'            => $blocked,
         ];
     }
 
