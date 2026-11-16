@@ -100,6 +100,7 @@ class IndexSuppliers extends OrgAction
             'type' => [
                 'label'    => __('Type'),
                 'elements' => $elements,
+                'default'  => implode(',', array_diff(array_keys($elements), ['archived'])),
                 'engine'   => function ($query, $elements) {
                     $query->where(function ($query) use ($elements) {
                         foreach ($elements as $element) {
@@ -175,7 +176,8 @@ class IndexSuppliers extends OrgAction
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
-                prefix: $prefix
+                prefix: $prefix,
+                default: $elementGroup['default'] ?? null
             );
         }
 
@@ -228,7 +230,8 @@ class IndexSuppliers extends OrgAction
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null
                 );
             }
 
