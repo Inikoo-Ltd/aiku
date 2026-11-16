@@ -23,12 +23,14 @@ class SyncShopGoogleMerchantCostOfGoodsSold
 {
     use AsAction;
 
-    public string $commandSignature = 'google-merchant:sync-cogs {shop? : The shop slug, every connected shop if omitted}';
+    public string $commandSignature = 'google-merchant:sync-cogs {shop? : The shop slug, every connected shop if omitted} {--product=* : Only these product codes, for testing}';
 
     /**
+     * @param array<int, string> $productCodes
+     *
      * @return array{sent: int, unchanged: int, no_cost: int, failed: int, error: string|null}
      */
-    public function handle(Shop $shop): array
+    public function handle(Shop $shop, array $productCodes = []): array
     {
         $client = GoogleMerchantClient::forShop($shop);
 
@@ -47,7 +49,14 @@ class SyncShopGoogleMerchantCostOfGoodsSold
         $result = ['sent' => 0, 'unchanged' => 0, 'no_cost' => 0, 'failed' => 0, 'error' => null];
         $rates  = [];
 
-        foreach ($client->products() as $merchantProduct) {
+        $merchantProducts = $client->products();
+
+        if ($productCodes) {
+            $productCodes     = array_map('strtolower', $productCodes);
+            $merchantProducts = array_filter($merchantProducts, fn (array $merchantProduct) => in_array(strtolower($merchantProduct['offerId']), $productCodes, true));
+        }
+
+        foreach ($merchantProducts as $merchantProduct) {
             $cost         = $costs->get(strtolower($merchantProduct['offerId']));
             $currencyCode = data_get($merchantProduct, 'productAttributes.price.currencyCode', $shop->currency->code);
 
@@ -123,7 +132,7 @@ class SyncShopGoogleMerchantCostOfGoodsSold
 
         foreach ($shops as $shop) {
             try {
-                $result = $this->handle($shop);
+                $result = $this->handle($shop, $command->option('product'));
                 $command->info("$shop->slug: sent {$result['sent']}, unchanged {$result['unchanged']}, without cost {$result['no_cost']}, failed {$result['failed']}");
             } catch (Throwable $exception) {
                 Sentry::captureException($exception);
