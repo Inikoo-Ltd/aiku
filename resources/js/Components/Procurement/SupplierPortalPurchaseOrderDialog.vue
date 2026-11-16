@@ -326,21 +326,22 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 						</div>
 
 						<div v-else-if="stage.key === 'ready'" class="mt-2 text-xs">
-							<div class="mb-1 font-semibold text-gray-500">{{ ctrans("Balance") }}</div>
-							<ul v-if="detail.payments.balance.length" class="space-y-1.5">
-								<li v-for="(payment, paymentIndex) in detail.payments.balance" :key="paymentIndex">
-									<div class="flex justify-between gap-2">
-										<span class="tabular-nums text-gray-700">{{ day(payment.date) }}</span>
-										<span class="whitespace-nowrap font-medium tabular-nums text-gray-900">{{ money(payment.amount) }}</span>
-									</div>
-									<div v-if="payment.original_amount !== null && payment.original_currency_code" class="text-right tabular-nums text-gray-400">
-										{{ locale.currencyFormat(payment.original_currency_code, payment.original_amount) }}
-									</div>
-									<div class="break-words text-gray-500">{{ payment.paid_by }}<template v-if="payment.reference"> · {{ payment.reference }}</template></div>
-								</li>
-							</ul>
-							<p v-else class="text-gray-400">{{ ctrans("No balance paid yet") }}</p>
-							<dl class="mt-2 space-y-0.5 border-t border-gray-200 pt-1.5">
+							<template v-if="detail.payments.balance.length">
+								<div class="mb-1 font-semibold text-gray-500">{{ ctrans("Balance") }}</div>
+								<ul class="space-y-1.5">
+									<li v-for="(payment, paymentIndex) in detail.payments.balance" :key="paymentIndex">
+										<div class="flex justify-between gap-2">
+											<span class="tabular-nums text-gray-700">{{ day(payment.date) }}</span>
+											<span class="whitespace-nowrap font-medium tabular-nums text-gray-900">{{ money(payment.amount) }}</span>
+										</div>
+										<div v-if="payment.original_amount !== null && payment.original_currency_code" class="text-right tabular-nums text-gray-400">
+											{{ locale.currencyFormat(payment.original_currency_code, payment.original_amount) }}
+										</div>
+										<div class="break-words text-gray-500">{{ payment.paid_by }}<template v-if="payment.reference"> · {{ payment.reference }}</template></div>
+									</li>
+								</ul>
+							</template>
+							<dl class="space-y-0.5" :class="detail.payments.balance.length ? 'mt-2 border-t border-gray-200 pt-1.5' : ''">
 								<div class="flex justify-between gap-2">
 									<dt class="text-gray-500">{{ ctrans("Paid") }}</dt>
 									<dd class="whitespace-nowrap tabular-nums text-gray-700">{{ money(detail.payments.paid) }} / {{ money(detail.payments.total) }}</dd>
