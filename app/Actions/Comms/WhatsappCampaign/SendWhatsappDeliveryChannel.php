@@ -185,6 +185,15 @@ class SendWhatsappDeliveryChannel
             return;
         }
 
+        if ($this->isWhatsappSendHeldLocally('newsletter', [
+            'whatsapp_campaign_id'  => $campaign->id,
+            'whatsapp_recipient_id' => $recipient->id,
+            'template'              => $template->name,
+            'message_text'          => $messageText,
+        ])) {
+            return;
+        }
+
         $send = fn () => Http::withToken($accessToken)->post(
             $this->whatsappEndpoint($phoneNumberId.'/marketing_messages'),
             $built['payload'] + ['recipient_type' => 'individual']

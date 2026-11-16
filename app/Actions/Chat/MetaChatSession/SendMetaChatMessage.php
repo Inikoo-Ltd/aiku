@@ -275,6 +275,19 @@ class SendMetaChatMessage
             $payload['context'] = ['message_id' => $repliedTo->meta_message_id];
         }
 
+        if ($this->isWhatsappSendHeldLocally('chat message', [
+            'meta_chat_session_id' => $metaChatSession->id,
+            'agent_id'             => $agent->id,
+            'type'                 => $payload['type'] ?? null,
+            'message_text'         => $messageText,
+        ])) {
+            return [
+                'ok'      => false,
+                'message' => __('WhatsApp messages are not sent from a local environment.'),
+                'code'    => 422,
+            ];
+        }
+
         $response = Http::withToken($accessToken)->post(
             $this->whatsappEndpoint($phoneNumberId.'/messages'),
             $payload

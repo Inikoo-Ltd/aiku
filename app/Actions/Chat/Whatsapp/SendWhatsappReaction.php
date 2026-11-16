@@ -88,6 +88,17 @@ class SendWhatsappReaction
             ->where('emoji', $emoji)
             ->exists();
 
+        if ($this->isWhatsappSendHeldLocally('reaction', [
+            'meta_chat_message_id' => $metaChatMessage->id,
+            'emoji'                => $emoji,
+        ])) {
+            return [
+                'ok'      => false,
+                'message' => __('WhatsApp messages are not sent from a local environment.'),
+                'code'    => 422,
+            ];
+        }
+
         $response = Http::withToken($accessToken)->post($this->whatsappEndpoint($phoneNumberId.'/messages'), [
             'messaging_product' => 'whatsapp',
             'recipient_type'    => 'individual',

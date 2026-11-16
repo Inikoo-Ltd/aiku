@@ -1510,6 +1510,65 @@ test('an order confirmation goes out on WhatsApp from its own WhatsApp outbox, w
         && Arr::get($request->data(), 'template.components.0.parameters.1.text') === $order->reference);
 });
 
+test('a WhatsApp customer notification is never sent from a local environment', function () {
+    [, , $shop] = createOwnShop('whatsapp-outboxes');
+    [$whatsappOutbox, , $customer] = whatsappOutboxTestSetup($shop);
+    [, $product] = createProduct($shop);
+    $order = createOrder($customer, $product);
+    \App\Actions\CRM\CustomerComms\UpdateCustomerComms::run($customer->comms, ['is_subscribed_to_whatsapp_notifications' => true]);
+
+    Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.LOCAL']]])]);
+
+    $originalEnvironment = app()['env'];
+    app()['env'] = 'local';
+
+    try {
+        $message = \App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp::run($customer->fresh(), \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_CONFIRMATION, $order);
+    } finally {
+        app()['env'] = $originalEnvironment;
+    }
+
+    expect($message)->toBeNull()
+        ->and($whatsappOutbox->fresh()->last_sent_at)->toBeNull();
+
+    Http::assertNotSent(fn ($request) => str_ends_with($request->url(), '/messages'));
+});
+
+test('an agent chat message and a chat greeting are never sent to WhatsApp from a local environment', function () {
+    [, , $shop] = createOwnShop('whatsapp-local-chat');
+    [, $outboxTemplate, $customer] = whatsappOutboxTestSetup($shop);
+
+    $freeTemplate = $outboxTemplate->replicate()->fill([
+        'template_id' => 'free-'.Str::random(10),
+        'name'        => 'free_template_'.Str::lower(Str::random(6)),
+    ]);
+    $freeTemplate->save();
+
+    $agent   = ChatAgent::where('user_id', $this->user->id)->first() ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+    $session = StoreMetaChatSession::run(['shop_id' => $shop->id, 'customer_id' => $customer->id]);
+    $session->update(['last_visitor_message_at' => now()]);
+
+    Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.LOCAL']]])]);
+
+    $originalEnvironment = app()['env'];
+    app()['env'] = 'local';
+
+    try {
+        $chatResult = \App\Actions\Chat\MetaChatSession\SendMetaChatMessage::make()->handle($session, $agent, ['template_id' => $freeTemplate->id]);
+        $greeted    = \App\Actions\Chat\MetaChatSession\SendMetaChatGreeting::run($session->fresh());
+    } finally {
+        app()['env'] = $originalEnvironment;
+    }
+
+    expect($chatResult['ok'])->toBeFalse()
+        ->and($chatResult['message'])->toBe('WhatsApp messages are not sent from a local environment.')
+        ->and($greeted)->toBeFalse()
+        ->and(data_get($session->fresh()->metadata, 'greeted_at'))->toBeNull()
+        ->and($session->messages()->where('sender_type', ChatSenderTypeEnum::AGENT)->exists())->toBeFalse();
+
+    Http::assertNotSent(fn ($request) => str_ends_with($request->url(), '/messages'));
+});
+
 test('a suspended WhatsApp outbox sends nothing, and one cannot be activated with a marketing template', function () {
     [, , $shop] = createOwnShop('whatsapp-outboxes');
     [$whatsappOutbox, , $customer] = whatsappOutboxTestSetup($shop, 'MARKETING');

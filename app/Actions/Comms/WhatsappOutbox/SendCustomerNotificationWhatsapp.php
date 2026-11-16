@@ -142,6 +142,16 @@ class SendCustomerNotificationWhatsapp
             return $this->recordFailure($session, $whatsappOutbox, $template, $order, $messageText, $built['message']);
         }
 
+        if ($this->isWhatsappSendHeldLocally('customer notification', [
+            'whatsapp_outbox_id' => $whatsappOutbox->id,
+            'customer_id'        => $customer->id,
+            'order_id'           => $order?->id,
+            'template'           => $template->name,
+            'message_text'       => $messageText,
+        ])) {
+            return null;
+        }
+
         $send = fn () => Http::withToken($accessToken)->post(
             $this->whatsappEndpoint($phoneNumberId.'/messages'),
             $built['payload'] + ['recipient_type' => 'individual']
