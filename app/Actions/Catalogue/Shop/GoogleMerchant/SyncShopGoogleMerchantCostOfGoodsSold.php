@@ -23,14 +23,15 @@ class SyncShopGoogleMerchantCostOfGoodsSold
 {
     use AsAction;
 
-    public string $commandSignature = 'google-merchant:sync-cogs {shop? : The shop slug, every connected shop if omitted} {--product=* : Only these product codes, for testing}';
+    public string $commandSignature = 'google-merchant:sync-cogs {shop? : The shop slug, every connected shop if omitted} {--product=* : Only these product codes, for testing} {--register-with= : Register the Google Cloud project with this Merchant Center account instead, the advanced account when the shop account is its sub-account}';
 
     /**
      * @param array<int, string> $productCodes
+     * @param string|null         $registrationAccountId
      *
      * @return array{sent: int, unchanged: int, no_cost: int, failed: int, error: string|null}
      */
-    public function handle(Shop $shop, array $productCodes = []): array
+    public function handle(Shop $shop, array $productCodes = [], ?string $registrationAccountId = null): array
     {
         $client = GoogleMerchantClient::forShop($shop);
 
@@ -38,7 +39,7 @@ class SyncShopGoogleMerchantCostOfGoodsSold
             throw new RuntimeException('Google Merchant Center is not connected or has no Merchant ID.');
         }
 
-        $dataSource = Arr::get($shop->settings, 'google_merchant.data_source') ?: $this->storeDataSource($shop, $client);
+        $dataSource = Arr::get($shop->settings, 'google_merchant.data_source') ?: $this->storeDataSource($shop, $client, $registrationAccountId);
 
         $costs = Product::where('products.shop_id', $shop->id)
             ->join('master_assets', 'master_assets.id', '=', 'products.master_product_id')
@@ -99,9 +100,9 @@ class SyncShopGoogleMerchantCostOfGoodsSold
         return $result;
     }
 
-    private function storeDataSource(Shop $shop, GoogleMerchantClient $client): string
+    private function storeDataSource(Shop $shop, GoogleMerchantClient $client, ?string $registrationAccountId): string
     {
-        $dataSource = $client->createSupplementalDataSource('Aiku cost of goods sold');
+        $dataSource = $client->createSupplementalDataSource('Aiku cost of goods sold', $registrationAccountId);
 
         $shop->refresh();
         $settings = $shop->settings;
@@ -132,7 +133,7 @@ class SyncShopGoogleMerchantCostOfGoodsSold
 
         foreach ($shops as $shop) {
             try {
-                $result = $this->handle($shop, $command->option('product'));
+                $result = $this->handle($shop, $command->option('product'), $command->option('register-with'));
                 $command->info("$shop->slug: sent {$result['sent']}, unchanged {$result['unchanged']}, without cost {$result['no_cost']}, failed {$result['failed']}");
             } catch (Throwable $exception) {
                 Sentry::captureException($exception);
