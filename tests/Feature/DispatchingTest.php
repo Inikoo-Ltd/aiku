@@ -130,6 +130,7 @@ use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -6837,6 +6838,7 @@ test('a return cannot be put back without a location, so no stock goes missing (
 
     $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
     $returnItem         = $returnDeliveryNote->returnDeliveryNoteItem()->first();
+    $returnDeliveryNote->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNING]);
 
     actingAs($this->user);
 
@@ -6858,6 +6860,7 @@ test('an open pack goes back into stock as the packets that came back (HELP-3449
     $returnItem->update(['total_expected_qty' => 2]);
 
     $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('org_stock_id', $deliveryNoteItem->org_stock_id)->first();
+    $returnDeliveryNote->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNING]);
 
     actingAs($this->user);
 
@@ -6866,7 +6869,6 @@ test('an open pack goes back into stock as the packets that came back (HELP-3449
         'location_org_stock_id' => $locationOrgStock->id,
     ])->assertSessionHasNoErrors();
 
-    $returnDeliveryNote->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNING]);
     request()->setUserResolver(fn () => $this->user);
     \App\Actions\GoodsIn\ReturnDeliveryNote\SetReturnedReturnDeliveryNote::make()->handle($returnDeliveryNote->refresh());
 
@@ -6875,6 +6877,53 @@ test('an open pack goes back into stock as the packets that came back (HELP-3449
     expect(round((float) $returnItem->total_item_returned * 12))->toBe(23.0)
         ->and(round((float) $returnItem->total_item_not_returned * 12))->toBe(1.0)
         ->and(round((float) $returnItem->sowings()->first()->orgStockMovement->quantity * 12))->toBe(23.0);
+});
+
+test('web return items are handled only while the return is being returned, into a location of the same SKO, and a finished return is neither undone nor cancelled', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 2]);
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+    $returnItem         = $returnDeliveryNote->returnDeliveryNoteItem()->first();
+    $returnItem->update(['total_expected_qty' => 2]);
+
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('org_stock_id', $deliveryNoteItem->org_stock_id)->first();
+    $otherOrgStock    = StoreOrgStock::make()->action($this->organisation, StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE])));
+    $otherSkoLink     = StoreLocationOrgStock::make()->action($otherOrgStock, $locationOrgStock->location, ['type' => LocationStockTypeEnum::STORING]);
+    $item             = fn (string $action) => route("grp.models.return_delivery_note_item.$action", $returnItem->id);
+
+    actingAs($this->user);
+
+    $this->patchJson($item('upsert_returned'), ['quantity' => 1, 'location_org_stock_id' => $locationOrgStock->id])->assertJsonValidationErrors('message');
+    $this->patchJson($item('set_all_damaged'))->assertJsonValidationErrors('message');
+    expect($returnItem->sowings()->count())->toBe(0);
+
+    $returnDeliveryNote->update(['state' => ReturnDeliveryNoteStateEnum::RETURNING]);
+
+    $this->patchJson($item('upsert_returned'), ['quantity' => 1, 'location_org_stock_id' => $otherSkoLink->id])->assertJsonValidationErrors('message');
+    $this->patchJson($item('upsert_returned'), ['quantity' => 3, 'location_org_stock_id' => $locationOrgStock->id])->assertJsonValidationErrors('message');
+    expect($returnItem->sowings()->count())->toBe(0);
+
+    $this->patchJson($item('upsert_returned'), ['quantity' => 1, 'location_org_stock_id' => $locationOrgStock->id])->assertSessionHasNoErrors();
+    $this->patchJson($item('upsert_damaged'), ['quantity' => 1])->assertSessionHasNoErrors();
+    expect((float) $returnItem->refresh()->total_item_returned)->toBe(1.0)
+        ->and((float) $returnItem->total_item_damaged)->toBe(1.0);
+
+    $put = $returnItem->sowings()->where('type', 'sow')->firstOrFail();
+    $returnDeliveryNote->update(['state' => ReturnDeliveryNoteStateEnum::DONE]);
+
+    $this->deleteJson(route('grp.models.sowing.delete', $put->id))->assertJsonValidationErrors('sowing');
+    $this->patchJson(route('grp.models.return_delivery_note.state.cancel', $returnDeliveryNote->id))->assertJsonValidationErrors('message');
+    expect($returnItem->sowings()->whereKey($put->id)->exists())->toBeTrue()
+        ->and($returnDeliveryNote->refresh()->state)->toBe(ReturnDeliveryNoteStateEnum::DONE);
+
+    $this->patchJson(route('grp.models.return_delivery_note.update', $returnDeliveryNote->id), ['handler_user_id' => 999999999])->assertJsonValidationErrors('handler_user_id');
+    $this->patchJson(route('grp.models.return_delivery_note.update', $returnDeliveryNote->id), ['handler_user_id' => $this->user->id, 'state' => 'received', 'reference' => 'CHANGED'])
+        ->assertSessionHasNoErrors();
+    expect($returnDeliveryNote->refresh()->handler_user_id)->toBe($this->user->id)
+        ->and($returnDeliveryNote->state)->toBe(ReturnDeliveryNoteStateEnum::DONE)
+        ->and($returnDeliveryNote->reference)->not->toBe('CHANGED');
 });
 
 test('a second worker reaching picked with a stale note leaves the already picked note alone', function () {

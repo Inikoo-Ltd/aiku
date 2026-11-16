@@ -10,7 +10,6 @@
 namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
 use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
-use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
@@ -23,20 +22,15 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class UpsertReturnDeliveryNoteItemDamaged extends OrgAction
 {
     use WithReturnsAuthorisation;
+    use WithReturnItemPuts;
     use AsAction;
     use WithAttributes;
 
     public function handle(ReturnDeliveryNoteItem $returnDeliveryNoteItem, array $modelData): ReturnDeliveryNoteItem
     {
-        $user = auth()->user();
+        $this->ensureReturnIsBeingReturned($returnDeliveryNoteItem);
 
-        data_set($modelData, 'sower_user_id', $user->id);
-        data_set($modelData, 'type', SowingTypeEnum::DAMAGED);
-
-        StoreSowing::make()->action($returnDeliveryNoteItem, $user, $modelData);
-        CalculateReturnDeliveryNoteItemTotalSowed::make()->action($returnDeliveryNoteItem);
-
-        return $returnDeliveryNoteItem;
+        return $this->storeLockedPut($returnDeliveryNoteItem, $modelData, (float) $modelData['quantity'], SowingTypeEnum::DAMAGED);
     }
 
     public function afterValidator(Validator $validator, ActionRequest $request)

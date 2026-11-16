@@ -17,6 +17,7 @@ use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateFromGoodsIn;
 use App\Actions\GoodsIn\StockDeliveryItem\CalculateStockDeliveryItemTotalPlaced;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\GoodsIn\Sowing;
@@ -51,6 +52,11 @@ class DeleteSowing extends OrgAction
 
         if ($stockDeliveryItem && !$stockDeliveryItem->stockDelivery->isInGoodsIn()) {
             $validator->errors()->add('sowing', __('A put-away can only be undone while the delivery is being booked in'));
+        }
+
+        $return = $this->sowing->return;
+        if (!$this->asAction && $return && $return->state !== ReturnDeliveryNoteStateEnum::RETURNING) {
+            $validator->errors()->add('sowing', __('A put-back can only be undone while the return is being returned to locations'));
         }
     }
 
