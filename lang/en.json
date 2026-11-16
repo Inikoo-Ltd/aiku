@@ -26691,5 +26691,8 @@
     "Not interested, thanks": "Not interested, thanks",
     ":name remembers:": ":name remembers:",
     "Forget this": "Forget this",
-    "1 product = :count SKO": "1 product = :count SKO"
+    "1 product = :count SKO": "1 product = :count SKO",
+    "Finish booking in?": "Finish booking in?",
+    "This is the last item to put away. The delivery will be booked in with :count line over or under delivered. Is the delivery done?|This is the last item to put away. The delivery will be booked in with :count lines over or under delivered. Is the delivery done?": "This is the last item to put away. The delivery will be booked in with :count line over or under delivered. Is the delivery done?|This is the last item to put away. The delivery will be booked in with :count lines over or under delivered. Is the delivery done?",
+    "Yes, delivery is done": "Yes, delivery is done"
 }

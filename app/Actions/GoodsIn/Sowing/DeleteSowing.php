@@ -22,6 +22,9 @@ use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\GoodsIn\Sowing;
 use App\Models\SysAdmin\User;
+use App\Models\GoodsIn\StockDelivery;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -50,7 +53,7 @@ class DeleteSowing extends OrgAction
     {
         $stockDeliveryItem = $this->sowing->stockDeliveryItem;
 
-        if ($stockDeliveryItem && !$stockDeliveryItem->stockDelivery->isInGoodsIn()) {
+        if ($stockDeliveryItem && !$stockDeliveryItem->stockDelivery->acceptsPutAwayUndo()) {
             $validator->errors()->add('sowing', __('A put-away can only be undone while the delivery is being booked in'));
         }
 
@@ -68,6 +71,10 @@ class DeleteSowing extends OrgAction
     private function undo(Sowing $sowing, ?User $user): bool
     {
         $stockDeliveryItem = $sowing->stockDeliveryItem;
+
+        if ($stockDeliveryItem && !StockDelivery::lockForUpdate()->find($stockDeliveryItem->stock_delivery_id)->acceptsPutAwayUndo()) {
+            throw ValidationException::withMessages(['sowing' => __('A put-away can only be undone while the delivery is being booked in')]);
+        }
 
         $sowing->delete();
         $sowing->refresh();
@@ -132,6 +139,11 @@ class DeleteSowing extends OrgAction
         }
 
         $this->handle($sowing, $request->user());
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 
     public function action(Sowing $sowing, ?User $user = null): bool

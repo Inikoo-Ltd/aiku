@@ -1646,18 +1646,34 @@ test('a dispatched stock delivery with no products can not be received and is ca
     expect($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::CANCELLED);
 });
 
-test('a put away can not be undone once the delivery is booked in', function () {
-    $stockDelivery = createStockDeliveryWithItems($this, 'UNDO-BOOKED-IN', [10]);
+test('a put away can be undone while the delivery is booked in, which steps it back, but not once placed', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'UNDO-BOOKED-IN', [10, 10]);
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
     $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
 
-    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
-    $stockDeliveryItem = SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, ['location_org_stock_id' => createLocationOrgStockFor($this, $stockDeliveryItem)->id]);
+    [$shortItem, $fullItem] = $stockDelivery->items()->orderBy('id')->get()->all();
+    $shortItem = SetStockDeliveryItemCheckedQuantity::make()->action($shortItem, ['unit_quantity_checked' => 8]);
+    $fullItem  = SetStockDeliveryItemCheckedQuantity::make()->action($fullItem, ['unit_quantity_checked' => 10]);
+    $shortItem = SetStockDeliveryItemAsPlaced::make()->action($shortItem, ['location_org_stock_id' => createLocationOrgStockFor($this, $shortItem)->id]);
+
+    expect($stockDelivery->fresh()->bookingInLinesLeft())->toBe(['unplaced' => 1, 'discrepancies' => 1]);
+
+    $fullItem = SetStockDeliveryItemAsPlaced::make()->action($fullItem, ['location_org_stock_id' => createLocationOrgStockFor($this, $fullItem)->id]);
 
     expect($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
 
-    DeleteSowing::make()->action($stockDeliveryItem->sowings()->first());
-})->throws(ValidationException::class);
+    DeleteSowing::make()->action($fullItem->sowings()->first());
+
+    $stockDelivery->refresh();
+    expect($stockDelivery->state)->toBe(StockDeliveryStateEnum::BOOKING_IN)
+        ->and($stockDelivery->booked_in_at)->toBeNull()
+        ->and($fullItem->fresh()->state)->toBe(StockDeliveryItemStateEnum::CHECKED);
+
+    $fullItem = SetStockDeliveryItemAsPlaced::make()->action($fullItem->fresh(), ['location_org_stock_id' => createLocationOrgStockFor($this, $fullItem)->id]);
+    $stockDelivery->update(['state' => StockDeliveryStateEnum::PLACED]);
+
+    expect(fn () => DeleteSowing::make()->action($fullItem->sowings()->first()))->toThrow(ValidationException::class);
+});
 
 test('undoing a put away needs procurement permission', function () {
     $this->orgStocks[0]->update(['packed_in' => 1]);
