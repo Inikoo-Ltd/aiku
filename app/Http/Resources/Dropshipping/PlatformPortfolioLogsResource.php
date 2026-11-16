@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Dropshipping;
 
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Helpers\PlatformResponseFormatter;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -36,6 +37,7 @@ class PlatformPortfolioLogsResource extends JsonResource
     public function toArray($request): array
     {
         $response = PlatformResponseFormatter::make()->format($this->response);
+        $isFailure = ($this->status instanceof PlatformPortfolioLogsStatusEnum ? $this->status : PlatformPortfolioLogsStatusEnum::tryFrom((string) $this->status)) === PlatformPortfolioLogsStatusEnum::FAIL;
 
         return [
             'id'              => $this->id,
@@ -44,7 +46,7 @@ class PlatformPortfolioLogsResource extends JsonResource
             'type'            => $this->type,
             'status'          => $this->status,
             'response'        => Arr::get($response, 'message'),
-            'response_hint'   => Arr::get($response, 'hint'),
+            'response_hint'   => $isFailure ? Arr::get($response, 'hint') : null,
             'response_code'   => Arr::get($response, 'code'),
             'response_detail' => $request->routeIs('grp.*') && filled($this->platform_errors)
                 ? json_encode($this->platform_errors, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
