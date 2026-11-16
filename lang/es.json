@@ -26797,5 +26797,16 @@
     "Raw material batches": "Lotes de materias primas",
     "This raw material is not on the recipe of this step": "Esta materia prima no está en la receta de este paso",
     "A batch code can have up to 64 characters": "Un código de lote puede tener hasta 64 caracteres",
-    "Pick the expiry date from the calendar": "Elige la fecha de caducidad en el calendario"
+    "Pick the expiry date from the calendar": "Elige la fecha de caducidad en el calendario",
+    "I have added this to your question for our team.": "He añadido esto a su pregunta para nuestro equipo.",
+    "You are welcome, :name! I am here whenever you need me.": "¡De nada, :name! Aquí estoy siempre que me necesite.",
+    "You are welcome! I am here whenever you need me.": "¡De nada! Aquí estoy siempre que me necesite.",
+    "Barcode :barcode": "Código de barras :barcode",
+    ":quantity in stock": ":quantity en stock",
+    ":name is brewing a potion…": ":name está preparando una poción…",
+    ":name is looking it up in his spellbook…": ":name lo está buscando en su libro de hechizos…",
+    ":name is casting a spell…": ":name está lanzando un hechizo…",
+    ":name is gazing into his crystal ball…": ":name está mirando en su bola de cristal…",
+    "This one needs a little more thought. Nearly there…": "Esta necesita pensarse un poco más. Ya casi está…",
+    "Usually takes about :seconds seconds": "Suele tardar unos :seconds segundos"
 }

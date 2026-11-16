@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
+import MerlinThinking from "@/Iris/Components/MerlinThinking.vue"
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import axios from "axios"
 import { router, usePage } from "@inertiajs/vue3"
@@ -1113,11 +1114,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     <div v-if="isPending" class="flex gap-3">
                         <div class="assistant-avatar" aria-hidden="true"><MerlinIcon /></div>
                         <div class="min-w-0 flex-1">
-                            <p class="text-sm text-gray-600">
-                                <LoadingIcon />
-                                {{ ctrans("Looking through the range for your shop…") }}
-                            </p>
-                            <div class="skeleton assistant-skeleton mt-3 rounded" />
+                            <MerlinThinking :name="assistantName" :expected-seconds="assistant?.expected_seconds" />
                         </div>
                     </div>
 
