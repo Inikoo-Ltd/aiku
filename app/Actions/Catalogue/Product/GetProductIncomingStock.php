@@ -427,6 +427,7 @@ class GetProductIncomingStock
                 'orders.reference as order_reference',
                 'job_orders.reference as job_order_reference',
                 'job_orders.employee_id as job_order_employee_id',
+                DB::raw("job_orders.data->'hold' is not null as job_order_on_hold"),
                 DB::raw('coalesce(job_orders.confirmed_at, job_orders.created_at) as job_order_started_at'),
             ]);
 
@@ -452,7 +453,7 @@ class GetProductIncomingStock
             $orgPartner = $orgPartners->get($item->org_partner_id);
             $durations  = GetPartnerSupplyDurations::run($orgPartner);
             $toBuyer    = $durations['dispatch'] + $durations['transit'];
-            $line       = fn (string $reference, string $label, float $quantity, string $eta) => [
+            $line       = fn (string $reference, string $label, float $quantity, ?string $eta, bool $isOverdue = false) => [
                 'type'              => 'partner_request',
                 'supplier_name'     => $item->partner_name,
                 'supplier_code'     => $item->partner_code,
@@ -468,6 +469,7 @@ class GetProductIncomingStock
                 'quantity'          => round($quantity, 3),
                 'eta'               => $eta,
                 'is_estimate'       => true,
+                'is_overdue'        => $isOverdue,
                 'organisation_slug' => $item->organisation_slug,
             ];
 
@@ -498,13 +500,18 @@ class GetProductIncomingStock
                 continue;
             }
 
+            if ($item->job_order_on_hold) {
+                $lines[] = $line($item->job_order_reference, __('On hold at :partner', ['partner' => $item->partner_name]), $waiting, null);
+                continue;
+            }
+
             if ($item->job_order_reference) {
-                $madeAround = Carbon::parse($item->job_order_started_at)->addMinutes((int) round($durations['production'] * 1440))->max(now());
-                $artisan    = $artisans->get($item->job_order_employee_id);
-                $label      = $artisan
+                $expectedMade = Carbon::parse($item->job_order_started_at)->addMinutes((int) round($durations['production'] * 1440));
+                $artisan      = $artisans->get($item->job_order_employee_id);
+                $label        = $artisan
                     ? __('Being made at :partner by :artisan', ['partner' => $item->partner_name, 'artisan' => $artisan])
                     : __('Being made at :partner', ['partner' => $item->partner_name]);
-                $lines[]    = $line($item->job_order_reference, $label, $waiting, $this->estimate($madeAround, $toBuyer));
+                $lines[]      = $line($item->job_order_reference, $label, $waiting, $this->estimate($expectedMade->max(now()), $toBuyer), $expectedMade->isPast());
                 continue;
             }
 

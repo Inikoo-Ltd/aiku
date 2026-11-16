@@ -813,6 +813,34 @@ describe('partner shopping list', function () {
             ->and($line['is_estimate'])->toBeTrue();
     });
 
+    test('a partner job order on hold or past its production time gives the website no date', function () {
+        $seller         = $this->orgPartner->partner;
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $sellerOrgStock->update(['quantity_available' => 0]);
+        $production = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        Artefact::where('production_id', $production->id)->where('org_stock_id', $sellerOrgStock->id)->first()
+            ?? StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
+
+        $item     = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $jobOrder = StoreJobOrdersFromToProduceItems::make()->action($production, [$item->id])['job_orders'][0];
+        $product  = (new \App\Models\Catalogue\Product())->setRelation('orgStocks', collect([$this->buyerOrgStock]));
+
+        expect(GetProductIncomingStock::make()->earliestIncoming($product))->not->toBeNull();
+
+        $jobOrder->update(['data' => array_merge($jobOrder->data ?? [], ['hold' => ['reason' => 'waiting for label from china', 'kind' => 'missing_label']])]);
+        $line = collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->firstWhere('reference', $jobOrder->reference);
+
+        expect($line['eta'])->toBeNull()
+            ->and($line['state_label'])->toStartWith('On hold at')
+            ->and(GetProductIncomingStock::make()->earliestIncoming($product))->toBeNull();
+
+        $jobOrder->update(['data' => \Illuminate\Support\Arr::except($jobOrder->data, 'hold'), 'created_at' => now()->subYear(), 'confirmed_at' => now()->subYear()]);
+
+        expect(collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->firstWhere('reference', $jobOrder->reference)['is_overdue'])->toBeTrue()
+            ->and(GetProductIncomingStock::make()->earliestIncoming($product))->toBeNull();
+    });
+
     test('cherry pick reuses in-process intercompany order across picks', function () {
         $itemA = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 5,
