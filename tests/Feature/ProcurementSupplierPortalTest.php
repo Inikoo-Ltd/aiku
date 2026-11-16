@@ -717,3 +717,53 @@ test('INI-238 a published version never goes back to draft, a supplier accepts a
     $purchaseOrder->update(['confirmed_at' => now()->subDays(20)]);
     expect($purchaseOrder->refresh()->supplier_agreement_acceptance_id)->toBeNull();
 });
+
+test('HELP-4731 a supplier uploads shipping documents to its own order from its portal and sees only those, never what the buyer attached', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    [, , $otherToken]     = portalSupplier($this);
+    $orgSupplier          = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+    $purchaseOrder        = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+
+    \App\Actions\Helpers\Media\AttachAttachmentToModel::make()->action($purchaseOrder, [
+        'attachments' => [UploadedFile::fake()->createWithContent('our-bank-statement.pdf', '%PDF-1.4 bank '.Str::random(32))],
+        'scope'       => 'Bank statement',
+    ]);
+    $buyerMedia = $purchaseOrder->attachments()->sole();
+    Auth::logout();
+
+    $route = route('grp.supplier_share.purchase_order.documents.store', ['token' => $token, 'purchaseOrder' => $purchaseOrder->id]);
+    $this->postJson($route, ['scope' => 'Claim', 'files' => [UploadedFile::fake()->create('bl.pdf', 20, 'application/pdf')]])->assertJsonValidationErrors('scope');
+    $this->postJson(route('grp.supplier_share.purchase_order.documents.store', ['token' => $otherToken, 'purchaseOrder' => $purchaseOrder->id]), [
+        'scope' => 'Bill of lading',
+        'files' => [UploadedFile::fake()->create('bl.pdf', 20, 'application/pdf')],
+    ])->assertNotFound();
+
+    $this->postJson($route, ['scope' => 'Bill of lading', 'files' => [UploadedFile::fake()->createWithContent('bl.html', '%PDF-1.4 '.Str::random(32))]])->assertJsonValidationErrors('files.0');
+    $this->postJson($route, ['scope' => 'Invoice', 'files' => [UploadedFile::fake()->createWithContent('copy-of-ours.pdf', file_get_contents($buyerMedia->getPath()))]])
+        ->assertJsonValidationErrors('files');
+
+    $origin    = '%PDF-1.4 origin '.Str::random(32);
+    $this->postJson($route, ['scope' => 'Proforma', 'files' => [UploadedFile::fake()->createWithContent('origin.pdf', $origin)]])->assertOk();
+    $documents = $this->postJson($route, [
+        'scope' => 'Certificate of origin',
+        'files' => [UploadedFile::fake()->createWithContent('origin.pdf', $origin)],
+    ])->assertOk()->json('documents');
+
+    expect($documents['files'])->toHaveCount(1)
+        ->and($documents['open'])->toBeTrue()
+        ->and($documents['files'][0]['type'])->toBe('Certificate of origin')
+        ->and($documents['files'][0]['file_name'])->toBe('origin.pdf')
+        ->and(collect($documents['types'])->pluck('value')->all())->toContain('Bill of lading', 'Packing list', 'Proforma')
+        ->and($purchaseOrder->attachments()->wherePivot('scope', 'Certificate of origin')->wherePivot('sub_scope', 'supplier_portal')->count())->toBe(1)
+        ->and($purchaseOrder->attachments()->where('media.id', $buyerMedia->id)->sole()->pivot->scope)->toBe('Bank statement');
+
+    $this->get($documents['files'][0]['download_url'])->assertOk();
+    $this->get(route('grp.supplier_share.purchase_order.document', ['token' => $token, 'purchaseOrder' => $purchaseOrder->id, 'media' => $buyerMedia->ulid]))->assertNotFound();
+
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::CANCELLED]);
+    $this->postJson($route, ['scope' => 'Invoice', 'files' => [UploadedFile::fake()->createWithContent('late.pdf', '%PDF-1.4 '.Str::random(32))]])->assertJsonValidationErrors('files');
+
+    actingAs($this->adminGuest->getUser());
+    $this->post(route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'path' => "purchase-orders/$purchaseOrder->id/documents"]))->assertSessionHasErrors('preview');
+});

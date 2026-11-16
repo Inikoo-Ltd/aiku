@@ -12,6 +12,8 @@ namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
+use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierPortalPurchaseOrderDocument;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -25,6 +27,7 @@ use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierShareLink;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -52,7 +55,7 @@ class ShowSupplierPortalPurchaseOrder
     ];
 
     /**
-     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, payments: array<string, mixed>, production: array<string, mixed>, lines: list<array<string, mixed>>}
+     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, payments: array<string, mixed>, production: array<string, mixed>, documents: array<string, mixed>, lines: list<array<string, mixed>>}
      */
     public function handle(Supplier $supplier, int $purchaseOrderId, ?string $token = null): array
     {
@@ -93,6 +96,7 @@ class ShowSupplierPortalPurchaseOrder
             'journey'    => IndexSupplierPortalPurchaseOrderStages::make()->forPurchaseOrder($supplier, $purchaseOrder->id),
             'payments'   => $this->payments($purchaseOrder, $token),
             'production' => $this->production($purchaseOrder),
+            'documents'  => $this->documents($purchaseOrder, $token),
             'lines'      => $lines->map(fn (PurchaseOrderTransaction $line) => $this->line($line, $purchaseOrder))->values()->all(),
         ];
     }
@@ -207,6 +211,45 @@ class ShowSupplierPortalPurchaseOrder
                 ->whereNull('deleted_at')
                 ->whereNotNull('date')
                 ->exists());
+    }
+
+    public function supplierDocumentsQuery(PurchaseOrder $purchaseOrder): MorphToMany
+    {
+        return $purchaseOrder->attachments()->wherePivot('sub_scope', StoreSupplierPortalPurchaseOrderDocument::SUB_SCOPE);
+    }
+
+    /**
+     * The shipping and customs documents the supplier uploaded to the order, and the types it can upload.
+     *
+     * @return array{open: bool, types: list<array{value: string, label: string}>, files: list<array<string, mixed>>}
+     */
+    private function documents(PurchaseOrder $purchaseOrder, ?string $token): array
+    {
+        $labels = PurchaseOrderAttachmentScopeEnum::labels();
+
+        return [
+            'open'  => in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true),
+            'types' => array_map(fn (PurchaseOrderAttachmentScopeEnum $scope) => ['value' => $scope->value, 'label' => $labels[$scope->value]], PurchaseOrderAttachmentScopeEnum::supplierPortal()),
+            'files' => $this->supplierDocumentsQuery($purchaseOrder)
+                ->orderBy('model_has_attachments.id')
+                ->get(['media.id', 'media.ulid'])
+                ->map(function (Media $media) use ($purchaseOrder, $token, $labels) {
+                    $parameters = $token === null
+                        ? ['media' => $media->ulid]
+                        : ['token' => $token, 'purchaseOrder' => $purchaseOrder->id, 'media' => $media->ulid];
+                    $route      = $token === null ? 'grp.media.download' : 'grp.supplier_share.purchase_order.document';
+
+                    return [
+                        'type'         => $labels[$media->pivot->scope] ?? $media->pivot->scope,
+                        'file_name'    => $media->pivot->caption,
+                        'uploaded_at'  => $media->pivot->created_at,
+                        'view_url'     => route($route, [...$parameters, 'inline' => true]),
+                        'download_url' => route($route, $parameters),
+                    ];
+                })
+                ->values()
+                ->all(),
+        ];
     }
 
     /**
