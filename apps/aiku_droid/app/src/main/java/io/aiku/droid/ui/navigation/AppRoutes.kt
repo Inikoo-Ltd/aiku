@@ -34,17 +34,12 @@ import kotlinx.serialization.Serializable
 @Serializable data class LocationRoute(val id: Long, val code: String)
 @Serializable data class LocationSkuRoute(val locationId: Long, val locationOrgStockId: Long, val locationCode: String, val skoCode: String)
 @Serializable data object GoodsInBacklogRoute
-@Serializable data object StockDeliveriesRoute
-@Serializable data class StockDeliveryArrivingRoute(val reference: String)
-@Serializable data class StockDeliveryCheckingRoute(val reference: String)
-@Serializable data object ScanCameraRoute
-@Serializable data class StockDeliveryChecklistRoute(val reference: String)
-@Serializable data class BookingInRoute(val reference: String)
-@Serializable data class PlaceItemRoute(val reference: String, val skuCode: String)
-@Serializable data class PlaceItemNoPickingLocationRoute(val reference: String, val skuCode: String)
-@Serializable data class BookedInRoute(val reference: String)
-@Serializable data object GoodsInReturnsRoute
-@Serializable data class GoodsInReturnRoute(val reference: String)
+@Serializable data class StockDeliveriesRoute(val source: String? = null, val state: String? = null)
+@Serializable data class StockDeliveryRoute(val id: Long, val reference: String)
+@Serializable data class StockDeliveryScanRoute(val id: Long, val reference: String)
+@Serializable data class PlaceItemRoute(val id: Long, val itemId: Long, val reference: String, val skoCode: String)
+@Serializable data class GoodsInReturnsRoute(val state: String? = null)
+@Serializable data class GoodsInReturnRoute(val id: Long, val reference: String)
 @Serializable data object GoodsOutBacklogRoute
 @Serializable data class DeliveryNotesRoute(val bucket: String? = null, val channel: String? = null, val sessionId: Long? = null, val sessionReference: String? = null)
 @Serializable data class DeliveryNoteToDoRoute(val id: Long, val reference: String)

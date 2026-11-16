@@ -58,7 +58,7 @@ import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.components.rememberNavFocusIndication
 import io.aiku.droid.ui.navigation.LocalAppNavigator
-import io.aiku.droid.ui.navigation.ScanCameraRoute
+import io.aiku.droid.ui.navigation.ScanRoute
 import io.aiku.droid.ui.states.SearchEmptyState
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
@@ -92,7 +92,7 @@ fun SearchScreen() {
     ) {
         when {
             needle.isEmpty() -> RecentSearches(onPick = { query = it })
-            groups.isEmpty() -> SearchEmptyState(query = needle, onScan = { navigator.open(ScanCameraRoute) })
+            groups.isEmpty() -> SearchEmptyState(query = needle, onScan = { navigator.open(ScanRoute) })
             else -> {
                 groups.forEach { group ->
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

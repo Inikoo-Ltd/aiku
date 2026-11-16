@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,70 +17,105 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
-import io.aiku.droid.ui.components.AppHeader
+import io.aiku.droid.data.api.ReturnState
+import io.aiku.droid.data.api.StockDeliveryState
 import io.aiku.droid.ui.components.CardShape
-import io.aiku.droid.ui.components.ControlShape
-import io.aiku.droid.ui.components.DetailCard
-import io.aiku.droid.ui.components.DetailLine
+import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ProductPhoto
 import io.aiku.droid.ui.components.StatusBadge
+import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.Tone
-import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.components.rememberTabIndication
-import io.aiku.droid.ui.navigation.BookedInRoute
-import io.aiku.droid.ui.navigation.LocalAppNavigator
-import io.aiku.droid.ui.navigation.StockDeliveryCheckingRoute
-import io.aiku.droid.ui.navigation.StockDeliveryChecklistRoute
+import io.aiku.droid.ui.goodsout.GoodsOutProblem
+import io.aiku.droid.ui.goodsout.problemText
+import io.aiku.droid.ui.inventory.dayText
 import io.aiku.droid.ui.theme.LocalAikuColors
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-internal enum class DeliveryView(@StringRes val label: Int) {
-    Pending(R.string.goodsin_tab_pending),
-    Done(R.string.goodsin_tab_done),
-    Checklist(R.string.goodsin_tab_checklist),
-}
+private const val DATE_PATTERN = "d MMM yyyy"
+private const val ISO_DATE_LENGTH = 10
 
 internal enum class ActionTone { Neutral, Primary, Danger }
 
-internal data class CheckItemLook(val chip: String?, val tone: Tone?, val subtitle: String)
+internal data class DeliveryField(@StringRes val label: Int, val value: String)
 
-internal data class Difference(val chip: String, val tone: Tone, val description: String)
+internal fun deliveryStateTone(state: String): Tone = when (state) {
+    StockDeliveryState.RECEIVED, StockDeliveryState.CHECKED -> Tone.Primary
+    StockDeliveryState.BOOKING_IN -> Tone.Lime
+    StockDeliveryState.BOOKED_IN, StockDeliveryState.PLACED -> Tone.Success
+    StockDeliveryState.NOT_RECEIVED, StockDeliveryState.CANCELLED -> Tone.Danger
+    else -> Tone.Neutral
+}
 
-private fun DeliveryView.routeFor(reference: String): Any = when (this) {
-    DeliveryView.Pending -> StockDeliveryCheckingRoute(reference)
-    DeliveryView.Done -> BookedInRoute(reference)
-    DeliveryView.Checklist -> StockDeliveryChecklistRoute(reference)
+internal fun returnStateTone(state: String): Tone = when (state) {
+    ReturnState.RETURNING -> Tone.Primary
+    ReturnState.RETURNED, ReturnState.DONE -> Tone.Success
+    ReturnState.CANCELLED -> Tone.Danger
+    else -> Tone.Neutral
+}
+
+internal fun goodsInDate(value: String?, zone: ZoneId): String? {
+    val text = value?.takeIf { it.isNotBlank() } ?: return null
+    return dayText(text, zone)
+        ?: runCatching { LocalDate.parse(text.take(ISO_DATE_LENGTH)).format(DateTimeFormatter.ofPattern(DATE_PATTERN, Locale.getDefault())) }.getOrNull()
 }
 
 @Composable
-internal fun StockDeliveryHeader(reference: String) {
-    AppHeader(isSample = true, title = reference, kicker = stringResource(R.string.goodsin_kicker_stock_delivery, GoodsInSamples.SUPPLIER))
+internal fun GoodsInEvents(
+    event: GoodsInEvent?,
+    onHandled: () -> Unit,
+    onSheetProblem: ((String) -> Unit)? = null,
+    doneText: (GoodsInEvent.Done) -> String? = { null },
+    onDone: (GoodsInEvent.Done) -> Unit = {},
+) {
+    val toasts = LocalToasts.current
+    val problemTexts = GoodsOutProblem.entries.associateWith { problemText(it) }
+
+    LaunchedEffect(event) {
+        when (event) {
+            is GoodsInEvent.Done -> {
+                val kind = when {
+                    event.wasRaised -> ToastKind.Warning
+                    event.isNothingChanged -> ToastKind.Info
+                    else -> ToastKind.Success
+                }
+                (event.message ?: doneText(event))?.let { toasts.show(it, kind) }
+                onDone(event)
+            }
+            is GoodsInEvent.Refused -> {
+                val text = event.message.ifBlank { problemTexts.getValue(event.problem) }
+                if (onSheetProblem != null) onSheetProblem(text) else toasts.show(text, ToastKind.Error)
+            }
+            null -> return@LaunchedEffect
+        }
+        onHandled()
+    }
 }
 
 @Composable
-internal fun SectionHeading(title: String, modifier: Modifier = Modifier, caption: String? = null, isCaptionSample: Boolean = false) {
+internal fun SectionHeading(title: String, modifier: Modifier = Modifier, caption: String? = null) {
     val colors = LocalAikuColors.current
 
     Row(verticalAlignment = Alignment.Bottom, modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
@@ -92,12 +128,7 @@ internal fun SectionHeading(title: String, modifier: Modifier = Modifier, captio
             modifier = Modifier.weight(1f),
         )
         if (caption != null) {
-            Text(
-                text = caption,
-                fontSize = 12.sp,
-                color = colors.textTertiary,
-                modifier = if (isCaptionSample) Modifier.fakeData(cornerRadius = 4.dp).padding(horizontal = 4.dp, vertical = 2.dp) else Modifier,
-            )
+            Text(text = caption, fontSize = 12.sp, color = colors.textTertiary)
         }
     }
 }
@@ -110,19 +141,6 @@ internal fun HelperNote(text: String, modifier: Modifier = Modifier) {
         lineHeight = 18.sp,
         color = LocalAikuColors.current.textQuaternary,
         modifier = modifier.padding(horizontal = 4.dp),
-    )
-}
-
-@Composable
-internal fun OrdererCard(modifier: Modifier = Modifier) {
-    DetailCard(
-        title = stringResource(R.string.goodsin_orderer),
-        lines = listOf(
-            DetailLine(icon = R.drawable.ic_ui_person, text = GoodsInSamples.ORDERER),
-            DetailLine(icon = R.drawable.ic_ui_document, text = stringResource(R.string.goodsin_purchase_orders, GoodsInSamples.PURCHASE_ORDERS)),
-            DetailLine(icon = R.drawable.ic_ui_clock, text = stringResource(R.string.goodsin_estimated_receiving, GoodsInSamples.ESTIMATED_RECEIVING)),
-        ),
-        modifier = modifier.fakeData(),
     )
 }
 
@@ -163,7 +181,6 @@ internal fun ActionLinkRow(
     subtitle: String,
     modifier: Modifier = Modifier,
     tone: ActionTone = ActionTone.Neutral,
-    trailing: String? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val colors = LocalAikuColors.current
@@ -189,16 +206,12 @@ internal fun ActionLinkRow(
             Text(text = title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colors.text)
             Text(text = subtitle, fontSize = 13.sp, color = colors.textTertiary)
         }
-        if (trailing != null) {
-            Text(text = trailing, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.link)
-        }
     }
 }
 
 @Composable
-internal fun DeliveryViewTabs(active: DeliveryView, reference: String, modifier: Modifier = Modifier) {
+internal fun ViewTabs(options: List<Pair<DeliveryView, String>>, active: DeliveryView?, onSelect: (DeliveryView) -> Unit, modifier: Modifier = Modifier) {
     val colors = LocalAikuColors.current
-    val navigator = LocalAppNavigator.current
     val tabShape = RoundedCornerShape(7.dp)
 
     Row(
@@ -206,28 +219,29 @@ internal fun DeliveryViewTabs(active: DeliveryView, reference: String, modifier:
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
             .background(colors.border)
+            .horizontalScroll(rememberScrollState())
             .padding(horizontal = 2.dp),
     ) {
-        DeliveryView.entries.forEach { view ->
+        options.forEach { (view, label) ->
             val isActive = view == active
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .weight(1f)
                     .height(44.dp)
                     .selectable(
                         selected = isActive,
                         interactionSource = remember { MutableInteractionSource() },
                         indication = rememberTabIndication(cornerRadius = 9.dp),
                         role = Role.Tab,
-                        onClick = { if (!isActive) navigator.switchSection(view.routeFor(reference)) },
+                        onClick = { if (!isActive) onSelect(view) },
                     )
                     .padding(horizontal = 2.dp, vertical = 4.dp)
                     .clip(tabShape)
-                    .background(if (isActive) colors.surface else Color.Transparent),
+                    .background(if (isActive) colors.surface else Color.Transparent)
+                    .padding(horizontal = 12.dp),
             ) {
                 Text(
-                    text = stringResource(view.label),
+                    text = label,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = if (isActive) colors.link else colors.textTertiary,
@@ -239,14 +253,7 @@ internal fun DeliveryViewTabs(active: DeliveryView, reference: String, modifier:
 }
 
 @Composable
-internal fun ScanPromptCard(
-    title: String,
-    body: String,
-    code: String,
-    detail: String,
-    modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
-) {
+internal fun ScanPromptCard(title: String, body: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = LocalAikuColors.current
 
     Column(
@@ -254,7 +261,7 @@ internal fun ScanPromptCard(
             .fillMaxWidth()
             .clip(CardShape)
             .background(colors.scan)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -263,8 +270,6 @@ internal fun ScanPromptCard(
             Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onScan)
         }
         Text(text = body, fontSize = 13.sp, color = colors.onScan)
-        Text(text = code, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = colors.onScan)
-        Text(text = detail, fontSize = 13.sp, color = colors.onScan)
     }
 }
 
@@ -273,6 +278,7 @@ internal fun PlaceItemCard(
     code: String,
     subtitle: String,
     modifier: Modifier = Modifier,
+    imageUrl: String? = null,
     chip: String? = null,
     chipTone: Tone = Tone.Warn,
 ) {
@@ -288,7 +294,7 @@ internal fun PlaceItemCard(
             .border(width = 1.dp, color = colors.border, shape = CardShape)
             .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
-        ProductPhoto(code = code, size = 72.dp)
+        ProductPhoto(code = code, size = 72.dp, imageUrl = imageUrl)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(text = code, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.text)
             Text(text = subtitle, fontSize = 13.sp, color = colors.textTertiary)
@@ -296,88 +302,5 @@ internal fun PlaceItemCard(
         if (chip != null) {
             StatusBadge(text = chip, tone = chipTone)
         }
-    }
-}
-
-@Composable
-internal fun CountStepper(
-    value: Int,
-    onValueChange: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    min: Int = 0,
-    max: Int = Int.MAX_VALUE,
-    valueMinWidth: Dp = 56.dp,
-) {
-    val colors = LocalAikuColors.current
-
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = modifier) {
-        StepSquare(symbol = "−", description = stringResource(R.string.stepper_decrease), isEnabled = value > min) { onValueChange(value - 1) }
-        Text(
-            text = value.toString(),
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = colors.text,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.widthIn(min = valueMinWidth),
-        )
-        StepSquare(symbol = "+", description = stringResource(R.string.stepper_increase), isEnabled = value < max) { onValueChange(value + 1) }
-    }
-}
-
-@Composable
-private fun StepSquare(symbol: String, description: String, isEnabled: Boolean, onClick: () -> Unit) {
-    val colors = LocalAikuColors.current
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(44.dp)
-            .clip(ControlShape)
-            .background(colors.surface)
-            .border(width = 1.dp, color = colors.borderStrong, shape = ControlShape)
-            .clickable(enabled = isEnabled, role = Role.Button, onClickLabel = description, onClick = onClick)
-            .semantics { contentDescription = description },
-    ) {
-        Text(text = symbol, fontSize = 20.sp, color = if (isEnabled) colors.text else colors.faint)
-    }
-}
-
-@Composable
-internal fun checkItemLook(item: CheckItem): CheckItemLook {
-    val checked = item.checked
-    val deliveredLine = stringResource(R.string.goodsin_item_delivered, item.name, item.delivered)
-    return when {
-        checked == null -> CheckItemLook(chip = null, tone = null, subtitle = deliveredLine)
-        checked == 0 -> CheckItemLook(chip = stringResource(R.string.goodsin_not_received), tone = Tone.Danger, subtitle = stringResource(R.string.goodsin_item_checked_as_zero, item.name))
-        checked < item.delivered -> CheckItemLook(chip = stringResource(R.string.goodsin_chip_checked_under), tone = Tone.Warn, subtitle = deliveredLine)
-        checked > item.delivered -> CheckItemLook(chip = stringResource(R.string.goodsin_chip_checked_over), tone = Tone.Orange, subtitle = deliveredLine)
-        else -> CheckItemLook(chip = stringResource(R.string.sd_state_checked), tone = Tone.Success, subtitle = deliveredLine)
-    }
-}
-
-@Composable
-internal fun differenceOf(checked: Int, delivered: Int): Difference {
-    val gap = checked - delivered
-    return when {
-        checked == 0 -> Difference(
-            chip = stringResource(R.string.goodsin_chip_not_received_by, delivered),
-            tone = Tone.Danger,
-            description = pluralStringResource(R.plurals.goodsin_difference_under, delivered, delivered),
-        )
-        gap < 0 -> Difference(
-            chip = stringResource(R.string.goodsin_chip_under, -gap),
-            tone = Tone.Warn,
-            description = pluralStringResource(R.plurals.goodsin_difference_under, -gap, -gap),
-        )
-        gap > 0 -> Difference(
-            chip = stringResource(R.string.goodsin_chip_over, gap),
-            tone = Tone.Orange,
-            description = pluralStringResource(R.plurals.goodsin_difference_over, gap, gap),
-        )
-        else -> Difference(
-            chip = stringResource(R.string.goodsin_chip_matches),
-            tone = Tone.Success,
-            description = stringResource(R.string.goodsin_difference_none),
-        )
     }
 }

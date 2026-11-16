@@ -23,7 +23,7 @@ import io.aiku.droid.ui.components.WarehouseSection
 import io.aiku.droid.ui.components.warehouseKicker
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
-import io.aiku.droid.ui.navigation.ScanCameraRoute
+import io.aiku.droid.ui.navigation.ScanRoute
 import io.aiku.droid.ui.navigation.SkusRoute
 import io.aiku.droid.ui.states.SessionExpiredScreen
 
@@ -55,7 +55,7 @@ private fun InventoryDashboardContent(state: InventoryDashboardUiState, onRetry:
                     HeaderIconButton(
                         icon = R.drawable.ic_ui_scan,
                         description = stringResource(R.string.inventory_manage_barcodes),
-                        onClick = { navigator.open(ScanCameraRoute) },
+                        onClick = { navigator.open(ScanRoute) },
                         filled = true,
                     )
                 },
