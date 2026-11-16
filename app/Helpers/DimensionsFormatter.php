@@ -86,4 +86,21 @@ class DimensionsFormatter
         return '';
     }
 
+    public static function fromMetres(array|string $dimensions): array
+    {
+        if (is_string($dimensions)) {
+            $dimensions = json_decode($dimensions, true) ?? [];
+        }
+
+        $units = Arr::get($dimensions, 'units', 'm');
+
+        foreach (['l', 'w', 'h', 'd'] as $side) {
+            if (isset($dimensions[$side]) && is_numeric($dimensions[$side])) {
+                $dimensions[$side] = round(convertUnits((float) $dimensions[$side], 'm', $units), 2);
+            }
+        }
+
+        return $dimensions;
+    }
+
 }
