@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\Variant;
 
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
@@ -57,8 +58,10 @@ class UpdateVariant extends OrgAction
             return $variant;
         }
 
+        $detachedProductIds = [];
+
         /** @var Variant $variant */
-        $variant = DB::transaction(function () use ($modelData, $variant) {
+        $variant = DB::transaction(function () use ($modelData, $variant, &$detachedProductIds) {
             $variant->update($modelData);
             $variant->refresh();
 
@@ -68,6 +71,11 @@ class UpdateVariant extends OrgAction
                 $productIds = $productsInVariant->pluck('id');
 
                 $website = $variant->shop->website;
+
+                $detachedProductIds = Product::where('variant_id', $variant->id)
+                    ->whereNotIn('id', $productIds)
+                    ->pluck('id')
+                    ->all();
 
                 // Detach other product not in variant
                 Product::where('variant_id', $variant->id)
@@ -154,6 +162,7 @@ class UpdateVariant extends OrgAction
             } else {
                 $productsInVariant = $variant->allProduct();
                 $productIds = $productsInVariant->pluck('id');
+                $detachedProductIds = $productIds->all();
 
                 Product::whereIn('id', $productIds)
                     ->update([
@@ -177,6 +186,10 @@ class UpdateVariant extends OrgAction
 
             return $variant;
         });
+
+        foreach (Product::whereIn('id', $detachedProductIds)->get() as $detachedProduct) {
+            ProductHydrateForSale::run($detachedProduct);
+        }
 
         if (Arr::has($modelData, 'data')) {
             TranslateVariantOptions::dispatch($variant);

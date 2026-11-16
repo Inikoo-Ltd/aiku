@@ -22,6 +22,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Catalogue\Collection\StoreCollectionWebpage;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\UpdateFamilyDepartment;
@@ -1574,4 +1575,44 @@ test('logged-out family page product list leaves out the rrp (HELP-4214)', funct
     expect($loggedOut['data'])->not->toBeEmpty()
         ->and($loggedOut['data'][0])->toHaveKey('code')->not->toHaveKeys(['rrp', 'rrp_per_unit'])
         ->and($loggedIn['data'][0])->toHaveKeys(['rrp', 'rrp_per_unit']);
+});
+
+test('switching a variant off closes the page of a former leader that is not for sale', function () {
+    [, $leader] = createProduct($this->shop);
+    $this->website->refresh()->storefront->update(['state' => WebpageStateEnum::LIVE]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $leader->group_id,
+        'code'     => $leader->code,
+        'data'     => ['products' => []],
+    ]);
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $leader->group_id,
+        'organisation_id'   => $leader->organisation_id,
+        'shop_id'           => $leader->shop_id,
+        'family_id'         => $leader->family_id,
+        'code'              => $leader->code,
+        'leader_id'         => $leader->id,
+        'status'            => true,
+        'data'              => ['products' => [$leader->id => ['product' => ['id' => $leader->id]]]],
+    ]);
+    $leader->updateQuietly([
+        'variant_id'        => $variant->id,
+        'is_variant_leader' => true,
+        'is_for_sale'       => true,
+        'is_main'           => true,
+        'state'             => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE,
+        'status'            => \App\Enums\Catalogue\Product\ProductStatusEnum::NOT_FOR_SALE,
+    ]);
+    $webpage = StoreProductWebpage::make()->action($leader);
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+
+    \App\Actions\Catalogue\Variant\UpdateVariant::make()->action($variant, ['status' => false]);
+
+    $leader->refresh();
+
+    expect($leader->is_variant_leader)->toBeFalse()
+        ->and($leader->is_for_sale)->toBeFalse()
+        ->and($webpage->refresh()->state)->toBe(WebpageStateEnum::CLOSED);
 });

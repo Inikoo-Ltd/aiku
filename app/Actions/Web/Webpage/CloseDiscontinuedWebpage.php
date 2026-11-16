@@ -88,7 +88,9 @@ class CloseDiscontinuedWebpage
         }
 
         // Fallsback to storefront; a shop without a live website has nowhere to redirect to
-        return $target->shop->website?->storefront;
+        $storefront = $target->shop->website?->storefront;
+
+        return $storefront?->state === WebpageStateEnum::LIVE ? $storefront : null;
     }
 
 }

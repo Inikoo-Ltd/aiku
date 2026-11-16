@@ -2884,3 +2884,38 @@ test('faire days to dispatch is changed only by organisation admins, between 1 a
     expect(\Illuminate\Support\Arr::get($faireShop->refresh()->settings, 'faire.order_from_days'))->toBe(14)
         ->and(\App\Actions\Catalogue\Shop\External\Faire\AcceptFaireOrder::make()->getExpectedShipDate($faireShop, null)->toDateString())->toBe(now()->addDays(14)->toDateString());
 });
+
+test('a product page closes when the product stops being for sale and reopens when it is back on sale', function () {
+    $shop = Shop::orderBy('id')->first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    $website = $shop->website ?? createWebsite($shop);
+    $website->refresh()->storefront->update(['state' => WebpageStateEnum::LIVE]);
+
+    $product = StoreProduct::make()->action($shop, array_merge(Product::factory()->definition(), [
+        'trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]],
+        'price'       => 10,
+    ]));
+    $webpage = StoreProductWebpage::make()->action($product);
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+
+    $hydrateWithStatus = function (ProductStatusEnum $status) use ($product, $webpage): Webpage {
+        DB::table('products')->where('id', $product->id)->update([
+            'state'   => ProductStateEnum::ACTIVE->value,
+            'status'  => $status->value,
+            'is_main' => true,
+        ]);
+        \App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale::run(Product::find($product->id));
+
+        return Webpage::find($webpage->id);
+    };
+
+    $closed = $hydrateWithStatus(ProductStatusEnum::NOT_FOR_SALE);
+
+    expect($closed->state)->toBe(WebpageStateEnum::CLOSED)
+        ->and($closed->redirect_webpage_id)->not->toBeNull()
+        ->and(\App\Models\Web\Redirect::where('website_id', $closed->website_id)->where('from_path', $closed->url)->exists())->toBeTrue();
+
+    $reopened = $hydrateWithStatus(ProductStatusEnum::FOR_SALE);
+
+    expect($reopened->state)->toBe(WebpageStateEnum::LIVE)
+        ->and(\App\Models\Web\Redirect::where('website_id', $reopened->website_id)->where('from_path', $reopened->url)->exists())->toBeFalse();
+});
