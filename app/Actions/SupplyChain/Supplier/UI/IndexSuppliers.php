@@ -168,6 +168,15 @@ class IndexSuppliers extends OrgAction
             $query->whereRaw('suppliers.location->>0 = ?', [$value]);
         });
 
+        $photoFilter = AllowedFilter::callback('photo', function ($query, $value) {
+            $hasPhoto = fn ($query) => $query->where('model_has_media.scope', 'photo');
+            match ($value) {
+                'with'    => $query->whereHas('images', $hasPhoto),
+                'without' => $query->whereDoesntHave('images', $hasPhoto),
+                default   => null,
+            };
+        });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -224,7 +233,7 @@ class IndexSuppliers extends OrgAction
                 'number_purchase_orders',
                 'number_stock_deliveries',
             ])
-            ->allowedFilters([$globalSearch, $agentFilter, $locationFilter])
+            ->allowedFilters([$globalSearch, $agentFilter, $locationFilter, $photoFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -254,6 +263,7 @@ class IndexSuppliers extends OrgAction
 
             $table
                 ->selectFilter('location', $this->locationFilterOptions($parent), __('Supplier location'), withFlags: true)
+                ->selectFilter('photo', ['with' => __('With photo'), 'without' => __('Without photo')], __('Photo'))
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->withLabelRecord([__('Supplier'), __('Suppliers')])
