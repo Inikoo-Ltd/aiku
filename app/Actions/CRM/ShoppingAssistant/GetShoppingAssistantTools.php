@@ -56,6 +56,8 @@ use App\Models\Web\Website;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
+use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Country;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -1028,32 +1030,56 @@ class GetShoppingAssistantTools
             return $this->error('The shop information is not available right now. Do not answer from your own knowledge: answer with answer_kind offer_person and offer_reason not_sure.');
         }
 
-        if ($entries->isEmpty()) {
-            return [
-                'content'  => ['texts' => [], 'note' => 'We have nothing written about this. Do not answer from your own knowledge: answer with answer_kind offer_person and offer_reason not_sure.'],
-                'products' => [],
-                'error'    => null,
-                'sources'  => [],
-            ];
-        }
+        $sources = $entries->map(fn (ChatKnowledgeEntry $entry) => [
+            'id'          => $entry->id,
+            'kind'        => $entry->kind,
+            'source_type' => $entry->source_type,
+            'source_id'   => $entry->source_id,
+            'title'       => $entry->title,
+            'url'         => $entry->url,
+            'body'        => $entry->body,
+            'checked'     => $entry->is_manual || $entry->source_type === 'verified',
+        ])->prepend(self::deliveryCountriesSource($customer->shop))->values();
 
         return [
             'content'  => [
-                'texts' => $entries->map(fn (ChatKnowledgeEntry $entry) => ['id' => $entry->id, 'title' => $entry->title, 'text' => $entry->body, 'checked_by_staff' => $entry->is_manual || $entry->source_type === 'verified'])->values()->all(),
-                'note'  => 'Answer only if these texts clearly answer the question, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. You may repeat a figure only exactly as a text states it. A text marked checked_by_staff is newer than our pages: when it disagrees with a page, follow it and cite it. Some texts are notes written for our staff: tell the customer only what answers their question, in plain words, and never repeat internal codes, ids, system or file names, what staff can do, or that a page of ours is wrong or out of date. If the texts do not answer the question, do not guess: answer with answer_kind offer_person and offer_reason not_sure.',
+                'texts' => $sources->map(fn (array $source) => ['id' => $source['id'], 'title' => $source['title'], 'text' => $source['body'], 'checked_by_staff' => $source['checked']])->all(),
+                'note'  => 'Answer only if these texts clearly answer the question, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. You may repeat a figure only exactly as a text states it. A text marked checked_by_staff is newer than our pages: when it disagrees with a page, follow it and cite it. The text with id 0 comes from the shop\'s delivery settings, which the checkout enforces: it is the answer to whether we deliver to a country. Some texts are notes written for our staff: tell the customer only what answers their question, in plain words, and never repeat internal codes, ids, system or file names, what staff can do, or that a page of ours is wrong or out of date. If the texts do not answer the question, do not guess: answer with answer_kind offer_person and offer_reason not_sure.',
             ],
             'products' => [],
             'error'    => null,
-            'sources'  => $entries->map(fn (ChatKnowledgeEntry $entry) => [
-                'id'          => $entry->id,
-                'kind'        => $entry->kind,
-                'source_type' => $entry->source_type,
-                'source_id'   => $entry->source_id,
-                'title'       => $entry->title,
-                'url'         => $entry->url,
-                'body'        => $entry->body,
-            ])->values()->all(),
+            'sources'  => $sources->map(fn (array $source) => Arr::except($source, 'checked'))->all(),
         ];
+    }
+
+    /**
+     * The countries the checkout accepts a delivery address in, from the same banned list
+     * GetAddressDataForShop applies (the shop's, or the organisation's when the shop follows it).
+     * Whichever of the two lists is shorter is named: a shop that delivers to one country bans
+     * two hundred. A ban with a postcode pattern covers only part of the country.
+     *
+     * @return array{id: int, kind: string, source_type: string, source_id: string, title: string, url: null, body: string, checked: bool}
+     */
+    public static function deliveryCountriesSource(Shop $shop): array
+    {
+        $target   = data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false) ? $shop->organisation : $shop;
+        $banned   = collect($target->bannedDeliveryCountries());
+        $whole    = $banned->filter(fn (array $ban) => empty($ban['postcode']))->keys();
+        $partial  = $banned->reject(fn (array $ban) => empty($ban['postcode']))->keys();
+        $names    = fn ($codes) => Country::whereIn('code', $codes)->orderBy('name')->pluck('name')->implode(', ');
+        $allowed  = Country::where('status', true)->where('show_in_address', true)->whereNotIn('code', $whole)->pluck('code');
+
+        $body = match (true) {
+            $whole->isEmpty()                   => 'We deliver to every country: the checkout accepts a delivery address in any country.',
+            $allowed->count() < $whole->count() => 'We deliver only to these countries: '.$names($allowed).'.',
+            default                             => 'We deliver to every country except: '.$names($whole).'.',
+        };
+
+        if ($partial->isNotEmpty()) {
+            $body .= ' Some areas of '.$names($partial).' are excluded.';
+        }
+
+        return ['id' => 0, 'kind' => 'shop_setting', 'source_type' => 'shop_setting', 'source_id' => 'delivery_countries', 'title' => 'Countries we deliver to', 'url' => null, 'body' => $body, 'checked' => true];
     }
 
     /**
