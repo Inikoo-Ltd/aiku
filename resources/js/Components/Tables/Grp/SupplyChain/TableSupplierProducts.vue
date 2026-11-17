@@ -75,6 +75,25 @@ const bulkStateHiddenCount = computed(() => selectedSupplierProductIds.value.len
 const bulkStateNewOption = computed(() => props.stateOptions?.find((option) => option.value === bulkState.value) ?? null)
 const bulkStateChangingCount = computed(() => bulkStatePreviewRows.value.filter((supplierProduct) => supplierProduct.state?.value !== bulkState.value).length)
 
+const bulkStateEffects = computed<string[]>(() => {
+    const effectsByState: Record<string, string[]> = {
+        in_process: [ctrans("Cannot be added to purchase orders")],
+        active: [ctrans("Can be added to purchase orders")],
+        discontinuing: [ctrans("Cannot be added to new purchase orders")],
+        discontinued: [ctrans("Cannot be added to purchase orders"), ctrans("Discontinued date is recorded")],
+    }
+
+    if (!bulkState.value) {
+        return []
+    }
+
+    return [
+        ...(effectsByState[bulkState.value] ?? []),
+        ctrans("Applies in every organisation"),
+        ctrans("Stock and website do not change: products still sell while there is stock"),
+    ]
+})
+
 function openBulkStateDialog() {
     bulkState.value = null
     bulkStateError.value = null
@@ -298,6 +317,16 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
                         @change="bulkStateError = null"
                     />
                 </label>
+
+                <div v-if="bulkStateEffects.length" class="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    <div class="mb-1 flex items-center gap-1 font-semibold">
+                        <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
+                        {{ ctrans("What will happen:") }}
+                    </div>
+                    <ul class="list-disc space-y-0.5 pl-4">
+                        <li v-for="effect in bulkStateEffects" :key="effect">{{ effect }}</li>
+                    </ul>
+                </div>
 
                 <div class="max-h-[50vh] overflow-y-auto rounded border border-gray-200">
                     <table class="w-full text-xs">
