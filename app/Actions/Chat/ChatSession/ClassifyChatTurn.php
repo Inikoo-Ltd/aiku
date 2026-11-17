@@ -196,25 +196,33 @@ class ClassifyChatTurn
     }
 
     /**
-     * Cancel, change of address or a delivery instruction, flagged on even odds: a missed one
-     * ships, a wrong one costs an agent a glance. Cancelling wins over the address, and the
-     * address over an instruction for the same address. Cancelling it all, taking items off and
-     * holding it are one request to stop the order as it is. Agreeing to leave out what we said
-     * is out of stock is not: the order ships as we proposed.
+     * Cancel, hold, change of address or a delivery instruction, flagged on even odds: a missed
+     * one ships, a wrong one costs an agent a glance, but nothing is flagged when Jev thinks
+     * more likely the customer asks for none of these (HELP-4774: a dispatch date question
+     * was flagged as a cancel). Cancelling it all, taking items off and holding it are one
+     * request to stop the order as it is, which wins over the address, and the address over an
+     * instruction for the same address. The label says which: holding an order or delivering
+     * it later is not cancelling it. Agreeing to leave out what we said is out of stock is not
+     * a request: the order ships as we proposed.
      *
      * @param  array<string, mixed>  $answers
      */
     public static function urgent(array $answers): ?string
     {
-        $cancel      = array_sum(array_map(fn (string $option) => (float) Arr::get($answers, "request.probabilities.$option", 0), ['cancel_all', 'remove_items', 'hold']));
-        $address     = (float) Arr::get($answers, 'request.probabilities.change_address', 0);
-        $instruction = (float) Arr::get($answers, 'request.probabilities.delivery_instruction', 0);
+        $probability = fn (string ...$options) => array_sum(array_map(fn (string $option) => (float) Arr::get($answers, "request.probabilities.$option", 0), $options));
+
+        $cancel      = $probability('cancel_all', 'remove_items');
+        $hold        = $probability('hold');
+        $stop        = $cancel + $hold;
+        $address     = $probability('change_address');
+        $instruction = $probability('delivery_instruction');
+        $asked       = $stop + $address + $instruction;
 
         return match (true) {
-            max($cancel, $address, $instruction) < self::URGENT => null,
-            $cancel >= max($address, $instruction)              => 'cancel_order',
-            $address >= $instruction                            => 'change_address',
-            default                                             => 'delivery_instruction',
+            $asked < self::URGENT, $asked < $probability('none', 'accept_ours') => null,
+            $stop >= max($address, $instruction)                                => $hold > $cancel ? 'hold_order' : 'cancel_order',
+            $address >= $instruction                                             => 'change_address',
+            default                                                              => 'delivery_instruction',
         };
     }
 
