@@ -13,6 +13,7 @@ use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\TiktokUser;
@@ -116,24 +117,38 @@ class ProcessTiktokOrderShipment extends OrgAction
     ): void {
         $tiktokPackageShippingId = Arr::get($tiktokPackageDetail, 'data.shipping_provider_id');
         $tiktokPackageShippingName = Arr::get($tiktokPackageDetail, 'data.shipping_provider_name');
-        $tiktokPackageShippingCode = Str::slug(substr($tiktokPackageShippingName, 0, 8));
         $tiktokPackageTrackingNumber = Arr::get($tiktokPackageDetail, 'data.tracking_number');
 
-        $shipper = Shipper::where('code', $tiktokPackageShippingCode)->first();
-
-        if (!$shipper) {
-            $shipper = StoreShipper::make()->action($order->organisation, [
-                'code' => $tiktokPackageShippingCode,
-                'name' => $tiktokPackageShippingName.' (TikTok)',
-                'trade_as' => Str::substr($tiktokPackageShippingName, 0, 15)
-            ]);
-        }
+        $shipper = $this->getShipper($order->organisation, $tiktokPackageShippingName);
 
         StoreShipment::make()->action($deliveryNote, $shipper, [
             'reference' => $tiktokPackageShippingId,
             'tracking' => $tiktokPackageTrackingNumber,
             'combined_label_url' => $tiktokShippingLabelUrl
         ]);
+    }
+
+    /**
+     * @throws \Throwable
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function getShipper(Organisation $organisation, string $tiktokPackageShippingName): Shipper
+    {
+        $tiktokPackageShippingCode = Str::slug(substr($tiktokPackageShippingName, 0, 8));
+
+        $shipper = Shipper::where('organisation_id', $organisation->id)
+            ->where('code', $tiktokPackageShippingCode)
+            ->first();
+
+        if (!$shipper) {
+            $shipper = StoreShipper::make()->action($organisation, [
+                'code' => $tiktokPackageShippingCode,
+                'name' => $tiktokPackageShippingName.' (TikTok)',
+                'trade_as' => Str::substr($tiktokPackageShippingName, 0, 15)
+            ]);
+        }
+
+        return $shipper;
     }
 
     public function authorize(ActionRequest $request): bool
