@@ -33,6 +33,16 @@ class ShowSupplierPortalLogin
     ];
 
     /**
+     * Every language the portal can be read in.
+     *
+     * @return array<int, string>
+     */
+    public static function languages(): array
+    {
+        return array_values(array_unique(['en', ...self::LANGUAGE_BY_COUNTRY]));
+    }
+
+    /**
      * The language the visitor picked last time, else the usual one in the country Cloudflare sees them in.
      */
     public static function language(Request $request): string
