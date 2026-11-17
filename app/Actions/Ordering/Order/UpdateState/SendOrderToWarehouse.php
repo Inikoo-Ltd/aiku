@@ -296,7 +296,8 @@ class SendOrderToWarehouse extends OrgAction
 
         ReusePicksFromCancelledDeliveryNote::make()->action($order, $deliveryNote);
 
-        if ($order->customer) {
+        /** An Orderchamp order is billed to Orderchamp and delivered to the retailer named on the order */
+        if ($order->customer && !$order->isFromOrderchamp()) {
             $modelData['email']        = $order->customer->email;
             $modelData['phone']        = $order->customer->phone;
             $modelData['contact_name'] = $order->customer->contact_name;
@@ -343,7 +344,7 @@ class SendOrderToWarehouse extends OrgAction
                 $phone = $order->customerClient->phone;
             }
         } else {
-            $phone = $order->customer->phone;
+            $phone = $order->isFromOrderchamp() && $order->phone ? $order->phone : $order->customer->phone;
         }
 
         return $phone;

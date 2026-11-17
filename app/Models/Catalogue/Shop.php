@@ -9,6 +9,7 @@
 namespace App\Models\Catalogue;
 
 use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
+use App\Actions\Catalogue\Shop\Traits\WithOrderchampApi;
 use App\Actions\Catalogue\Shop\Traits\WithReviewIOApi;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -301,6 +302,7 @@ class Shop extends Model implements HasMedia, Auditable
     use HasHistory;
     use HasImage;
     use WithFaireApi;
+    use WithOrderchampApi;
     use WithReviewIOApi;
     use HasApiTokens;
 

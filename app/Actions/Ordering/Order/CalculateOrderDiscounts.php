@@ -65,8 +65,9 @@ class CalculateOrderDiscounts implements ShouldBeUnique
          * External shops are Faire, and Faire owns the pricing of its own orders: the amounts,
          * the discount and the tax all come from its payload. Such an order carries no Aiku
          * offers, so this would compute an amount_off of zero and overwrite what Faire sent.
+         * An Orderchamp order in an ordinary shop is priced by Orderchamp the same way.
          */
-        if ($order->shop->type == ShopTypeEnum::EXTERNAL) {
+        if ($order->shop->type == ShopTypeEnum::EXTERNAL || $order->isFromOrderchamp()) {
             return $order;
         }
 

@@ -20,6 +20,7 @@ use App\Actions\Dispatching\Shipment\ApiCalls\TrackGlsEsShipments;
 use App\Actions\Inventory\LocationOrgStock\DisassociateEmptyLocationOrgStocks;
 use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
+use App\Actions\Dropshipping\Orderchamp\GetOrderchampOrders;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\SyncDispatchedFaireOrdersTax;
 use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyOrdersAllShops;
@@ -921,6 +922,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'GetFaireOrdersAllShops',
                 ),
                 name: 'GetFaireOrdersAllShops',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(GetOrderchampOrders::makeJob())->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'GetOrderchampOrders',
+                ),
+                name: 'GetOrderchampOrders',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

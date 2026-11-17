@@ -141,6 +141,7 @@ trait WithReceivables
             ->whereNull('invoices.deleted_at')
             ->whereRaw(self::OWED_SQL.' > 0')
             ->whereRaw("not (shops.type = ? and exists (select 1 from bank_transactions where bank_transactions.order_id = invoices.order_id and bank_transactions.match_state = ?))", [ShopTypeEnum::EXTERNAL->value, BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE->value])
+            ->whereRaw("not exists (select 1 from bank_transactions where bank_transactions.match_state = ? and bank_transactions.match_data->'order_ids' @> to_jsonb(invoices.order_id))", [BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE->value])
             ->when($owedBy === 'legacy', fn ($query) => $query->whereNotNull('invoices.source_id'))
             ->when($owedBy !== null && $owedBy !== 'legacy', fn ($query) => $query->whereNull('invoices.source_id')->where('shops.type', $owedBy === 'marketplaces' ? '=' : '!=', ShopTypeEnum::EXTERNAL->value))
             ->when($owedBy === 'companies', fn ($query) => $query->whereNotNull('invoices.as_organisation_id'))

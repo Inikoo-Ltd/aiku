@@ -62,6 +62,7 @@ class BankIncomingResource extends JsonResource
                 $this->match_state === BankTransactionMatchStateEnum::DISMISSED       => $this->match_data['dismissed_note'] ?? null,
                 $this->match_state === BankTransactionMatchStateEnum::ALREADY_PAID && isset($this->match_data['dismissed_note']) => $this->match_data['dismissed_note'],
                 $this->match_state === BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT => null,
+                $this->match_state === BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE && isset($this->match_data['settlement']) => __('Orderchamp settlement :settlement of :orders', ['settlement' => $this->match_data['settlement'], 'orders' => implode(', ', $this->match_data['order_references'] ?? [])]),
                 $this->match_state === BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE => __('Faire payout of this order'),
                 $this->match_state === null => in_array($this->provider_type, MatchBankTransactions::CUSTOMER_TRANSFER_TYPES, true)
                     ? __('Not matched yet')

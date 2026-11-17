@@ -37,7 +37,8 @@ class FixedAddressGarbageCollection
 
         if (!$inUse) {
             try {
-                $address->forceDelete();
+                /** A savepoint: a refused delete must not abort the caller's transaction (an imported order sets its address in one) */
+                DB::transaction(fn () => $address->forceDelete());
 
                 return true;
             } catch (Exception) {

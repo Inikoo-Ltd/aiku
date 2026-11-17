@@ -112,6 +112,24 @@ class BankTransaction extends Model implements AuditableContract
         return $this->belongsTo(Order::class);
     }
 
+    /**
+     * A marketplace payout names its order in order_id, or, when it settles several (an Orderchamp settlement),
+     * all of them in match_data.order_ids.
+     */
+    public static function paidByMarketplaceFor(int $orderId): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::where('match_state', BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE)
+            ->where(fn ($query) => $query->where('order_id', $orderId)->orWhereRaw("match_data->'order_ids' @> to_jsonb(?::bigint)", [$orderId]));
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function settledOrderIds(): array
+    {
+        return array_values(array_unique(array_filter([$this->order_id, ...($this->match_data['order_ids'] ?? [])])));
+    }
+
     public function payment(): BelongsTo
     {
         return $this->belongsTo(Payment::class);
