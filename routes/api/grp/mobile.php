@@ -248,6 +248,9 @@ Route::middleware(VerifyMobileAppKey::class)->group(function () {
         Route::post('/warehouses/{warehouse:id}/picking-sessions', StoreMobilePickingSession::class)->name('warehouses.picking_sessions.store');
         Route::get('/picking-sessions/{pickingSession:id}', GetMobilePickingSession::class)->name('picking_sessions.show');
 
+        Route::prefix('warehouses/{warehouse:id}')->name('warehouses.')->withoutScopedBindings()->group(__DIR__.'/mobile_fulfilment_inbound.php');
+        Route::prefix('warehouses/{warehouse:id}')->name('warehouses.')->withoutScopedBindings()->group(__DIR__.'/mobile_fulfilment_outbound.php');
+
         Route::prefix('picking-sessions/{pickingSession:id}')->name('picking_sessions.')->group(function () {
             Route::post('/start-picking', StartMobilePickingSession::class)->name('start_picking');
             Route::post('/back-to-picking', UndoMobileWaitingPickingSession::class)->name('back_to_picking');

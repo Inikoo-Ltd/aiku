@@ -36,13 +36,14 @@ class ShowSupplierPortalPreview extends OrgAction
     public function asController(Supplier $supplier, ActionRequest $request): Response
     {
         $this->initialisationFromGroup($supplier->group, $request);
-        $blocked = fn (string $path) => route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, $path]);
+        $blocked  = fn (string $path) => route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, $path]);
+        $language = ShowSupplierPortalLogin::language($request);
 
         return Inertia::render('SupplyChain/SupplierShare', [
             'title'    => $supplier->officialName(),
             'supplier' => ['code' => $supplier->code, 'name' => $supplier->officialName()],
             'group'    => $supplier->group->name,
-            'language' => ShowSupplierPortalLogin::language($request),
+            'language' => $language,
             'preview'  => true,
             'routes'   => [
                 'send_code' => $blocked('code'),
@@ -50,7 +51,7 @@ class ShowSupplierPortalPreview extends OrgAction
                 'profile'   => $blocked('profile'),
                 'search'    => route('grp.supply-chain.suppliers.portal_preview.search', $supplier),
             ],
-            ...ShowSupplierShare::make()->portal($supplier),
+            ...ShowSupplierShare::make()->portal($supplier, null, $language),
             'profile'  => [
                 'name'         => null,
                 'phone'        => null,

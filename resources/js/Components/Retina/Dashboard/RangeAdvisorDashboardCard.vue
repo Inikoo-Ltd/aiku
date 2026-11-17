@@ -33,7 +33,7 @@ const ask = (question: string) => {
 <template>
     <section class="flex flex-col rounded-lg border border-gray-200 bg-white p-4 lg:self-stretch" aria-labelledby="range-advisor-card-heading">
         <div class="flex items-start gap-3">
-            <MerlinIcon class="!size-8" />
+            <MerlinIcon themed class="!size-8" />
             <div class="min-w-0">
                 <h2 id="range-advisor-card-heading" class="text-lg font-semibold text-gray-900">{{ ctrans("Ask :name", { name }) }}</h2>
                 <p class="mt-1 text-sm text-gray-700">{{ ctrans(":name finds what sells for shops like yours, from what is in stock now.", { name }) }}</p>

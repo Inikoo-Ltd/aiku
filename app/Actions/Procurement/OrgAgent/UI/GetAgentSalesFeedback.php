@@ -9,7 +9,10 @@
 namespace App\Actions\Procurement\OrgAgent\UI;
 
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteStateEnum;
+use App\Actions\Reviews\TranslateReviewMessage;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteVisibilityEnum;
+use App\Models\Helpers\Language;
+use App\Models\Reviews\Review;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Database\Query\Builder;
@@ -20,7 +23,8 @@ use Lorisleiva\Actions\Concerns\AsObject;
  * What customers, purchasing and the warehouse say about an agent's products, or one supplier's. Customers are only
  * quoted when a review is public, the rest of their side (refunds, replacements) is numbers. Purchasing shows only
  * the notes marked as visible to the agent, or to the supplier when a supplier is read on its own. The warehouse is
- * numbers from goods-in.
+ * numbers from goods-in. Given a language, as on the supplier portal, the quoted reviews are in that language,
+ * translated the first time they are shown.
  */
 class GetAgentSalesFeedback
 {
@@ -35,7 +39,7 @@ class GetAgentSalesFeedback
     /**
      * @return array<string, mixed>
      */
-    public function handle(Agent|Supplier $agent, ?Supplier $supplier = null): array
+    public function handle(Agent|Supplier $agent, ?Supplier $supplier = null, ?Language $language = null): array
     {
         if ($agent instanceof Supplier) {
             $supplier = $agent;
@@ -54,7 +58,7 @@ class GetAgentSalesFeedback
                 'rating'         => $reviews ? round($products->sum('rating_sum') / $reviews, 2) : null,
                 'reviews'        => $reviews,
                 'refund_percent' => $invoices ? round(100 * $products->sum('refunds') / $invoices, 2) : null,
-                'recent'         => $this->recentReviews($agent, $supplier),
+                'recent'         => $this->recentReviews($agent, $supplier, $language),
             ],
             'purchasing' => $this->notes($agent, $supplier),
             'warehouse'  => [
@@ -80,9 +84,9 @@ class GetAgentSalesFeedback
     /**
      * @return array<int, array{code: string, rating: int, message: string, date: string}>
      */
-    private function recentReviews(Agent|Supplier $agent, ?Supplier $supplier): array
+    private function recentReviews(Agent|Supplier $agent, ?Supplier $supplier, ?Language $language): array
     {
-        return GetAgentSalesProducts::make()->publicReviews()
+        $reviews = GetAgentSalesProducts::make()->publicReviews()
             ->join('org_stock_has_org_supplier_products as link', fn ($join) => $join->on('link.org_stock_id', 'phos.org_stock_id')->where('link.status', true))
             ->join('org_supplier_products as feedback_osp', 'feedback_osp.id', 'link.org_supplier_product_id')
             ->when($agent instanceof Agent, fn (Builder $query) => $query->join('org_agents as feedback_oa', fn ($join) => $join->on('feedback_oa.id', 'feedback_osp.org_agent_id')->where('feedback_oa.agent_id', $agent->id)))
@@ -96,8 +100,23 @@ class GetAgentSalesFeedback
             ->get()
             ->unique('id')
             ->take(self::RECENT_REVIEWS)
+            ->values();
+
+        if ($language) {
+            $models  = Review::with(['language', 'shop.language'])->findMany($reviews->pluck('id'))->keyBy('id');
+            $english = Language::where('code', 'en')->first();
+            $reviews = $reviews->map(function ($review) use ($models, $language, $english) {
+                $model           = $models->get($review->id);
+                $review->message = ($model ? TranslateReviewMessage::run($model, $language) : null)
+                    ?? ($model && $english ? data_get($model->translations, 'message.'.$english->id) : null)
+                    ?? $review->message;
+
+                return $review;
+            });
+        }
+
+        return $reviews
             ->map(fn ($review) => ['code' => $review->code, 'rating' => (int) $review->rating, 'message' => $review->message, 'date' => substr((string) $review->date, 0, 10)])
-            ->values()
             ->all();
     }
 

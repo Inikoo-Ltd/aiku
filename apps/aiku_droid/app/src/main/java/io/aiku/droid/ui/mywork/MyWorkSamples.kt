@@ -31,7 +31,7 @@ internal object MyWorkSamples {
         MyWorkItem("AR24790", "To pack", "Delivery note · 6 items · picked 10 min ago", MyWorkModule.Warehouse, Tone.Primary, DeliveryNotePackingRoute(id = GoodsOutSamples.SAMPLE_DELIVERY_NOTE_ID, reference = "AR24790")),
         MyWorkItem("SDaw-0093", "To check", "Stock delivery · 6 items received", MyWorkModule.Warehouse, Tone.Primary, StockDeliveriesRoute(state = "received")),
         MyWorkItem("A-12-03", "Audit", "Stock audit · location · 4 SKOs", MyWorkModule.Warehouse, Tone.Primary, LocationRoute(id = 0, code = "A-12-03")),
-        MyWorkItem("acme-011", "Booking in", "Fulfilment delivery · [Customer A] · 3 of 4 pallets", MyWorkModule.Warehouse, Tone.Primary, FulfilmentBookInRoute("acme-011")),
+        MyWorkItem("acme-011", "Booking in", "Fulfilment delivery · [Customer A] · 3 of 4 pallets", MyWorkModule.Warehouse, Tone.Primary, FulfilmentBookInRoute(0L, "acme-011")),
         MyWorkItem("[Task]", "Due today", "From Aiku Tasks · assigned by [Supervisor]", MyWorkModule.Tasks, Tone.Neutral, NoTasksRoute),
     )
 }

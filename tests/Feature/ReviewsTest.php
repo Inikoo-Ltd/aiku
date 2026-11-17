@@ -33,6 +33,8 @@ use App\Actions\Reviews\Import\TrustPilotImport;
 use App\Actions\Reviews\StoreReview;
 use App\Actions\Reviews\TranslateReply;
 use App\Actions\Reviews\TranslateReview;
+use App\Actions\Reviews\TranslateReviewMessage;
+use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
 use App\Actions\Reviews\UI\IndexReviewsInIris;
 use App\Actions\Reviews\UpdateReview;
 use App\InertiaTable\InertiaTable;
@@ -69,6 +71,8 @@ use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\patch;
 use function Pest\Laravel\post;
+
+require_once __DIR__.'/../Support/ProcurementHelpers.php';
 
 beforeAll(function () {
     loadDB();
@@ -778,4 +782,77 @@ test('index reviews in iris scope handlers', function () {
 
     $closure = $indexer->tableStructure(shop: $this->shop, scopes: [ReviewScopeEnum::SHOP, ReviewScopeEnum::PRODUCT]);
     $closure(new InertiaTable(request()));
+});
+
+test('a review is translated into a supplier portal language once, kept beside the shop languages, and TranslateReview keeps it', function () {
+    $hindi = Language::where('code', 'hi')->firstOrFail();
+    Translate::mock()->shouldReceive('handle')->once()->andReturn('बढ़िया उत्पाद');
+
+    $review = storeProductReview(['message' => 'Skvělý produkt']);
+    $review->update(['translations' => ['message' => [$this->shop->language_id => 'Great product']]]);
+
+    expect(TranslateReviewMessage::run($review->refresh(), $hindi))->toBe('बढ़िया उत्पाद')
+        ->and(TranslateReviewMessage::run($review->refresh(), $hindi))->toBe('बढ़िया उत्पाद')
+        ->and($review->refresh()->translations['message'])->toBe([(string) $this->shop->language_id => 'Great product', (string) $hindi->id => 'बढ़िया उत्पाद']);
+
+    Translate::mock()->shouldReceive('handle')->andReturn('translated');
+    $this->shop->update(['is_aiku' => true]);
+    TranslateReview::run($review->refresh());
+
+    expect($review->refresh()->translations['message'][$hindi->id])->toBe('बढ़िया उत्पाद');
+});
+
+test('a failed translation is not stored, so the review is tried again next time', function () {
+    $hindi  = Language::where('code', 'hi')->firstOrFail();
+    $review = storeProductReview(['message' => 'Skvělý produkt']);
+    Translate::mock()->shouldReceive('handle')->andReturnUsing(fn (string $text) => $text);
+
+    expect(TranslateReviewMessage::run($review, $hindi))->toBeNull()
+        ->and(data_get($review->refresh()->translations, 'message.'.$hindi->id))->toBeNull();
+});
+
+test('reviews:translate-supplier-portal takes only reviews the portal can quote, only counts without --apply and queues one job per missing review and language with it', function () {
+    $hindi    = Language::where('code', 'hi')->firstOrFail();
+    $missing  = TranslateReviewMessage::make()->missing($hindi)->count();
+    $pending  = storeProductReview(['message' => 'Čeká na schválení']);
+    $pending->update(['state' => ReviewStateEnum::WAITING_APPROVAL, 'review_status' => ReviewStatusEnum::PENDING]);
+    $review   = storeProductReview(['message' => 'Skvělý produkt']);
+    $review->update(['state' => ReviewStateEnum::PUBLISHED, 'review_status' => ReviewStatusEnum::APPROVED, 'is_public' => true]);
+
+    expect(TranslateReviewMessage::make()->missing($hindi)->count())->toBe($missing + 1)
+        ->and(TranslateReviewMessage::make()->missing($hindi)->whereKey($pending->id)->exists())->toBeFalse();
+
+    $this->artisan('reviews:translate-supplier-portal', ['--language' => ['hi']])->assertSuccessful();
+    TranslateReviewMessage::assertNotPushed();
+
+    $this->artisan('reviews:translate-supplier-portal', ['--language' => ['hi'], '--apply' => true])->assertSuccessful();
+    TranslateReviewMessage::assertPushed(fn ($action, array $arguments) => $arguments[0]->is($review) && $arguments[1]->is($hindi));
+
+    $this->artisan('reviews:translate-supplier-portal', ['--language' => ['fr']])->assertFailed();
+});
+
+test('the supplier portal shows its customer reviews in the portal language, and staff pages keep them as written', function () {
+    $hindi       = Language::where('code', 'hi')->firstOrFail();
+    $this->stock = $this->orgStocks[0]->stock;
+    [$orgSupplier, , $orgSupplierProduct] = independentOrgSupplierFixture($this);
+    AttachOrgSupplierProductToOrgStock::make()->action($this->orgStocks[0], $orgSupplierProduct);
+    $supplier = $orgSupplier->supplier;
+
+    $review = storeProductReview(['message' => 'Skvělý produkt']);
+    $review->update(['state' => ReviewStateEnum::PUBLISHED, 'review_status' => ReviewStatusEnum::APPROVED, 'is_public' => true]);
+    Translate::mock()->shouldReceive('handle')->andReturn('बढ़िया उत्पाद');
+
+    $recent = fn (?Language $language) => collect(\App\Actions\Procurement\OrgAgent\UI\GetAgentSalesFeedback::run($supplier, null, $language)['customers']['recent']);
+
+    expect($recent(null)->firstWhere('message', 'Skvělý produkt'))->not->toBeNull()
+        ->and($recent($hindi)->firstWhere('message', 'बढ़िया उत्पाद'))->not->toBeNull();
+
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+    $this->withoutVite();
+    $this->withUnencryptedCookie('supplier_portal_language', 'hi')
+        ->get(route('grp.supply-chain.suppliers.portal_preview', $supplier))
+        ->assertInertia(fn ($page) => $page
+            ->where('language', 'hi')
+            ->loadDeferredProps('feedback', fn ($reload) => $reload
+                ->where('feedback.customers.recent', fn ($rows) => collect($rows)->pluck('message')->contains('बढ़िया उत्पाद'))));
 });

@@ -1,7 +1,6 @@
 package io.aiku.droid.ui.goodsin
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +26,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -46,6 +44,7 @@ import io.aiku.droid.data.api.ReturnState
 import io.aiku.droid.data.api.ReturnType
 import io.aiku.droid.data.api.ReturnWrite
 import io.aiku.droid.ui.components.AikuButton
+import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
@@ -376,10 +375,27 @@ private fun ReturnItemCard(
             Text(text = breakdown, fontSize = 13.sp, color = colors.textTertiary)
             item.puts.forEach { put -> PutRow(put = put, onUndo = if (canUndo) ({ onUndo(put) }) else null) }
             if (canPutBack) {
+                AikuButton(
+                    text = stringResource(R.string.goodsin_back_to_stock),
+                    onClick = { onAction(ReturnItemAction.BackToStock) },
+                    height = 48.dp,
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    ReturnActionButton(text = stringResource(R.string.goodsin_back_to_stock), isPrimary = true, onClick = { onAction(ReturnItemAction.BackToStock) }, modifier = Modifier.weight(1f))
-                    ReturnActionButton(text = stringResource(R.string.goodsin_damaged), isPrimary = false, onClick = { onAction(ReturnItemAction.Damaged) }, modifier = Modifier.weight(1f))
-                    ReturnActionButton(text = stringResource(R.string.goodsin_not_returned), isPrimary = false, onClick = { onAction(ReturnItemAction.NotReturned) }, modifier = Modifier.weight(1f))
+                    AikuButton(
+                        text = stringResource(R.string.goodsin_damaged),
+                        onClick = { onAction(ReturnItemAction.Damaged) },
+                        style = ButtonStyle.Outline,
+                        height = 48.dp,
+                        modifier = Modifier.weight(1f),
+                    )
+                    AikuButton(
+                        text = stringResource(R.string.goodsin_not_returned),
+                        onClick = { onAction(ReturnItemAction.NotReturned) },
+                        style = ButtonStyle.Outline,
+                        height = 48.dp,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }
@@ -412,30 +428,5 @@ private fun PutRow(put: ReturnPut, onUndo: (() -> Unit)?) {
                     .padding(horizontal = 10.dp, vertical = 12.dp),
             )
         }
-    }
-}
-
-@Composable
-private fun ReturnActionButton(text: String, isPrimary: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = LocalAikuColors.current
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .heightIn(min = 52.dp)
-            .clip(ControlShape)
-            .background(if (isPrimary) colors.primary else colors.surface)
-            .border(width = 1.dp, color = if (isPrimary) colors.primaryBorder else colors.borderStrong, shape = ControlShape)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 6.dp, vertical = 4.dp),
-    ) {
-        Text(
-            text = text,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = if (isPrimary) colors.onPrimary else colors.textSecondary,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-        )
     }
 }

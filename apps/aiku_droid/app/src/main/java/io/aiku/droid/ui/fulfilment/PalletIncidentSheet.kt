@@ -30,61 +30,63 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
+import io.aiku.droid.data.api.Pallet
+import io.aiku.droid.data.api.PalletIncidentState
 import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChoiceRow
 import io.aiku.droid.ui.components.ControlShape
-import io.aiku.droid.ui.components.LocalToasts
-import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.animateFocusProgress
-import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.components.focusHalo
-import io.aiku.droid.ui.navigation.LocalAppNavigator
-import io.aiku.droid.ui.navigation.PalletIncidentsRoute
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
 
-@Composable
-fun PalletIncidentSheet(reference: String, onDismiss: () -> Unit) {
-    val colors = LocalAikuColors.current
-    val navigator = LocalAppNavigator.current
-    val toasts = LocalToasts.current
-    var kind by remember { mutableStateOf(PalletIncidentKind.Damaged) }
-    var note by remember { mutableStateOf(INCIDENT_NOTE_SAMPLE) }
-    val isLost = kind == PalletIncidentKind.Lost
-    val savedMessage = stringResource(
-        if (isLost) R.string.fulfilment_incident_lost_toast else R.string.fulfilment_incident_damaged_toast,
-        reference,
-    )
-    val noteLabel = stringResource(R.string.fulfilment_incident_note)
+private const val INCIDENT_NOTE_MAX_LENGTH = 1000
 
-    AikuBottomSheet(title = stringResource(R.string.fulfilment_incident_title), onDismiss = onDismiss) {
-        Text(
-            text = dotJoined(reference, palletFactsSample.location),
-            fontSize = 14.sp,
-            color = colors.textTertiary,
-            modifier = Modifier.fakeData(cornerRadius = 4.dp).padding(horizontal = 4.dp, vertical = 2.dp),
-        )
-        ChoiceRow(
-            title = stringResource(R.string.fulfilment_state_damaged),
-            subtitle = stringResource(R.string.fulfilment_incident_damaged_hint),
-            selected = kind == PalletIncidentKind.Damaged,
-            onClick = { kind = PalletIncidentKind.Damaged },
-        )
-        ChoiceRow(
-            title = stringResource(R.string.fulfilment_state_lost),
-            subtitle = stringResource(R.string.fulfilment_incident_lost_hint),
-            selected = isLost,
-            onClick = { kind = PalletIncidentKind.Lost },
-        )
+@Composable
+fun PalletIncidentSheet(
+    pallet: Pallet,
+    states: List<PalletIncidentState>,
+    isWorking: Boolean,
+    problem: String?,
+    onSave: (PalletIncidentState, String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = LocalAikuColors.current
+    var chosen by remember { mutableStateOf(states.firstOrNull()) }
+    var note by remember { mutableStateOf("") }
+    val noteLabel = stringResource(R.string.fulfilment_incident_note)
+    val noteInteraction = remember { MutableInteractionSource() }
+    val isNoteFocused by noteInteraction.collectIsFocusedAsState()
+    val noteFocusProgress = animateFocusProgress(isNoteFocused)
+    val selected = chosen
+
+    AikuBottomSheet(
+        title = stringResource(R.string.fulfilment_incident_title),
+        subtitle = dotJoined(pallet.reference, pallet.locationCode),
+        onDismiss = onDismiss,
+    ) {
+        if (PalletIncidentState.Damaged in states) {
+            ChoiceRow(
+                title = stringResource(R.string.fulfilment_state_damaged),
+                subtitle = stringResource(R.string.fulfilment_incident_damaged_hint),
+                selected = selected == PalletIncidentState.Damaged,
+                onClick = { chosen = PalletIncidentState.Damaged },
+            )
+        }
+        if (PalletIncidentState.Lost in states) {
+            ChoiceRow(
+                title = stringResource(R.string.fulfilment_state_lost),
+                subtitle = stringResource(R.string.fulfilment_incident_lost_hint),
+                selected = selected == PalletIncidentState.Lost,
+                onClick = { chosen = PalletIncidentState.Lost },
+            )
+        }
         Text(text = noteLabel, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
-        val noteInteraction = remember { MutableInteractionSource() }
-        val isNoteFocused by noteInteraction.collectIsFocusedAsState()
-        val noteFocusProgress = animateFocusProgress(isNoteFocused)
         BasicTextField(
             value = note,
-            onValueChange = { note = it },
+            onValueChange = { note = it.take(INCIDENT_NOTE_MAX_LENGTH) },
             textStyle = TextStyle(fontFamily = Inter, fontSize = 15.sp, lineHeight = 22.sp, color = colors.text),
             cursorBrush = SolidColor(colors.primary),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
@@ -92,7 +94,6 @@ fun PalletIncidentSheet(reference: String, onDismiss: () -> Unit) {
             maxLines = 6,
             interactionSource = noteInteraction,
             modifier = Modifier
-                .fakeData(cornerRadius = 8.dp)
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
                 .focusHalo(progress = noteFocusProgress, color = colors.focus, cornerRadius = 8.dp)
@@ -102,19 +103,19 @@ fun PalletIncidentSheet(reference: String, onDismiss: () -> Unit) {
                 .padding(horizontal = 12.dp, vertical = 10.dp)
                 .semantics { contentDescription = noteLabel },
         )
-        FulfilmentFootnote(text = stringResource(R.string.fulfilment_incident_footnote))
+        problem?.let { Text(text = it, fontSize = 13.sp, color = colors.danger) }
+        FulfilmentFootnote(text = stringResource(R.string.fulfilment_inbound_incident_footnote))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
-            AikuButton(
-                text = stringResource(if (isLost) R.string.fulfilment_incident_set_lost else R.string.fulfilment_incident_set_damaged),
-                onClick = {
-                    onDismiss()
-                    toasts.show(savedMessage, ToastKind.Success)
-                    navigator.open(PalletIncidentsRoute)
-                },
-                style = ButtonStyle.Danger,
-                height = 52.dp,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            if (selected != null) {
+                AikuButton(
+                    text = stringResource(if (selected == PalletIncidentState.Lost) R.string.fulfilment_incident_set_lost else R.string.fulfilment_incident_set_damaged),
+                    onClick = { onSave(selected, note) },
+                    style = ButtonStyle.Danger,
+                    isLoading = isWorking,
+                    height = 52.dp,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             AikuButton(
                 text = stringResource(R.string.dialog_cancel),
                 onClick = onDismiss,
