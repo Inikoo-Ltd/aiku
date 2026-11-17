@@ -215,4 +215,13 @@ test('an Orderchamp settlement pays every imported order it lists, on one bank l
         expect($order->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID)
             ->and($order->pay_detailed_status)->toBe(OrderPayDetailedStatusEnum::PAID_BY_MARKETPLACE);
     }
+
+    Http::assertSent(function (Request $request) {
+        if (!preg_match('/settlements\(first: (\d+).*invoices\(first: (\d+)/', $request['query'] ?? '', $matches)) {
+            return false;
+        }
+        [, $settlements, $invoices] = array_map('intval', $matches);
+
+        return $settlements + $settlements * (1 + 2 * $invoices) <= 2000;
+    });
 });

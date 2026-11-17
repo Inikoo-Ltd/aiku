@@ -11,13 +11,16 @@ use RuntimeException;
  * Orderchamp pays each of its companies' weekly settlements in one transfer referenced with the settlement number
  * ("Orderchamp NL payment: STL233240-1"). The API finds a settlement only by id, so the newest ones are read until
  * the number turns up. Each of its invoices is what Orderchamp pays for one order: the order total less commission
- * plus Orderchamp's share of the shipping.
+ * plus Orderchamp's share of the shipping. Orderchamp refuses a query costing more than 2000: each settlement with its
+ * 100 invoices costs about 201, so a page reads 9 settlements.
  */
 class GetOrderchampSettlement
 {
     use AsAction;
 
     private const int PAGES = 15;
+
+    private const int PER_PAGE = 9;
 
     /**
      * @return array{number: string, amount: float, currency: string|null, orders: array<string, float>}|null
@@ -26,7 +29,7 @@ class GetOrderchampSettlement
     {
         $after = null;
         for ($page = 0; $page < self::PAGES; $page++) {
-            $data = $shop->orderchampQuery('{ settlements(first: 15, sort: ID_DESC'.($after ? ', after: "'.$after.'"' : '').') { pageInfo { hasNextPage endCursor } edges { node { number amount currency invoicesCount invoices(first: 100) { edges { node { totalPrice order { number } } } } } } } }');
+            $data = $shop->orderchampQuery('{ settlements(first: '.self::PER_PAGE.', sort: ID_DESC'.($after ? ', after: "'.$after.'"' : '').') { pageInfo { hasNextPage endCursor } edges { node { number amount currency invoicesCount invoices(first: 100) { edges { node { totalPrice order { number } } } } } } } }');
 
             foreach (Arr::get($data, 'settlements.edges', []) as $edge) {
                 $settlement = $edge['node'];
