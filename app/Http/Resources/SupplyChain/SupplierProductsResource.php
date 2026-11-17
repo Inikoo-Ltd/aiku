@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\SupplyChain;
 
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -18,6 +19,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $agent_slug
  * @property mixed $supplier_slug
  * @property mixed $supplier_name
+ * @property SupplierProductStateEnum|null $state
  * @property string $description
  * @property mixed $cost
  * @property string $currency_code
@@ -36,6 +38,11 @@ class SupplierProductsResource extends JsonResource
             'agent_slug'    => $this->whenHas('agent_slug'),
             'supplier_slug' => $this->whenHas('supplier_slug'),
             'supplier_name' => $this->whenHas('supplier_name'),
+            'state'         => $this->whenHas('state', fn () => $this->state ? [
+                'value' => $this->state->value,
+                'label' => SupplierProductStateEnum::labels()[$this->state->value],
+                'icon'  => SupplierProductStateEnum::stateIcon()[$this->state->value],
+            ] : null),
             'description'   => $this->description,
             'cost'          => $this->cost,
             'currency_code' => $this->currency_code,

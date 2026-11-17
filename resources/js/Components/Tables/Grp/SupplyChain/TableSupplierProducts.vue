@@ -9,16 +9,17 @@ import {Link} from '@inertiajs/vue3';
 import { computed, ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBarcodeRead } from "@fal"
+import { faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh } from "@fal"
 import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from '@/Components/Table/Table.vue';
+import Icon from "@/Components/Icon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SupplierProductLabelsDialog from "@/Components/SupplyChain/SupplierProductLabelsDialog.vue"
 import { ctrans } from "@/Composables/useTrans"
 import {SupplierProduct} from "@/types/supplier-product";
 import { routeType } from "@/types/route"
 
-library.add(faBarcodeRead)
+library.add(faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh)
 
 const props = defineProps<{
     data: object,
@@ -103,6 +104,12 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
                 <Link v-if="supplier_product.supplier_slug" :href="route('grp.supply-chain.suppliers.show', [supplier_product.supplier_slug])" class="secondaryLink">
                     {{ supplier_product.supplier_name }}
                 </Link>
+            </template>
+            <template #cell(state)="{ item: supplier_product }">
+                <span v-if="supplier_product.state" class="inline-flex items-center gap-x-1.5 whitespace-nowrap">
+                    <Icon :data="supplier_product.state.icon" :title="supplier_product.state.label" />
+                    {{ supplier_product.state.label }}
+                </span>
             </template>
         </Table>
         <SupplierProductLabelsDialog

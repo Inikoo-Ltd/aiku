@@ -111,6 +111,7 @@ class IndexSupplierProducts extends OrgAction
                 'supplier_products.code',
                 'supplier_products.slug',
                 'supplier_products.name',
+                'supplier_products.state',
                 'supplier_products.cost',
                 'currencies.code as currency_code',
                 'suppliers.slug as supplier_slug',
@@ -133,7 +134,7 @@ class IndexSupplierProducts extends OrgAction
                     }
                 }
             })
-            ->allowedSorts(['code', 'name', 'cost', 'supplier_name'])
+            ->allowedSorts(['code', 'name', 'state', 'cost', 'supplier_name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -168,6 +169,7 @@ class IndexSupplierProducts extends OrgAction
                 $table->column(key: 'supplier_name', label: __('Supplier'), sortable: true);
             }
             $table
+                ->column(key: 'state', label: __('State'), sortable: true)
                 ->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: true, type: 'currency')
                 ->defaultSort('code');
         };
