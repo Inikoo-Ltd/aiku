@@ -2494,9 +2494,13 @@ test('a pallet only offers Move to people who can edit its warehouse locations o
         ->and($canMove(null))->toBeFalse();
 
     $locationBefore = $pallet->location_id;
-    $target         = $this->warehouse->locations()->when($locationBefore, fn ($query) => $query->where('id', '!=', $locationBefore))->first();
+    $statusBefore   = $pallet->status;
+    $pallet->updateQuietly(['status' => PalletStatusEnum::STORING]);
+    $target = $this->warehouse->locations()->when($locationBefore, fn ($query) => $query->where('id', '!=', $locationBefore))->first();
+    $targetBefore = $target->only(['status', 'allow_fulfilment']);
+    $target->updateQuietly(['status' => \App\Enums\Inventory\Location\LocationStatusEnum::OPERATIONAL, 'allow_fulfilment' => true]);
     actingAs($viewer);
-    patch(route('grp.models.warehouse.pallets.location.update', [$pallet->warehouse_id, $pallet->id]), ['location_id' => $target?->id])->assertForbidden();
+    patch(route('grp.models.warehouse.pallets.location.update', [$pallet->warehouse_id, $pallet->id]), ['location_id' => $target->id])->assertForbidden();
     expect($pallet->fresh()->location_id)->toBe($locationBefore);
 
     setPermissionsTeamId($viewer->group_id);
@@ -2509,10 +2513,11 @@ test('a pallet only offers Move to people who can edit its warehouse locations o
         ->and($canMove($viewer))->toBeTrue();
 
     actingAs($viewer);
-    patch(route('grp.models.warehouse.pallets.location.update', [$pallet->warehouse_id, $pallet->id]), ['location_id' => $target->id])->assertRedirect();
+    patch(route('grp.models.warehouse.pallets.location.update', [$pallet->warehouse_id, $pallet->id]), ['location_id' => $target->id])->assertRedirect()->assertSessionHasNoErrors();
     expect($pallet->fresh()->location_id)->toBe($target->id);
 
-    $pallet->updateQuietly(['location_id' => $locationBefore]);
+    $pallet->updateQuietly(['location_id' => $locationBefore, 'status' => $statusBefore]);
+    $target->updateQuietly($targetBefore);
 });
 
 test('a stored item shows where a pallet without a location was last picked from, linking to its movements', function () {

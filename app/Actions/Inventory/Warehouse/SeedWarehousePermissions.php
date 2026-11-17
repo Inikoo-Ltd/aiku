@@ -77,7 +77,10 @@ class SeedWarehousePermissions
         if ($case == RolesEnum::FULFILMENT_SHOP_SUPERVISOR) {
             foreach ($warehouse->fulfilments as $fulfilment) {
                 /** @var Role $role */
-                $role = new Role()->where('name', RolesEnum::getRoleName($case->value, $warehouse))->first();
+                $role = new Role()->where('name', RolesEnum::getRoleName($case->value, $fulfilment))->first();
+                if (!$role) {
+                    continue;
+                }
                 foreach ($case->getPermissions() as $permissionName) {
                     if (class_basename($permissionName) == 'FulfilmentPermissionsEnum' && $permission = new Permission()->where('name', FulfilmentPermissionsEnum::getPermissionName($permissionName->value, $fulfilment))->first()) {
                         $role->givePermissionTo($permission);

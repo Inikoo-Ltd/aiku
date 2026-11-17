@@ -15,6 +15,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use Illuminate\Validation\ValidationException;
 
 trait WithMobilePackingMessages
 {
@@ -69,6 +70,12 @@ trait WithMobilePackingMessages
 
         if (UpdateDeliveryNoteStatePacked::hasMissingParcelDimensions($deliveryNote)) {
             return __('Enter the dimensions of every parcel before setting as packed');
+        }
+
+        try {
+            UpdateDeliveryNoteStatePacked::make()->returnsToFinalised($deliveryNote);
+        } catch (ValidationException $exception) {
+            return collect($exception->errors())->flatten()->first();
         }
 
         return DeliveryNoteBoxPackingList::make()->missingBoxesMessage($deliveryNote);
