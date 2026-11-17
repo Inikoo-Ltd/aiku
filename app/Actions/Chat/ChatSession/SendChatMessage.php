@@ -174,8 +174,12 @@ class SendChatMessage
         $shouldNotifyByEmail = ($modelData['is_email_notif'] ?? false)
             && $chatSession->channel !== ChatChannelEnum::EMAIL;
 
-        if ($shouldNotifyByEmail && $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
-            $this->sendExternalNotification($chatSession);
+        $isAgentReply = $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value;
+
+        $sentOfflineReplyWhatsapp = $isAgentReply && NotifyOfflineMessageReplyOnWhatsapp::run($chatSession);
+
+        if ($shouldNotifyByEmail && $isAgentReply) {
+            $this->sendExternalNotification($chatSession, notifyOnWhatsapp: !$sentOfflineReplyWhatsapp);
         }
 
         return $chatMessage;
@@ -330,22 +334,21 @@ class SendChatMessage
     /**
      * @throws \Throwable
      */
-    protected function sendExternalNotification(ChatSession $chatSession): void
+    protected function sendExternalNotification(ChatSession $chatSession, bool $notifyOnWhatsapp = true): void
     {
-        $chatLink = null;
-        if ($chatSession->shop && $chatSession->shop->website && $chatSession->ulid) {
-            $chatLink = $chatSession->shop->website->getUrl().'/?chat_session='.$chatSession->ulid;
-        }
+        $chatLink = NotifyOfflineMessageReplyOnWhatsapp::chatLink($chatSession);
         if ($chatSession->web_user_id && $chatSession->webUser && $chatSession->webUser->customer) {
             SendChatNotificationToCustomer::dispatch($chatSession->webUser->customer, ['chat_link' => $chatLink,
             'chat_message' => $chatSession->messages()?->latest()?->first()?->message_text ?? null,
             ]);
-            SendCustomerNotificationWhatsapp::dispatch(
-                $chatSession->webUser->customer,
-                OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
-                null,
-                ['chat_url' => $chatLink]
-            );
+            if ($notifyOnWhatsapp) {
+                SendCustomerNotificationWhatsapp::dispatch(
+                    $chatSession->webUser->customer,
+                    OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
+                    null,
+                    ['chat_url' => $chatLink]
+                );
+            }
 
             return;
         }

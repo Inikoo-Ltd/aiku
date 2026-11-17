@@ -38,6 +38,7 @@ class UpdateWhatsappOutbox extends OrgAction
         return [
             'state'                    => ['sometimes', 'required', Rule::enum(OutboxStateEnum::class)],
             'interval'                 => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
+            'days_after'               => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
             'meta_message_template_id' => [
                 'sometimes',
                 'nullable',
@@ -78,6 +79,14 @@ class UpdateWhatsappOutbox extends OrgAction
 
         if ($this->whatsappOutbox->code === OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION && blank($interval)) {
             $validator->errors()->add('interval', __('Set how many hours to wait between runs before activating this outbox, otherwise it will never send.'));
+
+            return;
+        }
+
+        $daysAfter = $this->has('days_after') ? $this->get('days_after') : $this->whatsappOutbox->days_after;
+
+        if ($this->whatsappOutbox->isGoldRewardReminder() && blank($daysAfter)) {
+            $validator->errors()->add('days_after', __('Set how many days after the last invoice to send this reminder before activating this outbox, otherwise it will never send.'));
 
             return;
         }
@@ -124,7 +133,7 @@ class UpdateWhatsappOutbox extends OrgAction
         $this->whatsappOutbox = $whatsappOutbox;
         $this->initialisationFromShop($whatsappOutbox->shop, $modelData);
 
-        return $this->handle($whatsappOutbox, Arr::only($this->validatedData, ['state', 'meta_message_template_id', 'interval']));
+        return $this->handle($whatsappOutbox, Arr::only($this->validatedData, ['state', 'meta_message_template_id', 'interval', 'days_after']));
     }
 
     public function htmlResponse(): RedirectResponse

@@ -34,6 +34,7 @@ enum OutboxCodeEnum: string
     case ABANDONED_CHECKOUT = 'abandoned_checkout';
 
     case DELIVERY_CONFIRMATION = 'delivery_confirmation';
+    case ORDER_DISPATCHED = 'order_dispatched';
     case SEND_INVOICE_TO_CUSTOMER = 'send_invoice_to_customer';
     // Retired Jul 2026, replaced by Gold reward reminder; cases kept because historic outboxes/dispatched_emails rows still hold these codes
     case REORDER_REMINDER = 'reorder_reminder';
@@ -110,6 +111,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REGISTRATION_REJECTED,
             OutboxCodeEnum::PASSWORD_REMINDER,
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
+            OutboxCodeEnum::ORDER_DISPATCHED,
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
@@ -201,6 +203,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ABANDONED_CART_REMINDER_3 => '3rd Abandoned cart reminder',
             OutboxCodeEnum::ABANDONED_CHECKOUT => 'Abandoned checkout',
             OutboxCodeEnum::DELIVERY_CONFIRMATION => 'Delivery confirmation',
+            OutboxCodeEnum::ORDER_DISPATCHED => 'Order dispatched',
             OutboxCodeEnum::REORDER_REMINDER => '1st Reorder reminder',
             OutboxCodeEnum::REORDER_REMINDER_2ND => '2nd Reorder reminder',
             OutboxCodeEnum::REORDER_REMINDER_3RD => '3rd Reorder reminder',
@@ -279,6 +282,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ABANDONED_CART_REMINDER_3 => '3rd Abandoned cart reminder',
             OutboxCodeEnum::ABANDONED_CHECKOUT => 'Abandoned checkout',
             OutboxCodeEnum::DELIVERY_CONFIRMATION => 'Delivery conformation',
+            OutboxCodeEnum::ORDER_DISPATCHED => 'Order dispatched',
             OutboxCodeEnum::REORDER_REMINDER => 'Reorder reminder',
             OutboxCodeEnum::REORDER_REMINDER_2ND => '2nd Reorder reminder',
             OutboxCodeEnum::REORDER_REMINDER_3RD => '3rd Reorder reminder',
@@ -382,6 +386,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::RENTAL_AGREEMENT,
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED => ['Fulfilment'],
+
+            /** Sent on WhatsApp only: no email exists for it, so no email outbox is seeded (HELP-4641) */
+            OutboxCodeEnum::ORDER_DISPATCHED => ['WhatsApp'],
             default => ['Shop']
         };
     }
@@ -428,6 +435,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED,
             OutboxCodeEnum::DELIVERY_NOTE_UNDISPATCHED,
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
+            OutboxCodeEnum::ORDER_DISPATCHED,
             OutboxCodeEnum::ORDER_CONFIRMATION => ['b2b', 'b2c', 'dropshipping'],
 
             /** Only a shop whose orders arrive from a platform can have an order the customer never
@@ -719,6 +727,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REGISTRATION_REJECTED,
             OutboxCodeEnum::PASSWORD_REMINDER,
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
+            OutboxCodeEnum::ORDER_DISPATCHED,
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,

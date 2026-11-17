@@ -43,6 +43,8 @@ class GetWhatsappOutboxShowcase
             'is_bulk'      => $whatsappOutbox->isBulk(),
             'interval'     => $whatsappOutbox->interval,
             'needs_interval' => $whatsappOutbox->code === OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
+            'days_after'   => $whatsappOutbox->days_after,
+            'needs_days_after' => $whatsappOutbox->isGoldRewardReminder(),
             'template'     => $template ? GetWhatsappOutboxesTab::templateData($template) + [
                 'body' => $this->templateBody($template),
                 'tags' => Arr::get($template->data ?? [], 'merge_tags.body', []),

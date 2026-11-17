@@ -1220,6 +1220,12 @@ class EditShop extends OrgAction
                             'information' => __('When nobody is on cover the widget asks the visitor for an email address. With this on, the conversation becomes an email one, so the answer written later is sent to them rather than left in a widget they have closed. Needs a mailbox connected to this shop.'),
                             'value'       => (bool) Arr::get($shop->settings, 'chat.email_offline_replies', false),
                         ],
+                        'chat_whatsapp_offline_replies' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Tell customers on WhatsApp when an offline message is answered'),
+                            'information' => __('When staff first answer an offline message from a logged in customer, the "Chat notification to customer" WhatsApp is sent too, with the link back to the chat. Only customers who opted in to WhatsApp updates get it, and only while that WhatsApp outbox is active.'),
+                            'value'       => (bool) Arr::get($shop->settings, 'chat.whatsapp_offline_replies', false),
+                        ],
                         'send_chat_ai_suggestions' => [
                             'type'        => 'toggle',
                             'label'       => __('Aiku reply suggestions'),

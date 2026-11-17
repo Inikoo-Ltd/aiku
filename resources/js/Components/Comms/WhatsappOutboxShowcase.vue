@@ -36,6 +36,8 @@ const props = defineProps<{
         is_bulk: boolean
         interval: number | null
         needs_interval: boolean
+        days_after: number | null
+        needs_days_after: boolean
         template: (TemplateOption & { body: string | null; tags: string[] }) | null
         templates: TemplateOption[]
         stats: { sent: number; delivered: number; read: number; failed: number; sent_1w: number; failed_1w: number }
@@ -66,6 +68,23 @@ const saveInterval = () => {
     }
 
     save({ interval: intervalValue.value })
+}
+
+const daysAfterValue = ref<number | null>(props.data?.days_after ?? null)
+
+watch(
+    () => props.data?.days_after,
+    (daysAfter) => {
+        daysAfterValue.value = daysAfter ?? null
+    }
+)
+
+const saveDaysAfter = () => {
+    if (daysAfterValue.value === (props.data?.days_after ?? null)) {
+        return
+    }
+
+    save({ days_after: daysAfterValue.value })
 }
 
 const placeholder = (index: number) => "{" + "{" + (index + 1) + "}" + "}"
@@ -156,6 +175,27 @@ const save = (changes: Record<string, unknown>) => {
                     <p v-if="errors.interval" class="mt-1 text-xs text-red-600">{{ errors.interval }}</p>
                     <p class="mt-2 text-xs text-gray-500">
                         {{ ctrans("Each run tells customers about the products in their order that ran out since the run before.") }}
+                    </p>
+                </section>
+
+                <section v-if="data.needs_days_after" class="rounded-lg border border-gray-200 p-4">
+                    <label for="whatsapp-outbox-days-after" class="mb-1 block text-xs font-medium text-gray-700">
+                        {{ ctrans("Days after the last invoice") }} <span class="text-red-500">*</span>
+                    </label>
+                    <InputNumber
+                        inputId="whatsapp-outbox-days-after"
+                        v-model="daysAfterValue"
+                        :min="1"
+                        :max="365"
+                        :useGrouping="false"
+                        :suffix="' ' + ctrans('days')"
+                        :disabled="!data.can_edit || isSaving"
+                        :class="fieldFocusClass"
+                        @blur="saveDaysAfter"
+                    />
+                    <p v-if="errors.days_after" class="mt-1 text-xs text-red-600">{{ errors.days_after }}</p>
+                    <p class="mt-2 text-xs text-gray-500">
+                        {{ ctrans("Sent once a day to customers who opted in to WhatsApp updates, have not ordered since their last invoice, and were last invoiced this many days ago.") }}
                     </p>
                 </section>
 

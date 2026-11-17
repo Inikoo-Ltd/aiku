@@ -31,6 +31,7 @@ class SeedShopWhatsappOutboxes
         return [
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
+            OutboxCodeEnum::ORDER_DISPATCHED,
             OutboxCodeEnum::ORDER_PAYMENT_REMINDER,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::OOS_NOTIFICATION,
@@ -38,6 +39,7 @@ class SeedShopWhatsappOutboxes
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::REVIEW_REMINDER,
+            ...WhatsappOutbox::goldRewardReminderCodes(),
         ];
     }
 

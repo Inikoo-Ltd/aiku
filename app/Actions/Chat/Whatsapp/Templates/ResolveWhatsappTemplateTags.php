@@ -12,6 +12,7 @@ use App\Models\CRM\Customer;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
+use App\Actions\Comms\Outbox\GoldRewardReminder\GetGoldRewardReminderCustomersQuery;
 use App\Actions\Comms\Email\SendPreOrderUpdateEmail;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Catalogue\Product;
@@ -77,6 +78,9 @@ class ResolveWhatsappTemplateTags
             WhatsappTemplateTagEnum::CUSTOMER_REFERENCE     => $customer?->reference,
             WhatsappTemplateTagEnum::CUSTOMER_REGISTER_DATE => $customer?->created_at?->format('j M Y'),
             WhatsappTemplateTagEnum::CUSTOMER_BALANCE       => $this->money($customer?->balance, $shop),
+            WhatsappTemplateTagEnum::CUSTOMER_LAST_INVOICE_DATE => $customer?->last_invoiced_at?->format('j M Y'),
+
+            WhatsappTemplateTagEnum::GOLD_REWARD_DEADLINE => $customer?->last_invoiced_at?->copy()->addDays(GetGoldRewardReminderCustomersQuery::GOLD_REWARD_WINDOW_DAYS)->format('j M Y'),
 
             WhatsappTemplateTagEnum::SHOP_NAME  => $shop?->name,
             WhatsappTemplateTagEnum::SHOP_URL   => $this->shopUrl($metaChatSession),

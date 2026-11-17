@@ -33,6 +33,9 @@ enum WhatsappTemplateTagEnum: string
     case CUSTOMER_REFERENCE = 'Customer Reference';
     case CUSTOMER_REGISTER_DATE = 'Customer Register Date';
     case CUSTOMER_BALANCE = 'Customer Balance';
+    case CUSTOMER_LAST_INVOICE_DATE = 'Customer Last Invoice Date';
+
+    case GOLD_REWARD_DEADLINE = 'Gold Reward Deadline';
 
     case SHOP_NAME = 'Shop Name';
     case SHOP_URL = 'Shop Url';
@@ -107,6 +110,9 @@ enum WhatsappTemplateTagEnum: string
             self::CUSTOMER_REFERENCE     => 'AWD08605',
             self::CUSTOMER_REGISTER_DATE => '12 Aug 2026',
             self::CUSTOMER_BALANCE       => '£125.00',
+            self::CUSTOMER_LAST_INVOICE_DATE => '12 Aug 2026',
+
+            self::GOLD_REWARD_DEADLINE => '11 Sep 2026',
 
             self::SHOP_NAME  => 'Ancient Wisdom',
             self::SHOP_URL   => 'https://www.ancientwisdom.biz',
@@ -169,6 +175,7 @@ enum WhatsappTemplateTagEnum: string
             str_starts_with($this->value, 'Pre-order') => __('Pre-order'),
             str_starts_with($this->value, 'Credit')   => __('Credit'),
             str_starts_with($this->value, 'Chat')     => __('Chat'),
+            str_starts_with($this->value, 'Gold')     => __('Gold reward'),
             default                                   => __('Agent'),
         };
     }

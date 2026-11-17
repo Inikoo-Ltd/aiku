@@ -88,6 +88,8 @@ class FilterRecipientsByTemplateTags
             WhatsappTemplateTagEnum::CUSTOMER_REFERENCE     => $this->requireCustomerColumn($recipients, 'reference'),
             WhatsappTemplateTagEnum::CUSTOMER_REGISTER_DATE => $this->requireCustomerColumn($recipients, 'created_at'),
             WhatsappTemplateTagEnum::CUSTOMER_BALANCE       => $this->requireCustomerColumn($recipients, 'balance'),
+            WhatsappTemplateTagEnum::CUSTOMER_LAST_INVOICE_DATE,
+            WhatsappTemplateTagEnum::GOLD_REWARD_DEADLINE   => $this->requireCustomerColumn($recipients, 'last_invoiced_at'),
 
             /* State and item count are non null on any order row, so the order existing is
                the whole requirement. */

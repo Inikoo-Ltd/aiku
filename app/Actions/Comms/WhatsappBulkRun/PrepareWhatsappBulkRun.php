@@ -9,6 +9,7 @@ namespace App\Actions\Comms\WhatsappBulkRun;
 
 use App\Actions\Comms\Outbox\BackInStockNotification\GetBackInStockCustomersQuery;
 use App\Actions\Comms\Outbox\BackInStockNotification\SettleBackInStockReminders;
+use App\Actions\Comms\Outbox\GoldRewardReminder\GetGoldRewardReminderCustomersQuery;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\GetOutOfStockInOrderCustomersQuery;
 use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -137,6 +138,10 @@ class PrepareWhatsappBulkRun
             return GetBackInStockCustomersQuery::run($whatsappOutbox->shop_id, GetBackInStockCustomersQuery::WHATSAPP)->get();
         }
 
+        if ($whatsappOutbox->isGoldRewardReminder()) {
+            return $this->goldRewardReminderCandidates($whatsappOutbox);
+        }
+
         if (!$whatsappOutbox->interval) {
             return null;
         }
@@ -149,6 +154,25 @@ class PrepareWhatsappBulkRun
         }
 
         return GetOutOfStockInOrderCustomersQuery::run($whatsappOutbox->shop_id, $lastRunAt?->toDateTimeString())->get();
+    }
+
+    /**
+     * A customer matches on exactly one day, the one `days_after` days after their last
+     * invoice, so a second run on the same day would only message them twice.
+     *
+     * @return Collection<int, object>|null
+     */
+    private function goldRewardReminderCandidates(WhatsappOutbox $whatsappOutbox): ?Collection
+    {
+        if (!$whatsappOutbox->days_after) {
+            return null;
+        }
+
+        if ($whatsappOutbox->bulkRuns()->where('created_at', '>=', now()->utc()->startOfDay())->exists()) {
+            return null;
+        }
+
+        return GetGoldRewardReminderCustomersQuery::run($whatsappOutbox->shop_id, $whatsappOutbox->days_after, withEmail: false)->get();
     }
 
     /**
