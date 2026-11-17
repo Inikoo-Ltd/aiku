@@ -81,7 +81,7 @@ defineProps<{
                                 <span v-else class="text-xs text-gray-400">{{ ctrans("No template") }}</span>
                             </td>
                             <td class="whitespace-nowrap px-3 py-2">
-                                <Tag v-if="outbox.is_sending" severity="success" :value="ctrans('Sending')" />
+                                <Tag v-if="outbox.is_sending" severity="success" :value="ctrans('Active')" />
                                 <Tag v-else-if="outbox.state === 'active'" severity="warn" :value="ctrans('Not sending')" v-tooltip="ctrans('The template must be an approved UTILITY template.')" />
                                 <Tag v-else severity="secondary" :value="ctrans('Off')" />
                             </td>

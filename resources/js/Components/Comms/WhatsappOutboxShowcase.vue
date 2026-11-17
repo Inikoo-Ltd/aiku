@@ -117,7 +117,7 @@ const save = (changes: Record<string, unknown>) => {
                             <div>
                                 <div class="text-sm font-semibold text-gray-800">{{ data.name }}</div>
                                 <div class="text-xs text-gray-500">
-                                    <Tag v-if="data.is_sending" severity="success" :value="ctrans('Sending')" />
+                                    <Tag v-if="data.is_sending" severity="success" :value="ctrans('Active')" />
                                     <Tag v-else-if="data.is_active" severity="warn" :value="ctrans('Active, but not sending')" />
                                     <Tag v-else severity="secondary" :value="ctrans('Suspended')" />
                                 </div>
