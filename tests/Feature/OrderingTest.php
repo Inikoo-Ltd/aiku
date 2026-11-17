@@ -636,6 +636,18 @@ test('proforma shows the customer valid tax number and the delivery or collectio
         ->not->toContain('PRE-75 delivery street');
 })->depends('create transaction');
 
+test('proforma is dated when the order was submitted, not when the basket was started', function (Transaction $transaction) {
+    $proformaOrder = $transaction->order->refresh()->replicate();
+    $proformaOrder->date = Carbon::parse('2025-07-06 12:00:00');
+
+    $proformaOrder->submitted_at = null;
+    expect(renderProformaView($proformaOrder))->toContain('6 July 2025');
+
+    $proformaOrder->submitted_at = Carbon::parse('2026-11-13 12:00:00');
+    expect(renderProformaView($proformaOrder))->toContain('13 November 2026')
+        ->not->toContain('6 July 2025');
+})->depends('create transaction');
+
 test('create transaction from adjustment', function (Order $order) {
     $adjustment = StoreAdjustment::make()->action(
         $order->shop,
