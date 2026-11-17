@@ -10,6 +10,7 @@
 
 use App\Actions\Accounting\BankConnection\SetBankConnectionAutoPay;
 use App\Actions\Accounting\BankTransaction\MatchBankTransactions;
+use App\Actions\Accounting\BankTransaction\PayMatchedBankTransactions;
 use App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Catalogue\Shop\StoreShop;
@@ -19,6 +20,8 @@ use App\Enums\Accounting\BankConnection\BankConnectionProviderEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\BankConnection;
 use App\Models\Accounting\BankTransaction;
@@ -48,6 +51,7 @@ beforeEach(function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
 
     $this->otherShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['currency_id' => $this->shop->currency_id]));
+    $this->otherShop->updateQuietly(['state' => ShopStateEnum::OPEN, 'type' => ShopTypeEnum::B2B]);
 
     $this->bankConnection = BankConnection::create([
         'group_id'        => $this->organisation->group_id,
@@ -110,7 +114,8 @@ test('shop staff pay a bank payment only to an order of their own shop, and the 
     $staff      = shopPaymentsStaff($this->shop);
     $ownOrder   = shopPaymentsOrder(createCustomer($this->shop), 40);
     $otherOrder = shopPaymentsOrder(createCustomer($this->otherShop), 40);
-    $line       = shopPaymentsLine($this->bankConnection, 40, $this->shop->currency_id);
+    $payer      = $ownOrder->customer->name;
+    $line       = shopPaymentsLine($this->bankConnection, 40, $this->shop->currency_id, $payer);
     $shopRoute  = fn (string $name, BankTransaction $bankTransaction) => route("grp.models.org.shop.bank_transaction.$name", [$this->organisation->id, $this->shop->id, $bankTransaction->id]);
 
     post($shopRoute('pay_order', $line), ['order_id' => $otherOrder->id, 'order_reference' => $otherOrder->reference])->assertSessionHasErrors('order');
@@ -120,9 +125,14 @@ test('shop staff pay a bank payment only to an order of their own shop, and the 
     post(route('grp.models.org.shop.bank_transaction.pay_order', [$this->organisation->id, $this->otherShop->id, $line->id]), ['order_id' => $otherOrder->id, 'order_reference' => $otherOrder->reference])->assertForbidden();
     post(route('grp.models.org.bank_transaction.dismiss', [$this->organisation->id, $line->id]), ['note' => 'not ours'])->assertForbidden();
 
-    $setAside = shopPaymentsLine($this->bankConnection, 40, $this->shop->currency_id);
+    $setAside = shopPaymentsLine($this->bankConnection, 40, $this->shop->currency_id, $payer);
     $setAside->update(['match_state' => BankTransactionMatchStateEnum::DISMISSED, 'match_data' => ['dismissed_note' => 'refund from a supplier']]);
-    $tiedToOtherShop = shopPaymentsLine($this->bankConnection, 40, $this->shop->currency_id);
+    $tiedToOtherShop = shopPaymentsLine($this->bankConnection, 40, $this->shop->currency_id, $payer);
+    $nobodysPayer    = shopPaymentsLine($this->bankConnection, 40, $this->shop->currency_id, 'Unknown Payer '.random_int(1000, 9999));
+    post($shopRoute('pay_order', $nobodysPayer), ['order_id' => $ownOrder->id, 'order_reference' => $ownOrder->reference])->assertSessionHasErrors('order');
+    post($shopRoute('customer_credit', $nobodysPayer), ['customer_id' => $ownOrder->customer_id])->assertSessionHasErrors('order');
+    post($shopRoute('point_customer', $nobodysPayer), ['customer_id' => $ownOrder->customer_id])->assertSessionHasErrors('order');
+    expect($nobodysPayer->refresh()->payment_id)->toBeNull()->and($nobodysPayer->staff_hint)->toBeNull();
     $tiedToOtherShop->update(['match_state' => BankTransactionMatchStateEnum::MATCHED, 'order_id' => $otherOrder->id]);
     post($shopRoute('pay_order', $setAside), ['order_id' => $ownOrder->id, 'order_reference' => $ownOrder->reference])->assertSessionHasErrors('order');
     post($shopRoute('customer_credit', $setAside), ['customer_id' => $ownOrder->customer_id])->assertSessionHasErrors('order');
@@ -168,22 +178,42 @@ test('shop staff say which customer of their shop sent a payment, in any currenc
         ->and($audit->user_id)->toBe($staff->id);
 });
 
-test('the shop backlog and customers show how many payments in the shop currency wait, linking to the shop bank payments page', function () {
+test('the shop backlog and customers count only the waiting payments pointing at the shop, linking to the shop bank payments page', function () {
     shopPaymentsStaff($this->shop);
-    $waiting = IndexBankIncoming::waitingInShopCurrency($this->shop);
-    $line    = shopPaymentsLine($this->bankConnection, 12.5, $this->shop->currency_id);
-    shopPaymentsLine($this->bankConnection, 9, Currency::where('id', '!=', $this->shop->currency_id)->value('id'));
+    $customer      = createCustomer($this->shop);
+    $otherCurrency = Currency::where('id', '!=', $this->shop->currency_id)->value('id');
+    $waiting       = IndexBankIncoming::waitingForShop($this->shop);
+
+    $byName        = shopPaymentsLine($this->bankConnection, 12.5, $this->shop->currency_id, mb_strtoupper($customer->name));
+    $wrongCurrency = shopPaymentsLine($this->bankConnection, 9, $otherCurrency, $customer->name);
+    $nobodys       = shopPaymentsLine($this->bankConnection, 7, $this->shop->currency_id, 'Unknown Payer '.random_int(1000, 9999));
+    $ankorstore    = shopPaymentsLine($this->bankConnection, 230, $this->shop->currency_id, 'Stripe Technology Eu');
+    $ankorstore->update(['reference' => 'Ankorstore T1B3B4', 'match_state' => null, 'match_data' => []]);
+
+    $paidBefore = shopPaymentsLine($this->bankConnection, 40, $this->shop->currency_id, 'Old Name s.r.o.');
+    $paidBefore->update(['counterparty_account' => '2900123456/2010']);
+    PayMatchedBankTransactions::make()->payToOrder($paidBefore, shopPaymentsOrder($customer, 40), false, 'staff');
+    $sameAccount = shopPaymentsLine($this->bankConnection, 15, $this->shop->currency_id, 'New Name s.r.o.');
+    $sameAccount->update(['counterparty_account' => '2900123456/2010']);
+
+    MatchBankTransactions::run($this->bankConnection);
+    expect($ankorstore->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($ankorstore->match_data)->toMatchArray(['provider' => 'ankorstore', 'reason' => 'Ankorstore payout'])
+        ->and(BankTransaction::whereKey($ankorstore->id)->selectRaw(IndexBankIncoming::BUCKET_SQL.' as section')->value('section'))->toBe('marketplaces');
 
     $notice = IndexBankIncoming::shopNotice($this->shop, auth()->user());
-    expect($notice['count'])->toBe($waiting + 1)
+    expect($notice['count'])->toBe($waiting + 3)
         ->and($notice['route']['name'])->toBe('grp.org.shops.show.ordering.bank_payments');
 
-    get(route('grp.org.shops.show.ordering.bank_payments', [$this->organisation->slug, $this->shop->slug, 'filter' => ['global' => (string)$line->reference]]))
+    $token = 'lead'.random_int(100000, 999999);
+    foreach ([$byName, $wrongCurrency, $nobodys, $ankorstore, $sameAccount] as $line) {
+        $line->update(['reference' => $line->reference.' '.$token]);
+    }
+    $listed = get(route('grp.org.shops.show.ordering.bank_payments', [$this->organisation->slug, $this->shop->slug, 'filter' => ['global' => $token]]))
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('Org/Accounting/BankIncoming')
-            ->where('shop.id', $this->shop->id)
-            ->where('canEdit', true));
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Accounting/BankIncoming')->where('shop.id', $this->shop->id)->where('canEdit', true))
+        ->viewData('page')['props']['data']['data'];
+    expect(collect($listed)->pluck('id')->sort()->values()->all())->toBe(collect([$byName->id, $wrongCurrency->id, $sameAccount->id])->sort()->values()->all());
 
     $outsider = User::factory()->create(['group_id' => $this->shop->group_id, 'status' => true]);
     actingAsUserWithOnlyPermissions($outsider, ["orders.{$this->otherShop->id}.view"]);

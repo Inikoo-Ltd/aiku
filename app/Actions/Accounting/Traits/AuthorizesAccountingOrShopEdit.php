@@ -36,7 +36,7 @@ trait AuthorizesAccountingOrShopEdit
     }
 
     /**
-     * From a shop, only a payment still waiting for a person can be decided, read again under a lock: never one
+     * From a shop, only a payment still waiting for a person and pointing at the shop can be decided, read again under a lock: never one
      * accounting set aside or marked already paid, a payout, or one already tied to another shop's order or an invoice.
      * Call it inside the transaction that records the decision.
      */
@@ -48,7 +48,10 @@ trait AuthorizesAccountingOrShopEdit
         }
 
         $waiting = $bankTransaction->payment_id === null
-            && BankTransaction::whereKey($bankTransaction->id)->whereRaw('('.IndexBankIncoming::BUCKET_SQL.") = 'needs_person'")->exists();
+            && BankTransaction::whereKey($bankTransaction->id)
+                ->whereRaw('('.IndexBankIncoming::BUCKET_SQL.") = 'needs_person'")
+                ->whereRaw('bank_transactions.id in ('.IndexBankIncoming::shopLeadSql($this->shop).')')
+                ->exists();
         $ownOrNoOrder = $bankTransaction->order_id === null
             ? !isset($bankTransaction->match_data['invoice_id'])
             : Order::whereKey($bankTransaction->order_id)->where('shop_id', $this->shop->id)->exists();

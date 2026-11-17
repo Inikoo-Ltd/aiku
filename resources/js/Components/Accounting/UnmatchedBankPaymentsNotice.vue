@@ -27,7 +27,7 @@ const locale = useLocaleStore()
 			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-600" fixed-width aria-hidden="true" />
 			<span class="whitespace-nowrap">{{ ctrans("Bank payments to match") }}</span>
 			<span class="font-semibold tabular-nums">{{ locale.number(notice.count) }}</span>
-			<span class="text-xs text-amber-800 dark:text-amber-200">{{ ctrans("Payments in :currency the bank received that need a person to place them: help match the ones from your customers", { currency: notice.currency }) }}</span>
+			<span class="text-xs text-amber-800 dark:text-amber-200">{{ ctrans("Payments the bank received that look like they come from your customers and need a person to place them") }}</span>
 		</Link>
 	</div>
 </template>

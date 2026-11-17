@@ -217,6 +217,10 @@ class MatchBankTransactions
             return $this->decideOrderchampPayout($bankTransaction);
         }
 
+        if (preg_match('/^stripe\b/i', (string)$bankTransaction->counterparty_name) && preg_match('/^ankorstore\b/i', (string)$bankTransaction->reference)) {
+            return [BankTransactionMatchStateEnum::UNMATCHED, null, ['provider' => 'ankorstore', 'reason' => 'Ankorstore payout']];
+        }
+
         $marketplaceOrderReference = $this->marketplaceOrderReference($bankTransaction);
         if ($marketplaceOrderReference) {
             return $this->decideMarketplacePayout($bankTransaction, $marketplaceOrderReference);

@@ -27,6 +27,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -35,8 +36,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 /**
  * Every payment the organisation's banks received, each line in exactly one section: customers paying orders,
  * marketplace payouts, payment provider payouts, lines waiting for a person, and the rest. A shop's Bank payments page
- * shows the lines waiting for a person to the shop's staff, who know their customers: every currency, the shop's own
- * first, and only orders and customers of that shop can be picked.
+ * shows the shop's staff, who know their customers, only the lines waiting for a person that point at the shop
+ * (shopLeadSql), the shop's currency first, and only orders and customers of that shop can be picked.
  */
 class IndexBankIncoming extends OrgAction
 {
@@ -45,7 +46,7 @@ class IndexBankIncoming extends OrgAction
     public const array SECTIONS = ['customers', 'marketplaces', 'payment_accounts', 'other', 'needs_person'];
 
     public const string BUCKET_SQL = "case
-        when bank_transactions.match_state = 'paid_by_marketplace' or (bank_transactions.match_state = 'unmatched' and bank_transactions.match_data->>'reason' = 'marketplace order not found') then 'marketplaces'
+        when bank_transactions.match_state = 'paid_by_marketplace' or (bank_transactions.match_state = 'unmatched' and (bank_transactions.match_data->>'reason' = 'marketplace order not found' or bank_transactions.match_data->>'provider' in ('orderchamp', 'ankorstore'))) then 'marketplaces'
         when bank_transactions.match_state = 'card_processor_payout' or (bank_transactions.match_state = 'unmatched' and bank_transactions.match_data->>'reason' like 'PastPay payout%') then 'payment_accounts'
         when bank_transactions.payment_id is not null or bank_transactions.match_state = 'already_paid' then 'customers'
         when bank_transactions.match_state in ('review', 'unmatched', 'matched') then 'needs_person'
@@ -157,22 +158,60 @@ class IndexBankIncoming extends OrgAction
     }
 
     /**
-     * Payments waiting for a person in the shop's currency, as the shop's Bank payments page counts them by default.
+     * The bank lines of the shop's organisation that point at this shop: the order they name or were matched to is the
+     * shop's, the payer is named like one of the shop's customers, the payer's name or account paid the shop before, or
+     * the line is in a currency only this shop sells in. Banks are shared by every shop of the organisation, so a line
+     * with none of these leads stays with accounting.
      */
-    public static function waitingInShopCurrency(Shop $shop): int
+    public static function shopLeadSql(Shop $shop): string
+    {
+        $shopId         = (int)$shop->id;
+        $organisationId = (int)$shop->organisation_id;
+        $currencyId     = (int)$shop->currency_id;
+        $paidTheShop    = "select e.counterparty_name, e.counterparty_account from bank_transactions e join payments p on p.id = e.payment_id where e.organisation_id = $organisationId and p.shop_id = $shopId";
+
+        return "with waiting as (
+                select id, order_id, match_data, currency_id, counterparty_account, lower(counterparty_name) as payer
+                from bank_transactions where organisation_id = $organisationId and direction = 'in' and payment_id is null
+                and match_state in ('review', 'unmatched', 'matched')
+            ),
+            payers as (select distinct payer from waiting where payer <> ''),
+            shop_payers as (
+                select unnest(array[lower(name::text), lower(company_name::text), lower(contact_name::text)]) as payer from customers
+                where shop_id = $shopId and (lower(name::text) in (select payer from payers) or lower(company_name::text) in (select payer from payers) or lower(contact_name::text) in (select payer from payers))
+                union select lower(counterparty_name) from ($paidTheShop) paid
+            )
+            select w.id from waiting w join orders o on o.id = w.order_id and o.shop_id = $shopId
+            union select w.id from waiting w
+                cross join lateral jsonb_array_elements_text(case when jsonb_typeof(w.match_data->'order_ids') = 'array' then w.match_data->'order_ids' else '[]'::jsonb end) as named(order_id)
+                join orders o on o.id = named.order_id::bigint and o.shop_id = $shopId
+            union select w.id from waiting w join shop_payers sp on sp.payer = w.payer where w.payer <> ''
+            union select w.id from waiting w join ($paidTheShop) paid on paid.counterparty_account = w.counterparty_account where w.counterparty_account <> ''
+            union select w.id from waiting w where w.currency_id = $currencyId and not exists (
+                select 1 from shops other where other.organisation_id = $organisationId and other.id <> $shopId and other.currency_id = $currencyId
+                and other.state = 'open' and other.type in ('b2b', 'dropshipping')
+            )";
+    }
+
+    /**
+     * Payments waiting for a person that point at the shop, as the shop's Bank payments page lists them by default.
+     * Reading the leads scans the shop's customers once (about 0.6s for UK's 229k), so the notice caches the count for
+     * ten minutes; an expression index on the lowered customer names is the next step if the page itself gets slow.
+     */
+    public static function waitingForShop(Shop $shop): int
     {
         return BankTransaction::query()
             ->where('organisation_id', $shop->organisation_id)
             ->where('direction', 'in')
             ->where('status', 'booked')
-            ->where('currency_id', $shop->currency_id)
             ->where('booked_at', '>=', now()->subDays(90))
             ->whereRaw('('.self::BUCKET_SQL.") = 'needs_person'")
+            ->whereRaw('bank_transactions.id in ('.self::shopLeadSql($shop).')')
             ->count();
     }
 
     /**
-     * The yellow notice on a shop's backlog and customers: how many payments in the shop's currency wait for a person,
+     * The yellow notice on a shop's backlog and customers: how many payments pointing at the shop wait for a person,
      * linking to the shop's Bank payments page; null when there are none or the user may not open that page.
      *
      * @return array{count: int, currency: string, route: array{name: string, parameters: array<string, string>}}|null
@@ -183,12 +222,12 @@ class IndexBankIncoming extends OrgAction
             || !$user->authTo(["orders.$shop->id.view", "crm.$shop->id.view", "accounting.$shop->organisation_id.view"])) {
             return null;
         }
-        $count = self::waitingInShopCurrency($shop);
+        $count = Cache::remember('bank-payments-notice:'.$shop->id, 600, fn () => self::waitingForShop($shop));
 
         return $count ? [
             'count'    => $count,
             'currency' => $shop->currency->code,
-            'route'    => ['name' => 'grp.org.shops.show.ordering.bank_payments', 'parameters' => ['organisation' => $shop->organisation->slug, 'shop' => $shop->slug, 'currency' => $shop->currency->code]],
+            'route'    => ['name' => 'grp.org.shops.show.ordering.bank_payments', 'parameters' => ['organisation' => $shop->organisation->slug, 'shop' => $shop->slug]],
         ] : null;
     }
 
