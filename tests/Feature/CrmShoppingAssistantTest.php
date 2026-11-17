@@ -3736,7 +3736,22 @@ test('Merlin finds the order a customer asks about without a number, says it wai
         ->and($guessed['content']['other_open_orders'])->toStartWith('2 more')
         ->and($waiting['content']['state'])->toContain('not paid yet')
         ->and($waiting['content'])->not->toHaveKey('priority')
+        ->and($waiting['content']['payment'])->toContain('No refused payment is recorded')
+        ->and($waiting['content']['payment'])->toContain('does not pay this order')
         ->and($unpaid->refresh()->is_premium_dispatch)->toBeFalse();
+
+    \App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange::shouldRun()->andReturn(1);
+    $declined = \App\Actions\Accounting\Payment\StorePayment::make()->action($customer, $this->shop->paymentAccountShops()->first()->paymentAccount, array_merge(\App\Models\Accounting\Payment::factory()->definition(), ['state' => \App\Enums\Accounting\Payment\PaymentStateEnum::DECLINED]));
+    $unpaid->payments()->attach($declined->id);
+
+    expect($tools->execute($conversation, 'order_status', ['reference' => $unpaid->reference])['content']['payment'])->toStartWith('A payment on this order was refused.');
+
+    $unpaid->update(['is_shipping_by_external' => true]);
+    expect($tools->execute($conversation, 'order_status', ['reference' => $unpaid->reference])['content']['payment'])->toContain('we never charge it');
+
+    $unpaid->update(['is_shipping_by_external' => false, 'data' => ['banned_delivery' => ['country' => 'XX']]]);
+    expect($tools->execute($conversation, 'order_status', ['reference' => $unpaid->reference])['content']['payment'])->toContain('we do not deliver to its address');
+    $unpaid->update(['data' => []]);
 
     $unpaid->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID, 'state' => \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED, 'dispatched_at' => now()]);
     $guessed = $tools->execute($conversation, 'order_status', []);
