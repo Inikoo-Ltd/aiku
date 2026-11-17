@@ -54,7 +54,7 @@ class IndexDayMaterialsCheck extends OrgAction
 
     public function handle(Production $production, ?string $date = null): LengthAwarePaginator
     {
-        $this->date = IndexJobOrderPlan::parseDate($date);
+        $this->date = IndexJobOrderPlan::parseDate($date, $production);
 
         return QueryBuilder::for(RawMaterial::query()->withoutGlobalScopes()->fromSub(GetDayMaterialsChecklist::make()->query($production, $this->date), 'raw_materials'))
             ->defaultSort('code')
@@ -131,7 +131,7 @@ class IndexDayMaterialsCheck extends OrgAction
                 ],
                 'production_id'          => $production->id,
                 'date'                   => $this->date,
-                'today'                  => now()->toDateString(),
+                'today'                  => IndexJobOrderPlan::today($production),
                 'factory_location'       => $production->factoryLocation?->code,
                 'can_check'              => (bool) $production->factory_location_id && MaterialsCheckAuthorisation::canDoMaterialsCheck($request->user(), $production, $this->date),
                 'can_manage'             => $canManage && (bool) $production->factory_location_id,

@@ -253,6 +253,35 @@ test('assigning a line to an artisan refreshes the manufacture floor tablets', f
     \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\BroadcastManufactureFloorChanged::class, fn ($event) => $event->productionId == $this->production->id);
 });
 
+test('many task saves in one transaction tell the floor once, after the commit, and a rolled back one tells nobody', function () {
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 20]);
+    $tasks = \App\Models\Production\JobOrderItemTask::where('job_order_id', $jobOrder->id)->get();
+    expect($tasks->count())->toBeGreaterThan(1);
+
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastManufactureFloorChanged::class]);
+    $touchAll = fn () => $tasks->each(fn ($task) => $task->forceFill(['updated_at' => now()->addSecond()])->save());
+
+    \Illuminate\Support\Facades\DB::transaction(function () use ($touchAll) {
+        $touchAll();
+        \Illuminate\Support\Facades\Event::assertNotDispatched(\App\Events\BroadcastManufactureFloorChanged::class);
+    });
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastManufactureFloorChanged::class, 1);
+
+    try {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($touchAll) {
+            $touchAll();
+            throw new \RuntimeException('rolled back');
+        });
+    } catch (\RuntimeException) {
+    }
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastManufactureFloorChanged::class, 1);
+
+    $touchAll();
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastManufactureFloorChanged::class, 1 + $tasks->count());
+});
+
 test('to produce board lists each artisan and their share of a split job order', function () {
     $stocks   = createStocks($this->group);
     $orgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];

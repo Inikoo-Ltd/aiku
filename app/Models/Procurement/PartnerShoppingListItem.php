@@ -79,7 +79,7 @@ class PartnerShoppingListItem extends Model
         $announce = function (self $item) {
             $sellerId = $item->partner_organisation_id ?? $item->organisation_id;
             if ($sellerId) {
-                rescue(fn () => BroadcastProductionQueuesChanged::dispatch($sellerId));
+                rescue(fn () => BroadcastProductionQueuesChanged::dispatchOncePerTransaction($sellerId));
             }
             if ($item->partner_organisation_id) {
                 rescue(fn () => BroadcastPartnerProductionChanged::dispatch($item->organisation_id));

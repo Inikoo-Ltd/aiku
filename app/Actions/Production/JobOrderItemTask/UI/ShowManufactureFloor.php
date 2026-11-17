@@ -10,6 +10,7 @@ namespace App\Actions\Production\JobOrderItemTask\UI;
 
 use App\Actions\Goods\ProductDevelopment\Recipe\RecordTrialRunFormulation;
 use App\Actions\Production\Artefact\StoreArtefactDevelopmentFeedback;
+use App\Actions\Production\JobOrder\UI\IndexJobOrderPlan;
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Actions\Production\JobOrderItemTask\SettleShortJobOrderItemTask;
 use App\Actions\Production\JobOrderItemTask\ShareMixPool;
@@ -348,7 +349,7 @@ class ShowManufactureFloor extends OrgAction
                 ] : null),
                 'artisan'      => $this->employee?->contact_name,
                 'is_hourly'    => $this->employee?->artisan_pay_type === ArtisanPayTypeEnum::HOURLY,
-                'materials_check_route' => $this->employee && MaterialsCheckAuthorisation::checkingRequest($production, now()->toDateString())?->checker_employee_id === $this->employee->id ? [
+                'materials_check_route' => fn () => $this->employee && MaterialsCheckAuthorisation::checkingRequest($production, IndexJobOrderPlan::today($production))?->checker_employee_id === $this->employee->id ? [
                     'name'       => 'grp.org.productions.show.operations.materials_check',
                     'parameters' => [$production->organisation->slug, $production->slug],
                 ] : null,

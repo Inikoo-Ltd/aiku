@@ -73,7 +73,7 @@ class AssignMaterialsChecker extends OrgAction
     {
         $this->initialisationFromProduction($production, $request);
 
-        return $this->handle($production, IndexJobOrderPlan::parseDate($this->validatedData['date']), $this->validatedData['employee_id']);
+        return $this->handle($production, IndexJobOrderPlan::parseDate($this->validatedData['date'], $production), $this->validatedData['employee_id']);
     }
 
     public function htmlResponse(): RedirectResponse

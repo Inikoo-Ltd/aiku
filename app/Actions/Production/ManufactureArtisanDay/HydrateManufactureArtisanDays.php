@@ -24,6 +24,7 @@ use App\Models\Production\Production;
 use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -451,7 +452,7 @@ class HydrateManufactureArtisanDays
             'date'            => $date,
         ]);
 
-        $day->fill([
+        $values = [
             'user_id'                => $sessions->first()?->user_id ?? $day->user_id ?? $employee->user_id,
             'shift_start'            => isset($shift['start']) ? $shift['start']->copy()->setTimezone(config('app.timezone')) : null,
             'shift_end'              => isset($shift['end']) ? $shift['end']->copy()->setTimezone(config('app.timezone')) : null,
@@ -468,10 +469,32 @@ class HydrateManufactureArtisanDays
             'tolerance_minutes'      => $tolerance,
             'unchecked_running_jobs' => $runningJobs,
             'status'                 => $status,
-        ]);
+        ];
+
+        try {
+            $this->saveDay($day, $values, $overtime);
+        } catch (UniqueConstraintViolationException $exception) {
+            if ($day->exists) {
+                throw $exception;
+            }
+            $this->saveDay(
+                ManufactureArtisanDay::where('production_id', $production->id)->where('employee_id', $employee->id)->where('date', $date)->firstOrFail(),
+                $values,
+                $overtime
+            );
+        }
+    }
+
+    /**
+     * Two pages opened at once both rebuild a new day: the one that loses the insert writes the same figures onto the
+     * row the other saved.
+     */
+    private function saveDay(ManufactureArtisanDay $day, array $values, ?ManufactureOvertime $overtime): void
+    {
+        $day->fill($values);
         $day->setRelation('overtime', $overtime);
         $day->is_warning_open = $day->needsAction();
-        $day->save();
+        $day->exists ? $day->save() : DB::transaction(fn () => $day->save());
     }
 
     /**

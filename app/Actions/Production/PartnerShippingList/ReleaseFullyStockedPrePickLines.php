@@ -55,7 +55,6 @@ class ReleaseFullyStockedPrePickLines
             ->select(['id', 'partner_organisation_id', 'stock_id', 'quantity', 'priority', 'needed_by', 'created_at'])
             ->selectRaw(PartnerShoppingListItem::queuedThroughSql().' as queued_through')
             ->selectRaw(PartnerShoppingListItem::freeStockSql().' as free_stock')
-            ->selectRaw(PartnerShoppingListItem::shortfallSql().' as shortfall')
             ->get();
     }
 

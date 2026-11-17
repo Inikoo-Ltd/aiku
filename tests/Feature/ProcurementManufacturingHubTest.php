@@ -1763,6 +1763,32 @@ describe('partner shopping list', function () {
             ->toThrow(ValidationException::class);
     });
 
+    test('a double click on send to warehouse makes one delivery note: the second click reads the order again and is refused', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $item        = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 4,
+        ]);
+        $result      = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        $firstClick  = $result['orders'][0];
+        $secondClick = \App\Models\Ordering\Order::find($firstClick->id);
+
+        $sendingNow = \Illuminate\Support\Facades\Cache::lock("send-partner-order-to-warehouse:{$firstClick->id}", 60);
+        $sendingNow->get();
+        expect(fn () => SendPartnerOrderToWarehouse::make()->action($secondClick))->toThrow(ValidationException::class, 'already been sent')
+            ->and($firstClick->refresh()->deliveryNotes()->count())->toBe(0);
+        $sendingNow->release();
+
+        SendPartnerOrderToWarehouse::make()->action($firstClick);
+
+        expect($secondClick->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::CREATING)
+            ->and(fn () => SendPartnerOrderToWarehouse::make()->action($secondClick))->toThrow(ValidationException::class, 'already been sent')
+            ->and($firstClick->refresh()->deliveryNotes()->count())->toBe(1);
+    });
+
     test('mirror stock delivery follows delivery note dispatch', function () {
         $seller = $this->orgPartner->partner;
         if (!$seller->warehouses()->exists()) {
