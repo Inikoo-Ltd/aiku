@@ -11,6 +11,7 @@ namespace App\Actions\Chat;
 use App\Actions\Helpers\SendDiscordDirectMessage;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -40,6 +41,7 @@ class AlertChatMessageSpikes
     public const int SPIKE_FACTOR = 3;
     public const int COOLDOWN_HOURS = 3;
     public const int SAMPLE_MESSAGES = 5;
+    public const int ORDERS_WINDOW_HOURS = 3;
 
     public string $commandSignature = 'chat:alert-spikes {--to=raul : aiku username to DM} {--r|dry-run : Report spikes, send nothing}';
 
@@ -64,6 +66,11 @@ class AlertChatMessageSpikes
                 continue;
             }
 
+            if ($this->ordersAreNormal($shopId, $now)) {
+                $command?->info(sprintf('Shop %d: %d chats in %d min, but orders are normal, so it is a busy day, not an outage', $shopId, $chats, self::WINDOW_MINUTES));
+                continue;
+            }
+
             $spike = ['shop_id' => $shopId, 'chats' => $chats, 'usual' => $usual, 'sent' => false];
 
             if (!$dryRun && !Cache::has($this->cooldownKey($shopId))) {
@@ -79,6 +86,27 @@ class AlertChatMessageSpikes
         }
 
         return $spikes;
+    }
+
+    /**
+     * A broken checkout or payment page stops orders; a promotion fills the inbox and the order book at once.
+     * Orders over the last few hours at or above the same hours of the previous weeks mean the shop is busy, not broken.
+     * A shop that usually has no orders at that time cannot show this, so it still alerts.
+     */
+    protected function ordersAreNormal(int $shopId, Carbon $now): bool
+    {
+        $usual = collect(range(1, self::BASELINE_WEEKS))
+            ->sum(fn (int $week) => $this->ordersSubmitted($shopId, $now->copy()->subWeeks($week))) / self::BASELINE_WEEKS;
+
+        return $usual > 0 && $this->ordersSubmitted($shopId, $now) >= $usual;
+    }
+
+    protected function ordersSubmitted(int $shopId, Carbon $until): int
+    {
+        return Order::where('shop_id', $shopId)
+            ->where('submitted_at', '>', $until->copy()->subHours(self::ORDERS_WINDOW_HOURS))
+            ->where('submitted_at', '<=', $until)
+            ->count();
     }
 
     public function asCommand(Command $command): int
