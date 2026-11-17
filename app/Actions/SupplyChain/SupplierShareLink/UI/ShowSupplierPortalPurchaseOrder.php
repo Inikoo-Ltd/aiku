@@ -12,7 +12,9 @@ namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
+use App\Actions\SupplyChain\SupplierShareLink\NotifyPurchasingOfSupplierDepositRequest;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierPortalPurchaseOrderDocument;
+use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalPurchaseOrderDeposit;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
@@ -55,7 +57,7 @@ class ShowSupplierPortalPurchaseOrder
     ];
 
     /**
-     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, payments: array<string, mixed>, production: array<string, mixed>, documents: array<string, mixed>, lines: list<array<string, mixed>>}
+     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, payments: array<string, mixed>, deposit: array<string, mixed>, production: array<string, mixed>, documents: array<string, mixed>, lines: list<array<string, mixed>>}
      */
     public function handle(Supplier $supplier, int $purchaseOrderId, ?string $token = null): array
     {
@@ -96,6 +98,7 @@ class ShowSupplierPortalPurchaseOrder
             ],
             'journey'    => IndexSupplierPortalPurchaseOrderStages::make()->forPurchaseOrder($supplier, $purchaseOrder->id),
             'payments'   => $this->payments($purchaseOrder, $token),
+            'deposit'    => $this->deposit($purchaseOrder),
             'production' => $this->production($purchaseOrder),
             'documents'  => $this->documents($purchaseOrder, $token),
             'lines'      => $lines->map(fn (PurchaseOrderTransaction $line) => $this->line($line, $purchaseOrder))->values()->all(),
@@ -268,6 +271,33 @@ class ShowSupplierPortalPurchaseOrder
                 })
                 ->values()
                 ->all(),
+        ];
+    }
+
+    /**
+     * What the supplier answered at the deposit stage. It chooses once, while the order is open, nothing is paid, no
+     * deposit amount is set and no later stage is reached: no deposit needed, or a deposit of a fixed share.
+     *
+     * @return array{choosable: bool, not_needed: bool, request: array{percentage: int, amount: float, requested_at: string}|null, request_percentage: int, request_amount: float, recipients: list<array{name: string, organisation: string}>}
+     */
+    public function deposit(PurchaseOrder $purchaseOrder): array
+    {
+        $request   = Arr::get($purchaseOrder->data ?? [], 'supplier_deposit_request');
+        $notNeeded = $purchaseOrder->deposit_amount !== null && (float) $purchaseOrder->deposit_amount == 0 && !$purchaseOrder->isDepositPaid();
+
+        $choosable = $request === null
+            && $purchaseOrder->deposit_amount === null
+            && in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)
+            && !$purchaseOrder->isDepositPaid()
+            && !(GetPurchaseOrderStages::run($purchaseOrder)[PurchaseOrderStageEnum::DEPOSIT_PAID->value]['reached'] ?? false);
+
+        return [
+            'choosable'          => $choosable,
+            'not_needed'         => $notNeeded,
+            'request'            => $request ? Arr::only($request, ['percentage', 'amount', 'requested_at']) : null,
+            'request_percentage' => UpdateSupplierPortalPurchaseOrderDeposit::REQUEST_PERCENTAGE,
+            'request_amount'     => UpdateSupplierPortalPurchaseOrderDeposit::requestAmount($purchaseOrder),
+            'recipients'         => $choosable ? NotifyPurchasingOfSupplierDepositRequest::make()->emailRecipients($purchaseOrder) : [],
         ];
     }
 
