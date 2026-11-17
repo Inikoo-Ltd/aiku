@@ -1700,7 +1700,7 @@ class ShowStockDelivery extends OrgAction
 
     private function getGiveFeedbackAction(StockDelivery $stockDelivery): array
     {
-        if (!$this->canGiveFeedback($stockDelivery)) {
+        if (!$this->canGiveFeedback($stockDelivery) || GetStockDeliveryFeedbackForm::suppliersAwaitingFeedback($stockDelivery)->isEmpty()) {
             return [];
         }
 

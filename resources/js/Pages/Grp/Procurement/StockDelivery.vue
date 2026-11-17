@@ -1617,6 +1617,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 			:agreement="currentTab === 'notes' ? note_form : undefined"
 		:removablePurchaseOrderIds="currentTab === 'purchase_orders' ? removablePurchaseOrderIds : undefined"
 		@removePurchaseOrder="(purchaseOrderId: number) => (purchaseOrderToRemoveId = purchaseOrderId)"
+		@giveFeedback="giveFeedbackOpen = true"
 	>
 		<template #button-empty-state-attachments>
 			<Button

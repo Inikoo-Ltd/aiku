@@ -41,6 +41,8 @@ const props = defineProps<{
 	portal?: boolean
 }>()
 
+const emit = defineEmits<{ giveFeedback: [] }>()
+
 defineOptions({ inheritAttrs: false })
 
 const locale = useLocaleStore()
@@ -76,6 +78,13 @@ const submitInstruction = () => {
 			<FontAwesomeIcon :icon="faStar" class="mb-2 text-2xl text-gray-300" aria-hidden="true" />
 			<p class="font-medium text-gray-700">{{ ctrans("No delivery feedback yet") }}</p>
 			<p>{{ portal ? ctrans("When we receive one of your deliveries, our warehouse tells you here how it arrived.") : ctrans("Use \"Give delivery feedback\" to tell the supplier how this delivery arrived.") }}</p>
+			<Button
+				v-if="!portal && options?.suppliers?.length"
+				type="secondary"
+				icon="fal fa-star"
+				class="mt-4"
+				:label="ctrans('Give delivery feedback')"
+				@click="emit('giveFeedback')" />
 		</div>
 
 		<article v-for="card in list" :key="card.id" class="rounded-lg border border-gray-200 bg-white p-4 text-sm shadow-sm">
