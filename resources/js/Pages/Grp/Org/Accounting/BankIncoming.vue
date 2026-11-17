@@ -23,10 +23,10 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faUniversity, faCheck, faCheckDouble, faTimes, faArchive, faReceipt, faUndo, faPiggyBank } from "@fal"
+import { faUniversity, faCheck, faCheckDouble, faTimes, faArchive, faReceipt, faUndo, faPiggyBank, faUserCheck } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faUniversity, faCheck, faCheckDouble, faTimes, faArchive, faReceipt, faUndo, faPiggyBank)
+library.add(faUniversity, faCheck, faCheckDouble, faTimes, faArchive, faReceipt, faUndo, faPiggyBank, faUserCheck)
 
 interface BankLine {
 	id: number
@@ -50,6 +50,7 @@ interface BankLine {
 	organisation_code: string
 	actionable: boolean
 	suggested_orders: SuggestedOrder[]
+	staff_hint: { customer_reference: string; customer_name: string | null; shop_code: string; note: string | null; by: string; at: string } | null
 	payout: {
 		provider: "checkout" | "pastpay" | "cod"
 		payout_id: string | null
@@ -102,6 +103,7 @@ const props = defineProps<{
 	pageHead: PageHeadingTypes
 	canEdit: boolean
 	organisationId: number | null
+	shop?: { id: number; slug: string; code: string; currency: string } | null
 	organisation: string | null
 	organisations: { value: string; label: string }[]
 	section: "customers" | "marketplaces" | "payment_accounts" | "other" | "needs_person"
@@ -129,6 +131,18 @@ const orderRoute = (line: BankLine) =>
 		? route("grp.org.shops.show.ordering.orders.show", [line.organisation_slug, line.shop_slug, line.order_slug])
 		: null
 
+const lineRoute = (name: string, lineId: number) =>
+	props.shop
+		? route(`grp.models.org.shop.bank_transaction.${name}`, [props.organisationId, props.shop.id, lineId])
+		: route(`grp.models.org.bank_transaction.${name}`, [props.organisationId, lineId])
+
+const candidatesRoute = (name: string, lineId: number) =>
+	props.shop
+		? route(`grp.json.shop.bank_transaction.${name}`, [props.organisationId, props.shop.id, lineId])
+		: route(`grp.json.bank_transaction.${name}`, [props.organisationId, lineId])
+
+const orderOfAnotherShop = (line: BankLine) => !!props.shop && !!line.order_reference && line.shop_slug !== props.shop.slug
+
 const providerOptions = computed(() => [{ label: ctrans("All"), value: "all" }, ...props.providers])
 
 const ALREADY_PAID_NOTE = "Already recorded on the order by hand"
@@ -146,7 +160,7 @@ const confirmSuggestion = (line: BankLine, order: SuggestedOrder) => {
 	rowError.value = null
 	const [url, payload] =
 		order.kind === "pay"
-			? [route("grp.models.org.bank_transaction.pay_order", [props.organisationId, line.id]), { order_id: order.id, order_reference: order.reference, absorb_bank_fee: false, from_suggestion: true }]
+			? [lineRoute("pay_order", line.id), { order_id: order.id, order_reference: order.reference, absorb_bank_fee: false, from_suggestion: true }]
 			: [route("grp.models.org.bank_transaction.dismiss", [props.organisationId, line.id]), { note: ALREADY_PAID_NOTE, already_paid: true, order_id: order.id, from_suggestion: true }]
 	router.post(url, payload, {
 		preserveScroll: true,
@@ -162,7 +176,7 @@ const restore = (line: BankLine) => {
 }
 
 const selected = ref<BankLine | null>(null)
-const action = ref<"pay" | "already_paid" | "credit" | "dismiss" | null>(null)
+const action = ref<"pay" | "already_paid" | "credit" | "dismiss" | "point" | null>(null)
 const customerPick = ref<CustomerCandidate | string>("")
 const customerSuggestions = ref<CustomerCandidate[]>([])
 const payerCustomers = ref<CustomerCandidate[] | null>(null)
@@ -190,6 +204,8 @@ const header = computed(() =>
 			? ctrans("Which order already has this payment?")
 			: action.value === "credit"
 			? ctrans("Add this bank payment to a customer credit")
+			: action.value === "point"
+			? ctrans("Which of our customers sent this payment?")
 			: ctrans("This bank payment does not pay an order")
 )
 
@@ -198,14 +214,14 @@ const pickedReference = computed(() => (typeof orderPick.value === "string" ? or
 const pickedCustomer = computed(() => (typeof customerPick.value === "string" ? null : customerPick.value))
 
 const canSubmit = computed(() =>
-	action.value === "pay" ? pickedReference.value !== "" : action.value === "already_paid" ? typeof orderPick.value !== "string" : action.value === "credit" ? pickedCustomer.value !== null : note.value.trim() !== ""
+	action.value === "pay" ? pickedReference.value !== "" : action.value === "already_paid" ? typeof orderPick.value !== "string" : action.value === "credit" || action.value === "point" ? pickedCustomer.value !== null : note.value.trim() !== ""
 )
 
 const findCustomers = async (search: string): Promise<CustomerCandidate[]> => {
 	if (!selected.value) {
 		return []
 	}
-	const response = await axios.get(route("grp.json.bank_transaction.customer_candidates", [props.organisationId, selected.value.id]), { params: { search } })
+	const response = await axios.get(candidatesRoute("customer_candidates", selected.value.id), { params: { search, any_currency: action.value === "point" ? 1 : 0 } })
 	return response.data
 }
 
@@ -230,7 +246,7 @@ const findOrders = async (search: string, payer = false): Promise<OrderCandidate
 	if (!selected.value) {
 		return []
 	}
-	const response = await axios.get(route("grp.json.bank_transaction.order_candidates", [props.organisationId, selected.value.id]), {
+	const response = await axios.get(candidatesRoute("order_candidates", selected.value.id), {
 		params: { search, payer: payer ? 1 : 0, paid: action.value === "already_paid" ? 1 : 0 },
 	})
 	return response.data
@@ -249,7 +265,7 @@ const loadPayerOrders = async (line: BankLine) => {
 	}
 }
 
-const open = (line: BankLine, kind: "pay" | "already_paid" | "credit" | "dismiss") => {
+const open = (line: BankLine, kind: "pay" | "already_paid" | "credit" | "dismiss" | "point") => {
 	selected.value = line
 	action.value = kind
 	orderPick.value = line.order_reference ?? ""
@@ -260,7 +276,7 @@ const open = (line: BankLine, kind: "pay" | "already_paid" | "credit" | "dismiss
 	if ((kind === "pay" || kind === "already_paid") && !line.order_reference) {
 		loadPayerOrders(line)
 	}
-	if (kind === "credit") {
+	if (kind === "credit" || kind === "point") {
 		loadPayerCustomers(line)
 	}
 }
@@ -273,17 +289,19 @@ const submit = () => {
 	const [url, payload] =
 		action.value === "pay"
 			? [
-					route("grp.models.org.bank_transaction.pay_order", [organisationId, selected.value.id]),
+					lineRoute("pay_order", selected.value.id),
 					{
 						order_id: typeof orderPick.value === "string" ? null : orderPick.value.id,
 						order_reference: pickedReference.value,
-						absorb_bank_fee: absorbBankFee.value,
+						absorb_bank_fee: !props.shop && absorbBankFee.value,
 					},
 				]
 			: action.value === "already_paid"
 				? [route("grp.models.org.bank_transaction.dismiss", [organisationId, selected.value.id]), { note: ALREADY_PAID_NOTE, already_paid: true, order_id: typeof orderPick.value === "string" ? null : orderPick.value.id }]
 				: action.value === "credit"
-				? [route("grp.models.org.bank_transaction.customer_credit", [organisationId, selected.value.id]), { customer_id: pickedCustomer.value?.id }]
+				? [lineRoute("customer_credit", selected.value.id), { customer_id: pickedCustomer.value?.id }]
+				: action.value === "point"
+				? [lineRoute("point_customer", selected.value.id), { customer_id: pickedCustomer.value?.id, note: note.value.trim() || null }]
 				: [route("grp.models.org.bank_transaction.dismiss", [organisationId, selected.value.id]), { note: note.value.trim() }]
 
 	router.post(url, payload, {
@@ -403,7 +421,13 @@ const submit = () => {
 				<template v-else>{{ ctrans("Checkout payout, its report is not read yet") }}</template>
 			</div>
 			<div v-else-if="item.reason" class="mb-1 text-right text-xs text-gray-500">{{ sentenceCase(ctrans(item.reason)) }}</div>
-			<div v-if="canEdit && item.can_bring_back" class="flex flex-col items-end gap-1 whitespace-nowrap">
+			<div v-if="item.staff_hint" class="mb-1 text-right text-xs text-amber-700">
+				<FontAwesomeIcon icon="fal fa-user-check" fixed-width aria-hidden="true" />
+				{{ ctrans(":by says it is", { by: item.staff_hint.by }) }}
+				{{ item.staff_hint.customer_name }}
+				<span class="whitespace-nowrap">{{ item.staff_hint.customer_reference }} ({{ item.staff_hint.shop_code }})</span><template v-if="item.staff_hint.note">: {{ item.staff_hint.note }}</template>
+			</div>
+			<div v-if="canEdit && !shop && item.can_bring_back" class="flex flex-col items-end gap-1 whitespace-nowrap">
 				<Button type="tertiary" size="xs" :label="ctrans('Bring back')" @click="restore(item)">
 					<template #icon>
 						<FontAwesomeIcon icon="fal fa-undo" fixed-width aria-hidden="true" />
@@ -430,7 +454,38 @@ const submit = () => {
 						</template>
 					</Button>
 				</div>
-				<div class="flex justify-end gap-2 whitespace-nowrap">
+				<div v-if="shop" class="flex justify-end gap-2 whitespace-nowrap">
+					<span v-if="orderOfAnotherShop(item)" class="text-xs text-gray-500">{{ ctrans("Names an order of another shop") }}</span>
+					<Button v-else-if="item.currency_code === shop.currency" type="tertiary" size="xs" :label="ctrans('Pay order')" @click="open(item, 'pay')">
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+					<Button
+						v-if="item.currency_code === shop.currency && !item.order_reference"
+						type="tertiary"
+						size="xs"
+						:label="ctrans('Customer credit')"
+						v-tooltip="ctrans('Pays no order: add the money to the customer credit')"
+						@click="open(item, 'credit')"
+					>
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-piggy-bank" class="text-green-600" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+					<Button
+						type="tertiary"
+						size="xs"
+						:label="ctrans('Our customer')"
+						v-tooltip="ctrans('Say which of our customers sent it, so accounting can place it')"
+						@click="open(item, 'point')"
+					>
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-user-check" class="text-gray-500" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+				</div>
+				<div v-else class="flex justify-end gap-2 whitespace-nowrap">
 					<Button type="tertiary" size="xs" :label="ctrans('Pay order')" @click="open(item, 'pay')">
 						<template #icon>
 							<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
@@ -523,7 +578,7 @@ const submit = () => {
 						<span class="ml-auto whitespace-nowrap tabular-nums" :class="order.amount_matches ? 'font-medium text-gray-900' : 'text-gray-500'">{{ orderAmountLabel(order) }}</span>
 					</button>
 				</div>
-				<label v-if="action === 'pay'" class="flex items-start gap-2">
+				<label v-if="action === 'pay' && !shop" class="flex items-start gap-2">
 					<Checkbox v-model="absorbBankFee" binary input-id="absorb-bank-fee" />
 					<span>
 						{{ ctrans("If it arrived a little short, absorb the bank fee so the order is paid") }}
@@ -532,7 +587,8 @@ const submit = () => {
 				</label>
 			</template>
 
-			<template v-else-if="action === 'credit'">
+			<template v-else-if="action === 'credit' || action === 'point'">
+				<p v-if="action === 'point'" class="text-gray-600">{{ ctrans("Nothing is paid: accounting sees your answer on this payment and places it.") }}</p>
 				<label class="block">
 					<span class="mb-1 block font-medium">{{ ctrans("Customer") }} <span class="text-red-500">*</span></span>
 					<AutoComplete
@@ -548,7 +604,7 @@ const submit = () => {
 							<div class="flex w-full min-w-0 items-baseline gap-2">
 								<span class="truncate font-medium">{{ option.name ?? "—" }}</span>
 								<span class="whitespace-nowrap text-gray-500">{{ option.reference }} · {{ option.shop }}</span>
-								<span class="ml-auto whitespace-nowrap tabular-nums text-gray-500">{{ ctrans("credit :amount", { amount: locale.currencyFormat(selected.currency_code, option.balance) }) }}</span>
+								<span v-if="action === 'credit'" class="ml-auto whitespace-nowrap tabular-nums text-gray-500">{{ ctrans("credit :amount", { amount: locale.currencyFormat(selected.currency_code, option.balance) }) }}</span>
 							</div>
 						</template>
 					</AutoComplete>
@@ -568,9 +624,13 @@ const submit = () => {
 					>
 						<span class="truncate font-medium">{{ customer.name ?? "—" }}</span>
 						<span class="whitespace-nowrap text-gray-500">{{ customer.reference }} · {{ customer.shop }}</span>
-						<span class="ml-auto whitespace-nowrap tabular-nums text-gray-500">{{ ctrans("credit :amount", { amount: locale.currencyFormat(selected.currency_code, customer.balance) }) }}</span>
+						<span v-if="action === 'credit'" class="ml-auto whitespace-nowrap tabular-nums text-gray-500">{{ ctrans("credit :amount", { amount: locale.currencyFormat(selected.currency_code, customer.balance) }) }}</span>
 					</button>
 				</div>
+				<label v-if="action === 'point'" class="block">
+					<span class="mb-1 block font-medium">{{ ctrans("Note") }}</span>
+					<Textarea v-model="note" rows="2" class="w-full" :placeholder="ctrans('e.g. paid order UK12345 in euros by mistake')" />
+				</label>
 			</template>
 
 			<label v-else class="block">
@@ -593,7 +653,7 @@ const submit = () => {
 					v-if="action !== 'dismiss'"
 					type="primary"
 					full
-					:label="action === 'pay' ? ctrans('Record payment') : action === 'already_paid' ? ctrans('Already paid') : ctrans('Add to credit')"
+					:label="action === 'pay' ? ctrans('Record payment') : action === 'already_paid' ? ctrans('Already paid') : action === 'point' ? ctrans('This is our customer') : ctrans('Add to credit')"
 					:loading="isSaving"
 					:disabled="!canSubmit"
 					@click="submit"

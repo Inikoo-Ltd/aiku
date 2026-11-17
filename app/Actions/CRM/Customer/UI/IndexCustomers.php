@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Mailshot\Filters\FilterByOrderValue;
 use App\Actions\CRM\Customer\GetCustomerFilterStructure;
@@ -782,6 +783,7 @@ class IndexCustomers extends OrgAction
                     'actions'       => $action,
                     'subNavigation' => $subNavigation,
                 ]),
+                'bankPaymentsNotice' => $this->parent instanceof Shop ? IndexBankIncoming::shopNotice($this->parent, $request->user()) : null,
                 // 'data' => CustomersResource::collection($customers),
                 'download_route' => [
                     'xlsx' => [

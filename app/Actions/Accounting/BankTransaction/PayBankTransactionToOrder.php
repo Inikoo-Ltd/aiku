@@ -8,9 +8,10 @@
 
 namespace App\Actions\Accounting\BankTransaction;
 
-use App\Actions\Accounting\Traits\AuthorizesAccountingEdit;
+use App\Actions\Accounting\Traits\AuthorizesAccountingOrShopEdit;
 use App\Actions\OrgAction;
 use App\Models\Accounting\BankTransaction;
+use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -20,11 +21,12 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * From the bank review queue: a person names the order a bank payment belongs to, and it is recorded there.
+ * From the bank review queue: a person names the order a bank payment belongs to, and it is recorded there. From a
+ * shop's Bank payments page only an order of that shop can be named, and no bank fee is absorbed.
  */
 class PayBankTransactionToOrder extends OrgAction
 {
-    use AuthorizesAccountingEdit;
+    use AuthorizesAccountingOrShopEdit;
 
     private ?User $user = null;
 
@@ -34,6 +36,7 @@ class PayBankTransactionToOrder extends OrgAction
     public function handle(BankTransaction $bankTransaction, array $modelData): BankTransaction
     {
         $orders = Order::where('organisation_id', $bankTransaction->organisation_id)
+            ->when(isset($this->shop), fn ($query) => $query->where('shop_id', $this->shop->id))
             ->when(
                 $modelData['order_id'] ?? null,
                 fn ($query, $orderId) => $query->where('id', $orderId),
@@ -41,7 +44,9 @@ class PayBankTransactionToOrder extends OrgAction
             )
             ->get();
         if ($orders->isEmpty()) {
-            throw ValidationException::withMessages(['order' => __('No order :reference in this organisation', ['reference' => $modelData['order_reference'] ?? ''])]);
+            throw ValidationException::withMessages(['order' => isset($this->shop)
+                ? __('No order :reference in this shop', ['reference' => $modelData['order_reference'] ?? ''])
+                : __('No order :reference in this organisation', ['reference' => $modelData['order_reference'] ?? ''])]);
         }
         $order = $orders->count() === 1 ? $orders->first() : $orders->firstWhere('id', $bankTransaction->order_id);
         if (!$order) {
@@ -52,14 +57,22 @@ class PayBankTransactionToOrder extends OrgAction
             DB::transaction(fn () => $this->checkStillSuggested(BankTransaction::lockForUpdate()->findOrFail($bankTransaction->id), Order::lockForUpdate()->findOrFail($order->id)));
         }
 
+        DB::transaction(fn () => $this->lockLineOpenToShop($bankTransaction));
         PayMatchedBankTransactions::make()->payToOrder(
             $bankTransaction,
             $order,
-            (bool)($modelData['absorb_bank_fee'] ?? false),
+            !isset($this->shop) && ($modelData['absorb_bank_fee'] ?? false),
             $this->user?->contact_name ?? $this->user?->username ?? 'staff'
         );
 
-        return $bankTransaction->refresh();
+        $bankTransaction->refresh()->recordDecision('paid_to_order', array_filter([
+            'order'     => $order->reference,
+            'amount'    => $bankTransaction->amount,
+            'currency'  => $bankTransaction->currency->code,
+            'from_shop' => isset($this->shop) ? $this->shop->code : null,
+        ]));
+
+        return $bankTransaction;
     }
 
     /**
@@ -94,6 +107,18 @@ class PayBankTransactionToOrder extends OrgAction
         $this->user = $request->user();
         $this->initialisation($organisation, $request);
         abort_unless($bankTransaction->organisation_id === $organisation->id, 404);
+
+        return $this->handle($bankTransaction, $this->validatedData);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function inShop(Organisation $organisation, Shop $shop, BankTransaction $bankTransaction, ActionRequest $request): BankTransaction
+    {
+        $this->user = $request->user();
+        $this->initialisationFromShop($shop, $request);
+        abort_unless($shop->organisation_id === $organisation->id && $bankTransaction->organisation_id === $organisation->id, 404);
 
         return $this->handle($bankTransaction, $this->validatedData);
     }

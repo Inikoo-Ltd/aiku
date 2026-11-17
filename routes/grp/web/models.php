@@ -1314,6 +1314,9 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('/bank-transaction/{bankTransaction:id}/customer-credit', PayBankTransactionToCustomerCredit::class)->name('bank_transaction.customer_credit')->withoutScopedBindings();
     Route::post('/bank-transaction/{bankTransaction:id}/dismiss', DismissBankTransaction::class)->name('bank_transaction.dismiss')->withoutScopedBindings();
     Route::post('/bank-transaction/{bankTransaction:id}/restore', RestoreBankTransaction::class)->name('bank_transaction.restore')->withoutScopedBindings();
+    Route::post('/shop/{shop:id}/bank-transaction/{bankTransaction:id}/pay-order', [PayBankTransactionToOrder::class, 'inShop'])->name('shop.bank_transaction.pay_order')->withoutScopedBindings();
+    Route::post('/shop/{shop:id}/bank-transaction/{bankTransaction:id}/customer-credit', [PayBankTransactionToCustomerCredit::class, 'inShop'])->name('shop.bank_transaction.customer_credit')->withoutScopedBindings();
+    Route::post('/shop/{shop:id}/bank-transaction/{bankTransaction:id}/our-customer', [\App\Actions\Accounting\BankTransaction\PointBankTransactionToCustomer::class, 'inShop'])->name('shop.bank_transaction.point_customer')->withoutScopedBindings();
 });
 
 Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilmentTransaction:id}')->group(function () {

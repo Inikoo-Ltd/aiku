@@ -43,6 +43,7 @@ class RestoreBankTransaction extends OrgAction
                 'match_data'  => array_merge($matchData, ['restored_from' => $bankTransaction->match_data]),
                 'matched_at'  => now(),
             ]);
+            $bankTransaction->recordDecision('brought_back', ['state' => $bankTransaction->match_state?->value]);
 
             return $bankTransaction;
         });

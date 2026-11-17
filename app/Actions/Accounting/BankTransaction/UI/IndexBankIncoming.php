@@ -17,6 +17,11 @@ use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
 use App\Http\Resources\Accounting\BankIncomingResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\BankTransaction;
+use App\Models\Catalogue\Shop;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\SysAdmin\User;
+use App\Models\Ordering\Order;
+use App\Actions\Ordering\UI\ShowOrdersBacklog;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -29,7 +34,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 /**
  * Every payment the organisation's banks received, each line in exactly one section: customers paying orders,
- * marketplace payouts, payment provider payouts, lines waiting for a person, and the rest.
+ * marketplace payouts, payment provider payouts, lines waiting for a person, and the rest. A shop's Bank payments page
+ * shows the lines waiting for a person to the shop's staff, who know their customers: every currency, the shop's own
+ * first, and only orders and customers of that shop can be picked.
  */
 class IndexBankIncoming extends OrgAction
 {
@@ -94,6 +101,7 @@ class IndexBankIncoming extends OrgAction
                 'bank_transactions.match_data',
                 'bank_transactions.payment_id',
                 'bank_transactions.provider_type',
+                'bank_transactions.staff_hint',
                 'bank_connections.name as bank',
                 'currencies.code as currency_code',
                 'org_currencies.code as org_currency_code',
@@ -105,6 +113,7 @@ class IndexBankIncoming extends OrgAction
             ])
             ->selectRaw($this->orgAmountSql().' as org_amount')
             ->selectRaw(($organisation instanceof Group ? 'true' : 'false').' as read_only')
+            ->when(isset($this->shop) && !request()->query('sort'), fn ($query) => $query->orderByRaw('bank_transactions.currency_id = ? desc', [$this->shop->currency_id]))
             ->defaultSort('-booked_at')
             ->allowedSorts(['booked_at', 'amount'])
             ->allowedFilters([$globalSearch])
@@ -135,6 +144,52 @@ class IndexBankIncoming extends OrgAction
     public function other(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         return $this->inSection('other', $organisation, $request);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        abort_unless($shop->organisation_id === $organisation->id && in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING], true), 404);
+        $this->initialisationFromShop($shop, $request);
+        $this->section = 'needs_person';
+        $this->readFilters($organisation, $request);
+
+        return $this->handle($organisation, $this->section, $this->period, currency: $this->currency, from: $this->from, to: $this->to, min: $this->min, max: $this->max);
+    }
+
+    /**
+     * Payments waiting for a person in the shop's currency, as the shop's Bank payments page counts them by default.
+     */
+    public static function waitingInShopCurrency(Shop $shop): int
+    {
+        return BankTransaction::query()
+            ->where('organisation_id', $shop->organisation_id)
+            ->where('direction', 'in')
+            ->where('status', 'booked')
+            ->where('currency_id', $shop->currency_id)
+            ->where('booked_at', '>=', now()->subDays(90))
+            ->whereRaw('('.self::BUCKET_SQL.") = 'needs_person'")
+            ->count();
+    }
+
+    /**
+     * The yellow notice on a shop's backlog and customers: how many payments in the shop's currency wait for a person,
+     * linking to the shop's Bank payments page; null when there are none or the user may not open that page.
+     *
+     * @return array{count: int, currency: string, route: array{name: string, parameters: array<string, string>}}|null
+     */
+    public static function shopNotice(Shop $shop, User $user): ?array
+    {
+        if (!in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING], true)
+            || !$user->authTo(["orders.$shop->id.view", "crm.$shop->id.view", "accounting.$shop->organisation_id.view"])) {
+            return null;
+        }
+        $count = self::waitingInShopCurrency($shop);
+
+        return $count ? [
+            'count'    => $count,
+            'currency' => $shop->currency->code,
+            'route'    => ['name' => 'grp.org.shops.show.ordering.bank_payments', 'parameters' => ['organisation' => $shop->organisation->slug, 'shop' => $shop->slug, 'currency' => $shop->currency->code]],
+        ] : null;
     }
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
@@ -225,6 +280,9 @@ class IndexBankIncoming extends OrgAction
         if (!$isGroup) {
             $this->suggestOrders($bankTransactions);
         }
+        if (isset($this->shop)) {
+            return $this->shopResponse($bankTransactions, $request, $sectionTotals);
+        }
         $query         = array_filter([
             'period'   => $this->from || $this->period === '90d' ? null : $this->period,
             'currency' => $this->currency,
@@ -275,6 +333,7 @@ class IndexBankIncoming extends OrgAction
 
     /**
      * Lines naming no order get the orders of a customer named like the payer that this amount pays or already paid.
+     * On a shop's page only an order of that shop that the payment would pay.
      */
     private function suggestOrders(LengthAwarePaginator $bankTransactions): void
     {
@@ -282,9 +341,59 @@ class IndexBankIncoming extends OrgAction
         foreach ($bankTransactions->getCollection() as $bankTransaction) {
             if ($bankTransaction->order_id === null && $bankTransaction->payment_id === null
                 && in_array($bankTransaction->match_state, [BankTransactionMatchStateEnum::UNMATCHED, BankTransactionMatchStateEnum::REVIEW], true)) {
-                $bankTransaction->suggested_orders = $matcher->suggestedOrders($bankTransaction);
+                $suggestions = $matcher->suggestedOrders($bankTransaction);
+                if (isset($this->shop) && $suggestions) {
+                    $shopOrders  = Order::whereIn('id', array_column($suggestions, 'id'))->where('shop_id', $this->shop->id)->pluck('id')->all();
+                    $suggestions = array_values(array_filter($suggestions, fn (array $suggestion) => $suggestion['kind'] === 'pay' && in_array($suggestion['id'], $shopOrders, true)));
+                }
+                $bankTransaction->suggested_orders = $suggestions;
             }
         }
+    }
+
+    /**
+     * @param array<string, array{count: int, total: float|null}> $sectionTotals
+     */
+    private function shopResponse(LengthAwarePaginator $bankTransactions, ActionRequest $request, array $sectionTotals): Response
+    {
+        $shop  = $this->shop;
+        $title = __('Unmatched bank payments');
+
+        return Inertia::render(
+            'Org/Accounting/BankIncoming',
+            [
+                'breadcrumbs'    => array_merge(
+                    ShowOrdersBacklog::make()->getBreadcrumbs($shop, $request->route()->originalParameters()),
+                    [['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.org.shops.show.ordering.bank_payments', 'parameters' => $request->route()->originalParameters()], 'label' => $title]]]
+                ),
+                'title'          => $title,
+                'pageHead'       => [
+                    'model' => __('Bank payments'),
+                    'title' => $title,
+                    'icon'  => ['fal', 'fa-university'],
+                ],
+                'canEdit'        => $request->user()->authTo(["orders.$shop->id.edit", "crm.$shop->id.edit"]),
+                'organisationId' => $this->organisation->id,
+                'organisation'   => null,
+                'organisations'  => [],
+                'shop'           => ['id' => $shop->id, 'slug' => $shop->slug, 'code' => $shop->code, 'currency' => $shop->currency->code],
+                'section'        => 'needs_person',
+                'sectionTotals'  => ['needs_person' => $sectionTotals['needs_person']],
+                'summary'        => $sectionTotals['needs_person'],
+                'provider'       => null,
+                'providers'      => [],
+                'currencyTotals' => $this->currencyTotals($this->organisation, 'needs_person', $this->period, $this->from, $this->to, $this->min, $this->max),
+                'period'         => $this->from ? null : $this->period,
+                'currency'       => $this->currency,
+                'currencies'     => $this->currencies($this->organisation),
+                'from'           => $this->from,
+                'to'             => $this->to,
+                'min'            => $this->min,
+                'max'            => $this->max,
+                'orgCurrency'    => $this->organisation->currency->code,
+                'data'           => BankIncomingResource::collection($bankTransactions),
+            ]
+        )->table($this->tableStructure());
     }
 
     public function tableStructure($prefix = null): Closure

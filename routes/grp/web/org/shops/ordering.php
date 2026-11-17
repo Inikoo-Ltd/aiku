@@ -39,6 +39,7 @@ Route::get('', ShowOrderingDashboard::class)->name('dashboard');
 
 Route::get('/backlog', ShowOrdersBacklog::class)->name('backlog');
 Route::get('/backlog/waiting_items', IndexWaitingCrmItemsGrouped::class)->name('backlog.waiting_items');
+Route::get('/bank-payments', [\App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming::class, 'inShop'])->name('bank_payments');
 
 
 Route::get('/orders/', IndexOrders::class)->name('orders.index');

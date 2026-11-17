@@ -197,6 +197,7 @@ class AppServiceProvider extends ServiceProvider
                 'OrgPaymentServiceProvider'        => 'App\Models\Accounting\OrgPaymentServiceProvider',
                 'OrgPaymentServiceProviderShop'    => 'App\Models\Accounting\OrgPaymentServiceProviderShop',
                 'Payment'                          => 'App\Models\Accounting\Payment',
+                'BankTransaction'                  => 'App\Models\Accounting\BankTransaction',
                 'PaymentAccount'                   => 'App\Models\Accounting\PaymentAccount',
                 'PaymentAccountShop'               => 'App\Models\Accounting\PaymentAccountShop',
                 'PaymentServiceProvider'           => 'App\Models\Accounting\PaymentServiceProvider',
