@@ -780,19 +780,22 @@ test('the knowledge base splits pages into sections and keeps the notes staff wr
     $saved->delete();
 });
 
-test('a shop fact points a country\'s customers to the shop of the same catalogue most of them buy from, only on a clear lead', function () {
-    $row  = fn (int $shop, int $master, string $country, int $customers) => (object) ['shop_id' => $shop, 'master_shop_id' => $master, 'country_code' => $country, 'customers' => $customers];
-    $rows = [
+test('a shop fact points a customer across the UK/EU customs border to the shop of the same catalogue most customers there buy from, only on a clear lead', function () {
+    $shopCountry = [1 => 'GB', 2 => 'ES', 3 => 'SK', 4 => 'FR', 9 => 'DE'];
+    $row         = fn (int $shop, int $master, string $country, int $customers) => (object) ['shop_id' => $shop, 'master_shop_id' => $master, 'country_code' => $country, 'shop_country_code' => $shopCountry[$shop], 'customers' => $customers];
+    $rows        = [
         $row(1, 1, 'ES', 3), $row(2, 1, 'ES', 400),
-        $row(1, 1, 'GB', 900), $row(3, 1, 'GB', 11),
+        $row(1, 1, 'GB', 900), $row(3, 1, 'GB', 11), $row(2, 1, 'GB', 4),
         $row(1, 1, 'FR', 40), $row(4, 1, 'FR', 70),
-        $row(2, 1, 'IT', 300),
+        $row(3, 1, 'IT', 5), $row(2, 1, 'IT', 300),
         $row(1, 1, 'MT', 2), $row(3, 1, 'MT', 9),
+        $row(2, 1, 'US', 8), $row(1, 1, 'US', 33),
         $row(1, 1, 'DE', 5), $row(9, 2, 'DE', 500),
     ];
 
     expect(\App\Actions\Chat\ChatSession\GetChatShopFacts::homeShopIds($rows, 1, 1))->toBe(['ES' => 2])
         ->and(\App\Actions\Chat\ChatSession\GetChatShopFacts::homeShopIds($rows, 3, 1))->toBe(['GB' => 1])
+        ->and(\App\Actions\Chat\ChatSession\GetChatShopFacts::homeShopIds($rows, 2, 1))->toBe(['GB' => 1])
         ->and(\App\Actions\Chat\ChatSession\GetChatShopFacts::DROPSHIPPING_SHOP_BY_ORGANISATION)->toBe(['aw' => 'awd', 'sk' => 'dssk', 'es' => 'dse', 'aroma' => 'awd']);
 });
 
