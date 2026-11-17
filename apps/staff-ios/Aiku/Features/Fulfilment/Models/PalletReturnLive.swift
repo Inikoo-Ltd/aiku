@@ -1,0 +1,434 @@
+import Foundation
+import Observation
+
+enum PalletReturnStateFilter: String, CaseIterable, Hashable, Sendable {
+    case active
+    case confirmed
+    case picking
+    case picked
+    case dispatched
+    case cancel
+
+    var title: String {
+        switch self {
+        case .active: "Active"
+        case .confirmed: "Confirmed"
+        case .picking: "Picking"
+        case .picked: "Picked"
+        case .dispatched: "Dispatched"
+        case .cancel: "Cancelled"
+        }
+    }
+
+    func count(in counts: MobilePalletReturnsPage.Counts?) -> Int? {
+        guard let counts else { return nil }
+        switch self {
+        case .active: return counts.active
+        case .confirmed: return counts.confirmed
+        case .picking: return counts.picking
+        case .picked: return counts.picked
+        case .dispatched: return counts.dispatched
+        case .cancel: return counts.cancel
+        }
+    }
+}
+
+enum PalletReturnTypeFilter: String, CaseIterable, Hashable, Sendable {
+    case all
+    case pallets
+    case items
+
+    var title: String {
+        switch self {
+        case .all: "All"
+        case .pallets: "Pallets"
+        case .items: "Stored items"
+        }
+    }
+
+    var serverValue: String? { self == .all ? nil : rawValue }
+
+    func count(in counts: MobilePalletReturnsPage.Counts?) -> Int? {
+        guard let counts else { return nil }
+        switch self {
+        case .all: return counts.types.pallets + counts.types.items
+        case .pallets: return counts.types.pallets
+        case .items: return counts.types.items
+        }
+    }
+}
+
+enum PalletReturnText {
+    static let stages = ["confirmed", "picking", "picked", "dispatched"]
+    static let stageTitles = ["Confirmed", "Picking", "Picked", "Dispatched"]
+
+    static func stateTone(_ state: String) -> Tone {
+        switch state {
+        case "picking": .info
+        case "picked", "dispatched": .success
+        case "cancel": .danger
+        default: .neutral
+        }
+    }
+
+    static func lineTone(_ state: String?, waiting: Bool) -> Tone {
+        if waiting { return .warn }
+        switch state {
+        case "picked": return .success
+        case "not_picked", "cancel": return .danger
+        case "picking": return .info
+        default: return .neutral
+        }
+    }
+
+    static func itemLineTone(_ line: MobileReturnItemLine) -> Tone {
+        if line.waitingCustomerService { return .warn }
+        if line.quantityOrdered > 0, line.quantityPicked >= line.quantityOrdered { return .success }
+        if line.quantityPicked > 0 || line.quantityNotPicked > 0 { return .warn }
+        return .neutral
+    }
+
+    static func typeTitle(_ row: MobilePalletReturnRow) -> String {
+        row.typeLabel ?? (row.typeGroup == "items" ? "Stored items" : "Pallets")
+    }
+
+    static func rowSubtitle(_ row: MobilePalletReturnRow) -> String {
+        let size = row.typeGroup == "items"
+            ? PalletDeliveryText.plural(row.numberItems, "item line", "item lines")
+            : PalletDeliveryText.plural(row.numberPallets, "pallet", "pallets")
+        return PalletDeliveryText.joined([
+            row.customer?.name,
+            typeTitle(row),
+            row.platform?.label.map { "from \($0)" },
+            size,
+            PalletDeliveryText.day(row.date)
+        ])
+    }
+
+    static func kicker(_ detail: MobilePalletReturnDetail) -> String {
+        PalletDeliveryText.joined(["Fulfilment return", detail.typeLabel ?? (detail.isItems ? "Stored items" : "Pallets"), detail.customer?.name])
+    }
+
+    static func locationText(_ location: MobileStoredPallet.Location?) -> String {
+        location?.code ?? "no location"
+    }
+}
+
+struct PalletGroup: Identifiable {
+    let pallet: MobileReturnPalletRef?
+    let locationCode: String?
+    let lines: [(item: MobileReturnStoredItem, line: MobileReturnItemLine)]
+
+    var id: String { "\(pallet?.id ?? 0)" }
+
+    static func grouping(_ items: [MobileReturnStoredItem]) -> [PalletGroup] {
+        var order: [Int] = []
+        var byPallet: [Int: [(MobileReturnStoredItem, MobileReturnItemLine)]] = [:]
+        for item in items {
+            for line in item.lines {
+                let key = line.pallet?.id ?? 0
+                if byPallet[key] == nil { order.append(key) }
+                byPallet[key, default: []].append((item, line))
+            }
+        }
+        return order.compactMap { key in
+            guard let lines = byPallet[key], let first = lines.first?.1 else { return nil }
+            return PalletGroup(pallet: first.pallet, locationCode: first.location?.code, lines: lines)
+        }
+        .sorted {
+            let left = ($0.locationCode == nil ? 1 : 0, $0.locationCode ?? "", $0.pallet?.reference ?? "")
+            let right = ($1.locationCode == nil ? 1 : 0, $1.locationCode ?? "", $1.pallet?.reference ?? "")
+            return left < right
+        }
+    }
+}
+
+@MainActor
+@Observable
+final class PalletReturnsFeed {
+    var state: PalletReturnStateFilter = .active
+    var type: PalletReturnTypeFilter = .all
+    var search = ""
+    private(set) var rows: [MobilePalletReturnRow] = []
+    private(set) var counts: MobilePalletReturnsPage.Counts?
+    private(set) var isLoadingMore = false
+    private(set) var loadError: String?
+    private(set) var currentPage = 0
+    private(set) var lastPage = 0
+    private(set) var loadedRequest: Request?
+
+    struct Request: Hashable, Sendable {
+        let warehouseID: Int
+        let state: PalletReturnStateFilter
+        let type: PalletReturnTypeFilter
+        let search: String
+    }
+
+    func request(warehouseID: Int) -> Request {
+        Request(warehouseID: warehouseID, state: state, type: type, search: search.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    var hasMorePages: Bool { currentPage > 0 && currentPage < lastPage }
+
+    func reload(warehouseID: Int, apiClient: APIClient) async {
+        let request = request(warehouseID: warehouseID)
+        do {
+            let page = try await apiClient.fetchPalletReturns(warehouseID: warehouseID, query: query(request, page: 1))
+            guard request == self.request(warehouseID: warehouseID) else { return }
+            rows = page.data
+            counts = page.counts
+            currentPage = page.meta.currentPage
+            lastPage = page.meta.lastPage
+            loadedRequest = request
+            loadError = nil
+        } catch where error.isCancellation {
+            return
+        } catch {
+            loadError = PalletDeliveryText.message(for: error)
+            loadedRequest = request
+        }
+    }
+
+    func loadNextPage(apiClient: APIClient) async {
+        guard let request = loadedRequest, hasMorePages, !isLoadingMore else { return }
+        isLoadingMore = true
+        defer { isLoadingMore = false }
+        do {
+            let page = try await apiClient.fetchPalletReturns(warehouseID: request.warehouseID, query: query(request, page: currentPage + 1))
+            guard request == loadedRequest else { return }
+            let known = Set(rows.map(\.id))
+            rows.append(contentsOf: page.data.filter { !known.contains($0.id) })
+            counts = page.counts
+            currentPage = page.meta.currentPage
+            lastPage = page.meta.lastPage
+        } catch where error.isCancellation {
+            return
+        } catch {
+            loadError = PalletDeliveryText.message(for: error)
+        }
+    }
+
+    private func query(_ request: Request, page: Int) -> MobilePalletReturnsQuery {
+        MobilePalletReturnsQuery(state: request.state.rawValue, type: request.type.serverValue, search: request.search, page: page)
+    }
+}
+
+enum PalletReturnEvent: Equatable {
+    case done(String, Tone)
+    case lineFound(Int)
+}
+
+@MainActor
+@Observable
+final class PalletReturnLive {
+    let warehouseID: Int
+    let returnID: Int
+    private let apiClient: APIClient
+    private let makeRequestID: @Sendable () -> String
+
+    private(set) var detail: MobilePalletReturnDetail?
+    private(set) var loadError: String?
+    private(set) var working: MobilePalletReturnWrite?
+    private(set) var event: PalletReturnEvent?
+    private(set) var sheetError: String?
+    private(set) var fieldErrors: [String: String] = [:]
+    private(set) var queuedScans = 0
+    private(set) var shippers = GoodsOutShipperList()
+    private(set) var isLoadingShippers = false
+    private(set) var shippersError: String?
+    var selectedPalletID: Int?
+
+    private var pending: [MobilePalletReturnWrite] = []
+    private var isDraining = false
+
+    init(warehouseID: Int, returnID: Int, apiClient: APIClient, makeRequestID: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() }) {
+        self.warehouseID = warehouseID
+        self.returnID = returnID
+        self.apiClient = apiClient
+        self.makeRequestID = makeRequestID
+    }
+
+    var isWorking: Bool { working != nil || isDraining }
+
+    func load() async {
+        guard !isWorking else { return }
+        do {
+            detail = try await apiClient.fetchPalletReturn(warehouseID: warehouseID, id: returnID)
+            loadError = nil
+        } catch where error.isCancellation {
+            return
+        } catch {
+            loadError = PalletDeliveryText.message(for: error)
+        }
+    }
+
+    func clearEvent() { event = nil }
+    func clearErrors() {
+        sheetError = nil
+        fieldErrors = [:]
+    }
+
+    func startPicking() async -> Bool { await act(.startPicking) }
+    func finishPicking() async -> Bool { await act(.finishPicking) }
+    func dispatch() async -> Bool { await act(.dispatch) }
+    func printInserts() async -> Bool { await act(.printInserts) }
+    func pickPallet(_ lineID: Int) async -> Bool { await act(.pickPallet(lineID: lineID, requestID: makeRequestID())) }
+    func pickItem(_ lineID: Int, quantity: Int?) async -> Bool { await act(.pickItem(lineID: lineID, quantity: quantity, requestID: makeRequestID())) }
+    func notPicked(_ lineID: Int, quantity: Int? = nil) async -> Bool { await act(.notPicked(lineID: lineID, quantity: quantity)) }
+    func undo(_ lineID: Int) async -> Bool { await act(.undo(lineID: lineID)) }
+    func pickFromOtherPallet(_ palletStoredItemID: Int, quantity: Int, fromLineID: Int?) async -> Bool {
+        await act(.pickFromOtherPallet(palletStoredItemID: palletStoredItemID, quantity: quantity, fromLineID: fromLineID, requestID: makeRequestID()))
+    }
+    func deleteShipment(_ id: Int) async -> Bool { await act(.deleteShipment(id: id)) }
+    func printLabel(_ id: Int) async -> Bool { await act(.printLabel(shipmentID: id)) }
+
+    func createShipment(shipperID: Int, tracking: String?, parcels: [MobileReturnParcelBody]?) async -> Bool {
+        if let parcels {
+            guard await act(.setParcels(parcels), announce: false) else { return false }
+        }
+        let trimmed = tracking?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return await act(.addShipment(shipperID: shipperID, tracking: trimmed?.isEmpty == false ? trimmed : nil))
+    }
+
+    func scan(_ code: String) async {
+        let scanned = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !scanned.isEmpty, let detail else { return }
+        if detail.canScan {
+            pending.append(.scan(barcode: scanned, requestID: makeRequestID()))
+            queuedScans = pending.count
+            await drain()
+        } else {
+            event = localMatch(detail, code: scanned)
+        }
+    }
+
+    func loadShippers() async {
+        guard !isLoadingShippers else { return }
+        isLoadingShippers = true
+        defer { isLoadingShippers = false }
+        do {
+            let dto = try await apiClient.fetchPalletReturnShippers(warehouseID: warehouseID, id: returnID)
+            shippers = GoodsOutShipperList(
+                shippers: dto.data.map {
+                    GoodsOutShipperChoice(
+                        id: $0.id,
+                        name: $0.name ?? $0.code ?? "",
+                        isAPI: $0.type == "api",
+                        needsTracking: $0.needsTracking ?? false,
+                        isLockedOut: $0.isLockedOut ?? false,
+                        code: $0.code ?? ""
+                    )
+                }
+            )
+            shippersError = nil
+        } catch where error.isCancellation {
+            return
+        } catch {
+            shippersError = PalletDeliveryText.message(for: error)
+        }
+    }
+
+    func downloadLabel(_ shipment: MobileReturnShipment) async -> Result<URL, GoodsOutProblem> {
+        do {
+            let data = try await apiClient.downloadPalletReturnLabel(warehouseID: warehouseID, id: returnID, shipmentID: shipment.id)
+            guard data.starts(with: Data("%PDF".utf8)) else {
+                return .failure(GoodsOutProblem(message: "Aiku sent something that is not a PDF."))
+            }
+            let folder = FileManager.default.temporaryDirectory.appending(path: "aiku-documents")
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let file = folder.appending(path: "\(detail?.reference ?? "\(returnID)")-label-\(shipment.id).pdf")
+            try data.write(to: file, options: .atomic)
+            return .success(file)
+        } catch {
+            return .failure(GoodsOutProblem(message: PalletDeliveryText.message(for: error)))
+        }
+    }
+
+    private func localMatch(_ detail: MobilePalletReturnDetail, code: String) -> PalletReturnEvent {
+        if let line = detail.pallets.first(where: { $0.pallet?.matches(code) == true }) {
+            selectedPalletID = line.pallet?.id
+            return .lineFound(line.lineId)
+        }
+        let itemLines = detail.storedItems.flatMap(\.lines)
+        if let pallet = itemLines.compactMap(\.pallet).first(where: { $0.matches(code) }) {
+            selectedPalletID = pallet.id
+            return .done("Pallet \(pallet.reference ?? code): now scan its items", .info)
+        }
+        guard let item = detail.storedItems.first(where: { $0.storedItem.matches(code) }) else {
+            return .done("\(code) isn’t on this return", .info)
+        }
+        let line = item.lines.first { $0.pallet?.id == selectedPalletID && $0.hasActions }
+            ?? item.lines.first { $0.can("pick") }
+            ?? item.lines.first { $0.hasActions }
+            ?? item.lines.first
+        guard let line else { return .done("\(code) isn’t on this return", .info) }
+        return .lineFound(line.lineId)
+    }
+
+    @discardableResult
+    private func act(_ write: MobilePalletReturnWrite, announce: Bool = true) async -> Bool {
+        guard detail != nil, !isWorking else { return false }
+        return await run(write, announce: announce)
+    }
+
+    private func drain() async {
+        guard !isDraining else { return }
+        isDraining = true
+        defer {
+            isDraining = false
+            queuedScans = pending.count
+        }
+        while !pending.isEmpty {
+            let next = pending.removeFirst()
+            queuedScans = pending.count
+            _ = await run(next, announce: true)
+        }
+    }
+
+    private func run(_ write: MobilePalletReturnWrite, announce: Bool) async -> Bool {
+        working = write
+        clearErrors()
+        do {
+            let result = try await apiClient.writePalletReturn(warehouseID: warehouseID, id: returnID, write: write)
+            working = nil
+            detail = result.data
+            loadError = nil
+            if case .scan(let code, _) = write {
+                event = scanEvent(code: code, result: result.result)
+            } else if announce {
+                let nothingChanged = result.result?.status == "nothing_changed"
+                event = .done(result.result?.message ?? "Done", nothingChanged ? .info : .success)
+            }
+            return true
+        } catch {
+            working = nil
+            let message = PalletDeliveryText.message(for: error)
+            sheetError = message
+            if case .validation(let text, _) = error as? APIError {
+                fieldErrors["form"] = text
+            }
+            event = .done(message, .danger)
+            await reloadQuietly()
+            return false
+        }
+    }
+
+    private func scanEvent(code: String, result: MobilePalletReturnWriteResult.Result?) -> PalletReturnEvent {
+        let status = result?.status ?? ""
+        let message = result?.message
+        switch status {
+        case "picked", "done": return .done(message ?? "\(code) picked", .success)
+        case "already_picked", "nothing_changed": return .done(message ?? "\(code) is already picked", .info)
+        case "no_stock": return .done(message ?? "No stock of \(code) left to pick", .warn)
+        case "wrong_state": return .done(message ?? "This return isn’t being picked", .warn)
+        default:
+            return .done(message ?? "\(code) isn’t on this return", .warn)
+        }
+    }
+
+    private func reloadQuietly() async {
+        if let fresh = try? await apiClient.fetchPalletReturn(warehouseID: warehouseID, id: returnID) {
+            detail = fresh
+        }
+    }
+}
