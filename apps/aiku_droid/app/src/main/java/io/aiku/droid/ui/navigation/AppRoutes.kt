@@ -18,7 +18,6 @@ import kotlinx.serialization.Serializable
 @Serializable data object ResolveConflictsRoute
 @Serializable data class ConflictRoute(val reference: String)
 @Serializable data class OnlineOnlyRoute(val reference: String)
-@Serializable data object NoTasksRoute
 @Serializable data class StatePreviewRoute(val kind: String)
 @Serializable data class NotDesignedRoute(val title: String)
 @Serializable data object InventoryDashboardRoute

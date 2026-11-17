@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mywork_empty_title">Nothing assigned to you right now</string>
+    <string name="mywork_empty_body">Delivery notes, picking sessions and returns assigned to you appear here.</string>
+    <string name="mywork_failed">Couldn’t load your work</string>
+
+    <string name="mywork_kind_delivery_note">Delivery note</string>
+    <string name="mywork_kind_picking_session">Picking session</string>
+    <string name="mywork_kind_return">Customer return</string>
+    <string name="mywork_kind_pallet_return">Fulfilment return</string>
+
+    <plurals name="mywork_lines">
+        <item quantity="one">%d line</item>
+        <item quantity="other">%d lines</item>
+    </plurals>
+    <plurals name="mywork_delivery_notes">
+        <item quantity="one">%d delivery note</item>
+        <item quantity="other">%d delivery notes</item>
+    </plurals>
+    <plurals name="mywork_items">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <plurals name="mywork_pallets">
+        <item quantity="one">%d pallet</item>
+        <item quantity="other">%d pallets</item>
+    </plurals>
+    <plurals name="mywork_stored_items">
+        <item quantity="one">%d stored item</item>
+        <item quantity="other">%d stored items</item>
+    </plurals>
+    <plurals name="mywork_trolleys">
+        <item quantity="one">Trolley %1$s</item>
+        <item quantity="other">Trolleys %1$s</item>
+    </plurals>
+
+    <string name="mywork_since_just_now">just now</string>
+    <plurals name="mywork_since_minutes">
+        <item quantity="one">%d min ago</item>
+        <item quantity="other">%d min ago</item>
+    </plurals>
+    <plurals name="mywork_since_hours">
+        <item quantity="one">%d hour ago</item>
+        <item quantity="other">%d hours ago</item>
+    </plurals>
+    <plurals name="mywork_since_days">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+
+    <plurals name="mywork_badge_unassigned">
+        <item quantity="one">%d unassigned</item>
+        <item quantity="other">%d unassigned</item>
+    </plurals>
+</resources>
