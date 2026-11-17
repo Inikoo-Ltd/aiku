@@ -134,9 +134,12 @@ class IndexOperationsDashboardRecords extends OrgAction
         return QueryBuilder::for(Location::class)
             ->where('locations.warehouse_id', $warehouse->id)
             ->where('locations.is_empty', false)
-            ->where(fn (Builder $query) => $query->whereNull('locations.audited_at')->orWhere('locations.audited_at', '<', now()->subDays(90)))
+            ->whereNotExists(fn ($query) => $query->from('location_org_stocks')
+                ->whereColumn('location_org_stocks.location_id', 'locations.id')
+                ->where('location_org_stocks.audited_at', '>=', now()->subDays(90)))
             ->leftJoin('warehouse_areas', 'warehouse_areas.id', 'locations.warehouse_area_id')
-            ->select('locations.slug', 'locations.code', 'locations.audited_at', 'warehouse_areas.name as area')
+            ->select('locations.slug', 'locations.code', 'warehouse_areas.name as area')
+            ->selectSub(fn ($query) => $query->from('location_org_stocks')->whereColumn('location_org_stocks.location_id', 'locations.id')->selectRaw('max(audited_at)'), 'audited_at')
             ->defaultSort('audited_at')
             ->allowedSorts(['audited_at', 'code', 'area']);
     }

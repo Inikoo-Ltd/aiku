@@ -42,6 +42,15 @@ use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\UI\Dashboards\GetGroupWarehouseDashboardData;
 use App\Actions\UI\Dashboards\GetOperationsDashboardData;
+use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Inventory\OrgStock\StoreOrgStock;
+use App\Actions\Inventory\Location\StoreLocation;
+use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
+use App\Models\Goods\Stock;
+use App\Models\Inventory\Location;
+use App\Enums\Goods\Stock\StockStateEnum;
+use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
+use App\Http\Resources\Inventory\LocationResource;
 use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Actions\Inventory\Warehouse\SeedWarehousePermissions;
 use App\Actions\SysAdmin\User\SetUserAuthorisedModels;
@@ -2748,6 +2757,36 @@ test('operations dashboard numbers open lists holding exactly what was counted',
     $unrelated = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
     actingAs($unrelated);
     get(route('grp.org.warehouses.show.operations.records', [$warehouse->organisation->slug, $warehouse->slug, 'not_counted']))->assertForbidden();
+});
+
+test('a location counts as counted when any SKO in it was counted in the last 90 days', function () {
+    $warehouse = createWarehouse();
+    actingAs($this->user);
+
+    $suffix   = Str::random(6);
+    $stock    = StoreStock::make()->action($warehouse->group, array_merge(Stock::factory()->definition(), ['code' => 'LC-'.$suffix, 'state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($warehouse->organisation, $stock);
+
+    $countedLocation    = StoreLocation::make()->action($warehouse, array_merge(Location::factory()->definition(), ['code' => 'LCR-'.$suffix]));
+    $notCountedLocation = StoreLocation::make()->action($warehouse, array_merge(Location::factory()->definition(), ['code' => 'LCO-'.$suffix]));
+    $recentCount        = now()->subDays(5)->startOfSecond();
+    StoreLocationOrgStock::make()->action($orgStock, $countedLocation, ['type' => LocationStockTypeEnum::STORING])->updateQuietly(['audited_at' => $recentCount]);
+    StoreLocationOrgStock::make()->action($orgStock, $notCountedLocation, ['type' => LocationStockTypeEnum::STORING])->updateQuietly(['audited_at' => now()->subDays(120)]);
+    Location::whereIn('id', [$countedLocation->id, $notCountedLocation->id])->update(['is_empty' => false]);
+
+    $notCounted = getJson(route('grp.dashboard.operations', ['warehouse' => $warehouse->id, 'remember' => 0]))->json('stock.not_audited_90d.count');
+    expect($notCounted)->toBe(Location::where('warehouse_id', $warehouse->id)->where('is_empty', false)
+        ->whereDoesntHave('locationOrgStocks', fn ($query) => $query->where('audited_at', '>=', now()->subDays(90)))->count());
+
+    $rows = collect(get(route('grp.org.warehouses.show.operations.records', [$warehouse->organisation->slug, $warehouse->slug, 'not_counted', 'perPage' => 1000]))
+        ->assertOk()->viewData('page')['props']['data']['data'])->keyBy('code');
+    expect($rows->has($countedLocation->code))->toBeFalse()
+        ->and($rows->get($notCountedLocation->code)['audited_at'])->not->toBe(__('Never'));
+
+    getJson(route('grp.org.warehouses.show.infrastructure.locations.show', [$warehouse->organisation->slug, $warehouse->slug, $countedLocation->slug]))
+        ->assertOk()
+        ->assertJsonPath('audited_at', $recentCount->toJSON());
+    expect(LocationResource::make($notCountedLocation)->resolve()['audited_at'])->toBeNull();
 });
 
 test('operations dashboard: warehouse staff land on it, only see their warehouse and no money', function () {

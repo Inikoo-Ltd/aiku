@@ -11,6 +11,7 @@ namespace App\Http\Resources\Inventory;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
 /**
  * @property mixed $pivot
@@ -38,7 +39,7 @@ class LocationResource extends JsonResource
             'max_weight'             => $location->max_weight,
             'max_volume'             => $location->max_volume,
             'data'                   => $location->data,
-            'audited_at'             => $location->audited_at,
+            'audited_at'             => Carbon::make($location->location_org_stocks_max_audited_at),
             'created_at'             => $location->created_at,
             'updated_at'             => $location->updated_at,
             'quantity'               => $this->whenPivotLoaded(new LocationOrgStock(), function () {

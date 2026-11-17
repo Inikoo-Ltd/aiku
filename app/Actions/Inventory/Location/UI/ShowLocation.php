@@ -163,7 +163,7 @@ class ShowLocation extends OrgAction
 
     public function jsonResponse(Location $location): JsonResource
     {
-        return LocationResource::make($location);
+        return LocationResource::make($location->loadMax('locationOrgStocks', 'audited_at'));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
