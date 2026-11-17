@@ -10,6 +10,6 @@ enum FulfilmentRoute: Hashable, Sendable {
     case storedItems
     case storedItemAudit(id: Int, reference: String)
     case returns
-    case returnDetail(reference: String)
-    case returnShipment(reference: String)
+    case palletReturn(id: Int, reference: String)
+    case palletReturnShipment(id: Int, reference: String)
 }

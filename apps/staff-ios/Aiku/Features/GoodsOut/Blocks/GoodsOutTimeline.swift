@@ -38,6 +38,7 @@ struct GoodsOutTimeline: View {
             }
             .padding(.vertical, 10)
         }
+        .scrollBounceBehavior(.basedOnSize, axes: [.horizontal, .vertical])
         .cardSurface()
         .accessibilityLabel("Timeline")
     }

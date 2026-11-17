@@ -14,6 +14,7 @@ struct Endpoint: Sendable {
     var queryItems: [URLQueryItem] = []
     var body: Data?
     var contentType: String?
+    var timeout: TimeInterval?
 
     static let ping = Endpoint(path: "ping")
     static let profile = Endpoint(path: "profile")
@@ -78,6 +79,9 @@ final class APIClient: Sendable {
 
         var request = URLRequest(url: components.url!)
         request.httpMethod = endpoint.method.rawValue
+        if let timeout = endpoint.timeout {
+            request.timeoutInterval = timeout
+        }
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if let mobileAppKey = configuration.mobileAppKey {
             request.setValue(mobileAppKey, forHTTPHeaderField: "X-Aiku-App-Key")

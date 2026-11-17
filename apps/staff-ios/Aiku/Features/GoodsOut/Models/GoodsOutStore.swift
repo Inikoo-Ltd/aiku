@@ -33,6 +33,8 @@ final class GoodsOutStore {
     private(set) var noteErrors: [String: String] = [:]
     private(set) var loadingNoteIDs: Set<Int> = []
     private(set) var workingReferences: Set<String> = []
+    private(set) var pendingLines: [String: [GoodsOutLine.ID: GoodsOutLine]] = [:]
+    @ObservationIgnored var lineQueues: [String: Task<Void, Never>] = [:]
     private(set) var resourcesError: String?
     private(set) var isLoadingResources = false
     private(set) var pickersNow: [GoodsOutPersonActivity] = []
@@ -84,7 +86,18 @@ final class GoodsOutStore {
     }
 
     func isWorking(on reference: String) -> Bool {
-        workingReferences.contains(reference)
+        workingReferences.contains(reference) || !(pendingLines[reference]?.isEmpty ?? true)
+    }
+
+    func isSending(_ line: GoodsOutLine.ID, on reference: String) -> Bool {
+        pendingLines[reference]?[line] != nil
+    }
+
+    func setPending(_ line: GoodsOutLine?, id: GoodsOutLine.ID, on reference: String) {
+        pendingLines[reference, default: [:]][id] = line
+        if pendingLines[reference]?.isEmpty == true {
+            pendingLines[reference] = nil
+        }
     }
 
     @discardableResult
@@ -307,6 +320,9 @@ extension GoodsOutStore {
         noteErrors = [:]
         loadingNoteIDs = []
         workingReferences = []
+        pendingLines = [:]
+        lineQueues.values.forEach { $0.cancel() }
+        lineQueues = [:]
         resourcesError = nil
         isLoadingResources = false
         pickersNow = []
