@@ -54,6 +54,7 @@ class SeedGroupPermissions
                         'name'       => $permissionName,
                         'scope_type' => 'Group',
                         'scope_id'   => $group->id,
+                        'guard_name' => 'web',
                     ]
                 );
             } catch (Exception) {
@@ -72,6 +73,7 @@ class SeedGroupPermissions
                             'group_id'   => $group->id,
                             'scope_type' => 'Group',
                             'scope_id'   => $group->id,
+                            'guard_name' => 'web',
                         ]
                     );
                 }

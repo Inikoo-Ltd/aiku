@@ -1388,15 +1388,23 @@ test('locations and warehouse areas are uploaded only by inventory or location e
     \Pest\Laravel\post(route('grp.models.warehouse_area.location.upload', $warehouseArea->id), $spreadsheet())->assertForbidden();
 })->depends('create warehouse area');
 
-test('a warehouse can be created during a token authenticated request', function () {
+test('warehouses, shops, fulfilments and productions can be created during a token authenticated request', function () {
     Sanctum::actingAs($this->user, ['mobile']);
+    $suffix = strtoupper(\Illuminate\Support\Str::random(4));
 
-    $warehouse = StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+    $warehouse      = StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+    $shop           = \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
+    $fulfilmentShop = \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, array_merge(\App\Models\Catalogue\Shop::factory()->definition(), [
+        'type'       => \App\Enums\Catalogue\Shop\ShopTypeEnum::FULFILMENT->value,
+        'warehouses' => [$warehouse->id],
+    ]));
+    $production     = \App\Actions\Production\Production\StoreProduction::make()->action($this->organisation, ['code' => 'TK'.$suffix, 'name' => 'Token kitchen '.$suffix]);
 
-    expect(Role::where('scope_type', 'Warehouse')->where('scope_id', $warehouse->id)->pluck('guard_name')->unique()->all())->toBe(['web'])
-        ->and(Permission::where('scope_type', 'Warehouse')->where('scope_id', $warehouse->id)->pluck('guard_name')->unique()->all())->toBe(['web']);
-
-    $warehouse->delete();
+    $scopes = [['Warehouse', $warehouse->id], ['Shop', $shop->id], ['Fulfilment', $fulfilmentShop->fulfilment->id], ['Production', $production->id]];
+    foreach ($scopes as [$scopeType, $scopeId]) {
+        expect(Role::where('scope_type', $scopeType)->where('scope_id', $scopeId)->pluck('guard_name')->unique()->all())->toBe(['web'])
+            ->and(Permission::where('scope_type', $scopeType)->where('scope_id', $scopeId)->pluck('guard_name')->unique()->all())->toBe(['web']);
+    }
 });
 
 test('sko lists show each sko once when the organisation has several warehouses', function (Warehouse $warehouse) {

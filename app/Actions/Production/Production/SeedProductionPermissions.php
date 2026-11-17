@@ -44,6 +44,7 @@ class SeedProductionPermissions
                         'name'       => $permissionName,
                         'scope_type' => 'Production',
                         'scope_id'   => $production->id,
+                        'guard_name' => 'web',
                     ]
                 );
             } catch (Exception) {
@@ -72,6 +73,7 @@ class SeedProductionPermissions
                             'scope_type' => 'Production',
                             'scope_id'   => $production->id,
                             'group_id'   => $production->group_id,
+                            'guard_name' => 'web',
                         ]
                     );
                 }
