@@ -13,7 +13,7 @@ import Dialog from "primevue/dialog"
 import InputNumber from "primevue/inputnumber"
 import Checkbox from "primevue/checkbox"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faPen, faTags, faExternalLink } from "@fal"
+import { faCheck, faTimes, faPen, faTags, faExternalLink, faLayerGroup, faCube } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -49,6 +49,8 @@ interface MasterProduct {
     name: string | null
     master_shop: string | null
     units: number
+    stocks_in_product: number
+    stock_quantity: number
     cost: number | null
     cost_currency: string
     main_currencies: string[]
@@ -350,6 +352,22 @@ function saveMaster(masterProduct: MasterProduct): void {
                             <FontAwesomeIcon :icon="faExternalLink" class="text-[10px]" aria-hidden="true" />
                         </a>
                         <span v-else class="whitespace-nowrap font-medium text-gray-800">{{ masterProduct.code }}</span>
+                        <span
+                            v-if="masterProduct.stocks_in_product > 1"
+                            v-tooltip="ctrans('A bundle sold as one product: :code is one of its :count SKUs, so its cost is only part of the price', { code: data.code, count: masterProduct.stocks_in_product })"
+                            class="flex cursor-help items-center gap-1 whitespace-nowrap rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-purple-700"
+                        >
+                            <FontAwesomeIcon :icon="faLayerGroup" fixed-width aria-hidden="true" />
+                            {{ ctrans("Bundle of :count SKUs", { count: masterProduct.stocks_in_product }) }}<template v-if="masterProduct.stock_quantity > 1"> · {{ ctrans(":quantity× :code", { quantity: masterProduct.stock_quantity, code: data.code }) }}</template>
+                        </span>
+                        <span
+                            v-else
+                            v-tooltip="ctrans('This product is :code on its own', { code: data.code })"
+                            class="flex cursor-help items-center gap-1 whitespace-nowrap rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-sky-700"
+                        >
+                            <FontAwesomeIcon :icon="faCube" fixed-width aria-hidden="true" />
+                            {{ masterProduct.stock_quantity > 1 ? ctrans("Own product, :quantity per outer", { quantity: masterProduct.stock_quantity }) : ctrans("Own product") }}
+                        </span>
                         <span class="min-w-0 flex-1 truncate">{{ masterProduct.name }}</span>
                         <span class="text-gray-500">{{ ctrans(":units units per outer", { units: masterProduct.units }) }}</span>
                         <span v-if="masterProduct.cost !== null" class="text-gray-500">{{ ctrans("Cost :cost", { cost: money(masterProduct.cost_currency, masterProduct.cost) }) }}</span>

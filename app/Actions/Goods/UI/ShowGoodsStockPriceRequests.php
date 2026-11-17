@@ -146,8 +146,17 @@ class ShowGoodsStockPriceRequests extends OrgAction
             ->where('type', MasterAssetTypeEnum::PRODUCT)
             ->where('status', true)
             ->with('masterShop')
-            ->orderBy('code')
+            ->addSelect([
+                'stocks_in_product' => DB::table('master_asset_has_stocks')
+                    ->selectRaw('count(distinct stock_id)')
+                    ->whereColumn('master_asset_has_stocks.master_asset_id', 'master_assets.id'),
+                'stock_quantity'    => DB::table('master_asset_has_stocks')
+                    ->selectRaw('max(quantity)')
+                    ->whereColumn('master_asset_has_stocks.master_asset_id', 'master_assets.id')
+                    ->where('master_asset_has_stocks.stock_id', $stock->id),
+            ])
             ->get()
+            ->sortBy(fn (MasterAsset $masterAsset) => [(int) $masterAsset->stocks_in_product > 1, $masterAsset->code])
             ->map(function (MasterAsset $masterAsset) {
                 $exchanges      = collect($masterAsset->masterShop?->price_exchanges ?? []);
                 $mainCurrencies = $exchanges->filter(fn (array $exchange) => $exchange['is_major'] ?? false)->keys()->values();
@@ -158,6 +167,8 @@ class ShowGoodsStockPriceRequests extends OrgAction
                     'name'            => $masterAsset->name,
                     'master_shop'     => $masterAsset->masterShop?->code,
                     'units'           => (float) $masterAsset->units,
+                    'stocks_in_product' => (int) $masterAsset->stocks_in_product,
+                    'stock_quantity'  => (float) $masterAsset->stock_quantity,
                     'cost'            => $masterAsset->effective_cost !== null ? round((float) $masterAsset->effective_cost, 2) : null,
                     'cost_currency'   => $this->group->currency->code,
                     'main_currencies' => $mainCurrencies->all(),
