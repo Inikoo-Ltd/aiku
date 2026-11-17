@@ -108,7 +108,7 @@ class ShowTicketProject extends OrgAction
             'project_route' => ['name' => 'grp.tasks.project.update', 'parameters' => ['staffTask' => $task->reference]],
         ]);
 
-        return $tickets->concat($tasks)->sortByDesc('updated_at')->values();
+        return $tickets->concat($tasks)->sortBy('reference', SORT_NATURAL)->values();
     }
 
     /**

@@ -260,6 +260,7 @@ const milestoneFilter = ref<"all" | "none" | number>("all")
 const assigneeFilter = ref<"all" | "none" | number>("all")
 const showClosed = ref(false)
 const workView = ref<"list" | "board">("list")
+const workSort = ref<"reference" | "updated">("reference")
 
 const milestoneOptions = computed(() => props.milestones.map((milestone) => ({ label: milestone.name, value: milestone.id as number })))
 
@@ -280,17 +281,20 @@ const filteredWork = computed(() => {
         if (needle && !`${item.reference} ${item.subject}`.toLowerCase().includes(needle)) return false
         if (item.state === "cancelled" && !showClosed.value) return false
         return true
-    })
+    }).sort((a, b) =>
+        workSort.value === "updated"
+            ? Date.parse(b.updated_at) - Date.parse(a.updated_at)
+            : a.reference.localeCompare(b.reference, undefined, { numeric: true }),
+    )
 })
 
 
-const stateOrder: Record<WorkState, number> = { in_progress: 0, todo: 1, done: 2, cancelled: 3 }
 const milestoneById = computed(() => new Map(props.milestones.map((milestone, index) => [milestone.id as number, { milestone, index }])))
 
 const workTable = computed(() => {
     const rank = (item: WorkItem) => (item.milestone_id !== null ? (milestoneById.value.get(item.milestone_id)?.index ?? props.milestones.length) : props.milestones.length)
     const rows = [...filteredWork.value]
-        .sort((a, b) => rank(a) - rank(b) || stateOrder[a.state] - stateOrder[b.state])
+        .sort((a, b) => rank(a) - rank(b))
         .map((item, index, sorted) => ({ ...item, is_group_start: index === 0 || sorted[index - 1].milestone_id !== item.milestone_id }))
     return { data: rows, meta: { total: rows.length, per_page: Math.max(1, rows.length), current_page: 1, last_page: 1, from: rows.length ? 1 : 0, to: rows.length } }
 })
@@ -303,6 +307,10 @@ const typeOptions = [
 ]
 const milestoneFilterOptions = computed(() => [{ label: ctrans("All milestones"), value: "all" }, { label: ctrans("No milestone"), value: "none" }, ...milestoneOptions.value])
 const assigneeFilterOptions = computed(() => [{ label: ctrans("Everyone"), value: "all" }, { label: ctrans("Unassigned"), value: "none" }, ...assignees.value.map((person) => ({ label: person.name, value: person.id }))])
+const workSortOptions = [
+    { label: ctrans("Sort by ticket ID"), value: "reference" },
+    { label: ctrans("Sort by last updated"), value: "updated" },
+]
 const workViewOptions = [
     { label: ctrans("List"), value: "list", icon: "fal fa-list" },
     { label: ctrans("Board"), value: "board", icon: "fal fa-columns" },
@@ -391,7 +399,7 @@ const timeline = computed(() => {
     const todayLeft = today.getTime() >= start.getTime() && today.getTime() <= end.getTime() ? position(today) : null
     const targetLeft = props.project.target_date ? position(parseDay(props.project.target_date)) : null
 
-    return { ticks, months, rows, todayLeft, targetLeft }
+    return { ticks, months, rows, todayLeft, targetLeft, position }
 })
 
 const expandedMilestones = ref<Record<number, boolean>>({})
@@ -417,7 +425,10 @@ const openQuickLook = (item: WorkItem, event: MouseEvent) => {
 
 const reloadWork = () => router.reload({ only: ["work", "milestones", "workload"] })
 
-const workOfMilestone = (milestone: Milestone) => props.work.filter((item) => item.milestone_id === milestone.id && item.state !== "cancelled")
+const workOfMilestone = (milestone: Milestone) =>
+    props.work
+        .filter((item) => item.milestone_id === milestone.id && item.state !== "cancelled")
+        .map((item) => ({ ...item, done_left: item.done_at ? timeline.value.position(new Date(item.done_at)) : null }))
 const openMilestoneInWork = (milestone: Milestone) => {
     milestoneFilter.value = milestone.id as number
     showClosed.value = true
@@ -728,7 +739,8 @@ const burnUpOptions = {
                 <Checkbox v-model="showClosed" binary input-id="project-show-closed" />
                 {{ ctrans("Show closed") }}
             </label>
-            <SegmentedToggle v-model="workView" :options="workViewOptions" :aria-label="ctrans('View')" class="ml-auto" />
+            <Select v-model="workSort" :options="workSortOptions" option-label="label" option-value="value" size="small" class="ml-auto w-52" />
+            <SegmentedToggle v-model="workView" :options="workViewOptions" :aria-label="ctrans('View')" />
         </div>
 
         <div v-if="can_edit">
@@ -904,15 +916,31 @@ const burnUpOptions = {
                         </div>
                         <div v-if="expandedMilestones[row.milestone.id as number]" class="border-t border-gray-100 bg-gray-50/60">
                             <ul class="divide-y divide-gray-100">
-                                <li v-for="item in workOfMilestone(row.milestone)" :key="item.key" class="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 py-1.5 pl-9 pr-3 text-sm hover:bg-gray-50" :class="item.state === 'done' && 'opacity-70'" @click="openQuickLook(item, $event)">
-                                    <FontAwesomeIcon v-tooltip="item.status_label" :icon="item.status_icon.icon" :class="item.status_icon.class" fixed-width />
-                                    <a :href="item.url" class="min-w-0 flex-1 basis-60 truncate hover:underline">
-                                        <span class="mr-2 font-mono text-xs text-gray-500">{{ item.reference }}</span>
-                                        <span class="text-gray-700" :class="priorityClasses[item.priority]">{{ item.subject }}</span>
-                                    </a>
-                                    <span class="text-xs text-gray-500">{{ item.status_label }}</span>
-                                    <TicketUserAvatar v-if="item.assignee" v-tooltip="item.assignee.name" :name="item.assignee.name" :avatar="item.assignee.avatar" size="sm" />
-                                    <span v-else class="text-xs text-gray-500">{{ ctrans("Unassigned") }}</span>
+                                <li v-for="item in workOfMilestone(row.milestone)" :key="item.key" :class="timelineColumns" class="cursor-pointer text-sm hover:bg-gray-50" @click="openQuickLook(item, $event)">
+                                    <div class="flex min-w-0 items-center gap-1.5 py-1.5 pl-7 pr-3" :class="item.state === 'done' && 'opacity-70'">
+                                        <FontAwesomeIcon v-tooltip="item.status_label" :icon="item.status_icon.icon" :class="item.status_icon.class" fixed-width />
+                                        <a v-tooltip="item.subject" :href="item.url" class="min-w-0 flex-1 truncate hover:underline">
+                                            <span class="mr-1.5 whitespace-nowrap font-mono text-xs text-gray-500">{{ item.reference }}</span>
+                                            <span class="text-gray-700" :class="priorityClasses[item.priority]">{{ item.subject }}</span>
+                                        </a>
+                                        <TicketUserAvatar v-if="item.assignee" v-tooltip="item.assignee.name" :name="item.assignee.name" :avatar="item.assignee.avatar" size="sm" />
+                                    </div>
+                                    <div class="relative min-h-8 pr-3">
+                                        <span v-for="tick in timeline.ticks" :key="tick.left" class="absolute inset-y-0 border-l border-gray-100" :style="{ left: tick.left + '%' }" />
+                                        <span v-if="timeline.targetLeft !== null" class="absolute inset-y-0 border-l border-dashed border-gray-400" :style="{ left: timeline.targetLeft + '%' }" />
+                                        <span v-if="timeline.todayLeft !== null" class="absolute inset-y-0 z-10 border-l-2 border-red-400" :style="{ left: timeline.todayLeft + '%' }" />
+                                        <template v-if="item.done_at && item.done_left !== null">
+                                            <span
+                                                v-tooltip="ctrans('Done :date', { date: shortDate(new Date(item.done_at)) })"
+                                                class="absolute top-1/2 z-20 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-green-500 ring-2 ring-white"
+                                                :style="{ left: item.done_left + '%' }" />
+                                            <span
+                                                class="absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-xs tabular-nums text-gray-500"
+                                                :style="item.done_left <= 88 ? { left: `calc(${item.done_left}% + 10px)` } : { right: `calc(${100 - item.done_left}% + 10px)` }">
+                                                {{ shortDate(new Date(item.done_at)) }}
+                                            </span>
+                                        </template>
+                                    </div>
                                 </li>
                             </ul>
                             <button class="flex items-center gap-1.5 py-1.5 pl-9 pr-3 text-xs text-gray-500 hover:text-gray-800" @click="openMilestoneInWork(row.milestone)">

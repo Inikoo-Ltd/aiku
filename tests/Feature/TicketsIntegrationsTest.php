@@ -564,6 +564,7 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
         ->where('progress.percent', 33)
         ->where('progress.week', 2)
         ->has('work', 3)
+        ->where('work', fn ($work) => collect($work)->pluck('reference')->all() === collect($work)->pluck('reference')->sort(SORT_NATURAL)->values()->all())
         ->where('milestones.0.total', 2)
         ->where('milestones.0.done', 1)
         ->where('milestones.1.total', 1)
