@@ -601,6 +601,8 @@ use App\Actions\Procurement\SupplierAgreedTerm\WithdrawSupplierAgreedTerm;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderJourneyStage;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderReference;
+use App\Actions\Procurement\PurchaseOrder\ChangePurchaseOrderSupplier;
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderChangeSupplierOptions;
 use App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage;
 use App\Actions\Procurement\PurchaseOrder\SkipPurchaseOrderStage;
 use App\Actions\Procurement\PurchaseOrderChase\StorePurchaseOrderChase;
@@ -898,6 +900,8 @@ use App\Actions\Helpers\TicketProject\AssignWorkToProject;
 use App\Actions\Helpers\TicketProject\AttachWorkToProject;
 use App\Actions\Helpers\TicketProject\StoreTicketProject;
 use App\Actions\Helpers\TicketProject\StoreTicketProjectUpdate;
+use App\Actions\Helpers\TicketProject\UpdateTicketProjectUpdate;
+use App\Actions\Helpers\TicketProject\DeleteTicketProjectUpdate;
 use App\Actions\Helpers\TicketProject\UpdateTicketProject;
 use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\StoreTicket;
@@ -959,6 +963,8 @@ Route::prefix('ticket-project')->name('ticket_project.')->group(function () {
     Route::post('/', StoreTicketProject::class)->name('store');
     Route::patch('{ticketProject:id}', UpdateTicketProject::class)->name('update')->whereNumber('ticketProject');
     Route::post('{ticketProject:id}/update', StoreTicketProjectUpdate::class)->name('update.store')->whereNumber('ticketProject');
+    Route::patch('update/{ticketProjectUpdate:id}', UpdateTicketProjectUpdate::class)->name('update.update')->whereNumber('ticketProjectUpdate');
+    Route::delete('update/{ticketProjectUpdate:id}', DeleteTicketProjectUpdate::class)->name('update.delete')->whereNumber('ticketProjectUpdate');
     Route::post('{ticketProject:id}/work', AttachWorkToProject::class)->name('work.attach')->whereNumber('ticketProject');
 });
 
@@ -2128,6 +2134,8 @@ Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(functi
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {
     Route::patch('update', UpdatePurchaseOrder::class)->name('update');
     Route::patch('reference', UpdatePurchaseOrderReference::class)->name('reference.update');
+    Route::get('change-supplier', GetPurchaseOrderChangeSupplierOptions::class)->name('change_supplier.options');
+    Route::patch('change-supplier', ChangePurchaseOrderSupplier::class)->name('change_supplier');
     Route::patch('journey-stage', UpdatePurchaseOrderJourneyStage::class)->name('journey_stage');
     Route::patch('stage', MarkPurchaseOrderStage::class)->name('stage');
     Route::patch('skip-stage', SkipPurchaseOrderStage::class)->name('skip_stage');

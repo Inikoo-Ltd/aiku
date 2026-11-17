@@ -13,11 +13,6 @@
     <string name="home_profile_settings">Profile &amp; settings</string>
 
     <string name="mywork_kicker">%1$s · assigned to you</string>
-    <string name="mywork_filter_all">All %1$d</string>
-    <string name="mywork_filter_warehouse">Warehouse %1$d</string>
-    <string name="mywork_filter_tasks">Tasks %1$d</string>
-    <string name="mywork_module_warehouse">Warehouse</string>
-    <string name="mywork_module_tasks">Tasks</string>
     <string name="mywork_note">Everything assigned to you, from every module you can open. Oldest and blocked first.</string>
 
     <plurals name="inbox_unread">

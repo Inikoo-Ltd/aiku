@@ -27,6 +27,7 @@ import io.aiku.droid.data.api.DeliveryNoteAction
 import io.aiku.droid.data.api.DeliveryNoteShipment
 import io.aiku.droid.data.api.ShipmentLabelKind
 import io.aiku.droid.ui.components.AikuButton
+import io.aiku.droid.ui.components.ButtonLook
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChipShape
 import io.aiku.droid.ui.components.ListGroup
@@ -73,8 +74,8 @@ internal fun ShipmentsBlock(
         AikuButton(
             text = stringResource(R.string.goodsout_add_another_shipment),
             onClick = { onAddAnother(action) },
-            style = ButtonStyle.Outline,
-            icon = R.drawable.ic_ui_truck,
+            style = ButtonStyle.Soft,
+            icon = R.drawable.ic_ui_plus,
             height = 48.dp,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -175,8 +176,7 @@ internal fun DeleteShipmentSheet(shipment: DeliveryNoteShipment, isWorking: Bool
         title = stringResource(R.string.goodsout_delete_shipment_title, shipper),
         subtitle = shipment.trackingNumbers.joinToString(", ").takeIf { it.isNotEmpty() }?.let { stringResource(R.string.goodsout_shipment_tracking, it) },
         confirmLabel = stringResource(R.string.goodsout_delete_shipment),
-        icon = R.drawable.ic_ui_close,
-        confirmStyle = ButtonStyle.Danger,
+        confirmLook = ButtonLook(ButtonStyle.DangerStrong, R.drawable.ic_ui_trash),
         hint = stringResource(R.string.goodsout_delete_shipment_hint),
         isWorking = isWorking,
         problem = problem,

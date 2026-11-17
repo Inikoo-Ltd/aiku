@@ -38,6 +38,7 @@ fun SyncQueueScreen() {
             AikuButton(
                 text = SyncSamples.BACK_ONLINE,
                 onClick = { navigator.open(ResolveConflictsRoute) },
+                icon = R.drawable.ic_ui_next,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth().fakeData(cornerRadius = 8.dp),
             )

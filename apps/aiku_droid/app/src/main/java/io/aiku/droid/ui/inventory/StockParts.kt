@@ -33,6 +33,8 @@ import io.aiku.droid.data.api.StockMovement
 import io.aiku.droid.data.api.StockMovementReasons
 import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AlertTone
+import io.aiku.droid.ui.components.ButtonLook
+import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChoiceRow
 import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.ItemRow
@@ -262,6 +264,7 @@ internal fun AuditSheet(
                 }
             },
             onCancel = onDismiss,
+            confirmLook = ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_check),
             isWorking = isWorking,
         )
     }

@@ -54,6 +54,7 @@ fun OvertimeScreen() {
         AikuButton(
             text = stringResource(R.string.clocking_overtime_request),
             onClick = { form = OvertimeForm.New },
+            icon = R.drawable.ic_ui_plus,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),
         )

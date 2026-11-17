@@ -15,6 +15,10 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Arr;
+use Closure;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 
 trait WithMobilePackingActions
 {
@@ -34,6 +38,10 @@ trait WithMobilePackingActions
 
     private const string FAIRE_SHIPMENT_ROUTE = 'grp.models.delivery_note.shipment.store_faire';
 
+    private const int SHIPPING_LOCK_SECONDS = 180;
+
+    private const int SHIPPING_LOCK_WAIT_SECONDS = 150;
+
     private const string TIKTOK_SHIPMENT_ROUTE = 'grp.models.delivery_note.shipment.store_tiktok';
 
     /**
@@ -44,7 +52,7 @@ trait WithMobilePackingActions
         $actions = [];
         if (!$canHandle) {
             $actions['take_over'] = __('Unlock to pack');
-        } elseif (!$this->isDropshipping($deliveryNote)) {
+        } else {
             $actions['set_as_packed'] = __('Set as packed');
         }
 
@@ -109,11 +117,31 @@ trait WithMobilePackingActions
 
         $externalShipmentRoute = $this->externalShipmentRoute($deliveryNote);
 
-        if ($externalShipmentRoute && $deliveryNote->state === DeliveryNoteStateEnum::PACKED && $deliveryNote->shipments()->doesntExist()) {
+        if (!$externalShipmentRoute) {
+            return $deliveryNote->collection_address_id ? [] : ['add_shipment' => __('Add shipment')];
+        }
+
+        if (in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED], true) && $deliveryNote->shipments()->doesntExist()) {
             return ['get_external_shipment' => $externalShipmentRoute['label']];
         }
 
         return [];
+    }
+
+    /**
+     * @template TResult
+     * @param Closure(): TResult $work
+     * @return TResult
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    protected function underShippingLock(DeliveryNote $deliveryNote, Closure $work): mixed
+    {
+        try {
+            return Cache::lock('mobile-delivery-note-shipping:'.$deliveryNote->id, self::SHIPPING_LOCK_SECONDS)
+                ->block(self::SHIPPING_LOCK_WAIT_SECONDS, $work);
+        } catch (LockTimeoutException) {
+            throw ValidationException::withMessages(['state' => __('This delivery note is still being packed or shipped. Try again in a moment.')]);
+        }
     }
 
     /**

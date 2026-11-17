@@ -31,6 +31,7 @@ import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.QuantityStepper
 import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.fulfilment.FulfilmentScanPrompt
 import io.aiku.droid.ui.fulfilment.dotJoined
 import io.aiku.droid.ui.goodsin.HelperNote
@@ -93,7 +94,8 @@ internal fun PickItemsContent(viewModel: PalletReturnViewModel, state: PalletRet
                 start != null -> AikuButton(
                     text = start.label.ifBlank { stringResource(R.string.fulfilment_out_start_picking) },
                     onClick = { openSheet(ItemSheet.Start) },
-                    icon = R.drawable.ic_ui_check,
+                    style = fulfilmentOutboundActionLook(start.key).style,
+                    icon = fulfilmentOutboundActionLook(start.key).icon,
                     isLoading = isWorking,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
@@ -101,7 +103,8 @@ internal fun PickItemsContent(viewModel: PalletReturnViewModel, state: PalletRet
                 finish != null -> AikuButton(
                     text = finish.label.ifBlank { stringResource(R.string.fulfilment_out_set_as_picked) },
                     onClick = { openSheet(ItemSheet.Finish) },
-                    icon = R.drawable.ic_ui_check,
+                    style = fulfilmentOutboundActionLook(finish.key).style,
+                    icon = fulfilmentOutboundActionLook(finish.key).icon,
                     isLoading = isWorking,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
@@ -110,6 +113,7 @@ internal fun PickItemsContent(viewModel: PalletReturnViewModel, state: PalletRet
                     text = stringResource(R.string.fulfilment_return_pick_from_other, shortItem.storedItem.reference),
                     onClick = { openSheet(ItemSheet.OtherPallet(shortItem.storedItem.id)) },
                     style = ButtonStyle.Soft,
+                    icon = R.drawable.ic_ui_pallet,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -247,7 +251,8 @@ private fun ItemLineSheet(
                 AikuButton(
                     text = stringResource(R.string.fulfilment_out_pick_amount, amount),
                     onClick = { onPick(amount) },
-                    icon = R.drawable.ic_ui_check,
+                    style = fulfilmentOutboundActionLook(PalletReturnActionKey.PICK).style,
+                    icon = fulfilmentOutboundActionLook(PalletReturnActionKey.PICK).icon,
                     isLoading = isWorking,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
@@ -257,6 +262,7 @@ private fun ItemLineSheet(
                         text = pluralStringResource(R.plurals.fulfilment_out_pick_all, line.maxPick, line.maxPick),
                         onClick = onPickAll,
                         style = ButtonStyle.Soft,
+                        icon = R.drawable.ic_ui_check_double,
                         height = 52.dp,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -267,6 +273,7 @@ private fun ItemLineSheet(
                     text = stringResource(R.string.fulfilment_out_pick_from_other),
                     onClick = onOtherPallet,
                     style = ButtonStyle.Soft,
+                    icon = R.drawable.ic_ui_pallet,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -275,7 +282,8 @@ private fun ItemLineSheet(
                 AikuButton(
                     text = actionLabel(line.availableActions, PalletReturnActionKey.NOT_PICKED) ?: stringResource(R.string.fulfilment_return_not_picked),
                     onClick = onNotPicked,
-                    style = ButtonStyle.Outline,
+                    style = fulfilmentOutboundActionLook(PalletReturnActionKey.NOT_PICKED).style,
+                    icon = fulfilmentOutboundActionLook(PalletReturnActionKey.NOT_PICKED).icon,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -284,8 +292,8 @@ private fun ItemLineSheet(
                 AikuButton(
                     text = actionLabel(line.availableActions, PalletReturnActionKey.UNDO) ?: stringResource(R.string.fulfilment_out_undo),
                     onClick = onUndo,
-                    style = ButtonStyle.Outline,
-                    icon = R.drawable.ic_ui_undo,
+                    style = fulfilmentOutboundActionLook(PalletReturnActionKey.UNDO).style,
+                    icon = fulfilmentOutboundActionLook(PalletReturnActionKey.UNDO).icon,
                     isLoading = isWorking && !canPick,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
@@ -345,7 +353,8 @@ private fun NotPickedItemSheet(
             AikuButton(
                 text = stringResource(R.string.fulfilment_out_set_not_picked_amount, amount),
                 onClick = { onConfirm(amount) },
-                style = ButtonStyle.Danger,
+                style = fulfilmentOutboundActionLook(PalletReturnActionKey.NOT_PICKED).forConfirm().style,
+                icon = fulfilmentOutboundActionLook(PalletReturnActionKey.NOT_PICKED).forConfirm().icon,
                 isLoading = isWorking,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -390,7 +399,7 @@ private fun OtherPalletSheet(
                 AikuButton(
                     text = pluralStringResource(R.plurals.fulfilment_out_pick_from_pallet, amount, amount, chosen.pallet?.reference.orEmpty()),
                     onClick = { onConfirm(chosen, amount) },
-                    icon = R.drawable.ic_ui_check,
+                    icon = fulfilmentOutboundActionLook(PalletReturnActionKey.PICK).icon,
                     isLoading = isWorking,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),

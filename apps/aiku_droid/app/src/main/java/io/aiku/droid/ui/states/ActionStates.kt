@@ -83,7 +83,7 @@ fun ActionFailedContent(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = modifier.fillMaxWidth()) {
         InlineAlert(title = errorTitle, body = errorBody, tone = AlertTone.Danger)
         fields()
-        AikuButton(text = retryLabel, onClick = onRetry, modifier = Modifier.fillMaxWidth(), height = 52.dp)
+        AikuButton(text = retryLabel, onClick = onRetry, modifier = Modifier.fillMaxWidth(), icon = R.drawable.ic_states_retry, height = 52.dp)
     }
 }
 

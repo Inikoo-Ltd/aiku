@@ -181,6 +181,7 @@ fun ChangePasswordScreen(state: ChangePasswordUiState, actions: ChangePasswordAc
                 AikuButton(
                     text = stringResource(if (state.isSubmitting) R.string.profile_password_saving else R.string.profile_change_password),
                     onClick = submit,
+                    icon = R.drawable.ic_ui_check,
                     isLoading = state.isSubmitting,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),

@@ -10,6 +10,7 @@ import io.aiku.droid.data.api.PalletReturnActionKey
 import io.aiku.droid.data.api.PalletReturnScanStatus
 import io.aiku.droid.data.api.PalletReturnWrite
 import io.aiku.droid.ui.components.ConfirmDialog
+import io.aiku.droid.ui.components.forConfirm
 
 internal fun actionLabel(actions: List<DeliveryNoteAction>, key: String): String? = actions.firstOrNull { it.key == key }?.label?.takeIf { it.isNotBlank() }
 
@@ -62,6 +63,7 @@ internal fun StartPickingDialog(palletReturn: PalletReturn, onConfirm: () -> Uni
         title = stringResource(R.string.fulfilment_out_start_picking_title, palletReturn.reference),
         body = stringResource(R.string.fulfilment_out_start_picking_body),
         confirmLabel = actionLabel(palletReturn.availableActions, PalletReturnActionKey.START_PICKING) ?: stringResource(R.string.fulfilment_out_start_picking),
+        confirmLook = fulfilmentOutboundActionLook(PalletReturnActionKey.START_PICKING).forConfirm(),
         onConfirm = onConfirm,
         onDismiss = onDismiss,
     )
@@ -73,6 +75,7 @@ internal fun FinishPickingDialog(palletReturn: PalletReturn, onConfirm: () -> Un
         title = stringResource(R.string.fulfilment_out_set_as_picked_title, palletReturn.reference),
         body = stringResource(R.string.fulfilment_out_set_as_picked_body),
         confirmLabel = actionLabel(palletReturn.availableActions, PalletReturnActionKey.FINISH_PICKING) ?: stringResource(R.string.fulfilment_out_set_as_picked),
+        confirmLook = fulfilmentOutboundActionLook(PalletReturnActionKey.FINISH_PICKING).forConfirm(),
         onConfirm = onConfirm,
         onDismiss = onDismiss,
     )
@@ -89,6 +92,7 @@ internal fun DispatchDialog(palletReturn: PalletReturn, onConfirm: () -> Unit, o
         title = stringResource(R.string.fulfilment_out_dispatch_title, palletReturn.reference),
         body = body,
         confirmLabel = actionLabel(palletReturn.availableActions, PalletReturnActionKey.DISPATCH) ?: stringResource(R.string.fulfilment_return_dispatch),
+        confirmLook = fulfilmentOutboundActionLook(PalletReturnActionKey.DISPATCH).forConfirm(),
         onConfirm = onConfirm,
         onDismiss = onDismiss,
     )

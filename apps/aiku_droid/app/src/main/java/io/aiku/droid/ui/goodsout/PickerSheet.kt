@@ -85,6 +85,7 @@ internal fun PickerSheet(
                         change = PickerChange.Assign
                         onConfirm(selected.userId)
                     },
+                    icon = R.drawable.ic_ui_person,
                     isLoading = isWorking && change == PickerChange.Assign,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
@@ -97,7 +98,8 @@ internal fun PickerSheet(
                         change = PickerChange.Remove
                         onConfirm(null)
                     },
-                    style = ButtonStyle.Danger,
+                    style = goodsOutActionLook(remove.key).style,
+                    icon = goodsOutActionLook(remove.key).icon,
                     isLoading = isWorking && change == PickerChange.Remove,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),

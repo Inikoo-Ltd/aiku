@@ -47,10 +47,11 @@ import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.CountBadge
 import io.aiku.droid.ui.components.GroupLabel
 import io.aiku.droid.ui.components.SkeletonBlock
-import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.components.goodsInEntry
 import io.aiku.droid.ui.components.initialsOf
 import io.aiku.droid.ui.components.warehouseKicker
+import io.aiku.droid.ui.mywork.LocalWorkBadges
+import io.aiku.droid.ui.mywork.goodsOutUnassignedBadge
 import io.aiku.droid.ui.navigation.ClockingRoute
 import io.aiku.droid.ui.navigation.DeliveryNotesRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
@@ -69,7 +70,7 @@ private const val MORNING_ENDS_AT = 12
 private const val AFTERNOON_ENDS_AT = 18
 private const val SHORTCUT_COLUMNS = 4
 
-private data class Shortcut(@StringRes val label: Int, @DrawableRes val icon: Int, val route: Any, val sampleBadge: Int? = null)
+private data class Shortcut(@StringRes val label: Int, @DrawableRes val icon: Int, val route: Any, val badge: Int? = null)
 
 @Composable
 fun HomeScreen() {
@@ -81,14 +82,19 @@ fun HomeScreen() {
     val clockingState by clocking.state.collectAsStateWithLifecycle()
     val now = rememberClockingNow()
     val weekTotal = clockingWeekTotal(clockingState, now)
+    val workBadges = LocalWorkBadges.current
+    val badges by workBadges.badges.collectAsStateWithLifecycle()
     val shortcuts = listOfNotNull(
-        Shortcut(R.string.module_goods_out, R.drawable.ic_ui_goods_out, DeliveryNotesRoute(), HomeSamples.GOODS_OUT_BADGE).takeIf { can.viewGoodsOut },
+        Shortcut(R.string.module_goods_out, R.drawable.ic_ui_goods_out, DeliveryNotesRoute(), badges.goodsOutUnassignedBadge).takeIf { can.viewGoodsOut },
         goodsInEntry(can)?.let { Shortcut(R.string.module_goods_in, R.drawable.ic_ui_goods_in, it) },
         Shortcut(R.string.module_inventory, R.drawable.ic_ui_pallet, SkusRoute()).takeIf { can.viewInventory },
         Shortcut(R.string.module_locations, R.drawable.ic_ui_locations, LocationsRoute()).takeIf { can.viewLocations },
     )
 
-    LaunchedEffect(Unit) { clocking.refresh() }
+    LaunchedEffect(Unit) {
+        clocking.refresh()
+        workBadges.refresh()
+    }
 
     AppScreen(header = { HomeHeader() }, activeTab = MainTab.Home, spacing = 20.dp) {
         ClockingCard(summary = clockingSummaryLines(clockingState, now), onOpen = { navigator.open(ClockingRoute) })
@@ -260,10 +266,10 @@ private fun ShortcutTile(shortcut: Shortcut, onClick: () -> Unit, modifier: Modi
                 maxLines = 1,
             )
         }
-        if (shortcut.sampleBadge != null) {
+        if (shortcut.badge != null) {
             CountBadge(
-                count = shortcut.sampleBadge,
-                modifier = Modifier.align(Alignment.TopEnd).offset(x = (-5).dp, y = 3.dp).fakeData(cornerRadius = 12.dp).padding(3.dp),
+                count = shortcut.badge,
+                modifier = Modifier.align(Alignment.TopEnd).offset(x = (-5).dp, y = 3.dp).padding(3.dp),
             )
         }
     }

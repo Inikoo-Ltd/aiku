@@ -36,8 +36,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
+import io.aiku.droid.data.api.GoodsInActionKey
 import io.aiku.droid.data.api.ReturnState
 import io.aiku.droid.data.api.StockDeliveryState
+import io.aiku.droid.ui.components.ButtonLook
+import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ProductPhoto
@@ -57,7 +60,20 @@ import java.util.Locale
 private const val DATE_PATTERN = "d MMM yyyy"
 private const val ISO_DATE_LENGTH = 10
 
-internal enum class ActionTone { Neutral, Primary, Danger }
+internal val goodsInActionLooks: Map<String, ButtonLook> = mapOf(
+    GoodsInActionKey.RECEIVE to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_next),
+    GoodsInActionKey.START to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_next),
+    GoodsInActionKey.PUT_BACK to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_next),
+    GoodsInActionKey.PLACE to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_location),
+    GoodsInActionKey.CHECK to ButtonLook(ButtonStyle.Soft, R.drawable.ic_ui_check_double),
+    GoodsInActionKey.SET_AS_RETURNED to ButtonLook(ButtonStyle.Finish, R.drawable.ic_ui_check),
+    GoodsInActionKey.UNRECEIVE to ButtonLook(ButtonStyle.Caution, R.drawable.ic_ui_undo),
+    GoodsInActionKey.UNDO to ButtonLook(ButtonStyle.Caution, R.drawable.ic_ui_undo),
+)
+
+internal fun goodsInActionLook(key: String): ButtonLook = goodsInActionLooks[key] ?: ButtonLook(ButtonStyle.Outline)
+
+internal enum class ActionTone { Neutral, Primary, Caution, Danger }
 
 internal data class DeliveryField(@StringRes val label: Int, val value: String)
 
@@ -187,6 +203,7 @@ internal fun ActionLinkRow(
     val (container, content) = when (tone) {
         ActionTone.Neutral -> colors.background to colors.textSecondary
         ActionTone.Primary -> colors.soft to colors.link
+        ActionTone.Caution -> colors.cautionSoft to colors.cautionInk
         ActionTone.Danger -> colors.dangerSoft to colors.danger
     }
 

@@ -23,12 +23,12 @@ import io.aiku.droid.data.api.ReturnPalletLine
 import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AppScreen
-import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ConfirmDialog
 import io.aiku.droid.ui.components.FooterStatus
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.fulfilment.FulfilmentScanPrompt
 import io.aiku.droid.ui.fulfilment.dotJoined
 import io.aiku.droid.ui.goodsin.HelperNote
@@ -140,7 +140,7 @@ internal fun PickPalletsContent(viewModel: PalletReturnViewModel, state: PalletR
                     viewModel.notPicked(line.lineId)
                 },
                 onDismiss = closeSheet,
-                isDestructive = true,
+                confirmLook = fulfilmentOutboundActionLook(PalletReturnActionKey.NOT_PICKED).forConfirm(),
             )
         }
         PalletSheet.Start -> StartPickingDialog(palletReturn = palletReturn, onConfirm = {
@@ -205,7 +205,8 @@ private fun PalletLineSheet(
                 AikuButton(
                     text = actionLabel(line.availableActions, PalletReturnActionKey.PICK) ?: stringResource(R.string.fulfilment_return_pick_pallet, line.pallet.reference),
                     onClick = onPick,
-                    icon = R.drawable.ic_ui_check,
+                    style = fulfilmentOutboundActionLook(PalletReturnActionKey.PICK).style,
+                    icon = fulfilmentOutboundActionLook(PalletReturnActionKey.PICK).icon,
                     isLoading = isWorking,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
@@ -215,7 +216,8 @@ private fun PalletLineSheet(
                 AikuButton(
                     text = actionLabel(line.availableActions, PalletReturnActionKey.NOT_PICKED) ?: stringResource(R.string.fulfilment_return_not_picked),
                     onClick = onNotPicked,
-                    style = ButtonStyle.Outline,
+                    style = fulfilmentOutboundActionLook(PalletReturnActionKey.NOT_PICKED).style,
+                    icon = fulfilmentOutboundActionLook(PalletReturnActionKey.NOT_PICKED).icon,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -224,8 +226,8 @@ private fun PalletLineSheet(
                 AikuButton(
                     text = actionLabel(line.availableActions, PalletReturnActionKey.UNDO) ?: stringResource(R.string.fulfilment_out_undo),
                     onClick = onUndo,
-                    style = ButtonStyle.Outline,
-                    icon = R.drawable.ic_ui_undo,
+                    style = fulfilmentOutboundActionLook(PalletReturnActionKey.UNDO).style,
+                    icon = fulfilmentOutboundActionLook(PalletReturnActionKey.UNDO).icon,
                     isLoading = isWorking && !line.can(PalletReturnActionKey.PICK),
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
@@ -266,7 +268,8 @@ private fun palletsFooter(
         start != null -> AikuButton(
             text = start.label.ifBlank { stringResource(R.string.fulfilment_out_start_picking) },
             onClick = onStart,
-            icon = R.drawable.ic_ui_check,
+            style = fulfilmentOutboundActionLook(start.key).style,
+            icon = fulfilmentOutboundActionLook(start.key).icon,
             isLoading = isWorking,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),
@@ -274,7 +277,8 @@ private fun palletsFooter(
         finish != null -> AikuButton(
             text = finish.label.ifBlank { stringResource(R.string.fulfilment_out_set_as_picked) },
             onClick = onFinish,
-            icon = R.drawable.ic_ui_check,
+            style = fulfilmentOutboundActionLook(finish.key).style,
+            icon = fulfilmentOutboundActionLook(finish.key).icon,
             isLoading = isWorking,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),
@@ -285,7 +289,8 @@ private fun palletsFooter(
                     AikuButton(
                         text = stringResource(R.string.fulfilment_return_not_picked),
                         onClick = { onNotPicked(nextLine) },
-                        style = ButtonStyle.Outline,
+                        style = fulfilmentOutboundActionLook(PalletReturnActionKey.NOT_PICKED).style,
+                        icon = fulfilmentOutboundActionLook(PalletReturnActionKey.NOT_PICKED).icon,
                         height = 52.dp,
                         modifier = Modifier.weight(1f),
                     )
@@ -294,6 +299,8 @@ private fun palletsFooter(
                     AikuButton(
                         text = stringResource(R.string.fulfilment_return_pick_pallet, nextLine.pallet.reference),
                         onClick = { onPick(nextLine) },
+                        style = fulfilmentOutboundActionLook(PalletReturnActionKey.PICK).style,
+                        icon = fulfilmentOutboundActionLook(PalletReturnActionKey.PICK).icon,
                         isLoading = isWorking,
                         height = 52.dp,
                         modifier = Modifier.weight(1f),

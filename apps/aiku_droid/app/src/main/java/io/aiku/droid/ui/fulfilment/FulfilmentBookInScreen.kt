@@ -34,12 +34,14 @@ import io.aiku.droid.ui.components.ConfirmDialog
 import io.aiku.droid.ui.components.FooterStatus
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ToastKind
+import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.fulfilment.inbound.BookInPanel
 import io.aiku.droid.ui.fulfilment.inbound.DeliveryPalletList
 import io.aiku.droid.ui.fulfilment.inbound.InboundLoading
 import io.aiku.droid.ui.fulfilment.inbound.PalletDeliveryStatus
 import io.aiku.droid.ui.fulfilment.inbound.PalletDeliveryUiState
 import io.aiku.droid.ui.fulfilment.inbound.PalletDeliveryViewModel
+import io.aiku.droid.ui.fulfilment.inbound.fulfilmentInboundActionLook
 import io.aiku.droid.ui.fulfilment.inbound.palletDeliveryDoneText
 import io.aiku.droid.ui.fulfilment.inbound.palletTypeText
 import io.aiku.droid.ui.fulfilment.inbound.quotedReference
@@ -166,6 +168,7 @@ private fun BookInContent(viewModel: PalletDeliveryViewModel, state: PalletDeliv
             body = stringResource(R.string.fulfilment_inbound_finish_body),
             confirmLabel = delivery.action(FulfilmentInboundActionKey.FINISH_BOOKING)?.label?.takeIf { it.isNotBlank() }
                 ?: stringResource(R.string.fulfilment_book_in_set_booked_in),
+            confirmLook = fulfilmentInboundActionLook(FulfilmentInboundActionKey.FINISH_BOOKING).forConfirm(),
             onConfirm = {
                 confirm = null
                 viewModel.finishBooking()
@@ -181,7 +184,7 @@ private fun BookInContent(viewModel: PalletDeliveryViewModel, state: PalletDeliv
                 viewModel.notReceived(current.palletId)
             },
             onDismiss = { confirm = null },
-            isDestructive = true,
+            confirmLook = fulfilmentInboundActionLook(FulfilmentInboundActionKey.NOT_RECEIVED).forConfirm(),
         )
         null -> Unit
     }
@@ -209,7 +212,8 @@ private fun bookInFooter(
             AikuButton(
                 text = finish.label.ifBlank { stringResource(R.string.fulfilment_book_in_set_booked_in) },
                 onClick = onFinish,
-                icon = R.drawable.ic_ui_check,
+                style = fulfilmentInboundActionLook(finish.key).style,
+                icon = fulfilmentInboundActionLook(finish.key).icon,
                 isLoading = working == PalletDeliveryWrite.FinishBooking,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),

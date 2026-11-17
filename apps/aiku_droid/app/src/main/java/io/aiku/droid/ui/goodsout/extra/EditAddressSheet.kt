@@ -44,6 +44,7 @@ internal fun EditAddressSheet(
             AikuButton(
                 text = saveLabel,
                 onClick = { onSave(address) },
+                icon = R.drawable.ic_ui_check,
                 isLoading = isWorking,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),

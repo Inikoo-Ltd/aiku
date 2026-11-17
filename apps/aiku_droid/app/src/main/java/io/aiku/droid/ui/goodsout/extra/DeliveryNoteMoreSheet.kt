@@ -17,6 +17,8 @@ import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.tileTone
+import io.aiku.droid.ui.goodsout.goodsOutActionLook
 
 private val pickerKeys = setOf(NoteActionKey.ASSIGN_PICKER, NoteActionKey.REMOVE_PICKER, NoteActionKey.CHANGE_PICKER)
 private val packerKeys = setOf(NoteActionKey.CHANGE_PACKER)
@@ -105,18 +107,12 @@ private fun ActionGroup(label: String, actions: List<DeliveryNoteAction>, onActi
     }
 }
 
-private fun DeliveryNoteAction.menuTone(): Tone = when {
-    isDisabled || key == NoteActionKey.REMOVE_PICKER -> Tone.Neutral
-    key == NoteActionKey.CANCEL -> Tone.Danger
-    else -> Tone.Primary
-}
+private fun DeliveryNoteAction.menuTone(): Tone = if (isDisabled) Tone.Neutral else goodsOutActionLook(key).style.tileTone()
 
 @DrawableRes
-private fun DeliveryNoteAction.menuIcon(): Int = when (key) {
+private fun DeliveryNoteAction.menuIcon(): Int = goodsOutActionLook(key).icon ?: when (key) {
     NoteActionKey.CHANGE_TROLLEY -> R.drawable.ic_ui_trolley
     NoteActionKey.CHANGE_PICKED_BAY -> R.drawable.ic_ui_area
-    NoteActionKey.UNDO_SET_AS_PICKED, NoteActionKey.UNDO_PACKING, NoteActionKey.UNPACK -> R.drawable.ic_ui_undo
-    NoteActionKey.CANCEL -> R.drawable.ic_feedback_close
     else -> R.drawable.ic_ui_person
 }
 

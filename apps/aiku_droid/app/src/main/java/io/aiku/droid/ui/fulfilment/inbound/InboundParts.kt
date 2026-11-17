@@ -10,6 +10,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
+import io.aiku.droid.data.api.FulfilmentInboundActionKey
 import io.aiku.droid.data.api.FulfilmentLocation
 import io.aiku.droid.data.api.Pallet
 import io.aiku.droid.data.api.PalletDelivery
@@ -22,6 +23,8 @@ import io.aiku.droid.data.api.PalletStatus
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
+import io.aiku.droid.ui.components.ButtonLook
+import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChoiceRow
 import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.SearchScanField
@@ -45,6 +48,21 @@ import io.aiku.droid.ui.navigation.FulfilmentBookedInRoute
 import io.aiku.droid.ui.navigation.FulfilmentDeliveryRoute
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.theme.LocalAikuColors
+
+internal val fulfilmentInboundActionLooks: Map<String, ButtonLook> = mapOf(
+    FulfilmentInboundActionKey.RECEIVE to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_next),
+    FulfilmentInboundActionKey.START_BOOKING to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_pallet),
+    FulfilmentInboundActionKey.BOOK_IN to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_location),
+    FulfilmentInboundActionKey.FINISH_BOOKING to ButtonLook(ButtonStyle.Finish, R.drawable.ic_ui_check),
+    FulfilmentInboundActionKey.UNDO_NOT_RECEIVED to ButtonLook(ButtonStyle.Caution, R.drawable.ic_ui_undo),
+    FulfilmentInboundActionKey.NOT_RECEIVED to ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_x_circle),
+    FulfilmentInboundActionKey.DAMAGED to ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_warning),
+    FulfilmentInboundActionKey.LOST to ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_warning),
+    FulfilmentInboundActionKey.MOVE to ButtonLook(ButtonStyle.Outline),
+    FulfilmentInboundActionKey.AUDIT to ButtonLook(ButtonStyle.Outline),
+)
+
+internal fun fulfilmentInboundActionLook(key: String): ButtonLook = fulfilmentInboundActionLooks[key] ?: ButtonLook(ButtonStyle.Outline)
 
 internal fun palletDeliveryRoute(id: Long, reference: String, state: String): Any = when (state) {
     PalletDeliveryState.BOOKING_IN -> FulfilmentBookInRoute(id = id, reference = reference)

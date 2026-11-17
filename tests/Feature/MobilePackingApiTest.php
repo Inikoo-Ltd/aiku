@@ -19,6 +19,7 @@ use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Enums\Catalogue\Leaflet\LeafletTypeEnum;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteLeaflet\DeliveryNoteLeafletStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -576,6 +577,35 @@ test('mobile finalises and dispatches a packed note once it has a shipment, and 
     postGoodsOut('grp.api.mobile.delivery_notes.dispatch', $finalised->id)->assertOk()
         ->assertJsonPath('result.message', 'Delivery note dispatched.')
         ->assertJsonPath('data.state', 'dispatched');
+});
+
+test('mobile external notes get the normal shipment form without a platform action, fetch from Faire in packed and finalised, and never fetch a second shipment', function () {
+    actingAsGoodsOutUser($this->group, $this->warehouse, [RolesEnum::DISPATCH_CLERK]);
+
+    [$noPlatform] = packedDeliveryNote($this, true);
+    $noPlatform->updateQuietly(['is_shipping_by_external' => true]);
+    expect(goodsOutActionKeys($noPlatform))->toContain('add_shipment')->not->toContain('get_external_shipment');
+
+    [$faire] = packedDeliveryNote($this, true);
+    $faire->updateQuietly(['is_shipping_by_external' => true]);
+    $shop           = $faire->orders->first()->shop;
+    $originalEngine = $shop->engine;
+    $shop->updateQuietly(['engine' => ShopEngineEnum::FAIRE]);
+
+    expect(goodsOutActionKeys($faire))->toContain('get_external_shipment')->not->toContain('add_shipment');
+
+    $faire->updateQuietly(['state' => DeliveryNoteStateEnum::FINALISED]);
+    expect(goodsOutActionKeys($faire))->toContain('get_external_shipment')->toContain('dispatch');
+
+    $shipper = mobileManualShipper($this);
+    StoreShipment::run($faire, $shipper, ['shipper_id' => $shipper->id, 'tracking' => 'FAIRE1']);
+    expect(goodsOutActionKeys($faire))->not->toContain('get_external_shipment');
+
+    postGoodsOut('grp.api.mobile.delivery_notes.external_shipment', $faire->id)->assertOk()
+        ->assertJsonPath('result', ['status' => 'nothing_changed', 'message' => 'The shipment is already there.']);
+    expect($faire->shipments()->count())->toBe(1);
+
+    $shop->updateQuietly(['engine' => $originalEngine]);
 });
 
 test('mobile finalises a collection note and then sets it as collected', function () {

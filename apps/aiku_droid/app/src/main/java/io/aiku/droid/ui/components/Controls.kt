@@ -54,7 +54,37 @@ import io.aiku.droid.R
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
 
-enum class ButtonStyle { Primary, Soft, Outline, Danger, Scan }
+enum class ButtonStyle { Primary, Finish, Soft, Caution, Outline, Danger, DangerStrong, Scan }
+
+data class ButtonLook(val style: ButtonStyle, @DrawableRes val icon: Int? = null)
+
+fun ButtonLook.forConfirm(): ButtonLook = when (style) {
+    ButtonStyle.Danger -> copy(style = ButtonStyle.DangerStrong, icon = icon ?: R.drawable.ic_ui_x_circle)
+    ButtonStyle.Soft -> copy(style = ButtonStyle.Primary)
+    else -> this
+}
+
+fun ButtonLook.inFooter(isFirst: Boolean): ButtonLook = when {
+    isFirst -> this
+    style == ButtonStyle.Primary || style == ButtonStyle.Finish -> copy(style = ButtonStyle.Soft)
+    else -> this
+}
+
+fun ButtonStyle.tileTone(): Tone = when (this) {
+    ButtonStyle.Finish -> Tone.Success
+    ButtonStyle.Caution -> Tone.Warn
+    ButtonStyle.Danger, ButtonStyle.DangerStrong -> Tone.Danger
+    else -> Tone.Primary
+}
+
+@DrawableRes
+private fun ButtonStyle.defaultIcon(): Int? = when (this) {
+    ButtonStyle.Finish -> R.drawable.ic_ui_check
+    ButtonStyle.Danger -> R.drawable.ic_ui_x_circle
+    else -> null
+}
+
+private data class ButtonColors(val container: Color, val content: Color, val border: Color, val borderWidth: Dp = 1.dp)
 
 @Composable
 fun AikuButton(
@@ -70,19 +100,28 @@ fun AikuButton(
     val colors = LocalAikuColors.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val (container, content, border) = when {
-        !enabled -> Triple(Color.Transparent, colors.textQuaternary, colors.borderStrong)
-        style == ButtonStyle.Primary -> Triple(if (isPressed) colors.primaryPressed else colors.primary, colors.onPrimary, colors.primaryBorder)
-        style == ButtonStyle.Soft -> Triple(colors.soft, colors.link, colors.softBorder)
-        style == ButtonStyle.Outline -> Triple(Color.Transparent, colors.textSecondary, colors.borderStrong)
-        style == ButtonStyle.Scan -> Triple(colors.scan, colors.onScan, Color.Transparent)
-        else -> Triple(colors.surface, colors.danger, colors.dangerBorder)
+    val (container, content, border, borderWidth) = if (!enabled) {
+        ButtonColors(Color.Transparent, colors.textQuaternary, colors.borderStrong)
+    } else {
+        when (style) {
+            ButtonStyle.Primary -> ButtonColors(if (isPressed) colors.primaryPressed else colors.primary, colors.onPrimary, colors.primaryBorder)
+            ButtonStyle.Finish -> ButtonColors(colors.finish, colors.onFinish, colors.finish)
+            ButtonStyle.Soft -> ButtonColors(colors.soft, colors.softInk, colors.softBorder)
+            ButtonStyle.Caution -> ButtonColors(colors.cautionSoft, colors.cautionInk, colors.cautionBorder)
+            ButtonStyle.Outline -> ButtonColors(Color.Transparent, colors.textSecondary, colors.borderStrong)
+            ButtonStyle.Danger -> ButtonColors(colors.surface, colors.danger, colors.dangerButtonBorder, 1.5.dp)
+            ButtonStyle.DangerStrong -> ButtonColors(colors.dangerStrong, colors.onDangerStrong, colors.dangerStrong)
+            ButtonStyle.Scan -> ButtonColors(colors.scan, colors.onScan, Color.Transparent)
+        }
     }
     val focusRing = when (style) {
         ButtonStyle.Primary -> colors.onPrimary
+        ButtonStyle.Finish -> colors.onFinish
+        ButtonStyle.DangerStrong -> colors.onDangerStrong
         ButtonStyle.Scan -> colors.onScan
         else -> colors.focus
     }
+    val shownIcon = icon ?: style.defaultIcon()
 
     Row(
         horizontalArrangement = Arrangement.Center,
@@ -92,7 +131,7 @@ fun AikuButton(
             .alpha(if (!enabled) 0.8f else if (isLoading) 0.85f else 1f)
             .clip(ControlShape)
             .background(container)
-            .border(1.dp, border, ControlShape)
+            .border(borderWidth, border, ControlShape)
             .clickable(
                 interactionSource = interactionSource,
                 indication = AikuFocusIndication(ringColor = focusRing, gapColor = colors.background, ripple = ripple(color = content)),
@@ -105,8 +144,8 @@ fun AikuButton(
         if (isLoading) {
             CircularProgressIndicator(color = content, trackColor = content.copy(alpha = 0.35f), strokeWidth = 2.5.dp, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(10.dp))
-        } else if (icon != null) {
-            Icon(painter = painterResource(icon), contentDescription = null, tint = content, modifier = Modifier.size(20.dp))
+        } else if (shownIcon != null) {
+            Icon(painter = painterResource(shownIcon), contentDescription = null, tint = content, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
         }
         Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = content, maxLines = 1, overflow = TextOverflow.Ellipsis)

@@ -170,6 +170,7 @@ fun FilterSheet(
                 AikuButton(
                     text = showText,
                     onClick = onShow,
+                    icon = R.drawable.ic_ui_next,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
                 )

@@ -80,7 +80,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             $orgStock           = $purchaseOrderTransaction->orgStock;
             $orgSupplierProduct = ($isSameSupplier ? $purchaseOrderTransaction->orgSupplierProduct : null)
                 ?? $this->orgSupplierProductOfStock($orgSupplier, $orgStock->id)
-                ?? $this->linkUnlinkedOrgSupplierProductOfStock($orgSupplier, $orgStock)
+                ?? self::linkUnlinkedOrgSupplierProductOfStock($orgSupplier, $orgStock)
                 ?? StoreSupplierProductForOrgStock::make()->action($orgStock, [
                     'org_supplier_id'  => $orgSupplier->id,
                     'code'             => Arr::get($modelData, 'code') ?: $purchaseOrderTransaction->supplierProduct?->code,
@@ -399,7 +399,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             ->orderBy('org_supplier_products.id');
     }
 
-    private function linkUnlinkedOrgSupplierProductOfStock(OrgSupplier $orgSupplier, OrgStock $orgStock): ?OrgSupplierProduct
+    public static function linkUnlinkedOrgSupplierProductOfStock(OrgSupplier $orgSupplier, OrgStock $orgStock): ?OrgSupplierProduct
     {
         $orgSupplierProduct = static::unlinkedOrgSupplierProductsOfStocksQuery([$orgSupplier->id], [$orgStock->id])->first();
 

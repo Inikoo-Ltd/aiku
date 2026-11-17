@@ -39,6 +39,7 @@ use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\PurchaseOrder\ConfirmPurchaseOrderPayment;
 use App\Actions\Procurement\PurchaseOrder\ResolvePurchaseOrderDeliveryAddress;
 use App\Actions\Procurement\PurchaseOrder\Traits\WithPurchaseOrderWeightAndVolume;
+use App\Actions\Procurement\PurchaseOrder\ChangePurchaseOrderSupplier;
 use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier;
 use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
@@ -92,7 +93,7 @@ class ShowPurchaseOrder extends OrgAction
     use WithPurchaseOrderWeightAndVolume;
     use WithAgentOrganisation;
 
-    private const array AGENT_ACTION_KEYS = ['edit_estimated_delivery_date', 'cancel_purchase_order', 'undo_cancel_purchase_order', 'pull_from_other_order'];
+    private const array AGENT_ACTION_KEYS = ['edit_estimated_delivery_date', 'cancel_purchase_order', 'undo_cancel_purchase_order', 'pull_from_other_order', 'change_supplier'];
 
     private bool $agentCanEdit = false;
 
@@ -850,6 +851,22 @@ class ShowPurchaseOrder extends OrgAction
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'grp.models.purchase-order.transaction.pull',
+                    'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                ],
+            ];
+        }
+
+        if (ChangePurchaseOrderSupplier::canChange($purchaseOrder)) {
+            $actions[] = [
+                'label'   => __('Change supplier'),
+                'tooltip' => __('The goods of this order are made by another supplier of the agent: move the whole order to that supplier'),
+                'type'    => 'button',
+                'style'   => 'secondary',
+                'icon'    => 'fal fa-people-arrows',
+                'key'     => 'change_supplier',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.purchase-order.change_supplier',
                     'parameters' => ['purchaseOrder' => $purchaseOrder->id],
                 ],
             ];

@@ -31,27 +31,27 @@ class SetMobileDeliveryNoteAsPacked
         /** @var User $user */
         $user = $request->user();
         $this->ensureCanWork($deliveryNote, $user);
-        $this->ensureState($deliveryNote, [DeliveryNoteStateEnum::HANDLING, DeliveryNoteStateEnum::PICKED, DeliveryNoteStateEnum::PACKING]);
-        $this->ensureCanHandle($deliveryNote);
 
-        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
-            if ($this->isDropshipping($deliveryNote)) {
-                $this->refuseState(__('A dropshipping delivery note is not packed at the packing station.'));
+        return $this->underShippingLock($deliveryNote, function () use ($deliveryNote, $user) {
+            $deliveryNote->refresh();
+            $this->ensureState($deliveryNote, [DeliveryNoteStateEnum::HANDLING, DeliveryNoteStateEnum::PICKED, DeliveryNoteStateEnum::PACKING]);
+            $this->ensureCanHandle($deliveryNote);
+
+            if ($deliveryNote->state != DeliveryNoteStateEnum::PACKING) {
+                $this->ensurePackableWithoutPacking($deliveryNote);
             }
-        } else {
-            $this->ensurePackableWithoutPacking($deliveryNote);
-        }
 
-        $deliveryNote = $this->passingWebRefusals(
-            fn () => UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $user),
-            'state'
-        );
+            $deliveryNote = $this->passingWebRefusals(
+                fn () => UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $user),
+                'state'
+            );
 
-        $message = $deliveryNote->refresh()->state == DeliveryNoteStateEnum::FINALISED
-            ? __('Packed. The delivery note is back to finalised.')
-            : __('Delivery note packed.');
+            $message = $deliveryNote->refresh()->state == DeliveryNoteStateEnum::FINALISED
+                ? __('Packed. The delivery note is back to finalised.')
+                : __('Delivery note packed.');
 
-        return $this->respondWith($deliveryNote, $user, 'done', $message);
+            return $this->respondWith($deliveryNote, $user, 'done', $message);
+        });
     }
 
     private function ensurePackableWithoutPacking(DeliveryNote $deliveryNote): void

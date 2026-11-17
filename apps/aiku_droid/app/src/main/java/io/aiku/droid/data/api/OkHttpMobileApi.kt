@@ -19,6 +19,7 @@ import java.io.File
 import java.io.IOException
 import java.time.LocalDate
 import java.time.YearMonth
+import java.util.concurrent.TimeUnit
 
 class OkHttpMobileApi(
     private val client: OkHttpClient,
@@ -30,6 +31,7 @@ class OkHttpMobileApi(
     internal val mobileApiUrl = "$apiBaseUrl/app/api/mobile"
     private val hrApiUrl = "$mobileApiUrl/clocking"
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
+    private val platformClient: OkHttpClient by lazy { client.newBuilder().readTimeout(PLATFORM_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS).build() }
 
     override suspend fun login(credentials: LoginCredentials): LoginResult {
         val body = AuthResponses.json.encodeToString(
@@ -234,7 +236,10 @@ class OkHttpMobileApi(
             ?: GoodsOutResult.Unreachable
 
     override suspend fun write(token: String, deliveryNoteId: Long, write: DeliveryNoteWrite): GoodsOutResult<NoteActionOutcome> =
-        execute(writeRequest("$mobileApiUrl/delivery-notes/$deliveryNoteId", GoodsOutResponses.writeRequest(write), token))
+        execute(
+            writeRequest("$mobileApiUrl/delivery-notes/$deliveryNoteId", GoodsOutResponses.writeRequest(write), token),
+            httpClient = if (write.waitsForPlatform) platformClient else client,
+        )
             ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseWrite(statusCode, responseBody) }
             ?: GoodsOutResult.Unreachable
 
@@ -546,9 +551,9 @@ class OkHttpMobileApi(
         .apply { bearerToken?.let { header("Authorization", "Bearer $it") } }
         .build()
 
-    internal suspend fun execute(request: Request): Pair<Int, String>? = withContext(ioDispatcher) {
+    internal suspend fun execute(request: Request, httpClient: OkHttpClient = client): Pair<Int, String>? = withContext(ioDispatcher) {
         try {
-            client.newCall(request).execute().use { response -> response.code to response.body.string() }
+            httpClient.newCall(request).execute().use { response -> response.code to response.body.string() }
         } catch (exception: IOException) {
             Log.w(LOG_TAG, "${request.method} ${request.url} failed", exception)
             null
@@ -570,6 +575,7 @@ class OkHttpMobileApi(
 
     private companion object {
         const val LOG_TAG = "AikuApi"
+        const val PLATFORM_WRITE_TIMEOUT_SECONDS = 120L
         const val HTTP_OK = 200
         const val ATTACHMENTS_FIELD = "attachments[]"
     }

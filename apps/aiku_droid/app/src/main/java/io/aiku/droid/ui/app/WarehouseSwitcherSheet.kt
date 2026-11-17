@@ -116,6 +116,7 @@ internal fun WarehouseSwitcherSheet(
                     stringResource(R.string.profile_switcher_switch_to, chosenLabel)
                 },
                 onClick = { if (chosenId == selected.id) onDismiss() else onSwitch(chosenId) },
+                icon = R.drawable.ic_ui_warehouse,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
             )

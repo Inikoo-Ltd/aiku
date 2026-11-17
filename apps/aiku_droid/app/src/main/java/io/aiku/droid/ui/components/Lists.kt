@@ -206,7 +206,7 @@ fun ScanPanel(
                 ScanPanelCloseButton(onClick = onClose)
             }
         }
-        AikuButton(text = allLabel, onClick = onAll, icon = R.drawable.ic_ui_check, height = 52.dp, isLoading = isWorking, modifier = Modifier.fillMaxWidth())
+        AikuButton(text = allLabel, onClick = onAll, icon = R.drawable.ic_ui_check_double, height = 52.dp, isLoading = isWorking, modifier = Modifier.fillMaxWidth())
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             StepButton(symbol = "−", description = stringResource(R.string.stepper_decrease), enabled = amount > 1, shape = stepShape) { onAmountChange(amount - 1) }
             Text(

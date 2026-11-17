@@ -130,7 +130,7 @@ internal fun CheckResultSheet(
                         onSave(result, note, incidentType, quantity.trim().replace(',', '.').toDoubleOrNull())
                     }
                 },
-                style = if (isFailing) ButtonStyle.Danger else ButtonStyle.Primary,
+                style = if (isFailing) ButtonStyle.Danger else ButtonStyle.Finish,
                 isLoading = isWorking,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),

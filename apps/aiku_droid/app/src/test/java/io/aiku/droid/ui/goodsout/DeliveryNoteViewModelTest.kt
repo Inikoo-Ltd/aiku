@@ -119,6 +119,31 @@ class DeliveryNoteViewModelTest {
     }
 
     @Test
+    fun `an unanswered set as packed reloads the note so it shows what the server did`() {
+        api.note = note(state = "packing")
+        val viewModel = loadedViewModel()
+        api.note = note(state = "packed")
+        api.writeResult = GoodsOutResult.Unreachable
+
+        viewModel.act(DeliveryNoteWrite.SetAsPacked)
+
+        assertEquals(note(state = "packed"), viewModel.state.value.note)
+        assertFalse(viewModel.state.value.isWorking)
+    }
+
+    @Test
+    fun `an unanswered line pick keeps the note as it was`() {
+        api.note = note(state = "handling")
+        val viewModel = loadedViewModel()
+        api.note = note(state = "picked")
+        api.writeResult = GoodsOutResult.Unreachable
+
+        viewModel.act(DeliveryNoteWrite.PickAll(lineId = LINE_ID, locationOrgStockId = null))
+
+        assertEquals(note(state = "handling"), viewModel.state.value.note)
+    }
+
+    @Test
     fun `set as picked moves to the picked screen`() {
         api.note = note(state = "handling")
         api.writeResult = GoodsOutResult.Loaded(NoteActionOutcome(note = note(state = "picked"), status = "done", message = null))

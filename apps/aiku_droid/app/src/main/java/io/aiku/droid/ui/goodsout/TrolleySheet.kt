@@ -91,6 +91,7 @@ internal fun TrolleyChoiceSheet(
                         confirmedId = trolley.id
                         onConfirm(trolley.id)
                     },
+                    icon = R.drawable.ic_ui_trolley,
                     isLoading = isWorking && confirmedId != null,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
@@ -104,6 +105,7 @@ internal fun TrolleyChoiceSheet(
                         onConfirm(null)
                     },
                     style = if (selected == null) ButtonStyle.Primary else ButtonStyle.Outline,
+                    icon = if (selected == null) R.drawable.ic_ui_next else null,
                     isLoading = isWorking && confirmedId == null,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),

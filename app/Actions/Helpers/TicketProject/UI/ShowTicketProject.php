@@ -108,7 +108,7 @@ class ShowTicketProject extends OrgAction
             'project_route' => ['name' => 'grp.tasks.project.update', 'parameters' => ['staffTask' => $task->reference]],
         ]);
 
-        return $tickets->concat($tasks)->sortByDesc('updated_at')->values();
+        return $tickets->concat($tasks)->sortBy('reference', SORT_NATURAL)->values();
     }
 
     /**
@@ -294,6 +294,7 @@ class ShowTicketProject extends OrgAction
         $totals = IndexTicketProjects::workTotals($project);
 
         $updates = $project->updates()->with('author.image')->latest('id')->limit(200)->get()
+            ->each(fn (TicketProjectUpdate $update) => $update->setRelation('project', $project))
             ->map(fn (TicketProjectUpdate $update) => [
                 'id'           => $update->id,
                 'body'         => $update->body,
@@ -301,6 +302,9 @@ class ShowTicketProject extends OrgAction
                 'health_label' => $update->health ? TicketProjectHealthEnum::labels()[$update->health->value] : null,
                 'author'       => IndexTicketProjects::person($update->author),
                 'created_at'   => $update->created_at,
+                'is_edited'    => $update->updated_at !== null && $update->created_at !== null && $update->updated_at->gt($update->created_at->copy()->addMinute()),
+                'can_edit'     => $update->canBeEditedBy($user),
+                'can_delete'   => $update->canBeDeletedBy($user),
             ]);
 
         $commits    = self::commits($work);

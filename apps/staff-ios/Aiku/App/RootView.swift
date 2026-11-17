@@ -41,9 +41,7 @@ struct RootView: View {
             guard let userID = authStore.userID, userID > 0 else { return }
             LocationsStore.shared.beginRemoteLoad()
             await warehouseStore.load(for: userID, apiClient: apiClient)
-            if let warehouse = warehouseStore.selected {
-                session.apply(warehouse: warehouse.name, code: warehouse.code, organisation: warehouse.organisation.name)
-            }
+            applySelectedWarehouse()
         }
         .onChange(of: resolvedModules, initial: true) { _, modules in
             if let modules {
@@ -55,6 +53,7 @@ struct RootView: View {
             Task {
                 await authStore.refreshProfile()
                 await refreshPermissionsIfSignedIn()
+                await refreshWarehousesIfSignedIn()
             }
         }
     }
@@ -68,6 +67,17 @@ struct RootView: View {
         await permissionStore.refresh()
     }
 
+    private func refreshWarehousesIfSignedIn() async {
+        guard authStore.isSignedIn, let userID = authStore.userID, userID > 0 else { return }
+        await warehouseStore.refresh(for: userID, apiClient: apiClient)
+        applySelectedWarehouse()
+    }
+
+    private func applySelectedWarehouse() {
+        guard let warehouse = warehouseStore.selected else { return }
+        session.apply(warehouse: warehouse.name, code: warehouse.code, organisation: warehouse.organisation.name)
+    }
+
     private func signOut() {
         permissionStore.clear()
         warehouseStore.reset()
@@ -75,6 +85,7 @@ struct RootView: View {
         LocationsStore.shared.resetToSample()
         InventoryFamiliesFeed.shared.reset()
         GoodsInStore.shared.resetToSample()
+        PalletDeliveriesFeed.shared.reset()
         Task { await authStore.signOut() }
     }
 }

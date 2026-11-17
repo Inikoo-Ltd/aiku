@@ -5,9 +5,11 @@ import Testing
 private actor GoodsOutCalls {
     var listRequests: [GoodsOutListRequest] = []
     var actions: [(Int, GoodsOutNoteAction)] = []
+    var noteLoads: [Int] = []
 
     func recordList(_ request: GoodsOutListRequest) { listRequests.append(request) }
     func recordAction(_ id: Int, _ action: GoodsOutNoteAction) { actions.append((id, action)) }
+    func recordNoteLoad(_ id: Int) { noteLoads.append(id) }
 }
 
 private func decode<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
@@ -93,7 +95,10 @@ private func service(calls: GoodsOutCalls, actionResult: Result<String, APIError
             """)
         },
         counts: { _, _ in try decode(DataEnvelope<GoodsOutCountsDTO>.self, countsJSON).value },
-        deliveryNote: { _ in try decode(GoodsOutDeliveryNoteDTO.self, handlingNoteJSON) },
+        deliveryNote: { id in
+            await calls.recordNoteLoad(id)
+            return try decode(GoodsOutDeliveryNoteDTO.self, handlingNoteJSON)
+        },
         perform: { id, action in
             await calls.recordAction(id, action)
             try await Task.sleep(for: actionDelay)
@@ -355,6 +360,54 @@ struct GoodsOutAPITests {
         let outcome = await offline.perform(.takeOver, on: "AR24811")
         #expect(outcome == .failed(message: GoodsOutMapper.message(for: APIError.offline)))
         #expect(await offline.perform(.takeOver, on: "UNKNOWN") == .failed(message: "This delivery note is not in the selected warehouse."))
+    }
+
+    @Test func platformStepsWaitUpToTwoMinutes() {
+        for action in [GoodsOutNoteAction.setAsPacked, .externalShipment, .finalise, .finaliseAndDispatch, .dispatch] {
+            #expect(Endpoint.goodsOutNoteAction(noteID: 501, action).timeout == 120)
+        }
+        #expect(Endpoint.goodsOutNoteAction(noteID: 501, .takeOver).timeout == nil)
+        #expect(Endpoint.goodsOutNoteAction(noteID: 501, .addShipment(shipperID: 1, tracking: nil)).timeout == nil)
+    }
+
+    @MainActor
+    @Test func anUnansweredPlatformStepReloadsTheNote() async throws {
+        let calls = GoodsOutCalls()
+        let store = try remoteStore(calls: calls, actionResult: .failure(.offline))
+        await store.loadList()
+
+        let outcome = await store.perform(.setAsPacked, on: "AR24811")
+
+        #expect(outcome == .failed(message: GoodsOutMapper.message(for: APIError.offline)))
+        #expect(await calls.noteLoads == [501])
+        #expect(store.note("AR24811")?.isDetailed == true)
+        #expect(store.isWorking(on: "AR24811") == false)
+    }
+
+    @MainActor
+    @Test func anUnansweredWriteThroughTheFormPathReloadsTheNote() async throws {
+        let calls = GoodsOutCalls()
+        let store = try remoteStore(calls: calls, actionResult: .failure(.offline))
+        await store.loadList()
+
+        _ = await store.write(.dispatch, on: "AR24811")
+
+        #expect(await calls.noteLoads == [501])
+    }
+
+    @MainActor
+    @Test func anUnansweredLineStepOrRefusedPlatformStepKeepsTheNote() async throws {
+        let offlineCalls = GoodsOutCalls()
+        let offline = try remoteStore(calls: offlineCalls, actionResult: .failure(.offline))
+        await offline.loadList()
+        _ = await offline.perform(.pickAll(line: 11, locationOrgStockID: nil), on: "AR24811")
+        #expect(await offlineCalls.noteLoads.isEmpty)
+
+        let refusedCalls = GoodsOutCalls()
+        let refused = try remoteStore(calls: refusedCalls, actionResult: .failure(.validation(message: "Add a parcel first.", code: nil)))
+        await refused.loadList()
+        _ = await refused.perform(.setAsPacked, on: "AR24811")
+        #expect(await refusedCalls.noteLoads.isEmpty)
     }
 
     @MainActor
