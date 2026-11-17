@@ -38,7 +38,8 @@ class DiscontinueDeadOrgSupplierProducts
     /**
      * Supplier products, bought through an agent or straight from the supplier, that an organisation
      * still holds as active though they are dead: every SKO they supply is discontinued, the organisation stocks none of them, and
-     * nobody in the group has ordered one in two years or has one on an order still open. Their price and availability have not been
+     * nobody in the group has ordered one in two years or has one on an order still open. A draft order is neither: a line left on a
+     * draft never keeps a retired product alive. Their price and availability have not been
      * looked at since, so "active" is a lie that fills the catalogue with noise.
      *
      * Only the organisation's own row changes here. The supplier product is shared by the group, and
@@ -81,14 +82,15 @@ class DiscontinueDeadOrgSupplierProducts
                 ->whereColumn('pot.supplier_product_id', 'sp.id')
                 ->whereNull('pot.deleted_at')
                 ->whereNull('po.deleted_at')
+                ->where('po.state', '!=', PurchaseOrderStateEnum::IN_PROCESS->value)
                 ->where(fn (Builder $query) => $query
                     ->whereRaw('coalesce(po.submitted_at, po.date, po.created_at) >= ?', [now()->subMonths(self::MONTHS_WITHOUT_ORDERS)])
-                    ->orWhereIn('po.state', PurchaseOrderStateEnum::liveValues())));
+                    ->orWhereIn('po.state', PurchaseOrderStateEnum::openValues())));
     }
 
     /**
      * Supplier products the group still holds as active though every SKO they supply is discontinued, no organisation row stays
-     * active once its dead rows are discontinued, no live purchase order has a line of them and the agent holds none in its warehouse. These show as discontinued in the
+     * active once its dead rows are discontinued, no open purchase order (drafts do not count) has a line of them and the agent holds none in its warehouse. These show as discontinued in the
      * supplier portal and the supplier product lists only once the group row says so.
      */
     public function deadInGroup(?string $organisationSlug = null, ?int $stockId = null): Builder
@@ -131,7 +133,7 @@ class DiscontinueDeadOrgSupplierProducts
                 ->whereColumn('pot.supplier_product_id', 'sp.id')
                 ->whereNull('pot.deleted_at')
                 ->whereNull('po.deleted_at')
-                ->whereIn('po.state', PurchaseOrderStateEnum::liveValues()));
+                ->whereIn('po.state', PurchaseOrderStateEnum::openValues()));
     }
 
     /**

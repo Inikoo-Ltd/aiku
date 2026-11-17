@@ -29,7 +29,9 @@ class BulkUpdateSupplierProductsState extends OrgAction
 
         $supplierProducts = SupplierProduct::where('group_id', $group->id)
             ->whereIn('id', $modelData['supplier_products'])
-            ->where('state', '!=', $state->value)
+            ->where(fn ($query) => $query
+                ->where('state', '!=', $state->value)
+                ->orWhereRaw("data->>'".UpdateSupplierProduct::FOLLOWS_DISCONTINUING_SKOS_KEY."' is not null"))
             ->get();
 
         foreach ($supplierProducts as $supplierProduct) {
