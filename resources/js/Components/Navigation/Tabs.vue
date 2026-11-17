@@ -8,7 +8,7 @@
     TODO: Icon loading is unlimited if change tabs is failed
 -->
 <script setup lang="ts">
-import { inject, ref, watch } from "vue"
+import { inject, nextTick, onMounted, ref, watch } from "vue"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import { faClock as falClock, faPencil as falPencil } from "@fal"
 import { faInfoCircle, faPallet, faCircle, faUndo } from "@fas"
@@ -105,12 +105,32 @@ const onChangeTab = async (tabSlug: string) => {
 	emits("update:tab", tabSlug)
 }
 
+const leftTabsElement = ref<HTMLElement | null>(null)
+
+const scrollActiveTabIntoView = () => {
+	const scroller = leftTabsElement.value
+	const activeTab = scroller?.querySelector<HTMLElement>('[aria-current="page"]')
+	if (!scroller || !activeTab || scroller.scrollWidth <= scroller.clientWidth) {
+		return
+	}
+	const overflowLeft = activeTab.offsetLeft - scroller.offsetLeft - scroller.scrollLeft
+	const overflowRight = overflowLeft + activeTab.offsetWidth - scroller.clientWidth
+	if (overflowLeft < 0) {
+		scroller.scrollLeft += overflowLeft
+	} else if (overflowRight > 0) {
+		scroller.scrollLeft += overflowRight
+	}
+}
+
+onMounted(scrollActiveTabIntoView)
+
 // Set new active Tab after parent has changed page
 watch(
 	() => props.current,
 	(newVal) => {
 		currentTab.value = newVal
 		tabLoading.value = false
+		nextTick(scrollActiveTabIntoView)
 	}
 )
 
@@ -265,14 +285,14 @@ const placeMobileTabOptions = () => {
 		<div class="hidden sm:block">
 			<div class="border-b border-gray-200 flex">
 				<!-- Left section -->
-				<nav class="-mb-px flex w-full gap-x-6 ml-4" aria-label="Tabs">
+				<nav ref="leftTabsElement" class="-mb-px flex min-w-0 flex-1 gap-x-6 ml-4 pr-4 overflow-x-auto [scrollbar-width:thin]" aria-label="Tabs">
 					<template v-for="(tab, tabSlug) in navigation" :key="tabSlug">
 						<button
 							v-if="tab.align !== 'right'"
 							v-tooltip="tab.tooltip"
 							@click="onChangeTab(tabSlug)"
 							:class="tabButtonClass(tab, tabSlug === currentTab)"
-							class="relative group flex items-center py-2 px-1 font-medium text-left text-sm md:text-base w-fit focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+							class="relative group flex shrink-0 items-center py-2 px-1 font-medium text-left text-sm md:text-base w-fit focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
 							:aria-current="tabSlug === currentTab ? 'page' : undefined">
 							<FontAwesomeIcon
 								v-if="tabLoading === tabSlug"
@@ -316,7 +336,7 @@ const placeMobileTabOptions = () => {
 									fixed-width aria-hidden="true" />
 								<span
 									v-if="tabSlug === 'bundles'"
-									class="absolute -top-4 -right-12 text-[8px] px-1.5 py-[1px] rounded
+									class="absolute -top-2 -right-12 text-[8px] px-1.5 py-[1px] rounded
 										bg-red-500 text-white font-semibold tracking-wide
 										whitespace-nowrap scale-90 origin-left impulse"
 								>
@@ -345,7 +365,7 @@ const placeMobileTabOptions = () => {
 				</nav>
 
 				<!-- Right section -->
-				<nav class="flex flex-row-reverse mr-4" aria-label="Secondary Tabs">
+				<nav class="flex shrink-0 flex-row-reverse mr-4" aria-label="Secondary Tabs">
 					<template v-for="(tab, tabSlug) in navigation" :key="tabSlug">
 						<button
 							v-if="tab.align === 'right'"
