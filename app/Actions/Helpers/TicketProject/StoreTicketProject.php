@@ -14,6 +14,7 @@ use App\Models\SysAdmin\Group;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreTicketProject extends OrgAction
@@ -43,7 +44,16 @@ class StoreTicketProject extends OrgAction
             'owner_id'     => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
             'member_ids'   => ['sometimes', 'array'],
             'member_ids.*' => [Rule::exists('users', 'id')->where('group_id', $this->group->id)],
+            'parent_id'    => ['sometimes', 'nullable', 'integer', self::parentRule($this->group->id)],
         ];
+    }
+
+    /**
+     * Sub-projects go one level deep: a parent is a top-level project of the same group.
+     */
+    public static function parentRule(int $groupId): Exists
+    {
+        return Rule::exists('ticket_projects', 'id')->where('group_id', $groupId)->whereNull('parent_id')->whereNull('deleted_at');
     }
 
     public function action(Group $group, array $modelData): TicketProject

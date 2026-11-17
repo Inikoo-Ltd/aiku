@@ -10,11 +10,14 @@ namespace App\Actions\Helpers\TicketProject\UI;
 
 use App\Actions\Helpers\Ticket\UI\WithTicketsScope;
 use App\Actions\OrgAction;
+use App\InertiaTable\InertiaTable;
+use Closure;
 use App\Enums\Helpers\Ticket\TicketProjectHealthEnum;
 use App\Enums\Helpers\Ticket\TicketProjectStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusGroupEnum;
 use App\Enums\Tasks\StaffTaskStatusEnum;
+use App\Http\Resources\Helpers\TicketProjectsResource;
 use App\Models\Helpers\Ticket;
 use App\Models\Helpers\TicketProject;
 use App\Models\Helpers\TicketProjectMilestone;
@@ -38,7 +41,7 @@ class ShowTicketProject extends OrgAction
 
     public function handle(TicketProject $ticketProject): TicketProject
     {
-        return $ticketProject->load(['owner.image', 'members.image', 'milestones']);
+        return $ticketProject->load(['owner.image', 'members.image', 'milestones', 'parent', 'children' => fn ($query) => IndexTicketProjects::withProgress($query)]);
     }
 
     public function asController(TicketProject $ticketProject, ActionRequest $request): TicketProject
@@ -204,6 +207,85 @@ class ShowTicketProject extends OrgAction
             ->all();
     }
 
+    /**
+     * Warnings worth seeing before anything else on the page: a project nobody has reported on,
+     * milestones past their date, work running behind time, or every ticket finished while
+     * milestones are still open (the remaining work is not tracked).
+     *
+     * @param  array<int, array<string, mixed>>  $milestones
+     * @param  array<string, mixed>  $progress
+     * @return array<int, array{key: string, level: string, text: string}>
+     */
+    public static function indicators(TicketProject $project, array $milestones, array $progress, mixed $lastUpdateAt): array
+    {
+        if ($project->status !== TicketProjectStatusEnum::ACTIVE) {
+            return [];
+        }
+
+        $today      = Carbon::today();
+        $indicators = [];
+
+        $daysSinceUpdate = $lastUpdateAt ? (int) Carbon::parse($lastUpdateAt)->startOfDay()->diffInDays($today) : null;
+        if ($daysSinceUpdate === null && $project->start_date->diffInDays($today, false) > 7) {
+            $indicators[] = ['key' => 'stale_update', 'level' => 'warning', 'text' => __('No progress update has been posted yet')];
+        } elseif ($daysSinceUpdate !== null && $daysSinceUpdate > 14) {
+            $indicators[] = ['key' => 'stale_update', 'level' => 'warning', 'text' => __('The last progress update was :days days ago', ['days' => $daysSinceUpdate])];
+        }
+
+        if ($progress['days_left'] !== null && $progress['days_left'] < 0) {
+            $indicators[] = ['key' => 'past_target', 'level' => 'danger', 'text' => __('The target date passed :days days ago', ['days' => -$progress['days_left']])];
+        } elseif ($progress['percent'] !== null && $progress['time_percent'] !== null && $progress['percent'] + 10 < $progress['time_percent']) {
+            $indicators[] = ['key' => 'behind', 'level' => 'danger', 'text' => __('Work done (:work%) is behind time used (:time%)', ['work' => $progress['percent'], 'time' => $progress['time_percent']])];
+        }
+
+        $openMilestones = collect($milestones)->whereNull('done_at');
+        foreach ($openMilestones as $milestone) {
+            if (!$milestone['due_date'] || $milestone['due_date'] >= $today->toDateString()) {
+                continue;
+            }
+            $indicators[] = $milestone['total'] > 0 && $milestone['done'] === $milestone['total']
+                ? ['key' => 'milestone_ready', 'level' => 'info', 'text' => __('“:name” has all its work done but is not marked done', ['name' => $milestone['name']])]
+                : ['key' => 'milestone_overdue', 'level' => 'danger', 'text' => __('“:name” was due on :date and is not done', ['name' => $milestone['name'], 'date' => Carbon::parse($milestone['due_date'])->isoFormat('D MMM')])];
+        }
+
+        if ($progress['open'] === 0 && $openMilestones->isNotEmpty()) {
+            $indicators[] = ['key' => 'untracked_work', 'level' => 'warning', 'text' => trans_choice('All tracked work is done but :count milestone is still open: add the remaining work as tickets or tasks|All tracked work is done but :count milestones are still open: add the remaining work as tickets or tasks', $openMilestones->count(), ['count' => $openMilestones->count()])];
+        }
+
+        return $indicators;
+    }
+
+    public function workTableStructure(): Closure
+    {
+        return function (InertiaTable $table) {
+            $table
+                ->name('work')
+                ->withEmptyState(['title' => __('No work matches')])
+                ->column(key: 'status', label: '', canBeHidden: false)
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false)
+                ->column(key: 'subject', label: __('Subject'), canBeHidden: false)
+                ->column(key: 'milestone', label: __('Milestone'), canBeHidden: false)
+                ->column(key: 'status_label', label: __('Status'), canBeHidden: false)
+                ->column(key: 'assignee', label: __('Assignee'), canBeHidden: false)
+                ->column(key: 'updated_at', label: __('Updated'), canBeHidden: false)
+                ->column(key: 'actions', label: '', canBeHidden: false);
+        };
+    }
+
+    public function commitsTableStructure(): Closure
+    {
+        return function (InertiaTable $table) {
+            $table
+                ->name('commits')
+                ->withEmptyState(['title' => __('No commits recorded on this project\'s tickets yet')])
+                ->column(key: 'version', label: __('Version'), canBeHidden: false)
+                ->column(key: 'deployed_at', label: __('Deployed'), canBeHidden: false)
+                ->column(key: 'hash', label: __('Commit'), canBeHidden: false)
+                ->column(key: 'subject', label: __('Subject'), canBeHidden: false)
+                ->column(key: 'reference', label: __('Ticket'), canBeHidden: false);
+        };
+    }
+
     public function htmlResponse(TicketProject $project, ActionRequest $request): Response
     {
         $user = $request->user();
@@ -221,8 +303,23 @@ class ShowTicketProject extends OrgAction
                 'created_at'   => $update->created_at,
             ]);
 
-        $commits = self::commits($work);
-        $health  = $updates->firstWhere('health', '!==', null);
+        $commits    = self::commits($work);
+        $health     = $updates->firstWhere('health', '!==', null);
+        $progress   = IndexTicketProjects::progress($project, $totals['total'], $totals['done'], $totals['cancelled']);
+        $milestones = $project->milestones->map(function (TicketProjectMilestone $milestone) use ($work) {
+            $items = $work->where('milestone_id', $milestone->id)->where('state', '!=', 'cancelled');
+
+            return [
+                'id'          => $milestone->id,
+                'name'        => $milestone->name,
+                'description' => $milestone->description,
+                'start_date'  => $milestone->start_date?->toDateString(),
+                'due_date'    => $milestone->due_date?->toDateString(),
+                'done_at'     => $milestone->done_at?->toDateString(),
+                'total'       => $items->count(),
+                'done'        => $items->where('state', 'done')->count(),
+            ];
+        })->values()->all();
 
         return Inertia::render(
             'Tickets/TicketProject',
@@ -231,6 +328,9 @@ class ShowTicketProject extends OrgAction
                     $this->moduleScopeParentBreadcrumbs(),
                     [
                         ['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.projects.index'], 'label' => __('Projects')]],
+                    ],
+                    $project->parent ? [['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.projects.show', 'parameters' => [$project->parent->slug]], 'label' => $project->parent->name]]] : [],
+                    [
                         ['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.projects.show', 'parameters' => [$project->slug]], 'label' => $project->name]],
                     ]
                 ),
@@ -254,22 +354,13 @@ class ShowTicketProject extends OrgAction
                     'health'       => $health['health'] ?? null,
                     'health_label' => $health['health_label'] ?? null,
                     'health_at'    => $health['created_at'] ?? null,
+                    'last_update_at' => $updates->first()['created_at'] ?? null,
+                    'parent'       => $project->parent ? ['id' => $project->parent->id, 'slug' => $project->parent->slug, 'name' => $project->parent->name] : null,
                 ],
-                'milestones' => $project->milestones->map(function (TicketProjectMilestone $milestone) use ($work) {
-                    $items = $work->where('milestone_id', $milestone->id)->where('state', '!=', 'cancelled');
-
-                    return [
-                        'id'          => $milestone->id,
-                        'name'        => $milestone->name,
-                        'description' => $milestone->description,
-                        'start_date'  => $milestone->start_date?->toDateString(),
-                        'due_date'    => $milestone->due_date?->toDateString(),
-                        'done_at'     => $milestone->done_at?->toDateString(),
-                        'total'       => $items->count(),
-                        'done'        => $items->where('state', 'done')->count(),
-                    ];
-                })->values()->all(),
-                'progress'    => IndexTicketProjects::progress($project, $totals['total'], $totals['done'], $totals['cancelled']),
+                'sub_projects' => TicketProjectsResource::collection($project->children)->resolve(),
+                'milestones'  => $milestones,
+                'indicators'  => self::indicators($project, $milestones, $progress, $updates->first()['created_at'] ?? null),
+                'progress'    => $progress,
                 'hidden_work' => $totals['total'] - $work->count(),
                 'work'        => $work->map(fn (array $item) => collect($item)->except('commits')->all())->all(),
                 'burn_up'     => self::burnUp($project, $work),
@@ -282,6 +373,9 @@ class ShowTicketProject extends OrgAction
                     'statuses' => TicketProjectStatusEnum::options(),
                     'healths'  => TicketProjectHealthEnum::options(),
                     'staff'    => IndexTicketProjects::staffOptions($this->group),
+                    'parents'  => $project->children->isEmpty()
+                        ? collect(IndexTicketProjects::parentOptions($this->group))->where('value', '!=', $project->id)->values()->all()
+                        : [],
                 ],
                 'routes' => [
                     'update'      => ['name' => 'grp.models.ticket_project.update', 'parameters' => ['ticketProject' => $project->id]],
@@ -290,6 +384,6 @@ class ShowTicketProject extends OrgAction
                     'create_ticket' => ['name' => 'grp.tickets.create', 'parameters' => ['project' => $project->slug]],
                 ],
             ]
-        );
+        )->table($this->workTableStructure())->table($this->commitsTableStructure());
     }
 }
