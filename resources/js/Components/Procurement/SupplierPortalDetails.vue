@@ -172,6 +172,7 @@ const edit = (submission: EditedSubmission) => {
 				<div>
 					<h2 class="text-sm font-semibold text-gray-700">{{ ctrans("Your products") }}</h2>
 					<p class="text-xs text-gray-500">{{ ctrans("Packs sold in the last 12 whole months at your price, against the 12 months before") }}</p>
+					<p v-if="productWebsitesRoute" class="text-xs text-gray-500">{{ ctrans("Click a product to see how it is shown on our websites") }}</p>
 				</div>
 				<div class="flex flex-wrap items-center gap-2">
 					<IconField>
