@@ -29,6 +29,7 @@ struct GoodsInDeliveryView: View {
     @State private var isConfirmingUnmarkDispatched = false
     @State private var isConfirmingCancel = false
     @State private var isConfirmingPlace = false
+    @State private var isConfirmingCheckAll = false
     private let store = GoodsInStore.shared
 
     private var delivery: GoodsInDelivery { store.delivery(reference) }
@@ -62,8 +63,16 @@ struct GoodsInDeliveryView: View {
                 }
             }
             .aikuSheet(item: $failingCheck) { check in
-                GoodsInFailCheckSheet(check: check) { note in
-                    store.recordCheck(reference, checkID: check.id, passed: false, note: note, by: session.profile.name)
+                GoodsInFailCheckSheet(check: check, incidentTypes: delivery.incidentTypes) { failed in
+                    store.recordCheck(
+                        reference,
+                        checkID: check.id,
+                        passed: false,
+                        note: failed.note,
+                        incidentType: failed.incidentType,
+                        incidentQuantity: failed.incidentQuantity,
+                        by: session.profile.name
+                    )
                     toasts.show("\(check.title) failed", tone: .warn)
                     failingCheck = nil
                 } onCancel: {
@@ -72,6 +81,10 @@ struct GoodsInDeliveryView: View {
             }
             .fullScreenCover(isPresented: $isScanning) {
                 GoodsInCheckScanView(reference: reference) { isScanning = false }
+            }
+            .aikuConfirm("Check all items?", isPresented: $isConfirmingCheckAll, message: "Every item not checked yet is checked as its expected quantity.", confirmTitle: "Check all items") {
+                store.checkAll(reference)
+                toasts.show("All items of \(reference) checked as expected")
             }
             .aikuConfirm("Unmark as received?", isPresented: $isConfirmingUnmarkReceived, message: "\(reference) goes back to dispatched and its checked quantities are cleared.", confirmTitle: "Unmark", isDestructive: true) {
                 store.unmarkAsReceived(reference)
@@ -163,7 +176,8 @@ struct GoodsInDeliveryView: View {
                 delivery: delivery,
                 canCheck: actions.contains(.checkItems),
                 onScan: { isScanning = true },
-                onEdit: { editingItem = $0 }
+                onEdit: { editingItem = $0 },
+                onCheckAll: { isConfirmingCheckAll = true }
             )
             actionSections
         case .place:

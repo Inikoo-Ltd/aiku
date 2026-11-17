@@ -41,6 +41,10 @@ struct GoodsInAPITests {
         "mobile/warehouses/1/stock-deliveries/36604": #"{"data":"# + detail + "}",
         "mobile/warehouses/1/stock-deliveries/36604/items/177817/check": #"{"data":"# + detail + #","result":{"status":"done","message":"Checked"}}"#,
         "mobile/warehouses/1/stock-deliveries/36604/items/177817/place": #"{"data":"# + detail + #","result":{"status":"done","message":"Placed"}}"#,
+        "mobile/warehouses/1/stock-deliveries/36604/items/177817/place-all": #"{"data":"# + detail + #","result":{"status":"done","message":"Placed"}}"#,
+        "mobile/warehouses/1/stock-deliveries/36604/check-all": #"{"data":"# + detail + #","result":{"status":"done","message":"1 item checked as expected."}}"#,
+        "mobile/warehouses/1/stock-deliveries/36604/checklist": #"{"data":"# + detail + #","result":{"status":"done","message":"Check failed"}}"#,
+        "mobile/warehouses/1/returns/635/puts/91": #"{"data":"# + returnDetail + #","result":{"status":"done","message":"Undone: Returned."}}"#,
         "mobile/warehouses/1/returns": #"{"data":[{"id":635,"reference":"GB591132-r2","type":"cancellation","type_label":"Cancellation","state":"received","state_label":"Received","created_at":"2026-10-23T07:44:16+00:00","customer":{"name":"Thimble and Wick"},"delivery_note":null,"number_items":2,"number_handled":0,"handler":null}],"meta":{"current_page":1,"last_page":1,"per_page":150,"total":1},"counts":{"received":14,"returning":21,"returned":99,"done":112,"cancelled":15,"all":261}}"#,
         "mobile/warehouses/1/returns/635": #"{"data":"# + returnDetail + "}",
         "mobile/warehouses/1/returns/635/start": #"{"data":"# + returnDetail.replacingOccurrences(of: #""state":"received""#, with: #""state":"returning""#) + #","result":{"status":"done","message":"Started"}}"#,
@@ -247,7 +251,7 @@ struct GoodsInAPITests {
         #expect(item.leftToPlace == 2.75)
     }
 
-    @Test func placingAFractionalRemainderSendsItExactly() async throws {
+    @Test func placingTheWholeRemainderUsesPlaceAllWithoutAQuantity() async throws {
         let (store, transport, client) = setUp()
         await store.reloadList(apiClient: client)
         await store.loadDelivery("AR27075", apiClient: client)
@@ -258,11 +262,128 @@ struct GoodsInAPITests {
         }
 
         let placed = store.place("AR27075", sko: "ABB-07a", quantity: 2.75, in: "67A6")
-        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/place") == true } }
+        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/place-all") == true } }
 
         #expect(placed == 2.75)
+        let sent = try body(transport.requests.last { $0.url?.path.hasSuffix("/items/177817/place-all") == true })
+        #expect(sent["quantity"] == nil)
+        #expect(sent["location_org_stock_id"] as? Int == 77204)
+    }
+
+    @Test func placingPartOfAFractionalRemainderSendsTheQuantity() async throws {
+        let (store, transport, client) = setUp()
+        await store.reloadList(apiClient: client)
+        await store.loadDelivery("AR27075", apiClient: client)
+        if let index = store.deliveries.firstIndex(where: { $0.reference == "AR27075" }) {
+            var item = GoodsInItem(sko: "ABB-07a", name: "", delivered: 2.75, checked: 2.75, remoteID: 177817, packedIn: 8)
+            item.locationLinks = ["67A6": 77204]
+            store.deliveries[index].items[0] = item
+        }
+
+        store.place("AR27075", sko: "ABB-07a", quantity: 1.25, in: "67A6")
+        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/place") == true } }
+
         let sent = try body(transport.requests.last { $0.url?.path.hasSuffix("/items/177817/place") == true })
-        #expect(sent["quantity"] as? Double == 2.75)
+        #expect(sent["quantity"] as? Double == 1.25)
+    }
+
+    @Test func checkAllItemsUsesTheDeliveryCheckAllEndpoint() async {
+        let (store, transport, client) = setUp()
+        await store.reloadList(apiClient: client)
+        await store.loadDelivery("AR27075", apiClient: client)
+
+        store.checkAll("AR27075")
+        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/check-all") == true } }
+
+        let request = transport.requests.last { $0.url?.path.hasSuffix("/stock-deliveries/36604/check-all") == true }
+        #expect(request?.httpMethod == "POST")
+        #expect(!transport.requests.contains { $0.url?.path.hasSuffix("/items/177817/check") == true })
+    }
+
+    @Test func failedCheckSendsTheIncidentTypeAndQuantity() async throws {
+        let (store, transport, client) = setUp()
+        await store.reloadList(apiClient: client)
+        await store.loadDelivery("AR27075", apiClient: client)
+
+        store.recordCheck("AR27075", checkID: "seal", passed: false, note: "Seal broken", incidentType: "damaged", incidentQuantity: 2.5, by: "Andi")
+        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/checklist") == true } }
+
+        let sent = try body(transport.requests.last { $0.url?.path.hasSuffix("/checklist") == true })
+        #expect(sent["result"] as? String == "failed")
+        #expect(sent["body"] as? String == "Seal broken")
+        #expect(sent["incident_type"] as? String == "damaged")
+        #expect(sent["incident_quantity"] as? Double == 2.5)
+    }
+
+    @Test func passedCheckSendsNoIncident() async throws {
+        let (store, transport, client) = setUp()
+        await store.reloadList(apiClient: client)
+        await store.loadDelivery("AR27075", apiClient: client)
+
+        store.recordCheck("AR27075", checkID: "seal", passed: true, note: "", incidentType: "damaged", by: "Andi")
+        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/checklist") == true } }
+
+        let sent = try body(transport.requests.last { $0.url?.path.hasSuffix("/checklist") == true })
+        #expect(sent["incident_type"] == nil)
+        #expect(sent["body"] == nil)
+    }
+
+    @Test func checklistIncidentTypesComeFromTheServer() throws {
+        let json = Self.detail.replacingOccurrences(of: #""incident_types":[]"#, with: #""incident_types":[{"value":"damaged","label":"Damaged"},{"value":"late","label":"Late"}]"#)
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let detail = try decoder.decode(MobileStockDeliveryDetail.self, from: Data(json.utf8))
+
+        let delivery = GoodsInDelivery(detail: detail)
+
+        #expect(delivery.incidentTypes == [GoodsInIncidentType(id: "damaged", label: "Damaged"), GoodsInIncidentType(id: "late", label: "Late")])
+    }
+
+    @Test func undoingAReturnPutDeletesItOnTheServer() async throws {
+        let (store, transport, client) = setUp()
+        await store.reloadReturns(apiClient: client)
+        await store.loadReturn("GB591132-r2", apiClient: client)
+        let put = GoodsInReturnPut(id: 91, sko: "GemTG-20", kind: "sow", label: "Returned", quantity: 1, location: "27A12")
+
+        store.undoPut("GB591132-r2", put: put)
+        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/puts/91") == true } }
+
+        let request = try #require(transport.requests.last { $0.url?.path.hasSuffix("/returns/635/puts/91") == true })
+        #expect(request.httpMethod == "DELETE")
+        #expect(put.undoMessage == "1 is taken back out of 27A12 and goes back to remaining.")
+    }
+
+    @Test func returnPutsMapWithTheirLabels() throws {
+        let json = Self.returnDetail.replacingOccurrences(of: #""puts":[]"#, with: #""puts":[{"id":91,"type":"sow","type_label":"Returned","quantity":1,"location":{"id":1594,"code":"27A12"}},{"id":92,"type":"not-sow","quantity":1,"location":null}]"#)
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let detail = try decoder.decode(MobileReturnDetail.self, from: Data(json.utf8))
+
+        let puts = GoodsInReturn(detail: detail).items.first?.puts ?? []
+
+        #expect(puts.map(\.title) == ["1 · Returned · 27A12", "1 · Not returned"])
+    }
+
+    @Test func scannedStockDeliveryOpensItsScreen() throws {
+        let json = #"{"code":"AEU10106","type":"stock_delivery","sko":null,"location":null,"delivery_note":null,"stock_delivery":{"id":36573,"reference":"AEU10106","state":"checked","state_label":"Checked"}}"#
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let result = try decoder.decode(MobileScanResult.self, from: Data(json.utf8))
+
+        let target = try #require(ShellScanCatalog.target(from: result))
+
+        #expect(target.kind == .stockDelivery)
+        #expect(target.detail == "Checked")
+        #expect(target.link == .goodsIn(.scannedStockDelivery(id: 36573, reference: "AEU10106")))
+    }
+
+    @Test func scannedDeliveryLoadsByIDWithoutTheList() async {
+        let (store, _, client) = setUp()
+
+        await store.loadDelivery(id: 36604, apiClient: client)
+
+        #expect(store.delivery("AR27075").isDetailLoaded)
+        #expect(!store.isWaitingForDelivery("AR27075"))
     }
 
     @Test func detailKeepsTheFractionalQuantitiesFromTheServer() async throws {

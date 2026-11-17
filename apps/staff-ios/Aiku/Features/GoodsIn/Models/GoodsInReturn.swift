@@ -38,6 +38,27 @@ enum GoodsInReturnOutcome: Hashable, Sendable {
     case notReturned
 }
 
+struct GoodsInReturnPut: Identifiable, Hashable, Sendable {
+    let id: Int
+    let sko: String
+    let kind: String
+    let label: String
+    let quantity: Double
+    let location: String?
+    var packedIn = 1
+
+    var title: String {
+        [GoodsInQuantity.text(quantity, packedIn: packedIn), label, location].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    var undoMessage: String {
+        if let location, kind == "sow" {
+            return "\(GoodsInQuantity.text(quantity, packedIn: packedIn)) is taken back out of \(location) and goes back to remaining."
+        }
+        return "The quantity goes back to remaining."
+    }
+}
+
 struct GoodsInReturnItem: Identifiable, Hashable, Sendable {
     let sko: String
     let name: String
@@ -47,6 +68,7 @@ struct GoodsInReturnItem: Identifiable, Hashable, Sendable {
     var remoteID: Int? = nil
     var homeLinkID: Int? = nil
     var packedIn = 1
+    var puts: [GoodsInReturnPut] = []
 
     var id: String { sko }
 
@@ -121,6 +143,12 @@ struct GoodsInReturn: Identifiable, Hashable, Sendable {
     mutating func process(_ sko: String, outcome: GoodsInReturnOutcome) {
         guard state == .received || state == .returning, let index = items.firstIndex(where: { $0.sko == sko }), items[index].outcome == nil else { return }
         items[index].outcome = outcome
+    }
+
+    mutating func undo(_ put: GoodsInReturnPut) {
+        guard state == .returning, let index = items.firstIndex(where: { $0.sko == put.sko }) else { return }
+        items[index].puts.removeAll { $0.id == put.id }
+        items[index].outcome = nil
     }
 
     mutating func setAsReturned() {

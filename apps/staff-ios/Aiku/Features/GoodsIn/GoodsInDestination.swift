@@ -15,7 +15,7 @@ struct GoodsInDestination: View {
             GoodsInBacklogView()
         case .stockDeliveries:
             GoodsInDeliveriesView()
-        case .stockDelivery(let reference):
+        case .stockDelivery(let reference), .scannedStockDelivery(_, let reference):
             GoodsInRemoteGate(isWaiting: GoodsInStore.shared.isWaitingForDelivery(reference), title: reference) {
                 GoodsInDeliveryView(reference: reference)
             }
@@ -83,6 +83,8 @@ private struct GoodsInRemoteLoading: ViewModifier {
                 break
             case .stockDelivery(let reference), .placeItem(let reference, _), .placeNewItem(let reference, _):
                 await store.loadDelivery(reference, apiClient: apiClient)
+            case .scannedStockDelivery(let id, _):
+                await store.loadDelivery(id: id, apiClient: apiClient)
             case .returns:
                 await store.reloadReturns(apiClient: apiClient)
             case .returnDetail(let reference):

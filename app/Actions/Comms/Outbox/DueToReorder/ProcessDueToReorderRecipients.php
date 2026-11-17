@@ -108,7 +108,7 @@ class ProcessDueToReorderRecipients implements ShouldQueue
         return Product::query()
             ->joinSub(IndexCustomerReorderProducts::reordersQuery($customer->id), 'reorders', 'reorders.product_id', '=', 'products.id')
             ->where('products.is_for_sale', true)
-            ->whereNotNull('products.webpage_id')
+            ->whereHas('webpage')
             ->select('products.*', 'reorders.average_quantity')
             ->orderByRaw('('.IndexCustomerReorderProducts::IS_DUE_SQL.') desc')
             ->orderByDesc('reorders.times_ordered')

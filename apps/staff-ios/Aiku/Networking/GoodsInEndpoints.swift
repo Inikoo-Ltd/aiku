@@ -121,7 +121,13 @@ struct MobileStockDeliveryChecklist: Decodable, Sendable, Equatable {
         let checkedAt: String?
     }
 
+    struct IncidentType: Decodable, Sendable, Equatable {
+        let value: String
+        let label: String
+    }
+
     let sections: [Section]
+    var incidentTypes: [IncidentType]? = nil
 }
 
 struct MobileStockDeliveryDetail: Decodable, Sendable, Equatable {
@@ -204,6 +210,7 @@ struct MobileReturnItem: Decodable, Sendable, Equatable {
     struct Put: Decodable, Sendable, Equatable {
         let id: Int
         let type: String
+        var typeLabel: String? = nil
         let quantity: OptionalFlexibleDouble?
         let location: MobileGoodsInLocationRef?
     }
@@ -266,6 +273,8 @@ struct MobileChecklistBody: Encodable, Sendable {
     let key: String
     let result: String
     let body: String?
+    var incidentType: String? = nil
+    var incidentQuantity: Double? = nil
 }
 
 struct MobilePlaceItemBody: Encodable, Sendable, Equatable {
@@ -315,6 +324,10 @@ extension Endpoint {
     static func mobileReturnAction(warehouseID: Int, id: Int, path: String, body: some Encodable & Sendable) -> Endpoint {
         .jsonBody("mobile/warehouses/\(warehouseID)/returns/\(id)/\(path)", method: .post, body)
     }
+
+    static func mobileReturnPutDelete(warehouseID: Int, id: Int, putID: Int) -> Endpoint {
+        Endpoint(path: "mobile/warehouses/\(warehouseID)/returns/\(id)/puts/\(putID)", method: .delete)
+    }
 }
 
 extension APIClient {
@@ -344,5 +357,9 @@ extension APIClient {
 
     func returnAction(warehouseID: Int, id: Int, path: String, body: some Encodable & Sendable = MobileEmptyBody()) async throws -> MobileReturnWriteResult {
         try await send(.mobileReturnAction(warehouseID: warehouseID, id: id, path: path, body: body), as: MobileReturnWriteResult.self)
+    }
+
+    func deleteReturnPut(warehouseID: Int, id: Int, putID: Int) async throws -> MobileReturnWriteResult {
+        try await send(.mobileReturnPutDelete(warehouseID: warehouseID, id: id, putID: putID), as: MobileReturnWriteResult.self)
     }
 }

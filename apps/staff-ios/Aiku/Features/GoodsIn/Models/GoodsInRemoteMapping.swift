@@ -1,6 +1,15 @@
 import Foundation
 
 enum GoodsInRemote {
+    static func putLabel(_ type: String) -> String {
+        switch type {
+        case "sow": "Returned"
+        case "damaged": "Damaged"
+        case "not-sow": "Not returned"
+        default: type
+        }
+    }
+
     static func state(_ remote: String) -> GoodsInDeliveryState {
         switch remote {
         case "dispatched": .arriving
@@ -145,6 +154,7 @@ extension GoodsInDelivery {
         estimatedReceiving = GoodsInRemote.date(detail.estimatedReceivingDate).map { "Estimated receiving \(GoodsInDates.dayMonth($0))" } ?? ""
         deliveryFacts = Self.facts(detail.delivery, agentReference: detail.agentReference)
         checks = (detail.checklist?.sections ?? []).flatMap(\.checks).map(GoodsInDeliveryCheck.init(remote:))
+        incidentTypes = (detail.checklist?.incidentTypes ?? []).map { GoodsInIncidentType(id: $0.value, label: $0.label) }
     }
 
     private static func facts(_ delivery: MobileStockDeliveryDetail.Delivery?, agentReference: String?) -> [GoodsInFact] {
@@ -251,5 +261,18 @@ extension GoodsInReturnItem {
         remoteID = remote.id
         homeLinkID = home?.locationOrgStockId
         packedIn = GoodsInRemote.packedIn(remote.sko?.packedIn)
+        let code = sko
+        let pack = packedIn
+        puts = (remote.puts ?? []).map { put in
+            GoodsInReturnPut(
+                id: put.id,
+                sko: code,
+                kind: put.type,
+                label: put.typeLabel ?? GoodsInRemote.putLabel(put.type),
+                quantity: GoodsInRemote.skos(put.quantity),
+                location: put.location?.code,
+                packedIn: pack
+            )
+        }
     }
 }

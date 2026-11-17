@@ -5,6 +5,7 @@ struct GoodsInPendingItems: View {
     let canCheck: Bool
     let onScan: () -> Void
     let onEdit: (GoodsInItem) -> Void
+    var onCheckAll: (() -> Void)? = nil
 
     private var pending: [GoodsInItem] { delivery.items.filter { !$0.isPlaced } }
 
@@ -34,6 +35,10 @@ struct GoodsInPendingItems: View {
                     action: canCheck && !item.hasPlacements ? { onEdit(item) } : nil
                 )
             }
+        }
+        if canCheck, let onCheckAll, delivery.items.contains(where: { $0.checked == nil }) {
+            AikuButton("Check all items", icon: .check, kind: .secondary, action: onCheckAll)
+                .accessibilityIdentifier("goodsIn.checkAll")
         }
         HelperText("Tap an item to set its checked quantity or check all. Checking an item as 0 marks it Not received. Checked items can be placed straight away from Booking in.")
             .padding(.horizontal, 4)
@@ -224,20 +229,48 @@ struct GoodsInCheckQuantitySheet: View {
     }
 }
 
+struct GoodsInFailedCheck: Equatable {
+    let note: String
+    var incidentType: String?
+    var incidentQuantity: Double?
+}
+
 struct GoodsInFailCheckSheet: View {
     let check: GoodsInDeliveryCheck
-    let onSave: (String) -> Void
+    var incidentTypes: [GoodsInIncidentType] = []
+    let onSave: (GoodsInFailedCheck) -> Void
     let onCancel: () -> Void
     @State private var note = ""
+    @State private var incidentType: String?
+    @State private var quantity = ""
 
     private var hasNote: Bool { !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    private var incidentQuantity: Double? {
+        Double(quantity.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: ",", with: "."))
+    }
 
     var body: some View {
         SheetScaffold(title: "Fail check", subtitle: check.title) {
             AikuTextArea("Note", text: $note, placeholder: "What is wrong?")
+            if !incidentTypes.isEmpty {
+                Text("Incident type (optional)")
+                    .font(.aiku(13, .semibold))
+                    .foregroundStyle(AikuColor.text2)
+                FlowLayout(spacing: 8, lineSpacing: 8) {
+                    ForEach(incidentTypes) { type in
+                        FilterChip(type.label, isSelected: incidentType == type.id) {
+                            incidentType = incidentType == type.id ? nil : type.id
+                        }
+                        .accessibilityIdentifier("goodsIn.check.incident.\(type.id)")
+                    }
+                }
+                AikuTextField("Quantity affected (optional)", text: $quantity, placeholder: "0", keyboard: .decimalPad)
+            }
             HelperText("A failed check needs a note. Purchasing follows up the differences.")
         } footer: {
-            AikuButton("Save failed check", kind: .danger) { onSave(note) }
+            AikuButton("Save failed check", kind: .danger) {
+                onSave(GoodsInFailedCheck(note: note, incidentType: incidentType, incidentQuantity: incidentQuantity))
+            }
                 .disabled(!hasNote)
                 .accessibilityIdentifier("goodsIn.check.saveFail")
             AikuButton("Cancel", kind: .tertiary, action: onCancel)

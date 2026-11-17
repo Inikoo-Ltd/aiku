@@ -388,6 +388,7 @@ test('UI show family edit page tab lays out the webpage and content fields with 
             ->component('Org/Catalogue/Family')
             ->where('tabs.current', FamilyTabsEnum::EDIT_PAGE->value)
             ->has('tabs.navigation.edit_page')
+            ->where('tabs.navigation', fn ($navigation) => collect($navigation)->keys()->take(2)->all() === [FamilyTabsEnum::SHOWCASE->value, FamilyTabsEnum::EDIT_PAGE->value])
             ->where('edit_page.notice', null)
             ->where('edit_page.workshop_route.parameters.webpage', $webpage->slug)
             ->where('edit_page.internal_link_route.parameters.website', $webpage->website->slug)
