@@ -125,13 +125,22 @@ watch(
             data.value = null
             adjustingId.value = null
             savedMasterId.value = null
+            answeredHere.value = false
             fetchData()
         }
     },
     { immediate: true }
 )
 
-const header = computed(() => (data.value ? ctrans("Price requests for :code", { code: data.value.code }) : ctrans("Price requests")))
+const answeredHere = ref(false)
+
+const header = computed(() => {
+    if (!data.value) {
+        return ctrans("Prices")
+    }
+
+    return data.value.requests.length || answeredHere.value ? ctrans("Price requests for :code", { code: data.value.code }) : ctrans("Price and RRP of :code", { code: data.value.code })
+})
 
 const unitCost = (currency: string | null, amount: number | null): string => locale.currencyFormatUnitCost(currency, amount ?? 0)
 
@@ -177,6 +186,7 @@ function answer(request: PriceRequest, answerValue: Answer): void {
             only: props.reloadProps,
             onSuccess: () => {
                 adjustingId.value = null
+                answeredHere.value = true
                 fetchData()
             },
             onError: (errors) => (requestErrors[request.id] = firstError(errors)),
@@ -251,7 +261,7 @@ function saveMaster(masterProduct: MasterProduct): void {
         <div v-else-if="data" class="space-y-5 text-sm">
             <p v-if="data.name" class="-mt-2 text-xs text-gray-500">{{ data.name }}</p>
 
-            <section class="space-y-2">
+            <section v-if="data.requests.length || answeredHere" class="space-y-2">
                 <h3 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <FontAwesomeIcon :icon="faTags" class="text-amber-600" fixed-width aria-hidden="true" />
                     {{ ctrans("New supplier prices waiting for your answer") }}

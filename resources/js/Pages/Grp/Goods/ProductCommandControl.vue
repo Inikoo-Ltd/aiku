@@ -11,6 +11,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import OrgStockDiscontinuePreviewModal from "@/Components/Warehouse/Inventory/OrgStockDiscontinuePreviewModal.vue"
 import ProductDetailDrawer from "@/Components/Goods/ProductDetailDrawer.vue"
 import GoodsPriceRequestDialog from "@/Components/Goods/GoodsPriceRequestDialog.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import GoodsViewToggle from "@/Components/Goods/GoodsViewToggle.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
@@ -596,6 +597,11 @@ function openPriceRequests(row: Row): void {
     priceRequestOpen.value = true
 }
 
+function openPriceRequestsFromDrawer(row: Row): void {
+    drawerOpen.value = false
+    openPriceRequests(row)
+}
+
 function priceRequestLabel(count: number): string {
     return count === 1 ? ctrans("1 price request") : ctrans(":count price requests", { count })
 }
@@ -921,6 +927,16 @@ function priceRequestLabel(count: number): string {
                         <FontAwesomeIcon :icon="['fal', 'tags']" fixed-width aria-hidden="true" />
                         {{ priceRequestLabel(row.price_requests) }}
                     </button>
+                    <button
+                        v-else
+                        v-tooltip="ctrans('Change the selling price and RRP')"
+                        type="button"
+                        class="rounded p-1 text-gray-400 transition-colors hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]"
+                        :aria-label="ctrans('Change the selling price and RRP')"
+                        @click="openPriceRequests(row)"
+                    >
+                        <FontAwesomeIcon :icon="['fal', 'tags']" fixed-width aria-hidden="true" />
+                    </button>
                     <template v-if="row.action">
                         <Select
                             v-model="newStates[row.id]"
@@ -1065,6 +1081,17 @@ function priceRequestLabel(count: number): string {
         @navigate="(slug: string) => (drawerSlug = slug)"
     >
         <template #action>
+            <div v-if="drawerRow" class="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs">
+                <span class="font-medium text-gray-600">{{ ctrans("Selling price and RRP") }}</span>
+                <span v-if="drawerRow.price_requests > 0" class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
+                    {{ priceRequestLabel(drawerRow.price_requests) }}
+                </span>
+                <Button type="tertiary" size="xs" class="ml-auto" :label="drawerRow.price_requests > 0 ? ctrans('Answer and change prices') : ctrans('Change prices')" @click="openPriceRequestsFromDrawer(drawerRow)">
+                    <template #icon>
+                        <FontAwesomeIcon :icon="['fal', 'tags']" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+            </div>
             <div v-if="drawerRow?.action" class="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs">
                 <span class="font-medium text-gray-600">{{ ctrans("Group product status") }}</span>
                 <span class="w-16 rounded px-1.5 py-0.5 text-center font-semibold" :class="statuses[drawerRow.state]?.class">
