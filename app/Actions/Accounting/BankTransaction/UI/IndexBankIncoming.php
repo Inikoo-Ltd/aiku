@@ -59,6 +59,7 @@ class IndexBankIncoming extends OrgAction
             $query->where(function ($query) use ($value) {
                 $query->whereWith('bank_transactions.reference', $value)
                     ->orWhereAnyWordStartWith('bank_transactions.counterparty_name', $value)
+                    ->orWhereWith('bank_transactions.counterparty_account', $value)
                     ->orWhereWith('bank_connections.name', $value)
                     ->orWhere('orders.reference', '=', strtoupper($value));
                 $amount = $this->searchedAmount($value);
@@ -87,6 +88,7 @@ class IndexBankIncoming extends OrgAction
                 'bank_transactions.booked_at',
                 'bank_transactions.amount',
                 'bank_transactions.counterparty_name',
+                'bank_transactions.counterparty_account',
                 'bank_transactions.reference',
                 'bank_transactions.match_state',
                 'bank_transactions.match_data',

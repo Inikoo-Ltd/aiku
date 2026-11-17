@@ -2632,6 +2632,7 @@ function fioMovement(int $id, float $amount, ?string $counterAccount, ?string $m
         'column1'  => ['value' => $amount, 'name' => 'Objem', 'id' => 1],
         'column14' => ['value' => $currency, 'name' => 'Měna', 'id' => 14],
         'column2'  => $counterAccount ? ['value' => $counterAccount, 'name' => 'Protiúčet', 'id' => 2] : null,
+        'column3'  => $counterAccount ? ['value' => '0800', 'name' => 'Kód banky', 'id' => 3] : null,
         'column10' => $counterAccount ? ['value' => 'Jan Novák', 'name' => 'Název protiúčtu', 'id' => 10] : null,
         'column16' => $message ? ['value' => $message, 'name' => 'Zpráva pro příjemce', 'id' => 16] : null,
         'column8'  => ['value' => $counterAccount ? 'Bezhotovostní příjem' : 'Poplatek', 'name' => 'Typ', 'id' => 8],
@@ -2666,6 +2667,8 @@ test('a fio account statement is mirrored once, transfers carry the message as r
         ->and($lines['1001']->currency->code)->toBe('CZK')
         ->and($lines['1001']->reference)->toBe('CZ10234')
         ->and($lines['1001']->counterparty_name)->toBe('Jan Novák')
+        ->and($lines['1001']->counterparty_account)->toBe('123456789/0800')
+        ->and($lines['1002']->counterparty_account)->toBeNull()
         ->and($lines['1001']->booked_at->toDateString())->toBe('2026-11-12')
         ->and($lines['1002']->provider_type)->toBe('OTHER')
         ->and((float)$lines['1002']->amount)->toBe(-35.0)

@@ -37,6 +37,7 @@ interface BankLine {
 	org_amount: number | null
 	org_currency_code: string
 	counterparty_name: string | null
+	counterparty_account: string | null
 	reference: string | null
 	reason: string | null
 	owed: number | null
@@ -337,6 +338,7 @@ const submit = () => {
 
 		<template #cell(counterparty_name)="{ item }">
 			<span class="text-xs">{{ item.counterparty_name ?? "—" }}</span>
+			<span v-if="item.counterparty_account" class="block whitespace-nowrap font-mono text-xs text-gray-500">{{ item.counterparty_account }}</span>
 		</template>
 
 		<template #cell(amount)="{ item }">
