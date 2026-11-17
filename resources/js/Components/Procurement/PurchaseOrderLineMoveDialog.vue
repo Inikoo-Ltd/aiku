@@ -37,6 +37,8 @@ type SupplierOption = {
 	is_current: boolean
 	code: string
 	name: string
+	company_name: string | null
+	contact_name: string | null
 	currency: string | null
 	reference: string
 	open_purchase_orders: string[]
@@ -113,6 +115,7 @@ const supplierOptions = computed(() =>
 		.map((option) => ({
 			...option,
 			label: `${option.code} ${option.name}`,
+			search: [option.code, option.name, option.company_name, option.contact_name].filter(Boolean).join(" "),
 		}))
 )
 
@@ -281,6 +284,7 @@ function submit() {
 					optionLabel="label"
 					optionValue="org_supplier_id"
 					filter
+					:filterFields="['search']"
 					:loading="isFetching"
 					:placeholder="ctrans('Choose a supplier of the same agent')"
 					:emptyMessage="isFetching
@@ -295,6 +299,7 @@ function submit() {
 						<div class="flex w-full min-w-0 items-center gap-2">
 							<span class="whitespace-nowrap font-medium">{{ option.code }}</span>
 							<span class="truncate text-gray-500">{{ option.name }}</span>
+							<span v-if="option.company_name && option.company_name !== option.name" class="truncate text-xs text-gray-400">{{ option.company_name }}</span>
 							<span
 								v-if="sellsEveryProduct(option)"
 								class="ml-auto flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
