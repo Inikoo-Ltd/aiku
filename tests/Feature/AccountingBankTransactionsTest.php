@@ -1342,13 +1342,16 @@ test('checkout payouts pay no order, and their report says which payments they s
 
     $csv = implode("\n", [
         'Action Type,Action ID,Payment ID,Payout ID,Breakdown Type,Processing Currency Amount,Holding Currency,Holding Currency Amount',
-        "Capture,act_1,$paymentReference,00000003YGCF,Gross,100.00,CZK,100.00",
-        "Capture,act_1,$paymentReference,00000003YGCF,Interchange Fee,-0.30,CZK,-0.30",
-        "Capture,act_1,$paymentReference,00000003YGCF,Scheme Fee,-0.20,CZK,-0.20",
-        'Capture,act_2,pay_notinaiku000000000000000000,00000003YGCF,Gross,5.00,CZK,5.00',
-        'Refund,act_3,pay_refunded00000000000000000000,00000003YGCF,Gross,-8.00,CZK,-8.00',
-        'Refund,act_3,pay_refunded00000000000000000000,00000003YGCF,Gateway Fee,-0.50,CZK,-0.50',
+        "Capture,act_1,$paymentReference,00000003YGCF,Capture,100.00,CZK,100.00",
+        "Capture,act_1,$paymentReference,00000003YGCF,Interchange Fixed Fee,-0.30,CZK,-0.30",
+        "Capture,act_1,$paymentReference,00000003YGCF,Scheme Variable Fee,-0.20,CZK,-0.20",
+        'Capture,act_2,pay_notinaiku000000000000000000,00000003YGCF,Capture,5.00,CZK,5.00',
+        'Partial Refund,act_3,pay_refunded00000000000000000000,00000003YGCF,Refund,-8.00,CZK,-8.00',
+        'Refund,act_3,pay_refunded00000000000000000000,00000003YGCF,Refund Fixed Fee,-0.50,CZK,-0.50',
     ]);
+    expect(\App\Actions\Accounting\BankTransaction\ReconcileCheckoutPayouts::make()->payoutIdTag(['tags' => ['payout_id:00000003yvnv']]))->toBe('00000003YVNV')
+        ->and(\App\Actions\Accounting\BankTransaction\ReconcileCheckoutPayouts::make()->payoutIdTag(['tags' => []]))->toBeNull();
+
     $reconciler = \App\Actions\Accounting\BankTransaction\ReconcileCheckoutPayouts::partialMock();
     $reconciler->shouldReceive('payoutReportFiles')->andReturn([
         '00000003YGCF' => ['report_id' => 'rpt_1', 'file_id' => 'file_1'],
@@ -1357,7 +1360,7 @@ test('checkout payouts pay no order, and their report says which payments they s
     $reconciler->shouldReceive('payoutReportCsv')->with(\Mockery::any(), \Mockery::any(), 'rpt_1', 'file_1')->andReturn($csv);
     $reconciler->shouldReceive('payoutReportCsv')->with(\Mockery::any(), \Mockery::any(), 'rpt_2', 'file_2')->andReturn(implode("\n", [
         'Action Type,Payment ID,Breakdown Type,Processing Currency Amount,Holding Currency,Holding Currency Amount',
-        'Capture,pay_short000000000000000000000,Gross,10.00,CZK,10.00',
+        'Capture,pay_short000000000000000000000,Capture,10.00,CZK,10.00',
     ]));
     Config::set('app.sandbox.checkout_com.secret_key', 'sk_test');
 
