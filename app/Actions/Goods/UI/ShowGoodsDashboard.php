@@ -881,7 +881,7 @@ class ShowGoodsDashboard extends OrgAction
     {
         $first = $cells[0];
 
-        [$state, $allRetired] = $this->groupState($cells);
+        [$state, $allRetired] = self::groupState($cells);
 
         $sums = [];
         foreach (self::PERIODS as $period) {
@@ -961,7 +961,7 @@ class ShowGoodsDashboard extends OrgAction
      * @param  array<int, object>  $cells
      * @return array{0: string, 1: bool}
      */
-    private function groupState(array $cells): array
+    public static function groupState(array $cells): array
     {
         $priority = [
             OrgStockStateEnum::ACTIVE->value        => 0,

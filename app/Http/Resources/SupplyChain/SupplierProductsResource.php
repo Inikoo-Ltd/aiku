@@ -20,6 +20,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $supplier_slug
  * @property mixed $supplier_name
  * @property SupplierProductStateEnum|null $state
+ * @property array<int, array{stock_code: string, state: string}>|null $goods_states
  * @property string $description
  * @property mixed $cost
  * @property string $currency_code
@@ -43,6 +44,7 @@ class SupplierProductsResource extends JsonResource
                 'label' => SupplierProductStateEnum::labels()[$this->state->value],
                 'icon'  => SupplierProductStateEnum::stateIcon()[$this->state->value],
             ] : null),
+            'goods_states'  => $this->goods_states ?? [],
             'description'   => $this->description,
             'cost'          => $this->cost,
             'currency_code' => $this->currency_code,

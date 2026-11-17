@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
+use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\Helpers\Upload\UI\IndexUploadReports;
 use App\Actions\Procurement\WithParentSiblingsNavigation;
 use App\Actions\OrgAction;
@@ -31,6 +32,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -104,7 +106,7 @@ class IndexSupplierProducts extends OrgAction
             );
         }
 
-        return $queryBuilder
+        $supplierProducts = $queryBuilder
             ->defaultSort('supplier_products.code')
             ->select([
                 'supplier_products.id',
@@ -138,6 +140,33 @@ class IndexSupplierProducts extends OrgAction
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        $this->attachGoodsStates($supplierProducts);
+
+        return $supplierProducts;
+    }
+
+    private function attachGoodsStates(LengthAwarePaginator $supplierProducts): void
+    {
+        $orgStockStates = DB::table('stock_has_supplier_products')
+            ->join('stocks', 'stocks.id', 'stock_has_supplier_products.stock_id')
+            ->join('org_stocks', 'org_stocks.stock_id', 'stock_has_supplier_products.stock_id')
+            ->whereIn('stock_has_supplier_products.supplier_product_id', $supplierProducts->getCollection()->pluck('id'))
+            ->select(['stock_has_supplier_products.supplier_product_id', 'stocks.code as stock_code', 'org_stocks.state'])
+            ->orderBy('stocks.code')
+            ->get()
+            ->groupBy('supplier_product_id');
+
+        foreach ($supplierProducts->getCollection() as $supplierProduct) {
+            $supplierProduct->goods_states = ($orgStockStates->get($supplierProduct->id) ?? collect())
+                ->groupBy('stock_code')
+                ->map(fn ($cells, $stockCode) => [
+                    'stock_code' => $stockCode,
+                    'state'      => ShowGoodsDashboard::groupState($cells->all())[0],
+                ])
+                ->values()
+                ->all();
+        }
     }
 
     public function tableStructure(Group|Agent|Supplier|null $parent = null, ?array $modelOperations = null, $prefix = null): Closure

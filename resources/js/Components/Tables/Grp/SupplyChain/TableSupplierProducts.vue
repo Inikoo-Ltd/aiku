@@ -9,10 +9,9 @@ import {Link, router} from '@inertiajs/vue3';
 import { computed, reactive, ref } from "vue"
 import axios from "axios"
 import Select from "primevue/select"
-import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh } from "@fal"
+import { faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh, faCheck } from "@fal"
 import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from '@/Components/Table/Table.vue';
 import Icon from "@/Components/Icon.vue"
@@ -22,10 +21,28 @@ import { ctrans } from "@/Composables/useTrans"
 import {SupplierProduct} from "@/types/supplier-product";
 import { routeType } from "@/types/route"
 
-library.add(faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh)
+library.add(faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh, faCheck)
 
 type SupplierProductRow = Omit<SupplierProduct, "state"> & {
     state: { value: string, label: string, icon: object } | null
+    goods_states?: { stock_code: string, state: string }[]
+}
+
+const goodsStateLabels: Record<string, string> = {
+    active: ctrans("Active"),
+    suspended: ctrans("Hold"),
+    discontinuing: ctrans("Discontinued"),
+    discontinued: ctrans("Retired"),
+}
+
+function mismatchedGoodsStates(supplierProduct: SupplierProductRow) {
+    return (supplierProduct.goods_states ?? []).filter((goodsState) => goodsState.state !== supplierProduct.state?.value)
+}
+
+function goodsStateMismatchTooltip(supplierProduct: SupplierProductRow) {
+    return mismatchedGoodsStates(supplierProduct)
+        .map((goodsState) => ctrans("Goods shows :stock as :state", { stock: goodsState.stock_code, state: goodsStateLabels[goodsState.state] ?? goodsState.state }))
+        .join("\n")
 }
 
 const props = defineProps<{
@@ -44,6 +61,11 @@ const isLabelsDialogOpen = ref(false)
 
 const newStates = reactive<Record<number, string>>({})
 const savingStateIds = ref<number[]>([])
+const stateErrors = reactive<Record<number, string>>({})
+
+const bulkState = ref<string | null>(null)
+const isSavingBulkState = ref(false)
+const bulkStateMessage = ref<{ type: "success" | "error", text: string } | null>(null)
 
 const rowSelectPt = {
     label: { class: "!text-xs" },
@@ -63,23 +85,43 @@ async function saveState(supplierProduct: SupplierProductRow) {
     }
 
     savingStateIds.value.push(supplierProduct.id)
+    delete stateErrors[supplierProduct.id]
     try {
         await axios.patch(route("grp.models.supplier-product.update", [supplierProduct.id]), { state })
         delete newStates[supplierProduct.id]
-        notify({
-            title: ctrans("State updated"),
-            text: ctrans(":code is now :state", { code: supplierProduct.code, state: props.stateOptions?.find((option) => option.value === state)?.label ?? state }),
-            type: "success",
-        })
         router.reload({ only: ["data"] })
     } catch (error: any) {
-        notify({
-            title: ctrans("Something went wrong"),
-            text: error?.response?.data?.message ?? ctrans("Failed to update the state"),
-            type: "error",
-        })
+        stateErrors[supplierProduct.id] = error?.response?.data?.message ?? ctrans("Failed to update the state")
     } finally {
         savingStateIds.value = savingStateIds.value.filter((id) => id !== supplierProduct.id)
+    }
+}
+
+async function saveBulkState() {
+    if (!bulkState.value || !selectedSupplierProductIds.value.length) {
+        return
+    }
+
+    isSavingBulkState.value = true
+    bulkStateMessage.value = null
+    try {
+        const response = await axios.patch(route("grp.models.supplier-products.state.update"), {
+            supplier_products: selectedSupplierProductIds.value,
+            state: bulkState.value,
+        })
+        bulkStateMessage.value = {
+            type: "success",
+            text: ctrans(":count products set to :state", {
+                count: response.data.updated,
+                state: props.stateOptions?.find((option) => option.value === bulkState.value)?.label ?? bulkState.value,
+            }),
+        }
+        bulkState.value = null
+        router.reload({ only: ["data"] })
+    } catch (error: any) {
+        bulkStateMessage.value = { type: "error", text: error?.response?.data?.message ?? ctrans("Failed to update the state") }
+    } finally {
+        isSavingBulkState.value = false
     }
 }
 
@@ -143,6 +185,39 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
                         <FontAwesomeIcon icon="fal fa-barcode-read" class="text-green-600" fixed-width aria-hidden="true" />
                     </template>
                 </Button>
+                <div v-if="stateOptions?.length" class="flex items-center gap-1.5 whitespace-nowrap">
+                    <Select
+                        v-model="bulkState"
+                        :options="stateOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        size="small"
+                        class="w-40 text-xs [&.p-focus]:!border-[var(--app-accent)]"
+                        :pt="rowSelectPt"
+                        :placeholder="ctrans('New state')"
+                        :aria-label="ctrans('New state for the ticked products')"
+                        :disabled="isSavingBulkState"
+                    />
+                    <Button
+                        type="tertiary"
+                        :label="ctrans('Set state (:count)', { count: selectedSupplierProductIds.length })"
+                        :disabled="!bulkState || !selectedSupplierProductIds.length"
+                        :loading="isSavingBulkState"
+                        :tooltip="selectedSupplierProductIds.length ? undefined : ctrans('Tick the products to change their state')"
+                        @click="saveBulkState"
+                    >
+                        <template #icon>
+                            <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                    <span
+                        v-if="bulkStateMessage"
+                        class="text-xs"
+                        :class="bulkStateMessage.type === 'error' ? 'text-red-500' : 'text-green-600'"
+                    >
+                        {{ bulkStateMessage.text }}
+                    </span>
+                </div>
             </template>
             <template #cell(code)="{ item: supplier_product }">
                 <Link :href="supplierProductHref(supplier_product)" class="primaryLink whitespace-nowrap">
@@ -155,41 +230,54 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
                 </Link>
             </template>
             <template #cell(state)="{ item: supplier_product }">
-                <div v-if="stateOptions?.length" class="flex items-center gap-1.5 whitespace-nowrap">
-                    <Icon v-if="supplier_product.state" :data="supplier_product.state.icon" :title="supplier_product.state.label" />
-                    <Select
-                        v-model="newStates[supplier_product.id]"
-                        :options="rowStateOptions(supplier_product)"
-                        optionLabel="label"
-                        optionValue="value"
-                        optionDisabled="disabled"
-                        size="small"
-                        class="w-36 text-xs [&.p-focus]:!border-[var(--app-accent)]"
-                        :pt="rowSelectPt"
-                        :placeholder="supplier_product.state?.label ?? ctrans('Select new')"
-                        :aria-label="ctrans('Select new state')"
-                        :disabled="savingStateIds.includes(supplier_product.id)"
+                <div class="flex items-center gap-1.5">
+                    <div v-if="stateOptions?.length" class="flex items-center gap-1.5 whitespace-nowrap">
+                        <Icon v-if="supplier_product.state" :data="supplier_product.state.icon" :title="supplier_product.state.label" />
+                        <Select
+                            v-model="newStates[supplier_product.id]"
+                            :options="rowStateOptions(supplier_product)"
+                            optionLabel="label"
+                            optionValue="value"
+                            optionDisabled="disabled"
+                            size="small"
+                            class="w-36 text-xs [&.p-focus]:!border-[var(--app-accent)]"
+                            :pt="rowSelectPt"
+                            :placeholder="supplier_product.state?.label ?? ctrans('Select new')"
+                            :aria-label="ctrans('Select new state')"
+                            :disabled="savingStateIds.includes(supplier_product.id)"
+                        >
+                            <template #option="{ option }">
+                                <span class="flex w-full items-center justify-between gap-2 text-xs">
+                                    {{ option.label }}
+                                    <span v-if="option.disabled" class="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-gray-400">{{ ctrans("current") }}</span>
+                                </span>
+                            </template>
+                        </Select>
+                        <Button
+                            type="primary"
+                            size="xs"
+                            :label="ctrans('Set')"
+                            :disabled="!newStates[supplier_product.id] || newStates[supplier_product.id] === supplier_product.state?.value"
+                            :loading="savingStateIds.includes(supplier_product.id)"
+                            @click="saveState(supplier_product)"
+                        />
+                        <span v-if="stateErrors[supplier_product.id]" class="text-xs text-red-500">{{ stateErrors[supplier_product.id] }}</span>
+                    </div>
+                    <span v-else-if="supplier_product.state" class="inline-flex items-center gap-x-1.5 whitespace-nowrap">
+                        <Icon :data="supplier_product.state.icon" :title="supplier_product.state.label" />
+                        {{ supplier_product.state.label }}
+                    </span>
+                    <Link
+                        v-if="mismatchedGoodsStates(supplier_product).length"
+                        :href="route('grp.goods.dashboard', { search: mismatchedGoodsStates(supplier_product)[0].stock_code })"
+                        v-tooltip="goodsStateMismatchTooltip(supplier_product)"
+                        class="inline-flex items-center gap-1 whitespace-nowrap rounded bg-amber-50 px-1.5 py-0.5 text-xs font-semibold text-amber-700 hover:bg-amber-100"
+                        :aria-label="goodsStateMismatchTooltip(supplier_product)"
                     >
-                        <template #option="{ option }">
-                            <span class="flex w-full items-center justify-between gap-2 text-xs">
-                                {{ option.label }}
-                                <span v-if="option.disabled" class="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-gray-400">{{ ctrans("current") }}</span>
-                            </span>
-                        </template>
-                    </Select>
-                    <Button
-                        type="primary"
-                        size="xs"
-                        :label="ctrans('Set')"
-                        :disabled="!newStates[supplier_product.id] || newStates[supplier_product.id] === supplier_product.state?.value"
-                        :loading="savingStateIds.includes(supplier_product.id)"
-                        @click="saveState(supplier_product)"
-                    />
+                        <FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                        {{ ctrans("Goods: :state", { state: goodsStateLabels[mismatchedGoodsStates(supplier_product)[0].state] ?? mismatchedGoodsStates(supplier_product)[0].state }) }}
+                    </Link>
                 </div>
-                <span v-else-if="supplier_product.state" class="inline-flex items-center gap-x-1.5 whitespace-nowrap">
-                    <Icon :data="supplier_product.state.icon" :title="supplier_product.state.label" />
-                    {{ supplier_product.state.label }}
-                </span>
             </template>
         </Table>
         <SupplierProductLabelsDialog
