@@ -2613,7 +2613,9 @@ test('packeta sends a Polish parcel locker delivery to the InPost locker the cus
         ->and($client->packetAttributes['carrierPickupPoint'])->toBe('BYD21N')
         ->and($client->packetAttributes['size'])->toBe(['length' => 350, 'width' => 300, 'height' => 150])
         ->and(mb_strlen((string) $client->packetAttributes['note']))->toBeLessThanOrEqual(128)
-        ->and(base64_decode($response['modelData']['label']))->toBe('carrier-label');
+        ->and(base64_decode($response['modelData']['label']))->toBe('carrier-label')
+        ->and($response['modelData']['delivery_type'])->toBe(\App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum::PICKUP_POINT)
+        ->and($response['modelData']['pickup_point_code'])->toBe('BYD21N');
 })->with([
     'locker in the address'       => ['Parcel Locker Paczkomat InPost BYD21N', null],
     'locker in the shipping note' => ['Elzanowo 10B', "'Send as InPost:{BYD21N}'"],
@@ -3287,8 +3289,25 @@ test('delete shipment action', function () {
         ->and($deliveryNote->shipments()->count())->toBe(0);
 });
 
+test('a shipment records whether it goes home or to a pickup point', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'DT'.Str::random(4), 'name' => 'Dt', 'trade_as' => 'dt']);
+
+    $homeShipment = StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'H'.Str::random(6)]);
+    \App\Actions\Dispatching\Shipment\DeleteShipment::run($homeShipment);
+
+    $deliveryNote->orders->first()->update(['data' => ['ebay_order' => ['fulfillmentStartInstructions' => [['fulfillmentInstructionsType' => 'PREPARE_FOR_PICKUP']]]]]);
+    $pickupShipment = StoreShipment::make()->action($deliveryNote->refresh(), $shipper, ['tracking' => 'P'.Str::random(6)]);
+
+    expect($homeShipment->refresh()->delivery_type)->toBe(\App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum::HOME)
+        ->and($pickupShipment->refresh()->delivery_type)->toBe(\App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum::PICKUP_POINT);
+});
+
 test('UI reports and batch code edit', function () {
     get(route('grp.org.reports.packer-performance', [$this->organisation->slug]))->assertOk();
+    get(route('grp.org.reports.shipment-delivery-type', [$this->organisation->slug, 'between' => ['created_at' => now()->subMonth()->format('Ymd').'-'.now()->format('Ymd')]]))
+        ->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->component('Org/Reports/ShipmentDeliveryTypeReport')->has('data'));
     get(route('grp.org.reports.picker-performance', [$this->organisation->slug]))->assertOk();
 
     $orgStock  = makeOrgStock($this);

@@ -23,6 +23,7 @@ use App\Actions\Accounting\Reports\SageInvoices\ExportSageInvoices;
 use App\Actions\Accounting\Reports\SageInvoices\UI\IndexSageInvoicesReport;
 use App\Actions\Dispatching\Reports\IndexPackerPerformanceReport;
 use App\Actions\Dispatching\Reports\IndexPickerPerformanceReport;
+use App\Actions\Dispatching\Reports\IndexShipmentDeliveryTypeReport;
 use App\Actions\Reports\DownloadPackagingReport;
 use App\Actions\Reports\ExportCostOfGoodsSold;
 use App\Actions\Reports\ExportUkManufacturingSurvey;
@@ -40,6 +41,7 @@ Route::get('/', IndexReports::class)->name('index');
 
 Route::get('/picker-performance', IndexPickerPerformanceReport::class)->name('picker-performance');
 Route::get('/packer-performance', IndexPackerPerformanceReport::class)->name('packer-performance');
+Route::get('/shipment-delivery-type', IndexShipmentDeliveryTypeReport::class)->name('shipment-delivery-type');
 
 Route::get('/intrastat/exports', IndexIntrastatExportReport::class)->name('intrastat.exports');
 Route::get('/intrastat/exports/export-xml', ExportIntrastatXml::class)->name('intrastat.exports.export');

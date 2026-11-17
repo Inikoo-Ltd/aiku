@@ -89,6 +89,12 @@ class GetReports extends OrgAction
                 'count' => IndexPackerPerformanceReport::make()->inReports($organisation),
             ],
             [
+                'name'  => __('Home vs pickup point'),
+                'icon'  => 'fal fa-mailbox',
+                'route' => route('grp.org.reports.shipment-delivery-type', $organisation),
+                'count' => null,
+            ],
+            [
                 'name'  => __('Packaging EPR'),
                 'icon'  => 'fal fa-boxes',
                 'route' => route('grp.org.reports.packaging', $organisation),
