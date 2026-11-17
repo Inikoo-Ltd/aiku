@@ -11,7 +11,6 @@ use App\Models\Dispatching\Trolley;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionGrouped;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
-use App\Actions\Ordering\Order\AssignDefaultPackagingToOrderWithoutPackaging;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
 use App\Actions\UI\WithInertia;
@@ -45,10 +44,6 @@ class ShowPickingSession extends OrgAction
 
     public function handle(PickingSession $pickingSession): PickingSession
     {
-        $pickingSession->deliveryNotes()->with('orders.shop')->get()->each(
-            fn (DeliveryNote $deliveryNote) => AssignDefaultPackagingToOrderWithoutPackaging::make()->forDeliveryNote($deliveryNote, $deliveryNote->orders->first())
-        );
-
         return $pickingSession;
     }
 

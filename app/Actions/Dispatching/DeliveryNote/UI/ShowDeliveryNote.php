@@ -10,7 +10,6 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
-use App\Actions\Ordering\Order\AssignDefaultPackagingToOrderWithoutPackaging;
 use App\Actions\Dispatching\DeliveryNote\CustomsExport\GetDeliveryNoteCustomsItems;
 use App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList;
 use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
@@ -113,10 +112,6 @@ class ShowDeliveryNote extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-        if (AssignDefaultPackagingToOrderWithoutPackaging::make()->forDeliveryNote($deliveryNote)) {
-            $deliveryNote->refresh();
-        }
-
         return $deliveryNote;
     }
 
