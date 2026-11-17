@@ -648,7 +648,7 @@ class ShowDeliveryNote extends OrgAction
                     ],
 
                 ],
-                $deliveryNote->pickerUser->id == $request->user()->id
+                $deliveryNote->pickerUser?->id == $request->user()->id
                     ? [
                     'type'    => 'button',
                     'style'   => 'save',

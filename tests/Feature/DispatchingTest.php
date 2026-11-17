@@ -1608,6 +1608,15 @@ test('a delivery note shipped by external on an order without a platform still o
         ->assertJsonPath('shipment.shipments_routes.submit_route.name', 'grp.models.delivery_note.shipment.store');
 });
 
+test('a queued delivery note with no picker still opens, INI-290', function () {
+    $deliveryNote = makeDeliveryNote($this);
+    $deliveryNote->updateQuietly(['state' => DeliveryNoteStateEnum::QUEUED, 'picker_user_id' => null, 'picker_id' => null]);
+
+    get(route('grp.org.warehouses.show.dispatching.delivery_notes.show', [$deliveryNote->organisation->slug, $deliveryNote->warehouse->slug, $deliveryNote->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.1.label', __('I will pick this'))->etc());
+});
+
 test('UI delivery notes in customer group and org stock', function () {
     $orgStock = makeOrgStock($this);
     get(route('grp.org.shops.show.crm.customers.show.delivery_notes.index', [$this->organisation->slug, $this->shop->slug, $this->customer->slug]))->assertOk();
