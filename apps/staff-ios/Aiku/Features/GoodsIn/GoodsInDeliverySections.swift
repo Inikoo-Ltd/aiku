@@ -14,7 +14,7 @@ struct GoodsInPendingItems: View {
                 title: "Scan to check",
                 subtitle: "Each scan adds 1 to the checked quantity",
                 code: item.sko,
-                detail: "\(item.name) · \((item.checked ?? 0).grouped) of \(item.delivered.grouped) checked",
+                detail: "\(item.name) · \(item.text(item.checked ?? 0)) of \(item.text(item.delivered)) checked",
                 identifier: "goodsIn.scanToCheck",
                 action: onScan
             )
@@ -26,7 +26,7 @@ struct GoodsInPendingItems: View {
             CardList(pending) { item in
                 GoodsInItemRow(
                     sko: item.sko,
-                    subtitle: item.checked == 0 ? "\(item.name) · checked as 0" : "\(item.name) · delivered \(item.delivered.grouped)",
+                    subtitle: GoodsInQuantity.isZero(item.checked ?? 1) ? "\(item.name) · checked as 0" : "\(item.name) · delivered \(item.text(item.delivered))",
                     chip: item.checkStatus.chip,
                     value: item.checked ?? 0,
                     total: item.delivered,
@@ -74,8 +74,12 @@ struct GoodsInChecklist: View {
 
     var body: some View {
         SectionHeading("Goods-in checks")
-        CardList(delivery.checks) { check in
-            ListRow(check.title, subtitle: check.detail, chips: [check.result.chip])
+        if delivery.checks.isEmpty {
+            EmptyState(icon: .checkCircle, title: "No goods-in checks", message: "The supplier has no packing instructions or notes to check on this delivery.")
+        } else {
+            CardList(delivery.checks) { check in
+                ListRow(check.title, subtitle: check.detail, chips: [check.result.chip])
+            }
         }
         SectionHeading("Under / over delivered", detail: "read-only")
         if delivery.differenceItems.isEmpty {
@@ -97,10 +101,13 @@ struct GoodsInChecklist: View {
 struct GoodsInBookingInContent: View {
     let delivery: GoodsInDelivery
     let canWork: Bool
+    var canPlace: Bool? = nil
+    var showsItemsToCheck = true
     let onPlace: (GoodsInItem) -> Void
     let onCheck: (GoodsInItem) -> Void
     let onOpenSko: (GoodsInItem) -> Void
 
+    private var placesItems: Bool { canPlace ?? canWork }
     private var checkedItems: [GoodsInItem] { delivery.items.filter(\.isChecked) }
     private var uncheckedItems: [GoodsInItem] { delivery.items.filter { !$0.isChecked } }
 
@@ -109,12 +116,12 @@ struct GoodsInBookingInContent: View {
         CardList(checkedItems) { item in
             row(item)
         }
-        if !uncheckedItems.isEmpty {
+        if showsItemsToCheck, !uncheckedItems.isEmpty {
             SectionHeading("Still to check", detail: uncheckedItems.count == 1 ? "1 item" : "\(uncheckedItems.count) items")
             CardList(uncheckedItems) { item in
                 GoodsInItemRow(
                     sko: item.sko,
-                    subtitle: "\(item.name) · delivered \(item.delivered.grouped)",
+                    subtitle: "\(item.name) · delivered \(item.text(item.delivered))",
                     value: 0,
                     total: item.delivered,
                     action: canWork ? { onCheck(item) } : nil
@@ -127,7 +134,7 @@ struct GoodsInBookingInContent: View {
 
     @ViewBuilder
     private func row(_ item: GoodsInItem) -> some View {
-        if item.checked == 0 {
+        if GoodsInQuantity.isZero(item.checked ?? 1) {
             GoodsInItemRow(sko: item.sko, subtitle: "\(item.name) · checked as 0", chip: Chip("Not received", .danger), value: 0, total: item.delivered, tone: .danger)
         } else if item.isPlaced {
             GoodsInItemRow(
@@ -146,7 +153,7 @@ struct GoodsInBookingInContent: View {
                 chip: item.pickingLocation == nil ? Chip("No picking location yet", .warn) : nil,
                 value: item.placedQuantity,
                 total: item.checked ?? 0,
-                action: canWork ? { onPlace(item) } : nil
+                action: placesItems ? { onPlace(item) } : nil
             )
             .accessibilityIdentifier("goodsIn.place.\(item.sko)")
         }
@@ -155,7 +162,7 @@ struct GoodsInBookingInContent: View {
     private func pendingSubtitle(_ item: GoodsInItem) -> String {
         var parts = [item.name]
         if item.hasPlacements {
-            parts.append("\(item.leftToPlace.grouped) left · \(item.placementSummary)")
+            parts.append("\(item.text(item.leftToPlace)) left · \(item.placementSummary)")
         } else if let picking = item.pickingLocation {
             parts.append("picking location \(picking)")
         }
@@ -165,10 +172,10 @@ struct GoodsInBookingInContent: View {
 
 struct GoodsInCheckQuantitySheet: View {
     let item: GoodsInItem
-    let onSave: (Int) -> Void
-    @State private var quantity: Int
+    let onSave: (Double) -> Void
+    @State private var quantity: Double
 
-    init(item: GoodsInItem, onSave: @escaping (Int) -> Void) {
+    init(item: GoodsInItem, onSave: @escaping (Double) -> Void) {
         self.item = item
         self.onSave = onSave
         _quantity = State(initialValue: item.checked ?? 0)
@@ -179,20 +186,20 @@ struct GoodsInCheckQuantitySheet: View {
     private var differenceText: String {
         switch status {
         case .pending, .exact: "Matches the delivered quantity"
-        case .under(let gap): "\(gap.grouped) under the delivered quantity"
-        case .over(let gap): "\(gap.grouped) over the delivered quantity"
+        case .under(let gap): "\(item.text(gap)) under the delivered quantity"
+        case .over(let gap): "\(item.text(gap)) over the delivered quantity"
         case .notReceived: "Nothing received"
         }
     }
 
     var body: some View {
-        SheetScaffold(title: "\(item.sko) · checked quantity", subtitle: "\(item.name) · delivered \(item.delivered.grouped)") {
+        SheetScaffold(title: "\(item.sko) · checked quantity", subtitle: "\(item.name) · delivered \(item.text(item.delivered))") {
             HStack {
                 Text("Checked")
                     .font(.aiku(14, .semibold))
                     .foregroundStyle(AikuColor.text)
                 Spacer(minLength: 8)
-                GoodsInStepper(value: $quantity, range: max(item.placedQuantity, 0)...99999)
+                GoodsInStepper(value: $quantity, range: max(item.placedQuantity, 0)...99999, packedIn: item.packedIn)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
@@ -205,11 +212,11 @@ struct GoodsInCheckQuantitySheet: View {
             HelperText("Count in units or in SKOs (outers), as set for the item. Purchasing resolves differences: recount, unit error, supplier claim or surplus accepted.")
                 .padding(.horizontal, 4)
         } footer: {
-            AikuButton("Save \(quantity.grouped) checked") { onSave(quantity) }
+            AikuButton("Save \(item.text(quantity)) checked") { onSave(quantity) }
                 .accessibilityIdentifier("goodsIn.check.save")
-            AikuButton("Check all \(item.delivered.grouped)", kind: .secondary) { onSave(item.delivered) }
+            AikuButton("Check all \(item.text(item.delivered))", kind: .secondary) { onSave(item.delivered) }
                 .accessibilityIdentifier("goodsIn.check.all")
-            if item.placedQuantity == 0 {
+            if GoodsInQuantity.isZero(item.placedQuantity) {
                 AikuButton("Check as 0 · not received", kind: .danger) { onSave(0) }
                     .accessibilityIdentifier("goodsIn.check.zero")
             }

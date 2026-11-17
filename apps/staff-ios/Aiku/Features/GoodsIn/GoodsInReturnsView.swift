@@ -9,7 +9,14 @@ struct GoodsInReturnsView: View {
         AppScreen(title: "Returns", kicker: "Goods in · \(session.warehouseLabel)") {
             ModuleTabs(.goodsIn, current: .goodsInReturns)
         } content: {
-            CardList(store.returns) { item in
+            if store.isRemote, let message = store.loadError {
+                InlineAlert(title: "Couldn’t load returns", message: message)
+            }
+            if store.isRemote, store.listedReturns.isEmpty, store.isLoadingReturns {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 88)
+            }
+            CardList(store.listedReturns) { item in
                 ListRow(item.reference, subtitle: item.listSubtitle, chips: [item.state.chip]) {
                     router.open(GoodsInRoute.returnDetail(reference: item.reference))
                 }
@@ -66,6 +73,7 @@ struct GoodsInReturnDetailView: View {
                 value: item.returnedQuantity,
                 total: item.quantity,
                 tone: item.tone,
+                packedIn: item.packedIn,
                 action: action(for: item)
             )
         }
@@ -124,7 +132,7 @@ struct GoodsInReturnDetailView: View {
         store.processReturnItem(reference, sko: item.sko, outcome: outcome)
         selectedSKO = nil
         switch outcome {
-        case .toLocation(let location): toasts.show("\(item.quantity.grouped) back in \(location)")
+        case .toLocation(let location): toasts.show("\(GoodsInQuantity.text(item.quantity, packedIn: item.packedIn)) back in \(location)")
         case .damaged: toasts.show("\(item.sko) set as damaged", tone: .warn)
         case .notReturned: toasts.show("\(item.sko) set as not returned", tone: .warn)
         }

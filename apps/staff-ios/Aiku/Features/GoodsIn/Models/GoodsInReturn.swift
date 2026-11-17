@@ -41,13 +41,16 @@ enum GoodsInReturnOutcome: Hashable, Sendable {
 struct GoodsInReturnItem: Identifiable, Hashable, Sendable {
     let sko: String
     let name: String
-    let quantity: Int
+    let quantity: Double
     let homeLocation: String
     var outcome: GoodsInReturnOutcome?
+    var remoteID: Int? = nil
+    var homeLinkID: Int? = nil
+    var packedIn = 1
 
     var id: String { sko }
 
-    var returnedQuantity: Int {
+    var returnedQuantity: Double {
         if case .toLocation = outcome { quantity } else { 0 }
     }
 
@@ -71,9 +74,9 @@ struct GoodsInReturnItem: Identifiable, Hashable, Sendable {
 
     var subtitle: String {
         switch outcome {
-        case .none: "\(name) · \(quantity.grouped) to process"
-        case .toLocation(let location): "\(quantity.grouped) back in \(location)"
-        case .damaged: "\(name) · \(quantity.grouped) set as damaged"
+        case .none: "\(name) · \(GoodsInQuantity.text(quantity, packedIn: packedIn)) to process"
+        case .toLocation(let location): "\(GoodsInQuantity.text(quantity, packedIn: packedIn)) back in \(location)"
+        case .damaged: "\(name) · \(GoodsInQuantity.text(quantity, packedIn: packedIn)) set as damaged"
         case .notReturned: "\(name) · set as not returned"
         }
     }
@@ -85,6 +88,12 @@ struct GoodsInReturn: Identifiable, Hashable, Sendable {
     var items: [GoodsInReturnItem]
     var isSetAsReturned = false
     var isDone = false
+    var remoteID: Int? = nil
+    var remoteState: GoodsInReturnState? = nil
+    var remoteItemCount: Int? = nil
+    var remoteHandledCount: Int? = nil
+    var remoteActions: Set<String> = []
+    var isDetailLoaded = true
 
     var id: String { reference }
 
@@ -93,15 +102,18 @@ struct GoodsInReturn: Identifiable, Hashable, Sendable {
     var nextPendingItem: GoodsInReturnItem? { items.first { $0.outcome == nil } }
 
     var state: GoodsInReturnState {
+        if let remoteState { return remoteState }
         if isDone { return .done }
         if isSetAsReturned { return .returned }
         return processedCount > 0 ? .returning : .received
     }
 
     var listSubtitle: String {
-        let count = items.count == 1 ? "1 item" : "\(items.count) items"
+        let total = isDetailLoaded ? items.count : (remoteItemCount ?? items.count)
+        let handled = isDetailLoaded ? processedCount : (remoteHandledCount ?? processedCount)
+        let count = total == 1 ? "1 item" : "\(total) items"
         if state == .returning {
-            return "\(customer) · \(processedCount) of \(items.count) items processed"
+            return "\(customer) · \(handled) of \(total) items processed"
         }
         return "\(customer) · \(count)"
     }

@@ -22,7 +22,7 @@ struct GoodsInBacklogView: View {
                 router.open(GoodsInRoute.stockDeliveries)
             }
             if session.hasFulfilmentAccess {
-                GoodsInBacklogCard(title: "Fulfilment deliveries", counts: GoodsInBacklogCounts(arriving: 2, received: 0, checked: 0, bookingIn: 1, bookedInLastWeek: 4)) {
+                GoodsInBacklogCard(title: "Fulfilment deliveries", counts: store.fulfilmentBacklog) {
                     router.open(FulfilmentRoute.deliveries)
                 }
             }

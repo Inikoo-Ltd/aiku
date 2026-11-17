@@ -109,24 +109,25 @@ struct GoodsInOrdererCard: View {
 }
 
 struct GoodsInStepper: View {
-    @Binding var value: Int
-    var range: ClosedRange<Int> = 0...99999
+    @Binding var value: Double
+    var range: ClosedRange<Double> = 0...99999
+    var packedIn = 1
 
     var body: some View {
         HStack(spacing: 10) {
-            button("−", label: "Less", isEnabled: value > range.lowerBound) {
-                value = max(range.lowerBound, value - 1)
+            button("−", label: "Less", isEnabled: GoodsInQuantity.isLess(range.lowerBound, than: value)) {
+                value = GoodsInQuantity.clean(max(range.lowerBound, value - 1))
             }
-            Text(value.grouped)
+            Text(GoodsInQuantity.text(value, packedIn: packedIn))
                 .font(.aiku(22, .bold))
                 .foregroundStyle(AikuColor.text)
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .frame(minWidth: 56)
-                .accessibilityLabel("Quantity \(value)")
-            button("+", label: "More", isEnabled: value < range.upperBound) {
-                value = min(range.upperBound, value + 1)
+                .accessibilityLabel("Quantity \(GoodsInQuantity.text(value, packedIn: packedIn))")
+            button("+", label: "More", isEnabled: GoodsInQuantity.isLess(value, than: range.upperBound)) {
+                value = GoodsInQuantity.clean(min(range.upperBound, value + 1))
             }
         }
     }
@@ -148,13 +149,14 @@ struct GoodsInStepper: View {
 }
 
 struct GoodsInQuantityText: View {
-    let value: Int
-    let total: Int
+    let value: Double
+    let total: Double
     var tone: Tone = .neutral
+    var packedIn = 1
 
     var body: some View {
-        (Text(value.grouped).font(.aiku(16, .bold)).foregroundColor(tone == .neutral ? AikuColor.text : tone.foreground)
-            + Text(" / \(total.grouped)").font(.aiku(13, .medium)).foregroundColor(AikuColor.text3))
+        (Text(GoodsInQuantity.text(value, packedIn: packedIn)).font(.aiku(16, .bold)).foregroundColor(tone == .neutral ? AikuColor.text : tone.foreground)
+            + Text(" / \(GoodsInQuantity.text(total, packedIn: packedIn))").font(.aiku(13, .medium)).foregroundColor(AikuColor.text3))
             .monospacedDigit()
             .lineLimit(1)
             .fixedSize()
@@ -165,16 +167,17 @@ struct GoodsInItemRow: View {
     let sko: String
     let subtitle: String
     var chip: Chip?
-    let value: Int
-    let total: Int
+    let value: Double
+    let total: Double
     var tone: Tone = .neutral
+    var packedIn = 1
     var action: (() -> Void)?
 
     var body: some View {
         ListRow(sko, subtitle: subtitle, chips: chip.map { [$0] } ?? [], action: action) {
             ProductThumb(size: 48, label: "Product photo of \(sko)")
         } trailing: {
-            GoodsInQuantityText(value: value, total: total, tone: tone)
+            GoodsInQuantityText(value: value, total: total, tone: tone, packedIn: packedIn)
         }
     }
 }
