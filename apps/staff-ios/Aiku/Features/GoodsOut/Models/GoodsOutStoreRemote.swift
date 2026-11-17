@@ -123,7 +123,7 @@ extension GoodsOutStore {
     func performForResult(_ action: GoodsOutNoteAction, on reference: String) async -> (outcome: GoodsOutActionOutcome, result: GoodsOutActionResponseDTO.Result?) {
         guard isRemote else { return (.failed(message: "Sign in and choose a warehouse to work on delivery notes."), nil) }
         guard let id = noteID(for: reference) else { return (.failed(message: "This delivery note is not in the selected warehouse."), nil) }
-        guard !workingReferences.contains(reference) else { return (.failed(message: "Still working on the last action."), nil) }
+        guard !isWorking(on: reference) else { return (.failed(message: "Still working on the last action."), nil) }
         setWorking(reference, true)
         defer { setWorking(reference, false) }
         do {

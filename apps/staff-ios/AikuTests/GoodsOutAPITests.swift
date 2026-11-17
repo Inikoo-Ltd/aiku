@@ -80,7 +80,7 @@ private let warehouseJSON = """
  "can": {"view_locations": true, "edit_locations": false, "view_goods_out": true, "pick_and_pack": true, "supervise_goods_out": false}}
 """
 
-private func service(calls: GoodsOutCalls, actionResult: Result<String, APIError> = .success(handlingNoteJSON)) -> GoodsOutService {
+private func service(calls: GoodsOutCalls, actionResult: Result<String, APIError> = .success(handlingNoteJSON), actionDelay: Duration = .zero) -> GoodsOutService {
     GoodsOutService(
         deliveryNotes: { _, request in
             await calls.recordList(request)
@@ -96,6 +96,7 @@ private func service(calls: GoodsOutCalls, actionResult: Result<String, APIError
         deliveryNote: { _ in try decode(GoodsOutDeliveryNoteDTO.self, handlingNoteJSON) },
         perform: { id, action in
             await calls.recordAction(id, action)
+            try await Task.sleep(for: actionDelay)
             switch actionResult {
             case .success(let note):
                 return try decode(GoodsOutActionResponseDTO.self, #"{"data": \#(note), "result": {"status": "done", "message": "Trolley changed."}}"#)
@@ -124,13 +125,63 @@ private func service(calls: GoodsOutCalls, actionResult: Result<String, APIError
 }
 
 @MainActor
-private func remoteStore(calls: GoodsOutCalls, actionResult: Result<String, APIError> = .success(handlingNoteJSON)) throws -> GoodsOutStore {
-    let store = GoodsOutStore(service: service(calls: calls, actionResult: actionResult), now: { GoodsOutDateFormat.date(day: 11, hour: 10, minute: 0) })
+private func remoteStore(calls: GoodsOutCalls, actionResult: Result<String, APIError> = .success(handlingNoteJSON), actionDelay: Duration = .zero) throws -> GoodsOutStore {
+    let store = GoodsOutStore(service: service(calls: calls, actionResult: actionResult, actionDelay: actionDelay), now: { GoodsOutDateFormat.date(day: 11, hour: 10, minute: 0) })
     store.configure(userID: 7, warehouse: try decode(MobileWarehouse.self, warehouseJSON), currentUser: "Artha")
     return store
 }
 
 struct GoodsOutAPITests {
+    @MainActor
+    @Test func fastPickShowsThePickAtOnceAndSendsItInTheBackground() async throws {
+        let calls = GoodsOutCalls()
+        let store = try remoteStore(calls: calls, actionDelay: .milliseconds(200))
+        _ = await store.loadNote(id: 501, errorKey: "AR24811")
+        let line = try #require(store.note("AR24811")?.lines.first { $0.apiID == 11 })
+
+        let sending = Task { await store.quickLine(.pickAll(line: 11, locationOrgStockID: 91), line: line.id, change: .pickAll, on: "AR24811") }
+        try await Task.sleep(for: .milliseconds(50))
+
+        #expect(store.note("AR24811")?.lines.first { $0.id == line.id }?.isHandled == true)
+        #expect(store.isSending(line.id, on: "AR24811"))
+        #expect(store.isWorking(on: "AR24811"))
+
+        #expect(await sending.value == .done(message: "Trolley changed."))
+        #expect(!store.isSending(line.id, on: "AR24811"))
+        #expect(!store.isWorking(on: "AR24811"))
+        #expect(await calls.actions.map(\.1) == [.pickAll(line: 11, locationOrgStockID: 91)])
+    }
+
+    @MainActor
+    @Test func fastPickPutsTheLineBackWhenTheServerRefuses() async throws {
+        let store = try remoteStore(calls: GoodsOutCalls(), actionResult: .failure(.validation(message: "No stock at B-02.", code: nil)))
+        _ = await store.loadNote(id: 501, errorKey: "AR24811")
+        let line = try #require(store.note("AR24811")?.lines.first { $0.apiID == 11 })
+
+        let outcome = await store.quickLine(.pickAll(line: 11, locationOrgStockID: 91), line: line.id, change: .pickAll, on: "AR24811")
+
+        #expect(outcome == .failed(message: "No stock at B-02."))
+        #expect(store.note("AR24811")?.lines.first { $0.id == line.id } == line)
+        #expect(!store.isSending(line.id, on: "AR24811"))
+    }
+
+    @MainActor
+    @Test func swipesOnSeveralLinesAreSentOneAfterAnother() async throws {
+        let calls = GoodsOutCalls()
+        let store = try remoteStore(calls: calls, actionDelay: .milliseconds(50))
+        _ = await store.loadNote(id: 501, errorKey: "AR24811")
+        let lines = try #require(store.note("AR24811")?.lines)
+        let first = try #require(lines.first { $0.apiID == 11 })
+        let second = try #require(lines.first { $0.apiID == 13 })
+
+        async let one = store.quickLine(.pickAll(line: 11, locationOrgStockID: nil), line: first.id, change: .pickAll, on: "AR24811")
+        async let two = store.quickLine(.notPicked(line: 13, quantity: nil, reason: .outOfStock, note: nil), line: second.id, change: .notPicked(.outOfStock), on: "AR24811")
+        _ = await (one, two)
+
+        #expect(await calls.actions.count == 2)
+        #expect(store.pendingLines.isEmpty)
+    }
+
     @Test func warehouseAbilitiesIncludeGoodsOutAndDefaultToFalse() throws {
         let warehouse = try decode(MobileWarehouse.self, warehouseJSON)
         #expect(warehouse.can.viewGoodsOut)
