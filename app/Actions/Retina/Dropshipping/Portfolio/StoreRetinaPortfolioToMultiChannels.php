@@ -17,6 +17,7 @@ use App\Events\StoreRetinaProductCategoryPortfolioProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -72,7 +73,15 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
             $items->chunk(100)->each(function ($chunkedItems) use ($salesChannel, $existingPortfolios, $totalOperations, &$successCount, &$lastPercentageReported) {
                 $chunkedItems->each(function ($item) use ($salesChannel, $existingPortfolios, $totalOperations, &$successCount, &$lastPercentageReported) {
                     if (!in_array($salesChannel->id . '-' . $item->id, $existingPortfolios)) {
-                        StorePortfolio::make()->action($salesChannel, $item, []);
+                        try {
+                            StorePortfolio::make()->action($salesChannel, $item, []);
+                        } catch (UniqueConstraintViolationException $exception) {
+                            if (str_contains($exception->getMessage(), 'portfolios_customer_sales_channel_id_item_id_unique')) {
+                                return;
+                            }
+
+                            throw $exception;
+                        }
                         $successCount++;
                         $currentPercentage = floor(($successCount / $totalOperations) * 100);
 
