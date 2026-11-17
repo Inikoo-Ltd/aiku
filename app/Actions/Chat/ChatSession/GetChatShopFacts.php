@@ -15,12 +15,17 @@ use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Billables\Charge;
 use App\Models\Catalogue\Shop;
 use App\Models\Billables\ShippingZone;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Bundle;
+use App\Models\Helpers\Country;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Number;
 use Locale;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -33,6 +38,10 @@ class GetChatShopFacts
 {
     use AsAction;
     use WithOrderForbiddenCountryCheck;
+
+    public const array DROPSHIPPING_SHOP_BY_ORGANISATION = ['aw' => 'awd', 'sk' => 'dssk', 'es' => 'dse', 'aroma' => 'awd'];
+
+    public const int HOME_SHOP_MIN_CUSTOMERS = 10;
 
     /**
      * What the shop's own settings say, one entry each, for the knowledge base.
@@ -54,7 +63,116 @@ class GetChatShopFacts
             ($methods = $this->paymentMethods($shop)) ? ['title' => __('Payment methods'), 'body' => $methods] : null,
             ($charges = $this->charges($shop)) ? ['title' => __('Charges'), 'body' => $charges] : null,
             ($bundles = $this->bundleDiscount($shop)) ? ['title' => __('Bundle discount'), 'body' => $bundles] : null,
+            $this->dropshippingShop($shop),
+            ...$this->homeShops($shop),
         ]));
+    }
+
+    /**
+     * Where a wholesale customer can dropship: the dropshipping shop of the shop's organisation (Raul, 17 Nov 2026).
+     *
+     * @return ?array{title: string, body: string}
+     */
+    private function dropshippingShop(Shop $shop): ?array
+    {
+        $target = $shop->type === ShopTypeEnum::B2B && ($slug = self::DROPSHIPPING_SHOP_BY_ORGANISATION[$shop->organisation->slug] ?? null)
+            ? Shop::where('slug', $slug)->where('type', ShopTypeEnum::DROPSHIPPING)->where('state', ShopStateEnum::OPEN)->with('website')->first()
+            : null;
+
+        if (!$target?->website?->domain || $target->website->state !== WebsiteStateEnum::LIVE) {
+            return null;
+        }
+
+        return [
+            'title' => __('Dropshipping'),
+            'body'  => __('We also do dropshipping, for customers who sell our products to their own buyers one at a time from an online store (Shopify, WooCommerce, eBay, Wix, TikTok Shop and others): we send each order straight to their buyer. Our dropshipping shop is :name, :url, where they register separately. Almost every product there is sold as a single unit, so it also suits a customer who wants one item rather than a whole outer.', ['name' => $target->name, 'url' => 'https://'.ltrim($target->website->domain, '/')]),
+        ];
+    }
+
+    /**
+     * For each country whose customers mostly buy from another shop of the same catalogue (the same master shop), that shop
+     * and its link, so a customer in that country can be told where most customers there buy (e.g. EU customers of the UK
+     * shop, Brexit), only across the UK/EU customs border (customsSide). Only countries this shop has customers from. "Mostly" means at least HOME_SHOP_MIN_CUSTOMERS customers there and twice the customers this shop has
+     * from that country, counted by the customer's own address over the last 12 months: a near tie (two French shops)
+     * says nothing. It is where customers buy, not a delivery price comparison, and the facts say only that.
+     *
+     * @return array<int, array{title: string, body: string}>
+     */
+    private function homeShops(Shop $shop): array
+    {
+        if (!$shop->master_shop_id) {
+            return [];
+        }
+
+        return collect(self::homeShopIds($this->customersByShopAndCountry(), $shop->id, $shop->master_shop_id))
+            ->map(function (int $targetId, string $countryCode) {
+                $target  = Shop::with('website')->find($targetId);
+                $country = Locale::getDisplayRegion('-'.$countryCode, 'en') ?: $countryCode;
+
+                return $target?->website?->domain && $target->website->state === WebsiteStateEnum::LIVE ? [
+                    'title' => __('Customers in :country', ['country' => $country]),
+                    'body'  => __('Most of our customers in :country buy from our shop :name, :url. It is a separate shop: a customer from :country registers there and orders there.', ['country' => $country, 'name' => $target->name, 'url' => 'https://'.ltrim($target->website->domain, '/')]),
+                ] : null;
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  iterable<object{shop_id: int, master_shop_id: int, country_code: string, shop_country_code: ?string, customers: int}>  $rows
+     * @return array<string, int> country code => the shop most of its customers buy from
+     */
+    public static function homeShopIds(iterable $rows, int $shopId, int $masterShopId): array
+    {
+        return collect($rows)
+            ->where('master_shop_id', $masterShopId)
+            ->groupBy('country_code')
+            ->map(function ($rows, string $countryCode) use ($shopId) {
+                $top      = $rows->sortByDesc('customers')->first();
+                $current  = $rows->first(fn (object $row) => (int) $row->shop_id === $shopId);
+                $here     = (int) ($current?->customers ?? 0);
+                $customer = self::customsSide($countryCode);
+
+                return $here === 0 || (int) $top->shop_id === $shopId || $top->customers < self::HOME_SHOP_MIN_CUSTOMERS || $top->customers < 2 * $here
+                    || !$customer || self::customsSide($current->shop_country_code) === $customer || self::customsSide($top->shop_country_code) !== $customer
+                    ? null
+                    : (int) $top->shop_id;
+            })
+            ->filter()
+            ->all();
+    }
+
+    /**
+     * UK or EU: the customs border a shop's orders cross (Brexit). Only a shop on the customer's side of it is worth
+     * recommending, because that saves the customer import VAT and customs; within the EU, or for a customer outside
+     * both, moving shop gains them nothing (Raul, 17 Nov 2026: rare, only when it truly helps).
+     */
+    private static function customsSide(?string $countryCode): ?string
+    {
+        return match (true) {
+            in_array($countryCode, ['GB', 'GG', 'JE', 'IM'], true)      => 'uk',
+            in_array($countryCode, Country::getCountryCodesInEU(), true) => 'eu',
+            default                                                      => null,
+        };
+    }
+
+    /**
+     * @return array<int, object{shop_id: int, master_shop_id: int, country_code: string, shop_country_code: ?string, customers: int}>
+     */
+    private function customersByShopAndCountry(): array
+    {
+        return Cache::remember('chat-shop-facts:customers-by-shop-and-country:v2', now()->addDay(), fn () => DB::select(
+            "select shops.id as shop_id, shops.master_shop_id, addresses.country_code, organisation_addresses.country_code as shop_country_code, count(distinct orders.customer_id) as customers
+             from orders
+             join shops on shops.id = orders.shop_id
+             join organisations on organisations.id = shops.organisation_id
+             left join addresses as organisation_addresses on organisation_addresses.id = organisations.address_id
+             join customers on customers.id = orders.customer_id
+             join addresses on addresses.id = customers.address_id
+             where orders.submitted_at > now() - interval '12 months' and orders.state <> 'cancelled' and shops.state = 'open' and shops.master_shop_id is not null
+             group by shops.id, shops.master_shop_id, addresses.country_code, organisation_addresses.country_code"
+        ));
     }
 
     private function zoneCountries($zone): string

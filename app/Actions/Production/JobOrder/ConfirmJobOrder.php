@@ -14,6 +14,7 @@ use App\Enums\Production\Artefact\ArtefactComplianceStatusEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Production\JobOrder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
@@ -54,23 +55,33 @@ class ConfirmJobOrder extends OrgAction
             ]);
         }
 
-        $data = $jobOrder->data;
-        if ($nonCompliantArtefacts) {
-            $data['compliance_override'] = [
-                'user_id'   => request()->user()?->id,
-                'at'        => now()->toDateTimeString(),
-                'artefacts' => array_keys($nonCompliantArtefacts),
-            ];
-        }
+        return DB::transaction(function () use ($jobOrder, $nonCompliantArtefacts) {
+            JobOrder::whereKey($jobOrder->id)->lockForUpdate()->first();
+            $jobOrder->refresh();
+            if ($jobOrder->state != JobOrderStateEnum::IN_PROCESS) {
+                throw ValidationException::withMessages([
+                    'state' => __('Only a draft job order can be released to the floor'),
+                ]);
+            }
 
-        $jobOrder->update([
-            'state'        => JobOrderStateEnum::CONFIRMED,
-            'submitted_at' => now(),
-            'confirmed_at' => now(),
-            'data'         => $data,
-        ]);
+            $data = $jobOrder->data;
+            if ($nonCompliantArtefacts) {
+                $data['compliance_override'] = [
+                    'user_id'   => request()->user()?->id,
+                    'at'        => now()->toDateTimeString(),
+                    'artefacts' => array_keys($nonCompliantArtefacts),
+                ];
+            }
 
-        return $jobOrder;
+            $jobOrder->update([
+                'state'        => JobOrderStateEnum::CONFIRMED,
+                'submitted_at' => now(),
+                'confirmed_at' => now(),
+                'data'         => $data,
+            ]);
+
+            return $jobOrder;
+        });
     }
 
     public function rules(): array

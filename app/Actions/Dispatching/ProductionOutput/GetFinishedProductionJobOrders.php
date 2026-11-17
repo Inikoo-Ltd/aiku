@@ -44,9 +44,13 @@ class GetFinishedProductionJobOrders
             ->whereExists(fn ($query) => $query->selectRaw('1')->from('job_order_items')->whereColumn('job_order_items.job_order_id', 'job_orders.id')
                 ->whereExists(fn ($query) => $query->selectRaw('1')->from('job_order_item_tasks')->whereColumn('job_order_item_tasks.job_order_item_id', 'job_order_items.id'))
                 ->whereNotExists(fn ($query) => $query->selectRaw('1')->from('job_order_item_tasks')->whereColumn('job_order_item_tasks.job_order_item_id', 'job_order_items.id')->where('job_order_item_tasks.state', '!=', 'done')))
-            ->with(['employee', 'jobOrderItems.artefact.orgStock.locations','jobOrderItems.tasks'])
+            ->with('employee')
             ->orderBy('confirmed_at')
             ->get();
+
+        $allRoots     = $jobOrders->mapWithKeys(fn (JobOrder $jobOrder) => [$this->root($jobOrder) => $this->root($jobOrder)])->all();
+        $chainMembers = $this->chainMembers($allRoots);
+        $allocator    = GetJobOrderDestinationAllocation::make()->preload($jobOrders->concat($chainMembers), ['artefact.orgStock.locations']);
 
         $partnersByLocation = collect();
         foreach (OrgPartner::where('organisation_id', $warehouse->organisation_id)->whereNotNull('goods_out_location_id')->with('partner')->get() as $orgPartner) {
@@ -63,7 +67,7 @@ class GetFinishedProductionJobOrders
         foreach ($jobOrders as $jobOrder) {
             $root = $this->root($jobOrder);
 
-            foreach (GetJobOrderDestinationAllocation::make()->outstanding($jobOrder) as $allocation) {
+            foreach ($allocator->outstanding($jobOrder) as $allocation) {
                 $item     = $allocation['item'];
                 $quantity = $allocation['quantity'];
 
@@ -103,7 +107,7 @@ class GetFinishedProductionJobOrders
             }
         }
 
-        $chainTotals = $this->chainTotals($roots);
+        $chainTotals = $this->chainTotals($chainMembers->filter(fn (JobOrder $jobOrder) => isset($roots[$this->root($jobOrder)])), $allocator);
 
         return collect($trips)->map(fn (array $trip) => [
             'destination'   => $trip['destination'],
@@ -141,23 +145,19 @@ class GetFinishedProductionJobOrders
      * ponytail: totals are per job and artefact, not per destination; a chain split over two bays
      * shows the same job total on both rows, split it per destination if that ever confuses.
      *
-     * @param  array<int, int>  $roots
+     * @param  Collection<int, JobOrder>  $chainMembers
      * @return array<int, array<int, array{made: float, total: float}>>
      */
-    private function chainTotals(array $roots): array
+    private function chainTotals(Collection $chainMembers, GetJobOrderDestinationAllocation $allocator): array
     {
-        if (!$roots) {
-            return [];
-        }
-
         $totals = [];
 
-        foreach ($this->chainMembers($roots) as $jobOrder) {
+        foreach ($chainMembers as $jobOrder) {
             $root     = $this->root($jobOrder);
             $ordered  = $jobOrder->jobOrderItems->mapWithKeys(fn (JobOrderItem $item) => [$item->id => (float) $item->quantity])->all();
 
             foreach (['made' => [], 'total' => $ordered] as $side => $madeByItem) {
-                foreach (GetJobOrderDestinationAllocation::run($jobOrder, $madeByItem) as $allocation) {
+                foreach ($allocator->handle($jobOrder, $madeByItem) as $allocation) {
                     $item     = $allocation['item'];
                     $packedIn = max(1, (int) $item->artefact->orgStock?->packed_in);
 
@@ -178,6 +178,10 @@ class GetFinishedProductionJobOrders
      */
     private function chainMembers(array $roots): Collection
     {
+        if (!$roots) {
+            return collect();
+        }
+
         return JobOrder::whereIn('state', [
             JobOrderStateEnum::CONFIRMED,
             JobOrderStateEnum::RECEIVED,
@@ -190,7 +194,7 @@ class GetFinishedProductionJobOrders
                     $query->orWhere('data->carried_from', $root);
                 }
             })
-            ->with(['jobOrderItems.artefact.orgStock', 'jobOrderItems.tasks'])
+            ->with('jobOrderItems')
             ->get();
     }
 }

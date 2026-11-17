@@ -56,6 +56,8 @@ class TranslateMetaChatMessage
             return;
         }
 
+        $sourceLanguage ??= DetectLanguageWithJev::translationSourceWhenUnknown($message->metaChatSession, $targetLanguage->code);
+
         $translated = $this->translate($text, $sourceLanguage?->code, $targetLanguage->code);
 
         if (!$translated || $translated === $text) {

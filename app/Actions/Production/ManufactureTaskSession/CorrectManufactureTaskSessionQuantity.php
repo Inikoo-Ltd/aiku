@@ -45,10 +45,25 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
         FillToOrder::make()->refuseAfterRelease($session->jobOrderItemTask?->jobOrderItem);
 
         return DB::transaction(function () use ($session, $modelData) {
+            self::lockJobOrders([ManufactureTaskSession::whereKey($session->id)->value('job_order_item_task_id'), $modelData['job_order_item_task_id'] ?? null]);
             $session = ManufactureTaskSession::lockForUpdate()->find($session->id);
+            self::lockJobOrders([$session->job_order_item_task_id]);
 
             return $this->changeInPayWeek($session->production, $session, $session->user_id, 'quantity', [$session->ended_at], ['quantity_made', 'job_order_item_task_id', 'manufacture_task_id', 'band_code', 'pay'], $modelData['lock_reason'] ?? null, fn () => $this->correct($session, $modelData));
         });
+    }
+
+    /**
+     * Job orders are locked before anything on them, in id order as StartManufactureTaskSession does, so a correction or
+     * a close waits for a receive into stock in progress (and the other way round) instead of reading the job half changed,
+     * and two of them never wait on each other's session and job order the other way round.
+     */
+    public static function lockJobOrders(array $taskIds): void
+    {
+        $jobOrderIds = JobOrderItemTask::whereIn('id', array_filter($taskIds))->pluck('job_order_id');
+        if ($jobOrderIds->isNotEmpty()) {
+            JobOrder::whereIn('id', $jobOrderIds)->orderBy('id')->lockForUpdate()->get();
+        }
     }
 
     private function correct(ManufactureTaskSession $session, array $modelData): ManufactureTaskSession

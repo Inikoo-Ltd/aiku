@@ -20,6 +20,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\HumanResources\Employee;
 use App\Models\Production\JobOrderItem;
 use App\Models\Production\JobOrderItemTask;
+use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -62,14 +63,14 @@ class IndexJobOrderPlan extends OrgAction
 
     public function handle(Production $production, ?string $date = null): LengthAwarePaginator
     {
-        $this->date = self::parseDate($date);
+        $this->date = self::parseDate($date, $production);
 
         $paginator = QueryBuilder::for(JobOrderItem::class)
             ->join('job_orders', 'job_orders.id', 'job_order_items.job_order_id')
             ->leftJoin('artefacts', 'artefacts.id', 'job_order_items.artefact_id')
             ->where('job_orders.production_id', $production->id)
             ->whereNull('job_orders.deleted_at')
-            ->where(fn (Builder $query) => self::onThePlan($query, $this->date))
+            ->where(fn (Builder $query) => self::onThePlan($query, $this->date, $production))
             ->select([
                 'job_order_items.id',
                 'job_order_items.quantity',
@@ -102,9 +103,11 @@ class IndexJobOrderPlan extends OrgAction
             'jobOrder.employee',
         ]);
 
-        $paginator->getCollection()->each(
-            fn (JobOrderItem $item) => $item->tasks->each(fn (JobOrderItemTask $task) => $task->setRelation('jobOrderItem', $item))
-        );
+        $today = self::today($production);
+        $paginator->getCollection()->each(function (JobOrderItem $item) use ($today) {
+            $item->setAttribute('plan_today', $today);
+            $item->tasks->each(fn (JobOrderItemTask $task) => $task->setRelation('jobOrderItem', $item));
+        });
 
         return $paginator;
     }
@@ -114,9 +117,9 @@ class IndexJobOrderPlan extends OrgAction
      * it stays in front of the manager until it is confirmed onto a day or taken off the plan.
      * Needs job_orders and job_order_items joined.
      */
-    public static function onThePlan(Builder|BaseBuilder $query, string $date): void
+    public static function onThePlan(Builder|BaseBuilder $query, string $date, Production $production): void
     {
-        $today = now()->toDateString();
+        $today = self::today($production);
 
         $query->whereDate('job_orders.planned_for', $date);
 
@@ -132,13 +135,18 @@ class IndexJobOrderPlan extends OrgAction
         }
     }
 
-    public static function parseDate(?string $date): string
+    public static function parseDate(?string $date, Production $production): string
     {
         try {
-            return $date ? Carbon::createFromFormat('Y-m-d', $date)->toDateString() : now()->toDateString();
+            return $date ? Carbon::createFromFormat('Y-m-d', $date)->toDateString() : self::today($production);
         } catch (Throwable) {
-            return now()->toDateString();
+            return self::today($production);
         }
+    }
+
+    public static function today(Production $production): string
+    {
+        return now(ManufacturePayrollAdjustment::timezone($production))->toDateString();
     }
 
     /**
@@ -152,9 +160,9 @@ class IndexJobOrderPlan extends OrgAction
             ->where('job_orders.production_id', $production->id)
             ->whereNull('job_orders.deleted_at')
             ->whereNull('job_order_items.deleted_at')
-            ->where(fn (Builder $query) => self::onThePlan($query, $this->date))
+            ->where(fn (Builder $query) => self::onThePlan($query, $this->date, $production))
             ->selectRaw('count(distinct job_orders.id) as jobs')
-            ->selectRaw('count(distinct job_orders.id) filter (where job_orders.planned_for < ?) as carried_over', [now()->toDateString()])
+            ->selectRaw('count(distinct job_orders.id) filter (where job_orders.planned_for < ?) as carried_over', [self::today($production)])
             ->selectRaw('count(*) as steps')
             ->selectRaw("count(*) filter (where job_order_item_tasks.state = 'done') as steps_done")
             ->selectRaw("count(*) filter (where job_order_item_tasks.state != 'done' and ".JobOrderItemTask::ASSIGNEE_SQL.' is null) as steps_unassigned')
@@ -212,7 +220,7 @@ class IndexJobOrderPlan extends OrgAction
                     ],
                 ],
                 'date'      => $this->date,
-                'today'     => now()->toDateString(),
+                'today'     => self::today($this->production),
                 'can_edit'  => $this->canEdit,
                 'summary'   => $this->getSummary($this->production),
                 'operators' => $this->canEdit ? $this->getOperators($this->production) : [],

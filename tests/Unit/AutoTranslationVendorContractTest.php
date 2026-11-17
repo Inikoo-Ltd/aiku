@@ -280,6 +280,32 @@ it('asks jev to choose between the ngram shortlist, the conversation language an
     });
 });
 
+it('detects no language when jev says the message is in none of the offered ones', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+    Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/alpha/decisions' => Illuminate\Support\Facades\Http::response(['answers' => ['language' => ['choice' => 'other', 'probabilities' => ['other' => 0.8], 'confidence' => 0.8]]]),
+    ]);
+
+    $spanish = App\Models\Helpers\Language::firstWhere('code', 'es');
+
+    expect(App\Actions\Helpers\Translations\DetectLanguageWithJev::run('db ila jatni commande kifache ant3amlo meaha w kifache atkhalso feha ntoma', [null, null, $spanish]))->toBeNull();
+
+    Illuminate\Support\Facades\Http::assertSent(fn (Illuminate\Http\Client\Request $request) => array_key_exists('other', $request['questions']['language']['criteria']));
+});
+
+it('labels a message in an unknown language with the first conversation language that is not the agent one', function () {
+    $english = App\Models\Helpers\Language::firstWhere('code', 'en');
+    $spanish = App\Models\Helpers\Language::firstWhere('code', 'es');
+
+    $session = (new App\Models\Chat\ChatSession())
+        ->setRelation('userLanguage', null)
+        ->setRelation('language', $english)
+        ->setRelation('shop', (new App\Models\Catalogue\Shop())->setRelation('language', $spanish));
+
+    expect(App\Actions\Helpers\Translations\DetectLanguageWithJev::translationSourceWhenUnknown($session, 'en')->code)->toBe('es')
+        ->and(App\Actions\Helpers\Translations\DetectLanguageWithJev::translationSourceWhenUnknown($session, 'es')->code)->toBe('en');
+});
+
 it('maps the detector codes onto ours and falls back to the conversation language without jev', function () {
     $detector = App\Actions\Helpers\Translations\DetectLanguageWithJev::make();
 

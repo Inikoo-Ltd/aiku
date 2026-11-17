@@ -17,6 +17,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Production\JobOrder;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -35,8 +36,10 @@ class PutAwayFinishedJobOrder extends OrgAction
      */
     public function handle(Warehouse $warehouse, array $jobOrderIds, string|array $locations, bool $allowNewLocations = false, array $quantities = []): array
     {
-        $this->requestedSkos = $quantities;
-        $this->unitsLeft     = [];
+        $this->requestedSkos      = $quantities;
+        $this->unitsLeft          = [];
+        $this->allocator          = null;
+        $this->partnerLocationIds = null;
 
         $itemIdsByCode = is_string($locations)
             ? [$locations => null]
@@ -87,6 +90,11 @@ class PutAwayFinishedJobOrder extends OrgAction
 
     private ?int $userId = null;
 
+    private ?GetJobOrderDestinationAllocation $allocator = null;
+
+    /** @var Collection<int, int>|null */
+    private ?Collection $partnerLocationIds = null;
+
     /** @var array<int, float> */
     private array $requestedSkos = [];
 
@@ -101,12 +109,13 @@ class PutAwayFinishedJobOrder extends OrgAction
      */
     private function allocationsFor(JobOrder $jobOrder, Location $location, ?array $itemIds, bool $allowNewLocations): array
     {
-        $partnerLocationIds = $jobOrder->organisation->orgPartners()->whereNotNull('goods_out_location_id')->get()->flatMap(fn ($orgPartner) => $orgPartner->bayIds());
-        $isPartnerBay       = $partnerLocationIds->contains($location->id);
+        $this->partnerLocationIds ??= $jobOrder->organisation->orgPartners()->whereNotNull('goods_out_location_id')->get()->flatMap(fn ($orgPartner) => $orgPartner->bayIds());
+        $isPartnerBay               = $this->partnerLocationIds->contains($location->id);
 
         $allocations = [];
 
-        foreach (GetJobOrderDestinationAllocation::make()->outstanding($jobOrder) as $allocation) {
+        $this->allocator ??= GetJobOrderDestinationAllocation::make();
+        foreach ($this->allocator->outstanding($jobOrder) as $allocation) {
             $item     = $allocation['item'];
             $quantity = $allocation['quantity'];
 

@@ -53,7 +53,9 @@ class CloseManufactureTaskSession extends OrgAction
     public function handle(ManufactureTaskSession $session, array $modelData): ManufactureTaskSession
     {
         return DB::transaction(function () use ($session, $modelData) {
+            $this->lockJobOrders(ManufactureTaskSession::whereKey($session->id)->value('job_order_item_task_id'));
             $session = ManufactureTaskSession::lockForUpdate()->find($session->id);
+            $this->lockJobOrders($session->job_order_item_task_id);
             if ($session->state == ManufactureTaskSessionStateEnum::CLOSED) {
                 throw ValidationException::withMessages([
                     'state' => __('This task session is already closed'),
@@ -327,6 +329,17 @@ class CloseManufactureTaskSession extends OrgAction
             && !$task->isInRecipe()
             && $task->sessions()->whereKeyNot($session->id)->doesntExist()
             && $task->sessionShares()->doesntExist();
+    }
+
+    /**
+     * The job orders of the task and of every line it is combined with, before the session and the task.
+     */
+    private function lockJobOrders(?int $taskId): void
+    {
+        $task = $taskId ? JobOrderItemTask::find($taskId) : null;
+        if ($task) {
+            CorrectManufactureTaskSessionQuantity::lockJobOrders($task->combinedGroup()->pluck('id')->all());
+        }
     }
 
     /**

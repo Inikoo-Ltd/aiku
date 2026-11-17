@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Iris\Docs\ShowIrisDocs;
+use App\Actions\UI\AikuPublic\BlogPosts;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -27,7 +28,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * Copies what a shop already says into its knowledge base, so the AI answers from short, current
  * entries instead of fetching whole pages: each section of the returns, delivery and terms pages,
  * what the shop's settings say (delivery prices per zone, blocked countries, offers, payment
- * methods) and, for dropshipping, the /docs guides. Run every hour and on demand; entries staff
+ * methods) and, for dropshipping, the /docs guides (each guide's summary and each of its sections, so
+ * a how-to question finds the steps and not only the one-line summary). Run every hour and on demand; entries staff
  * wrote are never touched.
  *
  * Every entry of the shop is embedded, so the AI shopping assistant finds the ones that answer a
@@ -198,15 +200,22 @@ class HydrateChatKnowledge
             return [];
         }
 
-        return collect(ShowIrisDocs::make()->handle($shop->website))
-            ->map(fn (array $doc) => [
-                'kind'        => 'guide',
-                'title'       => mb_substr($doc['title'], 0, 250),
-                'body'        => $doc['summary'],
-                'url'         => 'https://'.ltrim($shop->website->domain, '/').$doc['url'],
-                'source_type' => 'docs',
-                'source_id'   => $doc['slug'],
-            ])
+        $docs = ShowIrisDocs::make();
+
+        return collect($docs->handle($shop->website))
+            ->flatMap(function (array $doc) use ($docs, $shop) {
+                $html = $docs->fillPlaceholders(BlogPosts::find($doc['slug'], BlogPosts::DROPSHIPPING_DOCS)['html'] ?? '', $shop->website, isHtml: true);
+
+                return collect([['title' => $doc['title'], 'body' => $doc['summary']], ...self::sections([$html], $doc['title'])])
+                    ->map(fn (array $section) => [
+                        'kind'        => 'guide',
+                        'title'       => mb_substr($section['title'], 0, 250),
+                        'body'        => $section['body'],
+                        'url'         => 'https://'.ltrim($shop->website->domain, '/').$doc['url'],
+                        'source_type' => 'docs',
+                        'source_id'   => $doc['slug'],
+                    ]);
+            })
             ->all();
     }
 

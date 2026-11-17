@@ -18,6 +18,7 @@ use App\Models\Ordering\Order;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -37,6 +38,19 @@ class SendPartnerOrderToWarehouse extends OrgAction
      * @throws \Throwable
      */
     public function handle(Order $order): ?StockDelivery
+    {
+        $sent = Cache::lock("send-partner-order-to-warehouse:{$order->id}", 300)->get(fn () => $this->send($order->refresh()));
+        if ($sent === false) {
+            throw ValidationException::withMessages(['order' => __('Order has already been sent to the warehouse')]);
+        }
+
+        return $sent;
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    private function send(Order $order): ?StockDelivery
     {
         if ($order->salesChannel?->code !== 'intercompany') {
             throw ValidationException::withMessages(['order' => __('Not an intercompany order')]);

@@ -1802,6 +1802,25 @@ describe('chat spike alert', function () {
         expect(($this->spikeFor)(\App\Actions\Chat\AlertChatMessageSpikes::make()->handle($this->user->username)))->toBeNull();
         \Illuminate\Support\Facades\Http::assertNothingSent();
     });
+
+    test('a chat spike while orders are at their usual level or higher is a busy day and does not alert', function () {
+        $submittedAt = [now()->subWeek()->subHour(), now()->subHour(), now()->subMinutes(30)];
+        foreach ($submittedAt as $i => $when) {
+            \App\Actions\Ordering\Order\StoreOrder::make()->action($this->customer, [
+                'reference'        => 'SPIKE'.random_int(100000, 999999).$i,
+                'date'             => $when->toDateString(),
+                'customer_id'      => $this->customer->id,
+                'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+                'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+            ])->updateQuietly(['submitted_at' => $when]);
+        }
+        foreach (range(1, \App\Actions\Chat\AlertChatMessageSpikes::MIN_CHATS) as $i) {
+            noiseTestEmailSession($this->shop, "promo$i@example.com", 'Promo question', 'Is this in stock');
+        }
+
+        expect(($this->spikeFor)(\App\Actions\Chat\AlertChatMessageSpikes::make()->handle($this->user->username)))->toBeNull();
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    });
 });
 
 test('agents tick several inbox conversations and mark them read or close them, without opening them', function () {

@@ -16,6 +16,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 class BroadcastProductionQueuesChanged implements ShouldBroadcastNow
 {
     use Dispatchable;
+    use DispatchesOncePerTransaction;
     use InteractsWithSockets;
 
     public function __construct(public int $organisationId)

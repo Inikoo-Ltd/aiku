@@ -1,7 +1,7 @@
 ---
 title: Connecting your Wix store
 summary: Install our app on your Wix site to link it to your dropshipping account, check the three ticks that show it is ready, and fix a channel that says it is not connected.
-date: 2026-09-28
+date: 2026-11-17
 tags: wix, wix stores, sales channel, connect
 category: sales-channels
 series: wix
@@ -27,7 +27,7 @@ Go to <b>Channels</b>, press <b>Add Sales Channel</b>, then <b>Connect</b> on th
 1. Open <b>Channels</b> in the menu. The <b>Sales Channels</b> page lists the channels you already have.
 2. Press <b>Add Sales Channel</b>. The <b>Create Channels</b> page opens.
 3. Find the <b>Wix</b> card and press <b>Connect</b>. Wix opens in a new tab.
-4. If Wix asks, log in. Choose the site you want to connect and install the app. Wix shows the permissions the app needs; accept them to go on.
+4. If Wix asks, log in. Choose the site you want to connect and install the app. Wix shows the permissions the app needs; accept them to go on. See <b>What the app can see and do</b> below.
 5. When the install is finished, Wix sends you back to your dropshipping account and opens the dashboard of your new channel.
 
 <!-- screenshot: the Create Channels page with the Wix card and its Connect button -->
@@ -37,6 +37,18 @@ Go to <b>Channels</b>, press <b>Add Sales Channel</b>, then <b>Connect</b> on th
 Finish the install within two hours of pressing <b>Connect</b>. After that the link expires and you must press <b>Connect</b> again.
 
 The channel gets the name of your Wix site. You can change it later in <b>Manage Sales Channel</b>, <b>Store name</b>.
+
+## What the app can see and do
+
+When you install AW Connect, Wix lists the permissions the app asks for. This is what we use them for:
+
+- <b>Your store products</b>: we create our products in Wix Stores, update their details, prices and images, and remove them when you remove them from your channel. Products of your own that you do not link to ours are only read, so you can match them.
+- <b>Stock</b>: we keep the stock of our products up to date on your site.
+- <b>Orders</b>: we read your buyers' orders, including the delivery address, so we can send the parcels. If we cancel an order on our side, we cancel it on Wix too.
+- <b>Shipping</b>: when we send an order, we mark it as fulfilled on Wix with the tracking number and link.
+- <b>Site details</b>: your site name, address, currency and language, and the email of the site owner, which we use to link the site to your dropshipping account.
+
+We do not touch your Wix payments, your site design or your other Wix apps. Wix asks you to accept the permissions to install the app. If you would rather not connect your site, you can enter your buyers' orders by hand on a manual channel instead: see [Placing orders manually](/docs/placing-orders-manually).
 
 ## Check that the channel is ready
 

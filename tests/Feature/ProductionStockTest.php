@@ -1764,3 +1764,69 @@ test('INI-221 putting away a job order values every movement at FIFO in a bounde
         ])
         ->and($queryCount)->toBeLessThan(370);
 });
+
+test('the production output list loads in a number of queries that does not grow with the open job orders', function () {
+    $user = $this->guest->getUser();
+    ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)->delete();
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-QCNT', 'name' => 'Query count warehouse']);
+    $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-QCNT', 'name' => 'Query count area']);
+    $shelf     = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'SHELF-QCNT', 'name' => 'Query count shelf'] + \App\Models\Inventory\Location::factory()->definition());
+
+    $artefactFor = function (string $code) use ($shelf) {
+        $stock    = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
+        $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+        $orgStock->update(['packed_in' => 4]);
+        \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($orgStock, $shelf, []);
+        $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code, 'name' => $code, 'org_stock_id' => $orgStock->id]);
+        $artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+
+        return $artefact;
+    };
+    $make = fn (JobOrderItem $item, int $quantity, string $outcome) => CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $item->tasks()->first()),
+        ['quantity_made' => $quantity, 'outcome' => $outcome]
+    );
+
+    $addJobs = function (int $count, string $prefix) use ($artefactFor, $make) {
+        foreach (range(1, $count) as $n) {
+            $jobOrder = StoreJobOrder::make()->action($this->production, []);
+            $soap     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefactFor("$prefix-SOAP-$n")->id, 'quantity' => 12]);
+            $bomb     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefactFor("$prefix-BOMB-$n")->id, 'quantity' => 8]);
+            ConfirmJobOrder::make()->action($jobOrder);
+            $make($soap, 12, 'complete');
+            $make($bomb, 8, 'complete');
+
+            $carriedJob  = StoreJobOrder::make()->action($this->production, []);
+            $carriedItem = StoreJobOrderItem::make()->action($carriedJob, ['artefact_id' => $artefactFor("$prefix-CARRY-$n")->id, 'quantity' => 40]);
+            ConfirmJobOrder::make()->action($carriedJob);
+            $make($carriedItem, 23, 'carry_over');
+        }
+    };
+
+    $countQueries = function () use ($warehouse) {
+        $queries = 0;
+        \Illuminate\Support\Facades\DB::listen(function () use (&$queries) {
+            $queries++;
+        });
+        $rows = \App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders::run($warehouse);
+        \Illuminate\Support\Facades\DB::getEventDispatcher()->forget(\Illuminate\Database\Events\QueryExecuted::class);
+
+        return [$queries, $rows];
+    };
+
+    $addJobs(2, 'QA');
+    [$fewJobsQueries] = $countQueries();
+    $addJobs(5, 'QB');
+    [$manyJobsQueries, $rows] = $countQueries();
+
+    $ours = collect($rows)->flatMap(fn (array $trip) => collect($trip['jobs'])->flatMap(fn (array $job) => $job['items']))
+        ->filter(fn (array $row) => preg_match('/^Q[AB]-/', $row['code']))->values();
+
+    expect($ours)->toHaveCount(21)
+        ->and($ours->firstWhere('code', 'QB-SOAP-1')['quantity'])->toEqual(3.0)
+        ->and($ours->firstWhere('code', 'QB-CARRY-1')['quantity'])->toEqual(5.0)
+        ->and($ours->firstWhere('code', 'QB-CARRY-1')['quantity_total'])->toEqual(10.0)
+        ->and($ours->firstWhere('code', 'QB-CARRY-1')['in_progress'])->toBeTrue()
+        ->and($manyJobsQueries - $fewJobsQueries)->toBeLessThan(5);
+});
