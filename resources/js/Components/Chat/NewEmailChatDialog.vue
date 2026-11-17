@@ -178,6 +178,28 @@ const visibleRecentAddresses = computed(() => {
     return recentAddresses.value.filter((recent) => recent.email !== firstAddress.value)
 })
 
+const customerSearchExternalAddresses = computed(() => {
+    if (isNotACustomer.value) {
+        return []
+    }
+    return [
+        ...visibleSavedContacts.value.map((contact) => ({
+            key: `contact-${contact.id}`,
+            icon: "fal fa-address-book",
+            name: contact.company ? `${contact.name} · ${contact.company}` : contact.name,
+            email: contact.email,
+            pick: () => pickContact(contact),
+        })),
+        ...visibleRecentAddresses.value.map((recent) => ({
+            key: `recent-${recent.email}`,
+            icon: "fal fa-history",
+            name: recent.name ?? recent.email,
+            email: recent.email,
+            pick: () => pickRecentAddress(recent),
+        })),
+    ]
+})
+
 const pickRecentAddress = (recent: { name: string | null, email: string }) => {
     const fill = () => {
         form.email = recent.email
@@ -381,10 +403,27 @@ watch(visible, (isVisible) => {
                         </button>
                         <template v-else>{{ ctrans("No customer found") }}</template>
                     </template>
+
+                    <template #beforelist>
+                        <div v-if="customerSearchExternalAddresses.length" class="border-b border-gray-200 py-1">
+                            <div class="px-3 py-1 text-xs font-medium text-gray-500">
+                                {{ ctrans("Not a customer: saved contacts and addresses emailed recently") }}
+                            </div>
+                            <button v-for="address in customerSearchExternalAddresses" :key="address.key" type="button"
+                                class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-baseline gap-3 px-3 py-1.5 text-left text-sm hover:bg-[var(--app-accent-soft)]"
+                                @mousedown.prevent="address.pick()">
+                                <span class="truncate" :title="address.name">
+                                    <FontAwesomeIcon :icon="address.icon" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />
+                                    {{ address.name }}
+                                </span>
+                                <span class="truncate text-gray-500" :title="address.email">{{ address.email }}</span>
+                            </button>
+                        </div>
+                    </template>
                 </PureMultiselectInfiniteScroll>
             </div>
 
-            <div v-if="visibleSavedContacts.length" class="flex flex-col gap-1">
+            <div v-if="isNotACustomer && visibleSavedContacts.length" class="flex flex-col gap-1">
                 <span class="text-xs font-medium text-gray-600">{{ ctrans("Saved contacts") }}</span>
                 <ul class="max-h-48 overflow-y-auto rounded-md border border-gray-200 divide-y divide-gray-100">
                     <li v-for="contact in visibleSavedContacts" :key="contact.id" class="group/contact flex items-center">
@@ -412,7 +451,7 @@ watch(visible, (isVisible) => {
                 <p v-if="contactError" class="text-xs text-red-500 leading-snug">{{ contactError }}</p>
             </div>
 
-            <div v-if="visibleRecentAddresses.length" class="flex flex-col gap-1">
+            <div v-if="isNotACustomer && visibleRecentAddresses.length" class="flex flex-col gap-1">
                 <span class="text-xs font-medium text-gray-600">{{ ctrans("Emailed recently") }}</span>
                 <ul class="max-h-48 overflow-y-auto rounded-md border border-gray-200 divide-y divide-gray-100">
                     <li v-for="recent in visibleRecentAddresses" :key="recent.email">
