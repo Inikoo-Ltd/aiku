@@ -365,6 +365,7 @@ test('the catalogue brief keeps brand names, follows the family and learns from 
     $brief = GetCatalogueTranslationBrief::run($slovak, $this->product->family);
 
     expect($brief)->toContain('Ancient Witch')
+        ->and($brief)->toContain('not automatically a brand')
         ->and($brief)->toContain('- unit label asset => Sviečka Ancient Witch')
         ->and($brief)->toContain('corrected: Vonné kužele');
 });
