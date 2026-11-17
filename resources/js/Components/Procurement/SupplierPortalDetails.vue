@@ -248,11 +248,11 @@ const edit = (submission: EditedSubmission) => {
 								<Checkbox :modelValue="areAllShownSelected" binary :aria-label="ctrans('Select all')" @update:modelValue="toggleAllShown" />
 							</th>
 							<th class="whitespace-nowrap pb-1 text-left font-medium" colspan="2">{{ ctrans("Product") }}</th>
-							<th class="whitespace-nowrap pb-1 text-left font-medium">{{ ctrans("Status") }}</th>
-							<th class="whitespace-nowrap pb-1 text-right font-medium">{{ ctrans("Your price") }}</th>
-							<th class="whitespace-nowrap pb-1 text-right font-medium">{{ ctrans("Packs sold") }}</th>
-							<th class="whitespace-nowrap pb-1 text-right font-medium">{{ ctrans("Sold, at your prices") }}</th>
-							<th class="whitespace-nowrap pb-1 text-right font-medium">{{ ctrans("Difference") }}</th>
+							<th class="whitespace-nowrap pb-1 pl-4 text-left font-medium">{{ ctrans("Status") }}</th>
+							<th class="whitespace-nowrap pb-1 pl-6 text-right font-medium">{{ ctrans("Your price") }}</th>
+							<th class="whitespace-nowrap pb-1 pl-6 text-right font-medium">{{ ctrans("Packs sold") }}</th>
+							<th class="whitespace-nowrap pb-1 pl-6 text-right font-medium">{{ ctrans("Sold, at your prices") }}</th>
+							<th class="whitespace-nowrap pb-1 pl-6 text-right font-medium">{{ ctrans("Difference") }}</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-gray-100 tabular-nums text-gray-700">
@@ -266,7 +266,7 @@ const edit = (submission: EditedSubmission) => {
 									<FontAwesomeIcon icon='fal fa-image' class='text-xs text-gray-400' fixed-width aria-hidden='true' />
 								</div>
 							</td>
-							<td class="py-1.5">
+							<td class="py-1.5 pr-2">
 								<button v-if="productWebsitesRoute" type="button" class="group text-left" :title="ctrans('See the websites selling this product')" @click="openedProductId = product.id">
 									<span class="mr-1.5 whitespace-nowrap font-medium text-[var(--app-accent)] group-hover:underline">{{ product.code }}</span>
 									<span class="text-gray-500">{{ product.name }}</span>
@@ -276,14 +276,14 @@ const edit = (submission: EditedSubmission) => {
 									<span class="text-gray-500">{{ product.name }}</span>
 								</template>
 							</td>
-							<td class="whitespace-nowrap py-1.5" :class="statusClass[product.status]">{{ product.status_label }}</td>
-							<td class="whitespace-nowrap py-1.5 text-right">
+							<td class="whitespace-nowrap py-1.5 pl-4" :class="statusClass[product.status]">{{ product.status_label }}</td>
+							<td class="whitespace-nowrap py-1.5 pl-6 text-right">
 								{{ money(product.price) }}
 								<span v-if="product.units_per_pack > 1" class="text-xs text-gray-400"> × {{ product.units_per_pack }}</span>
 							</td>
-							<td class="whitespace-nowrap py-1.5 text-right">{{ product.packs }}</td>
-							<td class="whitespace-nowrap py-1.5 text-right">{{ money(product.sold) }}</td>
-							<td class="whitespace-nowrap py-1.5 text-right">
+							<td class="whitespace-nowrap py-1.5 pl-6 text-right">{{ product.packs }}</td>
+							<td class="whitespace-nowrap py-1.5 pl-6 text-right">{{ money(product.sold) }}</td>
+							<td class="whitespace-nowrap py-1.5 pl-6 text-right">
 								<span v-if="product.change === null" class="text-xs text-gray-400">{{ product.packs > 0 ? ctrans("New") : "—" }}</span>
 								<span v-else :class="product.change >= 0 ? 'text-green-700' : 'text-red-600'">{{ product.change >= 0 ? "+" : "" }}{{ product.change }}%</span>
 							</td>
