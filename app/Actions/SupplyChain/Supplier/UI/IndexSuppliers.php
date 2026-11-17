@@ -28,6 +28,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -159,6 +160,14 @@ class IndexSuppliers extends OrgAction
             });
         });
 
+        $agentFilter = AllowedFilter::callback('agent', function ($query, $value) {
+            $query->where('agents.slug', $value);
+        });
+
+        $locationFilter = AllowedFilter::callback('location', function ($query, $value) {
+            $query->whereRaw('suppliers.location->>0 = ?', [$value]);
+        });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -215,7 +224,7 @@ class IndexSuppliers extends OrgAction
                 'number_purchase_orders',
                 'number_stock_deliveries',
             ])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, $agentFilter, $locationFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -238,7 +247,13 @@ class IndexSuppliers extends OrgAction
                 );
             }
 
+            if ($parent instanceof Group) {
+                $agentOptions = $this->agentFilterOptions($parent);
+                $table->selectFilter('agent', $agentOptions->pluck('label', 'slug')->all(), __('Agent'), withFlags: $agentOptions->pluck('country_code', 'slug')->filter()->all());
+            }
+
             $table
+                ->selectFilter('location', $this->locationFilterOptions($parent), __('Supplier location'), withFlags: true)
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->withLabelRecord([__('Supplier'), __('Suppliers')])
@@ -266,6 +281,45 @@ class IndexSuppliers extends OrgAction
 
             $table->defaultSort('code');
         };
+    }
+
+    /**
+     * @return Collection<int, array{slug: string, label: string, country_code: string|null}>
+     */
+    protected function agentFilterOptions(Group $group): Collection
+    {
+        return Agent::query()
+            ->leftJoin('organisations', 'organisations.id', 'agents.organisation_id')
+            ->leftJoin('countries', 'countries.id', 'organisations.country_id')
+            ->where('agents.group_id', $group->id)
+            ->whereHas('suppliers')
+            ->orderBy('agents.code')
+            ->get(['agents.slug', 'agents.code', 'agents.name', 'countries.code as country_code'])
+            ->map(fn (Agent $agent) => [
+                'slug'         => $agent->slug,
+                'label'        => $agent->code.($agent->name ? ' ('.$agent->name.')' : ''),
+                'country_code' => $agent->country_code,
+            ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function locationFilterOptions(Group|Agent $parent): array
+    {
+        return Supplier::query()
+            ->when(
+                $parent instanceof Agent,
+                fn ($query) => $query->where('agent_id', $parent->id),
+                fn ($query) => $query->where('group_id', $parent->id)
+            )
+            ->whereRaw("location->>0 <> ''")
+            ->selectRaw('location->>0 as country_code, max(location->>1) as country_name')
+            ->groupByRaw('location->>0')
+            ->orderByRaw('max(location->>1)')
+            ->get()
+            ->mapWithKeys(fn ($country) => [$country->country_code => $country->country_name ?: $country->country_code])
+            ->all();
     }
 
     protected function getEmptyState(Group|Agent $parent): array
