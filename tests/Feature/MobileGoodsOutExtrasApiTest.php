@@ -175,7 +175,7 @@ test('mobile does not cancel a finalised note nor a Faire order, but cancels a F
     expect($order->refresh()->state)->toBe(DeliveryNoteStateEnum::UNASSIGNED);
 });
 
-test('cancel writes one not-pick per picking, and StoreNotPickPicking resets its quantity to what is left, hiding the picked_quantity typo of CancelDeliveryNote', function () {
+test('cancel writes a not-pick for what is left on each picked line, and none for a line already fully picked', function () {
     $supervisor = actingAsGoodsOutUser($this->group, $this->warehouse, [RolesEnum::DISPATCH_SUPERVISOR]);
     $cancelled  = function (float $picked, bool $createReturn) use ($supervisor): array {
         [$deliveryNote, [$line]] = goodsOutPickingNote($this, [3], $supervisor);
@@ -193,7 +193,7 @@ test('cancel writes one not-pick per picking, and StoreNotPickPicking resets its
         ];
     };
 
-    expect($cancelled(3, true))->toBe([3.0, 0.0, [['pick', 3.0], ['not-pick', 0.0]]])
+    expect($cancelled(3, true))->toBe([3.0, 0.0, [['pick', 3.0]]])
         ->and($cancelled(1, true))->toBe([1.0, 2.0, [['pick', 1.0], ['not-pick', 2.0]]])
         ->and($cancelled(1, false))->toBe([0.0, 3.0, [['not-pick', 3.0]]])
         ->and($cancelled(0, true))->toBe([null, null, []]);

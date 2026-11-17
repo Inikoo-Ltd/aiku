@@ -3335,6 +3335,39 @@ test('picking upsert pick all split and delete', function () {
     expect(Picking::find($picking->id))->toBeNull();
 });
 
+test('a pick right after a not pick is applied, pick all leaves the not picked quantity, and a skipped waiting not pick keeps its waiting quantity, INI-290', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 4);
+    $location              = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $los                   = StoreLocationOrgStock::make()->action(
+        orgStock: $item->orgStock,
+        location: $location,
+        modelData: ['quantity' => 200, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+        strict: false
+    );
+
+    expect(StoreNotPickPicking::make()->action($item->refresh(), $this->user, ['quantity' => 1]))->not->toBeNull()
+        ->and($item->refresh()->locked_at)->toBeNull();
+
+    $this->actingAs($this->user);
+    request()->setUserResolver(fn () => $this->user);
+    expect(\App\Actions\Dispatching\Picking\UpsertPicking::run($item, $los, ['quantity' => 3, 'location_org_stock_id' => $los->id]))->toBeTrue()
+        ->and((float) $item->refresh()->quantity_picked)->toBe(7.0);
+
+    expect(\App\Actions\Dispatching\Picking\PickAllItem::run($item, ['location_org_stock_id' => $los->id, 'picker_user_id' => $this->user->id]))->not->toBeNull()
+        ->and((float) $item->refresh()->quantity_picked)->toBe(9.0)
+        ->and((float) $item->quantity_not_picked)->toBe(1.0);
+
+    $item->update(['quantity_waiting_warehouse' => 2, 'locked_at' => now()]);
+    expect(fn () => \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingWarehouse::make()->handle($item->refresh(), $this->user, ['quantity' => 2]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect((float) $item->refresh()->quantity_waiting_warehouse)->toBe(2.0);
+
+    $item->update(['quantity_waiting_warehouse' => 0, 'quantity_waiting_crm' => 2, 'locked_at' => now()]);
+    expect(fn () => \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingCrm::make()->handle($item->refresh(), $this->user, ['quantity' => 2]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect((float) $item->refresh()->quantity_waiting_crm)->toBe(2.0);
+});
+
 test('picking waiting warehouse and crm flow', function () {
     $settings = $this->organisation->settings;
     data_set($settings, 'orders.allow_waiting', true);
