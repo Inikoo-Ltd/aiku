@@ -4341,7 +4341,9 @@ test('a container straight from a supplier takes its other agreed orders, never 
 });
 
 test('booking goods into a location the SKO is not linked to links it as picking when the SKO has no picking location, as storing when it has one (INI-291)', function () {
-    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-LINK-TYPE', [10]);
+    $this->stocks    = [StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]))];
+    $this->orgStocks = [\App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $this->stocks[0])];
+    $stockDelivery   = createStockDeliveryWithItems($this, 'PLACE-LINK-TYPE', [10]);
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
     $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
 
