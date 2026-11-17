@@ -95,11 +95,7 @@ struct LocationsDetailView: View {
                     RowDivider()
                 }
                 ListRow("Stock movements", subtitle: "History of this location", icon: .history, iconTone: .neutral, showsChevron: true) {
-                    if store.isRemote {
-                        router.open(LocationsRoute.movements(code: location.code))
-                    } else {
-                        router.open(InventoryRoute.stockHistory)
-                    }
+                    router.open(LocationsRoute.movements(code: location.code))
                 }
                 .accessibilityIdentifier("locations.movements")
             }
