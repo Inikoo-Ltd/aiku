@@ -1510,6 +1510,46 @@ test('an order confirmation goes out on WhatsApp from its own WhatsApp outbox, w
         && Arr::get($request->data(), 'template.components.0.parameters.1.text') === $order->reference);
 });
 
+test('a WhatsApp customer notification whose template variables are not mapped is kept as failed and never reaches Meta', function () {
+    [, , $shop] = createOwnShop('whatsapp-outboxes');
+    [$whatsappOutbox, $template, $customer] = whatsappOutboxTestSetup($shop, tags: []);
+    [, $product] = createProduct($shop);
+    $order = createOrder($customer, $product);
+    \App\Actions\CRM\CustomerComms\UpdateCustomerComms::run($customer->comms, ['is_subscribed_to_whatsapp_notifications' => true]);
+
+    Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.UNMAPPED']]])]);
+
+    $message = \App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp::run($customer->fresh(), \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_CONFIRMATION, $order);
+
+    expect($message)->not->toBeNull()
+        ->and($message->state)->toBe(\App\Enums\CRM\Livechat\ChatMessageStateEnum::FAILED)
+        ->and(Arr::get($message->metadata, 'wa_error.message'))->toBe($template->name.' has 2 variables but 0 are set up. Map every variable on the template page.')
+        ->and($whatsappOutbox->fresh()->last_sent_at)->toBeNull();
+
+    Http::assertNotSent(fn ($request) => str_ends_with($request->url(), '/messages'));
+});
+
+test('a WhatsApp customer notification sends a dash for a variable Aiku cannot fill', function () {
+    [, , $shop] = createOwnShop('whatsapp-outboxes');
+    [, $template, $customer] = whatsappOutboxTestSetup($shop, body: 'Hi {{1}} from {{2}}.', tags: ['Customer Name', 'Customer Company']);
+    $customer->update(['company_name' => null]);
+    [, $product] = createProduct($shop);
+    $order = createOrder($customer, $product);
+    \App\Actions\CRM\CustomerComms\UpdateCustomerComms::run($customer->comms, ['is_subscribed_to_whatsapp_notifications' => true]);
+
+    Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.DASH']]])]);
+
+    $message = \App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp::run($customer->fresh(), \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_CONFIRMATION, $order);
+
+    expect($message)->not->toBeNull()
+        ->and($message->state)->toBe(\App\Enums\CRM\Livechat\ChatMessageStateEnum::SENT)
+        ->and($message->message_text)->toEndWith(' from -.');
+
+    Http::assertSent(fn ($request) => str_ends_with($request->url(), '/messages')
+        && Arr::get($request->data(), 'template.name') === $template->name
+        && Arr::get($request->data(), 'template.components.0.parameters.1.text') === '-');
+});
+
 test('a WhatsApp customer notification is never sent from a local environment', function () {
     [, , $shop] = createOwnShop('whatsapp-outboxes');
     [$whatsappOutbox, , $customer] = whatsappOutboxTestSetup($shop);

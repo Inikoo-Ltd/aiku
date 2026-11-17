@@ -51,6 +51,12 @@ class SendCustomerNotificationWhatsapp
     public const UTILITY_CATEGORY = 'UTILITY';
 
     /**
+     * Meta rejects a blank template parameter, so a value Aiku cannot resolve goes out as a
+     * dash instead of holding back the whole notification.
+     */
+    public const MISSING_VALUE_PLACEHOLDER = '-';
+
+    /**
      * Below Meta's default 80 messages a second per Cloud API number, so a bulk run sharing a
      * number with live chat leaves room for the agents' replies.
      */
@@ -128,11 +134,17 @@ class SendCustomerNotificationWhatsapp
         $tags     = Arr::get($template->data ?? [], 'merge_tags.body', []);
         $merged   = $tags ? ResolveWhatsappTemplateTags::run($session, $tags, null, $order, $context) : ['values' => [], 'missing' => []];
 
+        $merged['values'] = array_map(fn (?string $value) => blank($value) ? self::MISSING_VALUE_PLACEHOLDER : $value, $merged['values']);
+
         $messageText = $this->renderTemplateBody($template->id, $shop->id, $template->name, $language, $merged['values']);
 
-        if ($merged['missing']) {
-            return $this->recordFailure($session, $whatsappOutbox, $template, $order, $messageText, __('Missing :tags', [
-                'tags' => implode(', ', $merged['missing']),
+        $placeholderCount = $this->bodyPlaceholderCount($template);
+
+        if ($placeholderCount !== count($merged['values'])) {
+            return $this->recordFailure($session, $whatsappOutbox, $template, $order, $messageText, __(':name has :expected variables but :mapped are set up. Map every variable on the template page.', [
+                'name'     => $template->name,
+                'expected' => $placeholderCount,
+                'mapped'   => count($merged['values']),
             ]));
         }
 
@@ -243,6 +255,24 @@ class SendCustomerNotificationWhatsapp
     {
         return SubscribeRetinaCustomerToWhatsappNewsletter::normalisePhone($customer->marketing_whatsapp_phone)
             ?? SubscribeRetinaCustomerToWhatsappNewsletter::normalisePhone($customer->phone);
+    }
+
+    /**
+     * Meta rejects a send whose body values do not match the template's `{{n}}` slots with
+     * `(#132000) Number of parameters does not match`. Counting them first keeps a template
+     * synced from Meta without its variables mapped from reaching Meta at all.
+     */
+    private function bodyPlaceholderCount(MetaMessageTemplate $template): int
+    {
+        $body = (string) Arr::get(
+            collect(Arr::get($template->data ?? [], 'components', []))->firstWhere('type', 'BODY') ?? [],
+            'text',
+            ''
+        );
+
+        preg_match_all('/\{\{\s*(\d+)\s*}}/', $body, $matches);
+
+        return count(array_unique($matches[1]));
     }
 
     private function resolveSession(Customer $customer, string $phone): ?MetaChatSession
