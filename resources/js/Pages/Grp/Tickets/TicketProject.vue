@@ -7,12 +7,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue"
 import { Head, Link, router, useForm } from "@inertiajs/vue3"
-import { Dialog, Select, MultiSelect } from "primevue"
+import { Dialog, Select, MultiSelect, InputText, Textarea, Checkbox, DatePicker } from "primevue"
 import Chart from "primevue/chart"
 import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import Table from "@/Components/Table/Table.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
@@ -22,9 +24,9 @@ import StaffTaskQuickLook from "@/Components/Tasks/StaffTaskQuickLook.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay } from "@fal"
+import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck } from "@fal"
 
-library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay)
+library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck)
 
 type Person = { id: number; name: string; avatar: Record<string, string> | null }
 type Route = { name: string; parameters?: Record<string, unknown> }
@@ -68,7 +70,11 @@ const props = defineProps<{
         health: Health | null
         health_label: string | null
         health_at: string | null
+        last_update_at: string | null
+        parent: { id: number; slug: string; name: string } | null
     }
+    sub_projects: { slug: string; name: string; status: string; status_label: string; health: Health | null; health_label: string | null; owner: Person | null; progress: { total: number; done: number; open: number; percent: number | null; time_percent: number | null; days_left: number | null } }[]
+    indicators: { key: string; level: "info" | "warning" | "danger"; text: string }[]
     milestones: Milestone[]
     progress: { total: number; done: number; open: number; percent: number | null; time_percent: number | null; week: number; weeks: number | null; days_left: number | null }
     hidden_work: number
@@ -79,7 +85,7 @@ const props = defineProps<{
     workload: { person: Person | null; todo: number; in_progress: number; done: number }[]
     updates: { id: number; body: string; health: Health | null; health_label: string | null; author: Person | null; created_at: string }[]
     can_edit: boolean
-    options: { statuses: { label: string; value: string }[]; healths: { label: string; value: string }[]; staff: { label: string; value: number }[] }
+    options: { statuses: { label: string; value: string }[]; healths: { label: string; value: string }[]; staff: { label: string; value: number }[]; parents: { label: string; value: number }[] }
     routes: { update: Route; post_update: Route; attach_work: Route; create_ticket: Route }
 }>()
 
@@ -113,6 +119,10 @@ const addDays = (date: Date, days: number) => {
     return next
 }
 const todayIso = toIso(new Date())
+const asDate = (value: string | null | undefined) => (value ? parseDay(value) : null)
+const fromDate = (value: Date | Date[] | (Date | null)[] | null | undefined) => (value instanceof Date ? toIso(value) : null)
+const datePickerPt = { pcInputText: { root: { class: "!w-full !py-0.5 !text-xs" } } }
+const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
 const shortDate = (value: string | Date) => (typeof value === "string" ? parseDay(value) : value).toLocaleDateString(undefined, { day: "numeric", month: "short" })
 
 const healthClasses: Record<string, string> = {
@@ -122,6 +132,14 @@ const healthClasses: Record<string, string> = {
 }
 const healthDots: Record<string, string> = { on_track: "bg-green-500", at_risk: "bg-amber-500", off_track: "bg-red-500" }
 const priorityClasses: Record<string, string> = { urgent: "font-medium text-red-600", high: "text-amber-600" }
+const indicatorStyles: Record<string, { icon: string; class: string }> = {
+    danger: { icon: "fal fa-exclamation-triangle", class: "text-red-700" },
+    warning: { icon: "fal fa-exclamation-triangle", class: "text-amber-700" },
+    info: { icon: "fal fa-info-circle", class: "text-gray-700" },
+}
+const milestonesDone = computed(() => props.milestones.filter((milestone) => milestone.done_at).length)
+const daysSince = (value: string | null) => (value ? Math.max(0, Math.round((parseDay(todayIso).getTime() - parseDay(value).getTime()) / 86400000)) : null)
+const daysSinceUpdate = computed(() => daysSince(props.project.last_update_at))
 
 const isCreatingTask = ref(false)
 const onTaskCreated = () => {
@@ -138,6 +156,7 @@ const editForm = useForm({
     target_date: props.project.target_date ?? "",
     owner_id: props.project.owner?.id ?? null,
     member_ids: props.project.members.map((member) => member.id),
+    parent_id: props.project.parent?.id ?? null,
 })
 const openEditor = () => {
     editForm.defaults({
@@ -148,6 +167,7 @@ const openEditor = () => {
         target_date: props.project.target_date ?? "",
         owner_id: props.project.owner?.id ?? null,
         member_ids: props.project.members.map((member) => member.id),
+        parent_id: props.project.parent?.id ?? null,
     })
     editForm.reset()
     isEditing.value = true
@@ -194,6 +214,10 @@ const toggleMilestone = (milestone: Milestone) => {
     milestone.done_at = milestone.done_at ? null : todayIso
     persistMilestones()
 }
+const setMilestoneDate = (milestone: Milestone, key: "start_date" | "due_date", value: Date | Date[] | (Date | null)[] | null | undefined) => {
+    milestone[key] = fromDate(value)
+    persistMilestones()
+}
 const removeMilestone = (index: number) => {
     if (isSavingMilestones.value) {
         return
@@ -236,7 +260,6 @@ const milestoneFilter = ref<"all" | "none" | number>("all")
 const assigneeFilter = ref<"all" | "none" | number>("all")
 const showClosed = ref(false)
 const workView = ref<"list" | "board">("list")
-const collapsedGroups = ref<Record<string, boolean>>({})
 
 const milestoneOptions = computed(() => props.milestones.map((milestone) => ({ label: milestone.name, value: milestone.id as number })))
 
@@ -260,25 +283,30 @@ const filteredWork = computed(() => {
     })
 })
 
-const listItems = computed(() => filteredWork.value.filter((item) => showClosed.value || item.state === "todo" || item.state === "in_progress"))
 
-type Group = { key: string; milestone: Milestone | null; items: WorkItem[]; total: number; done: number }
+const stateOrder: Record<WorkState, number> = { in_progress: 0, todo: 1, done: 2, cancelled: 3 }
+const milestoneById = computed(() => new Map(props.milestones.map((milestone, index) => [milestone.id as number, { milestone, index }])))
 
-const groups = computed<Group[]>(() => {
-    const build = (key: string, milestone: Milestone | null, milestoneId: number | null): Group => {
-        const everything = props.work.filter((item) => item.milestone_id === milestoneId && item.state !== "cancelled")
-        return {
-            key,
-            milestone,
-            items: listItems.value.filter((item) => item.milestone_id === milestoneId),
-            total: everything.length,
-            done: everything.filter((item) => item.state === "done").length,
-        }
-    }
-    const result = props.milestones.map((milestone) => build("m" + milestone.id, milestone, milestone.id as number))
-    result.push(build("none", null, null))
-    return result.filter((group) => group.items.length)
+const workTable = computed(() => {
+    const rank = (item: WorkItem) => (item.milestone_id !== null ? (milestoneById.value.get(item.milestone_id)?.index ?? props.milestones.length) : props.milestones.length)
+    const rows = [...filteredWork.value]
+        .sort((a, b) => rank(a) - rank(b) || stateOrder[a.state] - stateOrder[b.state])
+        .map((item, index, sorted) => ({ ...item, is_group_start: index === 0 || sorted[index - 1].milestone_id !== item.milestone_id }))
+    return { data: rows, meta: { total: rows.length, per_page: Math.max(1, rows.length), current_page: 1, last_page: 1, from: rows.length ? 1 : 0, to: rows.length } }
 })
+const commitsTable = computed(() => ({ data: props.commits, meta: { total: props.commits.length, per_page: Math.max(1, props.commits.length), current_page: 1, last_page: 1, from: props.commits.length ? 1 : 0, to: props.commits.length } }))
+
+const typeOptions = [
+    { label: ctrans("Tickets and tasks"), value: "all" },
+    { label: ctrans("Tickets"), value: "ticket" },
+    { label: ctrans("Tasks"), value: "task" },
+]
+const milestoneFilterOptions = computed(() => [{ label: ctrans("All milestones"), value: "all" }, { label: ctrans("No milestone"), value: "none" }, ...milestoneOptions.value])
+const assigneeFilterOptions = computed(() => [{ label: ctrans("Everyone"), value: "all" }, { label: ctrans("Unassigned"), value: "none" }, ...assignees.value.map((person) => ({ label: person.name, value: person.id }))])
+const workViewOptions = [
+    { label: ctrans("List"), value: "list", icon: "fal fa-list" },
+    { label: ctrans("Board"), value: "board", icon: "fal fa-columns" },
+]
 
 const boardColumns = computed(() => {
     const columns: { state: WorkState; label: string }[] = [
@@ -313,7 +341,7 @@ const milestoneStateOf = (milestone: Milestone): MilestoneState => {
 }
 const milestoneStyles: Record<MilestoneState, { fill: string; track: string; icon: string; iconClass: string; label: string }> = {
     done: { fill: "bg-green-500", track: "bg-green-100", icon: "fal fa-check-circle", iconClass: "text-green-600", label: ctrans("Done") },
-    active: { fill: "bg-blue-500", track: "bg-blue-100", icon: "fal fa-clock", iconClass: "text-blue-600", label: ctrans("In progress") },
+    active: { fill: "bg-[var(--app-accent)]", track: "bg-[var(--app-accent-soft)]", icon: "fal fa-clock", iconClass: "text-[var(--app-accent)]", label: ctrans("In progress") },
     late: { fill: "bg-red-500", track: "bg-red-100", icon: "fal fa-exclamation-triangle", iconClass: "text-red-600", label: ctrans("Late") },
     upcoming: { fill: "bg-gray-400", track: "bg-gray-100", icon: "fal fa-circle", iconClass: "text-gray-400", label: ctrans("Upcoming") },
 }
@@ -452,51 +480,110 @@ const burnUpOptions = {
     </PageHeading>
     <StaffTaskDialog :is-open="isCreatingTask" :ticket-project-id="project.id" @close="isCreatingTask = false" @created="onTaskCreated" />
 
-    <div class="grid gap-x-6 gap-y-3 border-b border-gray-200 px-4 py-3 text-sm sm:grid-cols-2 lg:grid-cols-[auto_auto_auto_minmax(14rem,1fr)_auto]">
-        <div>
-            <p class="mb-1 text-xs uppercase tracking-wide text-gray-400">{{ ctrans("Health") }}</p>
-            <span v-if="project.health" class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium" :class="healthClasses[project.health]">
-                <span class="size-2 rounded-full" :class="healthDots[project.health]" />
-                {{ project.health_label }}
-                <span class="font-normal opacity-75">· {{ ctrans("as of :date", { date: useFormatTime(project.health_at ?? undefined, { formatTime: "mdy" }) }) }}</span>
-            </span>
-            <span v-else class="text-xs text-gray-400">{{ ctrans("No health set") }}</span>
-        </div>
-        <div>
-            <p class="mb-1 text-xs uppercase tracking-wide text-gray-400">{{ ctrans("Status") }}</p>
-            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{{ project.status_label }}</span>
-        </div>
-        <div>
-            <p class="mb-1 text-xs uppercase tracking-wide text-gray-400">{{ ctrans("Owner and team") }}</p>
-            <div class="flex items-center gap-1">
-                <TicketUserAvatar v-if="project.owner" v-tooltip="ctrans('Owner') + ': ' + project.owner.name" :name="project.owner.name" :avatar="project.owner.avatar" size="sm" class="ring-2 ring-[--app-accent-strong]" />
-                <TicketUserAvatar v-for="member in project.members" :key="member.id" v-tooltip="member.name" :name="member.name" :avatar="member.avatar" size="sm" />
-                <span v-if="!project.owner && !project.members.length" class="text-xs text-gray-400">-</span>
-            </div>
-        </div>
-        <TicketProjectProgress :progress="progress" :start-date="project.start_date" :target-date="project.target_date" />
-        <div class="flex items-start gap-4 tabular-nums">
+    <div class="grid gap-x-8 gap-y-4 border-b border-gray-200 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)]">
+        <div class="min-w-0 space-y-3">
             <div>
-                <p class="text-xs uppercase tracking-wide text-gray-400">{{ ctrans("Open") }}</p>
-                <p class="text-lg font-semibold text-gray-800">{{ progress.open }}</p>
+                <p class="mb-1 text-xs uppercase tracking-wide text-gray-400">{{ ctrans("Goal") }}</p>
+                <p v-if="project.description" class="whitespace-pre-line text-base leading-relaxed text-gray-800">{{ project.description }}</p>
+                <p v-else class="text-sm text-gray-400">{{ ctrans("No goal set") }}</p>
+                <p v-if="project.parent" class="mt-1 text-xs text-gray-500">
+                    {{ ctrans("Sub-project of") }} <Link :href="route('grp.projects.show', project.parent.slug)" class="font-medium text-gray-700 hover:underline">{{ project.parent.name }}</Link>
+                </p>
             </div>
-            <div>
-                <p class="text-xs uppercase tracking-wide text-gray-400">{{ ctrans("Done") }}</p>
-                <p class="text-lg font-semibold text-green-700">{{ progress.done }}</p>
+            <div v-if="sub_projects.length">
+                <p class="mb-1 text-xs uppercase tracking-wide text-gray-400">{{ ctrans("Sub-projects") }}</p>
+                <table class="w-full text-sm">
+                    <thead class="whitespace-nowrap text-left text-xs text-gray-500">
+                        <tr>
+                            <th class="py-1 pr-3 font-normal">{{ ctrans("Project") }}</th>
+                            <th class="py-1 pr-3 font-normal">{{ ctrans("Owner") }}</th>
+                            <th class="py-1 pr-3 font-normal">{{ ctrans("Status") }}</th>
+                            <th class="py-1 text-right font-normal">{{ ctrans("Work done") }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr v-for="sub in sub_projects" :key="sub.slug">
+                            <td class="py-1.5 pr-3"><Link :href="route('grp.projects.show', sub.slug)" class="font-medium text-gray-800 hover:underline">{{ sub.name }}</Link></td>
+                            <td class="whitespace-nowrap py-1.5 pr-3">
+                                <span v-if="sub.owner" class="flex items-center gap-1.5 text-xs text-gray-600">
+                                    <TicketUserAvatar :name="sub.owner.name" :avatar="sub.owner.avatar" size="xs" />{{ sub.owner.name }}
+                                </span>
+                            </td>
+                            <td class="whitespace-nowrap py-1.5 pr-3">
+                                <span class="flex gap-1">
+                                    <span v-if="sub.health" class="rounded-full px-2 py-0.5 text-xs" :class="healthClasses[sub.health]">{{ sub.health_label }}</span>
+                                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{{ sub.status_label }}</span>
+                                </span>
+                            </td>
+                            <td class="py-1.5">
+                                <span class="grid grid-cols-[6rem_6.5rem] items-center justify-end gap-2 text-xs">
+                                    <span class="h-2 overflow-hidden rounded-full bg-gray-100">
+                                        <span class="block h-full rounded-full bg-green-500" :style="{ width: (sub.progress.percent ?? 0) + '%' }" />
+                                    </span>
+                                    <span class="text-right tabular-nums text-gray-600">{{ sub.progress.done }} / {{ sub.progress.done + sub.progress.open }} · {{ sub.progress.percent === null ? "—" : sub.progress.percent + "%" }}</span>
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="mt-1 text-xs text-gray-400">{{ ctrans("The progress of this project includes the work of its sub-projects.") }}</p>
             </div>
-            <div v-if="progress.days_left !== null">
-                <p class="text-xs uppercase tracking-wide text-gray-400">{{ ctrans("Days left") }}</p>
-                <p class="text-lg font-semibold" :class="progress.days_left < 0 ? 'text-red-600' : 'text-gray-800'">{{ progress.days_left }}</p>
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                <span v-if="project.health" class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium" :class="healthClasses[project.health]">
+                    <span class="size-2 rounded-full" :class="healthDots[project.health]" />
+                    {{ project.health_label }}
+                    <span class="font-normal opacity-75">· {{ ctrans("as of :date", { date: useFormatTime(project.health_at ?? undefined, { formatTime: "mdy" }) }) }}</span>
+                </span>
+                <span v-else class="text-xs text-gray-400">{{ ctrans("No health set") }}</span>
+                <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{{ project.status_label }}</span>
+                <div class="flex items-center gap-1">
+                    <TicketUserAvatar v-if="project.owner" v-tooltip="ctrans('Owner') + ': ' + project.owner.name" :name="project.owner.name" :avatar="project.owner.avatar" size="sm" class="ring-2 ring-[var(--app-accent-strong)]" />
+                    <TicketUserAvatar v-for="member in project.members" :key="member.id" v-tooltip="member.name" :name="member.name" :avatar="member.avatar" size="sm" />
+                    <span v-if="!project.owner && !project.members.length" class="text-xs text-gray-400">{{ ctrans("No owner or team") }}</span>
+                </div>
+                <span class="text-xs text-gray-500">
+                    <template v-if="daysSinceUpdate === null">{{ ctrans("No progress updates yet") }}</template>
+                    <template v-else-if="daysSinceUpdate === 0">{{ ctrans("Last update today") }}</template>
+                    <template v-else>{{ ctrans("Last update :days days ago", { days: daysSinceUpdate }) }}</template>
+                </span>
             </div>
+        </div>
+        <div class="space-y-3">
+            <dl class="grid grid-cols-4 divide-x divide-gray-200 rounded-md border border-gray-200 tabular-nums">
+                <div class="px-3 py-2">
+                    <dt class="whitespace-nowrap text-xs text-gray-500">{{ ctrans("Days left") }}</dt>
+                    <dd class="text-xl font-semibold" :class="progress.days_left !== null && progress.days_left < 0 ? 'text-red-600' : 'text-gray-800'">{{ progress.days_left ?? "-" }}</dd>
+                </div>
+                <div class="px-3 py-2">
+                    <dt class="whitespace-nowrap text-xs text-gray-500">{{ ctrans("Open") }}</dt>
+                    <dd class="text-xl font-semibold text-gray-800">{{ progress.open }}</dd>
+                </div>
+                <div class="px-3 py-2">
+                    <dt class="whitespace-nowrap text-xs text-gray-500">{{ ctrans("Done") }}</dt>
+                    <dd class="text-xl font-semibold text-green-700">{{ progress.done }}</dd>
+                </div>
+                <div class="px-3 py-2">
+                    <dt class="whitespace-nowrap text-xs text-gray-500">{{ ctrans("Milestones") }}</dt>
+                    <dd class="text-xl font-semibold text-gray-800">{{ milestonesDone }}<span class="text-sm font-normal text-gray-400">/{{ milestones.length }}</span></dd>
+                </div>
+            </dl>
+            <TicketProjectProgress :progress="progress" :start-date="project.start_date" :target-date="project.target_date" />
         </div>
     </div>
+
+    <ul v-if="indicators.length" class="divide-y divide-gray-100 border-b border-gray-200 bg-gray-50 text-sm">
+        <li v-for="indicator in indicators" :key="indicator.key + indicator.text" class="flex items-start gap-2 px-4 py-1.5" :class="indicatorStyles[indicator.level].class">
+            <FontAwesomeIcon :icon="indicatorStyles[indicator.level].icon" class="mt-0.5" fixed-width aria-hidden="true" />
+            <span>{{ indicator.text }}</span>
+        </li>
+    </ul>
 
     <nav class="flex gap-1 overflow-x-auto border-b border-gray-200 px-4">
         <button
             v-for="tab in tabs"
             :key="tab.key"
             class="-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm"
-            :class="[activeTab === tab.key ? 'border-[--app-accent-strong] font-medium text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-800', { 'ml-auto': tab.alignRight }]"
+            :class="[activeTab === tab.key ? 'border-[var(--app-accent-strong)] font-medium text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-800', { 'ml-auto': tab.alignRight }]"
             @click="selectTab(tab.key)">
             <FontAwesomeIcon :icon="tab.icon" fixed-width aria-hidden="true" />
             {{ tab.label }}
@@ -505,15 +592,10 @@ const burnUpOptions = {
 
     <div v-if="activeTab === 'overview'" class="grid gap-6 p-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
         <div class="min-w-0 space-y-6">
-            <section v-if="project.description">
-                <h2 class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Goal") }}</h2>
-                <p class="whitespace-pre-line text-gray-700">{{ project.description }}</p>
-            </section>
-
             <section>
                 <h2 class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Progress updates") }}</h2>
                 <form v-if="can_edit" class="mb-4 rounded-md border border-gray-200 p-2" @submit.prevent="postUpdate">
-                    <textarea v-model="updateForm.body" rows="3" class="w-full rounded-md border-gray-300 text-sm" :placeholder="ctrans('What moved, what is blocked, what comes next…')" />
+                    <Textarea v-model="updateForm.body" rows="3" auto-resize class="w-full text-sm" :placeholder="ctrans('What moved, what is blocked, what comes next…')" />
                     <p v-if="updateForm.errors.body" class="text-xs text-red-600">{{ updateForm.errors.body }}</p>
                     <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
                         <div class="inline-flex overflow-hidden rounded-md border border-gray-300 text-xs">
@@ -528,7 +610,7 @@ const burnUpOptions = {
                                 {{ health.label }}
                             </button>
                         </div>
-                        <Button :label="ctrans('Post update')" :disabled="!updateForm.body.trim()" :loading="updateForm.processing" @click="postUpdate" />
+                        <Button icon="fal fa-check" :label="ctrans('Post update')" type="tertiary" :disabled="!updateForm.body.trim()" :loading="updateForm.processing" @click="postUpdate" />
                     </div>
                 </form>
                 <p v-if="!updates.length" class="text-sm text-gray-500">{{ ctrans("No updates yet") }}</p>
@@ -550,58 +632,66 @@ const burnUpOptions = {
 
         <aside class="space-y-6">
             <section class="rounded-lg border border-gray-200 p-4">
-                <h2 class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Milestones") }}</h2>
+                <h2 class="mb-3 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-gray-400">
+                    {{ ctrans("Milestones") }}
+                    <span class="normal-case tabular-nums">{{ ctrans(":done of :total done", { done: milestonesDone, total: milestones.length }) }}</span>
+                </h2>
                 <p v-if="!milestoneDraft.length" class="text-sm text-gray-500">{{ ctrans("No milestones yet") }}</p>
-                <ul class="space-y-3 text-sm">
-                    <li v-for="(milestone, index) in milestoneDraft" :key="milestone.id ?? 'new-' + index" class="group">
-                        <div class="flex items-start gap-2">
-                            <button :disabled="!can_edit" class="mt-1" @click="toggleMilestone(milestone)">
-                                <FontAwesomeIcon :icon="milestone.done_at ? 'fal fa-check-square' : 'fal fa-square'" :class="milestone.done_at ? 'text-green-600' : 'text-gray-400'" fixed-width />
-                            </button>
-                            <div class="min-w-0 flex-1">
-                                <input
-                                    v-if="can_edit"
-                                    v-model="milestone.name"
-                                    maxlength="255"
-                                    class="w-full rounded-md border-transparent px-1 py-0.5 text-sm hover:border-gray-300"
-                                    :class="milestone.done_at && 'text-gray-400 line-through'"
-                                    @change="persistMilestones" />
-                                <p v-else :class="milestone.done_at && 'text-gray-400 line-through'">{{ milestone.name }}</p>
-                                <div v-if="can_edit" class="mt-0.5 flex gap-1">
-                                    <input v-model="milestone.start_date" type="date" :title="ctrans('Start')" class="min-w-0 flex-1 rounded-md border-transparent px-1 py-0.5 text-xs text-gray-500 hover:border-gray-300" @change="persistMilestones" />
-                                    <input v-model="milestone.due_date" type="date" :title="ctrans('Due')" class="min-w-0 flex-1 rounded-md border-transparent px-1 py-0.5 text-xs hover:border-gray-300" :class="isOverdue(milestone) ? 'font-semibold text-red-600' : 'text-gray-500'" @change="persistMilestones" />
-                                </div>
-                                <p v-else class="text-xs" :class="isOverdue(milestone) ? 'font-semibold text-red-600' : 'text-gray-400'">
-                                    <template v-if="milestone.done_at">{{ ctrans("Done :date", { date: useFormatTime(milestone.done_at, { formatTime: "mdy" }) }) }}</template>
-                                    <template v-else-if="milestone.due_date">{{ ctrans("Due :date", { date: useFormatTime(milestone.due_date, { formatTime: "mdy" }) }) }}</template>
-                                </p>
-                                <div class="mt-1 flex items-center gap-2 px-1">
-                                    <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
-                                        <div class="h-full rounded-full" :class="milestone.done_at ? 'bg-green-500' : isOverdue(milestone) ? 'bg-red-400' : 'bg-blue-500'" :style="{ width: percentOf(milestone.done, milestone.total) + '%' }" />
-                                    </div>
-                                    <span class="text-xs tabular-nums text-gray-500">{{ milestone.done }}/{{ milestone.total }}</span>
-                                    <span v-if="isOverdue(milestone)" class="text-xs font-semibold text-red-600">{{ ctrans("Overdue") }}</span>
-                                </div>
+                <ol class="text-sm">
+                    <li v-for="(milestone, index) in milestoneDraft" :key="milestone.id ?? 'new-' + index" class="group relative flex gap-3 pb-4 last:pb-0">
+                        <span v-if="index < milestoneDraft.length - 1" class="absolute bottom-0 left-3 top-7 border-l border-gray-200" aria-hidden="true" />
+                        <button
+                            v-tooltip="can_edit ? (milestone.done_at ? ctrans('Mark not done') : ctrans('Mark done')) : milestoneStyles[milestoneStateOf(milestone)].label"
+                            :disabled="!can_edit"
+                            class="relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full border bg-white"
+                            :class="milestone.done_at ? 'border-green-500' : isOverdue(milestone) ? 'border-red-400' : milestoneStateOf(milestone) === 'active' ? 'border-[var(--app-accent)]' : 'border-gray-300'"
+                            @click="toggleMilestone(milestone)">
+                            <FontAwesomeIcon :icon="milestone.done_at ? 'fal fa-check' : milestoneStyles[milestoneStateOf(milestone)].icon" :class="milestoneStyles[milestoneStateOf(milestone)].iconClass" class="text-xs" fixed-width />
+                        </button>
+                        <div class="min-w-0 flex-1">
+                            <input
+                                v-if="can_edit"
+                                v-model="milestone.name"
+                                maxlength="255"
+                                class="w-full rounded-md border-transparent px-1 py-0.5 text-sm hover:border-gray-300"
+                                :class="milestone.done_at && 'text-gray-500'"
+                                @change="persistMilestones" />
+                            <p v-else class="px-1" :class="milestone.done_at && 'text-gray-500'">{{ milestone.name }}</p>
+                            <p class="px-1 text-xs" :class="isOverdue(milestone) ? 'font-semibold text-red-600' : 'text-gray-500'">
+                                <template v-if="milestone.done_at">{{ ctrans("Done :date", { date: useFormatTime(milestone.done_at, { formatTime: "mdy" }) }) }}</template>
+                                <template v-else-if="isOverdue(milestone)">{{ ctrans("Overdue since :date", { date: useFormatTime(milestone.due_date ?? undefined, { formatTime: "mdy" }) }) }}</template>
+                                <template v-else-if="milestone.due_date">{{ ctrans("Due :date", { date: useFormatTime(milestone.due_date, { formatTime: "mdy" }) }) }}</template>
+                                <template v-else>{{ ctrans("No due date") }}</template>
+                            </p>
+                            <div v-if="can_edit" class="mt-1 hidden gap-1 group-focus-within:flex group-hover:flex">
+                                <DatePicker :model-value="asDate(milestone.start_date)" date-format="d M yy" show-button-bar :placeholder="ctrans('Start')" :class="fieldFocusClass" :pt="datePickerPt" class="min-w-0 flex-1" @update:model-value="setMilestoneDate(milestone, 'start_date', $event)" />
+                                <DatePicker :model-value="asDate(milestone.due_date)" date-format="d M yy" show-button-bar :placeholder="ctrans('Due')" :class="fieldFocusClass" :pt="datePickerPt" class="min-w-0 flex-1" @update:model-value="setMilestoneDate(milestone, 'due_date', $event)" />
                             </div>
-                            <div v-if="can_edit" class="flex flex-col text-gray-400 sm:invisible sm:group-hover:visible">
-                                <button :disabled="index === 0" class="hover:text-gray-700 disabled:opacity-30" @click="moveMilestone(index, -1)">
-                                    <FontAwesomeIcon icon="fal fa-arrow-up" fixed-width />
-                                </button>
-                                <button :disabled="index === milestoneDraft.length - 1" class="hover:text-gray-700 disabled:opacity-30" @click="moveMilestone(index, 1)">
-                                    <FontAwesomeIcon icon="fal fa-arrow-down" fixed-width />
-                                </button>
-                                <button class="hover:text-red-600" @click="removeMilestone(index)">
-                                    <FontAwesomeIcon icon="fal fa-times" fixed-width />
-                                </button>
+                            <div class="mt-1 flex items-center gap-2 px-1">
+                                <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
+                                    <div class="h-full rounded-full" :class="milestone.done_at ? 'bg-green-500' : isOverdue(milestone) ? 'bg-red-400' : 'bg-[var(--app-accent)]'" :style="{ width: percentOf(milestone.done, milestone.total) + '%' }" />
+                                </div>
+                                <span class="w-10 text-right text-xs tabular-nums text-gray-500">{{ milestone.done }}/{{ milestone.total }}</span>
                             </div>
                         </div>
+                        <div v-if="can_edit" class="flex flex-col text-gray-400 sm:invisible sm:group-hover:visible">
+                            <button v-tooltip="ctrans('Move up')" :disabled="index === 0" class="hover:text-gray-700 disabled:opacity-30" @click="moveMilestone(index, -1)">
+                                <FontAwesomeIcon icon="fal fa-arrow-up" fixed-width />
+                            </button>
+                            <button v-tooltip="ctrans('Move down')" :disabled="index === milestoneDraft.length - 1" class="hover:text-gray-700 disabled:opacity-30" @click="moveMilestone(index, 1)">
+                                <FontAwesomeIcon icon="fal fa-arrow-down" fixed-width />
+                            </button>
+                            <button v-tooltip="ctrans('Delete milestone')" class="hover:text-red-600" @click="removeMilestone(index)">
+                                <FontAwesomeIcon icon="fal fa-times" fixed-width />
+                            </button>
+                        </div>
                     </li>
-                </ul>
-                <form v-if="can_edit" class="mt-3 space-y-1.5" @submit.prevent="addMilestone">
-                    <input v-model="newMilestone.name" maxlength="255" class="w-full rounded-md border-gray-300 py-1 text-sm" :placeholder="ctrans('New milestone')" />
+                </ol>
+                <form v-if="can_edit" class="mt-4 space-y-1.5 border-t border-gray-100 pt-3" @submit.prevent="addMilestone">
+                    <InputText v-model="newMilestone.name" maxlength="255" size="small" class="w-full" :placeholder="ctrans('New milestone')" />
                     <div class="flex gap-2">
-                        <input v-model="newMilestone.due_date" type="date" class="flex-1 rounded-md border-gray-300 py-1 text-sm" />
-                        <Button icon="fal fa-plus" type="tertiary" size="xs" :disabled="!newMilestone.name.trim()" @click="addMilestone" />
+                        <DatePicker :model-value="asDate(newMilestone.due_date)" date-format="d M yy" :placeholder="ctrans('Due')" :class="fieldFocusClass" :pt="datePickerPt" class="min-w-0 flex-1" @update:model-value="newMilestone.due_date = fromDate($event) ?? ''" />
+                        <Button icon="fal fa-plus" :label="ctrans('Add')" type="tertiary" size="xs" :disabled="!newMilestone.name.trim()" @click="addMilestone" />
                     </div>
                 </form>
             </section>
@@ -618,7 +708,7 @@ const burnUpOptions = {
                         </div>
                         <div class="flex h-1.5 overflow-hidden rounded-full bg-gray-100" :style="{ width: ((row.todo + row.in_progress + row.done) / maxWorkload) * 100 + '%' }">
                             <div class="bg-gray-400" :style="{ flexGrow: row.todo }" />
-                            <div class="bg-blue-500" :style="{ flexGrow: row.in_progress }" />
+                            <div class="bg-[var(--app-accent)]" :style="{ flexGrow: row.in_progress }" />
                             <div class="bg-green-500" :style="{ flexGrow: row.done }" />
                         </div>
                     </li>
@@ -630,79 +720,64 @@ const burnUpOptions = {
 
     <div v-else-if="activeTab === 'work'" class="space-y-3 p-4">
         <div class="flex flex-wrap items-center gap-2 text-sm">
-            <div class="relative">
-                <FontAwesomeIcon icon="fal fa-search" class="pointer-events-none absolute left-2 top-2 text-gray-400" fixed-width />
-                <input v-model="search" class="w-48 rounded-md border-gray-300 py-1 pl-8 text-sm" :placeholder="ctrans('Search')" />
-            </div>
-            <select v-model="typeFilter" class="rounded-md border-gray-300 py-1 text-sm">
-                <option value="all">{{ ctrans("Tickets and tasks") }}</option>
-                <option value="ticket">{{ ctrans("Tickets") }}</option>
-                <option value="task">{{ ctrans("Tasks") }}</option>
-            </select>
-            <select v-model="milestoneFilter" class="rounded-md border-gray-300 py-1 text-sm">
-                <option value="all">{{ ctrans("All milestones") }}</option>
-                <option value="none">{{ ctrans("No milestone") }}</option>
-                <option v-for="milestone in milestones" :key="milestone.id" :value="milestone.id">{{ milestone.name }}</option>
-            </select>
-            <select v-model="assigneeFilter" class="rounded-md border-gray-300 py-1 text-sm">
-                <option value="all">{{ ctrans("Everyone") }}</option>
-                <option value="none">{{ ctrans("Unassigned") }}</option>
-                <option v-for="person in assignees" :key="person.id" :value="person.id">{{ person.name }}</option>
-            </select>
+            <InputText v-model="search" size="small" class="w-48" :placeholder="ctrans('Search')" />
+            <Select v-model="typeFilter" :options="typeOptions" option-label="label" option-value="value" size="small" class="w-44" />
+            <Select v-model="milestoneFilter" :options="milestoneFilterOptions" option-label="label" option-value="value" size="small" class="w-56" />
+            <Select v-model="assigneeFilter" :options="assigneeFilterOptions" option-label="label" option-value="value" filter size="small" class="w-44" />
             <label class="flex items-center gap-1.5 text-gray-600">
-                <input v-model="showClosed" type="checkbox" class="rounded border-gray-300" />
+                <Checkbox v-model="showClosed" binary input-id="project-show-closed" />
                 {{ ctrans("Show closed") }}
             </label>
-            <div class="ml-auto inline-flex overflow-hidden rounded-md border border-gray-300">
-                <button class="flex items-center gap-1.5 px-2 py-1" :class="workView === 'list' ? 'bg-gray-100 font-medium' : 'text-gray-600 hover:bg-gray-50'" @click="workView = 'list'">
-                    <FontAwesomeIcon icon="fal fa-list" fixed-width />{{ ctrans("List") }}
-                </button>
-                <button class="flex items-center gap-1.5 border-l border-gray-300 px-2 py-1" :class="workView === 'board' ? 'bg-gray-100 font-medium' : 'text-gray-600 hover:bg-gray-50'" @click="workView = 'board'">
-                    <FontAwesomeIcon icon="fal fa-columns" fixed-width />{{ ctrans("Board") }}
-                </button>
-            </div>
+            <SegmentedToggle v-model="workView" :options="workViewOptions" :aria-label="ctrans('View')" class="ml-auto" />
         </div>
 
         <div v-if="can_edit">
             <form class="flex flex-wrap items-center gap-2" @submit.prevent="attachWork">
-                <input v-model="attachForm.references" class="min-w-0 flex-1 rounded-md border-gray-300 py-1 text-sm sm:max-w-md" :placeholder="ctrans('Add tickets or tasks: HELP-123, TASK-45')" />
+                <InputText v-model="attachForm.references" size="small" class="min-w-0 flex-1 sm:max-w-md" :placeholder="ctrans('Add tickets or tasks: HELP-123, TASK-45')" />
                 <Select v-model="attachForm.ticket_project_milestone_id" :options="milestoneOptions" option-label="label" option-value="value" show-clear size="small" class="w-48" :placeholder="ctrans('No milestone')" />
                 <Button icon="fal fa-link" :label="ctrans('Add')" type="tertiary" size="xs" :loading="attachForm.processing" :disabled="!attachForm.references.trim()" @click="attachWork" />
             </form>
             <p v-if="attachForm.errors.references" class="mt-1 text-xs text-red-600">{{ attachForm.errors.references }}</p>
         </div>
 
-        <p v-if="!filteredWork.length" class="rounded-md border border-dashed border-gray-300 p-4 text-center text-sm text-gray-500">{{ ctrans("No work matches") }}</p>
-
-        <div v-if="workView === 'list'" class="space-y-3">
-            <section v-for="group in groups" :key="group.key" class="rounded-md border border-gray-200">
-                <button class="flex w-full items-center gap-2 bg-gray-50 px-3 py-1.5 text-left text-sm" @click="collapsedGroups[group.key] = !collapsedGroups[group.key]">
-                    <FontAwesomeIcon :icon="collapsedGroups[group.key] ? 'fal fa-chevron-right' : 'fal fa-chevron-down'" class="text-gray-400" fixed-width />
-                    <span class="font-medium">{{ group.milestone?.name ?? ctrans("No milestone") }}</span>
-                    <span class="text-xs text-gray-500">{{ group.done }}/{{ group.total }}</span>
-                    <span class="h-1.5 w-20 overflow-hidden rounded-full bg-gray-200">
-                        <span class="block h-full rounded-full bg-green-500" :style="{ width: percentOf(group.done, group.total) + '%' }" />
-                    </span>
-                    <span v-if="group.milestone?.due_date" class="ml-auto text-xs" :class="isOverdue(group.milestone) ? 'font-semibold text-red-600' : 'text-gray-400'">{{ ctrans("Due :date", { date: useFormatTime(group.milestone.due_date, { formatTime: "mdy" }) }) }}</span>
+        <p v-if="workView === 'list' && !workTable.data.length" class="rounded-md border border-dashed border-gray-300 p-4 text-center text-sm text-gray-500">{{ ctrans("No work matches") }}</p>
+        <Table v-else-if="workView === 'list'" name="work" :resource="workTable" class="mt-1">
+            <template #tableFilterSearch><span /></template>
+            <template #pagination><span /></template>
+            <template #cell(status)="{ item }">
+                <FontAwesomeIcon v-tooltip="item.status_label" :icon="item.status_icon.icon" :class="item.status_icon.class" fixed-width />
+            </template>
+            <template #cell(reference)="{ item }">
+                <a :href="item.url" class="whitespace-nowrap font-mono text-xs text-gray-600 hover:underline" @click="openQuickLook(item, $event)">{{ item.reference }}</a>
+            </template>
+            <template #cell(subject)="{ item }">
+                <a :href="item.url" class="hover:underline" :class="[priorityClasses[item.priority], (item.state === 'done' || item.state === 'cancelled') && 'text-gray-500']" @click="openQuickLook(item, $event)">{{ item.subject }}</a>
+            </template>
+            <template #cell(milestone)="{ item }">
+                <Select v-if="can_edit" :model-value="item.milestone_id" :options="milestoneOptions" option-label="label" option-value="value" show-clear size="small" class="w-56" :class="!item.is_group_start && 'opacity-60 hover:opacity-100'" :placeholder="ctrans('No milestone')" @update:model-value="moveItem(item, $event ?? null)" />
+                <span v-else-if="item.is_group_start" class="text-sm text-gray-700">{{ milestoneById.get(item.milestone_id)?.milestone.name ?? ctrans("No milestone") }}</span>
+            </template>
+            <template #cell(status_label)="{ item }">
+                <span class="whitespace-nowrap text-sm text-gray-600">{{ item.status_label }}</span>
+            </template>
+            <template #cell(assignee)="{ item }">
+                <span v-if="item.assignee" class="flex items-center gap-2 whitespace-nowrap">
+                    <TicketUserAvatar :name="item.assignee.name" :avatar="item.assignee.avatar" size="xs" />
+                    {{ item.assignee.name }}
+                </span>
+                <span v-else class="text-gray-400">{{ ctrans("Unassigned") }}</span>
+            </template>
+            <template #cell(updated_at)="{ item }">
+                <span class="whitespace-nowrap tabular-nums text-gray-500">{{ useFormatTime(item.updated_at, { formatTime: "mdy" }) }}</span>
+            </template>
+            <template #cell(actions)="{ item }">
+                <button v-if="can_edit" v-tooltip="ctrans('Take out of the project')" class="text-gray-400 hover:text-red-600" @click="removeItem(item)">
+                    <FontAwesomeIcon icon="fal fa-times" fixed-width />
                 </button>
-                <ul v-show="!collapsedGroups[group.key]" class="divide-y divide-gray-100">
-                    <li v-for="item in group.items" :key="item.key" class="group flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 hover:bg-gray-50" :class="(item.state === 'done' || item.state === 'cancelled') && 'opacity-70'" @click="openQuickLook(item, $event)">
-                        <FontAwesomeIcon v-tooltip="item.status_label" :icon="item.status_icon.icon" :class="item.status_icon.class" fixed-width />
-                        <a :href="item.url" class="min-w-0 flex-1 basis-60 truncate">
-                            <span class="mr-2 font-mono text-xs text-gray-500">{{ item.reference }}</span>
-                            <span :class="priorityClasses[item.priority]">{{ item.subject }}</span>
-                        </a>
-                        <TicketUserAvatar v-if="item.assignee" v-tooltip="item.assignee.name" :name="item.assignee.name" :avatar="item.assignee.avatar" size="sm" />
-                        <Select v-if="can_edit" :model-value="item.milestone_id" :options="milestoneOptions" option-label="label" option-value="value" show-clear size="small" class="w-44" :placeholder="ctrans('No milestone')" @update:model-value="moveItem(item, $event ?? null)" />
-                        <button v-if="can_edit" v-tooltip="ctrans('Take out of the project')" class="text-gray-400 hover:text-red-600 sm:invisible sm:group-hover:visible" @click="removeItem(item)">
-                            <FontAwesomeIcon icon="fal fa-times" fixed-width />
-                        </button>
-                    </li>
-                </ul>
-            </section>
-        </div>
+            </template>
+        </Table>
 
-        <div v-else class="grid gap-3 md:grid-cols-3" :class="showClosed && 'xl:grid-cols-4'">
+        <div v-if="workView === 'board'" class="grid gap-3 md:grid-cols-3" :class="showClosed && 'xl:grid-cols-4'">
             <section v-for="column in boardColumns" :key="column.state" class="rounded-md bg-gray-50 p-2">
                 <h3 class="mb-2 flex items-center justify-between px-1 text-xs font-medium uppercase tracking-wide text-gray-500">
                     {{ column.label }}
@@ -860,31 +935,22 @@ const burnUpOptions = {
     </div>
 
     <div v-else-if="activeTab === 'commits'" class="p-4">
-        <p v-if="!commits.length" class="rounded-md border border-dashed border-gray-300 p-4 text-center text-sm text-gray-500">{{ ctrans("No commits recorded on this project's tickets yet") }}</p>
-        <div v-else class="overflow-x-auto rounded-md border border-gray-200">
-            <table class="w-full text-left text-sm">
-                <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-                    <tr>
-                        <th class="px-3 py-2">{{ ctrans("Version") }}</th>
-                        <th class="px-3 py-2">{{ ctrans("Deployed") }}</th>
-                        <th class="px-3 py-2">{{ ctrans("Commit") }}</th>
-                        <th class="px-3 py-2">{{ ctrans("Subject") }}</th>
-                        <th class="px-3 py-2">{{ ctrans("Ticket") }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    <tr v-for="commit in commits" :key="commit.hash + commit.reference">
-                        <td class="whitespace-nowrap px-3 py-2">{{ commit.version ?? "-" }}</td>
-                        <td class="whitespace-nowrap px-3 py-2">{{ commit.deployed_at ? useFormatTime(commit.deployed_at, { formatTime: "mdy" }) : "-" }}</td>
-                        <td class="px-3 py-2 font-mono text-xs">{{ commit.hash.slice(0, 10) }}</td>
-                        <td class="px-3 py-2">{{ commit.subject }}</td>
-                        <td class="whitespace-nowrap px-3 py-2">
-                            <Link :href="commit.url" class="font-mono text-xs underline">{{ commit.reference }}</Link>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <Table name="commits" :resource="commitsTable">
+            <template #tableFilterSearch><span /></template>
+            <template #pagination><span /></template>
+            <template #cell(version)="{ item }">
+                <span class="whitespace-nowrap">{{ item.version ?? "-" }}</span>
+            </template>
+            <template #cell(deployed_at)="{ item }">
+                <span class="whitespace-nowrap tabular-nums">{{ item.deployed_at ? useFormatTime(item.deployed_at, { formatTime: "mdy" }) : "-" }}</span>
+            </template>
+            <template #cell(hash)="{ item }">
+                <span class="whitespace-nowrap font-mono text-xs">{{ item.hash.slice(0, 10) }}</span>
+            </template>
+            <template #cell(reference)="{ item }">
+                <Link :href="item.url" class="whitespace-nowrap font-mono text-xs hover:underline">{{ item.reference }}</Link>
+            </template>
+        </Table>
     </div>
 
     <div v-else class="p-4">
@@ -904,31 +970,34 @@ const burnUpOptions = {
     <Dialog v-model:visible="isEditing" modal :header="ctrans('Edit project')" class="w-full max-w-lg">
         <form class="space-y-3" @submit.prevent="saveProject">
             <div>
-                <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Name") }}</label>
-                <input v-model="editForm.name" maxlength="255" required class="w-full rounded-md border-gray-300 text-sm" />
+                <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Name") }} <span class="text-red-500">*</span></label>
+                <InputText v-model="editForm.name" maxlength="255" required class="w-full" />
                 <p v-if="editForm.errors.name" class="mt-1 text-xs text-red-600">{{ editForm.errors.name }}</p>
             </div>
             <div>
                 <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Goal") }}</label>
-                <textarea v-model="editForm.description" rows="5" class="w-full rounded-md border-gray-300 text-sm" />
+                <Textarea v-model="editForm.description" rows="5" auto-resize class="w-full text-sm" />
             </div>
             <div class="grid grid-cols-3 gap-3">
                 <div>
-                    <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Status") }}</label>
-                    <select v-model="editForm.status" class="w-full rounded-md border-gray-300 text-sm">
-                        <option v-for="status in options.statuses" :key="status.value" :value="status.value">{{ status.label }}</option>
-                    </select>
+                    <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Status") }} <span class="text-red-500">*</span></label>
+                    <Select v-model="editForm.status" :options="options.statuses" option-label="label" option-value="value" class="w-full" />
                 </div>
                 <div>
-                    <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Start") }}</label>
-                    <input v-model="editForm.start_date" type="date" required class="w-full rounded-md border-gray-300 text-sm" />
+                    <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Start") }} <span class="text-red-500">*</span></label>
+                    <DatePicker :model-value="asDate(editForm.start_date)" date-format="d M yy" :class="fieldFocusClass" class="w-full" @update:model-value="editForm.start_date = fromDate($event) ?? editForm.start_date" />
                 </div>
                 <div>
                     <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Target") }}</label>
-                    <input v-model="editForm.target_date" type="date" class="w-full rounded-md border-gray-300 text-sm" />
+                    <DatePicker :model-value="asDate(editForm.target_date)" date-format="d M yy" show-button-bar :class="fieldFocusClass" class="w-full" @update:model-value="editForm.target_date = fromDate($event) ?? ''" />
                 </div>
             </div>
             <p v-if="editForm.errors.start_date || editForm.errors.target_date" class="text-xs text-red-600">{{ editForm.errors.start_date || editForm.errors.target_date }}</p>
+            <div v-if="options.parents.length || editForm.parent_id">
+                <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Sub-project of") }}</label>
+                <Select v-model="editForm.parent_id" :options="options.parents" option-label="label" option-value="value" filter show-clear :placeholder="ctrans('None: a top-level project')" class="w-full" />
+                <p v-if="editForm.errors.parent_id" class="mt-1 text-xs text-red-600">{{ editForm.errors.parent_id }}</p>
+            </div>
             <div>
                 <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Owner") }}</label>
                 <Select v-model="editForm.owner_id" :options="options.staff" option-label="label" option-value="value" filter show-clear class="w-full" />
@@ -937,9 +1006,13 @@ const burnUpOptions = {
                 <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Team") }}</label>
                 <MultiSelect v-model="editForm.member_ids" :options="options.staff" option-label="label" option-value="value" filter display="chip" class="w-full" />
             </div>
-            <div class="flex justify-end gap-2 pt-2">
-                <Button type="tertiary" :label="ctrans('Cancel')" @click="isEditing = false" />
-                <Button :label="ctrans('Save')" :loading="editForm.processing" @click="saveProject" />
+            <div class="flex w-full gap-2 pt-2">
+                <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isEditing = false">
+                    <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width /></template>
+                </Button>
+                <Button type="primary" full :label="ctrans('Save')" :loading="editForm.processing" @click="saveProject">
+                    <template #icon><FontAwesomeIcon icon="fal fa-check" fixed-width /></template>
+                </Button>
             </div>
         </form>
     </Dialog>

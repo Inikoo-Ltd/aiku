@@ -31,7 +31,7 @@ enum GoodsInSampleData {
         GoodsInDeliveryCheck(id: "pallets", title: "[Check · pallets wrapped]")
     ]
 
-    static func bathBomb(checked: Int? = nil, placed: Bool = false) -> GoodsInItem {
+    static func bathBomb(checked: Double? = nil, placed: Bool = false) -> GoodsInItem {
         GoodsInItem(
             sko: "SKO-00733", name: "Bath bomb – rose 180g", delivered: 48, checked: checked,
             placements: placed ? [GoodsInPlacement(location: "A-03-02", quantity: 48)] : [],
@@ -40,7 +40,7 @@ enum GoodsInSampleData {
         )
     }
 
-    static func lavender(checked: Int? = nil, placed: Bool = false) -> GoodsInItem {
+    static func lavender(checked: Double? = nil, placed: Bool = false) -> GoodsInItem {
         GoodsInItem(
             sko: "SKO-00412", name: "Lavender essential oil 10ml", delivered: 120, checked: checked,
             placements: placed ? [GoodsInPlacement(location: "A-01-01", quantity: checked ?? 0)] : [],
@@ -49,7 +49,7 @@ enum GoodsInSampleData {
         )
     }
 
-    static func eucalyptus(checked: Int? = nil) -> GoodsInItem {
+    static func eucalyptus(checked: Double? = nil) -> GoodsInItem {
         GoodsInItem(
             sko: "SKO-01402", name: "Eucalyptus essential oil 10ml", delivered: 60, checked: checked,
             pickingLocation: "A-01-02", pickingSummary: "A-01-02 for Wholesale",
@@ -57,7 +57,7 @@ enum GoodsInSampleData {
         )
     }
 
-    static func candle(checked: Int? = nil) -> GoodsInItem {
+    static func candle(checked: Double? = nil) -> GoodsInItem {
         GoodsInItem(
             sko: "SKO-01187", name: "Soy wax candle – vanilla", delivered: 72, checked: checked,
             pickingLocation: "A-07-01", pickingSummary: "A-07-01 for Wholesale · B-02-01 for Dropshipping",
@@ -68,7 +68,7 @@ enum GoodsInSampleData {
         )
     }
 
-    static func incense(checked: Int? = nil) -> GoodsInItem {
+    static func incense(checked: Double? = nil) -> GoodsInItem {
         GoodsInItem(
             sko: "SKO-00953", name: "Incense sticks – sandalwood", delivered: 200, checked: checked,
             pickingLocation: "B-01-04", pickingSummary: "B-01-04 for Wholesale",
@@ -79,7 +79,7 @@ enum GoodsInSampleData {
         )
     }
 
-    static func roseQuartz(checked: Int? = nil) -> GoodsInItem {
+    static func roseQuartz(checked: Double? = nil) -> GoodsInItem {
         GoodsInItem(
             sko: "SKO-02210", name: "Rose quartz tumble stones", delivered: 6, checked: checked,
             suggestedLocation: GoodsInLocationOption(code: "A-09-04", detail: "Area A · empty"),
@@ -92,7 +92,7 @@ enum GoodsInSampleData {
             let number = first + offset
             let code = String(format: "SKO-%05d", number)
             return GoodsInItem(
-                sko: code, name: "[Product name]", delivered: 24 + (offset % 5) * 12,
+                sko: code, name: "[Product name]", delivered: Double(24 + (offset % 5) * 12),
                 pickingLocation: offset < count - newSkos ? "B-0\(offset % 4 + 1)-0\(offset % 6 + 1)" : nil,
                 pickingSummary: offset < count - newSkos ? "B-0\(offset % 4 + 1)-0\(offset % 6 + 1) for Wholesale" : nil,
                 locationOptions: offset < count - newSkos ? [GoodsInLocationOption(code: "B-0\(offset % 4 + 1)-0\(offset % 6 + 1)", detail: "Picking location · Wholesale")] : [],

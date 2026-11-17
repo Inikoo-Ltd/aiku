@@ -365,6 +365,26 @@ class ShareMixPool
     }
 
     /**
+     * The job orders of the lines tasksNeeding() may give to, read without the pool lock and without the recipe check,
+     * so it can only hold more of them: these are locked before an entry of the pool is closed, corrected or voided.
+     *
+     * @return Collection<int, int>
+     */
+    public function jobOrderIdsNeeding(int $productionId, string $poolKey): Collection
+    {
+        [$manufactureTaskId, $label] = self::stepOf($poolKey);
+
+        return $this->openLines($productionId)
+            ->setEagerLoads([])
+            ->reorder()
+            ->where('job_order_item_tasks.manufacture_task_id', $manufactureTaskId)
+            ->whereRaw(self::LABEL_SQL.' = ?', [$label])
+            ->pluck('job_order_item_tasks.job_order_id')
+            ->unique()
+            ->values();
+    }
+
+    /**
      * The same lines as tasksNeeding() for several pools read at once, for screens that only show them:
      * anything that shares out, fills or settles a pool reads its own lines inside its lock.
      *

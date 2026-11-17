@@ -11,6 +11,7 @@ namespace App\Actions\Helpers\TicketProject;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Ticket\TicketProjectStatusEnum;
 use App\Models\Helpers\TicketProject;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -87,6 +88,17 @@ class UpdateTicketProject extends OrgAction
             'owner_id'                => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
             'member_ids'              => ['sometimes', 'nullable', 'array'],
             'member_ids.*'            => [Rule::exists('users', 'id')->where('group_id', $this->group->id)],
+            'parent_id'               => ['sometimes', 'nullable', 'integer', StoreTicketProject::parentRule($this->group->id), function (string $attribute, mixed $value, Closure $fail) {
+                $project = $this->updatingProject ?? request()->route('ticketProject');
+                if ($value === null || !$project) {
+                    return;
+                }
+                if ((int) $value === $project->id) {
+                    $fail(__('A project cannot be its own parent.'));
+                } elseif ($project->children()->exists()) {
+                    $fail(__('This project has sub-projects, so it cannot become a sub-project itself.'));
+                }
+            }],
             'milestones'              => ['sometimes', 'nullable', 'array', 'max:100'],
             'milestones.*.id'          => ['nullable', 'integer'],
             'milestones.*.name'        => ['required', 'string', 'max:255'],

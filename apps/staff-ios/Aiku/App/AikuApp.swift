@@ -25,9 +25,18 @@ struct AikuApp: App {
         )
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-AikuUITestSignedIn") {
-            let profile = ProfileResponse(id: 0, username: StaffProfile.sample.username, contactName: StaffProfile.sample.name, email: nil, employee: [])
+            let loginProfile = ProfileResponse(id: 0, username: StaffProfile.sample.username, contactName: StaffProfile.sample.name, email: nil, employee: [])
+            let profile = MobileProfileResponse(
+                id: 0,
+                username: StaffProfile.sample.username,
+                name: StaffProfile.sample.name,
+                position: nil,
+                jobTitle: nil,
+                jobPositions: [],
+                organisation: nil
+            )
             let service = AuthService(
-                login: { _ in MobileLoginResponse(token: "ui-test", expiresAt: nil, user: profile) },
+                login: { _ in MobileLoginResponse(token: "ui-test", expiresAt: nil, user: loginProfile) },
                 fetchProfile: { profile },
                 logout: {}
             )

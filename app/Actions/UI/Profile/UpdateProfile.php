@@ -110,6 +110,10 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['tickets_list_mine'] = (string) Arr::pull($modelData, 'tickets_list_mine');
         }
 
+        if (Arr::exists($modelData, 'projects_view')) {
+            $modelData['settings']['projects_view'] = (string) Arr::pull($modelData, 'projects_view');
+        }
+
         if (Arr::exists($modelData, 'sales_quarters')) {
             $modelData['settings']['sales_quarters'] = (int) Arr::pull($modelData, 'sales_quarters');
         }
@@ -315,6 +319,7 @@ class UpdateProfile extends OrgAction
             'ticket_history_newest_first'         => ['sometimes', 'boolean'],
             'tickets_list_mine'                   => ['sometimes', 'nullable', 'string', 'max:100'],
             'sales_quarters'                      => ['sometimes', 'integer', 'between:4,8'],
+            'projects_view'                       => ['sometimes', 'string', Rule::in(['table', 'cards'])],
             'rail_hidden_badges'                  => ['sometimes', 'nullable', 'array'],
             'rail_hidden_badges.*'                => ['string', Rule::in(self::RAIL_BADGES)],
             'rail_parts'                          => ['sometimes', 'array', 'max:50'],

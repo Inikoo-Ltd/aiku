@@ -1789,6 +1789,47 @@ describe('partner shopping list', function () {
             ->and($firstClick->refresh()->deliveryNotes()->count())->toBe(1);
     });
 
+    test('a partner order sent inside a bigger transaction stays locked until that transaction commits or rolls back', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+        $order = function () use ($seller) {
+            $item = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 4]);
+
+            return CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]])['orders'][0];
+        };
+        $isFree = function (\App\Models\Ordering\Order $order) {
+            $lock = \Illuminate\Support\Facades\Cache::lock("send-partner-order-to-warehouse:{$order->id}", 5);
+            if (!$lock->get()) {
+                return false;
+            }
+            $lock->release();
+
+            return true;
+        };
+
+        $committed = $order();
+        \Illuminate\Support\Facades\DB::transaction(function () use ($committed, $isFree) {
+            SendPartnerOrderToWarehouse::make()->action($committed);
+            expect($isFree($committed))->toBeFalse();
+        });
+        expect($isFree($committed))->toBeTrue()
+            ->and($committed->refresh()->deliveryNotes()->count())->toBe(1);
+
+        $rolledBack = $order();
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($rolledBack, $isFree) {
+                SendPartnerOrderToWarehouse::make()->action($rolledBack);
+                expect($isFree($rolledBack))->toBeFalse();
+                throw new \RuntimeException('the purchase order failed after the send');
+            });
+        } catch (\RuntimeException) {
+        }
+        expect($isFree($rolledBack))->toBeTrue()
+            ->and($rolledBack->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::CREATING);
+    });
+
     test('mirror stock delivery follows delivery note dispatch', function () {
         $seller = $this->orgPartner->partner;
         if (!$seller->warehouses()->exists()) {

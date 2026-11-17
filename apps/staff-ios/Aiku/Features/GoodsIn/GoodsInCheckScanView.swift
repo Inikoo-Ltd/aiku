@@ -34,7 +34,7 @@ struct GoodsInCheckScanView: View {
         .aikuSheet(item: $editingItem) { item in
             GoodsInCheckQuantitySheet(item: item) { quantity in
                 store.setChecked(reference, sko: item.sko, quantity: quantity)
-                feedback = GoodsInScanFeedback(tone: .success, title: item.sko, detail: "· \(quantity.grouped) of \(item.delivered.grouped) checked")
+                feedback = GoodsInScanFeedback(tone: .success, title: item.sko, detail: "· \(item.text(quantity)) of \(item.text(item.delivered)) checked")
                 editingItem = nil
             }
         }
@@ -70,23 +70,23 @@ struct GoodsInCheckScanView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 VStack(alignment: .trailing, spacing: 0) {
-                    (Text(checked.grouped).font(.aiku(22, .bold)).foregroundColor(AikuColor.text)
-                        + Text(" / \(item.delivered.grouped)").font(.aiku(14, .medium)).foregroundColor(AikuColor.text3))
+                    (Text(item.text(checked)).font(.aiku(22, .bold)).foregroundColor(AikuColor.text)
+                        + Text(" / \(item.text(item.delivered))").font(.aiku(14, .medium)).foregroundColor(AikuColor.text3))
                         .monospacedDigit()
                     Text("checked")
                         .font(.aiku(11))
                         .foregroundStyle(AikuColor.text3)
                 }
             }
-            ProgressBar(value: item.delivered > 0 ? Double(checked) / Double(item.delivered) : 0, height: 6)
+            ProgressBar(value: item.delivered > 0 ? checked / item.delivered : 0, height: 6)
                 .accessibilityLabel("Checked")
-            Text("\(item.leftToCheck.grouped) left on this item")
+            Text("\(item.text(item.leftToCheck)) left on this item")
                 .font(.aiku(13))
                 .foregroundStyle(AikuColor.text3)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            AikuButton("Check all \(item.leftToCheck.grouped)", kind: .secondary, size: .regular) {
+            AikuButton("Check all \(item.text(item.leftToCheck))", kind: .secondary, size: .regular) {
                 store.setChecked(reference, sko: item.sko, quantity: item.delivered)
-                feedback = GoodsInScanFeedback(tone: .success, title: item.sko, detail: "· all \(item.delivered.grouped) checked")
+                feedback = GoodsInScanFeedback(tone: .success, title: item.sko, detail: "· all \(item.text(item.delivered)) checked")
             }
             .accessibilityIdentifier("goodsIn.scan.checkAll")
             HStack(spacing: 10) {
@@ -124,7 +124,7 @@ struct GoodsInCheckScanView: View {
         switch store.registerScan(reference, code: code) {
         case .counted(let sko, let checked, let delivered):
             let complete = checked == delivered ? " · complete" : ""
-            feedback = GoodsInScanFeedback(tone: checked > delivered ? .warn : .success, title: sko, detail: "+1 · \(checked.grouped) of \(delivered.grouped)\(complete)", note: "beep + vibrate")
+            feedback = GoodsInScanFeedback(tone: checked > delivered ? .warn : .success, title: sko, detail: "+1 · \(GoodsInQuantity.text(checked)) of \(GoodsInQuantity.text(delivered))\(complete)", note: "beep + vibrate")
         case .notOnDelivery(let code):
             feedback = GoodsInScanFeedback(tone: .warn, title: "\(code) is not on \(reference)", detail: "· not counted")
         case .alreadyPlaced(let sko):

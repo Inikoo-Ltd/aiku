@@ -2,12 +2,14 @@ import SwiftUI
 
 enum GoodsInDetailTab: String, CaseIterable, Hashable {
     case pending
+    case place
     case done
     case checklist
 
     var title: String {
         switch self {
         case .pending: "Pending items"
+        case .place: "To place"
         case .done: "Done items"
         case .checklist: "Checklist"
         }
@@ -33,11 +35,21 @@ struct GoodsInDeliveryView: View {
     private var rights: GoodsInRights { GoodsInRights(session: session) }
     private var actions: Set<GoodsInDeliveryAction> { GoodsInDeliveryAction.available(for: delivery, rights: rights) }
 
+    private var showsPlaceTab: Bool {
+        delivery.remoteID != nil && actions.contains(.placeItems)
+    }
+
+    private var tabs: [GoodsInDetailTab] {
+        showsPlaceTab ? [.pending, .place, .done, .checklist] : [.pending, .done, .checklist]
+    }
+
     private var tab: GoodsInDetailTab {
-        if let selectedTab { return selectedTab }
+        if let selectedTab, tabs.contains(selectedTab) { return selectedTab }
         switch delivery.state {
         case .bookedIn, .placed: return .done
-        default: return .pending
+        default:
+            if showsPlaceTab, delivery.items.allSatisfy(\.isChecked) { return .place }
+            return .pending
         }
     }
 
@@ -108,6 +120,7 @@ struct GoodsInDeliveryView: View {
             GoodsInBookingInContent(
                 delivery: delivery,
                 canWork: actions.contains(.checkItems),
+                canPlace: actions.contains(.placeItems),
                 onPlace: openPlacement,
                 onCheck: { editingItem = $0 },
                 onOpenSko: openSko
@@ -138,12 +151,12 @@ struct GoodsInDeliveryView: View {
     @ViewBuilder
     private var tabbedContent: some View {
         let isWorking = [GoodsInDeliveryState.received, .checked, .notReceived].contains(delivery.state)
-        if tab == .pending, isWorking {
+        if tab == .pending || tab == .place, isWorking {
             GoodsInOrdererCard(delivery: delivery)
             GoodsInFactGrid(title: "Delivery", facts: delivery.deliveryFacts)
             GoodsInFactGrid(title: "Items", facts: itemFacts)
         }
-        SegmentedControl(options: GoodsInDetailTab.allCases, selection: Binding(get: { tab }, set: { selectedTab = $0 }), title: \.title)
+        SegmentedControl(options: tabs, selection: Binding(get: { tab }, set: { selectedTab = $0 }), title: \.title)
         switch tab {
         case .pending:
             GoodsInPendingItems(
@@ -153,6 +166,16 @@ struct GoodsInDeliveryView: View {
                 onEdit: { editingItem = $0 }
             )
             actionSections
+        case .place:
+            GoodsInBookingInContent(
+                delivery: delivery,
+                canWork: actions.contains(.checkItems),
+                canPlace: actions.contains(.placeItems),
+                showsItemsToCheck: false,
+                onPlace: openPlacement,
+                onCheck: { editingItem = $0 },
+                onOpenSko: openSko
+            )
         case .done:
             GoodsInDoneItems(delivery: delivery, onOpenSko: openSko)
             actionSections
@@ -214,6 +237,10 @@ struct GoodsInDeliveryView: View {
         }
     }
 
+    private var canRecordChecks: Bool {
+        delivery.remoteID == nil ? rights.canEditGoodsIn : delivery.remoteActions.contains("checklist")
+    }
+
     private var hasFooter: Bool {
         switch delivery.state {
         case .arriving:
@@ -224,9 +251,12 @@ struct GoodsInDeliveryView: View {
             return true
         case .received, .checked, .notReceived:
             if tab == .checklist {
-                return delivery.nextCheckToDo != nil && rights.canEditGoodsIn
+                return delivery.nextCheckToDo != nil && canRecordChecks
             }
-            return actions.contains(.placeItems)
+            if tab == .place {
+                return actions.contains(.placeItems) && delivery.nextItemToPlace != nil
+            }
+            return delivery.remoteID == nil && actions.contains(.placeItems)
         case .cancelled, .withdrawn:
             return false
         }
@@ -260,6 +290,9 @@ struct GoodsInDeliveryView: View {
                     }
                     .accessibilityIdentifier("goodsIn.check.pass")
                 }
+            } else if tab == .place, let item = delivery.nextItemToPlace {
+                AikuButton("Place \(item.sko)", icon: .locations) { openPlacement(item) }
+                    .accessibilityIdentifier("goodsIn.placeNext")
             } else {
                 AikuButton("Place checked items", icon: .locations, kind: delivery.state == .checked ? .primary : .secondary) {
                     store.startBookingIn(reference)
@@ -271,14 +304,14 @@ struct GoodsInDeliveryView: View {
         }
     }
 
-    private func saveChecked(_ item: GoodsInItem, quantity: Int) {
+    private func saveChecked(_ item: GoodsInItem, quantity: Double) {
         let before = delivery.state
         store.setChecked(reference, sko: item.sko, quantity: quantity)
         let after = delivery.state
         if after != before, after == .checked || after == .notReceived || after == .bookedIn {
             toasts.show("All items checked · \(reference) is \(after.title)")
         } else {
-            toasts.show("\(item.sko) · \(quantity.grouped) of \(item.delivered.grouped) checked")
+            toasts.show("\(item.sko) · \(item.text(quantity)) of \(item.text(item.delivered)) checked")
         }
     }
 

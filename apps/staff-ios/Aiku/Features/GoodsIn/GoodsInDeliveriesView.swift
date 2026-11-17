@@ -4,6 +4,7 @@ struct GoodsInDeliveriesView: View {
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
     @State private var isFiltering = false
+    @Environment(\.apiClient) private var apiClient
     private let store = GoodsInStore.shared
 
     var body: some View {
@@ -30,11 +31,23 @@ struct GoodsInDeliveriesView: View {
                 }
                 .padding(.horizontal, 4)
             }
-            if listed.isEmpty {
+            if store.isRemote, let message = store.loadError {
+                InlineAlert(title: "Couldn’t load stock deliveries", message: message)
+            }
+            if listed.isEmpty, store.isRemote, store.isLoadingList || store.listRequest != store.currentListRequest {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 88)
+                    .accessibilityLabel("Loading stock deliveries")
+            } else if listed.isEmpty {
                 EmptyState(icon: .stockDelivery, title: "No stock deliveries", message: "Nothing matches \(store.listScope.title.lowercased()) with these filters.")
             } else {
                 CardList(listed) { delivery in
                     GoodsInDeliveryRow(delivery: delivery) { open(delivery) }
+                }
+                if store.hasMorePages {
+                    LocationsLoadMoreRow(isLoading: store.isLoadingMore, page: store.currentPage) {
+                        await store.loadNextPage(apiClient: apiClient)
+                    }
                 }
             }
             if !others.isEmpty {
@@ -45,6 +58,10 @@ struct GoodsInDeliveriesView: View {
             }
             HelperText("References follow the organisation format (SD + organisation + number). Suppliers and agents can have their own.")
                 .padding(.horizontal, 4)
+        }
+        .task(id: GoodsInListTaskKey(request: store.currentListRequest, isRemote: store.isRemote, warehouseID: store.warehouseID)) {
+            guard store.isRemote else { return }
+            await store.reloadList(apiClient: apiClient)
         }
         .aikuSheet(isPresented: $isFiltering) {
             GoodsInFilterSheet(initial: store.filter) { draft in
@@ -182,4 +199,10 @@ struct GoodsInFilterSheet: View {
         .buttonStyle(.plain)
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
+}
+
+private struct GoodsInListTaskKey: Hashable {
+    let request: GoodsInListRequest
+    let isRemote: Bool
+    let warehouseID: Int?
 }
