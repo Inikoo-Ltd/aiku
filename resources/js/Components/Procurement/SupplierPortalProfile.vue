@@ -6,14 +6,16 @@ import InputText from "primevue/inputtext"
 import SelectButton from "primevue/selectbutton"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
+import { Cropper } from "vue-advanced-cropper"
+import "vue-advanced-cropper/dist/style.css"
 import type { Image as ImageProxy } from "@/types/Image"
 import { ctrans } from "@/Composables/useTrans"
 import { useColorTheme } from "@/Composables/useStockList"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCamera, faCheck, faBuilding } from "@fal"
+import { faCamera, faCheck, faBuilding, faTimes } from "@fal"
 
-library.add(faCamera, faCheck, faBuilding)
+library.add(faCamera, faCheck, faBuilding, faTimes)
 
 export interface PortalProfile {
 	name: string | null
@@ -83,13 +85,56 @@ const chooseTheme = (index: number) => {
 	save({ theme: index })
 }
 
-const choosePhoto = (field: "photo" | "company_photo", event: Event) => {
+type PhotoField = "photo" | "company_photo"
+
+const cropper = ref<InstanceType<typeof Cropper> | null>(null)
+const cropSource = ref<string | null>(null)
+const cropField = ref<PhotoField>("photo")
+const isCropping = computed({
+	get: () => cropSource.value !== null,
+	set: (visible: boolean) => {
+		if (!visible) {
+			closeCropper()
+		}
+	},
+})
+
+const closeCropper = () => {
+	if (cropSource.value) {
+		URL.revokeObjectURL(cropSource.value)
+	}
+	cropSource.value = null
+}
+
+const choosePhoto = (field: PhotoField, event: Event) => {
 	const input = event.target as HTMLInputElement
 	const file = input.files?.[0]
-	if (file) {
-		save({ [field]: file })
-	}
 	input.value = ""
+	if (!file) {
+		return
+	}
+	closeCropper()
+	cropField.value = field
+	cropSource.value = URL.createObjectURL(file)
+}
+
+const saveCroppedPhoto = () => {
+	const canvas = cropper.value?.getResult().canvas
+	if (!canvas) {
+		return
+	}
+	const field = cropField.value
+	canvas.toBlob(
+		(blob) => {
+			if (!blob) {
+				return
+			}
+			closeCropper()
+			save({ [field]: new File([blob], `${field}.jpg`, { type: "image/jpeg" }) })
+		},
+		"image/jpeg",
+		0.9
+	)
 }
 
 const openCompanyDetails = () => {
@@ -192,6 +237,32 @@ const openCompanyDetails = () => {
 					</Button>
 				</div>
 			</div>
+		</Dialog>
+
+		<Dialog v-model:visible="isCropping" modal :header="cropField === 'company_photo' ? ctrans('Crop company photo') : ctrans('Crop your photo')" :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }">
+			<div class="space-y-2">
+				<div class="h-80 w-full overflow-hidden rounded bg-gray-800">
+					<Cropper
+						v-if="cropSource"
+						ref="cropper"
+						class="h-full w-full"
+						:src="cropSource"
+						:stencil-props="{ aspectRatio: 1 }"
+						:canvas="{ maxWidth: 1024, maxHeight: 1024 }"
+						image-restriction="stencil" />
+				</div>
+				<p class="text-xs text-gray-500">{{ ctrans("Drag and resize the square to choose the part of the photo to keep. Scroll to zoom.") }}</p>
+			</div>
+			<template #footer>
+				<div class="flex w-full gap-2">
+					<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="closeCropper">
+						<template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+					</Button>
+					<Button type="primary" full :label="ctrans('Save photo')" :loading="isSaving" @click="saveCroppedPhoto">
+						<template #icon><FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" /></template>
+					</Button>
+				</div>
+			</template>
 		</Dialog>
 	</div>
 </template>

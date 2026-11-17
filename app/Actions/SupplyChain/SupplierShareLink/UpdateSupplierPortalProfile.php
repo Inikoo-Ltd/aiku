@@ -71,8 +71,8 @@ class UpdateSupplierPortalProfile
             'name'          => ['sometimes', 'nullable', 'string', 'max:255'],
             'phone'         => ['sometimes', 'nullable', 'string', 'max:64', 'regex:/^\+?[0-9 ()-]{6,}$/'],
             'theme'         => ['sometimes', 'integer', 'min:0', 'max:'.(self::THEMES - 1)],
-            'photo'         => ['sometimes', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'company_photo' => ['sometimes', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'photo'         => ['sometimes', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120', 'dimensions:ratio=1'],
+            'company_photo' => ['sometimes', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120', 'dimensions:ratio=1'],
         ])->validate();
 
         $this->handle(ResolveSupplierPortalProfile::make()->handle($link, $request), $modelData);
