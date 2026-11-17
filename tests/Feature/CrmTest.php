@@ -147,6 +147,7 @@ use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
 use App\Models\Tasks\StaffTask;
 use App\Models\Web\Website;
+use App\Models\Web\Webpage;
 use App\Notifications\StaffTaskNotification;
 use Illuminate\Http\UploadedFile;
 use App\Actions\CRM\Appointment\Zoom\SyncAppointmentZoomMeeting;
@@ -4003,6 +4004,34 @@ test('due to reorder outbox emails a due customer once per order cycle and gives
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('showcase.customer.email_subscriptions.subscriptions.reorder_reminder.field', 'is_subscribed_to_reorder_reminder')
             ->etc());
+});
+
+test('due to reorder email leaves out products whose webpage is not their own', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    [, $product] = createProduct($this->shop);
+
+    foreach ([90, 60, 30] as $daysAgo) {
+        $invoice = StoreInvoice::make()->action($customer, array_merge(Invoice::factory()->definition(), ['in_process' => false]));
+        StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+            'date'            => now()->subDays($daysAgo),
+            'tax_category_id' => $invoice->tax_category_id,
+            'quantity'        => 2,
+            'gross_amount'    => 10,
+            'net_amount'      => 10,
+        ]);
+        DB::table('invoices')->where('id', $invoice->id)->update(['created_at' => now()->subDays($daysAgo)]);
+    }
+
+    $otherModelsWebpageId = Webpage::query()->where(fn ($query) => $query->where('model_type', '!=', 'Product')->orWhereNull('model_type'))->value('id');
+    expect($otherModelsWebpageId)->not->toBeNull();
+    DB::table('products')->where('id', $product->id)->update(['webpage_id' => $otherModelsWebpageId, 'is_for_sale' => true]);
+
+    expect(ProcessDueToReorderRecipients::make()->reorderProducts($customer))->toBeEmpty()
+        ->and(ProcessDueToReorderRecipients::make()->productsContent($customer))->toBe('');
+
+    DB::table('webpages')->where('id', $otherModelsWebpageId)->update(['model_type' => 'Product', 'model_id' => $product->id]);
+
+    expect(ProcessDueToReorderRecipients::make()->reorderProducts($customer)->pluck('id')->all())->toBe([$product->id]);
 });
 
 test('customer page opens for normal and dropshipping customers, reorders tab only for normal ones', function () {
