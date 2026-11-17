@@ -64,13 +64,13 @@ class DraftChatReply
      * The language of what the customer wrote, named to the model rather than left to it: told to
      * match the customer, it answered an English customer in Spanish. The message's detected
      * language when translation has already run, detected here when it has not (WhatsApp chats
-     * never record one on the session), and the chat's language only when detection fails.
+     * never record one on the session); when detection fails the customer's last known language, then the chat's.
      */
     public static function replyLanguage(ChatSession|MetaChatSession $chatSession, ChatMessage|MetaChatMessage $trigger, string $text): ?Language
     {
         $chatLanguage = $chatSession->language ?? $chatSession->shop?->language;
 
-        return $trigger->originalLanguage ?? DetectLanguageWithJev::inConversation($text, $chatSession) ?? $chatLanguage;
+        return $trigger->originalLanguage ?? DetectLanguageWithJev::inConversation($text, $chatSession) ?? $chatSession->userLanguage ?? $chatLanguage;
     }
 
     /**

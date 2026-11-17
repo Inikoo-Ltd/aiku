@@ -337,6 +337,11 @@ test('a draft the assistant stored is shown to staff, and what they do with it i
     $spanish->update(['original_language_id' => Language::where('code', 'es')->value('id')]);
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::replyLanguage($stranger, $spanish->refresh(), 'Hola, ¿dónde está mi pedido?')->name)->toBe('Spanish');
 
+    \App\Actions\Helpers\Translations\DetectLanguageWithJev::shouldRun()->andReturn(null);
+    $stranger->update(['user_language_id' => Language::where('code', 'es')->value('id'), 'language_id' => Language::where('code', 'en')->value('id')]);
+    $darija = $ask($stranger->refresh(), 'db ila jatni commande kifache ant3amlo meaha', ChatSenderTypeEnum::GUEST);
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::replyLanguage($stranger, $darija->refresh(), 'db ila jatni commande kifache ant3amlo meaha')->name)->toBe('Spanish');
+
     actingAs($this->user);
     $facts = $draft->facts;
     $draft->update(['facts' => ['mode' => \App\Actions\Chat\ChatSession\DraftChatReply::SUGGESTION]]);
