@@ -283,7 +283,6 @@ class AppServiceProvider extends ServiceProvider
                 'StoredItemMovement'               => 'App\Models\Fulfilment\StoredItemMovement',
                 'PalletStoredItem'                 => 'App\Models\Fulfilment\PalletStoredItem',
                 'PalletDeliveryPallet'             => 'App\Models\Fulfilment\PalletDeliveryPallet',
-                'MovementPallet'                   => 'App\Models\Fulfilment\MovementPallet',
                 'RentalAgreement'                  => 'App\Models\Fulfilment\RentalAgreement',
                 'RecurringBill'                    => 'App\Models\Fulfilment\RecurringBill',
                 'Space'                            => 'App\Models\Fulfilment\Space',
