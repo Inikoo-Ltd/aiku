@@ -345,7 +345,7 @@ private fun ThemePreview() {
                         text = stringResource(R.string.profile_preview_enter_quantity),
                         container = colors.soft,
                         border = colors.softBorder,
-                        content = colors.link,
+                        content = colors.softInk,
                         modifier = Modifier.weight(1f),
                     )
                     PreviewButton(

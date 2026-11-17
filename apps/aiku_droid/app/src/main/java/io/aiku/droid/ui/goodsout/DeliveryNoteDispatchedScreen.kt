@@ -65,6 +65,7 @@ internal fun DispatchedHero(note: DeliveryNote) {
     AikuButton(
         text = stringResource(R.string.goodsout_next_delivery_note),
         onClick = { navigator.switchSection(DeliveryNotesRoute()) },
+        icon = R.drawable.ic_ui_next,
         height = 52.dp,
         modifier = Modifier.fillMaxWidth(),
     )

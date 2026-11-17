@@ -13,6 +13,8 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.OrgStockDetail
 import io.aiku.droid.data.api.OrgStockWrite
 import io.aiku.droid.ui.components.AikuBottomSheet
+import io.aiku.droid.ui.components.ButtonLook
+import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChoiceRow
 import io.aiku.droid.ui.theme.LocalAikuColors
 
@@ -63,6 +65,7 @@ fun ConsumeStockSheet(detail: OrgStockDetail, isWorking: Boolean, errorText: Str
                 }
             },
             onCancel = onDismiss,
+            confirmLook = ButtonLook(ButtonStyle.Caution, R.drawable.ic_ui_sko),
             isWorking = isWorking,
             showConfirm = locations.isNotEmpty(),
         )

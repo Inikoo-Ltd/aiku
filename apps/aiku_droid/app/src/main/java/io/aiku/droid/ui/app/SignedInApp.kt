@@ -300,8 +300,8 @@ fun SignedInApp(container: AppContainer, session: StaffSession) {
             body = current.message.asText(),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                AikuButton(text = stringResource(R.string.warehouses_retry), onClick = warehousesViewModel::load, modifier = Modifier.fillMaxWidth())
-                AikuButton(text = stringResource(R.string.sign_out), onClick = warehousesViewModel::signOut, style = ButtonStyle.Outline, modifier = Modifier.fillMaxWidth())
+                AikuButton(text = stringResource(R.string.warehouses_retry), onClick = warehousesViewModel::load, icon = R.drawable.ic_states_retry, modifier = Modifier.fillMaxWidth())
+                AikuButton(text = stringResource(R.string.sign_out), onClick = warehousesViewModel::signOut, style = ButtonStyle.Danger, icon = R.drawable.ic_ui_log_out, modifier = Modifier.fillMaxWidth())
             }
         }
         WarehousesUiState.NoWarehouses, is WarehousesUiState.Ready -> {

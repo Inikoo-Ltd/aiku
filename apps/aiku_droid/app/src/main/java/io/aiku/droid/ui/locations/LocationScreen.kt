@@ -233,7 +233,7 @@ private fun LocationBlocks(detail: LocationDetail, actions: List<LocationAction>
                 LocationAction.Audit -> Triple(action, R.string.locations_action_audit, R.drawable.ic_ui_check)
                 LocationAction.MoveAll -> Triple(action, R.string.locations_action_move_all, R.drawable.ic_ui_location)
                 LocationAction.MoveSome -> Triple(action, R.string.locations_action_move_some, R.drawable.ic_ui_location)
-                LocationAction.Remove -> Triple(action, R.string.locations_action_remove, null)
+                LocationAction.Remove -> Triple(action, R.string.locations_action_remove, R.drawable.ic_ui_trash)
             }
         }
         buttons.chunked(2).forEach { row ->

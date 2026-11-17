@@ -255,6 +255,7 @@ private fun SelectionFooter(state: DeliveryNotesUiState, selected: Int, notes: D
             pluralStringResource(R.plurals.goodsout_add_to_session, selected, selected, target.reference)
         },
         onClick = notes::submitSelection,
+        icon = R.drawable.ic_ui_plus,
         isLoading = state.isSubmittingSelection,
         height = 52.dp,
         modifier = Modifier.fillMaxWidth(),

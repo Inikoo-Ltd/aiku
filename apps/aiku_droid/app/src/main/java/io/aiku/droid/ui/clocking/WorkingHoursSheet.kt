@@ -104,6 +104,7 @@ fun WorkingHoursSheet(onDismiss: () -> Unit, onConfirm: (workScheduleId: Long?) 
             AikuButton(
                 text = stringResource(R.string.clocking_working_hours_confirm),
                 onClick = { onConfirm(if (isShiftSchedule) chosenShift?.id else null) },
+                icon = R.drawable.ic_ui_check,
                 height = 50.dp,
                 modifier = Modifier.weight(1f),
             )

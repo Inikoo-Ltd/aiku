@@ -78,7 +78,12 @@ internal fun ReturnItemSheet(
                 AikuButton(
                     text = confirmLabel,
                     onClick = { onConfirm(shownQuantity, locationOrgStockId) },
-                    style = if (action == ReturnItemAction.BackToStock) ButtonStyle.Primary else ButtonStyle.Danger,
+                    style = if (action == ReturnItemAction.BackToStock) ButtonStyle.Primary else ButtonStyle.DangerStrong,
+                    icon = when (action) {
+                        ReturnItemAction.BackToStock -> R.drawable.ic_ui_next
+                        ReturnItemAction.Damaged -> R.drawable.ic_ui_warning
+                        ReturnItemAction.NotReturned -> R.drawable.ic_ui_x_circle
+                    },
                     isLoading = isWorking,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),

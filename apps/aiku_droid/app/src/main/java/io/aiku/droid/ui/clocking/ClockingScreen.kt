@@ -436,7 +436,8 @@ private fun ClockingQrCodeMethod(location: ClockingLocation, onOpenCamera: () ->
         AikuButton(
             text = stringResource(R.string.clocking_open_camera),
             onClick = onOpenCamera,
-            icon = R.drawable.ic_ui_camera,
+            style = ButtonStyle.Scan,
+            icon = R.drawable.ic_ui_scan,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),
         )

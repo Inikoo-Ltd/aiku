@@ -97,6 +97,7 @@ private fun BookedInContent(viewModel: PalletDeliveryViewModel, state: PalletDel
         AikuButton(
             text = stringResource(R.string.fulfilment_booked_in_next_delivery),
             onClick = { navigator.switchSection(FulfilmentDeliveriesRoute) },
+            icon = R.drawable.ic_ui_next,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),
         )

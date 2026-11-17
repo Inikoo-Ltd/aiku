@@ -183,6 +183,7 @@ private fun PlaceItemContent(viewModel: StockDeliveryViewModel, state: StockDeli
                         text = stringResource(R.string.goodsin_place_all),
                         onClick = { run(true) },
                         style = ButtonStyle.Soft,
+                        icon = R.drawable.ic_ui_check_double,
                         isLoading = state.working is StockDeliveryWrite.PlaceAll,
                         height = 52.dp,
                     )
@@ -190,6 +191,7 @@ private fun PlaceItemContent(viewModel: StockDeliveryViewModel, state: StockDeli
                         text = target?.let { stringResource(R.string.goodsin_place_in, quantityText(shownQuantity), it.code) }
                             ?: stringResource(R.string.goodsin_place_quantity, quantityText(shownQuantity)),
                         onClick = { run(false) },
+                        icon = goodsInActionLook(GoodsInActionKey.PLACE).icon,
                         isLoading = state.working is StockDeliveryWrite.Place,
                         height = 52.dp,
                         modifier = Modifier.weight(1f),

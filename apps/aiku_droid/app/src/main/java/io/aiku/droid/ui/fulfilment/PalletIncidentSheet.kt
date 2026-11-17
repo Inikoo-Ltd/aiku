@@ -111,6 +111,7 @@ fun PalletIncidentSheet(
                     text = stringResource(if (selected == PalletIncidentState.Lost) R.string.fulfilment_incident_set_lost else R.string.fulfilment_incident_set_damaged),
                     onClick = { onSave(selected, note) },
                     style = ButtonStyle.Danger,
+                    icon = R.drawable.ic_ui_warning,
                     isLoading = isWorking,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),

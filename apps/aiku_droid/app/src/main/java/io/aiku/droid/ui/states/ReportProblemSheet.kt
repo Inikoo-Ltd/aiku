@@ -163,6 +163,7 @@ private fun ReportProblemContent(initialCategory: ReportProblemCategory, onSend:
         text = stringResource(R.string.states_report_send),
         onClick = onSend,
         modifier = Modifier.fillMaxWidth(),
+        icon = R.drawable.ic_ui_next,
         height = 52.dp,
     )
     AikuButton(

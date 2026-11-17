@@ -28,11 +28,15 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import io.aiku.droid.AppContainer
 import io.aiku.droid.R
 import io.aiku.droid.data.api.PalletReturn
+import io.aiku.droid.data.api.PalletReturnActionKey
 import io.aiku.droid.data.api.PalletReturnState
 import io.aiku.droid.data.api.PalletReturnWrite
+import io.aiku.droid.data.api.StoredItemAuditActionKey
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
+import io.aiku.droid.ui.components.ButtonLook
+import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.DetailCard
 import io.aiku.droid.ui.components.DetailLine
 import io.aiku.droid.ui.components.InlineAlert
@@ -50,6 +54,21 @@ import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.theme.LocalAikuColors
+
+internal val fulfilmentOutboundActionLooks: Map<String, ButtonLook> = mapOf(
+    PalletReturnActionKey.START_PICKING to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_next),
+    PalletReturnActionKey.PICK to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_next),
+    PalletReturnActionKey.ADD_SHIPMENT to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_truck),
+    PalletReturnActionKey.FINISH_PICKING to ButtonLook(ButtonStyle.Finish, R.drawable.ic_ui_check),
+    PalletReturnActionKey.DISPATCH to ButtonLook(ButtonStyle.Finish, R.drawable.ic_ui_check),
+    PalletReturnActionKey.PRINT_INSERTS to ButtonLook(ButtonStyle.Soft, R.drawable.ic_ui_print),
+    PalletReturnActionKey.UNDO to ButtonLook(ButtonStyle.Caution, R.drawable.ic_ui_undo),
+    PalletReturnActionKey.NOT_PICKED to ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_x_circle),
+    StoredItemAuditActionKey.COUNT to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_check),
+    StoredItemAuditActionKey.COMPLETE to ButtonLook(ButtonStyle.Finish, R.drawable.ic_ui_check),
+)
+
+internal fun fulfilmentOutboundActionLook(key: String): ButtonLook = fulfilmentOutboundActionLooks[key] ?: ButtonLook(ButtonStyle.Outline)
 
 private val stageLabels = mapOf(
     PalletReturnState.CONFIRMED to R.string.fulfilment_state_confirmed,

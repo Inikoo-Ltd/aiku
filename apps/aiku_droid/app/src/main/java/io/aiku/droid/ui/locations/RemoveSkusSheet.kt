@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
 import io.aiku.droid.data.api.LocationDetail
 import io.aiku.droid.ui.components.AikuBottomSheet
+import io.aiku.droid.ui.components.ButtonLook
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChoiceRow
 import io.aiku.droid.ui.inventory.SheetButtons
@@ -63,7 +64,7 @@ fun RemoveSkusSheet(
             confirmLabel = pluralStringResource(R.plurals.locations_remove_confirm, selected.size, selected.size),
             onConfirm = { if (selected.isEmpty()) isMissing = true else onRemove(selected.toList()) },
             onCancel = onDismiss,
-            confirmStyle = ButtonStyle.Danger,
+            confirmLook = ButtonLook(ButtonStyle.DangerStrong, R.drawable.ic_ui_trash),
             isWorking = isWorking,
         )
     }

@@ -66,6 +66,8 @@ import io.aiku.droid.data.api.StockDelivery
 import io.aiku.droid.data.api.StockDeliveryItem
 import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
+import io.aiku.droid.ui.components.ButtonLook
+import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.ProductPhoto
 import io.aiku.droid.ui.components.ProgressBar
@@ -474,14 +476,14 @@ private fun CurrentItemPanel(
                     text = stringResource(R.string.goodsin_set_checked_quantity),
                     icon = null,
                     container = colors.soft,
-                    content = colors.link,
+                    content = colors.softInk,
                     borderColor = colors.softBorder,
                     onClick = { onSetQuantity(item) },
                     modifier = Modifier.weight(1f),
                 )
             }
         }
-        AikuButton(text = stringResource(R.string.goodsin_done_back), onClick = onDone, height = 52.dp, modifier = Modifier.fillMaxWidth())
+        AikuButton(text = stringResource(R.string.goodsin_done_back), onClick = onDone, icon = R.drawable.ic_ui_check, height = 52.dp, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -521,6 +523,7 @@ private fun TypeCodeSheet(onFind: (String) -> Unit, onDismiss: () -> Unit) {
         SheetTextField(value = code, onValueChange = { code = it }, label = stringResource(R.string.goodsin_type_code_label))
         SheetButtons(
             confirmLabel = stringResource(R.string.goodsin_type_code_find),
+            confirmLook = ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_search),
             onConfirm = { code.trim().takeIf { it.isNotEmpty() }?.let(onFind) },
             onCancel = onDismiss,
         )

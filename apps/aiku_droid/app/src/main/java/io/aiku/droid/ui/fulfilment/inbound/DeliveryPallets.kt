@@ -101,8 +101,8 @@ internal fun DeliveryPalletSheet(
                     AikuButton(
                         text = undo.label.ifBlank { stringResource(R.string.fulfilment_inbound_undo_not_received) },
                         onClick = onUndoNotReceived,
-                        style = ButtonStyle.Outline,
-                        icon = R.drawable.ic_ui_undo,
+                        style = fulfilmentInboundActionLook(undo.key).style,
+                        icon = fulfilmentInboundActionLook(undo.key).icon,
                         isLoading = working is PalletDeliveryWrite.UndoNotReceived,
                         height = 52.dp,
                         modifier = Modifier.fillMaxWidth(),
@@ -112,7 +112,8 @@ internal fun DeliveryPalletSheet(
                     AikuButton(
                         text = notReceived.label.ifBlank { stringResource(R.string.fulfilment_not_received) },
                         onClick = onNotReceived,
-                        style = ButtonStyle.Danger,
+                        style = fulfilmentInboundActionLook(notReceived.key).style,
+                        icon = fulfilmentInboundActionLook(notReceived.key).icon,
                         isLoading = working is PalletDeliveryWrite.NotReceived,
                         height = 52.dp,
                         modifier = Modifier.fillMaxWidth(),
@@ -176,7 +177,8 @@ internal fun BookInPanel(
             AikuButton(
                 text = stringResource(R.string.fulfilment_book_in_at, target.code),
                 onClick = { onBookIn(target) },
-                icon = R.drawable.ic_ui_location,
+                style = fulfilmentInboundActionLook(FulfilmentInboundActionKey.BOOK_IN).style,
+                icon = fulfilmentInboundActionLook(FulfilmentInboundActionKey.BOOK_IN).icon,
                 isLoading = working is PalletDeliveryWrite.BookIn,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -187,7 +189,8 @@ internal fun BookInPanel(
                 AikuButton(
                     text = notReceived.label.ifBlank { stringResource(R.string.fulfilment_not_received) },
                     onClick = onNotReceived,
-                    style = ButtonStyle.Outline,
+                    style = fulfilmentInboundActionLook(notReceived.key).style,
+                    icon = fulfilmentInboundActionLook(notReceived.key).icon,
                     isLoading = working is PalletDeliveryWrite.NotReceived,
                     height = 48.dp,
                     modifier = Modifier.weight(1f),

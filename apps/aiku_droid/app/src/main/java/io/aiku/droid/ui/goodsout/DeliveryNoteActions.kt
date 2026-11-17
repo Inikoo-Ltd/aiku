@@ -1,6 +1,5 @@
 package io.aiku.droid.ui.goodsout
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -26,13 +25,17 @@ import io.aiku.droid.data.api.DeliveryNoteWrite
 import io.aiku.droid.data.api.IncompleteSetPart
 import io.aiku.droid.data.api.NoteActionKey
 import io.aiku.droid.data.api.NoteField
+import io.aiku.droid.data.api.SessionActionKey
 import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AlertTone
+import io.aiku.droid.ui.components.ButtonLook
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.DeliveryNoteStage
 import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.ItemRow
+import io.aiku.droid.ui.components.forConfirm
+import io.aiku.droid.ui.components.inFooter
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.Tone
@@ -137,31 +140,62 @@ internal fun DeliveryNote.stepFor(action: DeliveryNoteAction): ActionStep = when
     else -> ActionStep.Sheet(action.sheet())
 }
 
-@DrawableRes
-internal fun DeliveryNoteAction.icon(): Int? = when (key) {
-    NoteActionKey.TAKE_OVER -> R.drawable.ic_ui_lock
-    NoteActionKey.SET_AS_PICKED, NoteActionKey.PUT_BACK_INCOMPLETE_SETS, NoteActionKey.FINALISE -> R.drawable.ic_ui_check
-    NoteActionKey.SET_AS_PACKED -> R.drawable.ic_ui_packed
-    NoteActionKey.BACK_TO_PICKING, NoteActionKey.UNDO_SET_AS_PICKED, NoteActionKey.UNDO_PACKING, NoteActionKey.UNPACK -> R.drawable.ic_ui_undo
-    NoteActionKey.START_PACKING -> R.drawable.ic_ui_box
-    NoteActionKey.ADD_SHIPMENT, NoteActionKey.GET_EXTERNAL_SHIPMENT, NoteActionKey.FINALISE_AND_DISPATCH, NoteActionKey.DISPATCH -> R.drawable.ic_ui_truck
-    else -> null
-}
+private val mainStep = ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_next)
+private val finish = ButtonLook(ButtonStyle.Finish, R.drawable.ic_ui_check)
+private val stepBack = ButtonLook(ButtonStyle.Caution, R.drawable.ic_ui_undo)
+private val neutral = ButtonLook(ButtonStyle.Outline)
+
+internal val goodsOutActionLooks: Map<String, ButtonLook> = mapOf(
+    NoteActionKey.START_PICKING to mainStep,
+    NoteActionKey.RESUME_PICKING to mainStep,
+    NoteActionKey.START_PACKING to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_box),
+    NoteActionKey.ADD_SHIPMENT to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_truck),
+    NoteActionKey.GET_EXTERNAL_SHIPMENT to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_truck),
+    NoteActionKey.PUT_BACK_INCOMPLETE_SETS to mainStep,
+    NoteActionKey.SET_AS_PICKED to finish,
+    NoteActionKey.SET_AS_PACKED to finish,
+    NoteActionKey.AUTO_FINISH_WAITING to finish,
+    NoteActionKey.FINALISE_AND_DISPATCH to finish,
+    NoteActionKey.FINALISE to finish,
+    NoteActionKey.DISPATCH to finish,
+    NoteActionKey.TAKE_OVER to ButtonLook(ButtonStyle.Caution, R.drawable.ic_ui_unlock),
+    NoteActionKey.BACK_TO_PICKING to stepBack,
+    NoteActionKey.UNDO_SET_AS_PICKED to stepBack,
+    NoteActionKey.UNDO_PACKING to stepBack,
+    NoteActionKey.UNPACK to stepBack,
+    NoteActionKey.REMOVE_PICKER to stepBack,
+    NoteActionKey.CANCEL to ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_x_circle),
+    NoteActionKey.ASSIGN_PICKER to neutral,
+    NoteActionKey.CHANGE_PICKER to neutral,
+    NoteActionKey.CHANGE_PACKER to neutral,
+    NoteActionKey.CHANGE_TROLLEY to neutral,
+    NoteActionKey.CHANGE_PICKED_BAY to neutral,
+    NoteActionKey.EDIT_DELIVERY_ADDRESS to neutral,
+    SessionActionKey.SCAN_PICK to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_scan),
+    SessionActionKey.SCAN_PACK to ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_scan),
+    SessionActionKey.ADD_DELIVERY_NOTES to ButtonLook(ButtonStyle.Soft, R.drawable.ic_ui_plus),
+    SessionActionKey.REMOVE_DELIVERY_NOTES to ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_trash),
+)
+
+internal fun goodsOutActionLook(key: String): ButtonLook = goodsOutActionLooks[key] ?: neutral
 
 @Composable
 internal fun NoteFooterItems(items: List<FooterItem>, loadingKey: String?, onAction: (DeliveryNoteAction) -> Unit) {
     items.forEach { item ->
         when (item) {
             is FooterItem.Notice -> DisabledActionNotice(action = item.action)
-            is FooterItem.Button -> AikuButton(
-                text = item.action.label,
-                onClick = { onAction(item.action) },
-                style = if (item.isPrimary) ButtonStyle.Primary else ButtonStyle.Outline,
-                icon = item.action.icon(),
-                isLoading = item.action.key == loadingKey,
-                height = if (item.isPrimary) 52.dp else 48.dp,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            is FooterItem.Button -> {
+                val look = goodsOutActionLook(item.action.key).inFooter(isFirst = item.isPrimary)
+                AikuButton(
+                    text = item.action.label,
+                    onClick = { onAction(item.action) },
+                    style = look.style,
+                    icon = look.icon,
+                    isLoading = item.action.key == loadingKey,
+                    height = if (item.isPrimary) 52.dp else 48.dp,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }
@@ -197,8 +231,7 @@ internal fun ActionConfirmSheet(
     problem: String?,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    @DrawableRes icon: Int? = null,
-    confirmStyle: ButtonStyle = ButtonStyle.Primary,
+    confirmLook: ButtonLook = mainStep,
     cancelLabel: String = stringResource(R.string.dialog_cancel),
     hint: String? = null,
     content: @Composable ColumnScope.() -> Unit = {},
@@ -212,8 +245,8 @@ internal fun ActionConfirmSheet(
             AikuButton(
                 text = confirmLabel,
                 onClick = onConfirm,
-                style = confirmStyle,
-                icon = icon,
+                style = confirmLook.style,
+                icon = confirmLook.icon,
                 isLoading = isWorking,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -251,7 +284,7 @@ internal fun TakeOverSheet(note: DeliveryNote, action: DeliveryNoteAction, isWor
         title = stringResource(R.string.goodsout_take_over_title, note.reference),
         subtitle = subtitle,
         confirmLabel = action.label,
-        icon = R.drawable.ic_ui_lock,
+        confirmLook = goodsOutActionLook(action.key).forConfirm(),
         hint = hint,
         isWorking = isWorking,
         problem = problem,
@@ -266,7 +299,7 @@ internal fun PutBackSheet(note: DeliveryNote, action: DeliveryNoteAction, isWork
         title = stringResource(R.string.goodsout_put_back_title),
         subtitle = stringResource(R.string.goodsout_delivery_note_reference, note.reference),
         confirmLabel = action.label,
-        icon = R.drawable.ic_ui_check,
+        confirmLook = goodsOutActionLook(action.key).forConfirm(),
         hint = stringResource(R.string.goodsout_put_back_hint),
         isWorking = isWorking,
         problem = problem,
@@ -307,6 +340,7 @@ internal fun AutoFinishWaitingSheet(note: DeliveryNote, action: DeliveryNoteActi
         title = stringResource(R.string.goodsout_auto_finish_title),
         subtitle = stringResource(R.string.goodsout_delivery_note_reference, note.reference),
         confirmLabel = action.label,
+        confirmLook = goodsOutActionLook(action.key).forConfirm(),
         hint = stringResource(R.string.goodsout_auto_finish_hint),
         isWorking = isWorking,
         problem = problem,
@@ -321,7 +355,7 @@ internal fun SetAsPackedSheet(note: DeliveryNote, action: DeliveryNoteAction, is
         title = stringResource(R.string.goodsout_set_as_packed_title, note.reference),
         subtitle = null,
         confirmLabel = action.label,
-        icon = R.drawable.ic_ui_packed,
+        confirmLook = goodsOutActionLook(action.key).forConfirm(),
         hint = stringResource(if (note.stage == DeliveryNoteStage.Packing) R.string.goodsout_set_as_packed_packing_hint else R.string.goodsout_set_as_packed_hint),
         isWorking = isWorking,
         problem = problem,
@@ -343,7 +377,7 @@ internal fun DispatchConfirmSheet(note: DeliveryNote, action: DeliveryNoteAction
         title = stringResource(R.string.goodsout_action_confirm_title, action.label, note.reference),
         subtitle = shipmentSummary(note).takeIf { it.isNotEmpty() },
         confirmLabel = action.label,
-        icon = action.icon(),
+        confirmLook = goodsOutActionLook(action.key).forConfirm(),
         hint = effects.joinToString(" ").takeIf { it.isNotEmpty() },
         isWorking = isWorking,
         problem = problem,

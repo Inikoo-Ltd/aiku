@@ -49,6 +49,7 @@ import io.aiku.droid.ui.goodsout.DisabledActionNotice
 import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
 import io.aiku.droid.ui.goodsout.ReadOnlyParcels
 import io.aiku.droid.ui.goodsout.channelName
+import io.aiku.droid.ui.goodsout.goodsOutActionLook
 import io.aiku.droid.ui.goodsout.stage
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
@@ -123,7 +124,8 @@ private fun ExternalShipmentContent(viewModel: DeliveryNoteViewModel, state: Del
                         problem = null
                         viewModel.act(DeliveryNoteWrite.GetExternalShipment)
                     },
-                    icon = R.drawable.ic_ui_truck,
+                    style = goodsOutActionLook(action.key).style,
+                    icon = goodsOutActionLook(action.key).icon,
                     isLoading = state.isWorking,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),

@@ -83,6 +83,7 @@ private fun CancelledContent(reference: String, note: DeliveryNote?, problem: Go
             AikuButton(
                 text = stringResource(R.string.goodsout_extra_back_to_delivery_notes),
                 onClick = { navigator.switchSection(DeliveryNotesRoute()) },
+                icon = R.drawable.ic_ui_next,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
             )
