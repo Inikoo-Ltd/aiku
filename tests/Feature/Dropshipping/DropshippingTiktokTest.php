@@ -21,6 +21,9 @@ use App\Actions\Dropshipping\Tiktok\Order\GetTiktokOrdersApi;
 use App\Actions\Dropshipping\Tiktok\Product\CheckTiktokPortfolio;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Dropshipping\Tiktok\Product\CreateNewAllPortfoliosToTiktok;
+use App\Actions\Dropshipping\Tiktok\Product\CreateNewBulkPortfoliosToTiktok;
+use App\Actions\Dropshipping\Tiktok\Product\StoreNewProductToCurrentTiktok;
+use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Actions\Dropshipping\Tiktok\Product\MatchPortfolioToCurrentTiktokProduct;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\Product\UpdateInventoryTiktokProducts;
@@ -49,10 +52,13 @@ use App\Models\Ordering\Order;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use App\Jobs\BoundedUniqueJobDecorator;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 
@@ -1115,4 +1121,90 @@ test('package dimensions convert the metre marketing dimensions to centimetres a
         'height' => '10.00',
         'unit'   => 'CENTIMETER',
     ]);
+});
+
+test('package weight sends the gross weight, else the unit weight, else a nominal 100 g tiktok accepts', function () {
+    $this->product->update(['gross_weight' => 1371, 'marketing_weight' => 430]);
+    expect(StoreProductToTiktok::packageWeight($this->product->refresh()))->toBe(['value' => '1.371', 'unit' => 'KILOGRAM']);
+
+    $this->product->update(['gross_weight' => 0]);
+    expect(StoreProductToTiktok::packageWeight($this->product->refresh()))->toBe(['value' => '0.43', 'unit' => 'KILOGRAM']);
+
+    $this->product->update(['marketing_weight' => null]);
+    expect(StoreProductToTiktok::packageWeight($this->product->refresh()))->toBe(['value' => '0.1', 'unit' => 'KILOGRAM']);
+});
+
+test('a bulk upload queues one tiktok job per product not yet on tiktok instead of uploading them all in one job', function () {
+    $tiktokUser = tiktokChannel($this->customer);
+
+    fakeTiktok(['/product/202309/products/search' => tiktokOk(['products' => [], 'total_count' => 0])]);
+    $portfolio = StorePortfolio::make()->action($tiktokUser->customerSalesChannel, $this->product, []);
+
+    Queue::fake();
+
+    CreateNewBulkPortfoliosToTiktok::make()->handle($tiktokUser->customerSalesChannel, ['portfolios' => [$portfolio->id]]);
+
+    Queue::assertPushedOn('tiktok', BoundedUniqueJobDecorator::class, fn (BoundedUniqueJobDecorator $job) => $job->getAction() instanceof StoreNewProductToCurrentTiktok
+        && $job->getParameters()[0]->id === $portfolio->id
+        && $job->getParameters()[1]['total'] === 1);
+    Queue::assertPushed(BoundedUniqueJobDecorator::class, 1);
+
+    $portfolio->update(['platform_status' => true]);
+    Queue::fake();
+
+    CreateNewBulkPortfoliosToTiktok::make()->handle($tiktokUser->customerSalesChannel, ['portfolios' => [$portfolio->id]]);
+
+    Queue::assertNothingPushed();
+});
+
+test('once tiktok refuses a product for the shop listing limit the rest of that bulk upload is not sent', function () {
+    Event::fake([UploadProductToSalesChannelProgressEvent::class]);
+    $tiktokUser = tiktokChannel($this->customer);
+
+    fakeTiktok(['/product/202309/products/search' => tiktokOk(['products' => [], 'total_count' => 0])]);
+    $portfolio = StorePortfolio::make()->action($tiktokUser->customerSalesChannel, $this->product, []);
+    $portfolio->update(['sku' => 'CAPPED-1', 'customer_price' => 5]);
+
+    $limitMessage = 'Operation Not Allowed. Cannot list more products: your Shop probation tier allows at most `200` total product listings.';
+    fakeTiktok([
+        '/categories/recommend' => tiktokOk(['leaf_category_id' => '600009']),
+        '/rules' => tiktokOk(['product_certifications' => []]),
+        '/product/202309/categories' => tiktokOk(['categories' => [['id' => '600009', 'is_leaf' => true, 'permission_statuses' => ['AVAILABLE']]]]),
+        '/attributes' => tiktokOk(['attributes' => []]),
+        '/product/202309/products/search' => tiktokOk(['products' => [], 'total_count' => 0]),
+        '/product/202309/products' => tiktokError(12019018, $limitMessage),
+    ]);
+
+    $bulkProgress = ['cache_key' => 'upload_progress_test_'.uniqid(), 'total' => 2];
+
+    StoreNewProductToCurrentTiktok::make()->asJob($portfolio, $bulkProgress);
+
+    expect($portfolio->refresh()->platform_status)->toBeFalse()
+        ->and(Arr::get($portfolio->errors_response, 'message'))->toContain('Cannot list more products');
+
+    $portfolio->update(['errors_response' => null]);
+    $callsBefore = Http::recorded()->count();
+
+    StoreNewProductToCurrentTiktok::make()->asJob($portfolio, $bulkProgress);
+
+    expect(Http::recorded()->count())->toBe($callsBefore)
+        ->and(Arr::get($portfolio->refresh()->errors_response, 'message'))->toContain('Cannot list more products')
+        ->and((int) Cache::get($bulkProgress['cache_key'].'_fail'))->toBe(2);
+
+    Event::assertDispatchedTimes(UploadProductToSalesChannelProgressEvent::class, 2);
+});
+
+test('a queued upload of a product already on tiktok sends nothing and counts as a success', function () {
+    Event::fake([UploadProductToSalesChannelProgressEvent::class]);
+    $tiktokUser = tiktokChannel($this->customer);
+    $portfolio = tiktokListedPortfolio($tiktokUser, $this->product, 'ALREADY-'.random_int(1000, 9999));
+
+    fakeTiktok([]);
+    $callsBefore = Http::recorded()->count();
+    $bulkProgress = ['cache_key' => 'upload_progress_test_'.uniqid(), 'total' => 1];
+
+    StoreNewProductToCurrentTiktok::make()->asJob($portfolio, $bulkProgress);
+
+    expect(Http::recorded()->count())->toBe($callsBefore)
+        ->and((int) Cache::get($bulkProgress['cache_key'].'_success'))->toBe(1);
 });

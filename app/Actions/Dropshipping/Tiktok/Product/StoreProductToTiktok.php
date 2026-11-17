@@ -32,6 +32,7 @@ class StoreProductToTiktok extends RetinaAction
     use WithActionUpdate;
     use WithPortfolioErrorResponse;
     public const float FALLBACK_DIMENSION_IN_CM = 10;
+    public const int FALLBACK_WEIGHT_IN_GRAMS = 100;
 
     /**
      * @throws \Exception
@@ -162,10 +163,7 @@ class StoreProductToTiktok extends RetinaAction
                 'price' => (string) $portfolio->customer_price,
                 'category_id' => $leafCategoryId,
                 'main_images' => $productImages,
-                'package_weight' => [
-                    'value' => (string) ($product->gross_weight / 1000),
-                    'unit' => 'KILOGRAM'
-                ],
+                'package_weight' => self::packageWeight($product),
                 'package_dimensions' => self::packageDimensions($product),
                 'product_certifications' => $requiredCertifications,
                 ...$requiredPersonResponsible,
@@ -312,6 +310,21 @@ class StoreProductToTiktok extends RetinaAction
         }
 
         return $categoryId;
+    }
+
+    /**
+     * TikTok refuses a weight of 0, so a product without one is sent with its unit weight, else a nominal 100 g like eBay.
+     *
+     * @return array{value: string, unit: string}
+     */
+    public static function packageWeight(Product $product): array
+    {
+        $grams = $product->gross_weight ?: $product->marketing_weight ?: self::FALLBACK_WEIGHT_IN_GRAMS;
+
+        return [
+            'value' => (string) ($grams / 1000),
+            'unit'  => 'KILOGRAM',
+        ];
     }
 
     /**
