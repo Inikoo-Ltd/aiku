@@ -323,7 +323,7 @@ const placeMobileTabOptions = () => {
 										tab.type,
 										tab.align,
 										tab.iconClass || ''
-									)
+									) + (tab.iconClass ? ' tabIconKeepsColour' : '')
 								"
 								fixed-width aria-hidden="true"
 								:rotation="tab.icon_rotation" />
@@ -434,14 +434,20 @@ const placeMobileTabOptions = () => {
 <style lang="scss" scoped>
 .tabNavigation {
 	@apply transition-all duration-75;
-	filter: saturate(0);
 	border-bottom: v-bind("`2px solid transparent`");
 	color: v-bind("`${layoutStore.app.theme[0]}99`");
 
+	& > :not(.tabIconKeepsColour) {
+		filter: saturate(0);
+	}
+
 	&:hover {
-		filter: saturate(0.85);
 		border-bottom: v-bind("`2px solid ${layoutStore.app.theme[0]}AA`");
 		color: v-bind("`${layoutStore.app.theme[0]}AA`");
+
+		& > :not(.tabIconKeepsColour) {
+			filter: saturate(0.85);
+		}
 	}
 }
 
