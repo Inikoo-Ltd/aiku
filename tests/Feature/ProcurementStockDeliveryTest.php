@@ -82,6 +82,7 @@ use App\Actions\Transfers\Aurora\RepairAuroraDeletedStockDeliveries;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
@@ -4223,7 +4224,7 @@ test('import file details tick steps from aiku data, take marks that win over it
     $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab='.StockDeliveryTabsEnum::IMPORT_FILE->value)
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Procurement/StockDelivery')
-            ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.steps.11.key', 'duty_rates')
+            ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.steps.12.key', 'duty_rates')
             ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.can_edit', true)
             ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.can_upload', true)
             ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.steps.0.files', []));
@@ -4236,6 +4237,35 @@ test('import file details tick steps from aiku data, take marks that win over it
 
     $this->withExceptionHandling();
     $this->patch($url, ['step' => 'not_a_step', 'status' => 'done'])->assertSessionHasErrors('step');
+});
+
+test('import file details is where costs are booked: invoice, shipping and customs steps open the costing, where the invoice and shipping are uploaded, and the packing list is its own step (HELP-4761)', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'IMPORT-FILE-4761', [10]);
+    $stockDelivery->update(['data' => array_merge($stockDelivery->data ?? [], ['import_file' => ['commercial_invoice' => ['status' => 'done', 'date' => '2026-11-10', 'user_id' => null, 'at' => null]]])]);
+
+    $steps = collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->keyBy('key');
+
+    expect($steps['commercial_invoice'])->toMatchArray(['costing' => 'invoice', 'upload_in_costing' => true])
+        ->and($steps['shipping_invoice'])->toMatchArray(['costing' => 'landed', 'upload_in_costing' => true])
+        ->and($steps['duty_invoice'])->toMatchArray(['costing' => 'landed', 'upload_in_costing' => false, 'scope' => PurchaseOrderAttachmentScopeEnum::CUSTOMS->value])
+        ->and($steps['packing_list'])->toMatchArray(['costing' => null, 'scope' => PurchaseOrderAttachmentScopeEnum::PACKING_LIST->value, 'status' => 'done', 'date' => '2026-11-10'])
+        ->and($steps['duty_paid'])->toMatchArray(['costing' => null, 'scope' => PurchaseOrderAttachmentScopeEnum::DUTY_PAYMENT->value]);
+});
+
+test('a file uploaded to the wrong import file step can be removed from the step (HELP-4760)', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'IMPORT-FILE-4760', [10]);
+    $this->post(route('grp.models.stock-delivery.attachment.attach', ['stockDelivery' => $stockDelivery->id]), ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('wrong.pdf', 10, 'application/pdf')], 'scope' => PurchaseOrderAttachmentScopeEnum::DEPOSIT_PAYMENT->value])->assertSuccessful();
+
+    $importFile = GetStockDeliveryImportFile::run($stockDelivery->refresh());
+    $file       = collect($importFile['steps'])->firstWhere('key', 'deposit')['files'][0];
+
+    expect($file['is_applied'])->toBeFalse();
+    DB::table('model_has_attachments')->where('id', $file['id'])->update(['data' => json_encode(['invoice_reading' => ['applied_at' => now()->toIso8601String()]])]);
+    expect(collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->firstWhere('key', 'deposit')['files'][0]['is_applied'])->toBeTrue();
+
+    $this->delete(route($importFile['detach_route']['name'], [...$importFile['detach_route']['parameters'], 'attachment' => $file['media_id']]))->assertSuccessful();
+
+    expect(collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->firstWhere('key', 'deposit')['files'])->toBe([]);
 });
 
 test('a container sheet PO matches a purchase order by its whole reference or its whole number, not by a digit inside it', function () {
