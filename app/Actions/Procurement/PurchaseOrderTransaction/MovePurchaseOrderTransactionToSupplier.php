@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\PurchaseOrderTransaction;
 
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
+use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\StoreSupplierProductForOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\NotifyBuyerOfAgentStageChange;
@@ -22,6 +23,7 @@ use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\AgentWarehouseStock;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -78,6 +80,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             $orgStock           = $purchaseOrderTransaction->orgStock;
             $orgSupplierProduct = ($isSameSupplier ? $purchaseOrderTransaction->orgSupplierProduct : null)
                 ?? $this->orgSupplierProductOfStock($orgSupplier, $orgStock->id)
+                ?? $this->linkUnlinkedOrgSupplierProductOfStock($orgSupplier, $orgStock)
                 ?? StoreSupplierProductForOrgStock::make()->action($orgStock, [
                     'org_supplier_id'  => $orgSupplier->id,
                     'code'             => Arr::get($modelData, 'code') ?: $purchaseOrderTransaction->supplierProduct?->code,
@@ -364,7 +367,50 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             ->where('org_supplier_products.is_available', true)
             ->with('supplierProduct')
             ->orderBy('org_supplier_products.id')
-            ->get();
+            ->get()
+            ->concat(static::unlinkedOrgSupplierProductsOfStocksQuery($orgSupplierIds, $orgStockIds)->with('supplierProduct')->get())
+            ->values();
+    }
+
+    /**
+     * A supplier product created for the SKO of one organisation is mirrored to every organisation of the supplier, but
+     * only that organisation's SKO is linked (KM DMI-10, linked in AW only, so moving an SK line to KM tried to create it
+     * again and failed on the taken code). Such a product, with no SKO in its organisation, is taken for the SKO of the
+     * stock it is linked to at group level.
+     *
+     * @param array<int> $orgSupplierIds
+     * @param array<int> $orgStockIds
+     *
+     * @return EloquentBuilder<OrgSupplierProduct>
+     */
+    public static function unlinkedOrgSupplierProductsOfStocksQuery(array $orgSupplierIds, array $orgStockIds): EloquentBuilder
+    {
+        return OrgSupplierProduct::query()
+            ->select('org_supplier_products.*', 'org_stocks.id as org_stock_id')
+            ->join('stock_has_supplier_products', 'stock_has_supplier_products.supplier_product_id', '=', 'org_supplier_products.supplier_product_id')
+            ->join('org_stocks', fn ($join) => $join->on('org_stocks.stock_id', '=', 'stock_has_supplier_products.stock_id')
+                ->on('org_stocks.organisation_id', '=', 'org_supplier_products.organisation_id'))
+            ->whereIn('org_supplier_products.org_supplier_id', $orgSupplierIds)
+            ->whereIn('org_stocks.id', $orgStockIds)
+            ->where('org_supplier_products.state', OrgSupplierProductStateEnum::ACTIVE)
+            ->where('org_supplier_products.is_available', true)
+            ->whereNotExists(fn (Builder $query) => $query->from('org_stock_has_org_supplier_products')
+                ->whereColumn('org_stock_has_org_supplier_products.org_supplier_product_id', 'org_supplier_products.id'))
+            ->orderBy('org_supplier_products.id');
+    }
+
+    private function linkUnlinkedOrgSupplierProductOfStock(OrgSupplier $orgSupplier, OrgStock $orgStock): ?OrgSupplierProduct
+    {
+        $orgSupplierProduct = static::unlinkedOrgSupplierProductsOfStocksQuery([$orgSupplier->id], [$orgStock->id])->first();
+
+        if (!$orgSupplierProduct) {
+            return null;
+        }
+
+        $orgSupplierProduct = OrgSupplierProduct::find($orgSupplierProduct->id);
+        AttachOrgSupplierProductToOrgStock::make()->action($orgStock, $orgSupplierProduct);
+
+        return $orgSupplierProduct;
     }
 
     /**
