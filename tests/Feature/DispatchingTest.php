@@ -3303,6 +3303,20 @@ test('a shipment records whether it goes home or to a pickup point', function ()
         ->and($pickupShipment->refresh()->delivery_type)->toBe(\App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum::PICKUP_POINT);
 });
 
+test('repair fills the delivery type of shipments made before it was recorded', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+    $shipper  = StoreShipper::make()->action($this->organisation, ['code' => 'DR'.Str::random(4), 'name' => 'Dr', 'trade_as' => 'dr']);
+    $shipment = StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'R'.Str::random(6)]);
+    $shipment->update(['delivery_type' => null]);
+
+    \App\Actions\Dispatching\Shipment\RepairShipmentDeliveryType::run(true);
+    expect($shipment->refresh()->delivery_type)->toBeNull();
+
+    \App\Actions\Dispatching\Shipment\RepairShipmentDeliveryType::run();
+    expect($shipment->refresh()->delivery_type)->toBe(\App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum::HOME);
+});
+
 test('UI reports and batch code edit', function () {
     get(route('grp.org.reports.packer-performance', [$this->organisation->slug]))->assertOk();
     get(route('grp.org.reports.shipment-delivery-type', [$this->organisation->slug, 'between' => ['created_at' => now()->subMonth()->format('Ymd').'-'.now()->format('Ymd')]]))
