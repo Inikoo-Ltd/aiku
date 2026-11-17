@@ -2257,3 +2257,30 @@ test('a simple board finishes a producing card dropped on Done and receives it i
         $user->employees()->detach($mover->id);
     }
 });
+
+test('a backlog card carries the sales forecast of its SKO', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
+    StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FCST-01', 'name' => 'Forecast line'])->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
+    $orgStocks[0]->stats()->update(['predicted_daily_usage' => 2.5, 'days_of_cover' => 0]);
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stocks[0]->id,
+        'org_stock_id'    => $orgStocks[0]->id,
+        'quantity'        => 5,
+    ]);
+
+    actingAs($this->guest->getUser());
+    $card = collect(collect(get(route('grp.org.productions.show.to_produce.index', [$this->organisation->slug, $this->production->slug]))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->firstWhere('label', 'Backlog')['items'])->firstWhere('id', $line->id);
+
+    expect($card['stock_cover']['daily_usage'])->toBe(2.5)
+        ->and($card['stock_cover']['days'])->toBe(0.0)
+        ->and($card['quarterly_usage'])->toBeArray()
+        ->and($card)->toHaveKey('stock_in_locations');
+});

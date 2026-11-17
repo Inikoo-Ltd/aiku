@@ -23,6 +23,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import ArtisanPicker from "@/Components/Production/ArtisanPicker.vue"
 import ModalCreateManualJobOrder from "@/Components/Production/ModalCreateManualJobOrder.vue"
+import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
 import DatePicker from "primevue/datepicker"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faCalendarDay, faMagic } from "@fal"
@@ -156,7 +157,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, unit_name?: string | null, is_fill?: boolean, shop_name?: string | null, customer_name?: string | null, order_reference?: string | null, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, loose_pieces?: number, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
+type BoardItem = { id: number, unit_name?: string | null, is_fill?: boolean, shop_name?: string | null, customer_name?: string | null, order_reference?: string | null, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, loose_pieces?: number, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, stock_cover?: object | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
 
 function artisansOf(item: BoardItem): string[] {
     if (item.current_steps?.length) return [...new Set(item.current_steps.flatMap(step => step.artisans.map(artisan => artisan ?? "")))]
@@ -972,9 +973,12 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         <span v-if="item.job_order_hold_reason" v-tooltip="item.job_order_hold_reason" class="rounded bg-yellow-100 px-1 text-[10px] font-semibold uppercase text-yellow-800" :class="laneIndex === queuedLane && isReassignable(item) ? '' : 'ml-auto'">{{ ctrans("On hold") }}</span>
                         <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink" :class="(laneIndex === queuedLane && isReassignable(item)) || item.job_order_hold_reason ? '' : 'ml-auto'">{{ item.job_order_reference }}</Link>
                     </div>
-                    <div v-if="laneIndex <= LANE_PREPARING" class="text-gray-400">
-                        <span :class="freeStock(item) >= Number(item.quantity) ? 'text-emerald-600' : ''">{{ ctrans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
-                        <span v-if="Number(item.stock_promised) > 0"> · {{ ctrans("promised to pre-picks") }}: {{ useLocaleStore().number(Number(item.stock_promised)) }} · {{ ctrans("not promised") }}: {{ useLocaleStore().number(freeStock(item)) }}</span>
+                    <div v-if="laneIndex <= LANE_PREPARING && item.stock_cover" @click.stop @mousedown.stop>
+                        <PurchaseOrderItemStockInfo :item="item" isOrderClosed hideComing />
+                    </div>
+                    <div v-if="laneIndex <= LANE_PREPARING && (!item.stock_cover || Number(item.stock_promised) > 0)" class="text-gray-400">
+                        <span v-if="!item.stock_cover" :class="freeStock(item) >= Number(item.quantity) ? 'text-emerald-600' : ''">{{ ctrans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
+                        <span v-if="Number(item.stock_promised) > 0"><template v-if="!item.stock_cover"> · </template>{{ ctrans("promised to pre-picks") }}: {{ useLocaleStore().number(Number(item.stock_promised)) }} · {{ ctrans("not promised") }}: {{ useLocaleStore().number(freeStock(item)) }}</span>
                     </div>
                     <div
                         v-if="laneIndex === LANE_PREPARING && item.batch_code"
