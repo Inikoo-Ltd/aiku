@@ -24,7 +24,8 @@ use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Starts the next sample of an in-house SKU, numbered after the last one. A SKU makes one sample at a time.
+ * Starts the next sample of an in-house SKU, numbered after the last one, in the formulation stage asked for or
+ * the stage being worked on. A SKU makes one sample at a time.
  */
 class StoreProductDevelopmentSample extends OrgAction
 {
@@ -51,6 +52,7 @@ class StoreProductDevelopmentSample extends OrgAction
         /** @var ProductDevelopmentSample $sample */
         $sample = $item->samples()->create([
             'product_development_id' => $item->product_development_id,
+            'product_development_formulation_id' => $modelData['product_development_formulation_id'] ?? ProductDevelopmentRecipes::currentFormulation($item)->id,
             'number'                 => (int) $item->samples()->max('number') + 1,
             'status'                 => ProductDevelopmentSampleStatusEnum::IN_PROGRESS,
             'batch_size'             => $modelData['batch_size'] ?? null,
@@ -79,6 +81,7 @@ class StoreProductDevelopmentSample extends OrgAction
                 'integer',
                 Rule::exists('job_order_items', 'job_order_id')->where('artefact_id', $this->item->artefact_id),
             ],
+            'product_development_formulation_id' => ['sometimes', 'nullable', 'integer', Rule::exists('product_development_formulations', 'id')->where('product_development_item_id', $this->item->id)],
             'made_by_id'    => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->item->productDevelopment->group_id)],
         ];
     }
@@ -87,6 +90,13 @@ class StoreProductDevelopmentSample extends OrgAction
     {
         if ($this->item->productDevelopment->kind !== ProductDevelopmentKindEnum::RECIPE || !$this->item->artefact_id) {
             $validator->errors()->add('item', __('Trial runs are made for in-house SKUs only'));
+
+            return;
+        }
+
+        $formulationId = $this->get('product_development_formulation_id');
+        if ($formulationId && (int) $formulationId !== ProductDevelopmentRecipes::currentFormulation($this->item)->id) {
+            $validator->errors()->add('product_development_formulation_id', __('Trial runs follow the stages in order: approve the earlier stage first'));
 
             return;
         }

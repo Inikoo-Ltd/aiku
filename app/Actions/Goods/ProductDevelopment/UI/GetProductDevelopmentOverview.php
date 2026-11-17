@@ -217,7 +217,7 @@ class GetProductDevelopmentOverview
             ->values();
 
         if ($role === ProductDevelopmentMemberRoleEnum::PRODUCTION && $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE) {
-            $approved = $productDevelopment->samples()->where('status', 'approved')->pluck('product_development_item_id')->unique();
+            $approved = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::approvedItems($productDevelopment)->pluck('product_development_items.id');
             $waiting  = $productDevelopment->items->reject(fn (ProductDevelopmentItem $item) => $approved->contains($item->id));
             if ($waiting->isNotEmpty()) {
                 $rows->push([

@@ -172,6 +172,7 @@ class ShowJobOrder extends OrgAction
                     'public_notes' => $jobOrder->public_notes,
                     'employee_id'  => $jobOrder->employee_id,
                     'artisan'      => $jobOrder->employee?->contact_name,
+                    'proposed_artisan' => $this->proposedArtisan($jobOrder),
                     'overproductions' => $jobOrder->data['overproductions'] ?? [],
                     'corrections'     => $jobOrder->data['corrections'] ?? [],
                     'non_productive'  => $this->nonProductive($jobOrder, $currencySymbol),
@@ -414,5 +415,22 @@ class ShowJobOrder extends OrgAction
                 ],
             ]
         );
+    }
+
+    /**
+     * The artisan the product development proposes for its trial run, while the job waits for release.
+     *
+     * @return array{id: int, name: string}|null
+     */
+    private function proposedArtisan(JobOrder $jobOrder): ?array
+    {
+        $employeeId = $jobOrder->data['proposed_employee_id'] ?? null;
+        if (!$employeeId || !$jobOrder->isAwaitingRelease()) {
+            return null;
+        }
+
+        $employee = Employee::find($employeeId);
+
+        return $employee ? ['id' => $employee->id, 'name' => $employee->contact_name] : null;
     }
 }

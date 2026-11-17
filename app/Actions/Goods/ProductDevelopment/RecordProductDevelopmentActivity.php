@@ -87,6 +87,8 @@ class RecordProductDevelopmentActivity
 
     public const string SAMPLE_STARTED = 'sample_started';
 
+    public const string FORMULATION_ADDED = 'formulation_added';
+
     public const string SAMPLE_READY = 'sample_ready';
 
     public const string TRIAL_RUN_FORMULATED = 'trial_run_formulated';

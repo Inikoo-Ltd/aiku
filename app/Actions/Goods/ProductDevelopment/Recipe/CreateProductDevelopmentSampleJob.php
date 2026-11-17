@@ -28,8 +28,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * Asks the factory for trial runs of one or more in-house SKUs: one draft trial-run job order per SKU, which
- * a production manager assigns and releases to the floor. Each SKU gets its next trial run record linked to
- * its job order.
+ * a production manager assigns and releases to the floor. Each SKU gets its next trial run record, in the
+ * formulation stage being worked on, linked to its job order; the stage's proposed artisan goes with the job
+ * for the production manager to accept or change.
  */
 class CreateProductDevelopmentSampleJob extends OrgAction
 {
@@ -60,18 +61,21 @@ class CreateProductDevelopmentSampleJob extends OrgAction
         return DB::transaction(function () use ($productDevelopment, $requester, $modelData, $items, $notes) {
             $jobOrders = [];
             foreach ($items as $item) {
+                $open        = $item->samples()->whereIn('status', [ProductDevelopmentSampleStatusEnum::IN_PROGRESS->value, ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW->value])->first();
+                $formulation = $open?->formulation ?? ProductDevelopmentRecipes::currentFormulation($item);
+
                 $jobOrder = StoreTrialRunJobOrder::make()->action($productDevelopment->production, [
-                    'artefact_id' => $item->artefact_id,
-                    'quantity'            => (int) $modelData['quantity'],
-                    'notes'               => trim($productDevelopment->code.($notes !== '' ? ': '.$notes : '')),
-                    'product_development' => $productDevelopment->code,
+                    'artefact_id'          => $item->artefact_id,
+                    'quantity'             => (int) $modelData['quantity'],
+                    'notes'                => trim($productDevelopment->code.' '.$formulation->name.($notes !== '' ? ': '.$notes : '')),
+                    'product_development'  => $productDevelopment->code,
+                    'proposed_employee_id' => $formulation->artisan_id,
                 ]);
 
-                $open = $item->samples()->whereIn('status', [ProductDevelopmentSampleStatusEnum::IN_PROGRESS->value, ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW->value])->first();
                 if ($open) {
                     $open->update(['job_order_id' => $jobOrder->id, 'made_by_id' => null]);
                 } else {
-                    StoreProductDevelopmentSample::make()->action($item, $requester, ['job_order_id' => $jobOrder->id, 'made_by_id' => null]);
+                    StoreProductDevelopmentSample::make()->action($item, $requester, ['job_order_id' => $jobOrder->id, 'made_by_id' => null, 'product_development_formulation_id' => $formulation->id]);
                 }
 
                 $jobOrders[] = $jobOrder;

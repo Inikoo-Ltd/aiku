@@ -48,6 +48,9 @@ use App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentComponent
 use App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentComponent;
 use App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample;
+use App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentFormulation;
+use App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentFormulation;
+use App\Actions\Goods\ProductDevelopment\Recipe\DeleteProductDevelopmentFormulation;
 use App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Design\CancelProductDevelopmentArtworkInAiku;
@@ -2337,6 +2340,9 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::delete('brief-file/{productDevelopmentFile:id}', RemoveProductDevelopmentBriefFile::class)->name('brief_file.remove')->withoutScopedBindings();
     Route::patch('item/{productDevelopmentItem:id}/brief', UpdateProductDevelopmentItemBrief::class)->name('item.brief')->withoutScopedBindings();
     Route::post('item/{productDevelopmentItem:id}/sample', StoreProductDevelopmentSample::class)->name('item.sample.store')->withoutScopedBindings();
+    Route::post('item/{productDevelopmentItem:id}/formulation', StoreProductDevelopmentFormulation::class)->name('item.formulation.store')->withoutScopedBindings();
+    Route::patch('formulation/{productDevelopmentFormulation:id}', UpdateProductDevelopmentFormulation::class)->name('formulation.update')->withoutScopedBindings();
+    Route::delete('formulation/{productDevelopmentFormulation:id}', DeleteProductDevelopmentFormulation::class)->name('formulation.delete')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}', UpdateProductDevelopmentSample::class)->name('sample.update')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}/submit', SubmitProductDevelopmentSample::class)->name('sample.submit')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}/review', ReviewProductDevelopmentSample::class)->name('sample.review')->withoutScopedBindings();
