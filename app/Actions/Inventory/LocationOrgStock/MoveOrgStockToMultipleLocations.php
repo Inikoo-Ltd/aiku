@@ -57,7 +57,7 @@ class MoveOrgStockToMultipleLocations extends OrgAction
             'targets'                         => ['required', 'array', 'min:1', $this->targetsAreValid(...)],
             'targets.*.location_org_stock_id' => ['required', 'integer', Rule::exists('location_org_stocks', 'id')],
             'targets.*.quantity'              => ['required', 'numeric', 'gt:0'],
-            'reason'                          => ['sometimes', 'nullable', Rule::enum(OrgStockMovementReasonEnum::class)],
+            'reason'                          => ['sometimes', 'nullable', Rule::in(OrgStockMovementReasonEnum::transferReason())],
             'note'                            => ['sometimes', 'nullable', 'string', 'max:1024'],
         ];
     }

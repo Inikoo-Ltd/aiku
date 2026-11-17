@@ -1431,6 +1431,10 @@ test('moving stock keeps the reason and note on both movements', function ($ware
         'targets' => [['location_org_stock_id' => $otherSlot->id, 'quantity' => 3]],
         'reason'  => 'transfer',
     ])->assertSessionHasNoErrors();
+    $this->patch(route('grp.models.location_org_stock.multi_move', $sourceSlot->id), [
+        'targets' => [['location_org_stock_id' => $otherSlot->id, 'quantity' => 1]],
+        'reason'  => 'uom',
+    ])->assertSessionHasErrors('reason');
 
     $movements = OrgStockMovement::where('org_stock_id', $orgStock->id)->where('type', OrgStockMovementTypeEnum::LOCATION_TRANSFER)->orderBy('id')->get();
 

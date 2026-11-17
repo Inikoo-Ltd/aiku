@@ -24,7 +24,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class MoveOrgStockToOtherLocation extends OrgAction
@@ -114,8 +114,8 @@ class MoveOrgStockToOtherLocation extends OrgAction
     {
         return [
             'quantity'  => ['required','numeric','gt:0', $this->quantityFitsInSourceLocation(...)],
-            'reason'    => ['sometimes', 'nullable', new Enum(OrgStockMovementReasonEnum::class)],
-            'note'                  => ['sometimes', 'nullable', 'string'],
+            'reason'    => ['sometimes', 'nullable', Rule::in(OrgStockMovementReasonEnum::transferReason())],
+            'note'      => ['sometimes', 'nullable', 'string', 'max:1024'],
         ];
     }
 
