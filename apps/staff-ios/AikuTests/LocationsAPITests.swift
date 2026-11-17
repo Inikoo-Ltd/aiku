@@ -50,6 +50,10 @@ struct LocationsAPITests {
         return defaults
     }
 
+    private func isolatedCache() -> FileWarehouseCache {
+        FileWarehouseCache(fileURL: FileManager.default.temporaryDirectory.appending(path: "aiku-tests-\(UUID().uuidString)/warehouses.json"))
+    }
+
     private func client(_ responses: [String: String] = Self.responses) -> APIClient {
         APIClient(
             configuration: AppConfiguration(apiBaseURL: URL(string: "https://app.aiku.test/app/api")!, mobileAppKey: "key"),
@@ -135,25 +139,77 @@ struct LocationsAPITests {
 
     @Test func warehouseStorePrefersAWarehouseWithLocationAccessThenRemembersTheChoice() async {
         let defaults = isolatedDefaults()
-        let first = WarehouseStore(defaults: defaults)
+        let cache = isolatedCache()
+        let first = WarehouseStore(defaults: defaults, cache: cache)
 
         await first.load(for: 291, apiClient: client())
         #expect(first.selected?.code == "ED")
 
         first.select(4)
-        let reopened = WarehouseStore(defaults: defaults)
+        let reopened = WarehouseStore(defaults: defaults, cache: cache)
         await reopened.load(for: 291, apiClient: client())
 
         #expect(reopened.selected?.code == "PAR")
     }
 
     @Test func warehouseStoreIgnoresAWarehouseItCannotList() async {
-        let store = WarehouseStore(defaults: isolatedDefaults())
+        let store = WarehouseStore(defaults: isolatedDefaults(), cache: isolatedCache())
         await store.load(for: 291, apiClient: client())
 
         store.select(99)
 
         #expect(store.selectedID == 1)
+    }
+
+    @Test func warehouseStoreRefreshPicksUpChangedAccessAndKeepsTheChoice() async {
+        let store = WarehouseStore(defaults: isolatedDefaults(), cache: isolatedCache())
+        await store.load(for: 291, apiClient: client())
+        store.select(4)
+        #expect(store.selected?.can.viewLocations == false)
+
+        var changed = Self.responses
+        changed["mobile/warehouses"] = #"{"data":[{"id":4,"slug":"par","code":"PAR","name":"Paris","organisation":{"id":2,"slug":"es","name":"AW Europe"},"can":{"view_locations":true,"edit_locations":true}}]}"#
+        await store.refresh(for: 291, apiClient: client(changed))
+
+        #expect(store.warehouses.map(\.id) == [4])
+        #expect(store.selected?.can.viewLocations == true)
+        #expect(store.selected?.can.editLocations == true)
+    }
+
+    @Test func warehouseStoreWorksOfflineFromTheLastListForTheSameUser() async {
+        let defaults = isolatedDefaults()
+        let cache = isolatedCache()
+        let online = WarehouseStore(defaults: defaults, cache: cache)
+        await online.load(for: 291, apiClient: client())
+        online.select(4)
+
+        let offline = WarehouseStore(defaults: defaults, cache: cache)
+        await offline.load(for: 291, apiClient: client([:]))
+
+        #expect(offline.warehouses.map(\.code) == ["ED", "PAR"])
+        #expect(offline.selected?.code == "PAR")
+        #expect(offline.selected?.organisation.name == "AW Europe")
+        #expect(offline.loadError == nil)
+
+        let otherUser = WarehouseStore(defaults: defaults, cache: cache)
+        await otherUser.load(for: 300, apiClient: client([:]))
+        #expect(otherUser.warehouses.isEmpty)
+        #expect(otherUser.loadError != nil)
+    }
+
+    @Test func warehouseStoreForgetsTheOfflineListOnSignOut() async {
+        let defaults = isolatedDefaults()
+        let cache = isolatedCache()
+        let store = WarehouseStore(defaults: defaults, cache: cache)
+        await store.load(for: 291, apiClient: client())
+
+        store.reset()
+
+        #expect(cache.load(for: 291) == nil)
+        let reopened = WarehouseStore(defaults: defaults, cache: cache)
+        await reopened.load(for: 291, apiClient: client([:]))
+        #expect(reopened.warehouses.isEmpty)
+        #expect(reopened.loadError != nil)
     }
 
     @Test func warehouseSheetGroupsRealWarehousesByOrganisation() async throws {

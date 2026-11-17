@@ -11,10 +11,12 @@ final class WarehouseStore {
     private(set) var loadError: String?
 
     @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let cache: WarehouseCaching
     @ObservationIgnored private var userID: Int?
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, cache: WarehouseCaching = FileWarehouseCache.standard) {
         self.defaults = defaults
+        self.cache = cache
     }
 
     var isLive: Bool { !warehouses.isEmpty }
@@ -25,19 +27,24 @@ final class WarehouseStore {
 
     func load(for userID: Int, apiClient: APIClient) async {
         guard self.userID != userID || warehouses.isEmpty else { return }
+        if let cached = cache.load(for: userID) {
+            apply(cached, for: userID)
+        }
+        await refresh(for: userID, apiClient: apiClient)
+    }
+
+    func refresh(for userID: Int, apiClient: APIClient) async {
         do {
             let fetched = try await apiClient.fetchWarehouses()
-            self.userID = userID
-            warehouses = fetched
+            apply(fetched, for: userID)
             loadError = nil
-            let stored = defaults.object(forKey: Self.key(for: userID)) as? Int
-            let chosen = fetched.first { $0.id == stored } ?? fetched.first(where: \.can.viewLocations) ?? fetched.first
-            selectedID = chosen?.id
-            persist()
+            try? cache.save(fetched, for: userID)
         } catch where error.isCancellation {
             return
         } catch {
-            loadError = error.localizedDescription
+            if self.userID != userID || warehouses.isEmpty {
+                loadError = error.localizedDescription
+            }
         }
     }
 
@@ -52,6 +59,20 @@ final class WarehouseStore {
         selectedID = nil
         loadError = nil
         userID = nil
+        cache.clear()
+    }
+
+    private func apply(_ fetched: [MobileWarehouse], for userID: Int) {
+        self.userID = userID
+        if warehouses != fetched {
+            warehouses = fetched
+        }
+        let stored = defaults.object(forKey: Self.key(for: userID)) as? Int
+        let chosen = fetched.first { $0.id == stored } ?? fetched.first(where: \.can.viewLocations) ?? fetched.first
+        if selectedID != chosen?.id {
+            selectedID = chosen?.id
+        }
+        persist()
     }
 
     private func persist() {
