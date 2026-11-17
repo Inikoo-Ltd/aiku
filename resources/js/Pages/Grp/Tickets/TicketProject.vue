@@ -22,11 +22,13 @@ import TicketProjectProgress from "@/Components/Tickets/TicketProjectProgress.vu
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import StaffTaskQuickLook from "@/Components/Tasks/StaffTaskQuickLook.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
+import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck } from "@fal"
+import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt } from "@fal"
 
-library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck)
+library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt)
 
 type Person = { id: number; name: string; avatar: Record<string, string> | null }
 type Route = { name: string; parameters?: Record<string, unknown> }
@@ -83,7 +85,7 @@ const props = defineProps<{
     commits: { hash: string; subject: string | null; version: string | null; deployed_at: string | null; reference: string; url: string }[]
     activity: { at: string; icon: string; text: string; url: string | null; by: string | null }[]
     workload: { person: Person | null; todo: number; in_progress: number; done: number }[]
-    updates: { id: number; body: string; health: Health | null; health_label: string | null; author: Person | null; created_at: string }[]
+    updates: { id: number; body: string; health: Health | null; health_label: string | null; author: Person | null; created_at: string; is_edited: boolean; can_edit: boolean; can_delete: boolean }[]
     can_edit: boolean
     options: { statuses: { label: string; value: string }[]; healths: { label: string; value: string }[]; staff: { label: string; value: number }[]; parents: { label: string; value: number }[] }
     routes: { update: Route; post_update: Route; attach_work: Route; create_ticket: Route }
@@ -181,6 +183,43 @@ const updateForm = useForm({ body: "", health: null as string | null })
 const toggleUpdateHealth = (value: string) => (updateForm.health = updateForm.health === value ? null : value)
 const postUpdate = () =>
     updateForm.post(route(props.routes.post_update.name, props.routes.post_update.parameters), { preserveScroll: true, onSuccess: () => updateForm.reset() })
+
+const editingUpdateId = ref<number | null>(null)
+const editUpdateForm = useForm({ body: "", health: null as string | null })
+const startEditingUpdate = (update: (typeof props.updates)[number]) => {
+    editUpdateForm.clearErrors()
+    editUpdateForm.body = update.body
+    editUpdateForm.health = update.health
+    editingUpdateId.value = update.id
+}
+const toggleEditUpdateHealth = (value: string) => (editUpdateForm.health = editUpdateForm.health === value ? null : value)
+const saveEditedUpdate = () => {
+    if (editingUpdateId.value === null) {
+        return
+    }
+    editUpdateForm.patch(route("grp.models.ticket_project.update.update", editingUpdateId.value), {
+        preserveScroll: true,
+        onSuccess: () => (editingUpdateId.value = null),
+    })
+}
+
+const deletingUpdateId = ref<number | null>(null)
+const deleteUpdateError = ref<string | null>(null)
+const deleteUpdate = (id: number, closeModal: () => void) => {
+    deletingUpdateId.value = id
+    deleteUpdateError.value = null
+    router.delete(route("grp.models.ticket_project.update.delete", id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeModal()
+            if (editingUpdateId.value === id) {
+                editingUpdateId.value = null
+            }
+        },
+        onError: () => (deleteUpdateError.value = ctrans("The update could not be deleted. Reload the page and try again.")),
+        onFinish: () => (deletingUpdateId.value = null),
+    })
+}
 
 const milestoneDraft = ref<Milestone[]>([])
 watch(() => props.milestones, (milestones) => (milestoneDraft.value = milestones.map((milestone) => ({ ...milestone }))), { immediate: true })
@@ -624,17 +663,85 @@ const burnUpOptions = {
                         <Button icon="fal fa-check" :label="ctrans('Post update')" type="tertiary" :disabled="!updateForm.body.trim()" :loading="updateForm.processing" @click="postUpdate" />
                     </div>
                 </form>
+                <p v-if="deleteUpdateError" class="mb-2 text-xs text-red-600">{{ deleteUpdateError }}</p>
                 <p v-if="!updates.length" class="text-sm text-gray-500">{{ ctrans("No updates yet") }}</p>
                 <ol class="space-y-4">
                     <li v-for="update in updates" :key="update.id" class="flex gap-3">
                         <TicketUserAvatar :name="update.author?.name ?? null" :avatar="update.author?.avatar" />
                         <div class="min-w-0 flex-1">
-                            <p class="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                            <div class="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
                                 <span class="font-medium text-gray-700">{{ update.author?.name ?? "-" }}</span>
                                 <span>{{ useFormatTime(update.created_at, { formatTime: "hm" }) }}</span>
+                                <span v-if="update.is_edited" class="text-gray-400">{{ ctrans("(edited)") }}</span>
                                 <span v-if="update.health" class="rounded-full px-2 py-0.5" :class="healthClasses[update.health]">{{ update.health_label }}</span>
-                            </p>
-                            <TicketBody :text="update.body" class="text-sm" />
+                                <span v-if="(update.can_edit || update.can_delete) && editingUpdateId !== update.id" class="ml-auto flex items-center gap-1">
+                                    <button
+                                        v-if="update.can_edit"
+                                        v-tooltip="ctrans('Edit')"
+                                        type="button"
+                                        class="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-40"
+                                        :aria-label="ctrans('Edit update')"
+                                        :disabled="deletingUpdateId === update.id"
+                                        @click="startEditingUpdate(update)">
+                                        <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                                    </button>
+                                    <ModalConfirmation
+                                        v-if="update.can_delete"
+                                        :title="update.can_edit ? ctrans('Delete this update?') : ctrans('Delete :author\'s update?', { author: update.author?.name ?? ctrans('this person') })"
+                                        :description="update.can_edit ? ctrans('The update will be removed from the project.') : ctrans('This is not your update. It will be removed for everyone and cannot be undone.')">
+                                        <template #default="{ changeModel }">
+                                            <button
+                                                v-tooltip="ctrans('Delete')"
+                                                type="button"
+                                                class="p-1 text-gray-500 hover:text-red-600 disabled:opacity-40"
+                                                :aria-label="ctrans('Delete update')"
+                                                :disabled="deletingUpdateId === update.id"
+                                                @click="changeModel">
+                                                <LoadingIcon v-if="deletingUpdateId === update.id" />
+                                                <FontAwesomeIcon v-else icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                                            </button>
+                                        </template>
+                                        <template #btn-yes="{ closeModal }">
+                                            <Button type="tertiary" :label="ctrans('Yes, delete')" :loading="deletingUpdateId === update.id" @click="deleteUpdate(update.id, closeModal)">
+                                                <template #icon>
+                                                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
+                                                </template>
+                                            </Button>
+                                        </template>
+                                    </ModalConfirmation>
+                                </span>
+                            </div>
+                            <form v-if="editingUpdateId === update.id" class="mt-1 rounded-md border border-gray-200 p-2" @submit.prevent="saveEditedUpdate">
+                                <Textarea v-model="editUpdateForm.body" rows="3" auto-resize class="w-full text-sm" :aria-label="ctrans('Update text')" />
+                                <p v-if="editUpdateForm.errors.body" class="text-xs text-red-600">{{ editUpdateForm.errors.body }}</p>
+                                <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
+                                    <div class="inline-flex overflow-hidden rounded-md border border-gray-300 text-xs">
+                                        <button
+                                            v-for="health in options.healths"
+                                            :key="health.value"
+                                            type="button"
+                                            class="flex items-center gap-1.5 border-r border-gray-300 px-2 py-1 last:border-r-0"
+                                            :class="editUpdateForm.health === health.value ? healthClasses[health.value] : 'bg-white text-gray-600 hover:bg-gray-50'"
+                                            @click="toggleEditUpdateHealth(health.value)">
+                                            <span class="size-2 rounded-full" :class="healthDots[health.value]" />
+                                            {{ health.label }}
+                                        </button>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <Button type="tertiary" :label="ctrans('Cancel')" :disabled="editUpdateForm.processing" @click="editingUpdateId = null">
+                                            <template #icon>
+                                                <FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                                            </template>
+                                        </Button>
+                                        <Button type="tertiary" :label="ctrans('Save')" :disabled="!editUpdateForm.body.trim()" :loading="editUpdateForm.processing" @click="saveEditedUpdate">
+                                            <template #icon>
+                                                <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+                                            </template>
+                                        </Button>
+                                    </div>
+                                </div>
+                            </form>
+                            <TicketBody v-else :text="update.body" class="text-sm" />
                         </div>
                     </li>
                 </ol>
