@@ -23,6 +23,7 @@ enum UserNotificationEnum: string
     case PURCHASE_ORDER_COMPLIANCE_DUE = 'purchase_order_compliance_due';
     case PURCHASE_ORDER_MINIMUM_POKE = 'purchase_order_minimum_poke';
     case PURCHASE_ORDER_BALANCE_DUE = 'purchase_order_balance_due';
+    case PURCHASE_ORDER_DEPOSIT_REQUESTED = 'purchase_order_deposit_requested';
     case MONEY_REQUEST_CREATED = 'money_request_created';
     case MONEY_REQUEST_APPROVED = 'money_request_approved';
     case MONEY_REQUEST_PAID = 'money_request_paid';
@@ -58,6 +59,7 @@ enum UserNotificationEnum: string
         self::PURCHASE_ORDER_COMPLIANCE_DUE,
         self::PURCHASE_ORDER_MINIMUM_POKE,
         self::PURCHASE_ORDER_BALANCE_DUE,
+        self::PURCHASE_ORDER_DEPOSIT_REQUESTED,
         self::MONEY_REQUEST_CREATED,
         self::MONEY_REQUEST_APPROVED,
         self::MONEY_REQUEST_PAID,
@@ -84,6 +86,7 @@ enum UserNotificationEnum: string
             self::PURCHASE_ORDERS_STUCK         => __('The weekly list of purchase orders past their expected date'),
             self::PURCHASE_ORDER_COMPLIANCE_DUE => __('Compliance documents of my purchase order are due'),
             self::PURCHASE_ORDER_BALANCE_DUE    => __('A purchase order passed its QC and its balance can be paid'),
+            self::PURCHASE_ORDER_DEPOSIT_REQUESTED => __('A supplier asks for a deposit on a purchase order I buy or my organisation buys or handles as agent'),
             self::MONEY_REQUEST_CREATED         => __('An agent asks for money on a money request I approve, pay or am copied on'),
             self::MONEY_REQUEST_APPROVED        => __('The client approves a money request I asked for or am copied on'),
             self::MONEY_REQUEST_PAID            => __('A money request I asked for or am copied on is paid'),
@@ -154,6 +157,7 @@ enum UserNotificationEnum: string
             self::PURCHASE_ORDERS_STUCK         => 'fal fa-hourglass-half',
             self::PURCHASE_ORDER_COMPLIANCE_DUE => 'fal fa-clipboard-check',
             self::PURCHASE_ORDER_BALANCE_DUE    => 'fal fa-file-invoice',
+            self::PURCHASE_ORDER_DEPOSIT_REQUESTED => 'fal fa-coins',
             self::MONEY_REQUEST_CREATED         => 'fal fa-money-check-alt',
             self::MONEY_REQUEST_APPROVED        => 'fal fa-thumbs-up',
             self::MONEY_REQUEST_PAID            => 'fal fa-hand-holding-usd',

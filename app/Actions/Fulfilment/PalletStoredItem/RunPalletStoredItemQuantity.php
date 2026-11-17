@@ -52,6 +52,7 @@ class RunPalletStoredItemQuantity
             ->where('stored_item_id', $palletStoredItem->stored_item_id)
             ->where('state', StoredItemAuditDeltaStateEnum::COMPLETED)
             ->latest()
+            ->latest('id')
             ->first();
 
         if (!$delta) {

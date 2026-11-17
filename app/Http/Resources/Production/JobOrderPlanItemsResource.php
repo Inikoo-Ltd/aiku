@@ -19,6 +19,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $id
  * @property numeric $quantity
  * @property int $job_order_id
+ * @property string $plan_today
  * @property string $reference
  * @property string $job_order_slug
  * @property string $job_order_state
@@ -43,7 +44,7 @@ class JobOrderPlanItemsResource extends JsonResource
             'state_label'     => JobOrderStateEnum::labels()[$this->job_order_state] ?? $this->job_order_state,
             'planned_for'     => $this->planned_for,
             'plan_position'   => $this->plan_position,
-            'is_carried_over' => $isUnfinished && $this->planned_for < now()->toDateString(),
+            'is_carried_over' => $isUnfinished && $this->planned_for < $this->plan_today,
             'artefact_code'   => $this->artefact_code,
             'artefact_name'   => $this->artefact_name,
             'artefact_department_id' => $this->artefact_department_id,

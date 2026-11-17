@@ -884,6 +884,222 @@ test('a supervisor corrects an entry typed too high and the grown job shrinks ba
     ]);
 });
 
+test('a correction locks the job order before its entry, as a receive into stock does, and keeps what others wrote on the job', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task    = $item->tasks()->first();
+    $session = StartManufactureTaskSession::make()->action(auth()->user(), $task);
+    $session->update(['quantity_made' => 5, 'state' => ManufactureTaskSessionStateEnum::CLOSED, 'ended_at' => now()]);
+    \App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities::run($task);
+    $staleSession = $session->refresh();
+    JobOrder::find($jobOrder->id)->update(['data' => array_merge($jobOrder->refresh()->data ?? [], ['planner_note' => 'kept'])]);
+
+    \Illuminate\Support\Facades\DB::flushQueryLog();
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+    \App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity::make()->action($staleSession, ['quantity_made' => 4], 'Supervisor');
+    $locks = collect(\Illuminate\Support\Facades\DB::getQueryLog())->pluck('query')->filter(fn (string $sql) => str_contains($sql, 'for update'))->values();
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    expect($locks[0])->toContain('"job_orders"')
+        ->and($locks[1])->toContain('"manufacture_task_sessions"')
+        ->and($jobOrder->refresh()->data['planner_note'])->toBe('kept')
+        ->and($jobOrder->data['corrections'][0])->toMatchArray(['from' => 5.0, 'to' => 4.0])
+        ->and((float) $session->refresh()->quantity_made)->toBe(4.0);
+});
+
+test('closing an entry locks its job order before the entry and the step, as a correction and a receive into stock do', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task    = $item->tasks()->first();
+    $session = StartManufactureTaskSession::make()->action(auth()->user(), $task);
+
+    \Illuminate\Support\Facades\DB::flushQueryLog();
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+    CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 4]);
+    $locks = collect(\Illuminate\Support\Facades\DB::getQueryLog())->pluck('query')->filter(fn (string $sql) => str_contains($sql, 'for update'))->values();
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    expect($locks[0])->toContain('"job_orders"')
+        ->and($locks[1])->toContain('"manufacture_task_sessions"')
+        ->and($locks->search(fn (string $sql) => str_contains($sql, '"job_order_item_tasks"')))->toBeGreaterThan(1)
+        ->and($session->refresh()->state)->toBe(ManufactureTaskSessionStateEnum::CLOSED)
+        ->and((float) $session->quantity_made)->toBe(4.0)
+        ->and((float) $task->refresh()->quantity_made)->toBe(4.0);
+});
+
+test('a void in a pay week locked for payroll locks the job order, then the entry, then the worker, as a correction does', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task    = $item->tasks()->first();
+    $session = StartManufactureTaskSession::make()->action(auth()->user(), $task);
+    $session->update(['quantity_made' => 2, 'state' => ManufactureTaskSessionStateEnum::CLOSED, 'started_at' => now()->subWeeks(3)->subHour(), 'ended_at' => now()->subWeeks(3)]);
+    $organisationId = $this->production->organisation_id;
+    $manager        = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+    $manager->givePermissionTo(["org-supervisor.$organisationId", "accounting.$organisationId.view", "accounting.$organisationId.edit"]);
+    \Illuminate\Support\Facades\Notification::fake();
+
+    \Illuminate\Support\Facades\DB::flushQueryLog();
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+    $voided = VoidManufactureTaskSession::make()->action($session, $manager, ['lock_reason' => 'Entered twice']);
+    $locks  = collect(\Illuminate\Support\Facades\DB::getQueryLog())->pluck('query')->filter(fn (string $sql) => str_contains($sql, 'for update'))->values();
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    $first = fn (string $table) => $locks->search(fn (string $sql) => str_contains($sql, '"'.$table.'"'));
+    expect($first('job_orders'))->toBe(0)
+        ->and($first('manufacture_task_sessions'))->toBe(1)
+        ->and($first('users'))->toBeGreaterThan(1)
+        ->and($voided->state)->toBe(ManufactureTaskSessionStateEnum::VOIDED)
+        ->and($session->state)->toBe(ManufactureTaskSessionStateEnum::VOIDED)
+        ->and(\App\Models\Production\ManufacturePayrollAdjustment::where('model_type', 'ManufactureTaskSession')->where('model_id', $session->id)->sole()->change)->toBe('void')
+        ->and(fn () => VoidManufactureTaskSession::make()->action(ManufactureTaskSession::find($session->id)->setAttribute('state', ManufactureTaskSessionStateEnum::CLOSED), $manager, ['lock_reason' => 'Again']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'Only a finished task session can be voided');
+});
+
+test('an entry moved to another job order while it is being locked is read and locked again, so no job order is locked after the entry', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $line = function () {
+        $jobOrder = StoreJobOrder::make()->action($this->production, []);
+        $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+        ConfirmJobOrder::make()->action($jobOrder);
+
+        return $item->tasks()->first();
+    };
+    $from    = $line();
+    $to      = $line();
+    $session = StartManufactureTaskSession::make()->action(auth()->user(), $from);
+    $session->update(['quantity_made' => 2, 'state' => ManufactureTaskSessionStateEnum::CLOSED, 'ended_at' => now()]);
+
+    config(['database.connections.racing_move' => config('database.connections.'.config('database.default'))]);
+    $moved = false;
+    \Illuminate\Support\Facades\DB::listen(function (\Illuminate\Database\Events\QueryExecuted $query) use (&$moved, $session, $to) {
+        if ($moved || $query->connectionName === 'racing_move' || !str_contains($query->sql, '"job_orders"') || !str_contains($query->sql, 'for update')) {
+            return;
+        }
+        $moved = true;
+        \Illuminate\Support\Facades\DB::connection('racing_move')->table('manufacture_task_sessions')->where('id', $session->id)->update(['job_order_item_task_id' => $to->id]);
+    });
+
+    try {
+        \Illuminate\Support\Facades\DB::flushQueryLog();
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        VoidManufactureTaskSession::make()->action($session);
+        $locks = collect(\Illuminate\Support\Facades\DB::getQueryLog())->filter(fn (array $query) => str_contains($query['query'], 'for update'))->values();
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+    } finally {
+        \Illuminate\Support\Facades\DB::purge('racing_move');
+    }
+
+    $sessionLocks = $locks->keys()->filter(fn (int $index) => str_contains($locks[$index]['query'], '"manufacture_task_sessions"'))->values();
+    expect($moved)->toBeTrue()
+        ->and($sessionLocks)->toHaveCount(2)
+        ->and($locks[$sessionLocks[1] - 1]['query'])->toContain('"job_orders"')
+        ->and($locks[$sessionLocks[1] - 1]['bindings'])->toContain($to->job_order_id)
+        ->and($locks->slice($sessionLocks[1] + 1)->filter(fn (array $query) => str_contains($query['query'], '"job_orders"')))->toBeEmpty()
+        ->and($session->refresh()->state)->toBe(ManufactureTaskSessionStateEnum::VOIDED)
+        ->and($session->job_order_item_task_id)->toBe($to->id);
+});
+
+test('the floor counts what was finished today on the organisation\'s day, not the UTC one', function () {
+    $organisation       = $this->production->organisation;
+    $previousTimezoneId = $organisation->timezone_id;
+    $organisation->update(['timezone_id' => \App\Models\Helpers\Timezone::where('name', 'Asia/Kuala_Lumpur')->value('id')]);
+
+    try {
+        $this->artefact->manufactureTasks()->sync([
+            $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        ]);
+        $utcDay = now()->addYears(9)->addDays(rand(1, 300))->toDateString();
+        $at     = fn (string $time) => \Illuminate\Support\Carbon::parse($utcDay.' '.$time, 'UTC');
+        $this->travelTo($at('20:00'));
+        $jobOrder = StoreJobOrder::make()->action($this->production, []);
+        $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 50]);
+        ConfirmJobOrder::make()->action($jobOrder);
+        $task  = $item->tasks()->first();
+        $entry = function (string $endedAt, int $quantity) use ($task, $at) {
+            $session = StartManufactureTaskSession::make()->action(auth()->user(), $task->refresh());
+            $session->update(['quantity_made' => $quantity, 'state' => ManufactureTaskSessionStateEnum::CLOSED, 'started_at' => $at($endedAt)->subHour(), 'ended_at' => $at($endedAt)]);
+
+            return $session;
+        };
+        $yesterdayHere = $entry('15:00', 3);
+        $todayHere     = $entry('17:00', 5);
+
+        get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('today.sessions', fn ($sessions) => (int) $sessions === 1)
+                ->where('today.quantity_made', fn ($quantity) => (float) $quantity === 5.0)
+                ->where('finished_today', fn ($finished) => collect($finished)->pluck('id')->all() === [$todayHere->id])
+                ->etc());
+        expect($yesterdayHere->refresh()->ended_at->toDateString())->toBe($utcDay);
+    } finally {
+        $organisation->update(['timezone_id' => $previousTimezoneId]);
+    }
+});
+
+test('a job order is released to the floor under a lock: the state is checked again and data others wrote is kept', function () {
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 3]);
+    $staleOnce  = JobOrder::find($jobOrder->id);
+    $staleTwice = JobOrder::find($jobOrder->id);
+    JobOrder::find($jobOrder->id)->update(['data' => array_merge($jobOrder->refresh()->data ?? [], ['planner_note' => 'kept'])]);
+
+    $confirmed = ConfirmJobOrder::make()->action($staleOnce);
+    expect($confirmed->state)->toBe(JobOrderStateEnum::CONFIRMED)
+        ->and($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED)
+        ->and($jobOrder->data['planner_note'])->toBe('kept');
+
+    $confirmedAt = $jobOrder->confirmed_at;
+    expect($staleTwice->state)->toBe(JobOrderStateEnum::IN_PROCESS)
+        ->and(fn () => ConfirmJobOrder::make()->action($staleTwice))->toThrow(\Illuminate\Validation\ValidationException::class, 'Only a draft job order')
+        ->and($jobOrder->refresh()->confirmed_at->equalTo($confirmedAt))->toBeTrue();
+});
+
+test('the day plan opens on today in the organisation\'s timezone and carries over from its yesterday', function () {
+    $organisation       = $this->production->organisation;
+    $previousTimezoneId = $organisation->timezone_id;
+    $organisation->update(['timezone_id' => \App\Models\Helpers\Timezone::where('name', 'Asia/Kuala_Lumpur')->value('id')]);
+
+    try {
+        $utcDay = now()->addYears(9)->addDays(rand(1, 300))->toDateString();
+        $this->travelTo(\Illuminate\Support\Carbon::parse($utcDay.' 20:00:00', 'UTC'));
+        $localDay = \Illuminate\Support\Carbon::parse($utcDay)->addDay()->toDateString();
+        $production = $this->production->refresh()->load('organisation.timezone');
+
+        $jobOrder = StoreJobOrder::make()->action($production, []);
+        StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 2]);
+        ConfirmJobOrder::make()->action($jobOrder);
+        $jobOrder->update(['planned_for' => $utcDay]);
+
+        $isOnThePlan = fn (string $date) => JobOrderItem::join('job_orders', 'job_orders.id', 'job_order_items.job_order_id')
+            ->where('job_orders.id', $jobOrder->id)
+            ->where(fn ($query) => \App\Actions\Production\JobOrder\UI\IndexJobOrderPlan::onThePlan($query, $date, $production))
+            ->exists();
+
+        expect(\App\Actions\Production\JobOrder\UI\IndexJobOrderPlan::parseDate(null, $production))->toBe($localDay)
+            ->and(\App\Actions\Production\JobOrder\UI\IndexJobOrderPlan::parseDate('not a date', $production))->toBe($localDay)
+            ->and($isOnThePlan($localDay))->toBeTrue();
+
+        get(route('grp.org.productions.show.operations.day_plan', [$organisation->slug, $production->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('date', $localDay)->where('today', $localDay)->etc());
+    } finally {
+        $organisation->update(['timezone_id' => $previousTimezoneId]);
+    }
+});
+
 test('historic job orders do not generate a work queue', function () {
     $jobOrder = StoreJobOrder::make()->action($this->production, [
         'state'       => JobOrderStateEnum::RECEIVED,

@@ -8,6 +8,8 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Helpers\Media\SaveModelImage;
+use Illuminate\Http\UploadedFile;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
@@ -1202,6 +1204,19 @@ test('suppliers list shows free and agent suppliers and searches by supplier pro
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('data.data', fn ($suppliers) => collect($suppliers)->pluck('id')->all() === [$freeSupplier->id])
             ->etc());
+});
+
+test('suppliers list filters suppliers without a photo', function () {
+    $code = fake()->unique()->numerify('PHOTO-#####');
+    $withoutPhoto = StoreSupplier::make()->action($this->group, array_merge(Supplier::factory()->definition(), ['code' => $code.'A', 'status' => true]));
+    $withPhoto = StoreSupplier::make()->action($this->group, array_merge(Supplier::factory()->definition(), ['code' => $code.'B', 'status' => true]));
+    $logo = UploadedFile::fake()->image('logo.jpg', 50, 50);
+    SaveModelImage::run($withPhoto, ['path' => $logo->getPathname(), 'originalName' => 'logo.jpg'], 'photo');
+
+    $listed = fn (string $photo) => collect($this->get(route('grp.supply-chain.suppliers.index', ['filter[global]' => $code, 'filter[photo]' => $photo]))->assertOk()->inertiaProps('data.data'))->pluck('id')->all();
+
+    expect($listed('without'))->toContain($withoutPhoto->id)->not->toContain($withPhoto->id)
+        ->and($listed('with'))->toContain($withPhoto->id)->not->toContain($withoutPhoto->id);
 });
 
 test('majordomo redirect supplier link', function () {

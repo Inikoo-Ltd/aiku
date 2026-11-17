@@ -9,17 +9,86 @@
 namespace App\Actions\Production\JobOrder;
 
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetJobOrderDestinationAllocation
 {
     use AsAction;
+
+    private const array ITEM_RELATIONS = ['artefact.orgStock.stock', 'artefact.orgStock.orgStockFamily', 'artefact.manufactureTasks', 'tasks.recipeStep', 'tasks.manufactureTask'];
+
+    /** @var array<int, Collection<int, JobOrderItem>> */
+    private array $preloadedItems = [];
+
+    /** @var array<int, Collection<int, Collection<int, PartnerShoppingListItem>>> */
+    private array $preloadedLines = [];
+
+    /** @var array<int, Collection<int, JobOrderItem>|null> */
+    private array $preloadedCarriedToItems = [];
+
+    /** @var array<int, Collection<int, OrgPartner>> */
+    private array $baysByOrganisation = [];
+
+    /**
+     * Loads the items, lines and carried jobs of many job orders at once, so a list of open job
+     * orders costs a handful of queries instead of dozens per job order. Only for readers: what is
+     * loaded here is reused as it is, so never preload before writing to these job orders.
+     *
+     * @param  Collection<int, JobOrder>  $jobOrders
+     * @param  array<int, string>  $itemRelations  extra relations the caller reads on the items
+     */
+    public function preload(Collection $jobOrders, array $itemRelations = []): static
+    {
+        $jobOrderIds = $jobOrders->pluck('id')->unique()->values()->all();
+        if (!$jobOrderIds) {
+            return $this;
+        }
+
+        $items = JobOrderItem::whereIn('job_order_id', $jobOrderIds)->with([...self::ITEM_RELATIONS, ...$itemRelations])->get()->groupBy('job_order_id');
+        $lines = $this->openLines(PartnerShoppingListItem::with('stock')->whereIn('job_order_id', $jobOrderIds))->groupBy('job_order_id');
+
+        foreach ($jobOrderIds as $jobOrderId) {
+            $this->preloadedItems[$jobOrderId] = $items->get($jobOrderId, collect());
+            $this->preloadedLines[$jobOrderId] = $lines->get($jobOrderId, collect())->groupBy('stock_id');
+        }
+
+        $this->preloadCarriedTo($items->flatten(1));
+
+        return $this;
+    }
+
+    /**
+     * @param  Collection<int, JobOrderItem>  $items
+     */
+    private function preloadCarriedTo(Collection $items): void
+    {
+        while ($carriedToIds = $items->map(fn (JobOrderItem $item) => Arr::get($item->data, 'carried_to'))->filter()->unique()
+            ->reject(fn ($id) => array_key_exists($id, $this->preloadedCarriedToItems))->values()->all()) {
+            $openJobOrders = JobOrder::whereIn('state', JobOrderStateEnum::open())->whereIn('id', $carriedToIds)->with('jobOrderItems.tasks')->get()->keyBy('id');
+
+            foreach ($carriedToIds as $carriedToId) {
+                $this->preloadedCarriedToItems[$carriedToId] = $openJobOrders->get($carriedToId)?->jobOrderItems;
+            }
+
+            $items = $openJobOrders->flatMap(fn (JobOrder $jobOrder) => $jobOrder->jobOrderItems);
+        }
+    }
+
+    private function openLines(Builder $query): Collection
+    {
+        return $query->where(fn ($query) => $query->whereNull('transaction_id')
+            ->orWhereHas('transaction', fn ($query) => $query->whereNotIn('state', [TransactionStateEnum::DISPATCHED, TransactionStateEnum::CANCELLED])))
+            ->get();
+    }
 
     /**
      * Splits what the artisan has made across the destinations the to-produce lines ask for.
@@ -39,15 +108,12 @@ class GetJobOrderDestinationAllocation
      */
     public function handle(JobOrder $jobOrder, array $madeByItem = []): array
     {
-        $items = $jobOrder->jobOrderItems()->with(['artefact.orgStock.stock', 'artefact.orgStock.orgStockFamily', 'tasks'])->get();
+        $isPreloaded = array_key_exists($jobOrder->id, $this->preloadedItems);
 
-        $lines = PartnerShoppingListItem::with('stock')->where('job_order_id', $jobOrder->id)
-            ->where(fn ($query) => $query->whereNull('transaction_id')
-                ->orWhereHas('transaction', fn ($query) => $query->whereNotIn('state', [TransactionStateEnum::DISPATCHED, TransactionStateEnum::CANCELLED])))
-            ->get()
-            ->groupBy('stock_id');
+        $items = $isPreloaded ? $this->preloadedItems[$jobOrder->id] : $jobOrder->jobOrderItems()->with(self::ITEM_RELATIONS)->get();
+        $lines = $isPreloaded ? $this->preloadedLines[$jobOrder->id] : $this->openLines(PartnerShoppingListItem::with('stock')->where('job_order_id', $jobOrder->id))->groupBy('stock_id');
 
-        $bays = OrgPartner::where('organisation_id', $jobOrder->organisation_id)
+        $bays = $this->baysByOrganisation[$jobOrder->organisation_id] ??= OrgPartner::where('organisation_id', $jobOrder->organisation_id)
             ->whereNotNull('goods_out_location_id')
             ->get()
             ->keyBy('partner_id');
@@ -155,7 +221,10 @@ class GetJobOrderDestinationAllocation
 
     private function restStillBeingMade(JobOrderItem $item): bool
     {
-        $nextItem = $item->carriedTo()?->jobOrderItems()->with('tasks')->where('artefact_id', $item->artefact_id)->first();
+        $carriedToId = Arr::get($item->data, 'carried_to');
+        $nextItem    = $carriedToId && array_key_exists($carriedToId, $this->preloadedCarriedToItems)
+            ? $this->preloadedCarriedToItems[$carriedToId]?->firstWhere('artefact_id', $item->artefact_id)
+            : $item->carriedTo()?->jobOrderItems()->with('tasks')->where('artefact_id', $item->artefact_id)->first();
         if (!$nextItem) {
             return false;
         }

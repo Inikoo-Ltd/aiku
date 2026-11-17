@@ -119,3 +119,11 @@ test('a default overlap lock expires within ten runs so a killed run cannot bloc
         ->and($findCommand('chat:learn-knowledge')->expiresAt)->toBe(1440)
         ->and($findCommand('hydrate:org-stock-out-of-stock-forecast')->expiresAt)->toBe(360);
 });
+
+test('stock movements are no longer fetched from Aurora on a schedule', function () {
+    config(['app.master' => true, 'app.slave' => false]);
+
+    $events = scheduledEventIds(rebuildSchedule());
+
+    expect(array_filter($events, fn (string $id) => str_contains($id, 'fetch:stock_movements')))->toBeEmpty();
+});

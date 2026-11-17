@@ -31,6 +31,7 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Actions\Ordering\Order\UpdateOrderPremiumDispatch;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -314,8 +315,8 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'order_status',
-                'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, why it has not been dispatched yet, whether it was sent, or for its tracking. Pass the order number they wrote as reference (ours or their own); without one you get their oldest order not dispatched yet, else their latest, so never ask for the number first. It also says when an order waits for payment, and an order still waiting to be picked a day after it was placed is moved to premium dispatch free of charge. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
-                ['reference' => ['type' => 'string', 'description' => 'The order number the customer wrote, exactly as written. Leave it out when they gave none.']]
+                'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, why it has not been dispatched yet, whether it was sent, or for its tracking. Pass the order or invoice number they wrote as reference (ours or their own); without one you get their oldest order not dispatched yet, else their latest, so never ask for the number first. It also says when an order waits for payment, and an order still waiting to be picked a day after it was placed is moved to premium dispatch free of charge. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
+                ['reference' => ['type' => 'string', 'description' => 'The order or invoice number the customer wrote, exactly as written. Leave it out when they gave none.']]
             ),
             $this->tool(
                 'products_not_in_store',
@@ -1126,7 +1127,7 @@ class GetShoppingAssistantTools
 
     /**
      * Where one of the customer's own orders is, never anybody else's: the order whose number they
-     * wrote (ours, their own reference or their store's), else the last one they placed. The model
+     * wrote (ours, their own reference, their store's or one of its invoices', ignoring case, spaces and hyphens), else the last one they placed. The model
      * gets the state in words and words it in the customer's language; the order number, its date
      * and the carrier, tracking number and tracking link hold digits, so they go under the reply
      * as one line written here.
@@ -1138,11 +1139,12 @@ class GetShoppingAssistantTools
     private function orderStatus(Customer $customer, array $arguments, string $locale): array
     {
         $reference = is_string($arguments['reference'] ?? null) ? trim($arguments['reference'], " \t\n\r#") : '';
+        $comparable = str_replace([' ', '-'], '', mb_strtoupper($reference));
         $orders    = Order::where('customer_id', $customer->id);
 
         $open  = (clone $orders)->whereIn('state', self::ORDER_OPEN_STATES)->orderBy('submitted_at')->orderBy('id')->get();
         $order = $reference !== ''
-            ? $orders->where(fn ($query) => $query->where('reference', $reference)->orWhere('customer_reference', $reference)->orWhere('platform_order_id', $reference))->latest('id')->first()
+            ? $orders->where(fn ($query) => $query->whereRaw("translate(upper(reference), ' -', '') = ?", [$comparable])->orWhereRaw("translate(upper(customer_reference), ' -', '') = ?", [$comparable])->orWhereRaw("translate(upper(platform_order_id), ' -', '') = ?", [$comparable])->orWhereHas('invoices', fn ($invoices) => $invoices->whereRaw("translate(upper(reference), ' -', '') = ?", [$comparable])))->latest('id')->first()
             : ($open->first() ?? $orders->where('state', '!=', OrderStateEnum::CREATING)->latest('submitted_at')->latest('id')->first());
 
         if (!$order) {
@@ -1188,6 +1190,7 @@ class GetShoppingAssistantTools
                 'found'        => true,
                 'state'        => $state,
                 'priority'     => $priority,
+                'payment'      => $this->unpaidOrderPayment($customer, $order),
                 'busy_season'  => in_array(now()->month, [11, 12], true) && in_array($order->state, self::ORDER_OPEN_STATES, true)
                     ? 'It is our Christmas rush, our busiest weeks of the year. Be honest about it: we are working through every order as fast as we can.'
                     : null,
@@ -1200,12 +1203,41 @@ class GetShoppingAssistantTools
                     OrderStateEnum::CANCELLED  => 'the order number and the date it was cancelled',
                     default                    => 'the order number and the date it was placed',
                 },
-                'note'         => 'A line with what line_shows says is added under your reply by the system. Be warm and honest: tell the customer in two or three sentences where the order is, from state, and that the details are below; write no number, date or tracking yourself and never promise a delivery or dispatch date. When priority is given, say sorry for the wait and that, as a thank-you for their patience, we have just moved it to premium dispatch free of charge, so it goes to the front of the picking queue. When it is waiting for payment, say that is what holds it. When it is dispatched without tracking, say there is no tracking number on it. When they need more than this (a late or lost parcel, a change, a cancellation, a refund, a payment problem, an invoice), or the order is on hold, also offer our team: answer_kind offer_person, offer_reason order_question; a plain wait in the queue needs no person.',
+                'note'         => 'A line with what line_shows says is added under your reply by the system. Be warm and honest: tell the customer in two or three sentences where the order is, from state, and that the details are below; write no number, date or tracking yourself and never promise a delivery or dispatch date. When priority is given, say sorry for the wait and that, as a thank-you for their patience, we have just moved it to premium dispatch free of charge, so it goes to the front of the picking queue. When it is waiting for payment, say that is what holds it and tell them how to pay it only from payment; never give a cause of a failed payment that payment does not state. When it is dispatched without tracking, say there is no tracking number on it. When they need more than this (a late or lost parcel, a change, a cancellation, a refund, a payment problem, an invoice), or the order is on hold, also offer our team: answer_kind offer_person, offer_reason order_question; a plain wait in the queue needs no person.',
             ], fn ($value) => $value !== null),
             'products' => [],
             'error'    => null,
             'fact'     => $line,
         ];
+    }
+
+    /**
+     * PRE-118: a saved card is charged only when the order is placed, with no retry, so the
+     * assistant must not blame a card nobody charged nor send the customer to update one.
+     */
+    private function unpaidOrderPayment(Customer $customer, Order $order): ?string
+    {
+        if ($order->state !== OrderStateEnum::SUBMITTED || in_array($order->pay_status, Order::PAY_SETTLED_STATUSES, true)) {
+            return null;
+        }
+
+        if (data_get($order->data, 'banned_delivery')) {
+            return 'It was never charged because we do not deliver to its address, so no payment, top-up or card sends it out: offer a person.';
+        }
+
+        if ($order->is_shipping_by_external) {
+            return 'It is shipped by their sales channel, not by us, so we never charge it and it is not sent from our warehouse: offer a person.';
+        }
+
+        $refused = $order->payments()->whereIn('payments.state', [PaymentStateEnum::ERROR, PaymentStateEnum::DECLINED])->exists();
+        $cause   = $refused
+            ? 'A payment on this order was refused.'
+            : 'No refused payment is recorded on this order: do not guess why it is unpaid, and never say a card payment failed.';
+        $howToPay = self::isDropshipping($customer)
+            ? 'To pay it they top up their balance until it covers the order and then press Pay with balance on the order, or our team can send a payment link.'
+            : 'Our team can send a payment link: offer a person.';
+
+        return $cause.' A saved card is charged only at the moment an order is placed and never again, so saving, adding or updating a card now does not pay this order: never suggest it. '.$howToPay;
     }
 
     /**

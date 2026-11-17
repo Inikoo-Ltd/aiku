@@ -176,7 +176,7 @@ class TranslateChatMessage
         }
 
         $targetCode = (string)($targetLang->code ?? '');
-        $sourceCode = (string)($originalLang?->code ?? 'en');
+        $sourceCode = (string)($originalLang?->code ?? DetectLanguageWithJev::translationSourceWhenUnknown($message->chatSession, $targetCode)?->code ?? 'en');
 
         if ($targetCode === '') {
             return;

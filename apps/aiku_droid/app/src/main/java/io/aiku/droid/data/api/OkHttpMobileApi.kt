@@ -27,7 +27,7 @@ class OkHttpMobileApi(
 ) : AuthApi, WarehouseApi, ClockingApi, HrApi, GoodsOutApi, PickingSessionApi, StaffChatApi, InventoryApi, GoodsInApi {
 
     private val apiBaseUrl = baseUrl.trimEnd('/')
-    private val mobileApiUrl = "$apiBaseUrl/app/api/mobile"
+    internal val mobileApiUrl = "$apiBaseUrl/app/api/mobile"
     private val hrApiUrl = "$mobileApiUrl/clocking"
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
@@ -238,7 +238,7 @@ class OkHttpMobileApi(
             ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseWrite(statusCode, responseBody) }
             ?: GoodsOutResult.Unreachable
 
-    private fun writeRequest(baseUrl: String, request: WriteRequest, token: String): Request {
+    internal fun writeRequest(baseUrl: String, request: WriteRequest, token: String): Request {
         val builder = Request.Builder()
             .url("$baseUrl/${request.path}")
             .header("Authorization", "Bearer $token")
@@ -475,7 +475,7 @@ class OkHttpMobileApi(
             ?: GoodsOutResult.Unreachable
     }
 
-    private fun urlWith(path: String, parameters: List<Pair<String, String>>): String = path.toHttpUrl().newBuilder()
+    internal fun urlWith(path: String, parameters: List<Pair<String, String>>): String = path.toHttpUrl().newBuilder()
         .apply { parameters.forEach { (name, value) -> addQueryParameter(name, value) } }
         .build()
         .toString()
@@ -485,7 +485,7 @@ class OkHttpMobileApi(
         return downloadTo(get(attachmentUrl, token), target)
     }
 
-    private suspend fun downloadTo(request: Request, target: File): AttachmentDownload =
+    internal suspend fun downloadTo(request: Request, target: File): AttachmentDownload =
         withContext(ioDispatcher) {
             try {
                 client.newCall(request).execute().use { response ->
@@ -528,25 +528,25 @@ class OkHttpMobileApi(
         }
         .build()
 
-    private fun get(url: String, bearerToken: String): Request = Request.Builder()
+    internal fun get(url: String, bearerToken: String): Request = Request.Builder()
         .url(url)
         .get()
         .header("Authorization", "Bearer $bearerToken")
         .build()
 
-    private fun patch(url: String, body: String, bearerToken: String): Request = Request.Builder()
+    internal fun patch(url: String, body: String, bearerToken: String): Request = Request.Builder()
         .url(url)
         .patch(body.toRequestBody(jsonMediaType))
         .header("Authorization", "Bearer $bearerToken")
         .build()
 
-    private fun post(url: String, body: String, bearerToken: String?): Request = Request.Builder()
+    internal fun post(url: String, body: String, bearerToken: String?): Request = Request.Builder()
         .url(url)
         .post(body.toRequestBody(jsonMediaType))
         .apply { bearerToken?.let { header("Authorization", "Bearer $it") } }
         .build()
 
-    private suspend fun execute(request: Request): Pair<Int, String>? = withContext(ioDispatcher) {
+    internal suspend fun execute(request: Request): Pair<Int, String>? = withContext(ioDispatcher) {
         try {
             client.newCall(request).execute().use { response -> response.code to response.body.string() }
         } catch (exception: IOException) {

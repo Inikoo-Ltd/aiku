@@ -9,7 +9,7 @@ import {
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
     faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
     faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide, faSpellCheck,
-    faArrowUp, faArrowDown,
+    faArrowUp, faArrowDown, faCopy, faPaste,
 } from '@fal'
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
@@ -30,6 +30,7 @@ import {
     DELETE_SELECTION_COMBOS, ROW_DRAG_MODE, UploadedImage, droppedImageFiles, isDraggingFiles, setModuleImage, EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
     columnWidthPercent, createDynamicBlockRows, createModule, createProductRows, createRow, dynamicContentSource, ProductCard, ProductCardAppearance, isEmptyMergeContent, duplicateWithNewUuids, normaliseEmailJson,
     UNSUBSCRIBE_BLOCK, emailHasUnsubscribeBlock, isTableModule, modulePlaceholder, isUnsubscribeMergeTag, isUnsubscribeModule, moduleDisplayName, paletteModuleTypes, getModuleText, setModuleText,
+    EMAIL_CLIPBOARD_STORAGE_KEY, EmailClipboard, copyEmailSelection, pasteEmailClipboard, readEmailClipboard,
     isRowLockedByUnsubscribe, isUnsubscribeModuleLocked, rowHasUnsubscribeBlock, rowLayouts, setSocialIconSources, hasCurrentVideoEmailThumbnail, videoEmailThumbnailKey, videoThumbnailFromUrl,
 } from './emailWorkshopBlocks'
 import { WebsiteTheme, applyThemeToModule } from './emailWorkshopTheme'
@@ -40,7 +41,7 @@ library.add(
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
     faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
     faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide, faSpellCheck,
-    faArrowUp, faArrowDown,
+    faArrowUp, faArrowDown, faCopy, faPaste,
 )
 
 const props = withDefaults(defineProps<{
@@ -404,6 +405,77 @@ const duplicateSelection = () => {
         duplicateRow(selectedRow.value)
     }
 }
+
+const readStoredClipboard = (): EmailClipboard | null => {
+    try {
+        return readEmailClipboard(window.localStorage.getItem(EMAIL_CLIPBOARD_STORAGE_KEY))
+    } catch {
+        return null
+    }
+}
+
+const clipboard = ref<EmailClipboard | null>(readStoredClipboard())
+const clipboardNotice = ref<string | null>(null)
+let clipboardNoticeTimer: ReturnType<typeof setTimeout> | null = null
+
+const showClipboardNotice = (message: string) => {
+    clipboardNotice.value = message
+    if (clipboardNoticeTimer) {
+        clearTimeout(clipboardNoticeTimer)
+    }
+    clipboardNoticeTimer = setTimeout(() => clipboardNotice.value = null, 1800)
+}
+
+const copySelection = () => {
+    const copied = copyEmailSelection(selectedModule.value, selectedModule.value ? null : selectedRow.value)
+    if (!copied) {
+        return
+    }
+    clipboard.value = copied
+    try {
+        window.localStorage.setItem(EMAIL_CLIPBOARD_STORAGE_KEY, JSON.stringify(copied))
+    } catch (error) {
+        console.warn('Unable to keep the copied block for other newsletters', error)
+    }
+    showClipboardNotice(copied.kind === 'row' ? ctrans('Row copied') : ctrans('Block copied'))
+}
+
+const pasteClipboard = () => {
+    const source = readStoredClipboard() ?? clipboard.value
+    if (!source) {
+        return
+    }
+    clipboard.value = source
+    const pasted = pasteEmailClipboard(
+        email.value,
+        source,
+        { moduleUuid: selectedModuleUuid.value, rowUuid: selectedRowUuid.value },
+        `${contentWidth.value}px`,
+    )
+    if (!pasted) {
+        return
+    }
+    if (pasted.module) {
+        onModuleAdded(pasted.module, pasted.row)
+    } else {
+        selectRow(pasted.row)
+    }
+    showClipboardNotice(source.kind === 'row' ? ctrans('Row pasted') : ctrans('Block pasted'))
+}
+
+const onClipboardStorage = (event: StorageEvent) => {
+    if (event.key === EMAIL_CLIPBOARD_STORAGE_KEY) {
+        clipboard.value = readEmailClipboard(event.newValue)
+    }
+}
+
+onMounted(() => window.addEventListener('storage', onClipboardStorage))
+onBeforeUnmount(() => {
+    window.removeEventListener('storage', onClipboardStorage)
+    if (clipboardNoticeTimer) {
+        clearTimeout(clipboardNoticeTimer)
+    }
+})
 
 const deleteSelection = () => {
     if (selectedModule.value) {
@@ -893,6 +965,14 @@ const shortcuts: WorkshopShortcut[] = [
         run: () => redo(), isAvailable: () => canRedo.value,
     },
     {
+        id: 'copy', group: 'Blocks', label: 'Copy selected block or row', combos: [['Mod', 'C']],
+        run: () => copySelection(), isAvailable: () => hasSelection() && !isSelectionLocked.value, skipWhenTextSelected: true,
+    },
+    {
+        id: 'paste', group: 'Blocks', label: 'Paste below the selected block or row', combos: [['Mod', 'V']],
+        run: () => pasteClipboard(), isAvailable: () => !!clipboard.value || !!readStoredClipboard(),
+    },
+    {
         id: 'duplicate', group: 'Blocks', label: 'Duplicate selected block or row', combos: [['Mod', 'D']],
         run: () => duplicateSelection(), isAvailable: () => hasSelection() && !isSelectionLocked.value,
     },
@@ -931,6 +1011,8 @@ const shortcuts: WorkshopShortcut[] = [
 ]
 
 const publishShortcutLabel = formatShortcutCombo(['Mod', 'S'])
+const copyShortcutLabel = formatShortcutCombo(['Mod', 'C'])
+const pasteShortcutLabel = formatShortcutCombo(['Mod', 'V'])
 
 const isShortcutBlocked = () => isShortcutsDialogVisible.value || !!document.querySelector('.p-dialog-mask')
 
@@ -1085,6 +1167,9 @@ defineExpose({
                         </template>
                     </span>
                     <span v-else-if="isDirty" class="ml-3 text-xs text-gray-400">{{ ctrans('Unsaved changes') }}</span>
+                    <span v-if="clipboardNotice" class="ml-3 flex items-center gap-1 whitespace-nowrap text-xs text-green-600" role="status">
+                        <FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />{{ clipboardNotice }}
+                    </span>
                 </div>
 
                 <div class="flex items-center gap-x-1">
@@ -1262,6 +1347,12 @@ defineExpose({
                             <div class="flex items-center gap-x-1 text-gray-500">
                                 <button v-if="!isSelectionDeleteLocked" type="button" class="h-7 w-7 rounded hover:bg-gray-100 hover:text-red-500" v-tooltip="ctrans('Delete')" @click="deleteSelection">
                                     <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                                </button>
+                                <button v-if="!isSelectionLocked" type="button" class="h-7 w-7 rounded hover:bg-gray-100" v-tooltip="`${ctrans('Copy')} (${copyShortcutLabel})`" :aria-label="ctrans('Copy')" @click="copySelection">
+                                    <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                                </button>
+                                <button v-if="clipboard" type="button" class="h-7 w-7 rounded hover:bg-gray-100" v-tooltip="`${ctrans('Paste below')} (${pasteShortcutLabel})`" :aria-label="ctrans('Paste below')" @click="pasteClipboard">
+                                    <FontAwesomeIcon icon="fal fa-paste" fixed-width aria-hidden="true" />
                                 </button>
                                 <button v-if="!isSelectionLocked" type="button" class="h-7 w-7 rounded hover:bg-gray-100" v-tooltip="ctrans('Duplicate')" @click="duplicateSelection">
                                     <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />

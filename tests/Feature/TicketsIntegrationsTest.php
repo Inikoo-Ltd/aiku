@@ -573,7 +573,7 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
         ->has('burn_up', 2)
         ->has('workload')
         ->has('activity'));
-    get(route('grp.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketProjects')->where('projects.0.progress.done', 1)->where('projects.0.health', 'at_risk'));
+    get(route('grp.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketProjects')->where('data.data.0.progress.done', 1)->where('data.data.0.health', 'at_risk')->where('view', 'table'));
     get(str_replace('/projects', '/tickets/projects', route('grp.projects.show', $project->slug)))->assertRedirect(route('grp.projects.show', $project->slug))->assertStatus(301);
     expect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($member)['projects']['route']['name'])->toBe('grp.projects.index')
         ->and(collect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($member)['tickets']['topMenu']['subSections'])->pluck('label'))->not->toContain('Projects');
@@ -600,6 +600,39 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
     expect($first->fresh()->ticket_project_id)->toBe($project->id);
     post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'hello'])->assertForbidden();
     patch(route('grp.models.ticket.project.update', $first->id), ['ticket_project_id' => null])->assertForbidden();
+});
+
+test('the project page warns about a stale update, overdue milestones and untracked remaining work', function () {
+    $member  = User::factory()->create(['group_id' => $this->group->id]);
+    $project = StoreTicketProject::make()->action($this->group, ['name' => 'Factory switch-over', 'start_date' => now()->subDays(60)->toDateString(), 'target_date' => now()->addDays(30)->toDateString()]);
+    $project->members()->attach($member->id);
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Move the job orders']);
+
+    actingAs($member);
+    patch(route('grp.models.ticket_project.update', $project->id), ['milestones' => [
+        ['name' => 'All jobs in Aiku', 'due_date' => now()->subDays(10)->toDateString()],
+        ['name' => 'Labels published', 'due_date' => now()->subDays(5)->toDateString()],
+        ['name' => 'Old methods off', 'due_date' => now()->addDays(20)->toDateString()],
+    ]])->assertSessionHasNoErrors();
+    [$jobs] = $project->milestones()->get()->all();
+    post(route('grp.models.ticket_project.work.attach', $project->id), ['references' => $ticket->reference, 'ticket_project_milestone_id' => $jobs->id])->assertSessionHasNoErrors();
+    UpdateTicket::make()->action($ticket->fresh(), ['status' => TicketStatusEnum::RESOLVED->value]);
+
+    $this->travelTo(now()->subDays(20));
+    post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'All jobs are in Aiku', 'health' => 'on_track'])->assertSessionHasNoErrors();
+    $this->travelBack();
+
+    get(route('grp.projects.show', $project->slug))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('progress.open', 0)
+        ->where('indicators', fn ($indicators) => collect($indicators)->pluck('key')->all() === ['stale_update', 'milestone_ready', 'milestone_overdue', 'untracked_work'])
+        ->where('indicators.0.text', 'The last progress update was 20 days ago')
+        ->where('indicators.1.text', '“All jobs in Aiku” has all its work done but is not marked done')
+        ->where('indicators.3.text', 'All tracked work is done but 3 milestones are still open: add the remaining work as tickets or tasks')
+        ->has('queryBuilderProps.work.columns', 8)
+        ->has('queryBuilderProps.commits.columns', 5));
+
+    $project->update(['status' => \App\Enums\Helpers\Ticket\TicketProjectStatusEnum::ON_HOLD]);
+    get(route('grp.projects.show', $project->slug))->assertInertia(fn (AssertableInertia $page) => $page->where('indicators', []));
 });
 
 test('the project tools let a team member run a project through the AI assistant', function () {
@@ -650,6 +683,52 @@ test('the project tools let a team member run a project through the AI assistant
     AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'post_update', 'project' => 'factory-move', 'body' => 'hi'])->assertHasErrors();
     AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'remove' => true])->assertHasErrors();
     expect($task->fresh()->ticket_project_id)->toBe($project->id);
+});
+
+test('sub-projects roll their work up into the parent and the projects list remembers table or cards', function () {
+    $parent  = StoreTicketProject::make()->action($this->group, ['name' => 'Staff mobile apps', 'start_date' => now()->subWeek()->toDateString()]);
+    $android = StoreTicketProject::make()->action($this->group, ['name' => 'Staff app Android', 'start_date' => now()->subWeek()->toDateString(), 'parent_id' => $parent->id]);
+    $ios     = StoreTicketProject::make()->action($this->group, ['name' => 'Staff app iOS', 'start_date' => now()->subWeek()->toDateString()]);
+    $done    = StoreTicket::make()->action($this->group, ['subject' => 'Android goods out']);
+    $open    = StoreTicket::make()->action($this->group, ['subject' => 'iOS goods in']);
+    $done->update(['ticket_project_id' => $android->id]);
+    $open->update(['ticket_project_id' => $ios->id]);
+    UpdateTicket::make()->action($done->fresh(), ['status' => TicketStatusEnum::RESOLVED->value]);
+
+    patch(route('grp.models.ticket_project.update', $ios->id), ['parent_id' => $ios->id])->assertSessionHasErrors('parent_id');
+    patch(route('grp.models.ticket_project.update', $parent->id), ['parent_id' => $ios->id])->assertSessionHasErrors('parent_id');
+    patch(route('grp.models.ticket_project.update', $ios->id), ['parent_id' => $android->id])->assertSessionHasErrors('parent_id');
+    patch(route('grp.models.ticket_project.update', $ios->id), ['parent_id' => $parent->id])->assertSessionHasNoErrors();
+
+    get(route('grp.projects.show', $parent->slug))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('progress.total', 2)
+        ->where('progress.done', 1)
+        ->has('sub_projects', 2)
+        ->where('sub_projects.0.name', 'Staff app Android')
+        ->where('sub_projects.0.progress.percent', 100)
+        ->where('sub_projects.1.progress.percent', 0)
+        ->where('options.parents', []));
+    get(route('grp.projects.show', $ios->slug))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('project.parent.slug', $parent->slug)
+        ->where('progress.total', 1)
+        ->where('breadcrumbs.2.simple.label', 'Staff mobile apps'));
+
+    get(route('grp.projects.index', ['filter' => ['global' => 'Staff app iOS']]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->has('data.data', 1)
+        ->where('data.data.0.slug', $parent->slug)
+        ->where('data.data.0.progress.percent', 50)
+        ->has('data.data.0.children', 2));
+
+    patch(route('grp.models.profile.update'), ['projects_view' => 'grid'])->assertSessionHasErrors('projects_view');
+    patch(route('grp.models.profile.update'), ['projects_view' => 'cards'])->assertSessionHasNoErrors();
+    get(route('grp.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->where('view', 'cards'));
+
+    AikuServer::actingAs($this->user)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'update', 'project' => $ios->slug, 'parent' => 'none'])->assertOk();
+    expect($ios->fresh()->parent_id)->toBeNull();
+    AikuServer::actingAs($this->user)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'update', 'project' => $ios->slug, 'parent' => $android->slug])->assertHasErrors();
+    AikuServer::actingAs($this->user)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'update', 'project' => $ios->slug, 'parent' => 'Staff mobile apps'])->assertOk();
+    AikuServer::actingAs($this->user)->tool(\App\Mcp\Tools\ProjectsTool::class, ['project' => $parent->slug])->assertOk()->assertSee([$android->slug, $ios->slug]);
+    expect($ios->fresh()->parent_id)->toBe($parent->id);
 });
 
 test('ticket page suggests similar tickets the viewer can see', function () {

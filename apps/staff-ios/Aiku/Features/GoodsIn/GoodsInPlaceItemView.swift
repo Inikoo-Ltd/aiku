@@ -7,25 +7,25 @@ struct GoodsInPlaceItemView: View {
     @Environment(ToastCenter.self) private var toasts
     @State private var selectedLocation: String?
     @State private var typedLocation: String?
-    @State private var quantity: Int?
+    @State private var quantity: Double?
     @State private var codeRequest: GoodsInCodeRequest?
     private let store = GoodsInStore.shared
 
     private var delivery: GoodsInDelivery { store.delivery(reference) }
     private var item: GoodsInItem { delivery.item(sko) ?? delivery.items[0] }
     private var location: String? { selectedLocation ?? item.pickingLocation ?? item.locationOptions.first?.code }
-    private var amount: Int { min(quantity ?? item.leftToPlace, item.leftToPlace) }
+    private var amount: Double { min(quantity ?? item.leftToPlace, item.leftToPlace) }
 
     var body: some View {
         Group {
-            if item.leftToPlace > 0 {
+            if item.leftToPlace > GoodsInQuantity.tolerance {
                 AppScreen(title: "Place \(item.sko)", kicker: "\(reference) · Booking in") {
                     content
                 } footer: {
                     HStack(spacing: 8) {
                         AikuButton("Place all", kind: .secondary) { place(item.leftToPlace) }
                             .accessibilityIdentifier("goodsIn.place.all")
-                        AikuButton(location.map { "Place \(amount.grouped) in \($0)" } ?? "Choose a location") { place(amount) }
+                        AikuButton(location.map { "Place \(item.text(amount)) in \($0)" } ?? "Choose a location") { place(amount) }
                             .disabled(location == nil || amount == 0)
                             .accessibilityIdentifier("goodsIn.place.confirm")
                     }
@@ -79,12 +79,12 @@ struct GoodsInPlaceItemView: View {
                 Text("Quantity")
                     .font(.aiku(15, .bold))
                     .foregroundStyle(AikuColor.text)
-                Text("up to \(item.leftToPlace.grouped)")
+                Text("up to \(item.text(item.leftToPlace))")
                     .font(.aiku(12))
                     .foregroundStyle(AikuColor.text3)
             }
             Spacer(minLength: 8)
-            GoodsInStepper(value: Binding(get: { amount }, set: { quantity = $0 }), range: 1...max(item.leftToPlace, 1))
+            GoodsInStepper(value: Binding(get: { amount }, set: { quantity = $0 }), range: 1...max(item.leftToPlace, 1), packedIn: item.packedIn)
         }
         .padding(16)
         .cardSurface()
@@ -101,14 +101,14 @@ struct GoodsInPlaceItemView: View {
             .padding(.horizontal, 4)
     }
 
-    private func place(_ requested: Int) {
+    private func place(_ requested: Double) {
         guard let location else { return }
         let before = delivery.state
         let placed = store.place(reference, sko: item.sko, quantity: requested, in: location)
-        guard placed > 0 else { return }
-        GoodsInPlacementToast.show(placed: placed, location: location, reference: reference, before: before, after: delivery.state, toasts: toasts)
+        guard placed > GoodsInQuantity.tolerance else { return }
+        GoodsInPlacementToast.show(placed: placed, packedIn: item.packedIn, location: location, reference: reference, before: before, after: delivery.state, toasts: toasts)
         quantity = nil
-        if item.leftToPlace == 0 {
+        if GoodsInQuantity.isZero(item.leftToPlace) {
             router.back()
         }
     }
@@ -131,11 +131,11 @@ struct GoodsInPlaceNewItemView: View {
 
     var body: some View {
         Group {
-            if item.leftToPlace > 0 {
+            if item.leftToPlace > GoodsInQuantity.tolerance {
                 AppScreen(title: "Place \(item.sko)", kicker: "\(reference) · Booking in") {
                     content
                 } footer: {
-                    AikuButton(location.map { "Place \(item.leftToPlace.grouped) in \($0.code)" } ?? "Scan a location first") { place() }
+                    AikuButton(location.map { "Place \(item.text(item.leftToPlace)) in \($0.code)" } ?? "Scan a location first") { place() }
                         .disabled(location == nil)
                         .accessibilityIdentifier("goodsIn.placeNew.confirm")
                 }
@@ -208,8 +208,8 @@ struct GoodsInPlaceNewItemView: View {
         guard let location else { return }
         let before = delivery.state
         let placed = store.place(reference, sko: item.sko, quantity: item.leftToPlace, in: location.code, setAsPicking: isSettingPicking)
-        guard placed > 0 else { return }
-        GoodsInPlacementToast.show(placed: placed, location: location.code, reference: reference, before: before, after: delivery.state, toasts: toasts)
+        guard placed > GoodsInQuantity.tolerance else { return }
+        GoodsInPlacementToast.show(placed: placed, packedIn: item.packedIn, location: location.code, reference: reference, before: before, after: delivery.state, toasts: toasts)
         router.back()
     }
 }
@@ -240,19 +240,19 @@ struct GoodsInPlacedItemCard: View {
     }
 
     private var subtitle: String {
-        let checked = "\(item.name) · \((item.checked ?? 0).grouped) checked"
-        guard item.hasPlacements, item.leftToPlace > 0 else { return checked }
-        return "\(checked) · \(item.leftToPlace.grouped) left to place"
+        let checked = "\(item.name) · \(item.text(item.checked ?? 0)) checked"
+        guard item.hasPlacements, item.leftToPlace > GoodsInQuantity.tolerance else { return checked }
+        return "\(checked) · \(item.text(item.leftToPlace)) left to place"
     }
 }
 
 enum GoodsInPlacementToast {
     @MainActor
-    static func show(placed: Int, location: String, reference: String, before: GoodsInDeliveryState, after: GoodsInDeliveryState, toasts: ToastCenter) {
+    static func show(placed: Double, packedIn: Int, location: String, reference: String, before: GoodsInDeliveryState, after: GoodsInDeliveryState, toasts: ToastCenter) {
         if after == .bookedIn, before != .bookedIn {
-            toasts.show("\(placed.grouped) placed in \(location) · \(reference) is Booked in")
+            toasts.show("\(GoodsInQuantity.text(placed, packedIn: packedIn)) placed in \(location) · \(reference) is Booked in")
         } else {
-            toasts.show("\(placed.grouped) placed in \(location)")
+            toasts.show("\(GoodsInQuantity.text(placed, packedIn: packedIn)) placed in \(location)")
         }
     }
 }

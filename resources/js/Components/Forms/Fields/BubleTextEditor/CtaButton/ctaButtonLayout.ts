@@ -80,7 +80,31 @@ export const safeCtaButtonColor = (color: unknown): string | null => {
 	return HEX_COLOR_PATTERN.test(value) || RGB_COLOR_PATTERN.test(value) ? value : null
 }
 
-export const ctaButtonLinkTypeFromHref = (href: unknown): CtaButtonLinkType => {
+export const CTA_BUTTON_PICKER_THEME_HEX = "d1d5db"
+
+const twoDigitHex = (channel: string): string => Math.min(255, Number(channel)).toString(16).padStart(2, "0")
+
+export const ctaButtonPickerHex = (color: string | null): string => {
+	const value = safeCtaButtonColor(color)
+	if (!value) {
+		return CTA_BUTTON_PICKER_THEME_HEX
+	}
+
+	if (value.startsWith("#")) {
+		const digits = value.slice(1).toLowerCase()
+
+		return digits.length <= 4
+			? digits.slice(0, 3).split("").map((digit) => digit + digit).join("")
+			: digits.slice(0, 6)
+	}
+
+	return (value.match(/\d{1,3}/g) ?? []).slice(0, 3).map(twoDigitHex).join("")
+}
+
+export const ctaButtonColorFromPicker = (hex: unknown): string | null =>
+	typeof hex === "string" ? safeCtaButtonColor(`#${hex.trim().replace(/^#/, "")}`) : null
+
+export const ctaButtonLinkTypeFromHref =(href: unknown): CtaButtonLinkType => {
 	const value = String(href ?? "").trim().toLowerCase()
 
 	if (value.startsWith("mailto:")) {

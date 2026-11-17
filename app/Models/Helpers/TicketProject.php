@@ -23,6 +23,7 @@ use Spatie\Sluggable\SlugOptions;
 /**
  * @property int $id
  * @property int $group_id
+ * @property int|null $parent_id
  * @property string $slug
  * @property string $name
  * @property string|null $description
@@ -34,6 +35,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read User|null $owner
+ * @property-read TicketProject|null $parent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, TicketProject> $children
  * @property-read \Illuminate\Database\Eloquent\Collection<int, User> $members
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Ticket> $tickets
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TicketProjectUpdate> $updates
@@ -79,6 +82,16 @@ class TicketProject extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(TicketProject::class, 'parent_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(TicketProject::class, 'parent_id')->orderBy('name');
     }
 
     public function members(): BelongsToMany

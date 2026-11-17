@@ -32,6 +32,13 @@ class DetectLanguageWithJev
     private const int NGRAM_CANDIDATES = 5;
 
     /**
+     * Without a way out Jev must pick from the n-gram shortlist even when the language is not on
+     * it: Moroccan Darija in Latin letters became Kurdish (PRE-117) and the agent's reply was
+     * emailed in Kurdish. Not knowing leaves the conversation's language as it was.
+     */
+    private const string NONE_OF_THESE = 'other';
+
+    /**
      * Loading the n-gram profiles of every language takes ~50 ms and ~19 MB; they never change.
      */
     private static ?NgramDetector $ngramDetector = null;
@@ -74,6 +81,18 @@ class DetectLanguageWithJev
     }
 
     /**
+     * A message in a language we could not name still has to reach the agent translated. The
+     * translator reads the text itself, so the label only has to differ from the agent's language:
+     * Darija labelled Spanish came out as good English as when it was labelled Kurdish.
+     */
+    public static function translationSourceWhenUnknown(ChatSession|MetaChatSession $session, string $targetCode): ?Language
+    {
+        return collect([$session->userLanguage, $session->language, $session->shop?->language, Language::where('code', 'en')->first()])
+            ->filter()
+            ->first(fn (Language $language) => $language->code !== $targetCode);
+    }
+
+    /**
      * @param  array<int, Language|null>  $contextLanguages
      * @return array{choice: string, confidence: float, candidates: array<int, string>}|null
      */
@@ -106,9 +125,13 @@ class DetectLanguageWithJev
             ['language' => [
                 'type'         => 'choice',
                 'instructions' => 'Which language is the customer message written in? Judge the message itself; the context only helps when the message is too short to tell.',
-                'criteria'     => $names->mapWithKeys(fn (string $name, string $code) => [$code => "Written in $name"])->all(),
+                'criteria'     => [...$names->mapWithKeys(fn (string $name, string $code) => [$code => "Written in $name"])->all(), self::NONE_OF_THESE => 'Written in a language or dialect not listed here'],
             ]]
         ), 'language');
+
+        if (($answer['choice'] ?? null) === self::NONE_OF_THESE) {
+            return null;
+        }
 
         if (!isset($answer['choice'])) {
             $contextCode = Arr::first($contextCodes);

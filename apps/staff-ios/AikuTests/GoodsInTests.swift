@@ -3,7 +3,7 @@ import Testing
 @testable import Aiku
 
 struct GoodsInTests {
-    private func item(_ sko: String, delivered: Int, checked: Int? = nil, picking: String? = "A-01-01") -> GoodsInItem {
+    private func item(_ sko: String, delivered: Double, checked: Double? = nil, picking: String? = "A-01-01") -> GoodsInItem {
         GoodsInItem(sko: sko, name: "[Product name]", delivered: delivered, checked: checked, pickingLocation: picking)
     }
 

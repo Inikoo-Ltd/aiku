@@ -30,8 +30,11 @@ const selectedValue = computed({
 })
 
 const flagSource = (optionValue: string) => {
-    const countryCode = props.flags?.[optionValue]
-    return countryCode ? `/flags/${countryCode.toLowerCase()}.png` : null
+    if (!props.flags || !Object.hasOwn(props.flags, optionValue)) {
+        return null
+    }
+    const countryCode = props.flags[optionValue]
+    return typeof countryCode === 'string' && countryCode ? `/flags/${countryCode.toLowerCase()}.png` : null
 }
 </script>
 

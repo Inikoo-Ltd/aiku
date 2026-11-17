@@ -29,7 +29,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Changes projects (see projects-tool), acting as the authenticated user with the same rights as the project page: the owner, the team and ticket leads can change a project; anyone can create one. Pick one action. create: a new project from name, start_date and optional goal, target_date, owner and team (aiku usernames). update: change name, goal, status, start_date, target_date, owner, or add_team/remove_team usernames. add_work: put tickets and staff tasks into the project by reference (e.g. "HELP-12, TASK-4"), optionally under a milestone. move_work: move items already in the project to another milestone (milestone "none" takes them off any milestone), or take them out of the project with remove=true. milestone: create a milestone (new name), or change an existing one (by name or id) with rename, start_date, due_date, done true/false, delete=true, or position (1 = first). post_update: post a progress update with optional health (on_track, at_risk, off_track); the owner and team are notified by bell and email. Changes show in the item\'s history. Confirm with the user before deleting milestones or taking work out.')]
+#[Description('Changes projects (see projects-tool), acting as the authenticated user with the same rights as the project page: the owner, the team and ticket leads can change a project; anyone can create one. Pick one action. create: a new project from name, start_date and optional goal, target_date, owner, team (aiku usernames) and parent (makes it a sub-project of that project). update: change name, goal, status, start_date, target_date, owner, parent ("none" to make it top-level again), or add_team/remove_team usernames. add_work: put tickets and staff tasks into the project by reference (e.g. "HELP-12, TASK-4"), optionally under a milestone. move_work: move items already in the project to another milestone (milestone "none" takes them off any milestone), or take them out of the project with remove=true. milestone: create a milestone (new name), or change an existing one (by name or id) with rename, start_date, due_date, done true/false, delete=true, or position (1 = first). post_update: post a progress update with optional health (on_track, at_risk, off_track); the owner and team are notified by bell and email. Changes show in the item\'s history. Confirm with the user before deleting milestones or taking work out.')]
 class ProjectWriteTool extends Tool
 {
     public function handle(Request $request): Response
@@ -78,6 +78,7 @@ class ProjectWriteTool extends Tool
                 'target_date' => $request->get('target_date'),
                 'owner_id'    => $request->filled('owner') ? $this->userId($user, $request->string('owner')->toString()) : $user->id,
                 'member_ids'  => $this->userIds($user, $request->get('team')),
+                'parent_id'   => $request->filled('parent') ? $this->parentId($user, $request->string('parent')->toString()) : null,
             ], fn ($value) => $value !== null && $value !== ''));
         } catch (ValidationException $exception) {
             return Response::error(implode(' ', $exception->validator->errors()->all()));
@@ -104,11 +105,23 @@ class ProjectWriteTool extends Tool
                 ->unique()->values()->all();
         }
 
-        if ($modelData === []) {
-            return Response::error('Nothing to change: give name, goal, status, start_date, target_date, owner, add_team or remove_team.');
+        if ($request->filled('parent')) {
+            try {
+                $modelData['parent_id'] = strtolower(trim($request->string('parent')->toString())) === 'none' ? null : $this->parentId($user, $request->string('parent')->toString());
+            } catch (ValidationException $exception) {
+                return Response::error(implode(' ', $exception->validator->errors()->all()));
+            }
         }
 
-        $project = UpdateTicketProject::make()->action($project, $modelData);
+        if ($modelData === []) {
+            return Response::error('Nothing to change: give name, goal, status, start_date, target_date, owner, parent, add_team or remove_team.');
+        }
+
+        try {
+            $project = UpdateTicketProject::make()->action($project, $modelData);
+        } catch (ValidationException $exception) {
+            return Response::error(implode(' ', $exception->validator->errors()->all()));
+        }
 
         return Response::json(['updated' => $project->slug, 'changed' => array_keys($modelData)]);
     }
@@ -283,6 +296,16 @@ class ProjectWriteTool extends Tool
             ->concat($project->staffTasks()->whereIn('reference', $references)->visibleTo($user)->get());
     }
 
+    private function parentId(User $user, string $identifier): int
+    {
+        $parent = ProjectsTool::findProject($user, $identifier);
+        if (!$parent) {
+            throw ValidationException::withMessages(['parent' => 'No project "'.$identifier.'" to put this one under.']);
+        }
+
+        return $parent->id;
+    }
+
     private function userId(User $user, string $username): int
     {
         $id = $user->group->users()->whereRaw('lower(username) = ?', [strtolower(trim($username))])->value('id');
@@ -328,6 +351,7 @@ class ProjectWriteTool extends Tool
             'due_date'    => $schema->string()->description('milestone: YYYY-MM-DD'),
             'owner'       => $schema->string()->description('create/update: aiku username of the owner (create defaults to the user)'),
             'team'        => $schema->string()->description('create: aiku usernames, comma separated'),
+            'parent'      => $schema->string()->description('create/update: slug or name of the project this one is a sub-project of (one level deep); update with "none" makes it a top-level project again'),
             'add_team'    => $schema->string()->description('update: aiku usernames to add to the team, comma separated'),
             'remove_team' => $schema->string()->description('update: aiku usernames to remove from the team, comma separated'),
             'references'  => $schema->string()->description('add_work/move_work: ticket and task references, e.g. "HELP-12, TASK-4"'),

@@ -1,8 +1,8 @@
 ---
 title: Ihren Wix-Shop verbinden
 summary: Installieren Sie unsere App auf Ihrer Wix-Website, um sie mit Ihrem Dropshipping-Konto zu verknüpfen, prüfen Sie die drei Häkchen, die anzeigen, dass sie bereit ist, und beheben Sie einen Kanal, der als nicht verbunden angezeigt wird.
-date: 2026-09-25
-source_date: 2026-09-28
+date: 2026-11-17
+source_date: 2026-11-17
 tags: Wix, Wix Stores, Vertriebskanal, Verbinden
 category: sales-channels
 series: wix
@@ -27,7 +27,7 @@ Gehen Sie zu <b>Channels</b>, drücken Sie <b>Add Sales Channel</b>, dann <b>Con
 1. Öffnen Sie <b>Channels</b> im Menü. Auf der Seite <b>Sales Channels</b> werden Ihre bereits vorhandenen Kanäle aufgelistet.
 2. Drücken Sie <b>Add Sales Channel</b>. Die Seite <b>Create Channels</b> öffnet sich.
 3. Suchen Sie die <b>Wix</b>-Karte und drücken Sie <b>Connect</b>. Wix öffnet sich in einem neuen Tab.
-4. Falls Wix danach fragt, melden Sie sich an. Wählen Sie die Website, die Sie verbinden möchten, und installieren Sie die App. Wix zeigt die von der App benötigten Berechtigungen an; akzeptieren Sie sie, um fortzufahren.
+4. Falls Wix danach fragt, melden Sie sich an. Wählen Sie die Website, die Sie verbinden möchten, und installieren Sie die App. Wix zeigt die von der App benötigten Berechtigungen an; akzeptieren Sie sie, um fortzufahren. Siehe <b>Was die App sehen und tun kann</b> weiter unten.
 5. Sobald die Installation abgeschlossen ist, schickt Wix Sie zurück zu Ihrem Dropshipping-Konto und öffnet das Dashboard Ihres neuen Kanals.
 
 <!-- screenshot: die Create-Channels-Seite mit der Wix-Karte und ihrer Connect-Schaltfläche -->
@@ -37,6 +37,18 @@ Gehen Sie zu <b>Channels</b>, drücken Sie <b>Add Sales Channel</b>, dann <b>Con
 Schließen Sie die Installation innerhalb von zwei Stunden nach dem Drücken von <b>Connect</b> ab. Danach läuft der Link ab, und Sie müssen erneut <b>Connect</b> drücken.
 
 Der Kanal erhält den Namen Ihrer Wix-Website. Sie können ihn später unter <b>Manage Sales Channel</b>, <b>Store name</b> ändern.
+
+## Was die App sehen und tun kann
+
+Wenn Sie AW Connect installieren, zeigt Wix die Berechtigungen an, die die App anfordert. Dafür nutzen wir sie:
+
+- <b>Ihre Shop-Produkte</b>: Wir legen unsere Produkte in Wix Stores an, aktualisieren ihre Angaben, Preise und Bilder und entfernen sie, wenn Sie sie aus Ihrem Kanal entfernen. Ihre eigenen Produkte, die Sie nicht mit unseren verknüpfen, lesen wir nur, damit Sie sie zuordnen können.
+- <b>Bestand</b>: Wir halten den Bestand unserer Produkte auf Ihrer Website aktuell.
+- <b>Bestellungen</b>: Wir lesen die Bestellungen Ihrer Käufer einschließlich der Lieferadresse, damit wir die Pakete versenden können. Wenn wir eine Bestellung auf unserer Seite stornieren, stornieren wir sie auch bei Wix.
+- <b>Versand</b>: Wenn wir eine Bestellung versenden, markieren wir sie bei Wix als erfüllt, mit der Sendungsnummer und dem Tracking-Link.
+- <b>Website-Daten</b>: Name, Adresse, Währung und Sprache Ihrer Website sowie die E-Mail des Website-Inhabers, mit der wir die Website mit Ihrem Dropshipping-Konto verknüpfen.
+
+Ihre Wix-Zahlungen, das Design Ihrer Website und Ihre anderen Wix-Apps rühren wir nicht an. Wix bittet Sie, die Berechtigungen zu akzeptieren, um die App zu installieren. Wenn Sie Ihre Website lieber nicht verbinden möchten, können Sie die Bestellungen Ihrer Käufer stattdessen von Hand in einem manuellen Kanal eingeben: siehe [Bestellungen manuell aufgeben](/docs/placing-orders-manually).
 
 ## Prüfen, ob der Kanal bereit ist
 

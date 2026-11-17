@@ -9,7 +9,14 @@ struct GoodsInReturnsView: View {
         AppScreen(title: "Returns", kicker: "Goods in · \(session.warehouseLabel)") {
             ModuleTabs(.goodsIn, current: .goodsInReturns)
         } content: {
-            CardList(store.returns) { item in
+            if store.isRemote, let message = store.loadError {
+                InlineAlert(title: "Couldn’t load returns", message: message)
+            }
+            if store.isRemote, store.listedReturns.isEmpty, store.isLoadingReturns {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 88)
+            }
+            CardList(store.listedReturns) { item in
                 ListRow(item.reference, subtitle: item.listSubtitle, chips: [item.state.chip]) {
                     router.open(GoodsInRoute.returnDetail(reference: item.reference))
                 }
@@ -26,10 +33,13 @@ struct GoodsInReturnDetailView: View {
     @Environment(AppRouter.self) private var router
     @Environment(ToastCenter.self) private var toasts
     @State private var selectedSKO: String?
+    @State private var undoingPut: GoodsInReturnPut?
     private let store = GoodsInStore.shared
 
     private var goodsReturn: GoodsInReturn { store.goodsReturn(reference) }
     private var canWork: Bool { goodsReturn.state == .received || goodsReturn.state == .returning }
+    private var canUndo: Bool { goodsReturn.remoteActions.contains("undo") }
+    private var undoablePuts: [GoodsInReturnPut] { canUndo ? goodsReturn.items.flatMap(\.puts) : [] }
     private var selectedItem: GoodsInReturnItem? {
         if let selectedSKO, let item = goodsReturn.items.first(where: { $0.sko == selectedSKO && $0.outcome == nil }) {
             return item
@@ -38,6 +48,23 @@ struct GoodsInReturnDetailView: View {
     }
 
     var body: some View {
+        screen
+            .aikuConfirm(
+                "Undo this?",
+                isPresented: Binding(get: { undoingPut != nil }, set: { if !$0 { undoingPut = nil } }),
+                message: undoingPut?.undoMessage ?? "",
+                confirmTitle: "Undo"
+            ) {
+                if let put = undoingPut {
+                    store.undoPut(reference, put: put)
+                    toasts.show("Undone: \(put.label.lowercased()) \(put.sko)")
+                }
+                undoingPut = nil
+            }
+    }
+
+    @ViewBuilder
+    private var screen: some View {
         if canWork, goodsReturn.isFullyProcessed {
             AppScreen(title: goodsReturn.reference, kicker: "Return · \(goodsReturn.customer)") {
                 content
@@ -66,8 +93,18 @@ struct GoodsInReturnDetailView: View {
                 value: item.returnedQuantity,
                 total: item.quantity,
                 tone: item.tone,
+                packedIn: item.packedIn,
                 action: action(for: item)
             )
+        }
+        if !undoablePuts.isEmpty {
+            SectionHeading("Done on this return")
+            CardList(undoablePuts) { put in
+                ListRow(put.sko, subtitle: put.title, icon: .undo, iconTone: .neutral) {
+                    undoingPut = put
+                }
+                .accessibilityIdentifier("goodsIn.return.undo.\(put.id)")
+            }
         }
         if canWork, let item = selectedItem {
             HStack(spacing: 8) {
@@ -124,7 +161,7 @@ struct GoodsInReturnDetailView: View {
         store.processReturnItem(reference, sko: item.sko, outcome: outcome)
         selectedSKO = nil
         switch outcome {
-        case .toLocation(let location): toasts.show("\(item.quantity.grouped) back in \(location)")
+        case .toLocation(let location): toasts.show("\(GoodsInQuantity.text(item.quantity, packedIn: item.packedIn)) back in \(location)")
         case .damaged: toasts.show("\(item.sko) set as damaged", tone: .warn)
         case .notReturned: toasts.show("\(item.sko) set as not returned", tone: .warn)
         }

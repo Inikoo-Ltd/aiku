@@ -4,6 +4,8 @@ struct GoodsInDeliveriesView: View {
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
     @State private var isFiltering = false
+    @Environment(\.apiClient) private var apiClient
+    @Environment(ToastCenter.self) private var toasts
     private let store = GoodsInStore.shared
 
     var body: some View {
@@ -30,11 +32,23 @@ struct GoodsInDeliveriesView: View {
                 }
                 .padding(.horizontal, 4)
             }
-            if listed.isEmpty {
+            if store.isRemote, let message = store.loadError {
+                InlineAlert(title: "Couldn’t load stock deliveries", message: message)
+            }
+            if listed.isEmpty, store.isRemote, store.isLoadingList || store.listRequest != store.currentListRequest {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 88)
+                    .accessibilityLabel("Loading stock deliveries")
+            } else if listed.isEmpty {
                 EmptyState(icon: .stockDelivery, title: "No stock deliveries", message: "Nothing matches \(store.listScope.title.lowercased()) with these filters.")
             } else {
                 CardList(listed) { delivery in
                     GoodsInDeliveryRow(delivery: delivery) { open(delivery) }
+                }
+                if store.hasMorePages {
+                    LocationsLoadMoreRow(isLoading: store.isLoadingMore, page: store.currentPage) {
+                        await store.loadNextPage(apiClient: apiClient)
+                    }
                 }
             }
             if !others.isEmpty {
@@ -46,6 +60,13 @@ struct GoodsInDeliveriesView: View {
             HelperText("References follow the organisation format (SD + organisation + number). Suppliers and agents can have their own.")
                 .padding(.horizontal, 4)
         }
+        .task(id: GoodsInListTaskKey(request: store.currentListRequest, isRemote: store.isRemote, warehouseID: store.warehouseID)) {
+            guard store.isRemote else { return }
+            await store.reloadList(apiClient: apiClient)
+        }
+        .hardwareScanner(isEnabled: !isFiltering) { code in
+            Task { await openScanned(code) }
+        }
         .aikuSheet(isPresented: $isFiltering) {
             GoodsInFilterSheet(initial: store.filter) { draft in
                 store.filteredCount(draft)
@@ -53,6 +74,29 @@ struct GoodsInDeliveriesView: View {
                 store.applyFilter(draft)
                 isFiltering = false
             }
+        }
+    }
+
+    private func openScanned(_ code: String) async {
+        let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard store.isRemote, let warehouseID = store.warehouseID else {
+            if let delivery = store.deliveries.first(where: { $0.reference.caseInsensitiveCompare(trimmed) == .orderedSame }) {
+                open(delivery)
+            } else {
+                toasts.show("\(trimmed) is not a stock delivery", tone: .info)
+            }
+            return
+        }
+        do {
+            let result = try await apiClient.scan(warehouseID: warehouseID, code: trimmed)
+            if let delivery = result.stockDelivery {
+                router.open(GoodsInRoute.scannedStockDelivery(id: delivery.id, reference: delivery.reference))
+            } else {
+                toasts.show("\(trimmed) is not a stock delivery", tone: .info)
+            }
+        } catch {
+            toasts.show(ShellScanCatalog.problem(error), tone: .danger)
         }
     }
 
@@ -182,4 +226,10 @@ struct GoodsInFilterSheet: View {
         .buttonStyle(.plain)
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
+}
+
+private struct GoodsInListTaskKey: Hashable {
+    let request: GoodsInListRequest
+    let isRemote: Bool
+    let warehouseID: Int?
 }

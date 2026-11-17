@@ -1667,6 +1667,65 @@ test('HELP-4562 one mix and its Making cover every open line of any product that
     expect($powderLeft())->toBe($powderBefore);
 });
 
+test('a shared mix locks the job orders of every line its pool gives to, in id order, before the entry', function () {
+    $user   = $this->guest->getUser();
+    $suffix = rand(10000, 99999);
+    $powder = StoreRawMaterial::make()->action($this->production, [
+        'type'        => RawMaterialTypeEnum::CONSUMABLE->value,
+        'state'       => RawMaterialStateEnum::ORPHAN->value,
+        'code'        => 'PWL'.$suffix,
+        'description' => 'Fizzer powder',
+        'unit'        => RawMaterialUnitEnum::KILOGRAM->value,
+        'unit_cost'   => 1,
+    ]);
+    $mixing = StoreManufactureTask::make()->action($this->production, ['code' => 'MXL'.$suffix, 'name' => 'Mixing '.$suffix, 'is_piece_rate' => false, 'is_recorded_in_kg' => true]);
+    $making = StoreManufactureTask::make()->action($this->production, ['code' => 'MKL'.$suffix, 'name' => 'Making '.$suffix, 'is_piece_rate' => true]);
+    $box    = function (string $code) use ($mixing, $making, $powder, $suffix) {
+        $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code.$suffix, 'name' => $code]);
+        $artefact->manufactureTasks()->sync([
+            $mixing->id => ['position' => 1, 'units_per_artefact' => 0.05, 'label' => 'Lilac'],
+            $making->id => ['position' => 2, 'units_per_artefact' => 1, 'label' => 'Lilac'],
+        ]);
+        AttachRawMaterialToRecipeStep::make()->action($artefact->recipeSteps()->where('manufacture_task_id', $mixing->id)->first(), ['raw_material_id' => $powder->id, 'quantity_per_unit' => 0.05]);
+
+        return $artefact;
+    };
+    $line = function (Artefact $artefact, int $quantity) {
+        $jobOrder = StoreJobOrder::make()->action($this->production, []);
+        $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => $quantity]);
+        ConfirmJobOrder::make()->action($jobOrder);
+
+        return $item->refresh();
+    };
+    $lineOne = $line($box('LLC01'), 300);
+    $lineTwo = $line($box('LLC02'), 200);
+    $mixOf   = fn (JobOrderItem $item) => $item->tasks()->where('manufacture_task_id', $mixing->id)->first();
+    $locks   = function (callable $do) {
+        \Illuminate\Support\Facades\DB::flushQueryLog();
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        $do();
+        $locks = collect(\Illuminate\Support\Facades\DB::getQueryLog())->filter(fn (array $query) => str_contains($query['query'], 'for update'))->values();
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        return $locks;
+    };
+
+    $session = StartManufactureTaskSession::make()->action($user, $mixOf($lineOne));
+    $closing = $locks(fn () => CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 25]));
+    expect($closing[0]['query'])->toContain('"job_orders"')
+        ->and($closing[0]['bindings'])->toContain($lineOne->job_order_id)
+        ->and($closing[0]['bindings'])->toContain($lineTwo->job_order_id)
+        ->and($closing[1]['query'])->toContain('"manufacture_task_sessions"')
+        ->and($session->refresh()->mix_pool_key)->not->toBeNull()
+        ->and($session->shares()->pluck('job_order_item_task_id')->all())->toContain($mixOf($lineTwo)->id);
+
+    $correcting = $locks(fn () => \App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity::make()->action($session->refresh(), ['quantity_made' => 20], 'Supervisor'));
+    expect($correcting[0]['query'])->toContain('"job_orders"')
+        ->and($correcting[0]['bindings'])->toContain($lineTwo->job_order_id)
+        ->and($correcting[1]['query'])->toContain('"manufacture_task_sessions"')
+        ->and((float) $session->refresh()->quantity_made)->toBe(20.0);
+});
+
 test('INI-221 putting away a job order values every movement at FIFO in a bounded number of queries', function () {
     $user = $this->guest->getUser();
     ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)->delete();
@@ -1763,4 +1822,70 @@ test('INI-221 putting away a job order values every movement at FIFO in a bounde
             'RM4 production quantity=-2 org_amount=-20.444 grp_amount=-20.444 running_quantity=16 running_quantity_org_stock=16 running_lpp_value=192 running_wac_value=160 running_fifo_value=168',
         ])
         ->and($queryCount)->toBeLessThan(370);
+});
+
+test('the production output list loads in a number of queries that does not grow with the open job orders', function () {
+    $user = $this->guest->getUser();
+    ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)->delete();
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-QCNT', 'name' => 'Query count warehouse']);
+    $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-QCNT', 'name' => 'Query count area']);
+    $shelf     = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'SHELF-QCNT', 'name' => 'Query count shelf'] + \App\Models\Inventory\Location::factory()->definition());
+
+    $artefactFor = function (string $code) use ($shelf) {
+        $stock    = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
+        $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+        $orgStock->update(['packed_in' => 4]);
+        \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($orgStock, $shelf, []);
+        $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code, 'name' => $code, 'org_stock_id' => $orgStock->id]);
+        $artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+
+        return $artefact;
+    };
+    $make = fn (JobOrderItem $item, int $quantity, string $outcome) => CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $item->tasks()->first()),
+        ['quantity_made' => $quantity, 'outcome' => $outcome]
+    );
+
+    $addJobs = function (int $count, string $prefix) use ($artefactFor, $make) {
+        foreach (range(1, $count) as $n) {
+            $jobOrder = StoreJobOrder::make()->action($this->production, []);
+            $soap     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefactFor("$prefix-SOAP-$n")->id, 'quantity' => 12]);
+            $bomb     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefactFor("$prefix-BOMB-$n")->id, 'quantity' => 8]);
+            ConfirmJobOrder::make()->action($jobOrder);
+            $make($soap, 12, 'complete');
+            $make($bomb, 8, 'complete');
+
+            $carriedJob  = StoreJobOrder::make()->action($this->production, []);
+            $carriedItem = StoreJobOrderItem::make()->action($carriedJob, ['artefact_id' => $artefactFor("$prefix-CARRY-$n")->id, 'quantity' => 40]);
+            ConfirmJobOrder::make()->action($carriedJob);
+            $make($carriedItem, 23, 'carry_over');
+        }
+    };
+
+    $countQueries = function () use ($warehouse) {
+        $queries = 0;
+        \Illuminate\Support\Facades\DB::listen(function () use (&$queries) {
+            $queries++;
+        });
+        $rows = \App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders::run($warehouse);
+        \Illuminate\Support\Facades\DB::getEventDispatcher()->forget(\Illuminate\Database\Events\QueryExecuted::class);
+
+        return [$queries, $rows];
+    };
+
+    $addJobs(2, 'QA');
+    [$fewJobsQueries] = $countQueries();
+    $addJobs(5, 'QB');
+    [$manyJobsQueries, $rows] = $countQueries();
+
+    $ours = collect($rows)->flatMap(fn (array $trip) => collect($trip['jobs'])->flatMap(fn (array $job) => $job['items']))
+        ->filter(fn (array $row) => preg_match('/^Q[AB]-/', $row['code']))->values();
+
+    expect($ours)->toHaveCount(21)
+        ->and($ours->firstWhere('code', 'QB-SOAP-1')['quantity'])->toEqual(3.0)
+        ->and($ours->firstWhere('code', 'QB-CARRY-1')['quantity'])->toEqual(5.0)
+        ->and($ours->firstWhere('code', 'QB-CARRY-1')['quantity_total'])->toEqual(10.0)
+        ->and($ours->firstWhere('code', 'QB-CARRY-1')['in_progress'])->toBeTrue()
+        ->and($manyJobsQueries - $fewJobsQueries)->toBeLessThan(5);
 });

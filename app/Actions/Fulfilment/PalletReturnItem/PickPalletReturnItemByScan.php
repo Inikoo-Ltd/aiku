@@ -30,9 +30,11 @@ use Lorisleiva\Actions\ActionRequest;
 class PickPalletReturnItemByScan extends OrgAction
 {
     /**
+     * @param  Collection<int, PalletReturnItem>|null  $pickableItems
+     *
      * @throws \Throwable
      */
-    public function handle(PalletReturn $palletReturn, User $user, array $modelData): array
+    public function handle(PalletReturn $palletReturn, User $user, array $modelData, ?Collection $pickableItems = null): array
     {
         $scanned  = trim((string)data_get($modelData, 'barcode'));
         $quantity = (float)data_get($modelData, 'quantity', 1);
@@ -46,7 +48,7 @@ class PickPalletReturnItemByScan extends OrgAction
             );
         }
 
-        $items        = $this->loadItems($palletReturn);
+        $items        = $pickableItems ?? $this->loadItems($palletReturn);
         $matchedItems = $this->matchItems($items, $scanned);
 
         if ($matchedItems->isEmpty()) {
@@ -113,7 +115,7 @@ class PickPalletReturnItemByScan extends OrgAction
     /**
      * @return Collection<int, PalletReturnItem>
      */
-    protected function loadItems(PalletReturn $palletReturn): Collection
+    public function loadItems(PalletReturn $palletReturn): Collection
     {
         return PalletReturnItem::where('pallet_return_id', $palletReturn->id)
             ->with(['pallet', 'storedItem'])
@@ -130,7 +132,7 @@ class PickPalletReturnItemByScan extends OrgAction
      *
      * @return Collection<int, PalletReturnItem>
      */
-    protected function matchItems(Collection $items, string $scanned): Collection
+    public function matchItems(Collection $items, string $scanned): Collection
     {
         if ($scanned === '') {
             return collect();
@@ -159,7 +161,7 @@ class PickPalletReturnItemByScan extends OrgAction
         );
     }
 
-    protected function itemReference(PalletReturnItem $item): string
+    public function itemReference(PalletReturnItem $item): string
     {
         return ($item->type == 'Pallet' ? $item->pallet?->reference : $item->storedItem?->reference) ?? '';
     }

@@ -1032,3 +1032,87 @@ export const modulePlaceholder = (module: EmailModule): ModulePlaceholder | null
             return null
     }
 }
+
+export const EMAIL_CLIPBOARD_STORAGE_KEY = 'aiku.emailWorkshop.clipboard'
+
+export type EmailClipboard = { kind: 'module', module: EmailModule } | { kind: 'row', row: EmailRow }
+
+export interface EmailSelection {
+    moduleUuid: string | null
+    rowUuid: string | null
+}
+
+const isClipboardLocked = (clipboard: EmailClipboard): boolean =>
+    clipboard.kind === 'module' ? isUnsubscribeModule(clipboard.module) : rowHasUnsubscribeBlock(clipboard.row)
+
+export const copyEmailSelection = (module: EmailModule | null, row: EmailRow | null): EmailClipboard | null => {
+    const clipboard: EmailClipboard | null = module
+        ? { kind: 'module', module: JSON.parse(JSON.stringify(module)) }
+        : row ? { kind: 'row', row: JSON.parse(JSON.stringify(row)) } : null
+
+    return clipboard && !isClipboardLocked(clipboard) ? clipboard : null
+}
+
+export const readEmailClipboard = (stored: unknown): EmailClipboard | null => {
+    let value = stored
+    if (typeof value === 'string') {
+        try {
+            value = JSON.parse(value)
+        } catch {
+            return null
+        }
+    }
+    const candidate = value as Partial<{ kind: string, module: EmailModule, row: EmailRow }> | null
+    if (candidate?.kind === 'module' && typeof candidate.module?.type === 'string' && candidate.module.descriptor && typeof candidate.module.descriptor === 'object') {
+        return { kind: 'module', module: candidate.module }
+    }
+    if (candidate?.kind === 'row' && Array.isArray(candidate.row?.columns) && candidate.row.columns.every((column) => Array.isArray(column?.modules))) {
+        return { kind: 'row', row: candidate.row }
+    }
+
+    return null
+}
+
+export const pasteEmailClipboard = (
+    email: EmailJson,
+    clipboard: EmailClipboard,
+    selection: EmailSelection,
+    newRowWidth: string,
+): { row: EmailRow, module: EmailModule | null } | null => {
+    if (isClipboardLocked(clipboard)) {
+        return null
+    }
+
+    const rows = email.page.rows
+    const selectedModuleRow = selection.moduleUuid
+        ? rows.find((row) => row.columns.some((column) => column.modules.some((module) => module.uuid === selection.moduleUuid)))
+        : undefined
+    const selectedRow = selectedModuleRow ?? rows.find((row) => !!selection.rowUuid && row.uuid === selection.rowUuid)
+
+    if (clipboard.kind === 'row') {
+        const row = duplicateWithNewUuids(clipboard.row)
+        rows.splice(selectedRow ? rows.indexOf(selectedRow) + 1 : rows.length, 0, row)
+
+        return { row, module: null }
+    }
+
+    const module = duplicateWithNewUuids(clipboard.module)
+    if (selectedModuleRow) {
+        const column = selectedModuleRow.columns.find((candidate) => candidate.modules.some((item) => item.uuid === selection.moduleUuid))!
+        column.modules.splice(column.modules.findIndex((item) => item.uuid === selection.moduleUuid) + 1, 0, module)
+
+        return { row: selectedModuleRow, module }
+    }
+    if (selectedRow?.columns.length) {
+        const column = selectedRow.columns.find((candidate) => candidate.modules.length === 0) ?? selectedRow.columns[0]
+        column.modules.push(module)
+
+        return { row: selectedRow, module }
+    }
+
+    const row = createRow([12], newRowWidth)
+    row.columns[0].modules.push(module)
+    rows.push(row)
+
+    return { row, module }
+}

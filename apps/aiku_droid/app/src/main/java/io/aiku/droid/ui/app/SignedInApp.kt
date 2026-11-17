@@ -721,21 +721,21 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
             )
             PickedBaysScreen(bays = bays)
         }
-        composable<FulfilmentDeliveriesRoute> { FulfilmentDeliveriesScreen() }
-        composable<FulfilmentDeliveryRoute> { entry -> entry.toRoute<FulfilmentDeliveryRoute>().let { route -> FulfilmentDeliveryScreen(route.reference) } }
-        composable<FulfilmentBookInRoute> { entry -> entry.toRoute<FulfilmentBookInRoute>().let { route -> FulfilmentBookInScreen(route.reference) } }
-        composable<FulfilmentBookedInRoute> { entry -> entry.toRoute<FulfilmentBookedInRoute>().let { route -> FulfilmentBookedInScreen(route.reference) } }
-        composable<StoredPalletsRoute> { StoredPalletsScreen() }
-        composable<PalletRoute> { entry -> entry.toRoute<PalletRoute>().let { route -> PalletScreen(route.reference) } }
-        composable<PalletIncidentsRoute> { PalletIncidentsScreen() }
-        composable<StoredItemsRoute> { StoredItemsScreen() }
-        composable<StoredItemAuditRoute> { entry -> entry.toRoute<StoredItemAuditRoute>().let { route -> StoredItemAuditScreen(route.reference) } }
-        composable<FulfilmentReturnsRoute> { FulfilmentReturnsScreen() }
-        composable<ReturnPickPalletsRoute> { entry -> entry.toRoute<ReturnPickPalletsRoute>().let { route -> ReturnPickPalletsScreen(route.reference) } }
-        composable<ReturnPickItemsRoute> { entry -> entry.toRoute<ReturnPickItemsRoute>().let { route -> ReturnPickItemsScreen(route.reference) } }
-        composable<ReturnPickedRoute> { entry -> entry.toRoute<ReturnPickedRoute>().let { route -> ReturnPickedScreen(route.reference) } }
-        composable<ReturnShipmentRoute> { entry -> entry.toRoute<ReturnShipmentRoute>().let { route -> ReturnShipmentScreen(route.reference) } }
-        composable<ReturnDispatchedRoute> { entry -> entry.toRoute<ReturnDispatchedRoute>().let { route -> ReturnDispatchedScreen(route.reference) } }
+        composable<FulfilmentDeliveriesRoute> { FulfilmentDeliveriesScreen(container = container, warehouseId = currentWarehouseId) }
+        composable<FulfilmentDeliveryRoute> { entry -> entry.toRoute<FulfilmentDeliveryRoute>().let { route -> FulfilmentDeliveryScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<FulfilmentBookInRoute> { entry -> entry.toRoute<FulfilmentBookInRoute>().let { route -> FulfilmentBookInScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<FulfilmentBookedInRoute> { entry -> entry.toRoute<FulfilmentBookedInRoute>().let { route -> FulfilmentBookedInScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<StoredPalletsRoute> { StoredPalletsScreen(container = container, warehouseId = currentWarehouseId) }
+        composable<PalletRoute> { entry -> entry.toRoute<PalletRoute>().let { route -> PalletScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<PalletIncidentsRoute> { PalletIncidentsScreen(container = container, warehouseId = currentWarehouseId) }
+        composable<StoredItemsRoute> { StoredItemsScreen(container = container, warehouseId = currentWarehouseId) }
+        composable<StoredItemAuditRoute> { entry -> entry.toRoute<StoredItemAuditRoute>().let { route -> StoredItemAuditScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<FulfilmentReturnsRoute> { FulfilmentReturnsScreen(container = container, warehouseId = currentWarehouseId) }
+        composable<ReturnPickPalletsRoute> { entry -> entry.toRoute<ReturnPickPalletsRoute>().let { route -> ReturnPickPalletsScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<ReturnPickItemsRoute> { entry -> entry.toRoute<ReturnPickItemsRoute>().let { route -> ReturnPickItemsScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<ReturnPickedRoute> { entry -> entry.toRoute<ReturnPickedRoute>().let { route -> ReturnPickedScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<ReturnShipmentRoute> { entry -> entry.toRoute<ReturnShipmentRoute>().let { route -> ReturnShipmentScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<ReturnDispatchedRoute> { entry -> entry.toRoute<ReturnDispatchedRoute>().let { route -> ReturnDispatchedScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
         composable<ClockingRoute> { ClockingScreen() }
         composable<ClockScanQrRoute> { ClockScanQrScreen() }
         composable<TimesheetsRoute> { TimesheetsScreen() }

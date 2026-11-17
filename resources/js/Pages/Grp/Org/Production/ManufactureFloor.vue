@@ -294,11 +294,12 @@ const sections = computed(() => {
 })
 
 const floorChannel = `grp.production.${props.production_id}.floor`
+const floorChangedProps = ["server_time", "tasks", "open_session", "open_break", "non_productive", "finished_today", "today", "materials_check_route"]
 let reloadTimer: ReturnType<typeof setTimeout> | null = null
 onMounted(() => {
     window.Echo.private(floorChannel).listen('.floor-changed', () => {
         if (reloadTimer) clearTimeout(reloadTimer)
-        reloadTimer = setTimeout(() => router.reload({ preserveScroll: true }), 300)
+        reloadTimer = setTimeout(() => router.reload({ preserveScroll: true, only: floorChangedProps }), 300)
     })
 })
 onUnmounted(() => window.Echo.private(floorChannel).stopListening('.floor-changed'))

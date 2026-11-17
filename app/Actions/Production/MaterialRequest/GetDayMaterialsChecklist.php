@@ -45,7 +45,7 @@ class GetDayMaterialsChecklist
             ->whereNull('job_order_items.deleted_at')
             ->whereNull('raw_materials.artefact_id')
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE->value)
-            ->where(fn (Builder $query) => IndexJobOrderPlan::onThePlan($query, $date))
+            ->where(fn (Builder $query) => IndexJobOrderPlan::onThePlan($query, $date, $production))
             ->groupBy('raw_materials.id')
             ->select([
                 'raw_materials.id as raw_material_id',
@@ -125,7 +125,7 @@ class GetDayMaterialsChecklist
             ->where('job_orders.production_id', $production->id)
             ->whereNull('job_orders.deleted_at')
             ->whereNull('job_order_items.deleted_at')
-            ->where(fn (Builder $query) => IndexJobOrderPlan::onThePlan($query, $date))
+            ->where(fn (Builder $query) => IndexJobOrderPlan::onThePlan($query, $date, $production))
             ->whereNotExists(fn (Builder $query) => $query->selectRaw('1')
                 ->from('artefacts_manufacture_tasks as recipe_steps')
                 ->join('recipe_step_raw_materials', 'recipe_step_raw_materials.artefact_manufacture_task_id', 'recipe_steps.id')

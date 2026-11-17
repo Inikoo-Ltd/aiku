@@ -914,7 +914,7 @@ test('jobs planned for a day name no operator, and a step given to an operator i
 
     $maker  = dayPlanOperator($this->organisation);
     $packer = dayPlanOperator($this->organisation);
-    $today  = now()->toDateString();
+    $today  = \App\Actions\Production\JobOrder\UI\IndexJobOrderPlan::today($this->production);
 
     $nextPosition       = JobOrder::nextPlanPosition($this->production->id, $today);
     [$planned, $second] = \App\Actions\Production\JobOrder\StoreJobOrdersGroupedByArtisan::run($this->production, [
@@ -973,8 +973,8 @@ test('a planned job not finished on its day stays on the plan until it is confir
     $this->artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
 
     $maker     = dayPlanOperator($this->organisation);
-    $today     = now()->toDateString();
-    $yesterday = now()->subDay()->toDateString();
+    $today     = \App\Actions\Production\JobOrder\UI\IndexJobOrderPlan::today($this->production);
+    $yesterday = \Illuminate\Support\Carbon::parse($today)->subDay()->toDateString();
 
     $jobOrder = StoreJobOrder::make()->action($this->production, ['planned_for' => $yesterday]);
     $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
@@ -1568,7 +1568,7 @@ test('the day plan lists the materials its open steps need, the check asks the w
     [$bottle, $bottleStock, $bottleShelf] = $material('MAT-BOTTLE', $this->manufactureTask, 1, 1000);
     [$box, $boxStock, $boxShelf]          = $material('MAT-BOX', $packingTask, 50, 10);
 
-    $today = now()->toDateString();
+    $today = \App\Actions\Production\JobOrder\UI\IndexJobOrderPlan::today($this->production);
     $this->production->update(['factory_location_id' => null]);
     expect(fn () => \App\Actions\Production\MaterialRequest\SubmitMaterialsCheck::make()->action($this->production, $today, []))
         ->toThrow(ValidationException::class, 'no factory location');
@@ -1795,7 +1795,7 @@ test('a recipe change deletes an unworked step from an open job, keeps a worked 
     expect($item['produced_quantity'])->toBe(700.0);
 });
 
-test('artefacts are uploaded only by organisation supervisors or production r&d editors', function () {
+test('artefacts and raw materials are uploaded only by organisation supervisors or production r&d editors', function () {
     $production = $this->production;
     $user       = \App\Models\SysAdmin\User::factory()->create(['group_id' => $production->group_id, 'status' => true]);
 
@@ -1803,6 +1803,10 @@ test('artefacts are uploaded only by organisation supervisors or production r&d 
 
     \Pest\Laravel\post(route('grp.models.production.artefacts.upload', $production->id), [
         'file' => \Illuminate\Http\UploadedFile::fake()->createWithContent('artefacts.csv', "code,name\nART1,Artefact\n"),
+    ])->assertForbidden();
+
+    \Pest\Laravel\post(route('grp.models.production.raw_materials.upload', $production->id), [
+        'file' => \Illuminate\Http\UploadedFile::fake()->createWithContent('raw_materials.csv', "code,description\nRM1,Raw material\n"),
     ])->assertForbidden();
 
     expect(\Illuminate\Support\Facades\Route::has('grp.models.production.manufacture_tasks.upload'))->toBeFalse();

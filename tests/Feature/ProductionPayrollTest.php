@@ -1468,8 +1468,10 @@ describe('production reward pay bands', function () {
         actingAs($manager);
         $this->patch(route('grp.models.manufacture-payroll-adjustment.approve', $voided->id))->assertForbidden();
         $headOfAccounts = $userWith(["org-supervisor.$organisationId", "accounting.$organisationId.view", "accounting.$organisationId.edit"]);
-        $headOfAccounts->assignRole(\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::ACCOUNTING_SUPERVISOR->value, $this->production->organisation));
-        expect(\App\Models\Production\ManufacturePayrollAdjustment::isAccountant($headOfAccounts->refresh(), $this->production))->toBeTrue()
+        expect(\App\Models\Production\ManufacturePayrollAdjustment::isAccountant($headOfAccounts, $this->production))->toBeFalse();
+        $accountingManager = \App\Models\HumanResources\JobPosition::where('organisation_id', $organisationId)->where('code', 'acc-m')->firstOrFail();
+        $headOfAccounts->pseudoJobPositions()->attach($accountingManager->id, ['group_id' => $this->group->id, 'organisation_id' => $organisationId, 'scopes' => []]);
+        expect(\App\Models\Production\ManufacturePayrollAdjustment::isAccountant($headOfAccounts, $this->production))->toBeTrue()
             ->and(\App\Models\Production\ManufacturePayrollAdjustment::isAccountant($manager, $this->production))->toBeFalse();
         actingAs($accountant);
         $this->patch(route('grp.models.manufacture-payroll-adjustment.approve', $voided->id))->assertSessionHasNoErrors();

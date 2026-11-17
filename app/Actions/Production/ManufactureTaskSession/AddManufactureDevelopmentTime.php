@@ -15,6 +15,7 @@ use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTy
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionTimeEditReasonEnum;
 use App\Models\HumanResources\Employee;
+use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\User;
@@ -110,7 +111,8 @@ class AddManufactureDevelopmentTime extends OrgAction
     private function notPaidWarning(Production $production, Employee $employee, User $worker, Carbon $startedAt, Carbon $endedAt): ?string
     {
         $name      = $worker->contact_name ?: $worker->username;
-        $date      = $endedAt->toDateString();
+        $timezone  = ManufacturePayrollAdjustment::timezone($production);
+        $date      = $endedAt->copy()->setTimezone($timezone)->toDateString();
         $clockings = HydrateManufactureArtisanDays::clockings([$employee->id], $date, $date);
         $timesheet = $clockings->first();
         $paidTime  = HydrateManufactureArtisanDays::make()->paidTime($production, $clockings)[$employee->id.'|'.$date] ?? null;
@@ -131,7 +133,7 @@ class AddManufactureDevelopmentTime extends OrgAction
         $tablet = HydrateManufactureArtisanDays::artisanSessions($production)
             ->where('user_id', $worker->id)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
-            ->whereDate('ended_at', $date)
+            ->whereBetween('ended_at', [Carbon::parse($date, $timezone)->startOfDay()->utc(), Carbon::parse($date, $timezone)->endOfDay()->utc()])
             ->get()
             ->sum(fn (ManufactureTaskSession $session) => $session->paidHours() * 3600);
         $adding = $startedAt->diffInSeconds($endedAt);

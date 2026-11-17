@@ -16,6 +16,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 class BroadcastManufactureFloorChanged implements ShouldBroadcast
 {
     use Dispatchable;
+    use DispatchesOncePerTransaction;
     use InteractsWithSockets;
 
     public bool $afterCommit = true;

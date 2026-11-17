@@ -19,6 +19,8 @@ import {
 	type CtaButtonShape,
 	type CtaButtonSize,
 	type CtaButtonTarget,
+	ctaButtonColorFromPicker,
+	ctaButtonPickerHex,
 	ctaButtonStyle,
 	normaliseCtaButtonAttributes,
 	safeCtaButtonHref,
@@ -109,14 +111,14 @@ const shapeOptions: Array<{ label: string, value: CtaButtonShape }> = [
 	{ label: ctrans("Pill"), value: "pill" },
 ]
 
-const colorPickerModel = (field: "backgroundColor" | "textColor") =>
-	computed<string>({
-		get: () => (form.value[field] ?? "").replace("#", ""),
-		set: (hex) => (form.value[field] = hex ? `#${hex.replace("#", "")}` : null),
-	})
+const colorFields: Array<{ key: "backgroundColor" | "textColor", label: string }> = [
+	{ key: "backgroundColor", label: ctrans("Button colour") },
+	{ key: "textColor", label: ctrans("Text colour") },
+]
 
-const backgroundColorModel = colorPickerModel("backgroundColor")
-const textColorModel = colorPickerModel("textColor")
+function pickColor(field: "backgroundColor" | "textColor", hex: unknown) {
+	form.value[field] = ctaButtonColorFromPicker(hex) ?? form.value[field]
+}
 
 const previewStyle = computed(() => ctaButtonStyle(normaliseCtaButtonAttributes(form.value)))
 
@@ -294,13 +296,15 @@ function save() {
 			</div>
 
 			<div class="grid gap-5 sm:grid-cols-2">
-				<div v-for="colorField in [
-					{ key: 'backgroundColor', label: ctrans('Button colour'), model: backgroundColorModel },
-					{ key: 'textColor', label: ctrans('Text colour'), model: textColorModel },
-				]" :key="colorField.key">
+				<div v-for="colorField in colorFields" :key="colorField.key">
 					<div class="mb-2 select-none text-sm text-gray-600">{{ colorField.label }}</div>
 					<div class="flex items-center gap-2">
-						<ColorPicker v-model="colorField.model.value" format="hex" />
+						<ColorPicker
+							:modelValue="ctaButtonPickerHex(form[colorField.key])"
+							format="hex"
+							:aria-label="colorField.label"
+							@update:modelValue="pickColor(colorField.key, $event)"
+						/>
 						<span class="text-sm text-gray-700">
 							{{ form[colorField.key] ?? ctrans("Website theme") }}
 						</span>

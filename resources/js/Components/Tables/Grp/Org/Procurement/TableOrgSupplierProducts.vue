@@ -34,7 +34,7 @@ const props = defineProps<{
     agents: { id: number, label: string, create_route: routeType }[]
     copy_route: routeType
   } | null
-  copyTargets?: { id: number, agent_id: number, label: string, number_products: number }[]
+  copyTargets?: { id: number, agent_id: number, label: string, number_products: number, company_name: string | null, contact_name: string | null }[]
   labelsPrint?: {
     plan_route: routeType
     pdf_route: routeType
@@ -301,6 +301,7 @@ function orgSupplierRoute(orgSupplierSlug: string) {
         optionLabel="label"
         optionValue="id"
         filter
+        :filterFields="['label', 'company_name', 'contact_name']"
         fluid
         :loading="isLoadingTargets"
         :placeholder="ctrans('Select a supplier')"
@@ -308,7 +309,10 @@ function orgSupplierRoute(orgSupplierSlug: string) {
       >
         <template #option="{ option }">
           <div class="flex w-full items-center justify-between gap-3">
-            <span class="truncate">{{ option.label }}</span>
+            <div class="min-w-0">
+              <div class="truncate">{{ option.label }}</div>
+              <div v-if="option.company_name" class="truncate text-xs text-gray-500">{{ option.company_name }}</div>
+            </div>
             <span class="shrink-0 text-xs tabular-nums text-gray-500">
               {{ ctransChoice(":count product|:count products", option.number_products, { count: String(option.number_products) }) }}
             </span>

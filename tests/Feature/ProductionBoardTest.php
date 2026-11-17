@@ -253,6 +253,56 @@ test('assigning a line to an artisan refreshes the manufacture floor tablets', f
     \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\BroadcastManufactureFloorChanged::class, fn ($event) => $event->productionId == $this->production->id);
 });
 
+test('a transaction whose commit fails does not stop the next one telling the floor', function () {
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    $task = \App\Models\Production\JobOrderItemTask::where('job_order_id', $jobOrder->id)->firstOrFail();
+
+    \Illuminate\Support\Facades\DB::statement('create temporary table if not exists failing_commit (id int, constraint failing_commit_unique unique (id) deferrable initially deferred)');
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastManufactureFloorChanged::class]);
+
+    expect(fn () => \Illuminate\Support\Facades\DB::transaction(function () use ($task) {
+        $task->forceFill(['updated_at' => now()->addSecond()])->save();
+        \Illuminate\Support\Facades\DB::insert('insert into failing_commit (id) values (1), (1)');
+    }))->toThrow(\PDOException::class);
+    \Illuminate\Support\Facades\Event::assertNotDispatched(\App\Events\BroadcastManufactureFloorChanged::class);
+    expect(\Illuminate\Support\Facades\DB::transactionLevel())->toBe(0);
+
+    \Illuminate\Support\Facades\DB::transaction(fn () => $task->forceFill(['updated_at' => now()->addSeconds(2)])->save());
+    expect(\Illuminate\Support\Facades\Event::dispatched(\App\Events\BroadcastManufactureFloorChanged::class)->count())->toBeGreaterThanOrEqual(1);
+
+    \Illuminate\Support\Facades\DB::statement('drop table if exists failing_commit');
+});
+
+test('many task saves in one transaction tell the floor once, after the commit, and a rolled back one tells nobody', function () {
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 20]);
+    $tasks = \App\Models\Production\JobOrderItemTask::where('job_order_id', $jobOrder->id)->get();
+    expect($tasks->count())->toBeGreaterThan(1);
+
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastManufactureFloorChanged::class]);
+    $touchAll = fn () => $tasks->each(fn ($task) => $task->forceFill(['updated_at' => now()->addSecond()])->save());
+
+    \Illuminate\Support\Facades\DB::transaction(function () use ($touchAll) {
+        $touchAll();
+        \Illuminate\Support\Facades\Event::assertNotDispatched(\App\Events\BroadcastManufactureFloorChanged::class);
+    });
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastManufactureFloorChanged::class, 1);
+
+    try {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($touchAll) {
+            $touchAll();
+            throw new \RuntimeException('rolled back');
+        });
+    } catch (\RuntimeException) {
+    }
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastManufactureFloorChanged::class, 1);
+
+    $touchAll();
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastManufactureFloorChanged::class, 1 + $tasks->count());
+});
+
 test('to produce board lists each artisan and their share of a split job order', function () {
     $stocks   = createStocks($this->group);
     $orgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];

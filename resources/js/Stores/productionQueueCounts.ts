@@ -5,12 +5,15 @@
  */
 
 import { defineStore } from "pinia"
+import { debounce } from "lodash-es"
 
 export interface ProductionQueueCounts {
 	to_produce: number
 	pre_pick: number
 	channel: string
 }
+
+const refetchAfterBurst = debounce((refetch: () => void) => refetch(), 500, { maxWait: 2000 })
 
 export const useProductionQueueCounts = defineStore("production-queue-counts", {
 	state: () => ({
@@ -45,7 +48,7 @@ export const useProductionQueueCounts = defineStore("production-queue-counts", {
 
 			this.unwatch()
 			this.channel = channel
-			window.Echo.private(channel).listen(".production-queues-changed", () => this.fetch())
+			window.Echo.private(channel).listen(".production-queues-changed", () => refetchAfterBurst(() => this.fetch()))
 		},
 
 		watch(organisation: string, production: string) {

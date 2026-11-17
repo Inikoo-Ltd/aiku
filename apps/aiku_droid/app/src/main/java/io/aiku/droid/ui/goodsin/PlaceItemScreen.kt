@@ -185,7 +185,6 @@ private fun PlaceItemContent(viewModel: StockDeliveryViewModel, state: StockDeli
                         style = ButtonStyle.Soft,
                         isLoading = state.working is StockDeliveryWrite.PlaceAll,
                         height = 52.dp,
-                        modifier = Modifier.weight(1f),
                     )
                     AikuButton(
                         text = target?.let { stringResource(R.string.goodsin_place_in, quantityText(shownQuantity), it.code) }

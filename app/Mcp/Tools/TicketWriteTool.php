@@ -150,7 +150,7 @@ class TicketWriteTool extends Tool
         if ($request->boolean('post_mortem') && !$ticket->canContributeBy($user)) {
             return Response::error('Only the assignee, collaborators and lead engineers can write incident post-mortems.');
         }
-        if ($request->boolean('to_customer') && ($request->boolean('internal') || $request->input('status') === TicketStatusEnum::PENDING_DEPLOY->value || $ticket->source_type !== 'ShoppingAssistantConversation')) {
+        if ($request->boolean('to_customer') && ($request->boolean('internal') || $request->get('status') === TicketStatusEnum::PENDING_DEPLOY->value || $ticket->source_type !== 'ShoppingAssistantConversation')) {
             return Response::error('to_customer is only for a public comment on a MER ticket, posted now: not with internal, and not held for a deployment.');
         }
         if ($request->boolean('internal') && !$ticket->canContributeBy($user)) {

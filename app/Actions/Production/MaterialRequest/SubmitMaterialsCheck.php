@@ -101,7 +101,7 @@ class SubmitMaterialsCheck extends OrgAction
             return true;
         }
 
-        return MaterialsCheckAuthorisation::canDoMaterialsCheck($request->user(), $this->production, IndexJobOrderPlan::parseDate($request->input('date')));
+        return MaterialsCheckAuthorisation::canDoMaterialsCheck($request->user(), $this->production, IndexJobOrderPlan::parseDate($request->input('date'), $this->production));
     }
 
     public function rules(): array

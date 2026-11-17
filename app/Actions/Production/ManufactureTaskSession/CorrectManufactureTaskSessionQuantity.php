@@ -24,7 +24,6 @@ use App\Models\Production\ManufactureTaskSession;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -32,6 +31,7 @@ use Lorisleiva\Actions\ActionRequest;
 class CorrectManufactureTaskSessionQuantity extends OrgAction
 {
     use WithManufacturePayrollLock;
+    use WithSessionJobOrderLocks;
 
     private ?string $correctedBy = null;
 
@@ -44,11 +44,11 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
     {
         FillToOrder::make()->refuseAfterRelease($session->jobOrderItemTask?->jobOrderItem);
 
-        return DB::transaction(function () use ($session, $modelData) {
-            $session = ManufactureTaskSession::lockForUpdate()->find($session->id);
-
-            return $this->changeInPayWeek($session->production, $session, $session->user_id, 'quantity', [$session->ended_at], ['quantity_made', 'job_order_item_task_id', 'manufacture_task_id', 'band_code', 'pay'], $modelData['lock_reason'] ?? null, fn () => $this->correct($session, $modelData));
-        });
+        return $this->withSessionLocked(
+            $session->id,
+            fn (ManufactureTaskSession $session) => self::jobOrderIdsOfEntry($session, [$modelData['job_order_item_task_id'] ?? null]),
+            fn (ManufactureTaskSession $session) => $this->changeInPayWeek($session->production, $session, $session->user_id, 'quantity', [$session->ended_at], ['quantity_made', 'job_order_item_task_id', 'manufacture_task_id', 'band_code', 'pay'], $modelData['lock_reason'] ?? null, fn () => $this->correct($session, $modelData))
+        );
     }
 
     private function correct(ManufactureTaskSession $session, array $modelData): ManufactureTaskSession

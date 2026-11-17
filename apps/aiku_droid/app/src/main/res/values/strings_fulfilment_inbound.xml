@@ -1,0 +1,100 @@
+<resources>
+    <string name="fulfilment_inbound_quoted">“%1$s”</string>
+    <string name="fulfilment_inbound_customer_reference">Customer ref %1$s</string>
+    <string name="fulfilment_inbound_expected_on">Expected %1$s</string>
+    <string name="fulfilment_inbound_received_on">Received %1$s</string>
+    <string name="fulfilment_inbound_booked_in_on">Booked in %1$s</string>
+    <string name="fulfilment_inbound_storing_since">Storing since %1$s</string>
+    <string name="fulfilment_inbound_details">Details</string>
+    <string name="fulfilment_inbound_notes">Notes</string>
+    <string name="fulfilment_inbound_status">Status</string>
+    <plurals name="fulfilment_inbound_box_count">
+        <item quantity="one">%1$d box</item>
+        <item quantity="other">%1$d boxes</item>
+    </plurals>
+    <plurals name="fulfilment_inbound_oversize_count">
+        <item quantity="one">%1$d oversize</item>
+        <item quantity="other">%1$d oversize</item>
+    </plurals>
+    <plurals name="fulfilment_inbound_stored_items">
+        <item quantity="one">%1$d stored item</item>
+        <item quantity="other">%1$d stored items</item>
+    </plurals>
+
+    <string name="fulfilment_inbound_search_deliveries">Search reference or customer</string>
+    <string name="fulfilment_inbound_scan_no_delivery">%1$s is not a fulfilment delivery in this warehouse</string>
+    <string name="fulfilment_inbound_deliveries_failed">Couldn’t load the fulfilment deliveries</string>
+    <string name="fulfilment_inbound_deliveries_more_failed">Couldn’t load more deliveries</string>
+    <string name="fulfilment_inbound_deliveries_no_match">No delivery matches “%1$s”</string>
+    <string name="fulfilment_inbound_deliveries_none">No fulfilment deliveries in this state.</string>
+
+    <string name="fulfilment_inbound_delivery_failed">Couldn’t load delivery %1$s</string>
+    <string name="fulfilment_inbound_delivery_refresh_failed">Couldn’t refresh this delivery</string>
+    <string name="fulfilment_inbound_delivery_not_received_body">None of its pallets arrived.</string>
+    <string name="fulfilment_inbound_customer_notes">Customer notes</string>
+    <string name="fulfilment_inbound_public_notes">Public notes</string>
+    <string name="fulfilment_inbound_internal_notes">Internal notes</string>
+    <string name="fulfilment_inbound_counts">Summary</string>
+    <string name="fulfilment_inbound_boxes">Boxes</string>
+    <string name="fulfilment_inbound_oversizes">Oversize</string>
+    <string name="fulfilment_inbound_total">Total</string>
+    <string name="fulfilment_inbound_services">Services</string>
+    <string name="fulfilment_inbound_physical_goods">Physical goods</string>
+    <string name="fulfilment_inbound_delivery_footnote">Tap a pallet to see its stored items. After Start booking in, each pallet is booked in at a location. A pallet that did not arrive can be set as not received.</string>
+    <string name="fulfilment_inbound_mark_received">Mark as received</string>
+    <string name="fulfilment_inbound_receive_title">Mark %1$s as received?</string>
+    <string name="fulfilment_inbound_receive_body">Every pallet in this delivery is set as received.</string>
+    <string name="fulfilment_inbound_waiting_to_be_received">Waiting to be received</string>
+    <string name="fulfilment_inbound_receive_needs_shop_edit">Marking it as received needs the right to edit this fulfilment shop.</string>
+    <string name="fulfilment_inbound_start_booking_needs_shop_edit">Starting booking in needs the right to edit this fulfilment shop.</string>
+    <string name="fulfilment_inbound_book_in_pallets">Book in pallets</string>
+    <string name="fulfilment_inbound_not_received_title">Set %1$s as not received?</string>
+    <string name="fulfilment_inbound_not_received_body">Use this when the pallet did not arrive with this delivery.</string>
+    <string name="fulfilment_inbound_undo_not_received">Undo not received</string>
+    <string name="fulfilment_inbound_undo_not_received_title">Undo not received for %1$s?</string>
+    <string name="fulfilment_inbound_undo_not_received_body">The pallet is set back to received.</string>
+
+    <string name="fulfilment_inbound_next_pallet">Next to book in: %1$s</string>
+    <string name="fulfilment_inbound_scan_not_on_delivery">%1$s is not a pallet of %2$s. Scan the pallet label first.</string>
+    <string name="fulfilment_inbound_scan_location">Scan or search its location</string>
+    <string name="fulfilment_inbound_change_location">Change location</string>
+    <string name="fulfilment_inbound_choose_another">Another pallet</string>
+    <string name="fulfilment_inbound_location_search">Search or scan a location</string>
+    <string name="fulfilment_inbound_no_location">No pallet location starts with “%1$s”</string>
+    <string name="fulfilment_inbound_finish_title">Set %1$s as booked in?</string>
+    <string name="fulfilment_inbound_finish_body">Booked-in pallets start storing at their locations. Pallets set as not received stay as they are.</string>
+    <string name="fulfilment_inbound_finish_needs_shop_edit">Setting it as booked in needs the right to edit this fulfilment shop.</string>
+    <string name="fulfilment_inbound_book_in_footnote">Scan a pallet label, then the location it goes to. A booked-in pallet can be moved to another location until the delivery is set as booked in.</string>
+
+    <string name="fulfilment_inbound_toast_received">%1$s marked as received</string>
+    <string name="fulfilment_inbound_toast_booking_started">Booking in started for %1$s</string>
+    <string name="fulfilment_inbound_toast_booked_in">%1$s set as booked in</string>
+    <string name="fulfilment_inbound_toast_undo_not_received">%1$s set back to received</string>
+    <string name="fulfilment_inbound_toast_moved">%1$s moved to %2$s</string>
+
+    <string name="fulfilment_inbound_search_pallets">Search pallet, customer ref or location</string>
+    <string name="fulfilment_inbound_scan_no_pallet">%1$s is not a pallet in this warehouse</string>
+    <string name="fulfilment_inbound_pallets_failed">Couldn’t load the pallets</string>
+    <string name="fulfilment_inbound_pallets_more_failed">Couldn’t load more pallets</string>
+    <string name="fulfilment_inbound_pallets_no_match">No pallet matches “%1$s”</string>
+    <string name="fulfilment_inbound_pallets_none">No pallets here.</string>
+    <string name="fulfilment_inbound_incident_reports">Incident reports</string>
+    <string name="fulfilment_inbound_incident_reports_hint">What was reported, by whom and when</string>
+
+    <string name="fulfilment_inbound_incidents_failed">Couldn’t load the incidents</string>
+    <string name="fulfilment_inbound_incidents_more_failed">Couldn’t load more incidents</string>
+    <string name="fulfilment_inbound_incidents_none">No pallet incidents.</string>
+    <string name="fulfilment_inbound_incident_in_return">Not picked in %1$s</string>
+    <string name="fulfilment_inbound_incidents_footnote">Damaged and lost are reported from the pallet page. Other incidents come from pallets not picked in a return.</string>
+
+    <string name="fulfilment_inbound_pallet_failed">Couldn’t load pallet %1$s</string>
+    <string name="fulfilment_inbound_pallet_refresh_failed">Couldn’t refresh this pallet</string>
+    <string name="fulfilment_inbound_no_stored_items">No stored items on this pallet.</string>
+    <string name="fulfilment_inbound_from_delivery">Delivery %1$s</string>
+    <string name="fulfilment_inbound_on_return">Return %1$s</string>
+    <string name="fulfilment_inbound_continue_audit">Continue audit</string>
+    <string name="fulfilment_inbound_move_title">Move %1$s</string>
+    <string name="fulfilment_inbound_now_in">Now in %1$s</string>
+    <string name="fulfilment_inbound_move_to">Move to %1$s</string>
+    <string name="fulfilment_inbound_incident_footnote">Saved as the incident report with your name and today’s date. The pallet’s location is cleared.</string>
+</resources>

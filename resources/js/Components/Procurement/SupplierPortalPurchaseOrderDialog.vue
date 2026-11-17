@@ -20,10 +20,10 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faTag, faCheck, faPencil, faTimes, faLock, faExclamationCircle, faReceipt, faDownload, faFileAlt, faUpload } from "@fal"
+import { faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faTag, faCheck, faPencil, faTimes, faLock, faExclamationCircle, faReceipt, faDownload, faFileAlt, faUpload, faHandHoldingUsd } from "@fal"
 import { faCheckCircle } from "@fas"
 
-library.add(faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faTag, faCheck, faPencil, faTimes, faLock, faExclamationCircle, faReceipt, faDownload, faFileAlt, faUpload, faCheckCircle)
+library.add(faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faTag, faCheck, faPencil, faTimes, faLock, faExclamationCircle, faReceipt, faDownload, faFileAlt, faUpload, faHandHoldingUsd, faCheckCircle)
 
 type SegmentState = "done" | "skipped" | "untracked" | "overdue" | "at_risk" | "on_track" | "future"
 
@@ -78,6 +78,14 @@ interface PurchaseOrderDetail {
 		deposit: Payment[]
 		balance: Payment[]
 	}
+	deposit: {
+		choosable: boolean
+		not_needed: boolean
+		request: { percentage: number; amount: number; requested_at: string } | null
+		request_percentage: number
+		request_amount: number
+		recipients: { name: string; organisation: string }[]
+	}
 	production: {
 		started_at: string | null
 		expected_finish_at: string | null
@@ -109,6 +117,7 @@ interface PurchaseOrderDetail {
 const props = defineProps<{
 	purchaseOrderRoute: string
 	productionRoute?: string
+	depositRoute?: string
 	documentsRoute?: string
 }>()
 
@@ -204,6 +213,48 @@ const saveProduction = async () => {
 		productionError.value = (errors && Object.values(errors)[0]?.[0]) ?? ctrans("The dates could not be saved. Try again.")
 	} finally {
 		isSavingProduction.value = false
+	}
+}
+
+type DepositChoice = "not_needed" | "request"
+
+const depositChoice = ref<DepositChoice | null>(null)
+const isSavingDeposit = ref(false)
+const depositError = ref<string | null>(null)
+
+const chooseDeposit = (choice: DepositChoice) => {
+	depositError.value = null
+	depositChoice.value = choice
+}
+
+const isConfirmingDeposit = computed({
+	get: () => depositChoice.value !== null,
+	set: (visible: boolean) => {
+		if (!visible) {
+			depositChoice.value = null
+		}
+	},
+})
+
+const saveDeposit = async () => {
+	const id = purchaseOrderId.value
+	if (!props.depositRoute || id === null || depositChoice.value === null) {
+		return
+	}
+
+	isSavingDeposit.value = true
+	depositError.value = null
+	try {
+		const { data } = await axios.post<PurchaseOrderDetail>(props.depositRoute.replace(/\/0\/deposit$/, `/${id}/deposit`), { choice: depositChoice.value })
+		if (purchaseOrderId.value === id) {
+			detail.value = data
+		}
+		depositChoice.value = null
+	} catch (error: any) {
+		const errors = error?.response?.data?.errors as Record<string, string[]> | undefined
+		depositError.value = (errors && Object.values(errors)[0]?.[0]) ?? ctrans("Your answer could not be sent. Try again.")
+	} finally {
+		isSavingDeposit.value = false
 	}
 }
 
@@ -376,6 +427,27 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 								</li>
 							</ul>
 							<p v-else class="text-gray-400">{{ ctrans("No deposit paid yet") }}</p>
+
+							<div v-if="detail.deposit.request" class="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-amber-800">
+								<div class="font-semibold">{{ ctrans("Deposit requested: :percentage%", { percentage: String(detail.deposit.request.percentage) }) }}</div>
+								<div class="flex justify-between gap-2">
+									<span class="tabular-nums">{{ day(detail.deposit.request.requested_at) }}</span>
+									<span class="whitespace-nowrap font-medium tabular-nums">{{ money(detail.deposit.request.amount) }}</span>
+								</div>
+							</div>
+							<div v-else-if="detail.deposit.not_needed" class="mt-2 flex items-center gap-1 text-green-700">
+								<FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
+								{{ ctrans("No deposit needed") }}
+							</div>
+
+							<div v-if="depositRoute && detail.deposit.choosable" class="mt-2 space-y-1.5">
+								<Button type="tertiary" size="xs" full :label="ctrans('No deposit needed')" @click="chooseDeposit('not_needed')">
+									<template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
+								</Button>
+								<Button type="tertiary" size="xs" full :label="ctrans('Request deposit :percentage%', { percentage: String(detail.deposit.request_percentage) })" @click="chooseDeposit('request')">
+									<template #icon><FontAwesomeIcon icon="fal fa-hand-holding-usd" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+								</Button>
+							</div>
 						</div>
 
 						<div v-else-if="stage.key === 'in_production'" class="mt-2 text-xs">
@@ -557,6 +629,36 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 				</a>
 			</section>
 		</div>
+	</Dialog>
+
+	<Dialog v-model:visible="isConfirmingDeposit" modal :header="depositChoice === 'request' ? ctrans('Request deposit') : ctrans('No deposit needed')" :style="{ width: '26rem', maxWidth: 'calc(100vw - 2rem)' }">
+		<div v-if="detail" class="space-y-3 text-sm">
+			<p v-if="depositChoice === 'request'" class="text-gray-700">
+				{{ ctrans("Ask :organisation for a deposit of :amount (:percentage% of the order) before you start production? We email the buyer and the agent.", { organisation: detail.order.organisation_name, amount: money(detail.deposit.request_amount), percentage: String(detail.deposit.request_percentage) }) }}
+			</p>
+			<div v-if="depositChoice === 'request'">
+				<div class="mb-1 text-xs font-semibold text-gray-500">{{ ctrans("Email goes to") }}</div>
+				<ul v-if="detail.deposit.recipients.length" class="max-h-48 divide-y divide-gray-100 overflow-y-auto rounded border border-gray-200 text-xs">
+					<li v-for="(recipient, recipientIndex) in detail.deposit.recipients" :key="recipientIndex" class="flex justify-between gap-2 px-2 py-1.5">
+						<span class="font-medium text-gray-800">{{ recipient.name }}</span>
+						<span class="whitespace-nowrap text-gray-400">{{ recipient.organisation }}</span>
+					</li>
+				</ul>
+				<p v-else class="text-xs text-amber-700">{{ ctrans("Nobody gets this request by email. Tell your contact directly.") }}</p>
+			</div>
+			<p v-else class="text-gray-700">{{ ctrans("Confirm you start production of :reference without a deposit. The order terms are agreed.", { reference: detail.order.reference }) }}</p>
+			<p v-if="depositError" class="text-xs text-red-600">{{ depositError }}</p>
+		</div>
+		<template #footer>
+			<div class="flex w-full gap-2">
+				<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isConfirmingDeposit = false">
+					<template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+				</Button>
+				<Button type="primary" full :label="depositChoice === 'request' ? ctrans('Send request') : ctrans('Confirm')" :loading="isSavingDeposit" @click="saveDeposit">
+					<template #icon><FontAwesomeIcon :icon="depositChoice === 'request' ? 'fal fa-hand-holding-usd' : 'fal fa-check'" fixed-width aria-hidden="true" /></template>
+				</Button>
+			</div>
+		</template>
 	</Dialog>
 
 	<Dialog v-model:visible="isEditingProduction" modal :header="ctrans('Production dates')" :style="{ width: '24rem', maxWidth: 'calc(100vw - 2rem)' }">
