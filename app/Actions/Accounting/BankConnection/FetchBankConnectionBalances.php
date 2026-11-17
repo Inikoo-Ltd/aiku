@@ -43,7 +43,8 @@ class FetchBankConnectionBalances
         try {
             $balances = match ($bankConnection->provider) {
                 BankConnectionProviderEnum::WISE => $this->wiseBalances($bankConnection),
-                BankConnectionProviderEnum::FIO => $this->fioBalances($bankConnection),
+                BankConnectionProviderEnum::FIO => $this->syncedBalance($bankConnection, 'fio_balance'),
+                BankConnectionProviderEnum::TATRA => $this->syncedBalance($bankConnection, 'tatra_balance'),
                 default => throw new RuntimeException("No bank balances for provider {$bankConnection->provider->value}"),
             };
             $stored = $this->store($bankConnection, $balances);
@@ -89,15 +90,16 @@ class FetchBankConnectionBalances
     }
 
     /**
-     * Fio answers one call per token every 30 seconds, so the balance is the closing balance of the statement the sync just read.
+     * Fio answers one call per token every 30 seconds and Tatra lists the balance with the account, so for both the
+     * balance is the one the sync just read into sync_data.
      *
      * @return array<string, array{amount: float, reserved_amount: float}>
      */
-    private function fioBalances(BankConnection $bankConnection): array
+    private function syncedBalance(BankConnection $bankConnection, string $key): array
     {
-        $balance = $bankConnection->sync_data['fio_balance'] ?? [];
+        $balance = $bankConnection->sync_data[$key] ?? [];
         if (!is_string($balance['currency'] ?? null) || !is_numeric($balance['amount'] ?? null)) {
-            throw new RuntimeException('No Fio balance read yet');
+            throw new RuntimeException("No $key read yet");
         }
 
         return [$balance['currency'] => ['amount' => (float)$balance['amount'], 'reserved_amount' => 0.0]];

@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\BankConnection;
 
 use App\Actions\Accounting\BankPayee\ClassifyBankOutgoing;
 use App\Actions\Accounting\BankConnection\Fio\SyncFioBankConnection;
+use App\Actions\Accounting\BankConnection\Tatra\SyncTatraBankConnection;
 use App\Actions\Accounting\BankConnection\Wise\SyncWiseBankConnection;
 use App\Actions\Accounting\BankTransaction\MatchBankTransactions;
 use App\Actions\Accounting\BankTransaction\PayMatchedBankTransactions;
@@ -62,6 +63,7 @@ class SyncBankConnection
             $result = match ($bankConnection->provider) {
                 BankConnectionProviderEnum::WISE => SyncWiseBankConnection::run($bankConnection, $full),
                 BankConnectionProviderEnum::FIO => SyncFioBankConnection::run($bankConnection, $full),
+                BankConnectionProviderEnum::TATRA => SyncTatraBankConnection::run($bankConnection, $full),
                 default => throw new RuntimeException("No bank sync for provider {$bankConnection->provider->value}"),
             };
         } catch (Throwable $exception) {
