@@ -3,6 +3,7 @@ import Foundation
 enum FulfilmentRoute: Hashable, Sendable {
     case deliveries
     case delivery(reference: String)
+    case palletDelivery(id: Int, reference: String)
     case pallets
     case pallet(reference: String)
     case palletIncidents

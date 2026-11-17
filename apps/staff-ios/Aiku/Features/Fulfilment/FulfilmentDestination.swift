@@ -9,6 +9,8 @@ struct FulfilmentDestination: View {
             FulfilmentDeliveriesView()
         case .delivery(let reference):
             FulfilmentDeliveryView(reference: reference)
+        case .palletDelivery(let id, let reference):
+            FulfilmentPalletDeliveryView(deliveryID: id, reference: reference)
         case .pallets:
             FulfilmentPalletsView()
         case .pallet(let reference):
