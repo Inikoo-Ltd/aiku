@@ -3,6 +3,7 @@ import test from "node:test"
 import {
 	DELETE_SELECTION_COMBOS,
 	MODULE_TYPES,
+	ROW_DRAG_MODE,
 	createDynamicBlockRows,
 	createEmptyEmail,
 	createModule,
@@ -17,6 +18,7 @@ import {
 	unsubscribeBlockCount,
 } from "../../resources/js/Components/CMS/Website/Outboxes/EmailWorkshop/emailWorkshopBlocks.ts"
 import { formattedClipboardContent, stripPastedFormatting } from "../../resources/js/Components/Forms/Fields/BubleTextEditor/pastedHtml.ts"
+import { readFileSync } from "node:fs"
 import { fontSizeInPixels } from "../../resources/js/Components/Forms/Fields/BubleTextEditor/editorTools.ts"
 
 const rowWith = (...modules: any[]) => {
@@ -139,4 +141,32 @@ test("the toolbar shows a pasted pixel font size as it is, and a rem size in pix
 	assert.equal(fontSizeInPixels("26px"), "26")
 	assert.equal(fontSizeInPixels("1.6250rem"), "26")
 	assert.equal(fontSizeInPixels(undefined), "")
+})
+
+test("rows dragged from the Rows tab can be dropped on the canvas because both lists share the fallback drag mode", () => {
+	const workshop = readFileSync(new URL("../../resources/js/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue", import.meta.url), "utf8")
+	const rowLists = [...workshop.matchAll(/<draggable\b(?:=>|[^>])*>/g)].map((match) => match[0]).filter((tag) => tag.includes("email-rows"))
+
+	assert.equal(ROW_DRAG_MODE.forceFallback, true)
+	assert.equal(rowLists.length, 2)
+	rowLists.forEach((rowList) => {
+		assert.match(rowList, /v-bind="ROW_DRAG_MODE"/)
+		assert.doesNotMatch(rowList, /force-fallback/)
+	})
+})
+
+test("while dragging, the landing place is a labelled drop bar and a new row from the Rows tab outlines the canvas", () => {
+	const workshop = readFileSync(new URL("../../resources/js/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue", import.meta.url), "utf8")
+	const draggableTags = [...workshop.matchAll(/<draggable\b(?:=>|[^>])*>/g)].map((match) => match[0])
+	const canvasRows = draggableTags.find((tag) => tag.includes('v-model="email.page.rows"'))!
+	const rowsPalette = draggableTags.find((tag) => tag.includes(":list=\"rowLayouts\""))!
+	const canvasModules = draggableTags.find((tag) => tag.includes('v-model="column.modules"'))!
+
+	assert.equal(ROW_DRAG_MODE.fallbackClass, "email-drag-preview")
+	assert.match(canvasRows, /ghost-class="email-row-ghost"/)
+	assert.match(canvasModules, /ghost-class="email-module-ghost"/)
+	assert.doesNotMatch(rowsPalette, /ghost-class/)
+	assert.match(rowsPalette, /@start="onRowLayoutDragStart"/)
+	assert.match(workshop, /\.email-row-ghost::before \{\s*content: var\(--email-drop-row-label/)
+	assert.match(workshop, /\.email-module-ghost::before \{\s*content: var\(--email-drop-block-label/)
 })
