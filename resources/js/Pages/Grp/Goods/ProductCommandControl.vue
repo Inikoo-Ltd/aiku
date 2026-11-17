@@ -10,6 +10,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import OrgStockDiscontinuePreviewModal from "@/Components/Warehouse/Inventory/OrgStockDiscontinuePreviewModal.vue"
 import ProductDetailDrawer from "@/Components/Goods/ProductDetailDrawer.vue"
+import GoodsPriceRequestDialog from "@/Components/Goods/GoodsPriceRequestDialog.vue"
 import GoodsViewToggle from "@/Components/Goods/GoodsViewToggle.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
@@ -23,9 +24,9 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faSlidersH, faWarehouse, faBan, faExclamationTriangle, faBoxes, faPlug, faDownload, faThumbsDown } from "@fal"
+import { faSlidersH, faWarehouse, faBan, faExclamationTriangle, faBoxes, faPlug, faDownload, faThumbsDown, faTags } from "@fal"
 import { faCheckCircle, faPauseCircle, faTimesCircle, faExclamationCircle } from "@fas"
-library.add(faSlidersH, faWarehouse, faBan, faExclamationTriangle, faBoxes, faPlug, faDownload, faThumbsDown, faCheckCircle, faPauseCircle, faTimesCircle, faExclamationCircle)
+library.add(faSlidersH, faWarehouse, faBan, faExclamationTriangle, faBoxes, faPlug, faDownload, faThumbsDown, faTags, faCheckCircle, faPauseCircle, faTimesCircle, faExclamationCircle)
 
 type Condition = "ok" | "low" | "oos" | "ns" | "over" | "off" | "sell" | "hold" | "ret" | "dead"
 type Period = "30d" | "90d" | "quarter" | "year"
@@ -59,6 +60,7 @@ interface Row {
     state: string
     suggestions: number
     suggestion_people: number
+    price_requests: number
     feedback: number
     feedback_level: FeedbackLevel | null
     orders: number
@@ -129,6 +131,8 @@ const props = defineProps<{
         offline_value: number
         suggested: number
         suggestions: number
+        price_requested: number
+        price_requests: number
         feedback_levels: Record<FeedbackLevel, number>
     }
     rows?: { data: Row[]; total: number }
@@ -187,6 +191,7 @@ const conditionFilters = computed(() => [
     { value: "hold", label: ctrans("On hold") },
     { value: "ok", label: ctrans("OK") },
     { value: "suggested", label: ctrans("Suggested to discontinue") },
+    { value: "price_request", label: props.kpis?.price_requested ? ctrans("Price request from agent (:count)", { count: props.kpis.price_requested }) : ctrans("Price request from agent") },
 ])
 
 const filterState = reactive({ ...props.filters })
@@ -489,7 +494,7 @@ function onSetDone(): void {
     drawerReloadKey.value++
 }
 
-const fieldClass = "[&.p-focus]:!border-[--app-accent] focus:!border-[--app-accent]"
+const fieldClass = "[&.p-focus]:!border-[var(--app-accent)] focus:!border-[var(--app-accent)]"
 
 const filterSelectPt = { label: { class: "!text-sm" } }
 
@@ -582,6 +587,18 @@ function openDrawer(row: Row): void {
     drawerSlug.value = row.slug
     drawerOpen.value = true
 }
+
+const priceRequestSlug = ref<string | null>(null)
+const priceRequestOpen = ref(false)
+
+function openPriceRequests(row: Row): void {
+    priceRequestSlug.value = row.slug
+    priceRequestOpen.value = true
+}
+
+function priceRequestLabel(count: number): string {
+    return count === 1 ? ctrans("1 price request") : ctrans(":count price requests", { count })
+}
 </script>
 
 <template>
@@ -609,11 +626,11 @@ function openDrawer(row: Row): void {
             :key="card.label"
             class="group rounded-lg border bg-white px-3 py-2 shadow-sm transition"
             :class="[
-                card.key ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent]' : '',
+                card.key ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]' : '',
                 card.key && filters.condition === card.key
-                    ? 'border-[--app-accent] bg-[--app-accent-soft] ring-1 ring-[--app-accent]'
+                    ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)] ring-1 ring-[var(--app-accent)]'
                     : card.key
-                      ? 'border-gray-200 hover:-translate-y-0.5 hover:border-[--app-accent] hover:shadow-md'
+                      ? 'border-gray-200 hover:-translate-y-0.5 hover:border-[var(--app-accent)] hover:shadow-md'
                       : 'border-gray-200',
             ]"
             :role="card.key ? 'button' : undefined"
@@ -633,8 +650,8 @@ function openDrawer(row: Row): void {
                 <button
                     v-if="card.detailKey"
                     type="button"
-                    class="relative rounded text-xs transition-colors hover:text-[--app-accent] hover:underline"
-                    :class="filters.condition === card.detailKey ? 'font-semibold text-[--app-accent]' : 'text-gray-500'"
+                    class="relative rounded text-xs transition-colors hover:text-[var(--app-accent)] hover:underline"
+                    :class="filters.condition === card.detailKey ? 'font-semibold text-[var(--app-accent)]' : 'text-gray-500'"
                     @click.stop="toggleCondition(card.detailKey)"
                     @keydown.stop
                 >
@@ -723,7 +740,7 @@ function openDrawer(row: Row): void {
         <button
             v-if="hasFilters"
             type="button"
-            class="rounded-md px-3 py-2 text-sm font-medium text-[--app-accent] transition-colors hover:bg-[--app-accent-soft]"
+            class="rounded-md px-3 py-2 text-sm font-medium text-[var(--app-accent)] transition-colors hover:bg-[var(--app-accent-soft)]"
             @click="reset"
         >
             {{ ctrans("Reset") }}
@@ -768,7 +785,7 @@ function openDrawer(row: Row): void {
         </div>
     </div>
     <div v-else class="compact-table mb-8">
-            <div v-if="selectedRows.length" class="mx-4 mb-2 rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] px-4 py-2.5 text-xs text-gray-600" role="region" :aria-label="ctrans('Change status of the selected products')">
+            <div v-if="selectedRows.length" class="mx-4 mb-2 rounded-lg border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-4 py-2.5 text-xs text-gray-600" role="region" :aria-label="ctrans('Change status of the selected products')">
                 <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="text-sm font-semibold text-gray-900">
@@ -802,7 +819,7 @@ function openDrawer(row: Row): void {
                         </Select>
                         <button
                             type="button"
-                            class="rounded-md bg-[--app-accent] px-3 py-1.5 font-semibold text-[--app-accent-text] shadow-sm transition-colors enabled:hover:bg-[--app-accent-strong] disabled:cursor-not-allowed disabled:opacity-40"
+                            class="rounded-md bg-[var(--app-accent)] px-3 py-1.5 font-semibold text-[var(--app-accent-text)] shadow-sm transition-colors enabled:hover:bg-[var(--app-accent-strong)] disabled:cursor-not-allowed disabled:opacity-40"
                             :disabled="!bulkState || !bulkTargets.length"
                             @click="openBulkSet"
                         >
@@ -894,6 +911,16 @@ function openDrawer(row: Row): void {
                         fixed-width
                         :aria-label="statuses[row.state]?.label ?? row.state"
                     />
+                    <button
+                        v-if="row.price_requests > 0"
+                        v-tooltip="ctrans('The agent asks a new supplier price. Click to accept, reject or set another price, and to change the selling price and RRP')"
+                        type="button"
+                        class="flex items-center gap-1 whitespace-nowrap rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700 hover:bg-amber-200"
+                        @click="openPriceRequests(row)"
+                    >
+                        <FontAwesomeIcon :icon="['fal', 'tags']" fixed-width aria-hidden="true" />
+                        {{ priceRequestLabel(row.price_requests) }}
+                    </button>
                     <template v-if="row.action">
                         <Select
                             v-model="newStates[row.id]"
@@ -917,7 +944,7 @@ function openDrawer(row: Row): void {
                         </Select>
                         <button
                             type="button"
-                            class="rounded-md bg-[--app-accent] px-2.5 py-1 font-semibold text-[--app-accent-text] shadow-sm transition-colors enabled:hover:bg-[--app-accent-strong] disabled:cursor-not-allowed disabled:opacity-40"
+                            class="rounded-md bg-[var(--app-accent)] px-2.5 py-1 font-semibold text-[var(--app-accent-text)] shadow-sm transition-colors enabled:hover:bg-[var(--app-accent-strong)] disabled:cursor-not-allowed disabled:opacity-40"
                             :disabled="!newStates[row.id] || newStates[row.id] === row.state"
                             :aria-label="ctrans('Set')"
                             @click="openSet(row)"
@@ -1027,6 +1054,8 @@ function openDrawer(row: Row): void {
         @onDone="onSetDone"
     />
 
+    <GoodsPriceRequestDialog v-model:visible="priceRequestOpen" :stockSlug="priceRequestSlug" :reloadProps="dashboardProps" />
+
     <ProductDetailDrawer
         :isOpen="drawerOpen"
         :stockSlug="drawerSlug"
@@ -1063,7 +1092,7 @@ function openDrawer(row: Row): void {
                 </Select>
                 <button
                     type="button"
-                    class="rounded-md bg-[--app-accent] px-3 py-1.5 font-semibold text-[--app-accent-text] shadow-sm transition-colors enabled:hover:bg-[--app-accent-strong] disabled:cursor-not-allowed disabled:opacity-40"
+                    class="rounded-md bg-[var(--app-accent)] px-3 py-1.5 font-semibold text-[var(--app-accent-text)] shadow-sm transition-colors enabled:hover:bg-[var(--app-accent-strong)] disabled:cursor-not-allowed disabled:opacity-40"
                     :disabled="!newStates[drawerRow.id] || newStates[drawerRow.id] === drawerRow.state"
                     @click="openSet(drawerRow)"
                 >

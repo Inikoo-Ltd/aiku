@@ -87,7 +87,7 @@ class ShowGoodsDashboard extends OrgAction
 
     public const string DEFAULT_PERIOD = '90d';
 
-    public const array CONDITIONS = ['oos', 'oos_no_po', 'ns', 'low', 'low_no_po', 'over', 'dead', 'off', 'sell', 'hold', 'ret', 'ok', 'suggested'];
+    public const array CONDITIONS = ['oos', 'oos_no_po', 'ns', 'low', 'low_no_po', 'over', 'dead', 'off', 'sell', 'hold', 'ret', 'ok', 'suggested', 'price_request'];
 
     public const array SORTS = ['code', 'sales', 'trend', 'cover', 'suggestions', 'complaints', 'feedback'];
 
@@ -250,8 +250,10 @@ class ShowGoodsDashboard extends OrgAction
         $period  = Arr::get($filters, 'period') ?: self::DEFAULT_PERIOD;
         $rows    = $this->flattenPeriod($dataset['rows'], $period);
 
-        $suggestions = OrgStockDiscontinueSuggestion::tallyByStock($this->group->id);
+        $suggestions   = OrgStockDiscontinueSuggestion::tallyByStock($this->group->id);
+        $priceRequests = ShowGoodsStockPriceRequests::tallyByStock($this->group->id);
         foreach ($rows as &$row) {
+            $row['price_requests']    = $priceRequests[$row['id']] ?? 0;
             $row['suggestions']       = $suggestions[$row['id']]['times'] ?? 0;
             $row['suggestion_people'] = $suggestions[$row['id']]['people'] ?? 0;
             $row['complaint_rate']    = $row['orders'] > 0 ? round($row['complaint_customers'] / $row['orders'] * 100, 1) : null;
@@ -1090,6 +1092,10 @@ class ShowGoodsDashboard extends OrgAction
             return $row['suggestions'] > 0;
         }
 
+        if ($condition === 'price_request') {
+            return $row['price_requests'] > 0;
+        }
+
         foreach ($this->scopedCells($row, $organisation) as $cell) {
             $matches = match ($condition) {
                 'oos_no_po' => $cell['condition'] === 'oos' && !$cell['has_po'],
@@ -1135,12 +1141,16 @@ class ShowGoodsDashboard extends OrgAction
             'offline_value'           => 0.0,
             'suggested'               => 0,
             'suggestions'             => 0,
+            'price_requested'         => 0,
+            'price_requests'          => 0,
             'feedback_levels'         => array_fill_keys(array_keys(self::FEEDBACK_LEVELS), 0),
         ];
 
         foreach ($rows as $row) {
             $kpis['suggested']   += (int) ($row['suggestions'] > 0);
             $kpis['suggestions'] += $row['suggestions'];
+            $kpis['price_requested'] += (int) ($row['price_requests'] > 0);
+            $kpis['price_requests']  += $row['price_requests'];
             if ($row['feedback_level']) {
                 $kpis['feedback_levels'][$row['feedback_level']]++;
             }
