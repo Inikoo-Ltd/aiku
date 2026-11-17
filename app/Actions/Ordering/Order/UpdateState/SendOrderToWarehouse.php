@@ -9,6 +9,8 @@
 namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\Production\JobOrder\FillToOrder;
+use App\Actions\Production\PartnerShippingList\AssignToProduceLinesAutomatically;
+use App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
@@ -124,6 +126,10 @@ class SendOrderToWarehouse extends OrgAction
     /** Bottles filled to order hold the whole order until the artisan has filled them; FillToOrder::release sends it (HELP-4556) */
     private function waitingForFilling(Order $order): bool
     {
+        if (StoreToProduceItemsFromOrder::make()->handle($order, fillsOnly: true)) {
+            DB::afterCommit(fn () => rescue(fn () => AssignToProduceLinesAutomatically::run($order)));
+        }
+
         $lines = FillToOrder::make()->pendingLines($order);
         if ($lines->isEmpty()) {
             return false;

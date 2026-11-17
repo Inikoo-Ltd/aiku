@@ -1908,6 +1908,41 @@ test('a bottle filled to order puts a fill line on To Produce, holds the whole o
         ->toThrow(\Illuminate\Validation\ValidationException::class, 'filled for order');
 });
 
+test('a fill product given its SKO after the order was submitted gets its fill line when the order goes to the warehouse', function () {
+    [, , $shop] = createShop();
+    createWarehouse();
+    [, $product] = createProduct($shop);
+    $orgStock    = $product->orgStocks()->first();
+    $product->update(['code' => $orgStock->code.'-10ml']);
+
+    $fill = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FILL-10ML-'.uniqid(), 'name' => 'Fill 10ml']);
+    $fill->update(['settings' => ['fills_size' => '10ml'], 'org_stock_id' => null]);
+
+    $customer = createCustomer($shop);
+    $order    = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'FILLLATE-'.uniqid(),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    $transaction = \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->refresh()->historicAsset, array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+
+    $pivot = \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->where('product_id', $product->id)->first();
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->where('product_id', $product->id)->delete();
+    expect(\App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::run($order->refresh()))->toBe([]);
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->insert((array) $pivot);
+
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+    expect(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::make()->action($order->refresh(), []))->toBeNull()
+        ->and($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED)
+        ->and($order->private_warehouse_note)->toContain('waiting for filling');
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::where('transaction_id', $transaction->id)->sole();
+    expect((float) $line->quantity)->toBe(2.0)
+        ->and($line->org_stock_id)->toBe($orgStock->id);
+});
+
 test('a fill line follows its order line: quantity changes, removal and cancelling the order', function () {
     createWarehouse();
     [, , $shop] = createShop();
