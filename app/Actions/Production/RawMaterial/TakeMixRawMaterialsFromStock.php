@@ -28,7 +28,7 @@ class TakeMixRawMaterialsFromStock
         $consumption = [];
         foreach ($recipeStep->loadMissing('rawMaterials.rawMaterial.orgStock')->rawMaterials as $recipeStepRawMaterial) {
             $orgStock = $recipeStepRawMaterial->rawMaterial?->orgStock;
-            if (!$orgStock) {
+            if (!$orgStock || $orgStock->id == $recipeStep->artefact?->org_stock_id) {
                 continue;
             }
             $consumption[$orgStock->id] ??= ['orgStock' => $orgStock, 'quantity' => 0.0];
