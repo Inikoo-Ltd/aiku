@@ -1,4 +1,6 @@
 {
+    ":count item is out of stock|:count items are out of stock": "Produkty niedostępne: :count|Produkty niedostępne: :count|Produkty niedostępne: :count",
+    "Low stock on :count item|Low stock on :count items": "Niski stan magazynowy dla :count produktu|Niski stan magazynowy dla :count produktów|Niski stan magazynowy dla :count produktów",
     " Products for sale": " Produkty na sprzedaż",
     " Slots": " Sloty",
     " is handling this chat": " obsługuje ten czat",
