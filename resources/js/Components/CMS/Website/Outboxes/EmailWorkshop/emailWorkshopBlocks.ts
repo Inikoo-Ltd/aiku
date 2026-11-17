@@ -89,6 +89,8 @@ export const PRODUCTS_BLOCK = 'aiku-products'
 
 export const DELETE_SELECTION_COMBOS: string[][] = [['Delete']]
 
+export const ROW_DRAG_MODE = { forceFallback: true, fallbackOnBody: true, fallbackClass: 'email-drag-preview' } as const
+
 export const DEFAULT_FONT_FAMILY ='Arial, Helvetica Neue, Helvetica, sans-serif'
 export const DEFAULT_MESSAGE_WIDTH = '650px'
 

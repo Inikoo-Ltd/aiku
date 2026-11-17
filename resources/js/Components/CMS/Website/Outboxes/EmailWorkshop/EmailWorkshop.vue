@@ -27,7 +27,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { WorkshopShortcut, formatShortcutCombo, useWorkshopShortcuts } from '@/Composables/useWorkshopShortcuts'
 import { ctrans } from '@/Composables/useTrans'
 import {
-    DELETE_SELECTION_COMBOS, UploadedImage, droppedImageFiles, isDraggingFiles, setModuleImage, EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
+    DELETE_SELECTION_COMBOS, ROW_DRAG_MODE, UploadedImage, droppedImageFiles, isDraggingFiles, setModuleImage, EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
     columnWidthPercent, createDynamicBlockRows, createModule, createProductRows, createRow, dynamicContentSource, ProductCard, ProductCardAppearance, isEmptyMergeContent, duplicateWithNewUuids, normaliseEmailJson,
     UNSUBSCRIBE_BLOCK, emailHasUnsubscribeBlock, isTableModule, modulePlaceholder, isUnsubscribeMergeTag, isUnsubscribeModule, moduleDisplayName, paletteModuleTypes, getModuleText, setModuleText,
     isRowLockedByUnsubscribe, isUnsubscribeModuleLocked, rowHasUnsubscribeBlock, rowLayouts, setSocialIconSources, hasCurrentVideoEmailThumbnail, videoEmailThumbnailKey, videoThumbnailFromUrl,
@@ -414,11 +414,27 @@ const deleteSelection = () => {
 }
 
 const isDraggingRow = ref(false)
+const isDraggingNewRow = ref(false)
 
 const onRowDragStart = () => {
     window.getSelection()?.removeAllRanges()
     isDraggingRow.value = true
 }
+
+const onRowLayoutDragStart = () => {
+    onRowDragStart()
+    isDraggingNewRow.value = true
+}
+
+const onRowDragEnd = () => {
+    isDraggingRow.value = false
+    isDraggingNewRow.value = false
+}
+
+const dropLabels = computed(() => ({
+    '--email-drop-row-label': JSON.stringify(ctrans('Drop row here')),
+    '--email-drop-block-label': JSON.stringify(ctrans('Drop block here')),
+}))
 
 const isFileDragOver = ref(false)
 const uploadingImageCount = ref(0)
@@ -1107,9 +1123,13 @@ defineExpose({
             </div>
 
             <div class="flex min-h-0 flex-1">
-                <main class="relative min-h-0 flex-1 overflow-auto py-1" :class="{ 'show-structure': isStructureVisible, 'mobile-canvas': device === 'mobile', 'desktop-canvas': device === 'desktop', 'outline-dashed outline-2 -outline-offset-4 outline-[var(--app-accent)]': isFileDragOver, 'select-none': isDraggingRow }" :style="{ backgroundColor: canvasBackground }" @click.self="clearSelection"
+                <main class="relative min-h-0 flex-1 overflow-auto py-1" :class="{ 'show-structure': isStructureVisible, 'mobile-canvas': device === 'mobile', 'desktop-canvas': device === 'desktop', 'outline-dashed outline-2 -outline-offset-4 outline-[var(--app-accent)]': isFileDragOver || isDraggingNewRow, 'select-none cursor-grabbing': isDraggingRow }" :style="[{ backgroundColor: canvasBackground }, dropLabels]" @click.self="clearSelection"
                     @dragover="onCanvasDragOver" @dragleave="onCanvasDragLeave" @drop="onCanvasDrop">
-                    <div v-if="isFileDragOver || uploadingImageCount || imageDropError" class="sticky top-0 z-20 mx-auto mb-1 flex w-fit items-center gap-x-2 rounded border bg-white px-3 py-1.5 text-xs shadow"
+                    <div v-if="isDraggingNewRow" class="sticky top-0 z-20 mx-auto mb-1 flex w-fit items-center gap-x-2 rounded border border-[var(--app-accent-muted)] bg-white px-3 py-1.5 text-xs text-gray-700 shadow" aria-live="polite">
+                        <FontAwesomeIcon icon="fal fa-columns" fixed-width aria-hidden="true" />
+                        {{ ctrans('Drop the row where it should go in the email') }}
+                    </div>
+                    <div v-else-if="isFileDragOver || uploadingImageCount || imageDropError" class="sticky top-0 z-20 mx-auto mb-1 flex w-fit items-center gap-x-2 rounded border bg-white px-3 py-1.5 text-xs shadow"
                         :class="imageDropError && !isFileDragOver && !uploadingImageCount ? 'border-red-200 text-red-600' : 'border-[var(--app-accent-muted)] text-gray-700'" aria-live="polite">
                         <template v-if="isFileDragOver">
                             <FontAwesomeIcon icon="fal fa-image" fixed-width aria-hidden="true" />
@@ -1129,9 +1149,9 @@ defineExpose({
                     </div>
                     <div :style="emailFrameStyle">
                         <draggable v-model="email.page.rows" item-key="uuid" group="email-rows" handle=".row-handle" ghost-class="email-row-ghost" class="min-h-[200px]"
-                            :force-fallback="true" fallback-class="email-row-drag-preview" :fallback-on-body="true"
+                            v-bind="ROW_DRAG_MODE"
                             :scroll="true" :scroll-sensitivity="120" :scroll-speed="20" :bubble-scroll="true"
-                            @start="onRowDragStart" @end="isDraggingRow = false">
+                            @start="onRowDragStart" @end="onRowDragEnd">
                             <template #item="{ element: row }">
                                 <div class="email-row group/row relative" :data-row-uuid="row.uuid"
                                     :class="[isRowSelected(row) ? 'z-[1] outline outline-2 -outline-offset-2 outline-[var(--theme-color-4)]' : 'hover:outline hover:outline-2 hover:-outline-offset-2 hover:outline-[color-mix(in_srgb,var(--theme-color-4)_45%,white)]', isHiddenOnCurrentDevice(row.content?.computedStyle) ? 'opacity-40' : '']"
@@ -1163,7 +1183,7 @@ defineExpose({
 
                                     <div class="mx-auto flex transition-[width]" :class="isStackedOnMobile(row) ? 'flex-col' : ''" :style="rowContentStyle(row)" @click.self="selectRow(row)">
                                         <div v-for="column in row.columns" :key="column.uuid" :style="columnStyle(row, column)" class="email-column relative min-w-0">
-                                            <draggable v-model="column.modules" item-key="uuid" group="email-modules" ghost-class="opacity-40" class="min-h-[40px]"
+                                            <draggable v-model="column.modules" item-key="uuid" group="email-modules" ghost-class="email-module-ghost" class="min-h-[40px]"
                                                 filter=".email-inline-editor" :prevent-on-filter="false"
                                                 @add="(event: any) => onModuleAdded(column.modules[event.newIndex], row)">
                                                 <template #item="{ element: module }">
@@ -1282,7 +1302,8 @@ defineExpose({
                             <div v-else-if="sidebarTab === 'rows'" class="p-4">
                                 <div class="mb-3 text-[11px] font-semibold uppercase tracking-wider text-gray-700">{{ ctrans('Empty rows') }}</div>
                                 <draggable :list="rowLayouts" :item-key="(layout: number[]) => layout.join('-')" :group="{ name: 'email-rows', pull: 'clone', put: false }"
-                                    :sort="false" :clone="cloneRowLayout" class="space-y-2">
+                                    v-bind="ROW_DRAG_MODE" :sort="false" :clone="cloneRowLayout" class="space-y-2"
+                                    @start="onRowLayoutDragStart" @end="onRowDragEnd">
                                     <template #item="{ element }">
                                         <button type="button" class="flex w-full cursor-grab gap-x-1 rounded border border-gray-200 bg-white p-2 transition hover:border-[var(--theme-color-4)] hover:shadow-md"
                                             @click="addRow(element)">
@@ -1345,23 +1366,69 @@ defineExpose({
 </template>
 
 <style>
-.email-row-drag-preview {
+.email-drag-preview {
     max-height: 72px !important;
     overflow: hidden !important;
-    opacity: 0.85 !important;
-    box-shadow: 0 8px 24px rgb(0 0 0 / 0.2);
+    opacity: 0.9 !important;
+    outline: 2px solid var(--app-accent) !important;
+    box-shadow: 0 12px 28px rgb(0 0 0 / 0.25);
+    rotate: 1deg;
+}
+
+.email-row-ghost,
+.email-module-ghost {
+    position: relative;
+    display: block !important;
+    width: 100% !important;
+    color: transparent !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    border: 2px dashed var(--app-accent) !important;
+    border-radius: 4px;
+    background: var(--app-accent-soft) !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.email-row-ghost {
+    height: 56px !important;
+    min-height: 0 !important;
+}
+
+.email-module-ghost {
+    height: 40px !important;
+    min-height: 0 !important;
+}
+
+.email-row-ghost > *,
+.email-module-ghost > * {
+    visibility: hidden !important;
+}
+
+.email-row-ghost::before,
+.email-module-ghost::before {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--app-accent);
+    visibility: visible;
+}
+
+.email-row-ghost::before {
+    content: var(--email-drop-row-label, "");
+}
+
+.email-module-ghost::before {
+    content: var(--email-drop-block-label, "");
 }
 </style>
 
 <style scoped>
-.email-row-ghost {
-    max-height: 72px;
-    overflow: hidden;
-    opacity: 0.4;
-    outline: 2px dashed var(--theme-color-4);
-    outline-offset: -2px;
-}
-
 .show-structure .email-row::after,
 .show-structure .email-column::after,
 .show-structure .email-module::after {
