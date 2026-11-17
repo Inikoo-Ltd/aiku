@@ -33,6 +33,7 @@ const props = defineProps <{
         navigation: object
     }
     uploads?: object
+    state_options?: { value: string, label: string }[] | null
 }>()
 
 const isModalUploadOpen = ref(false)
@@ -57,7 +58,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
     </PageHeading>
     <Tabs v-if="tabs" :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <UploadReports v-if="currentTab === 'uploads'" :data="uploads" tab="uploads" />
-    <TableSupplierProducts v-else :data="data" :labelsPrint="labels_print" />
+    <TableSupplierProducts v-else :data="data" :labelsPrint="labels_print" :stateOptions="state_options" />
     <UploadExcel
         v-model="isModalUploadOpen"
         scope="Supplier Product"

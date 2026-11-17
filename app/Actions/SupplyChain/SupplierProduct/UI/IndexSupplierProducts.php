@@ -347,6 +347,9 @@ class IndexSupplierProducts extends OrgAction
                     'plan_route' => ['name' => 'grp.supply-chain.supplier_products.labels.plan'],
                     'pdf_route'  => ['name' => 'grp.supply-chain.supplier_products.labels'],
                 ],
+                'state_options'      => $this->canEdit
+                    ? collect(SupplierProductStateEnum::labels())->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all()
+                    : null,
                 'data'               => SupplierProductsResource::collection($supplier_products),
                 ...($tabs ?? []),
             ],

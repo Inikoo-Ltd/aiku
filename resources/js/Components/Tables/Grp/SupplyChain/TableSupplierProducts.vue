@@ -5,8 +5,11 @@
   -->
 
 <script setup lang="ts">
-import {Link} from '@inertiajs/vue3';
-import { computed, ref } from "vue"
+import {Link, router} from '@inertiajs/vue3';
+import { computed, reactive, ref } from "vue"
+import axios from "axios"
+import Select from "primevue/select"
+import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh } from "@fal"
@@ -21,6 +24,10 @@ import { routeType } from "@/types/route"
 
 library.add(faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh)
 
+type SupplierProductRow = Omit<SupplierProduct, "state"> & {
+    state: { value: string, label: string, icon: object } | null
+}
+
 const props = defineProps<{
     data: object,
     tab?: string
@@ -28,11 +35,53 @@ const props = defineProps<{
         plan_route: routeType
         pdf_route: routeType
     }
+    stateOptions?: { value: string, label: string }[] | null
 }>()
 
 const selectedRows = ref<Record<string, boolean>>({})
 const selectedSupplierProductIds = computed(() => Object.keys(selectedRows.value).filter((id) => selectedRows.value[id]).map(Number))
 const isLabelsDialogOpen = ref(false)
+
+const newStates = reactive<Record<number, string>>({})
+const savingStateIds = ref<number[]>([])
+
+const rowSelectPt = {
+    label: { class: "!text-xs" },
+    option: ({ context }: { context: { disabled: boolean } }) => ({
+        class: context.disabled ? "!cursor-not-allowed !text-gray-400 !opacity-100" : "",
+    }),
+}
+
+function rowStateOptions(supplierProduct: SupplierProductRow) {
+    return (props.stateOptions ?? []).map((option) => ({ ...option, disabled: option.value === supplierProduct.state?.value }))
+}
+
+async function saveState(supplierProduct: SupplierProductRow) {
+    const state = newStates[supplierProduct.id]
+    if (!state || state === supplierProduct.state?.value) {
+        return
+    }
+
+    savingStateIds.value.push(supplierProduct.id)
+    try {
+        await axios.patch(route("grp.models.supplier-product.update", [supplierProduct.id]), { state })
+        delete newStates[supplierProduct.id]
+        notify({
+            title: ctrans("State updated"),
+            text: ctrans(":code is now :state", { code: supplierProduct.code, state: props.stateOptions?.find((option) => option.value === state)?.label ?? state }),
+            type: "success",
+        })
+        router.reload({ only: ["data"] })
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("Failed to update the state"),
+            type: "error",
+        })
+    } finally {
+        savingStateIds.value = savingStateIds.value.filter((id) => id !== supplierProduct.id)
+    }
+}
 
 
 function supplierProductHref(supplierProduct: SupplierProduct) {
@@ -106,7 +155,38 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
                 </Link>
             </template>
             <template #cell(state)="{ item: supplier_product }">
-                <span v-if="supplier_product.state" class="inline-flex items-center gap-x-1.5 whitespace-nowrap">
+                <div v-if="stateOptions?.length" class="flex items-center gap-1.5 whitespace-nowrap">
+                    <Icon v-if="supplier_product.state" :data="supplier_product.state.icon" :title="supplier_product.state.label" />
+                    <Select
+                        v-model="newStates[supplier_product.id]"
+                        :options="rowStateOptions(supplier_product)"
+                        optionLabel="label"
+                        optionValue="value"
+                        optionDisabled="disabled"
+                        size="small"
+                        class="w-36 text-xs [&.p-focus]:!border-[var(--app-accent)]"
+                        :pt="rowSelectPt"
+                        :placeholder="supplier_product.state?.label ?? ctrans('Select new')"
+                        :aria-label="ctrans('Select new state')"
+                        :disabled="savingStateIds.includes(supplier_product.id)"
+                    >
+                        <template #option="{ option }">
+                            <span class="flex w-full items-center justify-between gap-2 text-xs">
+                                {{ option.label }}
+                                <span v-if="option.disabled" class="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-gray-400">{{ ctrans("current") }}</span>
+                            </span>
+                        </template>
+                    </Select>
+                    <Button
+                        type="primary"
+                        size="xs"
+                        :label="ctrans('Set')"
+                        :disabled="!newStates[supplier_product.id] || newStates[supplier_product.id] === supplier_product.state?.value"
+                        :loading="savingStateIds.includes(supplier_product.id)"
+                        @click="saveState(supplier_product)"
+                    />
+                </div>
+                <span v-else-if="supplier_product.state" class="inline-flex items-center gap-x-1.5 whitespace-nowrap">
                     <Icon :data="supplier_product.state.icon" :title="supplier_product.state.label" />
                     {{ supplier_product.state.label }}
                 </span>
