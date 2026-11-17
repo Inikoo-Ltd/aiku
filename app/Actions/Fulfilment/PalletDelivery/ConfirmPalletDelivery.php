@@ -25,6 +25,10 @@ use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Fulfilment\PalletDeliveryResource;
 use App\Models\Fulfilment\PalletDelivery;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
+use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
+use App\Models\Fulfilment\RecurringBillTransaction;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class ConfirmPalletDelivery extends OrgAction
@@ -40,23 +44,25 @@ class ConfirmPalletDelivery extends OrgAction
             SubmitPalletDelivery::run($palletDelivery);
         }
 
-        if ($palletDelivery->state == PalletDeliveryStateEnum::RECEIVED) {
+        $isRevertFromReceived = $palletDelivery->state == PalletDeliveryStateEnum::RECEIVED;
+
+        if ($isRevertFromReceived) {
+            $this->removeReceivedBilling($palletDelivery);
             $modelData['received_at']       = null;
             $modelData['recurring_bill_id'] = null;
         } else {
             $modelData['confirmed_at'] = now();
-        }
-        foreach ($palletDelivery->pallets as $pallet) {
-            UpdatePallet::run($pallet, [
-                'reference' => GetSerialReference::run(
-                    container: $palletDelivery->fulfilmentCustomer,
-                    modelType: SerialReferenceModelEnum::PALLET
-                ),
-                'state'     => PalletStateEnum::SUBMITTED,
-                'status'    => PalletStatusEnum::RECEIVING
-            ], hydrateParents: false);
-            $pallet->generateSlug();
-
+            foreach ($palletDelivery->pallets as $pallet) {
+                UpdatePallet::run($pallet, [
+                    'reference' => GetSerialReference::run(
+                        container: $palletDelivery->fulfilmentCustomer,
+                        modelType: SerialReferenceModelEnum::PALLET
+                    ),
+                    'state'     => PalletStateEnum::SUBMITTED,
+                    'status'    => PalletStatusEnum::RECEIVING
+                ], hydrateParents: false);
+                $pallet->generateSlug();
+            }
         }
 
 
@@ -87,6 +93,37 @@ class ConfirmPalletDelivery extends OrgAction
         FulfilmentHydratePalletDeliveries::dispatch($palletDelivery->fulfilment);
 
         return $palletDelivery;
+    }
+
+    /**
+     * Receiving put the delivery's services and goods and each pallet's storage on the customer's
+     * current recurring bill; going back to confirmed takes them off again, or receiving once more
+     * would bill them twice. Once that bill is no longer current they have been invoiced.
+     *
+     * @throws ValidationException
+     */
+    private function removeReceivedBilling(PalletDelivery $palletDelivery): void
+    {
+        $recurringBill = $palletDelivery->recurringBill;
+        if (!$recurringBill) {
+            return;
+        }
+
+        if ($recurringBill->status != RecurringBillStatusEnum::CURRENT) {
+            throw ValidationException::withMessages([
+                'state' => __('This delivery has already been invoiced, so it can not go back to confirmed.'),
+            ]);
+        }
+
+        $palletIds = $palletDelivery->pallets()->pluck('id');
+
+        RecurringBillTransaction::where('recurring_bill_id', $recurringBill->id)
+            ->where(function ($query) use ($palletDelivery, $palletIds) {
+                $query->where('pallet_delivery_id', $palletDelivery->id)
+                    ->orWhere(fn ($query) => $query->where('item_type', 'Pallet')->whereIn('item_id', $palletIds));
+            })
+            ->get()
+            ->each(fn (RecurringBillTransaction $recurringBillTransaction) => DeleteRecurringBillTransaction::make()->action($recurringBillTransaction));
     }
 
     public function authorize(ActionRequest $request): bool

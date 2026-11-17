@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Models\Dispatching\Shipment;
 use App\Models\Fulfilment\PalletReturn;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseEditAuthorisation;
 
@@ -29,6 +30,11 @@ class DetachShipmentFromPalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn, Shipment $shipment): PalletReturn
     {
+        if (!$palletReturn->shipments()->whereKey($shipment->id)->exists()) {
+            throw ValidationException::withMessages([
+                'shipment' => __('This shipment does not belong to this return.'),
+            ]);
+        }
 
         $palletReturn->shipments()->detach($shipment);
         $shipment->forceDelete();

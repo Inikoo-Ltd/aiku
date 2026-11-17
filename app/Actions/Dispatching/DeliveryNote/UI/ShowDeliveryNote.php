@@ -1132,12 +1132,6 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
 
-                'delete_route' => [
-                    'name'       => 'grp.models.delivery_note.shipment.detach',
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
-                    ]
-                ],
             ],
             'shipper_directive'            => [
                 ...$this->getShipperDirective($deliveryNote),
@@ -1575,12 +1569,6 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
 
-                'delete_route' => [
-                    'name'       => 'grp.models.delivery_note.shipment.detach',
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
-                    ]
-                ],
             ],
             'warehouse'           => [
                 'slug' => $deliveryNote->warehouse->slug,

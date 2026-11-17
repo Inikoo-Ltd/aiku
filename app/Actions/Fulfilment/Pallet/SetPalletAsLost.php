@@ -13,6 +13,9 @@ use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Http\Resources\Fulfilment\PalletResource;
 use App\Models\Fulfilment\Pallet;
 use Illuminate\Validation\Rule;
+use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
+use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetPalletAsLost extends OrgAction
@@ -21,7 +24,15 @@ class SetPalletAsLost extends OrgAction
 
     public function handle(Pallet $pallet, $modelData): Pallet
     {
-        return $this->processIncident($pallet, PalletStateEnum::LOST, $modelData);
+        $oldLocation = $pallet->location;
+
+        $pallet = $this->processIncident($pallet, PalletStateEnum::LOST, $modelData);
+
+        if ($oldLocation) {
+            LocationHydratePallets::dispatch($oldLocation);
+        }
+
+        return $pallet;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -51,6 +62,10 @@ class SetPalletAsLost extends OrgAction
     public function asController(Pallet $pallet, ActionRequest $request): Pallet
     {
         $this->initialisationFromWarehouse($pallet->warehouse, $request);
+
+        if ($pallet->status !== PalletStatusEnum::STORING) {
+            throw ValidationException::withMessages(['pallet' => __('Only a stored pallet can be set as lost.')]);
+        }
 
         return $this->handle($pallet, $this->validatedData);
     }

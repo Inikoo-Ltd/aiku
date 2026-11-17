@@ -8870,3 +8870,114 @@ test('return item locations list the SKO locations of the return warehouse only 
 
     expect(collect($rows[0]['locations'])->pluck('id')->all())->toBe($sameWarehouseIds);
 });
+
+test('cancelling with create return writes no not pick for a fully picked line and one for the remainder of a partly picked line (INI-291)', function () {
+    [$fullNote, $fullItem]       = handlingDeliveryNoteWithPicking($this);
+    [$partialNote, $partialItem] = handlingDeliveryNoteWithPicking($this, 4);
+
+    CancelDeliveryNote::make()->action($fullNote, $this->user, true, false, null, true);
+    CancelDeliveryNote::make()->action($partialNote, $this->user, true, false, null, true);
+
+    $notPicks = fn (DeliveryNoteItem $item) => $item->pickings()->where('type', \App\Enums\Dispatching\Picking\PickingTypeEnum::NOT_PICK)->get();
+
+    $partialNotPicks = $notPicks($partialItem);
+
+    expect($notPicks($fullItem))->toHaveCount(0)
+        ->and($partialNotPicks)->toHaveCount(1)
+        ->and((float)$partialNotPicks->first()->quantity)->toBe(6.0)
+        ->and($partialNotPicks->first()->not_picked_reason)->toBe(\App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum::CANCELLED_BY_CUSTOMER);
+});
+
+test('packing the last item of a note with an unprinted insert leaves the note in packing, INI-291', function () {
+    $this->shop->update([
+        'type'     => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING,
+        'settings' => array_merge($this->shop->settings ?? [], ['packaging_and_inserts' => ['enabled' => true]]),
+    ]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($deliveryNote->refresh());
+
+    \App\Models\Dispatching\DeliveryNoteLeaflet::create([
+        'group_id'         => $deliveryNote->group_id,
+        'organisation_id'  => $deliveryNote->organisation_id,
+        'shop_id'          => $deliveryNote->shop_id,
+        'delivery_note_id' => $deliveryNote->id,
+        'type'             => \App\Enums\Catalogue\Leaflet\LeafletTypeEnum::PERSONALISED_MESSAGE,
+        'name'             => 'Personalised message',
+        'message'          => 'Thank you for your order',
+        'data'             => [],
+    ]);
+
+    expect($deliveryNote->refresh()->hasUnprintedLeaflets())->toBeTrue();
+
+    \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking::make()->action($item->refresh(), $this->user, null);
+
+    expect((float)$item->refresh()->quantity_packed)->toBe((float)$item->quantity_picked)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PACKING);
+});
+
+test('changing the user of a picking session gives the notes being handled to the new picker and leaves the others, INI-291', function () {
+    [$handlingNote]  = handlingDeliveryNoteWithPicking($this);
+    [$blockedNote]   = handlingDeliveryNoteWithPicking($this);
+    [$pickedNote]    = handlingDeliveryNoteWithPicking($this);
+    $newPicker       = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+
+    $notes = [$handlingNote, $blockedNote, $pickedNote];
+    collect($notes)->each->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => collect($notes)->pluck('id')->all(),
+        'user_id'        => $this->user->id,
+    ]);
+    collect($notes)->each->updateQuietly(['picker_user_id' => $this->user->id]);
+    $handlingNote->updateQuietly(['state' => DeliveryNoteStateEnum::HANDLING]);
+    $blockedNote->updateQuietly(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+    $pickedNote->updateQuietly(['state' => DeliveryNoteStateEnum::PICKED]);
+
+    UpdatePickingSession::make()->action($pickingSession, ['user_id' => $newPicker->id]);
+
+    expect($handlingNote->refresh()->picker_user_id)->toBe($newPicker->id)
+        ->and($blockedNote->refresh()->picker_user_id)->toBe($newPicker->id)
+        ->and($pickedNote->refresh()->picker_user_id)->toBe($this->user->id);
+});
+
+test('a picking session that already started cannot be started again, nor have notes removed or added, INI-291', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+    $startAt        = (string)$pickingSession->refresh()->start_at;
+
+    expect($pickingSession->state)->toBe(PickingSessionStateEnum::HANDLING);
+
+    foreach ([PickingSessionStateEnum::HANDLING, PickingSessionStateEnum::PICKING_FINISHED] as $state) {
+        $pickingSession->updateQuietly(['state' => $state]);
+
+        expect(fn () => StartPickPickingSession::run($pickingSession->refresh(), []))->toThrow(\Illuminate\Validation\ValidationException::class)
+            ->and(fn () => \App\Actions\Dispatching\PickingSession\RemoveDeliveryNotesFromPickingSession::make()->handle($pickingSession->refresh(), [$deliveryNote->id]))->toThrow(\Illuminate\Validation\ValidationException::class)
+            ->and(fn () => \App\Actions\Dispatching\PickingSession\AddDeliveryNotesToPickingSession::make()->handle($pickingSession->refresh(), [$deliveryNote->id]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+        $pickingSession->refresh();
+        expect($pickingSession->state)->toBe($state)
+            ->and((string)$pickingSession->start_at)->toBe($startAt)
+            ->and($pickingSession->deliveryNotes()->pluck('delivery_notes.id')->all())->toBe([$deliveryNote->id]);
+    }
+});
+
+test('a delivery note refuses a picker that is not a user of the group, INI-291', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $unknownUserId  = \App\Models\SysAdmin\User::max('id') + 1000;
+
+    expect(fn () => \App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote::make()->action($deliveryNote, ['picker_user_id' => $unknownUserId]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote::make()->action($deliveryNote->refresh(), ['picker_user_id' => $this->user->id]);
+    expect($deliveryNote->picker_user_id)->toBe($this->user->id);
+});

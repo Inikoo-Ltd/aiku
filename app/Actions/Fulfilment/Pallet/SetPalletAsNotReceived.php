@@ -21,6 +21,9 @@ use App\Http\Resources\Fulfilment\PalletResource;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\RecurringBillTransaction;
 use Illuminate\Support\Facades\DB;
+use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
+use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetPalletAsNotReceived extends OrgAction
@@ -38,6 +41,7 @@ class SetPalletAsNotReceived extends OrgAction
      */
     public function handle(Pallet $pallet): Pallet
     {
+        $oldLocation = $pallet->location;
         data_set($modelData, 'state', PalletStateEnum::NOT_RECEIVED);
         data_set($modelData, 'status', PalletStatusEnum::NOT_RECEIVED);
         data_set($modelData, 'location_id', null);
@@ -62,6 +66,9 @@ class SetPalletAsNotReceived extends OrgAction
         }
 
         PalletDeliveryHydratePallets::dispatch($pallet->palletDelivery);
+        if ($oldLocation) {
+            LocationHydratePallets::dispatch($oldLocation);
+        }
 
         return $pallet;
     }
@@ -82,6 +89,12 @@ class SetPalletAsNotReceived extends OrgAction
     public function asController(Pallet $pallet, ActionRequest $request): Pallet
     {
         $this->initialisationFromWarehouse($pallet->warehouse, $request);
+
+        if (!in_array($pallet->palletDelivery?->state, [PalletDeliveryStateEnum::RECEIVED, PalletDeliveryStateEnum::BOOKING_IN], true)
+            || !in_array($pallet->state, [PalletStateEnum::RECEIVED, PalletStateEnum::BOOKING_IN], true)
+            || $pallet->location_id !== null) {
+            throw ValidationException::withMessages(['pallet' => __('This pallet can not be set as not received now.')]);
+        }
 
         return $this->handle($pallet);
     }

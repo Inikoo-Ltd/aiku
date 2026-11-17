@@ -29,6 +29,8 @@ use App\Http\Resources\Fulfilment\StoredItemAuditsResource;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletStoredItem;
 use App\Models\Fulfilment\StoredItemAudit;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class CompleteStoredItemAudit extends OrgAction
@@ -41,64 +43,74 @@ class CompleteStoredItemAudit extends OrgAction
 
     public function handle(StoredItemAudit $storedItemAudit, array $modelData): StoredItemAudit
     {
-        foreach ($storedItemAudit->deltas as $storedItemAuditDelta) {
-            $pallet = $storedItemAuditDelta->pallet;
+        return DB::transaction(function () use ($storedItemAudit, $modelData) {
+            $storedItemAudit = StoredItemAudit::whereKey($storedItemAudit->id)->lockForUpdate()->firstOrFail();
 
-            $storedItemAuditDelta->update(
-                [
-                    'state' => StoredItemAuditDeltaStateEnum::COMPLETED
-                ]
-            );
-
-            if ($storedItemAuditDelta->audit_type === StoredItemAuditDeltaTypeEnum::SET_UP) {
-                AttachStoredItemToPallet::run($pallet, $storedItemAuditDelta->storedItem, $storedItemAuditDelta->audited_quantity);
-                $palletStoredItem = PalletStoredItem::where('pallet_id', $storedItemAuditDelta->pallet_id)->where('stored_item_id', $storedItemAuditDelta->stored_item_id)->first();
-                $palletStoredItem = $this->update($palletStoredItem, [
-                    'in_process' => false,
-                    'state'      => PalletStoredItemStateEnum::ACTIVE
+            if ($storedItemAudit->state !== StoredItemAuditStateEnum::IN_PROCESS) {
+                throw ValidationException::withMessages([
+                    'state' => __('This audit is already completed.'),
                 ]);
-
-
-
-            } else {
-                $palletStoredItem = PalletStoredItem::where('pallet_id', $storedItemAuditDelta->pallet_id)->where('stored_item_id', $storedItemAuditDelta->stored_item_id)->first();
-
-                $palletStoredItem = $this->update($palletStoredItem, [
-                    'in_process' => false,
-                    'state'      => $storedItemAuditDelta->audited_quantity == 0 ? PalletStoredItemStateEnum::STORED_ITEMS_MOVED_OUT : PalletStoredItemStateEnum::ACTIVE
-                ]);
-
-                $palletStoredItem->refresh();
-
             }
 
-            $storedItem = $palletStoredItem->storedItem;
+            foreach ($storedItemAudit->deltas as $storedItemAuditDelta) {
+                $pallet = $storedItemAuditDelta->pallet;
 
-            if ($storedItem->state->canBeStored()) {
-                $storedItem->update(
+                $storedItemAuditDelta->update(
                     [
-                        'state' => StoredItemStateEnum::ACTIVE
+                        'state' => StoredItemAuditDeltaStateEnum::COMPLETED
                     ]
                 );
+
+                if ($storedItemAuditDelta->audit_type === StoredItemAuditDeltaTypeEnum::SET_UP) {
+                    AttachStoredItemToPallet::run($pallet, $storedItemAuditDelta->storedItem, $storedItemAuditDelta->audited_quantity);
+                    $palletStoredItem = PalletStoredItem::where('pallet_id', $storedItemAuditDelta->pallet_id)->where('stored_item_id', $storedItemAuditDelta->stored_item_id)->first();
+                    $palletStoredItem = $this->update($palletStoredItem, [
+                        'in_process' => false,
+                        'state'      => PalletStoredItemStateEnum::ACTIVE
+                    ]);
+
+
+
+                } else {
+                    $palletStoredItem = PalletStoredItem::where('pallet_id', $storedItemAuditDelta->pallet_id)->where('stored_item_id', $storedItemAuditDelta->stored_item_id)->first();
+
+                    $palletStoredItem = $this->update($palletStoredItem, [
+                        'in_process' => false,
+                        'state'      => $storedItemAuditDelta->audited_quantity == 0 ? PalletStoredItemStateEnum::STORED_ITEMS_MOVED_OUT : PalletStoredItemStateEnum::ACTIVE
+                    ]);
+
+                    $palletStoredItem->refresh();
+
+                }
+
+                $storedItem = $palletStoredItem->storedItem;
+
+                if ($storedItem->state->canBeStored()) {
+                    $storedItem->update(
+                        [
+                            'state' => StoredItemStateEnum::ACTIVE
+                        ]
+                    );
+                }
+
+                PalletHydrateStoredItems::run($palletStoredItem->pallet);
+                StoreItemHydratePallets::run($storedItem);
+                StoreStoredItemMovement::run($storedItemAuditDelta);
+                RunPalletStoredItemQuantity::run($palletStoredItem);
+
+                if (in_array($storedItem->state, [StoredItemStateEnum::DISCONTINUING, StoredItemStateEnum::DISCONTINUED], true)) {
+                    SetStoredItemQuantityFromPalletStoreItems::run($storedItem);
+                }
             }
 
-            PalletHydrateStoredItems::run($palletStoredItem->pallet);
-            StoreItemHydratePallets::run($storedItem);
-            StoreStoredItemMovement::run($storedItemAuditDelta);
-            RunPalletStoredItemQuantity::run($palletStoredItem);
+            $modelData['state'] = StoredItemAuditStateEnum::COMPLETED;
 
-            if (in_array($storedItem->state, [StoredItemStateEnum::DISCONTINUING, StoredItemStateEnum::DISCONTINUED], true)) {
-                SetStoredItemQuantityFromPalletStoreItems::run($storedItem);
-            }
-        }
+            FulfilmentCustomerHydratePallets::dispatch($this->fulfilmentCustomer);
+            FulfilmentCustomerHydrateStoredItems::dispatch($this->fulfilmentCustomer);
+            FulfilmentCustomerHydrateStoredItemAudits::dispatch($this->fulfilmentCustomer);
 
-        $modelData['state'] = StoredItemAuditStateEnum::COMPLETED;
-
-        FulfilmentCustomerHydratePallets::dispatch($this->fulfilmentCustomer);
-        FulfilmentCustomerHydrateStoredItems::dispatch($this->fulfilmentCustomer);
-        FulfilmentCustomerHydrateStoredItemAudits::dispatch($this->fulfilmentCustomer);
-
-        return $this->update($storedItemAudit, $modelData, ['data']);
+            return $this->update($storedItemAudit, $modelData, ['data']);
+        });
     }
 
 

@@ -283,6 +283,7 @@ class ShowPallet extends OrgAction
                     'tooltip' => $startPalletAuditLabel,
                     'label'   => $startPalletAuditLabel,
                     'route'   => [
+                        'method'     => 'post',
                         'name'       => 'grp.org.warehouses.show.inventory.pallets.show.stored-item-audit.create',
                         'parameters' => $request->route()->originalParameters()
                     ]

@@ -29,7 +29,9 @@ class StoreStoredItemAuditDelta extends OrgAction
     use WithStoredItemAuditAuthorisation;
     use WithActionUpdate;
 
-    public function handle(StoredItemAudit $storedItemAudit, array $modelData)
+    private StoredItemAudit $storedItemAudit;
+
+    public function handle(StoredItemAudit $storedItemAudit, array $modelData): StoredItemAuditDelta
     {
         data_set($modelData, 'group_id', $storedItemAudit->group_id);
         data_set($modelData, 'organisation_id', $storedItemAudit->organisation_id);
@@ -43,7 +45,7 @@ class StoreStoredItemAuditDelta extends OrgAction
         )->first();
 
         if ($existingAuditDelta) {
-            return $storedItemAudit;
+            return UpdateStoredItemAuditDelta::make()->handle($existingAuditDelta, Arr::only($modelData, ['audited_quantity', 'user_id']));
         }
 
         $isNewStoredItem = false;
@@ -99,8 +101,8 @@ class StoreStoredItemAuditDelta extends OrgAction
     public function rules(): array
     {
         return [
-            'pallet_id'        => ['required', 'integer', 'exists:pallets,id'],
-            'stored_item_id'   => ['sometimes','required', 'integer', 'exists:stored_items,id'],
+            'pallet_id'        => ['required', 'integer', Rule::exists('pallets', 'id')->where('fulfilment_customer_id', $this->storedItemAudit->fulfilment_customer_id)],
+            'stored_item_id'   => ['sometimes', 'required', 'integer', Rule::exists('stored_items', 'id')->where('fulfilment_customer_id', $this->storedItemAudit->fulfilment_customer_id)],
             'stored_item_slug' => ['sometimes'],
             'audited_quantity' => ['required', 'integer', 'min:0'],
             'user_id'          => ['sometimes', 'required', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
@@ -115,14 +117,16 @@ class StoreStoredItemAuditDelta extends OrgAction
         }
 
         if ($this->has('stored_item_slug')) {
-
-            $storedItem = StoredItem::where('slug', $this->get('stored_item_slug'))->first();
-            $this->set('stored_item_id', $storedItem->id);
+            $storedItem = StoredItem::where('slug', $this->get('stored_item_slug'))
+                ->where('fulfilment_customer_id', $this->storedItemAudit->fulfilment_customer_id)
+                ->first();
+            $this->set('stored_item_id', $storedItem?->id);
         }
     }
 
     public function asController(StoredItemAudit $storedItemAudit, ActionRequest $request): void
     {
+        $this->storedItemAudit = $storedItemAudit;
         $this->warehouse = $storedItemAudit->warehouse;
         $this->initialisationFromFulfilment($storedItemAudit->fulfilment, $request);
 
@@ -131,6 +135,7 @@ class StoreStoredItemAuditDelta extends OrgAction
 
     public function action(StoredItemAudit $storedItemAudit, $modelData): StoredItemAuditDelta
     {
+        $this->storedItemAudit = $storedItemAudit;
         $this->asAction = true;
         $this->initialisationFromFulfilment($storedItemAudit->fulfilment, $modelData);
 

@@ -33,6 +33,9 @@ class RemoveDeliveryNotesFromPickingSession extends OrgAction
     public function handle(PickingSession $pickingSession, array $deliveryNoteIds): PickingSession
     {
         return DB::transaction(function () use ($pickingSession, $deliveryNoteIds) {
+            $pickingSession = PickingSession::lockForUpdate()->findOrFail($pickingSession->id);
+            EnsurePickingSessionInProcess::run($pickingSession);
+
             $existingDeliveryNotes = $pickingSession->deliveryNotes()->whereIn('delivery_notes.id', $deliveryNoteIds)->get();
 
             if ($existingDeliveryNotes->isEmpty()) {

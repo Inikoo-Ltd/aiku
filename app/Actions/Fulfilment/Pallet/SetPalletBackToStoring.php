@@ -18,30 +18,38 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturnItem;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetPalletBackToStoring extends OrgAction
 {
     public function handle(Pallet $pallet): Pallet
     {
-        DB::transaction(function () use ($pallet) {
+        if ($pallet->status !== PalletStatusEnum::INCIDENT) {
+            throw ValidationException::withMessages([
+                'pallet' => __('Only a pallet with an incident can be set as usable again.'),
+            ]);
+        }
+
+        return DB::transaction(function () use ($pallet) {
             $currPalletReturn = $pallet->palletReturn;
+
+            $pallet = UpdatePallet::run($pallet, [
+                'state'              => PalletStateEnum::STORING,
+                'status'             => PalletStatusEnum::STORING,
+                'set_as_incident_at' => null,
+                'incident_report'    => [],
+            ]);
+
             if (!$currPalletReturn) {
-                return;
+                return $pallet;
             }
 
-            data_set($modelData, 'state', PalletStateEnum::STORING);
-            data_set($modelData, 'status', PalletStatusEnum::STORING);
-            data_set($modelData, 'set_as_incident_at', null); // Empty incident message ?
-            data_set($modelData, 'incident_report', []); // Empty incident report message ?
-
-            $pallet = UpdatePallet::run($pallet, Arr::except($modelData, 'message'));
-            $pallet->palletReturn()->dissociate(); // To empty the pallet.pallet_return_id
+            $pallet->palletReturn()->dissociate();
             $pallet->palletReturns()->syncWithoutDetaching([
                 $currPalletReturn->id => ['state' => PalletReturnStateEnum::CANCEL]
-            ]); // To declare it as cancelled in the relationship
+            ]);
             $pallet->save();
 
             PalletReturnItem::where('pallet_return_id', $currPalletReturn->id)
@@ -58,11 +66,11 @@ class SetPalletBackToStoring extends OrgAction
             if (!$currPalletReturn->pallets()->whereNot('pallet_id', $pallet->id)->whereNotIn('pallet_return_items.state', [PalletReturnStateEnum::DISPATCHED, PalletReturnStateEnum::CANCEL])->exists()) {
                 AutomaticallySetPalletReturnAsCancelledIfEmpty::run($currPalletReturn);
             }
+
             PalletReturnHydratePallets::run($currPalletReturn);
 
+            return $pallet;
         });
-
-        return $pallet;
     }
 
     public function authorize(ActionRequest $request): bool

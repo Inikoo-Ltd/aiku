@@ -279,7 +279,7 @@ Route::prefix('pallets')->as('pallets.')->group(function () {
         Route::get('', IndexLostPalletsInWarehouse::class)->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inWarehouse'])->name('show');
     });
-    Route::get('{pallet}/stored-item-audits/create', CreateStoredItemAuditFromPalletInWarehouse::class)->name('show.stored-item-audit.create');
+    Route::post('{pallet}/stored-item-audits/create', CreateStoredItemAuditFromPalletInWarehouse::class)->name('show.stored-item-audit.create');
     Route::get('{pallet}/stored-item-audit/{storedItemAudit}', [ShowStoredItemAuditForPallet::class, 'inWarehouse'])->name('show.stored-item-audit.show');
 });
 
