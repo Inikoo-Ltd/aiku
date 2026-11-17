@@ -1,8 +1,8 @@
 ---
 title: Uw Wix-winkel koppelen
 summary: Installeer onze app op uw Wix-site om deze aan uw dropshippingaccount te koppelen, controleer de drie vinkjes die aangeven dat alles klaar is, en herstel een kanaal dat aangeeft niet verbonden te zijn.
-date: 2026-09-25
-source_date: 2026-09-28
+date: 2026-11-17
+source_date: 2026-11-17
 tags: wix, wix stores, verkoopkanaal, verbinden
 category: sales-channels
 series: wix
@@ -27,7 +27,7 @@ Ga naar <b>Kanalen</b>, druk op <b>Add Sales Channel</b> en dan op <b>Connect</b
 1. Open <b>Kanalen</b> in het menu. De pagina <b>Sales Channels</b> toont de kanalen die u al heeft.
 2. Druk op <b>Add Sales Channel</b>. De pagina <b>Create Channels</b> opent.
 3. Zoek de kaart <b>Wix</b> en druk op <b>Connect</b>. Wix opent in een nieuw tabblad.
-4. Vraagt Wix erom, log dan in. Kies de site die u wilt koppelen en installeer de app. Wix toont de machtigingen die de app nodig heeft; accepteer ze om verder te gaan.
+4. Vraagt Wix erom, log dan in. Kies de site die u wilt koppelen en installeer de app. Wix toont de machtigingen die de app nodig heeft; accepteer ze om verder te gaan. Zie <b>Wat de app kan zien en doen</b> hieronder.
 5. Zodra de installatie klaar is, stuurt Wix u terug naar uw dropshippingaccount en opent het dashboard van uw nieuwe kanaal.
 
 <!-- screenshot: de pagina Create Channels met de Wix-kaart en de knop Connect -->
@@ -37,6 +37,18 @@ Ga naar <b>Kanalen</b>, druk op <b>Add Sales Channel</b> en dan op <b>Connect</b
 Rond de installatie binnen twee uur na het drukken op <b>Connect</b> af. Daarna verloopt de link en moet u opnieuw op <b>Connect</b> drukken.
 
 Het kanaal krijgt de naam van uw Wix-site. U kunt deze later wijzigen in <b>Manage Sales Channel</b>, <b>Store name</b>.
+
+## Wat de app kan zien en doen
+
+Als u AW Connect installeert, toont Wix de machtigingen die de app vraagt. Hier gebruiken we ze voor:
+
+- <b>De producten in uw winkel</b>: we maken onze producten aan in Wix Stores, werken hun gegevens, prijzen en afbeeldingen bij en verwijderen ze als u ze uit uw kanaal haalt. Uw eigen producten die u niet aan de onze koppelt, lezen we alleen, zodat u ze kunt koppelen.
+- <b>Voorraad</b>: we houden de voorraad van onze producten op uw site actueel.
+- <b>Bestellingen</b>: we lezen de bestellingen van uw kopers, inclusief het afleveradres, zodat we de pakketten kunnen versturen. Als we een bestelling aan onze kant annuleren, annuleren we die ook in Wix.
+- <b>Verzending</b>: als we een bestelling versturen, markeren we die in Wix als afgehandeld, met het trackingnummer en de trackinglink.
+- <b>Sitegegevens</b>: de naam, het adres, de valuta en de taal van uw site, en het e-mailadres van de site-eigenaar, waarmee we de site aan uw dropshipping-account koppelen.
+
+We komen niet aan uw Wix-betalingen, het ontwerp van uw site of uw andere Wix-apps. Wix vraagt u de machtigingen te accepteren om de app te installeren. Wilt u uw site liever niet koppelen, dan kunt u de bestellingen van uw kopers ook met de hand invoeren in een handmatig kanaal: zie [Handmatig bestellingen plaatsen](/docs/placing-orders-manually).
 
 ## Controleren of het kanaal klaar is
 

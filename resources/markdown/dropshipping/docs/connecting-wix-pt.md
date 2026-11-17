@@ -1,8 +1,8 @@
 ---
 title: Ligar a tua loja Wix
 summary: Instala a nossa aplicação no teu site Wix para o ligar à tua conta de dropshipping, verifica os três vistos que mostram que está pronto, e corrige um canal que diz que não está ligado.
-date: 2026-09-25
-source_date: 2026-09-28
+date: 2026-11-17
+source_date: 2026-11-17
 tags: wix, wix stores, canal de vendas, ligar
 category: sales-channels
 series: wix
@@ -27,7 +27,7 @@ Vai a <b>Channels</b>, clica em <b>Add Sales Channel</b>, depois em <b>Connect</
 1. Abre <b>Channels</b> no menu. A página <b>Sales Channels</b> lista os canais que já tens.
 2. Clica em <b>Add Sales Channel</b>. Abre-se a página <b>Create Channels</b>.
 3. Encontra o cartão <b>Wix</b> e clica em <b>Connect</b>. O Wix abre num novo separador.
-4. Se o Wix pedir, faz login. Escolhe o site que queres ligar e instala a aplicação. O Wix mostra as permissões de que a aplicação precisa; aceita-as para continuar.
+4. Se o Wix pedir, faz login. Escolhe o site que queres ligar e instala a aplicação. O Wix mostra as permissões de que a aplicação precisa; aceita-as para continuar. Vê <b>O que a aplicação pode ver e fazer</b> mais abaixo.
 5. Quando a instalação terminar, o Wix envia-te de volta para a tua conta de dropshipping e abre o painel do teu novo canal.
 
 <!-- screenshot: a página Create Channels com o cartão Wix e o seu botão Connect -->
@@ -37,6 +37,18 @@ Vai a <b>Channels</b>, clica em <b>Add Sales Channel</b>, depois em <b>Connect</
 Termina a instalação dentro de duas horas depois de clicares em <b>Connect</b>. Depois disso a ligação expira e tens de clicar em <b>Connect</b> outra vez.
 
 O canal recebe o nome do teu site Wix. Podes mudá-lo mais tarde em <b>Manage Sales Channel</b>, <b>Store name</b>.
+
+## O que a aplicação pode ver e fazer
+
+Quando instalas o AW Connect, o Wix mostra as permissões que a aplicação pede. É para isto que as usamos:
+
+- <b>Os produtos da tua loja</b>: criamos os nossos produtos no Wix Stores, atualizamos os dados, preços e imagens, e removemo-los quando os removes do teu canal. Os teus próprios produtos que não ligas aos nossos são apenas lidos, para que os possas associar.
+- <b>Stock</b>: mantemos atualizado o stock dos nossos produtos no teu site.
+- <b>Encomendas</b>: lemos as encomendas dos teus compradores, incluindo a morada de entrega, para podermos enviar as encomendas. Se cancelarmos uma encomenda do nosso lado, também a cancelamos no Wix.
+- <b>Envios</b>: quando enviamos uma encomenda, marcamo-la como concluída no Wix com o número e o link de seguimento.
+- <b>Dados do site</b>: o nome, o endereço, a moeda e o idioma do teu site, e o email do proprietário do site, que usamos para ligar o site à tua conta de dropshipping.
+
+Não mexemos nos teus pagamentos do Wix, no design do teu site nem nas tuas outras aplicações do Wix. O Wix pede-te que aceites as permissões para instalar a aplicação. Se preferires não ligar o teu site, podes introduzir à mão as encomendas dos teus compradores num canal manual: vê [Fazer encomendas manualmente](/docs/placing-orders-manually).
 
 ## Confirmar que o canal está pronto
 
