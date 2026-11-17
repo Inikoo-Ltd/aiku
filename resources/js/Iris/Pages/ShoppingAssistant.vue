@@ -854,7 +854,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
                     <aside class="landing-hero-info">
                         <div class="landing-hero-heading">
-                            <MerlinIcon themed large class="landing-hero-logo" />
+                            <MerlinIcon themed class="landing-hero-logo" />
                             <div class="min-w-0">
                                 <div class="landing-eyebrow-row">
                                     <p class="landing-eyebrow">{{ ctrans("Meet :name · Ask us anything", { name: assistantName }) }}</p>
@@ -1110,7 +1110,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     </template>
 
                     <div v-if="isPending" class="flex gap-3">
-                        <div class="assistant-avatar" aria-hidden="true"><MerlinIcon themed /></div>
+                        <div class="assistant-avatar assistant-avatar-thinking" aria-hidden="true"><MerlinIcon themed /></div>
                         <div class="min-w-0 flex-1">
                             <MerlinThinking :name="assistantName" :expected-seconds="assistant?.expected_seconds" />
                         </div>
@@ -1210,14 +1210,37 @@ const sendOnEnter = (event: KeyboardEvent) => {
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    background-color: #fff;
-    border: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #e8e8e8);
+    color: color-mix(in srgb, var(--theme-color-4) 80%, #000);
+    background: radial-gradient(circle at 30% 25%, #fff 0%, color-mix(in srgb, var(--theme-color-4) 14%, #fff) 100%);
+    border: 1px solid color-mix(in srgb, var(--theme-color-4) 28%, #fff);
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--theme-color-4) 18%, transparent);
 }
 
 .assistant-avatar .merlin-icon {
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 1.5rem;
+    height: 1.5rem;
     vertical-align: middle;
+    --merlin-stroke-weight: 1.5;
+}
+
+.assistant-avatar-thinking {
+    animation: assistant-avatar-glow 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .assistant-avatar-thinking {
+        animation: none;
+    }
+}
+
+@keyframes assistant-avatar-glow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--theme-color-4) 35%, transparent);
+    }
+
+    50% {
+        box-shadow: 0 0 0 0.375rem color-mix(in srgb, var(--theme-color-4) 0%, transparent);
+    }
 }
 
 .assistant-bubble {
