@@ -15,75 +15,62 @@ class DimensionsFormatter
 {
     use AsObject;
 
+    private const array PER_METRE = ['mm' => 1000, 'cm' => 100, 'm' => 1, 'inch' => 39.3701];
+
+    /**
+     * Dimensions are stored in metres; units is only the unit they are shown in.
+     *
+     * @param array<string, mixed> $dimensions sizes as typed in $dimensions['units']
+     * @return array<string, mixed>
+     */
+    public static function toMetres(array $dimensions): array
+    {
+        $perMetre = self::PER_METRE[Arr::get($dimensions, 'units')] ?? 1;
+
+        foreach (['l', 'w', 'h'] as $size) {
+            if (is_numeric(Arr::get($dimensions, $size))) {
+                $dimensions[$size] = round($dimensions[$size] / $perMetre, 6);
+            }
+        }
+
+        return $dimensions;
+    }
+
+    /**
+     * @param array<string, mixed> $dimensions stored in metres
+     * @return array<string, mixed> sizes in $dimensions['units']
+     */
+    public static function fromMetres(array $dimensions): array
+    {
+        $perMetre = self::PER_METRE[Arr::get($dimensions, 'units')] ?? 1;
+
+        foreach (['l', 'w', 'h'] as $size) {
+            if (is_numeric(Arr::get($dimensions, $size))) {
+                $dimensions[$size] = round($dimensions[$size] * $perMetre, 4);
+            }
+        }
+
+        return $dimensions;
+    }
+
     public function dimensions(string $dimensionsData): string
     {
         $data = json_decode($dimensionsData, true);
-        if ($data) {
-            return match (Arr::get($data, 'type')) {
-                'rectangular' => number(
-                    convertUnits(
-                        $data['l'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).'x'.number(
-                    convertUnits(
-                        $data['w'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).'x'.number(
-                    convertUnits(
-                        $data['h'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).' ('.Arr::get($data, 'units', 'm').')',
-                'sheet' => number(
-                    convertUnits(
-                        $data['l'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).'x'.number(
-                    convertUnits(
-                        $data['w'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).' ('.Arr::get($data, 'units', 'm').')',
-                'cilinder', 'cylinder' => number(
-                    convertUnits(
-                        $data['h'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).'x'.number(
-                    convertUnits(
-                        $data['w'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).' ('.Arr::get($data, 'units', 'm').')',
-                'sphere' => 'D:'.number(
-                    convertUnits(
-                        $data['h'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).' ('.Arr::get($data, 'units', 'm').')',
-                'string' => 'L.'.number(
-                    convertUnits(
-                        $data['l'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).' ('.Arr::get($data, 'units', 'm').')',
-                default => '',
-            };
+        if (!is_array($data) || !$data) {
+            return '';
         }
 
-        return '';
-    }
+        $data  = self::fromMetres($data);
+        $units = ' ('.Arr::get($data, 'units', 'm').')';
+        $size  = fn (string $side) => number((float) ($data[$side] ?? 0));
 
+        return match (Arr::get($data, 'type')) {
+            'rectangular'          => $size('l').'x'.$size('w').'x'.$size('h').$units,
+            'sheet'                => $size('l').'x'.$size('w').$units,
+            'cilinder', 'cylinder' => $size('h').'x'.$size('w').$units,
+            'sphere'               => 'D:'.$size('h').$units,
+            'string'               => 'L.'.$size('l').$units,
+            default                => '',
+        };
+    }
 }

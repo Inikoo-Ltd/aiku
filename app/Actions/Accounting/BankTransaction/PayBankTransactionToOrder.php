@@ -15,6 +15,7 @@ use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -47,6 +48,10 @@ class PayBankTransactionToOrder extends OrgAction
             throw ValidationException::withMessages(['order' => __('Several orders are numbered :reference: record this payment from the order page', ['reference' => $modelData['order_reference']])]);
         }
 
+        if ($modelData['from_suggestion'] ?? false) {
+            DB::transaction(fn () => $this->checkStillSuggested(BankTransaction::lockForUpdate()->findOrFail($bankTransaction->id), Order::lockForUpdate()->findOrFail($order->id)));
+        }
+
         PayMatchedBankTransactions::make()->payToOrder(
             $bankTransaction,
             $order,
@@ -57,12 +62,27 @@ class PayBankTransactionToOrder extends OrgAction
         return $bankTransaction->refresh();
     }
 
+    /**
+     * Paying from a row suggestion: decided again under the locks, the order must still be the one order this line
+     * would pay, so a page left open while the order changed cannot record the money on it. payToOrder then locks
+     * both again and refuses an order that owes nothing, so a second click elsewhere in between cannot pay it twice.
+     */
+    private function checkStillSuggested(BankTransaction $bankTransaction, Order $order): void
+    {
+        $stillSuggested = !$bankTransaction->order_id && collect(MatchBankTransactions::make()->suggestedOrders($bankTransaction))
+            ->contains(fn (array $suggestion) => $suggestion['id'] === $order->id && $suggestion['kind'] === 'pay');
+        if (!$stillSuggested) {
+            throw ValidationException::withMessages(['order' => __(':order is no longer the one order this payment pays: open Pay order to choose', ['order' => $order->reference])]);
+        }
+    }
+
     public function rules(): array
     {
         return [
             'order_id'        => ['sometimes', 'nullable', 'integer'],
             'order_reference' => ['required_without:order_id', 'nullable', 'string', 'max:64'],
             'absorb_bank_fee' => ['sometimes', 'boolean'],
+            'from_suggestion' => ['sometimes', 'boolean'],
         ];
     }
 

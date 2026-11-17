@@ -10,7 +10,6 @@
 namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
 use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
-use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
@@ -21,29 +20,15 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class SetReturnDeliveryNoteItemAsDamaged extends OrgAction
 {
     use WithReturnsAuthorisation;
+    use WithReturnItemPuts;
     use AsAction;
     use WithAttributes;
 
     public function handle(ReturnDeliveryNoteItem $returnDeliveryNoteItem): ReturnDeliveryNoteItem
     {
-        $modelData = [];
-        $user = auth()->user();
+        $this->ensureReturnIsBeingReturned($returnDeliveryNoteItem);
 
-        $totalItemDamaged = $returnDeliveryNoteItem->total_expected_qty - (
-            $returnDeliveryNoteItem->total_item_damaged +
-            $returnDeliveryNoteItem->total_item_not_returned +
-            $returnDeliveryNoteItem->total_item_returned
-        );
-
-        data_set($modelData, 'quantity', $totalItemDamaged);
-        data_set($modelData, 'sower_user_id', $user->id);
-
-        data_set($modelData, 'type', SowingTypeEnum::DAMAGED);
-
-        StoreSowing::make()->action($returnDeliveryNoteItem, $user, $modelData);
-        CalculateReturnDeliveryNoteItemTotalSowed::make()->action($returnDeliveryNoteItem);
-
-        return $returnDeliveryNoteItem;
+        return $this->storeLockedPut($returnDeliveryNoteItem, [], null, SowingTypeEnum::DAMAGED);
     }
 
     public function asController(ReturnDeliveryNoteItem $returnDeliveryNoteItem, ActionRequest $request): void

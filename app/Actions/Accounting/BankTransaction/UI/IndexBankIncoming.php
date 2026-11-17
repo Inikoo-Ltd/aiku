@@ -8,10 +8,12 @@
 
 namespace App\Actions\Accounting\BankTransaction\UI;
 
+use App\Actions\Accounting\BankTransaction\MatchBankTransactions;
 use App\Actions\Accounting\BankTransaction\ReconcileCodPayouts;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
 use App\Http\Resources\Accounting\BankIncomingResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\BankTransaction;
@@ -78,6 +80,10 @@ class IndexBankIncoming extends OrgAction
             ->leftJoin('shops', 'shops.id', 'orders.shop_id')
             ->select([
                 'bank_transactions.id',
+                'bank_transactions.organisation_id',
+                'bank_transactions.bank_connection_id',
+                'bank_transactions.currency_id',
+                'bank_transactions.order_id',
                 'bank_transactions.booked_at',
                 'bank_transactions.amount',
                 'bank_transactions.counterparty_name',
@@ -214,6 +220,9 @@ class IndexBankIncoming extends OrgAction
         $filters       = [$parent, $this->period, $this->currency, $this->from, $this->to, $this->min, $this->max];
         $sectionTotals = $this->sectionTotals(...$filters);
         $providers     = $this->section === 'payment_accounts' ? $this->providerCounts(...$filters) : [];
+        if (!$isGroup) {
+            $this->suggestOrders($bankTransactions);
+        }
         $query         = array_filter([
             'period'   => $this->from || $this->period === '90d' ? null : $this->period,
             'currency' => $this->currency,
@@ -260,6 +269,20 @@ class IndexBankIncoming extends OrgAction
                 'data'           => BankIncomingResource::collection($bankTransactions),
             ]
         )->table($this->tableStructure());
+    }
+
+    /**
+     * Lines naming no order get the orders of a customer named like the payer that this amount pays or already paid.
+     */
+    private function suggestOrders(LengthAwarePaginator $bankTransactions): void
+    {
+        $matcher = MatchBankTransactions::make();
+        foreach ($bankTransactions->getCollection() as $bankTransaction) {
+            if ($bankTransaction->order_id === null && $bankTransaction->payment_id === null
+                && in_array($bankTransaction->match_state, [BankTransactionMatchStateEnum::UNMATCHED, BankTransactionMatchStateEnum::REVIEW], true)) {
+                $bankTransaction->suggested_orders = $matcher->suggestedOrders($bankTransaction);
+            }
+        }
     }
 
     public function tableStructure($prefix = null): Closure

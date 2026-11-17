@@ -12,6 +12,7 @@ import io.aiku.droid.ui.goodsout.deliveryNoteRoute
 import io.aiku.droid.ui.navigation.LocationRoute
 import io.aiku.droid.ui.navigation.ScanResultRoute
 import io.aiku.droid.ui.navigation.SkuRoute
+import io.aiku.droid.ui.navigation.StockDeliveryRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +22,7 @@ sealed interface ScanDestination {
     data class Sko(val id: Long, val code: String) : ScanDestination
     data class Location(val id: Long, val code: String) : ScanDestination
     data class DeliveryNote(val note: DeliveryNoteRow) : ScanDestination
+    data class StockDelivery(val id: Long, val reference: String) : ScanDestination
     data class Unknown(val code: String) : ScanDestination
 }
 
@@ -28,10 +30,12 @@ fun ScanLookup.destination(scannedCode: String): ScanDestination {
     val sko = sko
     val location = location
     val note = deliveryNote
+    val stockDelivery = stockDelivery
     return when {
         type == ScanMatch.SKO && sko != null -> ScanDestination.Sko(id = sko.id, code = sko.code)
         type == ScanMatch.LOCATION && location != null -> ScanDestination.Location(id = location.id, code = location.code)
         type == ScanMatch.DELIVERY_NOTE && note != null -> ScanDestination.DeliveryNote(note)
+        type == ScanMatch.STOCK_DELIVERY && stockDelivery != null -> ScanDestination.StockDelivery(id = stockDelivery.id, reference = stockDelivery.reference)
         else -> ScanDestination.Unknown(code.ifBlank { scannedCode })
     }
 }
@@ -40,6 +44,7 @@ fun ScanDestination.route(): Any = when (this) {
     is ScanDestination.Sko -> SkuRoute(id = id, code = code)
     is ScanDestination.Location -> LocationRoute(id = id, code = code)
     is ScanDestination.DeliveryNote -> deliveryNoteRoute(id = note.id, reference = note.reference, state = note.state)
+    is ScanDestination.StockDelivery -> StockDeliveryRoute(id = id, reference = reference)
     is ScanDestination.Unknown -> ScanResultRoute(code = code)
 }
 

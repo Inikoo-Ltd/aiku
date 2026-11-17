@@ -12,11 +12,15 @@ use App\Actions\Traits\Authorisations\WithGoodsInBookInAuthorisation;
 use App\Actions\OrgAction;
 use App\Models\GoodsIn\StockDeliveryItem;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetStockDeliveryItemAsPlaced extends OrgAction
 {
     use WithGoodsInBookInAuthorisation;
+
+    private StockDeliveryItem $stockDeliveryItem;
+
     public function handle(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
     {
         $remaining = ((float) $stockDeliveryItem->unit_quantity_checked - (float) $stockDeliveryItem->unit_quantity_placed) / $stockDeliveryItem->unitsPerSko();
@@ -35,8 +39,17 @@ class SetStockDeliveryItemAsPlaced extends OrgAction
         ];
     }
 
+    public function afterValidator(Validator $validator): void
+    {
+        $refusal = UpsertStockDeliveryItemPlaced::locationRefusal($this->stockDeliveryItem, $this->get('location_org_stock_id'), $this->get('location_id'), $this->asAction ? null : request()->user());
+        if ($refusal) {
+            $validator->errors()->add($refusal[0], $refusal[1]);
+        }
+    }
+
     public function asController(StockDeliveryItem $stockDeliveryItem, ActionRequest $request): void
     {
+        $this->stockDeliveryItem = $stockDeliveryItem;
         $this->initialisation($stockDeliveryItem->organisation, $request);
 
         $this->handle($stockDeliveryItem, $this->validatedData);
@@ -44,7 +57,8 @@ class SetStockDeliveryItemAsPlaced extends OrgAction
 
     public function action(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
     {
-        $this->asAction = true;
+        $this->asAction          = true;
+        $this->stockDeliveryItem = $stockDeliveryItem;
         $this->initialisation($stockDeliveryItem->organisation, $modelData);
 
         return $this->handle($stockDeliveryItem, $this->validatedData);

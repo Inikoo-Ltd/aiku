@@ -151,7 +151,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Nightwatch::rejectOutgoingRequests(function (OutgoingRequest $request) {
-            return str_contains($request->url, '10.0.0.');
+            return str_contains($request->url, '10.0.0.') || str_contains($request->url, 'fioapi.fio.cz');
         });
 
         if ($this->app->runningUnitTests()) {

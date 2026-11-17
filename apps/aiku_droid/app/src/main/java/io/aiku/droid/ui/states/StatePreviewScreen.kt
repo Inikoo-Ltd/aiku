@@ -6,7 +6,7 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.Ability
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
-import io.aiku.droid.ui.navigation.ScanCameraRoute
+import io.aiku.droid.ui.navigation.ScanRoute
 import io.aiku.droid.ui.navigation.SyncQueueRoute
 
 enum class StatePreview(val kind: String) {
@@ -40,7 +40,7 @@ fun StatePreviewScreen(kind: String) {
             missingPermission = Ability.ViewGoodsIn.permission,
             activeTab = MainTab.Menu,
         )
-        StatePreview.NotFound -> NotFoundScreen(barcode = STATES_UNKNOWN_BARCODE_SAMPLE, onScanAgain = { navigator.open(ScanCameraRoute) })
+        StatePreview.NotFound -> NotFoundScreen(barcode = STATES_UNKNOWN_BARCODE_SAMPLE, onScanAgain = { navigator.open(ScanRoute) })
         StatePreview.CameraBlocked -> CameraBlockedScreen(kicker = STATES_CAMERA_CONTEXT_SAMPLE)
         StatePreview.ActionFailed -> ActionFailedPreview()
         null -> NotDesignedScreen(title = kind)

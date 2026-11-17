@@ -18,6 +18,7 @@ use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Http\RedirectResponse;
 use App\Actions\SupplyChain\AgentInvoice\ApplyAgentInvoiceCosting;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -45,6 +46,10 @@ class StartStockDeliveryCosting extends OrgAction
     public function handle(StockDelivery $stockDelivery): StockDelivery
     {
         $stockDelivery = DB::transaction(function () use ($stockDelivery) {
+            if (StockDelivery::lockForUpdate()->find($stockDelivery->id)->state !== StockDeliveryStateEnum::BOOKED_IN) {
+                throw ValidationException::withMessages(['state' => __('You can only start the costing of a booked in stock delivery')]);
+            }
+
             $stockDelivery->items()
                 ->whereNull('cost_items')
                 ->update([

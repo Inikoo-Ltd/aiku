@@ -25721,5 +25721,6 @@
     ":name is casting a spell…": ":name está a lançar um feitiço…",
     ":name is gazing into his crystal ball…": ":name está a olhar para a sua bola de cristal…",
     "This one needs a little more thought. Nearly there…": "Esta precisa de um pouco mais de reflexão. Quase pronto…",
-    "Usually takes about :seconds seconds": "Costuma demorar cerca de :seconds segundos"
+    "Usually takes about :seconds seconds": "Costuma demorar cerca de :seconds segundos",
+    "Use my own shipping rates": "Usar as minhas próprias tarifas de envio"
 }

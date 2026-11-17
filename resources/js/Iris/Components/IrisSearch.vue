@@ -269,7 +269,7 @@ const visitSearchPage = () => {
             @click="askAssistant"
         >
             <template #icon>
-                <MerlinIcon class="iris-search-ask-icon" />
+                <MerlinIcon themed class="iris-search-ask-icon" />
             </template>
         </Button>
 
@@ -297,7 +297,7 @@ const visitSearchPage = () => {
                     class="flex w-full items-center gap-3 border-b border-gray-200 px-4 pb-3 pt-4 text-left text-sm hover:bg-gray-50"
                     @click="askAssistant"
                 >
-                    <MerlinIcon />
+                    <MerlinIcon themed />
                     <span class="min-w-0 flex-1 truncate">
                         <span class="font-semibold">{{ offerLabel }}</span>
                         <span class="text-gray-500"> &ldquo;{{ inputValue.trim() }}&rdquo;</span>

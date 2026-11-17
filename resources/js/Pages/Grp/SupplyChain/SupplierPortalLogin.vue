@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faEnvelope } from "@fal"
 import GrpAuth from "@/Layouts/GrpAuth.vue"
+import SupplierPortalBrandLogos from "@/Components/Procurement/SupplierPortalBrandLogos.vue"
 
 library.add(faEnvelope)
 
@@ -39,8 +40,12 @@ const send = () => {
 </script>
 
 <template>
-	<GrpAuth>
+	<GrpAuth :brand-name="company">
 		<Head :title="title" />
+		<template #above>
+			<p style="font-family: Georgia, 'Times New Roman', serif" class="mb-5 text-center text-4xl font-semibold leading-none tracking-tight text-[#1c1b22] select-none">{{ company }}</p>
+			<SupplierPortalBrandLogos class="mb-8 px-4" />
+		</template>
 		<form class="space-y-6" @submit.prevent="send">
 			<div>
 				<h1 class="text-base font-semibold text-gray-800">{{ ctrans("Supplier sign in") }}</h1>

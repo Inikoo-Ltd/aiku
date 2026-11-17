@@ -86,6 +86,7 @@ use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInCustomerSalesChannel
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Ordering\Order\UI\ShowOrder;
+use App\Actions\Ordering\Order\UI\GetEcomOrderActions;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\ResetOrderTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
@@ -243,6 +244,7 @@ use function Pest\Laravel\getJson;
 use function Pest\Laravel\patch;
 use function Pest\Laravel\patchJson;
 use function Pest\Laravel\postJson;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -5376,6 +5378,8 @@ test('an exclusive product can be added only by its own customer, and only while
     $line = StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 4]);
     SyncBasketLinesWithProductStock::run($exclusive->fresh());
     expect((float) $line->fresh()->quantity_ordered)->toBe(4.0);
+
+    $exclusive->exclusiveCustomers()->detach();
 });
 
 test('discontinued products are removed from baskets only when run live, submitted orders keep them', function () {
@@ -5593,7 +5597,7 @@ test('the orders backlog can be filtered to partner or direct orders and counts 
     expect(array_sum($partnerOnly['backlog_filters']['counts']['scope']))->toBe($partnerCount);
 });
 
-test('a partner organisation orders from a manufacturing hub only through the shopping list', function () {
+test('a partner organisation orders goods from a manufacturing hub only through the shopping list, staff open service only orders for it', function () {
     $intercompany = SalesChannel::where('group_id', $this->group->id)->where('code', 'intercompany')->first()
         ?? StoreSalesChannel::make()->action($this->group, [
             'code' => 'intercompany',
@@ -5626,9 +5630,30 @@ test('a partner organisation orders from a manufacturing hub only through the sh
 
         actingAs(createAdminGuest($this->group)->getUser());
         get(route('grp.org.shops.show.crm.customers.show', [$this->organisation->slug, $this->shop->slug, $partnerCustomer->slug]))
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('can_add_order', false));
-        get(route('grp.org.shops.show.crm.customers.show', [$this->organisation->slug, $this->shop->slug, $directOrder->customer->slug]))
             ->assertInertia(fn (AssertableInertia $page) => $page->where('can_add_order', true));
+
+        $ordersBefore = $partnerCustomer->orders()->count();
+        post(route('grp.models.customer.order.store', $partnerCustomer->id))->assertSessionHasNoErrors();
+        $serviceOrder = $partnerCustomer->orders()->latest('id')->first();
+        $actionKeys   = collect(GetEcomOrderActions::run($serviceOrder, true))->pluck('key');
+        expect($partnerCustomer->orders()->count())->toBe($ordersBefore + 1)
+            ->and($actionKeys)->toContain('add-service')
+            ->and($actionKeys)->not->toContain('add-product')
+            ->and($actionKeys)->not->toContain('upload-add')
+            ->and(collect(GetEcomOrderActions::run(StoreOrder::make()->action($partnerCustomer, [...Order::factory()->definition(), 'sales_channel_id' => $intercompany->id]), true))->pluck('key'))->not->toContain('add-product')
+            ->and(collect(GetEcomOrderActions::run($directOrder, true))->pluck('key'))->toContain('add-product');
+
+        $service = StoreService::make()->action($this->shop, [
+            'code'  => 'SRV-PARTNER',
+            'name'  => 'Partner service',
+            'price' => 10,
+            'unit'  => 'each',
+            'state' => ServiceStateEnum::ACTIVE,
+        ]);
+        expect(StoreTransaction::make()->action($serviceOrder, $service->historicAsset, ['quantity_ordered' => 1])->model_type)->toBe('Service')
+            ->and(fn () => StoreTransaction::make()->action($serviceOrder, $this->product->currentHistoricProduct, ['quantity_ordered' => 1]))->toThrow(ValidationException::class)
+            ->and(fn () => StoreTransaction::make()->action($serviceOrder, $this->product->currentHistoricProduct, ['quantity_ordered' => 0, 'quantity_bonus' => 1, 'is_gift' => true], strict: false))->toThrow(ValidationException::class)
+            ->and(StoreTransaction::make()->action($shoppingListOrder, $this->product->currentHistoricProduct, ['quantity_ordered' => 1])->model_type)->toBe('Product');
     } finally {
         $this->organisation->update(['is_manufacturing_hub' => $wasHub]);
     }

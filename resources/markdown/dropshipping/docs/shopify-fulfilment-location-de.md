@@ -52,6 +52,16 @@ Ein Tarif von Ihnen, der in einem Land, das wir bereits berechnen, vom <b>aiku-<
 
 Unsere Produkte werden nur in die Länder verkauft, die Ihre Märkte enthalten. Ein Kunde in einem Land, das keiner Ihrer Märkte abdeckt, sieht sie als ausverkauft.
 
+## Eigene Versandtarife verwenden
+
+Ihre Kunden können für unsere Produkte Ihren eigenen Versand statt <b>AW Standard</b> bezahlen, zum Beispiel um ab einem Bestellwert kostenlosen Versand anzubieten.
+
+1. Öffnen Sie in Ihrem Shopify-Admin <b>Märkte</b>, dann jeden Markt, in den Sie verkaufen, dann <b>Versand</b>. Bearbeiten Sie jeden Ihrer Tarife und prüfen Sie, dass <b>Versand von</b> den Standort <b>aiku-</b> enthält. Ohne ihn sehen Ihre Kunden für unsere Produkte keinen Versand.
+2. Schalten Sie in den <b>Einstellungen</b> Ihres Kanals unter <b>Versand</b> <b>Eigene Versandtarife verwenden</b> ein. Innerhalb weniger Minuten schalten wir jeden <b>AW Standard</b>-Tarif im Profil <b>AW Connect shipping</b> aus, und sie bleiben aus, wenn sich unsere Preise ändern.
+3. Geben Sie eine Testbestellung mit einem unserer Produkte auf, um an der Kasse nur Ihre Tarife zu sehen.
+
+Was wir Ihnen pro Bestellung berechnen, ändert sich nicht: Wir berechnen weiterhin unseren eigenen Versand. Schalten Sie die Einstellung aus, um <b>AW Standard</b> wieder anzuzeigen.
+
 ## Ihr eigener Bestand unserer Produkte
 
 Produkte in unserem Versandprofil versenden nur vom <b>aiku-</b>-Standort, Shopify verschickt sie also nicht von Ihren eigenen Standorten. Haben Sie selbst einige unserer Produkte, zum Beispiel einen unbenutzten Artikel, den ein Kunde an Sie zurückgeschickt hat, bieten Sie sie in Ihrem Shop als eigenes Produkt an und versenden Sie diese Bestellungen selbst.

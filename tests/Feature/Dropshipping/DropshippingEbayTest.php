@@ -24,6 +24,7 @@ use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrdersOnCustomerActivity;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayUserOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
+use App\Actions\Dropshipping\Ebay\Product\MoveEbayOfferToChannelPostagePolicy;
 use App\Actions\Dropshipping\Ebay\Product\StoreBulkNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Ebay\Product\StoreEbayProduct;
 use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
@@ -2891,4 +2892,36 @@ test('repairing a channel location leaves draft offers that never went live alon
 
     expect($result)->toMatchArray(['location_key' => $locationKey, 'moved' => 0, 'drafts' => 1, 'failed' => []]);
     Http::assertNotSent(fn (Request $request) => $request->method() === 'PUT');
+});
+
+test('a channel moved to another postage policy moves its listings still on the old one, and only their postage policy', function () {
+    $ebayUser = ebayChannel($this, ['fulfillment_policy_id' => 'fp-old']);
+    listedEbayPortfolio($this, $ebayUser, '111', 'offer-old');
+    StorePortfolio::make()->action($ebayUser->customerSalesChannel, secondProduct($this), [])
+        ->update(['platform_product_id' => 'offer-seller', 'platform_product_variant_id' => '222', 'platform_status' => true]);
+
+    Queue::fake();
+    fakeEbay($this, ebayAccountRoutes([]));
+
+    UpdateEbayCustomerSalesChannel::run($ebayUser->customerSalesChannel, ['fulfillment_policy_id' => 'fp-1']);
+
+    MoveEbayOfferToChannelPostagePolicy::assertPushed(2);
+
+    $offerOnOld = ['listingPolicies' => ['fulfillmentPolicyId' => 'fp-old', 'paymentPolicyId' => 'pp-seller', 'returnPolicyId' => 'rp-seller'], 'merchantLocationKey' => 'seller-location'];
+    fakeEbay($this, ['/sell/inventory/v1/offer' => function (Request $request) use ($offerOnOld) {
+        $policy = str_ends_with($request->url(), 'offer-seller') ? ['fulfillmentPolicyId' => 'fp-seller-own'] + $offerOnOld['listingPolicies'] : $offerOnOld['listingPolicies'];
+
+        return ebayOfferRoutes(offerById: ['listingPolicies' => $policy, 'merchantLocationKey' => 'seller-location'])($request);
+    }]);
+
+    foreach ($ebayUser->customerSalesChannel->portfolios()->whereNotNull('platform_product_id')->get() as $portfolio) {
+        expect(MoveEbayOfferToChannelPostagePolicy::run($portfolio, 'fp-old'))->toBe($portfolio->platform_product_id === 'offer-old' ? 'moved' : 'skipped');
+    }
+
+    $moved = sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-old')->data();
+    expect($moved['listingPolicies'])->toBe(['fulfillmentPolicyId' => 'fp-1', 'paymentPolicyId' => 'pp-seller', 'returnPolicyId' => 'rp-seller'])
+        ->and($moved['merchantLocationKey'])->toBe('seller-location')
+        ->and($moved['listingDescription'])->toBe('Old description on eBay');
+
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'PUT' && str_ends_with($request->url(), 'offer-seller'));
 });

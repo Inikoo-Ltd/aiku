@@ -166,9 +166,37 @@ class MatchBankTransactions
     }
 
     /**
+     * Already paid only when no other bank line of the same amount already accounts for the payment on those orders,
+     * such as one staff confirmed from a suggestion: one payment recorded by hand never explains two transfers.
+     *
      * @return array{0: BankTransactionMatchStateEnum, 1: Order|null, 2: array<string, mixed>}
      */
     public function decide(BankTransaction $bankTransaction): array
+    {
+        [$state, $order, $matchData] = $this->decideLine($bankTransaction);
+        $orderIds = $order ? [$order->id] : ($matchData['order_ids'] ?? []);
+        if ($state !== BankTransactionMatchStateEnum::ALREADY_PAID || !$orderIds) {
+            return [$state, $order, $matchData];
+        }
+
+        $received = round((float)$bankTransaction->amount, 2);
+        $claimed  = BankTransaction::where('id', '!=', $bankTransaction->id)
+            ->where('direction', BankTransactionDirectionEnum::IN)
+            ->where('match_state', BankTransactionMatchStateEnum::ALREADY_PAID)
+            ->whereBetween('amount', [$received - 0.01, $received + 0.01])
+            ->where(fn ($query) => $query->whereIn('order_id', $orderIds)
+                ->orWhere(fn ($query) => collect($orderIds)->each(fn (int $orderId) => $query->orWhereRaw("match_data->'order_ids' @> to_jsonb(?::bigint)", [$orderId]))))
+            ->exists();
+
+        return $claimed
+            ? [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'another bank line already accounts for the payment of this amount on the order'])]
+            : [$state, $order, $matchData];
+    }
+
+    /**
+     * @return array{0: BankTransactionMatchStateEnum, 1: Order|null, 2: array<string, mixed>}
+     */
+    private function decideLine(BankTransaction $bankTransaction): array
     {
         $payoutId = $this->cardProcessorPayoutId($bankTransaction);
         if ($payoutId) {
@@ -184,17 +212,24 @@ class MatchBankTransactions
             return $this->decidePastpayPayout($bankTransaction);
         }
 
+        if (preg_match('/^orderchamp\b/i', (string)$bankTransaction->counterparty_name)) {
+            return $this->decideOrderchampPayout($bankTransaction);
+        }
+
         $marketplaceOrderReference = $this->marketplaceOrderReference($bankTransaction);
         if ($marketplaceOrderReference) {
             return $this->decideMarketplacePayout($bankTransaction, $marketplaceOrderReference);
         }
 
-        $tokens = $this->orderReferenceTokens($bankTransaction->reference);
+        $tokens = $this->orderReferenceTokens($bankTransaction->reference) ?: $this->variableSymbolOrderReferences($bankTransaction);
         if (!$tokens) {
             return $this->decideInvoice($bankTransaction, []);
         }
 
         $orders = Order::where('organisation_id', $bankTransaction->organisation_id)->whereIn('reference', $tokens)->get();
+        if ($orders->isEmpty()) {
+            $orders = $this->invoicedOrders($bankTransaction, $tokens);
+        }
         if ($orders->isEmpty()) {
             return $this->decideInvoice($bankTransaction, $tokens);
         }
@@ -439,6 +474,172 @@ class MatchBankTransactions
     }
 
     /**
+     * Legal forms left out when comparing a payer with a customer ("Mahoni Health GmbH" against "Mahoni").
+     */
+    private const array LEGAL_FORM_WORDS = ['gmbh', 'ltd', 'limited', 'llc', 'inc', 'plc', 'ug', 'ag', 'kg', 'bv', 'nv', 'sa', 'sas', 'sarl', 'srl', 'sl', 'spa', 'sro', 'kft', 'oy', 'ab', 'as', 'aps', 'doo', 'ltda', 'co', 'sp', 'oo', 'zoo', 'eu', 'uk'];
+
+    /**
+     * For a line left unmatched because it names no order, the one order it can only be. The payer must name exactly
+     * one customer of the organisation: theirs is the only one whose company, name or contact name starts with the
+     * payer's first word ("Mahoni" for "Mahoni Health GmbH"; never a "Sarah", a "De Jong" or a "Smith" shared by two),
+     * and their words start the payer's or the other way round. Their order, submitted from 30 days before to 14 days
+     * after the money arrived, in the line's currency and named by no other bank line, either has no payment and owes
+     * exactly this amount, or already carries a bank payment of exactly this amount recorded by hand around that day.
+     * Two such orders suggest nothing. A payment must never land on the wrong customer: staff confirm it, and matching
+     * never acts on it.
+     *
+     * @return list<array{id: int, reference: string, customer: string|null, owed: float, total: float, date: string|null, kind: 'pay'|'already_paid'}>
+     */
+    public function suggestedOrders(BankTransaction $bankTransaction): array
+    {
+        $payer = $this->nameWords($bankTransaction->counterparty_name);
+        if (!$payer || !$bankTransaction->booked_at
+            || $bankTransaction->match_state !== BankTransactionMatchStateEnum::UNMATCHED
+            || ($bankTransaction->match_data['reason'] ?? null) !== 'no order number in the reference') {
+            return [];
+        }
+
+        $received = round((float)$bankTransaction->amount, 2);
+        $bookedAt = $bankTransaction->booked_at;
+
+        $suggestions = Order::query()
+            ->where('orders.organisation_id', $bankTransaction->organisation_id)
+            ->where('orders.currency_id', $bankTransaction->currency_id)
+            ->whereNotIn('orders.state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING])
+            ->whereBetween('orders.submitted_at', [$bookedAt->copy()->subDays(30), $bookedAt->copy()->addDays(14)])
+            ->where(fn ($query) => $query
+                ->whereRaw('abs(orders.total_amount - orders.payment_amount - ?) <= 0.01', [$received])
+                ->orWhereExists(fn ($query) => $query->from('model_has_payments')
+                    ->join('payments', 'payments.id', 'model_has_payments.payment_id')
+                    ->where('model_has_payments.model_type', 'Order')
+                    ->whereColumn('model_has_payments.model_id', 'orders.id')
+                    ->whereRaw('abs(payments.amount - ?) <= 0.01', [$received])))
+            ->whereNotExists(fn ($query) => $query->from('bank_transactions as others')
+                ->where('others.id', '!=', $bankTransaction->id)
+                ->where('others.direction', BankTransactionDirectionEnum::IN)
+                ->where(fn ($query) => $query->whereNull('others.match_state')->orWhereNotIn('others.match_state', [BankTransactionMatchStateEnum::DISMISSED, BankTransactionMatchStateEnum::UNMATCHED]))
+                ->where(fn ($query) => $query->whereColumn('others.order_id', 'orders.id')
+                    ->orWhereRaw("others.match_data->'order_ids' @> to_jsonb(orders.id)")))
+            ->get();
+        if ($suggestions->isEmpty()) {
+            return [];
+        }
+
+        $customer = $this->onlyCustomerNamed($bankTransaction->organisation_id, $payer);
+        if (!$customer) {
+            return [];
+        }
+
+        $suggestions = $suggestions
+            ->where('customer_id', $customer->id)
+            ->map(function (Order $order) use ($bankTransaction, $received, $customer) {
+                $owed = $order->amountStillToPay();
+                $kind = match (true) {
+                    abs($owed - $received) <= 0.01 && !$this->successfulPayments($order)->exists() => 'pay',
+                    $this->handBankPaymentOf($order, $bankTransaction, $received) !== null => 'already_paid',
+                    default => null,
+                };
+
+                return $kind ? [
+                    'id'        => $order->id,
+                    'reference' => $order->reference,
+                    'customer'  => $customer->company_name ?: $customer->name,
+                    'owed'      => $owed,
+                    'total'     => (float)$order->total_amount,
+                    'date'      => $order->submitted_at?->toDateString(),
+                    'kind'      => $kind,
+                ] : null;
+            })
+            ->filter()
+            ->values();
+
+        return $suggestions->count() === 1 ? $suggestions->all() : [];
+    }
+
+    /**
+     * A successful bank-account payment of exactly this amount on the order, in this currency, recorded from 3 days
+     * before to 30 days after the money arrived, that no other bank line accounts for.
+     */
+    public function handBankPaymentOf(Order $order, BankTransaction $bankTransaction, float $received): ?int
+    {
+        return Payment::query()
+            ->whereIn('payments.id', DB::table('model_has_payments')->where('model_type', 'Order')->where('model_id', $order->id)->select('payment_id'))
+            ->where('payments.currency_id', $bankTransaction->currency_id)
+            ->where('payments.status', PaymentStatusEnum::SUCCESS)
+            ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
+            ->whereHas('paymentAccount', fn ($query) => $query->where('type', PaymentAccountTypeEnum::BANK))
+            ->whereRaw('abs(payments.amount - ?) <= 0.01', [$received])
+            ->whereBetween('payments.date', [$bankTransaction->booked_at->copy()->subDays(3), $bankTransaction->booked_at->copy()->addDays(30)])
+            ->whereNotIn('payments.id', BankTransaction::whereNotNull('payment_id')->where('id', '!=', $bankTransaction->id)->select('payment_id'))
+            ->value('payments.id');
+    }
+
+    /**
+     * @return list<string> the words of a name, lower-cased, without legal forms or single letters ("s. r. o.")
+     */
+    public function nameWords(?string $name): array
+    {
+        $words = preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower(str_replace('.', '', (string)$name)), -1, PREG_SPLIT_NO_EMPTY);
+
+        return array_values(array_filter($words, fn (string $word) => mb_strlen($word) > 1 && !in_array($word, self::LEGAL_FORM_WORDS, true)));
+    }
+
+    /**
+     * The words of one name start the other, and those shared words come to 5 letters or more.
+     *
+     * @param list<string> $payer
+     * @param list<string> $customer
+     */
+    private function namesAlike(array $payer, array $customer): bool
+    {
+        [$shorter, $longer] = count($payer) <= count($customer) ? [$payer, $customer] : [$customer, $payer];
+
+        return $shorter && array_slice($longer, 0, count($shorter)) === $shorter && mb_strlen(implode('', $shorter)) >= 5;
+    }
+
+    /** @var array<string, Customer|null> */
+    private array $onlyCustomerNamed = [];
+
+    /**
+     * The one customer of the organisation the payer names, or null when no customer or several start with the
+     * payer's first word. The database only narrows the search to names holding that word, also spelt with dots or
+     * spaces between its letters ("M.A.H.O.N.I"), and more than a hundred is taken as several; the words are compared
+     * here, as namesAlike does.
+     *
+     * @param list<string> $payer
+     */
+    private function onlyCustomerNamed(int $organisationId, array $payer): ?Customer
+    {
+        return $this->onlyCustomerNamed[$organisationId.'|'.implode(' ', $payer)] ??= (function () use ($organisationId, $payer) {
+            $letters  = mb_str_split($payer[0]);
+            $spellings = array_unique(['%'.$payer[0].'%', '%'.implode('.', $letters).'%', '%'.implode(' ', $letters).'%']);
+            $holding  = Customer::where('organisation_id', $organisationId)
+                ->where(function ($query) use ($spellings) {
+                    foreach (['company_name', 'name', 'contact_name'] as $column) {
+                        foreach ($spellings as $spelling) {
+                            $query->orWhereRaw("lower($column::text) COLLATE \"C\" like ?", [$spelling]);
+                        }
+                    }
+                })
+                ->limit(101)
+                ->get(['id', 'name', 'company_name', 'contact_name']);
+            if ($holding->count() > 100) {
+                return null;
+            }
+
+            $startingWithIt = $holding->filter(fn (Customer $customer) => collect([$customer->company_name, $customer->name, $customer->contact_name])
+                ->contains(fn (?string $name) => ($this->nameWords($name)[0] ?? null) === $payer[0]));
+            if ($startingWithIt->count() !== 1) {
+                return null;
+            }
+            $customer = $startingWithIt->first();
+
+            return collect([$customer->company_name, $customer->name, $customer->contact_name])
+                ->contains(fn (?string $name) => $this->namesAlike($payer, $this->nameWords($name))) ? $customer : null;
+        })();
+    }
+
+    /**
      * Checkout.com pays out the card payments it collected, less its fees, in one transfer per day and currency from
      * Checkout SAS, referenced with its 12 character payout id (some banks put a space inside it). Those payments are
      * already on their orders, so the line pays no order.
@@ -581,6 +782,92 @@ class MatchBankTransactions
         }
     }
 
+    public const float ORDERCHAMP_TOLERANCE = 0.50;
+
+    public const int ORDERCHAMP_DAYS = 75;
+
+    /**
+     * Orderchamp pays weekly per entity ("Orderchamp NL payment: STL233240-1"), naming its own payout number, never
+     * the orders, and staff record each order paid by hand. A payout is linked only when it is surely one order: the
+     * entity's customer (named "Orderchamp … (NL)") has exactly one order from the last 75 days, settled and claimed by
+     * no other line, within 0.50 of the amount, and no two or three such orders add up to it as well. Anything else
+     * stays unmatched for staff.
+     *
+     * @return array{0: BankTransactionMatchStateEnum, 1: Order|null, 2: array<string, mixed>}
+     */
+    private function decideOrderchampPayout(BankTransaction $bankTransaction): array
+    {
+        $received = round((float)$bankTransaction->amount, 2);
+        if (!preg_match('/orderchamp ([A-Z]{2}) payment/i', (string)$bankTransaction->reference, $matches)) {
+            return [BankTransactionMatchStateEnum::UNMATCHED, null, ['provider' => 'orderchamp', 'reason' => 'Orderchamp payout without its country']];
+        }
+        $country = strtolower($matches[1]);
+
+        $customerIds = Customer::where('organisation_id', $bankTransaction->organisation_id)
+            ->whereRaw('lower(name::text) like ?', ['orderchamp%('.$country.')'])
+            ->pluck('id');
+
+        $claimed = BankTransaction::where('id', '!=', $bankTransaction->id)
+            ->whereNotNull('order_id')
+            ->whereIn('match_state', [BankTransactionMatchStateEnum::ALREADY_PAID, BankTransactionMatchStateEnum::MATCHED])
+            ->select('order_id');
+
+        $candidates = Order::whereIn('customer_id', $customerIds)
+            ->where('currency_id', $bankTransaction->currency_id)
+            ->whereNotIn('state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING])
+            ->whereBetween('date', [$bankTransaction->booked_at->copy()->subDays(self::ORDERCHAMP_DAYS), $bankTransaction->booked_at])
+            ->whereNotIn('id', $claimed)
+            ->get()
+            ->filter(fn (Order $order) => $order->amountStillToPay() <= 0.01)
+            ->values();
+
+        $fits = [];
+        foreach ([1, 2, 3] as $size) {
+            foreach ($this->combinations($candidates->all(), $size) as $orders) {
+                if (abs(round(collect($orders)->sum('total_amount') - $received, 2)) <= self::ORDERCHAMP_TOLERANCE) {
+                    $fits[] = $orders;
+                }
+            }
+        }
+
+        if (count($fits) !== 1 || count($fits[0]) !== 1) {
+            return [BankTransactionMatchStateEnum::UNMATCHED, null, [
+                'provider' => 'orderchamp',
+                'reason'   => $fits ? 'several Orderchamp orders could make this amount' : 'no Orderchamp order of this amount',
+                'order_ids' => collect($fits)->flatten()->pluck('id')->unique()->values()->all(),
+            ]];
+        }
+
+        $order = $fits[0][0];
+
+        return [BankTransactionMatchStateEnum::ALREADY_PAID, $order, [
+            'provider'   => 'orderchamp',
+            'reason'     => 'the only Orderchamp order of this amount, already paid by hand',
+            'owed'       => round((float)$order->total_amount, 2),
+            'received'   => $received,
+            'difference' => round($received - (float)$order->total_amount, 2),
+        ]];
+    }
+
+    /**
+     * @param list<Order> $items
+     *
+     * @return \Generator<list<Order>>
+     */
+    private function combinations(array $items, int $size, int $from = 0): \Generator
+    {
+        if ($size === 0) {
+            yield [];
+
+            return;
+        }
+        for ($i = $from; $i <= count($items) - $size; $i++) {
+            foreach ($this->combinations($items, $size - 1, $i + 1) as $rest) {
+                yield [$items[$i], ...$rest];
+            }
+        }
+    }
+
     /**
      * Faire pays each order in its own transfer, referenced "Faire <order code>". GBP payouts come through Adyen,
      * referenced "FAIRE <order code>" with two more characters glued on.
@@ -700,13 +987,62 @@ class MatchBankTransactions
     }
 
     /**
+     * Customers often quote the invoice instead of the order (ARi2216969 for order AR26463): the order of the shop
+     * invoice of that number. Fulfilment invoices have no order and are decided by decideInvoice.
+     *
+     * @param list<string> $tokens
+     *
+     * @return Collection<int, Order>
+     */
+    private function invoicedOrders(BankTransaction $bankTransaction, array $tokens): Collection
+    {
+        $invoiceReferences = array_values(array_filter(array_map(fn (string $token) => preg_match('/^([A-Z]{1,4})I([0-9]+)$/', $token, $match) ? $match[1].'i'.$match[2] : null, $tokens)));
+        if (!$invoiceReferences) {
+            return collect();
+        }
+
+        return Order::where('organisation_id', $bankTransaction->organisation_id)
+            ->whereIn('id', Invoice::where('organisation_id', $bankTransaction->organisation_id)
+                ->where('type', InvoiceTypeEnum::INVOICE)
+                ->whereIn('reference', $invoiceReferences)
+                ->whereNotNull('order_id')
+                ->select('order_id'))
+            ->get();
+    }
+
+    /**
+     * Czech and Slovak payers (and DPD CZ cash on delivery) put the order number without its shop prefix in the
+     * variable symbol (VS 20921 for CZ20921), which Fio keeps in column 5. It names the orders of this organisation
+     * in the line's currency whose number is a prefix and those digits.
+     *
+     * @return list<string>
+     */
+    public function variableSymbolOrderReferences(BankTransaction $bankTransaction): array
+    {
+        $variableSymbol = (string)($bankTransaction->data['movement']['column5']['value'] ?? '');
+        if (!preg_match('/^[0-9]{3,8}$/', $variableSymbol)) {
+            return [];
+        }
+
+        return Order::where('organisation_id', $bankTransaction->organisation_id)
+            ->where('currency_id', $bankTransaction->currency_id)
+            ->whereRaw('reference ~ ?', ['^[A-Z]{2,5}'.$variableSymbol.'$'])
+            ->pluck('reference')
+            ->all();
+    }
+
+    /**
      * @return list<string> upper-cased order-number-shaped words, e.g. PL31515 or DEU123456; customers sometimes write PL 31515 or PL-31515
      */
     public function orderReferenceTokens(?string $reference): array
     {
         preg_match_all('/(?<![A-Za-z0-9])([A-Za-z]{2,5})[ -]?([0-9]{3,8})(?![A-Za-z0-9])/', (string)$reference, $matches, PREG_SET_ORDER);
+        preg_match_all('/(?<![A-Za-z0-9])([A-Za-z]{1,4}[iI])([0-9]{2,4}) ([0-9]{2,4})(?![A-Za-z0-9])/', (string)$reference, $spacedInvoices, PREG_SET_ORDER);
 
-        return array_values(array_unique(array_map(fn (array $match) => strtoupper($match[1].$match[2]), $matches)));
+        return array_values(array_unique(array_merge(
+            array_map(fn (array $match) => strtoupper($match[1].$match[2]), $matches),
+            array_map(fn (array $match) => strtoupper($match[1].$match[2].$match[3]), $spacedInvoices)
+        )));
     }
 
     public function asCommand(Command $command): int
@@ -733,6 +1069,7 @@ class MatchBankTransactions
                 BankTransaction::where('bank_connection_id', $bankConnection->id)
                     ->whereNull('payment_id')
                     ->where(fn ($query) => $query->whereNull('match_state')->orWhere('match_state', '!=', BankTransactionMatchStateEnum::DISMISSED))
+                    ->whereNull('match_data->dismissed_at')
                     ->update(['match_state' => null, 'order_id' => null, 'match_data' => '{}', 'matched_at' => null]);
             }
 

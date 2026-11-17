@@ -758,6 +758,19 @@ test('saving a spec item writes the real trade unit field and records who saved 
     patch(route('grp.models.product_development.checklist_item.update', ['productDevelopmentChecklistItem' => $compliance->id]), ['operation' => 'save', 'value' => '3406'])->assertForbidden();
 });
 
+test('INI-274 dimensions typed in cm on a spec item are stored in metres and read back in cm', function () {
+    $productDevelopment = storeDevelopmentWithNewSkus($this, 1);
+    $item               = $productDevelopment->items->first();
+    $dimensions         = $productDevelopment->checklistItems()->where('product_development_item_id', $item->id)->where('key', 'trade_unit.marketing_dimensions')->first();
+
+    UpdateProductDevelopmentChecklistItem::make()->action($dimensions, $this->user, ['operation' => 'save', 'value' => ['l' => 20, 'w' => 10, 'h' => 5, 'units' => 'cm']]);
+
+    expect($item->tradeUnit->fresh()->marketing_dimensions)->toEqual(['type' => 'rectangular', 'units' => 'cm', 'l' => 0.2, 'w' => 0.1, 'h' => 0.05])
+        ->and(App\Helpers\NaturalLanguage::make()->dimensions($item->tradeUnit->fresh()->marketing_dimensions))->toBe('20x10x5 (cm)')
+        ->and(App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentChecklistEditor::liveValue(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_MARKETING_DIMENSIONS, $item->fresh()))
+        ->toMatchArray(['l' => 20, 'w' => 10, 'h' => 5, 'units' => 'cm']);
+});
+
 test('the buyer answers and marks N/A with a reason, then the brief can move on', function () {
     $productDevelopment = storeDevelopmentWithNewSkus($this, 1);
     [$first, $second]   = $productDevelopment->checklistItems()->where('role', 'buyer')->orderBy('id')->get()->all();

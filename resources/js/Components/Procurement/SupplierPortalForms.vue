@@ -109,6 +109,8 @@ const blank = () => ({
 	effective_from: null as Date | null,
 	effective_until: null as Date | null,
 	reason: "",
+	material: "",
+	reserve_by: null as Date | null,
 	designation: null as string | null,
 	mobile: "",
 	whatsapp: "",
@@ -129,6 +131,9 @@ watch(
 			form.supplier_product_id = props.products[0].id
 			form.moq = props.products[0].moq ?? null
 		}
+		if (!editing && props.lockedType === "material_planning" && props.products.length === 1) {
+			form.supplier_product_id = props.products[0].id
+		}
 		if (editing) {
 			type.value = editing.type
 			Object.assign(form, editing.data ?? {})
@@ -137,7 +142,7 @@ watch(
 					(form as Record<string, any>)[field] = editing.data?.[key] ?? companyNow.value[field]
 				}
 			}
-			for (const field of ["expires_on", "effective_from", "effective_until"] as const) {
+			for (const field of ["expires_on", "effective_from", "effective_until", "reserve_by"] as const) {
 				if (typeof form[field] === "string") {
 					form[field] = new Date(form[field] as unknown as string)
 				}
@@ -190,6 +195,7 @@ const fieldsFor: Record<string, string[]> = {
 	product_proposal: ["name", "description", "proposed_price", "currency", "unit_basis", "moq", "lead_time_days", "materials", "dimensions", "packaging", "draft", "files"],
 	compliance_document: ["document_type", "supplier_product_id", "expires_on", "note", "files"],
 	price_change: ["supplier_product_id", "proposed_price", "moq", "effective_from", "effective_until", "reason"],
+	material_planning: ["supplier_product_id", "material", "reserve_by", "note", "files"],
 }
 
 const isoDate = (date: Date | null) => (date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : null)
@@ -233,7 +239,9 @@ const caption = "font-medium text-gray-700"
 						? ctrans("You are completing your draft.")
 						: editing.state === "more_information_requested"
 							? ctrans("We asked for more information: :feedback", { feedback: editing.feedback ?? "" })
-							: ctrans("You are editing your proposed price change. Your contacts are notified again when you send it.")
+							: editing.type === "material_planning"
+								? ctrans("You are editing your material planning. Our buyers are told again when you send something new.")
+								: ctrans("You are editing your proposed price change. Your contacts are notified again when you send it.")
 				}}
 			</span>
 			<Button type="tertiary" size="xxs" :label="ctrans('Cancel')" @click="emit('done')">
@@ -351,8 +359,15 @@ const caption = "font-medium text-gray-700"
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Why") }} <span class="text-red-500">*</span></span><Textarea v-model="form.reason" rows="2" autoResize /></label>
 			</template>
 
+			<template v-else-if="type === 'material_planning'">
+				<p class="text-xs text-gray-500 md:col-span-2">{{ ctrans("Tell our buyers which material you plan to buy or reserve for this product, and until when you can hold it. Documents you add here are for planning only and do not approve any compliance.") }}</p>
+				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Material") }} <span class="text-red-500">*</span></span><InputText v-model="form.material" :placeholder="ctrans('e.g. EUDR compliant mango wood, 4 m³')" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Reserved until") }}</span><DatePicker v-model="form.reserve_by" dateFormat="dd M yy" :minDate="new Date()" showIcon showClear /></label>
+				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Note") }}</span><Textarea v-model="form.note" rows="3" autoResize /></label>
+			</template>
+
 			<div v-if="fieldsFor[type].includes('files')" class="flex flex-col gap-1 text-sm md:col-span-2">
-				<span :class="caption">{{ type === "photos" ? ctrans("Pictures") : type === "compliance_document" ? ctrans("Files") : ctrans("Pictures and documents") }}</span>
+				<span :class="caption">{{ type === "photos" ? ctrans("Pictures") : type === "compliance_document" ? ctrans("Files") : type === "material_planning" ? ctrans("Sourcing documents") : ctrans("Pictures and documents") }}</span>
 				<FileUpload :key="fileKey" mode="basic" :auto="false" customUpload multiple :chooseLabel="ctrans('Choose files')" @select="(event) => (form.files = event.files)" />
 				<span class="text-xs text-gray-400">{{ ctrans("Up to :count files, :mb MB each. JPG, PNG or PDF.", { count: String(forms.max_files), mb: String(forms.max_file_mb) }) }}</span>
 				<progress v-if="form.progress" :value="form.progress.percentage" max="100" class="w-full">{{ form.progress.percentage }}%</progress>

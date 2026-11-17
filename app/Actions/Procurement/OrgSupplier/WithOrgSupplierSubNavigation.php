@@ -12,6 +12,7 @@ namespace App\Actions\Procurement\OrgSupplier;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\Procurement\OrgSupplier\UI\ShowSupplierDraftsToSend;
 use App\Actions\SupplyChain\SupplierProduct\RepairSupplierProductsSupplier;
+use App\Actions\Traits\Authorisations\SupplierPortalPermissions;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
@@ -183,11 +184,23 @@ trait WithOrgSupplierSubNavigation
     }
 
     /**
-     * The supplier's sales and portal access live in supply chain, so they are shown only to those allowed to open supply chain supplier pages.
+     * Sales live in supply chain, for supply chain staff only. The portal is a supply chain page too, except for the agent organisation the supplier is bought through, which has its own under the supplier page.
      */
     protected function supplyChainSupplierNavigation(OrgSupplier $orgSupplier): array
     {
-        if (!request()->user()?->authTo(['supply-chain.view', 'compliance.view'])) {
+        $user     = request()->user();
+        $supplier = $orgSupplier->supplier;
+
+        if (SupplierPortalPermissions::agentOrganisationBuysThrough($this->organisation, $supplier)) {
+            return $user?->authTo("procurement.{$this->organisation->id}.view") ? [
+                $this->supplierPortalNavigationItem([
+                    'name'       => 'grp.org.agent.org_suppliers.show.supplier_portal',
+                    'parameters' => [$this->organisation->slug, $orgSupplier->slug],
+                ]),
+            ] : [];
+        }
+
+        if (!$user?->authTo(['supply-chain.view', 'compliance.view'])) {
             return [];
         }
 
@@ -196,23 +209,31 @@ trait WithOrgSupplierSubNavigation
                 'label'    => __('Sales'),
                 'route'    => [
                     'name'       => 'grp.supply-chain.suppliers.sales',
-                    'parameters' => [$orgSupplier->supplier->slug],
+                    'parameters' => [$supplier->slug],
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-chart-line'],
                     'tooltip' => __('Sales'),
                 ],
             ],
-            [
-                'label'    => __('Supplier portal'),
-                'route'    => [
-                    'name'       => 'grp.supply-chain.suppliers.share',
-                    'parameters' => [$orgSupplier->supplier->slug],
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-share-alt'],
-                    'tooltip' => __('Supplier portal'),
-                ],
+            $this->supplierPortalNavigationItem([
+                'name'       => 'grp.supply-chain.suppliers.share',
+                'parameters' => [$supplier->slug],
+            ]),
+        ];
+    }
+
+    /**
+     * @param  array{name: string, parameters: array<int, string>}  $route
+     */
+    private function supplierPortalNavigationItem(array $route): array
+    {
+        return [
+            'label'    => __('Supplier portal'),
+            'route'    => $route,
+            'leftIcon' => [
+                'icon'    => ['fal', 'fa-share-alt'],
+                'tooltip' => __('Supplier portal'),
             ],
         ];
     }

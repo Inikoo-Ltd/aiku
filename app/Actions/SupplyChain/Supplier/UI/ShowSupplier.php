@@ -19,6 +19,7 @@ use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Actions\OrgAction;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
+use App\Actions\SupplyChain\Supplier\DeactivateSupplier;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
@@ -112,6 +113,18 @@ class ShowSupplier extends OrgAction
                     ? ['rows' => GetRelatedProductDevelopments::make()->forSupplier($supplier, $request->user())]
 
                     : null,
+
+                'archive' => [
+                    'is_archived'   => !$supplier->status,
+                    'supplier_name' => $supplier->name,
+                    'archived_at'   => $supplier->archived_at,
+                    'can_archive'   => DeactivateSupplier::canArchive($request->user(), $supplier),
+                    'route'         => [
+                        'name'       => $supplier->status ? 'grp.models.supplier.archive' : 'grp.models.supplier.unarchive',
+                        'parameters' => ['supplier' => $supplier->id],
+                        'method'     => 'patch',
+                    ],
+                ],
 
                 'agreement' => GetAgreement::run($supplier, null, $request->user())
                     + ['print_route' => ['name' => 'grp.supply-chain.suppliers.agreement.pdf', 'parameters' => [$supplier->slug]]],

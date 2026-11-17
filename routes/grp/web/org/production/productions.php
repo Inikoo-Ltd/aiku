@@ -44,6 +44,7 @@ use App\Actions\Production\Artefact\UI\EditArtefact;
 use App\Actions\Production\Artefact\Label\UI\IndexArtefactLabels;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\Artefact\UI\ShowArtefact;
+use App\Actions\Production\JobOrder\FinishJobOrderFromBoard;
 use App\Actions\Production\JobOrder\StoreManualJobOrder;
 use App\Actions\Production\JobOrder\UI\IndexJobOrders;
 use App\Actions\Production\JobOrder\UI\ShowJobOrder;
@@ -151,6 +152,7 @@ Route::prefix('{production}')
                         Route::post('mixes/job-orders', StoreJobOrdersForMixes::class)->name('mixes.job_orders.store');
                         Route::post('job-orders', StoreJobOrdersFromToProduceItems::class)->name('job_orders.store');
                         Route::post('manual-job-order', StoreManualJobOrder::class)->name('manual_job_order.store');
+                        Route::post('job-orders/finish', FinishJobOrderFromBoard::class)->name('job_orders.finish');
                         Route::post('items/preparing', SetToProduceItemPreparing::class)->name('items.preparing');
                         Route::post('items/unassign', UnassignToProduceItems::class)->name('items.unassign');
                         Route::post('items/cant-be-done', DismissToProduceItems::class)->name('items.cant_be_done');

@@ -23,7 +23,7 @@ import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { useLocaleStore } from "@/Stores/locale"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import RenderProduct from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
+import RangeAdvisorProductCard from "@/Iris/Components/RangeAdvisorProductCard.vue"
 import RenderProductDropshiping from "@/Iris/Components/IrisBlocks/Products/ds/RenderProductDropshiping.vue"
 import RangeAdvisorPanel from "@/Iris/Components/RangeAdvisorPanel.vue"
 import { ProductResource } from "@/types/Iris/Products"
@@ -854,7 +854,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
                     <aside class="landing-hero-info">
                         <div class="landing-hero-heading">
-                            <MerlinIcon large class="landing-hero-logo" />
+                            <MerlinIcon themed large class="landing-hero-logo" />
                             <div class="min-w-0">
                                 <div class="landing-eyebrow-row">
                                     <p class="landing-eyebrow">{{ ctrans("Meet :name · Ask us anything", { name: assistantName }) }}</p>
@@ -899,7 +899,6 @@ const sendOnEnter = (event: KeyboardEvent) => {
                 v-if="isLayoutReady && layout.iris?.is_logged_in && !isDropshipping"
                 :assistantName
                 :fieldValue
-                :productCardCode
                 :screenType
                 @loaded="(hasProducts, hasForgotten) => { hasPanelProducts = hasProducts; hasForgottenProducts = hasForgotten }"
                 @tellShop="focusLandingTextarea"
@@ -910,7 +909,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
             <aside class="chat-sidebar" :class="{ 'chat-sidebar-open': isHistoryOpen }">
                 <div class="chat-sidebar-top">
                     <span class="chat-sidebar-brand">
-                        <MerlinIcon class="chat-sidebar-brand-icon" />
+                        <MerlinIcon themed class="chat-sidebar-brand-icon" />
                         {{ assistantName }}
                     </span>
                     <button
@@ -964,7 +963,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     >
                         <FontAwesomeIcon :icon="isHistoryOpen ? 'far fa-times' : 'far fa-bars'" fixed-width aria-hidden="true" />
                     </button>
-                    <span class="assistant-avatar" aria-hidden="true"><MerlinIcon /></span>
+                    <span class="assistant-avatar" aria-hidden="true"><MerlinIcon themed /></span>
                     <div class="min-w-0 flex-1">
                         <p class="chat-header-name">
                             {{ assistantName }}
@@ -997,7 +996,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                         </div>
 
                         <div v-else class="flex gap-3">
-                            <div class="assistant-avatar" aria-hidden="true"><MerlinIcon /></div>
+                            <div class="assistant-avatar" aria-hidden="true"><MerlinIcon themed /></div>
                             <div class="min-w-0 flex-1">
                                 <p class="chat-text whitespace-pre-line">{{ message.body }}</p>
 
@@ -1014,21 +1013,20 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                             <TabPanel v-for="tab in tabs" :key="tab.key" :value="tab.key">
                                                 <div class="assistant-grid">
                                                     <div v-for="card in tab.cards" :key="`${card.id}-${cardsVersion}`" @click.capture="(event) => recordClick(event, card)">
-                                                        <p class="mb-1 text-xs text-gray-600">{{ card.assistant_reason }}</p>
-                                                        <div :style="getStyles(fieldValue?.card_product?.properties, screenType)" class="relative flex justify-center rounded">
-                                                            <RenderProductDropshiping v-if="isDropshipping" :code="productCardCode" :product="card"
+                                                        <template v-if="isDropshipping">
+                                                            <p class="mb-1 text-xs text-gray-600">{{ card.assistant_reason }}</p>
+                                                            <div :style="getStyles(fieldValue?.card_product?.properties, screenType)" class="relative flex justify-center rounded">
+                                                                <RenderProductDropshiping :code="productCardCode" :product="card"
                                                                 :productHasPortfolio="card.portfolio_channels ?? []"
                                                                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
                                                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
                                                                 :bestSeller="fieldValue?.bestseller" :screenType />
-                                                            <RenderProduct v-else :code="productCardCode" :product="card"
-                                                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
-                                                                :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
-                                                                :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
-                                                                :button="fieldValue?.button"
-                                                                :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])"
-                                                                :bestSeller="fieldValue?.bestseller" :screenType />
-                                                        </div>
+                                                            </div>
+                                                        </template>
+                                                        <RangeAdvisorProductCard v-else :product="card"
+                                                            :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', card.id])"
+                                                            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
+                                                            :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false) ?? undefined" />
                                                     </div>
                                                 </div>
                                             </TabPanel>
@@ -1112,7 +1110,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     </template>
 
                     <div v-if="isPending" class="flex gap-3">
-                        <div class="assistant-avatar" aria-hidden="true"><MerlinIcon /></div>
+                        <div class="assistant-avatar" aria-hidden="true"><MerlinIcon themed /></div>
                         <div class="min-w-0 flex-1">
                             <MerlinThinking :name="assistantName" :expected-seconds="assistant?.expected_seconds" />
                         </div>
@@ -1213,7 +1211,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     justify-content: center;
     font-weight: 700;
     background-color: #fff;
-    border: 1px solid #ece6df;
+    border: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #e8e8e8);
 }
 
 .assistant-avatar .merlin-icon {
@@ -1227,7 +1225,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     padding: 0.625rem 0.875rem;
     border-radius: 0.75rem 0.75rem 0.25rem 0.75rem;
     line-height: 1.5;
-    background-color: color-mix(in srgb, var(--theme-color-4) 6%, #f2ece6);
+    background-color: color-mix(in srgb, var(--theme-color-4) 6%, #efefef);
 }
 
 .chat-shell {
@@ -1237,7 +1235,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     width: 100%;
     height: min(85vh, 920px);
     min-height: 560px;
-    border-top: 1px solid #ece7e1;
+    border-top: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #e8e8e8);
 }
 
 @media (min-width: 1024px) {
@@ -1251,8 +1249,8 @@ const sendOnEnter = (event: KeyboardEvent) => {
     min-height: 0;
     overflow-y: auto;
     padding: 0.75rem 0.625rem;
-    background-color: color-mix(in srgb, var(--theme-color-4) 4%, #f9f6f2);
-    border-right: 1px solid #ece7e1;
+    background-color: color-mix(in srgb, var(--theme-color-4) 4%, #f7f7f7);
+    border-right: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #e8e8e8);
 }
 
 .chat-sidebar-open {
@@ -1390,7 +1388,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     align-items: center;
     gap: 0.75rem;
     padding: 1rem var(--chat-gutter);
-    border-bottom: 1px solid #ece7e1;
+    border-bottom: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #e8e8e8);
 }
 
 .chat-header-name {
@@ -1427,7 +1425,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     width: 2.5rem;
     height: 2.5rem;
     flex-shrink: 0;
-    border: 1px solid #ddd5cc;
+    border: 1px solid color-mix(in srgb, var(--theme-color-4) 8%, #d6d6d6);
     border-radius: 9999px;
     color: #444;
 }
@@ -1472,7 +1470,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     align-items: center;
     gap: 0.375rem;
     padding: 0.5rem 0.875rem;
-    border: 1px solid #ddd5cc;
+    border: 1px solid color-mix(in srgb, var(--theme-color-4) 8%, #d6d6d6);
     border-radius: 9999px;
     font-size: 0.875rem;
     color: #1f1f1f;
@@ -1483,7 +1481,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     align-items: center;
     gap: 0.375rem;
     padding: 0.5rem 0.875rem;
-    border: 1px solid #ddd5cc;
+    border: 1px solid color-mix(in srgb, var(--theme-color-4) 8%, #d6d6d6);
     border-radius: 9999px;
     font-size: 0.875rem;
     color: #1f1f1f;
@@ -1513,7 +1511,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 .landing-history {
     margin-top: 1.5rem;
     padding-top: 1rem;
-    border-top: 1px solid #e3ddd6;
+    border-top: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #dedede);
 }
 
 .landing-history-title {
@@ -1522,7 +1520,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #8a7f74;
+    color: color-mix(in srgb, var(--theme-color-4) 15%, #7a7a7a);
 }
 
 .landing-history-list {
@@ -1554,7 +1552,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 .landing-history-icon {
     flex-shrink: 0;
     font-size: 0.75rem;
-    color: #b3a89c;
+    color: color-mix(in srgb, var(--theme-color-4) 15%, #a8a8a8);
     transition: color 0.15s;
 }
 
@@ -1580,7 +1578,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 .landing-history-date {
     flex-shrink: 0;
     font-size: 0.6875rem;
-    color: #8a7f74;
+    color: color-mix(in srgb, var(--theme-color-4) 15%, #7a7a7a);
 }
 
 .landing-talk-box {
@@ -1591,9 +1589,9 @@ const sendOnEnter = (event: KeyboardEvent) => {
 .chat-talk-box {
     margin-bottom: 0.75rem;
     padding: 1rem;
-    border: 1px solid #e3ddd6;
+    border: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #dedede);
     border-radius: 0.75rem;
-    background-color: color-mix(in srgb, var(--theme-color-4) 4%, #f9f6f2);
+    background-color: color-mix(in srgb, var(--theme-color-4) 4%, #f7f7f7);
 }
 
 .chat-header-new:hover {
@@ -1631,7 +1629,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     align-items: flex-end;
     gap: 0.5rem;
     padding: 0.3125rem 0.3125rem 0.3125rem 0.75rem;
-    border: 1px solid #e3ddd6;
+    border: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #dedede);
     border-radius: 1rem;
     background-color: white;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -1702,7 +1700,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .landing-hero {
-    background-color: color-mix(in srgb, var(--theme-color-4) 4%, #f9f6f2);
+    background-color: color-mix(in srgb, var(--theme-color-4) 4%, #f7f7f7);
     padding-top: 2.5rem;
     padding-bottom: 2.5rem;
 }
@@ -1798,7 +1796,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 .landing-hero-heading .landing-hero-logo {
     width: 3.75rem;
     height: 3.75rem;
-    filter: drop-shadow(0 8px 16px rgba(234, 84, 14, 0.2));
+    filter: drop-shadow(0 8px 16px color-mix(in srgb, var(--theme-color-4) 20%, transparent));
     animation: landing-hero-logo-float 4s ease-in-out infinite;
 }
 
@@ -1868,7 +1866,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
 .landing-ask {
     padding: 1rem;
-    border: 1.5px solid color-mix(in srgb, var(--theme-color-4) 35%, #e3ddd6);
+    border: 1.5px solid color-mix(in srgb, var(--theme-color-4) 35%, color-mix(in srgb, var(--theme-color-4) 6%, #dedede));
     border-radius: 1rem;
     background-color: white;
     box-shadow: 0 6px 20px -8px rgb(0 0 0 / 0.15);
@@ -1897,7 +1895,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 .landing-ask-footer {
     margin-top: 0.75rem;
     padding-top: 0.75rem;
-    border-top: 1px solid #f0ebe5;
+    border-top: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #ececec);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -1946,7 +1944,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
 .landing-chip {
     padding: 0.4375rem 0.75rem;
-    border: 1px solid #ddd5cc;
+    border: 1px solid color-mix(in srgb, var(--theme-color-4) 8%, #d6d6d6);
     border-radius: 9999px;
     font-size: 0.8125rem;
     background-color: white;
@@ -2032,7 +2030,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 .landing-promises {
     margin: 1.25rem 0 0;
     padding: 0.875rem 0 0;
-    border-top: 1px solid #ece7e1;
+    border-top: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #e8e8e8);
     list-style: none;
     display: flex;
     flex-wrap: wrap;
@@ -2058,8 +2056,9 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
 .assistant-grid {
     display: grid;
-    gap: 1.5rem 1rem;
+    gap: 0.75rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
 }
 
 @media (min-width: 640px) {

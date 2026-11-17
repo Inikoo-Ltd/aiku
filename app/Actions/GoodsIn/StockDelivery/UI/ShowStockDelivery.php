@@ -823,35 +823,18 @@ class ShowStockDelivery extends OrgAction
         }
 
         $weightAndVolume = $this->getStockDeliveryWeightAndVolume($stockDelivery);
-        $containerSize   = Arr::get($stockDelivery->data, 'container_size');
 
         return [
             'first_block'  => [
                 'orderer'  => $orderer,
-                'delivery' => [
-                    'type'             => Arr::get($stockDelivery->data, 'delivery_type'),
-                    'type_label'       => StockDeliveryTypeEnum::labels()[Arr::get($stockDelivery->data, 'delivery_type')] ?? null,
-                    'container_size'   => $containerSize ? Arr::get(OrgAgentOrderContainerEnum::labels(), $containerSize) : null,
-                    'incoterm'         => Arr::get($stockDelivery->data, 'incoterm'),
-                    'port_of_export'   => Arr::get($stockDelivery->data, 'port_of_export'),
-                    'port_of_import'   => Arr::get($stockDelivery->data, 'port_of_import'),
-                    'delivery_address' => Arr::get($stockDelivery->data, 'delivery_address'),
-                    'shipper_reference' => Arr::get($stockDelivery->data, 'shipper_reference'),
-                    'tracking_number'   => Arr::get($stockDelivery->data, 'tracking_number'),
-                    'container_number'  => Arr::get($stockDelivery->data, 'container_number'),
-                    'shipping_agent'    => Arr::get($stockDelivery->data, 'shipping_agent'),
-                ],
+                'delivery' => $this->getDeliveryDetails($stockDelivery),
             ],
             'second_block' => [
                 'state'                        => $this->getStateLabels($stockDelivery)[$stockDelivery->state->value],
                 'total_items'                  => IndexStockDeliveryItems::numberOfProducts($stockDelivery),
                 'total_received_checked_items' => $productsByState->get(StockDeliveryItemStateEnum::RECEIVED->value, 0) + $productsByState->get(StockDeliveryItemStateEnum::CHECKED->value, 0),
                 'total_placed_items'           => $productsByState->get(StockDeliveryItemStateEnum::PLACED->value, 0),
-                'total_new_org_stocks'         => $stockDelivery->items()
-                    ->whereNotIn('state', [StockDeliveryItemStateEnum::CANCELLED, StockDeliveryItemStateEnum::NOT_RECEIVED])
-                    ->whereHas('orgStock', fn ($query) => $query->where('has_been_in_warehouse', false))
-                    ->distinct()
-                    ->count('org_stock_id'),
+                'total_new_org_stocks'         => $this->numberOfNewOrgStocks($stockDelivery),
                 'show_delivery_discrepancy'    => $stockDelivery->checked_at !== null,
                 'total_under_delivered_items'  => $stockDelivery->number_stock_delivery_items_under_delivered,
                 'total_over_delivered_items'   => $stockDelivery->number_stock_delivery_items_over_delivered,
@@ -888,6 +871,37 @@ class ShowStockDelivery extends OrgAction
                 'is_agent' => (bool) $stockDelivery->agent_id,
             ] : null,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getDeliveryDetails(StockDelivery $stockDelivery): array
+    {
+        $containerSize = Arr::get($stockDelivery->data, 'container_size');
+
+        return [
+            'type'             => Arr::get($stockDelivery->data, 'delivery_type'),
+            'type_label'       => StockDeliveryTypeEnum::labels()[Arr::get($stockDelivery->data, 'delivery_type')] ?? null,
+            'container_size'   => $containerSize ? Arr::get(OrgAgentOrderContainerEnum::labels(), $containerSize) : null,
+            'incoterm'         => Arr::get($stockDelivery->data, 'incoterm'),
+            'port_of_export'   => Arr::get($stockDelivery->data, 'port_of_export'),
+            'port_of_import'   => Arr::get($stockDelivery->data, 'port_of_import'),
+            'delivery_address' => Arr::get($stockDelivery->data, 'delivery_address'),
+            'shipper_reference' => Arr::get($stockDelivery->data, 'shipper_reference'),
+            'tracking_number'   => Arr::get($stockDelivery->data, 'tracking_number'),
+            'container_number'  => Arr::get($stockDelivery->data, 'container_number'),
+            'shipping_agent'    => Arr::get($stockDelivery->data, 'shipping_agent'),
+        ];
+    }
+
+    public function numberOfNewOrgStocks(StockDelivery $stockDelivery): int
+    {
+        return $stockDelivery->items()
+            ->whereNotIn('state', [StockDeliveryItemStateEnum::CANCELLED, StockDeliveryItemStateEnum::NOT_RECEIVED])
+            ->whereHas('orgStock', fn ($query) => $query->where('has_been_in_warehouse', false))
+            ->distinct()
+            ->count('org_stock_id');
     }
 
     /**
@@ -1588,7 +1602,7 @@ class ShowStockDelivery extends OrgAction
     /**
      * @return array<int, array{id: int, code: ?string, name: ?string}>
      */
-    private function getProductsNotOnPurchaseOrder(StockDelivery $stockDelivery): array
+    public function getProductsNotOnPurchaseOrder(StockDelivery $stockDelivery): array
     {
         return AddItemNotOnPurchaseOrderToStockDelivery::addableOrgSupplierProducts($stockDelivery)
             ->join('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id')

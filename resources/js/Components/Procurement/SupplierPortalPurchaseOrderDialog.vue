@@ -10,6 +10,8 @@ import { computed, ref, watch } from "vue"
 import axios from "axios"
 import Dialog from "primevue/dialog"
 import DatePicker from "primevue/datepicker"
+import Select from "primevue/select"
+import FileUpload from "primevue/fileupload"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
@@ -18,10 +20,10 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faTag, faCheck, faPencil, faTimes, faLock, faExclamationCircle } from "@fal"
+import { faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faTag, faCheck, faPencil, faTimes, faLock, faExclamationCircle, faReceipt, faDownload, faFileAlt, faUpload } from "@fal"
 import { faCheckCircle } from "@fas"
 
-library.add(faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faTag, faCheck, faPencil, faTimes, faLock, faExclamationCircle, faCheckCircle)
+library.add(faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faTag, faCheck, faPencil, faTimes, faLock, faExclamationCircle, faReceipt, faDownload, faFileAlt, faUpload, faCheckCircle)
 
 type SegmentState = "done" | "skipped" | "untracked" | "overdue" | "at_risk" | "on_track" | "future"
 
@@ -32,6 +34,7 @@ interface Payment {
 	original_currency_code: string | null
 	reference: string | null
 	paid_by: string | null
+	receipt: { file_name: string | null; view_url: string; download_url: string } | null
 }
 
 interface PurchaseOrderDetail {
@@ -45,6 +48,7 @@ interface PurchaseOrderDetail {
 		delivery_label: string | null
 		open: boolean
 		submitted_at: string | null
+		submitted_by: string | null
 		confirmed_at: string | null
 		estimated_received_at: string | null
 		settled_at: string | null
@@ -80,6 +84,11 @@ interface PurchaseOrderDetail {
 		editable: boolean
 		blocked: string | null
 	}
+	documents: {
+		open: boolean
+		types: { value: string; label: string }[]
+		files: { type: string; file_name: string | null; uploaded_at: string | null; view_url: string; download_url: string }[]
+	}
 	lines: {
 		id: number
 		code: string | null
@@ -100,6 +109,7 @@ interface PurchaseOrderDetail {
 const props = defineProps<{
 	purchaseOrderRoute: string
 	productionRoute?: string
+	documentsRoute?: string
 }>()
 
 const purchaseOrderId = defineModel<number | null>({ required: true })
@@ -197,6 +207,60 @@ const saveProduction = async () => {
 	}
 }
 
+const documentType = ref<string | null>(null)
+const documentFiles = ref<File[]>([])
+const documentFileKey = ref(0)
+const isUploadingDocuments = ref(false)
+const isDraggingDocuments = ref(false)
+
+const chooseDocuments = (event: { files: File[] }) => {
+	documentFiles.value = [...documentFiles.value, ...event.files]
+	documentFileKey.value++
+	documentsError.value = null
+}
+
+const dropDocuments = (event: DragEvent) => {
+	isDraggingDocuments.value = false
+	const files = Array.from(event.dataTransfer?.files ?? [])
+	if (files.length) {
+		documentFiles.value = [...documentFiles.value, ...files]
+		documentsError.value = null
+	}
+}
+const documentsError = ref<string | null>(null)
+
+const uploadDocuments = async () => {
+	const id = purchaseOrderId.value
+	if (!props.documentsRoute || id === null) {
+		return
+	}
+	if (!documentType.value || !documentFiles.value.length) {
+		documentsError.value = ctrans("Choose the document type and at least one file.")
+		return
+	}
+
+	const body = new FormData()
+	body.append("scope", documentType.value)
+	documentFiles.value.forEach((file) => body.append("files[]", file))
+
+	isUploadingDocuments.value = true
+	documentsError.value = null
+	try {
+		const { data } = await axios.post<PurchaseOrderDetail>(props.documentsRoute.replace(/\/0\/documents$/, `/${id}/documents`), body)
+		if (purchaseOrderId.value === id) {
+			detail.value = data
+		}
+		documentType.value = null
+		documentFiles.value = []
+		documentFileKey.value++
+	} catch (error: any) {
+		const errors = error?.response?.data?.errors as Record<string, string[]> | undefined
+		documentsError.value = (errors && Object.values(errors)[0]?.[0]) ?? ctrans("The documents could not be uploaded. Try again.")
+	} finally {
+		isUploadingDocuments.value = false
+	}
+}
+
 const tomorrow = computed(() => {
 	const date = new Date()
 	date.setDate(date.getDate() + 1)
@@ -283,6 +347,11 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 							</template>
 						</div>
 
+						<div v-if="stage.key === 'submitted' && detail.order.submitted_by" class="mt-2 text-xs">
+							<div class="text-gray-500">{{ ctrans("Submitted by") }}</div>
+							<div class="break-words text-gray-700">{{ detail.order.submitted_by }}</div>
+						</div>
+
 						<div v-if="stage.key === 'deposit_paid'" class="mt-2 text-xs">
 							<div class="mb-1 font-semibold text-gray-500">{{ ctrans("Deposit") }}</div>
 							<ul v-if="detail.payments.deposit.length" class="space-y-1.5">
@@ -295,6 +364,15 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 										{{ locale.currencyFormat(payment.original_currency_code, payment.original_amount) }}
 									</div>
 									<div class="break-words text-gray-500">{{ payment.paid_by }}<template v-if="payment.reference"> · {{ payment.reference }}</template></div>
+									<div v-if="payment.receipt" class="mt-0.5 flex items-center gap-3">
+										<a :href="payment.receipt.view_url" target="_blank" rel="noopener" class="flex min-w-0 items-center gap-1 text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline" v-tooltip="payment.receipt.file_name">
+											<FontAwesomeIcon icon="fal fa-receipt" fixed-width aria-hidden="true" />
+											<span class="truncate">{{ ctrans("Transfer receipt") }}</span>
+										</a>
+										<a :href="payment.receipt.download_url" class="text-gray-500 hover:text-[var(--app-accent)]" v-tooltip="ctrans('Download')" :aria-label="ctrans('Download')">
+											<FontAwesomeIcon icon="fal fa-download" fixed-width aria-hidden="true" />
+										</a>
+									</div>
 								</li>
 							</ul>
 							<p v-else class="text-gray-400">{{ ctrans("No deposit paid yet") }}</p>
@@ -326,21 +404,31 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 						</div>
 
 						<div v-else-if="stage.key === 'ready'" class="mt-2 text-xs">
-							<div class="mb-1 font-semibold text-gray-500">{{ ctrans("Balance") }}</div>
-							<ul v-if="detail.payments.balance.length" class="space-y-1.5">
-								<li v-for="(payment, paymentIndex) in detail.payments.balance" :key="paymentIndex">
-									<div class="flex justify-between gap-2">
-										<span class="tabular-nums text-gray-700">{{ day(payment.date) }}</span>
-										<span class="whitespace-nowrap font-medium tabular-nums text-gray-900">{{ money(payment.amount) }}</span>
-									</div>
-									<div v-if="payment.original_amount !== null && payment.original_currency_code" class="text-right tabular-nums text-gray-400">
-										{{ locale.currencyFormat(payment.original_currency_code, payment.original_amount) }}
-									</div>
-									<div class="break-words text-gray-500">{{ payment.paid_by }}<template v-if="payment.reference"> · {{ payment.reference }}</template></div>
-								</li>
-							</ul>
-							<p v-else class="text-gray-400">{{ ctrans("No balance paid yet") }}</p>
-							<dl class="mt-2 space-y-0.5 border-t border-gray-200 pt-1.5">
+							<template v-if="detail.payments.balance.length">
+								<div class="mb-1 font-semibold text-gray-500">{{ ctrans("Balance") }}</div>
+								<ul class="space-y-1.5">
+									<li v-for="(payment, paymentIndex) in detail.payments.balance" :key="paymentIndex">
+										<div class="flex justify-between gap-2">
+											<span class="tabular-nums text-gray-700">{{ day(payment.date) }}</span>
+											<span class="whitespace-nowrap font-medium tabular-nums text-gray-900">{{ money(payment.amount) }}</span>
+										</div>
+										<div v-if="payment.original_amount !== null && payment.original_currency_code" class="text-right tabular-nums text-gray-400">
+											{{ locale.currencyFormat(payment.original_currency_code, payment.original_amount) }}
+										</div>
+										<div class="break-words text-gray-500">{{ payment.paid_by }}<template v-if="payment.reference"> · {{ payment.reference }}</template></div>
+										<div v-if="payment.receipt" class="mt-0.5 flex items-center gap-3">
+											<a :href="payment.receipt.view_url" target="_blank" rel="noopener" class="flex min-w-0 items-center gap-1 text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline" v-tooltip="payment.receipt.file_name">
+												<FontAwesomeIcon icon="fal fa-receipt" fixed-width aria-hidden="true" />
+												<span class="truncate">{{ ctrans("Transfer receipt") }}</span>
+											</a>
+											<a :href="payment.receipt.download_url" class="text-gray-500 hover:text-[var(--app-accent)]" v-tooltip="ctrans('Download')" :aria-label="ctrans('Download')">
+												<FontAwesomeIcon icon="fal fa-download" fixed-width aria-hidden="true" />
+											</a>
+										</div>
+									</li>
+								</ul>
+							</template>
+							<dl class="space-y-0.5" :class="detail.payments.balance.length ? 'mt-2 border-t border-gray-200 pt-1.5' : ''">
 								<div class="flex justify-between gap-2">
 									<dt class="text-gray-500">{{ ctrans("Paid") }}</dt>
 									<dd class="whitespace-nowrap tabular-nums text-gray-700">{{ money(detail.payments.paid) }} / {{ money(detail.payments.total) }}</dd>
@@ -403,6 +491,60 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 							</tr>
 						</tfoot>
 					</table>
+				</div>
+			</section>
+
+			<section class="overflow-hidden rounded-lg border border-gray-200">
+				<div class="border-b border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Shipping documents") }}</div>
+				<div class="space-y-3 p-3">
+					<p class="text-xs text-gray-500">{{ ctrans("Upload the documents of this order: proforma, invoice, packing list, bill of lading, certificate of origin.") }}</p>
+					<ul v-if="detail.documents.files.length" class="divide-y divide-gray-100">
+						<li v-for="(document, documentIndex) in detail.documents.files" :key="documentIndex" class="flex items-center gap-3 py-1.5">
+							<span class="w-40 shrink-0 whitespace-nowrap text-xs font-semibold text-gray-500">{{ document.type }}</span>
+							<a :href="document.view_url" target="_blank" rel="noopener" class="flex min-w-0 items-center gap-1 text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline">
+								<FontAwesomeIcon icon="fal fa-file-alt" fixed-width aria-hidden="true" />
+								<span class="truncate">{{ document.file_name }}</span>
+							</a>
+							<span class="ml-auto whitespace-nowrap text-xs tabular-nums text-gray-400">{{ day(document.uploaded_at) }}</span>
+							<a :href="document.download_url" class="text-gray-500 hover:text-[var(--app-accent)]" v-tooltip="ctrans('Download')" :aria-label="ctrans('Download')">
+								<FontAwesomeIcon icon="fal fa-download" fixed-width aria-hidden="true" />
+							</a>
+						</li>
+					</ul>
+					<p v-else class="text-xs text-gray-400">{{ ctrans("No documents uploaded yet") }}</p>
+
+					<div
+						v-if="documentsRoute && detail.documents.open"
+						class="space-y-2 rounded-lg border-2 border-dashed p-3 transition-colors"
+						:class="isDraggingDocuments ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)]' : 'border-gray-200'"
+						@dragenter.prevent="isDraggingDocuments = true"
+						@dragover.prevent="isDraggingDocuments = true"
+						@dragleave.self="isDraggingDocuments = false"
+						@drop.prevent="dropDocuments">
+						<div class="flex items-center gap-2 text-xs text-gray-500">
+							<FontAwesomeIcon icon="fal fa-upload" fixed-width aria-hidden="true" />
+							{{ ctrans("Drag and drop files here, or choose them") }}
+						</div>
+						<div class="flex flex-wrap items-center gap-2">
+							<Select v-model="documentType" :options="detail.documents.types" optionLabel="label" optionValue="value" :placeholder="ctrans('Document type')" class="w-56" size="small" />
+							<FileUpload :key="documentFileKey" mode="basic" :auto="false" customUpload multiple :chooseLabel="ctrans('Choose files')" @select="chooseDocuments">
+								<template #filelabel><span /></template>
+							</FileUpload>
+							<Button type="primary" size="xs" :label="ctrans('Upload')" :loading="isUploadingDocuments" @click="uploadDocuments">
+								<template #icon><FontAwesomeIcon icon="fal fa-upload" fixed-width aria-hidden="true" /></template>
+							</Button>
+						</div>
+						<ul v-if="documentFiles.length" class="flex flex-wrap gap-1.5 text-xs">
+							<li v-for="(file, fileIndex) in documentFiles" :key="fileIndex" class="flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-gray-700">
+								<span class="max-w-[16rem] truncate">{{ file.name }}</span>
+								<button type="button" class="text-gray-400 hover:text-red-600" :aria-label="ctrans('Remove')" @click="documentFiles = documentFiles.filter((_, index) => index !== fileIndex)">
+									<FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+								</button>
+							</li>
+						</ul>
+						<span class="block text-xs text-gray-400">{{ ctrans("Up to 10 files, 15 MB each. PDF, JPG, PNG, Excel or Word.") }}</span>
+						<p v-if="documentsError" class="text-xs text-red-600">{{ documentsError }}</p>
+					</div>
 				</div>
 			</section>
 

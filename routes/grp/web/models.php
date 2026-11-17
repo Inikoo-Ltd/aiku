@@ -84,6 +84,7 @@ use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Accounting\BankTransaction\DismissBankTransaction;
+use App\Actions\Accounting\BankTransaction\PayBankTransactionToCustomerCredit;
 use App\Actions\Accounting\BankTransaction\PayBankTransactionToOrder;
 use App\Actions\Accounting\BankTransaction\RestoreBankTransaction;
 use App\Actions\Accounting\Payment\CancelPayment;
@@ -722,6 +723,8 @@ use App\Actions\Reviews\ReviewReply\UpdateReviewReply;
 use App\Actions\Reviews\UpdateReview;
 use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\ImportSupplierPurchaseOrders;
 use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\PreviewSupplierPurchaseOrderImport;
+use App\Actions\SupplyChain\Supplier\DeactivateSupplier;
+use App\Actions\SupplyChain\Supplier\ReactivateSupplier;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierPortalContact\StoreSupplierPortalEmail;
@@ -1306,6 +1309,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
     Route::post('/bank-payee', App\Actions\Accounting\BankPayee\SetBankPayeeCategory::class)->name('bank_payee.set');
     Route::post('/bank-transaction/{bankTransaction:id}/pay-order', PayBankTransactionToOrder::class)->name('bank_transaction.pay_order')->withoutScopedBindings();
+    Route::post('/bank-transaction/{bankTransaction:id}/customer-credit', PayBankTransactionToCustomerCredit::class)->name('bank_transaction.customer_credit')->withoutScopedBindings();
     Route::post('/bank-transaction/{bankTransaction:id}/dismiss', DismissBankTransaction::class)->name('bank_transaction.dismiss')->withoutScopedBindings();
     Route::post('/bank-transaction/{bankTransaction:id}/restore', RestoreBankTransaction::class)->name('bank_transaction.restore')->withoutScopedBindings();
 });
@@ -1826,6 +1830,8 @@ Route::name('customer_client.')->prefix('customer-client/{customerClient:id}')->
 
 Route::post('/supplier', StoreSupplier::class)->name('supplier.store');
 Route::patch('/supplier/{supplier:id}', UpdateSupplier::class)->name('supplier.update');
+Route::patch('/supplier/{supplier:id}/archive', DeactivateSupplier::class)->name('supplier.archive');
+Route::patch('/supplier/{supplier:id}/unarchive', ReactivateSupplier::class)->name('supplier.unarchive');
 Route::post('/supplier/{supplier:id}/share-links', StoreSupplierShareLink::class)->name('supplier.share_links.store');
 Route::post('/supplier-share-links/{supplierShareLink:id}/revoke', RevokeSupplierShareLink::class)->name('supplier_share_link.revoke');
 Route::post('/supplier/{supplier:id}/portal-emails', StoreSupplierPortalEmail::class)->name('supplier.portal_emails.store');

@@ -8,6 +8,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import Image from "@common/Components/Image.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck } from "@fas"
@@ -77,6 +78,8 @@ const props = defineProps<{
         challenges: { label: string; topic: string; quote: string | null }[]
     }
     messages: Message[]
+    translation_language: string | null
+    translations?: Record<number, string>
 }>()
 
 const locale = useLocaleStore()
@@ -150,11 +153,15 @@ const detailLine = (message: Message) =>
     </div>
 
     <div class="mx-auto max-w-4xl space-y-4 p-4">
+        <p v-if="translation_language && messages?.length && (!translations || Object.keys(translations).length)" class="flex items-center gap-1.5 text-xs text-gray-500">
+            <LoadingIcon v-if="!translations" />
+            {{ translations ? ctrans("Each message is followed by its translation into :language.", { language: translation_language }) : ctrans("Translating into :language…", { language: translation_language }) }}
+        </p>
         <p v-if="!messages?.length" class="py-8 text-center text-sm text-gray-400">{{ ctrans("This conversation has no messages") }}</p>
 
         <div v-for="message in messages" :key="message.id" class="flex" :class="message.role === 'customer' ? 'justify-end' : 'justify-start'">
             <div v-if="message.role === 'customer'" class="max-w-[80%]">
-                <div class="whitespace-pre-line rounded-lg bg-[var(--app-accent-soft)] px-3 py-2 text-sm text-gray-900">{{ message.body }}</div>
+                <div class="whitespace-pre-line rounded-lg bg-[var(--app-accent-soft)] px-3 py-2 text-sm text-gray-900">{{ message.body }}<div v-if="translations?.[message.id]" class="mt-1.5 border-t border-[var(--app-accent-muted)] pt-1.5 text-gray-600">{{ translations[message.id] }}</div></div>
                 <div class="mt-0.5 text-right text-xs text-gray-400">{{ formatTime(message.created_at) }}</div>
             </div>
 
@@ -190,6 +197,7 @@ const detailLine = (message: Message) =>
                     </div>
 
                     <div class="whitespace-pre-line text-sm text-gray-800">{{ message.body }}</div>
+                    <div v-if="translations?.[message.id]" class="mt-1.5 whitespace-pre-line border-t border-gray-100 pt-1.5 text-sm text-gray-500">{{ translations[message.id] }}</div>
 
                     <div v-if="message.sources?.length" class="mt-1.5 text-xs text-gray-500">
                         {{ ctrans("Answered from:") }}

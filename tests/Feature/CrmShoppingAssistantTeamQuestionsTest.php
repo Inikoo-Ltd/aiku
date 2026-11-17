@@ -296,7 +296,7 @@ test('a question nobody answered is closed a day after the gurus first had it in
     SendShoppingAssistantMorningRound::run();
     expect(data_get($task->refresh()->data, 'round_first_at'))->toBeNull();
 
-    Carbon::setTestNow($friday->addDays(3)->setTime(8, 30));
+    Carbon::setTestNow($friday->addDays(3)->setTime(8, 15));
     SendShoppingAssistantMorningRound::run();
     expect(data_get($task->refresh()->data, 'round_first_at'))->toBeNull();
 
@@ -763,7 +763,8 @@ test('a guru sees the welcome once, before their first question, and a colleague
 
 test('a guru who refuses is recorded, their managers are told once, and they stay a guru', function () {
     Notification::fake();
-    $managers = StoreShoppingAssistantSalesLead::managersOf($this->organisation, GetAikuAssistant::run($this->organisation->group_id));
+    $assistant = GetAikuAssistant::run($this->organisation->group_id);
+    $managers  = StoreShoppingAssistantSalesLead::managersOf($this->organisation, $assistant)->reject(fn (User $manager) => in_array($manager->id, [$this->backup->id, $assistant->id]));
 
     actingAs($this->backup)->postJson(route('grp.tasks.assistant_questions.welcome_seen'), ['refused' => true])->assertOk();
     actingAs($this->backup)->postJson(route('grp.tasks.assistant_questions.welcome_seen'), ['refused' => true])->assertOk();
@@ -773,4 +774,23 @@ test('a guru who refuses is recorded, their managers are told once, and they sta
         ->and(GetShoppingAssistantTeamQuestionsForUser::isGuru($this->backup))->toBeTrue()
         ->and(actingAs($this->backup)->getJson(route('grp.tasks.assistant_questions'))->json('welcome'))->toBeFalse();
     Notification::assertSentToTimes($managers->first(), ShoppingAssistantGuruRefusedNotification::class, 1);
+    Notification::assertNotSentTo([$this->backup, $assistant], ShoppingAssistantGuruRefusedNotification::class);
+});
+
+test('a shop guru who refuses sends the managers to the shop settings, and neither they nor the assistant are told', function () {
+    Notification::fake();
+    $shopGuru  = teamQuestionStaff($this);
+    $assistant = GetAikuAssistant::run($this->organisation->group_id);
+    App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['assistant_questions_user_id' => $shopGuru->id]);
+    $managers = StoreShoppingAssistantSalesLead::managersOf($this->organisation, $assistant)->reject(fn (User $manager) => in_array($manager->id, [$shopGuru->id, $assistant->id]));
+
+    actingAs($shopGuru)->postJson(route('grp.tasks.assistant_questions.welcome_seen'), ['refused' => true])->assertOk();
+
+    App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop->refresh(), ['assistant_questions_user_id' => null]);
+
+    expect($managers)->not->toBeEmpty();
+    Notification::assertSentTo($managers->first(), ShoppingAssistantGuruRefusedNotification::class, fn (ShoppingAssistantGuruRefusedNotification $notification) => $notification->shop?->id === $this->shop->id
+        && str_contains($notification->body(), $this->shop->name)
+        && $notification->url() === route('grp.org.shops.show.settings.edit', [$this->organisation->slug, $this->shop->slug]));
+    Notification::assertNotSentTo([$shopGuru, $assistant], ShoppingAssistantGuruRefusedNotification::class);
 });

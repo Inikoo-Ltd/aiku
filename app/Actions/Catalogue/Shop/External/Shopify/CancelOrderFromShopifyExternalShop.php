@@ -3,7 +3,6 @@
 namespace App\Actions\Catalogue\Shop\External\Shopify;
 
 use App\Actions\Accounting\Invoice\DeleteInvoice;
-use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -28,11 +27,6 @@ class CancelOrderFromShopifyExternalShop extends OrgAction
             ]);
         }
 
-        foreach ($order->deliveryNotes as $deliveryNote) {
-            if ($deliveryNote->state != DeliveryNoteStateEnum::CANCELLED) {
-                CancelDeliveryNote::run($deliveryNote, null, false);
-            }
-        }
 
         CancelOrder::run($order);
 

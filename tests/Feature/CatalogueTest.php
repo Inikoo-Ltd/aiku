@@ -1943,7 +1943,10 @@ test('an on-demand stock never caps a product, and the shop products json report
             ->and(ProductHydrateAvailableQuantity::wholeProducts('69.997', '1.00000000'))->toBe(69)
             ->and(ProductHydrateAvailableQuantity::wholeProducts('365.960', '0.00666667'))->toBe(54894)
             ->and(ProductHydrateAvailableQuantity::wholeProducts('4.350', '0.01000000'))->toBe(435)
-            ->and(ProductHydrateAvailableQuantity::wholeProducts('7', '2.00000000'))->toBe(3);
+            ->and(ProductHydrateAvailableQuantity::wholeProducts('7', '2.00000000'))->toBe(3)
+            ->and(ProductHydrateAvailableQuantity::wholeProducts('378.400', '0.40000000'))->toBe(946)
+            ->and(ProductHydrateAvailableQuantity::wholeProducts('2.800', '0.40000000'))->toBe(7)
+            ->and(ProductHydrateAvailableQuantity::wholeProducts('2.799', '0.40000000'))->toBe(6);
 
         expect($stockedStock->products()->where('products.id', $product->id)->whereRaw(
             'products.available_quantity is distinct from '.ProductHydrateAvailableQuantity::wholeProductsSql('?::numeric'),
@@ -2880,4 +2883,39 @@ test('faire days to dispatch is changed only by organisation admins, between 1 a
     patch(route('grp.models.org.shop.update', [$faireShop->organisation_id, $faireShop->id]), ['faire_order_from_days' => 14])->assertSessionHasNoErrors();
     expect(\Illuminate\Support\Arr::get($faireShop->refresh()->settings, 'faire.order_from_days'))->toBe(14)
         ->and(\App\Actions\Catalogue\Shop\External\Faire\AcceptFaireOrder::make()->getExpectedShipDate($faireShop, null)->toDateString())->toBe(now()->addDays(14)->toDateString());
+});
+
+test('a product page closes when the product stops being for sale and reopens when it is back on sale', function () {
+    $shop = Shop::orderBy('id')->first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    $website = $shop->website ?? createWebsite($shop);
+    $website->refresh()->storefront->update(['state' => WebpageStateEnum::LIVE]);
+
+    $product = StoreProduct::make()->action($shop, array_merge(Product::factory()->definition(), [
+        'trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]],
+        'price'       => 10,
+    ]));
+    $webpage = StoreProductWebpage::make()->action($product);
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+
+    $hydrateWithStatus = function (ProductStatusEnum $status) use ($product, $webpage): Webpage {
+        DB::table('products')->where('id', $product->id)->update([
+            'state'   => ProductStateEnum::ACTIVE->value,
+            'status'  => $status->value,
+            'is_main' => true,
+        ]);
+        \App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale::run(Product::find($product->id));
+
+        return Webpage::find($webpage->id);
+    };
+
+    $closed = $hydrateWithStatus(ProductStatusEnum::NOT_FOR_SALE);
+
+    expect($closed->state)->toBe(WebpageStateEnum::CLOSED)
+        ->and($closed->redirect_webpage_id)->not->toBeNull()
+        ->and(\App\Models\Web\Redirect::where('website_id', $closed->website_id)->where('from_path', $closed->url)->exists())->toBeTrue();
+
+    $reopened = $hydrateWithStatus(ProductStatusEnum::FOR_SALE);
+
+    expect($reopened->state)->toBe(WebpageStateEnum::LIVE)
+        ->and(\App\Models\Web\Redirect::where('website_id', $reopened->website_id)->where('from_path', $reopened->url)->exists())->toBeFalse();
 });

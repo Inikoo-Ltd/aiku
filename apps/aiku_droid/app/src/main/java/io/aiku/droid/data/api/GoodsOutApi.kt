@@ -564,6 +564,7 @@ object ScanMatch {
     const val SKO = "sko"
     const val LOCATION = "location"
     const val DELIVERY_NOTE = "delivery_note"
+    const val STOCK_DELIVERY = "stock_delivery"
     const val UNKNOWN = "unknown"
 }
 
@@ -574,6 +575,7 @@ data class ScanLookup(
     val sko: ScannedSko? = null,
     val location: ScannedLocation? = null,
     @SerialName("delivery_note") val deliveryNote: DeliveryNoteRow? = null,
+    @SerialName("stock_delivery") val stockDelivery: ScannedStockDelivery? = null,
 )
 
 object NoteActionStatus {

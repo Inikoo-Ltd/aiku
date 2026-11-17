@@ -14,6 +14,7 @@ use App\Models\SupplyChain\SupplierShareLink;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\SupplierPortalPermissions;
 
 /**
  * Makes a private link for a supplier. Staff give it for months; the supplier sign-in page emails one for days.
@@ -53,7 +54,7 @@ class StoreSupplierShareLink extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo('supply-chain.edit');
+        return SupplierPortalPermissions::canEdit($request->user(), $request->route('supplier'));
     }
 
     public function rules(): array

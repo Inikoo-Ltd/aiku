@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Mailbox;
 
 use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
 use App\Actions\Chat\ChatSession\StoreChatSession;
+use App\Actions\Fulfilment\PalletReturn\ImportPalletReturnsFromPickNotice;
 use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
@@ -190,6 +191,13 @@ class ProcessInboundEmail
         // offered again by every sweep, and read as mail that never came through.
         if ($mailboxAddress && $from['address'] && strcasecmp($from['address'], $mailboxAddress) === 0) {
             $client->fileAway($gmailMessageId, 'aiku/filtered', Arr::get($raw, 'labelIds', []));
+
+            return null;
+        }
+
+        $pickNoticeCustomer = $rawHtml && ImportPalletReturnsFromPickNotice::isPickNoticeSubject($subject) ? ImportPalletReturnsFromPickNotice::fulfilmentCustomerForSender($shop, $from['address']) : null;
+        if ($pickNoticeCustomer && ImportPalletReturnsFromPickNotice::run($pickNoticeCustomer, $rawHtml, $gmailMessageId) !== null) {
+            $client->fileAway($gmailMessageId, 'aiku/pick-notices', Arr::get($raw, 'labelIds', []));
 
             return null;
         }

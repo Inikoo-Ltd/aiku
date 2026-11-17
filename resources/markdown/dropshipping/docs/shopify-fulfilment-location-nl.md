@@ -52,6 +52,16 @@ Een tarief van u dat vanaf <b>aiku-</b> verzendt in een land waarvoor we al een 
 
 Onze producten worden alleen verkocht naar de landen die uw markten bevatten. Een klant in een land dat geen van uw markten dekt, ziet ze als uitverkocht.
 
+## Uw eigen verzendtarieven gebruiken
+
+Uw klanten kunnen voor onze producten uw eigen verzending betalen in plaats van <b>AW Standard</b>, bijvoorbeeld om gratis verzending te bieden vanaf een bestelbedrag.
+
+1. Open in uw Shopify-beheer <b>Markten</b>, dan elke markt waarin u verkoopt, dan <b>Verzending</b>. Bewerk elk van uw tarieven en controleer dat <b>Verzonden vanaf</b> de locatie <b>aiku-</b> bevat. Zonder die locatie zien uw klanten geen verzending voor onze producten.
+2. Zet in de <b>Instellingen</b> van uw kanaal, onder <b>Verzending</b>, <b>Mijn eigen verzendtarieven gebruiken</b> aan. Binnen enkele minuten zetten we elk <b>AW Standard</b>-tarief in het profiel <b>AW Connect shipping</b> uit, en ze blijven uit wanneer onze prijzen veranderen.
+3. Plaats een testbestelling met een van onze producten om bij het afrekenen alleen uw tarieven te zien.
+
+Wat we u per bestelling rekenen verandert niet: we rekenen nog steeds onze eigen verzending. Zet de instelling uit om <b>AW Standard</b> weer te tonen.
+
 ## Uw eigen voorraad van onze producten
 
 Producten in ons verzendprofiel worden alleen vanaf de <b>aiku-</b>-locatie verzonden, dus Shopify verstuurt ze niet vanaf uw eigen locaties. Hebt u zelf enkele van onze producten, bijvoorbeeld een ongebruikt artikel dat een klant naar u terugstuurde, zet ze dan als een apart product in uw winkel en verstuur die bestellingen zelf.

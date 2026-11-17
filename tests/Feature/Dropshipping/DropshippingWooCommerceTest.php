@@ -138,6 +138,7 @@ test('authorising a store stores the keys, checks the connection and registers t
             ->push(['id' => 142, 'name' => 'Order created', 'status' => 'active', 'topic' => 'order.created'], 201)
             ->push(['id' => 143, 'name' => 'Product deleted', 'status' => 'active', 'topic' => 'product.deleted'], 201),
         'GET settings/products/woocommerce_weight_unit' => Http::response(['id' => 'woocommerce_weight_unit', 'value' => 'lbs', 'group_id' => 'products']),
+        'GET settings/products/woocommerce_dimension_unit' => Http::response(['id' => 'woocommerce_dimension_unit', 'value' => 'in', 'group_id' => 'products']),
     ]);
 
     StoreTemporaryWooUser::run($customer, ['name' => 'My Woo Shop', 'url' => WOO_STORE_URL.'/']);
@@ -153,7 +154,9 @@ test('authorising a store stores the keys, checks the connection and registers t
         ->and($channel->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED)
         ->and($channel->platform_status)->toBeTrue()
         ->and(Arr::get($wooCommerceUser->settings, 'webhooks'))->toBe(['order_created' => 142, 'product_deleted' => 143])
-        ->and(Arr::get($wooCommerceUser->settings, 'weight_option'))->toBe('lbs');
+        ->and(Arr::get($wooCommerceUser->settings, 'weight_option'))->toBe('lbs')
+        ->and(Arr::get($wooCommerceUser->settings, 'dimension_option'))->toBe('in')
+        ->and(StoreWooCommerceProduct::dimensionUnit($wooCommerceUser))->toBe('inch');
 
     $webhooks = wooSent('POST', 'webhooks');
     expect($webhooks)->toHaveCount(2)
@@ -1893,4 +1896,16 @@ test('an 8 product bulk upload keeps the store at 4 creates at once and finishes
         ->and($portfolios->every(fn (Portfolio $portfolio) => $portfolio->refresh()->platform_status))->toBeTrue()
         ->and(Redis::llen(DispatchWooUploadQueue::queueKey($wooCommerceUser)))->toBe(0)
         ->and((int) Cache::get('lanes_success'))->toBe(8);
+});
+
+test('a store whose size unit cannot be read keeps it unset, so the next check asks again', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+
+    wooFakeForPing(['GET settings/products/woocommerce_dimension_unit' => Http::response(['code' => 'woocommerce_rest_cannot_view'], 403)]);
+    CheckWooChannel::run($wooCommerceUser->refresh());
+    expect(Arr::get($wooCommerceUser->refresh()->settings, 'dimension_option'))->toBeNull();
+
+    wooFakeForPing(['GET settings/products/woocommerce_dimension_unit' => Http::response(['value' => 'mm'])]);
+    CheckWooChannel::run($wooCommerceUser->refresh());
+    expect(Arr::get($wooCommerceUser->refresh()->settings, 'dimension_option'))->toBe('mm');
 });

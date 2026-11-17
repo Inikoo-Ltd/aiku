@@ -30,6 +30,8 @@ enum UserNotificationEnum: string
     case MONEY_REQUEST_REJECTED = 'money_request_rejected';
     case MONEY_REQUEST_CANCELLED = 'money_request_cancelled';
     case SUPPLIER_PRODUCT_AVAILABILITY = 'supplier_product_availability';
+    case SUPPLIER_MATERIAL_PLANNING = 'supplier_material_planning';
+    case SUPPLIER_PLANNING_OVERDUE = 'supplier_planning_overdue';
     case PRODUCT_DEVELOPMENT_TASK = 'product_development_task';
     case PRODUCT_DEVELOPMENT_MENTION = 'product_development_mention';
     case PRODUCT_DEVELOPMENT_FILES = 'product_development_files';
@@ -63,6 +65,8 @@ enum UserNotificationEnum: string
         self::MONEY_REQUEST_REJECTED,
         self::MONEY_REQUEST_CANCELLED,
         self::SUPPLIER_PRODUCT_AVAILABILITY,
+        self::SUPPLIER_MATERIAL_PLANNING,
+        self::SUPPLIER_PLANNING_OVERDUE,
         self::DELIVERY_FEEDBACK,
     ];
 
@@ -87,6 +91,8 @@ enum UserNotificationEnum: string
             self::MONEY_REQUEST_REJECTED        => __('The client rejects a money request I asked for or am copied on'),
             self::MONEY_REQUEST_CANCELLED       => __('An agent withdraws a money request I approve, pay or am copied on'),
             self::SUPPLIER_PRODUCT_AVAILABILITY => __('An agent changes the availability of a product my organisation buys'),
+            self::SUPPLIER_MATERIAL_PLANNING    => __('A supplier sends material planning notes or documents for a product my organisation buys'),
+            self::SUPPLIER_PLANNING_OVERDUE     => __('A supplier material planning note is still not answered after the days set in the supplier page settings'),
             self::PRODUCT_DEVELOPMENT_TASK      => __('A product development gives me a task or reminds me of one'),
             self::PRODUCT_DEVELOPMENT_MENTION   => __('Someone @mentions me on a product development'),
             self::PRODUCT_DEVELOPMENT_FILES     => __('A file I need is uploaded to one of my product developments'),
@@ -155,6 +161,8 @@ enum UserNotificationEnum: string
             self::MONEY_REQUEST_REJECTED        => 'fal fa-ban',
             self::MONEY_REQUEST_CANCELLED       => 'fal fa-times-circle',
             self::SUPPLIER_PRODUCT_AVAILABILITY => 'fal fa-box-check',
+            self::SUPPLIER_MATERIAL_PLANNING    => 'fal fa-tree',
+            self::SUPPLIER_PLANNING_OVERDUE     => 'fal fa-hourglass-end',
             self::PURCHASE_ORDER_MINIMUM_POKE   => 'fal fa-hand-point-right',
             self::PRODUCT_DEVELOPMENT_TASK      => 'fal fa-lightbulb-on',
             self::PRODUCT_DEVELOPMENT_MENTION   => 'fal fa-at',

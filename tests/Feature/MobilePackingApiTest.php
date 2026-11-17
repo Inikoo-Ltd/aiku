@@ -589,6 +589,7 @@ test('mobile finalises a collection note and then sets it as collected', functio
         ->assertJsonPath('data.available_actions', [
             ['key' => 'finalise', 'label' => 'Finalise for collection'],
             ['key' => 'unpack', 'label' => 'Unpack'],
+            ['key' => 'take_over', 'label' => 'Unlock to pack'],
             ['key' => 'change_packer', 'label' => 'Change packer'],
             ['key' => 'edit_delivery_address', 'label' => 'Edit delivery address'],
         ]);

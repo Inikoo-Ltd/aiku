@@ -12,13 +12,14 @@ use App\Enums\Goods\Packaging\PackagingLevelEnum;
 use App\Enums\Goods\Packaging\PackagingMaterialCategoryEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitBatteryTypeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitNonPackagingMaterialEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitPackagingWeightEnum;
 use App\Models\Goods\PackagingComponent;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
- * What the trade unit declares for GPSR, EUDR and PPWR: the supplier's v7 answers and its packaging family.
+ * What the trade unit declares for GPSR, EUDR and packaging: the supplier's v7 answers and its packaging family.
  */
 class GetTradeUnitCompliance
 {
@@ -80,6 +81,15 @@ class GetTradeUnitCompliance
                 ['label' => __('Certification'), 'value' => Arr::get($compliance, 'eudr.certification')],
                 ['label' => __('Legality evidence'), 'value' => Arr::get($compliance, 'eudr.legality_evidence')],
             ],
+            'packaging_materials' => collect(TradeUnitPackagingWeightEnum::cases())
+                ->map(fn (TradeUnitPackagingWeightEnum $material) => [
+                    'category' => $material->category(),
+                    'material' => $material->material(),
+                    'weight_g' => Arr::get($compliance, 'packaging_materials.'.$material->value),
+                ])
+                ->whereNotNull('weight_g')
+                ->values()->all(),
+            'packaging_edit_route' => $editRoute ? [...$editRoute, 'parameters' => [...$editRoute['parameters'], 'section' => 'packaging_materials']] : null,
             'non_packaging_materials' => collect(TradeUnitNonPackagingMaterialEnum::labels())
                 ->map(fn (string $label, string $material) => ['label' => $label, 'weight_g' => Arr::get($compliance, 'non_packaging_materials.'.$material)])
                 ->whereNotNull('weight_g')

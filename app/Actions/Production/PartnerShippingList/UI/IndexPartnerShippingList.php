@@ -182,6 +182,7 @@ class IndexPartnerShippingList extends OrgAction
             ->select([
                 'partner_shopping_list_items.id',
                 'partner_shopping_list_items.job_order_id',
+                'partner_shopping_list_items.parent_id',
                 'partner_shopping_list_items.preparing_at',
                 'partner_shopping_list_items.quantity_to_produce',
                 'partner_shopping_list_items.batch_code as run_batch_code',
@@ -239,7 +240,7 @@ class IndexPartnerShippingList extends OrgAction
             $item->batch_size
         );
         $subJobs              = collect(json_decode($item->job_order_sub_jobs ?? '[]', true));
-        $item->job_order_sub_jobs = $subJobs->count() > 1
+        $item->job_order_sub_jobs = $subJobs->pluck('artisan')->unique()->count() > 1
             ? $subJobs->values()->map(fn (array $subJob, int $index) => [
                 'reference' => $item->job_order_reference.'-'.chr(65 + $index),
                 'artisan'   => $subJob['artisan'],
@@ -255,7 +256,8 @@ class IndexPartnerShippingList extends OrgAction
         $item->is_hitchhiker  = empty($item->is_fill) && !$item->job_order_id
             && $item->order_quantum > 1
             && (float) $item->open_demand_quantity < $item->order_quantum
-            && !$item->customer_demand_lines;
+            && !$item->customer_demand_lines
+            && !($item->parent_id && isset($this->production) && $this->production->hasSimpleBoard());
 
         return $item;
     }
@@ -273,9 +275,10 @@ class IndexPartnerShippingList extends OrgAction
             'job_orders.reference as job_order_reference',
             'job_orders.slug as job_order_slug',
             'job_orders.state as job_order_state',
+            'job_orders.received_at as job_order_received_at',
             'job_order_artisans.contact_name as job_order_artisan',
             DB::raw("job_orders.data->'hold'->>'reason' as job_order_hold_reason"),
-            DB::raw("(select json_agg(json_build_object('artisan', sub_job_artisans.contact_name, 'quantity', job_order_items.quantity) order by job_order_items.id) from job_order_items left join employees as sub_job_artisans on sub_job_artisans.id = job_order_items.employee_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_sub_jobs"),
+            DB::raw("(select json_agg(json_build_object('artisan', sub_job_artisans.contact_name, 'quantity', job_order_items.quantity) order by job_order_items.id) from job_order_items left join employees as sub_job_artisans on sub_job_artisans.id = coalesce(job_order_items.employee_id, job_orders.employee_id) where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_sub_jobs"),
             DB::raw('(select sum(quantity) from job_order_items where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_quantity'),
             DB::raw("exists(select 1 from job_order_item_tasks join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id and job_order_items.deleted_at is null and job_order_item_tasks.state != 'todo') as is_in_progress"),
             DB::raw("(select json_agg(json_build_object('name', steps.name, 'artisans', steps.artisans) order by steps.position) from (select pending_tasks.position, min(manufacture_tasks.name) as name, json_agg(distinct step_artisans.contact_name) as artisans from job_order_items join lateral (select job_order_item_tasks.position, job_order_item_tasks.manufacture_task_id, job_order_item_tasks.employee_id from job_order_item_tasks where job_order_item_tasks.job_order_item_id = job_order_items.id and job_order_item_tasks.state != 'done' order by job_order_item_tasks.position, job_order_item_tasks.id limit 1) as pending_tasks on true join manufacture_tasks on manufacture_tasks.id = pending_tasks.manufacture_task_id left join employees as step_artisans on step_artisans.id = coalesce(pending_tasks.employee_id, job_order_items.employee_id, job_orders.employee_id) where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id and job_order_items.deleted_at is null group by pending_tasks.position, pending_tasks.manufacture_task_id) as steps) as current_steps"),
@@ -304,7 +307,8 @@ class IndexPartnerShippingList extends OrgAction
     {
         $liveJobOrderIds = DB::table('job_orders')
             ->where('production_id', $this->production->id)
-            ->whereIn('state', JobOrderStateEnum::open())
+            ->where(fn ($query) => $query->whereIn('state', JobOrderStateEnum::open())
+                ->when($this->production->hasSimpleBoard(), fn ($query) => $query->orWhere(fn ($query) => $query->where('state', JobOrderStateEnum::RECEIVED)->where('received_at', '>=', today()))))
             ->whereNull('deleted_at')
             ->select('id');
 
@@ -503,25 +507,20 @@ class IndexPartnerShippingList extends OrgAction
     /** @return array<int, array{label: string, items: array<int, array<string, mixed>>}> */
     public function getBoardLanes(LengthAwarePaginator $items): array
     {
-        $lanes  = ['backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
-        $byLane = collect($items->items())->concat($this->getJobOrderItemsWithoutLine())->groupBy(function ($item) {
-            if (!$item->job_order_id) {
-                if ($item->is_hitchhiker && !$this->showHitchhikers) {
-                    return 'hitchhiking';
-                }
+        $lanes       = ['backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
+        $simpleBoard = $this->production->hasSimpleBoard();
+        $byLane      = collect($items->items())->concat($this->getJobOrderItemsWithoutLine())->groupBy(function ($item) use ($simpleBoard) {
+            $lane = $this->boardLaneOf($item);
 
-                return $item->preparing_at ? 'preparing' : 'backlog';
+            if (!$simpleBoard) {
+                return $lane;
             }
 
-            if ($item->job_order_state !== 'confirmed') {
-                return in_array($item->job_order_state, ['in_process', 'submitted']) ? 'assigned' : 'received';
-            }
-
-            if ($item->is_finished) {
+            if ($lane === 'received' && $item->job_order_received_at && Carbon::parse($item->job_order_received_at)->isToday()) {
                 return 'done';
             }
 
-            return $item->is_in_progress ? 'producing' : 'assigned';
+            return ['preparing' => 'backlog', 'assigned' => 'producing'][$lane] ?? $lane;
         });
 
         $this->hitchhikerCount = $byLane->get('hitchhiking', collect())->count();
@@ -536,14 +535,7 @@ class IndexPartnerShippingList extends OrgAction
 
         $this->markSurplusInPipeline($backlogItems);
 
-        $backlogItems->each(function ($item) use ($publishedLabels) {
-            $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
-            $item->batch_code         = $item->run_batch_code;
-            $item->label_expiry_date  = $this->getLabelExpiryDate($item);
-            $item->run_expiry         = $this->getRunExpiryDate($item);
-        });
-
-        $preparingItems->each(function ($item) use ($publishedLabels) {
+        $preparingItems->concat($backlogItems)->each(function ($item) use ($publishedLabels) {
             $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
             $item->batch_code         = $item->run_batch_code;
             $item->label_expiry_date  = $this->getLabelExpiryDate($item);
@@ -554,6 +546,27 @@ class IndexPartnerShippingList extends OrgAction
             ->map(fn ($label, $key) => ['label' => $label, 'items' => $byLane->get($key, collect())->values()->all()])
             ->values()
             ->all();
+    }
+
+    private function boardLaneOf(object $item): string
+    {
+        if (!$item->job_order_id) {
+            if ($item->is_hitchhiker && !$this->showHitchhikers) {
+                return 'hitchhiking';
+            }
+
+            return $item->preparing_at ? 'preparing' : 'backlog';
+        }
+
+        if ($item->job_order_state !== 'confirmed') {
+            return in_array($item->job_order_state, ['in_process', 'submitted']) ? 'assigned' : 'received';
+        }
+
+        if ($item->is_finished) {
+            return 'done';
+        }
+
+        return $item->is_in_progress ? 'producing' : 'assigned';
     }
 
     /**
@@ -590,9 +603,19 @@ class IndexPartnerShippingList extends OrgAction
 
         $surplus = GetProductionSurplusInPipeline::run($backlogItems->pluck('org_stock_id')->filter()->unique()->values()->all());
 
-        $backlogItems->sortBy(fn ($item) => [$item->created_at, $item->id])->each(function ($item) use (&$surplus) {
+        $parentJobOrders = PartnerShoppingListItem::query()
+            ->whereIn('partner_shopping_list_items.id', $backlogItems->pluck('parent_id')->filter()->unique()->values()->all())
+            ->join('job_orders', 'job_orders.id', 'partner_shopping_list_items.job_order_id')
+            ->pluck('job_orders.reference', 'partner_shopping_list_items.id');
+
+        $backlogItems->sortBy(fn ($item) => [$item->created_at, $item->id])->each(function ($item) use (&$surplus, $parentJobOrders) {
             $row = empty($item->is_fill) ? $surplus[$item->org_stock_id] ?? null : null;
             if (!$row) {
+                return;
+            }
+
+            /* What was left out of a run on purpose is not covered by that same run. */
+            if ($item->parent_id && $parentJobOrders->has($item->parent_id)) {
                 return;
             }
 
@@ -807,6 +830,7 @@ class IndexPartnerShippingList extends OrgAction
                     'subNavigation' => $this->getSubNavigation($request->route()->originalParameters()),
                 ],
                 'groupBy'      => $this->groupBy,
+                'simpleBoard'  => $this->production->hasSimpleBoard(),
                 'artisanWorkload' => in_array($this->groupBy, ['maker', 'board', 'mixes']) ? $this->getArtisanWorkload() : null,
                 'groups'       => $this->groupBy && $this->groupBy !== 'mixes' ? $this->getGroups($items) : null,
                 'hitchhikers'  => ['count' => $this->hitchhikerCount, 'showing' => $this->showHitchhikers],

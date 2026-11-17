@@ -14,6 +14,7 @@ use App\Enums\Goods\TradeUnit\TradeUnitBatteryTypeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitNonPackagingMaterialEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitPackagingWeightEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitPackagingMaterialEnum;
 use App\Models\Goods\TradeUnit;
 
@@ -95,6 +96,24 @@ trait WithTradeUnitEditSections
                 'value' => $tradeUnit?->marketing_dimensions,
             ],
         ];
+    }
+
+    public function getTradeUnitPackagingWeightFields(?TradeUnit $tradeUnit): array
+    {
+        $fields = [];
+        foreach (TradeUnitPackagingWeightEnum::cases() as $material) {
+            $fields[$material->field()] = [
+                'type'  => 'input_number',
+                'label' => TradeUnitPackagingWeightEnum::labels()[$material->value],
+                'value' => data_get($tradeUnit?->compliance, 'packaging_materials.'.$material->value),
+                'bind'  => [
+                    'suffix'            => 'g',
+                    'maxFractionDigits' => 3
+                ]
+            ];
+        }
+
+        return $fields;
     }
 
     public function getTradeUnitNonPackagingMaterialFields(?TradeUnit $tradeUnit): array

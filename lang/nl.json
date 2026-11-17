@@ -1811,7 +1811,7 @@
     "Dismiss": "Sluiten",
     "Dispatch": "Verzenden",
     "Dispatch Require Shipping": "Verzenden vereist een zending",
-    "Dispatched": "Afgeleverd",
+    "Dispatched": "Verzonden",
     "Dispatched Date": "Verzenddatum",
     "Dispatched Email": "Verzonden e-mail",
     "Dispatched Emails": "Verzonden e-mails",
@@ -9936,5 +9936,6 @@
     ":name is casting a spell…": ":name spreekt een spreuk uit…",
     ":name is gazing into his crystal ball…": ":name tuurt in zijn kristallen bol…",
     "This one needs a little more thought. Nearly there…": "Hier moet even wat langer over nagedacht worden. Bijna klaar…",
-    "Usually takes about :seconds seconds": "Duurt meestal zo'n :seconds seconden"
+    "Usually takes about :seconds seconds": "Duurt meestal zo'n :seconds seconden",
+    "Use my own shipping rates": "Mijn eigen verzendtarieven gebruiken"
 }

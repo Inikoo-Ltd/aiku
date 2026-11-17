@@ -14,6 +14,7 @@ use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\Ordering\Order\SaveOrderModification;
+use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
@@ -328,7 +329,9 @@ class GetEcomOrderActions
             }
         }
 
-
+        if (StoreOrder::isPartnerBuyingFromHub($order->customer, $order->shop)) {
+            $actions = array_values(array_filter($actions, fn ($action) => !in_array($action['key'] ?? null, ['upload-add', 'add-product', 'add-product-to-warehouse-order'], true)));
+        }
 
         return $actions;
     }

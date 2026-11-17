@@ -22,6 +22,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Catalogue\Collection\StoreCollectionWebpage;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\UpdateFamilyDepartment;
@@ -1574,4 +1575,97 @@ test('logged-out family page product list leaves out the rrp (HELP-4214)', funct
     expect($loggedOut['data'])->not->toBeEmpty()
         ->and($loggedOut['data'][0])->toHaveKey('code')->not->toHaveKeys(['rrp', 'rrp_per_unit'])
         ->and($loggedIn['data'][0])->toHaveKeys(['rrp', 'rrp_per_unit']);
+});
+
+test('switching a variant off closes the page of a former leader that is not for sale', function () {
+    [, $leader] = createProduct($this->shop);
+    $this->website->refresh()->storefront->update(['state' => WebpageStateEnum::LIVE]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $leader->group_id,
+        'code'     => $leader->code,
+        'data'     => ['products' => []],
+    ]);
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $leader->group_id,
+        'organisation_id'   => $leader->organisation_id,
+        'shop_id'           => $leader->shop_id,
+        'family_id'         => $leader->family_id,
+        'code'              => $leader->code,
+        'leader_id'         => $leader->id,
+        'status'            => true,
+        'data'              => ['products' => [$leader->id => ['product' => ['id' => $leader->id]]]],
+    ]);
+    $leader->updateQuietly([
+        'variant_id'        => $variant->id,
+        'is_variant_leader' => true,
+        'is_for_sale'       => true,
+        'is_main'           => true,
+        'state'             => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE,
+        'status'            => \App\Enums\Catalogue\Product\ProductStatusEnum::NOT_FOR_SALE,
+    ]);
+    $webpage = StoreProductWebpage::make()->action($leader);
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+
+    \App\Actions\Catalogue\Variant\UpdateVariant::make()->action($variant, ['status' => false]);
+
+    $leader->refresh();
+
+    expect($leader->is_variant_leader)->toBeFalse()
+        ->and($leader->is_for_sale)->toBeFalse()
+        ->and($webpage->refresh()->state)->toBe(WebpageStateEnum::CLOSED);
+});
+
+test('closing a page with an old redirect repoints it and forgets the cached path, as does reopening', function () {
+    [, $product] = createProduct($this->shop);
+    $this->website->refresh()->storefront->update(['state' => WebpageStateEnum::LIVE]);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+
+    \App\Models\Web\Redirect::create([
+        'group_id'        => $webpage->group_id,
+        'organisation_id' => $webpage->organisation_id,
+        'shop_id'         => $webpage->shop_id,
+        'website_id'      => $webpage->website_id,
+        'type'            => RedirectTypeEnum::PERMANENT,
+        'from_path'       => $webpage->url,
+        'from_url'        => $webpage->canonical_url,
+        'to_webpage_id'   => $this->website->storefront->id,
+    ]);
+
+    $pathKey = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($webpage->url);
+
+    Cache::put($pathKey, $webpage->id, 3600);
+    CloseWebpage::make()->action($webpage, [
+        'redirect_type' => RedirectTypeEnum::PERMANENT->value,
+        'to_webpage_id' => $this->website->storefront->id,
+    ]);
+    expect(Cache::has($pathKey))->toBeFalse();
+
+    $familyWebpage = StoreProductCategoryWebpage::make()->action($product->family);
+    $familyWebpage->update(['state' => WebpageStateEnum::LIVE]);
+    ReopenWebpage::run($webpage->refresh());
+    $redirect = \App\Models\Web\Redirect::create([
+        'group_id'        => $webpage->group_id,
+        'organisation_id' => $webpage->organisation_id,
+        'shop_id'         => $webpage->shop_id,
+        'website_id'      => $webpage->website_id,
+        'type'            => RedirectTypeEnum::PERMANENT,
+        'from_path'       => $webpage->url,
+        'from_url'        => $webpage->canonical_url,
+        'from_webpage_id' => $webpage->id,
+        'to_webpage_id'   => $this->website->storefront->id,
+    ]);
+    CloseWebpage::make()->action($webpage->refresh(), [
+        'redirect_type' => RedirectTypeEnum::PERMANENT->value,
+        'to_webpage_id' => $familyWebpage->id,
+    ]);
+    expect($redirect->refresh()->to_webpage_id)->toBe($familyWebpage->id)
+        ->and($webpage->refresh()->redirect_webpage_id)->toBe($familyWebpage->id);
+
+    Cache::put($pathKey, 0, 3600);
+    ReopenWebpage::run($webpage->refresh());
+    expect(Cache::has($pathKey))->toBeFalse();
 });

@@ -32,7 +32,7 @@ import io.aiku.droid.ui.navigation.WarehouseOverviewRoute
 enum class WarehouseModule(@StringRes val label: Int, private val canView: (WarehouseAbilities) -> Boolean) {
     Inventory(R.string.module_inventory, { it.viewInventory }),
     Locations(R.string.module_locations, { it.viewLocations }),
-    GoodsIn(R.string.module_goods_in, { it.viewGoodsIn }),
+    GoodsIn(R.string.module_goods_in, { it.viewGoodsIn || it.viewReturns }),
     GoodsOut(R.string.module_goods_out, { it.viewGoodsOut }),
     ;
 
@@ -47,6 +47,7 @@ enum class WarehouseSection(
     @StringRes val label: Int,
     val route: Any,
     val isFulfilment: Boolean = false,
+    private val canView: ((WarehouseAbilities) -> Boolean)? = null,
 ) {
     InventoryDashboard(WarehouseModule.Inventory, R.string.section_dashboard, InventoryDashboardRoute),
     SkuFamilies(WarehouseModule.Inventory, R.string.section_sko_families, SkuFamiliesRoute),
@@ -56,10 +57,10 @@ enum class WarehouseSection(
     WarehouseOverview(WarehouseModule.Locations, R.string.section_warehouse, WarehouseOverviewRoute),
     Areas(WarehouseModule.Locations, R.string.section_areas, AreasRoute),
     Locations(WarehouseModule.Locations, R.string.section_locations, LocationsRoute()),
-    GoodsInBacklog(WarehouseModule.GoodsIn, R.string.section_backlog, GoodsInBacklogRoute),
-    StockDeliveries(WarehouseModule.GoodsIn, R.string.section_stock_deliveries, StockDeliveriesRoute),
+    GoodsInBacklog(WarehouseModule.GoodsIn, R.string.section_backlog, GoodsInBacklogRoute, canView = { it.viewGoodsIn }),
+    StockDeliveries(WarehouseModule.GoodsIn, R.string.section_stock_deliveries, StockDeliveriesRoute(), canView = { it.viewGoodsIn }),
     FulfilmentDeliveries(WarehouseModule.GoodsIn, R.string.section_fulfilment_deliveries, FulfilmentDeliveriesRoute, isFulfilment = true),
-    GoodsInReturns(WarehouseModule.GoodsIn, R.string.section_returns, GoodsInReturnsRoute),
+    GoodsInReturns(WarehouseModule.GoodsIn, R.string.section_returns, GoodsInReturnsRoute(), canView = { it.viewReturns }),
     GoodsOutBacklog(WarehouseModule.GoodsOut, R.string.section_backlog, GoodsOutBacklogRoute),
     DeliveryNotes(WarehouseModule.GoodsOut, R.string.section_delivery_notes, DeliveryNotesRoute()),
     PickingSessions(WarehouseModule.GoodsOut, R.string.section_picking_sessions, PickingSessionsRoute),
@@ -68,7 +69,16 @@ enum class WarehouseSection(
     PickedBays(WarehouseModule.GoodsOut, R.string.section_picked_bays, PickedBaysRoute),
     ;
 
-    fun isVisible(can: WarehouseAbilities): Boolean = if (isFulfilment) can.viewFulfilment else module.allowsCoreSections(can)
+    fun isVisible(can: WarehouseAbilities): Boolean = when {
+        isFulfilment -> can.viewFulfilment
+        else -> module.allowsCoreSections(can) && canView?.invoke(can) != false
+    }
+}
+
+fun goodsInEntry(can: WarehouseAbilities): Any? = when {
+    can.viewGoodsIn -> StockDeliveriesRoute()
+    can.viewReturns -> GoodsInReturnsRoute()
+    else -> null
 }
 
 @Composable

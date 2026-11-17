@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\Hydrators;
 
+use App\Actions\Catalogue\Product\SyncProductWebpageWithForSale;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
@@ -46,6 +47,8 @@ class ProductHydrateForSale implements ShouldBeUnique
         }
 
         $product->update(['is_for_sale' => $isForSale]);
+
+        SyncProductWebpageWithForSale::run($product, $product->wasChanged('is_for_sale'));
 
         return ProductHydrateFirstAvailableAt::run($product);
     }

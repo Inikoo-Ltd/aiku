@@ -8,6 +8,8 @@
 
 namespace App\Actions\Traits\Authorisations;
 
+use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithGoodsInBookInAuthorisation
@@ -22,14 +24,23 @@ trait WithGoodsInBookInAuthorisation
      */
     protected function authToBookIn(ActionRequest $request, string $warehousePermission): bool
     {
-        if ($this->asAction || $request->user()->authTo("procurement.{$this->organisation->id}.edit")) {
+        if ($this->asAction) {
             return true;
         }
 
-        $warehousePermissions = $this->organisation->warehouses()->pluck('id')
+        return self::userCanBookIn($request->user(), $this->organisation, $warehousePermission);
+    }
+
+    public static function userCanBookIn(User $user, Organisation $organisation, string $warehousePermission): bool
+    {
+        if ($user->authTo("procurement.$organisation->id.edit")) {
+            return true;
+        }
+
+        $warehousePermissions = $organisation->warehouses()->pluck('id')
             ->map(fn (int $warehouseId) => sprintf($warehousePermission, $warehouseId))
             ->all();
 
-        return $warehousePermissions && $request->user()->authTo($warehousePermissions);
+        return $warehousePermissions && $user->authTo($warehousePermissions);
     }
 }

@@ -90,20 +90,27 @@ class GetPurchaseOrderCompliance
     }
 
     /**
-     * @return array{documents: array<int, array{scope: string, label: string, count: int, required: bool, supplier_only: bool}>, missing: string[], missing_supplier_only: string[]}
+     * @return array{documents: array<int, array{scope: string, label: string, count: int, files: array<int, array{name: string, download_route: array{name: string, parameters: array<string, string>}}>, required: bool, supplier_only: bool}>, missing: string[], missing_supplier_only: string[]}
      */
     public function documents(TradeUnit $tradeUnit): array
     {
-        $uploaded = $tradeUnit->attachmentsWithSharedDocuments()
-            ->map(fn (Media $attachment) => str_replace(['_private', 'msds'], ['', 'sds'], (string) $attachment->pivot->scope))
-            ->countBy();
+        $filesByScope = $tradeUnit->attachmentsWithSharedDocuments()
+            ->groupBy(fn (Media $attachment) => str_replace(['_private', 'msds'], ['', 'sds'], (string) $attachment->pivot->scope))
+            ->map(fn (Collection $attachments) => $attachments->map(fn (Media $attachment) => [
+                'name'           => $attachment->file_name,
+                'download_route' => [
+                    'name'       => 'grp.media.download',
+                    'parameters' => ['media' => $attachment->ulid],
+                ],
+            ])->values()->all());
         $required     = array_map(fn (TradeAttachmentScopeEnum $scope) => $scope->value, $this->requiredDocuments($tradeUnit));
         $supplierOnly = array_map(fn (TradeAttachmentScopeEnum $scope) => $scope->value, $this->supplierOnlyDocuments($tradeUnit));
 
         $documents = collect(self::DOCUMENTS)->map(fn (TradeAttachmentScopeEnum $scope) => [
             'scope'         => $scope->value,
             'label'         => TradeAttachmentScopeEnum::labels()[$scope->value],
-            'count'         => (int) $uploaded->get($scope->value, 0),
+            'count'         => count($filesByScope->get($scope->value, [])),
+            'files'         => $filesByScope->get($scope->value, []),
             'required'      => in_array($scope->value, $required),
             'supplier_only' => in_array($scope->value, $supplierOnly),
         ]);

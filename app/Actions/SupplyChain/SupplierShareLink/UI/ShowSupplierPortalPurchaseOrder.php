@@ -12,18 +12,22 @@ namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
+use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierPortalPurchaseOrderDocument;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierUnitEnum;
+use App\Models\Helpers\Media;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderDepositPayment;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierShareLink;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +35,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * One purchase order sent to the supplier, as the supplier sees it: what the order document it received already says
- * (products, quantities, its own prices, terms) and how far the order is up to hand over. Who placed it, our costs,
+ * (products, quantities, its own prices, terms), who submitted it and how far the order is up to hand over. Our costs,
  * extra costs, notes, deliveries and containers stay out. The supplier sees the money paid to it for the order, by
  * the buyer (deposit payments) or by the agent from its ledger: a ledger entry typed deposit or balance is that, any
  * other payment is the deposit when it is the first and the balance after it, and sets its own production dates while the order is open.
@@ -51,9 +55,9 @@ class ShowSupplierPortalPurchaseOrder
     ];
 
     /**
-     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, payments: array<string, mixed>, production: array<string, mixed>, lines: list<array<string, mixed>>}
+     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, payments: array<string, mixed>, production: array<string, mixed>, documents: array<string, mixed>, lines: list<array<string, mixed>>}
      */
-    public function handle(Supplier $supplier, int $purchaseOrderId): array
+    public function handle(Supplier $supplier, int $purchaseOrderId, ?string $token = null): array
     {
         /** @var PurchaseOrder $purchaseOrder */
         $purchaseOrder = IndexSupplierPortalPurchaseOrders::make()->sent($supplier)->findOrFail($purchaseOrderId);
@@ -74,6 +78,7 @@ class ShowSupplierPortalPurchaseOrder
                 'delivery_label'        => $open && $purchaseOrder->delivery_state ? (PurchaseOrderDeliveryStateEnum::labels()[$purchaseOrder->delivery_state->value] ?? null) : null,
                 'open'                  => $open,
                 'submitted_at'          => $purchaseOrder->submitted_at,
+                'submitted_by'          => $this->submittedBy($purchaseOrder),
                 'confirmed_at'          => $purchaseOrder->confirmed_at,
                 'estimated_received_at' => $open ? $purchaseOrder->estimated_received_at : null,
                 'settled_at'            => $purchaseOrder->state === PurchaseOrderStateEnum::SETTLED ? $purchaseOrder->settled_at : null,
@@ -90,19 +95,38 @@ class ShowSupplierPortalPurchaseOrder
                     : null,
             ],
             'journey'    => IndexSupplierPortalPurchaseOrderStages::make()->forPurchaseOrder($supplier, $purchaseOrder->id),
-            'payments'   => $this->payments($purchaseOrder),
+            'payments'   => $this->payments($purchaseOrder, $token),
             'production' => $this->production($purchaseOrder),
+            'documents'  => $this->documents($purchaseOrder, $token),
             'lines'      => $lines->map(fn (PurchaseOrderTransaction $line) => $this->line($line, $purchaseOrder))->values()->all(),
         ];
     }
 
     /**
+     * The person who sent the order: the user on the audit that moved it to submitted, else its buyer.
+     */
+    private function submittedBy(PurchaseOrder $purchaseOrder): ?string
+    {
+        $submitter = DB::table('audits')
+            ->join('users', 'users.id', 'audits.user_id')
+            ->where('audits.auditable_type', 'PurchaseOrder')
+            ->where('audits.auditable_id', $purchaseOrder->id)
+            ->where('audits.user_type', 'User')
+            ->whereRaw("audits.new_values->>'state' = ?", [PurchaseOrderStateEnum::SUBMITTED->value])
+            ->orderByDesc('audits.id')
+            ->first(['users.contact_name', 'users.username'])
+            ?? $purchaseOrder->buyer()->first(['contact_name', 'username']);
+
+        return $submitter ? ($submitter->contact_name ?: $submitter->username) : null;
+    }
+
+    /**
      * @return array{currency_code: string, total: float, paid: float, left: float, deposit_paid_at: mixed, balance_paid_at: mixed, deposit: list<array<string, mixed>>, balance: list<array<string, mixed>>}
      */
-    private function payments(PurchaseOrder $purchaseOrder): array
+    private function payments(PurchaseOrder $purchaseOrder, ?string $token): array
     {
-        $payments = $this->buyerPayments($purchaseOrder)
-            ->concat($purchaseOrder->isAgentOrder() ? $this->agentPayments($purchaseOrder) : [])
+        $payments = $this->buyerPayments($purchaseOrder, $token)
+            ->concat($purchaseOrder->isAgentOrder() ? $this->agentPayments($purchaseOrder, $token) : [])
             ->sortBy([['date', 'asc'], ['sort', 'asc']])
             ->values();
 
@@ -133,10 +157,10 @@ class ShowSupplierPortalPurchaseOrder
     /**
      * @return Collection<int, array<string, mixed>>
      */
-    private function buyerPayments(PurchaseOrder $purchaseOrder): Collection
+    private function buyerPayments(PurchaseOrder $purchaseOrder, ?string $token): Collection
     {
         return $purchaseOrder->depositPayments()
-            ->with('originalCurrency:id,code')
+            ->with(['originalCurrency:id,code', 'bankStatement:id,ulid,file_name'])
             ->get()
             ->map(fn (PurchaseOrderDepositPayment $payment) => [
                 'type'                   => null,
@@ -147,21 +171,23 @@ class ShowSupplierPortalPurchaseOrder
                 'original_currency_code' => $payment->originalCurrency?->code,
                 'reference'              => $payment->reference,
                 'paid_by'                => $purchaseOrder->organisation->name,
+                'receipt'                => $payment->bankStatement ? $this->receipt($purchaseOrder, $payment->bankStatement->ulid, $payment->bankStatement->file_name, $token) : null,
             ]);
     }
 
     /**
      * @return Collection<int, array<string, mixed>>
      */
-    private function agentPayments(PurchaseOrder $purchaseOrder): Collection
+    private function agentPayments(PurchaseOrder $purchaseOrder, ?string $token): Collection
     {
         return DB::table('agent_payments')
             ->leftJoin('currencies as original_currencies', 'original_currencies.id', 'agent_payments.original_currency_id')
+            ->leftJoin('media as receipts', 'receipts.id', 'agent_payments.media_id')
             ->where('agent_payments.purchase_order_id', $purchaseOrder->id)
             ->whereIn('agent_payments.type', AgentPaymentTypeEnum::supplierPaymentValues())
             ->whereNull('agent_payments.deleted_at')
             ->whereNotNull('agent_payments.date')
-            ->get(['agent_payments.id', 'agent_payments.type', 'agent_payments.date', 'agent_payments.amount', 'agent_payments.original_amount', 'original_currencies.code as original_currency_code', 'agent_payments.reference'])
+            ->get(['agent_payments.id', 'agent_payments.type', 'agent_payments.date', 'agent_payments.amount', 'agent_payments.original_amount', 'original_currencies.code as original_currency_code', 'agent_payments.reference', 'receipts.ulid as receipt_ulid', 'receipts.file_name as receipt_file_name'])
             ->map(fn (object $payment) => [
                 'type'                   => $payment->type,
                 'sort'                   => $payment->id,
@@ -171,7 +197,78 @@ class ShowSupplierPortalPurchaseOrder
                 'original_currency_code' => $payment->original_currency_code,
                 'reference'              => $payment->reference,
                 'paid_by'                => $purchaseOrder->agent?->organisation?->name,
+                'receipt'                => $payment->receipt_ulid ? $this->receipt($purchaseOrder, $payment->receipt_ulid, $payment->receipt_file_name, $token) : null,
             ]);
+    }
+
+    /**
+     * The transfer receipt of a payment. The supplier opens it through its own link; staff previewing the page through the staff media route.
+     *
+     * @return array{file_name: string|null, view_url: string, download_url: string}
+     */
+    private function receipt(PurchaseOrder $purchaseOrder, string $ulid, ?string $fileName, ?string $token): array
+    {
+        $parameters = $token === null
+            ? ['media' => $ulid]
+            : ['token' => $token, 'purchaseOrder' => $purchaseOrder->id, 'media' => $ulid];
+        $route      = $token === null ? 'grp.media.download' : 'grp.supplier_share.purchase_order.receipt';
+
+        return [
+            'file_name'    => $fileName,
+            'view_url'     => route($route, [...$parameters, 'inline' => true]),
+            'download_url' => route($route, $parameters),
+        ];
+    }
+
+    public function isPaymentReceipt(PurchaseOrder $purchaseOrder, Media $media): bool
+    {
+        return $purchaseOrder->depositPayments()->where('media_id', $media->id)->exists()
+            || ($purchaseOrder->isAgentOrder() && DB::table('agent_payments')
+                ->where('purchase_order_id', $purchaseOrder->id)
+                ->where('media_id', $media->id)
+                ->whereIn('type', AgentPaymentTypeEnum::supplierPaymentValues())
+                ->whereNull('deleted_at')
+                ->whereNotNull('date')
+                ->exists());
+    }
+
+    public function supplierDocumentsQuery(PurchaseOrder $purchaseOrder): MorphToMany
+    {
+        return $purchaseOrder->attachments()->wherePivot('sub_scope', StoreSupplierPortalPurchaseOrderDocument::SUB_SCOPE);
+    }
+
+    /**
+     * The shipping and customs documents the supplier uploaded to the order, and the types it can upload.
+     *
+     * @return array{open: bool, types: list<array{value: string, label: string}>, files: list<array<string, mixed>>}
+     */
+    private function documents(PurchaseOrder $purchaseOrder, ?string $token): array
+    {
+        $labels = PurchaseOrderAttachmentScopeEnum::labels();
+
+        return [
+            'open'  => in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true),
+            'types' => array_map(fn (PurchaseOrderAttachmentScopeEnum $scope) => ['value' => $scope->value, 'label' => $labels[$scope->value]], PurchaseOrderAttachmentScopeEnum::supplierPortal()),
+            'files' => $this->supplierDocumentsQuery($purchaseOrder)
+                ->orderBy('model_has_attachments.id')
+                ->get(['media.id', 'media.ulid'])
+                ->map(function (Media $media) use ($purchaseOrder, $token, $labels) {
+                    $parameters = $token === null
+                        ? ['media' => $media->ulid]
+                        : ['token' => $token, 'purchaseOrder' => $purchaseOrder->id, 'media' => $media->ulid];
+                    $route      = $token === null ? 'grp.media.download' : 'grp.supplier_share.purchase_order.document';
+
+                    return [
+                        'type'         => $labels[$media->pivot->scope] ?? $media->pivot->scope,
+                        'file_name'    => $media->pivot->caption,
+                        'uploaded_at'  => $media->pivot->created_at,
+                        'view_url'     => route($route, [...$parameters, 'inline' => true]),
+                        'download_url' => route($route, $parameters),
+                    ];
+                })
+                ->values()
+                ->all(),
+        ];
     }
 
     /**
@@ -234,6 +331,6 @@ class ShowSupplierPortalPurchaseOrder
         $link = SupplierShareLink::findLiveByToken($token);
         abort_if($link->needsCode(), 403);
 
-        return response()->json($this->handle($link->supplier, $purchaseOrder));
+        return response()->json($this->handle($link->supplier, $purchaseOrder, $token));
     }
 }

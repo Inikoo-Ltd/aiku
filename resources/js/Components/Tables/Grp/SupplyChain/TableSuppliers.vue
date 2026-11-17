@@ -22,6 +22,7 @@ interface Supplier {
     slug: string
     code: string
     name: string
+    name_source: "company" | "contact" | null
     nickname: string | null
     agent_slug: string | null
     agent_code: string | null
@@ -50,8 +51,22 @@ function supplierProductsRoute(supplier: Supplier) {
     return route("grp.supply-chain.suppliers.supplier_products.index", [supplier.slug])
 }
 
-function purchaseOrdersRoute(supplier: Supplier) {
-    return route("grp.supply-chain.suppliers.purchase_orders.index", [supplier.slug])
+const livePurchaseOrderStates = ["in_process", "submitted", "confirmed", "in_production", "in_warehouse", "ready", "handed_over", "arrived"]
+
+function purchaseOrdersRoute(supplier: Supplier, query: Record<string, string> = {}) {
+    return route("grp.supply-chain.suppliers.purchase_orders.index", { supplier: supplier.slug, ...query })
+}
+
+function openPurchaseOrdersRoute(supplier: Supplier) {
+    return purchaseOrdersRoute(supplier, { "elements[state]": livePurchaseOrderStates.join(",") })
+}
+
+function nameSourceTooltip(supplier: Supplier): string | null {
+    if (supplier.name_source === "company") {
+        return ctrans("Company name")
+    }
+
+    return supplier.name_source === "contact" ? ctrans("Contact name") : null
 }
 
 function agentRoute(supplier: Supplier) {
@@ -70,6 +85,9 @@ function agentRoute(supplier: Supplier) {
             </Link>
             <span v-if="supplier.open_incidents" class="ml-1 rounded-full bg-gray-800 px-1.5 py-0.5 text-xs font-medium text-white tabular-nums" :title="ctrans('Open incidents')">{{ supplier.open_incidents }}</span>
         </template>
+        <template #cell(name)="{ item: supplier }">
+            <span v-tooltip="nameSourceTooltip(supplier)">{{ supplier.name }}</span>
+        </template>
         <template #cell(agent_code)="{ item: supplier }">
             <Link v-if="supplier.agent_slug" :href="agentRoute(supplier)" class="secondaryLink" :title="supplier.agent_name">
                 {{ supplier.agent_code }}
@@ -87,9 +105,9 @@ function agentRoute(supplier: Supplier) {
             <Link :href="purchaseOrdersRoute(supplier)" class="secondaryLink">
                 {{ locale.number(supplier.number_purchase_orders) }}
             </Link>
-            <span v-if="supplier.number_open_purchase_orders" class="ml-1 text-xs text-gray-500 tabular-nums" :title="ctrans('Open purchase orders')">
+            <Link v-if="supplier.number_open_purchase_orders" :href="openPurchaseOrdersRoute(supplier)" class="secondaryLink ml-1 text-xs tabular-nums" :title="ctrans('Open purchase orders')">
                 ({{ ctrans(":count open", { count: locale.number(supplier.number_open_purchase_orders) }) }})
-            </span>
+            </Link>
         </template>
         <template #cell(number_stock_deliveries)="{ item: supplier }">
             {{ locale.number(supplier.number_stock_deliveries) }}

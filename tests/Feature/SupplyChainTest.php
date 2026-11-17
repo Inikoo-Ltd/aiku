@@ -664,6 +664,7 @@ test('confirmed supplier product upload creates families, trade unit, SKO, suppl
         ->and($tradeUnit->gross_weight)->toBe(250)
         ->and($tradeUnit->tariff_code)->toBe('4202129990')
         ->and($tradeUnit->marketing_ingredients)->toBe('Hemp, cotton')
+        ->and($tradeUnit->marketing_dimensions)->toEqual(['type' => 'rectangular', 'units' => 'cm', 'l' => 0.28, 'w' => 0.17, 'h' => 0.08])
         ->and($tradeUnit->barcode)->toBe('4006381333931')
         ->and($tradeUnit->tradeUnitFamily?->code)->toBe('UPL-BAG')
         ->and($stock->name)->toBe('Pack of 2 Hemp Forest Bag')

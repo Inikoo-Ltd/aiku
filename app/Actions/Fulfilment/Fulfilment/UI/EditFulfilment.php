@@ -8,12 +8,14 @@
 
 namespace App\Actions\Fulfilment\Fulfilment\UI;
 
+use App\Actions\Comms\Mailbox\WithCustomerMailboxBlueprint;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
+use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Organisation;
@@ -26,6 +28,8 @@ use Lorisleiva\Actions\ActionRequest;
 class EditFulfilment extends OrgAction
 {
     use WithFulfilmentShopEditAuthorisation;
+    use WithCustomerMailboxBlueprint;
+
     public function handle(Fulfilment $fulfilment): Fulfilment
     {
         return $fulfilment;
@@ -359,6 +363,7 @@ class EditFulfilment extends OrgAction
                                 ]
                             ],
                         ],
+                        $this->fulfilmentMailboxBlueprint($shop, $request),
                         [
                             'label'  => __('Ebay Redirect Key'),
                             'icon'   => 'fa-light fa-key',
@@ -404,6 +409,27 @@ class EditFulfilment extends OrgAction
 
             ]
         );
+    }
+
+    /**
+     * The sender name is saved by the shop's own settings, not by this form, so it stays there.
+     *
+     * @return array{label: string, icon: string, fields: array<string, mixed>}
+     */
+    private function fulfilmentMailboxBlueprint(Shop $shop, ActionRequest $request): array
+    {
+        $blueprint = $this->customerMailboxBlueprint($shop, $request);
+        unset($blueprint['fields']['mailbox_sender_name']);
+
+        $blueprint['label'] = __('Gmail inbox');
+        data_set($blueprint, 'fields.mailbox.value.texts', [
+            'not_connected_title' => __('No Gmail inbox connected'),
+            'not_connected'       => __('Sign in with the address customers send their emails and pick notices to, for example info@, not with your own account. Emails arrive in the chat inbox; pick notices from customers set up for it become returns.'),
+            'connect'             => __('Connect Gmail inbox'),
+            'connected'           => __('Emails to this address arrive in the chat inbox. Pick notices from customers set up for it become returns.'),
+        ]);
+
+        return $blueprint;
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

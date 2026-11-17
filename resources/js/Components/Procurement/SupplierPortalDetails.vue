@@ -147,7 +147,7 @@ const toggleAllShown = (isSelected: boolean) => {
 const money = (amount: number | null, currency: string | null = props.details.currency) =>
 	amount === null ? "—" : currency ? new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: amount < 100 ? 2 : 0 }).format(amount) : String(amount)
 
-const statusClass = { active: "text-green-700", on_hold: "text-amber-700", discontinued: "text-gray-400" }
+const statusClass = { active: "text-green-700", on_hold: "text-amber-700", discontinued: "text-red-600" }
 const stateClass: Record<string, string> = {
 	draft: "text-gray-500",
 	received: "text-gray-700",
@@ -199,7 +199,7 @@ const edit = (submission: EditedSubmission) => {
 			</div>
 			<p v-else-if="!products.length" class="py-6 text-center text-xs text-gray-400">{{ ctrans("No products") }}</p>
 			<ul v-else class="mt-3 divide-y divide-gray-100 md:hidden" :class="{ 'opacity-60': isLoadingProducts }">
-				<li v-for="product in products" :key="product.id" class="flex gap-3 py-3">
+				<li v-for="product in products" :key="product.id" class="flex gap-3 py-3" :class="{ 'bg-red-50': product.status === 'discontinued' }">
 					<Checkbox v-if="labelsPrint" v-model="selectedIds" :value="product.id" :inputId="`portal-product-${product.id}`" :aria-label="product.code" class="mt-1" />
 					<ZoomableImage v-if="product.image" :src="product.image" :full="product.image_full" :alt="product.code" class="h-14 w-14 shrink-0" />
 					<div v-else class="h-14 w-14 shrink-0 rounded bg-gray-100" />
@@ -239,7 +239,7 @@ const edit = (submission: EditedSubmission) => {
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-gray-100 tabular-nums text-gray-700">
-						<tr v-for="product in products" :key="product.id">
+						<tr v-for="product in products" :key="product.id" :class="{ 'bg-red-50': product.status === 'discontinued' }">
 							<td v-if="labelsPrint" class="w-8 py-1.5">
 								<Checkbox v-model="selectedIds" :value="product.id" :aria-label="product.code" />
 							</td>

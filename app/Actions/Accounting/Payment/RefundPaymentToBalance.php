@@ -19,6 +19,7 @@ use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccountShop;
@@ -105,6 +106,10 @@ class RefundPaymentToBalance extends OrgAction
 
         if ($payment->paymentAccount->type === PaymentAccountTypeEnum::BANK_FEE) {
             throw ValidationException::withMessages(['amount' => __('A bank fee we absorbed was never received, so it cannot be refunded')]);
+        }
+
+        if (CreditTransaction::where('payment_id', $payment->id)->where('type', CreditTransactionTypeEnum::TOP_UP)->exists()) {
+            throw ValidationException::withMessages(['amount' => __('This payment went to the customer credit: take the money from the credit instead')]);
         }
 
         if ($payment->status !== PaymentStatusEnum::SUCCESS) {

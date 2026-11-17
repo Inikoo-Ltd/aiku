@@ -10,7 +10,6 @@
 namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
 use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
-use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use Illuminate\Validation\Rule;
@@ -22,27 +21,17 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class SetReturnDeliveryNoteItemAsReturned extends OrgAction
 {
     use WithReturnsAuthorisation;
+    use WithReturnItemPuts;
     use WithReturnedItemLocation;
     use AsAction;
     use WithAttributes;
 
     public function handle(ReturnDeliveryNoteItem $returnDeliveryNoteItem, array $modelData): ReturnDeliveryNoteItem
     {
-        $user = auth()->user();
+        $this->ensureReturnIsBeingReturned($returnDeliveryNoteItem);
+        $this->ensureLocationHoldsItem($returnDeliveryNoteItem, $modelData['location_org_stock_id'] ?? null);
 
-        $totalItemReturned = $returnDeliveryNoteItem->total_expected_qty - (
-            $returnDeliveryNoteItem->total_item_damaged +
-            $returnDeliveryNoteItem->total_item_not_returned +
-            $returnDeliveryNoteItem->total_item_returned
-        );
-
-        data_set($modelData, 'quantity', $totalItemReturned);
-        data_set($modelData, 'sower_user_id', $user->id);
-
-        StoreSowing::make()->action($returnDeliveryNoteItem, $user, $modelData);
-        CalculateReturnDeliveryNoteItemTotalSowed::make()->action($returnDeliveryNoteItem);
-
-        return $returnDeliveryNoteItem;
+        return $this->storeLockedPut($returnDeliveryNoteItem, $modelData, null);
     }
 
     public function rules(): array

@@ -5,6 +5,7 @@ import android.os.Build
 import io.aiku.droid.data.api.AikuHttpClient
 import io.aiku.droid.data.api.AuthApi
 import io.aiku.droid.data.api.ClockingApi
+import io.aiku.droid.data.api.GoodsInApi
 import io.aiku.droid.data.api.GoodsOutApi
 import io.aiku.droid.data.api.HrApi
 import io.aiku.droid.data.api.InventoryApi
@@ -20,6 +21,7 @@ import io.aiku.droid.data.session.KeystoreCipher
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.data.session.WarehouseCache
 import io.aiku.droid.data.settings.DeviceSettings
+import io.aiku.droid.ui.goodsin.StockDeliveryHandoff
 import io.aiku.droid.ui.goodsout.DeliveryNoteHandoff
 import io.aiku.droid.ui.goodsout.extra.PickingSessionHandoff
 import io.aiku.droid.ui.scan.ScanController
@@ -51,6 +53,8 @@ class AppContainer(context: Context) {
 
     val inventoryApi: InventoryApi = mobileApi
 
+    val goodsInApi: GoodsInApi = mobileApi
+
     val images: ImageSource = RemoteImages(httpClient, BuildConfig.AIKU_API_BASE_URL)
 
     val scans = ScanController()
@@ -58,6 +62,8 @@ class AppContainer(context: Context) {
     val deliveryNoteHandoff = DeliveryNoteHandoff()
 
     val pickingSessionHandoff = PickingSessionHandoff()
+
+    val stockDeliveryHandoff = StockDeliveryHandoff()
 
     private val sessionCipher = KeystoreCipher(SESSION_KEY_ALIAS)
 

@@ -50,6 +50,7 @@ class UpdateCustomerSalesChannelSettings extends OrgAction
             'pricing_type'           => ['sometimes', Rule::in(['percent', 'fixed'])],
             'pricing_value'          => ['sometimes', 'numeric', 'gt:-100'],
             'private_tracking_notes' => ['sometimes', 'boolean'],
+            'own_shipping_rates' => ['sometimes', 'boolean'],
         ];
 
         if (!$this->customerSalesChannel->user instanceof EbayUser) {

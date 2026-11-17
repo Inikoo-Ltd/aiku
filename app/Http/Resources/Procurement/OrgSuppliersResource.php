@@ -38,7 +38,8 @@ class OrgSuppliersResource extends JsonResource
         return [
             'org_supplier_slug'            => $this->org_supplier_slug,
             'code'                         => $this->code,
-            'name'                         => $this->name,
+            'name'                         => Supplier::nameFromContact($this->company_name ?? null, $this->contact_name ?? null) ?: $this->name,
+            'name_source'                  => $this->nameSource(),
             'location'                     => json_decode($this->location),
             'number_org_supplier_products' => $this->number_org_supplier_products,
             'number_purchase_orders'       => $this->number_purchase_orders,
@@ -57,6 +58,15 @@ class OrgSuppliersResource extends JsonResource
     private function nickname(): ?string
     {
         return $this->name !== Supplier::nameFromContact($this->company_name ?? null, $this->contact_name ?? null) ? $this->name : null;
+    }
+
+    private function nameSource(): ?string
+    {
+        if (($this->company_name ?? '') != '') {
+            return 'company';
+        }
+
+        return ($this->contact_name ?? '') != '' ? 'contact' : null;
     }
 
     /**

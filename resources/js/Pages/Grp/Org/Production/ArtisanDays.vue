@@ -179,7 +179,7 @@ const selectedDays = computed(() => props.data.data.filter((day) => selectedRows
 
 const overtimeDialog = ref(false)
 const overtimeDays = ref<ArtisanDay[]>([])
-const overtimeDate = ref(toLocalIsoDate(new Date()))
+const overtimeDate = ref("")
 const overtimeDateModel = dateModel(overtimeDate)
 const overtimeArtisans = ref<number[]>([])
 const overtimeDecision = ref<"approved" | "not_approved">("approved")
@@ -205,7 +205,7 @@ function openOvertime(days: ArtisanDay[]) {
     const first = days[0]?.overtime
     overtimeDays.value = days
     overtimeArtisans.value = []
-    overtimeDate.value = days[0]?.date ?? toLocalIsoDate(new Date())
+    overtimeDate.value = days[0]?.date ?? ""
     overtimeDecision.value = first?.decision ?? "approved"
     overtimeCompensation.value = first?.compensation ?? "paid"
     overtimeReason.value = first?.reason ?? ""
@@ -665,7 +665,7 @@ function savePaidTime() {
                 <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" :disabled="processing" @click="overtimeDialog = false">
                     <template #icon><FontAwesomeIcon :icon="['fal', 'times']" class="text-red-500" fixed-width aria-hidden="true" /></template>
                 </Button>
-                <Button type="primary" full :label="ctrans('Save')" :loading="processing" :disabled="!overtimeTargets.length || (!overtimeDays.length && (!plannedStart || !plannedEnd)) || (overtimeDecision === 'not_approved' && !overtimeReason.trim()) || (!plannedStart !== !plannedEnd) || (overtimeTouchesLockedWeek && !lockReason.trim())" @click="saveOvertime">
+                <Button type="primary" full :label="ctrans('Save')" :loading="processing" :disabled="!overtimeTargets.length || (!overtimeDays.length && (!overtimeDate || !plannedStart || !plannedEnd)) || (overtimeDecision === 'not_approved' && !overtimeReason.trim()) || (!plannedStart !== !plannedEnd) || (overtimeTouchesLockedWeek && !lockReason.trim())" @click="saveOvertime">
                     <template #icon><FontAwesomeIcon :icon="['fal', 'check']" fixed-width aria-hidden="true" /></template>
                 </Button>
             </div>

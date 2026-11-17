@@ -39,6 +39,8 @@ const props = defineProps<{
         material_composition: { material: string, percentage: number }[]
         material_composition_text: string | null
         eudr: Field[]
+        packaging_materials: { category: string, material: string, weight_g: number }[]
+        packaging_edit_route: { name: string, parameters: Record<string, string> } | null
         non_packaging_materials: { label: string, weight_g: number, share_of_unit_pct: number | null }[]
         non_packaging_edit_route: { name: string, parameters: Record<string, string> } | null
         battery_type: string | null
@@ -64,6 +66,14 @@ const sections = computed(() => [
     { key: "regulatory", title: ctrans("Regulatory"), icon: "fal fa-flask", fields: props.data.regulatory },
     { key: "eudr", title: ctrans("EUDR raw materials"), icon: "fal fa-tree", fields: props.data.eudr },
 ])
+
+const packagingCategories = computed(() => {
+    const categories: Record<string, { material: string, weight_g: number }[]> = {}
+    props.data.packaging_materials.forEach((material) => {
+        (categories[material.category] ??= []).push(material)
+    })
+    return Object.entries(categories).map(([category, materials]) => ({ category, materials }))
+})
 
 const grams = (value: number | null) => value === null ? "—" : `${Number(value.toFixed(3))} g`
 </script>
@@ -166,18 +176,37 @@ const grams = (value: number | null) => value === null ? "—" : `${Number(value
         <section class="rounded-lg border border-gray-200 bg-white max-w-5xl">
             <h3 class="px-3 py-2 border-b border-gray-100 font-semibold flex items-center gap-2">
                 <FontAwesomeIcon icon="fal fa-box-open" class="text-gray-400" fixed-width />
-                {{ ctrans("Packaging (PPWR)") }}
-                <span v-if="data.packaging" class="font-normal text-gray-500">
-                    {{ data.packaging.code }}
-                    <template v-if="data.packaging.shared_with">· {{ ctrans("shared with :count other trade units", { count: data.packaging.shared_with }) }}</template>
-                </span>
+                {{ ctrans("Packaging") }}
+                <Link v-if="data.packaging_edit_route && data.packaging_materials.length" :href="route(data.packaging_edit_route.name, data.packaging_edit_route.parameters)"
+                      class="ml-auto text-gray-400 hover:text-gray-700" v-tooltip="ctrans('Edit')">
+                    <FontAwesomeIcon icon="fal fa-pencil" fixed-width />
+                </Link>
             </h3>
-            <div v-if="!data.packaging" class="px-3 py-4 text-gray-500">
-                {{ ctrans("No packaging components yet. They come from the Packaging components tab of the supplier product upload.") }}
+            <div v-if="!data.packaging_materials.length" class="px-3 py-4 text-gray-500">
+                {{ ctrans("None declared.") }}
+                <Link v-if="data.packaging_edit_route" :href="route(data.packaging_edit_route.name, data.packaging_edit_route.parameters)"
+                      class="ml-1 text-gray-700 underline hover:text-gray-900">
+                    <FontAwesomeIcon icon="fal fa-pencil" class="mr-1" fixed-width />{{ ctrans("Add materials") }}
+                </Link>
             </div>
-            <div v-else class="overflow-x-auto">
+            <dl v-else class="divide-y divide-gray-100">
+                <div v-for="group in packagingCategories" :key="group.category" class="px-3 py-1.5 grid grid-cols-[minmax(7rem,12rem)_minmax(0,1fr)] gap-2">
+                    <dt class="text-gray-500">{{ group.category }}</dt>
+                    <dd class="space-y-0.5">
+                        <div v-for="material in group.materials" :key="material.material" class="font-medium tabular-nums">
+                            <span v-if="group.materials.length > 1 || material.material !== group.category" class="font-normal text-gray-500">{{ material.material }}:</span>
+                            {{ grams(material.weight_g) }}
+                        </div>
+                    </dd>
+                </div>
+            </dl>
+            <div v-if="data.packaging" class="border-t border-gray-100 px-3 py-1.5 text-gray-500">
+                {{ ctrans("Supplier packaging components") }} · {{ data.packaging.code }}
+                <template v-if="data.packaging.shared_with">· {{ ctrans("shared with :count other trade units", { count: data.packaging.shared_with }) }}</template>
+            </div>
+            <div v-if="data.packaging" class="overflow-x-auto">
                 <table class="min-w-full text-xs">
-                    <thead class="text-gray-600 text-left">
+                    <thead class="text-gray-600 text-left whitespace-nowrap">
                         <tr class="border-b border-gray-100">
                             <th class="px-3 py-1.5 font-medium">{{ ctrans("Level") }}</th>
                             <th class="px-3 py-1.5 font-medium">{{ ctrans("Component") }}</th>

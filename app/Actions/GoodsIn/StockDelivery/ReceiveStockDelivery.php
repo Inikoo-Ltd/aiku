@@ -29,7 +29,7 @@ class ReceiveStockDelivery extends OrgAction
 
     private StockDelivery $stockDelivery;
 
-    private const RECEIVABLE_STATES = [
+    public const array RECEIVABLE_STATES = [
         StockDeliveryStateEnum::IN_PROCESS,
         StockDeliveryStateEnum::CONFIRMED,
         StockDeliveryStateEnum::READY_TO_SHIP,

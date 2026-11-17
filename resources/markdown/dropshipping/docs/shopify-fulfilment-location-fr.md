@@ -52,6 +52,16 @@ Un tarif à vous qui expédie depuis <b>aiku-</b> dans un pays pour lequel nous 
 
 Nos produits ne sont vendus que vers les pays que vos marchés incluent. Un client dans un pays qu'aucun de vos marchés ne couvre les voit épuisés.
 
+## Utiliser vos propres tarifs d'expédition
+
+Vos clients peuvent payer votre propre expédition pour nos produits au lieu de <b>AW Standard</b>, par exemple pour offrir la livraison gratuite au-delà d'un montant de commande.
+
+1. Dans votre admin Shopify, ouvrez <b>Marchés</b>, puis chaque marché où vous vendez, puis <b>Expédition</b>. Modifiez chacun de vos tarifs et vérifiez que <b>Expédié depuis</b> inclut l'emplacement <b>aiku-</b>. Sans lui, vos clients ne voient aucune expédition pour nos produits.
+2. Dans les <b>Paramètres</b> de votre canal, sous <b>Expédition</b>, activez <b>Utiliser mes propres tarifs d'expédition</b>. En quelques minutes, nous désactivons chaque tarif <b>AW Standard</b> du profil <b>AW Connect shipping</b>, et ils restent désactivés quand nos prix changent.
+3. Passez une commande test avec l'un de nos produits pour ne voir que vos tarifs au paiement.
+
+Ce que nous vous facturons pour chaque commande ne change pas : nous facturons toujours notre propre expédition. Désactivez le paramètre pour afficher à nouveau <b>AW Standard</b>.
+
 ## Votre propre stock de nos produits
 
 Les produits de notre profil d'expédition partent uniquement de l'emplacement <b>aiku-</b>, donc Shopify ne les expédie pas depuis vos propres emplacements. Si vous détenez vous-même certains de nos produits, par exemple un article inutilisé qu'un client vous a renvoyé, mettez-les en vente dans votre boutique comme un produit distinct et expédiez ces commandes vous-même.

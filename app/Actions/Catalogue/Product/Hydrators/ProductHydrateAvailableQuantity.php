@@ -48,7 +48,8 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
     /**
      * A product that is 1/n of an SKO stores its ratio rounded to 8 decimals (1/6 as 0.16666667),
      * so dividing by it falls just short of whole numbers: 13 SKOs gave 77 products, not 78.
-     * When the ratio is 1/n rounded, count with n itself; any other ratio divides as stored.
+     * When the ratio is 1/n rounded, count with n itself; any other ratio divides as stored, in
+     * whole thousandths and hundred-millionths (the column scales) so 378.4 / 0.4 is 946, not 945.
      */
     public static function wholeProducts(float|string $skoQuantity, float|string $productToOrgStockRatio): int
     {
@@ -57,7 +58,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
             return intdiv((int) round($skoQuantity * 1000) * (int) $productsPerSko, 1000);
         }
 
-        return (int) floor($skoQuantity / $productToOrgStockRatio);
+        return intdiv((int) round($skoQuantity * 1000) * 100000, (int) round($productToOrgStockRatio * 100000000));
     }
 
     /** The SQL twin of wholeProducts(); $skoQuantity is a column or a placeholder, used twice. */

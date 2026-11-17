@@ -48,6 +48,7 @@ import io.aiku.droid.ui.components.CountBadge
 import io.aiku.droid.ui.components.GroupLabel
 import io.aiku.droid.ui.components.SkeletonBlock
 import io.aiku.droid.ui.components.fakeData
+import io.aiku.droid.ui.components.goodsInEntry
 import io.aiku.droid.ui.components.initialsOf
 import io.aiku.droid.ui.components.warehouseKicker
 import io.aiku.droid.ui.navigation.ClockingRoute
@@ -60,7 +61,6 @@ import io.aiku.droid.ui.navigation.LocationsRoute
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.ProfileRoute
 import io.aiku.droid.ui.navigation.SkusRoute
-import io.aiku.droid.ui.navigation.StockDeliveriesRoute
 import io.aiku.droid.ui.navigation.WarehouseDashboardRoute
 import io.aiku.droid.ui.theme.LocalAikuColors
 import java.time.LocalTime
@@ -83,7 +83,7 @@ fun HomeScreen() {
     val weekTotal = clockingWeekTotal(clockingState, now)
     val shortcuts = listOfNotNull(
         Shortcut(R.string.module_goods_out, R.drawable.ic_ui_goods_out, DeliveryNotesRoute(), HomeSamples.GOODS_OUT_BADGE).takeIf { can.viewGoodsOut },
-        Shortcut(R.string.module_goods_in, R.drawable.ic_ui_goods_in, StockDeliveriesRoute).takeIf { can.viewGoodsIn },
+        goodsInEntry(can)?.let { Shortcut(R.string.module_goods_in, R.drawable.ic_ui_goods_in, it) },
         Shortcut(R.string.module_inventory, R.drawable.ic_ui_pallet, SkusRoute()).takeIf { can.viewInventory },
         Shortcut(R.string.module_locations, R.drawable.ic_ui_locations, LocationsRoute()).takeIf { can.viewLocations },
     )

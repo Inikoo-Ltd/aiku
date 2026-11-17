@@ -23,12 +23,12 @@ use Illuminate\Validation\ValidationException;
  * for it stands for a line on that list. An order, a line or extra quantity keyed in by hand has no
  * line behind it, so the buyer's list keeps asking for goods that already left and the hub makes
  * them twice (HELP-3848). Removing a line or lowering a quantity stays open, the list takes those back.
+ * Staff may still open an order for the partner and put services on it, to invoice them.
  * The message travels as a validation error so both Inertia forms and axios callers show it.
  */
 class EnsureHubPartnerOrderFromShoppingList
 {
     private const ALWAYS_BLOCKED_ROUTES = [
-        'customer.order.store',
         'customer.submitted_order.store',
         'order.transaction.store',
         'order.transaction.upload',
@@ -44,6 +44,10 @@ class EnsureHubPartnerOrderFromShoppingList
     public function handle(Request $request, Closure $next)
     {
         $routeName = Str::after((string) $request->route()?->getName(), 'grp.models.');
+
+        if ($routeName === 'order.transaction.store' && $request->route()->parameter('historicAsset')?->model_type === 'Service') {
+            return $next($request);
+        }
 
         $isAlwaysBlocked = in_array($routeName, self::ALWAYS_BLOCKED_ROUTES, true);
         if (!$isAlwaysBlocked && !in_array($routeName, self::QUANTITY_ROUTES, true)) {
@@ -96,11 +100,15 @@ class EnsureHubPartnerOrderFromShoppingList
             $transactions = $order->transactions()->whereIn('id', array_keys((array) $request->input('transactions', [])))->get()->keyBy('id');
 
             return collect((array) $request->input('transactions', []))
-                ->contains(fn ($data, $transactionId) => $this->isRaise((float) Arr::get($data, 'newQty'), $transactions->get($transactionId)?->quantity_ordered));
+                ->contains(fn ($data, $transactionId) => $transactions->get($transactionId)?->model_type !== 'Service' && $this->isRaise((float) Arr::get($data, 'newQty'), $transactions->get($transactionId)?->quantity_ordered));
         }
 
         /** @var Transaction $transaction */
         $transaction = $request->route()->parameter('transaction');
+
+        if ($transaction->model_type === 'Service') {
+            return false;
+        }
 
         if ($request->has('units_ordered')) {
             $units = (float) ($transaction->model?->units ?: 1);

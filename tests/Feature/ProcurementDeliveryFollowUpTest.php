@@ -48,6 +48,7 @@ use App\Notifications\StockDeliveryFeedbackNotification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -230,7 +231,7 @@ test('another supplier on the same consolidated delivery does not see the feedba
     expect(collect(\App\Actions\GoodsIn\StockDeliveryFollowUp\UI\GetStockDeliveryFeedbackForm::run($stockDelivery->refresh())['suppliers'])->pluck('id')->sort()->values()->all())
         ->toBe(collect([$productA->supplier_id, $productB->supplier_id])->sort()->values()->all());
 
-    $feedbackA = followUpFeedback($stockDelivery, $author, ['supplier_id' => $productA->supplier_id, 'rating' => 5, 'comment' => 'Perfect']);
+    $feedbackA = followUpFeedback($stockDelivery, $author, ['supplier_id' => $productA->supplier_id, 'rating' => 5, 'comment' => 'Perfect', 'photos' => [UploadedFile::fake()->image('cartons.jpg')]]);
     $feedbackB = followUpFeedback($stockDelivery, $author, ['supplier_id' => $productB->supplier_id, 'rating' => 2, 'comment' => 'Broken cartons', 'topics' => ['packing']]);
 
     expect($feedbackA->agent_id)->toBe($agent->id)
@@ -243,6 +244,18 @@ test('another supplier on the same consolidated delivery does not see the feedba
                 ->where('delivery_feedback', fn ($cards) => collect($cards)->pluck('id')->all() === [$feedback->id])
                 ->etc()));
     }
+
+    $tokenA    = portalToken($productA->supplier);
+    $mediaUlid = \Illuminate\Support\Facades\DB::table('model_has_attachments')->join('media', 'media.id', 'model_has_attachments.media_id')
+        ->where('model_has_attachments.sub_scope', 'feedback:'.$feedbackA->id)->value('media.ulid');
+    $photoUrl  = route('grp.supplier_share.feedback_photo', ['token' => $tokenA, 'media' => $mediaUlid, 'inline' => true]);
+    $this->get(route('grp.supplier_share.show', $tokenA))
+        ->assertInertia(fn ($page) => $page->loadDeferredProps('delivery_feedback', fn ($reload) => $reload
+            ->where('delivery_feedback.0.photos.0.url', $photoUrl)
+            ->etc()));
+
+    $this->get($photoUrl)->assertOk();
+    $this->get(route('grp.supplier_share.feedback_photo', ['token' => portalToken($productB->supplier), 'media' => $mediaUlid]))->assertNotFound();
 });
 
 test('a repeated submit makes no duplicate feedback and no second notification, a separate partial delivery gets its own', function () {

@@ -63,7 +63,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
             ->where('type', ShoppingAssistantEventTypeEnum::SHOWN)
             ->orderBy('position')
             ->orderBy('id')
-            ->get(['shopping_assistant_message_id', 'product_id', 'group', 'reason']);
+            ->get(['shopping_assistant_message_id', 'product_id', 'group', 'reason', 'reason_code']);
 
         $cards = $events->isEmpty() ? collect() : collect(IrisAuthenticatedProductsInWebpageResource::collection(
             $this->getBaseQuery('all')
@@ -122,6 +122,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
                         if ($card && isset($data['groups'][$event->group])) {
                             $data['groups'][$event->group][] = array_merge($card, [
                                 'assistant_reason'     => (string) $event->reason,
+                                'assistant_reason_code' => $event->reason_code,
                                 'assistant_message_id' => $message->id,
                             ]);
                         }

@@ -451,8 +451,12 @@ describe('partner shopping list', function () {
         $jobOrderItemId = $jobOrder->jobOrderItems()->first()->id;
         expect(\App\Models\Production\JobOrderItemTask::where('job_order_item_id', $jobOrderItemId)->count())->toBeGreaterThan(0);
 
+        $sameProduct = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 2]);
+        $sameProduct->update(['job_order_id' => $jobOrder->id]);
+
         \App\Actions\Production\PartnerShippingList\UnassignToProduceItems::make()->action($production, [$item->id]);
         expect($item->fresh()->job_order_id)->toBeNull()
+            ->and($sameProduct->fresh()->job_order_id)->toBeNull()
             ->and(JobOrder::withTrashed()->find($jobOrder->id)->jobOrderItems()->count())->toBe(0)
             ->and(\App\Models\Production\JobOrderItemTask::where('job_order_item_id', $jobOrderItemId)->count())->toBe(0);
     });
@@ -807,6 +811,34 @@ describe('partner shopping list', function () {
             ->and($line['state_label'])->toContain($artisan->contact_name)
             ->and($line['quantity'])->toBe(5.0)
             ->and($line['is_estimate'])->toBeTrue();
+    });
+
+    test('a partner job order on hold or past its production time gives the website no date', function () {
+        $seller         = $this->orgPartner->partner;
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $sellerOrgStock->update(['quantity_available' => 0]);
+        $production = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        Artefact::where('production_id', $production->id)->where('org_stock_id', $sellerOrgStock->id)->first()
+            ?? StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
+
+        $item     = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $jobOrder = StoreJobOrdersFromToProduceItems::make()->action($production, [$item->id])['job_orders'][0];
+        $product  = (new \App\Models\Catalogue\Product())->setRelation('orgStocks', collect([$this->buyerOrgStock]));
+
+        expect(GetProductIncomingStock::make()->earliestIncoming($product))->not->toBeNull();
+
+        $jobOrder->update(['data' => array_merge($jobOrder->data ?? [], ['hold' => ['reason' => 'waiting for label from china', 'kind' => 'missing_label']])]);
+        $line = collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->firstWhere('reference', $jobOrder->reference);
+
+        expect($line['eta'])->toBeNull()
+            ->and($line['state_label'])->toStartWith('On hold at')
+            ->and(GetProductIncomingStock::make()->earliestIncoming($product))->toBeNull();
+
+        $jobOrder->update(['data' => \Illuminate\Support\Arr::except($jobOrder->data, 'hold'), 'created_at' => now()->subYear(), 'confirmed_at' => now()->subYear()]);
+
+        expect(collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->firstWhere('reference', $jobOrder->reference)['is_overdue'])->toBeTrue()
+            ->and(GetProductIncomingStock::make()->earliestIncoming($product))->toBeNull();
     });
 
     test('cherry pick reuses in-process intercompany order across picks', function () {
@@ -1601,8 +1633,10 @@ describe('partner shopping list', function () {
         $quantity = (float) $transaction->quantity_ordered;
 
         expect(fn () => $through('grp.models.customer.submitted_order.store', ['customer' => $order->customer]))->toThrow(ValidationException::class)
-            ->and(fn () => $through('grp.models.customer.order.store', ['customer' => $order->customer]))->toThrow(ValidationException::class)
+            ->and($through('grp.models.customer.order.store', ['customer' => $order->customer]))->toBe('passed')
             ->and(fn () => $through('grp.models.order.transaction.store', ['order' => $order]))->toThrow(ValidationException::class)
+            ->and(fn () => $through('grp.models.order.transaction.store', ['order' => $order, 'historicAsset' => new \App\Models\Catalogue\HistoricAsset(['model_type' => 'Product'])]))->toThrow(ValidationException::class)
+            ->and($through('grp.models.order.transaction.store', ['order' => $order, 'historicAsset' => new \App\Models\Catalogue\HistoricAsset(['model_type' => 'Service'])]))->toBe('passed')
             ->and(fn () => $through('grp.models.order.follow_up.store', ['order' => $order]))->toThrow(ValidationException::class)
             ->and($through('grp.models.transaction.update_quantity_ordered', ['transaction' => $transaction], ['quantity_ordered' => $quantity]))->toBe('passed')
             ->and(fn () => $through('grp.models.transaction.update_quantity_ordered', ['transaction' => $transaction], ['quantity_ordered' => $quantity + 1]))->toThrow(ValidationException::class)

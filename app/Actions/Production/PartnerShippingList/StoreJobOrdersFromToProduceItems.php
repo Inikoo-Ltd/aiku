@@ -20,7 +20,9 @@ use App\Models\Production\JobOrder;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreJobOrdersFromToProduceItems extends OrgAction
@@ -29,7 +31,10 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
      * @param  array<int, int>  $ids
      * @return array{job_orders: array<int, JobOrder>, skipped: array<int, array{id: int, reason: string}>}
      */
-    public function handle(Production $production, array $ids, ?int $employeeId = null, float|int|null $quantity = null, ?string $plannedFor = null): array
+    /**
+     * @param  array<int, array<int, array{quantity: float|int, batch_code?: string|null, expiry_date?: string|null}>>  $runs  per line id, one job line per batch of raw material, each with its own batch code and expiry date
+     */
+    public function handle(Production $production, array $ids, ?int $employeeId = null, float|int|null $quantity = null, ?string $plannedFor = null, array $runs = []): array
     {
         $seller = $production->organisation;
 
@@ -56,7 +61,7 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
                 continue;
             }
 
-            $lines[] = [
+            $line = [
                 'artefact'    => $artefact,
                 'quantity'    => $quantity && count($ids) === 1 ? $quantity : ($item->quantity_to_produce ?? $item->quantity),
                 'batch_code'  => $item->batch_code,
@@ -70,11 +75,65 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
                     'order'         => $item->transaction?->order?->reference,
                 ],
             ];
+
+            $itemRuns = $line['fill'] ? [] : ($runs[$item->id] ?? []);
+
+            if ($production->hasSimpleBoard() && !$line['fill']) {
+                $this->leaveShortfallOnBoard($item, $itemRuns ? array_sum(array_column($itemRuns, 'quantity')) : (float) $line['quantity']);
+            }
+            if (!$itemRuns) {
+                $lines[] = $line;
+                continue;
+            }
+
+            foreach (array_values($itemRuns) as $index => $run) {
+                $lines[] = [
+                    ...$line,
+                    'quantity'    => $run['quantity'],
+                    'batch_code'  => ($run['batch_code'] ?? null) ?: null,
+                    'expiry_date' => ($run['expiry_date'] ?? null) ?: null,
+                    'after'       => $index === 0 ? $line['after'] : null,
+                ];
+            }
         }
 
         $jobOrders = StoreJobOrdersGroupedByArtisan::run($production, $lines, $employeeId, $plannedFor);
 
         return ['job_orders' => $jobOrders, 'skipped' => $skipped];
+    }
+
+    /**
+     * On a simple board the run is made as typed: when fewer SKOs are made than the line asks for,
+     * the line keeps what is made and the rest stays on the board as its own line, as at pre-pick.
+     */
+    private function leaveShortfallOnBoard(PartnerShoppingListItem $item, float $made): void
+    {
+        $shortfall = round((float) $item->quantity - $made, 3);
+        if ($shortfall <= 0) {
+            return;
+        }
+
+        PartnerShoppingListItem::create([
+            ...$item->only([
+                'group_id',
+                'organisation_id',
+                'org_partner_id',
+                'partner_organisation_id',
+                'stock_id',
+                'org_stock_id',
+                'priority',
+                'needed_by',
+                'notes',
+                'transaction_id',
+                'added_by_user_id',
+            ]),
+            'parent_id'  => $item->id,
+            'quantity'   => $shortfall,
+            'state'      => ShoppingListItemStateEnum::OPEN,
+            'created_at' => $item->created_at,
+        ]);
+
+        $item->update(['quantity' => $made]);
     }
 
     private function resolveArtefact(Production $production, PartnerShoppingListItem $item): ?Artefact
@@ -104,7 +163,30 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
             'employee_id' => ['sometimes', 'nullable', 'integer', 'exists:employees,id'],
             'quantity'    => ['sometimes', 'nullable', 'numeric', 'min:1'],
             'planned_for' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
+            'assign_to_me' => ['sometimes', 'boolean'],
+            'runs'                 => ['sometimes', 'array'],
+            'runs.*'               => ['array', 'min:1'],
+            'runs.*.*.quantity'    => ['required', 'numeric', 'min:1'],
+            'runs.*.*.batch_code'  => ['sometimes', 'nullable', 'string', 'max:64'],
+            'runs.*.*.expiry_date' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
         ];
+    }
+
+    /**
+     * On a simple board (Production::hasSimpleBoard) the job goes to whoever moved the card.
+     */
+    private function moverEmployeeId(ActionRequest $request): int
+    {
+        $employeeId = $request->user()->employees()
+            ->where('employees.organisation_id', $this->organisation->id)
+            ->where('employees.state', EmployeeStateEnum::WORKING->value)
+            ->value('employees.id');
+
+        if (!$employeeId) {
+            throw ValidationException::withMessages(['assign_to_me' => __('You are not a worker of :organisation, so the job cannot be given to you.', ['organisation' => $this->organisation->name])]);
+        }
+
+        return $employeeId;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -131,7 +213,9 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
     {
         $this->initialisationFromProduction($production, $request);
 
-        return $this->handle($production, $this->validatedData['ids'], $this->validatedData['employee_id'] ?? null, $this->validatedData['quantity'] ?? null, $this->validatedData['planned_for'] ?? null);
+        $employeeId = ($this->validatedData['assign_to_me'] ?? false) ? $this->moverEmployeeId($request) : ($this->validatedData['employee_id'] ?? null);
+
+        return $this->handle($production, $this->validatedData['ids'], $employeeId, $this->validatedData['quantity'] ?? null, $this->validatedData['planned_for'] ?? null, $this->validatedData['runs'] ?? []);
     }
 
     public function htmlResponse(array $result): RedirectResponse

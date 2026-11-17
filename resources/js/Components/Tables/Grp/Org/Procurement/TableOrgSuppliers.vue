@@ -21,6 +21,7 @@ interface OrgSupplier {
 	org_supplier_slug: string
 	code: string
 	name: string
+	name_source: "company" | "contact" | null
 	nickname: string | null
 	location: object
 	status_icon: object
@@ -56,11 +57,30 @@ function supplierProductsRoute(orgSupplier: OrgSupplier) {
 	])
 }
 
-function purchaseOrdersRoute(orgSupplier: OrgSupplier) {
-	return route("grp.org.procurement.org_suppliers.show.purchase_orders.index", [
-		route().params["organisation"],
-		orgSupplier.org_supplier_slug,
-	])
+const livePurchaseOrderStates = ["in_process", "submitted", "confirmed", "in_production", "in_warehouse", "ready", "handed_over", "arrived"]
+
+function purchaseOrdersRoute(orgSupplier: OrgSupplier, query: Record<string, string> = {}) {
+	const routeName = route().current("grp.org.agent.*")
+		? "grp.org.agent.org_suppliers.show.purchase_orders.index"
+		: "grp.org.procurement.org_suppliers.show.purchase_orders.index"
+
+	return route(routeName, {
+		organisation: route().params["organisation"],
+		orgSupplier: orgSupplier.org_supplier_slug,
+		...query,
+	})
+}
+
+function openPurchaseOrdersRoute(orgSupplier: OrgSupplier) {
+	return purchaseOrdersRoute(orgSupplier, { "elements[state]": livePurchaseOrderStates.join(",") })
+}
+
+function nameSourceTooltip(orgSupplier: OrgSupplier): string | null {
+	if (orgSupplier.name_source === "company") {
+		return ctrans("Company name")
+	}
+
+	return orgSupplier.name_source === "contact" ? ctrans("Contact name") : null
 }
 
 function orgAgentRoute(orgSupplier: OrgSupplier) {
@@ -82,6 +102,9 @@ function orgAgentRoute(orgSupplier: OrgSupplier) {
 			</Link>
 			<span v-if="orgSupplier.open_incidents" class="ml-1 rounded-full bg-gray-800 px-1.5 py-0.5 text-xs font-medium text-white tabular-nums" :title="ctrans('Open incidents')">{{ orgSupplier.open_incidents }}</span>
 		</template>
+		<template #cell(name)="{ item: orgSupplier }">
+			<span v-tooltip="nameSourceTooltip(orgSupplier)">{{ orgSupplier.name }}</span>
+		</template>
 		<template #cell(agent_code)="{ item: orgSupplier }">
 			<Link v-if="orgSupplier.org_agent_slug" :href="orgAgentRoute(orgSupplier)" class="secondaryLink" :title="orgSupplier.agent_name">
 				{{ orgSupplier.agent_code }}
@@ -99,9 +122,9 @@ function orgAgentRoute(orgSupplier: OrgSupplier) {
 			<Link :href="purchaseOrdersRoute(orgSupplier)" class="secondaryLink">
 				{{ locale.number(orgSupplier.number_purchase_orders ?? 0) }}
 			</Link>
-			<span v-if="orgSupplier.number_open_purchase_orders" class="ml-1 text-xs text-gray-500 tabular-nums" :title="ctrans('Open purchase orders')">
+			<Link v-if="orgSupplier.number_open_purchase_orders" :href="openPurchaseOrdersRoute(orgSupplier)" class="secondaryLink ml-1 text-xs tabular-nums" :title="ctrans('Open purchase orders')">
 				({{ ctrans(":count open", { count: locale.number(orgSupplier.number_open_purchase_orders) }) }})
-			</span>
+			</Link>
 		</template>
 		<template #cell(number_stock_deliveries)="{ item: orgSupplier }">
 			{{ locale.number(orgSupplier.number_stock_deliveries ?? 0) }}

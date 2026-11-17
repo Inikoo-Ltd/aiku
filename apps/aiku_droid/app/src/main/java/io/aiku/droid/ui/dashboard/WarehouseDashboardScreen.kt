@@ -39,6 +39,7 @@ import io.aiku.droid.ui.components.ProgressBar
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.fakeData
+import io.aiku.droid.ui.components.goodsInEntry
 import io.aiku.droid.ui.components.moduleKicker
 import io.aiku.droid.ui.components.tone
 import io.aiku.droid.ui.navigation.ClockingRoute
@@ -52,7 +53,6 @@ import io.aiku.droid.ui.navigation.LocationsRoute
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.SearchRoute
 import io.aiku.droid.ui.navigation.SkusRoute
-import io.aiku.droid.ui.navigation.StockDeliveriesRoute
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 private data class ModuleShortcut(@StringRes val label: Int, @DrawableRes val icon: Int, val route: Any)
@@ -68,7 +68,7 @@ fun WarehouseDashboardScreen() {
     val shortcuts = listOfNotNull(
         ModuleShortcut(R.string.module_inventory, R.drawable.ic_ui_sko, SkusRoute()).takeIf { can.viewInventory },
         ModuleShortcut(R.string.module_locations, R.drawable.ic_ui_location, LocationsRoute()).takeIf { can.viewLocations },
-        ModuleShortcut(R.string.module_goods_in, R.drawable.ic_ui_order, StockDeliveriesRoute).takeIf { can.viewGoodsIn },
+        goodsInEntry(can)?.let { ModuleShortcut(R.string.module_goods_in, R.drawable.ic_ui_order, it) },
         ModuleShortcut(R.string.module_goods_out, R.drawable.ic_ui_truck, DeliveryNotesRoute()).takeIf { can.viewGoodsOut },
         ModuleShortcut(R.string.dashboard_clocking, R.drawable.ic_ui_clock, ClockingRoute),
     )

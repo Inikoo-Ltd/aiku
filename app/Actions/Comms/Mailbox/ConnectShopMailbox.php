@@ -23,9 +23,13 @@ class ConnectShopMailbox extends OrgAction
         return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]);
     }
 
-    public function handle(Shop $shop, int $userId, ?string $section = null, bool $returnToAppointments = false): RedirectResponse
+    public function handle(Shop $shop, int $userId, ?string $section = null, ?string $from = null): RedirectResponse
     {
-        $returnUrl = route($returnToAppointments ? 'grp.org.shops.show.crm.appointments.settings' : 'grp.org.shops.show.settings.edit', [$shop->organisation->slug, $shop->slug]);
+        $returnUrl = match ($from) {
+            'appointments' => route('grp.org.shops.show.crm.appointments.settings', [$shop->organisation->slug, $shop->slug]),
+            'fulfilment'   => route('grp.org.fulfilments.show.settings.edit', [$shop->organisation->slug, $shop->fulfilment->slug]),
+            default        => route('grp.org.shops.show.settings.edit', [$shop->organisation->slug, $shop->slug]),
+        };
         $queryParams = [];
 
         if ($section) {
@@ -50,6 +54,6 @@ class ConnectShopMailbox extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $request->user()->id, $request->query('section'), $request->query('from') === 'appointments');
+        return $this->handle($shop, $request->user()->id, $request->query('section'), $request->query('from'));
     }
 }

@@ -103,7 +103,7 @@ class NotifyPurchasingOfSupplierProductAvailability
     /**
      * @return Collection<int, User>
      */
-    private function purchasingLeads(OrgSupplierProduct $orgSupplierProduct, ?User $changedBy): Collection
+    public function purchasingLeads(OrgSupplierProduct $orgSupplierProduct, ?User $changedBy): Collection
     {
         $permissions = Permission::where('name', "org-supervisor.$orgSupplierProduct->organisation_id.procurement")->pluck('name')->all();
         $buyerId     = DB::table('purchase_order_transactions as pot')

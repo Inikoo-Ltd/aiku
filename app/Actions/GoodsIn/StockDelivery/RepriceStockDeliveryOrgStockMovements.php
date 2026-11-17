@@ -46,14 +46,17 @@ class RepriceStockDeliveryOrgStockMovements
             }
 
             $movements = OrgStockMovement::where('type', OrgStockMovementTypeEnum::PURCHASE)
-                ->where(function ($query) use ($item, $auroraDeliveryKey) {
-                    $query->whereIn('id', $item->sowings()->select('org_stock_movement_id'));
-                    if ($auroraDeliveryKey && $this->isFirstLineOfOrgStock($item)) {
-                        $query->orWhere(fn ($query) => $query->where('org_stock_id', $item->org_stock_id)
-                            ->whereRaw("substring(note from 'delivery/([0-9]+)') = ?", [$auroraDeliveryKey]));
-                    }
-                })
+                ->whereIn('id', $item->sowings()->select('org_stock_movement_id'))
                 ->get();
+
+            if ($auroraDeliveryKey && $this->isFirstLineOfOrgStock($item)) {
+                $movements = $movements->merge(
+                    OrgStockMovement::where('type', OrgStockMovementTypeEnum::PURCHASE)
+                        ->where('org_stock_id', $item->org_stock_id)
+                        ->whereRaw("substring(note from 'delivery/([0-9]+)') = ?", [$auroraDeliveryKey])
+                        ->get()
+                );
+            }
 
             foreach ($movements as $movement) {
                 $orgAmount = round($cost['cost_per_sku'] * $movement->quantity, 3);

@@ -71,6 +71,7 @@ const props = defineProps<{
 	product_websites_route?: string
 	purchase_order_route?: string
 	purchase_order_production_route?: string
+	purchase_order_documents_route?: string
 	agreement?: PortalAgreement | null
 	order_plan?: OrderPlan
 }>()
@@ -280,6 +281,7 @@ onMounted(() => {
 					:contacts-loading="!loadedDetails"
 					:summary="summary"
 					:sales="sales"
+					:feedback="feedback"
 					:open-orders="openOrders"
 					:orders="purchase_order_stages"
 					:theme="navigationTheme"
@@ -299,7 +301,7 @@ onMounted(() => {
 					<TableSupplierPortalPurchaseOrders v-if="purchase_orders" :data="purchase_orders" tab="purchase_orders" @open="openPurchaseOrderId = $event" />
 				</div>
 
-				<SupplierPortalOrderPlan v-else-if="tab === 'order_plan'" :plan="order_plan" :accent="accent" @open="openPurchaseOrderId = $event" />
+				<SupplierPortalOrderPlan v-else-if="tab === 'order_plan'" :plan="order_plan" :accent="accent" :forms="forms" @open="openPurchaseOrderId = $event" />
 
 				<SupplierPortalPriceChanges
 					v-else-if="tab === 'price_changes' && price_changes && forms"
@@ -324,7 +326,7 @@ onMounted(() => {
 			</div>
 		</main>
 
-		<SupplierPortalPurchaseOrderDialog v-if="purchase_order_route" v-model="openPurchaseOrderId" :purchase-order-route="purchase_order_route" :production-route="purchase_order_production_route" />
+		<SupplierPortalPurchaseOrderDialog v-if="purchase_order_route" v-model="openPurchaseOrderId" :purchase-order-route="purchase_order_route" :production-route="purchase_order_production_route" :documents-route="purchase_order_documents_route" />
 
 		<footer class="fixed bottom-0 left-0 z-20 flex h-6 w-screen items-center justify-between gap-x-4 bg-black px-4 text-xs text-slate-400">
 			<a href="https://aiku.io/" target="_blank" rel="noopener" class="flex shrink-0 items-center gap-x-1.5 whitespace-nowrap hover:text-white">

@@ -166,6 +166,7 @@ class ShowPurchaseOrder extends OrgAction
         };
         $items = fn () => $draftOrgAgent
             ? JsonResource::collection(IndexAgentCoverBucketItems::make()->onSupplierDrafts($draftOrgAgent, $purchaseOrder->supplier_id, PurchaseOrderTabsEnum::ITEMS->value, $purchaseOrder->id))
+                ->additional(['this_order_only' => $request->boolean(PurchaseOrderTabsEnum::ITEMS->value.'_filter.this_order')])
             : PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder, PurchaseOrderTabsEnum::ITEMS->value));
 
         $orderer = [];

@@ -101,3 +101,15 @@ test('italy takes its plain zone rates, not the islands or remote areas surcharg
         ->and($result[0]['methodDefinitionsToCreate'][0]['rateDefinition']['price']['amount'])->toBe('8.90')
         ->and($result[1]['countries'])->toBe([['code' => 'ES', 'includeAllProvinces' => true]]);
 });
+
+test('a country the shop does not deliver to gets no Shopify zone, and a zone left with no country is dropped', function () {
+    $zones = [
+        shippingZoneForProfile('Zona 4', [['country_code' => 'AT'], ['country_code' => 'CH']], weightSteps([['from' => 0, 'to' => 'INF', 'price' => 9]])),
+        shippingZoneForProfile('Zona 5', [['country_code' => 'GR']], weightSteps([['from' => 0, 'to' => 'INF', 'price' => 12]])),
+    ];
+
+    $result = SyncShopifyDeliveryProfile::zonesToCreate($zones, 'EUR', fn ($amount) => number_format((float) $amount, 2, '.', ''), ['CH', 'GR']);
+
+    expect(array_column($result, 'name'))->toBe(['Zona 4'])
+        ->and($result[0]['countries'])->toBe([['code' => 'AT', 'includeAllProvinces' => true]]);
+});

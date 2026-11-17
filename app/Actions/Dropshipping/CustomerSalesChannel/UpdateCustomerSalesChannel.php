@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
+use App\Actions\Dropshipping\Shopify\FulfilmentService\SyncShopifyDeliveryProfile;
 use App\Actions\Dropshipping\Tiktok\Product\UpdateInventoryTiktokProducts;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\OrgAction;
@@ -56,7 +57,12 @@ class UpdateCustomerSalesChannel extends OrgAction
             data_set($modelData, 'settings.woocommerce.private_tracking_notes', (bool) Arr::pull($modelData, 'private_tracking_notes'));
         }
 
-        $stockSettingsBefore = self::stockSettings($customerSalesChannel);
+        if (Arr::has($modelData, 'own_shipping_rates')) {
+            data_set($modelData, 'settings.shopify.own_shipping_rates', (bool) Arr::pull($modelData, 'own_shipping_rates'));
+        }
+
+        $stockSettingsBefore    = self::stockSettings($customerSalesChannel);
+        $ownShippingRatesBefore = (bool) Arr::get($customerSalesChannel->settings, 'shopify.own_shipping_rates');
 
         $customerSalesChannel = $this->update($customerSalesChannel, $modelData, 'settings');
 
@@ -66,6 +72,10 @@ class UpdateCustomerSalesChannel extends OrgAction
                 PlatformTypeEnum::TIKTOK => UpdateInventoryTiktokProducts::dispatch($customerSalesChannel, true),
                 default => null
             };
+        }
+
+        if ($ownShippingRatesBefore !== (bool) Arr::get($customerSalesChannel->settings, 'shopify.own_shipping_rates')) {
+            SyncShopifyDeliveryProfile::dispatch($customerSalesChannel);
         }
 
         return $customerSalesChannel;
@@ -126,6 +136,7 @@ class UpdateCustomerSalesChannel extends OrgAction
             'stock_threshold' => ['sometimes', 'nullable', 'numeric'],
             'max_quantity_advertise' => ['sometimes', 'nullable', 'numeric'],
             'private_tracking_notes' => ['sometimes', 'boolean'],
+            'own_shipping_rates' => ['sometimes', 'boolean'],
 
             'closed_at'         => ['sometimes', 'date']
         ];

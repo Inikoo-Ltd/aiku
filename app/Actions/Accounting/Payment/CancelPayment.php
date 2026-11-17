@@ -9,6 +9,7 @@
 
 namespace App\Actions\Accounting\Payment;
 
+use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\Traits\HydratesPaymentSideEffects;
 use App\Actions\Accounting\Traits\AuthorizesAccountingEdit;
 use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
@@ -126,11 +127,24 @@ class CancelPayment extends OrgAction
 
         $bankFeePayment = $bankTransaction->bank_fee_payment_id ? Payment::find($bankTransaction->bank_fee_payment_id) : null;
 
+        $creditTransactionId = $bankTransaction->match_data['credit_transaction_id'] ?? null;
+        if ($creditTransactionId && $payment->customer) {
+            StoreCreditTransaction::make()->action($payment->customer, [
+                'amount'     => -round((float)$payment->amount, 2),
+                'type'       => CreditTransactionTypeEnum::REMOVE_FUNDS_OTHER,
+                'payment_id' => $payment->id,
+                'notes'      => 'Bank transfer added to the credit was cancelled: '.$payment->reference,
+            ], notifyCustomer: false);
+        }
+
         $bankTransaction->update([
             'payment_id'          => null,
             'bank_fee_payment_id' => null,
             'match_state'         => BankTransactionMatchStateEnum::REVIEW,
-            'match_data'          => array_merge($bankTransaction->match_data, ['reason' => 'the payment recorded from this line was cancelled']),
+            'match_data'          => array_merge(
+                collect($bankTransaction->match_data)->except(['paid_by', 'credit_customer_id', 'credit_customer_name', 'credit_transaction_id'])->all(),
+                ['reason' => 'the payment recorded from this line was cancelled']
+            ),
         ]);
 
         if ($bankFeePayment && $bankFeePayment->state !== PaymentStateEnum::CANCELLED) {

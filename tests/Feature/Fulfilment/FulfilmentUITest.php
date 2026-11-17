@@ -372,6 +372,16 @@ test('UI edit fulfilment', function () {
             )
             ->has('breadcrumbs', 3);
     });
+
+    $mailbox = collect($response->viewData('page')['props']['formData']['blueprint'])->firstWhere('label', 'Gmail inbox');
+    expect($mailbox['fields'])->toHaveKey('mailbox')
+        ->and($mailbox['fields'])->not->toHaveKey('mailbox_sender_name')
+        ->and($mailbox['fields']['mailbox']['value']['connect_url'])->toContain('from=fulfilment');
+
+    $googleUrl = \App\Actions\Comms\Mailbox\ConnectShopMailbox::make()->handle($this->fulfilment->shop, 1, null, 'fulfilment')->getTargetUrl();
+    parse_str(parse_url($googleUrl, PHP_URL_QUERY), $query);
+    expect(json_decode(\Illuminate\Support\Facades\Crypt::decryptString($query['state']), true)['return'])
+        ->toStartWith(route('grp.org.fulfilments.show.settings.edit', [$this->organisation->slug, $this->fulfilment->slug]));
 });
 
 test('UI show fulfilment shop', function () {

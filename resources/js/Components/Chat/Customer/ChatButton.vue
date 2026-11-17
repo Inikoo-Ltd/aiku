@@ -27,11 +27,12 @@ import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { router, usePage } from "@inertiajs/vue3"
-import { faSpinner, faComments, faEnvelope, faPhone, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck, faVideo, faStoreAlt, faHatWizard } from "@fal"
+import { faSpinner, faComments, faEnvelope, faPhone, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck, faVideo, faStoreAlt } from "@fal"
 import { useWindowSize } from "@vueuse/core"
 import { useBundle } from "../../../Composables/useBundle"
 import { useFloatingButtonsDrag } from "@/Iris/Composables/useFloatingButtonsDrag"
 import Image from "@common/Components/Image.vue"
+import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
 
 const MessageArea = defineAsyncComponent(() => import("@/Components/Chat/Customer/MessageArea.vue"))
 const MessageHistory = defineAsyncComponent(() => import("@/Components/Chat/MessageHistory.vue"))
@@ -43,7 +44,7 @@ const AppointmentDialog = defineAsyncComponent(() => import("@/Iris/Components/A
 library.add(
     faWhatsapp, faFacebookF, faFacebookMessenger, faInstagram, faXTwitter, faTelegram, faTiktok,
     faYoutube, faLinkedinIn, faLine, faWeixin, faPinterest, faSnapchat, faDiscord,
-    faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck, faVideo, faStoreAlt, faHatWizard
+    faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck, faVideo, faStoreAlt
 )
 
 interface ChatMessage {
@@ -224,7 +225,7 @@ const isAppointmentDialogVisible = ref(false)
 const selectedAppointmentTypeId = ref<number | null>(null)
 
 const merlinOption = computed<ContactOption | null>(() => layout?.iris?.merlin_mode && layout?.iris?.shopping_assistant
-    ? { icon: ["fal", "hat-wizard"], label: ctrans(":name, our AI assistant (answers now)", { name: layout.iris.shopping_assistant.name || "Merlin" }), url: "", isMerlin: true }
+    ? { icon: null, label: ctrans(":name, our AI assistant (answers now)", { name: layout.iris.shopping_assistant.name || "Merlin" }), url: "", isMerlin: true }
     : null)
 
 const contactOptions = computed<ContactOption[]>(() => {
@@ -1116,7 +1117,9 @@ if (isClient) {
                             <button v-for="(contactOption, index) in contactOptions" :key="index"
                                 @click="selectContactOption(contactOption)"
                                 class="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-gray-50">
-                                <FontAwesomeIcon :icon="contactOptionIcon(contactOption)" class="text-lg" fixed-width
+                                <MerlinIcon v-if="contactOption.isMerlin" mono class="text-lg"
+                                    :style="{ color: contactOptionColor(contactOption), width: '1.25em', height: '1.25em' }" />
+                                <FontAwesomeIcon v-else :icon="contactOptionIcon(contactOption)" class="text-lg" fixed-width
                                     :style="{ color: contactOptionColor(contactOption) }" aria-hidden="true" />
                                 <span class="text-sm text-gray-800">{{ contactOption.label }}</span>
                             </button>

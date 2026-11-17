@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Actions\SupplyChain\SupplierAgreement\GetSupplierAgreementStatus;
 use App\Actions\SupplyChain\SupplierMailshot\UI\WithSupplierMailshotsSubNavigation;
 use App\Actions\Procurement\WithParentSiblingsNavigation;
@@ -31,6 +32,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexSuppliers extends OrgAction
 {
@@ -100,6 +102,7 @@ class IndexSuppliers extends OrgAction
             'type' => [
                 'label'    => __('Type'),
                 'elements' => $elements,
+                'default'  => implode(',', array_diff(array_keys($elements), ['archived'])),
                 'engine'   => function ($query, $elements) {
                     $query->where(function ($query) use ($elements) {
                         foreach ($elements as $element) {
@@ -175,7 +178,8 @@ class IndexSuppliers extends OrgAction
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
-                prefix: $prefix
+                prefix: $prefix,
+                default: $elementGroup['default'] ?? null
             );
         }
 
@@ -198,12 +202,13 @@ class IndexSuppliers extends OrgAction
                 'supplier_stats.number_purchase_orders',
                 'supplier_stats.number_stock_deliveries',
             ])
-            ->selectRaw('coalesce(supplier_stats.number_open_purchase_orders, 0) + coalesce(supplier_stats.number_purchase_orders_state_in_process, 0) as number_open_purchase_orders')
+            ->selectRaw("coalesce(nullif(suppliers.company_name, ''), suppliers.contact_name, suppliers.name) as official_name")
+            ->selectRaw(PurchaseOrderStateEnum::countFromStatsSql('supplier_stats', PurchaseOrderStateEnum::live()).' as number_open_purchase_orders')
             ->selectSub(ProcurementNote::openIncidentsOfSupplierQuery(), 'open_incidents')
             ->tap(fn ($query) => GetSupplierAgreementStatus::make()->selectStatus($query, $parent->group_id ?? $parent->id))
             ->allowedSorts([
                 'code',
-                'name',
+                AllowedSort::field('name', 'official_name'),
                 'agent_code',
                 'location',
                 'number_supplier_products',
@@ -228,7 +233,8 @@ class IndexSuppliers extends OrgAction
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null
                 );
             }
 

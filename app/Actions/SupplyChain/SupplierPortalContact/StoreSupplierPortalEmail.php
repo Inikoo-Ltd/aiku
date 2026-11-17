@@ -14,6 +14,7 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierPortalContact;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\SupplierPortalPermissions;
 
 /**
  * Staff let one more email at the supplier log in by itself. The email goes into the supplier's other emails, so the
@@ -44,7 +45,7 @@ class StoreSupplierPortalEmail extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo('supply-chain.edit');
+        return SupplierPortalPermissions::canEdit($request->user(), $request->route('supplier'));
     }
 
     public function rules(): array

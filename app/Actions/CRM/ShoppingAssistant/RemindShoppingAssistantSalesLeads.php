@@ -34,7 +34,7 @@ class RemindShoppingAssistantSalesLeads
 
     public string $commandDescription = 'Raise again the big order leads and restock questions from the AI shopping assistant that nobody has taken';
 
-    public const int WORKDAY_STARTS = 9;
+    public const int WORKDAY_STARTS = 8;
 
     public const int WORKDAY_ENDS = 18;
 

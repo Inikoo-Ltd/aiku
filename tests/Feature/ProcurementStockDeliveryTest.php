@@ -102,6 +102,8 @@ use App\Models\Helpers\CurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\FetchCurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\WarmCurrencyExchanges;
+use App\Enums\Inventory\Location\LocationStatusEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Support\Facades\Cache;
@@ -2261,6 +2263,51 @@ test('stock delivery item that did not arrive is checked as zero SKOs', function
     expect($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::NOT_RECEIVED);
 });
 
+test('stock delivery items are placed only in a working location that holds stock, in a warehouse the user books in, and a new location link records who made it', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-GUARDS', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+
+    $warehouse      = Warehouse::where('organisation_id', $this->organisation->id)->oldest('id')->first() ?? StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+    $otherWarehouse = StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+    $broken         = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $noStock        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $working        = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $elsewhere      = StoreLocation::make()->action($otherWarehouse, Location::factory()->definition());
+    $broken->update(['status' => LocationStatusEnum::BROKEN]);
+    $noStock->update(['allow_stocks' => false]);
+
+    foreach ([$broken, $noStock] as $location) {
+        expect(fn () => UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem->refresh(), ['quantity' => 1, 'location_id' => $location->id]))->toThrow(ValidationException::class);
+    }
+    expect(fn () => SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem->refresh(), ['location_id' => $broken->id]))->toThrow(ValidationException::class)
+        ->and(LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)->whereIn('location_id', [$broken->id, $noStock->id])->exists())->toBeFalse();
+
+    $clerk = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $clerk->stats()->create();
+    allowGoodsInOn($warehouse, $clerk);
+
+    expect(UpsertStockDeliveryItemPlaced::locationRefusal($stockDeliveryItem, null, $elsewhere->id, $clerk->refresh()))->toBe(['location_id', __('You can not book in stock in the warehouse of that location.')])
+        ->and(UpsertStockDeliveryItemPlaced::locationRefusal($stockDeliveryItem, null, $working->id, $clerk))->toBeNull();
+
+    $user = $this->adminGuest->getUser();
+    allowGoodsInOn($warehouse, $user);
+    actingAs($user->refresh());
+
+    $this->patchJson(route('grp.models.stock-delivery-item.place', $stockDeliveryItem->id), ['quantity' => 2, 'location_id' => $working->id])->assertOk();
+
+    $associate = DB::table('org_stock_movements')
+        ->where('org_stock_id', $stockDeliveryItem->org_stock_id)
+        ->where('location_id', $working->id)
+        ->where('type', OrgStockMovementTypeEnum::ASSOCIATE->value)
+        ->first();
+
+    expect($associate)->not->toBeNull()
+        ->and($associate->user_id)->toBe($user->id)
+        ->and((float) $stockDeliveryItem->refresh()->unit_quantity_placed)->toBeGreaterThan(0.0);
+});
+
 test('stock delivery item can not be placed without a location', function () {
     $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-ALL-NO-LOCATION', [10]);
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
@@ -4151,7 +4198,7 @@ test('import file details tick steps from aiku data, take marks that win over it
 
     expect($steps()->keys()->all())->toBe(GetStockDeliveryImportFile::STEPS)
         ->and($steps()['shipping_invoice'])->toMatchArray(['status' => 'done', 'is_auto' => true])
-        ->and($steps()['bill_of_lading']['status'])->toBe('na')
+        ->and($steps()['bill_of_lading'])->toMatchArray(['status' => 'na', 'label' => __('Bill of lading / CMR / T1')])
         ->and($steps()['original_documents']['status'])->toBe('na')
         ->and($steps()['shipping_quotes']['status'])->toBe('pending');
 
@@ -4180,6 +4227,12 @@ test('import file details tick steps from aiku data, take marks that win over it
             ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.can_edit', true)
             ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.can_upload', true)
             ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.steps.0.files', []));
+
+    $attachUrl = route('grp.models.stock-delivery.attachment.attach', ['stockDelivery' => $stockDelivery->id]);
+    $this->post($attachUrl, ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('deposit.pdf', 10, 'application/pdf')], 'scope' => $steps()['deposit']['scope']])->assertSuccessful();
+    expect(collect($steps()['deposit']['files'])->pluck('caption')->all())->toBe(['deposit'])
+        ->and($steps()['balance_payment']['files'])->toBe([])
+        ->and($steps()['duty_paid']['files'])->toBe([]);
 
     $this->withExceptionHandling();
     $this->patch($url, ['step' => 'not_a_step', 'status' => 'done'])->assertSessionHasErrors('step');
@@ -4226,4 +4279,33 @@ test('procurement is told about a delivery booked in without costs from a queue 
     Notification::assertSentTo($user, \App\Notifications\StockDeliveryBookedInWithoutCostsNotification::class);
 
     $user->removeRole("procurement-clerk-{$this->organisation->id}");
+});
+
+test('a container straight from a supplier takes its other agreed orders, never another supplier\'s (HELP-4725)', function () {
+    [$orgSupplier, , $orgSupplierProduct]           = independentOrgSupplierFixture($this);
+    [$otherOrgSupplier, $otherSupplierProduct, $otherOrgSupplierProduct] = independentOrgSupplierFixture($this);
+
+    $firstOrder   = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 100);
+    $secondOrder  = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 1, 50);
+    $otherOrder   = createConfirmedAgentOrder($this, $otherOrgSupplier, $otherOrgSupplierProduct, 0, 30);
+
+    $container = StoreStockDeliveryFromPurchaseOrder::make()->action($firstOrder->refresh());
+    $addable   = \App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery::addablePurchaseOrders($container)->pluck('purchase_orders.id');
+
+    expect($container->parent_type)->toBe('OrgSupplier')
+        ->and(\App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery::acceptsPurchaseOrders($container))->toBeTrue()
+        ->and($addable->contains($secondOrder->id))->toBeTrue()
+        ->and($addable->contains($otherOrder->id))->toBeFalse()
+        ->and(StoreStockDeliveryFromPurchaseOrder::openAgentDeliveries($secondOrder)->pluck('id')->all())->toContain($container->id)
+        ->and(StoreStockDeliveryFromPurchaseOrder::openAgentDeliveries($otherOrder)->pluck('id')->all())->not->toContain($container->id);
+
+    \App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery::make()->action($container, ['purchase_order_ids' => [$secondOrder->id]]);
+
+    expect($container->refresh()->purchaseOrders()->pluck('purchase_orders.id')->sort()->values()->all())->toBe(collect([$firstOrder->id, $secondOrder->id])->sort()->values()->all())
+        ->and($container->number_purchase_orders)->toBe(2);
+
+    $unmatched = (new ReflectionMethod(\App\Actions\GoodsIn\StockDelivery\PreviewStockDeliveryItemsImport::class, 'unmatched'))
+        ->invoke(\App\Actions\GoodsIn\StockDelivery\PreviewStockDeliveryItemsImport::make(), $container, [$otherSupplierProduct->code]);
+
+    expect($unmatched[mb_strtolower($otherSupplierProduct->code)]['lines'])->toBeEmpty();
 });

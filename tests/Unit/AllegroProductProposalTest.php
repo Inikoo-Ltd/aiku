@@ -28,6 +28,7 @@ use App\Actions\Dropshipping\Allegro\Product\UpdateInventoryAllegro;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Models\Dropshipping\PlatformPortfolioLogs;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use Mockery;
 
 function allegroTestProduct(array $attributes): Product
@@ -243,6 +244,23 @@ test('an upload links only to the Allegro catalogue product that carries our bar
         ->and($storeProductToAllegro->catalogueProductHasBarcode(['parameters' => [['name' => 'Model', 'values' => ['5056368347337']]]], '5056368347337'))->toBeFalse();
 });
 
+test('an upload is not listed under a catalogue product that carries our barcode but is another product', function () {
+    $storeProductToAllegro = new StoreProductToAllegro();
+
+    $helsinki = [
+        'name'       => 'Ultrasonic USB Humidifier - Helsinki',
+        'parameters' => [
+            ['name' => 'EAN (GTIN)', 'values' => ['5056368347337']],
+            ['name' => 'Manufacturer code', 'values' => ['AATOM-21']],
+        ],
+    ];
+    $ourNames = ['Double (switchable) Essential Oil Waterless Nebulizer', 'Double (switchable) Essential Oil Waterless Nebulizer- USB to C'];
+
+    expect($storeProductToAllegro->catalogueProductIsOurs($helsinki, 'AATOM-37', $ourNames))->toBeFalse()
+        ->and($storeProductToAllegro->catalogueProductIsOurs(['name' => 'Waterless Nebulizer USB-C', 'parameters' => []], 'AATOM-37', $ourNames))->toBeTrue()
+        ->and($storeProductToAllegro->catalogueProductIsOurs(['name' => 'Nebulizator bezwodny', 'parameters' => [['name' => 'Kod producenta', 'values' => ['aatom-37']]]], 'AATOM-37', $ourNames))->toBeTrue();
+});
+
 function allegroCheckedPortfolio(array $attributes, AllegroUser $allegroUser): array
 {
     $portfolio = new Portfolio(array_merge(['platform_product_id' => '19118876760', 'platform_status' => true, 'exist_in_platform' => true], $attributes));
@@ -370,4 +388,14 @@ test('a stock push never reactivates an offer the seller ended', function () {
 
     expect($updates)->toHaveCount(1)
         ->and($updates[0]['errors_response']['message'])->toBe('This offer was ended on Allegro.');
+});
+
+test('a successful upload log that records the catalogue product carries no failure hint', function () {
+    $answer = json_encode(['offer_id' => '1', 'catalogue_product' => ['id' => 'x', 'name' => 'Nebulizer']]);
+    $hintFor = fn (PlatformPortfolioLogsStatusEnum $status) => \App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource::make(
+        (new PlatformPortfolioLogs())->forceFill(['status' => $status, 'response' => $answer])
+    )->toArray(\Illuminate\Http\Request::create('/'))['response_hint'];
+
+    expect($hintFor(PlatformPortfolioLogsStatusEnum::OK))->toBeNull()
+        ->and($hintFor(PlatformPortfolioLogsStatusEnum::FAIL))->not->toBeNull();
 });

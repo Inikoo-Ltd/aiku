@@ -38,7 +38,7 @@ class PreviewStockDeliveryItemsImport extends OrgAction
     public function afterValidator(Validator $validator): void
     {
         if (!AddPurchaseOrdersToStockDelivery::acceptsPurchaseOrders($this->stockDelivery)) {
-            $validator->errors()->add('file', __('Items can only be added to an agent container in process'));
+            $validator->errors()->add('file', __('Items can only be added to a container in process'));
         }
     }
 
@@ -328,7 +328,11 @@ class PreviewStockDeliveryItemsImport extends OrgAction
             ->join('purchase_orders', 'purchase_orders.id', 'purchase_order_transactions.purchase_order_id')
             ->join('supplier_products', 'supplier_products.id', 'purchase_order_transactions.supplier_product_id')
             ->where('purchase_orders.organisation_id', $stockDelivery->organisation_id)
-            ->where('purchase_orders.agent_id', $stockDelivery->agent_id)
+            ->when(
+                AddPurchaseOrdersToStockDelivery::isDirectSupplierContainer($stockDelivery),
+                fn ($query) => $query->whereNull('purchase_orders.agent_id')->where('purchase_orders.parent_type', 'OrgSupplier')->where('purchase_orders.parent_id', $stockDelivery->parent_id),
+                fn ($query) => $query->where('purchase_orders.agent_id', $stockDelivery->agent_id)
+            )
             ->whereNull('purchase_orders.deleted_at')
             ->whereIn(DB::raw('lower(supplier_products.code)'), $lowerCodes)
             ->orderByDesc('purchase_orders.id')
@@ -390,8 +394,8 @@ class PreviewStockDeliveryItemsImport extends OrgAction
         $reason = match (true) {
             ($unmatched['in_container'] ?? 0) > 0 => __('Already in this container (:units units)', ['units' => $unmatched['in_container'] + 0]),
             $latest === null                      => $sheetPurchaseOrder === null
-                ? __('No PO of this agent has this code')
-                : __(':file not found, and no PO of this agent has this code', ['file' => $sheetPurchaseOrder]),
+                ? __('No PO for this container has this code')
+                : __(':file not found, and no PO for this container has this code', ['file' => $sheetPurchaseOrder]),
             $fileFound === false                  => __(':file not found. Newest PO :reference :status', ['file' => $sheetPurchaseOrder, 'reference' => $latest->reference, 'status' => $status]),
             default                               => __(':reference :status', ['reference' => $latest->reference, 'status' => $status]),
         };

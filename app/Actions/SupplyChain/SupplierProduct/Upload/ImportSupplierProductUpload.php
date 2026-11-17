@@ -22,6 +22,7 @@ use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\SyncSupplierProductTradeUnits;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Enums\Helpers\Barcode\BarcodeStatusEnum;
+use App\Helpers\DimensionsFormatter;
 use App\Enums\Helpers\Barcode\BarcodeTypeEnum;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Enums\Helpers\Import\UploadStateEnum;
@@ -227,7 +228,7 @@ class ImportSupplierProductUpload
             'type'                  => $values['unit_label'],
             'gross_weight'          => $values['unit_weight'],
             'net_weight'            => $values['unit_weight'],
-            'marketing_dimensions'  => $values['unit_dimensions'],
+            'marketing_dimensions'  => $values['unit_dimensions'] ? DimensionsFormatter::toMetres(['type' => 'rectangular', 'units' => 'cm', ...$values['unit_dimensions']]) : null,
             'tariff_code'           => $values['tariff_code'],
             'marketing_ingredients' => $values['materials'],
         ], fn ($value) => $value !== null && $value !== '' && $value !== []);

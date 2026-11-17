@@ -100,6 +100,57 @@ class Translate extends OrgAction
     }
 
     /**
+     * Several short texts in one model request, for pages that show many at once. Each text is
+     * cached under the same key a single translation would use, so a text seen before costs nothing.
+     * A text that could not be translated is missing from the result.
+     *
+     * @param  array<string, string>  $texts
+     *
+     * @return array<string, string>
+     */
+    public function many(array $texts, Language $languageFrom, Language $languageTo, string $translationDriver = 'email'): array
+    {
+        if ($languageFrom->code === $languageTo->code) {
+            return [];
+        }
+
+        $cacheKey     = fn (string $text) => 'translate:'.$translationDriver.':'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
+        $translations = [];
+        $missing      = [];
+        foreach ($texts as $key => $text) {
+            if (trim($text) === '') {
+                continue;
+            }
+            $cached = Cache::get($cacheKey($text));
+            if ($cached !== null) {
+                $translations[$key] = $cached;
+            } else {
+                $missing[$key] = $text;
+            }
+        }
+
+        if (!$missing || (app()->environment('local') && !config('app.sandbox.translate'))) {
+            return $translations;
+        }
+
+        $translationWorkflowService = new TranslationWorkflowService(new TranslationEngineService());
+        $translationWorkflowService->setInMemoryTexts($missing);
+        $translated = rescue(fn () => $translationWorkflowService->translate($languageFrom->code, $languageTo->code, $translationDriver), []);
+
+        foreach ($missing as $key => $text) {
+            $translation = Arr::get($translated, $key);
+            if (!is_string($translation) || trim($translation) === '') {
+                continue;
+            }
+            $translation        = str_replace("\0", '', $this->unescapeJsonEchoes($text, $translation));
+            $translations[$key] = $translation;
+            Cache::put($cacheKey($text), $translation, now()->addHours(72));
+        }
+
+        return $translations;
+    }
+
+    /**
      * Jev grades the cheap model's translation for a fraction of a cent; the drivers that ask for
      * it redo the weak ones with a stronger model. No verdict (no key, Jev down) keeps the translation.
      */

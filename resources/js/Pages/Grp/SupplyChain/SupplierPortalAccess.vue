@@ -45,7 +45,7 @@ const showDirectLinks = () => (currentTab.value === "direct_links" ? router.relo
 				</Button>
 			</a>
 			<a :href="share.portal_url" target="_blank" rel="noopener">
-				<Button type="tertiary" size="xs" :label="ctrans('Supplier portal URL')">
+				<Button type="secondary" size="xs" :label="ctrans('Supplier portal URL')">
 					<template #icon><FontAwesomeIcon icon="fal fa-external-link" fixed-width aria-hidden="true" /></template>
 				</Button>
 			</a>

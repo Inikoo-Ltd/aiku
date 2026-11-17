@@ -519,6 +519,9 @@ test('agent manager only sees their own agent organisation', function () {
     actingAs($agentUser);
 
     $this->get(route('grp.org.agent.purchase_orders.index', $organisation->slug))->assertOk();
+    $this->getJson(route('grp.json.layout.badges'))->assertOk()->assertJsonStructure(['notifications', 'ticket_badges', 'task_badges']);
+    $this->getJson(route('grp.json.layout.organisation_navigation', $organisation->slug))->assertOk()->assertJsonStructure(['navigation' => ['agent_orders']]);
+    $this->getJson(route('grp.json.layout.organisation_navigation', $this->organisation->slug))->assertForbidden();
     $groupTicket = \App\Actions\Helpers\Ticket\StoreTicket::make()->action($this->group, ['subject' => 'HS codes for customs', 'reporter_type' => 'User', 'reporter_id' => $agentUser->id]);
     expect($groupTicket->organisation_id)->toBeNull();
     $this->get(route('grp.org.tickets.show', [$organisation->slug, $groupTicket->reference]))->assertOk();
@@ -1094,7 +1097,11 @@ test('a supplier behind an agent sees its sales at its own prices, its agent and
         ->assertInertia(fn ($page) => $page
             ->where('agent.name', $this->agent->name)
             ->where('valuation.measure', 'supplier')
-            ->loadDeferredProps(fn ($reload) => $reload->where('sales.top_sellers.0.sold', fn ($sold) => abs($sold - 10 * $pricePerSko) < 0.5)));
+            ->loadDeferredProps(fn ($reload) => $reload
+                ->where('sales.top_sellers.0.sold', fn ($sold) => abs($sold - 10 * $pricePerSko) < 0.5)
+                ->where('sales.by_organisation.'.$orgStock->organisation->code.'.top_sellers.0.sold', fn ($sold) => abs($sold - 10 * $pricePerSko) < 0.5)
+                ->where('sales.countries', fn ($countries) => abs(data_get(collect($countries)->firstWhere('code', $orgStock->organisation->country->code), 'top_sellers.0.sold') - 10 * $pricePerSko) < 0.5)
+                ->where('sales.by_organisation.'.$orgStock->organisation->code.'.top_sellers.0.organisations', fn ($organisations) => collect($organisations)->pluck('code')->all() === [$orgStock->organisation->code])));
 });
 
 test('PO journey board marks stages on an agent purchase order and keeps QC for management', function (PurchaseOrder $purchaseOrder) {

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\BankTransaction\Json;
 
+use App\Actions\Accounting\BankTransaction\MatchBankTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithAccountingPagesAuthorisation;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -20,27 +21,38 @@ use Lorisleiva\Actions\ActionRequest;
 /**
  * Orders a bank line could pay, for the Pay order dialog of the bank review: orders of this organisation in the line's
  * currency, submitted or later and not cancelled, that still owe money, found by order number or customer name.
- * Only suggestions: paying still goes through the same checks.
+ * Searching by the payer looks for the first word of its name without the legal form ("Mahoni" for "Mahoni Health
+ * GmbH"). Orders owing this amount within the bank fee come first, then those submitted nearest the day it arrived.
+ * Only suggestions: paying still goes through the same checks. With paid, orders that already carry a payment instead,
+ * for marking a line already paid.
  */
 class GetBankTransactionOrderCandidates extends OrgAction
 {
     use WithAccountingPagesAuthorisation;
 
     /**
-     * @return list<array{id: int, reference: string, customer: string|null, shop: string|null, owed: float, total: float, currency_code: string, date: string|null}>
+     * @return list<array{id: int, reference: string, customer: string|null, shop: string|null, owed: float, total: float, currency_code: string, date: string|null, amount_matches: bool}>
      */
-    public function handle(BankTransaction $bankTransaction, string $search): array
+    public function handle(BankTransaction $bankTransaction, string $search, bool $byPayer = false, bool $paid = false): array
     {
-        $search = trim($search);
+        $matcher = MatchBankTransactions::make();
+        $search  = $byPayer ? ($matcher->nameWords($bankTransaction->counterparty_name)[0] ?? '') : trim($search);
         if (mb_strlen($search) < 2) {
             return [];
         }
+        $received  = round((float)$bankTransaction->amount, 2);
+        $tolerance = max(0.01, $matcher->feeTolerance($received, $bankTransaction));
+        $bookedAt  = $bankTransaction->booked_at ?? now();
 
         return Order::query()
             ->where('orders.organisation_id', $bankTransaction->organisation_id)
             ->where('orders.currency_id', $bankTransaction->currency_id)
             ->whereNotIn('orders.state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING])
-            ->whereRaw('orders.total_amount - orders.payment_amount > 0.01')
+            ->when(
+                $paid,
+                fn (Builder $query) => $query->where('orders.payment_amount', '>', 0),
+                fn (Builder $query) => $query->whereRaw('orders.total_amount - orders.payment_amount > 0.01')
+            )
             ->join('customers', 'customers.id', 'orders.customer_id')
             ->join('shops', 'shops.id', 'orders.shop_id')
             ->join('currencies', 'currencies.id', 'orders.currency_id')
@@ -49,27 +61,38 @@ class GetBankTransactionOrderCandidates extends OrgAction
                     ->orWhere(fn (Builder $query) => $query->whereAnyWordStartWith('customers.name', $search));
             })
             ->orderByDesc('orders.date')
-            ->limit(15)
+            ->limit(60)
             ->get([
                 'orders.id',
                 'orders.reference',
                 'orders.date',
+                'orders.submitted_at',
                 'orders.total_amount',
                 'orders.payment_amount',
                 'customers.name as customer_name',
                 'shops.code as shop_code',
                 'currencies.code as currency_code',
             ])
-            ->map(fn (Order $order) => [
-                'id'            => $order->id,
-                'reference'     => $order->reference,
-                'customer'      => $order->customer_name,
-                'shop'          => $order->shop_code,
-                'owed'          => round((float)$order->total_amount - (float)$order->payment_amount, 2),
-                'total'         => (float)$order->total_amount,
-                'currency_code' => $order->currency_code,
-                'date'          => $order->date?->toDateString(),
-            ])
+            ->map(function (Order $order) use ($received, $tolerance, $bookedAt, $paid) {
+                $owed = round((float)$order->total_amount - (float)$order->payment_amount, 2);
+
+                return [
+                    'id'             => $order->id,
+                    'reference'      => $order->reference,
+                    'customer'       => $order->customer_name,
+                    'shop'           => $order->shop_code,
+                    'owed'           => $owed,
+                    'paid'           => (float)$order->payment_amount,
+                    'total'          => (float)$order->total_amount,
+                    'currency_code'  => $order->currency_code,
+                    'date'           => $order->date?->toDateString(),
+                    'amount_matches' => abs(($paid ? (float)$order->payment_amount : $owed) - $received) <= $tolerance,
+                    'days_away'      => abs($bookedAt->diffInDays($order->submitted_at ?? $order->date ?? $bookedAt)),
+                ];
+            })
+            ->sortBy([['amount_matches', 'desc'], ['days_away', 'asc']])
+            ->take(15)
+            ->map(fn (array $candidate) => collect($candidate)->except('days_away')->all())
             ->values()
             ->all();
     }
@@ -82,6 +105,6 @@ class GetBankTransactionOrderCandidates extends OrgAction
         $this->initialisation($organisation, $request);
         abort_unless($bankTransaction->organisation_id === $organisation->id, 404);
 
-        return $this->handle($bankTransaction, (string)$request->query('search', ''));
+        return $this->handle($bankTransaction, (string)$request->query('search', ''), $request->boolean('payer'), $request->boolean('paid'));
     }
 }

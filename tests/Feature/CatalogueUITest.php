@@ -1876,6 +1876,37 @@ test('products export links every image as a jpg', function () {
         ->toBe(['https://media.test/signature/'.$encodeSource('local://media/first.jpeg')]);
 });
 
+test('my products csv links every image as a jpg while shop data feeds keep the original links', function () {
+    config([
+        'img-proxy.base_url' => 'https://media.test',
+        'img-proxy.key'      => str_repeat('ab', 32),
+        'img-proxy.salt'     => str_repeat('cd', 32),
+    ]);
+    $encodeSource = fn (string $source) => rtrim(strtr(base64_encode($source), '+/', '-_'), '=');
+    $firstOriginal  = 'https://media.test/signature/'.$encodeSource('local://media/first.jpeg');
+    $secondOriginal = 'https://media.test/signature/'.$encodeSource('local://media/second.png');
+
+    $product = \App\Models\Catalogue\Product::where('shop_id', $this->shop->id)->where('is_main', true)->whereNull('exclusive_for_customer_id')->first();
+    $product->update([
+        'web_images' => [
+            'all' => [
+                ['original' => ['original' => $firstOriginal]],
+                ['original' => ['original' => $secondOriginal]],
+            ],
+        ],
+    ]);
+
+    $row          = \Illuminate\Support\Facades\DB::table('products')->select(\App\Exports\Marketing\ProductsInShopExport::DATA_FEED_PRODUCT_COLUMNS)->where('products.id', $product->id)->first();
+    $imagesColumn = array_search('Images', (new \App\Exports\Marketing\ProductsInShopExport($this->shop))->headings());
+
+    $firstJpg  = \App\Actions\Helpers\Images\GetImgProxyUrl::run(new \App\Helpers\ImgProxy\Image()->make('local://media/first.jpeg')->extension('jpg'));
+    $secondJpg = \App\Actions\Helpers\Images\GetImgProxyUrl::run(new \App\Helpers\ImgProxy\Image()->make('local://media/second.png')->extension('jpg'));
+
+    expect(\App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV::make()->map($row)[$imagesColumn])->toBe("$firstJpg, $secondJpg")
+        ->and($firstJpg)->toEndWith('.jpg')
+        ->and((new \App\Exports\Marketing\ProductsInShopExport($this->shop))->map($row)[$imagesColumn])->toBe("$firstOriginal, $secondOriginal");
+});
+
 test('website pages swap imgproxy urls for short signed links that serve the same image', function () {
     config([
         'img-proxy.base_url' => 'https://media.test',
@@ -3018,6 +3049,38 @@ test('a compliance editor declares the non-packaging materials of a trade unit a
     $tradeUnit->update(['gross_weight' => $originalGrossWeight]);
 });
 
+test('a compliance editor declares the packaging materials of a trade unit by material category', function () {
+    setPermissionsTeamId($this->group->id);
+    $compliance = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $compliance->givePermissionTo(['compliance.view', 'compliance.edit']);
+    actingAs($compliance);
+
+    $tradeUnit = $this->product->tradeUnits()->first();
+    $tradeUnit->update(['compliance' => ['brand' => 'Kept brand']]);
+
+    get(route('grp.goods.trade-units.edit', [$tradeUnit->slug, 'section' => 'packaging_materials']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions.0.route.parameters.tab', 'compliance')
+            ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->firstWhere('key', 'packaging_materials')['fields']['packaging_weight_xps']['label'] === 'Plastics excluding PET – XPS'));
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['packaging_weight_cardboard' => 40, 'packaging_weight_xps' => 2.5])->assertSessionHasNoErrors();
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['packaging_weight_glass' => -1])->assertSessionHasErrors('packaging_weight_glass');
+    expect($tradeUnit->refresh()->compliance)->toEqual(['brand' => 'Kept brand', 'packaging_materials' => ['cardboard' => 40, 'xps' => 2.5]]);
+
+    get(route('grp.goods.trade-units.show', [$tradeUnit->slug, 'tab' => 'compliance']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('compliance.packaging_edit_route.parameters.section', 'packaging_materials')
+            ->where('compliance.packaging_materials', [
+                ['category' => 'Plastics excluding PET', 'material' => 'XPS', 'weight_g' => 2.5],
+                ['category' => 'Paper and cardboard', 'material' => 'Cardboard', 'weight_g' => 40],
+            ]));
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['packaging_weight_cardboard' => 0, 'packaging_weight_xps' => null])->assertSessionHasNoErrors();
+    expect($tradeUnit->refresh()->compliance)->toEqual(['brand' => 'Kept brand', 'packaging_materials' => []]);
+});
+
 test('a compliance editor declares the battery type of a trade unit and the compliance tab shows it', function () {
     setPermissionsTeamId($this->group->id);
     $compliance = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
@@ -3370,5 +3433,6 @@ test('products export prints the stored metres in the display unit', function ()
         'marketing_dimensions' => json_encode(['type' => 'rectangular', 'units' => 'cm', 'l' => 0.1, 'w' => 0.05, 'h' => 0.02]),
     ]);
 
-    expect($row)->toBe(['X-1', '10x5x2 (cm)']);
+    expect($row)->toBe(['X-1', '10x5x2 (cm)'])
+        ->and(\App\Helpers\DimensionsFormatter::make()->dimensions(json_encode(['type' => 'rectangular', 'units' => 'inch', 'l' => 0.0254, 'w' => 0.0508, 'h' => 0.0762])))->toBe('1x2x3 (inch)');
 });

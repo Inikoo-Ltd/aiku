@@ -3106,6 +3106,7 @@
     "Bill": "Faktúra",
     "Bill of lading": "Konosament",
     "Bill of lading number": "Číslo konosamentu",
+    "Bill of lading / CMR / T1": "Konosament / CMR / T1",
     "Bill to": "Odberateľ",
     "Billables": "Fakturovateľné položky",
     "Billing": "Fakturácia",
@@ -26827,5 +26828,8 @@
     ":name is casting a spell…": ":name čaruje…",
     ":name is gazing into his crystal ball…": ":name hľadí do svojej krištáľovej gule…",
     "This one needs a little more thought. Nearly there…": "Toto si žiada trochu viac premýšľania. Takmer hotovo…",
-    "Usually takes about :seconds seconds": "Zvyčajne to trvá asi :seconds sekúnd"
+    "Usually takes about :seconds seconds": "Zvyčajne to trvá asi :seconds sekúnd",
+    "Finish booking in?": "Ukončiť bookovanie?",
+    "This is the last item to put away. The delivery will be booked in with :count line over or under delivered. Is the delivery done?|This is the last item to put away. The delivery will be booked in with :count lines over or under delivered. Is the delivery done?": "Toto je posledná položka na uskladnenie. Zásielka bude zabookovaná s :count riadkom s nadbytkom alebo nedostatkom. Je zásielka hotová?|Toto je posledná položka na uskladnenie. Zásielka bude zabookovaná s :count riadkami s nadbytkom alebo nedostatkom. Je zásielka hotová?|Toto je posledná položka na uskladnenie. Zásielka bude zabookovaná s :count riadkami s nadbytkom alebo nedostatkom. Je zásielka hotová?",
+    "Yes, delivery is done": "Áno, zásielka je hotová"
 }

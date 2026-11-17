@@ -19,7 +19,8 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Undoes "set aside" on a bank line: it is matched again, as when it arrived, and lands in the queue it belongs to.
+ * Undoes "set aside" or "already paid" marked by staff on a bank line: it is matched again, as when it arrived, and
+ * lands in the queue it belongs to.
  */
 class RestoreBankTransaction extends OrgAction
 {
@@ -29,7 +30,9 @@ class RestoreBankTransaction extends OrgAction
     {
         return DB::transaction(function () use ($bankTransaction) {
             $bankTransaction = BankTransaction::lockForUpdate()->findOrFail($bankTransaction->id);
-            if ($bankTransaction->match_state !== BankTransactionMatchStateEnum::DISMISSED || $bankTransaction->payment_id !== null) {
+            $markedByStaff = $bankTransaction->match_state === BankTransactionMatchStateEnum::DISMISSED
+                || ($bankTransaction->match_state === BankTransactionMatchStateEnum::ALREADY_PAID && isset($bankTransaction->match_data['dismissed_at']));
+            if (!$markedByStaff || $bankTransaction->payment_id !== null) {
                 throw ValidationException::withMessages(['note' => __('Only a bank payment that was set aside can be brought back')]);
             }
 

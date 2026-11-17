@@ -102,6 +102,16 @@ enum PurchaseOrderStateEnum: string
         return "'".implode("', '", self::liveValues())."'";
     }
 
+    /**
+     * Sums the per-state purchase order counters of a stats table, because number_open_purchase_orders is never hydrated.
+     *
+     * @param  array<int, self>  $states
+     */
+    public static function countFromStatsSql(string $statsTable, array $states): string
+    {
+        return implode(' + ', array_map(fn (self $state) => "coalesce($statsTable.number_purchase_orders_state_$state->value, 0)", $states));
+    }
+
     public function isOpen(): bool
     {
         return in_array($this, self::open(), true);

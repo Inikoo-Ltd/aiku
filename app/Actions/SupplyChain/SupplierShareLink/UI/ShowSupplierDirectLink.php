@@ -9,15 +9,15 @@
 namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
-use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
-use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
+use App\Actions\Traits\Authorisations\WithSupplierPortalAuthorisation;
 use App\Enums\UI\SupplyChain\SupplierPortalAccessTabsEnum;
 use App\Http\Resources\SupplyChain\SupplierPortalVisitsResource;
+use App\Models\Procurement\OrgSupplier;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SupplyChain\SupplierShareLink;
 use App\Models\SupplyChain\SupplierShareLinkView;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,8 +28,8 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowSupplierDirectLink extends OrgAction
 {
-    use WithSupplierSubNavigation;
-    use WithSupplyChainAuthorisation;
+    use WithAgentSupplierPortal;
+    use WithSupplierPortalAuthorisation;
 
     private Supplier $supplier;
 
@@ -38,6 +38,15 @@ class ShowSupplierDirectLink extends OrgAction
         abort_if($supplierShareLink->supplier_id !== $supplier->id, 404);
         $this->supplier = $supplier;
         $this->initialisationFromGroup($supplier->group, $request)->withTab(SupplierPortalAccessTabsEnum::values());
+
+        return $supplierShareLink;
+    }
+
+    public function inAgentOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, SupplierShareLink $supplierShareLink, ActionRequest $request): SupplierShareLink
+    {
+        abort_if($supplierShareLink->supplier_id !== $orgSupplier->supplier_id, 404);
+        $this->supplier = $orgSupplier->supplier;
+        $this->initialisationInAgentOrgSupplier($organisation, $orgSupplier, $request)->withTab(SupplierPortalAccessTabsEnum::values());
 
         return $supplierShareLink;
     }
@@ -89,12 +98,12 @@ class ShowSupplierDirectLink extends OrgAction
 
         return Inertia::render('SupplyChain/SupplierPortalAccessDetail', [
             'title'       => $model.' '.$title,
-            'breadcrumbs' => ShowSupplier::make()->getBreadcrumbs($supplier, 'grp.supply-chain.suppliers.show', [], '('.__('Supplier portal').' › '.$title.')'),
+            'breadcrumbs' => $this->supplierPortalBreadcrumbs($supplier, '('.__('Supplier portal').' › '.$title.')'),
             'pageHead'    => [
                 'title'         => $title,
                 'model'         => $model,
                 'icon'          => ['title' => $model, 'icon' => $icon],
-                'subNavigation' => $this->getSupplierNavigation($supplier),
+                'subNavigation' => $this->supplierPortalNavigation($supplier),
             ],
             'tabs'        => [
                 'current'    => $tab,

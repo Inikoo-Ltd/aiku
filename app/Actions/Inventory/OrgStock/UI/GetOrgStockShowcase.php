@@ -144,6 +144,10 @@ class GetOrgStockShowcase
                     'cover'           => $this->getCover($orgStock),
                     'stock_cost'      => $this->getStockCost($orgStock),
                     'summary'         => $this->getSummary($orgStock),
+                    'waiting_delivery_notes_route' => [
+                        'name'       => preg_replace('/\.(stock_history|procurement|products|delivery_notes|batch_codes|labels)$/', '', request()->route()->getName()).'.delivery_notes',
+                        'parameters' => [...request()->route()->originalParameters(), 'elements' => ['state' => 'waiting']],
+                    ],
                     'locations'       => $locations,
                     'qty_in_location'               => $orgStock->quantity_in_locations,
                     'qty_in_location_fractional'    => $this->getFractionalQuantity($orgStock->quantity_in_locations, $orgStock->packed_in),
@@ -284,7 +288,7 @@ class GetOrgStockShowcase
     {
         return $orgStock->orgStockMovements()
             ->whereNot('class', OrgStockMovementClassEnum::GARBAGE)
-            ->with(['location', 'user'])
+            ->with(['location', 'user', 'parent'])
             ->orderByDesc('date')
             ->limit(5)
             ->get()
@@ -303,6 +307,7 @@ class GetOrgStockShowcase
                     'location_code'                         => $orgStockMovement->location?->code,
                     'user_name'                             => $orgStockMovement->user?->contact_name,
                     'reason_label'                          => $orgStockMovement->reason?->label(),
+                    'parent_reference'                      => $orgStockMovement->parent?->reference,
                 ];
             })->toArray();
     }

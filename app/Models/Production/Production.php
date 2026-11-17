@@ -113,6 +113,15 @@ class Production extends Model implements Auditable
         return (bool) ($this->settings['records_raw_material_batches'] ?? false);
     }
 
+    /**
+     * A one-person factory (Spain, INI-231): the To produce board has no Preparing or Assigned lane, and
+     * a card dragged from Backlog to Producing becomes a job order for whoever dragged it.
+     */
+    public function hasSimpleBoard(): bool
+    {
+        return (bool) ($this->settings['simple_board'] ?? false);
+    }
+
     public const array DEFAULT_DEVELOPMENT_REVIEW = [
         'min_sessions'        => 5,
         'min_artisans'        => 2,

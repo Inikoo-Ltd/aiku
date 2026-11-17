@@ -21,6 +21,13 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
 {
     use HasSelfCall;
 
+    public static function defaultLocationOrder(?ShopTypeEnum $shopType): string
+    {
+        return $shopType == ShopTypeEnum::B2B
+            ? 'location_org_stocks.default_wholesale_picking_location::int desc'
+            : 'location_org_stocks.default_dropshipping_picking_location::int desc';
+    }
+
     public function toArray(Request $request)
     {
         /** @var ReturnDeliveryNoteItem $returnDeliveryNoteItem */
@@ -48,11 +55,7 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
                 ) as pickings_data',
                 ['pick', $this->id]
             )
-            ->orderByRaw(
-                $returnDeliveryNoteItem->returnDeliveryNote?->shop?->type == ShopTypeEnum::B2B
-                    ? 'location_org_stocks.default_wholesale_picking_location::int desc'
-                    : 'location_org_stocks.default_dropshipping_picking_location::int desc'
-            )
+            ->orderByRaw(self::defaultLocationOrder($returnDeliveryNoteItem->returnDeliveryNote?->shop?->type))
             ->orderBy('picking_priority')
             ->get();
 

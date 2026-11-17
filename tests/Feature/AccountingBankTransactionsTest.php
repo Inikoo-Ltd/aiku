@@ -45,6 +45,9 @@ use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\Http;
+use App\Actions\Accounting\BankTransaction\PayBankTransactionToCustomerCredit;
+use App\Http\Resources\Accounting\BankIncomingResource;
+use App\Models\Accounting\CreditTransaction;
 use App\Actions\Accounting\BankTransaction\PayBankTransactionToOrder;
 use Carbon\Carbon;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
@@ -67,7 +70,11 @@ beforeEach(function () {
     list($this->organisation, , $this->shop) = createShop();
     $this->wiseBalances       = [['currency' => 'EUR', 'amount' => ['value' => 0], 'reservedAmount' => ['value' => 0]]];
     $this->wiseBalancesStatus = 200;
-    Http::fake(['api.wise.com/v4/profiles/*/balances*' => fn () => Http::response($this->wiseBalances, $this->wiseBalancesStatus)]);
+    $this->wiseTransfers      = [];
+    Http::fake([
+        'api.wise.com/v4/profiles/*/balances*' => fn () => Http::response($this->wiseBalances, $this->wiseBalancesStatus),
+        'api.wise.com/v1/transfers?*'          => fn () => Http::response($this->wiseTransfers),
+    ]);
 });
 
 function wiseActivity(string $id, string $type, string $amount, string $title, string $status = 'COMPLETED', ?string $resourceId = null, string $updatedOn = '2026-11-10T10:05:00.071Z'): array
@@ -229,6 +236,55 @@ test('a full sync re-derives lines stored by an older parser, a jar move becomin
         ->and($lines['j1']->account_reference)->toBeNull()
         ->and((float)$lines['j1#in']->amount)->toBe(50000.0)
         ->and($lines['j1#in']->account_reference)->toBe('jar');
+});
+
+test('sent transfers missing from the wise feed are added from the transfers list, and transfers older than their balance moved no balance', function () {
+    $transfer = fn (int $id, float $value, int $targetAccount, string $created = '2026-07-13 18:04:26', string $reference = '') => [
+        'id' => $id, 'status' => 'outgoing_payment_sent', 'sourceCurrency' => 'EUR', 'sourceValue' => $value, 'targetAccount' => $targetAccount, 'created' => $created, 'reference' => $reference,
+    ];
+    $feed = [
+        wiseActivity('t1', 'TRANSFER', '120 EUR', 'Supplier Ltd', resourceId: '8001'),
+        wiseActivity('i1', 'TRANSFER', '<positive>+ 300 EUR</positive>', 'Customer', resourceId: '8002'),
+        wiseActivity('o1', 'TRANSFER', '100,000 EUR', 'Ourselves', resourceId: '8003'),
+    ];
+    Http::fake([
+        'api.wise.com/v2/profiles'                 => Http::response([['id' => 666, 'type' => 'BUSINESS']]),
+        'api.wise.com/v1/profiles/666/activities*' => Http::sequence()
+            ->push(['cursor' => null, 'activities' => $feed])
+            ->push(['cursor' => null, 'activities' => $feed])
+            ->push(['cursor' => null, 'activities' => [...$feed, wiseActivity('m1', 'TRANSFER', '50,000 EUR', 'Lender Ltd', resourceId: '8004')]]),
+        'api.wise.com/v1/transfers/8001'           => Http::response($transfer(8001, 120, 501)),
+        'api.wise.com/v1/transfers/8002'           => Http::response($transfer(8002, 300, 900)),
+        'api.wise.com/v1/transfers/8003'           => Http::response($transfer(8003, 100000, 502, '2015-01-19 10:56:53')),
+        'api.wise.com/v1/transfers/8004'           => Http::response($transfer(8004, 50000, 777, reference: 'Loan')),
+        'api.wise.com/v1/accounts/777'             => Http::response(['id' => 777, 'accountHolderName' => 'Lender Ltd']),
+    ]);
+    $this->wiseTransfers = [$transfer(8001, 120, 501), $transfer(8002, 300, 900), $transfer(8003, 100000, 502, '2015-01-19 10:56:53'), $transfer(8004, 50000, 777, reference: 'Loan'), $transfer(8005, 40, 900)];
+    $this->wiseBalances  = [['currency' => 'EUR', 'type' => 'STANDARD', 'creationTime' => '2017-12-05T10:00:00Z', 'amount' => ['value' => 0], 'reservedAmount' => ['value' => 0]]];
+
+    $bankConnection = StoreBankConnection::run($this->organisation, [
+        'provider'    => BankConnectionProviderEnum::WISE,
+        'name'        => 'Wise gaps',
+        'credentials' => 'gap-token',
+    ]);
+
+    expect(SyncBankConnection::run($bankConnection, true)['synced'])->toBe(3);
+    $lines = BankTransaction::where('bank_connection_id', $bankConnection->id)->get()->keyBy('provider_transaction_id');
+    expect($lines->keys()->sort()->values()->all())->toBe(['i1', 't1', 'transfer:8004'])
+        ->and((float)$lines['transfer:8004']->amount)->toBe(-50000.0)
+        ->and($lines['transfer:8004']->direction)->toBe(BankTransactionDirectionEnum::OUT)
+        ->and($lines['transfer:8004']->currency->code)->toBe('EUR')
+        ->and($lines['transfer:8004']->counterparty_name)->toBe('Lender Ltd')
+        ->and($lines['transfer:8004']->reference)->toBe('Loan')
+        ->and($lines['transfer:8004']->status)->toBe(BankTransactionStatusEnum::BOOKED)
+        ->and($lines['transfer:8004']->booked_at->toDateString())->toBe('2026-07-13');
+
+    expect(SyncBankConnection::run($bankConnection->refresh(), true)['synced'])->toBe(0)
+        ->and(BankTransaction::where('bank_connection_id', $bankConnection->id)->count())->toBe(3);
+
+    SyncBankConnection::run($bankConnection->refresh(), true);
+    expect(BankTransaction::where('bank_connection_id', $bankConnection->id)->pluck('provider_transaction_id')->sort()->values()->all())->toBe(['i1', 'm1', 't1'])
+        ->and((float)BankTransaction::where('bank_connection_id', $bankConnection->id)->where('provider_transaction_id', 'm1')->value('amount'))->toBe(-50000.0);
 });
 
 function bankMatchingOrder(\App\Models\CRM\Customer $customer, float $total): \App\Models\Ordering\Order
@@ -838,6 +894,75 @@ test('staff record a bank payment from the review queue on the order they name, 
         ->and($ids(['from' => now()->subYears(3)->subDay()->toDateString(), 'to' => now()->subYears(2)->toDateString()]))->toContain($old->id)->not->toContain($toReview->id);
 });
 
+test('staff add a bank payment that pays no order to the customer credit', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $customer       = createCustomer($this->shop);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'wise'.random_int(1000, 9999), 'name' => 'Wise credit test']
+    );
+    SetBankConnectionAutoPay::run($bankConnection, [$this->shop->currency->code => $bankAccount->code]);
+    SetBankConnectionAutoPay::run($bankConnection->refresh(), [], off: true);
+    $bankConnection->refresh();
+
+    $line = fn (string $id, ?int $currencyId = null) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id.random_int(1000, 99999),
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 75.5,
+        'currency_id'             => $currencyId ?? $this->shop->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => 'Prepayment',
+        'counterparty_name'       => $customer->name,
+        'booked_at'               => now(),
+        'match_state'             => BankTransactionMatchStateEnum::REVIEW,
+        'match_data'              => ['reason' => 'no order number in the reference'],
+    ]);
+
+    $balanceBefore = (float)$customer->refresh()->balance;
+
+    expect(fn () => PayBankTransactionToCustomerCredit::make()->handle($line('c0', Currency::where('id', '!=', $this->shop->currency_id)->value('id')), ['customer_id' => $customer->id]))
+        ->toThrow(ValidationException::class);
+
+    $credited = $line('c1');
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    get(route('grp.json.bank_transaction.customer_candidates', [$this->organisation->id, $credited->id]))
+        ->assertOk()
+        ->assertJsonFragment(['id' => $customer->id]);
+    post(route('grp.models.org.bank_transaction.customer_credit', [$this->organisation->id, $credited->id]), ['customer_id' => $customer->id])
+        ->assertSessionHasNoErrors();
+
+    $credited->refresh();
+    expect($credited->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($credited->order_id)->toBeNull()
+        ->and((float)$credited->payment->amount)->toBe(75.5)
+        ->and($credited->payment->customer_id)->toBe($customer->id)
+        ->and($credited->match_data['credit_customer_id'])->toBe($customer->id)
+        ->and((float)$customer->refresh()->balance)->toBe(round($balanceBefore + 75.5, 2))
+        ->and(CreditTransaction::find($credited->match_data['credit_transaction_id'])->payment_id)->toBe($credited->payment_id)
+        ->and((new BankIncomingResource($credited))->toArray(request())['actionable'])->toBeFalse();
+
+    expect(fn () => PayBankTransactionToCustomerCredit::make()->handle($credited, ['customer_id' => $customer->id]))
+        ->toThrow(ValidationException::class);
+    expect((float)$customer->refresh()->balance)->toBe(round($balanceBefore + 75.5, 2));
+
+    expect(fn () => RefundPaymentToBalance::lockForRefund($credited->payment, null, 10))
+        ->toThrow(ValidationException::class);
+
+    CancelPayment::make()->handle($credited->payment);
+    $credited->refresh();
+    expect((float)$customer->refresh()->balance)->toBe(round($balanceBefore, 2))
+        ->and($credited->payment_id)->toBeNull()
+        ->and($credited->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($credited->match_data)->not->toHaveKey('credit_customer_name');
+});
+
 test('order numbers are read from bank references as whole words', function () {
     $matcher = MatchBankTransactions::make();
 
@@ -847,6 +972,9 @@ test('order numbers are read from bank references as whole words', function () {
         ->and($matcher->orderReferenceTokens('numer zamówienia PL 30569'))->toBe(['PL30569'])
         ->and($matcher->orderReferenceTokens('SVWZ+FR 26245, de-10288'))->toBe(['FR26245', 'DE10288'])
         ->and($matcher->orderReferenceTokens('PL 31515 PL31515'))->toBe(['PL31515'])
+        ->and($matcher->orderReferenceTokens('AWFI223 775'))->toBe(['AWFI223', 'AWFI223775'])
+        ->and($matcher->orderReferenceTokens('AWFi223 345/290'))->toBe(['AWFI223', 'AWFI223345'])
+        ->and($matcher->orderReferenceTokens('PL 31515 123'))->toBe(['PL31515'])
         ->and($matcher->orderReferenceTokens(null))->toBe([]);
 });
 
@@ -2494,4 +2622,405 @@ test('bank outgoing: a transfer naming one of our orders is a customer refund, o
     post(route('grp.models.org.bank_payee.set', [$this->organisation->id]), ['payee_key' => $nameOnly->payee_key, 'category' => 'staff', 'model_type' => 'Employee', 'model_id' => $theirs->id])->assertSessionHasErrors('model_id');
     post(route('grp.models.org.bank_payee.set', [$this->organisation->id]), ['payee_key' => $nameOnly->payee_key, 'category' => 'customer_refunds'])->assertSessionHasNoErrors();
     expect($nameOnly->refresh()->out_category)->toBe('customer_refunds');
+});
+
+function fioMovement(int $id, float $amount, ?string $counterAccount, ?string $message, string $currency = 'CZK'): array
+{
+    return [
+        'column22' => ['value' => $id, 'name' => 'ID pohybu', 'id' => 22],
+        'column0'  => ['value' => '2026-11-12+0100', 'name' => 'Datum', 'id' => 0],
+        'column1'  => ['value' => $amount, 'name' => 'Objem', 'id' => 1],
+        'column14' => ['value' => $currency, 'name' => 'Měna', 'id' => 14],
+        'column2'  => $counterAccount ? ['value' => $counterAccount, 'name' => 'Protiúčet', 'id' => 2] : null,
+        'column10' => $counterAccount ? ['value' => 'Jan Novák', 'name' => 'Název protiúčtu', 'id' => 10] : null,
+        'column16' => $message ? ['value' => $message, 'name' => 'Zpráva pro příjemce', 'id' => 16] : null,
+        'column8'  => ['value' => $counterAccount ? 'Bezhotovostní příjem' : 'Poplatek', 'name' => 'Typ', 'id' => 8],
+    ];
+}
+
+test('a fio account statement is mirrored once, transfers carry the message as reference and the closing balance is kept', function () {
+    $statement = fn (array $movements) => ['accountStatement' => [
+        'info'            => ['accountId' => '2900123456', 'currency' => 'CZK', 'closingBalance' => 15234.5],
+        'transactionList' => ['transaction' => $movements],
+    ]];
+    Http::fake([
+        'fioapi.fio.cz/*' => Http::sequence()
+            ->push($statement([fioMovement(1001, 2450.0, '123456789', 'CZ10234'), fioMovement(1002, -35.0, null, null)]))
+            ->push($statement([fioMovement(1002, -35.0, null, null), fioMovement(1003, 99.0, '987654321', null, 'XYZ')])),
+    ]);
+
+    $bankConnection = StoreBankConnection::run($this->organisation, [
+        'provider'    => BankConnectionProviderEnum::FIO,
+        'name'        => 'Fio CZK',
+        'credentials' => 'fio-test-token',
+    ]);
+
+    expect(SyncBankConnection::run($bankConnection, true))->toBe(['synced' => 2, 'skipped' => 0, 'skipped_examples' => []]);
+
+    $lines = BankTransaction::where('bank_connection_id', $bankConnection->id)->get()->keyBy('provider_transaction_id');
+    expect($bankConnection->refresh()->external_id)->toBe('2900123456')
+        ->and($lines)->toHaveCount(2)
+        ->and($lines['1001']->provider_type)->toBe('TRANSFER')
+        ->and($lines['1001']->direction)->toBe(BankTransactionDirectionEnum::IN)
+        ->and((float)$lines['1001']->amount)->toBe(2450.0)
+        ->and($lines['1001']->currency->code)->toBe('CZK')
+        ->and($lines['1001']->reference)->toBe('CZ10234')
+        ->and($lines['1001']->counterparty_name)->toBe('Jan Novák')
+        ->and($lines['1001']->booked_at->toDateString())->toBe('2026-11-12')
+        ->and($lines['1002']->provider_type)->toBe('OTHER')
+        ->and((float)$lines['1002']->amount)->toBe(-35.0)
+        ->and((float)\App\Models\Accounting\BankBalance::where('bank_connection_id', $bankConnection->id)->value('amount'))->toBe(15234.5);
+
+    expect(SyncBankConnection::run($bankConnection->refresh()))->toBe(['synced' => 0, 'skipped' => 1, 'skipped_examples' => ['1003: unknown currency: XYZ']])
+        ->and(BankTransaction::where('bank_connection_id', $bankConnection->id)->count())->toBe(2);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'fioapi.fio.cz/v1/rest/periods/fio-test-token/'));
+    expect(\App\Helpers\SentryScrubber::redact('GET https://fioapi.fio.cz/v1/rest/periods/fio-test-token/2026-08-19/2026-11-16/transactions.json'))
+        ->toBe('GET https://fioapi.fio.cz/v1/rest/periods/***/2026-08-19/2026-11-16/transactions.json');
+});
+
+test('a fio payment whose variable symbol is the order number without its prefix is matched to that order', function () {
+    $order          = bankMatchingOrder(createCustomer($this->shop), 4697.25);
+    $digits         = preg_replace('/^[A-Z]+/', '', $order->reference);
+    $bankConnection = bankMatchingConnection($this->organisation);
+
+    $line = fn (string $id, ?string $variableSymbol, ?int $currencyId = null) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 4697.25,
+        'currency_id'             => $currencyId ?? $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => '06585700897356',
+        'booked_at'               => now(),
+        'data'                    => ['movement' => ['column5' => ['value' => $variableSymbol]]],
+    ]);
+
+    $matched       = $line('vs1', $digits);
+    $otherCurrency = $line('vs2', $digits, Currency::where('id', '!=', $order->currency_id)->value('id'));
+    $noSymbol      = $line('vs3', null);
+
+    MatchBankTransactions::run($bankConnection);
+
+    expect($matched->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($matched->order_id)->toBe($order->id)
+        ->and($otherCurrency->refresh()->order_id)->toBeNull()
+        ->and($noSymbol->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
+});
+
+test('a payment quoting the invoice number instead of the order number is matched to the invoiced order', function () {
+    $order   = bankMatchingOrder(createCustomer($this->shop), 839.59);
+    $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($order->customer, \App\Models\Accounting\Invoice::factory()->definition());
+    $invoiceReference = 'TSi'.random_int(1000000, 9999999);
+    $invoice->updateQuietly(['reference' => $invoiceReference, 'order_id' => $order->id]);
+    $bankConnection = bankMatchingConnection($this->organisation);
+
+    $line = fn (string $id, string $reference) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 839.59,
+        'currency_id'             => $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => $reference,
+        'booked_at'               => now(),
+    ]);
+
+    $asWritten  = $line('inv1', $invoiceReference);
+    $upperCased = $line('inv2', 'Invoice '.strtoupper($invoiceReference));
+    $unknown    = $line('inv3', 'TSi'.random_int(1000000, 9999999).'0');
+
+    MatchBankTransactions::run($bankConnection);
+
+    expect($asWritten->refresh()->order_id)->toBe($order->id)
+        ->and($asWritten->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($upperCased->refresh()->order_id)->toBe($order->id)
+        ->and($upperCased->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($unknown->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
+});
+
+test('auto-pay records a mapped payer, such as DPD CZ cash on delivery, on its own account and everyone else on the bank account', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $codOrder       = bankMatchingOrder(createCustomer($this->shop), 3354);
+    $transferOrder  = bankMatchingOrder(createCustomer($this->shop), 500);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'fio'.random_int(1000, 9999), 'name' => 'Fio test']
+    );
+    $codAccount = \App\Actions\Accounting\PaymentAccount\StorePaymentAccount::make()->action(
+        \App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider::make()->action(
+            paymentServiceProvider: PaymentServiceProvider::where('code', 'cond')->firstOrFail(),
+            organisation: $this->organisation,
+            modelData: ['code' => 'cod'.random_int(1000, 9999)]
+        ),
+        ['code' => 'cod'.random_int(1000, 9999), 'name' => 'COD CZK test', 'type' => PaymentAccountTypeEnum::CASH_ON_DELIVERY->value]
+    );
+
+    expect(fn () => SetBankConnectionAutoPay::run($bankConnection, [$codOrder->currency->code => $bankAccount->code], payerPaymentAccountCodes: ['Direct Parcel' => 'no-such-account']))
+        ->toThrow(ValidationException::class);
+
+    SetBankConnectionAutoPay::run($bankConnection->refresh(), [$codOrder->currency->code => $bankAccount->code], payerPaymentAccountCodes: ['Direct Parcel' => $codAccount->code]);
+    $bankConnection->refresh();
+
+    $line = fn (string $id, Order $order, string $payer) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => (float)$order->total_amount,
+        'currency_id'             => $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => $payer,
+        'reference'               => $order->reference,
+        'booked_at'               => now()->addMinute(),
+    ]);
+
+    $codLine      = $line('dpd1', $codOrder, 'Direct Parcel Distri');
+    $transferLine = $line('cus1', $transferOrder, 'NATURAL CENTRUM S.R.');
+
+    MatchBankTransactions::run($bankConnection);
+    expect(PayMatchedBankTransactions::run($bankConnection))->toBe(['paid' => 2])
+        ->and($codLine->refresh()->payment->payment_account_id)->toBe($codAccount->id)
+        ->and($transferLine->refresh()->payment->payment_account_id)->toBe($bankAccount->id)
+        ->and($codOrder->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID);
+});
+
+test('a line naming no order suggests orders of a customer named like the payer, by amount and date, and staff confirm it with one click', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'sugg'.random_int(1000, 9999), 'name' => 'Suggestion test']
+    );
+    $name        = 'Zorvak'.random_int(100000, 999999);
+    $newCustomer = fn (string $customerName) => \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, array_merge(\App\Models\CRM\Customer::factory()->definition(), ['contact_name' => $customerName, 'company_name' => $customerName]));
+    $customer    = $newCustomer($name);
+
+    $paidByHand = bankMatchingOrder($customer, 2454);
+    $paidByHand->updateQuietly(['submitted_at' => now()->addHour()]);
+    $payment = \App\Actions\Accounting\Payment\StorePayment::make()->action($customer, $bankAccount, [
+        'amount' => 2454,
+        'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+        'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+    ]);
+    \App\Actions\Ordering\Order\AttachPaymentToOrder::make()->action($paidByHand, $payment, []);
+    $paidByHand->updateQuietly(['total_amount' => 1472.40]);
+
+    $owing = bankMatchingOrder($customer, 310.50);
+    $owing->updateQuietly(['submitted_at' => now()->subDays(3)]);
+
+    $line = fn (string $id, float $amount, string $payer) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $amount,
+        'currency_id'             => $paidByHand->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => null,
+        'counterparty_name'       => $payer,
+        'booked_at'               => now(),
+    ]);
+
+    bankMatchingOrder($newCustomer('Jo'.$name), 55.55)->updateQuietly(['submitted_at' => now()]);
+
+    $twinName = 'Quillon'.random_int(100000, 999999);
+    bankMatchingOrder($newCustomer($twinName.' Twin'), 77.77)->updateQuietly(['submitted_at' => now()]);
+    bankMatchingOrder($newCustomer($twinName.' Twin Studio'), 77.77)->updateQuietly(['submitted_at' => now()]);
+
+    $sharedWord = 'Brannoch'.random_int(100000, 999999);
+    bankMatchingOrder($newCustomer($sharedWord), 66.66)->updateQuietly(['submitted_at' => now()]);
+    $newCustomer($sharedWord.' Garden Shop');
+
+    $partPaid = bankMatchingOrder($newCustomer('Tessaly'.random_int(100000, 999999)), 200);
+    $partPaid->updateQuietly(['submitted_at' => now()]);
+    $firstHalf = \App\Actions\Accounting\Payment\StorePayment::make()->action($partPaid->customer, $bankAccount, [
+        'amount' => 100,
+        'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+        'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+    ]);
+    \App\Actions\Ordering\Order\AttachPaymentToOrder::make()->action($partPaid, $firstHalf, []);
+    $firstHalf->updateQuietly(['date' => now()->subDays(20)]);
+
+    $smith = 'Smithwick'.random_int(100000, 999999);
+    $newCustomer($smith.' Ltd');
+    bankMatchingOrder($newCustomer('J. '.$smith), 120)->updateQuietly(['submitted_at' => now()]);
+
+    $jong = 'Jongbloed'.random_int(100000, 999999);
+    $newCustomer('De Vries '.$jong);
+    bankMatchingOrder($newCustomer('De '.$jong), 85)->updateQuietly(['submitted_at' => now()]);
+
+    bankMatchingOrder($customer, 99.99)->updateQuietly(['submitted_at' => now()->subDays(45)]);
+
+    $alreadyPaid  = $line('s1', 2454, $name.' Health GmbH');
+    $pays         = $line('s2', 310.50, strtoupper($name).' Health Ltd');
+    $otherPayer   = $line('s3', 310.50, 'Somebody Else Ltd');
+    $feeShort     = $line('s4', 310.00, $name.' Health GmbH');
+    $substring    = $line('s5', 55.55, $name.' Ltd');
+    $twoCustomers = $line('s6', 77.77, $twinName.' Twin Ltd');
+    $firstWordOnly = $line('s9', 66.66, $sharedWord.' Health');
+    $secondHalf    = $line('s10', 100, $partPaid->customer->company_name.' Ltd');
+    $tooOld       = $line('s7', 99.99, $name);
+    $smithPayer   = $line('s11', 120, $smith.' Ltd');
+    $particle     = $line('s12', 85, 'De '.$jong.' Bloemen BV');
+    MatchBankTransactions::run($bankConnection);
+
+    $matcher = MatchBankTransactions::make();
+    expect($alreadyPaid->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($alreadyPaid->order_id)->toBeNull()
+        ->and($matcher->suggestedOrders($alreadyPaid))->sequence(fn ($suggestion) => $suggestion->toMatchArray(['id' => $paidByHand->id, 'kind' => 'already_paid']))
+        ->and($matcher->suggestedOrders($pays->refresh()))->sequence(fn ($suggestion) => $suggestion->toMatchArray(['id' => $owing->id, 'kind' => 'pay']))
+        ->and($matcher->suggestedOrders($otherPayer->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($feeShort->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($substring->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($twoCustomers->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($firstWordOnly->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($secondHalf->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($tooOld->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($smithPayer->refresh()))->toBe([])
+        ->and($matcher->suggestedOrders($particle->refresh()))->toBe([]);
+
+    $dialogCandidates = \App\Actions\Accounting\BankTransaction\Json\GetBankTransactionOrderCandidates::make()->handle($pays, '', byPayer: true);
+    expect($dialogCandidates[0])->toMatchArray(['id' => $owing->id, 'amount_matches' => true])
+        ->and(collect($dialogCandidates)->where('amount_matches', true)->count())->toBe(1);
+
+    $paymentsBefore = \App\Models\Accounting\Payment::count();
+    expect(fn () => \App\Actions\Accounting\BankTransaction\PayBankTransactionToOrder::make()->handle($otherPayer, ['order_id' => $owing->id, 'from_suggestion' => true]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect(fn () => \App\Actions\Accounting\BankTransaction\DismissBankTransaction::make()->handle($pays, ['note' => 'Already recorded on the order by hand', 'already_paid' => true, 'order_id' => $owing->id, 'from_suggestion' => true]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    \App\Actions\Accounting\BankTransaction\DismissBankTransaction::make()->handle($alreadyPaid, ['note' => 'Already recorded on the order by hand', 'already_paid' => true, 'order_id' => $paidByHand->id, 'from_suggestion' => true]);
+
+    $secondTransfer = $line('s8', 2454, $name.' Health GmbH');
+    $namingIt       = $line('s13', 2454, $name.' Health GmbH');
+    $namingIt->update(['reference' => $paidByHand->reference]);
+    MatchBankTransactions::run($bankConnection);
+    expect($secondTransfer->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($namingIt->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($namingIt->match_data['reason'])->toBe('another bank line already accounts for the payment of this amount on the order');
+    expect($alreadyPaid->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($alreadyPaid->order_id)->toBe($paidByHand->id)
+        ->and(\App\Models\Accounting\Payment::count())->toBe($paymentsBefore)
+        ->and($matcher->suggestedOrders($secondTransfer))->toBe([])
+        ->and(fn () => \App\Actions\Accounting\BankTransaction\DismissBankTransaction::make()->handle($secondTransfer, ['note' => 'Already recorded on the order by hand', 'already_paid' => true, 'order_id' => $paidByHand->id]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    \App\Actions\Accounting\BankTransaction\RestoreBankTransaction::make()->handle($alreadyPaid);
+    expect($alreadyPaid->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($alreadyPaid->order_id)->toBeNull();
+    $paidCandidates = \App\Actions\Accounting\BankTransaction\Json\GetBankTransactionOrderCandidates::make()->handle($alreadyPaid, $name, paid: true);
+    expect(collect($paidCandidates)->pluck('id'))->toContain($paidByHand->id)->not->toContain($owing->id)
+        ->and(collect($paidCandidates)->firstWhere('id', $paidByHand->id))->toMatchArray(['paid' => 2454.0, 'amount_matches' => true]);
+
+    $handPick = fn (BankTransaction $bankTransaction, int $orderId) => \App\Actions\Accounting\BankTransaction\DismissBankTransaction::make()->handle($bankTransaction, ['note' => 'Already recorded on the order by hand', 'already_paid' => true, 'order_id' => $orderId]);
+    expect(fn () => $handPick($otherPayer->refresh(), $owing->id))->toThrow(\Illuminate\Validation\ValidationException::class);
+    $handPick($alreadyPaid, $paidByHand->id);
+    expect($alreadyPaid->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($alreadyPaid->order_id)->toBe($paidByHand->id)
+        ->and(fn () => $handPick($secondTransfer->refresh(), $paidByHand->id))->toThrow(\Illuminate\Validation\ValidationException::class, 'Another bank payment of this amount');
+
+    \App\Actions\Accounting\BankTransaction\RestoreBankTransaction::make()->handle($alreadyPaid);
+    $alreadyPaid->refresh()->update(['match_state' => BankTransactionMatchStateEnum::ALREADY_PAID, 'match_data' => ['order_ids' => [$paidByHand->id]]]);
+    expect(fn () => $handPick($secondTransfer->refresh(), $paidByHand->id))->toThrow(\Illuminate\Validation\ValidationException::class, 'Another bank payment of this amount');
+});
+
+test('an orderchamp payout is linked only to the one hand-paid order of its country and amount, everything else stays for staff', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'ochand'.random_int(1000, 9999), 'name' => 'Orderchamp hand paid test']
+    );
+
+    $newCustomer = fn (string $customerName) => \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, array_merge(\App\Models\CRM\Customer::factory()->definition(), ['contact_name' => $customerName, 'company_name' => $customerName]));
+    $netherlands = $newCustomer('Orderchamp B.V. (NL)');
+    $germany     = $newCustomer('Orderchamp GmbH (DE)');
+
+    $order = function (\App\Models\CRM\Customer $customer, float $total, bool $paid = true, int $daysAgo = 20) use ($bankAccount) {
+        $order = bankMatchingOrder($customer, $total);
+        $order->updateQuietly(['date' => now()->subDays($daysAgo)]);
+        if ($paid) {
+            $payment = \App\Actions\Accounting\Payment\StorePayment::make()->action($order->customer, $bankAccount, [
+                'amount' => $total,
+                'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+                'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+            ]);
+            \App\Actions\Ordering\Order\AttachPaymentToOrder::make()->action($order, $payment, []);
+        }
+
+        return $order->refresh();
+    };
+
+    $line = fn (string $id, string $reference, float $amount, array $extra = []) => BankTransaction::create(array_merge([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $amount,
+        'currency_id'             => $this->shop->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'counterparty_name'       => 'ORDERCHAMP BV',
+        'reference'               => $reference,
+        'booked_at'               => now(),
+    ], $extra));
+
+    $single = $order($netherlands, 116.08);
+    $order($netherlands, 99.60);
+    $order($netherlands, 101.76);
+    $order($netherlands, 201.40);
+    $order($netherlands, 80, paid: false);
+    $old     = $order($netherlands, 141.70, daysAgo: 100);
+    $claimed = $order($netherlands, 150);
+    $german  = $order($germany, 121.46);
+
+    $line('oc0', 'earlier line', 150, ['order_id' => $claimed->id, 'match_state' => BankTransactionMatchStateEnum::ALREADY_PAID]);
+
+    $lines = [
+        'single'  => $line('oc1', 'Orderchamp NL payment: STL228059-1/STL228059-1', 115.92),
+        'several' => $line('oc2', 'Orderchamp NL payment: STL228060-1/STL228060-1', 201.38),
+        'unpaid'  => $line('oc3', 'Orderchamp NL payment: STL228061-1/STL228061-1', 80),
+        'country' => $line('oc4', 'Orderchamp DE payment: STL228062-1/STL228062-1', 116.00),
+        'german'  => $line('oc5', 'Orderchamp DE payment: STL230552-1/STL230552-1', 121.81, ['counterparty_name' => 'Orderchamp GmbH']),
+        'claimed' => $line('oc6', 'Orderchamp NL payment: STL228063-1/STL228063-1', 150),
+        'old'     => $line('oc7', 'Orderchamp NL payment: STL228064-1/STL228064-1', 141.70),
+    ];
+    MatchBankTransactions::run($bankConnection);
+
+    foreach ($lines as $bankTransaction) {
+        $bankTransaction->refresh();
+    }
+
+    expect($lines['single']->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($lines['single']->order_id)->toBe($single->id)
+        ->and($lines['single']->match_data['difference'])->toBe(-0.16)
+        ->and($lines['german']->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($lines['german']->order_id)->toBe($german->id)
+        ->and($lines['several']->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($lines['several']->match_data['reason'])->toBe('several Orderchamp orders could make this amount')
+        ->and($lines['several']->match_data['order_ids'])->toHaveCount(3)
+        ->and($lines['unpaid']->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($lines['country']->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($lines['claimed']->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($lines['old']->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
+        ->and($lines['old']->order_id)->toBeNull()
+        ->and($old->refresh()->payment_amount)->toEqual(141.70);
 });

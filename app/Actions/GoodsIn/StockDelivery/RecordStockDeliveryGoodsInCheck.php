@@ -61,6 +61,7 @@ class RecordStockDeliveryGoodsInCheck extends OrgAction
             Arr::set($data, 'goods_in_checks.'.$modelData['key'], [
                 'result'      => $modelData['result'],
                 'user'        => $user->contact_name ?: $user->username,
+                'user_id'     => $user->id,
                 'at'          => now()->toIso8601String(),
                 'incident_id' => $incident?->id,
             ]);

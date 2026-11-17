@@ -17,10 +17,14 @@ use App\Actions\Procurement\ProjectOrganisationStockOuts;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
+use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\Helpers\Tag;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
+use App\Models\SupplyChain\SupplierSubmission;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -64,7 +68,8 @@ class GetSupplierPortalOrderPlan
 
         $rows     = $supplier->orgSuppliers()->with('organisation')->get()
             ->flatMap(fn (OrgSupplier $orgSupplier) => $this->rows($orgSupplier, $today));
-        $products = $this->byProduct($rows, $months, $this->openOrders($supplier, $rows->pluck('supplier_product_id')->unique()->all()));
+        $productIds = $rows->pluck('supplier_product_id')->unique()->all();
+        $products   = $this->byProduct($rows, $months, $this->openOrders($supplier, $productIds), $this->planningNotes($supplier, $productIds));
 
         return [
             'as_of'        => $rows->max('forecast_at') ? Carbon::parse($rows->max('forecast_at'))->toDateString() : null,
@@ -256,6 +261,40 @@ class GetSupplierPortalOrderPlan
             ->groupBy('supplier_product_id');
     }
 
+    /**
+     * The material planning the supplier sent for each product, newest first, with our reply.
+     *
+     * @param  array<int, int>  $supplierProductIds
+     *
+     * @return Collection<int, Collection<int, array<string, mixed>>>
+     */
+    private function planningNotes(Supplier $supplier, array $supplierProductIds): Collection
+    {
+        if (!$supplierProductIds) {
+            return collect();
+        }
+
+        return SupplierSubmission::where('supplier_id', $supplier->id)
+            ->where('type', SupplierSubmissionTypeEnum::MATERIAL_PLANNING)
+            ->whereIn('supplier_product_id', $supplierProductIds)
+            ->withCount('attachments')
+            ->latest('submitted_at')
+            ->get()
+            ->map(fn (SupplierSubmission $submission) => [
+                'id'                  => $submission->id,
+                'supplier_product_id' => $submission->supplier_product_id,
+                'type'                => $submission->type->value,
+                'state'               => $submission->state->value,
+                'state_label'         => SupplierSubmissionStateEnum::labels()[$submission->state->value],
+                'editable'            => $submission->state->isEditableBySupplier($submission->type),
+                'data'                => Arr::only($submission->data ?? [], ['supplier_product_id', 'material', 'reserve_by', 'note']),
+                'feedback'            => $submission->feedback,
+                'sent_at'             => $submission->submitted_at?->toDateString(),
+                'files'               => $submission->attachments_count,
+            ])
+            ->groupBy('supplier_product_id');
+    }
+
     private function cartons(float $units, int $perCarton, int $minimum): ?int
     {
         return $perCarton > 0 && $units > 0 ? max((int) ceil($units / $perCarton), $minimum) : null;
@@ -272,17 +311,18 @@ class GetSupplierPortalOrderPlan
      * @param  Collection<int, array<string, mixed>>  $rows
      * @param  Collection<int, Carbon>  $months
      * @param  Collection<int, Collection<int, object>>  $openOrders
+     * @param  Collection<int, Collection<int, array<string, mixed>>>  $planningNotes
      *
      * @return Collection<int, array<string, mixed>>
      */
-    private function byProduct(Collection $rows, Collection $months, Collection $openOrders): Collection
+    private function byProduct(Collection $rows, Collection $months, Collection $openOrders, Collection $planningNotes): Collection
     {
         $lastMonth = $months->last()->format('Y-m');
         $grouped   = $rows->groupBy('supplier_product_id');
         $products  = SupplierProduct::whereIn('id', $grouped->keys())->with(['image', 'tradeUnits.image'])->get()->keyBy('id');
 
         return $grouped
-            ->map(function (Collection $productRows, int $supplierProductId) use ($products, $lastMonth, $openOrders) {
+            ->map(function (Collection $productRows, int $supplierProductId) use ($products, $lastMonth, $openOrders, $planningNotes) {
                 $product    = $products->get($supplierProductId);
                 $first      = $productRows->first();
                 $perCarton  = $first['units_per_carton'];
@@ -336,6 +376,7 @@ class GetSupplierPortalOrderPlan
                         'reference' => $order->reference,
                         'units'     => (int) round((float) $order->units),
                     ])->values()->all(),
+                    'planning_notes'   => ($planningNotes->get($supplierProductId) ?? collect())->map(fn (array $note) => Arr::except($note, ['supplier_product_id']))->values()->all(),
                 ];
             })
             ->sortBy(fn (array $product) => [$product['status'] === 'estimate' ? 0 : 1, $product['order_on'] ?? '9999-12-31', -$product['value']])

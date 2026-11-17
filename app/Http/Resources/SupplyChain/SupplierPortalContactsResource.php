@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\SupplyChain;
 
+use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalAccess;
 use App\Models\SupplyChain\SupplierPortalContact;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,7 +22,7 @@ class SupplierPortalContactsResource extends JsonResource
         return [
             'id'                => $this->id,
             'email'             => $this->email,
-            'route'             => ['name' => 'grp.supply-chain.suppliers.share.emails.show', 'parameters' => [$this->supplier_slug, $this->id]],
+            'route'             => ShowSupplierPortalAccess::accessDetailRoute('emails', $this->supplier_slug, $this->id),
             'name'              => $this->name,
             'designation'       => $this->designation?->label(),
             'phone'             => $this->phone,

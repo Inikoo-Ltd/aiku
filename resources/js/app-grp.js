@@ -31,11 +31,10 @@ import { trackVisitStarts } from "@/Composables/visitTiming";
 import { prefetchInboxListOnVisit } from "@/Composables/inboxListPrefetch";
 import { startFreezeRecording } from "@/Composables/useInboxTimings";
 import { lazyPlainTextTooltips, startSharedTooltip } from "@/Composables/sharedTooltip";
+import { formatAppTitle } from "@/Composables/useAppTitle";
 
 skipUnchangedTooltips(vTooltip);
 lazyPlainTextTooltips(vTooltip);
-
-const appName = "aiku";
 
 // A request with no hand on the mouse or keyboard for this long came from a timer or a live
 // event reload, not a person: the server must not count it as the user being active.
@@ -93,7 +92,7 @@ prefetchInboxListOnVisit(router);
 
 createInertiaApp(
   {
-    title  : (title) => `${title} - ${appName}`,
+    title  : formatAppTitle,
     resolve: async name => {
       const pages = import.meta.glob("./Pages/Grp/**/*.vue");
       if (!pages) console.error(

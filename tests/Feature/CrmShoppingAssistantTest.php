@@ -70,6 +70,7 @@ beforeAll(function () {
 beforeEach(function () {
     [$this->organisation, $this->user, $this->shop] = createShop();
     [, $this->product] = createProduct($this->shop);
+    DB::table('product_categories')->where('id', $this->product->family_id)->update(['is_in_website' => true]);
 
     config(['services.openrouter.api_key' => 'test', 'services.shopping_assistant.plain_search' => false, 'services.shopping_assistant.light_model' => null, 'services.shopping_assistant.premium_model' => null]);
     actingAs($this->user);
@@ -457,6 +458,7 @@ test('the answer job stores the assistant reply and the conversation returns it 
         ->and($card['id'])->toBe($kept->id)
         ->and($card['code'])->toBe($kept->code)
         ->and($card['assistant_reason'])->toBe(GetShoppingAssistantTools::make()->reasonText('used_to_order', $customer, $conversation->language_code))
+        ->and($card['assistant_reason_code'])->toBe('used_to_order')
         ->and($card['assistant_message_id'])->toBe($messages[1]['id']);
 
     $after = $this->actingAs($webUser, 'retina')->getJson($url.'?after='.$customerMessage->id)->assertOk()->json('messages');
@@ -1975,7 +1977,7 @@ test('a big order lead nobody has taken is raised again to the manager in workin
         return (int) data_get($task->fresh()->data, 'reminders', 0);
     };
 
-    Carbon::setTestNow(CarbonImmutable::parse('2030-01-09 08:30', $timezone));
+    Carbon::setTestNow(CarbonImmutable::parse('2030-01-09 07:30', $timezone));
     $beforeWork = $remind();
     Carbon::setTestNow(CarbonImmutable::parse('2030-01-09 10:00', $timezone));
     $first = $remind();
@@ -2760,6 +2762,34 @@ test('the transcript shows the answer kind, the cited sources, the offer, the ha
             ->where('messages.5.hand_over.route_label', 'Email chat, answered later')
             ->where('messages.5.hand_over.in_hours', false)
             ->where('messages.5.hand_over.chat_route', ['name' => 'grp.org.chat.inbox.conversation', 'parameters' => [$this->organisation->slug, $chatUlid]]));
+});
+
+test('a conversation in another language shows each message translated into the staff member language, and an English one is not translated', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    createWebsite($this->shop);
+    $at = CarbonImmutable::now()->subDays(3);
+
+    [$conversation, , $replies] = shoppingAssistantGeneralTurn(shoppingAssistantCustomer($this->shop), $at, 'Czy wysyłacie próbki?', [['body' => 'Nie wysyłamy próbek.']]);
+    $conversation->update(['language_code' => 'pl']);
+    $this->user->update(['language_id' => App\Models\Helpers\Language::where('code', 'en')->value('id')]);
+    $customerMessageId = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::CUSTOMER)->value('id');
+    $replyId           = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->value('id');
+
+    App\Actions\Helpers\Translations\Translate::mock()->shouldReceive('many')
+        ->withArgs(fn (array $texts, $from, $to) => $texts === ['m'.$customerMessageId => 'Czy wysyłacie próbki?', 'm'.$replyId => 'Nie wysyłamy próbek.'] && $from->code === 'pl' && $to->code === 'en')
+        ->andReturn(['m'.$customerMessageId => 'Do you send samples?', 'm'.$replyId => 'Nie wysyłamy próbek.']);
+
+    $this->withoutVite();
+    config(['inertia.testing.ensure_pages_exist' => false]);
+    $this->get(route('grp.websites.shopping_assistant.conversations.show', [$conversation->ulid]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('translation_language', 'English')
+            ->missing('translations')
+            ->loadDeferredProps(fn (AssertableInertia $reload) => $reload->where('translations', [$customerMessageId => 'Do you send samples?'])));
+
+    $conversation->update(['language_code' => 'en']);
+    $this->get(route('grp.websites.shopping_assistant.conversations.show', [$conversation->ulid]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('translation_language', null)->where('translations', []));
 });
 
 test('a mixed question answered without citing a source is replaced by the offer, keeping the sentence our code wrote but not the products the tools found', function () {
@@ -4012,4 +4042,40 @@ test('a second plain search in a row goes to the model, which can explain what t
 
     expect($again['message']->flags ?? [])->not->toContain('plain_search')
         ->and($again['reply'])->toStartWith('We have no niaouli');
+});
+
+test('products of a family kept off the website that holds products made for customers are shown only to a customer with one of their own there, and a search without the model keeps only the close matches', function () {
+    $suffix     = Str::lower(Str::random(5));
+    $word       = 'brelm'.$suffix;
+    $department = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $family     = \App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($department, array_merge(\App\Models\Catalogue\ProductCategory::factory()->definition(), ['type' => \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY->value, 'name' => 'Personalised '.$suffix]));
+    DB::table('product_categories')->where('id', $family->id)->update(['is_in_website' => false]);
+    $owner      = shoppingAssistantCustomer($this->shop);
+    $prospect   = shoppingAssistantCustomer($this->shop);
+    $theirs     = shoppingAssistantProduct($this->product);
+    $sibling    = shoppingAssistantProduct($this->product);
+    $public     = shoppingAssistantProduct($this->product);
+    $far        = shoppingAssistantProduct($this->product);
+    $theirs->update(['family_id' => $family->id, 'name' => ucfirst($word).' Soap Bar A']);
+    $sibling->update(['family_id' => $family->id, 'name' => ucfirst($word).' Soap Bar B']);
+    $public->update(['name' => ucfirst($word).' Soap Bar C']);
+    $far->update(['name' => 'Zinnober Poster '.$suffix]);
+    DB::table('product_has_exclusive_customers')->insert(['product_id' => $theirs->id, 'customer_id' => $owner->id, 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('products')->whereIn('id', [$theirs->id, $sibling->id, $public->id, $far->id])->update(['is_in_website' => true]);
+
+    $vector = fn (string $text) => array_replace(array_fill(0, 1024, 0.0), [str_contains(mb_strtolower($text), $word) ? 0 : 1 => 1.0]);
+    Http::fake([
+        '*' => fn ($request) => Http::response(['data' => collect($request['input'] ?? [])->map(fn ($text, $index) => ['index' => $index, 'embedding' => $vector($text)])->all()]),
+    ]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    $tools  = GetShoppingAssistantTools::make();
+    $shown  = fn (Customer $customer, array $arguments) => collect($tools->execute(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'search_products', $arguments)['products'])->pluck('id');
+    $toProspect = $shown($prospect, ['query' => $word.' soap']);
+    $toOwner    = $shown($owner, ['query' => $word.' soap']);
+    $closeOnly  = $shown($prospect, ['query' => $word.' soap', 'close_only' => true]);
+
+    expect($toProspect)->toContain($public->id)->not->toContain($sibling->id)->not->toContain($theirs->id)
+        ->and($toOwner)->toContain($public->id)->toContain($sibling->id)->toContain($theirs->id)
+        ->and($closeOnly)->toContain($public->id)->not->toContain($far->id)->not->toContain($sibling->id);
 });

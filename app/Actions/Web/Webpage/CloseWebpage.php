@@ -12,12 +12,14 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
 use App\Actions\Web\Redirect\StoreRedirect;
+use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -35,14 +37,14 @@ class CloseWebpage extends OrgAction
         if (!$redirect) {
             $redirect = Redirect::where('website_id', $webpage->website_id)->where('from_url', $webpage->canonical_url)->first();
         }
+        $redirectData = [
+            'type'          => Arr::get($modelData, 'redirect_type', RedirectTypeEnum::PERMANENT->value),
+            'to_webpage_id' => Arr::get($modelData, 'to_webpage_id'),
+        ];
         if (!$redirect) {
-            StoreRedirect::make()->action(
-                $webpage,
-                [
-                    'type'          => Arr::get($modelData, 'redirect_type', RedirectTypeEnum::PERMANENT->value),
-                    'to_webpage_id' => Arr::get($modelData, 'to_webpage_id'),
-                ]
-            );
+            StoreRedirect::make()->action($webpage, $redirectData);
+        } elseif ($redirect->to_webpage_id != $redirectData['to_webpage_id']) {
+            UpdateRedirect::make()->action($redirect, $redirectData);
         }
 
         $webpage->update([
@@ -53,6 +55,7 @@ class CloseWebpage extends OrgAction
 
         $this->dispatchWebpageHydratorsAndRefresh($webpage);
         BreakWebpageCache::run($webpage);
+        Cache::forget(config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($webpage->url));
 
         return $webpage;
     }

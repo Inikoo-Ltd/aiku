@@ -32,6 +32,7 @@ use App\Enums\Goods\TradeUnit\TradeUnitBatteryTypeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitNonPackagingMaterialEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitPackagingWeightEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitPackagingMaterialEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Helpers\Country;
@@ -182,6 +183,17 @@ class UpdateTradeUnit extends OrgAction
                     Arr::forget($compliance, 'non_packaging_materials.'.$material->value);
                 } else {
                     data_set($compliance, 'non_packaging_materials.'.$material->value, (float)$weight);
+                }
+            }
+        }
+        foreach (TradeUnitPackagingWeightEnum::cases() as $material) {
+            if (Arr::has($modelData, $material->field())) {
+                $complianceChanged = true;
+                $weight            = Arr::pull($modelData, $material->field());
+                if (!(float)$weight) {
+                    Arr::forget($compliance, 'packaging_materials.'.$material->value);
+                } else {
+                    data_set($compliance, 'packaging_materials.'.$material->value, (float)$weight);
                 }
             }
         }
@@ -466,6 +478,9 @@ class UpdateTradeUnit extends OrgAction
 
         $rules['battery_type'] = ['sometimes', 'nullable', Rule::enum(TradeUnitBatteryTypeEnum::class)];
         foreach (TradeUnitNonPackagingMaterialEnum::cases() as $material) {
+            $rules[$material->field()] = ['sometimes', 'nullable', 'numeric', 'min:0'];
+        }
+        foreach (TradeUnitPackagingWeightEnum::cases() as $material) {
             $rules[$material->field()] = ['sometimes', 'nullable', 'numeric', 'min:0'];
         }
 

@@ -31,6 +31,7 @@ use App\Http\Resources\SupplyChain\SupplierProductResource;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
+use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
@@ -244,24 +245,41 @@ class ShowOrgSupplierProduct extends OrgAction
 
     public function getPrevious(OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): ?array
     {
-        $previous = $this->siblings($request)
-            ->whereRaw('(supplier_products.code, org_supplier_products.id) < (?, ?)', [$orgSupplierProduct->supplierProduct->code, $orgSupplierProduct->id])
-            ->orderBy('supplier_products.code', 'desc')
-            ->orderBy('org_supplier_products.id', 'desc')
-            ->first();
-
-        return $this->getNavigation($previous, $request);
+        return $this->getNavigation($this->getSibling($orgSupplierProduct, $request, '<'), $request);
     }
 
     public function getNext(OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): ?array
     {
-        $next = $this->siblings($request)
-            ->whereRaw('(supplier_products.code, org_supplier_products.id) > (?, ?)', [$orgSupplierProduct->supplierProduct->code, $orgSupplierProduct->id])
-            ->orderBy('supplier_products.code')
-            ->orderBy('org_supplier_products.id')
+        return $this->getNavigation($this->getSibling($orgSupplierProduct, $request, '>'), $request);
+    }
+
+    /**
+     * An agent lists each of its products once, however many organisations buy it, and links the row
+     * to the one with the lowest slug; stepping walks those rows, never the same code in another organisation.
+     */
+    private function getSibling(OrgSupplierProduct $orgSupplierProduct, ActionRequest $request, string $direction): ?OrgSupplierProduct
+    {
+        $order              = $direction === '<' ? 'desc' : 'asc';
+        $walksAgentProducts = $this->getListedAgent($request) !== null;
+        $tieColumn          = $walksAgentProducts ? 'supplier_products.id' : 'org_supplier_products.id';
+
+        $sibling = $this->siblings($request)
+            ->whereRaw("(supplier_products.code, $tieColumn) $direction (?, ?)", [
+                $orgSupplierProduct->supplierProduct->code,
+                $walksAgentProducts ? $orgSupplierProduct->supplier_product_id : $orgSupplierProduct->id,
+            ])
+            ->orderBy('supplier_products.code', $order)
+            ->orderBy($tieColumn, $order)
             ->first();
 
-        return $this->getNavigation($next, $request);
+        if (!$sibling || !$walksAgentProducts) {
+            return $sibling;
+        }
+
+        return $this->siblings($request)
+            ->where('org_supplier_products.supplier_product_id', $sibling->supplier_product_id)
+            ->orderBy('org_supplier_products.slug')
+            ->first();
     }
 
     /**
@@ -276,7 +294,7 @@ class ShowOrgSupplierProduct extends OrgAction
 
         $orgAgent    = $request->route('orgAgent');
         $orgSupplier = $request->route('orgSupplier');
-        $agent       = $this->getOrganisationAgent($this->organisation);
+        $agent       = $this->getListedAgent($request);
 
         if ($orgAgent instanceof OrgAgent) {
             $query->where('org_supplier_products.org_agent_id', $orgAgent->id);
@@ -289,6 +307,15 @@ class ShowOrgSupplierProduct extends OrgAction
         }
 
         return $query;
+    }
+
+    private function getListedAgent(ActionRequest $request): ?Agent
+    {
+        if ($request->route('orgAgent') instanceof OrgAgent || $request->route('orgSupplier') instanceof OrgSupplier) {
+            return null;
+        }
+
+        return $this->getOrganisationAgent($this->organisation);
     }
 
     private function getNavigation(?OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): ?array

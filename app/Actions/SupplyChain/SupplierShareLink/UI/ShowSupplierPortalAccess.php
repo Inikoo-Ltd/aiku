@@ -9,14 +9,14 @@
 namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
-use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
 use App\Actions\SupplyChain\SupplierPortalContact\SyncSupplierPortalContact;
-use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
+use App\Actions\Traits\Authorisations\WithSupplierPortalAuthorisation;
 use App\Enums\UI\SupplyChain\SupplierShareTabsEnum;
 use App\Http\Resources\SupplyChain\SupplierDirectLinksResource;
 use App\Http\Resources\SupplyChain\SupplierPortalContactsResource;
+use App\Models\Procurement\OrgSupplier;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -26,8 +26,8 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowSupplierPortalAccess extends OrgAction
 {
-    use WithSupplierSubNavigation;
-    use WithSupplyChainAuthorisation;
+    use WithAgentSupplierPortal;
+    use WithSupplierPortalAuthorisation;
 
     public function asController(Supplier $supplier, ActionRequest $request): Supplier
     {
@@ -37,13 +37,46 @@ class ShowSupplierPortalAccess extends OrgAction
         return $supplier;
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inAgentOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): Supplier
+    {
+        $this->initialisationInAgentOrgSupplier($organisation, $orgSupplier, $request)->withTab(SupplierShareTabsEnum::values());
+        SyncSupplierPortalContact::run($orgSupplier->supplier);
+
+        return $orgSupplier->supplier;
+    }
+
+    /**
+     * Where a row of the portal access tables opens: under the agent's supplier page when the list is shown there.
+     *
+     * @param  'links'|'emails'  $page
+     * @return array{name: string, parameters: array<int, string|int>}
+     */
+    public static function accessDetailRoute(string $page, string $supplierSlug, int $id): array
+    {
+        $organisation = request()->route('organisation');
+        $orgSupplier  = request()->route('orgSupplier');
+
+        if ($organisation instanceof Organisation && $orgSupplier instanceof OrgSupplier) {
+            return [
+                'name'       => "grp.org.agent.org_suppliers.show.supplier_portal.$page.show",
+                'parameters' => [$organisation->slug, $orgSupplier->slug, $id],
+            ];
+        }
+
+        return [
+            'name'       => "grp.supply-chain.suppliers.share.$page.show",
+            'parameters' => [$supplierSlug, $id],
+        ];
+    }
+
     public function htmlResponse(Supplier $supplier): Response
     {
         return Inertia::render(
             'SupplyChain/SupplierPortalAccess',
             [
                 'title'       => __('Supplier portal').' '.$supplier->code,
-                'breadcrumbs' => ShowSupplier::make()->getBreadcrumbs($supplier, 'grp.supply-chain.suppliers.show', [], '('.__('Supplier portal').')'),
+                'breadcrumbs' => $this->supplierPortalBreadcrumbs($supplier, '('.__('Supplier portal').')'),
                 'pageHead'    => [
                     'title'         => $supplier->name,
                     'model'         => __('Supplier portal'),
@@ -51,7 +84,7 @@ class ShowSupplierPortalAccess extends OrgAction
                         'title' => __('Supplier portal'),
                         'icon'  => 'fal fa-share-alt',
                     ],
-                    'subNavigation' => $this->getSupplierNavigation($supplier),
+                    'subNavigation' => $this->supplierPortalNavigation($supplier),
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,

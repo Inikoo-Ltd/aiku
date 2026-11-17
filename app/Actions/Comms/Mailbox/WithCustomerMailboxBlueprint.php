@@ -31,7 +31,11 @@ trait WithCustomerMailboxBlueprint
                             $shop->slug,
                             ...array_filter([
                                 'section' => $request->query('section'),
-                                'from'    => $request->routeIs('grp.org.shops.show.crm.appointments.settings') ? 'appointments' : null,
+                                'from'    => match (true) {
+                                    $request->routeIs('grp.org.shops.show.crm.appointments.settings') => 'appointments',
+                                    $request->routeIs('grp.org.fulfilments.show.settings.edit')       => 'fulfilment',
+                                    default                                                            => null,
+                                },
                             ]),
                         ]),
                         'disconnect_route' => [
