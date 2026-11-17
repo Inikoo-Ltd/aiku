@@ -13,14 +13,14 @@ struct FulfilmentDestination: View {
             FulfilmentPalletDeliveryView(deliveryID: id, reference: reference)
         case .pallets:
             FulfilmentPalletsView()
-        case .pallet(let reference):
-            FulfilmentPalletView(reference: reference)
+        case .pallet(let id, let reference):
+            FulfilmentPalletView(palletID: id, reference: reference)
         case .palletIncidents:
             FulfilmentIncidentsView()
         case .storedItems:
             FulfilmentStoredItemsView()
-        case .storedItemAudit(let reference):
-            FulfilmentAuditView(palletReference: reference)
+        case .storedItemAudit(let id, let reference):
+            FulfilmentAuditView(auditID: id, reference: reference)
         case .returns:
             FulfilmentReturnsView()
         case .returnDetail(let reference):

@@ -7,6 +7,7 @@ enum ShellScanKind: String, Hashable, Sendable {
     case deliveryNote
     case stockDelivery
     case palletDelivery
+    case pallet
 
     var article: String {
         switch self {
@@ -15,6 +16,7 @@ enum ShellScanKind: String, Hashable, Sendable {
         case .deliveryNote: "a delivery note"
         case .stockDelivery: "a stock delivery"
         case .palletDelivery: "a fulfilment delivery"
+        case .pallet: "a pallet"
         }
     }
 
@@ -24,7 +26,7 @@ enum ShellScanKind: String, Hashable, Sendable {
         case .sko: .sko
         case .deliveryNote: .deliveryNote
         case .stockDelivery: .stockDelivery
-        case .palletDelivery: .pallet
+        case .palletDelivery, .pallet: .pallet
         }
     }
 
@@ -35,6 +37,7 @@ enum ShellScanKind: String, Hashable, Sendable {
         case .deliveryNote: "Open delivery note"
         case .stockDelivery: "Open stock delivery"
         case .palletDelivery: "Open fulfilment delivery"
+        case .pallet: "Open pallet"
         }
     }
 
@@ -45,6 +48,7 @@ enum ShellScanKind: String, Hashable, Sendable {
         case .deliveryNote: "Delivery note"
         case .stockDelivery: "Stock delivery"
         case .palletDelivery: "Fulfilment delivery"
+        case .pallet: "Pallet"
         }
     }
 }
@@ -78,7 +82,8 @@ enum ShellScanCatalog {
         (.locations, "Location label → Location detail"),
         (.deliveryNote, "Delivery note or tracking number → Delivery note detail"),
         (.stockDelivery, "Stock delivery reference → Stock delivery"),
-        (.pallet, "Fulfilment delivery reference → Fulfilment delivery")
+        (.pallet, "Fulfilment delivery reference → Fulfilment delivery"),
+        (.pallet, "Pallet label → Pallet")
     ]
 
     static func target(from result: MobileScanResult) -> ShellScanTarget? {
@@ -93,6 +98,8 @@ enum ShellScanCatalog {
             return result.stockDelivery.map(stockDeliveryTarget)
         case .palletDelivery:
             return result.palletDelivery.map(palletDeliveryTarget)
+        case .pallet:
+            return result.pallet.map(palletTarget)
         case .unknown:
             return nil
         }
@@ -152,6 +159,16 @@ enum ShellScanCatalog {
             kind: .palletDelivery,
             detail: delivery.stateLabel ?? ShellScanKind.palletDelivery.fallbackDetail,
             link: .fulfilment(.palletDelivery(id: delivery.id, reference: delivery.reference))
+        )
+    }
+
+    private static func palletTarget(_ pallet: MobileScannedPallet) -> ShellScanTarget {
+        let parts = [pallet.stateLabel, pallet.locationCode].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        return ShellScanTarget(
+            code: pallet.reference,
+            kind: .pallet,
+            detail: parts.isEmpty ? ShellScanKind.pallet.fallbackDetail : parts.joined(separator: " · "),
+            link: .fulfilment(.pallet(id: pallet.id, reference: pallet.reference))
         )
     }
 

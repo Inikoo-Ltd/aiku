@@ -378,10 +378,10 @@ private struct PalletDeliveryScreen: View {
             message: storing.count == 1 ? "1 pallet is now Storing." : "\(storing.count.grouped) pallets are now Storing."
         )
         SectionHeading("Pallets", detail: storing.count.grouped)
-        palletList(storing, isOpenable: { _ in false }) { _ in }
+        palletList(storing) { pallet in router.open(FulfilmentRoute.pallet(id: pallet.id, reference: pallet.reference)) }
         if !notReceived.isEmpty {
             SectionHeading("Not received", detail: PalletDeliveryText.plural(notReceived.count, "pallet", "pallets"))
-            palletList(notReceived, isOpenable: { _ in false }) { _ in }
+            palletList(notReceived) { pallet in router.open(FulfilmentRoute.pallet(id: pallet.id, reference: pallet.reference)) }
         }
         AikuButton("View stored pallets", kind: .tertiary) {
             router.open(FulfilmentRoute.pallets)

@@ -85,9 +85,7 @@ struct LocationsDetailView: View {
                             pallet.reference,
                             subtitle: [pallet.customer, "Pallet", pallet.state].filter { !$0.isEmpty }.joined(separator: " · "),
                             icon: .pallet,
-                            iconTone: .neutral,
-                            showsChevron: !store.isRemote,
-                            action: store.isRemote ? nil : { router.open(FulfilmentRoute.pallet(reference: pallet.reference)) }
+                            iconTone: .neutral
                         )
                         .accessibilityIdentifier("locations.pallet.\(pallet.reference)")
                         RowDivider()

@@ -9,6 +9,8 @@ struct FulfilmentDeliveriesView: View {
     @State private var warehouseStore = WarehouseStore.shared
     @State private var lookingUpCode: String?
 
+    @State private var appearance = 0
+
     private var warehouseID: Int? { warehouseStore.selected?.id }
 
     var body: some View {
@@ -29,7 +31,8 @@ struct FulfilmentDeliveriesView: View {
             listContent
             FulfilmentNote("Fulfilment customers’ goods arrive as pallets, boxes or oversize items. References are per customer (customer code + number).")
         }
-        .task(id: warehouseID.map { feed.request(warehouseID: $0) }) {
+        .onAppear { appearance += 1 }
+        .task(id: ListLoadKey(request: warehouseID.map { feed.request(warehouseID: $0) }, appearance: appearance)) {
             guard let warehouseID else { return }
             if !feed.search.isEmpty {
                 try? await Task.sleep(for: .milliseconds(300))
