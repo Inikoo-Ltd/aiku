@@ -362,6 +362,15 @@ const onCheckedAll = ({ data, allChecked }) => {
 	}
 }
 
+const isPageAllSelected = computed(() => {
+	const rows = props.data?.data ?? []
+	return rows.length > 0 && rows.every((row) => selectedProducts.value?.includes(row.id))
+})
+
+const togglePageSelection = () => {
+	onCheckedAll({ data: props.data?.data ?? [], allChecked: !isPageAllSelected.value })
+}
+
 const onDisableCheckbox = (item) => {
 	if (disableButtons(item)) {
 		return true
@@ -644,8 +653,18 @@ const compTableFilterForSale = computed(() => {
 			}
 		"
 		:isParentLoading="!!isLoadingTable">
-		<template #header-checkbox="data">
-			<div></div>
+		<template #header-checkbox>
+			<div
+				@click="togglePageSelection"
+				v-tooltip="ctrans('Select all on this page')"
+				class="py-1.5 cursor-pointer">
+				<FontAwesomeIcon
+					:icon="isPageAllSelected ? 'fas fa-check-square' : 'fal fa-square'"
+					:class="isPageAllSelected ? 'text-green-500' : 'text-gray-500 hover:text-gray-700'"
+					class="mx-auto block text-lg"
+					fixed-width
+					aria-hidden="true" />
+			</div>
 		</template>
 
 		<template #disable-checkbox>
