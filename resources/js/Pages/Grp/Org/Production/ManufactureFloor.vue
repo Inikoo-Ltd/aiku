@@ -294,7 +294,7 @@ const sections = computed(() => {
 })
 
 const floorChannel = `grp.production.${props.production_id}.floor`
-const floorChangedProps = ["server_time", "tasks", "open_session", "open_break", "non_productive", "finished_today", "today"]
+const floorChangedProps = ["server_time", "tasks", "open_session", "open_break", "non_productive", "finished_today", "today", "materials_check_route"]
 let reloadTimer: ReturnType<typeof setTimeout> | null = null
 onMounted(() => {
     window.Echo.private(floorChannel).listen('.floor-changed', () => {

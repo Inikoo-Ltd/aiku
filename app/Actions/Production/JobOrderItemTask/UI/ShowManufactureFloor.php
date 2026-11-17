@@ -28,6 +28,7 @@ use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufacturePayBand;
+use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\ManufacturePreparationReason;
 use App\Models\Helpers\Language;
 use App\Actions\Production\ManufactureBreak\StartManufactureBreak;
@@ -220,9 +221,11 @@ class ShowManufactureFloor extends OrgAction
             ->sortBy(fn (array $task) => !$task['can_start'] || count($task['waiting_for']))
             ->values();
 
+        $timezone      = ManufacturePayrollAdjustment::timezone($production);
+        $today         = [now($timezone)->startOfDay()->utc(), now($timezone)->endOfDay()->utc()];
         $finishedToday = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
-            ->whereDate('ended_at', now()->toDateString())
+            ->whereBetween('ended_at', $today)
             ->with(['jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask', 'jobOrder', 'shares.jobOrderItemTask.jobOrderItem.artefact'])
             ->orderByDesc('ended_at')
             ->get()
@@ -244,7 +247,7 @@ class ShowManufactureFloor extends OrgAction
         $todayTotals = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
             ->whereNotNull('job_order_item_task_id')
-            ->whereDate('ended_at', now()->toDateString())
+            ->whereBetween('ended_at', $today)
             ->selectRaw('count(*) as sessions, coalesce(sum(quantity_made),0) as quantity_made, coalesce(sum(quantity_made * task_work_cost),0) as earned')
             ->first();
 

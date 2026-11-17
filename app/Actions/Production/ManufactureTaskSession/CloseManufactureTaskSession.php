@@ -38,7 +38,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Http\RedirectResponse;
 use App\Models\Production\JobOrderItemTask;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -49,13 +48,11 @@ use Lorisleiva\Actions\ActionRequest;
 class CloseManufactureTaskSession extends OrgAction
 {
     use ResolvesEmployeeByCode;
+    use WithSessionJobOrderLocks;
 
     public function handle(ManufactureTaskSession $session, array $modelData): ManufactureTaskSession
     {
-        return DB::transaction(function () use ($session, $modelData) {
-            $this->lockJobOrders(ManufactureTaskSession::whereKey($session->id)->value('job_order_item_task_id'));
-            $session = ManufactureTaskSession::lockForUpdate()->find($session->id);
-            $this->lockJobOrders($session->job_order_item_task_id);
+        return $this->withSessionLocked($session->id, fn (ManufactureTaskSession $session) => $this->jobOrderIdsTouched($session), function (ManufactureTaskSession $session) use ($modelData) {
             if ($session->state == ManufactureTaskSessionStateEnum::CLOSED) {
                 throw ValidationException::withMessages([
                     'state' => __('This task session is already closed'),
@@ -332,14 +329,20 @@ class CloseManufactureTaskSession extends OrgAction
     }
 
     /**
-     * The job orders of the task and of every line it is combined with, before the session and the task.
+     * The job orders of the task, of every line it is combined with and, for a shared mix, of every line its pool can give to.
+     *
+     * @return Collection<int, int>
      */
-    private function lockJobOrders(?int $taskId): void
+    private function jobOrderIdsTouched(ManufactureTaskSession $session): Collection
     {
-        $task = $taskId ? JobOrderItemTask::find($taskId) : null;
-        if ($task) {
-            CorrectManufactureTaskSessionQuantity::lockJobOrders($task->combinedGroup()->pluck('id')->all());
+        $task = $session->job_order_item_task_id ? JobOrderItemTask::find($session->job_order_item_task_id) : null;
+        if (!$task) {
+            return collect();
         }
+        $jobOrderIds = $task->combinedGroup()->pluck('job_order_id');
+        $poolKey     = ShareMixPool::poolKey($task);
+
+        return $poolKey ? $jobOrderIds->merge(ShareMixPool::make()->jobOrderIdsNeeding($task->production_id, $poolKey)) : $jobOrderIds;
     }
 
     /**

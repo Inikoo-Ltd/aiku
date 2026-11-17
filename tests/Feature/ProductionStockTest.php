@@ -1667,6 +1667,65 @@ test('HELP-4562 one mix and its Making cover every open line of any product that
     expect($powderLeft())->toBe($powderBefore);
 });
 
+test('a shared mix locks the job orders of every line its pool gives to, in id order, before the entry', function () {
+    $user   = $this->guest->getUser();
+    $suffix = rand(10000, 99999);
+    $powder = StoreRawMaterial::make()->action($this->production, [
+        'type'        => RawMaterialTypeEnum::CONSUMABLE->value,
+        'state'       => RawMaterialStateEnum::ORPHAN->value,
+        'code'        => 'PWL'.$suffix,
+        'description' => 'Fizzer powder',
+        'unit'        => RawMaterialUnitEnum::KILOGRAM->value,
+        'unit_cost'   => 1,
+    ]);
+    $mixing = StoreManufactureTask::make()->action($this->production, ['code' => 'MXL'.$suffix, 'name' => 'Mixing '.$suffix, 'is_piece_rate' => false, 'is_recorded_in_kg' => true]);
+    $making = StoreManufactureTask::make()->action($this->production, ['code' => 'MKL'.$suffix, 'name' => 'Making '.$suffix, 'is_piece_rate' => true]);
+    $box    = function (string $code) use ($mixing, $making, $powder, $suffix) {
+        $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code.$suffix, 'name' => $code]);
+        $artefact->manufactureTasks()->sync([
+            $mixing->id => ['position' => 1, 'units_per_artefact' => 0.05, 'label' => 'Lilac'],
+            $making->id => ['position' => 2, 'units_per_artefact' => 1, 'label' => 'Lilac'],
+        ]);
+        AttachRawMaterialToRecipeStep::make()->action($artefact->recipeSteps()->where('manufacture_task_id', $mixing->id)->first(), ['raw_material_id' => $powder->id, 'quantity_per_unit' => 0.05]);
+
+        return $artefact;
+    };
+    $line = function (Artefact $artefact, int $quantity) {
+        $jobOrder = StoreJobOrder::make()->action($this->production, []);
+        $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => $quantity]);
+        ConfirmJobOrder::make()->action($jobOrder);
+
+        return $item->refresh();
+    };
+    $lineOne = $line($box('LLC01'), 300);
+    $lineTwo = $line($box('LLC02'), 200);
+    $mixOf   = fn (JobOrderItem $item) => $item->tasks()->where('manufacture_task_id', $mixing->id)->first();
+    $locks   = function (callable $do) {
+        \Illuminate\Support\Facades\DB::flushQueryLog();
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        $do();
+        $locks = collect(\Illuminate\Support\Facades\DB::getQueryLog())->filter(fn (array $query) => str_contains($query['query'], 'for update'))->values();
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        return $locks;
+    };
+
+    $session = StartManufactureTaskSession::make()->action($user, $mixOf($lineOne));
+    $closing = $locks(fn () => CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 25]));
+    expect($closing[0]['query'])->toContain('"job_orders"')
+        ->and($closing[0]['bindings'])->toContain($lineOne->job_order_id)
+        ->and($closing[0]['bindings'])->toContain($lineTwo->job_order_id)
+        ->and($closing[1]['query'])->toContain('"manufacture_task_sessions"')
+        ->and($session->refresh()->mix_pool_key)->not->toBeNull()
+        ->and($session->shares()->pluck('job_order_item_task_id')->all())->toContain($mixOf($lineTwo)->id);
+
+    $correcting = $locks(fn () => \App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity::make()->action($session->refresh(), ['quantity_made' => 20], 'Supervisor'));
+    expect($correcting[0]['query'])->toContain('"job_orders"')
+        ->and($correcting[0]['bindings'])->toContain($lineTwo->job_order_id)
+        ->and($correcting[1]['query'])->toContain('"manufacture_task_sessions"')
+        ->and((float) $session->refresh()->quantity_made)->toBe(20.0);
+});
+
 test('INI-221 putting away a job order values every movement at FIFO in a bounded number of queries', function () {
     $user = $this->guest->getUser();
     ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)->delete();
