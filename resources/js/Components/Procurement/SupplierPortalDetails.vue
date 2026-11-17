@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
+import { useElementVisibility } from "@vueuse/core"
 import axios from "axios"
 import { debounce } from "lodash-es"
 import InputText from "primevue/inputtext"
 import Checkbox from "primevue/checkbox"
 import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
-import Paginator from "primevue/paginator"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -86,8 +86,10 @@ const sent = ref(props.submitted)
 watch(() => props.submitted, (submitted) => (sent.value = submitted))
 
 const productsPage = ref<ProductsPage | null>(null)
-const products = computed(() => productsPage.value?.data ?? [])
+const products = ref<Product[]>([])
 const isLoadingProducts = ref(false)
+const isLoadingMoreProducts = ref(false)
+const hasMoreProducts = computed(() => !!productsPage.value && productsPage.value.current_page < productsPage.value.last_page)
 const productsError = ref<string | null>(null)
 let latestProductsRequest = 0
 
@@ -96,7 +98,9 @@ const fetchProducts = async (page = 1) => {
 		return
 	}
 	const request = ++latestProductsRequest
-	isLoadingProducts.value = true
+	const isNextPage = page > 1
+	isLoadingProducts.value = !isNextPage
+	isLoadingMoreProducts.value = isNextPage
 	productsError.value = null
 	try {
 		const { data } = await axios.get<ProductsPage>(props.productsRoute, {
@@ -104,6 +108,7 @@ const fetchProducts = async (page = 1) => {
 		})
 		if (request === latestProductsRequest) {
 			productsPage.value = data
+			products.value = isNextPage ? [...products.value, ...data.data] : data.data
 		}
 	} catch {
 		if (request === latestProductsRequest) {
@@ -112,6 +117,7 @@ const fetchProducts = async (page = 1) => {
 	} finally {
 		if (request === latestProductsRequest) {
 			isLoadingProducts.value = false
+			isLoadingMoreProducts.value = false
 		}
 	}
 }
@@ -129,7 +135,16 @@ watch(
 	{ immediate: true }
 )
 
-const onProductsPage = (event: { page: number }) => fetchProducts(event.page + 1)
+const mobileProductsEnd = ref<HTMLElement | null>(null)
+const tableProductsEnd = ref<HTMLElement | null>(null)
+const isMobileProductsEndVisible = useElementVisibility(mobileProductsEnd)
+const isTableProductsEndVisible = useElementVisibility(tableProductsEnd)
+
+watch([isMobileProductsEndVisible, isTableProductsEndVisible, isLoadingProducts, isLoadingMoreProducts], ([isMobileEndVisible, isTableEndVisible, isLoading, isLoadingMore]) => {
+	if ((isMobileEndVisible || isTableEndVisible) && !isLoading && !isLoadingMore && !productsError.value && hasMoreProducts.value && productsPage.value) {
+		fetchProducts(productsPage.value.current_page + 1)
+	}
+})
 
 const openedProductId = ref<number | null>(null)
 
@@ -224,6 +239,7 @@ const edit = (submission: EditedSubmission) => {
 					</div>
 				</li>
 			</ul>
+			<div v-if="products.length && hasMoreProducts" ref="mobileProductsEnd" class="flex justify-center py-3 md:hidden"><LoadingIcon /></div>
 			<div v-if="products.length" class="mt-3 hidden max-h-[32rem] overflow-auto md:block" :class="{ 'opacity-60': isLoadingProducts }">
 				<table class="w-full text-sm">
 					<thead class="sticky top-0 bg-white text-xs uppercase tracking-wide text-gray-400">
@@ -274,19 +290,13 @@ const edit = (submission: EditedSubmission) => {
 						</tr>
 					</tbody>
 				</table>
+				<div v-if="hasMoreProducts" ref="tableProductsEnd" class="flex justify-center py-3"><LoadingIcon /></div>
 			</div>
 			<div v-if="productsPage && productsPage.total" class="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
 				<span class="tabular-nums">
 					{{ ctrans(":count products", { count: String(productsPage.total) }) }}
 					<LoadingIcon v-if="isLoadingProducts" class="ml-1" />
 				</span>
-				<Paginator
-					v-if="productsPage.total > productsPage.per_page"
-					:rows="productsPage.per_page"
-					:totalRecords="productsPage.total"
-					:first="(productsPage.current_page - 1) * productsPage.per_page"
-					@page="onProductsPage"
-				/>
 			</div>
 			<SupplierPortalProductWebsitesDialog v-if="productWebsitesRoute" v-model="openedProductId" :product-websites-route="productWebsitesRoute" />
 			<SupplierProductLabelsDialog
