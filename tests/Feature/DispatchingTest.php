@@ -8843,3 +8843,30 @@ test('a marketplace order gets the shop default packaging when it goes to the wa
         ->and($deliveryNote->packaging_id)->toBe($defaultPackaging->id)
         ->and($order->transactions()->where('model_type', 'Packaging')->where('model_id', $defaultPackaging->id)->count())->toBe(1);
 });
+
+test('return item locations list the SKO locations of the return warehouse only (INI-292)', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $item->update(['quantity_dispatched' => 2]);
+    $sameWarehouseIds = $item->orgStock->locationOrgStocks()->pluck('id')->all();
+
+    $otherWarehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, [
+        'code' => 'W'.substr(uniqid(), -6),
+        'name' => 'Other return warehouse',
+    ]);
+    StoreLocationOrgStock::make()->action(
+        orgStock: $item->orgStock,
+        location: StoreLocation::make()->action($otherWarehouse, Location::factory()->definition()),
+        modelData: ['quantity' => 50, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+        strict: false
+    );
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    $rows = \App\Http\Resources\Procurement\ReturnDeliveryNoteItemsResource::collection(
+        \App\Actions\GoodsIn\ReturnDeliveryNoteItem\IndexReturnDeliveryNoteItems::run($returnDeliveryNote)
+    )->resolve();
+
+    expect(collect($rows[0]['locations'])->pluck('id')->all())->toBe($sameWarehouseIds);
+});

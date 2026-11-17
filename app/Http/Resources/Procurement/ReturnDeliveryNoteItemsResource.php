@@ -37,7 +37,7 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
             ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
             ->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id')
             ->where('org_stock_id', $this->org_stock_id)
-            ->where('location_org_stocks.warehouse_id', $returnDeliveryNoteItem->returnDeliveryNote?->warehouse_id)
+            ->whereRaw('location_org_stocks.warehouse_id = (SELECT return_delivery_notes.warehouse_id FROM return_delivery_notes JOIN return_delivery_note_items ON return_delivery_note_items.return_delivery_note_id = return_delivery_notes.id WHERE return_delivery_note_items.id = ?)', [$this->id])
             ->select([
                 'location_org_stocks.id',
                 'location_org_stocks.quantity',
