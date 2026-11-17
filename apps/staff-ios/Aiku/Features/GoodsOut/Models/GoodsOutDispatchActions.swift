@@ -207,6 +207,7 @@ extension GoodsOutStore {
             return GoodsOutWriteResult(outcome: .failed(message: formError.message), fieldErrors: formError.fields)
         } catch {
             if error.isCancellation { return GoodsOutWriteResult(outcome: .failed(message: "")) }
+            await reloadIfPlatformUnanswered(action, error: error, noteID: id)
             return GoodsOutWriteResult(outcome: .failed(message: GoodsOutMapper.message(for: error)))
         }
     }

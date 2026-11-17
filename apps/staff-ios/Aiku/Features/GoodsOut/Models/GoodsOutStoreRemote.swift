@@ -133,8 +133,14 @@ extension GoodsOutStore {
             return (response.isNothingChanged ? .nothingChanged(message: message) : .done(message: message), response.result)
         } catch {
             if error.isCancellation { return (.failed(message: ""), nil) }
+            await reloadIfPlatformUnanswered(action, error: error, noteID: id)
             return (.failed(message: GoodsOutMapper.message(for: error)), nil)
         }
+    }
+
+    func reloadIfPlatformUnanswered(_ action: GoodsOutNoteAction, error: Error, noteID: Int) async {
+        guard action.waitsForPlatform, error as? APIError == .offline else { return }
+        await loadNote(id: noteID)
     }
 
     func scanToPick(_ reference: String, code: String, line: GoodsOutLine?) async -> (outcome: GoodsOutScanOutcome, message: String?) {

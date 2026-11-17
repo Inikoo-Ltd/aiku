@@ -25,6 +25,13 @@ struct APIClientTests {
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer secret")
     }
 
+    @Test func appliesTheEndpointTimeoutOnlyWhenSet() {
+        let client = APIClient(configuration: configuration)
+
+        #expect(client.makeRequest(for: Endpoint(path: "slow", timeout: 120)).timeoutInterval == 120)
+        #expect(client.makeRequest(for: .profile).timeoutInterval == URLRequest(url: URL(string: "https://example.test")!).timeoutInterval)
+    }
+
     @Test func omitsAuthorizationWithoutToken() {
         let request = APIClient(configuration: configuration).makeRequest(for: .profile)
 
