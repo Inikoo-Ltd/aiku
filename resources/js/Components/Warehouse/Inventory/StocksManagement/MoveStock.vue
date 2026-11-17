@@ -13,8 +13,7 @@ import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import {formatDistanceStrict} from 'date-fns/formatDistanceStrict'
-import { notify } from '@kyvg/vue3-notification'
-import Multiselect from '@vueform/multiselect'
+import Select from 'primevue/select'
 library.add(faLongArrowRight, faInfoCircle, faForklift, faTimes)
 
 const props = defineProps<{
@@ -32,9 +31,9 @@ const props = defineProps<{
         replenishment_stock?: number
     }>
     reasons?: {
-        increase: [],
-        decrease: [],
-        transfer: [],
+        increase: Record<string, string>,
+        decrease: Record<string, string>,
+        transfer: Record<string, string>,
     }
 }>()
 
@@ -77,8 +76,10 @@ const form = useForm({
     moveStock: null as null | { from: string, targets: { to: string, quantity: number }[] }
 })
 
-const selectedReason = ref('')
+const selectedReason = ref<string | null>(null)
 const note = ref('')
+const errorMessage = ref<string | null>(null)
+const reasonOptions = computed(() => Object.entries(props.reasons?.transfer ?? {}).map(([value, label]) => ({ value, label })))
 
 const batchLines = (location: { stock: number, batches: { batch_code_id: number, code: string, expiry_date: string | null, quantity: number }[] }) => {
     const lines: { key: number, code: string | null, expiry_date: string | null, quantity: number }[] = location.batches.map((batch) => ({ key: batch.batch_code_id, ...batch }))
@@ -157,7 +158,6 @@ const stickyRowStyle = (location: any) => {
 const canSave = computed(() => {
     return !!moveStock.value.from
         && moveStock.value.targets.length > 0
-        // && !!selectedReason.value
         && moveStock.value.targets.every((entry) => Number(entry.quantity) > 0)
         && totalMoveQuantity.value <= Number(moveStock.value.from?.stock ?? 0)
 })
@@ -177,6 +177,7 @@ const syncForm = () => {
 }
 
 const selectSource = (location: any) => {
+    errorMessage.value = null
     if (isSource(location)) {
         moveStock.value.from = null
         moveStock.value.isActive = false
@@ -186,11 +187,7 @@ const selectSource = (location: any) => {
     }
 
     if (!location.stock || location.stock <= 0) {
-        notify({
-            title: ctrans('Cannot select source'),
-            text: ctrans('This location has no stock to move'),
-            type: 'warning',
-        })
+        errorMessage.value = ctrans('This location has no stock to move')
         return
     }
 
@@ -211,6 +208,7 @@ const selectSource = (location: any) => {
 }
 
 const selectTarget = (location: any) => {
+    errorMessage.value = null
     if (isTarget(location)) {
         moveStock.value.targets = moveStock.value.targets.filter((entry) => entry.location.id !== location.id)
         syncForm()
@@ -225,11 +223,7 @@ const selectTarget = (location: any) => {
         const swappedSource = moveStock.value.targets[0].location
 
         if (!swappedSource.stock || swappedSource.stock <= 0) {
-            notify({
-                title: ctrans('Cannot swap locations'),
-                text: ctrans(':location has no stock to move', { location: swappedSource.name }),
-                type: 'warning',
-            })
+            errorMessage.value = ctrans(':location has no stock to move', { location: swappedSource.name })
             return
         }
 
@@ -457,31 +451,19 @@ const submitCheckStock = () => {
             location_org_stock_id: entry.location.id,
             quantity: entry.quantity
         })),
-        // reason: selectedReason.value,
-        // note: note.value
+        reason: selectedReason.value,
+        note: note.value || null
     }, {
         preserveScroll: true,
         onStart: () => {
+            errorMessage.value = null;
             isLoadingSubmit.value = true;
         },
         onSuccess: () => {
-            // notify({
-            //     title: ctrans("Success"),
-            //     text: ctrans('Moved :_qtyItem stocks from :_locationSource to :_locationDestination', {
-            //         _qtyItem: moveStock.value.quantity.toString(),
-            //         _locationSource: moveStock.value.from?.name ?? 'A',
-            //         _locationDestination: moveStock.value.to?.name ?? 'B',
-            //     }),
-            //     type: "success",
-            // })
             emits('close');
         },
         onError: (errors) => {
-            notify({
-                title: ctrans("Something went wrong"),
-                text: Object.values(errors ?? {})[0] ?? ctrans('Unable to move stock. An error occured.'),
-                type: "error",
-            })
+            errorMessage.value = Object.values(errors ?? {})[0] ?? ctrans('Unable to move stock. An error occured.')
         },
         onFinish: () => {
             isLoadingSubmit.value = false;
@@ -503,7 +485,6 @@ const applyReplenishment = (location: any) => {
 
 onMounted(() => {
     const locations = form.stockCheck
-    // selectedReason.value = Object.keys(props.reasons?.transfer ?? [])?.[0] ?? '';
 
     if (locations.length === 2) {
         const [loc1, loc2] = locations
@@ -639,30 +620,24 @@ onMounted(() => {
             </div> -->
         </div>
 
-        <!-- Disabled due to Tomas request -->
-        <!-- <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
             <div class="min-w-0">
                 <label class="block mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
                     {{ ctrans('Transfer reason') }}
-                    <span class="text-red-500">*</span>
+                    <span class="font-normal normal-case tracking-normal text-gray-400 italic">
+                        {{ ctrans('optional') }}
+                    </span>
                 </label>
-                <Multiselect
+                <Select
                     v-model="selectedReason"
-                    :options="reasons?.transfer ?? []"
+                    :options="reasonOptions"
+                    optionLabel="label"
+                    optionValue="value"
                     :placeholder="ctrans('Select your reason')"
-                    :canClear="false"
-                    :mode="'single'"
-                    :closeOnSelect="true"
-                    :canDeselect="false"
-                    :hideSelected="false"
-                    :searchable="true"
-                    :filter-results="false"
-                    :classes="{ container: selectedReason ? 'multiselect' : 'multiselect !border-red-300' }"
+                    showClear
+                    filter
+                    class="w-full"
                 />
-                <div v-if="!selectedReason" class="mt-1 text-xs h-4" :class="selectedReason ? 'invisible' : 'text-red-500'">
-                    <FontAwesomeIcon :icon="faInfoCircle" fixed-width aria-hidden="true" />
-                    {{ ctrans('Select a reason before saving') }}
-                </div>
             </div>
 
             <div class="min-w-0">
@@ -675,7 +650,7 @@ onMounted(() => {
                 <Textarea v-model.trim="note" rows="1" :autoResize="true"
                 :placeholder="ctrans('Add more details about this move')" class="w-full rounded-xl" />
             </div>
-        </div> -->
+        </div>
 
         <div class="flex-1 min-h-0 overflow-y-auto overflow-x-auto pr-4 pb-3 mt-4">
         <table v-if="form.stockCheck.length > 0" class="w-full text-sm">
@@ -866,6 +841,9 @@ onMounted(() => {
             </div>
         </div>
         </div>
+        <p v-if="errorMessage" class="shrink-0 mt-2 text-xs text-red-500">
+            {{ errorMessage }}
+        </p>
         <!-- Section: buttons -->
         <div class="shrink-0 relative flex gap-x-2 z-40 pt-3 mt-2 border-t bg-white">
             <Button

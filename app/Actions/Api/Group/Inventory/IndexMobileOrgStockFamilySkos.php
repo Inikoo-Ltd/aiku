@@ -47,7 +47,7 @@ class IndexMobileOrgStockFamilySkos
         ])->validate();
 
         $this->useWebTableParameters($filters);
-        $skos  = IndexOrgStocks::make()->handle($orgStockFamily, null, $filters['bucket'] ?? 'current');
+        $skos  = IndexOrgStocks::make()->handle($orgStockFamily, null, $filters['bucket'] ?? 'current', $warehouse);
         $stats = $orgStockFamily->stats;
 
         return response()->json([

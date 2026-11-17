@@ -45,6 +45,7 @@ class SeedWarehousePermissions
                         'name'       => $permissionName,
                         'scope_type' => 'Warehouse',
                         'scope_id'   => $warehouse->id,
+                        'guard_name' => 'web',
                     ]
                 );
             } catch (Exception) {
@@ -95,6 +96,7 @@ class SeedWarehousePermissions
                     'scope_type' => 'Warehouse',
                     'scope_id'   => $warehouse->id,
                     'group_id'   => $warehouse->group_id,
+                    'guard_name' => 'web',
                 ]
             );
         }

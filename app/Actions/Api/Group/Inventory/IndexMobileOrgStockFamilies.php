@@ -49,7 +49,7 @@ class IndexMobileOrgStockFamilies
 
         $state = $filters['state'] ?? 'active';
         $this->useWebTableParameters($filters);
-        $families = IndexOrgStockFamilies::make()->handle($warehouse->organisation, null, $state);
+        $families = IndexOrgStockFamilies::make()->handle($warehouse->organisation, null, $state, $warehouse);
         $ids      = OrgStockFamily::whereIn('slug', collect($families->items())->pluck('slug'))->pluck('id', 'slug');
         $stats    = $warehouse->organisation->inventoryStats;
 

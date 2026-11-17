@@ -61,6 +61,10 @@ use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use Config;
+use App\Models\Inventory\OrgStockMovement;
+use App\Models\SysAdmin\Permission;
+use App\Models\SysAdmin\Role;
+use Laravel\Sanctum\Sanctum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use Illuminate\Support\Facades\Cache;
@@ -1382,4 +1386,55 @@ test('locations and warehouse areas are uploaded only by inventory or location e
     \Pest\Laravel\post(route('grp.models.warehouse.location.upload', $warehouse->id), $spreadsheet())->assertForbidden();
     \Pest\Laravel\post(route('grp.models.warehouse.warehouse-areas.upload', $warehouse->id), $spreadsheet())->assertForbidden();
     \Pest\Laravel\post(route('grp.models.warehouse_area.location.upload', $warehouseArea->id), $spreadsheet())->assertForbidden();
+})->depends('create warehouse area');
+
+test('a warehouse can be created during a token authenticated request', function () {
+    Sanctum::actingAs($this->user, ['mobile']);
+
+    $warehouse = StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+
+    expect(Role::where('scope_type', 'Warehouse')->where('scope_id', $warehouse->id)->pluck('guard_name')->unique()->all())->toBe(['web'])
+        ->and(Permission::where('scope_type', 'Warehouse')->where('scope_id', $warehouse->id)->pluck('guard_name')->unique()->all())->toBe(['web']);
+
+    $warehouse->delete();
+});
+
+test('sko lists show each sko once when the organisation has several warehouses', function (Warehouse $warehouse) {
+    $secondWarehouse = StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+    $orgStock        = StoreOrgStock::make()->action($this->organisation, StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE])));
+    $stockFamily     = StoreStockFamily::make()->action($this->group, StockFamily::factory()->definition());
+    StoreStock::make()->action($stockFamily, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStockFamily  = StoreOrgStockFamily::make()->action($this->organisation, $stockFamily->refresh(), []);
+
+    $warehouseSlugsListed = fn (string $routeName, string $search, string $slug) => collect(
+        $this->withoutVite()->get(route($routeName, [$this->organisation->slug, $secondWarehouse->slug]).'?index_filter[global]='.urlencode($search))
+            ->assertOk()->viewData('page')['props']['index']['data']
+    )->where('slug', $slug)->pluck('warehouse_slug')->all();
+
+    expect($warehouseSlugsListed('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.index', $orgStock->code, $orgStock->slug))->toBe([$secondWarehouse->slug])
+        ->and($warehouseSlugsListed('grp.org.warehouses.show.inventory.org_stocks.orphan-product.index', $orgStock->code, $orgStock->slug))->toBe([$secondWarehouse->slug])
+        ->and($warehouseSlugsListed('grp.org.warehouses.show.inventory.org_stock_families.in-process.index', $orgStockFamily->code, $orgStockFamily->slug))->toBe([$secondWarehouse->slug]);
+
+    $secondWarehouse->delete();
+})->depends('create warehouse');
+
+test('moving stock keeps the reason and note on both movements', function ($warehouseArea) {
+    $orgStock   = StoreOrgStock::make()->action($this->organisation, StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE])));
+    $newSlot    = fn () => StoreLocationOrgStock::make()->action($orgStock, StoreLocation::make()->action($warehouseArea, Location::factory()->definition()), ['type' => LocationStockTypeEnum::PICKING]);
+    $sourceSlot = $newSlot();
+    $targetSlot = $newSlot();
+    $otherSlot  = $newSlot();
+    DB::table('location_org_stocks')->where('id', $sourceSlot->id)->update(['quantity' => 10]);
+
+    MoveOrgStockToOtherLocation::make()->action($sourceSlot->refresh(), $targetSlot, ['quantity' => 2, 'reason' => 'transfer', 'note' => 'shelf repaired']);
+    $this->withoutVite()->patch(route('grp.models.location_org_stock.multi_move', $sourceSlot->id), [
+        'targets' => [['location_org_stock_id' => $otherSlot->id, 'quantity' => 3]],
+        'reason'  => 'transfer',
+    ])->assertSessionHasNoErrors();
+
+    $movements = OrgStockMovement::where('org_stock_id', $orgStock->id)->where('type', OrgStockMovementTypeEnum::LOCATION_TRANSFER)->orderBy('id')->get();
+
+    expect($movements)->toHaveCount(4)
+        ->and($movements->take(2)->map(fn (OrgStockMovement $movement) => [$movement->reason?->value, $movement->note])->all())->toBe([['transfer', 'shelf repaired'], ['transfer', 'shelf repaired']])
+        ->and($movements->skip(2)->map(fn (OrgStockMovement $movement) => [$movement->reason?->value, $movement->note, $movement->user_id])->values()->all())->toBe([['transfer', null, $this->user->id], ['transfer', null, $this->user->id]]);
 })->depends('create warehouse area');
