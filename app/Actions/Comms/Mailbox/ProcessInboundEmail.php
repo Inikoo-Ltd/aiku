@@ -262,7 +262,7 @@ class ProcessInboundEmail
         // the waiting queue: customer service writes, the robot replies, and the chat reopens.
         $isAutoReply = self::isAutoReply($raw);
         $existing    = $this->findSessionByThread($shop, $threadId)
-            ?? ($isAutoReply || $isColleague ? null : $this->joinOpenSessionFromSender($shop, $from['address'], $threadId));
+            ?? ($isAutoReply || $isColleague || Arr::get($shop->settings, 'chat.email_split_new_threads') ? null : $this->joinOpenSessionFromSender($shop, $from['address'], $threadId));
 
         // On its own it is not a conversation at all: answering a mail we never sent leaves
         // nobody to reply to, so it is filtered rather than opened as new work. A courier's case
