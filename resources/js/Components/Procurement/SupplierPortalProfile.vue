@@ -42,6 +42,7 @@ const isSaving = ref(false)
 const isSaved = ref(false)
 const errors = ref<Record<string, string>>({})
 const photoInput = ref<HTMLInputElement | null>(null)
+const companyPhotoInput = ref<HTMLInputElement | null>(null)
 
 const themes = useColorTheme.slice(0, 10).map((colours, index) => ({ index, background: colours[0], active: colours[2], accent: colours[3] }))
 
@@ -63,7 +64,7 @@ const save = (data: Record<string, unknown>, onSuccess?: () => void) => {
 	router.post(props.updateRoute, data, {
 		preserveScroll: true,
 		preserveState: true,
-		forceFormData: data.photo !== undefined,
+		forceFormData: data.photo !== undefined || data.company_photo !== undefined,
 		only: ["profile"],
 		onSuccess,
 		onError: (response) => (errors.value = response),
@@ -82,11 +83,13 @@ const chooseTheme = (index: number) => {
 	save({ theme: index })
 }
 
-const choosePhoto = (event: Event) => {
-	const file = (event.target as HTMLInputElement).files?.[0]
+const choosePhoto = (field: "photo" | "company_photo", event: Event) => {
+	const input = event.target as HTMLInputElement
+	const file = input.files?.[0]
 	if (file) {
-		save({ photo: file })
+		save({ [field]: file })
 	}
+	input.value = ""
 }
 
 const openCompanyDetails = () => {
@@ -121,7 +124,7 @@ const openCompanyDetails = () => {
 						<Button type="tertiary" size="xs" :label="profile.avatar ? ctrans('Change photo') : ctrans('Add a photo')" :loading="isSaving" @click="photoInput?.click()">
 							<template #icon><FontAwesomeIcon icon="fal fa-camera" fixed-width aria-hidden="true" /></template>
 						</Button>
-						<input ref="photoInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="choosePhoto" />
+						<input ref="photoInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="choosePhoto('photo', $event)" />
 						<p v-if="errors.photo" class="text-xs text-red-600">{{ errors.photo }}</p>
 					</div>
 				</div>
@@ -165,6 +168,21 @@ const openCompanyDetails = () => {
 						</template>
 					</SelectButton>
 					<p v-if="errors.theme" class="text-xs text-red-600">{{ errors.theme }}</p>
+				</div>
+
+				<div class="flex items-center gap-4 border-t border-gray-100 pt-4">
+					<span class="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 text-gray-400">
+						<FontAwesomeIcon icon="fal fa-building" size="lg" fixed-width aria-hidden="true" />
+						<Image v-if="profile.company_logo" :src="profile.company_logo" class="absolute inset-0 h-full w-full object-cover" :alt="ctrans('Company photo')" />
+					</span>
+					<div class="space-y-1">
+						<div class="text-xs font-medium text-gray-500">{{ ctrans("Company photo") }}</div>
+						<Button type="tertiary" size="xs" :label="profile.company_logo ? ctrans('Change company photo') : ctrans('Add a company photo')" :loading="isSaving" @click="companyPhotoInput?.click()">
+							<template #icon><FontAwesomeIcon icon="fal fa-camera" fixed-width aria-hidden="true" /></template>
+						</Button>
+						<input ref="companyPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="choosePhoto('company_photo', $event)" />
+						<p v-if="errors.company_photo" class="text-xs text-red-600">{{ errors.company_photo }}</p>
+					</div>
 				</div>
 
 				<div class="space-y-1 border-t border-gray-100 pt-4">
