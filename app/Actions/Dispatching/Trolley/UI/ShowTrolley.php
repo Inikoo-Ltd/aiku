@@ -62,7 +62,7 @@ class ShowTrolley extends OrgAction
                         ],
                     'title'   => $trolley->name,
                     'model'   => __('Trolley'),
-                    'actions' => [
+                    'actions' => $this->canEdit ? [
                         [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -86,7 +86,7 @@ class ShowTrolley extends OrgAction
                                 ],
                             ],
                         ]
-                    ],
+                    ] : [],
                 ],
 
                 'tabs' => [

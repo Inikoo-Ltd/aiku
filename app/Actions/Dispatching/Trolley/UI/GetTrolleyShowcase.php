@@ -23,7 +23,7 @@ class GetTrolleyShowcase
             'name'              => $trolley->name,
             'status'            => $trolley->status,
             'slug'              => $trolley->slug,
-            'delivery_note'     => $trolley->currentDeliveryNote,
+            'delivery_note'     => $trolley->deliveryNote?->reference,
         ];
     }
 }

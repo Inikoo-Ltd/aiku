@@ -128,6 +128,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                 'location_org_stocks' => DB::table('location_org_stocks')
                     ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
                     ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')
+                    ->whereRaw('location_org_stocks.warehouse_id = (SELECT delivery_notes.warehouse_id FROM delivery_notes WHERE delivery_notes.id = delivery_note_items.delivery_note_id)')
                     ->selectRaw("
                         jsonb_agg(
                             jsonb_build_object(
@@ -141,8 +142,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                                 'pickings_data', (
                                     SELECT concat(
                                         coalesce(sum(quantity), 0),
-                                        ';',
-                                        coalesce(string_agg(id::char, ','), '')
+                                        ';'
                                     )
                                     FROM pickings
                                     WHERE pickings.location_id = location_org_stocks.location_id

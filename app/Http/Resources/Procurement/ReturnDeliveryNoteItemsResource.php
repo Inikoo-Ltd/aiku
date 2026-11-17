@@ -37,6 +37,7 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
             ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
             ->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id')
             ->where('org_stock_id', $this->org_stock_id)
+            ->where('location_org_stocks.warehouse_id', $returnDeliveryNoteItem->returnDeliveryNote?->warehouse_id)
             ->select([
                 'location_org_stocks.id',
                 'location_org_stocks.quantity',
@@ -46,15 +47,6 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
                 'locations.slug as location_slug',
             ])
             ->selectRaw('\''.$returnDeliveryNoteItem->packed_in.'\' as org_stock_packed_in')
-            ->selectRaw(
-                '(
-                    SELECT concat(sum(quantity),\';\',string_agg(id::char,\',\')) FROM pickings
-                    WHERE pickings.location_id = location_org_stocks.location_id
-                    AND pickings.org_stock_id = location_org_stocks.org_stock_id
-                    AND pickings.type = ? AND pickings.delivery_note_item_id = ?
-                ) as pickings_data',
-                ['pick', $this->id]
-            )
             ->orderByRaw(self::defaultLocationOrder($returnDeliveryNoteItem->returnDeliveryNote?->shop?->type))
             ->orderBy('picking_priority')
             ->get();
