@@ -22,10 +22,10 @@ enum PalletReturnItemNoSetReasonStateEnum: string
     public static function labels(): array
     {
         return [
-            'in_process'               => __('Other'),
-            'submitted'                => __('Unknown'),
-            'confirmed'                => __('Not Setup'),
-            'picking'                  => __('Auto Stock'),
+            'other'      => __('Other'),
+            'unknown'    => __('Unknown'),
+            'not_setup'  => __('Not Setup'),
+            'auto_stock' => __('Auto Stock'),
         ];
     }
 

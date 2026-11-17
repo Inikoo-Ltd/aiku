@@ -62,7 +62,6 @@ class PickedPalletReturn extends OrgAction
             $palletReturnItem = PalletReturnItem::find($pallet->pivot->id);
             PickWholePalletInPalletReturn::make()->action($palletReturnItem, []);
         }
-        // AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturn);
 
         $pickingSessions = $palletReturn->pickingSessions()->get();
         foreach ($pickingSessions as $pickingSession) {
@@ -121,11 +120,11 @@ class PickedPalletReturn extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(PalletReturn $palletReturn): PalletReturn
+    public function action(PalletReturn $palletReturn, ?User $user = null): PalletReturn
     {
         $this->asAction = true;
         $this->initialisationFromFulfilment($palletReturn->fulfilment, []);
 
-        return $this->handle($palletReturn, $this->validatedData);
+        return $this->handle($palletReturn, $this->validatedData, $user);
     }
 }

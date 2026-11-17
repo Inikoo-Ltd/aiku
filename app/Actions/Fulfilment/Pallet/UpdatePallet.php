@@ -8,7 +8,6 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -20,7 +19,6 @@ use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Rules\IUnique;
-use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -40,10 +38,6 @@ class UpdatePallet extends OrgAction
         $pallet = $this->update($pallet, $modelData, ['data']);
 
         $changes = $pallet->getChanges();
-
-        // if ($hydrateParents && $pallet->pallet_return_id && Arr::has($modelData, 'state')) {
-        //     AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($pallet->palletReturn);
-        // }
 
         RunPalletPostUpdateHydrators::dispatch(
             $pallet,

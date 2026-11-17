@@ -69,7 +69,8 @@ class IndexLostPalletsInWarehouse extends OrgAction
                 'pallets.fulfilment_customer_id',
                 'pallets.warehouse_id',
                 'pallets.pallet_delivery_id',
-                'pallets.pallet_return_id'
+                'pallets.pallet_return_id',
+                'pallets.incident_report'
             );
 
         $query->leftJoin('fulfilment_customers', 'fulfilment_customers.id', 'pallets.fulfilment_customer_id');
@@ -108,7 +109,7 @@ class IndexLostPalletsInWarehouse extends OrgAction
 
             $table->column(key: 'fulfilment_customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'customer_reference', label: __("Pallet reference (customer's), notes"), canBeHidden: false, sortable: true, searchable: true);
-
+            $table->column(key: 'incident_report_message', label: __("Description"), canBeHidden: false, sortable: true, searchable: true);
 
             $table->defaultSort('reference');
         };

@@ -53,6 +53,9 @@ use App\Actions\Fulfilment\Pallet\StoreMultiplePalletsFromDelivery;
 use App\Actions\Fulfilment\Pallet\StorePallet;
 use App\Actions\Fulfilment\Pallet\StorePalletCreatedInPalletDelivery;
 use App\Actions\Fulfilment\Pallet\UndoBookedInPallet;
+use App\Actions\Fulfilment\Pallet\UndoNotReceivedPallet;
+use App\Actions\Fulfilment\PalletDelivery\UI\IndexServiceInPalletDelivery;
+use App\Http\Resources\Fulfilment\FulfilmentTransactionsResource;
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\PalletDelivery\ConfirmPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ImportPalletsInPalletDelivery;
@@ -2098,12 +2101,16 @@ test('picked pallet to return', function (PalletReturn $pickingPalletReturn) {
     $fulfilmentCustomer = $pickingPalletReturn->fulfilmentCustomer;
 
 
+    $packer = User::first();
+
     $pickedPalletReturn = PickedPalletReturn::make()->action(
         $pickingPalletReturn,
+        $packer,
     );
     $fulfilmentCustomer->refresh();
     expect($pickedPalletReturn)->toBeInstanceOf(PalletReturn::class)
-        ->and($pickedPalletReturn->state)->toBe(PalletReturnStateEnum::PICKED);
+        ->and($pickedPalletReturn->state)->toBe(PalletReturnStateEnum::PICKED)
+        ->and($pickedPalletReturn->packer_user_id)->toBe($packer->id);
 
 
     return $pickedPalletReturn;
@@ -4645,3 +4652,26 @@ test('fulfilment rentals, accounting and post room pages answer fulfilment or ac
         $this->get($url)->assertOk();
     }
 });
+
+test('a pallet delivery keeps the warehouse it is given, INI-292', function (FulfilmentCustomer $fulfilmentCustomer) {
+    $numberDeliveries = $fulfilmentCustomer->palletDeliveries()->count();
+
+    expect(fn () => StorePalletDelivery::make()->action($fulfilmentCustomer, ['warehouse_id' => 32000]))
+        ->toThrow(ValidationException::class)
+        ->and($fulfilmentCustomer->palletDeliveries()->count())->toBe($numberDeliveries);
+})->depends('create 4th fulfilment customer');
+
+test('pallet delivery services show the service unit label, INI-292', function (PalletDelivery $palletDelivery) {
+    request()->setRouteResolver(fn () => (new \Illuminate\Routing\Route('GET', 'test', []))->name('test'));
+    $services = FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery))->resolve();
+
+    expect($services)->not->toBeEmpty()
+        ->and(collect($services)->pluck('unit_label')->unique()->values()->all())->toBe([__('service')]);
+})->depends('set rental to first pallet in the pallet delivery');
+
+test('undo not received pallet as an action checks the pallet it is given, INI-292', function (PalletDelivery $palletDelivery) {
+    $pallet = $palletDelivery->pallets()->first();
+
+    expect($palletDelivery->state)->toBe(PalletDeliveryStateEnum::NOT_RECEIVED)
+        ->and(fn () => UndoNotReceivedPallet::make()->action($pallet))->toThrow(ValidationException::class);
+})->depends('create pallet delivery that was not delivered by marking items 4th customer');
