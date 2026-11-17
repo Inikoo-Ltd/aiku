@@ -724,6 +724,15 @@ test('an engineer can raise a MER ticket from a Merlin conversation with the tic
         ->and($ticket->tags)->toContain('merlin', 'allegro')
         ->and(App\Http\Resources\Helpers\TicketResource::make($ticket)->resolve()['source']['url'])->toContain('/websites/ai-assistant/conversations/'.$conversation->ulid);
 
+    $ticket->update(['assignee_id' => $engineer->id]);
+    $messages = $conversation->messages()->count();
+    AikuServer::actingAs($engineer)->tool(App\Mcp\Tools\TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'Fixed, please try again.', 'to_customer' => true, 'status' => 'pending_deploy'])
+        ->assertHasErrors(['not held for a deployment']);
+    AikuServer::actingAs($engineer)->tool(App\Mcp\Tools\TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'Fixed, please try again.', 'to_customer' => true])
+        ->assertOk();
+    expect($conversation->messages()->count())->toBe($messages + 1);
+
+    StaffTask::where('data->ticket_id', $ticket->id)->delete();
     $ticket->delete();
     actingAs($this->user);
 });
