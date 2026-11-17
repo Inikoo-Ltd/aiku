@@ -321,7 +321,7 @@ test('feedback leaves stock, claims and discrepancy outcomes unchanged, and only
         ->and($card['instruction']['body'])->toBe('Count before packing')
         ->and($props['give_feedback']['suppliers'])->toBe([])
         ->and($props['give_feedback']['default_comments'][5])->toContain('perfect condition')
-        ->and(collect($props['pageHead']['actions'])->pluck('key'))->toContain('give_feedback');
+        ->and(collect($props['pageHead']['actions'])->pluck('key'))->not->toContain('give_feedback');
 });
 
 test('booking in works without any feedback', function () {
