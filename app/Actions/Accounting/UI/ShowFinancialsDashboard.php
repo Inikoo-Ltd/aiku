@@ -65,16 +65,17 @@ class ShowFinancialsDashboard extends OrgAction
      * @param Collection<int, Organisation> $organisations
      * @return array<string, mixed>
      */
-    public function handle(Group $group, Collection $organisations, User $user, ?string $organisationSlug = null, ?Carbon $today = null): array
+    public function handle(Organisation|Group $parent, Collection $organisations, User $user, ?string $organisationSlug = null, ?Carbon $today = null): array
     {
         $today ??= now();
+        $isGroup = $parent instanceof Group;
 
-        $cash        = ShowCash::make()->handle($group, $organisations);
-        $incoming    = ShowBankIncomingDashboard::make()->handle($group, '90d', IndexBankIncoming::make()->forGroup($group, $user, $organisationSlug));
-        $outgoing    = ShowBankOutgoingDashboard::make()->handle($group, '90d', IndexBankOutgoing::make()->forGroup($group, $user, $organisationSlug));
-        $receivables = ShowReceivablesDashboard::make()->handle($group, $organisations, $today);
-        $payouts     = ShowPayouts::make()->handle($group, $organisations);
-        $payables    = GetPayables::query($organisations->pluck('id')->all(), $group->currency_id)->where('counted', true)->get();
+        $cash        = ShowCash::make()->handle($parent, $organisations);
+        $incoming    = ShowBankIncomingDashboard::make()->handle($parent, '90d', $isGroup ? IndexBankIncoming::make()->forGroup($parent, $user, $organisationSlug) : IndexBankIncoming::make());
+        $outgoing    = ShowBankOutgoingDashboard::make()->handle($parent, '90d', $isGroup ? IndexBankOutgoing::make()->forGroup($parent, $user, $organisationSlug) : IndexBankOutgoing::make());
+        $receivables = ShowReceivablesDashboard::make()->handle($parent, $organisations, $today);
+        $payouts     = ShowPayouts::make()->handle($parent, $organisations);
+        $payables    = GetPayables::query($organisations->pluck('id')->all(), $parent->currency_id)->where('counted', true)->get();
         $sum         = fn (Collection $rows) => round((float) $rows->sum(fn (object $row) => (float) $row->amount), 2);
 
         $needsPerson = fn (array $dashboard) => (int) (collect($dashboard['sections'])->firstWhere('key', 'needs_person')['lines'] ?? 0);
@@ -116,7 +117,7 @@ class ShowFinancialsDashboard extends OrgAction
                     ->map(fn (Collection $rows, string $label) => ['key' => $label, 'label' => $label, 'amount' => round((float) $rows->sum('held.amount'), 2)])
                     ->sortByDesc('amount')->values()->all(),
             ],
-            'forecast'    => $this->forecast($group, $organisations, $today, $cash['total']['amount'], $payouts, $sum($payables->whereNotNull('amount'))),
+            'forecast'    => $this->forecast($parent, $organisations, $today, $cash['total']['amount'], $payouts, $sum($payables->whereNotNull('amount'))),
         ];
     }
 
@@ -125,11 +126,12 @@ class ShowFinancialsDashboard extends OrgAction
      * @param array<string, mixed> $payouts
      * @return array<string, mixed>
      */
-    private function forecast(Group $group, Collection $organisations, Carbon $today, float $cash, array $payouts, float $payables): array
+    private function forecast(Organisation|Group $parent, Collection $organisations, Carbon $today, float $cash, array $payouts, float $payables): array
     {
         $days      = '(-'.self::daysOverdueSql($today).')';
-        $converted = self::convertedSql($group);
-        $owed      = self::owedInvoices(DB::table('invoices'), $group, $organisations)
+        $converted = self::convertedSql($parent);
+        $exchange  = $parent instanceof Group ? 'grp_exchange' : 'org_exchange';
+        $owed      = self::owedInvoices(DB::table('invoices'), $parent, $organisations)
             ->whereNull('invoices.source_id')
             ->whereNull('invoices.as_organisation_id')
             ->selectRaw("$days as days, sum($converted) as amount")
@@ -142,7 +144,7 @@ class ShowFinancialsDashboard extends OrgAction
             ->whereIn('orders.state', array_map(fn (OrderStateEnum $state) => $state->value, self::PIPELINE_STATES))
             ->whereNull('orders.deleted_at')
             ->whereRaw('orders.total_amount - orders.payment_amount > 0')
-            ->selectRaw(self::DAYS_TO_INVOICE.' + coalesce(customers.payment_terms_days, 0) as days, sum((orders.total_amount - orders.payment_amount) * orders.grp_exchange) as amount, count(*) as orders')
+            ->selectRaw(self::DAYS_TO_INVOICE.' + coalesce(customers.payment_terms_days, 0) as days, sum((orders.total_amount - orders.payment_amount) * orders.'.$exchange.') as amount, count(*) as orders')
             ->groupByRaw('1')
             ->get();
 

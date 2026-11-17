@@ -137,6 +137,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('hr:sync-leave-cover-roles')->hourly()->onOneServer()->withoutOverlapping();
         $schedule->command('hr:add-leave-cover-collaborators')->hourly()->onOneServer()->withoutOverlapping();
         $schedule->command('currency:warm')->everyFourHours()->onOneServer()->withoutOverlapping(30);
+        $schedule->command('currency:fill-today')->dailyAt('23:30')->timezone('UTC')->onOneServer()->withoutOverlapping(30);
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
         $schedule->command('repair:eu-tax-numbers')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping(60);
         $schedule->command('sales-analysis:warm')->dailyAt('01:30')->onOneServer()->withoutOverlapping();

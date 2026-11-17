@@ -16,6 +16,11 @@ use App\Actions\Accounting\BankTransaction\MatchBankTransactions;
 use App\Actions\Accounting\BankTransaction\PayMatchedBankTransactions;
 use App\Enums\Accounting\BankConnection\BankConnectionProviderEnum;
 use App\Enums\Accounting\BankConnection\BankConnectionStateEnum;
+use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
+use App\Models\Accounting\BankBalance;
+use App\Models\Accounting\BankTransaction;
+use App\Models\Helpers\Currency;
+use Illuminate\Support\Carbon;
 use App\Models\Accounting\BankConnection;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -28,6 +33,8 @@ use Throwable;
 class SyncBankConnection
 {
     use AsAction;
+
+    public const int RATES_SINCE_YEARS = 2;
 
     public string $commandSignature = 'bank-connections:sync {bankConnection? : id; when omitted every connection already backfilled} {--full : read the whole history}';
 
@@ -89,6 +96,7 @@ class SyncBankConnection
         ]);
 
         FetchBankConnectionBalances::run($bankConnection);
+        self::keepExchangeRates($bankConnection);
 
         try {
             MatchBankTransactions::run($bankConnection);
@@ -104,6 +112,22 @@ class SyncBankConnection
         }
 
         return $result;
+    }
+
+    /**
+     * Every currency the bank holds or moved money in keeps a daily exchange rate, so its lines and balances can be
+     * shown in the organisation's currency: from its first line, but no further back than RATES_SINCE_YEARS.
+     */
+    public static function keepExchangeRates(BankConnection $bankConnection): void
+    {
+        $currencyIds = BankTransaction::where('bank_connection_id', $bankConnection->id)->distinct()->pluck('currency_id')
+            ->merge(BankBalance::where('bank_connection_id', $bankConnection->id)->distinct()->pluck('currency_id'))
+            ->unique();
+
+        Currency::whereIn('id', $currencyIds)->where('store_historic_data', false)->get()->each(function (Currency $currency) use ($bankConnection) {
+            $firstLine = BankTransaction::where('bank_connection_id', $bankConnection->id)->where('currency_id', $currency->id)->min('booked_at');
+            SetCurrencyHistoricFields::run($currency, Carbon::parse($firstLine ?? now())->max(now()->subYears(self::RATES_SINCE_YEARS)->startOfDay()));
+        });
     }
 
     public function asCommand(Command $command): int

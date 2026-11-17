@@ -2507,7 +2507,8 @@ test('cash shows what the connected banks hold: the group in its currency for th
         ->and(collect($groupCash['unconverted'])->firstWhere('currency', $unrated->code)['amount'])->toEqual(999)
         ->and(collect($groupCash['currencies'])->pluck('key')->all())->toContain($foreign->code)->not->toContain($unrated->code)
         ->and(collect($groupCash['organisations'])->pluck('label')->all())->toContain($this->organisation->name, $otherOrganisation->name)
-        ->and($groupCash['not_connected'])->toContain('Tatra banka')
+        ->and($groupCash['not_connected'])->toBe(\App\Actions\Accounting\BankBalance\UI\ShowCash::notConnected(collect([$this->organisation, $otherOrganisation])))
+        ->and(\App\Actions\Accounting\BankBalance\UI\ShowCash::notConnected(collect([new Organisation(['slug' => 'sk']), new Organisation(['slug' => 'es'])])))->toBe(['Tatra banka', 'Santander', 'Sabadell'])
         ->and(collect($cash(['org' => $otherOrganisation->slug])['connections'])->pluck('id')->all())->toBe([$theirs->id])
         ->and(collect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::make()->handle($admin)['financials']['topMenu']['subSections'])->pluck('route.name')->all())->toContain('grp.financials.cash.index');
 

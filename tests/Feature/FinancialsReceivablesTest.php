@@ -533,7 +533,7 @@ test('profit and loss shows in the organisation accounting and in group financia
             ->where('isGroup', true)
             ->where('profitAndLoss.currency', $group->currency->code)
             ->where('profitAndLoss.months', fn ($months) => collect($months)->count() === 12 && collect($months)->last()["month"] === now()->format("Y-m"))
-            ->where('notConnected', fn ($banks) => collect($banks)->contains('Tatra banka')));
+            ->where('notConnected', \App\Actions\Accounting\BankBalance\UI\ShowCash::notConnected(collect([$this->organisation]))));
     get(route('grp.org.accounting.profit_and_loss.index', [$this->organisation->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->where('isGroup', false)->where('profitAndLoss.currency', $this->organisation->currency->code));

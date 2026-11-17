@@ -8,7 +8,9 @@
 
 namespace App\Actions\Accounting\UI;
 
+use App\Actions\Accounting\BankBalance\UI\ShowCashFlow;
 use App\Actions\Accounting\Invoice\UI\GetInvoiceCountriesPeriods;
+use App\Actions\Accounting\ProfitAndLoss\UI\ShowProfitAndLoss;
 use App\Actions\Accounting\Payment\UI\GetPaymentMethodsPeriods;
 use App\Actions\Procurement\GetUncostedStockDeliveriesCard;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
@@ -67,17 +69,34 @@ class ShowAccountingDashboard extends OrgAction
                     'periods' => GetPaymentMethodsPeriods::run($organisation),
                     'route'   => [
                         'name'       => 'grp.org.accounting.payments.methods.index',
-                        'parameters' => [$organisation->slug],
+                        'parameters' => ['organisation' => $organisation->slug],
                     ],
                 ],
                 'invoice_countries' => [
                     'periods' => GetInvoiceCountriesPeriods::run($organisation),
                     'route'   => [
                         'name'       => 'grp.org.accounting.invoices_by_country.index',
-                        'parameters' => [$organisation->slug],
+                        'parameters' => ['organisation' => $organisation->slug],
                     ],
                 ],
                 'uncostedStockDeliveries' => GetUncostedStockDeliveriesCard::run($organisation),
+                'currency'                => $organisation->currency->code,
+                'routes'                  => collect([
+                    'cash'          => 'grp.org.accounting.cash.index',
+                    'cash_flow'     => 'grp.org.accounting.cash_flow.index',
+                    'bank_incoming' => 'grp.org.accounting.bank_incoming.index',
+                    'bank_outgoing' => 'grp.org.accounting.bank_outgoing.index',
+                    'needs_in'      => 'grp.org.accounting.bank_incoming.needs_person',
+                    'needs_out'     => 'grp.org.accounting.bank_outgoing.needs_person',
+                    'payouts'       => 'grp.org.accounting.payouts.index',
+                    'receivables'   => 'grp.org.accounting.receivables.index',
+                    'payables'      => 'grp.org.accounting.payables.index',
+                    'profit_and_loss' => 'grp.org.accounting.profit_and_loss.index',
+                    'balances'      => 'grp.org.accounting.balances.index',
+                ])->map(fn (string $name) => ['name' => $name, 'parameters' => ['organisation' => $organisation->slug]])->all(),
+                'financials'              => Inertia::defer(fn () => ShowFinancialsDashboard::make()->handle($organisation, collect([$organisation]), $request->user()), 'financials'),
+                'cashFlow'                => Inertia::defer(fn () => ShowCashFlow::make()->handle($organisation), 'cash_flow'),
+                'profitAndLoss'           => Inertia::defer(fn () => ShowProfitAndLoss::make()->handle($organisation, collect([$organisation])), 'profit_and_loss'),
                 'intervals' => ['value' => $userSettings['selected_interval']],
                 'settings'  => [],
                 'flatTreeMaps' => [

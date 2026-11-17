@@ -1143,6 +1143,15 @@ test('UI show accounting dashboard', function () {
             ->has('invoice_countries.periods.1m.countries')
             ->has('invoice_countries.periods.1y.between')
             ->where('invoice_countries.route.name', 'grp.org.accounting.invoices_by_country.index')
+            ->where('invoice_countries.route.parameters.organisation', $this->organisation->slug)
+            ->where('routes.cash_flow.name', 'grp.org.accounting.cash_flow.index')
+            ->missing('financials')
+            ->loadDeferredProps(fn (AssertableInertia $reload) => $reload
+                ->has('financials.cash.amount')
+                ->has('financials.receivables.ageing', 5)
+                ->has('financials.forecast.horizons', 3)
+                ->has('cashFlow.periods', \App\Actions\Accounting\BankBalance\UI\ShowCashFlow::PERIODS)
+                ->has('profitAndLoss.months', \App\Actions\Accounting\ProfitAndLoss\UI\ShowProfitAndLoss::MONTHS))
             ->where('intervals.value', '1m');
     });
 });

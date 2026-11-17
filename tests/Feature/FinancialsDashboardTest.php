@@ -103,3 +103,98 @@ test('the financials dashboard forecasts cash from receivables on their due date
     actingAs($restricted->refresh());
     get(route('grp.financials.dashboard'))->assertForbidden();
 });
+
+test('cash flow of an organisation: cash at the start and end of each week worked back from the last balance, money in and out by section, conversions apart', function () {
+    $this->travelTo(Carbon::parse('2026-11-18 12:00:00'));
+    $group            = $this->organisation->group;
+    $pivot            = \App\Models\Helpers\Currency::where('code', config('app.currency_exchange.pivot'))->firstOrFail();
+    $foreign          = \App\Models\Helpers\Currency::whereNotIn('id', \App\Models\Helpers\CurrencyExchange::select('currency_id'))->where('id', '!=', $pivot->id)->where('store_historic_data', false)->firstOrFail();
+    $organisationData = Organisation::factory()->definition();
+    data_set($organisationData, 'code', 'cfl'.random_int(1000, 9999));
+    data_set($organisationData, 'type', OrganisationTypeEnum::SHOP);
+    data_set($organisationData, 'currency_id', $pivot->id);
+    data_set($organisationData, 'timezone_id', \App\Models\Helpers\Timezone::where('name', 'Europe/Bratislava')->value('id'));
+    $organisation = StoreOrganisation::make()->action($group, $organisationData);
+    \App\Models\Helpers\CurrencyExchange::create(['currency_id' => $foreign->id, 'date' => '2026-10-01', 'exchange' => 4, 'source' => 'test']);
+
+    $bankConnection = \App\Models\Accounting\BankConnection::create([
+        'group_id'        => $group->id,
+        'organisation_id' => $organisation->id,
+        'provider'        => \App\Enums\Accounting\BankConnection\BankConnectionProviderEnum::WISE,
+        'name'            => 'Wise cash flow',
+        'external_id'     => (string) random_int(1000, 9999),
+    ]);
+    $line = fn (float $amount, string $bookedAt, array $more = []) => \App\Models\Accounting\BankTransaction::create(array_merge([
+        'group_id'                => $group->id,
+        'organisation_id'         => $organisation->id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => uniqid('cf'),
+        'provider_type'           => 'TRANSFER',
+        'direction'               => $amount > 0 ? 'in' : 'out',
+        'amount'                  => $amount,
+        'currency_id'             => $pivot->id,
+        'status'                  => \App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum::BOOKED,
+        'booked_at'               => $bookedAt,
+    ], $more));
+    $line(100, '2026-11-10 09:00:00', ['match_state' => 'already_paid']);
+    $line(-30, '2026-11-11 09:00:00', ['out_category' => 'suppliers']);
+    $line(50, '2026-11-16 09:00:00', ['match_state' => null, 'provider_type' => 'DIRECT_DEBIT']);
+    $line(-20, '2026-11-17 09:00:00');
+    $line(-10, '2026-11-17 10:00:00', ['provider_type' => 'INTERBALANCE', 'out_category' => 'other']);
+    $line(8, '2026-11-17 10:00:00', ['provider_type' => 'INTERBALANCE', 'currency_id' => $foreign->id]);
+    $line(7, '2026-11-18 11:30:00', ['match_state' => 'already_paid']);
+    $line(5, '2026-11-15 23:30:00', ['match_state' => null, 'provider_type' => 'DIRECT_DEBIT']);
+    foreach ([[$pivot->id, 1000], [$foreign->id, 40]] as [$currencyId, $amount]) {
+        \App\Models\Accounting\BankBalance::factory()->of($bankConnection)->create(['currency_id' => $currencyId, 'amount' => $amount, 'date' => '2026-11-18', 'taken_at' => '2026-11-18 11:00:00']);
+    }
+
+    $closedBank = \App\Models\Accounting\BankConnection::create([
+        'group_id'        => $group->id,
+        'organisation_id' => $organisation->id,
+        'provider'        => \App\Enums\Accounting\BankConnection\BankConnectionProviderEnum::WISE,
+        'name'            => 'Wise closed currency',
+        'external_id'     => (string) random_int(1000, 9999),
+    ]);
+    $line(40, '2022-05-23 09:00:00', ['bank_connection_id' => $closedBank->id, 'currency_id' => $foreign->id]);
+    \App\Models\Accounting\BankBalance::factory()->of($closedBank)->create(['currency_id' => $pivot->id, 'amount' => 0, 'date' => '2026-11-18', 'taken_at' => '2026-11-18 11:00:00']);
+
+    \App\Actions\Accounting\BankConnection\SyncBankConnection::keepExchangeRates($bankConnection);
+    expect($foreign->refresh()->store_historic_data)->toBeTrue()
+        ->and($foreign->historic_data_since->toDateString())->toBe('2026-11-17');
+
+    $cashFlow = \App\Actions\Accounting\BankBalance\UI\ShowCashFlow::make()->handle($organisation);
+    $weeks    = collect($cashFlow['periods'])->keyBy('start');
+
+    expect($weeks)->toHaveCount(12)
+        ->and($weeks->keys()->last())->toBe('2026-11-16')
+        ->and($weeks['2026-11-16']['closing'])->toEqual(1007 + 10)
+        ->and($weeks['2026-11-16']['in']['other'])->toEqual(50 + 5)
+        ->and($weeks['2026-11-16']['in']['customers'])->toEqual(7)
+        ->and($weeks['2026-11-16']['out']['needs_person'])->toEqual(20)
+        ->and($weeks['2026-11-16']['total_out'])->toEqual(20)
+        ->and($weeks['2026-11-16']['conversions'])->toEqual(-10 + 2)
+        ->and($weeks['2026-11-16']['opening'])->toEqual($weeks['2026-11-09']['closing'])
+        ->and($weeks['2026-11-09']['in']['customers'])->toEqual(100)
+        ->and($weeks['2026-11-09']['out']['suppliers'])->toEqual(30)
+        ->and($weeks['2026-11-09']['conversions'])->toEqual(0)
+        ->and($weeks['2026-11-09']['opening'])->toEqual(905 + 8)
+        ->and($weeks['2026-11-02']['closing'])->toEqual(905 + 8)
+        ->and($cashFlow['banks'][0]['partial'])->toBeTrue()
+        ->and($cashFlow['not_connected'])->toBe([])
+        ->and(collect(\App\Actions\Accounting\BankBalance\UI\ShowCashFlow::make()->handle($organisation, 'month')['periods'])->last()['total_in'])->toEqual(162);
+
+    setPermissionsTeamId($group->id);
+    $user = StoreGuest::make()->action($group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    actingAs($user);
+    get(route('grp.org.accounting.cash_flow.index', [$organisation->slug]))->assertForbidden();
+
+    $user->givePermissionTo("accounting.$organisation->id.view");
+    actingAs($user->refresh());
+    get(route('grp.org.accounting.cash_flow.index', [$organisation->slug, 'interval' => 'month']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Accounting/CashFlow')
+            ->where('cashFlow.interval', 'month')
+            ->where('cashFlow.currency', $pivot->code)
+            ->has('cashFlow.periods', 12));
+});

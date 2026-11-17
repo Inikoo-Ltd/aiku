@@ -99,7 +99,7 @@ class ShowProfitAndLoss extends OrgAction
                 'organisation'  => $this->organisationSlug,
                 'organisations' => $isGroup ? $this->groupOrganisations->map(fn (Organisation $organisation) => ['value' => $organisation->slug, 'label' => $organisation->code])->all() : [],
                 'isGroup'       => $isGroup,
-                'notConnected'  => ShowCash::NOT_CONNECTED,
+                'notConnected'  => ShowCash::notConnected($isGroup ? $this->groupOrganisations->when($this->organisationSlug, fn (Collection $organisations) => $organisations->where('slug', $this->organisationSlug)) : collect([$this->organisation])),
                 'profitAndLoss' => $profitAndLoss,
             ]
         );
