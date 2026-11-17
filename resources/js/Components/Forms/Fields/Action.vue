@@ -5,7 +5,6 @@ import { Action } from "@/types/Action"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPencil, faTrashAlt, faFileInvoice, faPlus, faEnvelope } from "@fal"
 import { ref } from "vue"
-import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 
@@ -18,6 +17,7 @@ const props = defineProps<{
 }>()
 
 const isLoading = ref(false)
+const errorMessage = ref<string | null>(null)
 
 const handleLinkClick = (event: MouseEvent, action: Action) => {
     if (!action.target) {
@@ -42,6 +42,7 @@ const handleClick = (action: Action|any) => {
         {
             onBefore: () => {
                 isLoading.value = true
+                errorMessage.value = null
             },
             onSuccess: () => {
                 isLoading.value = false
@@ -54,12 +55,7 @@ const handleClick = (action: Action|any) => {
                 if(action.fullLoading) {
                     isLoading.value = false
                 }
-                notify({
-                    title: ctrans('Something went wrong.'),
-                    text: typeof error === 'string' ? error : [...new Set(Object.values(error || {}).flat())].join('\n'),
-                    type: 'error',
-                    duration: 15000,
-                })
+                errorMessage.value = (typeof error === 'string' ? error : [...new Set(Object.values(error || {}).flat())].join('\n')) || ctrans('Something went wrong.')
             }
         })
 };
@@ -94,7 +90,7 @@ const handleClick = (action: Action|any) => {
     </div>
 
     <!-- Button -->
-    <template v-else-if="action.route">
+    <span v-else-if="action.route" class="relative inline-flex">
         <a
             :href="action.route?.url || (action.route?.name ? route(action.route?.name, action.route?.parameters) : '#')"
             :target="action.target"
@@ -116,7 +112,10 @@ const handleClick = (action: Action|any) => {
                 class="text-nowrap"
             />
         </a>
-    </template>
+        <span v-if="errorMessage" role="alert" class="absolute right-0 top-full z-20 mt-1 w-72 whitespace-pre-line rounded border border-red-300 bg-red-50 px-2 py-1 text-xs text-red-700 shadow-sm">
+            {{ errorMessage }}
+        </span>
+    </span>
 
     <Button v-else
         v-bind="action"

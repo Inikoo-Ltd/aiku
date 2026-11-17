@@ -12,9 +12,18 @@
 namespace Tests\Feature;
 
 use App\Actions\Fulfilment\Pallet\BookInPallet;
+use App\Actions\Fulfilment\Pallet\SetPalletBackToStoring;
+use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
+use App\Actions\Fulfilment\PalletDelivery\ConfirmPalletDelivery;
+use App\Actions\Fulfilment\StoredItemAudit\CompleteStoredItemAudit;
+use App\Actions\Fulfilment\StoredItemAudit\StoreStoredItemAuditFromPallet;
+use App\Actions\Fulfilment\StoredItemAuditDelta\StoreStoredItemAuditDelta;
+use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Actions\Fulfilment\Pallet\SetPalletAsDamaged;
 use App\Actions\Fulfilment\Pallet\SetPalletAsNotReceived;
 use App\Actions\Fulfilment\PalletDelivery\Notifications\SendPalletDeliveryNotification;
+use App\Actions\Fulfilment\PalletDelivery\ReceivePalletDelivery;
+use App\Actions\Fulfilment\RecurringBillTransaction\StoreRecurringBillTransaction;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
@@ -24,20 +33,13 @@ use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
 use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletStoredItem;
+use App\Models\Fulfilment\RecurringBillTransaction;
 use App\Models\Fulfilment\StoredItemAuditDelta;
 use App\Models\Inventory\Location;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use App\Actions\Fulfilment\Pallet\SetPalletBackToStoring;
-use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
-use App\Actions\Fulfilment\PalletDelivery\ConfirmPalletDelivery;
-use App\Actions\Fulfilment\StoredItemAudit\CompleteStoredItemAudit;
-use App\Actions\Fulfilment\StoredItemAudit\StoreStoredItemAuditFromPallet;
-use App\Actions\Fulfilment\StoredItemAuditDelta\StoreStoredItemAuditDelta;
-use App\Actions\Fulfilment\PalletDelivery\ReceivePalletDelivery;
-use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
-use App\Models\Fulfilment\RecurringBillTransaction;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 require_once __DIR__.'/../Support/MobileFulfilmentInboundHelpers.php';
 
@@ -219,6 +221,42 @@ test('mobile receive needs the shop right, a confirmed delivery and a rental agr
 
     $elsewhere = mobileFulInboundConfirmed(mobileFulInboundDelivery($customer, mobileFulInboundOtherWarehouse($this->organisation)));
     $receive($elsewhere)->assertNotFound();
+});
+
+test('receiving refuses pallets without a rental up front and never leaves a half received delivery', function () {
+    $autoAssignedTypes = $this->organisation->rentals()->where('auto_assign_asset', 'Pallet')->pluck('auto_assign_asset_type')->all();
+    $typeWithoutAutoRental = collect(PalletTypeEnum::cases())->first(fn (PalletTypeEnum $type) => !in_array($type->value, $autoAssignedTypes));
+    expect($typeWithoutAutoRental)->not->toBeNull();
+
+    $customer = mobileFulInboundCustomer($this->fulfilment);
+    $delivery = mobileFulInboundConfirmed(mobileFulInboundDelivery($customer, $this->warehouse, [[], ['type' => $typeWithoutAutoRental->value]]));
+    [$withRental, $withoutRental] = mobileFulInboundPallets($delivery);
+    $withoutRental->update(['rental_id' => null]);
+    $billLines = fn () => RecurringBillTransaction::where('fulfilment_customer_id', $customer->id)->count();
+
+    $assertUnreceived = function () use ($delivery, $customer, $billLines) {
+        expect($delivery->refresh()->state)->toBe(PalletDeliveryStateEnum::CONFIRMED)
+            ->and($delivery->received_at)->toBeNull()
+            ->and($delivery->recurring_bill_id)->toBeNull()
+            ->and($delivery->pallets()->where('state', '!=', PalletStateEnum::CONFIRMED)->count())->toBe(0)
+            ->and($customer->refresh()->current_recurring_bill_id)->toBeNull()
+            ->and($billLines())->toBe(0);
+    };
+
+    expect(fn () => ReceivePalletDelivery::make()->action($delivery))
+        ->toThrow(ValidationException::class, $withoutRental->reference);
+    $assertUnreceived();
+
+    mobileFulInboundShopClerk($this);
+    mobileFulInboundPost('pallet_deliveries.receive', ['warehouse' => $this->warehouse->id, 'palletDelivery' => $delivery->id])
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.pallets.0', fn (string $message) => str_contains($message, $withoutRental->reference) && !str_contains($message, $withRental->reference));
+    $assertUnreceived();
+
+    $withoutRental->update(['rental_id' => $withRental->rental_id]);
+    StoreRecurringBillTransaction::mock()->shouldReceive('action')->andThrow(new RuntimeException('billing failed'));
+    expect(fn () => ReceivePalletDelivery::make()->action($delivery->refresh()))->toThrow(RuntimeException::class, 'billing failed');
+    $assertUnreceived();
 });
 
 test('mobile start booking resets not received pallets and says so', function () {
