@@ -733,6 +733,7 @@ use App\Actions\SupplyChain\SupplierShareLink\RevokeSupplierShareLink;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier;
+use App\Actions\SupplyChain\SupplierProduct\BulkUpdateSupplierProductsState;
 use App\Actions\SupplyChain\SupplierProduct\RepairSupplierProductsSupplier;
 use App\Actions\SupplyChain\SupplierProduct\CheckSupplierProductForm;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProductFromForm;
@@ -1838,6 +1839,7 @@ Route::post('/supplier-mailshots', StoreSupplierMailshot::class)->name('supplier
 Route::post('/supplier-mailshots/{mailshot:id}/send', SendSupplierMailshot::class)->name('supplier_mailshot.send');
 Route::post('/supplier/{supplier:id}/change-request', StoreSupplierChangeRequest::class)->name('supplier.change_request.store');
 Route::patch('/supplier-change-request/{supplierChangeRequest:id}/decide', DecideSupplierChangeRequest::class)->name('supplier_change_request.decide');
+Route::patch('/supplier-products/state', BulkUpdateSupplierProductsState::class)->name('supplier-products.state.update');
 Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::class)->name('supplier-product.update');
 Route::patch('/org-supplier-product/{orgSupplierProduct:id}', UpdateOrgSupplierProduct::class)->name('org_supplier_product.update');
 Route::patch('/org-supplier-product/{orgSupplierProduct:id}/minimum-carton-order', UpdateOrgSupplierProductMinimumCartonOrder::class)->name('org_supplier_product.minimum_carton_order.update');

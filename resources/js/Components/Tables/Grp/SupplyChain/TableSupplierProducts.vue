@@ -9,9 +9,10 @@ import {Link, router} from '@inertiajs/vue3';
 import { computed, reactive, ref } from "vue"
 import axios from "axios"
 import Select from "primevue/select"
+import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh, faCheck } from "@fal"
+import { faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh, faCheck, faTimes, faArrowRight } from "@fal"
 import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from '@/Components/Table/Table.vue';
 import Icon from "@/Components/Icon.vue"
@@ -21,7 +22,7 @@ import { ctrans } from "@/Composables/useTrans"
 import {SupplierProduct} from "@/types/supplier-product";
 import { routeType } from "@/types/route"
 
-library.add(faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh, faCheck)
+library.add(faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh, faCheck, faTimes, faArrowRight)
 
 type SupplierProductRow = Omit<SupplierProduct, "state"> & {
     state: { value: string, label: string, icon: object } | null
@@ -46,7 +47,7 @@ function goodsStateMismatchTooltip(supplierProduct: SupplierProductRow) {
 }
 
 const props = defineProps<{
-    data: object,
+    data: { data: SupplierProductRow[] },
     tab?: string
     labelsPrint?: {
         plan_route: routeType
@@ -63,9 +64,23 @@ const newStates = reactive<Record<number, string>>({})
 const savingStateIds = ref<number[]>([])
 const stateErrors = reactive<Record<number, string>>({})
 
+const isBulkStateDialogOpen = ref(false)
 const bulkState = ref<string | null>(null)
 const isSavingBulkState = ref(false)
-const bulkStateMessage = ref<{ type: "success" | "error", text: string } | null>(null)
+const bulkStateError = ref<string | null>(null)
+const bulkStateSuccess = ref<string | null>(null)
+
+const bulkStatePreviewRows = computed(() => (props.data?.data ?? []).filter((supplierProduct) => selectedSupplierProductIds.value.includes(supplierProduct.id)))
+const bulkStateHiddenCount = computed(() => selectedSupplierProductIds.value.length - bulkStatePreviewRows.value.length)
+const bulkStateNewOption = computed(() => props.stateOptions?.find((option) => option.value === bulkState.value) ?? null)
+const bulkStateChangingCount = computed(() => bulkStatePreviewRows.value.filter((supplierProduct) => supplierProduct.state?.value !== bulkState.value).length)
+
+function openBulkStateDialog() {
+    bulkState.value = null
+    bulkStateError.value = null
+    bulkStateSuccess.value = null
+    isBulkStateDialogOpen.value = true
+}
 
 const rowSelectPt = {
     label: { class: "!text-xs" },
@@ -99,27 +114,25 @@ async function saveState(supplierProduct: SupplierProductRow) {
 
 async function saveBulkState() {
     if (!bulkState.value || !selectedSupplierProductIds.value.length) {
+        bulkStateError.value = ctrans("Choose the new state first")
         return
     }
 
     isSavingBulkState.value = true
-    bulkStateMessage.value = null
+    bulkStateError.value = null
     try {
         const response = await axios.patch(route("grp.models.supplier-products.state.update"), {
             supplier_products: selectedSupplierProductIds.value,
             state: bulkState.value,
         })
-        bulkStateMessage.value = {
-            type: "success",
-            text: ctrans(":count products set to :state", {
-                count: response.data.updated,
-                state: props.stateOptions?.find((option) => option.value === bulkState.value)?.label ?? bulkState.value,
-            }),
-        }
-        bulkState.value = null
+        bulkStateSuccess.value = ctrans(":count products set to :state", {
+            count: response.data.updated,
+            state: bulkStateNewOption.value?.label ?? bulkState.value,
+        })
+        isBulkStateDialogOpen.value = false
         router.reload({ only: ["data"] })
     } catch (error: any) {
-        bulkStateMessage.value = { type: "error", text: error?.response?.data?.message ?? ctrans("Failed to update the state") }
+        bulkStateError.value = error?.response?.data?.message ?? ctrans("Failed to update the state")
     } finally {
         isSavingBulkState.value = false
     }
@@ -186,37 +199,18 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
                     </template>
                 </Button>
                 <div v-if="stateOptions?.length" class="flex items-center gap-1.5 whitespace-nowrap">
-                    <Select
-                        v-model="bulkState"
-                        :options="stateOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        size="small"
-                        class="w-40 text-xs [&.p-focus]:!border-[var(--app-accent)]"
-                        :pt="rowSelectPt"
-                        :placeholder="ctrans('New state')"
-                        :aria-label="ctrans('New state for the ticked products')"
-                        :disabled="isSavingBulkState"
-                    />
                     <Button
                         type="tertiary"
                         :label="ctrans('Set state (:count)', { count: selectedSupplierProductIds.length })"
-                        :disabled="!bulkState || !selectedSupplierProductIds.length"
-                        :loading="isSavingBulkState"
+                        :disabled="!selectedSupplierProductIds.length"
                         :tooltip="selectedSupplierProductIds.length ? undefined : ctrans('Tick the products to change their state')"
-                        @click="saveBulkState"
+                        @click="openBulkStateDialog"
                     >
                         <template #icon>
                             <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
-                    <span
-                        v-if="bulkStateMessage"
-                        class="text-xs"
-                        :class="bulkStateMessage.type === 'error' ? 'text-red-500' : 'text-green-600'"
-                    >
-                        {{ bulkStateMessage.text }}
-                    </span>
+                    <span v-if="bulkStateSuccess" class="text-xs text-green-600">{{ bulkStateSuccess }}</span>
                 </div>
             </template>
             <template #cell(code)="{ item: supplier_product }">
@@ -280,6 +274,99 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
                 </div>
             </template>
         </Table>
+        <Dialog
+            v-if="stateOptions?.length"
+            v-model:visible="isBulkStateDialogOpen"
+            modal
+            :header="ctrans('Set state of :count products', { count: selectedSupplierProductIds.length })"
+            :style="{ width: '40rem', maxWidth: 'calc(100vw - 2rem)' }"
+            :draggable="false"
+        >
+            <div class="space-y-4 text-sm">
+                <label class="block space-y-1">
+                    <span class="text-xs font-semibold text-gray-600">{{ ctrans("New state") }} <span class="text-red-500">*</span></span>
+                    <Select
+                        v-model="bulkState"
+                        :options="stateOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        size="small"
+                        class="w-full text-xs [&.p-focus]:!border-[var(--app-accent)]"
+                        :pt="rowSelectPt"
+                        :placeholder="ctrans('Choose the new state')"
+                        :disabled="isSavingBulkState"
+                        @change="bulkStateError = null"
+                    />
+                </label>
+
+                <div class="max-h-[50vh] overflow-y-auto rounded border border-gray-200">
+                    <table class="w-full text-xs">
+                        <thead class="sticky top-0 whitespace-nowrap bg-gray-50 text-left text-gray-500">
+                            <tr>
+                                <th class="px-3 py-2 font-semibold">{{ ctrans("Code") }}</th>
+                                <th class="px-3 py-2 font-semibold">{{ ctrans("Name") }}</th>
+                                <th class="px-3 py-2 font-semibold">{{ ctrans("Current") }}</th>
+                                <th class="px-3 py-2 font-semibold">{{ ctrans("New") }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr
+                                v-for="supplierProduct in bulkStatePreviewRows"
+                                :key="supplierProduct.id"
+                                :class="bulkState && supplierProduct.state?.value === bulkState ? 'text-gray-400' : ''"
+                            >
+                                <td class="whitespace-nowrap px-3 py-1.5 font-medium">{{ supplierProduct.code }}</td>
+                                <td class="px-3 py-1.5">{{ supplierProduct.name }}</td>
+                                <td class="whitespace-nowrap px-3 py-1.5">
+                                    <span v-if="supplierProduct.state" class="inline-flex items-center gap-1">
+                                        <Icon :data="supplierProduct.state.icon" />
+                                        {{ supplierProduct.state.label }}
+                                    </span>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-1.5">
+                                    <span v-if="!bulkStateNewOption" class="text-gray-400">-</span>
+                                    <span v-else-if="supplierProduct.state?.value === bulkState" class="italic">{{ ctrans("no change") }}</span>
+                                    <span v-else class="inline-flex items-center gap-1 font-semibold text-[var(--app-accent)]">
+                                        <FontAwesomeIcon icon="fal fa-arrow-right" fixed-width aria-hidden="true" />
+                                        {{ bulkStateNewOption.label }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p v-if="bulkStateHiddenCount > 0" class="text-xs text-gray-500">
+                    {{ ctrans(":count more ticked products on other pages are not shown here", { count: bulkStateHiddenCount }) }}
+                </p>
+                <p v-if="bulkStateNewOption" class="text-xs text-gray-600">
+                    {{ ctrans(":changing of :total products will change to :state", { changing: bulkStateChangingCount + Math.max(bulkStateHiddenCount, 0), total: selectedSupplierProductIds.length, state: bulkStateNewOption.label }) }}
+                </p>
+                <p v-if="bulkStateError" class="text-xs text-red-500">{{ bulkStateError }}</p>
+            </div>
+
+            <template #footer>
+                <div class="flex w-full gap-2">
+                    <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isBulkStateDialogOpen = false">
+                        <template #icon>
+                            <FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                    <Button
+                        type="primary"
+                        full
+                        :label="ctrans('Set state')"
+                        :loading="isSavingBulkState"
+                        :disabled="!bulkState || (bulkStateChangingCount === 0 && bulkStateHiddenCount <= 0)"
+                        @click="saveBulkState"
+                    >
+                        <template #icon>
+                            <FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                </div>
+            </template>
+        </Dialog>
         <SupplierProductLabelsDialog
             v-if="labelsPrint"
             v-model:visible="isLabelsDialogOpen"
