@@ -17,7 +17,7 @@ import Checkbox from "primevue/checkbox"
 import RadioButton from "primevue/radiobutton"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faExclamationTriangle, faPlus } from "@fal"
+import { faCheck, faTimes, faExclamationTriangle, faPlus, faExternalLink } from "@fal"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
@@ -34,6 +34,7 @@ type UnsettledPurchaseOrder = {
 
 type SupplierOption = {
 	org_supplier_id: number
+	slug: string
 	is_current: boolean
 	code: string
 	name: string
@@ -105,6 +106,18 @@ const supplier = computed(() => isSameSupplier.value
 const typedReference = computed(() => purchaseOrderReference.value.trim())
 const joinsOpenOrder = computed(() => !!supplier.value && supplier.value.open_purchase_orders.some((reference) => reference.toLowerCase() === typedReference.value.toLowerCase()))
 const createsNewOrder = computed(() => !!supplier.value && !!typedReference.value && !joinsOpenOrder.value)
+
+const supplierUrl = computed(() => {
+	if (!supplier.value) {
+		return null
+	}
+
+	const routeName = route().current()?.startsWith("grp.org.agent.")
+		? "grp.org.agent.org_suppliers.show"
+		: "grp.org.procurement.org_suppliers.show"
+
+	return route(routeName, { organisation: route().params.organisation, orgSupplier: supplier.value.slug })
+})
 
 const sellsEveryProduct = (option: SupplierOption) => option.products_count === props.items.length
 const sellsSomeProducts = (option: SupplierOption) => option.products_count > 0 && !sellsEveryProduct(option)
@@ -316,6 +329,16 @@ function submit() {
 						</div>
 					</template>
 				</Select>
+				<a
+					v-if="supplierUrl"
+					:href="supplierUrl"
+					target="_blank"
+					rel="noopener"
+					class="flex w-fit items-center gap-1 text-xs text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline"
+				>
+					{{ ctrans("Open supplier :supplier", { supplier: supplier?.code ?? "" }) }}
+					<FontAwesomeIcon :icon="faExternalLink" fixed-width aria-hidden="true" />
+				</a>
 				<label class="flex cursor-pointer items-center gap-2 text-xs text-gray-600 w-fit">
 					<Checkbox v-model="onlySuppliersWithProducts" binary size="small" />
 					{{ isMany

@@ -72,6 +72,7 @@ class GetPurchaseOrderTransactionMoveSuppliers extends OrgAction
 
                 return [
                     'org_supplier_id'      => $orgSupplier->id,
+                    'slug'                 => $orgSupplier->slug,
                     'is_current'           => $orgSupplier->id === $purchaseOrder->parent_id,
                     'code'                 => $orgSupplier->supplier->code,
                     'name'                 => $orgSupplier->supplier->name,
