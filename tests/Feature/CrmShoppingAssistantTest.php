@@ -4167,3 +4167,32 @@ test('a product made for a customer is shown only to that customer, its family s
         ->and($toOwner)->toContain($public->id)->toContain($sibling->id)->toContain($theirs->id)
         ->and($closeOnly)->toContain($public->id)->not->toContain($far->id);
 });
+
+test('a shop with a sister shop points the customer to it, with a link built by code, only for products the model says match', function () {
+    $website = shoppingAssistantStorefront($this);
+    $sister  = $website;
+    $sister->update(['state' => \App\Enums\Web\Website\WebsiteStateEnum::LIVE]);
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['website_id' => $website->id]);
+    $tools = GetShoppingAssistantTools::make();
+
+    $withoutSister = $tools->execute($conversation->fresh(), 'sister_shop_products', ['query' => 'oil burners']);
+    $names         = fn (bool $hasSister) => array_map(fn (array $tool) => $tool['function']['name'], $tools->definitions(false, $hasSister));
+
+    $website->update(['settings' => array_merge($website->settings ?? [], ['shopping_assistant' => array_merge(data_get($website->settings, 'shopping_assistant', []), ['sister_website_id' => $sister->id])])]);
+    \App\Actions\Catalogue\Search\SearchCatalogueByMeaning::mock()->shouldReceive('handle')->andReturn(collect([$this->product->fresh()]));
+
+    $looked  = $tools->execute($conversation->fresh(), 'sister_shop_products', ['query' => 'oil burners']);
+    $matched = $tools->execute($conversation->fresh(), 'sister_shop_products', ['query' => 'oil burners', 'matching' => true]);
+
+    $sister->update(['state' => \App\Enums\Web\Website\WebsiteStateEnum::CLOSED]);
+
+    expect($withoutSister['error'])->toBe('This shop has no sister shop.')
+        ->and($names(false))->not->toContain('sister_shop_products')
+        ->and($names(true))->toContain('sister_shop_products')
+        ->and($looked)->not->toHaveKey('fact')
+        ->and($looked['content']['names'])->toBe([$this->product->name])
+        ->and($matched['fact'])->toBe(__('Our sister shop :website sells these: :link', ['website' => $sister->domain, 'link' => $sister->getUrl().'/search?q=oil%20burners'], $conversation->language_code))
+        ->and(GetShoppingAssistantTools::sisterWebsite($website->fresh()))->toBeNull();
+});

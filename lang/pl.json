@@ -26038,5 +26038,6 @@
     ":name is casting a spell…": ":name rzuca zaklęcie…",
     ":name is gazing into his crystal ball…": ":name wpatruje się w swoją kryształową kulę…",
     "This one needs a little more thought. Nearly there…": "To wymaga trochę więcej namysłu. Prawie gotowe…",
-    "Usually takes about :seconds seconds": "Zwykle trwa to około :seconds sekund"
+    "Usually takes about :seconds seconds": "Zwykle trwa to około :seconds sekund",
+    "Our sister shop :website sells these: :link": "Nasz siostrzany sklep :website sprzedaje te produkty: :link"
 }

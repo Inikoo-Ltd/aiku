@@ -9138,5 +9138,6 @@
     ":name is casting a spell…": ":name varázsol…",
     ":name is gazing into his crystal ball…": ":name a kristálygömbjébe néz…",
     "This one needs a little more thought. Nearly there…": "Ez egy kicsit több gondolkodást igényel. Mindjárt kész…",
-    "Usually takes about :seconds seconds": "Általában kb. :seconds másodperc"
+    "Usually takes about :seconds seconds": "Általában kb. :seconds másodperc",
+    "Our sister shop :website sells these: :link": "Testvérüzletünk, a(z) :website forgalmazza ezeket a termékeket: :link"
 }

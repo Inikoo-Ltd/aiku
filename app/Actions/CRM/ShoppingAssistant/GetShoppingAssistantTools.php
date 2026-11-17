@@ -51,6 +51,8 @@ use App\Models\Comms\MailshotRecipient;
 use Illuminate\Support\Str;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
+use App\Enums\Web\Website\WebsiteStateEnum;
+use App\Models\Web\Website;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
@@ -203,9 +205,12 @@ class GetShoppingAssistantTools
     /**
      * @return array<int, array{type: string, function: array{name: string, description: string, parameters: array<string, mixed>}}>
      */
-    public function definitions(bool $dropshipping = false): array
+    public function definitions(bool $dropshipping = false, bool $hasSisterShop = false): array
     {
         $excluded = $dropshipping ? self::NOT_FOR_DROPSHIPPING : self::ONLY_FOR_DROPSHIPPING;
+        if (!$hasSisterShop) {
+            $excluded[] = 'sister_shop_products';
+        }
 
         return array_values(array_filter($this->everyDefinition(), fn (array $tool) => !in_array($tool['function']['name'], $excluded, true)));
     }
@@ -332,6 +337,12 @@ class GetShoppingAssistantTools
                 'shipping_cost',
                 'What shipping costs for the customer\'s current basket. Use it when the customer asks about shipping, postage, carriage or delivery cost. The sentence with the amount is added under your reply by the system; you get no figure. Returns no products.',
                 []
+            ),
+            $this->tool(
+                'sister_shop_products',
+                'Our sister shop\'s products of a kind this shop does not sell. Use it only after search_products found nothing that is what the customer asked for. Returns the names of the closest products there; they cannot be shown or added to the basket here. When they are what the customer asked for, call it again with matching true and the system adds a sentence with a link to them under your reply.',
+                ['query' => ['type' => 'string', 'description' => 'What the customer is looking for, in a few words.'], 'matching' => ['type' => 'boolean', 'description' => 'True only on the second call, once the names you got are what the customer asked for.']],
+                ['query']
             ),
             $this->tool(
                 'products_on_offer',
@@ -493,6 +504,7 @@ class GetShoppingAssistantTools
                 'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
                 'report_to_engineers'            => $this->reportToEngineers($conversation, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
+                'sister_shop_products'           => $this->sisterShopProducts($conversation, $arguments),
                 'shop_information'               => $this->shopInformation($customer, $arguments),
                 'recent_emails_to_customer'      => $this->recentEmailsToCustomer($customer),
                 default                          => $this->error("Unknown tool $name."),
@@ -1370,6 +1382,58 @@ class GetShoppingAssistantTools
             'products' => [],
             'error'    => null,
             'fact'     => $fact,
+        ];
+    }
+
+    /**
+     * The live website of the shop customers are sent to for what this one does not sell, set per
+     * website in settings.shopping_assistant.sister_website_id (Raul, 18 Nov 2026: aw-aromatics.com
+     * to ancientwisdom.biz, both in the UK).
+     */
+    public static function sisterWebsite(?Website $website): ?Website
+    {
+        $sisterId = data_get($website?->settings, 'shopping_assistant.sister_website_id');
+
+        return $sisterId ? Website::where('id', $sisterId)->where('state', WebsiteStateEnum::LIVE)->first() : null;
+    }
+
+    /**
+     * ponytail: the model judges from the names whether the sister shop has what was asked, and the
+     * link is added on its word (matching); add a distance bar if links to unrelated searches show up.
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string, names?: array<int, string>}
+     */
+    private function sisterShopProducts(ShoppingAssistantConversation $conversation, array $arguments): array
+    {
+        $query  = is_string($arguments['query'] ?? null) ? trim($arguments['query']) : '';
+        $sister = self::sisterWebsite($conversation->website);
+
+        if (!$sister || $query === '') {
+            return $this->error($sister ? 'query must be a non-empty string.' : 'This shop has no sister shop.');
+        }
+
+        $names = SearchCatalogueByMeaning::run($sister->shop, $query, null, self::DEFAULT_LIMIT)->pluck('name')->filter()->values()->all();
+
+        if (!$names) {
+            return ['content' => ['found' => false, 'note' => 'Our sister shop has nothing like it either. Say we do not have it.'], 'products' => [], 'error' => null];
+        }
+
+        if (!($arguments['matching'] ?? false)) {
+            return [
+                'content'  => ['found' => true, 'sister_shop' => $sister->domain, 'names' => $names, 'note' => 'Products of our sister shop, not of this one. When some are what the customer asked for, call sister_shop_products again with the same query and matching true, and say in one short sentence that our sister shop sells them, without naming or counting them: a link is added under your reply. When none is, say we do not have it and do not mention the sister shop.'],
+                'products' => [],
+                'error'    => null,
+                'names'    => $names,
+            ];
+        }
+
+        return [
+            'content'  => ['found' => true, 'note' => 'A sentence with a link to them in our sister shop is added under your reply.'],
+            'products' => [],
+            'error'    => null,
+            'fact'     => __('Our sister shop :website sells these: :link', ['website' => $sister->domain, 'link' => $sister->getUrl().'/search?q='.rawurlencode($query)], $conversation->language_code),
         ];
     }
 
