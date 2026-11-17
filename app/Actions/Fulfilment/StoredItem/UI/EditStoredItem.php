@@ -155,6 +155,7 @@ class EditStoredItem extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, StoredItem $storedItem, ActionRequest $request): StoredItem
     {
+        abort_if($storedItem->organisation_id !== $warehouse->organisation_id, 404);
         $this->parent = $warehouse;
         $this->initialisationFromWarehouse($warehouse, $request);
 

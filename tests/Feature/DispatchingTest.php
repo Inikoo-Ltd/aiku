@@ -163,6 +163,7 @@ use App\Models\Helpers\Upload;
 use App\Models\Helpers\UploadRecord;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\PickingSession;
 use App\Models\Ordering\Transaction;
@@ -8902,6 +8903,57 @@ test('return item locations list the SKO locations of the return warehouse only 
     )->resolve();
 
     expect(collect($rows[0]['locations'])->pluck('id')->all())->toBe($sameWarehouseIds);
+});
+
+test('a warehouse lists and opens only its own organisation stored items and only its own pallets, INI-290', function () {
+    $palletReturn       = createPalletReturnWithPallet($this);
+    $fulfilmentCustomer = $palletReturn->fulfilmentCustomer;
+    $ownPallet          = $palletReturn->pallets()->first();
+
+    $orgData = \App\Models\SysAdmin\Organisation::factory()->definition();
+    data_set($orgData, 'code', 'acm2');
+    data_set($orgData, 'type', \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP);
+    $otherOrganisation = \App\Models\SysAdmin\Organisation::where('code', 'acm2')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, $orgData);
+    $otherWarehouse = Warehouse::where('organisation_id', $otherOrganisation->id)->first()
+        ?? \App\Actions\Inventory\Warehouse\StoreWarehouse::run($otherOrganisation, Warehouse::factory()->definition());
+
+    $foreignPallet = StorePallet::make()->action($fulfilmentCustomer, array_merge(['warehouse_id' => $this->warehouse->id], Pallet::factory()->definition()));
+    $location      = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $foreignPallet->updateQuietly(['warehouse_id' => $otherWarehouse->id, 'location_id' => $location->id, 'slug' => 'for-'.Str::lower(Str::random(8))]);
+    $ownPallet->updateQuietly(['location_id' => $location->id, 'slug' => $ownPallet->slug ?? 'own-'.Str::lower(Str::random(8))]);
+
+    $ownStoredItem     = StoreStoredItem::make()->action($fulfilmentCustomer, ['reference' => 'OWN'.Str::random(6)]);
+    $foreignStoredItem = StoreStoredItem::make()->action($fulfilmentCustomer, ['reference' => 'FOR'.Str::random(6)]);
+    $foreignStoredItem->updateQuietly(['organisation_id' => $otherOrganisation->id]);
+
+    $ownPallet->storedItems()->attach($ownStoredItem->id, ['quantity' => 1, 'state' => PalletStoredItemStateEnum::ACTIVE]);
+    $foreignPallet->storedItems()->attach($foreignStoredItem->id, ['quantity' => 1, 'state' => PalletStoredItemStateEnum::ACTIVE]);
+
+    $page = fn (string $tab) => get(route('grp.org.warehouses.show.inventory.stored_items.current.index', [
+        $this->organisation->slug,
+        $this->warehouse->slug,
+        'tab'                      => $tab,
+        'stored_items_perPage'     => 1000,
+        'pallet_stored_items_perPage' => 1000,
+    ]))->assertOk()->inertiaProps($tab.'.data');
+
+    $storedItemIds = collect($page('stored_items'))->pluck('id');
+    $palletRows    = collect($page('pallet_stored_items'))->pluck('stored_item_id');
+
+    expect($storedItemIds)->toContain($ownStoredItem->id)->not->toContain($foreignStoredItem->id)
+        ->and($palletRows)->toContain($ownStoredItem->id)->not->toContain($foreignStoredItem->id);
+
+    foreach (['show', 'edit'] as $page) {
+        get(route("grp.org.warehouses.show.inventory.stored_items.current.$page", [$this->organisation->slug, $this->warehouse->slug, $ownStoredItem->slug]))->assertOk();
+        get(route("grp.org.warehouses.show.inventory.stored_items.current.$page", [$this->organisation->slug, $this->warehouse->slug, $foreignStoredItem->slug]))->assertNotFound();
+    }
+
+    foreach (['show', 'edit'] as $page) {
+        get(route("grp.org.warehouses.show.inventory.pallets.current.$page", [$this->organisation->slug, $this->warehouse->slug, $ownPallet->slug]))->assertOk();
+        get(route("grp.org.warehouses.show.inventory.pallets.current.$page", [$this->organisation->slug, $this->warehouse->slug, $foreignPallet->slug]))->assertNotFound();
+    }
+    post(route('grp.org.warehouses.show.inventory.pallets.show.stored-item-audit.create', [$this->organisation->slug, $this->warehouse->slug, $foreignPallet->slug]))->assertNotFound();
 });
 
 test('cancelling with create return writes no not pick for a fully picked line and one for the remainder of a partly picked line (INI-291)', function () {
