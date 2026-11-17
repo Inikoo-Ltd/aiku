@@ -58,6 +58,7 @@ import PurchaseOrderSampleRequired, { type PurchaseOrderSample } from "@/Compone
 import AgentPurchaseOrderGoodsReceipts from "@/Components/Procurement/AgentPurchaseOrderGoodsReceipts.vue"
 import AgentReceiveGoodsButton from "@/Components/Procurement/AgentReceiveGoodsButton.vue"
 import PurchaseOrderPullLinesDialog from "@/Components/Procurement/PurchaseOrderPullLinesDialog.vue"
+import PurchaseOrderChangeSupplierDialog from "@/Components/Procurement/PurchaseOrderChangeSupplierDialog.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import ButtonDownloadWithOptions from "@/Components/Utils/ButtonDownloadWithOptions.vue"
@@ -456,6 +457,7 @@ const moneyTable = computed(() => {
 const currentTab = ref(props.tabs.current)
 const isModalUploadExcel = ref(false)
 const isPullLinesDialogOpen = ref(false)
+const isChangeSupplierDialogOpen = ref(false)
 
 const currentLevel = ref<OrderingLevel>(props.data.data.is_partner ? "skos" : "cartons")
 
@@ -1161,6 +1163,16 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				:icon="action.icon"
 				:tooltip="action.tooltip"
 				@click="() => isPullLinesDialogOpen = true"
+			/>
+		</template>
+
+		<template #button-change-supplier="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				@click="() => isChangeSupplierDialogOpen = true"
 			/>
 		</template>
 
@@ -2127,6 +2139,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	</Dialog>
 
 	<PurchaseOrderPullLinesDialog v-model:visible="isPullLinesDialogOpen" :purchase-order-id="data.data.id" />
+
+	<PurchaseOrderChangeSupplierDialog v-model:visible="isChangeSupplierDialogOpen" :purchase-order-id="data.data.id" />
 
 	<UploadExcel
 		v-if="props.upload_excel"

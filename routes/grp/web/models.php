@@ -601,6 +601,8 @@ use App\Actions\Procurement\SupplierAgreedTerm\WithdrawSupplierAgreedTerm;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderJourneyStage;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderReference;
+use App\Actions\Procurement\PurchaseOrder\ChangePurchaseOrderSupplier;
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderChangeSupplierOptions;
 use App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage;
 use App\Actions\Procurement\PurchaseOrder\SkipPurchaseOrderStage;
 use App\Actions\Procurement\PurchaseOrderChase\StorePurchaseOrderChase;
@@ -2128,6 +2130,8 @@ Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(functi
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {
     Route::patch('update', UpdatePurchaseOrder::class)->name('update');
     Route::patch('reference', UpdatePurchaseOrderReference::class)->name('reference.update');
+    Route::get('change-supplier', GetPurchaseOrderChangeSupplierOptions::class)->name('change_supplier.options');
+    Route::patch('change-supplier', ChangePurchaseOrderSupplier::class)->name('change_supplier');
     Route::patch('journey-stage', UpdatePurchaseOrderJourneyStage::class)->name('journey_stage');
     Route::patch('stage', MarkPurchaseOrderStage::class)->name('stage');
     Route::patch('skip-stage', SkipPurchaseOrderStage::class)->name('skip_stage');
