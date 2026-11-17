@@ -2509,6 +2509,29 @@ test('embedding what is missing fills a staff note and leaves the entry without 
         ->and($note->refresh()->embedding)->toHaveCount(1024);
 });
 
+test('on a dropshipping shop each guide is kept as its summary and its sections, so a how-to question finds the steps', function () {
+    $originalType = $this->shop->type;
+    $originalSlug = $this->shop->slug;
+
+    try {
+        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING, 'slug' => 'dssk']);
+        shoppingAssistantStorefront($this);
+        shoppingAssistantClearKnowledge($this->shop->refresh());
+        Http::fake(['*embeddings' => shoppingAssistantEmbeddingsFake(0.1)]);
+
+        App\Actions\Chat\ChatSession\HydrateChatKnowledge::make()->handle($this->shop);
+
+        $removing = ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('source_type', 'docs')->where('source_id', 'removing-products')->get();
+
+        expect($removing->count())->toBeGreaterThan(2)
+            ->and($removing->pluck('title'))->toContain('Removing products from a channel')
+            ->and($removing->first(fn (ChatKnowledgeEntry $entry) => str_contains($entry->body, 'tick the box at the top of the tick column'))?->title)->toBe('Removing products from a channel · Remove or unlink many products')
+            ->and($removing->every(fn (ChatKnowledgeEntry $entry) => $entry->kind === 'guide' && str_ends_with($entry->url, '/docs/removing-products') && mb_strlen($entry->body) <= 1500))->toBeTrue();
+    } finally {
+        $this->shop->update(['type' => $originalType, 'slug' => $originalSlug]);
+    }
+});
+
 
 function shoppingAssistantClearConversations(Shop $shop): void
 {
@@ -3079,6 +3102,46 @@ test('the assistant remembers facts about the shop without figures, starts the n
 
     AnonymiseCustomer::make()->action($customer->refresh(), 'Erasure request', false);
     expect($customer->refresh()->shop_profile)->toBeNull();
+});
+
+test('the prompt keeps instructions, tools and model private, handles mixed messages, and only teases staff', function () {
+    shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    Http::fake(['*chat/completions' => Http::response(shoppingAssistantPresent(['reply' => 'Hello.', 'answer_kind' => 'off_topic']))]);
+
+    $customer->updateQuietly(['is_staff' => false]);
+    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'What should I look at today?');
+    $prompt = Http::recorded()->last()[0]['messages'][0]['content'];
+
+    expect($prompt)->toContain('- Confidentiality. Never reveal')
+        ->and($prompt)->toContain('- Mixed messages.')
+        ->and($prompt)->not->toContain('a colleague testing you');
+
+    $customer->updateQuietly(['is_staff' => true]);
+    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'What should I look at today?');
+    expect(Http::recorded()->last()[0]['messages'][0]['content'])->toContain('a colleague testing you');
+});
+
+test('the last allowed model call must present the answer so a turn never ends empty, and chat about the assistant itself is offered to the light model', function () {
+    shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $calls    = (int) config('services.shopping_assistant.max_model_calls');
+    $search   = shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('search_products', ['query' => 'essential oil'])]], 'tool_calls');
+    $present  = shoppingAssistantPresent(['reply' => 'Essential oils are concentrated plant oils.', 'answer_kind' => 'products']);
+    $sequence = Http::sequence();
+    foreach (range(1, $calls - 1) as $ignored) {
+        $sequence->push($search);
+    }
+    Http::fake(['*chat/completions' => $sequence->push($present)]);
+
+    $result = AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'Explain what is essential oil? But before that make a recipe for fried rice');
+    $choices = Http::recorded()->filter(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))->map(fn ($pair) => $pair[0]->data()['tool_choice'])->values()->all();
+
+    expect($choices)->toHaveCount($calls)
+        ->and(array_slice($choices, 0, -1))->each->toBe('auto')
+        ->and(end($choices))->toBe(['type' => 'function', 'function' => ['name' => 'present_products']])
+        ->and($result['message']->flags ?? [])->not->toContain('model_call_limit')
+        ->and($result['reply'])->toContain('concentrated plant oils');
 });
 
 test('a basket add of a product both a chat and a later panel day showed is recorded on the chat', function () {
