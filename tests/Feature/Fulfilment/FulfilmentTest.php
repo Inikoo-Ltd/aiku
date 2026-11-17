@@ -74,6 +74,8 @@ use App\Actions\Fulfilment\PalletReturn\ConfirmPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\DispatchPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
 use App\Actions\Fulfilment\PalletReturn\PickedPalletReturn;
+use App\Actions\Fulfilment\PickingSession\StoreFulfilmentPickingSession;
+use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Actions\Fulfilment\PalletReturn\PickedPalletReturnWithStoredItems;
 use App\Actions\Fulfilment\PalletReturn\PickingPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
@@ -3485,6 +3487,43 @@ test('pick pallet return item', function (PalletReturn $palletReturn) {
 
     return $palletReturn;
 })->depends('picking second pallet to return');
+
+test('set stored item return as picked from the web updates stats and notifies', function (PalletReturn $palletReturn) {
+    SendPalletReturnNotification::shouldRun()->andReturn();
+
+    $palletStoredItem = PalletReturnItem::where('pallet_return_id', $palletReturn->id)
+        ->whereNotNull('pallet_stored_item_id')
+        ->firstOrFail()
+        ->palletStoredItem;
+
+    $storedItemReturn = StorePalletReturn::make()->actionWithStoredItems(
+        $palletReturn->fulfilmentCustomer,
+        [
+            'warehouse_id' => $this->warehouse->id,
+        ]
+    );
+    AttachStoredItemToReturn::make()->action($storedItemReturn, $palletStoredItem, ['quantity_ordered' => 1]);
+    SubmitAndConfirmPalletReturn::make()->action($storedItemReturn);
+    $pickingSession = StoreFulfilmentPickingSession::make()->handle($this->warehouse, [
+        'pallet_returns' => [$storedItemReturn->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $storedItemReturn = PickingPalletReturn::make()->action($storedItemReturn->refresh());
+
+    $fulfilmentCustomer = $storedItemReturn->fulfilmentCustomer;
+    $pickedBefore       = $fulfilmentCustomer->refresh()->number_pallet_returns_state_picked;
+
+    SendPalletReturnNotification::clearFake();
+    SendPalletReturnNotification::shouldRun()->once();
+
+    $storedItemReturn = PickedPalletReturn::make()->action($storedItemReturn->refresh(), $this->user);
+
+    expect($storedItemReturn->refresh()->state)->toBe(PalletReturnStateEnum::PICKED)
+        ->and($storedItemReturn->picked_at)->not->toBeNull()
+        ->and($storedItemReturn->packer_user_id)->toBe($this->user->id)
+        ->and($fulfilmentCustomer->refresh()->number_pallet_returns_state_picked)->toBe($pickedBefore + 1)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PACKING_FINISHED);
+})->depends('pick pallet return item');
 
 test('picking a stored item never takes the pallet below zero', function (PalletReturn $palletReturn) {
     SendPalletReturnNotification::shouldRun()

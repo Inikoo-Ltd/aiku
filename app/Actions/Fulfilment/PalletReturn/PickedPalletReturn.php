@@ -44,17 +44,19 @@ class PickedPalletReturn extends OrgAction
      */
     public function handle(PalletReturn $palletReturn, array $modelData = [], ?User $user = null): PalletReturn
     {
-        $modelData[PalletReturnStateEnum::PICKED->value.'_at']   = now();
-        $modelData['state']                                      = PalletReturnStateEnum::PICKED;
         if ($user) {
             $modelData['packer_user_id'] = $user->id;
         }
 
+        if ($palletReturn->type != PalletReturnTypeEnum::PALLET) {
+            return SetPalletReturnAsPicked::run($palletReturn, $modelData);
+        }
+
+        $modelData[PalletReturnStateEnum::PICKED->value.'_at']   = now();
+        $modelData['state']                                      = PalletReturnStateEnum::PICKED;
+
         $palletReturn = $this->update($palletReturn, $modelData);
 
-        if ($palletReturn->type != PalletReturnTypeEnum::PALLET) {
-            abort(419);
-        }
         $pendingPallets = $palletReturn->pallets->filter(
             fn ($pallet) => $pallet->pivot->state === PalletReturnItemStateEnum::PICKING->value
         );
