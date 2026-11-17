@@ -220,6 +220,7 @@ class IndexPartnerShippingList extends OrgAction
                 'customers.name as customer_name',
                 'shops.name as shop_name',
                 'orders.reference as order_reference',
+                DB::raw('case when fill_artefacts.id is not null then current_date - orders.submitted_at::date end as order_waiting_days'),
                 ...$this->jobOrderColumns(),
             ])
             ->defaultSort('-created_at')

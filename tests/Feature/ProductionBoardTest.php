@@ -1872,7 +1872,8 @@ test('a bottle filled to order puts a fill line on To Produce, holds the whole o
     $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
     expect(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::make()->action($order->refresh(), []))->toBeNull()
         ->and($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED)
-        ->and($order->private_warehouse_note)->toContain($product->code);
+        ->and($order->private_warehouse_note)->toContain($product->code)
+        ->and(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::heldReason('Fragile — '.$order->private_warehouse_note))->toBe('waiting for filling: '.$product->code);
 
     $result = \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [$lines[0]->id]);
     $jobOrder = $result['job_orders'][0];
@@ -2026,6 +2027,9 @@ test('a fill line shows on the board as the bottles for its order and shop, and 
         ->and(data_get($card, 'shop_name'))->toBe($shop->name)
         ->and(data_get($card, 'customer_name'))->toBe($customer->name)
         ->and($cardOf(['filter' => ['global' => $order->reference]]))->not->toBeNull();
+
+    $order->update(['submitted_at' => now()->subDays(3)]);
+    expect((int) data_get($cardOf(), 'order_waiting_days'))->toBe(3);
 
     $jobOrder = \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [$line->id])['job_orders'][0];
     expect($jobOrder->jobOrderItems()->first()->displayName())->toContain($order->reference)->toContain($shop->name);

@@ -147,6 +147,16 @@ class SendOrderToWarehouse extends OrgAction
         return true;
     }
 
+    /** Why the order is held, read from its warehouse note: "waiting for filling: FOKG-160-10ml" */
+    public static function heldReason(?string $note): ?string
+    {
+        if (!preg_match('/'.preg_quote(self::HELD_MARKER, '/').'\s*(.*?)(?=\s—\s|\R|$)/u', (string)$note, $match)) {
+            return null;
+        }
+
+        return trim($match[1]) ?: null;
+    }
+
     /** The note without the held warning, keeping whatever staff wrote around it */
     public static function withoutHeldNote(?string $note): ?string
     {
