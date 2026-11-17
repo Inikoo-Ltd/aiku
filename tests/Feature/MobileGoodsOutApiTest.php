@@ -894,5 +894,12 @@ test('mobile sets a fully picked dropshipping note as packed instead of picked',
         ->assertJsonPath('result', ['status' => 'done', 'message' => 'Delivery note packed.'])
         ->assertJsonPath('data.state', 'packed');
 
+    $unpacked = postGoodsOut('grp.api.mobile.delivery_notes.unpack', $deliveryNote->id)->assertOk()
+        ->assertJsonPath('data.state', 'packing');
+    expect(collect($unpacked->json('data.available_actions'))->pluck('key')->all())->toContain('set_as_packed')->toContain('undo_packing');
+
+    postGoodsOut('grp.api.mobile.delivery_notes.set_as_packed', $deliveryNote->id)->assertOk()
+        ->assertJsonPath('data.state', 'packed');
+
     $shop->update(['type' => $originalType]);
 });
