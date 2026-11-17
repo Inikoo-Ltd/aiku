@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
-import { Checkbox } from 'primevue'
+import { Checkbox, InputNumber, InputText } from 'primevue'
 import { computed } from 'vue'
 import { ref } from 'vue'
 
@@ -14,6 +14,8 @@ const props = defineProps<{
     }[]
 }>()
 
+const exportDetails = defineModel<{ incoterms: string | null, net_weight: number | null }>('exportDetails', { default: () => ({ incoterms: null, net_weight: null }) })
+
 const inEnglish = ref(false)
 
 const selectedCheck = ref<string[]>((props.listColumn || []).map(check => check.is_checked ? check.value : null).filter(Boolean) as string[])
@@ -25,7 +27,9 @@ const compSelectedDeck = computed(() => {
 
     if (!props.routeDownload) return '#'
 
-    return route(props.routeDownload?.name, { ...props.routeDownload?.parameters, ...columnFlags, ...(inEnglish.value ? { lang: 'en' } : {}) })
+    const exportParams = { incoterms: exportDetails.value.incoterms?.trim() ?? '', net_weight: exportDetails.value.net_weight ?? '' }
+
+    return route(props.routeDownload?.name, { ...props.routeDownload?.parameters, ...columnFlags, ...exportParams, ...(inEnglish.value ? { lang: 'en' } : {}) })
 })
 </script>
 
@@ -48,6 +52,18 @@ const compSelectedDeck = computed(() => {
                 <label for="lang_en" class="cursor-pointer">{{ ctrans("In English") }}</label>
             </div>
         </div>
+
+        <div class="mt-4 grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+                <label for="incoterms" class="text-sm">{{ ctrans("Incoterms") }}</label>
+                <InputText v-model="exportDetails.incoterms" id="incoterms" placeholder="DAP" maxlength="100" size="small" />
+            </div>
+            <div class="flex flex-col gap-1">
+                <label for="net_weight" class="text-sm">{{ ctrans("Net weight") }}</label>
+                <InputNumber v-model="exportDetails.net_weight" inputId="net_weight" suffix=" kg" :min="0" :maxFractionDigits="3" size="small" fluid />
+            </div>
+        </div>
+        <div class="mt-1 text-xs text-gray-500">{{ ctrans("For export deliveries; kept for the next download of this invoice") }}</div>
 
         <a :href="compSelectedDeck" target="_blank" rel="noopener noreferrer"
             class="w-full block mt-6">

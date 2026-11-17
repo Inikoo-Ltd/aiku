@@ -186,6 +186,7 @@ class ShowFulfilmentInvoice extends OrgAction
                     'workshop_route' => $this->getOutboxRoute($invoice)
                 ],
                 'download_pdf_column'  => ShowInvoice::make()->getDownloadPdfColumns($invoice),
+                'download_pdf_export_details' => ShowInvoice::make()->getDownloadPdfExportDetails($invoice),
 
                 FulfilmentInvoiceTabsEnum::REFUNDS->value => $this->tab == FulfilmentInvoiceTabsEnum::REFUNDS->value
                     ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, FulfilmentInvoiceTabsEnum::REFUNDS->value))
