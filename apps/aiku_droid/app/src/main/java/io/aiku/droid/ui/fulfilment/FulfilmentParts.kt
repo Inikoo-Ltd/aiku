@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -30,14 +29,9 @@ import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
 import io.aiku.droid.data.api.Ability
 import io.aiku.droid.ui.components.CardShape
-import io.aiku.droid.ui.components.HeaderIconButton
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.StatusBadge
-import io.aiku.droid.ui.components.Step
-import io.aiku.droid.ui.components.StepStatus
 import io.aiku.droid.ui.components.Tone
-import io.aiku.droid.ui.components.fakeData
-import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.theme.LocalAikuColors
 
@@ -49,32 +43,10 @@ internal enum class FulfilmentDeliveryState(@StringRes val label: Int, val tone:
     NotReceived(R.string.fulfilment_state_not_received, Tone.Danger),
 }
 
-internal enum class FulfilmentReturnState(@StringRes val label: Int, val tone: Tone) {
-    Confirmed(R.string.fulfilment_state_confirmed, Tone.Neutral),
-    Picking(R.string.fulfilment_state_picking, Tone.Primary),
-    Picked(R.string.fulfilment_state_picked, Tone.Success),
-    Dispatched(R.string.fulfilment_state_dispatched, Tone.Success),
-}
-
-internal enum class FulfilmentReturnType(@StringRes val label: Int) {
-    Pallets(R.string.fulfilment_return_type_pallets),
-    StoredItems(R.string.fulfilment_return_type_stored_items),
-    Dropshipping(R.string.fulfilment_return_type_dropshipping),
-}
-
 internal enum class FulfilmentPalletType(@StringRes val label: Int) {
     Pallet(R.string.fulfilment_type_pallet),
     Box(R.string.fulfilment_type_box),
     Oversize(R.string.fulfilment_type_oversize),
-}
-
-internal enum class FulfilmentPalletState(@StringRes val label: Int, val tone: Tone) {
-    Storing(R.string.fulfilment_state_storing, Tone.Success),
-    Damaged(R.string.fulfilment_state_damaged, Tone.Danger),
-    Lost(R.string.fulfilment_state_lost, Tone.Danger),
-    ;
-
-    val hasIncident: Boolean get() = this != Storing
 }
 
 internal enum class StoredPalletFilter(@StringRes val label: Int) {
@@ -91,50 +63,7 @@ internal enum class PalletIncidentKind(@StringRes val label: Int, val tone: Tone
     Other(R.string.fulfilment_state_other, Tone.Warn),
 }
 
-internal enum class StoredItemState(@StringRes val label: Int, val tone: Tone) {
-    Active(R.string.fulfilment_state_active, Tone.Success),
-    Discontinuing(R.string.fulfilment_state_discontinuing, Tone.Warn),
-}
-
-internal enum class ReturnPalletState(@StringRes val label: Int, val tone: Tone) {
-    ToPick(R.string.fulfilment_state_to_pick, Tone.Neutral),
-    Picked(R.string.fulfilment_state_picked, Tone.Success),
-}
-
-internal enum class StoredItemAuditScope(@StringRes val label: Int) {
-    Pallet(R.string.fulfilment_type_pallet),
-    Customer(R.string.fulfilment_audit_scope_customer),
-}
-
-private val deliveryStages = listOf(
-    FulfilmentDeliveryState.Confirmed,
-    FulfilmentDeliveryState.Received,
-    FulfilmentDeliveryState.BookingIn,
-    FulfilmentDeliveryState.BookedIn,
-)
-
 internal fun dotJoined(vararg parts: String?): String = parts.filterNotNull().filter { it.isNotBlank() }.joinToString(" · ")
-
-@Composable
-internal fun fulfilmentDeliverySteps(current: FulfilmentDeliveryState): List<Step> =
-    stepsOf(labels = deliveryStages.map { it.label }, currentIndex = deliveryStages.indexOf(current))
-
-@Composable
-internal fun fulfilmentReturnSteps(current: FulfilmentReturnState): List<Step> =
-    stepsOf(labels = FulfilmentReturnState.entries.map { it.label }, currentIndex = current.ordinal)
-
-@Composable
-private fun stepsOf(labels: List<Int>, currentIndex: Int): List<Step> =
-    labels.mapIndexed { index, label ->
-        Step(
-            label = stringResource(label),
-            status = when {
-                index < currentIndex -> StepStatus.Done
-                index == currentIndex -> StepStatus.Current
-                else -> StepStatus.Upcoming
-            },
-        )
-    }
 
 @Composable
 internal fun filterChipLabel(label: String, count: Int?): String =
@@ -148,45 +77,6 @@ internal fun RequireFulfilment(@StringRes section: Int, content: @Composable () 
         activeTab = MainTab.Menu,
         content = content,
     )
-}
-
-@Composable
-internal fun FulfilmentHeader(title: String, kicker: String) {
-    val colors = LocalAikuColors.current
-    val navigator = LocalAppNavigator.current
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.nav)
-            .statusBarsPadding()
-            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            HeaderIconButton(
-                icon = R.drawable.ic_ui_back,
-                description = stringResource(R.string.nav_back),
-                onClick = navigator::back,
-                iconSize = 24.dp,
-            )
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fakeData(cornerRadius = 4.dp)
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-            ) {
-                Text(text = kicker, fontSize = 12.sp, color = colors.onNavSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    text = title,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.onNav,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
 }
 
 @Composable
@@ -232,30 +122,6 @@ internal fun FulfilmentRow(
             }
         }
         trailing?.invoke()
-    }
-}
-
-@Composable
-internal fun FulfilmentSectionHeading(text: String, modifier: Modifier = Modifier, sampleCaption: String? = null) {
-    val colors = LocalAikuColors.current
-
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-        Text(
-            text = text.uppercase(),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.8.sp,
-            color = colors.textTertiary,
-            modifier = Modifier.weight(1f),
-        )
-        if (sampleCaption != null) {
-            Text(
-                text = sampleCaption,
-                fontSize = 12.sp,
-                color = colors.textTertiary,
-                modifier = Modifier.fakeData(cornerRadius = 4.dp).padding(horizontal = 6.dp, vertical = 2.dp),
-            )
-        }
     }
 }
 

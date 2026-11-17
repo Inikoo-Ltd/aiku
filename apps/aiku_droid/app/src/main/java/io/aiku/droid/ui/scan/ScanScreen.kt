@@ -120,7 +120,7 @@ fun ScanScreen(lookup: ScanLookupViewModel) {
     }
 }
 
-private val scanAbilities = listOf(Ability.ViewGoodsOut, Ability.ViewInventory, Ability.ViewLocations, Ability.ViewGoodsIn, Ability.ViewReturns)
+private val scanAbilities = listOf(Ability.ViewGoodsOut, Ability.ViewInventory, Ability.ViewLocations, Ability.ViewGoodsIn, Ability.ViewReturns, Ability.ViewFulfilment)
 
 @Composable
 private fun rememberCameraColors(): AikuColors {
