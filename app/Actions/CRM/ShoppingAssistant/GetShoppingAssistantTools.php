@@ -314,8 +314,8 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'order_status',
-                'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, why it has not been dispatched yet, whether it was sent, or for its tracking. Pass the order number they wrote as reference (ours or their own); without one you get their oldest order not dispatched yet, else their latest, so never ask for the number first. It also says when an order waits for payment, and an order still waiting to be picked a day after it was placed is moved to premium dispatch free of charge. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
-                ['reference' => ['type' => 'string', 'description' => 'The order number the customer wrote, exactly as written. Leave it out when they gave none.']]
+                'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, why it has not been dispatched yet, whether it was sent, or for its tracking. Pass the order or invoice number they wrote as reference (ours or their own); without one you get their oldest order not dispatched yet, else their latest, so never ask for the number first. It also says when an order waits for payment, and an order still waiting to be picked a day after it was placed is moved to premium dispatch free of charge. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
+                ['reference' => ['type' => 'string', 'description' => 'The order or invoice number the customer wrote, exactly as written. Leave it out when they gave none.']]
             ),
             $this->tool(
                 'products_not_in_store',
@@ -1126,7 +1126,7 @@ class GetShoppingAssistantTools
 
     /**
      * Where one of the customer's own orders is, never anybody else's: the order whose number they
-     * wrote (ours, their own reference or their store's), else the last one they placed. The model
+     * wrote (ours, their own reference, their store's or one of its invoices', ignoring case, spaces and hyphens), else the last one they placed. The model
      * gets the state in words and words it in the customer's language; the order number, its date
      * and the carrier, tracking number and tracking link hold digits, so they go under the reply
      * as one line written here.
@@ -1138,11 +1138,12 @@ class GetShoppingAssistantTools
     private function orderStatus(Customer $customer, array $arguments, string $locale): array
     {
         $reference = is_string($arguments['reference'] ?? null) ? trim($arguments['reference'], " \t\n\r#") : '';
+        $comparable = str_replace([' ', '-'], '', mb_strtoupper($reference));
         $orders    = Order::where('customer_id', $customer->id);
 
         $open  = (clone $orders)->whereIn('state', self::ORDER_OPEN_STATES)->orderBy('submitted_at')->orderBy('id')->get();
         $order = $reference !== ''
-            ? $orders->where(fn ($query) => $query->where('reference', $reference)->orWhere('customer_reference', $reference)->orWhere('platform_order_id', $reference))->latest('id')->first()
+            ? $orders->where(fn ($query) => $query->whereRaw("translate(upper(reference), ' -', '') = ?", [$comparable])->orWhereRaw("translate(upper(customer_reference), ' -', '') = ?", [$comparable])->orWhereRaw("translate(upper(platform_order_id), ' -', '') = ?", [$comparable])->orWhereHas('invoices', fn ($invoices) => $invoices->whereRaw("translate(upper(reference), ' -', '') = ?", [$comparable])))->latest('id')->first()
             : ($open->first() ?? $orders->where('state', '!=', OrderStateEnum::CREATING)->latest('submitted_at')->latest('id')->first());
 
         if (!$order) {
