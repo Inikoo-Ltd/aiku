@@ -53,7 +53,7 @@ const currencyOptions = computed(() => [
 const reload = (query: Record<string, string | number | null>) => {
 	const params = { ...props.extraQuery, org: props.organisation, period: props.period, currency: props.currency, from: props.from, to: props.to, min: props.min, max: props.max, ...query }
 	router.get(
-		route(route().current() as string, props.organisationId ? [route().params["organisation"]] : []),
+		route(route().current() as string, props.organisationId ? Object.fromEntries(["organisation", "shop"].filter((key) => route().params[key]).map((key) => [key, route().params[key]])) : {}),
 		Object.fromEntries(Object.entries(params).filter(([, value]) => value !== null && value !== undefined && value !== "")),
 		{ preserveState: false }
 	)

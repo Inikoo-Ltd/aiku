@@ -8,6 +8,7 @@
 namespace App\Actions\Inventory\LocationOrgStock;
 
 use App\Actions\OrgAction;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -24,7 +25,7 @@ class MoveOrgStockToMultipleLocations extends OrgAction
     private LocationOrgStock|null $sourceLocationOrgStock = null;
 
     /**
-     * @param array{targets: array<int, array{location_org_stock_id: int, quantity: float}>} $modelData
+     * @param array{targets: array<int, array{location_org_stock_id: int, quantity: float}>, reason?: string|null, note?: string|null} $modelData
      *
      * @throws \Throwable
      */
@@ -37,7 +38,11 @@ class MoveOrgStockToMultipleLocations extends OrgAction
                 MoveOrgStockToOtherLocation::make()->action(
                     $sourceLocationOrgStock,
                     $targetLocationOrgStock,
-                    ['quantity' => Arr::get($target, 'quantity')],
+                    [
+                        'quantity' => Arr::get($target, 'quantity'),
+                        'reason'   => Arr::get($modelData, 'reason'),
+                        'note'     => Arr::get($modelData, 'note'),
+                    ],
                     $this->user
                 );
             }
@@ -52,6 +57,8 @@ class MoveOrgStockToMultipleLocations extends OrgAction
             'targets'                         => ['required', 'array', 'min:1', $this->targetsAreValid(...)],
             'targets.*.location_org_stock_id' => ['required', 'integer', Rule::exists('location_org_stocks', 'id')],
             'targets.*.quantity'              => ['required', 'numeric', 'gt:0'],
+            'reason'                          => ['sometimes', 'nullable', Rule::in(OrgStockMovementReasonEnum::transferReason())],
+            'note'                            => ['sometimes', 'nullable', 'string', 'max:1024'],
         ];
     }
 

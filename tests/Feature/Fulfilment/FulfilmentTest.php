@@ -53,6 +53,9 @@ use App\Actions\Fulfilment\Pallet\StoreMultiplePalletsFromDelivery;
 use App\Actions\Fulfilment\Pallet\StorePallet;
 use App\Actions\Fulfilment\Pallet\StorePalletCreatedInPalletDelivery;
 use App\Actions\Fulfilment\Pallet\UndoBookedInPallet;
+use App\Actions\Fulfilment\Pallet\UndoNotReceivedPallet;
+use App\Actions\Fulfilment\PalletDelivery\UI\IndexServiceInPalletDelivery;
+use App\Http\Resources\Fulfilment\FulfilmentTransactionsResource;
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\PalletDelivery\ConfirmPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ImportPalletsInPalletDelivery;
@@ -71,6 +74,8 @@ use App\Actions\Fulfilment\PalletReturn\ConfirmPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\DispatchPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
 use App\Actions\Fulfilment\PalletReturn\PickedPalletReturn;
+use App\Actions\Fulfilment\PickingSession\StoreFulfilmentPickingSession;
+use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Actions\Fulfilment\PalletReturn\PickedPalletReturnWithStoredItems;
 use App\Actions\Fulfilment\PalletReturn\PickingPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
@@ -2098,12 +2103,16 @@ test('picked pallet to return', function (PalletReturn $pickingPalletReturn) {
     $fulfilmentCustomer = $pickingPalletReturn->fulfilmentCustomer;
 
 
+    $packer = User::first();
+
     $pickedPalletReturn = PickedPalletReturn::make()->action(
         $pickingPalletReturn,
+        $packer,
     );
     $fulfilmentCustomer->refresh();
     expect($pickedPalletReturn)->toBeInstanceOf(PalletReturn::class)
-        ->and($pickedPalletReturn->state)->toBe(PalletReturnStateEnum::PICKED);
+        ->and($pickedPalletReturn->state)->toBe(PalletReturnStateEnum::PICKED)
+        ->and($pickedPalletReturn->packer_user_id)->toBe($packer->id);
 
 
     return $pickedPalletReturn;
@@ -3479,6 +3488,43 @@ test('pick pallet return item', function (PalletReturn $palletReturn) {
     return $palletReturn;
 })->depends('picking second pallet to return');
 
+test('set stored item return as picked from the web updates stats and notifies', function (PalletReturn $palletReturn) {
+    SendPalletReturnNotification::shouldRun()->andReturn();
+
+    $palletStoredItem = PalletReturnItem::where('pallet_return_id', $palletReturn->id)
+        ->whereNotNull('pallet_stored_item_id')
+        ->firstOrFail()
+        ->palletStoredItem;
+
+    $storedItemReturn = StorePalletReturn::make()->actionWithStoredItems(
+        $palletReturn->fulfilmentCustomer,
+        [
+            'warehouse_id' => $this->warehouse->id,
+        ]
+    );
+    AttachStoredItemToReturn::make()->action($storedItemReturn, $palletStoredItem, ['quantity_ordered' => 1]);
+    SubmitAndConfirmPalletReturn::make()->action($storedItemReturn);
+    $pickingSession = StoreFulfilmentPickingSession::make()->handle($this->warehouse, [
+        'pallet_returns' => [$storedItemReturn->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $storedItemReturn = PickingPalletReturn::make()->action($storedItemReturn->refresh());
+
+    $fulfilmentCustomer = $storedItemReturn->fulfilmentCustomer;
+    $pickedBefore       = $fulfilmentCustomer->refresh()->number_pallet_returns_state_picked;
+
+    SendPalletReturnNotification::clearFake();
+    SendPalletReturnNotification::shouldRun()->once();
+
+    $storedItemReturn = PickedPalletReturn::make()->action($storedItemReturn->refresh(), $this->user);
+
+    expect($storedItemReturn->refresh()->state)->toBe(PalletReturnStateEnum::PICKED)
+        ->and($storedItemReturn->picked_at)->not->toBeNull()
+        ->and($storedItemReturn->packer_user_id)->toBe($this->user->id)
+        ->and($fulfilmentCustomer->refresh()->number_pallet_returns_state_picked)->toBe($pickedBefore + 1)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PACKING_FINISHED);
+})->depends('pick pallet return item');
+
 test('picking a stored item never takes the pallet below zero', function (PalletReturn $palletReturn) {
     SendPalletReturnNotification::shouldRun()
         ->andReturn();
@@ -4645,3 +4691,26 @@ test('fulfilment rentals, accounting and post room pages answer fulfilment or ac
         $this->get($url)->assertOk();
     }
 });
+
+test('a pallet delivery keeps the warehouse it is given, INI-292', function (FulfilmentCustomer $fulfilmentCustomer) {
+    $numberDeliveries = $fulfilmentCustomer->palletDeliveries()->count();
+
+    expect(fn () => StorePalletDelivery::make()->action($fulfilmentCustomer, ['warehouse_id' => 32000]))
+        ->toThrow(ValidationException::class)
+        ->and($fulfilmentCustomer->palletDeliveries()->count())->toBe($numberDeliveries);
+})->depends('create 4th fulfilment customer');
+
+test('pallet delivery services show the service unit label, INI-292', function (PalletDelivery $palletDelivery) {
+    request()->setRouteResolver(fn () => (new \Illuminate\Routing\Route('GET', 'test', []))->name('test'));
+    $services = FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery))->resolve();
+
+    expect($services)->not->toBeEmpty()
+        ->and(collect($services)->pluck('unit_label')->unique()->values()->all())->toBe([__('service')]);
+})->depends('set rental to first pallet in the pallet delivery');
+
+test('undo not received pallet as an action checks the pallet it is given, INI-292', function (PalletDelivery $palletDelivery) {
+    $pallet = $palletDelivery->pallets()->first();
+
+    expect($palletDelivery->state)->toBe(PalletDeliveryStateEnum::NOT_RECEIVED)
+        ->and(fn () => UndoNotReceivedPallet::make()->action($pallet))->toThrow(ValidationException::class);
+})->depends('create pallet delivery that was not delivered by marking items 4th customer');

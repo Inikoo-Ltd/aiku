@@ -4309,3 +4309,24 @@ test('a container straight from a supplier takes its other agreed orders, never 
 
     expect($unmatched[mb_strtolower($otherSupplierProduct->code)]['lines'])->toBeEmpty();
 });
+
+test('booking goods into a location the SKO is not linked to links it as picking when the SKO has no picking location, as storing when it has one (INI-291)', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-LINK-TYPE', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+    $warehouse         = Warehouse::where('organisation_id', $this->organisation->id)->first() ?? StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+    $firstLocation     = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $secondLocation    = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+
+    expect(LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)->count())->toBe(0);
+
+    $stockDeliveryItem = UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 4, 'location_id' => $firstLocation->id]);
+    UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 6, 'location_id' => $secondLocation->id]);
+
+    $linkType = fn (Location $location) => LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)->where('location_id', $location->id)->first()->type;
+
+    expect($linkType($firstLocation))->toBe(\App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING)
+        ->and($linkType($secondLocation))->toBe(\App\Enums\Inventory\LocationStock\LocationStockTypeEnum::STORING);
+});

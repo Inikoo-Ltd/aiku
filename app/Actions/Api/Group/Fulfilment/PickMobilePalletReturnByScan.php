@@ -10,7 +10,6 @@
 namespace App\Actions\Api\Group\Fulfilment;
 
 use App\Actions\Fulfilment\PalletReturnItem\PickPalletReturnItemByScan;
-use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
@@ -66,12 +65,12 @@ class PickMobilePalletReturnByScan
         $scanPicker = PickPalletReturnItemByScan::make();
         $lines      = $scanPicker->loadItems($palletReturn);
         $matched    = $scanPicker->matchItems($lines, $barcode);
-        $blocked    = $matched->filter(fn (PalletReturnItem $line) => $this->scanBlockedReason($line, $scanPicker) !== null);
+        $blocked    = $matched->filter(fn (PalletReturnItem $line) => $scanPicker->blockedReason($line) !== null);
 
         if ($palletReturn->state === PalletReturnStateEnum::PICKING && $matched->isNotEmpty() && $blocked->count() === $matched->count()) {
             $line = $blocked->first();
 
-            return ['status' => 'not_found', 'message' => $this->scanBlockedReason($line, $scanPicker), 'line_id' => $line->id];
+            return ['status' => 'not_found', 'message' => $scanPicker->blockedReason($line), 'line_id' => $line->id];
         }
 
         $outcome = $scanPicker->handle(
@@ -82,17 +81,5 @@ class PickMobilePalletReturnByScan
         );
 
         return ['status' => $outcome['status'], 'message' => $outcome['message'], 'line_id' => $outcome['item']['id'] ?? null];
-    }
-
-    private function scanBlockedReason(PalletReturnItem $line, PickPalletReturnItemByScan $scanPicker): ?string
-    {
-        $reference = $scanPicker->itemReference($line);
-
-        return match (true) {
-            (bool) $line->has_waiting_crm => __(':reference is waiting for customer service, it can not be picked.', ['reference' => $reference]),
-            $line->state === PalletReturnItemStateEnum::NOT_PICKED,
-            $line->type === 'StoredItem' && $line->getQuantityLeftToPick() <= 0 && (float) $line->quantity_picked <= 0 && (float) $line->quantity_not_picked > 0 => __(':reference was set as not picked.', ['reference' => $reference]),
-            default => null,
-        };
     }
 }

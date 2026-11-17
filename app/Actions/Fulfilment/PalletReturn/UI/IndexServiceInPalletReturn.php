@@ -81,6 +81,7 @@ class IndexServiceInPalletReturn extends OrgAction
         ->select([
             'fulfilment_transactions.id',
             'fulfilment_transactions.asset_id',
+            'assets.type as asset_type',
             'fulfilment_transactions.net_amount',
             'fulfilment_transactions.historic_asset_id',
             'services.slug as asset_slug',

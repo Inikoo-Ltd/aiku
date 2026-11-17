@@ -104,7 +104,6 @@ const props = withDefaults(defineProps<{
         shipments_routes: {
             submit_route: routeType
             fetch_route: routeType
-            delete_route: routeType
         }
         shop_type: string  // 'dropshipping', 'b2b'
         shipping_notes?: string

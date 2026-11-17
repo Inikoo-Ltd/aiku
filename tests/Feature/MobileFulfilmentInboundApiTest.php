@@ -12,9 +12,18 @@
 namespace Tests\Feature;
 
 use App\Actions\Fulfilment\Pallet\BookInPallet;
+use App\Actions\Fulfilment\Pallet\SetPalletBackToStoring;
+use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
+use App\Actions\Fulfilment\PalletDelivery\ConfirmPalletDelivery;
+use App\Actions\Fulfilment\StoredItemAudit\CompleteStoredItemAudit;
+use App\Actions\Fulfilment\StoredItemAudit\StoreStoredItemAuditFromPallet;
+use App\Actions\Fulfilment\StoredItemAuditDelta\StoreStoredItemAuditDelta;
+use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Actions\Fulfilment\Pallet\SetPalletAsDamaged;
 use App\Actions\Fulfilment\Pallet\SetPalletAsNotReceived;
 use App\Actions\Fulfilment\PalletDelivery\Notifications\SendPalletDeliveryNotification;
+use App\Actions\Fulfilment\PalletDelivery\ReceivePalletDelivery;
+use App\Actions\Fulfilment\RecurringBillTransaction\StoreRecurringBillTransaction;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
@@ -24,10 +33,13 @@ use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
 use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletStoredItem;
+use App\Models\Fulfilment\RecurringBillTransaction;
 use App\Models\Fulfilment\StoredItemAuditDelta;
 use App\Models\Inventory\Location;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 require_once __DIR__.'/../Support/MobileFulfilmentInboundHelpers.php';
 
@@ -209,6 +221,42 @@ test('mobile receive needs the shop right, a confirmed delivery and a rental agr
 
     $elsewhere = mobileFulInboundConfirmed(mobileFulInboundDelivery($customer, mobileFulInboundOtherWarehouse($this->organisation)));
     $receive($elsewhere)->assertNotFound();
+});
+
+test('receiving refuses pallets without a rental up front and never leaves a half received delivery', function () {
+    $autoAssignedTypes = $this->organisation->rentals()->where('auto_assign_asset', 'Pallet')->pluck('auto_assign_asset_type')->all();
+    $typeWithoutAutoRental = collect(PalletTypeEnum::cases())->first(fn (PalletTypeEnum $type) => !in_array($type->value, $autoAssignedTypes));
+    expect($typeWithoutAutoRental)->not->toBeNull();
+
+    $customer = mobileFulInboundCustomer($this->fulfilment);
+    $delivery = mobileFulInboundConfirmed(mobileFulInboundDelivery($customer, $this->warehouse, [[], ['type' => $typeWithoutAutoRental->value]]));
+    [$withRental, $withoutRental] = mobileFulInboundPallets($delivery);
+    $withoutRental->update(['rental_id' => null]);
+    $billLines = fn () => RecurringBillTransaction::where('fulfilment_customer_id', $customer->id)->count();
+
+    $assertUnreceived = function () use ($delivery, $customer, $billLines) {
+        expect($delivery->refresh()->state)->toBe(PalletDeliveryStateEnum::CONFIRMED)
+            ->and($delivery->received_at)->toBeNull()
+            ->and($delivery->recurring_bill_id)->toBeNull()
+            ->and($delivery->pallets()->where('state', '!=', PalletStateEnum::CONFIRMED)->count())->toBe(0)
+            ->and($customer->refresh()->current_recurring_bill_id)->toBeNull()
+            ->and($billLines())->toBe(0);
+    };
+
+    expect(fn () => ReceivePalletDelivery::make()->action($delivery))
+        ->toThrow(ValidationException::class, $withoutRental->reference);
+    $assertUnreceived();
+
+    mobileFulInboundShopClerk($this);
+    mobileFulInboundPost('pallet_deliveries.receive', ['warehouse' => $this->warehouse->id, 'palletDelivery' => $delivery->id])
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.pallets.0', fn (string $message) => str_contains($message, $withoutRental->reference) && !str_contains($message, $withRental->reference));
+    $assertUnreceived();
+
+    $withoutRental->update(['rental_id' => $withRental->rental_id]);
+    StoreRecurringBillTransaction::mock()->shouldReceive('action')->andThrow(new RuntimeException('billing failed'));
+    expect(fn () => ReceivePalletDelivery::make()->action($delivery->refresh()))->toThrow(RuntimeException::class, 'billing failed');
+    $assertUnreceived();
 });
 
 test('mobile start booking resets not received pallets and says so', function () {
@@ -578,4 +626,101 @@ test('mobile scan finds pallets and pallet deliveries and lets a fulfilment only
     mobileFulInboundUser($this, [], ["locations.{$this->warehouse->id}.view"]);
     $scan($pallet->reference)->assertJsonPath('data.type', 'unknown');
     $scan('pad-'.$delivery->slug)->assertJsonPath('data.type', 'unknown');
+});
+
+test('moving a pallet refuses a non stored pallet and a location of another warehouse, closed, not operational or not for pallets', function () {
+    $customer = mobileFulInboundCustomer($this->fulfilment);
+    $from     = mobileFulInboundLocation($this->warehouse);
+    $pallet   = mobileFulInboundStoredPallet($customer, $this->warehouse, $from);
+    $moveTo   = fn (Location $location, ?Pallet $target = null) => fn () => UpdatePalletLocation::make()->action($location, $target ?? $pallet);
+
+    $refusals = [
+        'another warehouse' => mobileFulInboundLocation(mobileFulInboundOtherWarehouse($this->organisation)),
+        'not operational'   => mobileFulInboundLocation($this->warehouse, ['status' => LocationStatusEnum::BROKEN]),
+        'no pallets'        => mobileFulInboundLocation($this->warehouse, ['allow_fulfilment' => false]),
+    ];
+    foreach ($refusals as $location) {
+        expect($moveTo($location))->toThrow(ValidationException::class);
+        expect($pallet->refresh()->location_id)->toBe($from->id);
+    }
+
+    $deleted = mobileFulInboundLocation($this->warehouse);
+    $deleted->delete();
+    expect(fn () => UpdatePalletLocation::make()->action($deleted->refresh(), $pallet))->toThrow(ValidationException::class);
+
+    $incident = mobileFulInboundStoredPallet($customer, $this->warehouse, null, ['state' => PalletStateEnum::LOST, 'status' => PalletStatusEnum::INCIDENT]);
+    expect($moveTo(mobileFulInboundLocation($this->warehouse), $incident))->toThrow(ValidationException::class, 'Only a stored pallet can be moved.');
+
+    $to = mobileFulInboundLocation($this->warehouse);
+    UpdatePalletLocation::make()->action($to, $pallet);
+    expect($pallet->refresh()->location_id)->toBe($to->id);
+});
+
+test('a damaged or lost pallet on no return goes back to storing, and a pallet without an incident is refused', function () {
+    $customer = mobileFulInboundCustomer($this->fulfilment);
+    $location = mobileFulInboundLocation($this->warehouse);
+    $pallet   = mobileFulInboundStoredPallet($customer, $this->warehouse, $location);
+
+    expect(fn () => SetPalletBackToStoring::make()->action($pallet, []))->toThrow(ValidationException::class, 'Only a pallet with an incident can be set as usable again.');
+
+    SetPalletAsDamaged::make()->action($pallet, ['message' => 'Forklift']);
+    expect($pallet->refresh()->status)->toBe(PalletStatusEnum::INCIDENT)
+        ->and($pallet->palletReturn)->toBeNull();
+
+    $restored = SetPalletBackToStoring::make()->action($pallet, []);
+    expect($restored->state)->toBe(PalletStateEnum::STORING)
+        ->and($restored->status)->toBe(PalletStatusEnum::STORING)
+        ->and($restored->set_as_incident_at)->toBeNull()
+        ->and($restored->incident_report)->toBeEmpty();
+
+    expect(fn () => SetPalletBackToStoring::make()->action($restored, []))->toThrow(ValidationException::class);
+});
+
+test('a repeated audit count updates the existing delta and foreign pallets or items are rejected, and a completed audit can not be completed again', function () {
+    $customer = mobileFulInboundCustomer($this->fulfilment);
+    $other    = mobileFulInboundCustomer($this->fulfilment);
+    $pallet   = mobileFulInboundStoredPallet($customer, $this->warehouse, mobileFulInboundLocation($this->warehouse));
+    $item     = mobileFulInboundStoredItem($pallet, 10);
+    $audit    = StoreStoredItemAuditFromPallet::make()->action($pallet, ['warehouse_id' => $this->warehouse->id]);
+    $count    = fn (int $quantity) => StoreStoredItemAuditDelta::make()->action($audit, ['pallet_id' => $pallet->id, 'stored_item_id' => $item->id, 'audited_quantity' => $quantity]);
+
+    $first  = $count(7);
+    $second = $count(12);
+    expect($second->id)->toBe($first->id)
+        ->and($audit->deltas()->count())->toBe(1)
+        ->and((float) $first->refresh()->audited_quantity)->toBe(12.0);
+
+    $foreignPallet = mobileFulInboundStoredPallet($other, $this->warehouse);
+    $foreignItem   = mobileFulInboundStoredItem($foreignPallet, 1);
+    expect(fn () => StoreStoredItemAuditDelta::make()->action($audit, ['pallet_id' => $foreignPallet->id, 'stored_item_id' => $item->id, 'audited_quantity' => 1]))->toThrow(ValidationException::class)
+        ->and(fn () => StoreStoredItemAuditDelta::make()->action($audit, ['pallet_id' => $pallet->id, 'stored_item_id' => $foreignItem->id, 'audited_quantity' => 1]))->toThrow(ValidationException::class)
+        ->and($audit->deltas()->count())->toBe(1);
+
+    CompleteStoredItemAudit::make()->action($audit->refresh(), []);
+    expect(fn () => CompleteStoredItemAudit::make()->action($audit->refresh(), []))->toThrow(ValidationException::class, 'This audit is already completed.');
+});
+
+test('reverting a received delivery to confirmed keeps the pallet references and takes the billing receiving added off the current recurring bill', function () {
+    $customer = mobileFulInboundCustomer($this->fulfilment);
+    $delivery = mobileFulInboundConfirmed(mobileFulInboundDelivery($customer, $this->warehouse, [[], []]));
+    $palletIds = $delivery->pallets()->pluck('id');
+    $references = $delivery->pallets()->orderBy('id')->pluck('reference')->all();
+    $billing = fn () => RecurringBillTransaction::where('fulfilment_customer_id', $customer->id)
+        ->where(fn ($query) => $query->where('pallet_delivery_id', $delivery->id)->orWhere(fn ($query) => $query->where('item_type', 'Pallet')->whereIn('item_id', $palletIds)))
+        ->count();
+
+    expect($billing())->toBe(0);
+    $delivery = ReceivePalletDelivery::make()->action($delivery);
+    expect($delivery->refresh()->state)->toBe(PalletDeliveryStateEnum::RECEIVED)
+        ->and($billing())->toBeGreaterThan(0);
+
+    $delivery = ConfirmPalletDelivery::make()->action($delivery);
+    expect($delivery->refresh()->state)->toBe(PalletDeliveryStateEnum::CONFIRMED)
+        ->and($delivery->recurring_bill_id)->toBeNull()
+        ->and($delivery->pallets()->orderBy('id')->pluck('reference')->all())->toBe($references)
+        ->and($billing())->toBe(0);
+
+    $received = ReceivePalletDelivery::make()->action($delivery);
+    $received->recurringBill->update(['status' => RecurringBillStatusEnum::FORMER]);
+    expect(fn () => ConfirmPalletDelivery::make()->action($received->refresh()))->toThrow(ValidationException::class, 'already been invoiced');
 });

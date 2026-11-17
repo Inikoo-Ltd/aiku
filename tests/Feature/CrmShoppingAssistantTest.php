@@ -4132,7 +4132,7 @@ test('a second plain search in a row goes to the model, which can explain what t
         ->and($again['reply'])->toStartWith('We have no niaouli');
 });
 
-test('products of a family kept off the website that holds products made for customers are shown only to a customer with one of their own there, and a search without the model keeps only the close matches', function () {
+test('a product made for a customer is shown only to that customer, its family siblings with no customer stay public, and a search without the model keeps only the close matches', function () {
     $suffix     = Str::lower(Str::random(5));
     $word       = 'brelm'.$suffix;
     $department = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::DEPARTMENT)->first();
@@ -4163,7 +4163,7 @@ test('products of a family kept off the website that holds products made for cus
     $toOwner    = $shown($owner, ['query' => $word.' soap']);
     $closeOnly  = $shown($prospect, ['query' => $word.' soap', 'close_only' => true]);
 
-    expect($toProspect)->toContain($public->id)->not->toContain($sibling->id)->not->toContain($theirs->id)
+    expect($toProspect)->toContain($public->id)->toContain($sibling->id)->not->toContain($theirs->id)
         ->and($toOwner)->toContain($public->id)->toContain($sibling->id)->toContain($theirs->id)
-        ->and($closeOnly)->toContain($public->id)->not->toContain($far->id)->not->toContain($sibling->id);
+        ->and($closeOnly)->toContain($public->id)->not->toContain($far->id);
 });

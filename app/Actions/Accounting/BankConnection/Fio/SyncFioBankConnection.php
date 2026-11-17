@@ -128,6 +128,7 @@ class SyncFioBankConnection
             'currency_id'             => $currencyId,
             'status'                  => BankTransactionStatusEnum::BOOKED,
             'counterparty_name'       => $this->text($this->column($movement, 10)) ?? $this->text($this->column($movement, 7)),
+            'counterparty_account'    => $counterAccount ? implode('/', array_filter([$counterAccount, $this->text($this->column($movement, 3))])) : null,
             'reference'               => $this->text($this->column($movement, 16)) ?? $this->text($this->column($movement, 27)) ?? $this->text($this->column($movement, 5)),
             'description'             => $this->text($this->column($movement, 8)),
             'booked_at'               => $bookedAt,

@@ -17,6 +17,7 @@ use App\Actions\Dispatching\DeliveryNote\ReusePicksFromCancelledDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\FulfilmentGate\GetGateCoverage;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Ordering\Order\AssignDefaultPackagingToOrderWithoutPackaging;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
@@ -303,6 +304,9 @@ class SendOrderToWarehouse extends OrgAction
         }
         UpdateOrder::make()->action($order, $modelData);
 
+        if (AssignDefaultPackagingToOrderWithoutPackaging::run($order)) {
+            $deliveryNote->refresh();
+        }
 
         if (in_array($order->salesChannel?->type, [
             SalesChannelTypeEnum::PHONE,

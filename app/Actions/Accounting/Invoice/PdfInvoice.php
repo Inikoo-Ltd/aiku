@@ -30,11 +30,21 @@ class PdfInvoice extends OrgAction
 
     public function handle(Invoice $invoice, array $options = []): Response
     {
-        $locale = Arr::pull($options, 'lang');
+        $locale        = Arr::pull($options, 'lang');
+        $exportDetails = Arr::only($options, ['incoterms', 'net_weight']);
+        $options       = Arr::except($options, ['incoterms', 'net_weight']);
 
-        if ($options) {
-            $data                = $invoice->data;
-            $data['pdf_columns'] = $options + Arr::get($data, 'pdf_columns', []);
+        if ($options || $exportDetails) {
+            $data = $invoice->data;
+            if ($options) {
+                $data['pdf_columns'] = $options + Arr::get($data, 'pdf_columns', []);
+            }
+            if ($exportDetails) {
+                $data['export_details'] = array_filter(
+                    $exportDetails + Arr::get($data, 'export_details', []),
+                    fn ($value) => $value !== null && $value !== ''
+                );
+            }
             $invoice->updateQuietly(['data' => $data]);
         }
 
@@ -60,6 +70,8 @@ class PdfInvoice extends OrgAction
             'separate_out_of_stock' => ['sometimes', 'boolean'],
             'show_discounts'        => ['sometimes', 'boolean'],
             'lang'                  => ['sometimes', 'string', 'in:en'],
+            'incoterms'             => ['sometimes', 'nullable', 'string', 'max:100'],
+            'net_weight'            => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:1000000'],
         ];
     }
 

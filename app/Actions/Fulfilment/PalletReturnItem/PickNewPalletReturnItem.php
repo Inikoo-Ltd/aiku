@@ -41,7 +41,8 @@ class PickNewPalletReturnItem extends OrgAction
                     'type'                 => 'StoredItem',
                     'pallet_id'            => $palletStoredItem->pallet_id,
                     'pallet_stored_item_id' => $palletStoredItem->id,
-                    'quantity_ordered'      => $quantityOrdered
+                    'quantity_ordered'      => $quantityOrdered,
+                    'picking_location_id'   => $palletStoredItem->pallet->location_id,
                 ]
             ]);
 

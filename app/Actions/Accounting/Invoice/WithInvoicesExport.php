@@ -414,6 +414,8 @@ trait WithInvoicesExport
 
         $deliveryAddress = $this->invoicePdfDeliveryAddress($invoice, $deliveryNote, $isCollection);
 
+        $netWeight = (float)Arr::get($invoice->data, 'export_details.net_weight');
+
         $pdf = PDF::loadView('invoices.templates.pdf.invoice', [
             'shop'                    => $invoice->shop,
             'invoice'                 => $invoice,
@@ -431,6 +433,8 @@ trait WithInvoicesExport
             'refunds'                 => $refundData,
             ...$pdfColumns,
             'discountOfferNames'      => $discountOfferNames,
+            'incoterms'               => Arr::get($invoice->data, 'export_details.incoterms'),
+            'netWeight'               => $netWeight > 0 ? rtrim(rtrim(number_format($netWeight, 3, '.', ''), '0'), '.').' kg' : null,
             'dispatch_total_skos'     => $deliveryNote?->total_skos > 0 ? $deliveryNote->total_skos : null,
             'dispatch_total_units'    => $deliveryNote?->total_units > 0 ? $deliveryNote->total_units : null,
             'dispatch_total_quantity' => $transactions->sum(fn ($t) => $t->quantity ?? 0),

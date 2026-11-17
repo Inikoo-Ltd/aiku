@@ -23,7 +23,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
 
 class MassMoveLocationOrgStocks extends OrgAction
@@ -99,8 +98,8 @@ class MassMoveLocationOrgStocks extends OrgAction
                 'not_in:'.$this->location->id
             ],
             'remove_after_move' => ['sometimes', 'nullable', 'boolean'],
-            'reason'            => [ 'required', new Enum(OrgStockMovementReasonEnum::class)],
-            'note'              => ['sometimes', 'nullable', 'string'],
+            'reason'            => ['required', Rule::in(OrgStockMovementReasonEnum::transferReason())],
+            'note'              => ['sometimes', 'nullable', 'string', 'max:1024'],
         ];
     }
 

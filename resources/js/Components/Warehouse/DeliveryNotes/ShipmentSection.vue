@@ -55,7 +55,6 @@ const props = withDefaults(defineProps<{
 		get_external_shipment_route: routeType
 		submit_route: routeType
 		fetch_route: routeType
-		delete_route: routeType
 		can_work?: boolean
 	}
 	shipper_directive?: {

@@ -20,10 +20,10 @@ class GetPickedBayShowcase
     {
         return [
             'created_at'        => $pickedBay->created_at,
-            'name'              => $pickedBay->name,
+            'name'              => $pickedBay->code,
             'status'            => $pickedBay->status,
             'slug'              => $pickedBay->slug,
-            'delivery_note'     => $pickedBay->currentDeliveryNote,
+            'delivery_note'     => $pickedBay->deliveryNotes()->pluck('reference')->implode(', ') ?: null,
         ];
     }
 }

@@ -22,6 +22,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreNotPickPickingFromWaitingWarehouse extends OrgAction
@@ -66,6 +67,12 @@ class StoreNotPickPickingFromWaitingWarehouse extends OrgAction
             data_set($modelData, 'quantity', $quantityToNotPick);
 
             $picking = StoreNotPickPicking::make()->action($deliveryNoteItem, $user, $modelData);
+
+            if (!$picking) {
+                throw ValidationException::withMessages([
+                    'message' => __('This item is being updated, try again.'),
+                ]);
+            }
 
             $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $user);
 

@@ -45,6 +45,7 @@ class CreateStoredItemAuditFromPalletInWarehouse extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, Pallet $pallet, ActionRequest $request): StoredItemAudit
     {
+        abort_if($pallet->warehouse_id !== $warehouse->id, 404);
         $this->parent = $warehouse;
         $this->pallet = $pallet;
         $this->initialisationFromWarehouse($warehouse, $request);

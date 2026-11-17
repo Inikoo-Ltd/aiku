@@ -10,7 +10,6 @@
 namespace App\Actions\Api\Group\Fulfilment;
 
 use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
-use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Inventory\Warehouse;
@@ -45,14 +44,7 @@ class MoveMobilePallet
                 return ['nothing_changed', __('The pallet is already in :location.', ['location' => $location->code])];
             }
 
-            $oldLocation = $pallet->location;
-
             UpdatePalletLocation::make()->handle($location, $pallet);
-
-            if ($oldLocation) {
-                LocationHydratePallets::dispatch($oldLocation);
-            }
-            LocationHydratePallets::dispatch($location);
 
             return ['done', __('Pallet moved to :location.', ['location' => $location->code])];
         });

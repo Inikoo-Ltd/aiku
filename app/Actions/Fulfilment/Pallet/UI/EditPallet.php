@@ -171,6 +171,7 @@ class EditPallet extends OrgAction
 
     public function inWarehouse(Organisation $organisation, Warehouse $warehouse, Pallet $pallet, ActionRequest $request): Pallet
     {
+        abort_if($pallet->warehouse_id !== $warehouse->id, 404);
         $this->parent = $warehouse;
         $this->initialisationFromWarehouse($warehouse, $request);
 

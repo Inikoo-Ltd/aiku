@@ -173,18 +173,19 @@ trait WithReceivables
     }
 
     /**
-     * @return array{invoices: int, debtors: int, balances: int}
+     * @return array{invoices: int, debtors: int, balances: int, cash_on_delivery: int}
      */
     protected function sectionCounts(): array
     {
         $owed = self::owedInvoices(DB::table('invoices'), $this->parent(), $this->readOrganisations, 'customers')
-            ->selectRaw('count(*) as invoices, count(distinct invoices.customer_id) as debtors')
+            ->selectRaw('count(*) as invoices, count(distinct invoices.customer_id) as debtors, count(*) filter (where invoices.is_cash_on_delivery and exists (select 1 from orders where orders.id = invoices.order_id and orders.dispatched_at is not null)) as cash_on_delivery')
             ->first();
 
         return [
             'invoices' => (int) $owed->invoices,
             'debtors'  => (int) $owed->debtors,
             'balances' => self::customerBalances($this->readOrganisations)->count(),
+            'cash_on_delivery' => (int) $owed->cash_on_delivery,
         ];
     }
 
@@ -197,6 +198,7 @@ trait WithReceivables
             'invoices' => [__('Unpaid invoices'), ['fal', 'fa-file-invoice-dollar']],
             'debtors'  => [__('Debtors'), ['fal', 'fa-user-clock']],
             'balances' => [__('Customer balances'), ['fal', 'fa-piggy-bank']],
+            'cash_on_delivery' => [__('Cash on delivery not paid'), ['fal', 'fa-truck']],
         ], $this->sectionCounts(), array_filter(['org' => $this->organisationSlug]));
     }
 
@@ -226,7 +228,7 @@ trait WithReceivables
         $base       = $this->isGroup() ? 'grp.financials.receivables.' : 'grp.org.accounting.receivables.';
         $parameters = $this->isGroup() ? array_filter(['org' => $this->organisationSlug]) : ['organisation' => $this->organisation->slug];
 
-        return collect(['index', 'invoices', 'debtors', 'balances'])->mapWithKeys(fn (string $section) => [$section => ['name' => $base.$section, 'parameters' => $parameters]])->all();
+        return collect(['index', ...IndexReceivables::SECTIONS])->mapWithKeys(fn (string $section) => [$section => ['name' => $base.$section, 'parameters' => $parameters]])->all();
     }
 
     public function getBreadcrumbs(array $routeParameters): array

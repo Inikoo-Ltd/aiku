@@ -59,6 +59,8 @@ class StoreNotPickPicking extends OrgAction
 
             CalculateDeliveryNoteItemTotalPicked::make()->action($picking->deliveryNoteItem);
 
+            $deliveryNoteItem->update(['locked_at' => null]);
+
             return $picking;
         } catch (Exception) {
             $deliveryNoteItem->update(['locked_at' => null]);
@@ -95,7 +97,7 @@ class StoreNotPickPicking extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if (!$request->has('quantity')) {
+        if (!$this->has('quantity')) {
             $this->set('quantity', $this->outstandingQuantity($this->deliveryNoteItem));
         }
     }

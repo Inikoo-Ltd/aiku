@@ -18,6 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property \Illuminate\Support\Carbon $booked_at
  * @property string $amount
  * @property string|null $counterparty_name
+ * @property string|null $counterparty_account
  * @property string|null $reference
  * @property BankTransactionMatchStateEnum $match_state
  * @property array<string, mixed> $match_data
@@ -34,6 +35,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $organisation_code
  * @property string|null $provider_type
  * @property list<array<string, mixed>>|null $suggested_orders
+ * @property array<string, mixed>|null $staff_hint
  */
 class BankIncomingResource extends JsonResource
 {
@@ -50,6 +52,7 @@ class BankIncomingResource extends JsonResource
             'org_amount'        => $this->currency_code === $this->org_currency_code || $this->org_amount === null ? null : (float)$this->org_amount,
             'org_currency_code' => $this->org_currency_code,
             'counterparty_name' => $this->counterparty_name,
+            'counterparty_account' => $this->counterparty_account,
             'reference'         => $this->reference,
             'reason'            => match (true) {
                 $this->payment_id !== null && isset($this->match_data['credit_customer_name']) => __('Added to the credit of :customer by :name', ['customer' => $this->match_data['credit_customer_name'], 'name' => $this->match_data['paid_by'] ?? '']),
@@ -85,6 +88,7 @@ class BankIncomingResource extends JsonResource
             ] : null,
             'owed'              => $this->match_data['owed'] ?? null,
             'suggested_orders'  => $this->suggested_orders ?? [],
+            'staff_hint'        => $this->staff_hint ? collect($this->staff_hint)->only(['customer_reference', 'customer_name', 'shop_code', 'note', 'by', 'at'])->all() : null,
             'order_reference'   => $this->order_reference,
             'order_slug'        => $this->order_slug,
             'shop_slug'         => $this->shop_slug,

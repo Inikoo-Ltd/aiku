@@ -1189,6 +1189,11 @@ test('agent catalogue leaves out dead codes: every SKO discontinued, or the SKO 
         'updated_at'          => now(),
     ]);
 
+    expect($recentOrder->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS)
+        ->and($isDead($oldCode))->toBeTrue();
+
+    DB::table('purchase_orders')->where('id', $recentOrder->id)->update(['state' => PurchaseOrderStateEnum::SUBMITTED->value]);
+
     expect($isDead($oldCode))->toBeFalse();
 
     DB::table('purchase_order_transactions')->where('id', $lineId)->update(['deleted_at' => now()]);
@@ -1241,6 +1246,154 @@ test('agent catalogue leaves out dead codes: every SKO discontinued, or the SKO 
     expect($stock->fresh()->state)->toBe(StockStateEnum::DISCONTINUED)
         ->and($newCode->fresh()->state)->toBe(OrgSupplierProductStateEnum::DISCONTINUED->value)
         ->and($newCode->supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUED);
+});
+
+test('a supplier product turns discontinuing in the group once all its SKOs are, keeps its organisation rows, and only that change is undone when a SKO is active again', function () {
+    $sync = App\Actions\SupplyChain\SupplierProduct\SyncSupplierProductsDiscontinuingFromSkos::make();
+
+    $stocks    = [];
+    $orgStocks = [];
+    foreach ([0, 1] as $index) {
+        $stocks[$index]    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        $orgStocks[$index] = App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stocks[$index], OrgStock::factory()->definition());
+        $orgStocks[$index]->update(['state' => OrgStockStateEnum::ACTIVE]);
+        App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks::run($stocks[$index]->id);
+    }
+
+    [, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $orgSupplierProduct->update(['state' => OrgSupplierProductStateEnum::ACTIVE, 'is_available' => true]);
+    $supplierProduct = $orgSupplierProduct->supplierProduct;
+    $supplierProduct->update(['state' => SupplierProductStateEnum::ACTIVE, 'is_available' => true]);
+    DB::table('stock_has_supplier_products')->where('supplier_product_id', $supplierProduct->id)->delete();
+    foreach ($stocks as $stock) {
+        StockHasSupplierProduct::create(['stock_id' => $stock->id, 'supplier_product_id' => $supplierProduct->id, 'available' => true]);
+    }
+
+    $setOrgStockState = function (int $index, OrgStockStateEnum $state) use ($orgStocks, $stocks) {
+        $orgStocks[$index]->update(['state' => $state]);
+        App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks::run($stocks[$index]->id);
+    };
+    $marker = fn () => data_get($supplierProduct->fresh()->data, App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct::FOLLOWS_DISCONTINUING_SKOS_KEY);
+
+    $setOrgStockState(0, OrgStockStateEnum::DISCONTINUING);
+
+    expect($stocks[0]->fresh()->state)->toBe(StockStateEnum::DISCONTINUING)
+        ->and($supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::ACTIVE);
+
+    $setOrgStockState(1, OrgStockStateEnum::DISCONTINUED);
+
+    expect($stocks[1]->fresh()->state)->toBe(StockStateEnum::DISCONTINUED)
+        ->and($supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUING)
+        ->and($supplierProduct->fresh()->is_available)->toBeTrue()
+        ->and($marker())->not->toBeNull()
+        ->and($orgSupplierProduct->fresh()->state)->toBe(OrgSupplierProductStateEnum::ACTIVE->value);
+
+    $orgSupplierProduct->update(['state' => OrgSupplierProductStateEnum::DISCONTINUED]);
+
+    $setOrgStockState(0, OrgStockStateEnum::ACTIVE);
+
+    expect($supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::ACTIVE)
+        ->and($marker())->toBeNull()
+        ->and($orgSupplierProduct->fresh()->state)->toBe(OrgSupplierProductStateEnum::DISCONTINUED->value);
+
+    $orgSupplierProduct->update(['state' => OrgSupplierProductStateEnum::ACTIVE]);
+
+    $order  = StorePurchaseOrder::make()->action($orgSupplierProduct->orgSupplier, [], strict: false);
+    DB::table('purchase_order_transactions')->insert([
+        'group_id'            => $order->group_id,
+        'organisation_id'     => $order->organisation_id,
+        'purchase_order_id'   => $order->id,
+        'supplier_product_id' => $supplierProduct->id,
+        'org_stock_id'        => $orgStocks[0]->id,
+        'state'               => PurchaseOrderTransactionStateEnum::SUBMITTED->value,
+        'delivery_state'      => App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS->value,
+        'quantity_ordered'    => 1,
+        'data'                => '{}',
+        'created_at'          => now(),
+        'updated_at'          => now(),
+    ]);
+    DB::table('purchase_orders')->where('id', $order->id)->update(['state' => PurchaseOrderStateEnum::SUBMITTED->value]);
+
+    $setOrgStockState(0, OrgStockStateEnum::DISCONTINUING);
+
+    expect($supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUING)
+        ->and($marker())->not->toBeNull()
+        ->and($orgSupplierProduct->fresh()->state)->toBe(OrgSupplierProductStateEnum::ACTIVE->value);
+
+    App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct::make()->action($supplierProduct->fresh(), ['state' => SupplierProductStateEnum::ACTIVE->value]);
+    DB::table('supplier_products')->where('id', $supplierProduct->id)->update(['data' => '{}']);
+    $orgSupplierProduct->update(['state' => OrgSupplierProductStateEnum::ACTIVE]);
+
+    expect($sync->toDiscontinuing()->where('sp.id', $supplierProduct->id)->exists())->toBeTrue()
+        ->and(collect($sync->preview())->firstWhere('supplier', $supplierProduct->supplier->code)['to_discontinuing'])->toBeGreaterThanOrEqual(1);
+
+    $sync->handle();
+
+    expect($supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUING)
+        ->and($marker())->not->toBeNull();
+
+    App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct::make()->action($supplierProduct->fresh(), ['state' => SupplierProductStateEnum::DISCONTINUED->value]);
+
+    expect($marker())->toBeNull()
+        ->and($sync->toRestore()->where('sp.id', $supplierProduct->id)->exists())->toBeFalse();
+
+    App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct::make()->action($supplierProduct->fresh(), ['state' => SupplierProductStateEnum::ACTIVE->value]);
+    App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct::make()->action($supplierProduct->fresh(), ['state' => SupplierProductStateEnum::DISCONTINUING->value]);
+
+    expect($marker())->toBeNull();
+
+    $setOrgStockState(0, OrgStockStateEnum::ACTIVE);
+
+    expect($supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUING)
+        ->and($sync->toRestore()->where('sp.id', $supplierProduct->id)->exists())->toBeFalse();
+
+    DB::table('supplier_products')->where('id', $supplierProduct->id)->update(['state' => SupplierProductStateEnum::ACTIVE->value]);
+    $orgSupplierProduct->update(['state' => OrgSupplierProductStateEnum::ACTIVE]);
+    $setOrgStockState(0, OrgStockStateEnum::DISCONTINUING);
+
+    expect($supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUING)
+        ->and($marker())->not->toBeNull();
+
+    App\Actions\SupplyChain\SupplierProduct\BulkUpdateSupplierProductsState::make()->handle($this->group, ['supplier_products' => [$supplierProduct->id], 'state' => SupplierProductStateEnum::DISCONTINUING->value]);
+
+    expect($marker())->toBeNull()
+        ->and($supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUING)
+        ->and($orgSupplierProduct->fresh()->state)->toBe(OrgSupplierProductStateEnum::DISCONTINUING->value);
+
+    DB::table('supplier_products')->where('id', $supplierProduct->id)->update(['state' => SupplierProductStateEnum::ACTIVE->value]);
+    $orgSupplierProduct->update(['state' => OrgSupplierProductStateEnum::ACTIVE]);
+    $sync->handle();
+
+    expect($marker())->not->toBeNull();
+
+    App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct::make()->action($supplierProduct->fresh(), ['state' => SupplierProductStateEnum::ACTIVE->value]);
+    $sync->handle();
+
+    $keptActive = fn () => data_get($supplierProduct->fresh()->data, App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct::KEPT_ACTIVE_BY_HAND_KEY);
+
+    expect($supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::ACTIVE)
+        ->and($keptActive())->not->toBeNull()
+        ->and($sync->toDiscontinuing()->where('sp.id', $supplierProduct->id)->exists())->toBeFalse();
+
+    App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct::make()->action($supplierProduct->fresh(), ['state' => SupplierProductStateEnum::DISCONTINUED->value]);
+
+    expect($keptActive())->toBeNull();
+
+    DB::table('supplier_products')->where('id', $supplierProduct->id)->update(['state' => SupplierProductStateEnum::ACTIVE->value, 'data' => '{}']);
+    $orgSupplierProduct->update(['state' => OrgSupplierProductStateEnum::ACTIVE]);
+    $sync->handle();
+
+    expect($supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUING);
+
+    $newStock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $newOrgStock = App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $newStock, OrgStock::factory()->definition());
+    $newOrgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
+    App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks::run($newStock->id);
+
+    App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock::make()->action($newOrgStock, $orgSupplierProduct->fresh());
+
+    expect($supplierProduct->fresh()->state)->toBe(SupplierProductStateEnum::ACTIVE)
+        ->and($marker())->toBeNull();
 });
 
 test('agent stock groups read the lead time the ordering card reads and are never at risk past the overstock edge', function () {

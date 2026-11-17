@@ -19,7 +19,9 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreNotPickPickingFromWaitingCrm extends OrgAction
@@ -30,32 +32,44 @@ class StoreNotPickPickingFromWaitingCrm extends OrgAction
 
     private DeliveryNoteItem $deliveryNoteItem;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): ?Picking
     {
         data_set($modelData, 'picker_user_id', $user->id);
 
-        $quantityStillWaitingForCrm = (float)$deliveryNoteItem->quantity_waiting_crm;
-        $quantityToNotPick          = min((float)Arr::get($modelData, 'quantity', 0), $quantityStillWaitingForCrm);
+        return DB::transaction(function () use ($deliveryNoteItem, $modelData, $user) {
+            $quantityStillWaitingForCrm = (float)$deliveryNoteItem->quantity_waiting_crm;
+            $quantityToNotPick          = min((float)Arr::get($modelData, 'quantity', 0), $quantityStillWaitingForCrm);
 
-        if ($quantityToNotPick <= 0) {
-            return null;
-        }
+            if ($quantityToNotPick <= 0) {
+                return null;
+            }
 
-        $newQuantityWaitingCrm = round($quantityStillWaitingForCrm - $quantityToNotPick, 6);
+            $newQuantityWaitingCrm = round($quantityStillWaitingForCrm - $quantityToNotPick, 6);
 
-        $deliveryNoteItem->update([
-            'quantity_waiting_crm' => $newQuantityWaitingCrm,
-        ]);
-        DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
+            $deliveryNoteItem->update([
+                'quantity_waiting_crm' => $newQuantityWaitingCrm,
+            ]);
+            DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
-        data_set($modelData, 'quantity', $quantityToNotPick);
+            data_set($modelData, 'quantity', $quantityToNotPick);
 
-        $picking = StoreNotPickPicking::make()->action($deliveryNoteItem, $user, $modelData);
+            $picking = StoreNotPickPicking::make()->action($deliveryNoteItem, $user, $modelData);
 
-        $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $user);
+            if (!$picking) {
+                throw ValidationException::withMessages([
+                    'message' => __('This item is being updated, try again.'),
+                ]);
+            }
 
-        AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
-        return $picking;
+            $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $user);
+
+            AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
+
+            return $picking;
+        });
     }
 
     public function rules(): array

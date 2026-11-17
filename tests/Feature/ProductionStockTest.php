@@ -1431,7 +1431,8 @@ test('the ai assistant puts SKOs on locations and sets up the factory location a
     expect(\App\Models\Inventory\LocationOrgStock::where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->exists())->toBeFalse();
 
     $locations(['pairs' => $pairs, 'confirm' => true, 'request_text' => 'yes put it there'])->assertOk()->assertSee($orgStock->code.' @ MCPL'.$suffix);
-    expect(\App\Models\Inventory\LocationOrgStock::where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->value('quantity'))->toEqual(0);
+    expect(\App\Models\Inventory\LocationOrgStock::where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->value('quantity'))->toEqual(0)
+        ->and(\App\Models\Inventory\OrgStockMovement::where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->value('user_id'))->toBe($user->id);
     $locations(['pairs' => $pairs])->assertOk()->assertSee('already_there');
     $locations(['skos' => [$orgStock->code]])->assertOk()->assertSee('MCPL'.$suffix);
 

@@ -28,13 +28,14 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 /**
  * The lists behind Receivables: the unpaid invoices (by age, owed by customers, by our own companies or by marketplaces, or legacy from Aurora), the debtors
- * (one row per customer) and the customer balances (credit we hold for them, or below zero).
+ * (one row per customer), the customer balances (credit we hold for them, or below zero) and the cash on delivery
+ * invoices still unpaid, with the courier and tracking of their parcels, oldest dispatch first, for staff to chase.
  */
 class IndexReceivables extends OrgAction
 {
     use WithReceivables;
 
-    public const array SECTIONS = ['invoices', 'debtors', 'balances'];
+    public const array SECTIONS = ['invoices', 'debtors', 'balances', 'cash_on_delivery'];
 
     private string $section = 'invoices';
 
@@ -44,10 +45,12 @@ class IndexReceivables extends OrgAction
 
     private ?string $side = null;
 
+    private ?string $courier = null;
+
     /**
      * @param Collection<int, Organisation> $organisations
      */
-    public function handle(Organisation|Group $parent, Collection $organisations, string $section = 'invoices', ?string $age = null, string $owedBy = 'customers', ?string $side = null, ?Carbon $today = null, $prefix = null): LengthAwarePaginator
+    public function handle(Organisation|Group $parent, Collection $organisations, string $section = 'invoices', ?string $age = null, string $owedBy = 'customers', ?string $side = null, ?Carbon $today = null, $prefix = null, ?string $courier = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -90,10 +93,17 @@ class IndexReceivables extends OrgAction
                 ->defaultSort('-balance')
                 ->allowedSorts(['balance', 'amount', 'customer_name'])
                 ->allowedFilters([$customerSearch()]),
+            'cash_on_delivery' => QueryBuilder::for($this->cashOnDelivery($parent, $organisations, $courier))
+                ->leftJoinLateral($this->parcels(), 'parcels')
+                ->select(['invoices.id', 'invoices.reference', 'invoices.slug as invoice_slug', 'invoices.total_amount', 'orders.reference as order_reference', 'orders.slug as order_slug', 'orders.dispatched_at', 'parcels.couriers', 'parcels.tracking', ...$customerSelect])
+                ->selectRaw(self::OWED_SQL.' as native, '.self::convertedSql($parent).' as amount, '.self::daysOutstandingSql($today ?? now()).' as days_outstanding')
+                ->defaultSort('-days_outstanding', 'reference')
+                ->allowedSorts(['days_outstanding', 'native', 'amount', 'reference'])
+                ->allowedFilters([$customerSearch(['invoices.reference', 'orders.reference'])]),
             default    => QueryBuilder::for($this->invoices($parent, $organisations, $age, $owedBy, $today ?? now()))
                 ->select(['invoices.id', 'invoices.reference', 'invoices.slug as invoice_slug', 'invoices.date', 'invoices.total_amount', 'invoices.is_cash_on_delivery', 'invoices.is_pastpay', ...$customerSelect])
                 ->selectRaw(self::OWED_SQL.' as native, '.self::convertedSql($parent).' as amount, '.self::daysOverdueSql($today ?? now()).' as days_overdue')
-                ->defaultSort('-days_overdue')
+                ->defaultSort('-days_overdue', 'reference')
                 ->allowedSorts(['date', 'days_overdue', 'native', 'amount', 'total_amount', 'reference'])
                 ->allowedFilters([$customerSearch(['invoices.reference'])]),
         };
@@ -111,6 +121,61 @@ class IndexReceivables extends OrgAction
     {
         return self::owedInvoices(Invoice::query(), $parent, $organisations, $owedBy)
             ->when($age, fn ($query) => $query->whereRaw('('.self::ageSql($today).') = ?', [$age]));
+    }
+
+    /**
+     * Unpaid cash on delivery invoices of dispatched orders; with a courier, only those with a parcel sent with it.
+     *
+     * @param Collection<int, Organisation> $organisations
+     */
+    private function cashOnDelivery(Organisation|Group $parent, Collection $organisations, ?string $courier = null): \Illuminate\Database\Eloquent\Builder
+    {
+        return self::owedInvoices(Invoice::query(), $parent, $organisations, 'customers')
+            ->join('orders', 'orders.id', 'invoices.order_id')
+            ->whereNotNull('orders.dispatched_at')
+            ->where('invoices.is_cash_on_delivery', true)
+            ->when($courier, fn ($query) => $query->whereExists($this->parcelsQuery()->join('shippers', 'shippers.id', 'shipments.shipper_id')->where('shippers.name', $courier)));
+    }
+
+    private function parcelsQuery(): \Illuminate\Database\Query\Builder
+    {
+        return DB::table('delivery_note_order')
+            ->join('model_has_shipments', fn ($join) => $join->on('model_has_shipments.model_id', 'delivery_note_order.delivery_note_id')->where('model_has_shipments.model_type', 'DeliveryNote'))
+            ->join('shipments', 'shipments.id', 'model_has_shipments.shipment_id')
+            ->whereColumn('delivery_note_order.order_id', 'invoices.order_id');
+    }
+
+    private function parcels(): \Illuminate\Database\Query\Builder
+    {
+        return $this->parcelsQuery()
+            ->leftJoin('shippers', 'shippers.id', 'shipments.shipper_id')
+            ->selectRaw("string_agg(distinct shippers.name, ', ') as couriers, string_agg(distinct shipments.tracking, ', ') as tracking");
+    }
+
+    public static function daysOutstandingSql(Carbon $today): string
+    {
+        return "(date '{$today->toDateString()}' - orders.dispatched_at::date)";
+    }
+
+    /**
+     * The couriers of the unpaid cash on delivery parcels, with how many invoices each.
+     *
+     * @return array<int, array{value: string, label: string, count: int}>
+     */
+    private function couriers(): array
+    {
+        return $this->cashOnDelivery($this->parent(), $this->readOrganisations)
+            ->join('delivery_note_order', 'delivery_note_order.order_id', 'orders.id')
+            ->join('model_has_shipments', fn ($join) => $join->on('model_has_shipments.model_id', 'delivery_note_order.delivery_note_id')->where('model_has_shipments.model_type', 'DeliveryNote'))
+            ->join('shipments', 'shipments.id', 'model_has_shipments.shipment_id')
+            ->join('shippers', 'shippers.id', 'shipments.shipper_id')
+            ->selectRaw('shippers.name, count(distinct invoices.id) as count')
+            ->groupBy('shippers.name')
+            ->orderByDesc('count')
+            ->toBase()
+            ->get()
+            ->map(fn ($row) => ['value' => $row->name, 'label' => $row->name, 'count' => (int) $row->count])
+            ->all();
     }
 
     /**
@@ -139,8 +204,9 @@ class IndexReceivables extends OrgAction
         $this->age          = $this->section === 'invoices' && in_array($request->query('age'), self::AGES, true) ? $request->query('age') : null;
         $this->owedBy       = $this->section === 'invoices' && in_array($request->query('owed_by'), self::OWED_BY, true) ? $request->query('owed_by') : 'customers';
         $this->side         = $this->section === 'balances' && in_array($request->query('side'), ['credit', 'debt'], true) ? $request->query('side') : null;
+        $this->courier      = $this->section === 'cash_on_delivery' && is_string($request->query('courier')) ? $request->query('courier') : null;
 
-        return $this->handle($parent, $this->readOrganisations, $this->section, $this->age, $this->owedBy, $this->side);
+        return $this->handle($parent, $this->readOrganisations, $this->section, $this->age, $this->owedBy, $this->side, courier: $this->courier);
     }
 
     private function sectionTitle(): string
@@ -148,6 +214,7 @@ class IndexReceivables extends OrgAction
         return match ($this->section) {
             'debtors'  => __('Debtors'),
             'balances' => __('Customer balances'),
+            'cash_on_delivery' => __('Cash on delivery not paid'),
             default    => __('Unpaid invoices'),
         };
     }
@@ -165,6 +232,8 @@ class IndexReceivables extends OrgAction
             'balances' => self::customerBalances($this->readOrganisations)
                 ->when($this->side, fn ($query) => $query->where('customers.balance', $this->side === 'credit' ? '>' : '<', 0))
                 ->selectRaw('count(*) as count, sum('.self::convertedBalanceSql($parent).') as total')->toBase()->first(),
+            'cash_on_delivery' => $this->cashOnDelivery($parent, $this->readOrganisations, $this->courier)
+                ->selectRaw('count(*) as count, sum('.self::convertedSql($parent).') as total')->toBase()->first(),
             default    => $this->invoices($parent, $this->readOrganisations, $this->age, $this->owedBy, now())
                 ->selectRaw('count(*) as count, sum('.self::convertedSql($parent).') as total')->toBase()->first(),
         };
@@ -193,6 +262,8 @@ class IndexReceivables extends OrgAction
                 'age'           => $this->age,
                 'owedBy'        => $this->owedBy,
                 'side'          => $this->side,
+                'courier'       => $this->courier,
+                'couriers'      => $this->section === 'cash_on_delivery' ? $this->couriers() : [],
                 'summary'       => $this->summary(),
                 'data'          => ReceivablesResource::collection($rows),
             ]
@@ -208,10 +279,16 @@ class IndexReceivables extends OrgAction
 
             $table->withGlobalSearch()->withEmptyState(match ($this->section) {
                 'debtors'  => ['title' => __('No customer owes us'), 'description' => __('Every invoice of a customer is paid.'), 'count' => 0],
+                'cash_on_delivery' => ['title' => __('No cash on delivery left to collect'), 'description' => __('Every dispatched cash on delivery order is paid under these filters.'), 'count' => 0],
                 'balances' => ['title' => __('No customer balances'), 'description' => __('No customer holds credit with us or is below zero under these filters.'), 'count' => 0],
                 default    => ['title' => __('No unpaid invoices'), 'description' => __('No invoice is left to pay under these filters.'), 'count' => 0],
             });
 
+            if ($this->section === 'cash_on_delivery') {
+                $table->column(key: 'order_reference', label: __('Order'));
+                $table->column(key: 'dispatched_at', label: __('Dispatched'));
+                $table->column(key: 'days_outstanding', label: __('Days outstanding'), sortable: true, align: 'right');
+            }
             if ($this->section === 'invoices') {
                 $table->column(key: 'reference', label: __('Invoice'), sortable: true);
                 $table->column(key: 'date', label: __('Date'), sortable: true);
@@ -220,8 +297,13 @@ class IndexReceivables extends OrgAction
                 $table->column(key: 'organisation_code', label: __('Organisation'));
             }
             $table->column(key: 'shop_code', label: __('Shop'));
-            $table->column(key: 'customer_name', label: __('Customer'), sortable: $this->section !== 'invoices');
-            if ($this->section === 'invoices') {
+            $table->column(key: 'customer_name', label: __('Customer'), sortable: !in_array($this->section, ['invoices', 'cash_on_delivery'], true));
+            if ($this->section === 'cash_on_delivery') {
+                $table->column(key: 'couriers', label: __('Courier'));
+                $table->column(key: 'tracking', label: __('Tracking'));
+                $table->column(key: 'reference', label: __('Invoice'), sortable: true);
+                $table->column(key: 'amount', label: __('Cash on delivery'), sortable: true, align: 'right');
+            } elseif ($this->section === 'invoices') {
                 $table->column(key: 'days_overdue', label: __('Overdue'), sortable: true, align: 'right');
                 $table->column(key: 'total_amount', label: __('Total'), sortable: true, align: 'right');
                 $table->column(key: 'amount', label: __('Owed'), sortable: true, align: 'right');

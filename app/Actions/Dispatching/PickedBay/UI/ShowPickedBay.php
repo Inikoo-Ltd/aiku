@@ -59,7 +59,7 @@ class ShowPickedBay extends OrgAction
                         ],
                     'title'   => $pickedBay->code,
                     'model'   => __('Picked bay'),
-                    'actions' => [
+                    'actions' => $this->canEdit ? [
                         [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -83,7 +83,7 @@ class ShowPickedBay extends OrgAction
                                 ],
                             ],
                         ],
-                    ],
+                    ] : [],
                 ],
 
                 'tabs' => [

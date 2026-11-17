@@ -11,6 +11,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
@@ -20,6 +21,7 @@ use App\Enums\Dispatching\DeliveryNoteLeaflet\DeliveryNoteLeafletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
+use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Enums\Catalogue\Leaflet\LeafletTypeEnum;
 use App\Models\Dispatching\Shipment;
@@ -27,6 +29,7 @@ use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\Inventory\PickingSession;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 require_once __DIR__.'/../Support/MobileFulfilmentOutboundHelpers.php';
 
@@ -723,4 +726,57 @@ test('mobile audits the stored items of a pallet: start or resume, count, add, a
     $pallet->update(['status' => PalletStatusEnum::RETURNING]);
     mfoPost('pallets.audit', $palletRoute)->assertUnprocessable()->assertJsonPath('errors.state.0', 'Only a pallet in storage can be audited.');
     mfoPost('pallets.audit', ['warehouse' => $this->warehouse->id, 'pallet' => $foreignPallet->id])->assertNotFound();
+});
+
+test('a scan never picks a line waiting for customer service, and says why without touching the picked quantity', function () {
+    $storedItem   = mfoStoredItem($this->customer);
+    $stock        = mfoStock(mfoPallet($this->customer, $this->warehouse, mfoLocation($this->warehouse)), $storedItem, 8);
+    $palletReturn = mfoItemsReturn($this->customer, $this->warehouse, [[$stock, 3]]);
+    $worker       = mfoWorker($this);
+    mfoPost('pallet_returns.start_picking', mfoReturnRoute($this->warehouse, $palletReturn))->assertOk();
+    $line = PalletReturnItem::where('pallet_return_id', $palletReturn->id)->sole();
+    $line->update(['has_waiting_crm' => true]);
+
+    $outcome = PickPalletReturnItemByScan::make()->handle($palletReturn->refresh(), $worker, ['barcode' => $storedItem->reference]);
+
+    expect($outcome['status'])->toBe('not_found')
+        ->and($outcome['message'])->toBe(PickPalletReturnItemByScan::make()->blockedReason($line->refresh()))
+        ->and($outcome['message'])->toContain('waiting for customer service')
+        ->and((float) $line->refresh()->quantity_picked)->toBe(0.0);
+
+    $line->update(['has_waiting_crm' => false]);
+    expect(PickPalletReturnItemByScan::make()->blockedReason($line->refresh()))->toBeNull()
+        ->and(PickPalletReturnItemByScan::make()->handle($palletReturn->refresh(), $worker, ['barcode' => $storedItem->reference])['status'])->toBe('picked')
+        ->and((float) $line->refresh()->quantity_picked)->toBe(1.0);
+});
+
+test('undoing a stored item pick puts a returned pallet stored item with stock back to active', function () {
+    $stock        = mfoStock(mfoPallet($this->customer, $this->warehouse, mfoLocation($this->warehouse)), mfoStoredItem($this->customer), 8);
+    $palletReturn = mfoItemsReturn($this->customer, $this->warehouse, [[$stock, 3]]);
+    mfoWorker($this);
+    mfoPost('pallet_returns.start_picking', mfoReturnRoute($this->warehouse, $palletReturn))->assertOk();
+    $route = mfoReturnRoute($this->warehouse, $palletReturn, ['palletReturnItem' => PalletReturnItem::where('pallet_return_id', $palletReturn->id)->sole()->id]);
+
+    mfoPost('pallet_returns.lines.pick', $route, ['quantity' => 3, 'client_request_id' => (string) Str::uuid()])->assertOk();
+    $stock->refresh()->update(['state' => PalletStoredItemStateEnum::RETURNED]);
+
+    mfoPost('pallet_returns.lines.undo', $route)->assertOk();
+    expect($stock->refresh()->state)->toBe(PalletStoredItemStateEnum::ACTIVE)
+        ->and((float) $stock->quantity)->toBe(8.0);
+});
+
+test('a shipment can only be detached from the pallet return it belongs to', function () {
+    $shipper      = StoreShipper::make()->action($this->organisation, ['code' => 'MFD'.Str::upper(Str::random(4)), 'name' => 'Detach', 'trade_as' => 'detach']);
+    $palletReturn = mfoPalletReturn($this->customer, $this->warehouse, [mfoPallet($this->customer, $this->warehouse)]);
+    $otherReturn  = mfoPalletReturn($this->customer, $this->warehouse, [mfoPallet($this->customer, $this->warehouse)]);
+    $own          = StoreShipment::run($palletReturn, $shipper, ['tracking' => 'DET1']);
+    $foreign      = StoreShipment::run($otherReturn, $shipper, ['tracking' => 'DET2']);
+    $detach       = fn (Shipment $shipment) => fn () => DetachShipmentFromPalletReturn::make()->handle($palletReturn->refresh(), $shipment);
+
+    expect($detach($foreign))->toThrow(ValidationException::class, 'This shipment does not belong to this return.')
+        ->and(Shipment::find($foreign->id))->not->toBeNull();
+
+    DetachShipmentFromPalletReturn::make()->handle($palletReturn->refresh(), $own);
+    expect(Shipment::find($own->id))->toBeNull()
+        ->and(Shipment::find($foreign->id))->not->toBeNull();
 });

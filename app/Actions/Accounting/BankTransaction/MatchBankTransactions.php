@@ -1012,14 +1012,14 @@ class MatchBankTransactions
 
     /**
      * Czech and Slovak payers (and DPD CZ cash on delivery) put the order number without its shop prefix in the
-     * variable symbol (VS 20921 for CZ20921), which Fio keeps in column 5. It names the orders of this organisation
+     * variable symbol (VS 20921 for CZ20921), which Fio keeps in column 5 and Tatra in variableSymbol. It names the orders of this organisation
      * in the line's currency whose number is a prefix and those digits.
      *
      * @return list<string>
      */
     public function variableSymbolOrderReferences(BankTransaction $bankTransaction): array
     {
-        $variableSymbol = (string)($bankTransaction->data['movement']['column5']['value'] ?? '');
+        $variableSymbol = (string)($bankTransaction->data['movement']['column5']['value'] ?? $bankTransaction->data['transaction']['variableSymbol'] ?? '');
         if (!preg_match('/^[0-9]{3,8}$/', $variableSymbol)) {
             return [];
         }

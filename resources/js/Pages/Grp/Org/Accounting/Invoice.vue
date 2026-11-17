@@ -172,6 +172,10 @@ const props = defineProps<{
         value: string
         is_checked: boolean
     }[]
+    download_pdf_export_details?: {
+        incoterms: string | null
+        net_weight: number | null
+    }
     is_external?: boolean
 }>();
 
@@ -231,6 +235,10 @@ const generateShowOrderRoute = () => {
 
 // Section: Download invoice
 const isOpenModalProforma = ref(false)
+const pdfExportDetails = ref({
+    incoterms: props.download_pdf_export_details?.incoterms ?? null,
+    net_weight: props.download_pdf_export_details?.net_weight != null ? Number(props.download_pdf_export_details.net_weight) : null,
+})
 const selectedRouteToDownloadInvoice = ref('')
 
 // Section: Edit invoice date
@@ -370,6 +378,7 @@ const submitEditAddress = async () => {
                     <ListColumnToDownload
                         :routeDownload="selectedRouteToDownloadInvoice"
                         :listColumn="download_pdf_column"
+                         v-model:exportDetails="pdfExportDetails"
                     />
                 </Modal>
             </div>

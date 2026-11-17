@@ -91,12 +91,6 @@ class GetMiniDeliveryNoteShipments extends OrgAction
                             'organisation' => $deliveryNote->organisation->slug,
                         ]
                     ],
-                    'delete_route' => [
-                        'name'       => 'grp.models.delivery_note.shipment.detach',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ],
                 ],
                 'shipper_directive' => $this->getShipperDirective($deliveryNote),
             ]

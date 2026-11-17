@@ -235,6 +235,8 @@ class IndexOrgStocks extends OrgAction
             $this->bucket = $bucket;
         }
 
+        $onlyWarehouse ??= isset($this->warehouse) ? $this->warehouse : null;
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('org_stocks.code', $value)
@@ -381,6 +383,8 @@ class IndexOrgStocks extends OrgAction
                 $join->on('warehouses.organisation_id', 'organisations.id');
                 if ($onlyWarehouse) {
                     $join->where('warehouses.id', $onlyWarehouse->id);
+                } else {
+                    $join->whereRaw('warehouses.id = (select min(id) from warehouses as first_warehouse where first_warehouse.organisation_id = organisations.id and first_warehouse.deleted_at is null)');
                 }
             })
             ->leftJoin('org_stock_stats', 'org_stock_stats.org_stock_id', 'org_stocks.id')

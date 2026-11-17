@@ -70,18 +70,22 @@ class ShowWarehousePalletReturn extends OrgAction
         $subNavigation = [];
 
 
+        $warehouseActionKeys = [
+            'confirm',
+            'start picking',
+            'finish-picking',
+            'Dispatching',
+            'print-documents',
+            'print-shipping-label'
+        ];
+        if ($request->user()->authTo("fulfilment-shop.$palletReturn->fulfilment_id.edit")) {
+            $warehouseActionKeys[] = 'revert-to-picking';
+        }
+
         $actions = array_values(
             Arr::where(
-                GetPalletReturnActions::run($palletReturn, true, false),
-                fn (array $action) => in_array($action['key'] ?? null, [
-                    'confirm',
-                    'start picking',
-                    'finish-picking',
-                    'Dispatching',
-                    'revert-to-picking',
-                    'print-documents',
-                    'print-shipping-label'
-                ], true)
+                GetPalletReturnActions::run($palletReturn, $this->canEdit, false),
+                fn (array $action) => in_array($action['key'] ?? null, $warehouseActionKeys, true)
             )
         );
 

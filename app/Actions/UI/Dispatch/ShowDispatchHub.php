@@ -260,7 +260,9 @@ class ShowDispatchHub extends OrgAction
 
         $base = self::currentWorkDeliveryNotes($warehouse, $role)
             ->leftJoin('users', 'users.id', '=', "delivery_notes.$userColumn")
-            ->leftJoin('trolleys', 'trolleys.current_delivery_note_id', '=', 'delivery_notes.id')
+            ->leftJoin('trolleys', fn ($join) => $join
+                ->on('trolleys.current_delivery_note_id', '=', 'delivery_notes.id')
+                ->orWhereRaw('trolleys.picking_session_id IN (SELECT picking_session_id FROM picking_session_has_delivery_notes WHERE picking_session_has_delivery_notes.delivery_note_id = delivery_notes.id)'))
             ->groupBy("delivery_notes.$userColumn", 'users.contact_name')
             ->select([
                 "delivery_notes.$userColumn as user_id",
