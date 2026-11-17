@@ -338,3 +338,14 @@ object GoodsOutResponses {
 
     private inline fun <reified T> decode(body: String): T? = runCatching { json.decodeFromString<T>(body) }.getOrNull()
 }
+
+internal val DeliveryNoteWrite.waitsForPlatform: Boolean
+    get() = when (this) {
+        DeliveryNoteWrite.SetAsPacked,
+        DeliveryNoteWrite.GetExternalShipment,
+        DeliveryNoteWrite.FinaliseAndDispatch,
+        DeliveryNoteWrite.Finalise,
+        DeliveryNoteWrite.Dispatch,
+        -> true
+        else -> false
+    }
