@@ -257,6 +257,14 @@ const assignError = ref<string | null>(null)
 
 type Run = { quantity: number, batch_code: string, expiry_date: string }
 
+const isoToDate = (iso?: string | null): Date | null => {
+    if (!iso) return null
+    const [year, month, day] = iso.split("-").map(Number)
+    return new Date(year, month - 1, day)
+}
+const dateToIso = (date: Date | null | undefined): string => date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : ""
+const expiryPickerPt = { root: { class: "w-full min-w-0" }, pcInputText: { root: { class: "!w-full !min-w-0 !py-0.5 !text-xs" } } }
+
 const extraRuns = reactive<Record<number, Run[]>>({})
 
 function assignToMe(items: BoardItem[], runs: Record<number, Run[]> = {}) {
@@ -719,18 +727,19 @@ function jobOrderHref(item: { job_order_slug: string }) {
                                 </label>
                                 <label class="flex min-w-0 flex-col gap-0.5">
                                     <span class="text-gray-500">{{ ctrans("Expiry date") }}</span>
-                                    <input
-                                        v-model="pendingExpiryDates[item.id]"
-                                        type="date"
+                                    <DatePicker
+                                        :modelValue="isoToDate(pendingExpiryDates[item.id])"
+                                        dateFormat="dd/mm/yy"
                                         :required="labelsNeed(item, 'expiry_date')"
-                                        class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
+                                        :pt="expiryPickerPt"
+                                        @update:modelValue="date => pendingExpiryDates[item.id] = dateToIso(date as Date | null)" />
                                 </label>
                             </div>
                             <template v-if="simpleBoard">
                                 <div v-for="(run, runIndex) in extraRuns[item.id] ?? []" :key="runIndex" class="grid grid-cols-[4rem_1fr_1fr_auto] items-center gap-1.5">
                                     <input v-model.number="run.quantity" type="number" min="1" step="1" required :aria-label="ctrans('SKOs')" class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
                                     <input v-model="run.batch_code" type="text" maxlength="64" :required="labelsNeed(item, 'batch_code')" :aria-label="ctrans('Batch code')" :placeholder="labelsNeed(item, 'batch_code') ? ctrans('Printed on the label') : ctrans('From job order')" class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
-                                    <input v-model="run.expiry_date" type="date" :required="labelsNeed(item, 'expiry_date')" :aria-label="ctrans('Expiry date')" class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
+                                    <DatePicker :modelValue="isoToDate(run.expiry_date)" dateFormat="dd/mm/yy" :required="labelsNeed(item, 'expiry_date')" :aria-label="ctrans('Expiry date')" :pt="expiryPickerPt" @update:modelValue="date => run.expiry_date = dateToIso(date as Date | null)" />
                                     <button type="button" class="px-1 text-gray-400 hover:text-red-600" :title="ctrans('Remove this batch')" @click="extraRuns[item.id].splice(runIndex, 1)">×</button>
                                 </div>
                                 <div class="flex items-center gap-2">
