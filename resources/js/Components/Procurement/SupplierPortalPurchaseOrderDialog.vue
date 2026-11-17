@@ -14,6 +14,7 @@ import Select from "primevue/select"
 import FileUpload from "primevue/fileupload"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import PingIcon from "@/Components/Utils/PingIcon.vue"
 import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -176,6 +177,15 @@ const fromIsoDate = (iso: string): Date => {
 	return new Date(year, month - 1, dayOfMonth)
 }
 const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+
+const isProductionNextStep = computed(() => {
+	const order = detail.value
+	if (!order || !order.production.editable || order.production.started_at) {
+		return false
+	}
+
+	return order.deposit.not_needed || isStageComplete("deposit_paid")
+})
 
 const isEditingProduction = ref(false)
 const productionStartedAt = ref<Date | null>(null)
@@ -467,11 +477,14 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 										<template #icon><FontAwesomeIcon icon="fal fa-lock" class="text-gray-400" fixed-width aria-hidden="true" /></template>
 									</Button>
 								</span>
-								<Button v-else type="tertiary" size="xs" full :label="detail.production.started_at ? ctrans('Change production dates') : ctrans('Set production dates')" @click="openProductionEditor">
-									<template #icon>
-										<FontAwesomeIcon :icon="detail.production.started_at ? 'fal fa-pencil' : 'fal fa-check'" :class="detail.production.started_at ? 'text-gray-500' : 'text-green-600'" fixed-width aria-hidden="true" />
-									</template>
-								</Button>
+								<span v-else class="relative block">
+									<Button type="tertiary" size="xs" full :label="detail.production.started_at ? ctrans('Change production dates') : ctrans('Set production dates')" @click="openProductionEditor">
+										<template #icon>
+											<FontAwesomeIcon :icon="detail.production.started_at ? 'fal fa-pencil' : 'fal fa-check'" :class="detail.production.started_at ? 'text-gray-500' : 'text-green-600'" fixed-width aria-hidden="true" />
+										</template>
+									</Button>
+									<PingIcon v-if="isProductionNextStep" class="!absolute -right-1 -top-1 text-[7px] text-amber-500" aria-hidden="true" />
+								</span>
 							</div>
 						</div>
 
