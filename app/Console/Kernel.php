@@ -21,6 +21,7 @@ use App\Actions\Inventory\LocationOrgStock\DisassociateEmptyLocationOrgStocks;
 use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Dropshipping\Orderchamp\GetOrderchampOrders;
+use App\Actions\Dropshipping\Ankorstore\GetAnkorstoreOrders;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\SyncDispatchedFaireOrdersTax;
 use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyOrdersAllShops;
@@ -931,6 +932,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'GetOrderchampOrders',
                 ),
                 name: 'GetOrderchampOrders',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(GetAnkorstoreOrders::makeJob())->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'GetAnkorstoreOrders',
+                ),
+                name: 'GetAnkorstoreOrders',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

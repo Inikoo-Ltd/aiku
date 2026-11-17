@@ -124,7 +124,7 @@ class UpdateOrderPaymentsStatus extends OrgAction
          */
         if ($runningPaymentsAmount == 0 && $totalAmount != 0 && $order->state !== OrderStateEnum::CANCELLED) {
             $paidByMarketplace = BankTransaction::paidByMarketplaceFor($order->id)->exists();
-            if ($paidByMarketplace || $order->shop->isFaire() || $order->isFromOrderchamp()) {
+            if ($paidByMarketplace || $order->shop->isFaire() || $order->isFromOrderchamp() || $order->isFromAnkorstore()) {
                 $payStatus         = $paidByMarketplace ? OrderPayStatusEnum::PAID : OrderPayStatusEnum::UNPAID;
                 $payDetailedStatus = $paidByMarketplace ? OrderPayDetailedStatusEnum::PAID_BY_MARKETPLACE : OrderPayDetailedStatusEnum::TO_BE_PAID_BY_MARKETPLACE;
             }

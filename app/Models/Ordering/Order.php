@@ -661,6 +661,14 @@ class Order extends Model implements HasMedia, Auditable
         return Arr::has($this->data, 'orderchamp.number');
     }
 
+    /**
+     * Imported from Ankorstore, which collects from the retailer and pays us the order later.
+     */
+    public function isFromAnkorstore(): bool
+    {
+        return Arr::has($this->data, 'ankorstore.id');
+    }
+
     public function taxCategory(): BelongsTo
     {
         return $this->belongsTo(TaxCategory::class);
