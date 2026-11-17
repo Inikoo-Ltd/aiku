@@ -227,6 +227,11 @@ struct GoodsInDeliveryCheck: Identifiable, Hashable, Sendable {
     var detail: String = "Pass or fail"
 }
 
+struct GoodsInIncidentType: Identifiable, Hashable, Sendable {
+    let id: String
+    let label: String
+}
+
 enum GoodsInScanResult: Hashable, Sendable {
     case counted(sko: String, checked: Double, delivered: Double)
     case notOnDelivery(code: String)
@@ -257,6 +262,7 @@ struct GoodsInDelivery: Identifiable, Hashable, Sendable {
     var remoteCheckedCount: Int? = nil
     var remotePlacedCount: Int? = nil
     var remoteActions: Set<String> = []
+    var incidentTypes: [GoodsInIncidentType] = []
     var isDetailLoaded = true
 
     var id: String { reference }

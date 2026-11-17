@@ -165,6 +165,15 @@ final class GoodsInStore {
         sendCheck(reference, sko: sko)
     }
 
+    func checkAll(_ reference: String) {
+        update(reference) { delivery in
+            for item in delivery.items where item.checked == nil {
+                delivery.setChecked(item.sko, quantity: item.delivered)
+            }
+        }
+        sendDelivery(reference, path: "check-all", body: MobileEmptyBody())
+    }
+
     func registerScan(_ reference: String, code: String) -> GoodsInScanResult {
         var result = GoodsInScanResult.notOnDelivery(code: code)
         update(reference) { result = $0.registerScan(code) }
@@ -177,17 +186,25 @@ final class GoodsInStore {
     @discardableResult
     func place(_ reference: String, sko: String, quantity: Double, in location: String, setAsPicking: Bool = false, now: Date = .now) -> Double {
         var placed = 0.0
+        let leftBefore = deliveries.first { $0.reference == reference }?.item(sko)?.leftToPlace ?? 0
         update(reference) { placed = $0.place(sko, quantity: quantity, in: location, setAsPicking: setAsPicking, now: now) }
         if placed > GoodsInQuantity.tolerance {
-            sendPlace(reference, sko: sko, quantity: placed, location: location, setAsPicking: setAsPicking)
+            sendPlace(reference, sko: sko, quantity: GoodsInQuantity.isEqual(placed, leftBefore) ? nil : placed, location: location, setAsPicking: setAsPicking)
         }
         return placed
     }
 
-    func recordCheck(_ reference: String, checkID: String, passed: Bool, note: String, by name: String, now: Date = .now) {
+    func recordCheck(_ reference: String, checkID: String, passed: Bool, note: String, incidentType: String? = nil, incidentQuantity: Double? = nil, by name: String, now: Date = .now) {
         update(reference) { $0.recordCheck(checkID, passed: passed, note: note, by: name, at: GoodsInDates.time(now)) }
         let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        sendDelivery(reference, path: "checklist", body: MobileChecklistBody(key: checkID, result: passed ? "passed" : "failed", body: trimmed.isEmpty ? nil : trimmed))
+        let body = MobileChecklistBody(
+            key: checkID,
+            result: passed ? "passed" : "failed",
+            body: trimmed.isEmpty ? nil : trimmed,
+            incidentType: passed ? nil : incidentType,
+            incidentQuantity: passed ? nil : incidentQuantity
+        )
+        sendDelivery(reference, path: "checklist", body: body)
     }
 
     func processReturnItem(_ reference: String, sko: String, outcome: GoodsInReturnOutcome) {
@@ -202,6 +219,20 @@ final class GoodsInStore {
             sendReturnItem(reference, path: "items/\(itemID)/damaged", body: MobileReturnPutBody())
         case .notReturned:
             sendReturnItem(reference, path: "items/\(itemID)/not-returned", body: MobileReturnPutBody())
+        }
+    }
+
+    func undoPut(_ reference: String, put: GoodsInReturnPut) {
+        updateReturn(reference) { $0.undo(put) }
+        guard isRemote, let client = remoteClient, let warehouseID, let id = returns.first(where: { $0.reference == reference })?.remoteID else { return }
+        Task {
+            do {
+                storeReturn(try await client.deleteReturnPut(warehouseID: warehouseID, id: id, putID: put.id).data)
+                actionError = nil
+            } catch {
+                actionError = InventoryLive.message(for: error)
+                await loadReturn(reference, apiClient: client)
+            }
         }
     }
 
@@ -225,7 +256,7 @@ final class GoodsInStore {
         sendDelivery(reference, path: "items/\(itemID)/check", body: MobileCheckItemBody(skoQuantity: checked))
     }
 
-    private func sendPlace(_ reference: String, sko: String, quantity: Double, location: String, setAsPicking: Bool) {
+    private func sendPlace(_ reference: String, sko: String, quantity: Double?, location: String, setAsPicking: Bool) {
         guard isRemote, let client = remoteClient, let warehouseID,
               let delivery = deliveries.first(where: { $0.reference == reference }), let id = delivery.remoteID,
               let item = delivery.item(sko), let itemID = item.remoteID else { return }
@@ -243,7 +274,8 @@ final class GoodsInStore {
                     }
                     body.locationId = match.id
                 }
-                let result = try await client.stockDeliveryAction(warehouseID: warehouseID, id: id, path: "items/\(itemID)/place", body: body)
+                let path = quantity == nil ? "items/\(itemID)/place-all" : "items/\(itemID)/place"
+                let result = try await client.stockDeliveryAction(warehouseID: warehouseID, id: id, path: path, body: body)
                 store(result.data)
                 actionError = nil
             } catch {
@@ -382,7 +414,12 @@ final class GoodsInStore {
     }
 
     func loadDelivery(_ reference: String, apiClient: APIClient) async {
-        guard isRemote, let warehouseID, let id = deliveries.first(where: { $0.reference == reference })?.remoteID else { return }
+        guard let id = deliveries.first(where: { $0.reference == reference })?.remoteID else { return }
+        await loadDelivery(id: id, apiClient: apiClient)
+    }
+
+    func loadDelivery(id: Int, apiClient: APIClient) async {
+        guard isRemote, let warehouseID else { return }
         do {
             store(try await apiClient.fetchStockDelivery(warehouseID: warehouseID, id: id))
             loadError = nil

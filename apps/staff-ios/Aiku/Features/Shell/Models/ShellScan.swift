@@ -5,12 +5,14 @@ enum ShellScanKind: String, Hashable, Sendable {
     case location
     case sko
     case deliveryNote
+    case stockDelivery
 
     var article: String {
         switch self {
         case .location: "a location"
         case .sko: "a SKO"
         case .deliveryNote: "a delivery note"
+        case .stockDelivery: "a stock delivery"
         }
     }
 
@@ -19,6 +21,7 @@ enum ShellScanKind: String, Hashable, Sendable {
         case .location: .locations
         case .sko: .sko
         case .deliveryNote: .deliveryNote
+        case .stockDelivery: .stockDelivery
         }
     }
 
@@ -27,6 +30,7 @@ enum ShellScanKind: String, Hashable, Sendable {
         case .location: "Open location"
         case .sko: "Open SKO"
         case .deliveryNote: "Open delivery note"
+        case .stockDelivery: "Open stock delivery"
         }
     }
 
@@ -35,6 +39,7 @@ enum ShellScanKind: String, Hashable, Sendable {
         case .location: "Location"
         case .sko: "SKO"
         case .deliveryNote: "Delivery note"
+        case .stockDelivery: "Stock delivery"
         }
     }
 }
@@ -66,7 +71,8 @@ enum ShellScanCatalog {
     static let capabilities: [(icon: AppIcon, text: String)] = [
         (.sko, "SKO barcode → SKO and its locations"),
         (.locations, "Location label → Location detail"),
-        (.deliveryNote, "Delivery note or tracking number → Delivery note detail")
+        (.deliveryNote, "Delivery note or tracking number → Delivery note detail"),
+        (.stockDelivery, "Stock delivery reference → Stock delivery")
     ]
 
     static func target(from result: MobileScanResult) -> ShellScanTarget? {
@@ -77,6 +83,8 @@ enum ShellScanCatalog {
             return result.location.map(locationTarget)
         case .deliveryNote:
             return result.deliveryNote.map(deliveryNoteTarget)
+        case .stockDelivery:
+            return result.stockDelivery.map(stockDeliveryTarget)
         case .unknown:
             return nil
         }
@@ -118,6 +126,15 @@ enum ShellScanCatalog {
             kind: .deliveryNote,
             detail: parts.isEmpty ? ShellScanKind.deliveryNote.fallbackDetail : parts.joined(separator: " · "),
             link: .goodsOut(.deliveryNoteID(id: note.id))
+        )
+    }
+
+    private static func stockDeliveryTarget(_ delivery: MobileScannedStockDelivery) -> ShellScanTarget {
+        ShellScanTarget(
+            code: delivery.reference,
+            kind: .stockDelivery,
+            detail: delivery.stateLabel ?? ShellScanKind.stockDelivery.fallbackDetail,
+            link: .goodsIn(.scannedStockDelivery(id: delivery.id, reference: delivery.reference))
         )
     }
 

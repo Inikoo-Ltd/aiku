@@ -5,6 +5,7 @@ struct GoodsInDeliveriesView: View {
     @Environment(Session.self) private var session
     @State private var isFiltering = false
     @Environment(\.apiClient) private var apiClient
+    @Environment(ToastCenter.self) private var toasts
     private let store = GoodsInStore.shared
 
     var body: some View {
@@ -63,6 +64,9 @@ struct GoodsInDeliveriesView: View {
             guard store.isRemote else { return }
             await store.reloadList(apiClient: apiClient)
         }
+        .hardwareScanner(isEnabled: !isFiltering) { code in
+            Task { await openScanned(code) }
+        }
         .aikuSheet(isPresented: $isFiltering) {
             GoodsInFilterSheet(initial: store.filter) { draft in
                 store.filteredCount(draft)
@@ -70,6 +74,29 @@ struct GoodsInDeliveriesView: View {
                 store.applyFilter(draft)
                 isFiltering = false
             }
+        }
+    }
+
+    private func openScanned(_ code: String) async {
+        let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard store.isRemote, let warehouseID = store.warehouseID else {
+            if let delivery = store.deliveries.first(where: { $0.reference.caseInsensitiveCompare(trimmed) == .orderedSame }) {
+                open(delivery)
+            } else {
+                toasts.show("\(trimmed) is not a stock delivery", tone: .info)
+            }
+            return
+        }
+        do {
+            let result = try await apiClient.scan(warehouseID: warehouseID, code: trimmed)
+            if let delivery = result.stockDelivery {
+                router.open(GoodsInRoute.scannedStockDelivery(id: delivery.id, reference: delivery.reference))
+            } else {
+                toasts.show("\(trimmed) is not a stock delivery", tone: .info)
+            }
+        } catch {
+            toasts.show(ShellScanCatalog.problem(error), tone: .danger)
         }
     }
 
