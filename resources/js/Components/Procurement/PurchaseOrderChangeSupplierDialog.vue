@@ -15,7 +15,7 @@ import InputNumber from "primevue/inputnumber"
 import InputText from "primevue/inputtext"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faExclamationTriangle, faBan, faArrowRight } from "@fal"
+import { faCheck, faTimes, faExclamationTriangle, faBan, faArrowRight, faCoins, faExternalLink } from "@fal"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
@@ -31,6 +31,15 @@ type Line = {
 	units_per_carton: number | null
 }
 
+type JoinableOrder = {
+	id: number
+	reference: string
+	slug: string
+	state_label: string
+	number_of_items: number
+	is_same_agent_order: boolean
+}
+
 type Supplier = {
 	org_supplier_id: number
 	code: string
@@ -38,6 +47,14 @@ type Supplier = {
 	reference: string
 	products: Record<number, TheirProduct | null>
 	products_count: number
+	purchase_orders: JoinableOrder[]
+}
+
+type Money = {
+	deposit_payments: number
+	agent_payments: number
+	money_requested: boolean
+	deposit_paid_at: string | null
 }
 
 type Options = {
@@ -46,6 +63,7 @@ type Options = {
 	slug: string
 	supplier: { code: string; name: string }
 	currency: string | null
+	money: Money
 	lines: Line[]
 	suppliers: Supplier[]
 }
@@ -70,6 +88,8 @@ const productFields = ["code", "name", "cost", "units_per_carton"]
 
 const options = ref<Options | null>(null)
 const orgSupplierId = ref<number | null>(null)
+const newOrder = 0
+const intoPurchaseOrderId = ref<number>(newOrder)
 const reference = ref("")
 const productForms = ref<Record<number, ProductForm>>({})
 const isFetching = ref(false)
@@ -79,6 +99,37 @@ const errors = ref<Record<string, string>>({})
 const supplierOptions = computed(() => (options.value?.suppliers ?? []).map((supplier) => ({ ...supplier, label: `${supplier.code} ${supplier.name}` })))
 const targetSupplier = computed(() => options.value?.suppliers.find((supplier) => supplier.org_supplier_id === orgSupplierId.value) ?? null)
 const lines = computed(() => options.value?.lines ?? [])
+const intoOrder = computed(() => targetSupplier.value?.purchase_orders.find((order) => order.id === intoPurchaseOrderId.value) ?? null)
+
+const destinationOptions = computed(() => [
+	{ id: newOrder, reference: reference.value || targetSupplier.value?.reference || "", label: ctrans("New order"), state_label: null, number_of_items: null, is_same_agent_order: false, isNew: true },
+	...(targetSupplier.value?.purchase_orders ?? []).map((order) => ({ ...order, label: order.reference, isNew: false })),
+])
+
+const moneyWarning = computed(() => {
+	const money = options.value?.money
+	if (!money || !intoOrder.value) {
+		return null
+	}
+
+	const parts: string[] = []
+	if (money.deposit_payments > 0) {
+		parts.push(ctrans(":amount of deposits recorded", { amount: locale.currencyFormat(options.value?.currency ?? "", money.deposit_payments) }))
+	}
+	if (money.agent_payments > 0) {
+		parts.push(ctrans(":amount paid by the agent to the supplier", { amount: locale.currencyFormat(options.value?.currency ?? "", money.agent_payments) }))
+	}
+	if (money.money_requested) {
+		parts.push(ctrans("the money requested from us for it"))
+	}
+	if (!parts.length && money.deposit_paid_at) {
+		parts.push(ctrans("the deposit marked paid on :date", { date: money.deposit_paid_at }))
+	}
+
+	return parts.length
+		? ctrans("Moves to :reference with the items: :money.", { reference: intoOrder.value.reference, money: parts.join(", ") })
+		: null
+})
 
 const theirProduct = (line: Line) => targetSupplier.value?.products[line.id] ?? null
 const needsProduct = (line: Line) => !!targetSupplier.value && !theirProduct(line)
@@ -94,12 +145,12 @@ const isProductFormReady = (line: Line) => {
 const canSubmit = computed(() =>
 	!options.value?.blocked_reason
 	&& !!targetSupplier.value
-	&& !!reference.value.trim()
+	&& (!!intoOrder.value || !!reference.value.trim())
 	&& linesNeedingProduct.value.every(isProductFormReady)
 )
 
 const otherErrors = computed(() => {
-	const shown = new Set(["org_supplier_id", "reference"])
+	const shown = new Set(["org_supplier_id", "reference", "into_purchase_order_id"])
 	linesNeedingProduct.value.forEach((line) => productFields.forEach((field) => shown.add(`lines.${line.id}.${field}`)))
 
 	return Object.entries(errors.value).filter(([field]) => !shown.has(field)).map(([, message]) => message)
@@ -108,6 +159,7 @@ const otherErrors = computed(() => {
 watch(targetSupplier, (supplier) => {
 	errors.value = {}
 	reference.value = supplier?.reference ?? ""
+	intoPurchaseOrderId.value = supplier?.purchase_orders.find((order) => order.is_same_agent_order)?.id ?? newOrder
 })
 
 watch(visible, async (isVisible) => {
@@ -117,6 +169,7 @@ watch(visible, async (isVisible) => {
 
 	options.value = null
 	orgSupplierId.value = null
+	intoPurchaseOrderId.value = newOrder
 	reference.value = ""
 	errors.value = {}
 	isFetching.value = true
@@ -157,7 +210,8 @@ async function submit() {
 	try {
 		const { data } = await axios.patch(route("grp.models.purchase-order.change_supplier", { purchaseOrder: props.purchaseOrderId }), {
 			org_supplier_id: orgSupplierId.value,
-			reference: reference.value.trim(),
+			into_purchase_order_id: intoOrder.value?.id ?? null,
+			reference: intoOrder.value ? null : reference.value.trim(),
 			lines: linesNeedingProduct.value.map((line) => {
 				const form = productForms.value[line.id]
 
@@ -202,7 +256,7 @@ async function submit() {
 
 			<template v-else>
 				<p class="text-xs text-gray-600">
-					{{ ctrans("Use this when the goods of this order are made by another supplier of the agent than :supplier. The whole order moves to that supplier with its items, agreed prices, goods received and stages.", { supplier: options.supplier.name }) }}
+					{{ ctrans("Use this when the goods of this order are made by another supplier of the agent than :supplier. The items move to that supplier with their agreed prices and goods received, as a new order or into an order it already has.", { supplier: options.supplier.name }) }}
 				</p>
 
 				<div class="space-y-1">
@@ -242,7 +296,51 @@ async function submit() {
 						<span class="truncate">{{ targetSupplier.name }}</span>
 					</div>
 
-					<label class="block space-y-1">
+					<div class="space-y-1">
+						<span class="block text-xs text-gray-500">{{ ctrans("Into order") }} <span class="text-red-500">*</span></span>
+						<Select
+							v-model="intoPurchaseOrderId"
+							:options="destinationOptions"
+							optionLabel="label"
+							optionValue="id"
+							:class="fieldFocusClass"
+							fluid
+						>
+							<template #option="{ option }">
+								<div class="flex w-full min-w-0 items-center gap-2">
+									<span class="whitespace-nowrap font-medium">{{ option.isNew ? ctrans("New order") : option.reference }}</span>
+									<span v-if="option.isNew" class="truncate text-xs text-gray-500">{{ ctrans("under :supplier's code", { supplier: targetSupplier.code }) }}</span>
+									<span v-if="option.is_same_agent_order" class="shrink-0 whitespace-nowrap rounded-full bg-[var(--app-accent-soft)] px-2 py-0.5 text-xs text-[var(--app-accent-deep)]">{{ ctrans("Same agent order") }}</span>
+									<span v-if="option.state_label" class="ml-auto shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{{ option.state_label }}</span>
+									<span v-if="option.number_of_items !== null" class="shrink-0 whitespace-nowrap text-xs text-gray-500">{{ ctransChoice(":count item|:count items", option.number_of_items) }}</span>
+								</div>
+							</template>
+						</Select>
+						<a
+							v-if="intoOrder"
+							:href="purchaseOrderUrlFor(intoOrder.slug)"
+							target="_blank"
+							rel="noopener"
+							class="inline-flex items-center gap-1 whitespace-nowrap text-xs text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline"
+						>
+							{{ ctrans("Open :reference", { reference: intoOrder.reference }) }}
+							<FontAwesomeIcon :icon="faExternalLink" fixed-width aria-hidden="true" />
+						</a>
+						<p v-if="errors.into_purchase_order_id" class="text-xs text-red-600">{{ errors.into_purchase_order_id }}</p>
+					</div>
+
+					<div v-if="intoOrder" class="space-y-2">
+						<p class="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+							<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-amber-500" fixed-width aria-hidden="true" />
+							<span>{{ ctrans("The items and the goods received move to :into, with their agreed prices; :reference is left empty and cancelled. :into keeps its own stage dates.", { into: intoOrder.reference, reference: options.reference }) }}</span>
+						</p>
+						<p v-if="moneyWarning" class="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+							<FontAwesomeIcon :icon="faCoins" class="mt-0.5 text-amber-500" fixed-width aria-hidden="true" />
+							<span>{{ moneyWarning }}</span>
+						</p>
+					</div>
+
+					<label v-else class="block space-y-1">
 						<span class="block text-xs text-gray-500">{{ ctrans("New reference") }} <span class="text-red-500">*</span></span>
 						<InputText v-model="reference" :class="fieldFocusClass" fluid />
 						<span v-if="reference.trim() !== options.reference" class="block text-xs text-gray-500">{{ ctrans("The order's URL changes with its reference") }}</span>
@@ -317,7 +415,9 @@ async function submit() {
 				<Button
 					type="primary"
 					full
-					:label="targetSupplier ? ctrans('Move the order to :supplier', { supplier: targetSupplier.code }) : ctrans('Change supplier')"
+					:label="intoOrder
+						? ctrans('Move the items to :reference', { reference: intoOrder.reference })
+						: targetSupplier ? ctrans('Move the order to :supplier', { supplier: targetSupplier.code }) : ctrans('Change supplier')"
 					:loading="isSaving"
 					:disabled="!canSubmit"
 					@click="submit"

@@ -11,6 +11,8 @@ namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\StoreSupplierProductForOrgStock;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateState;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydratePurchaseOrders;
 use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier;
 use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydratePurchaseOrders;
@@ -24,6 +26,7 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -34,22 +37,25 @@ use Lorisleiva\Actions\ActionRequest;
  * The goods of an order through an agent are made by another supplier of the same agent than the one the order names
  * (the SKO was only linked to the wrong one): the whole order goes to that supplier, in whatever stage it is, keeping its
  * lines, agreed prices, goods receipts and stages. Each line takes the new supplier's product of its SKO, linked or
- * created at the agreed price when the supplier does not sell it yet, and the reference takes the new supplier's code.
- * Not once its items are on a stock delivery, nor with agent payments to the old supplier recorded on it.
+ * created at the agreed price when the supplier does not sell it yet. The order either keeps going under the new
+ * supplier's code, or joins an order the new supplier already has with the agent ($into): the lines, the goods received,
+ * the deposits and the money requested or paid for it go there, and the emptied order is cancelled. Not once items of
+ * either order are on a stock delivery.
  */
 class ChangePurchaseOrderSupplier extends OrgAction
 {
     use WithPurchaseOrderAgentEditAuthorisation;
 
     /**
-     * @param array{org_supplier_id: int, reference?: string|null, lines?: array<int, array{id: int, code?: string|null, name?: string|null, cost?: float|string|null, units_per_carton?: float|string|null}>} $modelData
+     * @param array{org_supplier_id: int, into_purchase_order_id?: int|null, reference?: string|null, lines?: array<int, array{id: int, code?: string|null, name?: string|null, cost?: float|string|null, units_per_carton?: float|string|null}>} $modelData
      */
     public function handle(PurchaseOrder $purchaseOrder, array $modelData, ?User $user = null): PurchaseOrder
     {
         $oldOrgSupplier = null;
         $newOrgSupplier = null;
+        $into           = null;
 
-        $purchaseOrder = DB::transaction(function () use ($purchaseOrder, $modelData, $user, &$oldOrgSupplier, &$newOrgSupplier) {
+        $result = DB::transaction(function () use ($purchaseOrder, $modelData, $user, &$oldOrgSupplier, &$newOrgSupplier, &$into) {
             $purchaseOrder = PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->firstOrFail();
 
             if ($blockedReason = self::blockedReason($purchaseOrder)) {
@@ -59,39 +65,68 @@ class ChangePurchaseOrderSupplier extends OrgAction
             $oldOrgSupplier = $purchaseOrder->parent;
             $newOrgSupplier = self::targetOrgSupplier($purchaseOrder, (int) $modelData['org_supplier_id']);
             $newSupplier    = $newOrgSupplier->supplier;
-            $reference      = trim((string) Arr::get($modelData, 'reference')) ?: self::referenceFor($purchaseOrder, $newSupplier->code);
+            $into           = $this->intoPurchaseOrder($purchaseOrder, $newOrgSupplier, Arr::get($modelData, 'into_purchase_order_id'));
+            $reference      = $into ? null : (trim((string) Arr::get($modelData, 'reference')) ?: self::referenceFor($purchaseOrder, $newSupplier->code));
 
-            if (UpdatePurchaseOrderReference::conflictingPurchaseOrder($purchaseOrder, $reference)) {
+            if ($reference !== null && UpdatePurchaseOrderReference::conflictingPurchaseOrder($purchaseOrder, $reference)) {
                 throw ValidationException::withMessages(['reference' => __('Another purchase order already uses :reference.', ['reference' => $reference])]);
             }
 
+            $ledgerDatesBefore     = $into ? SyncPurchaseOrderPaidFromAgentLedger::ledgerDatesFor([$into->id]) : [];
             $linesForm             = collect(Arr::get($modelData, 'lines', []))->keyBy('id');
             $changedTransactionIds = [];
+            $changedAt             = now()->toIso8601String();
 
             foreach (self::linesToChange($purchaseOrder) as $transaction) {
                 $orgSupplierProduct = $this->orgSupplierProductFor($newOrgSupplier, $transaction, $linesForm->get($transaction->id, []), $purchaseOrder);
                 $supplierProduct    = $orgSupplierProduct->supplierProduct;
 
-                $transaction->update([
+                $transaction->update(array_merge([
                     'supplier_product_id'          => $supplierProduct->id,
                     'historic_supplier_product_id' => $supplierProduct->current_historic_supplier_product_id ?? $transaction->historic_supplier_product_id,
                     'org_supplier_product_id'      => $orgSupplierProduct->id,
                     'data'                         => array_merge($transaction->data ?? [], ['supplier_changed_from' => [
                         ...($transaction->data['supplier_changed_from'] ?? []),
                         [
+                            'purchase_order_id'       => $purchaseOrder->id,
+                            'reference'               => $purchaseOrder->reference,
                             'supplier_product_id'     => $transaction->supplier_product_id,
                             'org_supplier_product_id' => $transaction->org_supplier_product_id,
-                            'at'                      => now()->toIso8601String(),
+                            'at'                      => $changedAt,
                         ],
                     ]]),
-                ]);
+                ], $into ? [
+                    'purchase_order_id'                => $into->id,
+                    'state'                            => $into->state->transactionState(),
+                    'agent_supplier_purchase_order_id' => $into->agent_supplier_purchase_order_id ?? $transaction->agent_supplier_purchase_order_id,
+                ] : []));
 
-                DB::table('agent_warehouse_stocks')->where('purchase_order_transaction_id', $transaction->id)->update(['supplier_product_id' => $supplierProduct->id]);
-                DB::table('agent_goods_receipt_items')->where('purchase_order_transaction_id', $transaction->id)->update(['supplier_product_id' => $supplierProduct->id]);
+                $receivedRows = array_merge(['supplier_product_id' => $supplierProduct->id], $into ? ['purchase_order_id' => $into->id] : []);
+                DB::table('agent_warehouse_stocks')->where('purchase_order_transaction_id', $transaction->id)->update($receivedRows);
+                DB::table('agent_goods_receipt_items')->where('purchase_order_transaction_id', $transaction->id)->update($receivedRows);
                 $changedTransactionIds[] = $transaction->id;
             }
 
             $this->moveGoodsReceiptsWhollyOfSupplier($changedTransactionIds, $newSupplier);
+
+            DB::table('agent_payments')
+                ->where('purchase_order_id', $purchaseOrder->id)
+                ->where('supplier_id', $oldOrgSupplier->supplier_id)
+                ->update(['supplier_id' => $newSupplier->id]);
+
+            $changedFrom = [
+                'purchase_order_id' => $purchaseOrder->id,
+                'org_supplier_id'   => $oldOrgSupplier->id,
+                'supplier_code'     => $oldOrgSupplier->supplier->code,
+                'supplier_name'     => $oldOrgSupplier->supplier->name,
+                'reference'         => $purchaseOrder->reference,
+                'by'                => $user?->id,
+                'at'                => $changedAt,
+            ];
+
+            if ($into) {
+                return $this->mergeInto($purchaseOrder, $into, $changedFrom, $ledgerDatesBefore);
+            }
 
             $this->moveLegacyAgentSupplierOrder($purchaseOrder, $newSupplier);
 
@@ -102,14 +137,7 @@ class ChangePurchaseOrderSupplier extends OrgAction
             $purchaseOrder->reference   = $reference;
             $purchaseOrder->data        = array_merge($purchaseOrder->data ?? [], ['supplier_changed_from' => [
                 ...($purchaseOrder->data['supplier_changed_from'] ?? []),
-                [
-                    'org_supplier_id' => $oldOrgSupplier->id,
-                    'supplier_code'   => $oldOrgSupplier->supplier->code,
-                    'supplier_name'   => $oldOrgSupplier->supplier->name,
-                    'reference'       => $purchaseOrder->getOriginal('reference'),
-                    'by'              => $user?->id,
-                    'at'              => now()->toIso8601String(),
-                ],
+                Arr::except($changedFrom, 'purchase_order_id'),
             ]]);
 
             if ($purchaseOrder->isDirty('reference')) {
@@ -126,7 +154,110 @@ class ChangePurchaseOrderSupplier extends OrgAction
             SupplierHydratePurchaseOrders::dispatch($orgSupplier->supplier);
         }
 
-        return $purchaseOrder;
+        return $result;
+    }
+
+    /**
+     * The emptied order's money goes with its lines: deposits the buyer recorded, the agent's payments to the supplier,
+     * the money requested from the client for it and legacy agent deposits. Its own deposit marks are cleared and kept
+     * in merged_into, so the money is counted once, on the order that now holds the goods; a deposit date marked by hand
+     * goes there too when that order has none.
+     *
+     * @param array<int, array{deposit_paid_at: string|null, balance_paid_at: string|null}> $ledgerDatesBefore
+     */
+    private function mergeInto(PurchaseOrder $purchaseOrder, PurchaseOrder $into, array $changedFrom, array $ledgerDatesBefore): PurchaseOrder
+    {
+        $movedDepositPayments = DB::table('purchase_order_deposit_payments')->where('purchase_order_id', $purchaseOrder->id)->update(['purchase_order_id' => $into->id]);
+        $movedLedgerPayments  = DB::table('agent_payments')->where('purchase_order_id', $purchaseOrder->id)->update(['purchase_order_id' => $into->id]);
+        DB::table('deposit_request_items')->where('purchase_order_id', $purchaseOrder->id)->update(['purchase_order_id' => $into->id]);
+        DB::table('aspo_deposits')->where('purchase_order_id', $purchaseOrder->id)->update(['purchase_order_id' => $into->id]);
+
+        $depositMarks = Arr::only($purchaseOrder->getAttributes(), ['deposit_amount', 'deposit_paid_at', 'deposit_paid_by_id', 'balance_paid_at']);
+
+        $purchaseOrder->update([
+            'deposit_amount'     => null,
+            'deposit_paid_at'    => null,
+            'deposit_paid_by_id' => null,
+            'balance_paid_at'    => null,
+            'data'               => array_merge($purchaseOrder->data ?? [], ['merged_into' => [
+                'purchase_order_id'    => $into->id,
+                'reference'            => $into->reference,
+                'deposit_marks'        => $depositMarks,
+                'deposit_payments'     => $movedDepositPayments,
+                'agent_payments'       => $movedLedgerPayments,
+                'by'                   => $changedFrom['by'],
+                'at'                   => $changedFrom['at'],
+            ]]),
+        ]);
+
+        if (in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)) {
+            UpdatePurchaseOrderStateToCancelled::make()->handle($purchaseOrder, source: UpdatePurchaseOrderStateToCancelled::SOURCE_MOVED);
+        } else {
+            CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
+        }
+
+        $into->refresh();
+        $into->update(['data' => array_merge($into->data ?? [], ['merged_from' => [
+            ...($into->data['merged_from'] ?? []),
+            $changedFrom,
+        ]])]);
+
+        CalculatePurchaseOrderTotalAmounts::run($into);
+        PurchaseOrderHydrateTransactions::dispatch($into)->afterCommit();
+
+        if ($movedDepositPayments > 0) {
+            SyncPurchaseOrderDepositPaid::run($into->refresh());
+        }
+
+        if ($movedLedgerPayments > 0) {
+            SyncPurchaseOrderPaidFromAgentLedger::runForOrders($ledgerDatesBefore);
+        }
+
+        $into->refresh();
+        if ($into->deposit_paid_at === null && $depositMarks['deposit_paid_at'] !== null) {
+            $into->update([
+                'deposit_paid_at'    => $depositMarks['deposit_paid_at'],
+                'deposit_paid_by_id' => $depositMarks['deposit_paid_by_id'],
+            ]);
+        }
+
+        PurchaseOrderHydrateState::run($into->refresh());
+
+        return $into->refresh();
+    }
+
+    private function intoPurchaseOrder(PurchaseOrder $purchaseOrder, OrgSupplier $newOrgSupplier, mixed $intoPurchaseOrderId): ?PurchaseOrder
+    {
+        if (!$intoPurchaseOrderId) {
+            return null;
+        }
+
+        $into = self::purchaseOrdersToJoinQuery($purchaseOrder, [$newOrgSupplier->id])->lockForUpdate()->find((int) $intoPurchaseOrderId);
+
+        if (!$into) {
+            throw ValidationException::withMessages(['into_purchase_order_id' => __('Choose a live order of :supplier with the same agent and currency, with no items on a stock delivery', ['supplier' => $newOrgSupplier->supplier->name])]);
+        }
+
+        return $into;
+    }
+
+    /**
+     * The orders the lines can join: live orders of those suppliers with the same agent and currency, none of their items
+     * on a stock delivery.
+     *
+     * @param array<int, int> $orgSupplierIds
+     */
+    public static function purchaseOrdersToJoinQuery(PurchaseOrder $purchaseOrder, array $orgSupplierIds): Builder
+    {
+        return PurchaseOrder::query()
+            ->where('organisation_id', $purchaseOrder->organisation_id)
+            ->whereKeyNot($purchaseOrder->id)
+            ->where('parent_type', 'OrgSupplier')
+            ->whereIn('parent_id', $orgSupplierIds)
+            ->where('agent_id', $purchaseOrder->agent_id)
+            ->where('currency_id', $purchaseOrder->currency_id)
+            ->whereIn('state', PurchaseOrderStateEnum::live())
+            ->whereDoesntHave('stockDeliveries', fn (Builder $deliveries) => $deliveries->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED));
     }
 
     public static function canChange(PurchaseOrder $purchaseOrder): bool
@@ -142,7 +273,6 @@ class ChangePurchaseOrderSupplier extends OrgAction
             !$purchaseOrder->isAgentOrder() => __('Only the supplier of an order through an agent can change'),
             !in_array($purchaseOrder->state, PurchaseOrderStateEnum::live(), true) => __('This order is :state: its supplier can no longer change', ['state' => PurchaseOrderStateEnum::labels()[$purchaseOrder->state->value] ?? $purchaseOrder->state->value]),
             self::isOnStockDelivery($purchaseOrder) => __('Items of this order are on a stock delivery: take them off before changing the supplier'),
-            self::hasPaymentsToSupplier($purchaseOrder) => __('Payments to :supplier are recorded on this order: move them before changing the supplier', ['supplier' => $purchaseOrder->parent_name]),
             default => null,
         };
     }
@@ -298,18 +428,11 @@ class ChangePurchaseOrderSupplier extends OrgAction
         return $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists();
     }
 
-    private static function hasPaymentsToSupplier(PurchaseOrder $purchaseOrder): bool
-    {
-        return DB::table('agent_payments')
-            ->where('purchase_order_id', $purchaseOrder->id)
-            ->where('supplier_id', $purchaseOrder->supplier_id)
-            ->exists();
-    }
-
     public function rules(): array
     {
         return [
             'org_supplier_id'          => ['required', 'integer'],
+            'into_purchase_order_id'   => ['sometimes', 'nullable', 'integer'],
             'reference'                => ['sometimes', 'nullable', 'string', 'max:255'],
             'lines'                    => ['sometimes', 'array', 'max:500'],
             'lines.*.id'               => ['required', 'integer', 'distinct'],
