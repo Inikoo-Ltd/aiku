@@ -1,90 +1,279 @@
 import SwiftUI
 
 struct FulfilmentAuditView: View {
-    let palletReference: String
-    @Environment(AppRouter.self) private var router
-    @Environment(ToastCenter.self) private var toasts
-    @State private var isScanning = false
-    @State private var scanFeedback: String?
-    private let store = FulfilmentStore.shared
+    let auditID: Int
+    let reference: String
+    @Environment(\.apiClient) private var apiClient
+    @State private var warehouseStore = WarehouseStore.shared
 
     var body: some View {
-        let audit = store.audit(forPallet: palletReference)
-        AppScreen(title: audit.reference, kicker: "Stored item audit · Pallet · In process") {
-            FulfilmentScanCard(
-                title: "Scan to count",
-                detail: "Scan each item on pallet \(audit.palletReference)",
-                highlight: audit.focusItemCode ?? "No items yet",
-                identifier: "fulfilment.audit.scan"
-            ) {
-                scanFeedback = nil
-                isScanning = true
+        if let warehouseID = warehouseStore.selected?.id {
+            StoredItemAuditScreen(live: StoredItemAuditLive(warehouseID: warehouseID, auditID: auditID, apiClient: apiClient), reference: reference)
+                .id("\(warehouseID)-\(auditID)")
+        } else {
+            AppScreen(title: reference, kicker: "Stored item audit") {
+                EmptyState(icon: .pallet, title: "Choose a warehouse first")
             }
-            if let line = focusLine(audit) {
-                panel(line, audit: audit)
-            }
-            Card {
-                ForEach(audit.lines) { line in
-                    ListRow(line.itemCode, subtitle: line.subtitle, chips: line.chip.map { [$0] } ?? []) {
-                        ProductThumb(size: 48, label: "Product photo of \(line.itemCode)")
-                    } trailing: {
-                        FulfilmentCountLabel(done: line.counted ?? 0, total: line.expected, tone: line.countTone)
-                    }
-                    RowDivider()
-                }
-                ListRow("Add an item not on the list", subtitle: "Scan it to add (addition)", icon: .scan, iconTone: .neutral, action: {
-                    if let code = store.addUnlistedItem(toAuditOf: audit.palletReference) {
-                        toasts.show("\(code) added · addition +1")
+        }
+    }
+}
+
+private struct CountTarget: Identifiable, Equatable {
+    let storedItemID: Int
+    let reference: String
+    let name: String?
+    let expected: Int
+    let counted: Int?
+    let deltaID: Int?
+    var id: Int { storedItemID }
+}
+
+private struct AuditLineItem: Identifiable {
+    let line: MobileStoredItemAudit.Line
+    var id: Int { line.storedItem.id }
+}
+
+private struct StoredItemAuditScreen: View {
+    @State var live: StoredItemAuditLive
+    let reference: String
+    @Environment(AppRouter.self) private var router
+    @Environment(ToastCenter.self) private var toasts
+    @State private var counting: CountTarget?
+    @State private var isAddingItem = false
+    @State private var isConfirmingComplete = false
+    @State private var isScanning = false
+
+    var body: some View {
+        Group {
+            if let audit = live.audit {
+                loaded(audit)
+            } else {
+                AppScreen(title: reference, kicker: "Stored item audit") {
+                    if let message = live.loadError {
+                        InlineAlert(title: "Couldn’t load the audit of \(reference)", message: message)
+                        AikuButton("Try again", kind: .secondary) {
+                            Task { await live.load() }
+                        }
                     } else {
-                        toasts.show("No other stored items for this customer", tone: .warn)
+                        SkeletonRow()
+                        SkeletonRow()
                     }
-                })
-                .accessibilityIdentifier("fulfilment.audit.addItem")
+                }
             }
-            FulfilmentNote("An audit covers one pallet or the whole customer. Completing it applies the counted quantities.")
+        }
+        .task { await live.load() }
+        .onChange(of: live.done) { _, done in
+            guard let done else { return }
+            toasts.show(done.message, tone: done.tone)
+            live.clearDone()
+        }
+        .onChange(of: live.isCompleted) { _, completed in
+            if completed { router.back() }
+        }
+    }
+
+    @ViewBuilder
+    private func loaded(_ audit: MobileStoredItemAudit) -> some View {
+        let palletReference = audit.pallet?.reference ?? reference
+        let canCount = audit.can("count")
+        let canAdd = audit.can("add_item")
+        let complete = audit.action("complete")
+        let countedText = "\(audit.counts.counted.grouped) of \(audit.counts.lines.grouped) counted"
+        AppScreen(
+            title: (audit.reference?.isEmpty == false ? audit.reference : nil) ?? palletReference,
+            kicker: PalletDeliveryText.joined(["Stored item audit", "Pallet \(palletReference)", audit.stateLabel])
+        ) {
+            palletCard(audit)
+            if canCount {
+                FulfilmentScanCard(
+                    title: "Scan to count",
+                    detail: "Scan each item on pallet \(palletReference)",
+                    highlight: live.lastScanned ?? "Nothing scanned yet",
+                    footnote: live.lastScanned == nil ? nil : "Last scanned",
+                    identifier: "fulfilment.audit.scan"
+                ) {
+                    isScanning = true
+                }
+            }
+            SectionHeading("Stored items", detail: countedText)
+            if audit.lines.isEmpty, !canAdd {
+                HelperText("No stored items on this pallet.")
+            } else {
+                Card {
+                    ForEach(audit.lines.map(AuditLineItem.init)) { item in
+                        lineRow(item.line, canCount: canCount)
+                        RowDivider()
+                    }
+                    if canAdd {
+                        ListRow("Add an item not on the list", subtitle: "Search the customer’s items, or scan one", icon: .search, iconTone: .neutral) {
+                            live.choiceSearch = ""
+                            isAddingItem = true
+                        }
+                        .accessibilityIdentifier("fulfilment.audit.addItem")
+                    }
+                }
+            }
+            HelperText("Completing the audit applies the counted quantities to this pallet. Items not counted stay as they are.")
         } footer: {
-            AikuButton("Complete audit") {
-                store.completeAudit(ofPallet: audit.palletReference)
-                toasts.show("\(audit.reference) completed · quantities applied")
-                router.back()
+            if let complete {
+                AikuButton(complete.label.isEmpty ? "Complete audit" : complete.label, icon: .check) {
+                    isConfirmingComplete = true
+                }
+                .disabled(live.isWorking)
+                .accessibilityIdentifier("fulfilment.audit.complete")
+            } else {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(audit.stateLabel ?? audit.state)
+                        .font(.aiku(14, .semibold))
+                        .foregroundStyle(AikuColor.text)
+                    Text(countedText)
+                        .font(.aiku(13))
+                        .foregroundStyle(AikuColor.text3)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .accessibilityIdentifier("fulfilment.audit.complete")
+        }
+        .hardwareScanner(isEnabled: canCount && counting == nil && !isAddingItem && !isScanning) { code in
+            Task { await live.scan(code) }
         }
         .fullScreenCover(isPresented: $isScanning) {
-            let current = store.audit(forPallet: palletReference)
-            FulfilmentCameraScan(
-                kicker: "Audit · \(current.palletReference)",
-                title: "Scan to count",
-                feedback: scanFeedback,
-                onClose: { isScanning = false },
-                onScan: {
-                    if let code = store.scanNextAuditItem(palletReference: current.palletReference) {
-                        scanFeedback = "\(code) · counted 1"
-                    }
-                }
-            ) {
-                if let line = focusLine(current) {
-                    panel(line, audit: current)
-                }
+            FulfilmentCodeCamera(title: "Scan to count", onClose: { isScanning = false }) { code in
+                isScanning = false
+                Task { await live.scan(code) }
             }
+        }
+        .aikuSheet(item: $counting) { target in
+            CountSheet(live: live, target: target) { counting = nil }
+        }
+        .aikuSheet(isPresented: $isAddingItem) {
+            AddItemSheet(live: live) { choice in
+                isAddingItem = false
+                counting = CountTarget(storedItemID: choice.id, reference: choice.reference, name: choice.name, expected: 0, counted: nil, deltaID: nil)
+            } onClose: {
+                isAddingItem = false
+            }
+        }
+        .aikuConfirm(
+            "Complete \((audit.reference?.isEmpty == false ? audit.reference : nil) ?? palletReference)?",
+            isPresented: $isConfirmingComplete,
+            message: "The counted quantities are applied to pallet \(palletReference). Items not counted stay as they are.",
+            confirmTitle: complete?.label ?? "Complete audit"
+        ) {
+            Task { await live.complete() }
         }
     }
 
-    private func focusLine(_ audit: FulfilmentAudit) -> FulfilmentAuditLine? {
-        guard let code = audit.currentItemCode else { return nil }
-        return audit.lines.first { $0.itemCode == code }
+    private func palletCard(_ audit: MobileStoredItemAudit) -> some View {
+        var facts: [GoodsInFact] = []
+        if let pallet = audit.pallet {
+            facts.append(GoodsInFact("Pallet", PalletDeliveryText.joined([pallet.reference, pallet.customerReference])))
+        }
+        facts.append(GoodsInFact("Location", audit.pallet?.location?.code ?? "no location"))
+        if let customer = audit.customer?.name {
+            facts.append(GoodsInFact("Customer", customer))
+        }
+        return GoodsInFactGrid(title: "Pallet", facts: facts)
     }
 
-    private func panel(_ line: FulfilmentAuditLine, audit: FulfilmentAudit) -> some View {
-        let left = max(0, line.expected - (line.counted ?? 0))
-        return FulfilmentScanPanel(
-            title: "\(line.itemCode) · Counted \(line.counted ?? 0)",
-            detail: left > 0 ? "\(left) left on this item" : "All \(line.expected) counted",
-            allTitle: "Count all \(left)",
-            verb: "Count",
-            maximum: left,
-            onAll: { store.countAll(line.itemCode, inAuditOf: audit.palletReference) },
-            onAmount: { store.count(line.itemCode, by: $0, inAuditOf: audit.palletReference) }
-        )
+    private func lineRow(_ line: MobileStoredItemAudit.Line, canCount: Bool) -> some View {
+        let tone = FulfilmentStorageText.auditTone(type: line.auditType, difference: line.difference)
+        return ListRow(
+            line.storedItem.reference ?? "#\(line.storedItem.id)",
+            subtitle: PalletDeliveryText.joined([line.storedItem.name, line.isCounted ? "Expected \(line.quantity)" : "Expected \(line.quantity) · not counted yet"]),
+            chips: FulfilmentStorageText.auditChip(line).map { [Chip($0, tone)] } ?? [],
+            action: canCount ? {
+                live.clearSheetError()
+                counting = CountTarget(
+                    storedItemID: line.storedItem.id,
+                    reference: line.storedItem.reference ?? "#\(line.storedItem.id)",
+                    name: line.storedItem.name,
+                    expected: line.quantity,
+                    counted: line.auditedQuantity,
+                    deltaID: line.deltaId
+                )
+            } : nil
+        ) {
+            EmptyView()
+        } trailing: {
+            FulfilmentCountLabel(done: line.auditedQuantity ?? 0, total: line.quantity, tone: line.isCounted ? tone : .neutral)
+        }
+        .accessibilityIdentifier("fulfilment.audit.line.\(line.storedItem.reference ?? "\(line.storedItem.id)")")
+    }
+}
+
+private struct CountSheet: View {
+    let live: StoredItemAuditLive
+    let target: CountTarget
+    let onClose: () -> Void
+    @State private var text: String
+    @State private var isMissing = false
+
+    init(live: StoredItemAuditLive, target: CountTarget, onClose: @escaping () -> Void) {
+        self.live = live
+        self.target = target
+        self.onClose = onClose
+        _text = State(initialValue: String(target.counted ?? target.expected))
+    }
+
+    var body: some View {
+        SheetScaffold(title: target.reference, subtitle: target.name) {
+            Text("Expected \(target.expected)")
+                .font(.aiku(14))
+                .foregroundStyle(AikuColor.text2)
+            AikuTextField("Counted", text: $text, error: isMissing ? "Enter the counted quantity." : live.sheetError, keyboard: .numberPad)
+                .accessibilityIdentifier("fulfilment.audit.countField")
+        } footer: {
+            AikuButton("Save count", icon: .check) {
+                guard let quantity = Int(text.trimmingCharacters(in: .whitespacesAndNewlines)), quantity >= 0 else {
+                    isMissing = true
+                    return
+                }
+                Task {
+                    if await live.count(storedItemID: target.storedItemID, quantity: quantity) { onClose() }
+                }
+            }
+            .disabled(live.isWorking)
+            .accessibilityIdentifier("fulfilment.audit.saveCount")
+            if let deltaID = target.deltaID {
+                AikuButton("Remove count", kind: .danger) {
+                    Task {
+                        if await live.removeCount(deltaID: deltaID) { onClose() }
+                    }
+                }
+                .disabled(live.isWorking)
+                .accessibilityIdentifier("fulfilment.audit.removeCount")
+            }
+            AikuButton("Cancel", kind: .tertiary, action: onClose)
+        }
+    }
+}
+
+private struct AddItemSheet: View {
+    @Bindable var live: StoredItemAuditLive
+    let onChoose: (MobileAuditChoice) -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        SheetScaffold(title: "Add an item not on the list") {
+            SearchField(text: $live.choiceSearch, placeholder: "Search reference, barcode or name")
+            if let message = live.choicesError {
+                InlineAlert(title: "Couldn’t load the customer’s items", message: message)
+            } else if live.isLoadingChoices, live.choices.isEmpty {
+                SkeletonRow()
+                SkeletonRow()
+            } else if live.choices.isEmpty {
+                HelperText("No other item of this customer matches.")
+            } else {
+                CardList(live.choices) { choice in
+                    ListRow(choice.reference, subtitle: PalletDeliveryText.joined([choice.name, choice.barcode]), action: { onChoose(choice) })
+                        .accessibilityIdentifier("fulfilment.audit.choice.\(choice.reference)")
+                }
+            }
+        } footer: {
+            AikuButton("Cancel", kind: .tertiary, action: onClose)
+        }
+        .task(id: live.choiceSearch) {
+            await live.searchChoices(live.choiceSearch)
+        }
     }
 }

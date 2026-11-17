@@ -308,7 +308,7 @@ internal fun HrSubmissionProblem(submission: HrSubmission, shownFields: List<Str
 
 @Composable
 internal fun HrFormButtons(submitLabel: String, isSending: Boolean, onSubmit: () -> Unit, onCancel: () -> Unit) {
-    AikuButton(text = submitLabel, onClick = onSubmit, isLoading = isSending, height = 52.dp, modifier = Modifier.fillMaxWidth())
+    AikuButton(text = submitLabel, onClick = onSubmit, icon = R.drawable.ic_ui_next, isLoading = isSending, height = 52.dp, modifier = Modifier.fillMaxWidth())
     AikuButton(text = stringResource(R.string.dialog_cancel), onClick = onCancel, style = ButtonStyle.Outline, height = 44.dp, modifier = Modifier.fillMaxWidth())
 }
 
@@ -420,6 +420,7 @@ internal fun HrTimePickerDialog(title: String, initial: LocalTime, onPick: (Loca
                         onPick(LocalTime.of(state.hour, state.minute))
                         onDismiss()
                     },
+                    icon = R.drawable.ic_ui_check,
                     height = 44.dp,
                     modifier = Modifier.weight(1f),
                 )

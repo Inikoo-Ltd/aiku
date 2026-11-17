@@ -53,6 +53,7 @@ internal fun EditNoteSheet(
             AikuButton(
                 text = stringResource(R.string.goodsout_note_save),
                 onClick = { onSave(text) },
+                icon = R.drawable.ic_ui_check,
                 isLoading = isWorking,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),

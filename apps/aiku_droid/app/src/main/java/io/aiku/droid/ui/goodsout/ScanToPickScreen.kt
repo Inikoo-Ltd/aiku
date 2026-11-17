@@ -169,7 +169,7 @@ internal fun ScanToPickCamera(isOn: Boolean, onToggle: () -> Unit) {
     AikuButton(
         text = stringResource(if (isOn) R.string.goodsout_scan_camera_off else R.string.goodsout_scan_camera_on),
         onClick = onToggle,
-        style = ButtonStyle.Outline,
+        style = if (isOn) ButtonStyle.Outline else ButtonStyle.Scan,
         icon = R.drawable.ic_ui_scan,
         modifier = Modifier.fillMaxWidth(),
     )

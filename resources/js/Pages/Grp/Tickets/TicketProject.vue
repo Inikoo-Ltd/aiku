@@ -22,11 +22,13 @@ import TicketProjectProgress from "@/Components/Tickets/TicketProjectProgress.vu
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import StaffTaskQuickLook from "@/Components/Tasks/StaffTaskQuickLook.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
+import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck } from "@fal"
+import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt } from "@fal"
 
-library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck)
+library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt)
 
 type Person = { id: number; name: string; avatar: Record<string, string> | null }
 type Route = { name: string; parameters?: Record<string, unknown> }
@@ -83,7 +85,7 @@ const props = defineProps<{
     commits: { hash: string; subject: string | null; version: string | null; deployed_at: string | null; reference: string; url: string }[]
     activity: { at: string; icon: string; text: string; url: string | null; by: string | null }[]
     workload: { person: Person | null; todo: number; in_progress: number; done: number }[]
-    updates: { id: number; body: string; health: Health | null; health_label: string | null; author: Person | null; created_at: string }[]
+    updates: { id: number; body: string; health: Health | null; health_label: string | null; author: Person | null; created_at: string; is_edited: boolean; can_edit: boolean; can_delete: boolean }[]
     can_edit: boolean
     options: { statuses: { label: string; value: string }[]; healths: { label: string; value: string }[]; staff: { label: string; value: number }[]; parents: { label: string; value: number }[] }
     routes: { update: Route; post_update: Route; attach_work: Route; create_ticket: Route }
@@ -182,6 +184,43 @@ const toggleUpdateHealth = (value: string) => (updateForm.health = updateForm.he
 const postUpdate = () =>
     updateForm.post(route(props.routes.post_update.name, props.routes.post_update.parameters), { preserveScroll: true, onSuccess: () => updateForm.reset() })
 
+const editingUpdateId = ref<number | null>(null)
+const editUpdateForm = useForm({ body: "", health: null as string | null })
+const startEditingUpdate = (update: (typeof props.updates)[number]) => {
+    editUpdateForm.clearErrors()
+    editUpdateForm.body = update.body
+    editUpdateForm.health = update.health
+    editingUpdateId.value = update.id
+}
+const toggleEditUpdateHealth = (value: string) => (editUpdateForm.health = editUpdateForm.health === value ? null : value)
+const saveEditedUpdate = () => {
+    if (editingUpdateId.value === null) {
+        return
+    }
+    editUpdateForm.patch(route("grp.models.ticket_project.update.update", editingUpdateId.value), {
+        preserveScroll: true,
+        onSuccess: () => (editingUpdateId.value = null),
+    })
+}
+
+const deletingUpdateId = ref<number | null>(null)
+const deleteUpdateError = ref<string | null>(null)
+const deleteUpdate = (id: number, closeModal: () => void) => {
+    deletingUpdateId.value = id
+    deleteUpdateError.value = null
+    router.delete(route("grp.models.ticket_project.update.delete", id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeModal()
+            if (editingUpdateId.value === id) {
+                editingUpdateId.value = null
+            }
+        },
+        onError: () => (deleteUpdateError.value = ctrans("The update could not be deleted. Reload the page and try again.")),
+        onFinish: () => (deletingUpdateId.value = null),
+    })
+}
+
 const milestoneDraft = ref<Milestone[]>([])
 watch(() => props.milestones, (milestones) => (milestoneDraft.value = milestones.map((milestone) => ({ ...milestone }))), { immediate: true })
 
@@ -260,6 +299,7 @@ const milestoneFilter = ref<"all" | "none" | number>("all")
 const assigneeFilter = ref<"all" | "none" | number>("all")
 const showClosed = ref(false)
 const workView = ref<"list" | "board">("list")
+const workSort = ref<"reference" | "updated">("reference")
 
 const milestoneOptions = computed(() => props.milestones.map((milestone) => ({ label: milestone.name, value: milestone.id as number })))
 
@@ -280,17 +320,20 @@ const filteredWork = computed(() => {
         if (needle && !`${item.reference} ${item.subject}`.toLowerCase().includes(needle)) return false
         if (item.state === "cancelled" && !showClosed.value) return false
         return true
-    })
+    }).sort((a, b) =>
+        workSort.value === "updated"
+            ? Date.parse(b.updated_at) - Date.parse(a.updated_at)
+            : a.reference.localeCompare(b.reference, undefined, { numeric: true }),
+    )
 })
 
 
-const stateOrder: Record<WorkState, number> = { in_progress: 0, todo: 1, done: 2, cancelled: 3 }
 const milestoneById = computed(() => new Map(props.milestones.map((milestone, index) => [milestone.id as number, { milestone, index }])))
 
 const workTable = computed(() => {
     const rank = (item: WorkItem) => (item.milestone_id !== null ? (milestoneById.value.get(item.milestone_id)?.index ?? props.milestones.length) : props.milestones.length)
     const rows = [...filteredWork.value]
-        .sort((a, b) => rank(a) - rank(b) || stateOrder[a.state] - stateOrder[b.state])
+        .sort((a, b) => rank(a) - rank(b))
         .map((item, index, sorted) => ({ ...item, is_group_start: index === 0 || sorted[index - 1].milestone_id !== item.milestone_id }))
     return { data: rows, meta: { total: rows.length, per_page: Math.max(1, rows.length), current_page: 1, last_page: 1, from: rows.length ? 1 : 0, to: rows.length } }
 })
@@ -303,6 +346,10 @@ const typeOptions = [
 ]
 const milestoneFilterOptions = computed(() => [{ label: ctrans("All milestones"), value: "all" }, { label: ctrans("No milestone"), value: "none" }, ...milestoneOptions.value])
 const assigneeFilterOptions = computed(() => [{ label: ctrans("Everyone"), value: "all" }, { label: ctrans("Unassigned"), value: "none" }, ...assignees.value.map((person) => ({ label: person.name, value: person.id }))])
+const workSortOptions = [
+    { label: ctrans("Sort by ticket ID"), value: "reference" },
+    { label: ctrans("Sort by last updated"), value: "updated" },
+]
 const workViewOptions = [
     { label: ctrans("List"), value: "list", icon: "fal fa-list" },
     { label: ctrans("Board"), value: "board", icon: "fal fa-columns" },
@@ -391,7 +438,7 @@ const timeline = computed(() => {
     const todayLeft = today.getTime() >= start.getTime() && today.getTime() <= end.getTime() ? position(today) : null
     const targetLeft = props.project.target_date ? position(parseDay(props.project.target_date)) : null
 
-    return { ticks, months, rows, todayLeft, targetLeft }
+    return { ticks, months, rows, todayLeft, targetLeft, position }
 })
 
 const expandedMilestones = ref<Record<number, boolean>>({})
@@ -417,7 +464,10 @@ const openQuickLook = (item: WorkItem, event: MouseEvent) => {
 
 const reloadWork = () => router.reload({ only: ["work", "milestones", "workload"] })
 
-const workOfMilestone = (milestone: Milestone) => props.work.filter((item) => item.milestone_id === milestone.id && item.state !== "cancelled")
+const workOfMilestone = (milestone: Milestone) =>
+    props.work
+        .filter((item) => item.milestone_id === milestone.id && item.state !== "cancelled")
+        .map((item) => ({ ...item, done_left: item.done_at ? timeline.value.position(new Date(item.done_at)) : null }))
 const openMilestoneInWork = (milestone: Milestone) => {
     milestoneFilter.value = milestone.id as number
     showClosed.value = true
@@ -613,17 +663,85 @@ const burnUpOptions = {
                         <Button icon="fal fa-check" :label="ctrans('Post update')" type="tertiary" :disabled="!updateForm.body.trim()" :loading="updateForm.processing" @click="postUpdate" />
                     </div>
                 </form>
+                <p v-if="deleteUpdateError" class="mb-2 text-xs text-red-600">{{ deleteUpdateError }}</p>
                 <p v-if="!updates.length" class="text-sm text-gray-500">{{ ctrans("No updates yet") }}</p>
                 <ol class="space-y-4">
                     <li v-for="update in updates" :key="update.id" class="flex gap-3">
                         <TicketUserAvatar :name="update.author?.name ?? null" :avatar="update.author?.avatar" />
                         <div class="min-w-0 flex-1">
-                            <p class="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                            <div class="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
                                 <span class="font-medium text-gray-700">{{ update.author?.name ?? "-" }}</span>
                                 <span>{{ useFormatTime(update.created_at, { formatTime: "hm" }) }}</span>
+                                <span v-if="update.is_edited" class="text-gray-400">{{ ctrans("(edited)") }}</span>
                                 <span v-if="update.health" class="rounded-full px-2 py-0.5" :class="healthClasses[update.health]">{{ update.health_label }}</span>
-                            </p>
-                            <TicketBody :text="update.body" class="text-sm" />
+                                <span v-if="(update.can_edit || update.can_delete) && editingUpdateId !== update.id" class="ml-auto flex items-center gap-1">
+                                    <button
+                                        v-if="update.can_edit"
+                                        v-tooltip="ctrans('Edit')"
+                                        type="button"
+                                        class="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-40"
+                                        :aria-label="ctrans('Edit update')"
+                                        :disabled="deletingUpdateId === update.id"
+                                        @click="startEditingUpdate(update)">
+                                        <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                                    </button>
+                                    <ModalConfirmation
+                                        v-if="update.can_delete"
+                                        :title="update.can_edit ? ctrans('Delete this update?') : ctrans('Delete :author\'s update?', { author: update.author?.name ?? ctrans('this person') })"
+                                        :description="update.can_edit ? ctrans('The update will be removed from the project.') : ctrans('This is not your update. It will be removed for everyone and cannot be undone.')">
+                                        <template #default="{ changeModel }">
+                                            <button
+                                                v-tooltip="ctrans('Delete')"
+                                                type="button"
+                                                class="p-1 text-gray-500 hover:text-red-600 disabled:opacity-40"
+                                                :aria-label="ctrans('Delete update')"
+                                                :disabled="deletingUpdateId === update.id"
+                                                @click="changeModel">
+                                                <LoadingIcon v-if="deletingUpdateId === update.id" />
+                                                <FontAwesomeIcon v-else icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                                            </button>
+                                        </template>
+                                        <template #btn-yes="{ closeModal }">
+                                            <Button type="tertiary" :label="ctrans('Yes, delete')" :loading="deletingUpdateId === update.id" @click="deleteUpdate(update.id, closeModal)">
+                                                <template #icon>
+                                                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
+                                                </template>
+                                            </Button>
+                                        </template>
+                                    </ModalConfirmation>
+                                </span>
+                            </div>
+                            <form v-if="editingUpdateId === update.id" class="mt-1 rounded-md border border-gray-200 p-2" @submit.prevent="saveEditedUpdate">
+                                <Textarea v-model="editUpdateForm.body" rows="3" auto-resize class="w-full text-sm" :aria-label="ctrans('Update text')" />
+                                <p v-if="editUpdateForm.errors.body" class="text-xs text-red-600">{{ editUpdateForm.errors.body }}</p>
+                                <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
+                                    <div class="inline-flex overflow-hidden rounded-md border border-gray-300 text-xs">
+                                        <button
+                                            v-for="health in options.healths"
+                                            :key="health.value"
+                                            type="button"
+                                            class="flex items-center gap-1.5 border-r border-gray-300 px-2 py-1 last:border-r-0"
+                                            :class="editUpdateForm.health === health.value ? healthClasses[health.value] : 'bg-white text-gray-600 hover:bg-gray-50'"
+                                            @click="toggleEditUpdateHealth(health.value)">
+                                            <span class="size-2 rounded-full" :class="healthDots[health.value]" />
+                                            {{ health.label }}
+                                        </button>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <Button type="tertiary" :label="ctrans('Cancel')" :disabled="editUpdateForm.processing" @click="editingUpdateId = null">
+                                            <template #icon>
+                                                <FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                                            </template>
+                                        </Button>
+                                        <Button type="tertiary" :label="ctrans('Save')" :disabled="!editUpdateForm.body.trim()" :loading="editUpdateForm.processing" @click="saveEditedUpdate">
+                                            <template #icon>
+                                                <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+                                            </template>
+                                        </Button>
+                                    </div>
+                                </div>
+                            </form>
+                            <TicketBody v-else :text="update.body" class="text-sm" />
                         </div>
                     </li>
                 </ol>
@@ -728,7 +846,8 @@ const burnUpOptions = {
                 <Checkbox v-model="showClosed" binary input-id="project-show-closed" />
                 {{ ctrans("Show closed") }}
             </label>
-            <SegmentedToggle v-model="workView" :options="workViewOptions" :aria-label="ctrans('View')" class="ml-auto" />
+            <Select v-model="workSort" :options="workSortOptions" option-label="label" option-value="value" size="small" class="ml-auto w-52" />
+            <SegmentedToggle v-model="workView" :options="workViewOptions" :aria-label="ctrans('View')" />
         </div>
 
         <div v-if="can_edit">
@@ -904,15 +1023,31 @@ const burnUpOptions = {
                         </div>
                         <div v-if="expandedMilestones[row.milestone.id as number]" class="border-t border-gray-100 bg-gray-50/60">
                             <ul class="divide-y divide-gray-100">
-                                <li v-for="item in workOfMilestone(row.milestone)" :key="item.key" class="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 py-1.5 pl-9 pr-3 text-sm hover:bg-gray-50" :class="item.state === 'done' && 'opacity-70'" @click="openQuickLook(item, $event)">
-                                    <FontAwesomeIcon v-tooltip="item.status_label" :icon="item.status_icon.icon" :class="item.status_icon.class" fixed-width />
-                                    <a :href="item.url" class="min-w-0 flex-1 basis-60 truncate hover:underline">
-                                        <span class="mr-2 font-mono text-xs text-gray-500">{{ item.reference }}</span>
-                                        <span class="text-gray-700" :class="priorityClasses[item.priority]">{{ item.subject }}</span>
-                                    </a>
-                                    <span class="text-xs text-gray-500">{{ item.status_label }}</span>
-                                    <TicketUserAvatar v-if="item.assignee" v-tooltip="item.assignee.name" :name="item.assignee.name" :avatar="item.assignee.avatar" size="sm" />
-                                    <span v-else class="text-xs text-gray-500">{{ ctrans("Unassigned") }}</span>
+                                <li v-for="item in workOfMilestone(row.milestone)" :key="item.key" :class="timelineColumns" class="cursor-pointer text-sm hover:bg-gray-50" @click="openQuickLook(item, $event)">
+                                    <div class="flex min-w-0 items-center gap-1.5 py-1.5 pl-7 pr-3" :class="item.state === 'done' && 'opacity-70'">
+                                        <FontAwesomeIcon v-tooltip="item.status_label" :icon="item.status_icon.icon" :class="item.status_icon.class" fixed-width />
+                                        <a v-tooltip="item.subject" :href="item.url" class="min-w-0 flex-1 truncate hover:underline">
+                                            <span class="mr-1.5 whitespace-nowrap font-mono text-xs text-gray-500">{{ item.reference }}</span>
+                                            <span class="text-gray-700" :class="priorityClasses[item.priority]">{{ item.subject }}</span>
+                                        </a>
+                                        <TicketUserAvatar v-if="item.assignee" v-tooltip="item.assignee.name" :name="item.assignee.name" :avatar="item.assignee.avatar" size="sm" />
+                                    </div>
+                                    <div class="relative min-h-8 pr-3">
+                                        <span v-for="tick in timeline.ticks" :key="tick.left" class="absolute inset-y-0 border-l border-gray-100" :style="{ left: tick.left + '%' }" />
+                                        <span v-if="timeline.targetLeft !== null" class="absolute inset-y-0 border-l border-dashed border-gray-400" :style="{ left: timeline.targetLeft + '%' }" />
+                                        <span v-if="timeline.todayLeft !== null" class="absolute inset-y-0 z-10 border-l-2 border-red-400" :style="{ left: timeline.todayLeft + '%' }" />
+                                        <template v-if="item.done_at && item.done_left !== null">
+                                            <span
+                                                v-tooltip="ctrans('Done :date', { date: shortDate(new Date(item.done_at)) })"
+                                                class="absolute top-1/2 z-20 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-green-500 ring-2 ring-white"
+                                                :style="{ left: item.done_left + '%' }" />
+                                            <span
+                                                class="absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-xs tabular-nums text-gray-500"
+                                                :style="item.done_left <= 88 ? { left: `calc(${item.done_left}% + 10px)` } : { right: `calc(${100 - item.done_left}% + 10px)` }">
+                                                {{ shortDate(new Date(item.done_at)) }}
+                                            </span>
+                                        </template>
+                                    </div>
                                 </li>
                             </ul>
                             <button class="flex items-center gap-1.5 py-1.5 pl-9 pr-3 text-xs text-gray-500 hover:text-gray-800" @click="openMilestoneInWork(row.milestone)">

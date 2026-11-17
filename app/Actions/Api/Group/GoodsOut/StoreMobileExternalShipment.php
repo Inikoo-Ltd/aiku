@@ -30,22 +30,31 @@ class StoreMobileExternalShipment
         /** @var User $user */
         $user = $request->user();
         $this->ensureCanShip($deliveryNote, $user);
-        $this->ensureActionAvailable($deliveryNote, $user, 'get_external_shipment');
 
-        $this->passingShipmentRefusals(function () use ($deliveryNote) {
-            if ($this->isFaireShipment($deliveryNote)) {
-                StoreShipmentFromFaire::run($deliveryNote);
-            } else {
-                ProcessTiktokOrderShipment::run($deliveryNote->orders->firstOrFail());
+        return $this->underShippingLock($deliveryNote, function () use ($deliveryNote, $user) {
+            $deliveryNote->refresh();
+
+            if ($this->externalShipmentRoute($deliveryNote) && $deliveryNote->shipments()->exists()) {
+                return $this->respondWith($deliveryNote, $user, 'nothing_changed', __('The shipment is already there.'));
             }
+
+            $this->ensureActionAvailable($deliveryNote, $user, 'get_external_shipment');
+
+            $this->passingShipmentRefusals(function () use ($deliveryNote) {
+                if ($this->isFaireShipment($deliveryNote)) {
+                    StoreShipmentFromFaire::run($deliveryNote);
+                } else {
+                    ProcessTiktokOrderShipment::run($deliveryNote->orders->firstOrFail());
+                }
+            });
+
+            if ($deliveryNote->shipments()->doesntExist()) {
+                return $this->respondWith($deliveryNote, $user, 'nothing_changed', __(':engine did not return a shipment yet. Try again in a moment.', [
+                    'engine' => $this->externalEngineLabel($deliveryNote),
+                ]));
+            }
+
+            return $this->respondWith($deliveryNote, $user, 'done', __('Shipment added.'));
         });
-
-        if ($deliveryNote->shipments()->doesntExist()) {
-            return $this->respondWith($deliveryNote, $user, 'nothing_changed', __(':engine did not return a shipment yet. Try again in a moment.', [
-                'engine' => $this->externalEngineLabel($deliveryNote),
-            ]));
-        }
-
-        return $this->respondWith($deliveryNote, $user, 'done', __('Shipment added.'));
     }
 }

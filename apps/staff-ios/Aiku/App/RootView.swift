@@ -75,6 +75,7 @@ struct RootView: View {
         LocationsStore.shared.resetToSample()
         InventoryFamiliesFeed.shared.reset()
         GoodsInStore.shared.resetToSample()
+        PalletDeliveriesFeed.shared.reset()
         Task { await authStore.signOut() }
     }
 }

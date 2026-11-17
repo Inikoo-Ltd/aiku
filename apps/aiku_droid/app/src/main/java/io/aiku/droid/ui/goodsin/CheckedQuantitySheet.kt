@@ -105,6 +105,7 @@ internal fun CheckedQuantitySheet(
             AikuButton(
                 text = pluralStringResource(R.plurals.goodsin_save_checked, pluralQuantity(checked), quantityText(checked)),
                 onClick = { onSave(checked) },
+                icon = R.drawable.ic_ui_check,
                 isLoading = isWorking,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -113,6 +114,7 @@ internal fun CheckedQuantitySheet(
                 text = stringResource(R.string.goodsin_check_all, expectedText),
                 onClick = { onSave(item.skoExpected) },
                 style = ButtonStyle.Soft,
+                icon = R.drawable.ic_ui_check_double,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
             )

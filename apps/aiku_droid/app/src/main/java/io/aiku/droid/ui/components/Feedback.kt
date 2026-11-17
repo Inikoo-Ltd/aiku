@@ -260,7 +260,7 @@ fun ConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     dismissLabel: String = stringResource(R.string.dialog_cancel),
-    isDestructive: Boolean = false,
+    confirmLook: ButtonLook = ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_next),
 ) {
     val colors = LocalAikuColors.current
     val shape = RoundedCornerShape(14.dp)
@@ -283,7 +283,8 @@ fun ConfirmDialog(
                 AikuButton(
                     text = confirmLabel,
                     onClick = onConfirm,
-                    style = if (isDestructive) ButtonStyle.Danger else ButtonStyle.Primary,
+                    style = confirmLook.style,
+                    icon = confirmLook.icon,
                     height = 44.dp,
                     modifier = Modifier.weight(1f),
                 )

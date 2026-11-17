@@ -85,9 +85,7 @@ struct LocationsDetailView: View {
                             pallet.reference,
                             subtitle: [pallet.customer, "Pallet", pallet.state].filter { !$0.isEmpty }.joined(separator: " · "),
                             icon: .pallet,
-                            iconTone: .neutral,
-                            showsChevron: !store.isRemote,
-                            action: store.isRemote ? nil : { router.open(FulfilmentRoute.pallet(reference: pallet.reference)) }
+                            iconTone: .neutral
                         )
                         .accessibilityIdentifier("locations.pallet.\(pallet.reference)")
                         RowDivider()
@@ -97,11 +95,7 @@ struct LocationsDetailView: View {
                     RowDivider()
                 }
                 ListRow("Stock movements", subtitle: "History of this location", icon: .history, iconTone: .neutral, showsChevron: true) {
-                    if store.isRemote {
-                        router.open(LocationsRoute.movements(code: location.code))
-                    } else {
-                        router.open(InventoryRoute.stockHistory)
-                    }
+                    router.open(LocationsRoute.movements(code: location.code))
                 }
                 .accessibilityIdentifier("locations.movements")
             }

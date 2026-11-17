@@ -52,8 +52,7 @@ enum ShellMenuCatalog {
             ShellMenuItem(id: "inventory.families", title: "SKO families", icon: .skoFamilies, requirement: .inventory, link: .inventory(.families)),
             ShellMenuItem(id: "inventory.skos", title: "SKOs", icon: .sko, badge: .pill(Chip("17 low", .warn)), requirement: .inventory, link: .inventory(.skos)),
             ShellMenuItem(id: "inventory.pallets", title: "Stored pallets", icon: .sko, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.pallets)),
-            ShellMenuItem(id: "inventory.storedItems", title: "Stored items", icon: .sko, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.storedItems)),
-            ShellMenuItem(id: "inventory.history", title: "Stock history", icon: .history, requirement: .inventory, link: .inventory(.stockHistory))
+            ShellMenuItem(id: "inventory.storedItems", title: "Stored items", icon: .sko, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.storedItems))
         ]),
         ShellMenuGroup(id: "locations", title: "Locations", icon: .locations, items: [
             ShellMenuItem(id: "locations.warehouse", title: "Warehouse", icon: .warehouse, requirement: .locations, link: .locations(.warehouse)),

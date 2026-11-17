@@ -33,6 +33,7 @@ import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.NoteCard
 import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.fulfilment.inbound.DeliveryPalletList
 import io.aiku.droid.ui.fulfilment.inbound.DeliveryPalletSheet
 import io.aiku.droid.ui.fulfilment.inbound.InboundLoading
@@ -40,6 +41,7 @@ import io.aiku.droid.ui.fulfilment.inbound.PalletDeliveryStatus
 import io.aiku.droid.ui.fulfilment.inbound.PalletDeliveryUiState
 import io.aiku.droid.ui.fulfilment.inbound.PalletDeliveryViewModel
 import io.aiku.droid.ui.fulfilment.inbound.deliveryKicker
+import io.aiku.droid.ui.fulfilment.inbound.fulfilmentInboundActionLook
 import io.aiku.droid.ui.fulfilment.inbound.palletDeliveryDoneText
 import io.aiku.droid.ui.fulfilment.inbound.quotedReference
 import io.aiku.droid.ui.fulfilment.inbound.rememberPalletDelivery
@@ -157,6 +159,7 @@ private fun PalletDeliveryContent(viewModel: PalletDeliveryViewModel, state: Pal
             body = stringResource(R.string.fulfilment_inbound_receive_body),
             confirmLabel = delivery.action(FulfilmentInboundActionKey.RECEIVE)?.label?.takeIf { it.isNotBlank() }
                 ?: stringResource(R.string.fulfilment_inbound_mark_received),
+            confirmLook = fulfilmentInboundActionLook(FulfilmentInboundActionKey.RECEIVE).forConfirm(),
             onConfirm = {
                 confirm = null
                 viewModel.receive()
@@ -172,7 +175,7 @@ private fun PalletDeliveryContent(viewModel: PalletDeliveryViewModel, state: Pal
                 viewModel.notReceived(current.palletId)
             },
             onDismiss = { confirm = null },
-            isDestructive = true,
+            confirmLook = fulfilmentInboundActionLook(FulfilmentInboundActionKey.NOT_RECEIVED).forConfirm(),
         )
         is DeliveryConfirm.UndoNotReceived -> ConfirmDialog(
             title = stringResource(R.string.fulfilment_inbound_undo_not_received_title, current.reference),
@@ -183,6 +186,7 @@ private fun PalletDeliveryContent(viewModel: PalletDeliveryViewModel, state: Pal
                 viewModel.undoNotReceived(current.palletId)
             },
             onDismiss = { confirm = null },
+            confirmLook = fulfilmentInboundActionLook(FulfilmentInboundActionKey.UNDO_NOT_RECEIVED).forConfirm(),
         )
         null -> Unit
     }
@@ -202,7 +206,8 @@ private fun deliveryFooter(
             AikuButton(
                 text = receive.label.ifBlank { stringResource(R.string.fulfilment_inbound_mark_received) },
                 onClick = onReceive,
-                icon = R.drawable.ic_ui_check,
+                style = fulfilmentInboundActionLook(receive.key).style,
+                icon = fulfilmentInboundActionLook(receive.key).icon,
                 isLoading = working == PalletDeliveryWrite.Receive,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -212,7 +217,8 @@ private fun deliveryFooter(
             AikuButton(
                 text = startBooking.label.ifBlank { stringResource(R.string.fulfilment_delivery_start_booking_in) },
                 onClick = onStartBooking,
-                icon = R.drawable.ic_ui_pallet,
+                style = fulfilmentInboundActionLook(startBooking.key).style,
+                icon = fulfilmentInboundActionLook(startBooking.key).icon,
                 isLoading = working == PalletDeliveryWrite.StartBooking,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),

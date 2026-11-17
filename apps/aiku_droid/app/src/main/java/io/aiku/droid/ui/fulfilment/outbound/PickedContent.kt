@@ -28,6 +28,7 @@ import io.aiku.droid.ui.components.FooterStatus
 import io.aiku.droid.ui.components.IconTile
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.inFooter
 import io.aiku.droid.ui.components.rememberFileOpener
 import io.aiku.droid.ui.fulfilment.FulfilmentRow
 import io.aiku.droid.ui.fulfilment.FulfilmentSuccessHero
@@ -133,8 +134,8 @@ internal fun PickedContent(viewModel: PalletReturnViewModel, state: PalletReturn
                 AikuButton(
                     text = firstShipment.label.ifBlank { stringResource(R.string.goodsout_add_shipment) },
                     onClick = openShipment,
-                    style = if (dispatch != null) ButtonStyle.Outline else ButtonStyle.Primary,
-                    icon = R.drawable.ic_ui_truck,
+                    style = fulfilmentOutboundActionLook(firstShipment.key).inFooter(isFirst = dispatch == null).style,
+                    icon = fulfilmentOutboundActionLook(firstShipment.key).icon,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -146,7 +147,8 @@ internal fun PickedContent(viewModel: PalletReturnViewModel, state: PalletReturn
                         sheetProblem = null
                         sheet = PickedSheet.Dispatch
                     },
-                    icon = R.drawable.ic_ui_truck,
+                    style = fulfilmentOutboundActionLook(dispatch.key).style,
+                    icon = fulfilmentOutboundActionLook(dispatch.key).icon,
                     isLoading = state.working == PalletReturnWrite.Dispatch,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
@@ -169,7 +171,8 @@ internal fun PickedContent(viewModel: PalletReturnViewModel, state: PalletReturn
                     AikuButton(
                         text = action.label.ifBlank { stringResource(R.string.fulfilment_out_print) },
                         onClick = viewModel::printInserts,
-                        style = ButtonStyle.Soft,
+                        style = fulfilmentOutboundActionLook(action.key).style,
+                        icon = fulfilmentOutboundActionLook(action.key).icon,
                         isLoading = state.working == PalletReturnWrite.PrintInserts,
                         height = 44.dp,
                     )
@@ -194,8 +197,8 @@ internal fun PickedContent(viewModel: PalletReturnViewModel, state: PalletReturn
             AikuButton(
                 text = stringResource(R.string.goodsout_add_another_shipment),
                 onClick = openShipment,
-                style = ButtonStyle.Outline,
-                icon = R.drawable.ic_ui_truck,
+                style = ButtonStyle.Soft,
+                icon = R.drawable.ic_ui_plus,
                 height = 48.dp,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -294,6 +297,7 @@ internal fun DispatchedContent(viewModel: PalletReturnViewModel, state: PalletRe
         AikuButton(
             text = stringResource(R.string.fulfilment_return_next),
             onClick = { navigator.switchSection(FulfilmentReturnsRoute) },
+            icon = R.drawable.ic_ui_next,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),
         )

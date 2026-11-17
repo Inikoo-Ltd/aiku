@@ -7,10 +7,12 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.aiku.droid.R
+import io.aiku.droid.data.api.NoteActionKey
 import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.goodsout.ActionProblem
+import io.aiku.droid.ui.goodsout.goodsOutActionLook
 
 @Composable
 internal fun BackToPickingSheet(
@@ -37,7 +39,8 @@ internal fun BackToPickingSheet(
             AikuButton(
                 text = confirmLabel,
                 onClick = onConfirm,
-                icon = R.drawable.ic_ui_undo,
+                style = goodsOutActionLook(NoteActionKey.BACK_TO_PICKING).style,
+                icon = goodsOutActionLook(NoteActionKey.BACK_TO_PICKING).icon,
                 isLoading = isWorking,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),

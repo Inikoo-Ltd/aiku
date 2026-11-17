@@ -171,8 +171,8 @@ internal fun HrAttachmentPicker(
             AikuButton(
                 text = addLabel,
                 onClick = { launcher.launch(AllowedAttachmentTypes) },
-                style = ButtonStyle.Outline,
-                icon = R.drawable.ic_ui_document,
+                style = ButtonStyle.Soft,
+                icon = R.drawable.ic_ui_plus,
                 height = 44.dp,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -213,7 +213,7 @@ private fun HrPickedFileRow(file: PickedAttachment, onRemove: () -> Unit) {
                 .clickable(role = Role.Button, onClickLabel = removeLabel, onClick = onRemove)
                 .semantics { contentDescription = removeLabel },
         ) {
-            Icon(painter = painterResource(R.drawable.ic_ui_close), contentDescription = null, tint = colors.textTertiary, modifier = Modifier.size(18.dp))
+            Icon(painter = painterResource(R.drawable.ic_ui_close), contentDescription = null, tint = colors.danger, modifier = Modifier.size(18.dp))
         }
     }
 }

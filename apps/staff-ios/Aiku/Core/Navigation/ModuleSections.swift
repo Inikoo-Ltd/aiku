@@ -22,7 +22,6 @@ enum SectionID: String, Sendable {
     case skos
     case storedPallets
     case storedItems
-    case stockHistory
     case warehouse
     case areas
     case locations
@@ -69,8 +68,7 @@ extension AppModule {
             ModuleSection(.skoFamilies, "SKO families", InventoryRoute.families),
             ModuleSection(.skos, "SKOs", InventoryRoute.skos),
             ModuleSection(.storedPallets, "Stored pallets", FulfilmentRoute.pallets, fulfilment: true),
-            ModuleSection(.storedItems, "Stored items", FulfilmentRoute.storedItems, fulfilment: true),
-            ModuleSection(.stockHistory, "Stock history", InventoryRoute.stockHistory)
+            ModuleSection(.storedItems, "Stored items", FulfilmentRoute.storedItems, fulfilment: true)
         ]
         case .locations: [
             ModuleSection(.warehouse, "Warehouse", LocationsRoute.warehouse),

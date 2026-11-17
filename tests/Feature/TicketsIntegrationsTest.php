@@ -564,6 +564,7 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
         ->where('progress.percent', 33)
         ->where('progress.week', 2)
         ->has('work', 3)
+        ->where('work', fn ($work) => collect($work)->pluck('reference')->all() === collect($work)->pluck('reference')->sort(SORT_NATURAL)->values()->all())
         ->where('milestones.0.total', 2)
         ->where('milestones.0.done', 1)
         ->where('milestones.1.total', 1)
@@ -600,6 +601,60 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
     expect($first->fresh()->ticket_project_id)->toBe($project->id);
     post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'hello'])->assertForbidden();
     patch(route('grp.models.ticket.project.update', $first->id), ['ticket_project_id' => null])->assertForbidden();
+});
+
+test('a progress update can be edited by its author and deleted by its author, the project owner or a lead', function () {
+    $owner   = User::factory()->create(['group_id' => $this->group->id]);
+    $author  = User::factory()->create(['group_id' => $this->group->id]);
+    $teammate = User::factory()->create(['group_id' => $this->group->id]);
+    $project = StoreTicketProject::make()->action($this->group, ['name' => 'Update edits', 'start_date' => now()->toDateString(), 'owner_id' => $owner->id, 'member_ids' => [$author->id, $teammate->id]]);
+
+    Notification::fake();
+    actingAs($author);
+    post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'DUNS requested'])->assertRedirect()->assertSessionHasNoErrors();
+    $first = $project->updates()->latest('id')->firstOrFail();
+    post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'Posted twice by mistake'])->assertSessionHasNoErrors();
+    $duplicate = $project->updates()->latest('id')->firstOrFail();
+    $notificationsBeforeEdit = Notification::sentNotifications();
+
+    $this->travel(5)->minutes();
+    patch(route('grp.models.ticket_project.update.update', $first->id), ['body' => '  ', 'health' => 'on_track'])->assertSessionHasErrors('body');
+    patch(route('grp.models.ticket_project.update.update', $first->id), ['body' => ' DUNS requested, 5 to 30 days ', 'health' => 'at_risk'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($first->fresh()->body)->toBe('DUNS requested, 5 to 30 days')
+        ->and($first->fresh()->health?->value)->toBe('at_risk')
+        ->and(Notification::sentNotifications())->toEqual($notificationsBeforeEdit);
+    patch(route('grp.models.ticket_project.update.update', $first->id), ['body' => 'Health left alone'])->assertSessionHasNoErrors();
+    expect($first->fresh()->health?->value)->toBe('at_risk');
+
+    actingAs($teammate);
+    patch(route('grp.models.ticket_project.update.update', $first->id), ['body' => 'Not mine'])->assertForbidden();
+    delete(route('grp.models.ticket_project.update.delete', $first->id))->assertForbidden();
+
+    actingAs($owner);
+    patch(route('grp.models.ticket_project.update.update', $first->id), ['body' => 'Owner rewrite'])->assertForbidden();
+    delete(route('grp.models.ticket_project.update.delete', $duplicate->id))->assertRedirect();
+    expect($duplicate->fresh())->toBeNull()
+        ->and($first->fresh()->body)->toBe('Health left alone');
+
+    actingAs($this->user);
+    get(route('grp.projects.show', $project->slug))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Tickets/TicketProject')
+        ->has('updates', 1)
+        ->where('updates.0.is_edited', true)
+        ->where('updates.0.can_edit', false)
+        ->where('updates.0.can_delete', true));
+    delete(route('grp.models.ticket_project.update.delete', $first->id))->assertRedirect();
+    expect($project->updates()->count())->toBe(0);
+
+    actingAs($author);
+    post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'Mine to remove'])->assertSessionHasNoErrors();
+    $own = $project->updates()->latest('id')->firstOrFail();
+    get(route('grp.projects.show', $project->slug))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('updates.0.is_edited', false)
+        ->where('updates.0.can_edit', true)
+        ->where('updates.0.can_delete', true));
+    delete(route('grp.models.ticket_project.update.delete', $own->id))->assertRedirect();
+    expect($own->fresh())->toBeNull();
 });
 
 test('the project page warns about a stale update, overdue milestones and untracked remaining work', function () {

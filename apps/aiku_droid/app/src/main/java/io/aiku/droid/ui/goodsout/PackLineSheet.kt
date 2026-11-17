@@ -34,6 +34,7 @@ import io.aiku.droid.data.api.DeliveryNote
 import io.aiku.droid.data.api.DeliveryNoteLine
 import io.aiku.droid.data.api.DeliveryNoteWrite
 import io.aiku.droid.data.api.LineBox
+import io.aiku.droid.data.api.NoteActionKey
 import io.aiku.droid.data.api.WriteErrorKey
 import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
@@ -111,8 +112,7 @@ internal fun PackLineSheet(
             title = stringResource(R.string.goodsout_unpack_line_title, code),
             subtitle = stringResource(R.string.goodsout_line_packed_of, quantityText(line.quantityPacked, line.quantityPackedLabel), quantityText(line.quantityPicked, line.quantityPickedLabel)),
             confirmLabel = stringResource(R.string.goodsout_unpack),
-            icon = R.drawable.ic_ui_undo,
-            confirmStyle = ButtonStyle.Danger,
+            confirmLook = goodsOutActionLook(NoteActionKey.UNPACK),
             hint = stringResource(if (note.stage == DeliveryNoteStage.Packed) R.string.goodsout_unpack_line_hint_packed else R.string.goodsout_unpack_line_hint),
             isWorking = isWorking,
             problem = problem,
@@ -183,8 +183,8 @@ private fun PackLineContent(
             AikuButton(
                 text = stringResource(R.string.goodsout_unpack),
                 onClick = onUnpack,
-                style = ButtonStyle.Outline,
-                icon = R.drawable.ic_ui_undo,
+                style = goodsOutActionLook(NoteActionKey.UNPACK).style,
+                icon = goodsOutActionLook(NoteActionKey.UNPACK).icon,
                 height = 48.dp,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -292,6 +292,7 @@ private fun BoxesEditor(line: DeliveryNoteLine, serverMessages: List<String>, is
                 }
             },
             style = ButtonStyle.Soft,
+            icon = R.drawable.ic_ui_check,
             isLoading = isWorking,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),

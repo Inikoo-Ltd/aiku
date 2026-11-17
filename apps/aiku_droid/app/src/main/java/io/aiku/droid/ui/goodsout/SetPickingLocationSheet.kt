@@ -127,6 +127,7 @@ fun SetPickingLocationSheet(orgStockId: Long, code: String, name: String?, image
                         val defaults = PickingDefaults(wholesale = wholesale, dropshipping = dropshipping)
                         if (wholesale == null && dropshipping == null) onDismiss() else sko.setPickingDefaults(defaults)
                     },
+                    icon = R.drawable.ic_ui_check,
                     isLoading = state.isWorking,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),

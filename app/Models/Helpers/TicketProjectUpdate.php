@@ -45,4 +45,23 @@ class TicketProjectUpdate extends Model
     {
         return $this->belongsTo(User::class, 'author_id');
     }
+
+    public function isAuthoredBy(?User $user): bool
+    {
+        return $user !== null && $this->author_id !== null && (int) $this->author_id === (int) $user->id;
+    }
+
+    public function canBeEditedBy(?User $user): bool
+    {
+        return $this->isAuthoredBy($user) && $user->group_id === $this->project->group_id;
+    }
+
+    public function canBeDeletedBy(?User $user): bool
+    {
+        if ($user === null || $user->group_id !== $this->project->group_id) {
+            return false;
+        }
+
+        return $this->isAuthoredBy($user) || Ticket::canBeAssignedBy($user) || (int) $this->project->owner_id === (int) $user->id;
+    }
 }

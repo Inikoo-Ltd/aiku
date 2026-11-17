@@ -217,7 +217,7 @@ private fun ClockingErrorDetailRow(label: String, value: String) {
 
 @Composable
 private fun ClockingErrorPrimaryButton(text: String, onClick: () -> Unit) {
-    AikuButton(text = text, onClick = onClick, height = 52.dp, modifier = Modifier.fillMaxWidth())
+    AikuButton(text = text, onClick = onClick, icon = R.drawable.ic_ui_next, height = 52.dp, modifier = Modifier.fillMaxWidth())
 }
 
 @Composable

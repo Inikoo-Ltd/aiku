@@ -18,12 +18,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +47,8 @@ import io.aiku.droid.ui.components.WarehouseSection
 import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.components.initialsOf
 import io.aiku.droid.ui.components.warehouseKicker
+import io.aiku.droid.ui.mywork.LocalWorkBadges
+import io.aiku.droid.ui.mywork.goodsOutUnassignedBadge
 import io.aiku.droid.ui.navigation.AppearanceRoute
 import io.aiku.droid.ui.navigation.ClockingRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
@@ -58,7 +62,7 @@ import io.aiku.droid.ui.navigation.TimesheetsRoute
 import io.aiku.droid.ui.navigation.WarehouseDashboardRoute
 import io.aiku.droid.ui.theme.LocalAikuColors
 
-private data class SectionBadge(val text: String, val isWarn: Boolean)
+private data class SectionBadge(val text: String, val isWarn: Boolean, val isSample: Boolean = false)
 
 private val moduleIcons = mapOf(
     WarehouseModule.Inventory to R.drawable.ic_ui_pallet,
@@ -89,9 +93,7 @@ private val sectionIcons = mapOf(
 )
 
 private val sampleBadges = mapOf(
-    WarehouseSection.Skus to SectionBadge(MenuSamples.LOW_SKOS, isWarn = true),
-    WarehouseSection.StockDeliveries to SectionBadge(MenuSamples.RECEIVED_DELIVERIES, isWarn = false),
-    WarehouseSection.GoodsOutBacklog to SectionBadge(MenuSamples.UNASSIGNED, isWarn = true),
+    WarehouseSection.StockDeliveries to SectionBadge(MenuSamples.RECEIVED_DELIVERIES, isWarn = false, isSample = true),
 )
 
 @Composable
@@ -104,6 +106,14 @@ fun MenuScreen() {
     val name = staff.displayName.ifBlank { staff.username }
     val clockingState by LocalClocking.current.state.collectAsStateWithLifecycle()
     val isClockedIn = clockingState.status?.isClockedIn == true
+    val workBadges = LocalWorkBadges.current
+    val badges by workBadges.badges.collectAsStateWithLifecycle()
+    val unassignedBadge = badges.goodsOutUnassignedBadge?.let { count ->
+        SectionBadge(pluralStringResource(R.plurals.mywork_badge_unassigned, count, count), isWarn = true)
+    }
+    val sectionBadges = sampleBadges + listOfNotNull(unassignedBadge?.let { WarehouseSection.GoodsOutBacklog to it })
+
+    LaunchedEffect(Unit) { workBadges.refresh() }
 
     AppScreen(
         header = {
@@ -174,7 +184,7 @@ fun MenuScreen() {
             WarehouseModule.entries.forEach { module ->
                 val sections = module.visibleSections(warehouse.can)
                 if (sections.isNotEmpty()) {
-                    ModuleGroup(module = module, sections = sections, onOpen = { navigator.open(it.route) })
+                    ModuleGroup(module = module, sections = sections, badges = sectionBadges, onOpen = { navigator.open(it.route) })
                 }
             }
         }
@@ -240,7 +250,7 @@ private fun MenuSearch(onClick: () -> Unit) {
 }
 
 @Composable
-private fun ModuleGroup(module: WarehouseModule, sections: List<WarehouseSection>, onOpen: (WarehouseSection) -> Unit) {
+private fun ModuleGroup(module: WarehouseModule, sections: List<WarehouseSection>, badges: Map<WarehouseSection, SectionBadge>, onOpen: (WarehouseSection) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         GroupHeading(icon = moduleIcons.getValue(module), title = stringResource(module.label))
         ListGroup {
@@ -251,7 +261,7 @@ private fun ModuleGroup(module: WarehouseModule, sections: List<WarehouseSection
                 MenuRow(
                     icon = sectionIcons.getValue(section),
                     title = stringResource(section.label),
-                    badge = sampleBadges[section],
+                    badge = badges[section],
                     isFulfilment = section.isFulfilment,
                     onClick = { onOpen(section) },
                 )
@@ -329,7 +339,7 @@ private fun MenuRow(
                 fontWeight = FontWeight.SemiBold,
                 color = if (badge.isWarn) colors.warn else colors.success,
                 modifier = Modifier
-                    .fakeData(cornerRadius = 999.dp)
+                    .then(if (badge.isSample) Modifier.fakeData(cornerRadius = 999.dp) else Modifier)
                     .clip(RoundedCornerShape(999.dp))
                     .background(if (badge.isWarn) colors.warnSoft else colors.successSoft)
                     .padding(horizontal = 8.dp, vertical = 3.dp),
@@ -345,7 +355,5 @@ private fun Chevron() {
 }
 
 internal object MenuSamples {
-    const val LOW_SKOS = "17 low"
     const val RECEIVED_DELIVERIES = "2 received"
-    const val UNASSIGNED = "12 unassigned"
 }

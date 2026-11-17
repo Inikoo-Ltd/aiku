@@ -13,6 +13,7 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.OrgStockDetail
 import io.aiku.droid.data.api.OrgStockWrite
 import io.aiku.droid.ui.components.AikuBottomSheet
+import io.aiku.droid.ui.components.ButtonLook
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChoiceRow
 import io.aiku.droid.ui.locations.LIST_SEPARATOR
@@ -51,7 +52,7 @@ fun RemoveLocationsSheet(detail: OrgStockDetail, isWorking: Boolean, errorText: 
         errorText?.let { Text(text = it, fontSize = 13.sp, color = colors.danger) }
         SheetButtons(
             confirmLabel = pluralStringResource(R.plurals.inventory_remove_confirm, selected.size, selected.size),
-            confirmStyle = ButtonStyle.Danger,
+            confirmLook = ButtonLook(ButtonStyle.DangerStrong, R.drawable.ic_ui_trash),
             onConfirm = {
                 if (selected.isEmpty()) {
                     isMissing = true

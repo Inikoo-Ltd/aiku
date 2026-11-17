@@ -5,6 +5,8 @@ enum MobileScanType: String, Sendable {
     case location
     case deliveryNote = "delivery_note"
     case stockDelivery = "stock_delivery"
+    case palletDelivery = "pallet_delivery"
+    case pallet
     case unknown
 }
 
@@ -84,6 +86,23 @@ struct MobileScannedStockDelivery: Decodable, Equatable, Sendable {
     var stateLabel: String? = nil
 }
 
+struct MobileScannedPallet: Decodable, Equatable, Sendable {
+    let id: Int
+    let reference: String
+    var customerReference: String? = nil
+    var state: String? = nil
+    var stateLabel: String? = nil
+    var status: String? = nil
+    var locationCode: String? = nil
+}
+
+struct MobileScannedPalletDelivery: Decodable, Equatable, Sendable {
+    let id: Int
+    let reference: String
+    var state: String? = nil
+    var stateLabel: String? = nil
+}
+
 struct MobileScanResult: Decodable, Equatable, Sendable {
     let code: String
     let type: String
@@ -91,6 +110,8 @@ struct MobileScanResult: Decodable, Equatable, Sendable {
     var location: MobileScannedLocation? = nil
     var deliveryNote: MobileScannedDeliveryNote? = nil
     var stockDelivery: MobileScannedStockDelivery? = nil
+    var palletDelivery: MobileScannedPalletDelivery? = nil
+    var pallet: MobileScannedPallet? = nil
 
     var scanType: MobileScanType { MobileScanType(rawValue: type) ?? .unknown }
 }

@@ -291,7 +291,7 @@ fun SessionExpiredScreen(onSignIn: () -> Unit) {
 
     StatesFullScreen(
         actions = {
-            StatesButton(text = stringResource(R.string.states_session_sign_in), onClick = onSignIn)
+            StatesButton(text = stringResource(R.string.states_session_sign_in), onClick = onSignIn, icon = R.drawable.ic_ui_next)
         },
     ) {
         StatesHeroIcon(icon = R.drawable.ic_states_lock, container = colors.soft, tint = colors.link)
@@ -320,7 +320,7 @@ fun NoAccessScreen(moduleName: String, missingPermission: String?, activeTab: Ma
             )
         },
         actions = {
-            StatesButton(text = stringResource(R.string.states_back_to_dashboard), onClick = { navigator.openTab(MainTab.Home) })
+            StatesButton(text = stringResource(R.string.states_back_to_dashboard), onClick = { navigator.openTab(MainTab.Home) }, icon = R.drawable.ic_ui_home)
             if (canChangeWarehouse) {
                 StatesButton(
                     text = stringResource(R.string.states_change_warehouse),
@@ -437,6 +437,7 @@ fun NoTasksState(modifier: Modifier = Modifier) {
                 StatesButton(
                     text = stringResource(R.string.states_tasks_pick_from_queue),
                     onClick = { navigator.open(DeliveryNotesRoute()) },
+                    icon = R.drawable.ic_ui_next,
                 )
             }
             StatesButton(

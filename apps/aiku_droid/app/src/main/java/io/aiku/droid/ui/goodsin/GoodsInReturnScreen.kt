@@ -61,6 +61,7 @@ import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.StateTimeline
 import io.aiku.droid.ui.components.TimelineEntry
 import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.goodsout.DisabledActionNotice
 import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
@@ -227,17 +228,18 @@ private fun ReturnContent(viewModel: ReturnViewModel, state: ReturnUiState, cust
                 stringResource(R.string.goodsin_undo_put_body)
             },
             confirmLabel = stringResource(R.string.goodsin_undo),
+            confirmLook = goodsInActionLook(GoodsInActionKey.UNDO).forConfirm(),
             onConfirm = {
                 sheet = null
                 viewModel.undo(current.put.id)
             },
             onDismiss = closeSheet,
-            isDestructive = true,
         )
         ReturnSheet.SetAsReturned -> ConfirmDialog(
             title = stringResource(R.string.goodsin_set_returned_title, customerReturn.reference),
             body = stringResource(R.string.goodsin_set_returned_body),
             confirmLabel = setAsReturned?.label?.ifBlank { null } ?: stringResource(R.string.goodsin_set_returned),
+            confirmLook = goodsInActionLook(GoodsInActionKey.SET_AS_RETURNED).forConfirm(),
             onConfirm = {
                 sheet = null
                 viewModel.setAsReturned()
@@ -273,7 +275,8 @@ private fun returnFooter(
             AikuButton(
                 text = action.label.ifBlank { stringResource(R.string.goodsin_start_return) },
                 onClick = onStart,
-                icon = R.drawable.ic_ui_check,
+                style = goodsInActionLook(action.key).style,
+                icon = goodsInActionLook(action.key).icon,
                 isLoading = working == ReturnWrite.Start,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -282,7 +285,8 @@ private fun returnFooter(
             AikuButton(
                 text = action.label.ifBlank { stringResource(R.string.goodsin_set_returned) },
                 onClick = onSetAsReturned,
-                icon = R.drawable.ic_ui_check,
+                style = goodsInActionLook(action.key).style,
+                icon = goodsInActionLook(action.key).icon,
                 isLoading = working == ReturnWrite.SetAsReturned,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -378,6 +382,8 @@ private fun ReturnItemCard(
                 AikuButton(
                     text = stringResource(R.string.goodsin_back_to_stock),
                     onClick = { onAction(ReturnItemAction.BackToStock) },
+                    style = goodsInActionLook(GoodsInActionKey.PUT_BACK).style,
+                    icon = goodsInActionLook(GoodsInActionKey.PUT_BACK).icon,
                     height = 48.dp,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -385,14 +391,16 @@ private fun ReturnItemCard(
                     AikuButton(
                         text = stringResource(R.string.goodsin_damaged),
                         onClick = { onAction(ReturnItemAction.Damaged) },
-                        style = ButtonStyle.Outline,
+                        style = ButtonStyle.Danger,
+                        icon = R.drawable.ic_ui_warning,
                         height = 48.dp,
                         modifier = Modifier.weight(1f),
                     )
                     AikuButton(
                         text = stringResource(R.string.goodsin_not_returned),
                         onClick = { onAction(ReturnItemAction.NotReturned) },
-                        style = ButtonStyle.Outline,
+                        style = ButtonStyle.Danger,
+                        icon = R.drawable.ic_ui_x_circle,
                         height = 48.dp,
                         modifier = Modifier.weight(1f),
                     )
@@ -420,7 +428,7 @@ private fun PutRow(put: ReturnPut, onUndo: (() -> Unit)?) {
                 text = stringResource(R.string.goodsin_undo),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = colors.link,
+                color = colors.cautionInk,
                 modifier = Modifier
                     .heightIn(min = 44.dp)
                     .clip(ControlShape)

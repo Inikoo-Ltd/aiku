@@ -44,6 +44,7 @@ import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SearchField
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.fulfilment.FulfilmentRow
 import io.aiku.droid.ui.fulfilment.FulfilmentScanPrompt
 import io.aiku.droid.ui.fulfilment.dotJoined
@@ -160,7 +161,8 @@ private fun AuditContent(viewModel: StoredItemAuditViewModel, state: StoredItemA
                 AikuButton(
                     text = complete.label.ifBlank { stringResource(R.string.fulfilment_audit_complete) },
                     onClick = { openSheet(AuditSheet.Complete) },
-                    icon = R.drawable.ic_ui_check,
+                    style = fulfilmentOutboundActionLook(complete.key).style,
+                    icon = fulfilmentOutboundActionLook(complete.key).icon,
                     isLoading = state.working == StoredItemAuditWrite.Complete,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
@@ -252,6 +254,7 @@ private fun AuditContent(viewModel: StoredItemAuditViewModel, state: StoredItemA
             title = stringResource(R.string.fulfilment_out_complete_title, audit.reference.ifBlank { palletReference }),
             body = stringResource(R.string.fulfilment_out_complete_body, palletReference),
             confirmLabel = complete?.label?.ifBlank { null } ?: stringResource(R.string.fulfilment_audit_complete),
+            confirmLook = fulfilmentOutboundActionLook(StoredItemAuditActionKey.COMPLETE).forConfirm(),
             onConfirm = {
                 sheet = null
                 viewModel.complete()
@@ -339,7 +342,8 @@ private fun CountSheet(
                 onClick = {
                     if (counted == null) isMissing = true else onSave(counted)
                 },
-                icon = R.drawable.ic_ui_check,
+                style = fulfilmentOutboundActionLook(StoredItemAuditActionKey.COUNT).style,
+                icon = fulfilmentOutboundActionLook(StoredItemAuditActionKey.COUNT).icon,
                 isLoading = isWorking,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -349,6 +353,7 @@ private fun CountSheet(
                     text = stringResource(R.string.fulfilment_out_remove_count),
                     onClick = onRemove,
                     style = ButtonStyle.Danger,
+                    icon = R.drawable.ic_ui_trash,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
                 )
