@@ -2932,3 +2932,19 @@ test('the AI check sends a slim copy of a print-resolution artwork, keeping its 
         ->and(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::slim('small, sent untouched'))->toBe('small, sent untouched')
         ->and(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::slim(str_repeat('not a pdf ', 500_000)))->toBe(str_repeat('not a pdf ', 500_000));
 });
+
+test('a cancelled development leaves the list and the All count, and shows under Cancelled, HELP-4776', function () {
+    $productDevelopment = storeDevelopmentWithNewSkus($this, 1);
+    $productDevelopment->updateQuietly(['status' => ProductDevelopmentStatusEnum::CANCELLED]);
+
+    $response = get(route('grp.product_developments.index', ['perPage' => 500]))->assertOk();
+    $props    = $response->viewData('page')['props'];
+
+    expect(collect($props['data']['data'])->pluck('code'))->not->toContain($productDevelopment->code)
+        ->and($props['filterBar']['counts']['all'])->toBe($props['data']['meta']['total']);
+
+    get(route('grp.product_developments.index', ['filter' => ['status' => 'cancelled'], 'perPage' => 500]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('code')->contains($productDevelopment->code)));
+});
