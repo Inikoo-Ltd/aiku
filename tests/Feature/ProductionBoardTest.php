@@ -523,12 +523,27 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-BRD', 'name' => 'Board area']);
     $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-BRD', 'name' => 'Board loc'] + \App\Models\Inventory\Location::factory()->definition());
     actingAs($this->guest->getUser()->fresh());
-    $hubProps  = fn () => get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))
+    $hubProps  = fn (array $query = []) => get(route('grp.org.warehouses.show.incoming.production_output.index', [$this->organisation->slug, $warehouse->slug, ...$query]))
         ->assertOk()->viewData('page')['props'];
     $hubRows   = fn () => collect($hubProps()['production_output']['data']);
     $hubOutput = fn () => $hubRows()->pluck('job_order_reference')->all();
+    $waiting   = $hubRows()->flatMap(fn ($row) => collect($row['destinations'])->pluck('type')->unique())->countBy();
+    $incoming  = get(route('grp.org.warehouses.show.incoming.backlog', [$this->organisation->slug, $warehouse->slug]))->assertOk()->viewData('page')['props']['dashboard'];
     expect($hubOutput())->toContain($jobOrder->reference)
-        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count(\App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders::run($warehouse)));
+        ->and($incoming['dimension']['items'][0])->toMatchArray(['key' => 'production', 'highlight' => true, 'icon' => 'fal fa-industry'])
+        ->and(collect($incoming['dimension']['items'])->contains('key', 'pallet_deliveries'))->toBe($this->organisation->fulfilments()->exists())
+        ->and($incoming['data']['production']['arriving']['series'])->toHaveCount(3)
+        ->and($incoming['data']['production']['booked_in']['route_target']['parameters']['filter[state]'] ?? 'received')->toBe('received')
+        ->and($incoming['data']['production']['received']['total']['value'])->toBe($hubRows()->count())
+        ->and($incoming['row_totals']['production']['value'])->toBe($incoming['data']['production']['arriving']['value'] + $hubRows()->count() + $incoming['data']['production']['booked_in']['value'])
+        ->and($incoming['data']['production']['arriving']['value'])->toBe(array_sum(array_column($incoming['data']['production']['arriving']['series'], 'value')))
+        ->and(\App\Models\Production\JobOrder::where('organisation_id', $this->organisation->id)->where('state', 'confirmed')->whereNotIn('id', $hubRows()->pluck('job_order_id'))->count())->toBe($incoming['data']['production']['arriving']['series'][2]['value'])
+        ->and($incoming['data']['production']['received']['value'])->toBe($waiting['stock'] ?? 0)
+        ->and($incoming['data']['production']['received']['route_target']['parameters']['destination'])->toBe('stock')
+        ->and($incoming['data']['production']['received']['suffix']['value'])->toBe($waiting['partner'] ?? 0)
+        ->and(collect($hubProps(['destination' => 'stock'])['production_output']['data'])->flatMap(fn ($row) => $row['destinations'])->pluck('type')->unique()->all())->toBe($waiting['stock'] ?? 0 ? ['stock'] : [])
+        ->and($hubProps()['put_away_route']['name'])->toBe('grp.org.warehouses.show.incoming.production_output.put_away')
+        ->and(get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))->assertOk()->viewData('page')['props'])->not->toHaveKey('production_output');
 
     $stockItem        = $hubRows()->firstWhere('job_order_reference', $jobOrder->reference);
     $stockDestination = collect($stockItem['destinations'])->firstWhere('type', 'stock');

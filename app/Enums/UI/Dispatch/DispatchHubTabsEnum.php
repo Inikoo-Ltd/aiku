@@ -22,7 +22,6 @@ enum DispatchHubTabsEnum: string
     case PICKERS = 'pickers';
     case PACKERS = 'packers';
     case PARTNER_STAGING = 'partner_staging';
-    case PRODUCTION_OUTPUT = 'production_output';
     case PRODUCTION_MATERIALS = 'production_materials';
 
     public function blueprint(): array
@@ -47,10 +46,6 @@ enum DispatchHubTabsEnum: string
             DispatchHubTabsEnum::PARTNER_STAGING => [
                 'title' => __('Pre-pick'),
                 'icon'  => 'fal fa-dolly',
-            ],
-            DispatchHubTabsEnum::PRODUCTION_OUTPUT => [
-                'title' => __('From production'),
-                'icon'  => 'fal fa-industry',
             ],
             DispatchHubTabsEnum::PRODUCTION_MATERIALS => [
                 'title' => __('For production'),

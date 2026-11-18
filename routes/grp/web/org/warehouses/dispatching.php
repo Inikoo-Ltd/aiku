@@ -12,7 +12,6 @@ use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Dispatching\FulfilmentGate\StoreJobOrderFromShortfall;
 use App\Actions\Dispatching\PartnerStaging\ReleasePartnerStagingTask;
 use App\Actions\Dispatching\PartnerStaging\StagePartnerStock;
-use App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder;
 use App\Actions\Dispatching\FulfilmentGate\UI\IndexOrdersAtGate;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingCrmDeliveryNoteItems;
@@ -53,7 +52,6 @@ Route::post('/partner-staging/stage', StagePartnerStock::class)->name('partner_s
 Route::post('/partner-staging/release', ReleasePartnerStagingTask::class)->name('partner_staging.release');
 Route::post('/production-materials/{productionMaterialRequestItem:id}/deliver', DeliverProductionMaterialRequestItem::class)->name('production_materials.deliver')->withoutScopedBindings();
 Route::post('/production-materials/{productionMaterialRequestItem:id}/short', SetProductionMaterialRequestItemShort::class)->name('production_materials.short')->withoutScopedBindings();
-Route::post('/production-output/put-away', PutAwayFinishedJobOrder::class)->name('production_output.put_away')->withoutScopedBindings();
 Route::post('/gate/job-order', StoreJobOrderFromShortfall::class)->name('gate.job_order');
 
 Route::get('/waiting_items', IndexWaitingDeliveryNoteItems::class)->name('waiting_items');

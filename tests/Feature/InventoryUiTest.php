@@ -521,10 +521,12 @@ test('UI show incoming hub', function () {
             $warehouse->slug
         ])
     );
-    $response->assertInertia(function (AssertableInertia $page) {
+    $hasFulfilment = $this->organisation->fulfilments()->exists();
+    $response->assertInertia(function (AssertableInertia $page) use ($hasFulfilment) {
         $page
             ->component('Org/Incoming/IncomingHub')
-            ->has('dashboard.dimension.items', 5)
+            ->has('dashboard.dimension.items', $hasFulfilment ? 5 : 4)
+            ->where('dashboard.dimension.items', fn ($items) => collect($items)->contains('key', 'pallet_deliveries') === $hasFulfilment)
             ->where('dashboard.dimension.items.1.key', 'partner_stock_deliveries')
             ->where('dashboard.dimension.items.2.key', 'agent_stock_deliveries')
             ->where('dashboard.metrics.0.key', 'arriving')

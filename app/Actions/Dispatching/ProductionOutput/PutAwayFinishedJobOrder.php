@@ -164,7 +164,7 @@ class PutAwayFinishedJobOrder extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("dispatching.{$this->warehouse->id}.edit");
+        return $request->user()->authTo(["incoming.{$this->warehouse->id}.edit", "dispatching.{$this->warehouse->id}.edit"]);
     }
 
     /**
