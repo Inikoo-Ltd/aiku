@@ -23,7 +23,7 @@ const showsLittleBird = computed(() => props.littleBird ?? isLittleBird.value)
     <MerlinIcon v-else :mono :themed="themed && !mono" />
 </template>
 
-<style scoped>
+<style>
 .little-bird-icon {
     display: inline-block;
     width: 1.75em;
