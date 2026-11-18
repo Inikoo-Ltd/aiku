@@ -469,7 +469,7 @@ class IndexOrgSupplierProducts extends OrgAction
     }
 
     /**
-     * @return array{agent_id: int, agents: array<int, array{id: int, label: string, create_route: array{name: string, parameters: array<int, string>}}>, copy_route: array{name: string, parameters: array<int, int>}}|null
+     * @return array{agent_id: int, agents: array<int, array{id: int, label: string, create_route: array{name: string, parameters: array<int, string>}}>, copy_route: array{name: string, parameters: array<int, int>}, supplier_id: int, source_products_route: array{name: string, parameters: array<int, int>}}|null
      */
     private function getCopyProducts(ActionRequest $request): ?array
     {
@@ -492,6 +492,11 @@ class IndexOrgSupplierProducts extends OrgAction
             'copy_route' => [
                 'name'       => 'grp.models.org.supplier.supplier_products.copy',
                 'parameters' => [$this->organisation->id],
+            ],
+            'supplier_id'          => $this->parent->supplier_id,
+            'source_products_route' => [
+                'name'       => 'grp.json.supplier.supplier_products_to_copy',
+                'parameters' => [$this->organisation->id, $this->parent->supplier_id],
             ],
         ];
     }

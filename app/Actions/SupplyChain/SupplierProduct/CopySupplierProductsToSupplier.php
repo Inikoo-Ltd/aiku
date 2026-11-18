@@ -234,8 +234,10 @@ class CopySupplierProductsToSupplier extends OrgAction
     public function rules(): array
     {
         return [
-            'org_supplier_products'   => ['required', 'array', 'min:1'],
+            'org_supplier_products'   => ['required_without:supplier_products', 'array', 'min:1'],
             'org_supplier_products.*' => ['integer'],
+            'supplier_products'       => ['required_without:org_supplier_products', 'array', 'min:1'],
+            'supplier_products.*'     => ['integer'],
         ];
     }
 
@@ -246,8 +248,19 @@ class CopySupplierProductsToSupplier extends OrgAction
     {
         $this->initialisation($organisation, $request);
 
-        $agent = $this->getOrganisationAgent($organisation);
-        abort_unless($agent && $this->getAccessibleAgents($request->user())->contains('id', $supplier->agent_id), 404);
+        $agent            = $this->getOrganisationAgent($organisation);
+        $accessibleAgents = $this->getAccessibleAgents($request->user());
+        abort_unless($agent && $accessibleAgents->contains('id', $supplier->agent_id), 404);
+
+        if (isset($this->validatedData['supplier_products'])) {
+            return $this->handle(
+                $supplier,
+                SupplierProduct::whereIn('agent_id', $accessibleAgents->pluck('id'))
+                    ->where('supplier_id', '!=', $supplier->id)
+                    ->whereIn('id', $this->validatedData['supplier_products'])
+                    ->get()
+            );
+        }
 
         return $this->handle($supplier, $this->getAgentsSupplierProducts([$agent->id], $this->validatedData['org_supplier_products']));
     }

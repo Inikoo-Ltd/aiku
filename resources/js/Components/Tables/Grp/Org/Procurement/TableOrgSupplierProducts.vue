@@ -17,12 +17,13 @@ import Select from "primevue/select"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBarcodeRead, faCheck, faCopy, faLink, faPlus, faTimes } from "@fal"
+import { faBarcodeRead, faCheck, faCopy, faFileImport, faLink, faPlus, faTimes } from "@fal"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import CompletenessBar from "@/Components/Procurement/CompletenessBar.vue"
 import SupplierProductLabelsDialog from "@/Components/SupplyChain/SupplierProductLabelsDialog.vue"
+import AddProductsFromSupplierDialog from "@/Components/Procurement/AddProductsFromSupplierDialog.vue"
 
-library.add(faBarcodeRead, faCheck, faCopy, faLink, faPlus, faTimes)
+library.add(faBarcodeRead, faCheck, faCopy, faFileImport, faLink, faPlus, faTimes)
 
 const locale = inject("locale", aikuLocaleStructure)
 
@@ -33,6 +34,8 @@ const props = defineProps<{
     agent_id: number
     agents: { id: number, label: string, create_route: routeType }[]
     copy_route: routeType
+    supplier_id: number
+    source_products_route: routeType
   } | null
   copyTargets?: { id: number, agent_id: number, label: string, number_products: number, company_name: string | null, contact_name: string | null }[]
   labelsPrint?: {
@@ -48,6 +51,7 @@ const selectedRows = ref<Record<string, boolean>>({})
 const selectedIds = computed(() => Object.keys(selectedRows.value).filter((id) => selectedRows.value[id]).map(Number))
 
 const isCopyDialogVisible = ref(false)
+const isAddFromSupplierDialogVisible = ref(false)
 const isLabelsDialogOpen = ref(false)
 const isLoadingTargets = ref(false)
 const isCopying = ref(false)
@@ -57,11 +61,7 @@ const targetAgentId = ref<number | null>(props.copyProducts?.agent_id ?? null)
 const targetAgent = computed(() => props.copyProducts?.agents.find((agent) => agent.id === targetAgentId.value))
 const targetSuppliers = computed(() => (props.copyTargets ?? []).filter((supplier) => supplier.agent_id === targetAgentId.value))
 
-function openCopyDialog() {
-  targetSupplierId.value = null
-  copyError.value = null
-  isCopyDialogVisible.value = true
-
+function loadCopyTargets() {
   if (!props.copyTargets) {
     router.reload({
       only: ["copy_targets"],
@@ -69,6 +69,18 @@ function openCopyDialog() {
       onFinish: () => isLoadingTargets.value = false,
     })
   }
+}
+
+function openCopyDialog() {
+  targetSupplierId.value = null
+  copyError.value = null
+  isCopyDialogVisible.value = true
+  loadCopyTargets()
+}
+
+function openAddFromSupplierDialog() {
+  isAddFromSupplierDialogVisible.value = true
+  loadCopyTargets()
 }
 
 function copySelectedProducts() {
@@ -169,6 +181,11 @@ function orgSupplierRoute(orgSupplierSlug: string) {
 <template>
   <div>
   <div v-if="copyProducts || labelsPrint" class="mx-4 mt-4 flex flex-wrap items-center gap-2">
+    <Button v-if="copyProducts" type="tertiary" :label="ctrans('Add products from another supplier')" @click="openAddFromSupplierDialog">
+      <template #icon>
+        <FontAwesomeIcon icon="fal fa-file-import" class="text-green-600" fixed-width aria-hidden="true" />
+      </template>
+    </Button>
     <span class="text-sm text-gray-600 tabular-nums">{{ ctrans(":count selected", { count: String(selectedIds.length) }) }}</span>
     <Button v-if="labelsPrint" type="tertiary" :label="ctrans('Print barcodes')" :disabled="!selectedIds.length" @click="isLabelsDialogOpen = true">
       <template #icon>
@@ -323,23 +340,33 @@ function orgSupplierRoute(orgSupplierSlug: string) {
     </div>
 
     <template #footer>
-      <Button type="tertiary" :label="ctrans('Cancel')" @click="isCopyDialogVisible = false">
-        <template #icon>
-          <FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-        </template>
-      </Button>
-      <Button type="tertiary" :label="ctrans('New supplier')" :disabled="!targetAgent" @click="createSupplierWithSelectedProducts">
-        <template #icon>
-          <FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
-        </template>
-      </Button>
-      <Button type="tertiary" :label="ctrans('Add')" :disabled="!targetSupplierId" :loading="isCopying" @click="copySelectedProducts">
-        <template #icon>
-          <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
-        </template>
-      </Button>
+      <div class="flex w-full gap-2">
+        <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isCopyDialogVisible = false">
+          <template #icon>
+            <FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+          </template>
+        </Button>
+        <Button type="tertiary" class="shrink-0" :label="ctrans('New supplier')" :disabled="!targetAgent" @click="createSupplierWithSelectedProducts">
+          <template #icon>
+            <FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
+          </template>
+        </Button>
+        <Button type="primary" full :label="ctrans('Add')" :disabled="!targetSupplierId" :loading="isCopying" @click="copySelectedProducts">
+          <template #icon>
+            <FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
+          </template>
+        </Button>
+      </div>
     </template>
   </Dialog>
+
+  <AddProductsFromSupplierDialog
+    v-if="copyProducts"
+    v-model:visible="isAddFromSupplierDialogVisible"
+    :copyProducts="copyProducts"
+    :sourceSuppliers="copyTargets"
+    :isLoadingSuppliers="isLoadingTargets"
+  />
 
   <SupplierProductLabelsDialog
     v-if="labelsPrint"
