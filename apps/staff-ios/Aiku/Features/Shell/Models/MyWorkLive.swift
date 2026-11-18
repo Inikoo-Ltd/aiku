@@ -4,10 +4,16 @@ import Observation
 @MainActor
 @Observable
 final class WorkBadgesStore {
-    static let shared = WorkBadgesStore()
+    static let shared = WorkBadgesStore(inbox: ShellInboxStore.shared)
 
     private(set) var badges = MobileWorkBadges()
     private(set) var warehouseID: Int?
+
+    @ObservationIgnored private let inbox: ShellInboxStore?
+
+    init(inbox: ShellInboxStore? = nil) {
+        self.inbox = inbox
+    }
 
     var myWorkCount: Int { Self.visible(badges.myWork) }
     var goodsOutUnassignedCount: Int { Self.visible(badges.goodsOutUnassigned) }
@@ -24,6 +30,7 @@ final class WorkBadgesStore {
             let fetched = try await apiClient.fetchWorkBadges(warehouseID: warehouseID)
             guard warehouseID == self.warehouseID else { return }
             badges = fetched
+            inbox?.applyUnread(fetched.inboxUnread)
         } catch where error.isCancellation {
             return
         } catch let error as APIError {

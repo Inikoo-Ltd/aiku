@@ -5,6 +5,10 @@ enum InventorySkoScope: String, CaseIterable, Hashable, Sendable {
     case discontinued
     case abnormalities
     case all
+    case belowMinimum
+    case negative
+
+    static let chipScopes: [InventorySkoScope] = [.current, .discontinued, .abnormalities, .all]
 
     var title: String {
         switch self {
@@ -12,6 +16,26 @@ enum InventorySkoScope: String, CaseIterable, Hashable, Sendable {
         case .discontinued: "Discontinued"
         case .abnormalities: "Abnormalities"
         case .all: "All"
+        case .belowMinimum: "Below minimum"
+        case .negative: "Negative stock"
+        }
+    }
+
+    var listTitle: String {
+        switch self {
+        case .abnormalities: "Abnormalities"
+        case .belowMinimum: "SKOs below minimum"
+        case .negative: "SKOs with negative stock"
+        case .current, .discontinued, .all: "SKOs"
+        }
+    }
+
+    var emptyTitle: String {
+        switch self {
+        case .abnormalities: "No abnormalities"
+        case .belowMinimum: "No SKOs below minimum"
+        case .negative: "No SKOs with negative stock"
+        case .current, .discontinued, .all: "No \(title.lowercased()) SKOs"
         }
     }
 
@@ -21,6 +45,8 @@ enum InventorySkoScope: String, CaseIterable, Hashable, Sendable {
         case .discontinued: "discontinued"
         case .abnormalities: "abnormality"
         case .all: "all"
+        case .belowMinimum: "below_minimum"
+        case .negative: "negative"
         }
     }
 
@@ -30,6 +56,8 @@ enum InventorySkoScope: String, CaseIterable, Hashable, Sendable {
         case .discontinued: counts.discontinued
         case .abnormalities: counts.abnormality
         case .all: counts.all
+        case .belowMinimum: counts.belowMinimum ?? 0
+        case .negative: counts.negative ?? 0
         }
     }
 
@@ -39,6 +67,8 @@ enum InventorySkoScope: String, CaseIterable, Hashable, Sendable {
         case .discontinued: sko.state == .discontinued
         case .abnormalities: sko.isAbnormal
         case .all: true
+        case .belowMinimum: [.low, .critical, .outOfStock].contains(sko.status)
+        case .negative: sko.hasNegativeStock
         }
     }
 }

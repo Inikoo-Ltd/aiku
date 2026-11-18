@@ -23,6 +23,7 @@ final class GoodsInStore {
     private(set) var isLoadingList = false
     private(set) var isLoadingMore = false
     private(set) var returnReferences: [String] = []
+    private(set) var returnsScope: GoodsInReturnsScope = .all
     private(set) var isLoadingReturns = false
     private(set) var loadError: String?
     private(set) var actionError: String?
@@ -79,6 +80,11 @@ final class GoodsInStore {
     func filteredCount(_ draft: GoodsInDeliveryFilter, now: Date = .now) -> Int {
         guard isRemote else { return draft.apply(to: visibleDeliveries, now: now).count }
         return listTotal ?? 0
+    }
+
+    func showScope(_ scope: GoodsInListScope) {
+        filter = GoodsInDeliveryFilter()
+        listScope = scope
     }
 
     func applyFilter(_ draft: GoodsInDeliveryFilter) {
@@ -333,6 +339,7 @@ final class GoodsInStore {
         returnCounts = nil
         listReferences = []
         returnReferences = []
+        returnsScope = .all
         listTotal = nil
         listRequest = nil
         currentPage = 0
@@ -350,6 +357,7 @@ final class GoodsInStore {
         returnCounts = nil
         listReferences = []
         returnReferences = []
+        returnsScope = .all
         listTotal = nil
         listRequest = nil
         currentPage = 0
@@ -430,12 +438,12 @@ final class GoodsInStore {
         }
     }
 
-    func reloadReturns(apiClient: APIClient) async {
+    func reloadReturns(scope: GoodsInReturnsScope = .all, apiClient: APIClient) async {
         guard isRemote, let warehouseID else { return }
         isLoadingReturns = true
         defer { isLoadingReturns = false }
         do {
-            let page = try await apiClient.fetchReturns(warehouseID: warehouseID, state: "all", perPage: 150)
+            let page = try await apiClient.fetchReturns(warehouseID: warehouseID, state: scope.rawValue, perPage: 150)
             var references: [String] = []
             for row in page.data {
                 let fetched = GoodsInReturn(row: row)
@@ -447,6 +455,7 @@ final class GoodsInStore {
                 references.append(fetched.reference)
             }
             returnReferences = references
+            returnsScope = scope
             returnCounts = page.counts
             loadError = nil
         } catch where error.isCancellation {
@@ -467,6 +476,11 @@ final class GoodsInStore {
     var listedReturns: [GoodsInReturn] {
         guard isRemote else { return returns }
         return returnReferences.compactMap { reference in returns.first { $0.reference == reference } }
+    }
+
+    func visibleReturns(in scope: GoodsInReturnsScope) -> [GoodsInReturn] {
+        guard isRemote else { return returns.filter { scope.includes($0.state) } }
+        return returnsScope == scope ? listedReturns : []
     }
 
     func loadReturn(id: Int, apiClient: APIClient) async {

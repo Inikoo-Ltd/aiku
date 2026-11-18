@@ -128,6 +128,25 @@ enum GoodsInListScope: Hashable, Sendable {
     }
 }
 
+enum GoodsInReturnsScope: String, Hashable, Sendable {
+    case all
+    case toProcess = "to_process"
+
+    var title: String {
+        switch self {
+        case .all: "Returns"
+        case .toProcess: "Returns to process"
+        }
+    }
+
+    func includes(_ state: GoodsInReturnState) -> Bool {
+        switch self {
+        case .all: true
+        case .toProcess: state == .received || state == .returning
+        }
+    }
+}
+
 struct GoodsInBacklogCounts: Hashable, Sendable {
     var arriving = 0
     var received = 0

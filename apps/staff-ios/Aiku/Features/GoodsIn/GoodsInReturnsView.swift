@@ -1,28 +1,34 @@
 import SwiftUI
 
 struct GoodsInReturnsView: View {
+    var scope: GoodsInReturnsScope = .all
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
     private let store = GoodsInStore.shared
 
     var body: some View {
-        AppScreen(title: "Returns", kicker: "Goods in · \(session.warehouseLabel)") {
+        let listed = store.visibleReturns(in: scope)
+        AppScreen(title: scope.title, kicker: "Goods in · \(session.warehouseLabel)") {
             ModuleTabs(.goodsIn, current: .goodsInReturns)
         } content: {
             if store.isRemote, let message = store.loadError {
                 InlineAlert(title: "Couldn’t load returns", message: message)
             }
-            if store.isRemote, store.listedReturns.isEmpty, store.isLoadingReturns {
+            if store.isRemote, listed.isEmpty, store.isLoadingReturns || (store.returnsScope != scope && store.loadError == nil) {
                 ProgressView()
                     .frame(maxWidth: .infinity, minHeight: 88)
+            } else if listed.isEmpty, scope == .toProcess, store.loadError == nil {
+                EmptyState(icon: .checkCircle, title: "No returns to process")
             }
-            CardList(store.listedReturns) { item in
+            CardList(listed) { item in
                 ListRow(item.reference, subtitle: item.listSubtitle, chips: [item.state.chip]) {
                     router.open(GoodsInRoute.returnDetail(reference: item.reference))
                 }
                 .accessibilityIdentifier("goodsIn.return.\(item.reference)")
             }
-            HelperText("Customer returns arriving at goods in. Each item goes back to a location, or is set as damaged or not returned.")
+            HelperText(scope == .toProcess
+                ? "Customer returns received or being returned to locations."
+                : "Customer returns arriving at goods in. Each item goes back to a location, or is set as damaged or not returned.")
                 .padding(.horizontal, 4)
         }
     }

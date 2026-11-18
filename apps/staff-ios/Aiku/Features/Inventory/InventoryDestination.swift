@@ -13,6 +13,8 @@ struct InventoryDestination: View {
             InventoryFamilyDetailScreen(code: code)
         case .skos:
             InventorySkoListScreen(scope: .current)
+        case .skosIn(let scope):
+            InventorySkoListScreen(scope: scope)
         case .abnormalities:
             InventorySkoListScreen(scope: .abnormalities)
         case .sko(let reference):

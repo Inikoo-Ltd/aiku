@@ -3,6 +3,7 @@ import Foundation
 enum GoodsOutRoute: Hashable, Sendable {
     case backlog
     case deliveryNotes
+    case deliveryNotesIn(state: GoodsOutDeliveryNoteState)
     case deliveryNote(reference: String)
     case deliveryNoteID(id: Int)
     case fastPicking(reference: String)

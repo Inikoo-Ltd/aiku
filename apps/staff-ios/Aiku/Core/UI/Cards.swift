@@ -320,20 +320,22 @@ struct SectionHeading: View {
     let title: String
     var detail: String?
     var actionTitle: String?
+    var isUppercased = true
     var action: (() -> Void)?
 
-    init(_ title: String, detail: String? = nil, actionTitle: String? = nil, action: (() -> Void)? = nil) {
+    init(_ title: String, detail: String? = nil, actionTitle: String? = nil, isUppercased: Bool = true, action: (() -> Void)? = nil) {
         self.title = title
         self.detail = detail
         self.actionTitle = actionTitle
+        self.isUppercased = isUppercased
         self.action = action
     }
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(title.uppercased())
+            Text(isUppercased ? title.uppercased() : title)
                 .font(.aiku(13, .bold))
-                .tracking(0.8)
+                .tracking(isUppercased ? 0.8 : 0)
                 .foregroundStyle(AikuColor.text3)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)

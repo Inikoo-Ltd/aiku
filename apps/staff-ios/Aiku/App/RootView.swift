@@ -55,6 +55,9 @@ struct RootView: View {
                 await refreshPermissionsIfSignedIn()
                 await refreshWarehousesIfSignedIn()
                 await WorkBadgesStore.shared.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
+                if warehouseStore.selectedID == nil {
+                    await ShellInboxStore.shared.refreshUnread()
+                }
             }
         }
     }
@@ -89,6 +92,8 @@ struct RootView: View {
         GoodsInStore.shared.resetToSample()
         PalletDeliveriesFeed.shared.reset()
         WorkBadgesStore.shared.reset()
+        ShellInboxStore.shared.reset()
+        RecentSearches().clear()
         Task { await authStore.signOut() }
     }
 }
