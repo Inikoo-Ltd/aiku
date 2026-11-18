@@ -22,8 +22,8 @@ class GetIncomingHubProductionWidget
      * waiting to be put away counts there instead. Finished work waiting to be put away reads as received: what goes to stock locations,
      * plus what goes to partner bays. Booked in is what was put away in the last 7 days.
      *
-     * Finished lines are counted as the rows the From production page shows, so a line split
-     * between stock and a partner bay counts once in the total. The hub adds the partner suffix
+     * Finished lines are counted as the rows each filtered From production page shows; a line
+     * split between stock and a partner bay is on both, so the total reads as the sum. The hub adds the partner suffix
      * to the row total itself, so it is left out of row_totals here.
      * ponytail: counts are organisation-wide, so the job orders list is linked only when the
      * organisation has one production; link per production if one ever runs two.
@@ -41,7 +41,7 @@ class GetIncomingHubProductionWidget
             }
         }
         $waiting = ['stock' => count($itemIds['stock']), 'partner' => count($itemIds['partner'])];
-        $waitingTotal = count($itemIds['stock'] + $itemIds['partner']);
+        $waitingTotal = $waiting['stock'] + $waiting['partner'];
 
         $bookedIn = JobOrder::where('organisation_id', $warehouse->organisation_id)
             ->where('state', JobOrderStateEnum::RECEIVED)
