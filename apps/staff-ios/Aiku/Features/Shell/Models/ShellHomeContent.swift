@@ -27,14 +27,20 @@ enum ShellHomeContent {
     static let staffWorkplace = "Customer services"
 
     static let shortcuts: [ShellShortcut] = [
-        ShellShortcut(id: "goodsOut", title: "Goods out", icon: .goodsOut, badge: 12, requirement: .goodsOut, link: .goodsOut(.deliveryNotes)),
+        ShellShortcut(id: "goodsOut", title: "Goods out", icon: .goodsOut, requirement: .goodsOut, link: .goodsOut(.deliveryNotes)),
         ShellShortcut(id: "goodsIn", title: "Goods in", icon: .goodsIn, requirement: .goodsIn, link: .goodsIn(.stockDeliveries)),
         ShellShortcut(id: "inventory", title: "Inventory", icon: .inventory, requirement: .inventory, link: .inventory(.skos)),
         ShellShortcut(id: "locations", title: "Locations", icon: .locations, requirement: .locations, link: .locations(.locations))
     ]
 
-    static func shortcuts(for modules: ModuleAccess) -> [ShellShortcut] {
-        shortcuts.filter { $0.requirement.isMet(by: modules) }
+    static func shortcuts(for modules: ModuleAccess, goodsOutUnassigned: Int = 0) -> [ShellShortcut] {
+        shortcuts.filter { $0.requirement.isMet(by: modules) }.map { shortcut in
+            var shortcut = shortcut
+            if shortcut.id == "goodsOut", goodsOutUnassigned > 0 {
+                shortcut.badge = goodsOutUnassigned
+            }
+            return shortcut
+        }
     }
 
     static func greeting(hour: Int, firstName: String) -> String {

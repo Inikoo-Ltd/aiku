@@ -54,6 +54,7 @@ struct RootView: View {
                 await authStore.refreshProfile()
                 await refreshPermissionsIfSignedIn()
                 await refreshWarehousesIfSignedIn()
+                await WorkBadgesStore.shared.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
             }
         }
     }
@@ -86,6 +87,7 @@ struct RootView: View {
         InventoryFamiliesFeed.shared.reset()
         GoodsInStore.shared.resetToSample()
         PalletDeliveriesFeed.shared.reset()
+        WorkBadgesStore.shared.reset()
         Task { await authStore.signOut() }
     }
 }

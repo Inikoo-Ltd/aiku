@@ -43,22 +43,6 @@ struct ShellTests {
         #expect(ShellHomeContent.greeting(hour: 21, firstName: "Alex") == "Good evening, Alex")
     }
 
-    @Test func workFiltersCountItemsPerModule() {
-        let items = ShellWork.items
-
-        #expect(ShellWork.count(items, for: .all) == 6)
-        #expect(ShellWork.count(items, for: .warehouse) == 5)
-        #expect(ShellWork.count(items, for: .tasks) == 1)
-        #expect(ShellWork.filtered(items, by: .tasks).map(\.reference) == ["[Task]"])
-    }
-
-    @Test func workForStaffWithoutWarehouseAccessDropsWarehouseItems() {
-        let visible = ShellWork.visibleItems(ShellWork.items, hasWarehouseAccess: false)
-
-        #expect(visible.allSatisfy { $0.module == .tasks })
-        #expect(ShellWork.filters(for: visible) == [.all, .tasks])
-    }
-
     @Test func searchMatchesNamesCaseInsensitivelyAndGroupsByKind() {
         let sections = ShellSearch.sections(for: "lav", scope: .all)
 

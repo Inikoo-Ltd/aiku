@@ -21,7 +21,7 @@ struct GoodsInDestination: View {
             }
         case .returns:
             GoodsInReturnsView()
-        case .returnDetail(let reference):
+        case .returnDetail(let reference), .returnID(_, let reference):
             GoodsInRemoteGate(isWaiting: GoodsInStore.shared.isWaitingForReturn(reference), title: reference) {
                 GoodsInReturnDetailView(reference: reference)
             }
@@ -89,6 +89,8 @@ private struct GoodsInRemoteLoading: ViewModifier {
                 await store.reloadReturns(apiClient: apiClient)
             case .returnDetail(let reference):
                 await store.loadReturn(reference, apiClient: apiClient)
+            case .returnID(let id, _):
+                await store.loadReturn(id: id, apiClient: apiClient)
             }
         }
     }

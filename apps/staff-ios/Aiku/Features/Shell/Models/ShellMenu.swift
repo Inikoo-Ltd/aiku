@@ -66,7 +66,7 @@ enum ShellMenuCatalog {
             ShellMenuItem(id: "goodsIn.returns", title: "Returns", icon: .stockDelivery, requirement: .goodsIn, link: .goodsIn(.returns))
         ]),
         ShellMenuGroup(id: "goodsOut", title: "Goods out", icon: .goodsOut, items: [
-            ShellMenuItem(id: "goodsOut.backlog", title: "Backlog", icon: .backlog, badge: .pill(Chip("12 unassigned", .neutral)), requirement: .goodsOut, link: .goodsOut(.backlog)),
+            ShellMenuItem(id: "goodsOut.backlog", title: "Backlog", icon: .backlog, requirement: .goodsOut, link: .goodsOut(.backlog)),
             ShellMenuItem(id: "goodsOut.deliveryNotes", title: "Delivery notes", icon: .deliveryNote, requirement: .goodsOut, link: .goodsOut(.deliveryNotes)),
             ShellMenuItem(id: "goodsOut.fulfilmentReturns", title: "Fulfilment returns", icon: .deliveryNote, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.returns)),
             ShellMenuItem(id: "goodsOut.pickingSessions", title: "Picking sessions", icon: .deliveryNote, requirement: .goodsOut, link: .dispatch(.pickingSessions)),
@@ -79,9 +79,15 @@ enum ShellMenuCatalog {
         ])
     ]
 
-    static func groups(for modules: ModuleAccess) -> [ShellMenuGroup] {
+    static func groups(for modules: ModuleAccess, goodsOutUnassigned: Int = 0) -> [ShellMenuGroup] {
         allGroups.compactMap { group in
-            let visible = group.items.filter { $0.requirement.isMet(by: modules) }
+            let visible = group.items.filter { $0.requirement.isMet(by: modules) }.map { item in
+                var item = item
+                if item.id == "goodsOut.backlog", goodsOutUnassigned > 0 {
+                    item.badge = .pill(Chip("\(goodsOutUnassigned) unassigned", .warn))
+                }
+                return item
+            }
             guard !visible.isEmpty else { return nil }
             return ShellMenuGroup(id: group.id, title: group.title, icon: group.icon, note: group.note, items: visible)
         }

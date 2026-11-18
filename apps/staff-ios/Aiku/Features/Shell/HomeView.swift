@@ -4,6 +4,9 @@ struct HomeView: View {
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
     @State private var inbox = ShellInboxStore.shared
+    @Environment(\.apiClient) private var apiClient
+    @State private var warehouseStore = WarehouseStore.shared
+    private let workBadges = WorkBadgesStore.shared
 
     var body: some View {
         ScreenScaffold(spacing: 20) {
@@ -22,6 +25,9 @@ struct HomeView: View {
         }
         .onAppear {
             session.unreadCount = inbox.unreadCount
+        }
+        .task(id: warehouseStore.selectedID) {
+            await workBadges.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
         }
     }
 
@@ -91,7 +97,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeading("Shortcuts")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                ForEach(ShellHomeContent.shortcuts(for: session.visibleModules)) { shortcut in
+                ForEach(ShellHomeContent.shortcuts(for: session.visibleModules, goodsOutUnassigned: workBadges.goodsOutUnassignedCount)) { shortcut in
                     Button {
                         router.shellFollow(shortcut.link)
                     } label: {

@@ -469,6 +469,18 @@ final class GoodsInStore {
         return returnReferences.compactMap { reference in returns.first { $0.reference == reference } }
     }
 
+    func loadReturn(id: Int, apiClient: APIClient) async {
+        guard isRemote, let warehouseID else { return }
+        do {
+            storeReturn(try await apiClient.fetchReturn(warehouseID: warehouseID, id: id))
+            loadError = nil
+        } catch where error.isCancellation {
+            return
+        } catch {
+            loadError = InventoryLive.message(for: error)
+        }
+    }
+
     func loadReturn(_ reference: String, apiClient: APIClient) async {
         guard isRemote, let warehouseID, let id = returns.first(where: { $0.reference == reference })?.remoteID else { return }
         do {

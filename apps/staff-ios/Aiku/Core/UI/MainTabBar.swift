@@ -3,11 +3,12 @@ import SwiftUI
 struct MainTabBar: View {
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
+    private let workBadges = WorkBadgesStore.shared
 
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
             item(.home, icon: .home, title: "Home")
-            item(.work, icon: .work, title: "My work", badge: session.assignedCount)
+            item(.work, icon: .work, title: "My work", badge: workBadges.myWorkCount)
             if session.canScan {
                 scanButton
             }

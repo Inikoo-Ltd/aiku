@@ -39,15 +39,13 @@ enum AccessLevel: String, Sendable {
 final class Session {
     var profile: StaffProfile
     var access: AccessLevel
-    var assignedCount: Int
     var unreadCount: Int
     var hasWarehouseContext = false
     var modules: ModuleAccess = .everything
 
-    init(profile: StaffProfile = .sample, access: AccessLevel = .all, assignedCount: Int = 6, unreadCount: Int = 3) {
+    init(profile: StaffProfile = .sample, access: AccessLevel = .all, unreadCount: Int = 3) {
         self.profile = profile
         self.access = access
-        self.assignedCount = assignedCount
         self.unreadCount = unreadCount
     }
 
