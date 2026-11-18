@@ -37,6 +37,7 @@ interface Connection {
 	organisation_code: string
 	status: Status
 	taken_at: string | null
+	from_lines: boolean
 	failed_at: string | null
 	amount: number
 	reserved: number
@@ -78,7 +79,12 @@ const ago = (date: string) => useRangeFromNow(date, { addSuffix: true })
 const organisationOptions = computed(() => [{ label: ctrans("All"), value: "all" }, ...props.organisations])
 const view = computed({
 	get: () => "cash",
-	set: () => router.get(route("grp.org.accounting.cash_flow.index", { organisation: route().params.organisation })),
+	set: () =>
+		router.get(
+			props.isGroup
+				? route("grp.financials.cash_flow.index", props.organisation ? { org: props.organisation } : {})
+				: route("grp.org.accounting.cash_flow.index", { organisation: route().params.organisation }),
+		),
 })
 const viewOptions = [
 	{ label: ctrans("Balances"), value: "cash" },
@@ -107,7 +113,8 @@ const freshness = (connection: Connection) => {
 		return ctrans("Read :ago", { ago: ago(connection.taken_at!) })
 	}
 	if (connection.status === "never") {
-		return connection.failed_at ? ctrans("Reading failed :ago, no balance read yet", { ago: ago(connection.failed_at) }) : ctrans("No balance read yet")
+		const read = connection.failed_at ? ctrans("Reading failed :ago, no balance read yet", { ago: ago(connection.failed_at) }) : ctrans("No balance read yet")
+		return connection.from_lines ? ctrans(":read: counted from its bank lines", { read }) : read
 	}
 	const read = ctrans("last read :ago", { ago: ago(connection.taken_at!) })
 	if (connection.status === "failed") {
@@ -179,7 +186,7 @@ const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (Math.max(row.a
 				</div>
 			</div>
 			<SegmentedToggle v-if="organisations.length > 1" v-model="organisation" :options="organisationOptions" :aria-label="ctrans('Organisation')" />
-			<SegmentedToggle v-if="!isGroup" v-model="view" :options="viewOptions" :aria-label="ctrans('View')" />
+			<SegmentedToggle v-model="view" :options="viewOptions" :aria-label="ctrans('View')" />
 		</div>
 
 		<div v-if="flagged.length" class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">

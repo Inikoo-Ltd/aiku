@@ -27,7 +27,7 @@ class NotifyUserOnChosenChannels
      */
     public function handle(User $user, UserNotificationEnum $event, Notification $notification, string $title, string $body, string $url): void
     {
-        $channels = $event->channelsFor($user);
+        $channels = $event->deliverTo($user);
 
         $notification->byEmail = in_array('email', $channels, true) && (bool) $user->email;
         $user->notify($notification);

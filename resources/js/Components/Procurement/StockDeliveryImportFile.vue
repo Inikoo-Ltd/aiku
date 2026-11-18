@@ -19,9 +19,9 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faFolderOpen, faUpload, faUndo, faCheckCircle, faCircle, faMinusCircle, faFileAlt, faMagic, faBoxUsd, faCoins, faTimes, faLock } from "@fal"
+import { faFolderOpen, faUpload, faUndo, faCheckCircle, faCircle, faMinusCircle, faFileAlt, faMagic, faBoxUsd, faCoins, faTimes, faLock, faFilePdf, faFileArchive, faDownload } from "@fal"
 
-library.add(faFolderOpen, faUpload, faUndo, faCheckCircle, faCircle, faMinusCircle, faFileAlt, faMagic, faBoxUsd, faCoins, faTimes, faLock)
+library.add(faFolderOpen, faUpload, faUndo, faCheckCircle, faCircle, faMinusCircle, faFileAlt, faMagic, faBoxUsd, faCoins, faTimes, faLock, faFilePdf, faFileArchive, faDownload)
 
 type CostingSection = "invoice" | "landed"
 
@@ -65,6 +65,8 @@ const props = defineProps<{
 		update_route: routeType
 		attach_route: routeType
 		detach_route: routeType
+		documents_route: routeType
+		documents_count: number
 	}
 	tab?: string
 	costingAvailable?: Record<CostingSection, boolean>
@@ -179,7 +181,31 @@ const statusIconClass: Record<Status, string> = {
 	<div class="space-y-4 p-4">
 		<div class="grid gap-4 lg:grid-cols-3">
 			<div class="rounded-md border border-gray-200 bg-white p-4 lg:col-span-2">
-				<h3 class="mb-3 text-sm font-semibold text-gray-700">{{ ctrans("Shipment") }}</h3>
+				<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+					<h3 class="text-sm font-semibold text-gray-700">{{ ctrans("Shipment") }}</h3>
+					<div v-if="data.documents_count" class="flex gap-2">
+						<a :href="route(data.documents_route.name, { ...data.documents_route.parameters, format: 'pdf' })" v-tooltip="ctrans('Every document in one PDF to print, with a cover page listing them')">
+							<Button type="tertiary" size="xs" :label="ctrans('All documents (PDF)')">
+								<template #icon>
+									<FontAwesomeIcon :icon="faFilePdf" class="text-red-500" fixed-width aria-hidden="true" />
+								</template>
+								<template #iconRight>
+									<FontAwesomeIcon :icon="faDownload" class="text-gray-500" fixed-width aria-hidden="true" />
+								</template>
+							</Button>
+						</a>
+						<a :href="route(data.documents_route.name, { ...data.documents_route.parameters, format: 'zip' })" v-tooltip="ctrans('Every document as the original files in one ZIP')">
+							<Button type="tertiary" size="xs" :label="ctrans('All documents (ZIP)')">
+								<template #icon>
+									<FontAwesomeIcon :icon="faFileArchive" class="text-gray-500" fixed-width aria-hidden="true" />
+								</template>
+								<template #iconRight>
+									<FontAwesomeIcon :icon="faDownload" class="text-gray-500" fixed-width aria-hidden="true" />
+								</template>
+							</Button>
+						</a>
+					</div>
+				</div>
 				<dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
 					<div class="col-span-2 sm:col-span-3">
 						<dt class="text-xs text-gray-500">{{ ctrans("Purchase orders") }}</dt>

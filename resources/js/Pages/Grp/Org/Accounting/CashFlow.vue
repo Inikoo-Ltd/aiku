@@ -37,7 +37,9 @@ type Period = {
 const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
-	organisation: string
+	organisation: string | null
+	organisations: { value: string; label: string }[]
+	isGroup: boolean
 	inSections: Record<string, string>
 	outSections: Record<string, string>
 	cashFlow: {
@@ -49,6 +51,7 @@ const props = defineProps<{
 		not_connected: string[]
 		checked_from: string | null
 		timezone: string
+		organisations?: { code: string; name: string; closing: number; net: number }[]
 	}
 }>()
 
@@ -60,13 +63,23 @@ const shortMoney = (amount: number) =>
 const periodLabel = (period: Period) =>
 	props.cashFlow.interval === "month" ? useFormatTime(period.start, { formatTime: "MMM yy" }) : useFormatTime(period.start, { formatTime: "dd MMM" })
 
+const query = (interval: string, organisation: string | null) => ({
+	...(props.isGroup ? (organisation ? { org: organisation } : {}) : { organisation }),
+	...(interval === "week" ? {} : { interval }),
+})
+const routeName = (page: "cash" | "cash_flow") => (props.isGroup ? `grp.financials.${page}.index` : `grp.org.accounting.${page}.index`)
 const interval = computed({
 	get: () => props.cashFlow.interval,
-	set: (value: string) => router.get(route("grp.org.accounting.cash_flow.index", { organisation: props.organisation, ...(value === "week" ? {} : { interval: value }) })),
+	set: (value: string) => router.get(route(routeName("cash_flow"), query(value, props.organisation))),
 })
 const view = computed({
 	get: () => "cash_flow",
-	set: () => router.get(route("grp.org.accounting.cash.index", { organisation: props.organisation })),
+	set: () => router.get(route(routeName("cash"), query("week", props.organisation))),
+})
+const organisationOptions = computed(() => [{ label: ctrans("All"), value: "all" }, ...props.organisations])
+const organisation = computed({
+	get: () => props.organisation ?? "all",
+	set: (value: string) => router.get(route(routeName("cash_flow"), query(props.cashFlow.interval, value === "all" ? null : value))),
 })
 const viewOptions = [
 	{ label: ctrans("Balances"), value: "cash" },
@@ -181,6 +194,7 @@ const partialBanks = computed(() => props.cashFlow.banks.filter((bank) => bank.p
 				{{ cashFlow.interval === "month" ? ctrans("Last 12 months in :currency.", { currency }) : ctrans("Last 12 weeks, Monday to Sunday, in :currency.", { currency }) }}
 			</p>
 			<div class="flex flex-wrap items-center gap-3">
+				<SegmentedToggle v-if="organisations.length > 1" v-model="organisation" :options="organisationOptions" :aria-label="ctrans('Organisation')" />
 				<SegmentedToggle v-model="interval" :options="intervalOptions" :aria-label="ctrans('Interval')" />
 				<SegmentedToggle v-model="view" :options="viewOptions" :aria-label="ctrans('View')" />
 			</div>
@@ -192,6 +206,25 @@ const partialBanks = computed(() => props.cashFlow.banks.filter((bank) => bank.p
 				<div class="mt-1 text-xl font-semibold tabular-nums" :class="card.key === 'net' && card.amount < 0 ? 'text-red-600' : ''">{{ money(card.amount) }}</div>
 				<div v-if="card.note" class="mt-0.5 text-xs text-gray-400">{{ card.note }}</div>
 			</div>
+		</div>
+
+		<div v-if="isGroup && (cashFlow.organisations?.length ?? 0) > 1" class="overflow-x-auto rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+			<table class="w-full text-sm tabular-nums">
+				<thead class="whitespace-nowrap text-xs uppercase text-gray-500">
+					<tr>
+						<th class="py-1.5 pr-4 text-left font-medium">{{ ctrans("Organisation") }}</th>
+						<th class="px-2 py-1.5 text-right font-medium">{{ ctrans("Net cash flow, :count periods", { count: periods.length }) }}</th>
+						<th class="py-1.5 pl-2 text-right font-medium">{{ ctrans("Cash now") }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="row in cashFlow.organisations" :key="row.code" class="border-t border-gray-100">
+						<td class="whitespace-nowrap py-1.5 pr-4 text-gray-700">{{ row.name }}</td>
+						<td class="whitespace-nowrap px-2 py-1.5 text-right" :class="row.net < 0 ? 'text-red-600' : ''">{{ money(row.net) }}</td>
+						<td class="whitespace-nowrap py-1.5 pl-2 text-right font-semibold">{{ money(row.closing) }}</td>
+					</tr>
+				</tbody>
+			</table>
 		</div>
 
 		<DashboardWidgetBox storageKey="cash_flow_chart_collapsed">
@@ -248,6 +281,7 @@ const partialBanks = computed(() => props.cashFlow.banks.filter((bank) => bank.p
 				<li>{{ ctrans("Moves between our own currency balances are not money in or out: they and the change of exchange rates make the difference between the cash at the start and at the end.") }}</li>
 				<li>{{ ctrans("Cash is worked back from the last balance each bank gave, less the lines booked after each date.") }}</li>
 				<li>{{ ctrans("Cash now is that last balance plus the lines booked since, at today's exchange rate, so it can differ slightly from the Cash page, which shows the balance as the bank gave it, at the rate of that day.") }}</li>
+				<li v-if="isGroup">{{ ctrans("The group adds up each organisation's cash flow in :currency, each at the same exchange rates.", { currency }) }}</li>
 				<li>{{ cashFlow.interval === "month" ? ctrans("Months follow the organisation's time zone (:timezone).", { timezone: cashFlow.timezone }) : ctrans("Weeks run Monday to Sunday in the organisation's time zone (:timezone).", { timezone: cashFlow.timezone }) }}</li>
 				<li v-if="hasUnchecked" class="text-amber-800">
 					<span class="font-semibold">†</span>

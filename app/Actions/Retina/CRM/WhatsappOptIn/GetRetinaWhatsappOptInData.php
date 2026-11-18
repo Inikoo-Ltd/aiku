@@ -28,6 +28,11 @@ class GetRetinaWhatsappOptInData
             && filled(data_get($shop->settings, 'whatsapp.phone_number_id'));
     }
 
+    public static function isOfferedAtRegistration(Shop $shop): bool
+    {
+        return $shop->type === ShopTypeEnum::FULFILMENT || self::isOfferedIn($shop);
+    }
+
     /**
      * On the dashboard ($dismissible) the card offers Not interested and is not shown again once
      * dismissed; in the settings it is always shown, so a customer can still opt in there.

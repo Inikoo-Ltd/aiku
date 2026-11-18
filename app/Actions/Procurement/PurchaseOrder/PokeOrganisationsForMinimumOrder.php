@@ -80,7 +80,7 @@ class PokeOrganisationsForMinimumOrder extends OrgAction
 
             $draft->buyer->notify(new PurchaseOrderMinimumPokeNotification($draft, $title, $body));
 
-            if (in_array('browser', UserNotificationEnum::PURCHASE_ORDER_MINIMUM_POKE->channelsFor($draft->buyer), true) && $draft->buyer->pushSubscriptions()->exists()) {
+            if (in_array('browser', UserNotificationEnum::PURCHASE_ORDER_MINIMUM_POKE->deliverTo($draft->buyer), true) && $draft->buyer->pushSubscriptions()->exists()) {
                 SendUserPushNotification::dispatch($draft->buyer, [
                     'title' => $title,
                     'body'  => Str::limit($body, 200),

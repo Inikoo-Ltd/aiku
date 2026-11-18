@@ -18,6 +18,7 @@ interface LiveUser {
     avatar_thumbnail: Image
     action: string  // navigate, leave, logout
     last_active: Date
+    focus_until?: string | null
     current_page?: {
         label: string,
         url: string

@@ -214,6 +214,17 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     }
 
     /**
+     * Focus mode, chosen next to the search for 30 minutes to 8 hours: nothing pops up, rings,
+     * emails, pushes or messages them on Slack until it ends; the bell and task list still fill.
+     */
+    public function isFocusing(): bool
+    {
+        $until = Arr::get($this->settings, 'focus_until');
+
+        return $until && now()->lt($until);
+    }
+
+    /**
      * The staff chat screens draw avatars through Image (avif and original, 1x and 2x) and TicketUserAvatar (original),
      * so the webp and png links GetPictureSources also signs are left out: they were half of every coworker and conversation list.
      */

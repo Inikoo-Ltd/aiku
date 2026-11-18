@@ -370,7 +370,7 @@ class NotifyTicketUsers
             return;
         }
 
-        $channels = $event?->channelsFor($recipient) ?? [];
+        $channels = $event?->deliverTo($recipient) ?? [];
 
         $recipient->notify(new TicketNotification($ticket, $subject, $lines, $actionLabel, in_array('email', $channels, true) && (bool) $recipient->email, $reason));
 

@@ -170,6 +170,11 @@ class GetStockDeliveryImportFile
                 'name'       => 'grp.models.stock-delivery.attachment.detach',
                 'parameters' => ['stockDelivery' => $stockDelivery->id],
             ],
+            'documents_count' => $files->count(),
+            'documents_route' => [
+                'name'       => 'grp.models.stock-delivery.import_file.documents',
+                'parameters' => ['stockDelivery' => $stockDelivery->id],
+            ],
             'attach_route'  => [
                 'method'     => 'post',
                 'name'       => 'grp.models.stock-delivery.attachment.attach',
@@ -191,7 +196,7 @@ class GetStockDeliveryImportFile
         };
     }
 
-    private function scope(string $key): ?PurchaseOrderAttachmentScopeEnum
+    public static function scope(string $key): ?PurchaseOrderAttachmentScopeEnum
     {
         return match ($key) {
             'proforma'           => PurchaseOrderAttachmentScopeEnum::PROFORMA,

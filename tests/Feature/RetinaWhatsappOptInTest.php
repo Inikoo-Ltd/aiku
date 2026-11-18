@@ -409,3 +409,17 @@ test('the dropshipping dashboard carries the WhatsApp card and a dismissed custo
     $this->get('/app/dashboard?utm_campaign=whatsapp_optin&utm_source=newsletter')
         ->assertRedirect(route('retina.sysadmin.email.edit', ['utm_campaign' => 'whatsapp_optin', 'utm_source' => 'newsletter']));
 });
+
+test('the WhatsApp subscription and the sign-up checkbox follow the shop having a WhatsApp number', function () {
+    $subscriptionsOf = fn () => App\Http\Resources\CRM\CustomerResource::make($this->customer->fresh())->toArray(request())['email_subscriptions']['subscriptions'];
+
+    expect($subscriptionsOf())->toHaveKey('whatsapp_newsletter')
+        ->and(GetRetinaWhatsappOptInData::isOfferedAtRegistration($this->shop))->toBeTrue();
+
+    $this->shop->update(['settings' => array_replace_recursive($this->shop->settings, ['whatsapp' => ['phone_number_id' => null]])]);
+    $this->customer->shop->refresh();
+
+    expect($subscriptionsOf())->not->toHaveKey('whatsapp_newsletter')
+        ->and(GetRetinaWhatsappOptInData::isOfferedAtRegistration($this->shop->refresh()))->toBeFalse()
+        ->and(GetRetinaWhatsappOptInData::isOfferedAtRegistration((new App\Models\Catalogue\Shop())->forceFill(['type' => ShopTypeEnum::FULFILMENT, 'settings' => []])))->toBeTrue();
+});

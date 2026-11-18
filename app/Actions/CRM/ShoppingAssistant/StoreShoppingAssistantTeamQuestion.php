@@ -227,12 +227,12 @@ class StoreShoppingAssistantTeamQuestion
         $online = self::onlineUserIds();
 
         foreach ($gurus as $index => $guru) {
-            if ($online === null || in_array($guru->id, $online, true)) {
+            if (!$guru->isFocusing() && ($online === null || in_array($guru->id, $online, true))) {
                 return [$guru, $index === 0 ? 'guru' : 'backup'];
             }
         }
         $agent = ChatAgent::findAvailableAgent(null, $shopId)?->user;
-        if ($agent && $agent->status) {
+        if ($agent && $agent->status && !$agent->isFocusing()) {
             return [$agent, 'customer_services'];
         }
 
@@ -314,9 +314,10 @@ class StoreShoppingAssistantTeamQuestion
     }
 
     /**
-     * What the pop-up shows and where its buttons post.
+     * What the pop-up shows and where its buttons post. Only a live question (the customer is still
+     * waiting on the page) pops up; the rest wait quietly in the bell and the task list.
      *
-     * @return array<string, string>
+     * @return array<string, string|bool>
      */
     public static function popup(StaffTask $task): array
     {
@@ -325,6 +326,7 @@ class StoreShoppingAssistantTeamQuestion
             'draft_evidence' => data_get($task->data, 'draft_evidence'),
         ]) + [
             'task'           => $task->reference,
+            'live'           => self::isAwaited($task),
             'question'       => self::questionText($task),
             'customer_words' => self::questionText($task, 'customer_words'),
             'language'       => (string) data_get($task->data, 'language'),

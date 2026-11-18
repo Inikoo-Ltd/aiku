@@ -41,7 +41,7 @@ class SendPurchaseOrderMinimumPokeDigests
 
         foreach ($pokes->groupBy('recipient_id') as $recipientId => $recipientPokes) {
             $recipient = User::find($recipientId);
-            $channels  = $recipient ? UserNotificationEnum::PURCHASE_ORDER_MINIMUM_POKE->channelsFor($recipient) : [];
+            $channels  = $recipient ? UserNotificationEnum::PURCHASE_ORDER_MINIMUM_POKE->deliverTo($recipient) : [];
 
             $requests = $recipientPokes->map(function ($poke) use ($purchaseOrders) {
                 $purchaseOrder = $purchaseOrders->get($poke->purchase_order_id);

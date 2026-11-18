@@ -57,6 +57,7 @@ class GetLoggedUser
             'settings' => [
                 'app_theme' => Arr::get($user->settings, 'app_theme'),
                 'hide_logo' => Arr::get($user->settings, 'hide_logo', false),
+                'focus_until' => $user->isFocusing() ? Arr::get($user->settings, 'focus_until') : null,
                 'alert_sounds' => Arr::get($user->settings, 'alert_sounds'),
                 'alert_events' => Arr::get($user->settings, 'alert_events'),
                 'alert_preview_seconds' => Arr::get($user->settings, 'alert_preview_seconds'),
