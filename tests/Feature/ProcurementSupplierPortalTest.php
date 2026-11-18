@@ -876,3 +876,34 @@ test('W4 a second identical deposit request from the portal sends no second emai
     $this->postJson($route, ['choice' => 'not_needed'])->assertJsonValidationErrors('deposit');
 });
 
+test('W4 the supplier records production only from the day the order was agreed, never in the future, and clears only a date it set itself', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $orgSupplier          = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+    $purchaseOrder        = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $purchaseOrder->updateQuietly([
+        'state'                 => PurchaseOrderStateEnum::CONFIRMED,
+        'submitted_at'          => now()->subDays(12),
+        'confirmed_at'          => now()->subDays(10),
+        'deposit_amount'        => 0,
+        'production_started_at' => now()->subDays(3),
+    ]);
+    Auth::logout();
+
+    $route = route('grp.supplier_share.purchase_order.production', ['token' => $token, 'purchaseOrder' => $purchaseOrder->id]);
+    $send  = fn (?string $startedAt) => $this->postJson($route, ['production_started_at' => $startedAt, 'estimated_production_date' => null]);
+
+    $send(null)->assertJsonValidationErrors('production_started_at');
+    $send(now()->subDays(2)->toDateString())->assertJsonValidationErrors('production_started_at');
+    expect($purchaseOrder->fresh()->production_started_at->toDateString())->toBe(now()->subDays(3)->toDateString());
+
+    $purchaseOrder->updateQuietly(['production_started_at' => null]);
+    $send(now()->subDays(11)->toDateString())->assertJsonValidationErrors('production_started_at');
+    $send(now()->addDays(3)->toDateString())->assertJsonValidationErrors('production_started_at');
+
+    $send(now()->subDays(4)->toDateString())->assertOk();
+    expect($purchaseOrder->fresh()->production_started_at->toDateString())->toBe(now()->subDays(4)->toDateString());
+
+    $send(null)->assertOk();
+    expect($purchaseOrder->fresh()->production_started_at)->toBeNull();
+});
+

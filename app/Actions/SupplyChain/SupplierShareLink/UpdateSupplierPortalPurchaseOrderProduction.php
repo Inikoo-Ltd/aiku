@@ -33,6 +33,8 @@ class UpdateSupplierPortalPurchaseOrderProduction
 {
     use AsAction;
 
+    public const string STARTED_BY_SUPPLIER_KEY = 'supplier_production_started_on';
+
     /**
      * @param  array{production_started_at: string|null, estimated_production_date: string|null}  $modelData
      */
@@ -51,17 +53,34 @@ class UpdateSupplierPortalPurchaseOrderProduction
         if ($startedAt !== null && $startedAt > Carbon::parse(MarkPurchaseOrderStage::today($purchaseOrder->organisation))->addDay()->toDateString()) {
             throw ValidationException::withMessages(['production_started_at' => __('Production cannot start in the future.')]);
         }
+        $agreedOn = ($purchaseOrder->confirmed_at ?? $purchaseOrder->submitted_at)?->copy()->setTimezone($purchaseOrder->organisation->timezone?->name ?? config('app.timezone'))->toDateString();
+        if ($startedAt !== null && $agreedOn !== null && $startedAt < $agreedOn) {
+            throw ValidationException::withMessages(['production_started_at' => __('Production cannot start before the order was agreed.')]);
+        }
         if ($startedAt !== null && $finishAt !== null && $finishAt < $startedAt) {
             throw ValidationException::withMessages(['estimated_production_date' => __('The expected finish cannot be before production started.')]);
         }
 
-        if ($startedAt !== $purchaseOrder->production_started_at?->toDateString()) {
+        $recordedOn = $purchaseOrder->production_started_at?->toDateString();
+        if ($startedAt !== $recordedOn) {
+            if ($recordedOn !== null && Arr::get($purchaseOrder->data ?? [], self::STARTED_BY_SUPPLIER_KEY) !== $recordedOn) {
+                throw ValidationException::withMessages(['production_started_at' => __('This date was recorded by our team: ask us to change it.')]);
+            }
+
             $reasons       = MarkPurchaseOrderStage::make()->reasonsNeeded($purchaseOrder, 'production_started_at', $startedAt);
-            $purchaseOrder = MarkPurchaseOrderStage::make()->action($purchaseOrder, [
+            $purchaseOrder = MarkPurchaseOrderStage::make()->gated()->action($purchaseOrder, [
                 'field'  => 'production_started_at',
                 'date'   => $startedAt,
                 'reason' => $reasons ? __('Recorded by the supplier from its portal') : null,
             ]);
+
+            $data = $purchaseOrder->data ?? [];
+            if ($startedAt === null) {
+                unset($data[self::STARTED_BY_SUPPLIER_KEY]);
+            } else {
+                $data[self::STARTED_BY_SUPPLIER_KEY] = $startedAt;
+            }
+            $purchaseOrder->update(['data' => $data]);
         }
 
         if ($finishAt !== Arr::get($purchaseOrder->data ?? [], 'estimated_production_date')) {
