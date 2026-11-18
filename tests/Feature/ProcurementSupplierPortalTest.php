@@ -818,17 +818,18 @@ test('W4 the product upload reads only the template: wrong headings and more tha
         ->and($rows[0]['errors'])->toBe([]);
 });
 
-test('W4 a portal contact cannot replace the company photo, and the avatar still saves', function () {
+test('W4 a portal contact sets the company photo and the avatar, both taking their type from the file content', function () {
     [$supplier, , $token] = portalSupplier($this);
     Auth::logout();
     $imageBefore = $supplier->fresh()->image_id;
 
     $this->get(route('grp.supplier_share.show', $token))->assertOk();
     $this->post(route('grp.supplier_share.profile.update', $token), ['company_photo' => UploadedFile::fake()->image('logo.jpg', 200, 200)])->assertSessionHasNoErrors();
+    $this->post(route('grp.supplier_share.profile.update', $token), ['company_photo' => UploadedFile::fake()->create('x.jpg', 10, 'text/plain')])->assertSessionHasErrors('company_photo');
     $this->post(route('grp.supplier_share.profile.update', $token), ['photo' => UploadedFile::fake()->image('me.png', 200, 200)])->assertSessionHasNoErrors();
 
     $profile = \App\Models\SupplyChain\SupplierPortalProfile::where('supplier_id', $supplier->id)->sole();
-    expect($supplier->fresh()->image_id)->toBe($imageBefore)
+    expect($supplier->fresh()->image_id)->not->toBeNull()->not->toBe($imageBefore)
         ->and($profile->image_id)->not->toBeNull();
 });
 
