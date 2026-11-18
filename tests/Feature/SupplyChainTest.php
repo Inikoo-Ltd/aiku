@@ -2526,3 +2526,22 @@ test('make preferred on Add to another supplier needs goods edit and skips disco
     $this->post($url, ['supplier_products' => [$otherSource->id]])->assertSessionHasNoErrors();
     expect($target->supplierProducts()->where('code', $otherSource->code)->exists())->toBeTrue();
 });
+
+test('merge preview reports codes shared with a deleted product of either supplier, which the merge would refuse', function () {
+    [, $duplicateProduct, $kept, $keptOrgSupplier, $orgStock] = supplyChainFixAgentSuppliers($this);
+    $duplicate = $duplicateProduct->supplier;
+    $duplicate->update(['currency_id' => $kept->currency_id]);
+    $keptProduct = supplyChainFixSameCodeProduct($kept, $duplicateProduct, $keptOrgSupplier, $orgStock);
+
+    expect(\App\Actions\SupplyChain\Supplier\MergeSuppliers::make()->blockers($duplicate, $kept))->toBe([]);
+
+    $keptProduct->delete();
+    $blockers = \App\Actions\SupplyChain\Supplier\MergeSuppliers::make()->blockers($duplicate, $kept);
+    expect(implode(' ', $blockers))->toContain($keptProduct->code)
+        ->and(fn () => \App\Actions\SupplyChain\Supplier\MergeSuppliers::run($duplicate, $kept))->toThrow(ValidationException::class)
+        ->and($duplicate->refresh()->status)->toBeTrue();
+
+    $keptProduct->restore();
+    $duplicateProduct->delete();
+    expect(implode(' ', \App\Actions\SupplyChain\Supplier\MergeSuppliers::make()->blockers($duplicate, $kept)))->toContain($keptProduct->code);
+});
