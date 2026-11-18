@@ -29,6 +29,7 @@ use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasPalletDocumentReaders;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\SendsWorkNotifications;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -156,6 +157,7 @@ class PalletReturn extends Model implements HasMedia, Auditable
     use HasAttachments;
     use HasPalletDocumentReaders;
     use HasHistory;
+    use SendsWorkNotifications;
 
     protected $guarded = [];
     protected $casts = [

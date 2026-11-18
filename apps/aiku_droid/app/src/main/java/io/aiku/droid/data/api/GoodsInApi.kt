@@ -394,6 +394,7 @@ data class StockDeliveryOutcome(val delivery: StockDelivery, val status: String,
 
 enum class ReturnStateFilter(val key: String) {
     All("all"),
+    ToProcess("to_process"),
     Received("received"),
     Returning("returning"),
     Returned("returned"),

@@ -13,6 +13,7 @@ use App\Actions\UI\WithInertia;
 use App\Http\Resources\SysAdmin\NotificationResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\User;
+use App\Notifications\WorkNotification;
 use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -48,7 +49,7 @@ class IndexNotification
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for($user->notifications());
+        $query = QueryBuilder::for($user->notifications()->whereNot('notifications.type', WorkNotification::class));
 
         return $query->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

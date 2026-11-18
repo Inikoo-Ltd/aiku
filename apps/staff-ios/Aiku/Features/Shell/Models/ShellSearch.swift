@@ -1,129 +1,106 @@
 import Foundation
-
-enum ShellSearchScope: String, Hashable, Sendable, CaseIterable, Identifiable {
-    case all
-    case skos
-    case locations
-    case deliveryNotes
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .all: "All"
-        case .skos: "SKOs"
-        case .locations: "Locations"
-        case .deliveryNotes: "Delivery notes"
-        }
-    }
-}
-
-enum ShellSearchKind: String, Hashable, Sendable, CaseIterable {
-    case sko
-    case family
-    case location
-    case deliveryNote
-
-    var sectionTitle: String {
-        switch self {
-        case .sko: "SKOs"
-        case .family: "SKO families"
-        case .location: "Locations"
-        case .deliveryNote: "Delivery notes"
-        }
-    }
-
-    func isIncluded(in scope: ShellSearchScope) -> Bool {
-        switch scope {
-        case .all: true
-        case .skos: self == .sko || self == .family
-        case .locations: self == .location
-        case .deliveryNotes: self == .deliveryNote
-        }
-    }
-}
-
-struct ShellSearchRecord: Identifiable, Hashable, Sendable {
-    var id: String { "\(kind.rawValue).\(code)" }
-    let kind: ShellSearchKind
-    let code: String
-    let name: String
-    var detail: String?
-    var trailing: String?
-    let link: ShellLink
-
-    var title: String {
-        kind == .family ? name : code
-    }
-
-    var subtitle: String {
-        kind == .family ? (detail ?? code) : name
-    }
-}
-
-struct ShellSearchSection: Identifiable, Hashable, Sendable {
-    var id: ShellSearchKind { kind }
-    let kind: ShellSearchKind
-    let records: [ShellSearchRecord]
-
-    var heading: String { "\(kind.sectionTitle) · \(records.count)" }
-}
+import Observation
 
 struct ShellHighlightSegment: Hashable, Sendable {
     let text: String
     let isMatch: Bool
 }
 
-enum ShellSearch {
-    static let records: [ShellSearchRecord] = [
-        ShellSearchRecord(kind: .sko, code: "SKO-00412", name: "Lavender essential oil 10ml", trailing: "1,240", link: .inventory(.sko(reference: "SKO-00412"))),
-        ShellSearchRecord(kind: .sko, code: "SKO-00734", name: "Bath bomb – lavender 180g", trailing: "210", link: .inventory(.sko(reference: "SKO-00734"))),
-        ShellSearchRecord(kind: .sko, code: "SKO-01190", name: "Soy candle – lavender", trailing: "96", link: .inventory(.sko(reference: "SKO-01190"))),
-        ShellSearchRecord(kind: .sko, code: "SKO-00733", name: "Bath bomb – rose 180g", link: .inventory(.sko(reference: "SKO-00733"))),
-        ShellSearchRecord(kind: .sko, code: "SKO-01187", name: "Soy wax candle – vanilla", link: .inventory(.sko(reference: "SKO-01187"))),
-        ShellSearchRecord(kind: .sko, code: "SKO-01402", name: "[Product name]", trailing: "0", link: .inventory(.sko(reference: "SKO-01402"))),
-        ShellSearchRecord(kind: .family, code: "LV", name: "Lavender range", detail: "LV · 14 SKOs", link: .inventory(.family(code: "LV"))),
-        ShellSearchRecord(kind: .location, code: "A-03-02", name: "Area A · 6 SKOs", link: .locations(.location(code: "A-03-02"))),
-        ShellSearchRecord(kind: .location, code: "A-12-03", name: "Area A · 4 SKOs", link: .locations(.location(code: "A-12-03"))),
-        ShellSearchRecord(kind: .location, code: "B-01-04", name: "Area B · 2 SKOs", link: .locations(.location(code: "B-01-04"))),
-        ShellSearchRecord(kind: .deliveryNote, code: "AR24811", name: "To pick · 14 items", link: .goodsOut(.deliveryNote(reference: "AR24811"))),
-        ShellSearchRecord(kind: .deliveryNote, code: "AR24817", name: "Handling · 14 items", link: .goodsOut(.deliveryNote(reference: "AR24817"))),
-        ShellSearchRecord(kind: .deliveryNote, code: "AR24820", name: "Assigned to you", link: .goodsOut(.deliveryNote(reference: "AR24820"))),
-        ShellSearchRecord(kind: .deliveryNote, code: "AR24790", name: "Dispatched · 6 items", link: .goodsOut(.deliveryNote(reference: "AR24790")))
-    ]
+struct ShellSearchQuantity: Hashable, Sendable {
+    let number: String
 
-    static let recentSearches = ["AR24817", "A-12-03", "bath bomb"]
-    static let emptySuggestions = ["rosemary", "SKO-0", "A-03"]
+    var text: String { "\(number) in locations" }
+}
 
-    static func normalised(_ query: String) -> String {
-        query.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
+enum ShellSearchFormat {
+    static let minimumQueryLength = 2
+    static let debounce: Duration = .milliseconds(300)
+    static let allScopeID = MobileSearchType.allKey
 
-    static func matches(_ record: ShellSearchRecord, query: String) -> Bool {
-        let needle = normalised(query)
-        guard !needle.isEmpty else { return false }
-        return [record.code, record.name, record.detail ?? ""].contains {
-            $0.range(of: needle, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+    static func title(_ type: MobileSearchType) -> String {
+        switch type {
+        case .skos: "SKOs"
+        case .skoFamilies: "SKO families"
+        case .locations: "Locations"
+        case .deliveryNotes: "Delivery notes"
+        case .stockDeliveries: "Stock deliveries"
+        case .returns: "Returns"
+        case .pallets: "Pallets"
+        case .palletDeliveries: "Fulfilment deliveries"
+        case .palletReturns: "Fulfilment returns"
         }
     }
 
-    static func sections(for query: String, scope: ShellSearchScope, in records: [ShellSearchRecord] = records) -> [ShellSearchSection] {
-        ShellSearchKind.allCases.compactMap { kind in
-            guard kind.isIncluded(in: scope) else { return nil }
-            let found = records.filter { $0.kind == kind && matches($0, query: query) }
-            return found.isEmpty ? nil : ShellSearchSection(kind: kind, records: found)
+    static func scopeID(_ scope: MobileSearchType?) -> String {
+        scope?.rawValue ?? allScopeID
+    }
+
+    static func scopeTitle(_ scope: MobileSearchType?) -> String {
+        scope.map(title) ?? "All"
+    }
+
+    static func scope(id: String) -> MobileSearchType? {
+        MobileSearchType(rawValue: id)
+    }
+
+    static func heading(_ group: MobileSearchGroup) -> String {
+        let label = group.label.isEmpty ? title(group.type) : group.label
+        return group.hasMore ? "\(label) · \(group.rows.count)+" : "\(label) · \(group.rows.count)"
+    }
+
+    static func hasPhoto(_ type: MobileSearchType) -> Bool {
+        type == .skos
+    }
+
+    static func hasStateBadge(_ type: MobileSearchType) -> Bool {
+        switch type {
+        case .skos, .skoFamilies, .locations: false
+        default: true
         }
     }
 
-    static func remembering(_ query: String, in recents: [String], limit: Int = 5) -> [String] {
-        let term = normalised(query)
-        guard !term.isEmpty else { return recents }
-        let others = recents.filter { $0.caseInsensitiveCompare(term) != .orderedSame }
-        return Array(([term] + others).prefix(limit))
+    static func quantity(_ row: MobileSearchRow) -> ShellSearchQuantity? {
+        guard row.type == .skos, let value = row.quantity else { return nil }
+        return ShellSearchQuantity(number: value.trimmed)
+    }
+
+    static func tone(_ row: MobileSearchRow) -> Tone {
+        switch row.type {
+        case .deliveryNotes: GoodsOutDeliveryNoteState(apiState: row.state)?.tone ?? .neutral
+        case .stockDeliveries: GoodsInRemote.state(row.state).tone
+        case .returns: GoodsInRemote.returnState(row.state).chip.tone
+        case .pallets: FulfilmentStorageText.palletStateTone(row.state)
+        case .palletDeliveries: PalletDeliveryText.deliveryTone(row.state)
+        case .palletReturns: PalletReturnText.stateTone(row.state)
+        case .skos, .skoFamilies, .locations: .neutral
+        }
+    }
+
+    static func link(_ row: MobileSearchRow) -> ShellLink {
+        let reference = row.reference
+        return switch row.type {
+        case .skos: .inventory(.skoID(id: row.id))
+        case .skoFamilies: .inventory(.family(code: reference))
+        case .locations: .locations(.location(code: reference))
+        case .deliveryNotes: .goodsOut(.deliveryNoteID(id: row.id))
+        case .stockDeliveries: .goodsIn(.scannedStockDelivery(id: row.id, reference: reference))
+        case .returns: .goodsIn(.returnID(id: row.id, reference: reference))
+        case .pallets: .fulfilment(.pallet(id: row.id, reference: reference))
+        case .palletDeliveries: .fulfilment(.palletDelivery(id: row.id, reference: reference))
+        case .palletReturns: .fulfilment(.palletReturn(id: row.id, reference: reference))
+        }
+    }
+
+    static func problem(_ error: Error) -> String {
+        switch error as? APIError {
+        case .offline: "Search needs internet. Check Wi-Fi and try again."
+        case .http(403): "You can’t search in this warehouse."
+        default: error.localizedDescription
+        }
     }
 
     static func highlight(_ text: String, query: String) -> [ShellHighlightSegment] {
-        let needle = normalised(query)
+        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else { return [ShellHighlightSegment(text: text, isMatch: false)] }
         var segments: [ShellHighlightSegment] = []
         var cursor = text.startIndex
@@ -139,5 +116,351 @@ enum ShellSearch {
             segments.append(ShellHighlightSegment(text: String(text[cursor...]), isMatch: false))
         }
         return segments
+    }
+}
+
+struct RecentSearches {
+    static let limit = 8
+    static let storageKey = "search.recent"
+
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    private struct Stored: Codable {
+        let userID: Int
+        var warehouses: [String: [String]] = [:]
+    }
+
+    func read(userID: Int, warehouseID: Int) -> [String] {
+        savedSearches(for: userID)?.warehouses[String(warehouseID)] ?? []
+    }
+
+    @discardableResult
+    func remember(_ query: String, userID: Int, warehouseID: Int) -> [String] {
+        let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        var saved = savedSearches(for: userID) ?? Stored(userID: userID)
+        let key = String(warehouseID)
+        guard !term.isEmpty else { return saved.warehouses[key] ?? [] }
+        let others = (saved.warehouses[key] ?? []).filter { $0.caseInsensitiveCompare(term) != .orderedSame }
+        let recent = Array(([term] + others).prefix(Self.limit))
+        saved.warehouses[key] = recent
+        if let data = try? JSONEncoder().encode(saved) {
+            defaults.set(data, forKey: Self.storageKey)
+        }
+        return recent
+    }
+
+    func clear() {
+        defaults.removeObject(forKey: Self.storageKey)
+    }
+
+    private func savedSearches(for userID: Int) -> Stored? {
+        guard let data = defaults.data(forKey: Self.storageKey) else { return nil }
+        guard let saved = try? JSONDecoder().decode(Stored.self, from: data) else {
+            clear()
+            return nil
+        }
+        return saved.userID == userID ? saved : nil
+    }
+}
+
+@MainActor
+@Observable
+final class ShellSearchStore {
+    private(set) var query = ""
+    private(set) var scope: MobileSearchType?
+    private(set) var types: [MobileSearchType] = []
+    private(set) var exact: MobileSearchRow?
+    private(set) var groups: [MobileSearchGroup] = []
+    private(set) var loadedQuery: String?
+    private(set) var page = 1
+    private(set) var isSearching = false
+    private(set) var isLoadingMore = false
+    private(set) var problem: String?
+    private(set) var moreProblem: String?
+    private(set) var recent: [String] = []
+    private(set) var isSessionExpired = false
+    private(set) var warehouseID: Int?
+    private(set) var userID: Int?
+
+    @ObservationIgnored private(set) var searchTask: Task<Void, Never>?
+    @ObservationIgnored private(set) var typesTask: Task<Void, Never>?
+    @ObservationIgnored private var generation = 0
+    @ObservationIgnored private let service: SearchService
+    @ObservationIgnored private let recentSearches: RecentSearches
+    @ObservationIgnored private let debounce: Duration
+
+    init(service: SearchService, recentSearches: RecentSearches = RecentSearches(), debounce: Duration = ShellSearchFormat.debounce) {
+        self.service = service
+        self.recentSearches = recentSearches
+        self.debounce = debounce
+    }
+
+    static func live(_ client: APIClient) -> ShellSearchStore {
+        ShellSearchStore(service: .live(client))
+    }
+
+    var needle: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    var isQueryTooShort: Bool { needle.count < ShellSearchFormat.minimumQueryLength }
+
+    var shownRecent: [String] { needle.isEmpty ? recent : [] }
+
+    var hasResults: Bool { exact != nil || !groups.isEmpty }
+
+    var isEmpty: Bool { !isQueryTooShort && !isSearching && problem == nil && loadedQuery == needle && !hasResults }
+
+    var isPaging: Bool { scope != nil }
+
+    var canLoadMore: Bool { scope != nil && groups.contains(where: \.hasMore) && !isLoadingMore && !isSearching }
+
+    var scopes: [MobileSearchType?] {
+        guard !types.isEmpty else { return [] }
+        let typed: [MobileSearchType?] = types.map { $0 }
+        return [nil] + typed
+    }
+
+    func start(warehouseID: Int?, userID: Int?) {
+        if warehouseID != self.warehouseID || userID != self.userID {
+            typesTask?.cancel()
+            typesTask = nil
+            types = []
+            scope = nil
+            self.warehouseID = warehouseID
+            self.userID = userID
+            if !needle.isEmpty {
+                searchFromStart(after: .zero)
+            }
+        } else if !isQueryTooShort, !isSearching, loadedQuery != needle {
+            searchFromStart(after: .zero)
+        }
+        if let warehouseID, let userID {
+            recent = recentSearches.read(userID: userID, warehouseID: warehouseID)
+        } else {
+            recent = []
+        }
+        if types.isEmpty, typesTask == nil, let warehouseID {
+            loadTypes(warehouseID: warehouseID)
+        }
+    }
+
+    func updateQuery(_ text: String) {
+        let previousNeedle = needle
+        query = text
+        guard needle != previousNeedle else { return }
+        searchFromStart(after: debounce)
+    }
+
+    func searchNow() {
+        if loadedQuery == needle, problem == nil, !isSearching {
+            return
+        }
+        searchFromStart(after: .zero)
+    }
+
+    func pickRecent(_ term: String) {
+        query = term
+        searchFromStart(after: .zero)
+    }
+
+    func selectScope(_ scope: MobileSearchType?) {
+        guard scope != self.scope else { return }
+        self.scope = scope
+        exact = nil
+        groups = []
+        loadedQuery = nil
+        searchFromStart(after: .zero)
+    }
+
+    func showMore(_ type: MobileSearchType) {
+        if scope == nil {
+            selectScope(type)
+        } else {
+            loadMore()
+        }
+    }
+
+    func loadMore() {
+        guard let scope, let warehouseID, let searched = loadedQuery, canLoadMore else { return }
+        let nextPage = page + 1
+        isLoadingMore = true
+        moreProblem = nil
+        searchTask?.cancel()
+        generation += 1
+        let requestGeneration = generation
+        let service = self.service
+        searchTask = Task { [weak self] in
+            do {
+                let results = try await service.search(warehouseID, searched, scope, nextPage)
+                self?.applyNextPage(results, scope: scope, page: nextPage, generation: requestGeneration)
+            } catch {
+                self?.applyMoreFailure(error, generation: requestGeneration)
+            }
+        }
+    }
+
+    func retry() {
+        if moreProblem != nil {
+            loadMore()
+        } else {
+            searchFromStart(after: .zero)
+        }
+    }
+
+    func rememberSearch() {
+        guard let warehouseID, let userID else { return }
+        let searched = loadedQuery ?? needle
+        guard !searched.isEmpty else { return }
+        recent = recentSearches.remember(searched, userID: userID, warehouseID: warehouseID)
+    }
+
+    private func searchFromStart(after delay: Duration) {
+        searchTask?.cancel()
+        generation += 1
+        let requestGeneration = generation
+        let searched = needle
+        guard !isQueryTooShort, let warehouseID else {
+            searchTask = nil
+            exact = nil
+            groups = []
+            loadedQuery = nil
+            page = 1
+            isSearching = false
+            isLoadingMore = false
+            problem = nil
+            moreProblem = nil
+            return
+        }
+        let scope = self.scope
+        let service = self.service
+        isSearching = true
+        isLoadingMore = false
+        problem = nil
+        moreProblem = nil
+        searchTask = Task { [weak self] in
+            if delay > .zero {
+                do {
+                    try await Task.sleep(for: delay)
+                } catch {
+                    return
+                }
+            }
+            do {
+                let results = try await service.search(warehouseID, searched, scope, 1)
+                self?.applyFirstPage(results, searched: searched, scope: scope, generation: requestGeneration)
+            } catch {
+                self?.applyFailure(error, scope: scope, generation: requestGeneration)
+            }
+        }
+    }
+
+    private func loadTypes(warehouseID: Int) {
+        let service = self.service
+        typesTask = Task { [weak self] in
+            do {
+                let results = try await service.search(warehouseID, "", nil, 1)
+                self?.applyTypes(results.types, warehouseID: warehouseID)
+            } catch {
+                self?.applyTypesFailure(error, warehouseID: warehouseID)
+            }
+        }
+    }
+
+    private func applyTypes(_ loaded: [MobileSearchType], warehouseID: Int) {
+        guard warehouseID == self.warehouseID else { return }
+        types = loaded
+    }
+
+    private func applyTypesFailure(_ error: Error, warehouseID: Int) {
+        guard warehouseID == self.warehouseID, !error.isCancellation else { return }
+        typesTask = nil
+        if (error as? APIError) == .unauthorized {
+            isSessionExpired = true
+        } else if Self.isForbidden(error), !isSearching, !hasResults {
+            problem = ShellSearchFormat.problem(error)
+        }
+    }
+
+    private func applyFirstPage(_ results: MobileSearchResults, searched: String, scope: MobileSearchType?, generation requestGeneration: Int) {
+        guard requestGeneration == generation else { return }
+        let exact = results.exact
+        let groups = results.groups
+            .filter { scope == nil || $0.type == scope }
+            .map { group -> MobileSearchGroup in
+                var trimmed = group
+                if let exact {
+                    trimmed.rows = group.rows.filter { !$0.isSameRecord(exact) }
+                }
+                return trimmed
+            }
+            .filter { !$0.rows.isEmpty || $0.hasMore }
+        if !results.types.isEmpty {
+            types = results.types
+        }
+        self.exact = exact
+        self.groups = groups
+        loadedQuery = searched
+        page = 1
+        isSearching = false
+        problem = nil
+    }
+
+    private func applyNextPage(_ results: MobileSearchResults, scope: MobileSearchType, page nextPage: Int, generation requestGeneration: Int) {
+        guard requestGeneration == generation else { return }
+        let next = results.groups.first { $0.type == scope }
+        groups = groups.map { group -> MobileSearchGroup in
+            guard group.type == scope else { return group }
+            let known = group.rows + [exact].compactMap { $0 }
+            let added = (next?.rows ?? []).filter { row in !known.contains { $0.isSameRecord(row) } }
+            var grown = group
+            grown.rows = group.rows + added
+            grown.hasMore = next?.hasMore == true
+            return grown
+        }
+        page = nextPage
+        isLoadingMore = false
+        moreProblem = nil
+    }
+
+    private func applyFailure(_ error: Error, scope: MobileSearchType?, generation requestGeneration: Int) {
+        guard requestGeneration == generation else { return }
+        isSearching = false
+        if error.isCancellation {
+            return
+        }
+        if (error as? APIError) == .unauthorized {
+            isSessionExpired = true
+            return
+        }
+        if scope == nil, Self.isForbidden(error) {
+            types = []
+        }
+        exact = nil
+        groups = []
+        loadedQuery = nil
+        problem = ShellSearchFormat.problem(error)
+    }
+
+    private func applyMoreFailure(_ error: Error, generation requestGeneration: Int) {
+        guard requestGeneration == generation else { return }
+        isLoadingMore = false
+        if error.isCancellation {
+            return
+        }
+        if (error as? APIError) == .unauthorized {
+            isSessionExpired = true
+            return
+        }
+        moreProblem = ShellSearchFormat.problem(error)
+    }
+
+    private static func isForbidden(_ error: Error) -> Bool {
+        switch error as? APIError {
+        case .http(403), .rejected: true
+        default: false
+        }
     }
 }

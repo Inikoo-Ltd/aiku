@@ -109,6 +109,10 @@ return [
         'public_key'  => env('VAPID_PUBLIC_KEY'),
         'private_key' => env('VAPID_PRIVATE_KEY'),
     ],
+    'fcm'       => [
+        'credentials' => env('FIREBASE_CREDENTIALS'),
+        'project_id'  => env('FIREBASE_PROJECT_ID'),
+    ],
     'slack'     => [
         'signing_secret'  => env('SLACK_SIGNING_SECRET'),
         'ticket_reaction' => env('SLACK_TICKET_REACTION', 'ticket'),

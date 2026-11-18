@@ -11,6 +11,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Api\Group\Inventory\IndexMobileOrgStocks;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Inventory\Location\StoreLocation;
@@ -205,10 +206,12 @@ test('mobile SKO list follows the web buckets, family, search, sort and counts w
     $list()
         ->assertJsonPath('currency_code', $organisation->currency->code)
         ->assertJsonPath('counts', [
-            'current'      => (int) $inventoryStats->number_current_org_stocks,
-            'discontinued' => (int) $inventoryStats->number_org_stocks_state_discontinued,
-            'abnormality'  => (int) $inventoryStats->number_org_stocks_state_abnormality,
-            'all'          => (int) $inventoryStats->number_org_stocks,
+            'current'       => (int) $inventoryStats->number_current_org_stocks,
+            'discontinued'  => (int) $inventoryStats->number_org_stocks_state_discontinued,
+            'abnormality'   => (int) $inventoryStats->number_org_stocks_state_abnormality,
+            'below_minimum' => IndexMobileOrgStocks::numberBelowMinimumStock($warehouse),
+            'negative'      => IndexMobileOrgStocks::numberNegativeStocks($warehouse),
+            'all'           => (int) $inventoryStats->number_org_stocks,
         ])
         ->assertJsonPath('data.0.id', $active->id)
         ->assertJsonPath('data.0.slug', $active->slug)

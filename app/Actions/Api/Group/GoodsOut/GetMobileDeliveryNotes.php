@@ -10,7 +10,6 @@
 namespace App\Actions\Api\Group\GoodsOut;
 
 use App\Actions\Api\Group\Locations\WithMobileLocationsAccess;
-use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
@@ -74,7 +73,7 @@ class GetMobileDeliveryNotes
     {
         /** @var User $user */
         $user = $request->user();
-        abort_unless($warehouse->group_id === $user->group_id && IndexDeliveryNotes::canViewDispatching($user, $warehouse), 403);
+        abort_unless(self::canViewGoodsOut($user, $warehouse), 403);
 
         $sorts = collect(self::SORTS)->flatMap(fn (string $sort) => [$sort, '-'.$sort])->all();
 

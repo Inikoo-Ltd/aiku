@@ -10,6 +10,7 @@
 namespace App\Actions\Api\Group\GoodsIn;
 
 use App\Actions\Api\Group\Inventory\WithMobileOrgStocks;
+use App\Actions\Api\Group\WithMobileModuleAccess;
 use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
 use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Models\Inventory\Location;
@@ -22,12 +23,8 @@ use Illuminate\Validation\ValidationException;
 
 trait WithMobileGoodsIn
 {
+    use WithMobileModuleAccess;
     use WithMobileOrgStocks;
-
-    public static function canViewGoodsIn(User $user, Warehouse $warehouse): bool
-    {
-        return $warehouse->group_id === $user->group_id && $user->authTo("incoming.$warehouse->id.view");
-    }
 
     public static function canBookInStockDeliveries(User $user, Warehouse $warehouse): bool
     {
@@ -37,11 +34,6 @@ trait WithMobileGoodsIn
     public static function canSuperviseStockDeliveries(User $user, Warehouse $warehouse): bool
     {
         return $warehouse->group_id === $user->group_id && ReceiveStockDelivery::userCanBookIn($user, $warehouse->organisation, 'supervisor-incoming.%d');
-    }
-
-    public static function canViewReturns(User $user, Warehouse $warehouse): bool
-    {
-        return $warehouse->group_id === $user->group_id && $user->authTo(["incoming.$warehouse->id.view", "returns.$warehouse->id"]);
     }
 
     public static function canHandleReturns(User $user, Warehouse $warehouse): bool

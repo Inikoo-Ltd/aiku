@@ -1,10 +1,12 @@
 package io.aiku.droid.ui.goodsin
 
+import io.aiku.droid.R
 import io.aiku.droid.data.api.CustomerReturn
 import io.aiku.droid.data.api.CustomerReturnItem
 import io.aiku.droid.data.api.CustomerReturnRow
 import io.aiku.droid.data.api.DeliveryNoteAction
 import io.aiku.droid.data.api.GoodsInActionKey
+import io.aiku.droid.data.api.GoodsInResponses
 import io.aiku.droid.data.api.GoodsInSko
 import io.aiku.droid.data.api.GoodsInWriteStatus
 import io.aiku.droid.data.api.GoodsOutResult
@@ -90,6 +92,19 @@ class ReturnsViewModelTest {
         dispatcher.scheduler.advanceTimeBy(301)
 
         assertEquals(ReturnQuery(state = ReturnStateFilter.Received, search = "DN1", page = 1, perPage = 50), api.returnQueries.last())
+    }
+
+    @Test
+    fun `returns to process asks for received and returning together and is named in the title`() {
+        val returns = ReturnsViewModel(api, FakeSessions(), warehouseId = 1, initialState = ReturnStateFilter.ToProcess)
+
+        returns.onStart()
+
+        assertEquals(ReturnStateFilter.ToProcess, api.returnQueries.single().state)
+        assertEquals(listOf("state" to "to_process", "page" to "1", "per_page" to "50"), GoodsInResponses.returnsParameters(api.returnQueries.single()))
+        assertEquals(R.string.goodsin_returns_to_process_title, returnsListTitle(ReturnStateFilter.ToProcess))
+        assertEquals(R.string.section_returns, returnsListTitle(ReturnStateFilter.Received))
+        assertEquals(-1, returnChipStates.indexOfFirst { it.first == ReturnStateFilter.ToProcess })
     }
 
     @Test

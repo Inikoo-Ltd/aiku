@@ -6,6 +6,9 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Dispatching\ProductionMaterials\DeliverProductionMaterialRequestItem;
+use App\Actions\Dispatching\ProductionMaterials\IndexProductionMaterialRequestItems;
+use App\Actions\Dispatching\ProductionMaterials\SetProductionMaterialRequestItemShort;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrgStock;
 use App\Actions\Fulfilment\Pallet\UI\EditPallet;
 use App\Actions\Fulfilment\Pallet\UI\IndexDamagedPalletsInWarehouse;
@@ -61,6 +64,13 @@ use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowInventoryDashboard::class)->name('dashboard');
+
+Route::prefix('production-materials')->as('production_materials.')->group(function () {
+    Route::get('/', IndexProductionMaterialRequestItems::class)->name('index');
+    Route::get('/done', [IndexProductionMaterialRequestItems::class, 'done'])->name('done');
+    Route::post('/{productionMaterialRequestItem:id}/deliver', DeliverProductionMaterialRequestItem::class)->name('deliver')->withoutScopedBindings();
+    Route::post('/{productionMaterialRequestItem:id}/short', SetProductionMaterialRequestItemShort::class)->name('short')->withoutScopedBindings();
+});
 
 Route::prefix('stock-histories')->as('org_stock_histories.')->group(function () {
     Route::get('/', IndexOrganisationStockHistories::class)->name('index');

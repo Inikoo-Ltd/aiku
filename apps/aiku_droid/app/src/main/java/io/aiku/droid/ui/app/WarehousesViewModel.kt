@@ -7,10 +7,12 @@ import io.aiku.droid.data.api.AuthApi
 import io.aiku.droid.data.api.WarehouseAccess
 import io.aiku.droid.data.api.WarehouseApi
 import io.aiku.droid.data.api.WarehousesResult
+import io.aiku.droid.data.session.RecentSearches
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.data.session.StaffSession
 import io.aiku.droid.data.session.WarehouseCache
 import io.aiku.droid.data.settings.WarehouseSelection
+import io.aiku.droid.push.PushSignOut
 import io.aiku.droid.ui.UiMessage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +38,8 @@ class WarehousesViewModel(
     private val sessions: SessionRepository,
     private val selection: WarehouseSelection,
     private val cache: WarehouseCache,
+    private val push: PushSignOut,
+    private val recentSearches: RecentSearches,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow<WarehousesUiState>(WarehousesUiState.Loading)
@@ -52,6 +56,7 @@ class WarehousesViewModel(
                     if (token == null) {
                         fetch?.cancel()
                         cache.clear()
+                        recentSearches.clear()
                         mutableState.value = WarehousesUiState.Loading
                     } else {
                         load()
@@ -102,7 +107,10 @@ class WarehousesViewModel(
     fun signOut() {
         val session = sessions.session.value ?: return
         sessions.end()
-        viewModelScope.launch { authApi.logout(session.token) }
+        viewModelScope.launch {
+            push.unregister(session.token)
+            authApi.logout(session.token)
+        }
     }
 
     private fun refreshQuietly(session: StaffSession) {

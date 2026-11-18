@@ -3,11 +3,11 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
-    @State private var inbox = ShellInboxStore.shared
     @Environment(\.apiClient) private var apiClient
     @State private var warehouseStore = WarehouseStore.shared
     private let workBadges = WorkBadgesStore.shared
     private let clocking = ClockingStore.shared
+    private let inbox = ShellInboxStore.shared
 
     var body: some View {
         ScreenScaffold(spacing: 20) {
@@ -24,11 +24,11 @@ struct HomeView: View {
         } footer: {
             EmptyView()
         }
-        .onAppear {
-            session.unreadCount = inbox.unreadCount
-        }
         .task(id: warehouseStore.selectedID) {
             await workBadges.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
+            if warehouseStore.selectedID == nil {
+                await inbox.refreshUnread()
+            }
         }
         .task {
             await clocking.load()

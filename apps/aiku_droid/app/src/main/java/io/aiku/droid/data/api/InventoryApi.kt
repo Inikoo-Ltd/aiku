@@ -315,6 +315,8 @@ enum class SkoBucket(val key: String) {
     Discontinued("discontinued"),
     Abnormality("abnormality"),
     All("all"),
+    BelowMinimum("below_minimum"),
+    Negative("negative"),
     ;
 
     companion object {
@@ -369,12 +371,16 @@ data class SkoCounts(
     @Serializable(with = LenientInt::class) val discontinued: Int = 0,
     @Serializable(with = LenientInt::class) val abnormality: Int = 0,
     @Serializable(with = LenientInt::class) val all: Int = 0,
+    @Serializable(with = LenientIntOrNull::class) @SerialName("below_minimum") val belowMinimum: Int? = null,
+    @Serializable(with = LenientIntOrNull::class) val negative: Int? = null,
 ) {
-    fun count(bucket: SkoBucket): Int = when (bucket) {
+    fun count(bucket: SkoBucket): Int? = when (bucket) {
         SkoBucket.Current -> current
         SkoBucket.Discontinued -> discontinued
         SkoBucket.Abnormality -> abnormality
         SkoBucket.All -> all
+        SkoBucket.BelowMinimum -> belowMinimum
+        SkoBucket.Negative -> negative
     }
 }
 

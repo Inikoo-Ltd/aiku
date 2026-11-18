@@ -1631,9 +1631,9 @@ test('the day plan lists the materials its open steps need, the check asks the w
 
     $pending = \App\Actions\Dispatching\ProductionMaterials\IndexProductionMaterialRequestItems::pendingItems($warehouse)->pluck('production_material_request_items.id');
     expect($pending->all())->toBe([$item->id]);
-    $hub = get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))->viewData('page')['props'];
-    expect(collect($hub['production_materials']['data'])->firstWhere('id', $item->id))
-        ->toMatchArray(['location_code' => 'MAT-SHELF', 'to_location' => 'MAT-FACTORY', 'boxes' => 3, 'warehouse_short' => false]);
+    $list = get(route('grp.org.warehouses.show.inventory.production_materials.index', [$this->organisation->slug, $warehouse->slug]))->viewData('page')['props'];
+    expect(collect($list['data']['data'])->firstWhere('id', $item->id))
+        ->toMatchArray(['location_code' => 'MAT-SHELF', 'to_location' => 'MAT-FACTORY', 'remaining_skos' => 3.0, 'warehouse_short' => false]);
 
     \App\Actions\Dispatching\ProductionMaterials\DeliverProductionMaterialRequestItem::make()->action($item, $boxShelf, 3, $user);
 
@@ -1650,7 +1650,7 @@ test('the day plan lists the materials its open steps need, the check asks the w
     expect([$pickingRank[$shelf->id], $pickingRank[$factory->id]])->toBe([1, 2]);
 
     $short = \App\Actions\Production\MaterialRequest\SubmitMaterialsCheck::make()->action($this->production, $today, [$box->id => 10], $user);
-    \App\Actions\Dispatching\ProductionMaterials\SetProductionMaterialRequestItemShort::make()->action($short->items()->first(), $user);
+    \App\Actions\Dispatching\ProductionMaterials\SetProductionMaterialRequestItemShort::make()->action($short->items()->first(), 'Ordered from supplier', $user);
     expect($short->items()->first()->state)->toBe(\App\Enums\Production\ProductionMaterialRequestItem\ProductionMaterialRequestItemStateEnum::SHORT)
         ->and($short->refresh()->state)->toBe(\App\Enums\Production\ProductionMaterialRequest\ProductionMaterialRequestStateEnum::DELIVERED);
 
@@ -1660,6 +1660,107 @@ test('the day plan lists the materials its open steps need, the check asks the w
     expect((float) $factoryStock->refresh()->quantity)->toBe(0.6)
         ->and((float) $boxShelf->refresh()->quantity)->toBe(7.0)
         ->and((float) $bottleShelf->refresh()->quantity)->toBe(880.0);
+
+    $this->production->update(['factory_location_id' => null]);
+});
+
+test('the factory asks for any SKO to a drop point, the warehouse sees it under inventory, brings it even when Aiku has less, or says why it cannot', function () {
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-REQ', 'name' => 'Requests warehouse']);
+    $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-REQ', 'name' => 'Requests area']);
+    $location  = fn (string $code) => \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => $code, 'name' => $code] + \App\Models\Inventory\Location::factory()->definition());
+    $shelf     = $location('REQ-SHELF');
+    $factory   = $location('REQ-FACTORY');
+    \App\Actions\Production\Production\SetProductionFactoryLocation::make()->handle($this->production, $factory);
+
+    $boxes      = labelTestOrgStock($this->organisation, $this->group);
+    $salt       = labelTestOrgStock($this->organisation, $this->group);
+    $boxesShelf = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($boxes, $shelf, ['type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING]);
+    \App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement::make()->action($boxes, $shelf, [
+        'quantity' => 4,
+        'type'     => \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PURCHASE,
+    ]);
+
+    $user = $this->guest->getUser();
+    actingAs($user);
+    \Pest\Laravel\post(route('grp.models.production.drop_points.store', ['production' => $this->production->id]), ['name' => 'Req corner'])->assertRedirect();
+    \Pest\Laravel\post(route('grp.models.production.drop_points.store', ['production' => $this->production->id]), ['name' => 'Req bench'])->assertRedirect();
+    $corner = \App\Models\Production\ProductionDropPoint::where('production_id', $this->production->id)->where('name', 'Req corner')->firstOrFail();
+    $bench  = \App\Models\Production\ProductionDropPoint::where('production_id', $this->production->id)->where('name', 'Req bench')->firstOrFail();
+    \Pest\Laravel\post(route('grp.models.production.drop_points.store', ['production' => $this->production->id]), ['name' => 'Req corner'])->assertSessionHasErrors('name');
+    patch(route('grp.models.production.drop_points.update', ['production' => $this->production->id, 'productionDropPoint' => $bench->id]), ['name' => 'Req bench 2'])->assertRedirect();
+    $order = $this->production->dropPoints()->pluck('id')->reject(fn ($id) => $id === $bench->id)->prepend($bench->id)->values()->all();
+    patch(route('grp.models.production.drop_points.reorder', ['production' => $this->production->id]), ['drop_point_ids' => $order])->assertRedirect();
+    expect($bench->refresh()->name)->toBe('Req bench 2')
+        ->and($this->production->dropPoints()->pluck('id')->all())->toBe($order);
+
+    $artisan  = dayPlanOperator($this->organisation);
+    $operator = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+    $operator->employees()->attach($artisan->id, ['group_id' => $this->group->id, 'organisation_id' => $this->organisation->id]);
+    $operator->givePermissionTo("productions_operations.{$this->production->id}.view");
+
+    actingAs($operator);
+    \Pest\Laravel\post(route('grp.models.production.drop_points.store', ['production' => $this->production->id]), ['name' => 'Not allowed'])->assertForbidden();
+    expect(collect(get(route('grp.json.production.material_org_stocks.index', ['production' => $this->production->id, 'search' => $boxes->code]))->json())->firstWhere('id', $boxes->id))
+        ->toMatchArray(['warehouse_skos' => 4.0, 'factory_skos' => 0.0]);
+    \Pest\Laravel\post(route('grp.models.production.material_requests.store', ['production' => $this->production->id]), [
+        'lines' => [['org_stock_id' => $boxes->id, 'requested_quantity' => 2, 'requested_unit' => 'box']],
+    ])->assertSessionHasErrors('lines.0.production_drop_point_id');
+    \Pest\Laravel\post(route('grp.models.production.material_requests.store', ['production' => $this->production->id]), [
+        'lines' => [
+            ['org_stock_id' => $salt->id, 'requested_unit' => 'all', 'production_drop_point_id' => $corner->id, 'note' => 'dead sea salt'],
+            ['org_stock_id' => $boxes->id, 'requested_quantity' => 6, 'requested_unit' => 'sko', 'production_drop_point_id' => $bench->id, 'is_urgent' => true],
+        ],
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    $request = \App\Models\Production\ProductionMaterialRequest::where('production_id', $this->production->id)->latest('id')->firstOrFail();
+    $boxLine = $request->items()->where('org_stock_id', $boxes->id)->firstOrFail();
+    $saltLine = $request->items()->where('org_stock_id', $salt->id)->firstOrFail();
+    expect($request->source)->toBe(\App\Enums\Production\ProductionMaterialRequest\ProductionMaterialRequestSourceEnum::MANUAL)
+        ->and($request->submitted_by_user_id)->toBe($operator->id)
+        ->and($request->warehouse_id)->toBe($warehouse->id)
+        ->and((float) $boxLine->skos_to_bring)->toBe(6.0)
+        ->and($saltLine->skos_to_bring)->toBeNull()
+        ->and($saltLine->raw_material_id)->toBeNull();
+
+    actingAs($user);
+    $open = get(route('grp.org.warehouses.show.inventory.production_materials.index', [$this->organisation->slug, $warehouse->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Inventory/ProductionMaterials'))
+        ->viewData('page')['props']['data']['data'];
+    expect(collect($open)->pluck('id')->all())->toBe([$boxLine->id, $saltLine->id])
+        ->and($open[0])->toMatchArray(['is_urgent' => true, 'drop_point' => 'Req bench 2', 'bring' => '6 SKOs', 'location_code' => 'REQ-SHELF', 'warehouse_short' => true])
+        ->and($open[1])->toMatchArray(['bring' => 'All there is', 'note' => 'dead sea salt', 'location_code' => null])
+        ->and(\App\Actions\Dispatching\ProductionMaterials\IndexProductionMaterialRequestItems::bringLabel(new \App\Models\Production\ProductionMaterialRequestItem(['requested_unit' => 'pallet', 'requested_quantity' => 1])))->toBe('1 Pallet');
+
+    $dashboard = get(route('grp.org.warehouses.show.inventory.dashboard', [$this->organisation->slug, $warehouse->slug]))->viewData('page')['props'];
+    expect(collect($dashboard['actionGauges'])->firstWhere('key', 'production_materials'))
+        ->toMatchArray(['value' => 2, 'percentage' => 100.0])
+        ->and(collect($dashboard['actionGauges'])->firstWhere('key', 'production_materials')['secondary']['value'])->toBe(1);
+    expect(get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))->viewData('page')['props'])
+        ->not->toHaveKey('production_materials');
+
+    \App\Actions\Dispatching\ProductionMaterials\DeliverProductionMaterialRequestItem::make()->action($boxLine, $boxesShelf->refresh(), 6, $user);
+    $atFactory = \App\Models\Inventory\LocationOrgStock::where('location_id', $factory->id)->where('org_stock_id', $boxes->id)->first();
+    expect($boxLine->refresh()->state)->toBe(\App\Enums\Production\ProductionMaterialRequestItem\ProductionMaterialRequestItemStateEnum::DELIVERED)
+        ->and((float) $boxLine->delivered_skos)->toBe(6.0)
+        ->and((float) $boxLine->unbooked_skos)->toBe(2.0)
+        ->and((float) $atFactory->quantity)->toBe(4.0)
+        ->and((float) $boxesShelf->refresh()->quantity)->toBe(0.0);
+
+    \App\Actions\Dispatching\ProductionMaterials\SetProductionMaterialRequestItemShort::make()->action($saltLine, 'Ordered from supplier', $user);
+    expect($saltLine->refresh()->short_reason)->toBe('Ordered from supplier')
+        ->and($saltLine->short_at)->not->toBeNull()
+        ->and($request->refresh()->state)->toBe(\App\Enums\Production\ProductionMaterialRequest\ProductionMaterialRequestStateEnum::DELIVERED);
+
+    $done = get(route('grp.org.warehouses.show.inventory.production_materials.done', [$this->organisation->slug, $warehouse->slug]))->viewData('page')['props']['data']['data'];
+    expect(collect($done)->pluck('id')->sort()->values()->all())->toBe(collect([$boxLine->id, $saltLine->id])->sort()->values()->all())
+        ->and(collect($done)->firstWhere('id', $saltLine->id))->toMatchArray(['state' => 'short', 'short_reason' => 'Ordered from supplier']);
+
+    \Pest\Laravel\delete(route('grp.models.production.drop_points.delete', ['production' => $this->production->id, 'productionDropPoint' => $corner->id]))->assertRedirect();
+    $page = get(route('grp.org.productions.show.operations.materials_check', [$this->organisation->slug, $this->production->slug]))->viewData('page')['props'];
+    $asked = collect($page['requests'])->firstWhere('id', $request->id);
+    expect(collect($page['drop_points'])->pluck('id')->all())->not->toContain($corner->id)
+        ->and(collect($asked['items'])->firstWhere('id', $saltLine->id))->toMatchArray(['drop_point' => 'Req corner', 'state' => 'short', 'short_reason' => 'Ordered from supplier'])
+        ->and(collect($asked['items'])->firstWhere('id', $boxLine->id))->toMatchArray(['state' => 'delivered', 'delivered_skos' => 6.0]);
 
     $this->production->update(['factory_location_id' => null]);
 });

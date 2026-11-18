@@ -8,6 +8,13 @@
 */
 
 use App\Actions\Api\Group\Auth\GetMobilePermissions;
+use App\Actions\Api\Group\Auth\DeleteMobilePushToken;
+use App\Actions\Api\Group\Auth\UpdateMobilePushToken;
+use App\Actions\Api\Group\Inbox\GetMobileInboxUnreadCount;
+use App\Actions\Api\Group\Inbox\IndexMobileInbox;
+use App\Actions\Api\Group\Inbox\MarkAllMobileInboxNotificationsAsRead;
+use App\Actions\Api\Group\Inbox\MarkMobileInboxNotificationAsRead;
+use App\Actions\Api\Group\Inbox\MarkMobileInboxNotificationAsUnread;
 use App\Actions\Api\Group\Chat\IndexMobileStaffMessages;
 use App\Actions\Api\Group\Chat\OpenMobileDeliveryNoteChat;
 use App\Actions\Api\Group\Chat\OpenMobilePickingSessionChat;
@@ -143,6 +150,8 @@ use App\Actions\Api\Group\Locations\ShowMobileLocation;
 use App\Actions\Api\Group\Locations\UpdateMobileEmptyLocationsRemoval;
 use App\Actions\Api\Group\MyWork\GetMobileWarehouseBadges;
 use App\Actions\Api\Group\MyWork\IndexMobileMyWork;
+use App\Actions\Api\Group\Search\GetMobileSearch;
+use App\Actions\Api\Group\Dashboard\GetMobileWarehouseDashboard;
 use App\Actions\SysAdmin\User\PasswordResetLink;
 use App\Http\Middleware\VerifyMobileAppKey;
 use Illuminate\Support\Facades\Route;
@@ -164,7 +173,19 @@ Route::middleware(VerifyMobileAppKey::class)->group(function () {
         Route::get('/permissions', GetMobilePermissions::class)->name('permissions');
         Route::get('/warehouses/{warehouse:id}/badges', GetMobileWarehouseBadges::class)->name('warehouses.badges');
         Route::get('/warehouses/{warehouse:id}/my-work', IndexMobileMyWork::class)->name('warehouses.my_work');
+        Route::get('/warehouses/{warehouse:id}/search', GetMobileSearch::class)->name('warehouses.search');
+        Route::get('/warehouses/{warehouse:id}/dashboard', GetMobileWarehouseDashboard::class)->name('warehouses.dashboard');
         Route::get('/profile', GetMobileProfile::class)->name('profile');
+        Route::put('/push-token', UpdateMobilePushToken::class)->name('push_token.update');
+        Route::delete('/push-token', DeleteMobilePushToken::class)->name('push_token.delete');
+
+        Route::prefix('inbox')->name('inbox.')->group(function () {
+            Route::get('/', IndexMobileInbox::class)->name('index');
+            Route::get('/unread-count', GetMobileInboxUnreadCount::class)->name('unread_count');
+            Route::post('/read-all', MarkAllMobileInboxNotificationsAsRead::class)->name('read_all');
+            Route::post('/{notification}/read', MarkMobileInboxNotificationAsRead::class)->name('read')->whereUuid('notification');
+            Route::post('/{notification}/unread', MarkMobileInboxNotificationAsUnread::class)->name('unread')->whereUuid('notification');
+        });
 
         Route::prefix('clocking')->name('clocking.')->group(function () {
             Route::get('/', GetMobileClocking::class)->name('show');

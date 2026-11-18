@@ -16425,5 +16425,19 @@
     "Answers customers in the AI shopping assistant on the websites.": "Web sitelerindeki yapay zekâ alışveriş asistanında müşterileri yanıtlar.",
     "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Alışveriş asistanıyla biten konuşmaları okur ve müşterinin sipariş vermesini neyin engellediğini kaydeder.",
     "1 product = :count SKO": "1 ürün = :count SKO",
-    ":count SKO": ":count SKO"
+    ":count SKO": ":count SKO",
+    ":reference assigned to you": ":reference size atandı",
+    ":actor assigned :reference to you.": ":actor size :reference atadı.",
+    ":reference taken over": ":reference devralındı",
+    ":actor has taken over :reference, which was assigned to you.": ":actor size atanmış olan :reference işini devraldı.",
+    "Removed from :reference": ":reference görevinden çıkarıldınız",
+    ":actor removed you from :reference.": ":actor sizi :reference görevinden çıkardı.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor size atanmış olan :reference işini iptal etti.",
+    ":reference can go ahead": ":reference devam edebilir",
+    ":reference is no longer waiting and can be done again.": ":reference artık beklemede değil, tekrar yapılabilir.",
+    ":reference was changed": ":reference değiştirildi",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Dikkat: size atanmış olan :reference, :actor tarafından değiştirildi.",
+    ":actor has updated :reference, which is assigned to you.": ":actor size atanmış olan :reference işini güncelledi.",
+    "Operational": "Çalışır durumda",
+    ":reference cancelled": ":reference iptal edildi"
 }

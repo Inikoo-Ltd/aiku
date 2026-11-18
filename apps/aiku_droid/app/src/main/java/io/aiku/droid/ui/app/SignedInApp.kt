@@ -15,9 +15,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -45,6 +47,9 @@ import io.aiku.droid.data.api.StockDeliveryStateFilter
 import io.aiku.droid.data.api.Trolley
 import io.aiku.droid.data.api.WarehouseAccess
 import io.aiku.droid.data.session.StaffSession
+import io.aiku.droid.push.AskForNotificationsOnce
+import io.aiku.droid.push.PushDestination
+import io.aiku.droid.push.destination
 import io.aiku.droid.ui.asText
 import io.aiku.droid.ui.clocking.ClockScanQrScreen
 import io.aiku.droid.ui.clocking.ClockingAdjustmentsScreen
@@ -73,8 +78,10 @@ import io.aiku.droid.ui.components.LocalTabHandoff
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.TabHandoff
 import io.aiku.droid.ui.components.ToastHost
+import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.ToastState
 import io.aiku.droid.ui.dashboard.WarehouseDashboardScreen
+import io.aiku.droid.ui.dashboard.WarehouseDashboardViewModel
 import io.aiku.droid.ui.fulfilment.FulfilmentBookInScreen
 import io.aiku.droid.ui.fulfilment.FulfilmentBookedInScreen
 import io.aiku.droid.ui.fulfilment.FulfilmentDeliveriesScreen
@@ -133,6 +140,10 @@ import io.aiku.droid.ui.goodsout.extra.StaffChatViewModel
 import io.aiku.droid.ui.goodsout.extra.TrolleysScreen
 import io.aiku.droid.ui.home.HomeScreen
 import io.aiku.droid.ui.inbox.InboxScreen
+import io.aiku.droid.ui.inbox.InboxViewModel
+import io.aiku.droid.ui.inbox.LocalRecordOpener
+import io.aiku.droid.ui.inbox.RecordOpener
+import io.aiku.droid.ui.inbox.warehouseToSwitchTo
 import io.aiku.droid.ui.inventory.InventoryDashboardScreen
 import io.aiku.droid.ui.inventory.InventoryDashboardViewModel
 import io.aiku.droid.ui.inventory.InventoryServices
@@ -263,6 +274,7 @@ import io.aiku.droid.ui.scan.ScanLookupViewModel
 import io.aiku.droid.ui.scan.ScanResultScreen
 import io.aiku.droid.ui.scan.ScanScreen
 import io.aiku.droid.ui.search.SearchScreen
+import io.aiku.droid.ui.search.SearchViewModel
 import io.aiku.droid.ui.states.LoadingScreen
 import io.aiku.droid.ui.states.NotDesignedScreen
 import io.aiku.droid.ui.states.OfflineScreen
@@ -282,7 +294,7 @@ fun SignedInApp(container: AppContainer, session: StaffSession) {
     val warehousesViewModel: WarehousesViewModel = viewModel(
         factory = viewModelFactory {
             initializer {
-                WarehousesViewModel(container.warehouseApi, container.authApi, container.sessions, container.settings, container.warehouseCache)
+                WarehousesViewModel(container.warehouseApi, container.authApi, container.sessions, container.settings, container.warehouseCache, container.pushRegistration, container.recentSearches)
             }
         },
     )
@@ -356,11 +368,12 @@ private fun WarehouseApp(
     )
     val badgesViewModel: WorkBadgesViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { WorkBadgesViewModel(container.myWorkApi, container.sessions) }
+            initializer { WorkBadgesViewModel(container.myWorkApi, container.sessions, container.inboxApi) }
         },
     )
     LaunchedEffect(selected?.id) { badgesViewModel.showWarehouse(selected?.id) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { badgesViewModel.refresh() }
+    LaunchedEffect(badgesViewModel) { container.pushInbox.arrivals.collect { badgesViewModel.refresh() } }
     val isClockingSessionExpired by clockingViewModel.isSessionExpired.collectAsStateWithLifecycle()
     val isLeaveSessionExpired by leaveViewModel.isSessionExpired.collectAsStateWithLifecycle()
     val isAdjustmentsSessionExpired by adjustmentsViewModel.isSessionExpired.collectAsStateWithLifecycle()
@@ -382,6 +395,27 @@ private fun WarehouseApp(
             onSignOut = onSignOut,
         )
     }
+    val resources = LocalResources.current
+    val currentWarehouses by rememberUpdatedState(warehouses)
+    val recordOpener = remember(navigator, selected?.id, resources) {
+        RecordOpener { opening ->
+            opening.warehouseToSwitchTo(selected?.id, currentWarehouses)?.let { warehouse ->
+                onSelectWarehouse(warehouse.id)
+                toasts.show(resources.getString(R.string.inbox_switched_warehouse, warehouse.name), ToastKind.Info)
+            }
+            navigator.open(opening.route)
+        }
+    }
+    val pendingPush by container.pushInbox.pending.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingPush) {
+        val pushOpen = container.pushInbox.take() ?: return@LaunchedEffect
+        when (val destination = pushOpen.destination(warehouses.map { it.id })) {
+            is PushDestination.Record -> recordOpener.open(destination.opening)
+            PushDestination.Inbox -> navigator.openTab(MainTab.Inbox)
+        }
+        container.pushInbox.markRead(pushOpen.notificationId, onRead = badgesViewModel::refresh)
+    }
+    AskForNotificationsOnce(container.notificationPrompt)
     val appearance by container.settings.appearance.collectAsStateWithLifecycle()
     val appearanceController = remember(appearance) {
         object : AppearanceController {
@@ -403,6 +437,7 @@ private fun WarehouseApp(
         LocalOvertime provides overtimeViewModel,
         LocalClockingCalendar provides calendarViewModel,
         LocalWorkBadges provides badgesViewModel,
+        LocalRecordOpener provides recordOpener,
         LocalTabHandoff provides remember { TabHandoff() },
         LocalScanController provides container.scans,
         LocalImageSource provides container.images,
@@ -468,10 +503,27 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
             ScanScreen(lookup = lookup)
         }
         composable<ScanResultRoute> { entry -> entry.toRoute<ScanResultRoute>().let { route -> ScanResultScreen(route.code) } }
-        composable<InboxRoute> { InboxScreen() }
+        composable<InboxRoute> {
+            val inbox: InboxViewModel = viewModel(
+                factory = viewModelFactory { initializer { InboxViewModel(container.inboxApi, container.sessions, container.pushInbox.arrivals) } },
+            )
+            InboxScreen(inbox = inbox)
+        }
         composable<MenuRoute> { MenuScreen() }
-        composable<SearchRoute> { SearchScreen() }
-        composable<WarehouseDashboardRoute> { WarehouseDashboardScreen() }
+        composable<SearchRoute> {
+            val search: SearchViewModel = viewModel(
+                key = "search-$currentWarehouseId",
+                factory = viewModelFactory { initializer { SearchViewModel(container.searchApi, container.sessions, container.recentSearches, warehouseId) } },
+            )
+            SearchScreen(search = search)
+        }
+        composable<WarehouseDashboardRoute> {
+            val dashboard: WarehouseDashboardViewModel = viewModel(
+                key = "warehouse-dashboard-$currentWarehouseId",
+                factory = viewModelFactory { initializer { WarehouseDashboardViewModel(container.warehouseDashboardApi, container.sessions, warehouseId) } },
+            )
+            WarehouseDashboardScreen(dashboard = dashboard)
+        }
         composable<ProfileRoute> {
             val profileDetailsViewModel: ProfileDetailsViewModel = viewModel(
                 factory = viewModelFactory {

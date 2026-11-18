@@ -142,6 +142,7 @@ use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Inventory\OrgStock\Json\FetchOrgStockLabelOptions;
 use App\Actions\Inventory\OrgStock\Json\FetchOrgStockStocksManagement;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
+use App\Actions\Production\MaterialRequest\Json\GetProductionMaterialOrgStockOptions;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProductMinimumOrders;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\SupplyChain\SupplierChangeRequest\Json\GetSupplierChangeRequestPreview;
@@ -335,6 +336,7 @@ Route::get('production/{production:id}/artefacts', [IndexArtefacts::class, 'inJs
 Route::get('artefact/{artefact:id}/development-proposal', GetArtefactDevelopmentProposal::class)->name('artefact.development_proposal')->withoutScopedBindings();
 Route::get('production/{production:id}/manufacture-tasks', GetManufactureTasks::class)->name('production.manufacture_tasks.index');
 Route::get('production/{production:id}/raw-materials', GetRawMaterials::class)->name('production.raw_materials.index');
+Route::get('production/{production:id}/material-org-stocks', GetProductionMaterialOrgStockOptions::class)->name('production.material_org_stocks.index');
 Route::get('production/job-order/{jobOrder:id}/trial-run-brief', GetTrialRunBrief::class)->name('production.job_order.trial_run_brief');
 Route::get('manufacture-task-session/{manufactureTaskSession:id}/move-targets', GetManufactureTaskSessionMoveTargets::class)->name('manufacture_task_session.move_targets');
 Route::get('brands', GetBrands::class)->name('brands.index');

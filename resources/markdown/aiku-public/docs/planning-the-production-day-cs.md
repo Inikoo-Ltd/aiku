@@ -72,6 +72,22 @@ Dokud se nestiskne jedno z obojího, úkol vám zůstává před očima každý 
 
 Když dělník uzavře úkol s menším množstvím a zbytek přesune do nového úkolu (viz [Práce s obrazovkou dílny](/docs/working-the-floor-screen-cs)), nový úkol si ponechá naplánovaný den, místo v pořadí a dělníka u každého kroku.
 
+## Vyžádání materiálu od skladu
+
+Kdykoli továrna něco od skladu potřebuje, kdokoli z výroby si to vyžádá nahoře na **Factory → Operations → Materials check** (Továrna → Provoz → Kontrola materiálu), pod **Ask the warehouse** (Požádat sklad). Každý řádek je:
+
+| Pole | Co zadat |
+| --- | --- |
+| SKO | napište kód nebo název; seznam ukazuje, kolik SKO drží sklad a továrna |
+| Quantity and unit (Množství a jednotka) | tak, jak byste to řekli skladu: *3 Boxes*, *1 Pallet*, *80 Bags*, *2 SKOs* nebo *All there is* |
+| Drop point (Místo vyložení) | kam v továrně to složit (*Storage room*, *Clean room*, *Bath bomb area*...) |
+| Urgent (Naléhavé) | sklad vidí naléhavé řádky jako první |
+| Note (Poznámka) | cokoli, co má sklad vědět (*250ml*, *prosím venku na paletách*) |
+
+**Add line** (Přidat řádek) vyžádá více věcí najednou a **Send to warehouse** (Odeslat skladu) je odešle. **Asked this week** (Vyžádáno tento týden) níže ukazuje každý požadavek s tím, kdo ho zadal a kdy, a u každého řádku, zda je *To bring* (K přivezení), *Delivered* (Dodáno; kolik SKO, kým, kdy) nebo *Can't bring* (Nemůžeme přivézt) s důvodem skladu.
+
+Seznam míst vyložení vede tlačítkem **Drop points** (Místa vyložení) manažer a vedoucí výroby: přidat, přejmenovat, posunout nahoru a dolů nebo smazat. Smazané místo vyložení si zachová své jméno u požadavků, které tam už byly odeslány.
+
 ## Ranní kontrola materiálu
 
 Sklad vozí materiál do továrny v celých krabicích, ne v přesných množstvích na daný den. **Factory → Operations → Materials check** (Továrna → Provoz → Kontrola materiálu) vypíše, co denní plán ještě potřebuje, takže továrna zkontroluje, co je na místě, a zbytek si vyžádá od skladu jedním přehledným seznamem.
@@ -88,13 +104,15 @@ Každý řádek je jeden materiál sečtený přes všechny úkoly dne, spolu s 
 
 Když zadáte chybějící počet, řádek ukáže, co sklad přiveze, zaokrouhleno nahoru na jeho krabice: chybí 1 200 a v krabici je 500, tedy *bring 3 boxes (1 500)* (přivézt 3 krabice (1 500)). Červené *Warehouse short* (Sklad nemá dost) znamená, že sklad tolik nemá, takže to víte hned.
 
-Stiskněte **Send to warehouse** (Odeslat skladu). Chybějící řádky odejdou skladu jako jeden požadavek a ten se zobrazí nad seznamem, každý materiál označený *To bring* (K přivezení), *Delivered* (Dodáno) nebo *Warehouse short*. Zaškrtnutí všeho jako dostatečného a odeslání zaznamená, že kontrola proběhla. Druhá kontrola později během dne přidá jen to, co ještě chybí.
+Stiskněte **Send to warehouse** (Odeslat skladu). Chybějící řádky odejdou skladu jako jeden požadavek a ten se zobrazí pod **Asked this week**, každý materiál označený *To bring* (K přivezení), *Delivered* (Dodáno) nebo *Can't bring*. Zaškrtnutí všeho jako dostatečného a odeslání zaznamená, že kontrola proběhla. Druhá kontrola později během dne přidá jen to, co ještě chybí.
 
 Kontrolu provádí manažer nebo vedoucí výroby, nebo ji předá dělníkovi pomocí **Checked by** (Zkontroloval) nahoře. Ten pak na obrazovce dílny uvidí upozornění, které kontrolu otevře.
 
 ## Sklad přiveze materiál
 
-Ve skladu seznam **Goods out → For production** (Výdej zboží → Pro výrobu) vypíše všechny materiály, které továrna vyžádala, v pořadí obcházení regálů, ze kterých se bere, se skladovým kódem, počtem krabic k přivezení a místem v továrně, kam jdou. Skladník vybere regál, zkontroluje množství a stiskne **Delivered**. Když to sklad přivézt nemůže, dá to továrně vědět **Warehouse short**.
+Ve skladu karta **For production** (Pro výrobu) pod **Action needed** (Vyžaduje akci) na **Inventory** (Zásoby) ukazuje, na kolik řádků továrna čeká, naléhavé na malém odznaku. Otevře **Inventory → For production**: každý řádek, který je ještě třeba přivézt, nejdřív naléhavé a pak nejstarší, s tím, co se žádá, místem vyložení, kdo to vyžádal a kdy, poznámkou a regálem, ze kterého se bere. Skladník vybere regál, zadá přivezené SKO a stiskne **Delivered**. Když to sklad přivézt nemůže, **Can't bring** se zeptá na důvod (*out of stock*, *ordered from supplier*) a dá to továrně vědět. **Done** (Hotovo) vypíše, co se přivezlo nebo odmítlo, s dobou, jak dlouho to trvalo.
+
+Pokud Aiku ukazuje na regálu méně SKO, než se přivezlo, dodání přesto projde: co Aiku mělo, přejde do továrny a zbytek se označí jako *not in Aiku, count it* (není v Aiku, spočítat), aby se SKO přepočítalo.
 
 Dodané zboží se přesune z regálu na místo v továrně. Zůstává skladovou zásobou: počítá se a vidí se jako dřív a zákaznická objednávka si ho tam může stále vyzvednout, když jsou regály ve skladu prázdné, přičemž regály mají vždy přednost. Nepoužitý materiál lze vrátit na regál ze stránky místa v továrně, jako každý jiný přesun mezi místy.
 
@@ -107,9 +125,11 @@ Když se hotový úkol přijme do skladu, jeho materiály se podle množství v 
 <li><b>Změnit pořadí dne:</b> zadejte číslo do <b>Order</b>.</li>
 <li><b>Včerejší nedokončený úkol:</b> <b>Confirm for</b> den, nebo <b>Take off the plan</b>.</li>
 <li><b>Z nástěnky do plánu:</b> odkaz <b>Day plan</b> nad nástěnkou.</li>
+<li><b>Požádat sklad o něco:</b> <b>Factory</b> → <b>Operations</b> → <b>Materials check</b> → <b>Ask the warehouse</b> → <b>Send to warehouse</b>.</li>
+<li><b>Změnit místa vyložení:</b> <b>Materials check</b> → <b>Drop points</b>.</li>
 <li><b>Zkontrolovat materiál dne:</b> <b>Factory</b> → <b>Operations</b> → <b>Materials check</b> → <b>Have enough</b> nebo chybějící počet → <b>Send to warehouse</b>.</li>
 <li><b>Předat kontrolu dělníkovi:</b> <b>Materials check</b> → <b>Checked by</b>.</li>
-<li><b>Přivézt materiál (sklad):</b> <b>Goods out</b> → <b>For production</b> → <b>Delivered</b>, nebo <b>Warehouse short</b>.</li>
+<li><b>Přivézt materiál (sklad):</b> <b>Inventory</b> → <b>For production</b> → <b>Delivered</b>, nebo <b>Can't bring</b>.</li>
 </ul>
 </aside>
 
@@ -119,7 +139,8 @@ Když se hotový úkol přijme do skladu, jeho materiály se podle množství v 
 <li>Plánování dne, přidělování kroků, změna pořadí: <b>Floor supervisor</b> pro danou továrnu.</li>
 <li>Zobrazení Day plan bez možnosti změn: <b>Foreman</b>.</li>
 <li>Práce na kroku, který vám byl přidělen: <b>Operative</b>, na obrazovce dílny.</li>
-<li>Kontrola materiálu: <b>Floor supervisor</b>, nebo dělník, kterému byla předána.</li>
-<li>Přivážení materiálu do továrny: pozice ve skladu, která pracuje na výdeji zboží.</li>
+<li>Vyžádání materiálu od skladu: kdokoli, kdo vidí Operations továrny.</li>
+<li>Kontrola materiálu a místa vyložení: <b>Floor supervisor</b>; kontrolu také dělník, kterému byla předána.</li>
+<li>Přivážení materiálu do továrny: pozice ve skladu, která pracuje ve skladu.</li>
 </ul>
 </aside>

@@ -128,6 +128,8 @@ struct MobileOrgStocksPage: Decodable, Sendable, Equatable {
         let discontinued: Int
         let abnormality: Int
         let all: Int
+        var belowMinimum: Int?
+        var negative: Int?
     }
 
     let data: [MobileOrgStockRow]

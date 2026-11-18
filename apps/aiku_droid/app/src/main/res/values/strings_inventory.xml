@@ -28,6 +28,8 @@
     <string name="inventory_chip_current">Current</string>
     <string name="inventory_chip_discontinued">Discontinued</string>
     <string name="inventory_chip_abnormalities">Abnormalities</string>
+    <string name="inventory_title_below_minimum">SKOs below minimum</string>
+    <string name="inventory_title_negative">SKOs with negative stock</string>
     <string name="inventory_skos_search">Code, name or supplier product code</string>
     <string name="inventory_skos_footnote">Stock is in SKOs (stock keeping outers). The figure on the right is the stock available.</string>
     <string name="inventory_skos_failed">Couldn’t load the SKOs</string>

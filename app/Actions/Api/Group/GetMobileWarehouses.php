@@ -19,6 +19,7 @@ use Lorisleiva\Actions\Concerns\AsController;
 class GetMobileWarehouses
 {
     use AsController;
+    use WithMobileModuleAccess;
 
     public function handle(User $user): array
     {
@@ -48,21 +49,21 @@ class GetMobileWarehouses
         $organisationId = $warehouse->organisation_id;
 
         return [
-            'view_locations'      => $user->authTo(["locations.$warehouseId.view", "supervisor-locations.$warehouseId"]),
+            'view_locations'      => self::canViewLocations($user, $warehouse),
             'edit_locations'      => $user->authTo(["locations.$warehouseId.edit", "supervisor-locations.$warehouseId"]),
-            'view_inventory'      => $user->authTo(["inventory.$organisationId.view", "accounting.$organisationId.view", "supervisor-stocks.$warehouseId.view", "stocks.$warehouseId.view"]),
+            'view_inventory'      => self::canViewInventory($user, $warehouse),
             'move_stock'          => $user->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($warehouse->organisation)),
-            'view_goods_in'       => $user->authTo(["incoming.$warehouseId.view", "supervisor-incoming.$warehouseId"]),
+            'view_goods_in'       => self::canViewGoodsIn($user, $warehouse),
             'book_in'             => $user->authTo(["incoming.$warehouseId.edit", "supervisor-incoming.$warehouseId", "procurement.$organisationId.edit"]),
             'supervise_goods_in'  => $user->authTo(["supervisor-incoming.$warehouseId", "procurement.$organisationId.edit"]),
             'edit_procurement'    => $user->authTo("procurement.$organisationId.edit"),
             'place_stock_deliveries' => $user->authTo(["procurement.$organisationId.edit", "accounting.$organisationId.edit", "org-supervisor.$organisationId.accounting"]),
-            'view_goods_out'      => $user->authTo(["dispatching.$warehouseId.view", "fulfilment.$warehouseId.view", "supervisor-dispatching.$warehouseId"]),
+            'view_goods_out'      => self::canViewGoodsOut($user, $warehouse),
             'pick_and_pack'       => $user->authTo(["dispatching.$warehouseId.edit", "supervisor-dispatching.$warehouseId"]),
             'supervise_goods_out' => $user->authTo("supervisor-dispatching.$warehouseId"),
-            'view_fulfilment'     => $user->authTo(["fulfilment.$warehouseId.view", "supervisor-incoming.$warehouseId", "supervisor-fulfilment.$warehouseId", "warehouses-view.$organisationId"]),
+            'view_fulfilment'     => self::canViewFulfilment($user, $warehouse),
             'edit_fulfilment'     => $user->authTo(["fulfilment.$warehouseId.edit", "supervisor-fulfilment.$warehouseId"]),
-            'view_returns'        => $user->authTo(["incoming.$warehouseId.view", "returns.$warehouseId"]),
+            'view_returns'        => self::canViewReturns($user, $warehouse),
             'handle_returns'      => $user->authTo(["incoming.$warehouseId.edit", "returns.$warehouseId"]),
         ];
     }

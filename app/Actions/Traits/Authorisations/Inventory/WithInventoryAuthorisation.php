@@ -32,7 +32,7 @@ trait WithInventoryAuthorisation
         foreach ($warehousesIDs as $warehouseId) {
             $viewPermissions[] = "supervisor-stocks.$warehouseId.view";
             $viewPermissions[] = "stocks.$warehouseId.view";
-            $viewPermissions[] = "fulfilment.view.$warehouseId.view";
+            $viewPermissions[] = "fulfilment.$warehouseId.view";
         }
 
         return $request->user()->authTo(

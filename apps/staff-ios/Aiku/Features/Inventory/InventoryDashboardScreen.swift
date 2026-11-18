@@ -65,7 +65,7 @@ struct InventoryDashboardScreen: View {
         }
         if let summary = feed.summary, feed.loadedWarehouseID == warehouse?.id {
             blocks(summary)
-            HelperText("Same figures as the web inventory dashboard. Current SKOs and Abnormalities open the SKO list.")
+            HelperText("Same figures as the web inventory dashboard. Current SKOs, Abnormalities, below minimum and negative stocks open the SKO list.")
         } else if feed.loadError == nil {
             InventorySkeletonCard()
         }
@@ -84,8 +84,12 @@ struct InventoryDashboardScreen: View {
         StatGrid(columns: 2) {
             StatTile(summary.replenishmentsWholesale.grouped, label: summary.replenishmentsLabel, tone: .info)
             StatTile(summary.lowStockAudits.grouped, label: "Low stock audits")
-            StatTile(summary.belowMinimum.grouped, label: summary.belowMinimumLabel)
-            StatTile(summary.negativeStocks.grouped, label: "Negative stocks", tone: summary.negativeStocks > 0 ? .danger : nil)
+            StatTile(summary.belowMinimum.grouped, label: summary.belowMinimumLabel) {
+                router.open(InventoryRoute.skosIn(scope: .belowMinimum))
+            }
+            StatTile(summary.negativeStocks.grouped, label: "Negative stocks", tone: summary.negativeStocks > 0 ? .danger : nil) {
+                router.open(InventoryRoute.skosIn(scope: .negative))
+            }
             StatTile(summary.wrongWeights.grouped, label: "Wrong weights", tone: summary.wrongWeights > 0 ? .warn : nil)
             StatTile(summary.withoutProduct.grouped, label: "SKOs without product", tone: summary.withoutProduct > 0 ? .warn : nil)
         }

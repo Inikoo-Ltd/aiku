@@ -11,6 +11,8 @@ struct GoodsOutDestination: View {
             GoodsOutBacklogView()
         case .deliveryNotes:
             GoodsOutDeliveryNotesView()
+        case .deliveryNotesIn(let state):
+            GoodsOutDeliveryNotesView(initialTab: state)
         case .deliveryNote(let reference):
             GoodsOutDeliveryNoteScreen(reference: reference)
         case .fastPicking(let reference):

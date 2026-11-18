@@ -5,6 +5,7 @@ enum InventoryRoute: Hashable, Sendable {
     case families
     case family(code: String)
     case skos
+    case skosIn(scope: InventorySkoScope)
     case abnormalities
     case sko(reference: String)
     case skoHistory(reference: String)

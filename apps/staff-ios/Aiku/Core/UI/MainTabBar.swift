@@ -4,6 +4,7 @@ struct MainTabBar: View {
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
     private let workBadges = WorkBadgesStore.shared
+    private let inbox = ShellInboxStore.shared
 
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
@@ -12,7 +13,7 @@ struct MainTabBar: View {
             if session.canScan {
                 scanButton
             }
-            item(.inbox, icon: .bell, title: "Inbox", badge: session.unreadCount)
+            item(.inbox, icon: .bell, title: "Inbox", badge: inbox.unreadCount)
             item(.menu, icon: .menu, title: "Menu")
         }
         .padding(.horizontal, 8)

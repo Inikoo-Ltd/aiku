@@ -9139,5 +9139,20 @@
     ":name is gazing into his crystal ball…": ":name a kristálygömbjébe néz…",
     "This one needs a little more thought. Nearly there…": "Ez egy kicsit több gondolkodást igényel. Mindjárt kész…",
     "Usually takes about :seconds seconds": "Általában kb. :seconds másodperc",
-    "Our sister shop :website sells these: :link": "Testvérüzletünk, a(z) :website forgalmazza ezeket a termékeket: :link"
+    "Our sister shop :website sells these: :link": "Testvérüzletünk, a(z) :website forgalmazza ezeket a termékeket: :link",
+    ":reference assigned to you": ":reference hozzád lett rendelve",
+    ":actor assigned :reference to you.": ":actor hozzád rendelte: :reference.",
+    ":reference taken over": ":reference átvéve",
+    ":actor has taken over :reference, which was assigned to you.": ":actor átvette ezt: :reference (korábban hozzád rendelve).",
+    "Removed from :reference": "Eltávolítva: :reference",
+    ":actor removed you from :reference.": ":actor eltávolított innen: :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor törölte ezt: :reference (hozzád rendelve).",
+    ":reference can go ahead": ":reference folytatható",
+    ":reference is no longer waiting and can be done again.": ":reference már nem várakozik, folytatható.",
+    ":reference was changed": ":reference módosult",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Figyelem: :actor módosította ezt: :reference (hozzád rendelve).",
+    ":actor has updated :reference, which is assigned to you.": ":actor frissítette ezt: :reference (hozzád rendelve).",
+    "Operational": "Működő",
+    ":reference cancelled": ":reference törölve",
+    "The customer": "Az ügyfél"
 }

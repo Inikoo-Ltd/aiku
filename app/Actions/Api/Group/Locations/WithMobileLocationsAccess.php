@@ -8,6 +8,7 @@
 
 namespace App\Actions\Api\Group\Locations;
 
+use App\Actions\Api\Group\WithMobileModuleAccess;
 use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
@@ -19,13 +20,9 @@ use Illuminate\Support\Collection;
 
 trait WithMobileLocationsAccess
 {
-    public const int WEB_MAX_PER_PAGE = 150;
+    use WithMobileModuleAccess;
 
-    public static function canViewLocations(User $user, Warehouse $warehouse): bool
-    {
-        return $warehouse->group_id === $user->group_id
-            && $user->authTo(["locations.$warehouse->id.view", "supervisor-locations.$warehouse->id"]);
-    }
+    public const int WEB_MAX_PER_PAGE = 150;
 
     protected function ensureCanViewLocations(User $user, Warehouse $warehouse): void
     {

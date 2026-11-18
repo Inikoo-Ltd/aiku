@@ -5,12 +5,12 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { computed, inject, reactive, ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
+import Popover from "primevue/popover"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faArrowRight, faClipboardList, faExclamationTriangle, faIndustry } from "@fal"
@@ -27,6 +27,16 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 
 library.add(faArrowRight, faClipboardList, faExclamationTriangle, faIndustry)
 
+type IncomingLine = {
+	kind: "delivery" | "order"
+	slug: string
+	reference: string
+	supplier: string | null
+	state_label: string
+	eta: string | null
+	units: number
+}
+
 type Row = {
 	artefact_id: number
 	stock_code: string
@@ -34,6 +44,9 @@ type Row = {
 	category: string
 	sells_rank: number | string
 	in_production: number
+	incoming: number
+	incoming_timely: number
+	incoming_lines: IncomingLine[]
 	packed_in: number | null
 	stock_available: number | null
 	days_of_cover: number | null
@@ -111,6 +124,52 @@ const sellsBadge: Record<string, { label: string; class: string }> = {
 
 const selected = reactive<Record<number, number>>({})
 const edited = reactive<Record<number, number>>({})
+
+const daysUntil = (eta: string) =>
+	Math.round((new Date(eta + "T00:00:00").getTime() - new Date(new Date().toDateString()).getTime()) / 86400000)
+
+const arrivalLabel = (eta: string | null) => {
+	if (!eta) {
+		return ctrans("no date")
+	}
+	const days = daysUntil(eta)
+	if (days < 0) {
+		return ctrans("overdue")
+	}
+	if (days === 0) {
+		return ctrans("today")
+	}
+	return days === 1 ? ctrans("in 1 day") : ctrans("in :count days", { count: days })
+}
+
+const arrivalTone = (eta: string | null) => {
+	if (!eta) {
+		return "text-gray-400"
+	}
+	const days = daysUntil(eta)
+	if (days < 0) {
+		return "text-amber-600"
+	}
+	return days <= props.leadTime.days ? "text-green-600" : "text-gray-500"
+}
+
+const nextArrival = (row: Row): string | null => {
+	const dates = row.incoming_lines.map((line) => line.eta).filter((eta): eta is string => !!eta)
+	return dates.find((eta) => daysUntil(eta) >= 0) ?? dates[0] ?? null
+}
+
+const incomingPopover = ref()
+const incomingRow = ref<Row | null>(null)
+const showIncoming = (event: Event, row: Row) => {
+	incomingPopover.value?.hide()
+	incomingRow.value = row
+	incomingPopover.value?.show(event)
+}
+
+const incomingLineRoute = (line: IncomingLine) =>
+	line.kind === "delivery"
+		? route("grp.org.procurement.stock_deliveries.show", [route().params["organisation"], line.slug])
+		: route("grp.org.procurement.purchase_orders.show", [route().params["organisation"], line.slug])
 
 const unitsFor = (row: Row) => edited[row.artefact_id] ?? Number(row.job_units)
 const step = (row: Row) => Number(row.quantum_units) || 1
@@ -370,7 +429,6 @@ function changeQuantity(card: SentCard, quantity: number) {
 function assign(artisanId: number) {
 	if (!picking.value) return
 	const { card } = picking.value
-	const artisan = artisans.value.find((candidate) => candidate.id === artisanId)
 	picking.value = null
 	router.post(
 		route("grp.org.productions.show.to_produce.job_orders.store", routeParams()),
@@ -380,11 +438,6 @@ function assign(artisanId: number) {
 			preserveState: true,
 			only: ["sent"],
 			onSuccess: () => {
-				notify({
-					title: `${card.stock_code}: ${Math.ceil(Number(card.quantity_to_produce ?? card.quantity))} ${ctrans("assigned to")} ${artisan?.name ?? ""}`,
-					text: `${ctrans("Open board")}: ${route("grp.org.productions.show.to_produce.index", routeParams())}`,
-					type: "success",
-				})
 				fading[card.artefact_id] = true
 				setTimeout(() => (gone[card.artefact_id] = true), 1000)
 			},
@@ -709,6 +762,19 @@ function sendOne(row: Row) {
 				Number(item.in_production) ? locale.number(Number(item.in_production)) : "-"
 			}}</span>
 		</template>
+		<template #cell(incoming)="{ item }: { item: Row }">
+			<button
+				v-if="Number(item.incoming)"
+				type="button"
+				class="flex w-full flex-col items-end rounded px-1 hover:bg-gray-100"
+				@click.stop="(event) => showIncoming(event, item)">
+				<span class="tabular-nums text-gray-600">{{ locale.number(Number(item.incoming)) }}</span>
+				<span class="whitespace-nowrap text-xs" :class="arrivalTone(nextArrival(item))">
+					{{ arrivalLabel(nextArrival(item)) }}
+				</span>
+			</button>
+			<span v-else class="tabular-nums text-gray-600">-</span>
+		</template>
 		<template #cell(job_units)="{ item }: { item: Row }">
 			<span
 				class="tabular-nums"
@@ -772,6 +838,50 @@ function sendOne(row: Row) {
 			</div>
 		</template>
 	</Table>
+
+	<Popover ref="incomingPopover">
+		<div v-if="incomingRow" class="w-[26rem] text-sm">
+			<div class="mb-2 font-semibold">
+				{{ ctrans("Incoming :code", { code: incomingRow.stock_code }) }}
+			</div>
+			<table class="w-full">
+				<thead class="whitespace-nowrap text-xs text-gray-400">
+					<tr>
+						<th class="pb-1 text-left font-normal">{{ ctrans("Reference") }}</th>
+						<th class="pb-1 text-left font-normal">{{ ctrans("Supplier") }}</th>
+						<th class="pb-1 text-right font-normal">{{ ctrans("Units") }}</th>
+						<th class="pb-1 text-right font-normal">{{ ctrans("Arrives") }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="line in incomingRow.incoming_lines" :key="line.kind + line.slug + line.eta" class="border-t border-gray-100">
+						<td class="py-1 pr-2">
+							<Link :href="incomingLineRoute(line)" class="whitespace-nowrap font-mono text-gray-700 hover:underline">{{ line.reference }}</Link>
+							<div class="text-xs text-gray-400">
+								{{ line.kind === "delivery" ? ctrans("Delivery") : ctrans("Purchase order") }} · {{ line.state_label }}
+							</div>
+						</td>
+						<td class="py-1 pr-2 text-gray-600">{{ line.supplier }}</td>
+						<td class="py-1 text-right tabular-nums">{{ locale.number(line.units) }}</td>
+						<td class="whitespace-nowrap py-1 pl-2 text-right">
+							<div :class="arrivalTone(line.eta)">{{ arrivalLabel(line.eta) }}</div>
+							<div v-if="line.eta" class="text-xs text-gray-400">{{ line.eta }}</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<div class="mt-2 border-t border-gray-100 pt-2 text-xs text-gray-500">
+				{{
+					Number(incomingRow.incoming_timely)
+						? ctrans(":count units arrive within the :days day lead time and lower the suggestion", {
+								count: locale.number(Number(incomingRow.incoming_timely)),
+								days: leadTime.days,
+							})
+						: ctrans("Nothing arrives within the :days day lead time, so the suggestion ignores it", { days: leadTime.days })
+				}}
+			</div>
+		</div>
+	</Popover>
 
 	<Teleport to="body">
 		<div v-if="picking" class="fixed inset-0 z-40" @click="picking = null" />
