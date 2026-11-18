@@ -88,6 +88,7 @@ struct GoodsOutLine: Identifiable, Hashable, Sendable {
     var outcome: GoodsOutLineOutcome?
     var packedInto: [Int: Int] = [:]
     var apiID: Int?
+    var orgStockID: Int?
     var stockLocations: [GoodsOutStockLocation] = []
     var pickings: [GoodsOutLinePicking] = []
     var quantityToPick: Double?
