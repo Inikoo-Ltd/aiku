@@ -4705,3 +4705,17 @@ test('packing part of a warehouse row is limited to the units the agent still ho
         ->and($packed->state)->toBe(App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::PACKED_FOR_NEXT_CONTAINER)
         ->and((float) $row->refresh()->quantity)->toBe($onContainer);
 });
+
+test('the delivery address of a purchase order can change until the goods are handed over, not after', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 5)->refresh();
+
+    \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder::make()->action($purchaseOrder, ['delivery_address' => 'W2 Dock 1']);
+    expect($purchaseOrder->refresh()->data['delivery_address'])->toBe('W2 Dock 1');
+
+    $purchaseOrder->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::HANDED_OVER]);
+
+    expect(fn () => \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder::make()->action($purchaseOrder->refresh(), ['delivery_address' => 'W2 Dock 2']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and($purchaseOrder->refresh()->data['delivery_address'])->toBe('W2 Dock 1');
+});
