@@ -4268,3 +4268,28 @@ test('a payer saved before the payer rules can no longer approve once they are t
 
     actingAs($this->adminGuest->getUser());
 });
+
+test('the agent ledger shows each client\'s suppliers with their own agent fee and loads the list of every supplier only for the fee dialog', function () {
+    $orgAgent              = createFreshOrgAgent($this);
+    $agent                 = $orgAgent->agent;
+    $client                = $orgAgent->organisation;
+    [$ownFee]              = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [$followsClient]       = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $ownFee->supplier->update(['agent_fee_percentage' => 7]);
+    $followsClient->supplier->update(['agent_fee_percentage' => null]);
+    $agent->organisation->update(['currency_id' => $client->currency_id]);
+    setPermissionsTeamId($this->group->id);
+    actingAs(agentOrganisationAdmin($agent->organisation, 'w3-led-'.Str::lower(Str::random(6))));
+
+    $url = route('grp.org.agent.accounting.ledger.index', [$agent->organisation->slug]);
+    $this->withoutVite()->get($url)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+        ->missing('supplier_fee_options')
+        ->where('wallets', fn ($wallets) => ($wallet = collect($wallets)->firstWhere('organisation_id', $client->id))
+            && !array_key_exists('suppliers', $wallet)
+            && $wallet['number_suppliers'] === 2
+            && collect($wallet['suppliers_with_different_fee'])->pluck('id')->all() === [$ownFee->supplier_id])
+        ->reloadOnly('supplier_fee_options', fn (AssertableInertia $reload) => $reload
+            ->where('supplier_fee_options.'.$client->id, fn ($suppliers) => collect($suppliers)->pluck('id')->sort()->values()->all() === collect([$ownFee->supplier_id, $followsClient->supplier_id])->sort()->values()->all())));
+
+    actingAs($this->adminGuest->getUser());
+});

@@ -31,6 +31,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -191,26 +192,38 @@ class IndexAgentLedger extends OrgAction
     }
 
     /**
-     * The wallets with, for each client, the agent's suppliers it buys and those whose own agent fee differs from the client's.
+     * The wallets with, for each client, how many of the agent's suppliers it buys and those whose own agent fee
+     * differs from the client's. The full list of suppliers, to pick one in the dialog, loads only when it opens.
      *
      * @return list<array<string, mixed>>
      */
     private function walletsWithSupplierFees(Agent $agent): array
     {
-        $suppliersByClient = $this->suppliersByClient($agent);
+        $suppliersWithOwnFee = $this->suppliersByClient($agent, onlyWithOwnFee: true);
+        $numberOfSuppliers   = $this->clientSuppliersQuery($agent)
+            ->groupBy('org_suppliers.organisation_id')
+            ->selectRaw('org_suppliers.organisation_id, count(distinct suppliers.id) as number_suppliers')
+            ->pluck('number_suppliers', 'organisation_id');
 
-        return array_map(function (array $wallet) use ($suppliersByClient) {
+        return array_map(function (array $wallet) use ($suppliersWithOwnFee, $numberOfSuppliers) {
             $clientFee = $wallet['agent_fee_percentage'] ?? SyncAgentInvoiceChargesFromLedger::DEFAULT_AGENT_FEE_PERCENTAGE;
-            $suppliers = $suppliersByClient->get($wallet['organisation_id']) ?? collect();
 
             return $wallet + [
-                'suppliers'                    => $suppliers->all(),
-                'suppliers_with_different_fee' => $suppliers
-                    ->filter(fn (array $supplier) => $supplier['agent_fee_percentage'] !== null && abs($supplier['agent_fee_percentage'] - $clientFee) > 0.001)
+                'number_suppliers'             => (int) ($numberOfSuppliers[$wallet['organisation_id']] ?? 0),
+                'suppliers_with_different_fee' => ($suppliersWithOwnFee->get($wallet['organisation_id']) ?? collect())
+                    ->filter(fn (array $supplier) => abs($supplier['agent_fee_percentage'] - $clientFee) > 0.001)
                     ->values()
                     ->all(),
             ];
         }, $this->wallets($agent));
+    }
+
+    private function clientSuppliersQuery(Agent $agent): Builder
+    {
+        return DB::table('suppliers')
+            ->join('org_suppliers', 'org_suppliers.supplier_id', '=', 'suppliers.id')
+            ->where('suppliers.agent_id', $agent->id)
+            ->where('suppliers.status', true);
     }
 
     /**
@@ -218,12 +231,10 @@ class IndexAgentLedger extends OrgAction
      *
      * @return Collection<int, Collection<int, array{id: int, code: string, name: string|null, agent_fee_percentage: float|null}>>
      */
-    private function suppliersByClient(Agent $agent): Collection
+    private function suppliersByClient(Agent $agent, bool $onlyWithOwnFee = false): Collection
     {
-        return DB::table('suppliers')
-            ->join('org_suppliers', 'org_suppliers.supplier_id', '=', 'suppliers.id')
-            ->where('suppliers.agent_id', $agent->id)
-            ->where('suppliers.status', true)
+        return $this->clientSuppliersQuery($agent)
+            ->when($onlyWithOwnFee, fn (Builder $query) => $query->whereNotNull('suppliers.agent_fee_percentage'))
             ->orderBy('suppliers.code')
             ->get(['org_suppliers.organisation_id', 'suppliers.id', 'suppliers.code', 'suppliers.name', 'suppliers.agent_fee_percentage'])
             ->groupBy('organisation_id')
@@ -358,6 +369,7 @@ class IndexAgentLedger extends OrgAction
                     'title' => __('Ledger'),
                 ],
                 'wallets'     => $this->walletsWithSupplierFees($this->agent),
+                'supplier_fee_options' => $canEdit ? Inertia::optional(fn () => $this->suppliersByClient($this->agent)->map(fn (Collection $suppliers) => $suppliers->all())->all()) : null,
                 'agent_fee_explained' => SyncAgentInvoiceChargesFromLedger::feeCalculationExplained(),
                 'form'        => $canEdit ? [
                     'store_route'     => ['name' => 'grp.models.agent.ledger_entry.store', 'parameters' => ['agent' => $this->agent->id]],

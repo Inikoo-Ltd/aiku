@@ -24,6 +24,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
 import AgentFeeCalculationInfo from "@/Components/Procurement/AgentFeeCalculationInfo.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
@@ -44,7 +45,7 @@ interface Wallet {
 	org_agent_id: number | null
 	agent_fee_percentage: number | null
 	cho_penalty_percentage: number
-	suppliers: SupplierFee[]
+	number_suppliers: number
 	suppliers_with_different_fee: SupplierFee[]
 }
 
@@ -98,6 +99,7 @@ const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	wallets: Wallet[]
+	supplier_fee_options?: Record<number, SupplierFee[]> | null
 	agent_fee_explained: string[]
 	form: {
 		store_route: routeType
@@ -146,8 +148,15 @@ const supplierFeeError = ref<string | null>(null)
 const supplierFeeSaving = ref(false)
 const isSupplierFeeOpen = computed({ get: () => supplierFeeWallet.value !== null, set: (open: boolean) => !open && (supplierFeeWallet.value = null) })
 const clientFee = (wallet: Wallet | null) => wallet?.agent_fee_percentage ?? 2
+const walletSuppliers = computed<SupplierFee[]>(() => (supplierFeeWallet.value ? props.supplier_fee_options?.[supplierFeeWallet.value.organisation_id] ?? [] : []))
+const loadingSupplierOptions = ref(false)
+const loadSupplierOptions = () => {
+	if (!props.form) return
+	loadingSupplierOptions.value = true
+	router.reload({ only: ["supplier_fee_options"], onFinish: () => (loadingSupplierOptions.value = false) })
+}
 const supplierOptions = computed(() =>
-	(supplierFeeWallet.value?.suppliers ?? []).map((supplier) => ({
+	walletSuppliers.value.map((supplier) => ({
 		value: supplier.id,
 		label: [supplier.code, supplier.name].filter(Boolean).join(" · ") + (supplier.agent_fee_percentage !== null ? ` (${supplier.agent_fee_percentage}%)` : ""),
 	})),
@@ -157,6 +166,7 @@ const openSupplierFees = (wallet: Wallet) => {
 	supplierFeeSupplierId.value = null
 	supplierFeePercentage.value = null
 	supplierFeeError.value = null
+	if (!props.supplier_fee_options) loadSupplierOptions()
 }
 const pickSupplierFee = (supplier: SupplierFee) => {
 	supplierFeeSupplierId.value = supplier.id
@@ -164,7 +174,7 @@ const pickSupplierFee = (supplier: SupplierFee) => {
 	supplierFeeError.value = null
 }
 watch(supplierFeeSupplierId, (supplierId) => {
-	const supplier = supplierFeeWallet.value?.suppliers.find((option) => option.id === supplierId)
+	const supplier = walletSuppliers.value.find((option) => option.id === supplierId)
 	supplierFeePercentage.value = supplier?.agent_fee_percentage ?? null
 })
 const removingSupplierFeeId = ref<number | null>(null)
@@ -188,6 +198,7 @@ const patchSupplierFee = (supplierId: number, percentage: number | null, onFinis
 			supplierFeeSupplierId.value = null
 			supplierFeePercentage.value = null
 			supplierFeeError.value = null
+			if (supplierFeeWallet.value) loadSupplierOptions()
 		},
 		onError: (errors) => (supplierFeeError.value = firstError(errors)),
 		onFinish,
@@ -405,7 +416,7 @@ const confirmRemove = (row: EntryRow) =>
 				</button>
 			</div>
 			<button
-				v-if="wallet.org_agent_id && (wallet.suppliers_with_different_fee.length || (form && wallet.suppliers.length))"
+				v-if="wallet.org_agent_id && (wallet.suppliers_with_different_fee.length || (form && wallet.number_suppliers))"
 				type="button"
 				class="mt-1 text-left text-xs text-[var(--app-accent)] hover:underline"
 				@click="openSupplierFees(wallet)">
@@ -642,7 +653,7 @@ const confirmRemove = (row: EntryRow) =>
 		<AgentFeeCalculationInfo :items="agent_fee_explained" class="mt-3" />
 
 		<div v-if="form" class="mt-5 border-t border-gray-100 pt-4">
-			<div class="text-sm font-medium text-gray-700">{{ ctrans("Set a supplier's agent fee") }}</div>
+			<div class="flex items-center gap-2 text-sm font-medium text-gray-700">{{ ctrans("Set a supplier's agent fee") }} <LoadingIcon v-if="loadingSupplierOptions" /></div>
 			<div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_8rem]">
 				<Select
 					v-model="supplierFeeSupplierId"
