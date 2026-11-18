@@ -4815,3 +4815,13 @@ test('checking many goods receipt lines refreshes the hand over of each order on
         ->and($calls)->toBe([collect([$first->id, $second->id])->sort()->values()->all()])
         ->and($receipt->items()->whereNull('checked_at')->exists())->toBeFalse();
 });
+
+test('the rename availability check refuses a reference the rename would refuse for its format', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 5)->refresh();
+    $availability  = \App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderReferenceAvailability::make();
+
+    expect($availability->handle($purchaseOrder, 'W2 has spaces')['is_available'])->toBeFalse()
+        ->and($availability->handle($purchaseOrder, 'W2 has spaces')['format_error'])->not->toBeNull()
+        ->and($availability->handle($purchaseOrder, 'W2-ok-'.$purchaseOrder->id)['is_available'])->toBeTrue();
+});

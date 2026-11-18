@@ -38,6 +38,7 @@ interface Availability {
 	reference: string
 	is_unchanged: boolean
 	is_available: boolean
+	format_error?: string | null
 	conflict: PurchaseOrderMatch | null
 	slug: string | null
 	alternatives: string[]
@@ -224,6 +225,10 @@ const save = async () => {
 							<span v-else class="whitespace-nowrap font-semibold">{{ availability.conflict.reference }}</span>
 							({{ availability.conflict.state }})
 						</span>
+					</template>
+					<template v-else-if="availability?.format_error">
+						<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+						<span class="text-red-600">{{ availability.format_error }}</span>
 					</template>
 					<template v-else-if="availability">
 						<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
