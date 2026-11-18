@@ -11,17 +11,22 @@ namespace App\Notifications;
 
 use App\Models\SupplyChain\SupplierSubmission;
 use App\Notifications\Concerns\SendsMailThroughSes;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class SupplierPlanningNoteNotification extends Notification
+class SupplierPlanningNoteNotification extends Notification implements ShouldQueue
 {
+    use Queueable;
     use SendsMailThroughSes;
 
     public bool $byEmail = true;
 
     public function __construct(public SupplierSubmission $submission, public string $title, public string $body, public string $whyLine)
     {
+        $this->locale = app()->getLocale();
+        $this->afterCommit();
     }
 
     public function via($notifiable): array
@@ -44,9 +49,9 @@ class SupplierPlanningNoteNotification extends Notification
     {
         return $this->newMailMessage()
             ->subject($this->title)
-            ->line($this->body)
+            ->line($this->plainLine($this->body))
             ->action(__('Open the planning note'), self::url($this->submission))
-            ->line($this->whyLine);
+            ->line($this->plainLine($this->whyLine));
     }
 
     /**

@@ -832,3 +832,25 @@ test('W4 a portal contact cannot replace the company photo, and the avatar still
         ->and($profile->image_id)->not->toBeNull();
 });
 
+test('W4 supplier planning and deposit notifications are queued and show supplier text as plain text in the email', function () {
+    expect(\App\Notifications\SupplierPlanningNoteNotification::class)->toImplement(\Illuminate\Contracts\Queue\ShouldQueue::class)
+        ->and(\App\Notifications\SupplierDepositRequestedNotification::class)->toImplement(\Illuminate\Contracts\Queue\ShouldQueue::class);
+
+    [$supplier, $supplierProduct, $token] = portalSupplier($this);
+    $submission                           = SupplierSubmission::create([
+        'group_id'               => $supplier->group_id,
+        'supplier_id'            => $supplier->id,
+        'supplier_share_link_id' => \App\Models\SupplyChain\SupplierShareLink::where('supplier_id', $supplier->id)->value('id'),
+        'type'                   => SupplierSubmissionTypeEnum::MATERIAL_PLANNING,
+        'state'                  => SupplierSubmissionStateEnum::RECEIVED,
+        'data'                   => [],
+        'submitted_at'           => now(),
+    ]);
+
+    $notification = new \App\Notifications\SupplierPlanningNoteNotification($submission, 'Title', 'Click [here](https://evil.test) <b>now</b>.', 'Why');
+    $mail         = $notification->toMail($this->adminGuest->getUser());
+
+    expect($mail->introLines[0])->toBe('Click \[here\]\(https://evil.test\) \<b\>now\</b\>.')
+        ->and($notification->afterCommit)->toBeTrue();
+});
+
