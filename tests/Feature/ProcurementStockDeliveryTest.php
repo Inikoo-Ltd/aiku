@@ -4741,3 +4741,20 @@ test('renaming a purchase order follows the reference format, keeps the earlier 
 
     expect($purchaseOrder->refresh()->reference)->toBe('W2-'.$purchaseOrder->id);
 });
+
+test('lines cancelled with the whole order show who cancelled the order and when, as they have no audit of their own', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 5)->refresh();
+    $user          = $this->adminGuest->getUser();
+    actingAs($user);
+
+    \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled::make()->handle($purchaseOrder->refresh());
+    $cancelledAt = $purchaseOrder->refresh()->data['cancellation']['at'];
+
+    $this->withoutVite()
+        ->get(route('grp.org.procurement.purchase_orders.show', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]).'?tab=items')
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('items.data.0.cancellation.by', $user->contact_name ?: $user->username)
+            ->where('items.data.0.cancellation.at', $cancelledAt)
+            ->etc());
+});
