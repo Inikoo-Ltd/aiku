@@ -265,7 +265,7 @@ const visitSearchPage = () => {
             :title="askLabel"
             :aria-label="askLabel"
             type="tertiary"
-            class="iris-search-ask !h-12 shrink-0 !gap-1.5 !rounded-full !border-transparent !bg-transparent !px-4 text-sm font-medium"
+            class="iris-search-ask !h-12 shrink-0 !gap-1.5 !rounded-full !border-transparent !bg-transparent !px-4 !py-0 text-sm font-medium"
             @click="askAssistant"
         >
             <template #icon>
@@ -356,6 +356,16 @@ const visitSearchPage = () => {
 .iris-search-box .iris-search-ask:hover .iris-search-ask-icon {
     transform: rotate(20deg) scale(1.2);
     animation: iris-search-ask-twinkle 1.2s ease-in-out 0.4s infinite;
+}
+
+.iris-search-box .iris-search-ask .little-bird-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.iris-search-box .iris-search-ask:hover .little-bird-icon {
+    transform: none;
+    animation: none;
 }
 
 .iris-search-box .iris-search-ask:hover::after {

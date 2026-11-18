@@ -2466,8 +2466,8 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .bird-mark {
-    width: 124px;
-    height: 124px;
+    width: 148px;
+    height: 148px;
     margin: 0 auto 1rem;
 }
 
@@ -2816,13 +2816,13 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .chat-shell-little-bird .assistant-avatar .little-bird-icon {
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2.125rem;
+    height: 2.125rem;
 }
 
 .chat-shell-little-bird .chat-sidebar-brand-icon {
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2.25rem;
+    height: 2.25rem;
 }
 
 .chat-shell-little-bird .assistant-bubble {
