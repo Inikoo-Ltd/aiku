@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -62,7 +63,9 @@ class ShowSupplierPortalPreview extends OrgAction
             ],
             'forms'    => ShowSupplierShare::make()->forms(
                 collect(SupplierSubmissionTypeEnum::cases())->mapWithKeys(fn (SupplierSubmissionTypeEnum $type) => [$type->value => $blocked('submissions/'.$type->value)])->all(),
-                $blocked('submissions/0/update')
+                $blocked('submissions/0/update'),
+                route('grp.supply-chain.suppliers.portal_preview.product_proposals.template', $supplier),
+                $blocked('product-proposals/import')
             ),
         ])->table(IndexSupplierPortalPurchaseOrders::make()->tableStructure('purchase_orders'))
             ->table(IndexSupplierPortalPriceChanges::make()->tableStructure($supplier, 'price_changes'))
@@ -94,6 +97,11 @@ class ShowSupplierPortalPreview extends OrgAction
     public function purchaseOrder(Supplier $supplier, int $purchaseOrderId, ActionRequest $request): JsonResponse
     {
         return response()->json(ShowSupplierPortalPurchaseOrder::make()->handle($supplier, $purchaseOrderId));
+    }
+
+    public function productProposalTemplate(Supplier $supplier, ActionRequest $request): BinaryFileResponse
+    {
+        return DownloadSupplierPortalProductProposalTemplate::make()->handle($supplier);
     }
 
     public function blocked(): never

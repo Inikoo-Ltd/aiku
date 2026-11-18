@@ -15,6 +15,7 @@ use App\Actions\SupplyChain\SupplierAgreement\UI\GetSupplierPortalAgreement;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
 use App\Actions\SupplyChain\SupplierShareLink\LocateSupplierShareLinkView;
 use App\Actions\SupplyChain\SupplierShareLink\ResolveSupplierPortalProfile;
+use App\Actions\SupplyChain\SupplierSubmission\ImportSupplierPortalProductProposals;
 use App\Actions\SupplyChain\SupplierSubmission\StoreSupplierPortalSubmission;
 use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
@@ -187,15 +188,20 @@ class ShowSupplierShare
      *
      * @return array<string, mixed>
      */
-    public function forms(array $submit, string $update): array
+    public function forms(array $submit, string $update, string $productProposalTemplate, string $productProposalImport): array
     {
         return [
-            'submit'         => $submit,
-            'update'         => $update,
-            'document_types' => collect(SupplyChainAttachmentScopeEnum::labels())->except(['Price list', 'Catalogue'])->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
-            'max_files'      => StoreSupplierPortalSubmission::MAX_FILES,
-            'max_file_mb'    => (int) (StoreSupplierPortalSubmission::MAX_FILE_KB / 1024),
-            'designations'   => collect(SupplierPortalContactDesignationEnum::labels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
+            'submit'            => $submit,
+            'update'            => $update,
+            'product_proposals' => [
+                'template' => $productProposalTemplate,
+                'import'   => $productProposalImport,
+                'max_rows' => ImportSupplierPortalProductProposals::MAX_ROWS,
+            ],
+            'document_types'    => collect(SupplyChainAttachmentScopeEnum::labels())->except(['Price list', 'Catalogue'])->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
+            'max_files'         => StoreSupplierPortalSubmission::MAX_FILES,
+            'max_file_mb'       => (int) (StoreSupplierPortalSubmission::MAX_FILE_KB / 1024),
+            'designations'      => collect(SupplierPortalContactDesignationEnum::labels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
         ];
     }
 
@@ -244,7 +250,9 @@ class ShowSupplierShare
                 'submitted' => session('submitted'),
                 'forms'     => $this->forms(
                     collect(SupplierSubmissionTypeEnum::cases())->mapWithKeys(fn (SupplierSubmissionTypeEnum $type) => [$type->value => route('grp.supplier_share.submit', [$token, $type->value])])->all(),
-                    route('grp.supplier_share.submission.update', [$token, 0])
+                    route('grp.supplier_share.submission.update', [$token, 0]),
+                    route('grp.supplier_share.product_proposals.template', $token),
+                    route('grp.supplier_share.product_proposals.import', $token)
                 ),
             ])->table(IndexSupplierPortalPurchaseOrders::make()->tableStructure('purchase_orders'))
                 ->table(IndexSupplierPortalPriceChanges::make()->tableStructure($supplier, 'price_changes'));

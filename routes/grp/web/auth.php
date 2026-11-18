@@ -37,7 +37,9 @@ use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalPurchaseO
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalPurchaseOrderProduction;
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalPurchaseOrderDeposit;
 use App\Actions\SupplyChain\SupplierShareLink\SendSupplierShareCode;
+use App\Actions\SupplyChain\SupplierSubmission\ImportSupplierPortalProductProposals;
 use App\Actions\SupplyChain\SupplierSubmission\StoreSupplierPortalSubmission;
+use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalProductProposalTemplate;
 use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierShare;
 use App\Actions\SupplyChain\SupplierShareLink\VerifySupplierShareCode;
 use App\Http\Middleware\LogUserRequestMiddleware;
@@ -52,6 +54,8 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::get('', ShowSupplierShare::class)->name('show');
         Route::post('code', SendSupplierShareCode::class)->middleware('throttle:supplier-share-code')->name('send_code');
         Route::post('verify', VerifySupplierShareCode::class)->middleware('throttle:supplier-share-verify')->name('verify');
+        Route::get('product-proposals/template', DownloadSupplierPortalProductProposalTemplate::class)->name('product_proposals.template');
+        Route::post('product-proposals/import', ImportSupplierPortalProductProposals::class)->middleware('throttle:supplier-portal-submit')->name('product_proposals.import');
         Route::post('submissions/{type}', StoreSupplierPortalSubmission::class)->middleware('throttle:supplier-portal-submit')->where('type', '[a-z_]+')->name('submit');
         Route::post('submissions/{submission}/update', [StoreSupplierPortalSubmission::class, 'inSubmission'])->middleware('throttle:supplier-portal-submit')->whereNumber('submission')->name('submission.update');
         Route::post('profile', UpdateSupplierPortalProfile::class)->middleware('throttle:supplier-portal-submit')->name('profile.update');
