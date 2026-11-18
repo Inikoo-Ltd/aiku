@@ -24,6 +24,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -37,6 +38,8 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreAgentLedgerEntry extends OrgAction
 {
     private Agent $agent;
+
+    private ?int $createdBy = null;
 
     /**
      * @param  array{organisation_id: int, type: string, date: string, amount: float|string, purchase_order_id?: int|null, stock_delivery_id?: int|null, original_amount?: float|string|null, reference?: string|null, notes?: string|null, receipt?: UploadedFile|null}  $modelData
@@ -59,35 +62,37 @@ class StoreAgentLedgerEntry extends OrgAction
             'caption'      => pathinfo($receipt->getClientOriginalName(), PATHINFO_FILENAME),
         ]) : null;
 
-        $entry = AgentPayment::create([
-            'group_id'             => $agent->group_id,
-            'agent_id'             => $agent->id,
-            'organisation_id'      => $client->id,
-            'type'                 => $type,
-            'date'                 => $modelData['date'],
-            'amount'               => round((float) $modelData['amount'], 2),
-            'currency_id'          => $agent->organisation->currency_id,
-            'purchase_order_id'    => $purchaseOrder?->id,
-            'supplier_id'          => $purchaseOrder?->supplier_id,
-            'stock_delivery_id'    => $stockDelivery?->id,
-            'org_stock_id'         => $type === AgentPaymentTypeEnum::PACKAGING && $stockDelivery ? Arr::get($modelData, 'org_stock_id') : null,
-            'original_amount'      => $originalAmount ? round((float) $originalAmount, 2) : null,
-            'original_currency_id' => $originalAmount ? $client->currency_id : null,
-            'reference'            => Arr::get($modelData, 'reference'),
-            'notes'                => Arr::get($modelData, 'notes'),
-            'media_id'             => $media?->id,
-            'created_by'           => $this->asAction ? null : request()->user()?->id,
-        ]);
+        return DB::transaction(function () use ($agent, $client, $type, $purchaseOrder, $stockDelivery, $originalAmount, $paidDatesBefore, $media, $modelData) {
+            $entry = AgentPayment::create([
+                'group_id'             => $agent->group_id,
+                'agent_id'             => $agent->id,
+                'organisation_id'      => $client->id,
+                'type'                 => $type,
+                'date'                 => $modelData['date'],
+                'amount'               => round((float) $modelData['amount'], 2),
+                'currency_id'          => $agent->organisation->currency_id,
+                'purchase_order_id'    => $purchaseOrder?->id,
+                'supplier_id'          => $purchaseOrder?->supplier_id,
+                'stock_delivery_id'    => $stockDelivery?->id,
+                'org_stock_id'         => $type === AgentPaymentTypeEnum::PACKAGING && $stockDelivery ? Arr::get($modelData, 'org_stock_id') : null,
+                'original_amount'      => $originalAmount ? round((float) $originalAmount, 2) : null,
+                'original_currency_id' => $originalAmount ? $client->currency_id : null,
+                'reference'            => Arr::get($modelData, 'reference'),
+                'notes'                => Arr::get($modelData, 'notes'),
+                'media_id'             => $media?->id,
+                'created_by'           => $this->createdBy ?? ($this->asAction ? null : request()->user()?->id),
+            ]);
 
-        if ($stockDelivery) {
-            SyncAgentInvoiceChargesFromLedger::run($stockDelivery);
-        }
+            if ($stockDelivery) {
+                SyncAgentInvoiceChargesFromLedger::run($stockDelivery);
+            }
 
-        if ($type->isSupplierPayment()) {
-            SyncPurchaseOrderPaidFromAgentLedger::runForOrders($paidDatesBefore);
-        }
+            if ($type->isSupplierPayment()) {
+                SyncPurchaseOrderPaidFromAgentLedger::runForOrders($paidDatesBefore);
+            }
 
-        return $entry;
+            return $entry;
+        });
     }
 
     public function rules(): array
@@ -167,10 +172,11 @@ class StoreAgentLedgerEntry extends OrgAction
     /**
      * @param  array{organisation_id: int, type: string, date: string, amount: float|string}  $modelData
      */
-    public function action(Agent $agent, array $modelData): AgentPayment
+    public function action(Agent $agent, array $modelData, ?int $createdBy = null): AgentPayment
     {
-        $this->asAction = true;
-        $this->agent    = $agent;
+        $this->asAction  = true;
+        $this->agent     = $agent;
+        $this->createdBy = $createdBy;
         $this->initialisation($agent->organisation, $modelData);
 
         return $this->handle($agent, $this->validatedData);

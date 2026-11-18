@@ -4194,3 +4194,21 @@ test('the agent money requests page lists each open request\'s payers and copied
 
     actingAs($this->adminGuest->getUser());
 });
+
+test('an expense the agent adds while asking for money records who added it', function () {
+    $orgAgent = createFreshOrgAgent($this);
+    $agent    = $orgAgent->agent;
+    $client   = $orgAgent->organisation;
+    setPermissionsTeamId($this->group->id);
+    $agentUser = agentOrganisationAdmin($agent->organisation, 'w3-exp-'.Str::lower(Str::random(6)));
+    actingAs($agentUser);
+
+    $this->post(route('grp.models.agent.money_request_expense.store', $agent->id), ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'amount' => 12.5, 'notes' => 'Bank charge W3'])
+        ->assertSessionHasNoErrors();
+
+    $expense = \App\Models\SupplyChain\AgentPayment::where('agent_id', $agent->id)->where('notes', 'Bank charge W3')->sole();
+    expect($expense->created_by)->toBe($agentUser->id)
+        ->and($expense->type)->toBe(\App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum::OTHER_EXPENSE);
+
+    actingAs($this->adminGuest->getUser());
+});
