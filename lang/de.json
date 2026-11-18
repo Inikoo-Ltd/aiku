@@ -26826,5 +26826,8 @@
     "You edit it in :language below. Sent unchanged, the customer gets Aiku's original; changed, your reply is translated into their language before it is sent.": "Sie bearbeiten ihn unten auf :language. Unverändert gesendet erhält der Kunde das Original von Aiku; geändert wird Ihre Antwort vor dem Senden in seine Sprache übersetzt.",
     "The draft could not be translated for you to edit, so it is in the customer's language.": "Der Entwurf konnte nicht zum Bearbeiten übersetzt werden und ist daher in der Sprache des Kunden.",
     "That could not be saved": "Das konnte nicht gespeichert werden",
-    "The language of this customer is not known yet": "Die Sprache dieses Kunden ist noch nicht bekannt"
+    "The language of this customer is not known yet": "Die Sprache dieses Kunden ist noch nicht bekannt",
+    "What the customer gets if you send it unchanged": "Was der Kunde bekommt, wenn Sie ihn unverändert senden",
+    "Draft by Aiku in :mine: change what you need, it is sent in :theirs": "Entwurf von Aiku auf :mine: Ändern Sie, was nötig ist, gesendet wird er auf :theirs",
+    "the customer's language": "die Sprache des Kunden"
 }

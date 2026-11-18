@@ -24,7 +24,7 @@ const props = defineProps<{
     inline?: boolean
 }>()
 
-const emit = defineEmits<{ (e: "use", text: string, draftId?: number, translated?: boolean): void, (e: "discarded"): void, (e: "disposed"): void, (e: "loaded"): void, (e: "jump-to-message"): void }>()
+const emit = defineEmits<{ (e: "use", text: string, draftId?: number, translated?: { mine: string, theirs: string } | null): void, (e: "discarded"): void, (e: "disposed"): void, (e: "loaded"): void, (e: "jump-to-message"): void }>()
 
 interface DraftAction {
     index: number
@@ -263,13 +263,22 @@ const offerToEditor = async () => {
         await fetchTranslation()
         if (draft.value?.id !== draftId || hidden.value) return
         if (staffTranslation.value?.editable && staffTranslation.value.text) {
-            emit("use", staffTranslation.value.text, draftId, true)
+            emit("use", staffTranslation.value.text, draftId, {
+                mine: staffTranslation.value.language,
+                theirs: draft.value.customer_language ?? ctrans("the customer's language"),
+            })
             return
         }
         failure.value = ctrans("The draft could not be translated for you to edit, so it is in the customer's language.")
     }
 
-    emit("use", draft.value.text, draftId, false)
+    emit("use", draft.value.text, draftId, null)
+}
+
+const editSwitchPt = {
+    slider: ({ props }: { props: { modelValue: boolean } }) => ({
+        style: props.modelValue ? { background: "var(--app-accent)" } : undefined,
+    }),
 }
 
 const savingEditLanguage = ref(false)
@@ -436,7 +445,12 @@ onBeforeUnmount(stopListening)
                         </a>
                     </div>
                 </div>
-                <p v-if="inline && editsInMyLanguage && staffTranslation?.editable" class="mt-1 text-[11px] text-gray-500">{{ ctrans("You edit it in :language below. Sent unchanged, the customer gets Aiku's original; changed, your reply is translated into their language before it is sent.", { language: staffTranslation.language }) }}</p>
+                <template v-if="inline && editsInMyLanguage && staffTranslation?.editable">
+                    <p class="mt-1 text-[11px] text-gray-500">{{ ctrans("You edit it in :language below. Sent unchanged, the customer gets Aiku's original; changed, your reply is translated into their language before it is sent.", { language: staffTranslation.language }) }}</p>
+                    <p class="mt-1.5 text-[11px] font-medium text-gray-500">{{ ctrans("What the customer gets if you send it unchanged") }}</p>
+                    <p role="button" tabindex="0" :aria-expanded="draftOpen" class="cursor-pointer whitespace-pre-line text-gray-700" :class="draftOpen ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'"
+                        @click="toggleDraft" @keydown.enter.prevent="toggleDraft" @copy="copied">{{ draft.text }}</p>
+                </template>
                 <p v-else-if="draft.text && showTranslation && staffTranslation?.text" class="mt-1 text-[11px] text-gray-500">{{ ctrans("Translated into :language for you to read: the customer gets the original.", { language: staffTranslation.language }) }}</p>
                 <p v-if="!inline && draft.text" role="button" tabindex="0" :aria-expanded="draftOpen" :title="draftOpen ? undefined : draftText" class="mt-1 cursor-pointer whitespace-pre-line text-gray-800" :class="draftOpen ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'" @click="toggleDraft" @keydown.enter.prevent="toggleDraft" @copy="copied">{{ draftText }}</p>
                 <p v-else-if="inline && draft.text && showTranslation && staffTranslation?.text && !(editsInMyLanguage && staffTranslation.editable)" class="mt-1 max-h-48 overflow-y-auto whitespace-pre-line text-gray-800" @copy="copied">{{ staffTranslation.text }}</p>
@@ -462,10 +476,11 @@ onBeforeUnmount(stopListening)
                             <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
-                    <label v-if="inline && draft.translate_for_me && draft.text" class="flex cursor-pointer items-center gap-1.5 text-[11px] text-gray-600"
+                    <label v-if="inline && draft.translate_for_me && draft.text" class="flex cursor-pointer items-center gap-1.5 text-[11px]"
+                        :class="draft.edit_in_my_language ? 'font-medium text-[var(--app-accent)]' : 'text-gray-600'"
                         :title="draft.customer_language ? ctrans('Remembered for customers who write in :language, until you turn it off', { language: draft.customer_language }) : undefined">
                         <ToggleSwitch :model-value="!!draft.edit_in_my_language" :disabled="savingEditLanguage || translating"
-                            class="scale-75" @update:model-value="setEditInMyLanguage" />
+                            class="scale-75" :pt="editSwitchPt" @update:model-value="setEditInMyLanguage" />
                         {{ draft.my_language && draft.customer_language ? ctrans("Edit in :mine, send in :theirs", { mine: draft.my_language, theirs: draft.customer_language }) : ctrans("Edit in my language") }}
                     </label>
                     <span class="relative ml-auto flex items-center" :title="ctrans('How good is this draft?')">
