@@ -17,6 +17,7 @@ use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily;
+use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -473,9 +474,10 @@ test('every mobile dashboard tile equals the total of the list it opens', functi
             ->and($list->json("counts.$bucket"))->toBe($list->json('meta.total'));
     }
 
-    expect($data['inventory']['negative_stocks'])->toBe(2)
-        ->and(collect(getGoodsOut('grp.api.mobile.warehouses.org_stocks', $warehouseId, ['bucket' => 'negative'])->json('data'))->pluck('id')->sort()->values()->all())
-        ->toBe(collect([$twiceNegative->id, $onceNegative->id])->sort()->values()->all())
+    expect($data['inventory']['negative_stocks'])->toBe(3)
+        ->and($data['inventory']['negative_stocks'])->toBe(ShowInventoryDashboard::numberNegativeStocks($this->warehouse))
+        ->and(collect(getGoodsOut('grp.api.mobile.warehouses.org_stocks', $warehouseId, ['bucket' => 'negative'])->json('data'))->map(fn (array $row) => [$row['id'], $row['location_quantity']])->all())
+        ->toBe([[$twiceNegative->id, -3], [$onceNegative->id, -2], [$twiceNegative->id, -1]])
         ->and(getGoodsOut('grp.api.mobile.warehouses.org_stocks', $warehouseId, ['bucket' => 'below_minimum', 'q' => $belowMinimum->code])->json('data.*.id'))->toBe([$belowMinimum->id]);
 });
 
