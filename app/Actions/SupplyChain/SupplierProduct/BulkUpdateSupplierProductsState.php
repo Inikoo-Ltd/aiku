@@ -16,12 +16,15 @@ use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class BulkUpdateSupplierProductsState extends OrgAction
 {
     /**
+     * A blank reason keeps each product's own reason. All rows change or none do.
+     *
      * @param  array{supplier_products: array<int, int>, state: string, discontinued_reason?: string|null}  $modelData
      */
     public function handle(Group $group, array $modelData): int
@@ -35,12 +38,17 @@ class BulkUpdateSupplierProductsState extends OrgAction
                 ->orWhereRaw("data->>'".UpdateSupplierProduct::FOLLOWS_DISCONTINUING_SKOS_KEY."' is not null"))
             ->get();
 
-        foreach ($supplierProducts as $supplierProduct) {
-            UpdateSupplierProduct::make()->action($supplierProduct, [
-                'state'               => $state,
-                'discontinued_reason' => $modelData['discontinued_reason'] ?? null,
-            ]);
+        $reason     = trim((string) ($modelData['discontinued_reason'] ?? ''));
+        $updateData = ['state' => $state];
+        if ($reason !== '') {
+            $updateData['discontinued_reason'] = $reason;
         }
+
+        DB::transaction(function () use ($supplierProducts, $updateData) {
+            foreach ($supplierProducts as $supplierProduct) {
+                UpdateSupplierProduct::make()->action($supplierProduct, $updateData);
+            }
+        });
 
         return $supplierProducts->count();
     }
@@ -64,7 +72,7 @@ class BulkUpdateSupplierProductsState extends OrgAction
     public function rules(): array
     {
         return [
-            'supplier_products'   => ['required', 'array', 'min:1', 'max:500'],
+            'supplier_products'   => ['required', 'array', 'min:1', 'max:200'],
             'supplier_products.*' => ['integer', Rule::exists('supplier_products', 'id')->where('group_id', $this->group->id)],
             'state'               => ['required', Rule::enum(SupplierProductStateEnum::class)],
             'discontinued_reason' => ['sometimes', 'nullable', 'string', 'max:500'],

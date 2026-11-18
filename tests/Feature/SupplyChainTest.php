@@ -2596,3 +2596,29 @@ test('a supplier merged into another can not be unarchived and its page offers n
     $this->patch(route('grp.models.supplier.unarchive', $archived->id))->assertSessionHasNoErrors();
     expect($archived->refresh()->status)->toBeTrue();
 });
+
+test('bulk state change keeps each product discontinued reason when no reason is given, and takes at most 200 products', function () {
+    [, $supplierProduct] = supplyChainFixAgentSuppliers($this);
+    UpdateSupplierProduct::make()->action($supplierProduct, ['state' => SupplierProductStateEnum::DISCONTINUING, 'discontinued_reason' => 'Factory closed']);
+
+    \App\Actions\SupplyChain\SupplierProduct\BulkUpdateSupplierProductsState::make()->handle($this->group, [
+        'supplier_products'   => [$supplierProduct->id],
+        'state'               => SupplierProductStateEnum::DISCONTINUED->value,
+        'discontinued_reason' => null,
+    ]);
+    expect($supplierProduct->refresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUED)
+        ->and($supplierProduct->data['discontinued_reason'])->toBe('Factory closed');
+
+    \App\Actions\SupplyChain\SupplierProduct\BulkUpdateSupplierProductsState::make()->handle($this->group, [
+        'supplier_products'   => [$supplierProduct->id],
+        'state'               => SupplierProductStateEnum::DISCONTINUING->value,
+        'discontinued_reason' => 'Mould broken',
+    ]);
+    expect($supplierProduct->refresh()->data['discontinued_reason'])->toBe('Mould broken');
+
+    $this->patchJson(route('grp.models.supplier-products.state.update'), [
+        'supplier_products' => array_fill(0, 201, $supplierProduct->id),
+        'state'             => SupplierProductStateEnum::ACTIVE->value,
+    ])->assertJsonValidationErrors('supplier_products');
+    expect($supplierProduct->refresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUING);
+});
