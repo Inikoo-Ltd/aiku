@@ -219,7 +219,7 @@ struct ClockingLeaveRequestSheet: View {
                 InlineAlert(tone: .danger, title: "Can’t send this request", message: error.message)
             }
         } footer: {
-            AikuButton("Request leave", isLoading: isSending) {
+            AikuButton("Request leave", icon: .next, isLoading: isSending) {
                 isSending = true
                 Task {
                     switch await store.request(type: type, start: startText, end: endText, reason: reason, attachments: files) {
@@ -259,7 +259,7 @@ struct ClockingCertificateSheet: View {
                 InlineAlert(tone: .danger, title: "Couldn’t save the certificate", message: error.message)
             }
         } footer: {
-            AikuButton("Save certificate", isLoading: isSaving) {
+            AikuButton("Save certificate", icon: .next, isLoading: isSaving) {
                 isSaving = true
                 Task {
                     error = await store.replaceCertificate(of: leave, with: files)

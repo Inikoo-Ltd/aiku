@@ -46,11 +46,11 @@ struct ClockingQrPanel: View {
             }
             Button(action: onOpenCamera) {
                 HStack(spacing: 8) {
-                    AppIcon.camera.image.font(.system(size: 18))
+                    AppIcon.scan.image.font(.system(size: 18))
                     Text("Open camera").font(.aiku(16, .semibold))
                 }
             }
-            .buttonStyle(AikuButtonStyle(kind: .primary, size: .large))
+            .buttonStyle(AikuButtonStyle(kind: .scan, size: .large))
             .disabled(location != .found)
             .accessibilityIdentifier("clocking.openCamera")
             Text("Scan the QR code on the clocking machine. The machine decides where you clocked.")

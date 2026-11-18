@@ -148,7 +148,7 @@ struct LocationsDetailView: View {
                 LocationsActionButton(title: "Move some", icon: .locations) { sheet = .moveSome }
                     .disabled(!canMove)
                     .accessibilityIdentifier("locations.action.moveSome")
-                LocationsActionButton(title: "Remove SKOs", kind: .danger) { sheet = .remove }
+                LocationsActionButton(title: "Remove SKOs", icon: .trash, kind: .danger) { sheet = .remove }
                     .disabled(!canMove)
                     .accessibilityIdentifier("locations.action.remove")
             }

@@ -49,7 +49,7 @@ struct ClockingQrInvalidView: View {
             }
             .multilineTextAlignment(.leading)
         } actions: { back in
-            AikuButton("Open camera again") { back(.openCamera) }
+            AikuButton("Open camera again", icon: .next) { back(.openCamera) }
                 .accessibilityIdentifier("clocking.qrInvalid.camera")
             AikuButton("Back to clocking", kind: .tertiary) { back(nil) }
         }
@@ -81,7 +81,7 @@ struct ClockingLocationBlockedView: View {
         ) {
             EmptyView()
         } actions: { back in
-            AikuButton("Open camera anyway") { back(.chooseWorkplace) }
+            AikuButton("Open camera anyway", icon: .next) { back(.chooseWorkplace) }
                 .accessibilityIdentifier("clocking.location.cameraAnyway")
             AikuButton("Try again", kind: .tertiary) { back(.detectLocation) }
         }
@@ -103,7 +103,7 @@ struct ClockingNoPinView: View {
             }
             .multilineTextAlignment(.leading)
         } actions: { back in
-            AikuButton("Back to clocking") { back(nil) }
+            AikuButton("Back to clocking", icon: .next) { back(nil) }
                 .accessibilityIdentifier("clocking.noPin.back")
         }
     }
@@ -119,7 +119,7 @@ struct ClockingNoConnectionView: View {
         ) {
             EmptyView()
         } actions: { back in
-            AikuButton("Try again") { back(nil) }
+            AikuButton("Try again", icon: .next) { back(nil) }
                 .accessibilityIdentifier("clocking.offline.retry")
         }
     }

@@ -80,7 +80,7 @@ struct SystemSessionExpiredView: View {
                 message: Text("For security you were signed out after a long time without activity. Sign in again to continue. Nothing you saved is lost.")
             )
         } actions: {
-            AikuButton("Sign in again") { signOut() }
+            AikuButton("Sign in again", icon: .next) { signOut() }
                 .accessibilityIdentifier("system.session.signIn")
         }
     }
@@ -106,7 +106,7 @@ struct SystemNoAccessView: View {
                     .foregroundStyle(AikuColor.text4)
             }
         } actions: {
-            AikuButton("Back to Home") { router.select(.home) }
+            AikuButton("Back to Home", icon: .home) { router.select(.home) }
                 .accessibilityIdentifier("system.noAccess.home")
             AikuButton("Change warehouse", kind: .tertiary) { router.open(ShellRoute.profile) }
         }
@@ -184,7 +184,7 @@ struct SystemCameraOffView: View {
                 message: Text("Aiku needs the camera to scan barcodes. Turn it on in your phone settings, or use a scanner device instead.")
             )
         } actions: {
-            AikuButton("Open settings") {
+            AikuButton("Open settings", icon: .next) {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     openURL(url)
                 }
@@ -271,7 +271,7 @@ struct SystemEmptyTasksView: View {
                 spacing: 14
             )
         } actions: {
-            AikuButton("Back to delivery notes") { router.replace(with: GoodsOutRoute.deliveryNotes) }
+            AikuButton("Back to delivery notes", icon: .next) { router.replace(with: GoodsOutRoute.deliveryNotes) }
                 .accessibilityIdentifier("system.emptyTasks.deliveryNotes")
             AikuButton("Back to Home", kind: .tertiary) { router.select(.home) }
         }

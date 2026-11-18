@@ -27,7 +27,7 @@ struct LocationsRemoveSheet: View {
                 .background(AikuColor.dangerSoft, in: RoundedRectangle(cornerRadius: 10))
                 .accessibilityAddTraits(.isStaticText)
         } footer: {
-            AikuButton(selected.isEmpty ? "Remove SKOs" : "Remove \(LocationsFormat.skos(selected.count))", kind: .danger) {
+            AikuButton(selected.isEmpty ? "Remove SKOs" : "Remove \(LocationsFormat.skos(selected.count))", look: AikuButtonLook(.dangerStrong, icon: .trash)) {
                 onRemove(selected)
             }
             .disabled(selected.isEmpty)

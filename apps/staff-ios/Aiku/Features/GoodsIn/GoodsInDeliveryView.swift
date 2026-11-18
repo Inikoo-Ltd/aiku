@@ -216,7 +216,7 @@ struct GoodsInDeliveryView: View {
         if actions.contains(.unmarkAsDispatched) {
             SectionHeading("With procurement edit rights only")
             Card {
-                ListRow("Unmark as dispatched", subtitle: "Back to the state before dispatch", icon: .undo, iconTone: .neutral) {
+                ListRow("Unmark as dispatched", subtitle: "Back to the state before dispatch", icon: .undo, iconTone: GoodsInActionKey.stepBack.kind.tileTone) {
                     isConfirmingUnmarkDispatched = true
                 }
             }
@@ -224,7 +224,7 @@ struct GoodsInDeliveryView: View {
         if actions.contains(.unmarkAsReceived) {
             SectionHeading("Goods-in supervisor")
             Card {
-                ListRow("Unmark as received", subtitle: "Back to dispatched · needs incoming supervisor rights", icon: .undo, iconTone: .neutral) {
+                ListRow("Unmark as received", subtitle: "Back to dispatched · needs incoming supervisor rights", icon: .undo, iconTone: GoodsInActionKey.look(for: GoodsInActionKey.unreceive).kind.tileTone) {
                     isConfirmingUnmarkReceived = true
                 }
             }
@@ -280,14 +280,14 @@ struct GoodsInDeliveryView: View {
     private var footer: some View {
         switch delivery.state {
         case .arriving:
-            AikuButton("Mark as received", icon: .check) {
+            AikuButton("Mark as received", look: GoodsInActionKey.look(for: GoodsInActionKey.receive)) {
                 store.markAsReceived(reference)
                 toasts.show("\(reference) marked as received")
             }
             .accessibilityIdentifier("goodsIn.markAsReceived")
         case .bookingIn:
             if let item = delivery.nextItemToPlace {
-                AikuButton("Place \(item.sko)", icon: .locations) { openPlacement(item) }
+                AikuButton("Place \(item.sko)", look: GoodsInActionKey.look(for: GoodsInActionKey.place)) { openPlacement(item) }
                     .accessibilityIdentifier("goodsIn.placeNext")
             }
         case .bookedIn, .placed:
@@ -298,17 +298,17 @@ struct GoodsInDeliveryView: View {
                 HStack(spacing: 8) {
                     AikuButton("Fail", kind: .danger) { failingCheck = check }
                         .accessibilityIdentifier("goodsIn.check.fail")
-                    AikuButton("Pass") {
+                    AikuButton("Pass", kind: .finish) {
                         store.recordCheck(reference, checkID: check.id, passed: true, note: "", by: session.profile.name)
                         toasts.show("\(check.title) passed")
                     }
                     .accessibilityIdentifier("goodsIn.check.pass")
                 }
             } else if tab == .place, let item = delivery.nextItemToPlace {
-                AikuButton("Place \(item.sko)", icon: .locations) { openPlacement(item) }
+                AikuButton("Place \(item.sko)", look: GoodsInActionKey.look(for: GoodsInActionKey.place)) { openPlacement(item) }
                     .accessibilityIdentifier("goodsIn.placeNext")
             } else {
-                AikuButton("Place checked items", icon: .locations, kind: delivery.state == .checked ? .primary : .secondary) {
+                AikuButton("Place checked items", icon: GoodsInActionKey.look(for: GoodsInActionKey.place).icon, kind: delivery.state == .checked ? .primary : .secondary) {
                     store.startBookingIn(reference)
                     selectedTab = nil
                     toasts.show("Booking in \(reference)")

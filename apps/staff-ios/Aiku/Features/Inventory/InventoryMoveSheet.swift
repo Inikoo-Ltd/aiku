@@ -67,7 +67,7 @@ struct InventoryMoveSheet: View {
                 FieldError(error)
             }
         } footer: {
-            AikuButton(isSaving ? "Moving…" : "Move \(quantity)") {
+            AikuButton(isSaving ? "Moving…" : "Move \(quantity)", icon: .next) {
                 save()
             }
             .disabled(!canSave || isSaving)

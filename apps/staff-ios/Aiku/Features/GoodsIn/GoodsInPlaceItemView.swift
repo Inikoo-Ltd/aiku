@@ -23,9 +23,9 @@ struct GoodsInPlaceItemView: View {
                     content
                 } footer: {
                     HStack(spacing: 8) {
-                        AikuButton("Place all", kind: .secondary) { place(item.leftToPlace) }
+                        AikuButton("Place all", icon: .checkDouble, kind: .secondary) { place(item.leftToPlace) }
                             .accessibilityIdentifier("goodsIn.place.all")
-                        AikuButton(location.map { "Place \(item.text(amount)) in \($0)" } ?? "Choose a location") { place(amount) }
+                        AikuButton(location.map { "Place \(item.text(amount)) in \($0)" } ?? "Choose a location", look: GoodsInActionKey.look(for: GoodsInActionKey.place)) { place(amount) }
                             .disabled(location == nil || amount == 0)
                             .accessibilityIdentifier("goodsIn.place.confirm")
                     }
@@ -135,7 +135,7 @@ struct GoodsInPlaceNewItemView: View {
                 AppScreen(title: "Place \(item.sko)", kicker: "\(reference) · Booking in") {
                     content
                 } footer: {
-                    AikuButton(location.map { "Place \(item.text(item.leftToPlace)) in \($0.code)" } ?? "Scan a location first") { place() }
+                    AikuButton(location.map { "Place \(item.text(item.leftToPlace)) in \($0.code)" } ?? "Scan a location first", look: GoodsInActionKey.look(for: GoodsInActionKey.place)) { place() }
                         .disabled(location == nil)
                         .accessibilityIdentifier("goodsIn.placeNew.confirm")
                 }

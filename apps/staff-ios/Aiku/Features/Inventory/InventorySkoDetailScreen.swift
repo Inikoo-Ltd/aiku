@@ -271,7 +271,7 @@ private struct InventorySkoDetailView: View {
                 actionButton("Internal consumption", icon: .sko, sheet: .consume, isEnabled: sko.canConsume)
                 actionButton("Add location", icon: .locations, sheet: .addLocation, isEnabled: true)
             }
-            AikuButton("Remove locations", kind: .danger) {
+            AikuButton("Remove locations", look: AikuButtonLook(.danger, icon: .trash)) {
                 activeSheet = .removeLocations
             }
             .disabled(sko.locations.isEmpty)

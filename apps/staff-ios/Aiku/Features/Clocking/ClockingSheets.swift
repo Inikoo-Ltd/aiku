@@ -57,7 +57,7 @@ struct ClockingWorkplaceSheet: View {
             }
             HStack(spacing: 10) {
                 AikuButton("Cancel", kind: .tertiary, size: .regular, action: onCancel)
-                AikuButton("Confirm", size: .regular) {
+                AikuButton("Confirm", icon: .check, size: .regular) {
                     onConfirm(usesShift ? .shift(shiftName) : .standard)
                 }
                 .accessibilityIdentifier("clocking.workplace.confirm")
@@ -140,7 +140,7 @@ struct ClockingAdjustmentSheet: View {
                 InlineAlert(tone: .danger, title: "Can’t send this request", message: error.message)
             }
         } footer: {
-            AikuButton("Submit request", isLoading: isSending) {
+            AikuButton("Submit request", icon: .next, isLoading: isSending) {
                 isSending = true
                 Task {
                     switch await store.requestAdjustment(date: dateText, start: startText, end: endText, reason: reason, attachments: files) {

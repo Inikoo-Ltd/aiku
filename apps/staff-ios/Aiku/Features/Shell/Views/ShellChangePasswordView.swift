@@ -25,7 +25,7 @@ struct ShellChangePasswordView: View {
             PasswordInput("Confirm new password", text: $confirmation, error: error.field(PasswordField.confirmation), contentType: .newPassword)
                 .accessibilityIdentifier("password.confirm")
         } footer: {
-            AikuButton(isSaving ? "Changing…" : "Change password", isLoading: isSaving) {
+            AikuButton(isSaving ? "Changing…" : "Change password", icon: .check, isLoading: isSaving) {
                 save()
             }
             .accessibilityIdentifier("password.save")

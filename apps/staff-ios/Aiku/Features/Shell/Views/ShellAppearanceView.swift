@@ -158,7 +158,7 @@ struct ShellAppearanceView: View {
                     HStack(spacing: 10) {
                         Text("Enter quantity")
                             .font(.aiku(14, .semibold))
-                            .foregroundStyle(AikuColor.ink)
+                            .foregroundStyle(AikuColor.softInk)
                             .frame(maxWidth: .infinity, minHeight: 44)
                             .background(AikuColor.soft, in: RoundedRectangle(cornerRadius: 6))
                             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(AikuColor.softBd))
