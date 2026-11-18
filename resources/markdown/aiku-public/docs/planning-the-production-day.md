@@ -72,6 +72,22 @@ Until one of the two is pressed, the job stays in front of you every day. Its st
 
 When an operator closes a job short and moves the rest to a new job (see [Working the floor screen](/docs/working-the-floor-screen)), the new job keeps the planned day, the place in the order and the operator of each step.
 
+## Asking the warehouse for materials
+
+Whenever the factory needs something from the warehouse, anyone working in production asks for it at the top of **Factory → Operations → Materials check**, under **Ask the warehouse**. Each line is:
+
+| Field | What to put |
+| --- | --- |
+| SKO | type the code or the name; the list shows how many SKOs the warehouse and the factory hold |
+| Quantity and unit | how you would say it to the warehouse: *3 Boxes*, *1 Pallet*, *80 Bags*, *2 SKOs*, or *All there is* |
+| Drop point | where in the factory to leave it (*Storage room*, *Clean room*, *Bath bomb area*...) |
+| Urgent | the warehouse sees urgent lines first |
+| Note | anything the warehouse should know (*250ml*, *outside on pallets please*) |
+
+**Add line** asks for several things at once, and **Send to warehouse** sends them. **Asked this week** below shows every request with who asked and when, and for each line whether it is *To bring*, *Delivered* (how many SKOs, by whom, when) or *Can't bring* with the warehouse's reason.
+
+The manager and the supervisor keep the list of drop points with the **Drop points** button: add, rename, move up and down, or delete. A deleted drop point keeps its name on the requests already sent there.
+
 ## The morning materials check
 
 The warehouse brings materials to the factory in whole boxes, not in exact amounts for the day. **Factory → Operations → Materials check** lists what the day plan still needs, so the factory checks what is there and asks the warehouse for the rest in one clear list.
@@ -88,13 +104,15 @@ Each line is one material, added up over every job of the day, with the jobs tha
 
 When a missing number is typed, the line shows what the warehouse will bring, rounded up to its boxes: 1,200 missing with 500 to a box is *bring 3 boxes (1,500)*. A red *Warehouse short* means the warehouse does not hold that many, so you know straight away.
 
-Press **Send to warehouse**. The missing lines go to the warehouse as one request, and the request appears above the list with each material marked *To bring*, *Delivered* or *Warehouse short*. Ticking everything as enough and sending records that the check was done. A second check later in the day only adds what is still missing.
+Press **Send to warehouse**. The missing lines go to the warehouse as one request, and the request appears under **Asked this week** with each material marked *To bring*, *Delivered* or *Can't bring*. Ticking everything as enough and sending records that the check was done. A second check later in the day only adds what is still missing.
 
 The manager or the supervisor does the check, or gives it to an operator with **Checked by** at the top. That operator then sees a reminder on the floor screen that opens the check.
 
 ## The warehouse brings the materials
 
-In the warehouse, **Goods out → For production** lists every material the factory asked for, in walking order of the shelf to take it from, with the stock code, the boxes to bring and the factory location they go to. The picker chooses the shelf, checks the quantity and presses **Delivered**. When the warehouse cannot bring it, **Warehouse short** tells the factory.
+In the warehouse, the **For production** card under **Action needed** on **Inventory** shows how many lines the factory is waiting for, with the urgent ones on the small badge. It opens **Inventory → For production**: every line still to bring, urgent first and then oldest, with what was asked, the drop point, who asked and when, the note, and the shelf to take it from. The picker chooses the shelf, types the SKOs brought and presses **Delivered**. When the warehouse cannot bring it, **Can't bring** asks why (*out of stock*, *ordered from supplier*) and tells the factory. **Done** lists what was brought or refused, with how long it took.
+
+If Aiku shows fewer SKOs on the shelf than were brought, the delivery still goes through: what Aiku had moves to the factory, and the rest is marked as *not in Aiku, count it*, so the SKO gets counted.
 
 Delivered stock moves from the shelf to the factory location. It stays stock: it is counted and seen as before, and a customer order can still pick it there when the warehouse shelves are empty, the shelves always first. Materials not used can be moved back to a shelf from the factory location's page, like any other move between locations.
 
@@ -107,9 +125,11 @@ When a finished job is received into stock, its materials are used up from the f
 <li><b>Change the order of the day:</b> type a number in <b>Order</b>.</li>
 <li><b>Yesterday's unfinished job:</b> <b>Confirm for</b> the day, or <b>Take off the plan</b>.</li>
 <li><b>From the board to the plan:</b> the <b>Day plan</b> link above the board.</li>
+<li><b>Ask the warehouse for something:</b> <b>Factory</b> → <b>Operations</b> → <b>Materials check</b> → <b>Ask the warehouse</b> → <b>Send to warehouse</b>.</li>
+<li><b>Change the drop points:</b> <b>Materials check</b> → <b>Drop points</b>.</li>
 <li><b>Check the day's materials:</b> <b>Factory</b> → <b>Operations</b> → <b>Materials check</b> → <b>Have enough</b> or a missing number → <b>Send to warehouse</b>.</li>
 <li><b>Give the check to an operator:</b> <b>Materials check</b> → <b>Checked by</b>.</li>
-<li><b>Bring the materials (warehouse):</b> <b>Goods out</b> → <b>For production</b> → <b>Delivered</b>, or <b>Warehouse short</b>.</li>
+<li><b>Bring the materials (warehouse):</b> <b>Inventory</b> → <b>For production</b> → <b>Delivered</b>, or <b>Can't bring</b>.</li>
 </ul>
 </aside>
 
@@ -119,7 +139,8 @@ When a finished job is received into stock, its materials are used up from the f
 <li>Planning a day, giving out steps, changing the order: <b>Floor supervisor</b> for the factory.</li>
 <li>Seeing the Day plan without changing it: <b>Foreman</b>.</li>
 <li>Working a step given to you: <b>Operative</b>, on the floor screen.</li>
-<li>The materials check: <b>Floor supervisor</b>, or the operator it was given to.</li>
-<li>Bringing materials to the factory: a warehouse position that works on goods out.</li>
+<li>Asking the warehouse for materials: anyone who sees the factory's Operations.</li>
+<li>The materials check and the drop points: <b>Floor supervisor</b>; the check also by the operator it was given to.</li>
+<li>Bringing materials to the factory: a warehouse position that works in the warehouse.</li>
 </ul>
 </aside>

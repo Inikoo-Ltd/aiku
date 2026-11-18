@@ -8,6 +8,7 @@ export interface ActionGaugeTS {
     percentage: number
     total: number
     color: string
+    ring_tooltip?: string
     route: routeType
     secondary?: {
         tooltip: string

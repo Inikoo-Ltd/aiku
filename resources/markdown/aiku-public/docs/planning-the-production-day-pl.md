@@ -72,6 +72,22 @@ Dopóki nie zostanie naciśnięte jedno z dwóch, zadanie zostaje przed Tobą ka
 
 Gdy pracownik zamyka zadanie z mniejszą ilością i przenosi resztę do nowego zadania (zobacz [Praca z ekranem hali](/docs/working-the-floor-screen-pl)), nowe zadanie zachowuje zaplanowany dzień, miejsce w kolejności i pracownika każdego kroku.
 
+## Prośba do magazynu o materiały
+
+Kiedy fabryka czegoś potrzebuje z magazynu, każdy pracujący w produkcji prosi o to u góry **Factory → Operations → Materials check** (Fabryka → Operacje → Kontrola materiałów), pod **Ask the warehouse** (Poproś magazyn). Każdy wiersz to:
+
+| Pole | Co wpisać |
+| --- | --- |
+| SKO | wpisz kod lub nazwę; lista pokazuje, ile SKO ma magazyn i fabryka |
+| Quantity and unit (Ilość i jednostka) | tak, jak powiedziałbyś to magazynowi: *3 Boxes*, *1 Pallet*, *80 Bags*, *2 SKOs* albo *All there is* |
+| Drop point (Miejsce rozładunku) | gdzie w fabryce to zostawić (*Storage room*, *Clean room*, *Bath bomb area*...) |
+| Urgent (Pilne) | magazyn widzi pilne wiersze jako pierwsze |
+| Note (Notatka) | wszystko, co magazyn powinien wiedzieć (*250ml*, *proszę na zewnątrz na paletach*) |
+
+**Add line** (Dodaj wiersz) prosi o kilka rzeczy naraz, a **Send to warehouse** (Wyślij do magazynu) je wysyła. **Asked this week** (Zamówione w tym tygodniu) poniżej pokazuje każdą prośbę z tym, kto ją zgłosił i kiedy, a dla każdego wiersza, czy jest *To bring* (Do przywiezienia), *Delivered* (Dostarczono; ile SKO, kto, kiedy) czy *Can't bring* (Nie można przywieźć) z powodem podanym przez magazyn.
+
+Kierownik produkcji i kierownik hali prowadzą listę miejsc rozładunku przyciskiem **Drop points** (Miejsca rozładunku): dodają, zmieniają nazwy, przesuwają w górę i w dół albo usuwają. Usunięte miejsce rozładunku zachowuje swoją nazwę przy prośbach, które już tam wysłano.
+
 ## Poranna kontrola materiałów
 
 Magazyn dowozi materiały do fabryki w całych kartonach, a nie w dokładnych ilościach na dany dzień. **Factory → Operations → Materials check** (Fabryka → Operacje → Kontrola materiałów) pokazuje, czego plan dnia jeszcze potrzebuje, żeby fabryka sprawdziła, co ma, i poprosiła magazyn o resztę jedną czytelną listą.
@@ -88,13 +104,15 @@ Każdy wiersz to jeden materiał, zsumowany po wszystkich zadaniach dnia, razem 
 
 Gdy wpiszesz brakującą ilość, wiersz pokazuje, ile przywiezie magazyn, zaokrąglone w górę do jego kartonów: brakuje 1 200 przy 500 w kartonie to *bring 3 boxes (1 500)* (przywieź 3 kartony). Czerwone *Warehouse short* (Brak w magazynie) oznacza, że magazyn nie ma tyle na stanie, więc wiadomo to od razu.
 
-Naciśnij **Send to warehouse** (Wyślij do magazynu). Brakujące wiersze trafiają do magazynu jako jedno zamówienie, a ono pojawia się nad listą, z każdym materiałem oznaczonym jako *To bring* (Do przywiezienia), *Delivered* (Dostarczono) lub *Warehouse short*. Zaznaczenie wszystkiego jako wystarczające i wysłanie zapisuje, że kontrola została wykonana. Kolejna kontrola później w ciągu dnia dodaje tylko to, czego nadal brakuje.
+Naciśnij **Send to warehouse** (Wyślij do magazynu). Brakujące wiersze trafiają do magazynu jako jedno zamówienie, a ono pojawia się pod **Asked this week**, z każdym materiałem oznaczonym jako *To bring* (Do przywiezienia), *Delivered* (Dostarczono) lub *Can't bring*. Zaznaczenie wszystkiego jako wystarczające i wysłanie zapisuje, że kontrola została wykonana. Kolejna kontrola później w ciągu dnia dodaje tylko to, czego nadal brakuje.
 
 Kontrolę wykonuje kierownik produkcji albo kierownik hali, albo przekazuje ją pracownikowi przez **Checked by** (Sprawdza) u góry. Ten pracownik widzi wtedy na ekranie hali przypomnienie, które otwiera kontrolę.
 
 ## Magazyn dowozi materiały
 
-W magazynie **Goods out → For production** (Wydania → Dla produkcji) pokazuje każdy materiał, o który poprosiła fabryka, w kolejności obchodu regałów, z których trzeba go zabrać, z kodem towaru, liczbą kartonów do przywiezienia i lokalizacją w fabryce, do której trafiają. Kompletujący wybiera regał, sprawdza ilość i naciska **Delivered**. Gdy magazyn nie może dowieźć, **Warehouse short** informuje o tym fabrykę.
+W magazynie karta **For production** (Dla produkcji) pod **Action needed** (Wymaga działania) w **Inventory** (Zapasy) pokazuje, na ile wierszy czeka fabryka, a pilne na małej plakietce. Otwiera **Inventory → For production**: każdy wiersz, który jeszcze trzeba przywieźć, najpierw pilne, potem najstarsze, z tym, o co poproszono, miejscem rozładunku, kto prosił i kiedy, notatką i regałem, z którego trzeba wziąć. Kompletujący wybiera regał, wpisuje przywiezione SKO i naciska **Delivered**. Gdy magazyn nie może dowieźć, **Can't bring** pyta o powód (*out of stock*, *ordered from supplier*) i informuje fabrykę. **Done** (Zrobione) pokazuje to, co przywieziono lub odmówiono, wraz z czasem realizacji.
+
+Jeśli Aiku pokazuje na regale mniej SKO, niż przywieziono, dostawa i tak przechodzi: to, co Aiku miało, trafia do fabryki, a reszta jest oznaczona jako *not in Aiku, count it* (nie ma w Aiku, policz), żeby SKO zostało przeliczone.
 
 Dostarczony towar przechodzi z regału do lokalizacji fabryki. Nadal jest zapasem: jest liczony i widoczny jak dotąd, a zamówienie klienta może go tam jeszcze skompletować, gdy regały w magazynie są puste, przy czym regały zawsze mają pierwszeństwo. Niewykorzystane materiały można przenieść z powrotem na regał ze strony lokalizacji fabryki, jak każde inne przeniesienie między lokalizacjami.
 
@@ -107,9 +125,11 @@ Gdy gotowe zadanie jest przyjmowane na stan, jego materiały są zużywane najpi
 <li><b>Zmień kolejność dnia:</b> wpisz numer w <b>Order</b>.</li>
 <li><b>Wczorajsze niezakończone zadanie:</b> <b>Confirm for</b> dzień, albo <b>Take off the plan</b>.</li>
 <li><b>Z tablicy do planu:</b> link <b>Day plan</b> nad tablicą.</li>
+<li><b>Poproś magazyn o coś:</b> <b>Factory</b> → <b>Operations</b> → <b>Materials check</b> → <b>Ask the warehouse</b> → <b>Send to warehouse</b>.</li>
+<li><b>Zmień miejsca rozładunku:</b> <b>Materials check</b> → <b>Drop points</b>.</li>
 <li><b>Sprawdź materiały na dzień:</b> <b>Factory</b> → <b>Operations</b> → <b>Materials check</b> → <b>Have enough</b> albo brakująca ilość → <b>Send to warehouse</b>.</li>
 <li><b>Przekaż kontrolę pracownikowi:</b> <b>Materials check</b> → <b>Checked by</b>.</li>
-<li><b>Dowiezienie materiałów (magazyn):</b> <b>Goods out</b> → <b>For production</b> → <b>Delivered</b> albo <b>Warehouse short</b>.</li>
+<li><b>Dowiezienie materiałów (magazyn):</b> <b>Inventory</b> → <b>For production</b> → <b>Delivered</b> albo <b>Can't bring</b>.</li>
 </ul>
 </aside>
 
@@ -119,7 +139,8 @@ Gdy gotowe zadanie jest przyjmowane na stan, jego materiały są zużywane najpi
 <li>Planowanie dnia, przydzielanie kroków, zmiana kolejności: <b>Floor supervisor</b> dla fabryki.</li>
 <li>Podgląd Day plan bez zmian: <b>Foreman</b>.</li>
 <li>Praca nad przydzielonym krokiem: <b>Operative</b>, na ekranie hali.</li>
-<li>Kontrola materiałów: <b>Floor supervisor</b> albo pracownik, któremu ją przekazano.</li>
-<li>Dowożenie materiałów do fabryki: stanowisko w magazynie, które obsługuje wydania.</li>
+<li>Prośba do magazynu o materiały: każdy, kto widzi Operations fabryki.</li>
+<li>Kontrola materiałów i miejsca rozładunku: <b>Floor supervisor</b>; kontrolę także pracownik, któremu ją przekazano.</li>
+<li>Dowożenie materiałów do fabryki: stanowisko w magazynie, które pracuje w magazynie.</li>
 </ul>
 </aside>
