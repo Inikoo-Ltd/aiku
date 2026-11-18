@@ -4136,3 +4136,28 @@ test('an agent order is balance paid by the ledger only with supplier payments i
     \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line->refresh(), ['quantity_ordered' => 10]);
     expect($order->refresh()->balance_paid_at?->toDateString())->toBe(date('Y-m-d'));
 });
+
+test('only users of the client who see its procurement and are not the agent\'s staff can be set to approve and pay the agent\'s money requests', function () {
+    $orgAgent = createFreshOrgAgent($this);
+    $client   = $orgAgent->organisation;
+    setPermissionsTeamId($this->group->id);
+
+    $clientUser = agentOrganisationAdmin($client, 'w3-pay-c-'.Str::lower(Str::random(6)));
+    $agentStaff = agentOrganisationAdmin($orgAgent->agent->organisation, 'w3-pay-a-'.Str::lower(Str::random(6)));
+    $agentStaff->givePermissionTo("procurement.$client->id.view");
+    expect($agentStaff->refresh()->authTo("procurement.$client->id.view"))->toBeTrue();
+
+    $candidateIds = \App\Actions\Procurement\OrgAgent\UpdateOrgAgent::moneyRequestPayerCandidates($orgAgent)->pluck('users.id')->all();
+    expect($candidateIds)->toContain($clientUser->id)
+        ->not->toContain($agentStaff->id);
+
+    expect(fn () => \App\Actions\Procurement\OrgAgent\UpdateOrgAgent::make()->action($orgAgent, ['money_request_payer_user_ids' => [$clientUser->id, $agentStaff->id]]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect($orgAgent->refresh()->moneyRequestPayerIds())->toBe([]);
+
+    \App\Actions\Procurement\OrgAgent\UpdateOrgAgent::make()->action($orgAgent, ['money_request_payer_user_ids' => [$clientUser->id]]);
+    expect($orgAgent->refresh()->moneyRequestPayerIds())->toBe([$clientUser->id]);
+
+    $page = json_encode($this->withoutVite()->get(route('grp.org.procurement.org_agents.show.edit', [$client->slug, $orgAgent->slug]))->assertOk()->viewData('page')['props']);
+    expect(str_contains($page, '"money_request_payer_user_ids"'))->toBeTrue();
+});
