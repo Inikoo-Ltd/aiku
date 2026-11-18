@@ -242,6 +242,45 @@ class InventoryResponsesTest {
     }
 
     @Test
+    fun `a negative stock row reads its location and that location's quantity`() {
+        val body = """{"data":[
+            {"id":77,"code":"AWO-12","name":"Lavender","state":"active","quantity_available":10,"number_locations":2,
+             "location_org_stock_id":5501,"location":{"id":220,"code":"A-03-02"},"location_quantity":"-4"},
+            {"id":77,"code":"AWO-12","name":"Lavender","state":"active","quantity_available":10,"number_locations":2,
+             "location_org_stock_id":5502,"location":{"id":221,"code":"B-01-01"},"location_quantity":-0.5}],
+            "meta":{"current_page":1,"last_page":1,"per_page":50,"total":2},"counts":{"current":2345,"discontinued":120,"abnormality":3,"all":2468,"negative":2}}"""
+
+        val page = (InventoryResponses.parseOrgStocks(200, body) as GoodsOutResult.Loaded).value
+        val (first, second) = page.rows
+
+        assertEquals(5501L, first.locationOrgStockId)
+        assertEquals(PlaceRef(id = 220, code = "A-03-02"), first.location)
+        assertEquals(-4.0, first.locationQuantity!!, 0.0)
+        assertEquals(5502L, second.locationOrgStockId)
+        assertEquals(PlaceRef(id = 221, code = "B-01-01"), second.location)
+        assertEquals(-0.5, second.locationQuantity!!, 0.0)
+        assertEquals(2, page.meta.total)
+        assertEquals(2, page.counts?.count(SkoBucket.Negative))
+    }
+
+    @Test
+    fun `an SKO row without a location, or with null location keys, reads none`() {
+        val body = """{"data":[
+            {"id":77,"code":"AWO-12","name":"Lavender","quantity_available":10},
+            {"id":78,"code":"AWO-13","name":"Rose","quantity_available":3,"location_org_stock_id":null,"location":null,"location_quantity":null}],
+            "meta":{"current_page":1,"last_page":1,"per_page":50,"total":2}}"""
+
+        val rows = (InventoryResponses.parseOrgStocks(200, body) as GoodsOutResult.Loaded).value.rows
+
+        rows.forEach { row ->
+            assertNull(row.locationOrgStockId)
+            assertNull(row.location)
+            assertNull(row.locationQuantity)
+        }
+        assertEquals(listOf(77L, 78L), rows.map { it.id })
+    }
+
+    @Test
     fun `the SKO list reads the below minimum and negative counts`() {
         val body = """{"data":[],"meta":{"current_page":1,"last_page":1,"per_page":50,"total":17},
             "counts":{"current":2345,"discontinued":120,"abnormality":3,"below_minimum":17,"negative":"5","all":2468}}"""
