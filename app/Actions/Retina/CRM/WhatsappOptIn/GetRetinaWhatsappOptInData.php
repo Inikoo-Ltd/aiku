@@ -39,19 +39,25 @@ class GetRetinaWhatsappOptInData
             return null;
         }
 
-        if ($dismissible && $comms->whatsapp_newsletter_opt_in_dismissed_at && !$comms->is_subscribed_to_whatsapp_newsletter) {
+        $isSubscribedToNewsletter      = (bool)$comms->is_subscribed_to_whatsapp_newsletter;
+        $isSubscribedToNotifications   = (bool)$comms->is_subscribed_to_whatsapp_notifications;
+
+        if ($dismissible && $comms->whatsapp_newsletter_opt_in_dismissed_at && !$isSubscribedToNewsletter && !$isSubscribedToNotifications) {
             return null;
         }
 
         $knownWhatsappPhone = $this->getKnownWhatsappPhone($customer);
 
         return [
-            'anchor_id'            => MailshotReadyMadeLinkEnum::WHATSAPP_OPT_IN->anchor(),
-            'is_subscribed'        => (bool)$comms->is_subscribed_to_whatsapp_newsletter,
+            'anchor_id'                       => MailshotReadyMadeLinkEnum::WHATSAPP_OPT_IN->anchor(),
+            'is_subscribed'                   => $isSubscribedToNewsletter || $isSubscribedToNotifications,
+            'is_subscribed_to_newsletter'     => $isSubscribedToNewsletter,
+            'is_subscribed_to_notifications'  => $isSubscribedToNotifications,
             'whatsapp_phone'       => $knownWhatsappPhone,
             'suggested_phone'      => $knownWhatsappPhone ? null : $this->getSuggestedPhone($customer->phone),
             'default_country'      => $customer->address?->country_code,
             'consent_text'         => SubscribeRetinaCustomerToWhatsappNewsletter::consentText($customer),
+            'notifications_consent_text' => SubscribeRetinaCustomerToWhatsappNewsletter::notificationsConsentText($customer),
             'privacy_policy_url'   => $website->getPrivacyPolicyUrl(),
             'subscribe_route'      => [
                 'name'       => 'retina.models.whatsapp_newsletter.subscribe',

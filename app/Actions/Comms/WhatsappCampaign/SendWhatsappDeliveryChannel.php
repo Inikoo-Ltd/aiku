@@ -185,6 +185,15 @@ class SendWhatsappDeliveryChannel
             return;
         }
 
+        if ($this->isWhatsappSendHeldLocally('newsletter', [
+            'whatsapp_campaign_id'  => $campaign->id,
+            'whatsapp_recipient_id' => $recipient->id,
+            'template'              => $template->name,
+            'message_text'          => $messageText,
+        ])) {
+            return;
+        }
+
         $send = fn () => Http::withToken($accessToken)->post(
             $this->whatsappEndpoint($phoneNumberId.'/marketing_messages'),
             $built['payload'] + ['recipient_type' => 'individual']
@@ -355,7 +364,7 @@ class SendWhatsappDeliveryChannel
             return 0;
         }
 
-        foreach (WhatsappDeliveryChannel::where('state', WhatsappDeliveryChannelStateEnum::READY)->get() as $channel) {
+        foreach (WhatsappDeliveryChannel::where('state', WhatsappDeliveryChannelStateEnum::READY)->whereNotNull('whatsapp_campaign_id')->get() as $channel) {
             SendWhatsappDeliveryChannel::dispatch($channel->id);
         }
 

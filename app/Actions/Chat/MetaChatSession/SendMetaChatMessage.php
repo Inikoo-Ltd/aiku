@@ -179,6 +179,14 @@ class SendMetaChatMessage
             ];
         }
 
+        if ($template?->isUsedByWhatsappOutbox()) {
+            return [
+                'ok'      => false,
+                'message' => __('This template is used by a WhatsApp customer notification and cannot be sent from a chat.'),
+                'code'    => 422,
+            ];
+        }
+
         if (!$templateName && !$metaChatSession->can_send_non_template_message) {
             return [
                 'ok'      => false,
@@ -265,6 +273,19 @@ class SendMetaChatMessage
 
         if ($repliedTo) {
             $payload['context'] = ['message_id' => $repliedTo->meta_message_id];
+        }
+
+        if ($this->isWhatsappSendHeldLocally('chat message', [
+            'meta_chat_session_id' => $metaChatSession->id,
+            'agent_id'             => $agent->id,
+            'type'                 => $payload['type'] ?? null,
+            'message_text'         => $messageText,
+        ])) {
+            return [
+                'ok'      => false,
+                'message' => __('WhatsApp messages are not sent from a local environment.'),
+                'code'    => 422,
+            ];
         }
 
         $response = Http::withToken($accessToken)->post(

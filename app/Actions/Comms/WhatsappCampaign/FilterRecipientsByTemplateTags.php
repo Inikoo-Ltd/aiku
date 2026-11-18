@@ -88,6 +88,8 @@ class FilterRecipientsByTemplateTags
             WhatsappTemplateTagEnum::CUSTOMER_REFERENCE     => $this->requireCustomerColumn($recipients, 'reference'),
             WhatsappTemplateTagEnum::CUSTOMER_REGISTER_DATE => $this->requireCustomerColumn($recipients, 'created_at'),
             WhatsappTemplateTagEnum::CUSTOMER_BALANCE       => $this->requireCustomerColumn($recipients, 'balance'),
+            WhatsappTemplateTagEnum::CUSTOMER_LAST_INVOICE_DATE,
+            WhatsappTemplateTagEnum::GOLD_REWARD_DEADLINE   => $this->requireCustomerColumn($recipients, 'last_invoiced_at'),
 
             /* State and item count are non null on any order row, so the order existing is
                the whole requirement. */
@@ -112,7 +114,29 @@ class FilterRecipientsByTemplateTags
             /* Resolved from the agent handling a conversation. A campaign send has no agent,
                so these are missing for every recipient and the template can reach nobody. */
             WhatsappTemplateTagEnum::AGENT_NAME,
-            WhatsappTemplateTagEnum::AGENT_FIRST_NAME => $recipients->whereRaw('1 = 0'),
+            WhatsappTemplateTagEnum::AGENT_FIRST_NAME,
+            WhatsappTemplateTagEnum::TRACKING_CARRIER,
+            WhatsappTemplateTagEnum::TRACKING_NUMBER,
+            WhatsappTemplateTagEnum::TRACKING_URL,
+            WhatsappTemplateTagEnum::TRACKING_PARCELS,
+            WhatsappTemplateTagEnum::TRACKING_PAGE_URL,
+            WhatsappTemplateTagEnum::PRODUCT_NAMES,
+            WhatsappTemplateTagEnum::PRODUCT_NAMES_WITH_LINKS,
+            WhatsappTemplateTagEnum::PRODUCT_COUNT,
+            WhatsappTemplateTagEnum::PRODUCT_URL,
+            WhatsappTemplateTagEnum::SHOP_BANK_DETAILS,
+            WhatsappTemplateTagEnum::ORDER_TIME,
+            WhatsappTemplateTagEnum::ORDER_URL,
+            WhatsappTemplateTagEnum::ORDER_AMOUNT_DUE,
+            WhatsappTemplateTagEnum::ORDER_PAYMENT_DEADLINE,
+            WhatsappTemplateTagEnum::ORDER_DISPATCH_DATE,
+            WhatsappTemplateTagEnum::ORDER_REVIEW_URL,
+            WhatsappTemplateTagEnum::PRE_ORDER_UPDATE,
+            WhatsappTemplateTagEnum::PRE_ORDER_BALANCE_DUE_DATE,
+            WhatsappTemplateTagEnum::PRE_ORDER_DISPATCH_DATES,
+            WhatsappTemplateTagEnum::CREDIT_AMOUNT,
+            WhatsappTemplateTagEnum::CREDIT_REASON,
+            WhatsappTemplateTagEnum::CHAT_URL => $recipients->whereRaw('1 = 0'),
         };
     }
 

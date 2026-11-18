@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\PreOrder;
 
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\Comms\Email\SendPreOrderUpdateEmail;
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Models\Ordering\PreOrder;
@@ -46,10 +47,12 @@ class ProcessPreOrders
                 } elseif (!$preOrder->balance_second_reminder_sent_at && $daysSinceRequest >= (int) $shop->preOrderSetting('balance_second_reminder_day')) {
                     $preOrder->update(['balance_second_reminder_sent_at' => now()]);
                     SendPreOrderUpdateEmail::dispatch($preOrder, SendPreOrderUpdateEmail::BALANCE_REMINDER);
+                    SendCustomerNotificationWhatsapp::dispatchPreOrderUpdate($preOrder, SendPreOrderUpdateEmail::BALANCE_REMINDER);
                     $done['reminders']++;
                 } elseif (!$preOrder->balance_first_reminder_sent_at && $daysSinceRequest >= (int) $shop->preOrderSetting('balance_first_reminder_day')) {
                     $preOrder->update(['balance_first_reminder_sent_at' => now()]);
                     SendPreOrderUpdateEmail::dispatch($preOrder, SendPreOrderUpdateEmail::BALANCE_REMINDER);
+                    SendCustomerNotificationWhatsapp::dispatchPreOrderUpdate($preOrder, SendPreOrderUpdateEmail::BALANCE_REMINDER);
                     $done['reminders']++;
                 }
             } catch (\Throwable $e) {

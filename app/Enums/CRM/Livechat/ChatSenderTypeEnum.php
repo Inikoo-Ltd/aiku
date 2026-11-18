@@ -13,6 +13,7 @@ enum ChatSenderTypeEnum: string
     case AGENT = 'agent';
     case SYSTEM = 'system';
     case SYSTEM_CAMPAIGN = 'system_campaign';
+    case SYSTEM_NOTIFICATION = 'system_notification';
     case AI = 'ai';
 
     public static function labels(): array
@@ -23,6 +24,7 @@ enum ChatSenderTypeEnum: string
             'agent' => __('Agent'),
             'system' => __('System'),
             'system_campaign' => __('Campaign'),
+            'system_notification' => __('Notification'),
             'ai' => __('AI'),
         ];
     }

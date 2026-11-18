@@ -44,6 +44,8 @@ use App\Actions\Comms\Outbox\DueToReorder\RunDueToReorderEmailBulkRuns;
 use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\NewCustomerPush\RunNewCustomerPushEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
+use App\Actions\Comms\WhatsappBulkRun\RunWhatsappBulkRuns;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
 use App\Actions\Ordering\Order\SweepGoldRewardWindowBaskets;
 use App\Actions\Comms\Outbox\BasketOnOffer\RunBasketOnOfferEmailBulkRuns;
@@ -107,9 +109,11 @@ use App\Actions\Web\Seo\SuggestSeoContent;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\WebsiteNotFoundPath\PruneWebsiteNotFoundPaths;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
+use App\Models\Comms\WhatsappOutbox;
 use App\Traits\LoggableSchedule;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Illuminate\Support\Str;
 
 class Kernel extends ConsoleKernel
 {
@@ -511,6 +515,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'RunOutOfStockInOrderEmailBulkRuns',
                 ),
                 name: 'RunOutOfStockInOrderEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunWhatsappBulkRuns::makeJob(OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION))->hourly()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunWhatsappOutOfStockInOrderBulkRuns',
+                ),
+                name: 'RunWhatsappOutOfStockInOrderBulkRuns',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
@@ -919,6 +932,37 @@ class Kernel extends ConsoleKernel
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->job(RunWhatsappBulkRuns::makeJob(OutboxCodeEnum::OOS_NOTIFICATION))->dailyAt('15:05')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunWhatsappBackInStockBulkRuns',
+                ),
+                name: 'RunWhatsappBackInStockBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunWhatsappBulkRuns::makeJob(OutboxCodeEnum::REVIEW_REMINDER))->dailyAt('15:10')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunWhatsappReviewReminderBulkRuns',
+                ),
+                name: 'RunWhatsappReviewReminderBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            foreach (WhatsappOutbox::goldRewardReminderCodes() as $goldRewardReminderCode) {
+                $monitorSlug = 'RunWhatsapp'.Str::studly($goldRewardReminderCode->value).'BulkRuns';
+
+                $this->logSchedule(
+                    $schedule->job(RunWhatsappBulkRuns::makeJob($goldRewardReminderCode))->dailyAt('15:10')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: $monitorSlug,
+                    ),
+                    name: $monitorSlug,
+                    type: 'job',
+                    scheduledAt: now()->format('H:i')
+                );
+            }
 
             $this->logSchedule(
                 $schedule->job(GetFaireOrdersAllShops::makeJob())->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(

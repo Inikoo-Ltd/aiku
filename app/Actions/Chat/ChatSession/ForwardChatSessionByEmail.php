@@ -274,7 +274,7 @@ class ForwardChatSessionByEmail
             return $name ? trim("{$name}, {$shopName}", ', ') : $shopName;
         }
 
-        if (in_array($message->sender_type, [ChatSenderTypeEnum::AI, ChatSenderTypeEnum::SYSTEM_CAMPAIGN], true)) {
+        if (in_array($message->sender_type, [ChatSenderTypeEnum::AI, ChatSenderTypeEnum::SYSTEM_CAMPAIGN, ChatSenderTypeEnum::SYSTEM_NOTIFICATION], true)) {
             return $shopName;
         }
 

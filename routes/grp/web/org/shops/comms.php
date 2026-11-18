@@ -17,6 +17,7 @@ use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\Comms\Outbox\UI\ShowOutbox;
 use App\Actions\Comms\Outbox\UI\ShowOutboxWorkshop;
 use App\Actions\Comms\UI\ShowCommsDashboard;
+use App\Actions\Comms\WhatsappOutbox\UI\ShowWhatsappOutbox;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Comms\Outbox\UI\EditOutboxInShop;
 
@@ -35,6 +36,7 @@ Route::get('templates/{emailTemplate}/workshop', ShowMailshotTemplateWorkshop::c
 Route::get('templates/{emailTemplate}/edit', EditCommsTemplate::class)->name('templates.edit');
 Route::get('test-outboxes', [IndexOutboxes::class, 'inShopTest'])->name('test_outboxes.index');
 Route::get('outboxes/{outbox}', [ShowOutbox::class, 'inShop'])->name('outboxes.show');
+Route::get('whatsapp-outboxes/{whatsappOutbox}', ShowWhatsappOutbox::class)->name('whatsapp_outboxes.show');
 Route::get('outboxes/{outbox}/edit', EditOutboxInShop::class)->name('outboxes.edit');
 Route::get('outboxes/{outbox}/workshop', ShowOutboxWorkshop::class)->name('outboxes.workshop');
 Route::get('outboxes/{outbox}/dispatched-emails/{dispatchedEmail:id}', [ShowDispatchedEmail::class, 'inOutboxInShop'])->name('outboxes.dispatched-email.show');
