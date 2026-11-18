@@ -69,7 +69,6 @@ enum ShellDashboardContent {
 }
 
 enum ShellProfileContent {
-    static let timesheetSummary = "This week 6h 13m"
     static let syncWaiting = "3 waiting"
     static let notifications = "On"
     static let fallbackVersion = "1.0.0"

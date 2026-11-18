@@ -14,7 +14,7 @@ struct GoodsOutUnblockSheet: View {
         ) {
             HelperText("The picker can then pick the waiting lines again. Goods already picked stay in \(note.pickedBay ?? "the picked bay").")
         } footer: {
-            AikuButton("Back to picking", isLoading: store.isWorking(on: note.reference)) {
+            AikuButton("Back to picking", look: GoodsOutActionKey.backToPicking.look, isLoading: store.isWorking(on: note.reference)) {
                 if note.isRemote {
                     GoodsOutRun.action(.backToPicking, on: note.reference, fallback: "\(note.reference) is back to picking", toasts: toasts) { close() }
                     return

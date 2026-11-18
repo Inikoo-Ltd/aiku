@@ -19,7 +19,7 @@ struct GoodsOutCancelSheet: View {
         SheetScaffold(title: "Cancel delivery note \(note.reference)?", subtitle: "This cannot be undone from the app") {
             HelperText("Only a dispatching supervisor, an org admin, or someone with order or CRM edit rights can cancel. Dispatched notes can’t be cancelled. Picks already made can be reused if the order gets a replacement delivery note.")
         } footer: {
-            AikuButton("Cancel delivery note", kind: .danger) {
+            AikuButton("Cancel delivery note", look: GoodsOutActionKey.cancel.look.forConfirm) {
                 let previous = store.cancel(note.reference)
                 close()
                 GoodsOutFeedback.done("\(note.reference) cancelled", tone: .danger, previous: previous, toasts: toasts, offersUndo: false)
@@ -55,7 +55,7 @@ struct GoodsOutRemoteCancelSheet: View {
                 InlineAlert(tone: .danger, title: problem)
             }
         } footer: {
-            AikuButton(note.action(.cancel)?.label ?? "Cancel delivery note", kind: .danger, isLoading: store.isWorking(on: note.reference)) {
+            AikuButton(note.action(.cancel)?.label ?? "Cancel delivery note", look: GoodsOutActionKey.cancel.look.forConfirm, isLoading: store.isWorking(on: note.reference)) {
                 Task {
                     let result = await store.write(.cancel(createReturn: createReturn), on: note.reference)
                     if GoodsOutWriteFeedback.show(result, fallback: "Delivery note cancelled", toasts: toasts, showsFailure: false) {
