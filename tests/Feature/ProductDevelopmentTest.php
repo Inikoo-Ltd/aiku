@@ -2462,7 +2462,9 @@ test('in-house SKUs get packaging and components with their own approval, shown 
     actingAs($maker);
     patch(route('grp.models.product_development.component.approval', ['productDevelopmentComponent' => $replaced->id]), ['approved' => true])->assertForbidden();
     patch(route('grp.models.product_development.component.update', ['productDevelopmentComponent' => $replaced->id]), ['quantity' => 650])->assertRedirect();
-    get(route('grp.product_developments.json.search', ['scope' => 'trade_units', 'product_development' => $productDevelopment->id, 'q' => 'BTL-'.$suffix]))->assertOk();
+    get(route('grp.product_developments.json.search', ['scope' => 'trade_units', 'product_development' => $productDevelopment->id, 'q' => 'BTL-'.$suffix]))
+        ->assertOk()
+        ->assertJsonFragment(['code' => 'BTL-'.$suffix, 'url' => route('grp.trade_units.units.show', $bottle->slug)]);
 
     actingAs($this->user);
     $bottleRows = $productDevelopment->components()->where('trade_unit_id', $bottle->id)->get();
