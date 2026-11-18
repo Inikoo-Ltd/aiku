@@ -265,19 +265,19 @@ test('my work and its badge skip the sources the user can not open, and the unas
     $assignTo(myWorkUser($this));
     myWorkGet($this->warehouse)->assertOk()->assertJsonPath('counts', ['total' => 4, 'delivery_notes' => 1, 'picking_sessions' => 1, 'returns' => 1, 'pallet_returns' => 1]);
     expect($kinds())->toBe(['delivery_note', 'pallet_return', 'picking_session', 'return'])
-        ->and(myWorkBadges($this->warehouse)->assertOk()->json('data'))->toBe(['my_work' => 4, 'goods_out_unassigned' => 1]);
+        ->and(myWorkBadges($this->warehouse)->assertOk()->json('data'))->toBe(['my_work' => 4, 'goods_out_unassigned' => 1, 'inbox_unread' => 0]);
 
     $assignTo(myWorkUser($this, [RolesEnum::RETURNS_CLERK], []));
     myWorkGet($this->warehouse)->assertOk()->assertJsonPath('counts', ['total' => 1, 'delivery_notes' => 0, 'picking_sessions' => 0, 'returns' => 1, 'pallet_returns' => 0]);
     expect($kinds())->toBe(['return'])
-        ->and(myWorkBadges($this->warehouse)->assertOk()->json('data'))->toBe(['my_work' => 1, 'goods_out_unassigned' => null]);
+        ->and(myWorkBadges($this->warehouse)->assertOk()->json('data'))->toBe(['my_work' => 1, 'goods_out_unassigned' => null, 'inbox_unread' => 0]);
 
     $assignTo(myWorkUser($this, [], ["locations.{$this->warehouse->id}.view"]));
     myWorkGet($this->warehouse)
         ->assertOk()
         ->assertJsonPath('data', [])
         ->assertJsonPath('counts', ['total' => 0, 'delivery_notes' => 0, 'picking_sessions' => 0, 'returns' => 0, 'pallet_returns' => 0]);
-    expect(myWorkBadges($this->warehouse)->assertOk()->json('data'))->toBe(['my_work' => 0, 'goods_out_unassigned' => null]);
+    expect(myWorkBadges($this->warehouse)->assertOk()->json('data'))->toBe(['my_work' => 0, 'goods_out_unassigned' => null, 'inbox_unread' => 0]);
 });
 
 test('my work puts waiting first, then the oldest, and caps the list while counting everything', function () {

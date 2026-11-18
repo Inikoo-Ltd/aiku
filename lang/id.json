@@ -23585,5 +23585,19 @@
     "Shopping assistant customer challenges": "Kendala pelanggan di asisten belanja",
     "Answers customers in the AI shopping assistant on the websites.": "Menjawab pelanggan di asisten belanja AI pada situs web.",
     "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Membaca percakapan asisten belanja yang sudah selesai dan mencatat apa yang menghalangi pelanggan untuk memesan.",
-    "1 product = :count SKO": "1 produk = :count SKO"
+    "1 product = :count SKO": "1 produk = :count SKO",
+    ":reference assigned to you": ":reference ditugaskan kepada Anda",
+    ":actor assigned :reference to you.": ":actor menugaskan :reference kepada Anda.",
+    ":reference taken over": ":reference diambil alih",
+    ":actor has taken over :reference, which was assigned to you.": ":actor telah mengambil alih :reference, yang sebelumnya ditugaskan kepada Anda.",
+    "Removed from :reference": "Dilepas dari :reference",
+    ":actor removed you from :reference.": ":actor melepaskan Anda dari :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor membatalkan :reference, yang ditugaskan kepada Anda.",
+    ":reference can go ahead": ":reference bisa dilanjutkan",
+    ":reference is no longer waiting and can be done again.": ":reference tidak lagi menunggu dan bisa dikerjakan lagi.",
+    ":reference was changed": ":reference telah diubah",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Perhatian: :reference, yang ditugaskan kepada Anda, telah diubah oleh :actor.",
+    ":actor has updated :reference, which is assigned to you.": ":actor telah memperbarui :reference, yang ditugaskan kepada Anda.",
+    "Operational": "Beroperasi",
+    ":reference cancelled": ":reference dibatalkan"
 }

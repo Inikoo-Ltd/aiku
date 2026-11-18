@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,7 +26,12 @@ class ShowIncomingHub extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("incoming.{$this->warehouse->id}.view");
+        return self::canViewGoodsIn($request->user(), $this->warehouse);
+    }
+
+    public static function canViewGoodsIn(User $user, Warehouse $warehouse): bool
+    {
+        return $user->authTo(["incoming.$warehouse->id.view", "supervisor-incoming.$warehouse->id"]);
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse

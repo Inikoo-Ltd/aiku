@@ -10,29 +10,9 @@ namespace App\Models\Traits;
 
 use App\Models\Notifications\FcmToken;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 trait WithPushNotifications
 {
-    protected mixed $fcmToken;
-
-    public function currentFcmToken(): string
-    {
-        return $this->fcmToken;
-    }
-
-    public function withFcmToken($fcmToken): static
-    {
-        $this->fcmToken = $fcmToken;
-
-        return $this;
-    }
-
-    public function fcmToken(): MorphOne
-    {
-        return $this->morphOne(FcmToken::class, 'push_notifiable');
-    }
-
     public function fcmTokens(): MorphMany
     {
         return $this->morphMany(FcmToken::class, 'push_notifiable');

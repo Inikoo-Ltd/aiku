@@ -10,6 +10,7 @@ namespace App\Actions\UI\Notification;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\SysAdmin\User;
+use App\Notifications\WorkNotification;
 use Lorisleiva\Actions\ActionRequest;
 
 class MarkAllNotificationAsRead
@@ -21,7 +22,7 @@ class MarkAllNotificationAsRead
 
     public function handle(User $user): void
     {
-        $user->notifications->markAsRead();
+        $user->unreadNotifications()->whereNot('type', WorkNotification::class)->update(['read_at' => now()]);
     }
 
     public function asController(ActionRequest $request): void

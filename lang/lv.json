@@ -2064,5 +2064,20 @@
     "Answers customers in the AI shopping assistant on the websites.": "Atbild klientiem AI iepirkšanās asistentā tīmekļa vietnēs.",
     "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Lasa pabeigtās sarunas ar iepirkšanās asistentu un pieraksta, kas klientam traucēja pasūtīt.",
     "1 product = :count SKO": "1 produkts = :count SKO",
-    ":count SKO": ":count SKO"
+    ":count SKO": ":count SKO",
+    ":reference assigned to you": ":reference piešķirts jums",
+    ":actor assigned :reference to you.": ":actor jums piešķīra :reference.",
+    ":reference taken over": ":reference pārņemts",
+    ":actor has taken over :reference, which was assigned to you.": ":actor pārņēma :reference, kas bija piešķirts jums.",
+    "Removed from :reference": "Noņemts no :reference",
+    ":actor removed you from :reference.": ":actor jūs noņēma no :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor atcēla :reference, kas ir piešķirts jums.",
+    ":reference can go ahead": ":reference var turpināt",
+    ":reference is no longer waiting and can be done again.": ":reference vairs negaida, un to var turpināt.",
+    ":reference was changed": ":reference ir mainīts",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Uzmanību: :reference, kas piešķirts jums, mainīja :actor.",
+    ":actor has updated :reference, which is assigned to you.": ":actor atjaunināja :reference, kas ir piešķirts jums.",
+    "Operational": "Darbojas",
+    ":reference cancelled": ":reference atcelts",
+    "The customer": "Klients"
 }

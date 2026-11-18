@@ -25723,5 +25723,19 @@
     "This one needs a little more thought. Nearly there…": "Esta precisa de um pouco mais de reflexão. Quase pronto…",
     "Usually takes about :seconds seconds": "Costuma demorar cerca de :seconds segundos",
     "Use my own shipping rates": "Usar as minhas próprias tarifas de envio",
-    "Our sister shop :website sells these: :link": "A nossa loja irmã :website vende estes produtos: :link"
+    "Our sister shop :website sells these: :link": "A nossa loja irmã :website vende estes produtos: :link",
+    ":reference assigned to you": "Atribuído a si: :reference",
+    ":actor assigned :reference to you.": ":actor atribuiu-lhe :reference.",
+    ":reference taken over": ":reference assumido por outra pessoa",
+    ":actor has taken over :reference, which was assigned to you.": ":actor assumiu :reference, que lhe estava atribuído.",
+    "Removed from :reference": "Removido de :reference",
+    ":actor removed you from :reference.": ":actor removeu-o de :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor cancelou :reference, que lhe está atribuído.",
+    ":reference can go ahead": ":reference pode avançar",
+    ":reference is no longer waiting and can be done again.": ":reference já não está em espera e pode ser retomado.",
+    ":reference was changed": ":reference foi alterado",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Atenção: :reference, que lhe está atribuído, foi alterado por :actor.",
+    ":actor has updated :reference, which is assigned to you.": ":actor atualizou :reference, que lhe está atribuído.",
+    "Operational": "Operacional",
+    ":reference cancelled": ":reference cancelado"
 }

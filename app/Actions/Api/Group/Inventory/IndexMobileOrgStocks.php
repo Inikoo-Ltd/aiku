@@ -10,12 +10,14 @@
 namespace App\Actions\Api\Group\Inventory;
 
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateOrgStocksBelowMinimumStock;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -27,7 +29,7 @@ class IndexMobileOrgStocks
     use AsController;
     use WithMobileOrgStocks;
 
-    public const array BUCKETS = ['current', 'discontinued', 'abnormality', 'all'];
+    public const array BUCKETS = ['current', 'discontinued', 'abnormality', 'below_minimum', 'negative', 'all'];
     public const array SORTS = ['code', 'name', 'stock_value', 'quantity_available', 'family_code'];
 
     /**
@@ -47,6 +49,20 @@ class IndexMobileOrgStocks
         }
 
         return $webTable->initialisationFromWarehouse($warehouse, [])->handle($warehouse->organisation, null, $bucket, $warehouse);
+    }
+
+    public static function numberBelowMinimumStock(Warehouse $warehouse, ?OrgStockFamily $family = null): int
+    {
+        return WarehouseHydrateOrgStocksBelowMinimumStock::belowMinimumStock(OrgStock::query(), $warehouse->organisation_id)
+            ->when($family, fn (Builder $query) => $query->where('org_stocks.org_stock_family_id', $family->id))
+            ->count();
+    }
+
+    public static function numberNegativeStocks(Warehouse $warehouse, ?OrgStockFamily $family = null): int
+    {
+        return IndexOrgStocks::whereNegativeStock(OrgStock::query()->where('org_stocks.organisation_id', $warehouse->organisation_id), $warehouse)
+            ->when($family, fn (Builder $query) => $query->where('org_stocks.org_stock_family_id', $family->id))
+            ->count();
     }
 
     /**
@@ -102,10 +118,12 @@ class IndexMobileOrgStocks
             'data'          => $this->rows($orgStocks),
             'meta'          => $this->paginationMeta($orgStocks),
             'counts'        => [
-                'current'      => (int) $stats?->number_current_org_stocks,
-                'discontinued' => (int) $stats?->number_org_stocks_state_discontinued,
-                'abnormality'  => (int) $stats?->number_org_stocks_state_abnormality,
-                'all'          => (int) $stats?->number_org_stocks,
+                'current'       => (int) $stats?->number_current_org_stocks,
+                'discontinued'  => (int) $stats?->number_org_stocks_state_discontinued,
+                'abnormality'   => (int) $stats?->number_org_stocks_state_abnormality,
+                'below_minimum' => self::numberBelowMinimumStock($warehouse, $family),
+                'negative'      => self::numberNegativeStocks($warehouse, $family),
+                'all'           => (int) $stats?->number_org_stocks,
             ],
             'currency_code' => $warehouse->organisation->currency->code,
         ]);

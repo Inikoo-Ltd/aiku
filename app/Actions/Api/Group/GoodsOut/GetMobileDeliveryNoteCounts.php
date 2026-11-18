@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Group\GoodsOut;
 
+use App\Actions\Api\Group\WithMobileModuleAccess;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Inventory\Warehouse;
@@ -23,6 +24,7 @@ class GetMobileDeliveryNoteCounts
 {
     use AsController;
     use WithMobileDeliveryNotes;
+    use WithMobileModuleAccess;
 
     public const array STATE_BUCKETS = ['unassigned', 'queued', 'handling', 'handling_blocked', 'picked', 'packing', 'packed', 'finalised', 'dispatched'];
 
@@ -78,7 +80,7 @@ class GetMobileDeliveryNoteCounts
     /**
      * @return array<string, string>
      */
-    private function channelLabels(): array
+    public static function channelLabels(): array
     {
         return [
             'b2b'                                => __('Wholesale'),
@@ -94,7 +96,7 @@ class GetMobileDeliveryNoteCounts
     {
         /** @var User $user */
         $user = $request->user();
-        abort_unless($warehouse->group_id === $user->group_id && IndexDeliveryNotes::canViewDispatching($user, $warehouse), 403);
+        abort_unless(self::canViewGoodsOut($user, $warehouse), 403);
 
         $filters = Validator::make($request->query(), [
             'picker' => ['sometimes', 'nullable', Rule::in(self::PICKER_FILTERS)],

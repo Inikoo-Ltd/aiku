@@ -26971,5 +26971,18 @@
     ":name is gazing into his crystal ball…": ":name hledí do své křišťálové koule…",
     "This one needs a little more thought. Nearly there…": "Tohle chce trochu víc přemýšlení. Skoro hotovo…",
     "Usually takes about :seconds seconds": "Obvykle to trvá asi :seconds sekund",
-    "Our sister shop :website sells these: :link": "Náš sesterský obchod :website tyto produkty nabízí: :link"
+    "Our sister shop :website sells these: :link": "Náš sesterský obchod :website tyto produkty nabízí: :link",
+    ":reference assigned to you": "Přiděleno vám: :reference",
+    ":actor assigned :reference to you.": ":actor vám přidělil(a) :reference.",
+    ":reference taken over": "Převzato: :reference",
+    ":actor has taken over :reference, which was assigned to you.": ":actor převzal(a) :reference, které vám bylo přiděleno.",
+    "Removed from :reference": "Odebráno: :reference",
+    ":actor removed you from :reference.": ":actor vás odebral(a) z :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor zrušil(a) :reference, které je přiděleno vám.",
+    ":reference can go ahead": ":reference může pokračovat",
+    ":reference is no longer waiting and can be done again.": ":reference už nečeká a lze v něm pokračovat.",
+    ":reference was changed": "Změna: :reference",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Pozor: :reference, přidělené vám, změnil(a) :actor.",
+    ":actor has updated :reference, which is assigned to you.": ":actor aktualizoval(a) :reference, které je přiděleno vám.",
+    "Operational": "V provozu"
 }

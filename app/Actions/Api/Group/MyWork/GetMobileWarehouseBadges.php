@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Group\MyWork;
 
+use App\Actions\Api\Group\Inbox\WithMobileInbox;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
@@ -19,9 +20,10 @@ class GetMobileWarehouseBadges
 {
     use AsController;
     use WithMobileMyWork;
+    use WithMobileInbox;
 
     /**
-     * @return array{my_work: int, goods_out_unassigned: int|null}
+     * @return array{my_work: int, goods_out_unassigned: int|null, inbox_unread: int}
      */
     public function handle(Warehouse $warehouse, User $user): array
     {
@@ -30,6 +32,7 @@ class GetMobileWarehouseBadges
         return [
             'my_work'              => $this->myWorkCounts($warehouse, $user, $visibleSources)['total'],
             'goods_out_unassigned' => $visibleSources['delivery_notes'] ? $this->goodsOutUnassignedCount($warehouse) : null,
+            'inbox_unread'         => $this->inboxUnreadCount($user),
         ];
     }
 

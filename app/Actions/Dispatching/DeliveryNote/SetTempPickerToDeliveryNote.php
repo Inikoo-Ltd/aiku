@@ -17,6 +17,7 @@ use App\Actions\Traits\WithFixedAddressActions;
 use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\Organisation;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -34,6 +35,7 @@ class SetTempPickerToDeliveryNote extends OrgAction
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
         self::claimDeliveryNoteHandling($deliveryNote);
+        WorkNotifier::takenOver($deliveryNote);
 
         return $deliveryNote;
     }

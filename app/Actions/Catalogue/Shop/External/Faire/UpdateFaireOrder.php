@@ -40,6 +40,7 @@ use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -670,6 +671,7 @@ class UpdateFaireOrder extends OrgAction
 
             if ($createdItem) {
                 $this->walkDeliveryNoteBackToPicking($deliveryNote->refresh(), true, null);
+                WorkNotifier::modified($deliveryNote, 'lines');
             }
 
             return false;

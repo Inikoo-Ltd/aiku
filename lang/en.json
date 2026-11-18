@@ -26695,5 +26695,18 @@
     "1 product = :count SKO": "1 product = :count SKO",
     "Finish booking in?": "Finish booking in?",
     "This is the last item to put away. The delivery will be booked in with :count line over or under delivered. Is the delivery done?|This is the last item to put away. The delivery will be booked in with :count lines over or under delivered. Is the delivery done?": "This is the last item to put away. The delivery will be booked in with :count line over or under delivered. Is the delivery done?|This is the last item to put away. The delivery will be booked in with :count lines over or under delivered. Is the delivery done?",
-    "Yes, delivery is done": "Yes, delivery is done"
+    "Yes, delivery is done": "Yes, delivery is done",
+    ":reference assigned to you": ":reference assigned to you",
+    ":actor assigned :reference to you.": ":actor assigned :reference to you.",
+    ":reference taken over": ":reference taken over",
+    ":actor has taken over :reference, which was assigned to you.": ":actor has taken over :reference, which was assigned to you.",
+    "Removed from :reference": "Removed from :reference",
+    ":actor removed you from :reference.": ":actor removed you from :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor cancelled :reference, which is assigned to you.",
+    ":reference can go ahead": ":reference can go ahead",
+    ":reference is no longer waiting and can be done again.": ":reference is no longer waiting and can be done again.",
+    ":reference was changed": ":reference was changed",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Heads up: :reference, assigned to you, was changed by :actor.",
+    ":actor has updated :reference, which is assigned to you.": ":actor has updated :reference, which is assigned to you.",
+    "Operational": "Operational"
 }

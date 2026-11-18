@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\Fulfilment\PalletStoredItem;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -55,6 +56,7 @@ class PickNewPalletReturnItem extends OrgAction
             PickPalletReturnItemInPalletReturnWithStoredItem::run($palletReturnItem, [
                 'quantity_picked' => $quantityOrdered
             ]);
+            WorkNotifier::modified($palletReturn, 'lines');
         });
     }
 

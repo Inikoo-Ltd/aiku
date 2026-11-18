@@ -25839,5 +25839,19 @@
     "Answers customers in the AI shopping assistant on the websites.": "在网站的 AI 购物助手中回答客户。",
     "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "阅读已结束的购物助手对话，记录阻碍客户下单的原因。",
     "Range Advisor panel": "选品顾问面板",
-    "1 product = :count SKO": "1 件商品 = :count SKO"
+    "1 product = :count SKO": "1 件商品 = :count SKO",
+    ":reference assigned to you": ":reference 已分配给你",
+    ":actor assigned :reference to you.": ":actor 将 :reference 分配给了你。",
+    ":reference taken over": ":reference 已被接手",
+    ":actor has taken over :reference, which was assigned to you.": ":actor 接手了原本分配给你的 :reference。",
+    "Removed from :reference": "已将你从 :reference 移除",
+    ":actor removed you from :reference.": ":actor 将你从 :reference 移除。",
+    ":actor cancelled :reference, which is assigned to you.": ":actor 取消了分配给你的 :reference。",
+    ":reference can go ahead": ":reference 可以继续",
+    ":reference is no longer waiting and can be done again.": ":reference 不再等待，可以继续处理。",
+    ":reference was changed": ":reference 已更改",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "注意：分配给你的 :reference 已被 :actor 更改。",
+    ":actor has updated :reference, which is assigned to you.": ":actor 更新了分配给你的 :reference。",
+    "Operational": "运行中",
+    ":reference cancelled": ":reference 已取消"
 }

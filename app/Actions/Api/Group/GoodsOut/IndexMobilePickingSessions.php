@@ -9,7 +9,6 @@
 
 namespace App\Actions\Api\Group\GoodsOut;
 
-use App\Actions\Dispatching\PickingSession\UI\IndexPickingSessions;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionTypeEnum;
 use App\Models\Inventory\PickingSession;
@@ -57,7 +56,7 @@ class IndexMobilePickingSessions
     {
         /** @var User $user */
         $user = $request->user();
-        abort_unless($warehouse->group_id === $user->group_id && IndexPickingSessions::canViewDispatching($user, $warehouse), 403);
+        abort_unless(self::canViewGoodsOut($user, $warehouse), 403);
 
         $filters = Validator::make($request->query(), [
             'state' => ['sometimes', 'nullable', Rule::in(PickingSessionStateEnum::values())],

@@ -22634,5 +22634,19 @@
     "Answers customers in the AI shopping assistant on the websites.": "वेबसाइटों पर AI शॉपिंग असिस्टेंट में ग्राहकों को जवाब देता है।",
     "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "शॉपिंग असिस्टेंट की पूरी हुई बातचीत पढ़ता है और दर्ज करता है कि ग्राहक को ऑर्डर करने से क्या रोका।",
     "1 product = :count SKO": "1 उत्पाद = :count SKO",
-    ":count SKO": ":count SKO"
+    ":count SKO": ":count SKO",
+    ":reference assigned to you": ":reference आपको सौंपा गया",
+    ":actor assigned :reference to you.": ":actor ने :reference आपको सौंपा।",
+    ":reference taken over": ":reference किसी और ने ले लिया",
+    ":actor has taken over :reference, which was assigned to you.": ":actor ने :reference ले लिया, जो आपको सौंपा गया था।",
+    "Removed from :reference": ":reference से हटाया गया",
+    ":actor removed you from :reference.": ":actor ने आपको :reference से हटा दिया।",
+    ":actor cancelled :reference, which is assigned to you.": ":actor ने :reference रद्द कर दिया, जो आपको सौंपा गया है।",
+    ":reference can go ahead": ":reference आगे बढ़ सकता है",
+    ":reference is no longer waiting and can be done again.": ":reference अब प्रतीक्षा में नहीं है और फिर से किया जा सकता है।",
+    ":reference was changed": ":reference बदला गया",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "ध्यान दें: :reference, जो आपको सौंपा गया है, :actor द्वारा बदला गया।",
+    ":actor has updated :reference, which is assigned to you.": ":actor ने :reference अपडेट किया, जो आपको सौंपा गया है।",
+    "Operational": "चालू",
+    ":reference cancelled": ":reference रद्द"
 }

@@ -16,6 +16,7 @@ use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Notifications\Work\WorkNotifier;
 
 class DeleteDeliveryNoteItem extends OrgAction
 {
@@ -35,6 +36,7 @@ class DeleteDeliveryNoteItem extends OrgAction
         $deliveryNote = $deliveryNoteItem->deliveryNote;
 
         $deliveryNoteItem->delete();
+        WorkNotifier::modified($deliveryNote, 'lines');
 
         DeliveryNoteHydrateItems::run($deliveryNote);
 

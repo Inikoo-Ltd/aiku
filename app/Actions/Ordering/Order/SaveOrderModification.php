@@ -29,6 +29,7 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\User;
+use App\Notifications\Work\WorkNotifier;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -194,6 +195,8 @@ class SaveOrderModification extends OrgAction
                 $deliveryNoteItem->update(['state' => DeliveryNoteItemStateEnum::HANDLING, 'is_dirty' => true]);
             }
         }
+
+        WorkNotifier::modified($deliveryNote, 'lines');
     }
 
     /**

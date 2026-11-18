@@ -17,6 +17,7 @@ use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\Fulfilment\StoredItem;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -35,6 +36,7 @@ class StoreStoredItemsToReturn extends OrgAction
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
         $storedItemModels = Arr::get($modelData, 'stored_items');
+        WorkNotifier::modified($palletReturn, 'lines');
 
         if (blank($storedItemModels)) {
             PalletReturnItem::where('pallet_return_id', $palletReturn->id)->delete();

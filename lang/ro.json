@@ -25992,5 +25992,18 @@
     ":name is gazing into his crystal ball…": ":name privește în globul său de cristal…",
     "This one needs a little more thought. Nearly there…": "Aceasta cere puțin mai multă gândire. Aproape gata…",
     "Usually takes about :seconds seconds": "Durează de obicei cam :seconds secunde",
-    "Our sister shop :website sells these: :link": "Magazinul nostru partener :website vinde aceste produse: :link"
+    "Our sister shop :website sells these: :link": "Magazinul nostru partener :website vinde aceste produse: :link",
+    ":reference assigned to you": ":reference v-a fost atribuit",
+    ":actor assigned :reference to you.": ":actor v-a atribuit :reference.",
+    ":reference taken over": ":reference a fost preluat",
+    ":actor has taken over :reference, which was assigned to you.": ":actor a preluat :reference, care vă era atribuit.",
+    "Removed from :reference": "Retras de la :reference",
+    ":actor removed you from :reference.": ":actor v-a retras de la :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor a anulat :reference, care vă este atribuit.",
+    ":reference can go ahead": ":reference poate continua",
+    ":reference is no longer waiting and can be done again.": ":reference nu mai este în așteptare și poate fi reluat.",
+    ":reference was changed": ":reference a fost modificat",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Atenție: :reference, care vă este atribuit, a fost modificat de :actor.",
+    ":actor has updated :reference, which is assigned to you.": ":actor a actualizat :reference, care vă este atribuit.",
+    "Operational": "Operațional"
 }

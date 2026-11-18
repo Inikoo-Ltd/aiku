@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Group\Fulfilment;
 
+use App\Actions\Api\Group\WithMobileModuleAccess;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
 use DateTimeInterface;
@@ -17,15 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 trait WithMobileFulfilment
 {
-    public static function canViewFulfilment(User $user, Warehouse $warehouse): bool
-    {
-        return $warehouse->group_id === $user->group_id && $user->authTo([
-            "fulfilment.$warehouse->id.view",
-            "supervisor-incoming.$warehouse->id",
-            "supervisor-fulfilment.$warehouse->id",
-            "warehouses-view.$warehouse->organisation_id",
-        ]);
-    }
+    use WithMobileModuleAccess;
 
     public static function canEditFulfilmentWarehouse(User $user, Warehouse $warehouse): bool
     {

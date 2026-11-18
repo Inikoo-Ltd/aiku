@@ -26833,5 +26833,18 @@
     "Finish booking in?": "Ukončiť bookovanie?",
     "This is the last item to put away. The delivery will be booked in with :count line over or under delivered. Is the delivery done?|This is the last item to put away. The delivery will be booked in with :count lines over or under delivered. Is the delivery done?": "Toto je posledná položka na uskladnenie. Zásielka bude zabookovaná s :count riadkom s nadbytkom alebo nedostatkom. Je zásielka hotová?|Toto je posledná položka na uskladnenie. Zásielka bude zabookovaná s :count riadkami s nadbytkom alebo nedostatkom. Je zásielka hotová?|Toto je posledná položka na uskladnenie. Zásielka bude zabookovaná s :count riadkami s nadbytkom alebo nedostatkom. Je zásielka hotová?",
     "Yes, delivery is done": "Áno, zásielka je hotová",
-    "Our sister shop :website sells these: :link": "Náš sesterský obchod :website tieto produkty ponúka: :link"
+    "Our sister shop :website sells these: :link": "Náš sesterský obchod :website tieto produkty ponúka: :link",
+    ":reference assigned to you": "Pridelené vám: :reference",
+    ":actor assigned :reference to you.": ":actor vám pridelil(a) :reference.",
+    ":reference taken over": "Prevzaté: :reference",
+    ":actor has taken over :reference, which was assigned to you.": ":actor prevzal(a) :reference, ktoré vám bolo pridelené.",
+    "Removed from :reference": "Odobrané: :reference",
+    ":actor removed you from :reference.": ":actor vás odobral(a) z :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor zrušil(a) :reference, ktoré je pridelené vám.",
+    ":reference can go ahead": ":reference môže pokračovať",
+    ":reference is no longer waiting and can be done again.": ":reference už nečaká a dá sa v ňom pokračovať.",
+    ":reference was changed": "Zmenené: :reference",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Pozor: :reference, pridelené vám, zmenil(a) :actor.",
+    ":actor has updated :reference, which is assigned to you.": ":actor aktualizoval(a) :reference, ktoré je pridelené vám.",
+    "Operational": "V prevádzke"
 }

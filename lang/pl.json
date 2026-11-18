@@ -26039,5 +26039,18 @@
     ":name is gazing into his crystal ball…": ":name wpatruje się w swoją kryształową kulę…",
     "This one needs a little more thought. Nearly there…": "To wymaga trochę więcej namysłu. Prawie gotowe…",
     "Usually takes about :seconds seconds": "Zwykle trwa to około :seconds sekund",
-    "Our sister shop :website sells these: :link": "Nasz siostrzany sklep :website sprzedaje te produkty: :link"
+    "Our sister shop :website sells these: :link": "Nasz siostrzany sklep :website sprzedaje te produkty: :link",
+    ":reference assigned to you": "Przypisano Ci :reference",
+    ":actor assigned :reference to you.": ":reference zostało Ci przypisane przez: :actor.",
+    ":reference taken over": "Przejęto :reference",
+    ":actor has taken over :reference, which was assigned to you.": ":reference, przypisane do Ciebie, zostało przejęte przez: :actor.",
+    "Removed from :reference": "Usunięto Cię z :reference",
+    ":actor removed you from :reference.": ":actor usunął(-ęła) Cię z :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":reference, przypisane do Ciebie, zostało anulowane przez: :actor.",
+    ":reference can go ahead": ":reference można kontynuować",
+    ":reference is no longer waiting and can be done again.": ":reference już nie czeka i można je kontynuować.",
+    ":reference was changed": "Zmieniono :reference",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Uwaga: :reference, przypisane do Ciebie, zostało zmienione przez: :actor.",
+    ":actor has updated :reference, which is assigned to you.": ":reference, przypisane do Ciebie, zostało zaktualizowane przez: :actor.",
+    "Operational": "Czynna"
 }

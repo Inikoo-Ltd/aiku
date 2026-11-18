@@ -18,6 +18,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\PickingSession;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -31,11 +32,11 @@ class UpdatePickingSession extends OrgAction
         $pickingSession = $this->update($pickingSession, $modelData);
 
         if ($pickingSession->wasChanged('user_id') && $pickingSession->user_id) {
-            $pickingSession->deliveryNotes()
+            WorkNotifier::withoutDeliveryNotePickerNotices(fn () => $pickingSession->deliveryNotes()
                 ->whereIn('delivery_notes.state', [DeliveryNoteStateEnum::HANDLING, DeliveryNoteStateEnum::HANDLING_BLOCKED])
                 ->where(fn ($query) => $query->whereNull('delivery_notes.picker_user_id')->orWhere('delivery_notes.picker_user_id', '!=', $pickingSession->user_id))
                 ->get()
-                ->each(fn (DeliveryNote $deliveryNote) => UpdateDeliveryNote::make()->action($deliveryNote, ['picker_user_id' => $pickingSession->user_id]));
+                ->each(fn (DeliveryNote $deliveryNote) => UpdateDeliveryNote::make()->action($deliveryNote, ['picker_user_id' => $pickingSession->user_id])));
         }
 
         WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);

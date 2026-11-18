@@ -1649,5 +1649,20 @@
     "Answers customers in the AI shopping assistant on the websites.": "ウェブサイトのAIショッピングアシスタントで顧客に回答します。",
     "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "終了したショッピングアシスタントの会話を読み、顧客の注文を妨げた要因を記録します。",
     "1 product = :count SKO": "1 商品 = :count SKO",
-    ":count SKO": ":count SKO"
+    ":count SKO": ":count SKO",
+    ":reference assigned to you": ":reference があなたに割り当てられました",
+    ":actor assigned :reference to you.": ":actor が :reference をあなたに割り当てました。",
+    ":reference taken over": ":reference が引き継がれました",
+    ":actor has taken over :reference, which was assigned to you.": ":actor が、あなたに割り当てられていた :reference を引き継ぎました。",
+    "Removed from :reference": ":reference から外されました",
+    ":actor removed you from :reference.": ":actor があなたを :reference から外しました。",
+    ":actor cancelled :reference, which is assigned to you.": ":actor が、あなたに割り当てられている :reference をキャンセルしました。",
+    ":reference can go ahead": ":reference を再開できます",
+    ":reference is no longer waiting and can be done again.": ":reference は待機が解除され、再開できます。",
+    ":reference was changed": ":reference が変更されました",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "お知らせ: あなたに割り当てられている :reference が :actor によって変更されました。",
+    ":actor has updated :reference, which is assigned to you.": ":actor が、あなたに割り当てられている :reference を更新しました。",
+    "Operational": "稼働中",
+    ":reference cancelled": ":reference がキャンセルされました",
+    "The customer": "顧客"
 }

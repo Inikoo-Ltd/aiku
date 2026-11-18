@@ -23374,5 +23374,19 @@
     "Shopping assistant customer challenges": "सपिङ सहायकमा ग्राहकका बाधाहरू",
     "Answers customers in the AI shopping assistant on the websites.": "वेबसाइटहरूमा AI सपिङ सहायकमा ग्राहकहरूलाई जवाफ दिन्छ।",
     "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "सपिङ सहायकका सकिएका कुराकानी पढ्छ र ग्राहकलाई अर्डर गर्न के ले रोक्यो भनेर रेकर्ड गर्छ।",
-    "1 product = :count SKO": "1 उत्पादन = :count SKO"
+    "1 product = :count SKO": "1 उत्पादन = :count SKO",
+    ":reference assigned to you": ":reference तपाईंलाई तोकिएको छ",
+    ":actor assigned :reference to you.": ":actor ले :reference तपाईंलाई तोक्नुभयो।",
+    ":reference taken over": ":reference अरूले लिनुभयो",
+    ":actor has taken over :reference, which was assigned to you.": ":actor ले तपाईंलाई तोकिएको :reference लिनुभयो।",
+    "Removed from :reference": ":reference बाट हटाइयो",
+    ":actor removed you from :reference.": ":actor ले तपाईंलाई :reference बाट हटाउनुभयो।",
+    ":actor cancelled :reference, which is assigned to you.": ":actor ले तपाईंलाई तोकिएको :reference रद्द गर्नुभयो।",
+    ":reference can go ahead": ":reference अगाडि बढ्न सक्छ",
+    ":reference is no longer waiting and can be done again.": ":reference अब पर्खाइमा छैन र फेरि गर्न सकिन्छ।",
+    ":reference was changed": ":reference परिवर्तन भयो",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "ध्यान दिनुहोस्: तपाईंलाई तोकिएको :reference :actor ले परिवर्तन गर्नुभयो।",
+    ":actor has updated :reference, which is assigned to you.": ":actor ले तपाईंलाई तोकिएको :reference अद्यावधिक गर्नुभयो।",
+    "Operational": "सञ्चालनमा",
+    ":reference cancelled": ":reference रद्द भयो"
 }

@@ -51,6 +51,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use App\Models\Traits\HasSearch;
+use App\Models\Traits\SendsWorkNotifications;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -218,6 +219,7 @@ class DeliveryNote extends Model implements Auditable
     use HasAddresses;
     use HasHistory;
     use HasSearch;
+    use SendsWorkNotifications;
     public const array STAFF_NOTE_FIELDS = ['private_warehouse_note', 'shipping_notes'];
 
     protected $casts = [
