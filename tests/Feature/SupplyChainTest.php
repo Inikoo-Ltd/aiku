@@ -2576,3 +2576,23 @@ test('a supplier suggestion can not be decided while its approval runs, and the 
         ->and($duplicateProduct->refresh()->supplier_id)->toBe($duplicate->id)
         ->and($duplicate->refresh()->status)->toBeTrue();
 });
+
+test('a supplier merged into another can not be unarchived and its page offers no unarchive button', function () {
+    [, $duplicateProduct, $kept] = supplyChainFixAgentSuppliers($this);
+    $duplicate                   = $duplicateProduct->supplier;
+    $duplicate->update(['currency_id' => $kept->currency_id]);
+    \App\Actions\SupplyChain\Supplier\MergeSuppliers::run($duplicate, $kept);
+    $duplicateOrgSupplierIds = $duplicate->orgSuppliers()->pluck('id');
+
+    $this->patch(route('grp.models.supplier.unarchive', $duplicate->id))->assertSessionHasErrors('supplier');
+    expect($duplicate->refresh()->status)->toBeFalse()
+        ->and(\App\Models\Procurement\OrgSupplier::whereIn('id', $duplicateOrgSupplierIds)->where('status', true)->exists())->toBeFalse();
+
+    $this->get(route('grp.supply-chain.suppliers.show', [$duplicate->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('archive.is_archived', true)->where('archive.can_archive', false));
+
+    $archived = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
+    \App\Actions\SupplyChain\Supplier\DeactivateSupplier::run($archived);
+    $this->patch(route('grp.models.supplier.unarchive', $archived->id))->assertSessionHasNoErrors();
+    expect($archived->refresh()->status)->toBeTrue();
+});
