@@ -11,11 +11,12 @@ namespace App\Actions\SupplyChain\SupplierSubmission;
 
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Exports\SupplyChain\SupplierProductProposalTemplateExport;
+use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierShareLink;
-use App\Models\SupplyChain\SupplierSubmission;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -23,9 +24,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Maatwebsite\Excel\Facades\Excel;
 
 /**
- * A supplier that keeps its products in a spreadsheet sends many new product ideas at once: one row of our template
- * is one product idea, sent as if filled in the Suggest a product form. Nothing is saved while any row is wrong, and
- * every wrong row is named, so the supplier fixes the file and uploads it again.
+ * A supplier that keeps its products in a spreadsheet sends many new product ideas at once. The filled template is
+ * read first and nothing is saved: the supplier sees every row with what is wrong in it, corrects it on the page and
+ * adds pictures to each product. The products are then sent a few at a time, each one as if filled in the Suggest a
+ * product form, so a long list with pictures never goes in one request and what was sent stays sent if it stops.
  */
 class ImportSupplierPortalProductProposals
 {
@@ -35,12 +37,14 @@ class ImportSupplierPortalProductProposals
 
     public const int MAX_FILE_KB = 5120;
 
+    public const int MAX_PRODUCTS_PER_REQUEST = 10;
+
     /**
-     * @return list<SupplierSubmission>
+     * @return list<array{row: int, values: array<string, mixed>, errors: array<string, string>}>
      */
-    public function handle(SupplierShareLink $link, UploadedFile $file): array
+    public function previewRows(Supplier $supplier, UploadedFile $file): array
     {
-        $rows = $this->rowsOf($file, $link->supplier->currency?->code);
+        $rows = $this->rowsOf($file, $supplier->currency?->code);
 
         if (!$rows) {
             throw ValidationException::withMessages(['file' => __('The file has no products. Fill one product per row below the headings of our template.')]);
@@ -50,27 +54,38 @@ class ImportSupplierPortalProductProposals
             throw ValidationException::withMessages(['file' => __('Send at most :count products in one file.', ['count' => self::MAX_ROWS])]);
         }
 
-        $errors = [];
-        foreach ($rows as $rowNumber => $row) {
-            $validator = Validator::make($row, StoreSupplierPortalSubmission::productProposalRules(), [], $this->attributeNames());
-            if ($validator->fails()) {
-                $errors['row_'.$rowNumber] = __('Row :row: :errors', ['row' => $rowNumber, 'errors' => implode(' ', $validator->errors()->all())]);
-            }
+        $preview = [];
+        foreach ($rows as $rowNumber => $values) {
+            $errors = Validator::make($values, StoreSupplierPortalSubmission::productProposalRules(), [], $this->attributeNames())->errors();
+
+            $preview[] = [
+                'row'    => $rowNumber,
+                'values' => $values,
+                'errors' => collect($errors->keys())->mapWithKeys(fn (string $field) => [$field => $errors->first($field)])->all(),
+            ];
         }
 
-        if ($errors) {
-            throw ValidationException::withMessages($errors);
-        }
-
-        return DB::transaction(fn () => array_values(array_map(
-            fn (array $row) => StoreSupplierPortalSubmission::make()->handle($link, SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL, $row),
-            $rows
-        )));
+        return $preview;
     }
 
     /**
-     * The filled rows of the first sheet, keyed by their row number in the spreadsheet. A row with nothing but the
-     * currency we put in the template is left out.
+     * @param  list<array<string, mixed>>  $products
+     *
+     * @return list<int> the spreadsheet rows sent
+     */
+    public function handle(SupplierShareLink $link, array $products): array
+    {
+        return DB::transaction(fn () => array_map(function (array $product) use ($link) {
+            $row = (int) Arr::pull($product, 'row');
+            StoreSupplierPortalSubmission::make()->handle($link, SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL, $product);
+
+            return $row;
+        }, $products));
+    }
+
+    /**
+     * The filled rows of the first sheet, keyed by their row number in the spreadsheet. A row with nothing but a
+     * currency is left out.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -117,22 +132,52 @@ class ImportSupplierPortalProductProposals
     /**
      * @return array<string, string>
      */
-    private function attributeNames(): array
+    private function attributeNames(string $prefix = ''): array
     {
-        return array_map(fn (string $heading) => __($heading), SupplierProductProposalTemplateExport::COLUMNS);
+        return collect(SupplierProductProposalTemplateExport::COLUMNS)
+            ->mapWithKeys(fn (string $heading, string $field) => [$prefix.$field => __($heading)])
+            ->all();
     }
 
-    public function asController(string $token, Request $request): RedirectResponse
+    /**
+     * @return array<string, mixed>
+     */
+    public function productsRules(): array
+    {
+        return [
+            'products'           => ['required', 'array', 'max:'.self::MAX_PRODUCTS_PER_REQUEST],
+            'products.*.row'     => ['required', 'integer', 'min:2'],
+            ...collect(StoreSupplierPortalSubmission::productProposalRules())->mapWithKeys(fn (array $rules, string $field) => ['products.*.'.$field => $rules])->all(),
+            'products.*.files'   => ['nullable', 'array', 'max:'.StoreSupplierPortalSubmission::MAX_FILES],
+            'products.*.files.*' => ['file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:'.StoreSupplierPortalSubmission::MAX_FILE_KB],
+        ];
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    public static function fileRules(): array
+    {
+        return ['file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:'.self::MAX_FILE_KB]];
+    }
+
+    public function preview(string $token, Request $request): JsonResponse
     {
         $link = SupplierShareLink::findLiveByToken($token);
         abort_if($link->needsCode(), 403);
 
-        $validated = $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:'.self::MAX_FILE_KB],
-        ]);
+        $validated = $request->validate(self::fileRules());
 
-        $this->handle($link, $validated['file']);
+        return response()->json(['rows' => $this->previewRows($link->supplier, $validated['file'])]);
+    }
 
-        return back()->with('submitted', SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL->value);
+    public function asController(string $token, Request $request): JsonResponse
+    {
+        $link = SupplierShareLink::findLiveByToken($token);
+        abort_if($link->needsCode(), 403);
+
+        $validated = Validator::make($request->all(), $this->productsRules(), [], $this->attributeNames('products.*.'))->validate();
+
+        return response()->json(['sent' => $this->handle($link, $validated['products'])]);
     }
 }

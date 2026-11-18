@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
+use App\Actions\SupplyChain\SupplierSubmission\ImportSupplierPortalProductProposals;
 use App\Actions\Traits\Authorisations\SupplierPortalPermissions;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\SupplyChain\Supplier;
@@ -65,7 +66,9 @@ class ShowSupplierPortalPreview extends OrgAction
                 collect(SupplierSubmissionTypeEnum::cases())->mapWithKeys(fn (SupplierSubmissionTypeEnum $type) => [$type->value => $blocked('submissions/'.$type->value)])->all(),
                 $blocked('submissions/0/update'),
                 route('grp.supply-chain.suppliers.portal_preview.product_proposals.template', $supplier),
-                $blocked('product-proposals/import')
+                route('grp.supply-chain.suppliers.portal_preview.product_proposals.preview', $supplier),
+                $blocked('product-proposals/import'),
+                $supplier->currency?->code
             ),
         ])->table(IndexSupplierPortalPurchaseOrders::make()->tableStructure('purchase_orders'))
             ->table(IndexSupplierPortalPriceChanges::make()->tableStructure($supplier, 'price_changes'))
@@ -102,6 +105,13 @@ class ShowSupplierPortalPreview extends OrgAction
     public function productProposalTemplate(Supplier $supplier, ActionRequest $request): BinaryFileResponse
     {
         return DownloadSupplierPortalProductProposalTemplate::make()->handle($supplier);
+    }
+
+    public function productProposalPreview(Supplier $supplier, ActionRequest $request): JsonResponse
+    {
+        $validated = Validator::make($request->allFiles(), ImportSupplierPortalProductProposals::fileRules())->validate();
+
+        return response()->json(['rows' => ImportSupplierPortalProductProposals::make()->previewRows($supplier, $validated['file'])]);
     }
 
     public function blocked(): never

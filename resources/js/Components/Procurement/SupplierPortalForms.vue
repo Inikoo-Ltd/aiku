@@ -14,14 +14,15 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCalendarPlus, faDownload, faExclamationTriangle, faFileExcel, faPaperPlane, faSave, faTimes, faUpload } from "@fal"
+import { faCalendarPlus, faExclamationTriangle, faPaperPlane, faSave, faTimes } from "@fal"
+import SupplierPortalProductProposalUpload from "@/Components/Procurement/SupplierPortalProductProposalUpload.vue"
 
-library.add(faCalendarPlus, faDownload, faExclamationTriangle, faFileExcel, faPaperPlane, faSave, faTimes, faUpload)
+library.add(faCalendarPlus, faExclamationTriangle, faPaperPlane, faSave, faTimes)
 
 export interface PortalForms {
 	submit: Record<string, string>
 	update: string
-	product_proposals: { template: string; import: string; max_rows: number }
+	product_proposals: { template: string; preview: string; import: string; max_rows: number; products_per_request: number }
 	document_types: { value: string; label: string }[]
 	max_files: number
 	max_file_mb: number
@@ -81,6 +82,7 @@ const companyNow = computed<Record<string, string>>(() => ({
 }))
 const sentAs: Record<string, string> = { company_phone: "phone", company_website: "contact_website", company_address: "address" }
 const fileKey = ref(0)
+const isPreviewingSpreadsheet = ref(false)
 
 const blank = () => ({
 	supplier_product_id: null as number | null,
@@ -154,6 +156,7 @@ watch(
 )
 
 watch(type, () => {
+	isPreviewingSpreadsheet.value = false
 	if (props.editing) {
 		return
 	}
@@ -227,21 +230,6 @@ const send = (asDraft = false) => {
 		})
 }
 
-const spreadsheetForm = useForm({ file: null as File | null })
-const spreadsheetKey = ref(0)
-
-const sendSpreadsheet = () => {
-	spreadsheetForm.post(props.forms.product_proposals.import, {
-		forceFormData: true,
-		preserveScroll: true,
-		onSuccess: () => {
-			spreadsheetForm.reset()
-			spreadsheetKey.value++
-			emit("done")
-		},
-	})
-}
-
 const label = "flex flex-col gap-1 text-sm"
 const caption = "font-medium text-gray-700"
 </script>
@@ -273,32 +261,12 @@ const caption = "font-medium text-gray-700"
 			</div>
 		</template>
 
-		<div v-if="type === 'product_proposal' && !editing" class="space-y-2 rounded border border-gray-200 bg-gray-50 p-3 text-sm">
-			<div class="flex items-center gap-2 font-medium text-gray-700">
-				<FontAwesomeIcon icon="fal fa-file-excel" class="text-green-600" fixed-width aria-hidden="true" />
-				{{ ctrans("Many products in Excel?") }}
-			</div>
-			<p class="text-xs text-gray-500">
-				{{ ctrans("Download our template, fill one product per row (up to :count) and upload it. Each row is sent to us as one product idea. If we need pictures or more details, we will ask you.", { count: String(forms.product_proposals.max_rows) }) }}
-			</p>
-			<div class="flex flex-wrap items-center gap-2">
-				<a :href="forms.product_proposals.template" download>
-					<Button type="tertiary" size="xs" :label="ctrans('Download template')">
-						<template #icon><FontAwesomeIcon icon="fal fa-download" fixed-width aria-hidden="true" /></template>
-					</Button>
-				</a>
-				<FileUpload :key="spreadsheetKey" mode="basic" :auto="false" customUpload accept=".xlsx,.xls,.csv" :chooseLabel="ctrans('Choose filled file')" @select="(event) => (spreadsheetForm.file = event.files[0] ?? null)" />
-				<Button type="primary" size="xs" :label="ctrans('Upload and send to :group', { group: String(usePage().props.group ?? '') })" :disabled="!spreadsheetForm.file" :loading="spreadsheetForm.processing" @click="sendSpreadsheet">
-					<template #icon><FontAwesomeIcon icon="fal fa-upload" fixed-width aria-hidden="true" /></template>
-				</Button>
-			</div>
-			<div v-if="Object.keys(spreadsheetForm.errors).length" class="rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700">
-				<p v-for="(error, field) in spreadsheetForm.errors" :key="field">{{ error }}</p>
-			</div>
-			<p class="text-xs text-gray-500">{{ ctrans("Or tell us about one product here:") }}</p>
-		</div>
+		<template v-if="type === 'product_proposal' && !editing">
+			<SupplierPortalProductProposalUpload :routes="forms.product_proposals" :maxFiles="forms.max_files" :maxFileMb="forms.max_file_mb" @previewing="(isPreviewing) => (isPreviewingSpreadsheet = isPreviewing)" />
+			<p v-if="!isPreviewingSpreadsheet" class="text-xs text-gray-500">{{ ctrans("Or tell us about one product here:") }}</p>
+		</template>
 
-		<form class="grid gap-3 md:grid-cols-2" @submit.prevent="send(false)">
+		<form v-if="!(type === 'product_proposal' && isPreviewingSpreadsheet)" class="grid gap-3 md:grid-cols-2" @submit.prevent="send(false)">
 			<template v-if="type === 'referral'">
 				<p class="text-xs text-gray-500 md:col-span-2">{{ ctrans("Small shops that cannot reach your minimum order can buy your products from us. Tell us who they are and we will contact them.") }}</p>
 				<label :class="label"><span :class="caption">{{ ctrans("Business name") }} <span class="text-red-500">*</span></span><InputText v-model="form.company_name" /></label>
