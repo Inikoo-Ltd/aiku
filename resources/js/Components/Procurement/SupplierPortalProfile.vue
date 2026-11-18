@@ -44,7 +44,6 @@ const isSaving = ref(false)
 const isSaved = ref(false)
 const errors = ref<Record<string, string>>({})
 const photoInput = ref<HTMLInputElement | null>(null)
-const companyPhotoInput = ref<HTMLInputElement | null>(null)
 
 const themes = useColorTheme.slice(0, 10).map((colours, index) => ({ index, background: colours[0], active: colours[2], accent: colours[3] }))
 
@@ -66,7 +65,7 @@ const save = (data: Record<string, unknown>, onSuccess?: () => void) => {
 	router.post(props.updateRoute, data, {
 		preserveScroll: true,
 		preserveState: true,
-		forceFormData: data.photo !== undefined || data.company_photo !== undefined,
+		forceFormData: data.photo !== undefined,
 		only: ["profile"],
 		onSuccess,
 		onError: (response) => (errors.value = response),
@@ -85,7 +84,7 @@ const chooseTheme = (index: number) => {
 	save({ theme: index })
 }
 
-type PhotoField = "photo" | "company_photo"
+type PhotoField = "photo"
 
 const cropper = ref<InstanceType<typeof Cropper> | null>(null)
 const cropSource = ref<string | null>(null)
@@ -215,21 +214,6 @@ const openCompanyDetails = () => {
 					<p v-if="errors.theme" class="text-xs text-red-600">{{ errors.theme }}</p>
 				</div>
 
-				<div class="flex items-center gap-4 border-t border-gray-100 pt-4">
-					<span class="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 text-gray-400">
-						<FontAwesomeIcon icon="fal fa-building" size="lg" fixed-width aria-hidden="true" />
-						<Image v-if="profile.company_logo" :src="profile.company_logo" class="absolute inset-0 h-full w-full object-cover" :alt="ctrans('Company photo')" />
-					</span>
-					<div class="space-y-1">
-						<div class="text-xs font-medium text-gray-500">{{ ctrans("Company photo") }}</div>
-						<Button type="tertiary" size="xs" :label="profile.company_logo ? ctrans('Change company photo') : ctrans('Add a company photo')" :loading="isSaving" @click="companyPhotoInput?.click()">
-							<template #icon><FontAwesomeIcon icon="fal fa-camera" fixed-width aria-hidden="true" /></template>
-						</Button>
-						<input ref="companyPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="choosePhoto('company_photo', $event)" />
-						<p v-if="errors.company_photo" class="text-xs text-red-600">{{ errors.company_photo }}</p>
-					</div>
-				</div>
-
 				<div class="space-y-1 border-t border-gray-100 pt-4">
 					<p class="text-xs text-gray-500">{{ ctrans("Company name, phone, website or address changed? Send it to us: we check it and update it.") }}</p>
 					<Button type="tertiary" size="xs" :label="ctrans('Change company details')" @click="openCompanyDetails">
@@ -239,7 +223,7 @@ const openCompanyDetails = () => {
 			</div>
 		</Dialog>
 
-		<Dialog v-model:visible="isCropping" modal :header="cropField === 'company_photo' ? ctrans('Crop company photo') : ctrans('Crop your photo')" :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }">
+		<Dialog v-model:visible="isCropping" modal :header="ctrans('Crop your photo')" :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }">
 			<div class="space-y-2">
 				<div class="h-80 w-full overflow-hidden rounded bg-gray-800">
 					<Cropper
