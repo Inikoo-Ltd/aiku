@@ -16,12 +16,13 @@ import StockDeliverySupplierPayments from "@/Components/Procurement/StockDeliver
 import { ctrans } from "@/Composables/useTrans"
 import { useConfirm } from "primevue/useconfirm"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faFolderOpen, faUpload, faUndo, faCheckCircle, faCircle, faMinusCircle, faFileAlt, faMagic, faBoxUsd, faCoins, faTimes, faLock, faFilePdf, faFileArchive, faDownload } from "@fal"
+import { faFolderOpen, faUpload, faUndo, faCheckCircle, faCircle, faMinusCircle, faFileAlt, faMagic, faBoxUsd, faCoins, faTimes, faLock, faFilePdf, faFileArchive, faPaperclip, faDownload } from "@fal"
 
-library.add(faFolderOpen, faUpload, faUndo, faCheckCircle, faCircle, faMinusCircle, faFileAlt, faMagic, faBoxUsd, faCoins, faTimes, faLock, faFilePdf, faFileArchive, faDownload)
+library.add(faFolderOpen, faUpload, faUndo, faCheckCircle, faCircle, faMinusCircle, faFileAlt, faMagic, faBoxUsd, faCoins, faTimes, faLock, faFilePdf, faFileArchive, faPaperclip, faDownload)
 
 type CostingSection = "invoice" | "landed"
 
@@ -39,7 +40,24 @@ type Step = {
 	costing: CostingSection | null
 	upload_in_costing: boolean
 	files: { id: number; media_id: number; is_applied: boolean; file_name: string | null; caption: string | null; url: string }[]
+	money: DepositMoney | BalanceMoney | null
 }
+
+type DepositRow = {
+	purchase_order: string
+	date: string | null
+	amount: number
+	currency: string | null
+	original_amount: number | null
+	original_currency: string | null
+	percent: number | null
+	is_paid: boolean
+	bank_statement: string | null
+}
+
+type DepositMoney = { rows: DepositRow[]; currency: string | null; total: number | null }
+
+type BalanceMoney = { currency: string; total: number; total_source: "invoice" | "orders"; deposits: number; payments: number; left: number }
 
 const props = defineProps<{
 	data: {
@@ -98,6 +116,11 @@ const statusOptions = computed(() => [
 ])
 
 const modeLabel = computed(() => ({ sea: ctrans("Sea"), air: ctrans("Air"), road: ctrans("Road") })[props.data.summary.mode ?? "sea"] ?? null)
+
+const locale = useLocaleStore()
+const money = (currency: string | null, amount: number) => (currency ? locale.currencyFormat(currency, amount) : amount)
+const depositMoney = (step: Step) => (step.key === "deposit" ? (step.money as DepositMoney | null) : null)
+const balanceMoney = (step: Step) => (step.key === "balance_payment" ? (step.money as BalanceMoney | null) : null)
 
 const formatDate = (value: string | null) => (value ? useFormatTime(value) : "—")
 const toDate = (value: string | null) => (value ? new Date(`${value.substring(0, 10)}T00:00:00`) : null)
@@ -301,6 +324,38 @@ const statusIconClass: Record<Status, string> = {
 								{{ ctrans("Marked by :name", { name: step.marked.by ?? "—" }) }}
 								<template v-if="step.source"> · {{ step.source }}</template>
 							</div>
+							<div v-if="depositMoney(step)?.rows.length" class="ml-6 mt-1.5 space-y-1 text-xs">
+								<div v-for="(row, rowIndex) in depositMoney(step)!.rows" :key="rowIndex" class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-gray-600">
+									<span class="whitespace-nowrap font-medium text-gray-700">{{ row.purchase_order }}</span>
+									<span class="whitespace-nowrap tabular-nums text-gray-900">{{ money(row.currency, row.amount) }}</span>
+									<span v-if="row.percent !== null" class="whitespace-nowrap tabular-nums">{{ ctrans(":percent% of the order", { percent: String(row.percent) }) }}</span>
+									<span v-if="row.original_amount !== null && row.original_currency" class="whitespace-nowrap">{{ ctrans("sent as :amount", { amount: String(money(row.original_currency, row.original_amount)) }) }}</span>
+									<span v-if="row.date" class="whitespace-nowrap text-gray-400">{{ formatDate(row.date) }}</span>
+									<span v-if="!row.is_paid" class="whitespace-nowrap rounded bg-amber-50 px-1.5 text-amber-700">{{ ctrans("Requested, not paid yet") }}</span>
+									<a v-if="row.bank_statement" :href="route('grp.media.download', { id: row.bank_statement })" target="_blank" class="whitespace-nowrap text-gray-500 underline decoration-gray-300 hover:text-gray-800">
+										<FontAwesomeIcon :icon="faPaperclip" aria-hidden="true" />
+										{{ ctrans("Bank statement") }}
+									</a>
+									<span v-else-if="row.is_paid" class="whitespace-nowrap text-amber-600">{{ ctrans("No bank statement") }}</span>
+								</div>
+								<div v-if="depositMoney(step)!.rows.length > 1 && depositMoney(step)!.total !== null" class="font-medium text-gray-700">
+									{{ ctrans("Deposits sent: :amount", { amount: String(money(depositMoney(step)!.currency, depositMoney(step)!.total!)) }) }}
+								</div>
+							</div>
+							<dl v-if="balanceMoney(step)" class="ml-6 mt-1.5 grid w-fit grid-cols-[auto_auto] gap-x-4 gap-y-0.5 text-xs">
+								<dt class="whitespace-nowrap text-gray-500">{{ balanceMoney(step)!.total_source === "invoice" ? ctrans("Invoice total") : ctrans("Orders total, no invoice yet") }}</dt>
+								<dd class="text-right tabular-nums text-gray-700">{{ money(balanceMoney(step)!.currency, balanceMoney(step)!.total) }}</dd>
+								<template v-if="balanceMoney(step)!.deposits">
+									<dt class="whitespace-nowrap text-gray-500">{{ ctrans("Deposits sent") }}</dt>
+									<dd class="text-right tabular-nums text-gray-700">−{{ money(balanceMoney(step)!.currency, balanceMoney(step)!.deposits) }}</dd>
+								</template>
+								<template v-if="balanceMoney(step)!.payments">
+									<dt class="whitespace-nowrap text-gray-500">{{ ctrans("Paid") }}</dt>
+									<dd class="text-right tabular-nums text-gray-700">−{{ money(balanceMoney(step)!.currency, balanceMoney(step)!.payments) }}</dd>
+								</template>
+								<dt class="whitespace-nowrap font-semibold text-gray-800">{{ balanceMoney(step)!.left < 0 ? ctrans("Overpaid") : ctrans("Left to pay") }}</dt>
+								<dd class="text-right font-semibold tabular-nums" :class="balanceMoney(step)!.left < 0 ? 'text-red-600' : 'text-gray-900'">{{ money(balanceMoney(step)!.currency, Math.abs(balanceMoney(step)!.left)) }}</dd>
+							</dl>
 							<div v-if="errors[step.key]" class="ml-6 mt-1 text-xs text-red-600">{{ errors[step.key] }}</div>
 						</td>
 						<td class="px-3 py-2">

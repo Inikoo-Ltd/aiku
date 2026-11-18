@@ -4268,6 +4268,95 @@ test('a file uploaded to the wrong import file step can be removed from the step
     expect(collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->firstWhere('key', 'deposit')['files'])->toBe([]);
 });
 
+test('import file deposit row shows each deposit sent as amount, % of its order and bank statement, and the balance row what is left to pay (HELP-4794)', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'IMPORT-FILE-4794', [10]);
+    $order         = fn (string $reference, float $items) => tap(
+        StorePurchaseOrder::make()->action($stockDelivery->parent, array_merge(PurchaseOrder::factory()->definition(), ['reference' => $reference]), strict: false),
+        fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->updateQuietly(['cost_items' => $items, 'currency_id' => $stockDelivery->currency_id])
+    );
+    $supplierOrder = $order('HELP-4794-A', 1000);
+    $agentOrder    = $order('HELP-4794-B', 500);
+    $stockDelivery->purchaseOrders()->sync([$supplierOrder->id, $agentOrder->id]);
+
+    $this->post(route('grp.models.stock-delivery.attachment.attach', ['stockDelivery' => $stockDelivery->id]), ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('statement.pdf', 10, 'application/pdf')], 'scope' => PurchaseOrderAttachmentScopeEnum::DEPOSIT_PAYMENT->value])->assertSuccessful();
+    $mediaId = collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->firstWhere('key', 'deposit')['files'][0]['media_id'];
+
+    $supplierOrder->depositPayments()->create([
+        'group_id'        => $supplierOrder->group_id,
+        'organisation_id' => $supplierOrder->organisation_id,
+        'currency_id'     => $supplierOrder->currency_id,
+        'amount'          => 300,
+        'date'            => '2026-11-01',
+        'method'          => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum::BANK_TRANSFER,
+        'media_id'        => $mediaId,
+    ]);
+    $moneyRequest = \App\Models\SupplyChain\DepositRequest::create([
+        'group_id'        => $stockDelivery->group_id,
+        'agent_id'        => $this->orgAgent->agent_id,
+        'organisation_id' => $stockDelivery->organisation_id,
+        'currency_id'     => $stockDelivery->currency_id,
+        'state'           => \App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED,
+        'requested_at'    => '2026-11-02',
+    ]);
+    $advance = $moneyRequest->items()->create(['organisation_id' => $stockDelivery->organisation_id, 'kind' => \App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum::ADVANCE, 'purchase_order_id' => $agentOrder->id, 'amount' => 100]);
+
+    $steps = fn () => collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->keyBy('key');
+
+    $deposit = $steps()['deposit']['money'];
+    expect($deposit['rows'])->toHaveCount(2)
+        ->and($deposit['rows'][0])->toMatchArray(['purchase_order' => 'HELP-4794-A', 'amount' => 300.0, 'percent' => 30.0, 'is_paid' => true])
+        ->and($deposit['rows'][0]['bank_statement'])->toBeString()
+        ->and($deposit['rows'][1])->toMatchArray(['purchase_order' => 'HELP-4794-B', 'amount' => 100.0, 'percent' => 20.0, 'is_paid' => false, 'bank_statement' => null])
+        ->and($deposit['total'])->toBe(300.0)
+        ->and($steps()['balance_payment']['money'])->toMatchArray(['total' => 1500.0, 'total_source' => 'orders', 'deposits' => 300.0, 'payments' => 0.0, 'left' => 1200.0]);
+
+    $advance->update(['paid_at' => now()]);
+    expect($steps()['balance_payment']['money']['left'])->toBe(1100.0);
+
+    $moneyRequest->update(['state' => \App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::CANCELLED]);
+    expect($steps()['deposit']['money']['rows'])->toHaveCount(1);
+
+    $later = StoreStockDelivery::make()->action($stockDelivery->parent, ['reference' => 'IMPORT-FILE-4794-2', 'date' => date('Y-m-d')], strict: false);
+    $later->purchaseOrders()->sync([$supplierOrder->id]);
+    expect(collect(GetStockDeliveryImportFile::run($later->refresh())['steps'])->firstWhere('key', 'deposit')['money']['rows'])->toBe([]);
+});
+
+test('on an agent container the deposits sent for its orders come off the agent invoice balance, the same figure the import file shows (HELP-4794)', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'AGENT-DEP-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    $orgAgent->update(['agent_fee_percentage' => 0]);
+    $stockDelivery->items()->sole()->updateQuietly(['net_amount' => 1000]);
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($stockDelivery->parent, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'AGENT-DEP-PO']), strict: false);
+    $purchaseOrder->updateQuietly(['cost_items' => 1000, 'currency_id' => $stockDelivery->currency_id]);
+    $stockDelivery->purchaseOrders()->sync([$purchaseOrder->id]);
+    $purchaseOrder->depositPayments()->create([
+        'group_id'        => $purchaseOrder->group_id,
+        'organisation_id' => $purchaseOrder->organisation_id,
+        'currency_id'     => $purchaseOrder->currency_id,
+        'amount'          => 400,
+        'date'            => '2026-11-01',
+        'method'          => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum::BANK_TRANSFER,
+    ]);
+
+    setPermissionsTeamId($this->group->id);
+    actingAs(agentOrganisationAdmin($agent->organisation, 'agt-dep-'.Str::lower(Str::random(6))));
+    $invoice = StoreAgentInvoice::make()->handle($agent, $stockDelivery->refresh());
+    StoreAgentPayment::make()->handle($stockDelivery, ['date' => now()->toDateString(), 'amount' => 100, 'reference' => 'TT-4794']);
+    actingAs($this->adminGuest->getUser());
+
+    $invoice = $invoice->refresh();
+    $balance = collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->firstWhere('key', 'balance_payment')['money'];
+
+    expect(collect($invoice->advancePayments())->firstWhere('reference', 'AGENT-DEP-PO'))->toMatchArray(['type' => 'deposit', 'amount' => 400.0])
+        ->and($invoice->paidAmount())->toBe(500.0)
+        ->and($invoice->balanceDue())->toBe(round((float) $invoice->total_amount - 500, 2))
+        ->and($balance)->toMatchArray(['total_source' => 'invoice', 'deposits' => 400.0, 'payments' => 100.0, 'left' => $invoice->balanceDue()]);
+});
+
 test('the import file documents download as one ZIP or one printable PDF in checklist order (HELP-4795)', function () {
     $stockDelivery = createStockDeliveryWithItems($this, 'IMPORT-FILE-4795', [10]);
     $pdfBytes      = function (string $text): string {

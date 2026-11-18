@@ -8,7 +8,12 @@
 
 namespace App\Actions\GoodsIn\StockDelivery\UI;
 
+use App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
+use App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum;
+use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Models\Helpers\Currency;
+use App\Models\SupplyChain\DepositRequestItem;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryServiceInvoiceTypeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Models\GoodsIn\StockDelivery;
@@ -96,6 +101,7 @@ class GetStockDeliveryImportFile
         $auto           = $this->auto($stockDelivery, $purchaseOrders, $files);
         $userNames      = User::whereIn('id', collect($marks)->pluck('user_id')->filter()->unique())->pluck('contact_name', 'id');
         $mode           = $this->mode($stockDelivery);
+        $money          = $this->money($stockDelivery, $purchaseOrders);
 
         $steps = [];
         foreach (self::labels() as $key => $label) {
@@ -120,6 +126,7 @@ class GetStockDeliveryImportFile
                 'costing'  => self::COSTING_SECTIONS[$key] ?? null,
                 'upload_in_costing' => in_array($key, self::UPLOADED_IN_COSTING, true),
                 'files'    => $this->scope($key) !== null ? $files->where('scope', $this->scope($key)->value)->values()->all() : [],
+                'money'    => $money[$key] ?? null,
             ];
         }
 
@@ -180,6 +187,116 @@ class GetStockDeliveryImportFile
                 'name'       => 'grp.models.stock-delivery.attachment.attach',
                 'parameters' => ['stockDelivery' => $stockDelivery->id],
             ],
+        ];
+    }
+
+    /**
+     * The deposits sent for the orders whose first delivery this is: supplier instalments with their bank statement and
+     * the advance lines of live money requests (paid or only requested). AgentInvoice::advancePayments reads the paid
+     * ones too, so the Import file and the agent payments dialog agree (HELP-4794).
+     *
+     * @return Collection<int, array{purchase_order: string, date: ?string, amount: float, currency: ?string, original_amount: ?float, original_currency: ?string, percent: ?float, is_paid: bool, bank_statement: ?string}>
+     */
+    public static function sentDeposits(StockDelivery $stockDelivery, ?Collection $purchaseOrders = null): Collection
+    {
+        $purchaseOrders ??= $stockDelivery->purchaseOrders()->get();
+        $firstDeliveryOrders = $purchaseOrders->filter(
+            fn (PurchaseOrder $purchaseOrder) => (int) $purchaseOrder->stockDeliveries()->min('stock_deliveries.id') === $stockDelivery->id
+        )->keyBy('id');
+        $orderCurrencies     = Currency::whereIn('id', $purchaseOrders->pluck('currency_id')->unique())->pluck('code', 'id');
+        $percent             = fn (PurchaseOrder $purchaseOrder, float $amount): ?float => SyncPurchaseOrderDepositPaid::totalToPay($purchaseOrder) > 0
+            ? round(100 * $amount / SyncPurchaseOrderDepositPaid::totalToPay($purchaseOrder), 1)
+            : null;
+
+        $rows = PurchaseOrderDepositPayment::whereIn('purchase_order_id', $firstDeliveryOrders->keys())
+            ->with(['bankStatement:id,ulid', 'originalCurrency:id,code'])
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get()
+            ->map(function (PurchaseOrderDepositPayment $payment) use ($firstDeliveryOrders, $orderCurrencies, $percent) {
+                $purchaseOrder = $firstDeliveryOrders[$payment->purchase_order_id];
+
+                return [
+                    'purchase_order'    => $purchaseOrder->reference,
+                    'date'              => $payment->date->toDateString(),
+                    'amount'            => (float) $payment->amount,
+                    'currency'          => $orderCurrencies[$purchaseOrder->currency_id] ?? null,
+                    'original_amount'   => $payment->original_amount !== null ? (float) $payment->original_amount : null,
+                    'original_currency' => $payment->originalCurrency?->code,
+                    'percent'           => $percent($purchaseOrder, (float) $payment->amount),
+                    'is_paid'           => true,
+                    'bank_statement'    => $payment->bankStatement?->ulid,
+                ];
+            });
+
+        $advances = DepositRequestItem::where('kind', DepositRequestItemKindEnum::ADVANCE)
+            ->whereIn('purchase_order_id', $firstDeliveryOrders->keys())
+            ->whereHas('depositRequest', fn ($query) => $query->whereIn('state', [DepositRequestStateEnum::REQUESTED, DepositRequestStateEnum::SETTLED]))
+            ->with(['depositRequest.currency:id,code', 'depositRequest.transfers' => fn ($query) => $query->whereNotNull('media_id')->with('bankStatement:id,ulid')])
+            ->orderBy('id')
+            ->get()
+            ->map(function (DepositRequestItem $item) use ($firstDeliveryOrders, $percent) {
+                $purchaseOrder = $firstDeliveryOrders[$item->purchase_order_id];
+                $transfer      = $item->depositRequest->transfers->first();
+
+                return [
+                    'purchase_order'    => $purchaseOrder->reference,
+                    'date'              => ($item->paid_at ?? $item->depositRequest->requested_at)?->toDateString(),
+                    'amount'            => (float) $item->amount,
+                    'currency'          => $item->depositRequest->currency->code,
+                    'original_amount'   => null,
+                    'original_currency' => null,
+                    'percent'           => $item->depositRequest->currency_id === $purchaseOrder->currency_id ? $percent($purchaseOrder, (float) $item->amount) : null,
+                    'is_paid'           => $item->paid_at !== null,
+                    'bank_statement'    => $transfer?->bankStatement?->ulid,
+                ];
+            });
+
+        return $rows->concat($advances)->sortBy('date')->values();
+    }
+
+    /**
+     * HELP-4794: what was sent as deposit and what is left to pay. A supplier order's deposit is its instalments
+     * (purchase_order_deposit_payments, in the order's currency, with the bank statement); an agent order's is the
+     * advance lines of the money requests, with the bank statement of the transfer that paid them. A deposit counts
+     * on its order's first delivery only, as the supplier payments dialog does. The % is of the order's goods
+     * (SyncPurchaseOrderDepositPaid::totalToPay), only where the money is in the order's currency. Left to pay is
+     * the invoice total, or the orders' total until the invoice arrives, less the deposits and the payments on this
+     * delivery, and only when everything is in one currency.
+     *
+     * @return array{deposit: array<string, mixed>, balance_payment: array<string, mixed>}
+     */
+    private function money(StockDelivery $stockDelivery, Collection $purchaseOrders): array
+    {
+        $orderCurrencies = Currency::whereIn('id', $purchaseOrders->pluck('currency_id')->unique())->pluck('code', 'id');
+        $deposits        = self::sentDeposits($stockDelivery, $purchaseOrders);
+        $paidRows        = $deposits->where('is_paid', true);
+        $invoice         = $stockDelivery->agentInvoice ?? $stockDelivery->supplierInvoice;
+        $payments        = $stockDelivery->agent_id ? $stockDelivery->agentPayments()->get() : $stockDelivery->supplierPayments()->get();
+        $currencies      = $paidRows->pluck('currency')
+            ->concat(Currency::whereIn('id', $payments->pluck('currency_id')->unique())->pluck('code'))
+            ->push($invoice ? $invoice->currency->code : null)
+            ->concat($invoice ? [] : $purchaseOrders->map(fn (PurchaseOrder $purchaseOrder) => $orderCurrencies[$purchaseOrder->currency_id] ?? null))
+            ->filter()
+            ->unique();
+        $total           = $invoice ? (float) $invoice->total_amount : round($purchaseOrders->sum(fn (PurchaseOrder $purchaseOrder) => SyncPurchaseOrderDepositPaid::totalToPay($purchaseOrder)), 2);
+        $sent            = round((float) $paidRows->sum('amount'), 2);
+        $paid            = round((float) $payments->sum('amount') + ($stockDelivery->agent_id ? (float) $stockDelivery->depositApplications()->sum('amount') : 0), 2);
+
+        return [
+            'deposit'         => [
+                'rows'     => $deposits->all(),
+                'currency' => $paidRows->pluck('currency')->unique()->count() === 1 ? $paidRows->first()['currency'] : null,
+                'total'    => $paidRows->pluck('currency')->unique()->count() === 1 ? $sent : null,
+            ],
+            'balance_payment' => $currencies->count() === 1 && $total > 0 ? [
+                'currency'     => $currencies->first(),
+                'total'        => $total,
+                'total_source' => $invoice ? 'invoice' : 'orders',
+                'deposits'     => $sent,
+                'payments'     => $paid,
+                'left'         => round($total - $sent - $paid, 2),
+            ] : null,
         ];
     }
 
