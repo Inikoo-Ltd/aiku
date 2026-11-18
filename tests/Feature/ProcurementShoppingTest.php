@@ -4079,3 +4079,32 @@ test('what a shipment still owes takes off both what a money request asked for i
 
     expect($shipment())->toBeNull();
 });
+
+test('the agent reminds a client of a money request at most once an hour', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-REM-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'type' => 'other_expense', 'amount' => 40, 'notes' => 'Bank charge']);
+    $expense = \App\Models\SupplyChain\AgentPayment::where('agent_id', $agent->id)->latest('id')->firstOrFail();
+
+    $depositRequest = \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [
+        ['kind' => 'expense', 'agent_payment_id' => $expense->id, 'amount' => 40],
+    ]]);
+
+    \Illuminate\Support\Facades\Notification::fake();
+    setPermissionsTeamId($this->group->id);
+    actingAs(agentOrganisationAdmin($agent->organisation, 'w3-rem-'.Str::lower(Str::random(6))));
+
+    $this->post(route('grp.models.deposit_request.remind', $depositRequest->id))->assertSessionHasNoErrors();
+    $this->post(route('grp.models.deposit_request.remind', $depositRequest->id))->assertSessionHasErrors('request');
+    expect($depositRequest->refresh()->number_reminders)->toBe(1);
+
+    $depositRequest->update(['last_reminded_at' => now()->subMinutes(61)]);
+    $this->post(route('grp.models.deposit_request.remind', $depositRequest->id))->assertSessionHasNoErrors();
+    expect($depositRequest->refresh()->number_reminders)->toBe(2);
+
+    actingAs($this->adminGuest->getUser());
+});
