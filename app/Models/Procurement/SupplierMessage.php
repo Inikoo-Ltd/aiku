@@ -90,10 +90,14 @@ class SupplierMessage extends Model
     /**
      * @return array{supplier_id: int|null, org_supplier_id: int|null, org_agent_id: int|null, org_partner_id: int|null}
      */
-    public static function counterpartAttributes(OrgSupplier|OrgAgent|OrgPartner|null $counterpart): array
+    public static function counterpartAttributes(OrgSupplier|OrgAgent|OrgPartner|Supplier|null $counterpart): array
     {
         return [
-            'supplier_id'     => $counterpart instanceof OrgSupplier ? $counterpart->supplier_id : null,
+            'supplier_id'     => match (true) {
+                $counterpart instanceof OrgSupplier => $counterpart->supplier_id,
+                $counterpart instanceof Supplier    => $counterpart->id,
+                default                             => null,
+            },
             'org_supplier_id' => $counterpart instanceof OrgSupplier ? $counterpart->id : null,
             'org_agent_id'    => $counterpart instanceof OrgAgent ? $counterpart->id : null,
             'org_partner_id'  => $counterpart instanceof OrgPartner ? $counterpart->id : null,

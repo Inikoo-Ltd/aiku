@@ -60,6 +60,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Support\AgentOrganisationSelection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
@@ -219,7 +220,8 @@ class IndexPurchaseOrders extends OrgAction
         if (class_basename($parent) == 'OrgAgent') {
             $query->where('purchase_orders.agent_id', $parent->agent_id)->where('purchase_orders.organisation_id', $parent->organisation_id);
         } elseif (class_basename($parent) == 'OrgSupplier' && $this->viewingAgent) {
-            $query->where('purchase_orders.supplier_id', $parent->supplier_id);
+            $query->where('purchase_orders.supplier_id', $parent->supplier_id)
+                ->when(AgentOrganisationSelection::fromRequest()?->selected, fn ($query, $selected) => $query->where('purchase_orders.organisation_id', $selected->id));
         } elseif (class_basename($parent) == 'OrgSupplier') {
             $query->where('purchase_orders.parent_type', 'OrgSupplier')->where('purchase_orders.parent_id', $parent->id);
         } elseif (class_basename($parent) == 'OrgPartner') {

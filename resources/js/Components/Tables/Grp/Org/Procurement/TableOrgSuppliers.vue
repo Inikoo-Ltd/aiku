@@ -60,11 +60,7 @@ function supplierProductsRoute(orgSupplier: OrgSupplier) {
 const livePurchaseOrderStates = ["in_process", "submitted", "confirmed", "in_production", "in_warehouse", "ready", "handed_over", "arrived"]
 
 function purchaseOrdersRoute(orgSupplier: OrgSupplier, query: Record<string, string> = {}) {
-	const routeName = route().current("grp.org.agent.*")
-		? "grp.org.agent.org_suppliers.show.purchase_orders.index"
-		: "grp.org.procurement.org_suppliers.show.purchase_orders.index"
-
-	return route(routeName, {
+	return route("grp.org.procurement.org_suppliers.show.purchase_orders.index", {
 		organisation: route().params["organisation"],
 		orgSupplier: orgSupplier.org_supplier_slug,
 		...query,

@@ -44,7 +44,7 @@ class IndexSupplierMessages extends OrgAction
         return $this->handle($organisation);
     }
 
-    public function handle(Organisation|OrgSupplier|OrgAgent|Supplier $parent, ?string $prefix = null): LengthAwarePaginator
+    public function handle(Organisation|OrgSupplier|OrgAgent|Supplier $parent, ?string $prefix = null, ?Organisation $organisation = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -69,7 +69,8 @@ class IndexSupplierMessages extends OrgAction
             $parent instanceof Organisation => $query->where('supplier_messages.organisation_id', $parent->id),
             $parent instanceof OrgSupplier => $query->where('supplier_messages.org_supplier_id', $parent->id),
             $parent instanceof OrgAgent => $query->where('supplier_messages.org_agent_id', $parent->id),
-            $parent instanceof Supplier => $query->where('supplier_messages.supplier_id', $parent->id),
+            $parent instanceof Supplier => $query->where('supplier_messages.supplier_id', $parent->id)
+                ->when($organisation, fn ($query) => $query->where('supplier_messages.organisation_id', $organisation->id)),
         };
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -206,7 +207,7 @@ class IndexSupplierMessages extends OrgAction
     /**
      * @return array{email: array<string, mixed>|null, whatsapp: array<string, mixed>|null}|null
      */
-    public static function composeData(Organisation $organisation, User $user, OrgSupplier|OrgAgent|null $counterpart = null): ?array
+    public static function composeData(Organisation $organisation, User $user, OrgSupplier|OrgAgent|Supplier|null $counterpart = null): ?array
     {
         if (! $user->authTo("procurement.{$organisation->id}.edit")) {
             return null;

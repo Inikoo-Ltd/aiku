@@ -40,6 +40,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Support\AgentOrganisationSelection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -328,6 +329,9 @@ class IndexStockDeliveries extends OrgAction
             $query->where('stock_deliveries.organisation_id', $this->parent->partner->id);
         } elseif ($this->parent instanceof OrgSupplier && $agent = $this->agentViewingSupplier()) {
             $query->where(fn ($query) => $this->whereAgentSupplierDelivery($query, $agent, $this->parent->supplier_id));
+            if ($selected = AgentOrganisationSelection::fromRequest()?->selected) {
+                $query->where('stock_deliveries.organisation_id', $selected->id);
+            }
         } elseif ($this->parent instanceof OrgSupplier) {
             $query->where('stock_deliveries.parent_type', 'OrgSupplier')->where('stock_deliveries.parent_id', $this->parent->id);
         } elseif ($this->parent instanceof Warehouse) {

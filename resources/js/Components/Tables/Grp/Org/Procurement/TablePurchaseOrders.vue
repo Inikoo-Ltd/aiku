@@ -184,7 +184,7 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
 		case "grp.org.procurement.org_suppliers.show":
 			return route("grp.org.procurement.org_suppliers.show.purchase-orders.show", [
 				route().params["organisation"],
-				route().params["orgSupplier"],
+				(route().params["orgSupplier"] ?? route().params["supplier"]),
 				purchaseOrder.slug,
 			])
 		case "grp.org.procurement.org_partners.show.purchase-orders.index":
@@ -210,7 +210,7 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
 
 			return route("grp.org.procurement.org_suppliers.show.purchase-orders.show", [
 				route().params["organisation"],
-				route().params["orgSupplier"],
+				(route().params["orgSupplier"] ?? route().params["supplier"]),
 				purchaseOrder.slug,
 			])
 		default:
@@ -264,7 +264,7 @@ function SupplierRoute(purchaseOrder: PurchaseOrder) {
 		case "grp.org.procurement.org_suppliers.show.purchase_orders.index":
 			return route("grp.org.procurement.org_suppliers.show", [
 				route().params["organisation"],
-				route().params["orgSupplier"],
+				(route().params["orgSupplier"] ?? route().params["supplier"]),
 			])
 		default:
 			if (!purchaseOrder?.parent_slug || !purchaseOrder.org_agent_slug) {

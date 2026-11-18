@@ -26,9 +26,9 @@ export const useTabChange = (tabSlug: string, currentTab: Ref<string>, deferredP
     // Section: remove other parameter if ?tab= has changed
     let targetUrl: string
     if (isTabChanged) {
-        // The list a page was opened from (an artefact's previous / next) stays with it across tabs
+        // The list a page was opened from (an artefact's previous / next) and the organisation picked on an agent's page stay with it across tabs
         const kept = new URLSearchParams({ tab: tabSlug })
-        for (const key of ['list', 'list_query']) {
+        for (const key of ['list', 'list_query', 'organisation']) {
             const value = currentUrl.searchParams.get(key)
             if (value !== null) {
                 kept.set(key, value)

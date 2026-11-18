@@ -19,11 +19,35 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\Procurement\OrgSupplierStats;
 use App\Models\SysAdmin\Organisation;
+use App\Support\AgentOrganisationSelection;
 
 trait WithOrgSupplierSubNavigation
 {
+    /**
+     * On the agent's one page per supplier in All, the purchase order is for a buying organisation the user
+     * picks first: one button per organisation.
+     */
     protected function getOrgSupplierPurchaseOrderAction(OrgSupplier $orgSupplier): array
+    {
+        $selection = AgentOrganisationSelection::fromRequest();
+        if ($selection && !$selection->selected && $selection->rows->first() instanceof OrgSupplier) {
+            return [
+                'type'   => 'buttonGroup',
+                'key'    => 'purchase-order-organisation',
+                'button' => $selection->rows->map(fn (OrgSupplier $row) => [
+                    ...$this->purchaseOrderAction($row),
+                    'label'   => __('Purchase Order').' '.$row->organisation->code,
+                    'tooltip' => __('New purchase order for :organisation', ['organisation' => $row->organisation->name]),
+                ])->values()->all(),
+            ];
+        }
+
+        return $this->purchaseOrderAction($orgSupplier);
+    }
+
+    private function purchaseOrderAction(OrgSupplier $orgSupplier): array
     {
         return [
             'label' => __('Purchase Order'),
@@ -41,6 +65,11 @@ trait WithOrgSupplierSubNavigation
 
     public static function orgSupplierRoute(string $organisationSlug, OrgSupplier $orgSupplier, string $page, ?OrgAgent $orgAgent = null): array
     {
+        $selection = AgentOrganisationSelection::fromRequest();
+        if (!$orgAgent && $selection) {
+            return $selection->route("grp.org.procurement.org_suppliers.$page", ['organisation' => $organisationSlug, 'supplier' => $orgSupplier->supplier->slug]);
+        }
+
         if ($orgAgent) {
             return [
                 'name'       => "grp.org.procurement.org_agents.show.suppliers.$page",
@@ -58,7 +87,10 @@ trait WithOrgSupplierSubNavigation
      * An agent organisation sees a supplier's purchase orders and shipments for every buyer, so its
      * counts come from the agent, not from the one buyer's org supplier the page is opened through.
      *
-     * @return array{purchase_orders: int, stock_deliveries: int}|null
+     * On the agent's one page per supplier, the figures are those of the organisation picked in the
+     * selector, or the totals of every buying organisation in All.
+     *
+     * @return array{products: int|null, purchase_orders: int, open_purchase_orders: int, stock_deliveries: int}|null
      */
     public static function agentSupplierNumbers(Organisation $organisation, OrgSupplier $orgSupplier): ?array
     {
@@ -67,13 +99,21 @@ trait WithOrgSupplierSubNavigation
             return null;
         }
 
+        $selection       = AgentOrganisationSelection::fromRequest();
+        $organisationIds = $selection?->selected ? [$selection->selected->id] : null;
+
         $purchaseOrders = PurchaseOrder::where('agent_id', $agent->id)
             ->where('supplier_id', $orgSupplier->supplier_id)
-            ->where('state', '!=', PurchaseOrderStateEnum::IN_PROCESS);
+            ->where('state', '!=', PurchaseOrderStateEnum::IN_PROCESS)
+            ->when($organisationIds, fn ($query) => $query->whereIn('organisation_id', $organisationIds));
 
         return [
-            'purchase_orders'  => $purchaseOrders->count(),
-            'stock_deliveries' => StockDelivery::where(fn ($query) => IndexStockDeliveries::whereAgentSupplierDelivery($query, $agent, $orgSupplier->supplier_id))->count(),
+            'products'             => $selection ? (int) OrgSupplierStats::whereIn('org_supplier_id', $selection->selectedRows()->pluck('id'))->sum('number_current_org_supplier_products') : null,
+            'purchase_orders'      => (clone $purchaseOrders)->count(),
+            'open_purchase_orders' => (clone $purchaseOrders)->whereIn('state', PurchaseOrderStateEnum::openValues())->count(),
+            'stock_deliveries'     => StockDelivery::where(fn ($query) => IndexStockDeliveries::whereAgentSupplierDelivery($query, $agent, $orgSupplier->supplier_id))
+                ->when($organisationIds, fn ($query) => $query->whereIn('stock_deliveries.organisation_id', $organisationIds))
+                ->count(),
         ];
     }
 
@@ -108,7 +148,7 @@ trait WithOrgSupplierSubNavigation
                     'icon'    => ['fal', 'fa-box-usd'],
                     'tooltip' => __('Products'),
                 ],
-                'number'   => $parent->stats->number_current_org_supplier_products,
+                'number'   => $agentNumbers['products'] ?? $parent->stats->number_current_org_supplier_products,
             ],
             ...($parent->org_agent_id ? [] : [
                 [
@@ -167,12 +207,7 @@ trait WithOrgSupplierSubNavigation
             ...(!$orgAgent && in_array($parent->supplier->code, RepairSupplierProductsSupplier::REPAIRABLE_SUPPLIER_CODES, true) ? [
                 [
                     'label'    => __('Repair'),
-                    'route'    => [
-                        'name'       => $this->organisation->type === OrganisationTypeEnum::AGENT
-                            ? 'grp.org.agent.org_suppliers.show.repair_supplier_products.index'
-                            : 'grp.org.procurement.org_suppliers.show.repair_supplier_products.index',
-                        'parameters' => $routeParameters,
-                    ],
+                    'route'    => self::orgSupplierRoute($this->organisation->slug, $parent, 'show.repair_supplier_products.index'),
                     'leftIcon' => [
                         'icon'    => ['fal', 'fa-tools'],
                         'tooltip' => __('Move these products to their real supplier'),
@@ -193,10 +228,7 @@ trait WithOrgSupplierSubNavigation
 
         if (SupplierPortalPermissions::agentOrganisationBuysThrough($this->organisation, $supplier)) {
             return $user?->authTo("procurement.{$this->organisation->id}.view") ? [
-                $this->supplierPortalNavigationItem([
-                    'name'       => 'grp.org.agent.org_suppliers.show.supplier_portal',
-                    'parameters' => [$this->organisation->slug, $orgSupplier->slug],
-                ]),
+                $this->supplierPortalNavigationItem(self::orgSupplierRoute($this->organisation->slug, $orgSupplier, 'show.supplier_portal')),
             ] : [];
         }
 
@@ -224,7 +256,7 @@ trait WithOrgSupplierSubNavigation
     }
 
     /**
-     * @param  array{name: string, parameters: array<int, string>}  $route
+     * @param  array{name: string, parameters: array<int|string, mixed>}  $route
      */
     private function supplierPortalNavigationItem(array $route): array
     {

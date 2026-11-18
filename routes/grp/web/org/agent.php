@@ -111,22 +111,23 @@ use App\Actions\SupplyChain\AgentInvoice\PdfAgentInvoice;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
 use App\Actions\SupplyChain\AgentInvoice\UI\IndexAgentInvoices;
 use App\Actions\SupplyChain\AgentInvoice\UI\ShowAgentCommissionInvoice;
+use App\Http\Middleware\ResolveAgentOrganisationSelection;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
     Route::get('', IndexOrgSuppliers::class)->name('index');
     Route::get('create-new', [CreateSupplier::class, 'inOrganisation'])->name('create_new');
-    Route::get('{orgSupplier}', ShowOrgSupplier::class)->name('show');
-    Route::get('{orgSupplier}/edit', EditOrgSupplier::class)->name('edit');
-    Route::get('{orgSupplier}/purchase-order/{purchaseOrder}', [ShowPurchaseOrder::class, 'inOrgSupplier'])->name('show.purchase-orders.show');
-    Route::get('{orgSupplier}/supplier-products', [IndexOrgSupplierProducts::class, 'inOrgSupplier'])->name('show.supplier_products.index');
-    Route::get('{orgSupplier}/supplier-products/{orgSupplierProduct}', [ShowOrgSupplierProduct::class, 'inOrgSupplier'])->name('show.supplier_products.show');
-    Route::get('{orgSupplier}/purchase-orders', [IndexPurchaseOrders::class, 'inOrgSupplier'])->name('show.purchase_orders.index');
-    Route::get('{orgSupplier}/containers', [IndexStockDeliveries::class, 'inOrgSupplier'])->name('show.stock_deliveries.index');
-    Route::get('{orgSupplier}/repair', IndexRepairSupplierProducts::class)->name('show.repair_supplier_products.index');
-    Route::get('{orgSupplier}/supplier-portal', [ShowSupplierPortalAccess::class, 'inAgentOrgSupplier'])->name('show.supplier_portal');
-    Route::get('{orgSupplier}/supplier-portal/links/{supplierShareLink}', [ShowSupplierDirectLink::class, 'inAgentOrgSupplier'])->name('show.supplier_portal.links.show')->withoutScopedBindings();
-    Route::get('{orgSupplier}/supplier-portal/emails/{supplierPortalContact}', [ShowSupplierPortalContact::class, 'inAgentOrgSupplier'])->name('show.supplier_portal.emails.show')->withoutScopedBindings();
+    Route::get('{supplier}', ShowOrgSupplier::class)->middleware(ResolveAgentOrganisationSelection::class)->name('show');
+    Route::get('{supplier}/edit', EditOrgSupplier::class)->middleware(ResolveAgentOrganisationSelection::class)->name('edit');
+    Route::get('{supplier}/purchase-order/{purchaseOrder}', [ShowPurchaseOrder::class, 'inOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.purchase-orders.show');
+    Route::get('{supplier}/supplier-products', [IndexOrgSupplierProducts::class, 'inOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.supplier_products.index');
+    Route::get('{supplier}/supplier-products/{orgSupplierProduct}', [ShowOrgSupplierProduct::class, 'inOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.supplier_products.show');
+    Route::get('{supplier}/purchase-orders', [IndexPurchaseOrders::class, 'inOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.purchase_orders.index');
+    Route::get('{supplier}/containers', [IndexStockDeliveries::class, 'inOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.stock_deliveries.index');
+    Route::get('{supplier}/repair', IndexRepairSupplierProducts::class)->middleware(ResolveAgentOrganisationSelection::class)->name('show.repair_supplier_products.index');
+    Route::get('{supplier}/supplier-portal', [ShowSupplierPortalAccess::class, 'inAgentOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.supplier_portal');
+    Route::get('{supplier}/supplier-portal/links/{supplierShareLink}', [ShowSupplierDirectLink::class, 'inAgentOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.supplier_portal.links.show')->withoutScopedBindings();
+    Route::get('{supplier}/supplier-portal/emails/{supplierPortalContact}', [ShowSupplierPortalContact::class, 'inAgentOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.supplier_portal.emails.show')->withoutScopedBindings();
 });
 
 Route::prefix('supplier-products')->as('org_supplier_products.')->group(function () {

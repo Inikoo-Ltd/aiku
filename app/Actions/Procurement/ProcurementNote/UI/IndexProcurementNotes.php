@@ -53,6 +53,7 @@ class IndexProcurementNotes
                 $join->on('supplier_products.id', 'procurement_notes.subject_id')->where('procurement_notes.subject_type', 'SupplierProduct');
             })
             ->leftJoin('currencies', 'currencies.id', 'procurement_notes.incident_currency_id')
+            ->leftJoin('organisations', 'organisations.id', 'procurement_notes.organisation_id')
             ->joinSub($this->distinctNotes($subject, $organisation, $forAgent), 'distinct_notes', 'distinct_notes.id', 'procurement_notes.id')
             ->select([
                 'distinct_notes.number_documents',
@@ -61,6 +62,7 @@ class IndexProcurementNotes
                 'purchase_orders.reference as purchase_order_reference',
                 'supplier_products.code as supplier_product_code',
                 'currencies.code as incident_currency_code',
+                'organisations.code as organisation_code',
             ])
             ->selectRaw('? as listed_on', [$subject->getMorphClass()]);
 
@@ -100,9 +102,9 @@ class IndexProcurementNotes
             ->selectRaw('min(procurement_notes.id) as id, count(*) as number_documents');
     }
 
-    public function tableStructure(?string $prefix = null): Closure
+    public function tableStructure(?string $prefix = null, bool $withOrganisation = false): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $withOrganisation) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
@@ -113,8 +115,13 @@ class IndexProcurementNotes
                 ->column(key: 'created_at', label: __('Date'), canBeHidden: false)
                 ->column(key: 'category', label: __('Category'), canBeHidden: false)
                 ->column(key: 'note', label: __('Note'), canBeHidden: false)
-                ->column(key: 'author', label: __('Author'), canBeHidden: false)
-                ->column(key: 'actions', label: '', canBeHidden: false);
+                ->column(key: 'author', label: __('Author'), canBeHidden: false);
+
+            if ($withOrganisation) {
+                $table->column(key: 'organisation_code', label: __('Organisation'), canBeHidden: false);
+            }
+
+            $table->column(key: 'actions', label: '', canBeHidden: false);
         };
     }
 }

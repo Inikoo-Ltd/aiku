@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
+use App\Models\SupplyChain\Supplier;
 use App\Models\Procurement\SupplierMessage;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -39,7 +40,7 @@ class SendSupplierEmail extends OrgAction
      *
      * @param  array{to: array<int, string>, cc?: array<int, string>, subject: string, body: string, attachments?: array<int, UploadedFile>}  $modelData
      */
-    public function handle(Organisation $organisation, User $user, array $modelData, ?SupplierMessage $inReplyTo = null, OrgSupplier|OrgAgent|OrgPartner|null $counterpart = null): SupplierMessage
+    public function handle(Organisation $organisation, User $user, array $modelData, ?SupplierMessage $inReplyTo = null, OrgSupplier|OrgAgent|OrgPartner|Supplier|null $counterpart = null): SupplierMessage
     {
         $client = GmailClient::forProcurement($organisation);
 
@@ -138,7 +139,7 @@ class SendSupplierEmail extends OrgAction
             'body'          => ['required', 'string'],
             'attachments'   => ['sometimes', 'array', 'max:10'],
             'attachments.*' => ['file', 'max:20480'],
-            'counterpart'   => ['sometimes', 'nullable', 'string', 'regex:/^(supplier|agent|partner):\d+$/'],
+            'counterpart'   => ['sometimes', 'nullable', 'string', 'regex:/^(supplier|agent|partner|agent_supplier):\d+$/'],
         ];
     }
 

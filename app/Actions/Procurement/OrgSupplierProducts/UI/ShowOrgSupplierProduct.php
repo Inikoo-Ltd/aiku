@@ -37,6 +37,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Support\AgentOrganisationSelection;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrgSupplierProduct extends OrgAction
@@ -69,7 +70,8 @@ class ShowOrgSupplierProduct extends OrgAction
 
     public function inOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): OrgSupplierProduct
     {
-        abort_unless($orgSupplierProduct->org_supplier_id === $orgSupplier->id, 404);
+        $orgSupplierIds = AgentOrganisationSelection::fromRequest($request)?->rows->pluck('id')->all() ?? [$orgSupplier->id];
+        abort_unless(in_array($orgSupplierProduct->org_supplier_id, $orgSupplierIds, true), 404);
 
         $this->initialisation($organisation, $request)->withTab($this->getTabs());
         $this->authorizeProcurementRecord($orgSupplierProduct);
@@ -227,12 +229,12 @@ class ShowOrgSupplierProduct extends OrgAction
             array_merge(
                 ShowOrgSupplier::make()->getBreadcrumbs(
                     'grp.org.procurement.org_suppliers.show',
-                    Arr::only($routeParameters, ['organisation', 'orgSupplier'])
+                    Arr::only($routeParameters, ['organisation', 'orgSupplier', 'supplier'])
                 ),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.procurement.org_suppliers.show.supplier_products.index',
-                        'parameters' => Arr::only($routeParameters, ['organisation', 'orgSupplier']),
+                        'parameters' => Arr::only($routeParameters, ['organisation', 'orgSupplier', 'supplier']),
                     ],
                     [
                         'name'       => $routeName,

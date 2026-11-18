@@ -2449,7 +2449,7 @@ test('agent organisation manages its own supplier identity', function () {
         ->firstOrFail();
 
     $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.org.agent.org_suppliers.edit', [$ownAgent->organisation->slug, $orgSupplier->slug]));
+    $response = $this->get(route('grp.org.agent.org_suppliers.edit', [$ownAgent->organisation->slug, $orgSupplier->supplier->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page

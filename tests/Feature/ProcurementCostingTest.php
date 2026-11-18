@@ -4913,20 +4913,20 @@ test('an agent opening a supplier sees its purchase orders and shipments for eve
 
     actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-sup-'.Str::lower(Str::random(6))));
 
-    $this->get(route('grp.org.agent.org_suppliers.show', [$agentOrganisation->slug, $orgSupplier->slug]))
+    $this->get(route('grp.org.agent.org_suppliers.show', [$agentOrganisation->slug, $orgSupplier->supplier->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('pageHead.subNavigation', fn ($items) => collect($items)->firstWhere('label', 'Purchase Orders')['number'] === 2
                 && collect($items)->firstWhere('label', 'Stock Deliveries')['number'] === 2));
 
-    $this->get(route('grp.org.agent.org_suppliers.show.purchase_orders.index', [$agentOrganisation->slug, $orgSupplier->slug]))
+    $this->get(route('grp.org.agent.org_suppliers.show.purchase_orders.index', [$agentOrganisation->slug, $orgSupplier->supplier->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->sort()->values()->all() === collect([$ownOrder->id, $otherBuyerOrder->id])->sort()->values()->all())
             ->has('filterOptions.organisation', 2)
             ->missing('filterOptions.supplier'));
 
-    $this->get(route('grp.org.agent.org_suppliers.show.stock_deliveries.index', [$agentOrganisation->slug, $orgSupplier->slug]))
+    $this->get(route('grp.org.agent.org_suppliers.show.stock_deliveries.index', [$agentOrganisation->slug, $orgSupplier->supplier->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->sort()->values()->all() === collect([$shipment->id, $directDelivery->id])->sort()->values()->all())
@@ -4940,6 +4940,96 @@ test('an agent opening a supplier sees its purchase orders and shipments for eve
     $this->get(route('grp.org.agent.purchase_orders.show', [$agentOrganisation->slug, $directOrder->slug]))->assertNotFound();
 
     expect($draft->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS);
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('an agent has one page per supplier with an organisation selector, and the old page of each buying organisation redirects to it (INI-379)', function () {
+    $orgAgent          = createFreshOrgAgent($this);
+    $agent             = $orgAgent->agent;
+    $agentOrganisation = $agent->organisation;
+    $otherBuyer        = Organisation::where('code', 'prc2')->first()
+        ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
+    StoreOrgAgent::make()->action($otherBuyer, $agent, []);
+
+    [$orgSupplier]    = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $supplier         = $orgSupplier->supplier;
+    $otherOrgSupplier = OrgSupplier::where('supplier_id', $supplier->id)->where('organisation_id', $otherBuyer->id)->firstOrFail();
+    $ownOrder         = StorePurchaseOrder::make()->action($orgSupplier, [], strict: false);
+    $otherBuyerOrder  = StorePurchaseOrder::make()->action($otherOrgSupplier, [], strict: false);
+    $ownOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED]);
+    $otherBuyerOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED]);
+    $buyers = OrgSupplier::where('supplier_id', $supplier->id)->where('status', true)->orderBy('organisation_id')->with('organisation')->get()->pluck('organisation.slug')->all();
+
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-379-'.Str::lower(Str::random(6))));
+
+    $page = route('grp.org.agent.org_suppliers.show', [$agentOrganisation->slug, $supplier->slug]);
+    $this->get(route('grp.org.agent.org_suppliers.show', [$agentOrganisation->slug, $otherOrgSupplier->slug]))
+        ->assertRedirect($page.'?organisation='.$otherBuyer->slug);
+    $this->get(route('grp.org.procurement.org_suppliers.show', [$agentOrganisation->slug, $otherOrgSupplier->slug]))
+        ->assertRedirect(route('grp.org.agent.org_suppliers.show', [$agentOrganisation->slug, $otherOrgSupplier->slug]));
+
+    $purchaseOrdersItem = fn ($items) => collect($items)->firstWhere('label', 'Purchase Orders');
+
+    $this->get($page)
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('organisationSelector.current', 'all')
+            ->where('organisationSelector.options', fn ($options) => collect($options)->pluck('value')->all() === ['all', ...$buyers])
+            ->where('pageHead.subNavigation', fn ($items) => $purchaseOrdersItem($items)['number'] === 2 && !isset($purchaseOrdersItem($items)['route']['parameters']['_query']))
+            ->where('pageHead.actions.0.type', 'buttonGroup')
+            ->where('agreement.by_organisation', fn ($rows) => collect($rows)->pluck('route.parameters._query.organisation')->all() === $buyers));
+
+    $this->get($page.'?organisation='.$otherBuyer->slug)
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('organisationSelector.current', $otherBuyer->slug)
+            ->where('pageHead.subNavigation', fn ($items) => $purchaseOrdersItem($items)['number'] === 1
+                && $purchaseOrdersItem($items)['route']['parameters'] === ['organisation' => $agentOrganisation->slug, 'supplier' => $supplier->slug, '_query' => ['organisation' => $otherBuyer->slug]])
+            ->where('pageHead.actions.0.route.parameters.orgSupplier', $otherOrgSupplier->id)
+            ->where('agreement.by_organisation', null));
+
+    $this->get(route('grp.org.agent.org_suppliers.show.purchase_orders.index', [$agentOrganisation->slug, $supplier->slug]).'?organisation='.$otherBuyer->slug)
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => collect($rows)->pluck('id')->all() === [$otherBuyerOrder->id]));
+
+    $productRows = $this->get(route('grp.org.agent.org_suppliers.show.supplier_products.index', [$agentOrganisation->slug, $supplier->slug]))
+        ->assertOk()->viewData('page')['props']['index']['data'];
+    expect(collect($productRows)->pluck('organisation_code')->unique()->sort()->values()->all())
+        ->toBe(OrgSupplierProduct::whereIn('org_supplier_id', OrgSupplier::where('supplier_id', $supplier->id)->select('id'))->with('organisation')->get()->pluck('organisation.code')->unique()->sort()->values()->all());
+
+    $this->get(route('grp.org.agent.org_suppliers.edit', [$agentOrganisation->slug, $supplier->slug]).'?organisation='.$otherBuyer->slug)
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('formData.blueprint', fn ($sections) => collect($sections)->pluck('fields')->collapse()->pluck('label')->contains('Active ('.$otherBuyer->code.')')));
+
+    $noteForAll   = App\Actions\Procurement\ProcurementNote\StoreProcurementNote::make()->action($supplier, ['title' => 'INI-379 for all', 'category' => 'currency_payment', 'visibility' => 'agent', 'organisation_id' => null], strict: false);
+    $noteForBuyer = App\Actions\Procurement\ProcurementNote\StoreProcurementNote::make()->action($supplier, ['title' => 'INI-379 for buyer', 'category' => 'currency_payment', 'visibility' => 'agent', 'organisation_id' => $otherBuyer->id], strict: false);
+    $noteRows     = fn (string $url) => collect($this->get($url)->assertOk()->viewData('page')['props']['notes']['data'])->pluck('organisation_code', 'id')->all();
+
+    expect($noteRows($page.'?tab=notes'))->toBe([$noteForBuyer->id => $otherBuyer->code, $noteForAll->id => __('All')])
+        ->and($noteRows($page.'?tab=notes&organisation='.$otherBuyer->slug))->toBe([$noteForBuyer->id => $otherBuyer->code, $noteForAll->id => __('All')])
+        ->and($noteRows($page.'?tab=notes&organisation='.$orgSupplier->organisation->slug))->toBe([$noteForAll->id => __('All')]);
+
+    $message = fn (Organisation $organisation, array $counterpart) => \App\Models\Procurement\SupplierMessage::create($counterpart + [
+        'group_id'        => $organisation->group_id,
+        'organisation_id' => $organisation->id,
+        'direction'       => \App\Enums\Procurement\SupplierMessage\SupplierMessageDirectionEnum::OUTBOUND,
+        'subject'         => 'INI-379 '.Str::random(6),
+        'gmail_thread_id' => 'ini379-'.Str::random(10),
+        'sent_at'         => now(),
+    ]);
+    $agentMessage  = $message($agentOrganisation, ['supplier_id' => $supplier->id]);
+    $clientMessage = $message($orgSupplier->organisation, ['supplier_id' => $supplier->id, 'org_supplier_id' => $orgSupplier->id]);
+
+    $this->get($page.'?tab=inbox')
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('inbox.data', fn ($rows) => collect($rows)->pluck('id')->all() === [$agentMessage->id]));
+    expect(\App\Actions\Procurement\SupplierMessage\RouteSupplierMessage::run($agentOrganisation, ['someone@example.com'], $agentMessage->gmail_thread_id)[0]?->is($supplier))->toBeTrue()
+        ->and($clientMessage->exists)->toBeTrue();
+
+    $counterpart = \App\Actions\Procurement\SupplierMessage\AssignSupplierMessage::findCounterpart($agentOrganisation, 'agent_supplier:'.$supplier->id);
+    expect($counterpart->is($supplier))->toBeTrue()
+        ->and(\App\Models\Procurement\SupplierMessage::counterpartAttributes($counterpart))->toBe(['supplier_id' => $supplier->id, 'org_supplier_id' => null, 'org_agent_id' => null, 'org_partner_id' => null]);
 
     actingAs($this->adminGuest->getUser());
 });

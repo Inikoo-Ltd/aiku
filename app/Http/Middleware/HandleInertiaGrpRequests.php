@@ -18,6 +18,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Closure;
+use App\Support\AgentOrganisationSelection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Vite;
@@ -157,6 +158,7 @@ class HandleInertiaGrpRequests extends Middleware
                 ],
                 'help' => fn () => BlogPosts::helpFor($routeName, $user?->language?->code),
                 'can_move_stock' => fn () => $this->canMoveStockInRouteWarehouse($request, $user),
+                'organisationSelector' => fn () => AgentOrganisationSelection::fromRequest($request)?->selector(),
                 'costing_reminder' => fn () => $user && !str_starts_with($routeName, 'grp.clocking_employees.') ? GetStockDeliveriesCostingReminder::run($user) : null,
                 'ziggy' => [
                     'location' => $request->url(),

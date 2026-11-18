@@ -52,7 +52,7 @@ trait WithAgentSupplierPortal
         if ($this->agentOrgSupplier) {
             return ShowOrgSupplier::make()->getBreadcrumbs(
                 'grp.org.procurement.org_suppliers.show',
-                ['organisation' => $this->organisation->slug, 'orgSupplier' => $this->agentOrgSupplier->slug],
+                ['organisation' => $this->organisation->slug, 'supplier' => $this->agentOrgSupplier->supplier->slug],
                 $suffix
             );
         }

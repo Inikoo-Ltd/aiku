@@ -3787,14 +3787,14 @@ test('agent repairs products filed under AWChina: moves them to the real supplie
         ?? StoreOrgSupplier::make()->action($agentOrganisation, $realSupplier);
 
     $this->withoutVite()
-        ->get(route('grp.org.agent.org_suppliers.show.repair_supplier_products.index', [$agentOrganisation->slug, $awcInAgent->slug]))
+        ->get(route('grp.org.agent.org_suppliers.show.repair_supplier_products.index', [$agentOrganisation->slug, $awcInAgent->supplier->slug]))
         ->assertInertia(fn ($page) => $page
             ->component('Procurement/RepairSupplierProducts')
             ->where('data.meta.total', 0)
             ->where('active.state', 'active')
             ->where('suppliers', fn ($suppliers) => collect($suppliers)->pluck('id')->contains($realSupplier->id)));
 
-    $this->get(route('grp.org.agent.org_suppliers.show.repair_supplier_products.index', [$agentOrganisation->slug, $realInAgent->slug]))->assertNotFound();
+    $this->get(route('grp.org.agent.org_suppliers.show.repair_supplier_products.index', [$agentOrganisation->slug, $realInAgent->supplier->slug]))->assertNotFound();
     $this->get(route('grp.org.procurement.org_suppliers.show.repair_supplier_products.index', [$awcOrgSupplier->organisation->slug, $awcOrgSupplier->slug]))
         ->assertInertia(fn ($page) => $page->component('Procurement/RepairSupplierProducts'));
 });

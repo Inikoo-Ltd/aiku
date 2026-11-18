@@ -42,6 +42,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Support\AgentOrganisationSelection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -63,8 +64,12 @@ class IndexOrgSupplierProducts extends OrgAction
 
         $organisationAgent = $this->getParentOrganisationAgent($parent);
 
+        $selection         = $parent instanceof OrgSupplier ? AgentOrganisationSelection::fromRequest() : null;
+
         if ($parent instanceof OrgAgent) {
             $query->where('org_supplier_products.org_agent_id', $parent->id);
+        } elseif ($selection) {
+            $query->whereIn('org_supplier_products.org_supplier_id', $selection->selectedRows()->pluck('id'));
         } elseif ($parent instanceof OrgSupplier) {
             $query->where('org_supplier_products.org_supplier_id', $parent->id);
         } elseif ($organisationAgent) {
@@ -78,7 +83,7 @@ class IndexOrgSupplierProducts extends OrgAction
         }
 
         $counts = $query
-            ->selectRaw('supplier_products.state, count(distinct supplier_products.id) as total')
+            ->selectRaw('supplier_products.state, '.($selection ? 'count(*)' : 'count(distinct supplier_products.id)').' as total')
             ->groupBy('supplier_products.state')
             ->pluck('total', 'supplier_products.state');
 
@@ -136,6 +141,9 @@ class IndexOrgSupplierProducts extends OrgAction
 
         if ($parent instanceof OrgAgent) {
             $queryBuilder->where('org_supplier_products.org_agent_id', $parent->id);
+        } elseif ($parent instanceof OrgSupplier && $selection = AgentOrganisationSelection::fromRequest()) {
+            $queryBuilder->whereIn('org_supplier_products.org_supplier_id', $selection->selectedRows()->pluck('id'))
+                ->leftJoin('organisations', 'organisations.id', 'org_supplier_products.organisation_id');
         } elseif ($parent instanceof OrgSupplier) {
             $queryBuilder->where('org_supplier_products.org_supplier_id', $parent->id);
         } elseif ($organisationAgent) {
@@ -159,6 +167,10 @@ class IndexOrgSupplierProducts extends OrgAction
             'supplier_products.units_per_carton',
             'currencies.code as currency_code',
         ]);
+
+        if ($parent instanceof OrgSupplier && AgentOrganisationSelection::fromRequest()) {
+            $queryBuilder->addSelect('organisations.code as organisation_code');
+        }
 
         if (!$parent instanceof OrgSupplier) {
             $queryBuilder
@@ -216,7 +228,7 @@ class IndexOrgSupplierProducts extends OrgAction
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')
-            ->allowedSorts($organisationAgent ? ['code', 'name', 'supplier_name', 'state', 'cost', 'internal_code', 'cbm', 'completeness'] : ['code', 'internal_code', 'name', 'supplier_name', 'state', 'cost'])
+            ->allowedSorts($organisationAgent ? ['code', 'name', 'supplier_name', 'state', 'cost', 'internal_code', 'cbm', 'completeness', 'organisation_code'] : ['code', 'internal_code', 'name', 'supplier_name', 'state', 'cost', 'organisation_code'])
             ->allowedFilters($organisationAgent ? [$globalSearch, ...$this->agentProductFilters()] : [$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString()
@@ -295,6 +307,10 @@ class IndexOrgSupplierProducts extends OrgAction
 
             if (!$parent instanceof OrgSupplier) {
                 $table->column(key: 'supplier_name', label: __('Supplier'), canBeHidden: false, sortable: true);
+            }
+
+            if ($parent instanceof OrgSupplier && AgentOrganisationSelection::fromRequest()) {
+                $table->column(key: 'organisation_code', label: __('Organisation'), canBeHidden: false, sortable: true);
             }
 
             $table->column(key: 'state', label: __('State'), sortable: true);

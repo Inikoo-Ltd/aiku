@@ -30,6 +30,7 @@ import SupplierDeclarations from '@/Components/SupplyChain/SupplierDeclarations.
 import TableSupplierAgreedTerms from '@/Components/Tables/Grp/Org/Procurement/TableSupplierAgreedTerms.vue'
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import AgreementSummary from '@/Components/Procurement/AgreementSummary.vue'
+import AgentAgreementsByOrganisation from '@/Components/Procurement/AgentAgreementsByOrganisation.vue'
 import SupplierAgreementStatusBadge from '@/Components/Procurement/SupplierAgreementStatusBadge.vue'
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
@@ -120,6 +121,7 @@ const getErrors = () => {
     <div v-if="currentTab === 'showcase'" class="px-4 pt-4 max-w-4xl">
         <AgreementSummary :agreement="agreement" />
     </div>
+    <AgentAgreementsByOrganisation v-if="currentTab === 'agreed_terms' && agreement?.by_organisation" :rows="agreement.by_organisation" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute" v-bind="['agreed_terms', 'notes'].includes(currentTab) ? { agreement } : {}" />
 
     <UploadAttachment

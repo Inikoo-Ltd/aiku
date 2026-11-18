@@ -102,7 +102,7 @@ function supplierProductRoute(supplierProduct: OrgSupplierProduct) {
     case "grp.org.procurement.org_suppliers.show.supplier_products.index":
       return route(
         "grp.org.procurement.org_suppliers.show.supplier_products.show",
-        [routeParams["organisation"], routeParams["orgSupplier"], supplierProduct.slug])
+        [routeParams["organisation"], (routeParams["orgSupplier"] ?? routeParams["supplier"]), supplierProduct.slug])
 
     default:
       return route(

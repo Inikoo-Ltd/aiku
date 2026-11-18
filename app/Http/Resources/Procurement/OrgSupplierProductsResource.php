@@ -38,6 +38,7 @@ class OrgSupplierProductsResource extends JsonResource
             'code'              => $this->code,
             'name'              => $this->name,
             'slug'              => $this->slug,
+            'organisation_code' => $this->organisation_code ?? null,
             'supplier_name'     => $this->supplier_name,
             'org_supplier_slug' => $this->org_supplier_slug,
             'cost'              => $this->cost,

@@ -112,11 +112,7 @@ const supplierUrl = computed(() => {
 		return null
 	}
 
-	const routeName = route().current()?.startsWith("grp.org.agent.")
-		? "grp.org.agent.org_suppliers.show"
-		: "grp.org.procurement.org_suppliers.show"
-
-	return route(routeName, { organisation: route().params.organisation, orgSupplier: supplier.value.slug })
+	return route("grp.org.procurement.org_suppliers.show", { organisation: route().params.organisation, orgSupplier: supplier.value.slug })
 })
 
 const sellsEveryProduct = (option: SupplierOption) => option.products_count === props.items.length

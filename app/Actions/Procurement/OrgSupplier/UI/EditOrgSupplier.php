@@ -17,6 +17,7 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Support\AgentOrganisationSelection;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditOrgSupplier extends OrgAction
@@ -69,7 +70,8 @@ class EditOrgSupplier extends OrgAction
             ],
         ];
 
-        $blueprint   = [...$this->supplierEditSections($supplier), $statusSection];
+        $selection = AgentOrganisationSelection::fromRequest($request);
+        $blueprint = [...$this->supplierEditSections($supplier), ...$this->labelOrganisationSections($selection, [$statusSection])];
         $updateRoute = [
             'name' => 'grp.models.supplier.update',
             'parameters' => $supplier->id,
@@ -83,7 +85,7 @@ class EditOrgSupplier extends OrgAction
             $blueprint[] = $this->supplierAgentSection($supplier);
         }
 
-        $blueprint = array_merge($blueprint, $this->procurementSerialReferenceSections($orgSupplier, $orgSupplierUpdateRoute));
+        $blueprint = array_merge($blueprint, $this->labelOrganisationSections($selection, $this->procurementSerialReferenceSections($orgSupplier, $orgSupplierUpdateRoute)));
 
         return Inertia::render(
             'EditModel',
@@ -100,10 +102,12 @@ class EditOrgSupplier extends OrgAction
                         [
                             'type' => 'button',
                             'style' => 'exitEdit',
-                            'route' => [
-                                'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters()),
-                            ],
+                            'route' => $selection
+                                ? $selection->route('grp.org.procurement.org_suppliers.show', $request->route()->originalParameters())
+                                : [
+                                    'name' => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                    'parameters' => array_values($request->route()->originalParameters()),
+                                ],
                         ],
                     ],
                 ],
@@ -125,5 +129,24 @@ class EditOrgSupplier extends OrgAction
             routeParameters: $routeParameters,
             suffix: '('.__('Editing').')'
         );
+    }
+
+    /**
+     * On the agent's one page per supplier, fields kept per buying organisation say whose they are: the selected
+     * organisation's, or in All the first buying organisation's (AW).
+     *
+     * @param  array<int, array<string, mixed>>  $sections
+     * @return array<int, array<string, mixed>>
+     */
+    private function labelOrganisationSections(?AgentOrganisationSelection $selection, array $sections): array
+    {
+        if (!$selection) {
+            return $sections;
+        }
+
+        return array_map(fn (array $section) => [
+            ...$section,
+            'fields' => array_map(fn (array $field) => isset($field['label']) ? [...$field, 'label' => $selection->label($field['label'])] : $field, $section['fields'] ?? []),
+        ], $sections);
     }
 }

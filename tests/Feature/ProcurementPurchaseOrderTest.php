@@ -742,8 +742,8 @@ test('agent manager only sees their own agent organisation', function () {
     $orgSupplierOfAnotherOrganisation = OrgSupplier::where('organisation_id', '!=', $organisation->id)
         ->whereHas('supplier', fn ($query) => $query->where('agent_id', $this->agent->id))
         ->firstOrFail();
-    $this->get(route('grp.org.agent.org_suppliers.show.supplier_products.index', [$organisation->slug, $orgSupplierOfAnotherOrganisation->slug]))->assertOk();
-    expect(collect(\App\Actions\Procurement\OrgSupplier\UI\GetOrgSupplierShowcase::run($orgSupplierOfAnotherOrganisation, $organisation)['stats'])->pluck('route.parameters.0')->unique()->all())
+    $this->get(route('grp.org.agent.org_suppliers.show.supplier_products.index', [$organisation->slug, $orgSupplierOfAnotherOrganisation->supplier->slug]))->assertOk();
+    expect(collect(\App\Actions\Procurement\OrgSupplier\UI\GetOrgSupplierShowcase::run($orgSupplierOfAnotherOrganisation, $organisation)['stats'])->map(fn ($stat) => $stat['route']['parameters']['organisation'] ?? $stat['route']['parameters'][0])->unique()->values()->all())
         ->toBe([$organisation->slug]);
 
     $ownOrgAgent      = OrgAgent::where('agent_id', $this->agent->id)->where('organisation_id', '!=', $organisation->id)->firstOrFail();
@@ -763,11 +763,11 @@ test('agent manager only sees their own agent organisation', function () {
     $draftPurchaseOrder->updateQuietly(['agent_id' => null, 'agent_order_reference' => null]);
     $this->get(route('grp.org.agent.purchase_orders.pdf', [$organisation->slug, $directPurchaseOrder->slug]))->assertNotFound();
     $this->get(route('grp.org.agent.purchase_orders.labels', [$organisation->slug, $directPurchaseOrder->slug]))->assertNotFound();
-    expect(collect($this->get(route('grp.org.agent.org_suppliers.show.purchase_orders.index', [$organisation->slug, $ownOrgSupplier->slug]))
+    expect(collect($this->get(route('grp.org.agent.org_suppliers.show.purchase_orders.index', [$organisation->slug, $ownOrgSupplier->supplier->slug]))
         ->assertOk()->viewData('page')['props']['data']['data'])->pluck('slug')->all())->toBe([$ownPurchaseOrder->slug]);
-    $this->get(route('grp.org.agent.org_suppliers.show.purchase-orders.show', [$organisation->slug, $ownOrgSupplier->slug, $ownPurchaseOrder->slug]))->assertOk()
+    $this->get(route('grp.org.agent.org_suppliers.show.purchase-orders.show', [$organisation->slug, $ownOrgSupplier->supplier->slug, $ownPurchaseOrder->slug]))->assertOk()
         ->assertInertia(fn ($page) => $page->where('pageHead.actions', fn ($actions) => collect($actions)->contains('key', 'labels')));
-    $this->get(route('grp.org.agent.org_suppliers.show.purchase-orders.show', [$organisation->slug, $ownOrgSupplier->slug, $directPurchaseOrder->slug]))->assertNotFound();
+    $this->get(route('grp.org.agent.org_suppliers.show.purchase-orders.show', [$organisation->slug, $ownOrgSupplier->supplier->slug, $directPurchaseOrder->slug]))->assertNotFound();
 
     $this->artisan('procurement:link_agent_supplier_purchase_orders', ['agent' => $this->agent->slug, '--dry-run' => true])->assertExitCode(0);
     expect($directPurchaseOrder->refresh()->agent_id)->toBeNull();
@@ -776,7 +776,7 @@ test('agent manager only sees their own agent organisation', function () {
         ->and($directPurchaseOrder->agent_order_reference)->toBeNull()
         ->and($directPurchaseOrder->data['agent_linked_at'])->not->toBeNull()
         ->and($draftPurchaseOrder->refresh()->agent_id)->toBeNull();
-    $this->get(route('grp.org.agent.org_suppliers.show.purchase-orders.show', [$organisation->slug, $ownOrgSupplier->slug, $directPurchaseOrder->slug]))->assertOk();
+    $this->get(route('grp.org.agent.org_suppliers.show.purchase-orders.show', [$organisation->slug, $ownOrgSupplier->supplier->slug, $directPurchaseOrder->slug]))->assertOk();
     $directPurchaseOrder->delete();
     $draftPurchaseOrder->delete();
     $ownPurchaseOrder->delete();

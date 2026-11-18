@@ -30,6 +30,15 @@ class SeparateAgentRoutes
 
     public const string AGENT_PREFIX = 'grp.org.agent.';
 
+    /**
+     * Agent supplier and supplier product pages are addressed by the group record, not by one buying
+     * organisation's org row; a link built with the org row's parameter is renamed to the agent route's.
+     */
+    public const array AGENT_PARAMETERS = [
+        'orgSupplier'        => 'supplier',
+        'orgSupplierProduct' => 'supplierProduct',
+    ];
+
     public function handle(Request $request, Closure $next): Response
     {
         $route        = $request->route();
@@ -61,7 +70,7 @@ class SeparateAgentRoutes
 
             abort_unless($request->isMethod('GET') && $agentRouteName, 404);
 
-            return redirect()->to(route($agentRouteName, $route->originalParameters()).($request->getQueryString() ? '?'.$request->getQueryString() : ''));
+            return redirect()->to(route($agentRouteName, self::agentRouteParameters($agentRouteName, $route->originalParameters())).($request->getQueryString() ? '?'.$request->getQueryString() : ''));
         }
 
         return $next($request);
@@ -76,5 +85,22 @@ class SeparateAgentRoutes
         $agentRouteName = self::AGENT_PREFIX.substr($procurementRouteName, strlen(self::PROCUREMENT_PREFIX));
 
         return Route::has($agentRouteName) ? $agentRouteName : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $parameters
+     * @return array<string, mixed>
+     */
+    public static function agentRouteParameters(string $agentRouteName, array $parameters): array
+    {
+        $names = Route::getRoutes()->getByName($agentRouteName)?->parameterNames() ?? [];
+
+        $renamed = [];
+        foreach ($parameters as $name => $value) {
+            $agentName = self::AGENT_PARAMETERS[$name] ?? null;
+            $renamed[$agentName && !in_array($name, $names, true) && in_array($agentName, $names, true) ? $agentName : $name] = $value;
+        }
+
+        return $renamed;
     }
 }
