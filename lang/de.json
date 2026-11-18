@@ -1,4 +1,11 @@
 {
+    "The invoice date could not be saved": "Das Rechnungsdatum konnte nicht gespeichert werden",
+    "No tax number": "Keine Steuernummer",
+    "Change the tax number on this invoice and on the customer": "Steuernummer auf dieser Rechnung und beim Kunden ändern",
+    "Country code and number, e.g. ES B12345678": "Ländercode und Nummer, z. B. ES B12345678",
+    "The tax number could not be saved": "Die Steuernummer konnte nicht gespeichert werden",
+    "Start the tax number with the country code, e.g. ES B12345678": "Beginnen Sie die Steuernummer mit dem Ländercode, z. B. ES B12345678",
+    "Saved on this invoice and on the customer's profile, and the invoice tax is recalculated. To change it only on this invoice, use Edit.": "Wird auf dieser Rechnung und im Kundenprofil gespeichert, und die Steuer der Rechnung wird neu berechnet. Um sie nur auf dieser Rechnung zu ändern, verwenden Sie Bearbeiten.",
     "Ephemeral note": "Vorübergehende Notiz",
     "Add ephemeral note": "Vorübergehende Notiz hinzufügen",
     "hides on :date": "wird am :date ausgeblendet",

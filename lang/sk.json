@@ -1,4 +1,11 @@
 {
+    "The invoice date could not be saved": "Dátum faktúry sa nepodarilo uložiť",
+    "No tax number": "Bez IČ DPH",
+    "Change the tax number on this invoice and on the customer": "Zmeniť IČ DPH na tejto faktúre aj u zákazníka",
+    "Country code and number, e.g. ES B12345678": "Kód krajiny a číslo, napr. ES B12345678",
+    "The tax number could not be saved": "IČ DPH sa nepodarilo uložiť",
+    "Start the tax number with the country code, e.g. ES B12345678": "IČ DPH začnite kódom krajiny, napr. ES B12345678",
+    "Saved on this invoice and on the customer's profile, and the invoice tax is recalculated. To change it only on this invoice, use Edit.": "Uloží sa na tejto faktúre aj v profile zákazníka a daň faktúry sa prepočíta. Ak ho chcete zmeniť len na tejto faktúre, použite Upraviť.",
     "Ephemeral note": "Dočasná poznámka",
     "Add ephemeral note": "Pridať dočasnú poznámku",
     "hides on :date": "skryje sa :date",

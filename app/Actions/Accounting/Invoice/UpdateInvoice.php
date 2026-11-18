@@ -99,6 +99,7 @@ class UpdateInvoice extends OrgAction
 
         $updateTaxCategory = (bool)$billingAddressData;
         $isTaxNumberEdited = Arr::has($modelData, 'formatted_tax_number');
+        $staleTaxInvoice   = $isTaxNumberEdited ? clone $invoice : null;
 
         if (Arr::has($modelData, 'formatted_tax_number')) {
             $formattedTaxNumber = getUnformattedTaxNumber(Arr::pull($modelData, 'formatted_tax_number'));
@@ -183,6 +184,10 @@ class UpdateInvoice extends OrgAction
             $this->applyInvoiceLineTaxCategories($invoice);
             CalculateInvoiceTotals::run($invoice);
             RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
+
+            if ($staleTaxInvoice) {
+                $this->auditTaxNumberUpdate($invoice, $staleTaxInvoice);
+            }
 
             if ($billingAddressData) {
                 $this->auditBillingAddressUpdate($invoice, $oldBillAddressData, $billingAddressData, $staleInvoice);
@@ -330,6 +335,24 @@ class UpdateInvoice extends OrgAction
         Event::dispatch(new AuditCustom($parent));
     }
 
+    private function auditTaxNumberUpdate(Invoice $invoice, Invoice $staleInvoice): void
+    {
+        $fields  = ['tax_number', 'tax_number_valid', 'tax_category_id', 'tax_amount', 'total_amount'];
+        $oldData = Arr::only($staleInvoice->getAttributes(), $fields);
+        $newData = Arr::only($invoice->fresh()->getAttributes(), $fields);
+
+        if ($oldData == $newData) {
+            return;
+        }
+
+        $invoice->auditEvent     = 'invoice_tax_number_update';
+        $invoice->isCustomEvent  = true;
+        $invoice->auditCustomOld = $oldData;
+        $invoice->auditCustomNew = $newData;
+
+        Event::dispatch(new AuditCustom($invoice));
+    }
+
     /**
      * The tax number the invoice was issued with, so an edit does not re-tax it with whatever the customer has today
      */
@@ -376,7 +399,11 @@ class UpdateInvoice extends OrgAction
             ],
             'shipping_zone_schema_id'      => ['sometimes', 'nullable'],
             'shipping_zone_id'             => ['sometimes', 'nullable'],
-            'formatted_tax_number'         => ['sometimes', 'nullable', 'string'],
+            'formatted_tax_number'         => match (true) {
+                $this->asAction => ['sometimes', 'nullable', 'string'],
+                !UpdateInvoiceTaxNumber::canEditTaxNumber(request()->user(), $this->invoice) => ['missing'],
+                default => ['sometimes', 'nullable', 'string', UpdateInvoiceTaxNumber::taxNumberRule()],
+            },
             'identity_document_number'     => ['sometimes', 'nullable', 'string'],
             'identity_document_number_alt' => ['sometimes', 'nullable', 'string'],
             'fiscal_name'                  => ['sometimes', 'nullable', 'string'],

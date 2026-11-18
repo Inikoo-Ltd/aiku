@@ -1,4 +1,11 @@
 {
+    "The invoice date could not be saved": "No se pudo guardar la fecha de la factura",
+    "No tax number": "Sin NIF/IVA",
+    "Change the tax number on this invoice and on the customer": "Cambiar el NIF/IVA en esta factura y en el cliente",
+    "Country code and number, e.g. ES B12345678": "Código de país y número, p. ej. ES B12345678",
+    "The tax number could not be saved": "No se pudo guardar el NIF/IVA",
+    "Start the tax number with the country code, e.g. ES B12345678": "Empieza el NIF/IVA con el código de país, p. ej. ES B12345678",
+    "Saved on this invoice and on the customer's profile, and the invoice tax is recalculated. To change it only on this invoice, use Edit.": "Se guarda en esta factura y en el perfil del cliente, y se recalcula el impuesto de la factura. Para cambiarlo solo en esta factura, usa Editar.",
     "Ephemeral note": "Nota temporal",
     "Add ephemeral note": "Añadir nota temporal",
     "hides on :date": "se oculta el :date",

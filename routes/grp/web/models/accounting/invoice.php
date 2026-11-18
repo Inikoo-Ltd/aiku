@@ -11,6 +11,7 @@ use App\Actions\Accounting\Invoice\DeleteInvoice;
 use App\Actions\Accounting\Invoice\PayInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoiceDate;
+use App\Actions\Accounting\Invoice\UpdateInvoiceTaxNumber;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInProcessInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\ForceDeleteRefundInProcessInvoiceTransaction;
 use App\Actions\Accounting\StandaloneFulfilmentInvoice\CompleteStandaloneFulfilmentInvoice;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\Route;
 Route::name('invoice.')->prefix('invoice/{invoice:id}')->group(function () {
     Route::patch('update', UpdateInvoice::class)->name('update');
     Route::patch('update/date', UpdateInvoiceDate::class)->name('update.date');
+    Route::patch('update/tax-number', UpdateInvoiceTaxNumber::class)->name('update.tax_number');
     Route::post('delete', DeleteInvoice::class)->name('delete');
     Route::delete('in-process/delete', DeleteInProcessInvoice::class)->name('in-process.delete');
     Route::post('payment-account/{paymentAccount:id}/payment', PayInvoice::class)->name('payment.store')->withoutScopedBindings();

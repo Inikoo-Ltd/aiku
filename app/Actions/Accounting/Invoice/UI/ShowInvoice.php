@@ -16,6 +16,7 @@ use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Actions\Accounting\Invoice\UpdateInvoiceTaxNumber;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithMarginData;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -459,10 +460,15 @@ class ShowInvoice extends OrgAction
                         'name'       => 'grp.models.invoice.update',
                         'parameters' => [$invoice->id]
                     ],
+                    'updateInvoiceTaxNumberRoute' => [
+                        'name'       => 'grp.models.invoice.update.tax_number',
+                        'parameters' => [$invoice->id]
+                    ],
                 ],
                 'can'                           => [
                     'editInvoiceDate'    => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
                     'editInvoiceAddress' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
+                    'editTaxNumber'      => UpdateInvoiceTaxNumber::canEditTaxNumber($request->user(), $invoice),
                 ],
                 'billing_address_form'          => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting") ? [
                     'value'   => AddressFormFieldsResource::make($invoice->address)->getArray(),

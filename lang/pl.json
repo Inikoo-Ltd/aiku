@@ -1,4 +1,11 @@
 {
+    "The invoice date could not be saved": "Nie udało się zapisać daty faktury",
+    "No tax number": "Brak numeru NIP",
+    "Change the tax number on this invoice and on the customer": "Zmień NIP na tej fakturze i u klienta",
+    "Country code and number, e.g. ES B12345678": "Kod kraju i numer, np. ES B12345678",
+    "The tax number could not be saved": "Nie udało się zapisać numeru NIP",
+    "Start the tax number with the country code, e.g. ES B12345678": "Zacznij NIP od kodu kraju, np. ES B12345678",
+    "Saved on this invoice and on the customer's profile, and the invoice tax is recalculated. To change it only on this invoice, use Edit.": "Zapisuje się na tej fakturze i w profilu klienta, a podatek faktury jest przeliczany. Aby zmienić go tylko na tej fakturze, użyj Edytuj.",
     "Ephemeral note": "Notatka tymczasowa",
     "Add ephemeral note": "Dodaj notatkę tymczasową",
     "hides on :date": "ukryje się :date",
