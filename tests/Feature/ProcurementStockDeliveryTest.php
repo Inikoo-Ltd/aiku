@@ -4573,3 +4573,27 @@ test('clean hand over is recorded on its own only on an agreed order not finishe
         ->and($orders['submitted']->refresh()->handed_over_at)->toBeNull()
         ->and($orders['settled']->refresh()->handed_over_at)->toBeNull();
 });
+
+test('changing the supplier of an agent order joins only an open order of the new supplier, never a draft', function () {
+    $orgAgent                   = createFreshOrgAgent($this);
+    [$oldSupplier, $oldProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [$newSupplier, $newProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+
+    $source = createConfirmedAgentOrder($this, $oldSupplier, $oldProduct, 0, 6)->refresh();
+    $open   = createConfirmedAgentOrder($this, $newSupplier, $newProduct, 1, 4)->refresh();
+    $draft  = StorePurchaseOrder::make()->action($newSupplier, array_merge(\App\Models\Procurement\PurchaseOrder::factory()->definition(), ['currency_id' => $source->currency_id]));
+
+    $joinable = \App\Actions\Procurement\PurchaseOrder\ChangePurchaseOrderSupplier::purchaseOrdersToJoinQuery($source, [$newSupplier->id])->pluck('id')->all();
+
+    expect($joinable)->toContain($open->id)->not->toContain($draft->id);
+
+    expect(fn () => \App\Actions\Procurement\PurchaseOrder\ChangePurchaseOrderSupplier::make()->action($source, ['org_supplier_id' => $newSupplier->id, 'into_purchase_order_id' => $draft->id]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $into = \App\Actions\Procurement\PurchaseOrder\ChangePurchaseOrderSupplier::make()->action($source->refresh(), ['org_supplier_id' => $newSupplier->id, 'into_purchase_order_id' => $open->id]);
+
+    expect($into->id)->toBe($open->id)
+        ->and($into->purchaseOrderTransactions()->count())->toBe(2)
+        ->and($source->refresh()->state)->toBe(\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::CANCELLED)
+        ->and($draft->refresh()->purchaseOrderTransactions()->count())->toBe(0);
+});

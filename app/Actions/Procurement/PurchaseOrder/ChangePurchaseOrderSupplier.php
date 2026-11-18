@@ -209,9 +209,7 @@ class ChangePurchaseOrderSupplier extends OrgAction
             SyncPurchaseOrderDepositPaid::run($into->refresh());
         }
 
-        if ($movedLedgerPayments > 0) {
-            SyncPurchaseOrderPaidFromAgentLedger::runForOrders($ledgerDatesBefore);
-        }
+        SyncPurchaseOrderPaidFromAgentLedger::runForOrders($ledgerDatesBefore);
 
         $into->refresh();
         if ($into->deposit_paid_at === null && $depositMarks['deposit_paid_at'] !== null) {
@@ -235,14 +233,15 @@ class ChangePurchaseOrderSupplier extends OrgAction
         $into = self::purchaseOrdersToJoinQuery($purchaseOrder, [$newOrgSupplier->id])->lockForUpdate()->find((int) $intoPurchaseOrderId);
 
         if (!$into) {
-            throw ValidationException::withMessages(['into_purchase_order_id' => __('Choose a live order of :supplier with the same agent and currency, with no items on a stock delivery', ['supplier' => $newOrgSupplier->supplier->name])]);
+            throw ValidationException::withMessages(['into_purchase_order_id' => __('Choose an open order of :supplier with the same agent and currency, with no items on a stock delivery', ['supplier' => $newOrgSupplier->supplier->name])]);
         }
 
         return $into;
     }
 
     /**
-     * The orders the lines can join: live orders of those suppliers with the same agent and currency, none of their items
+     * The orders the lines can join: open orders of those suppliers (sent, never a draft, as money and goods move with
+     * the lines) with the same agent and currency, none of their items
      * on a stock delivery.
      *
      * @param array<int, int> $orgSupplierIds
@@ -256,7 +255,7 @@ class ChangePurchaseOrderSupplier extends OrgAction
             ->whereIn('parent_id', $orgSupplierIds)
             ->where('agent_id', $purchaseOrder->agent_id)
             ->where('currency_id', $purchaseOrder->currency_id)
-            ->whereIn('state', PurchaseOrderStateEnum::live())
+            ->whereIn('state', PurchaseOrderStateEnum::open())
             ->whereDoesntHave('stockDeliveries', fn (Builder $deliveries) => $deliveries->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED));
     }
 
