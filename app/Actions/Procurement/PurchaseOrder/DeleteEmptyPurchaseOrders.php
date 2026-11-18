@@ -21,8 +21,8 @@ use Lorisleiva\Actions\ActionRequest;
 class DeleteEmptyPurchaseOrders extends OrgAction
 {
     /**
-     * An order not yet received can go when its items are worth nothing (no lines, or every line cancelled or priced at
-     * zero), nothing was paid or asked as a deposit on it, and no goods, delivery or agent payment hangs off it. Extra
+     * An order not yet received can go when it orders nothing (no lines, or every line cancelled, or ordering
+     * no units and worth nothing), nothing was paid or asked as a deposit on it, and no goods, delivery or agent payment hangs off it. Extra
      * costs (shipping, duties, tax, other) do not stop it: they go with the order. Written against the alias po.
      */
     public static function deletableCondition(): string
@@ -82,7 +82,7 @@ class DeleteEmptyPurchaseOrders extends OrgAction
                 where purchase_order_transactions.purchase_order_id = po.id
                     and purchase_order_transactions.deleted_at is null
                     and purchase_order_transactions.state <> 'cancelled'
-                    and purchase_order_transactions.net_amount <> 0
+                    and (purchase_order_transactions.quantity_ordered > 0 or purchase_order_transactions.net_amount <> 0)
             )",
             'deposit'  => 'not ('.self::withoutDepositCondition().')',
             'goods'    => 'exists (select 1 from agent_goods_receipt_items where agent_goods_receipt_items.purchase_order_id = po.id)

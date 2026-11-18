@@ -4534,3 +4534,23 @@ test('Close Old PO offers and accepts only received deliveries through the order
 
     expect($purchaseOrder->refresh()->closedAsOld()['stock_delivery_id'])->toBe($agentDelivery->id);
 });
+
+test('an order with units ordered at a zero price is not empty and can not be deleted', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, createFreshOrgAgent($this));
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, \App\Models\Procurement\PurchaseOrder::factory()->definition());
+    $line          = StorePurchaseOrderTransaction::make()->action(
+        $purchaseOrder,
+        $orgSupplierProduct->supplierProduct->historicSupplierProduct,
+        $this->orgStocks[0],
+        array_merge(\App\Models\Procurement\PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 5])
+    );
+    $line->updateQuietly(['net_amount' => 0, 'unit_cost' => 0]);
+
+    expect(\App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders::blockersOf([$purchaseOrder->id])[$purchaseOrder->id])->toContain('items')
+        ->and(\App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders::deletableIds($this->group, [$purchaseOrder->id]))->toBeEmpty();
+
+    $line->updateQuietly(['quantity_ordered' => 0]);
+
+    expect(\App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders::deletableIds($this->group, [$purchaseOrder->id]))->toBe([$purchaseOrder->id]);
+});
