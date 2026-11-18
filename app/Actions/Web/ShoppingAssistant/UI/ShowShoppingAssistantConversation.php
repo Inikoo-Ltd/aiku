@@ -60,7 +60,7 @@ class ShowShoppingAssistantConversation extends OrgAction
         }
 
         if ($this->inShopMenu) {
-            return $request->user()->authTo(["websites-view.{$this->organisation->id}", "web.{$this->shop->id}.view", 'group-webmaster.view']);
+            return $request->user()->canSeeShop($this->shop) || $request->user()->authTo(["websites-view.{$this->organisation->id}", "web.{$this->shop->id}.view", 'group-webmaster.view']);
         }
 
         return $this->website ? $this->authorizeWebsiteRoute($request) : $this->canViewGroupShoppingAssistant($request->user());
@@ -325,7 +325,11 @@ class ShowShoppingAssistantConversation extends OrgAction
                 'type'   => 'simple',
                 'simple' => [
                     'route' => [
-                        'name'       => $this->website ? 'grp.org.shops.show.web.analytics.shopping_assistant.conversations.show' : 'grp.websites.shopping_assistant.conversations.show',
+                        'name'       => match (true) {
+                            $this->inShopMenu     => 'grp.org.shops.show.ai_salesman.conversations.show',
+                            (bool) $this->website => 'grp.org.shops.show.web.analytics.shopping_assistant.conversations.show',
+                            default               => 'grp.websites.shopping_assistant.conversations.show',
+                        },
                         'parameters' => $routeParameters,
                     ],
                     'label' => $conversation->customer?->name ?? $conversation->ulid,

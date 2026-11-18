@@ -109,7 +109,7 @@ class StoreShoppingAssistantTeamQuestion
                 __('Question: :question', ['question' => $question]),
                 $words !== $question ? __('Their words (:language): :words', ['language' => $language, 'words' => $words]) : null,
                 __('Customer: :name (:reference)', ['name' => $customer->name, 'reference' => $customer->reference]).' '.route('grp.org.shops.show.crm.customers.show', [$organisation->slug, $customer->shop->slug, $customer->slug]),
-                $conversation->website ? __('Conversation on :website:', ['website' => $conversation->website->domain]).' '.route('grp.org.shops.show.web.analytics.shopping_assistant.conversations.show', [$organisation->slug, $customer->shop->slug, $conversation->website->slug, $conversation->ulid]) : null,
+                $conversation->website ? __('Conversation on :website:', ['website' => $conversation->website->domain]).' '.route('grp.org.shops.show.ai_salesman.conversations.show', [$organisation->slug, $customer->shop->slug, $conversation->ulid]) : null,
             ])),
             'assignee_id'      => $first->id,
             'collaborator_ids' => array_values(array_filter(array_map(fn (User $guru) => $guru->id !== $first->id ? $guru->id : null, $gurus))),
@@ -335,8 +335,23 @@ class StoreShoppingAssistantTeamQuestion
             'answer_url'     => route('grp.tasks.assistant_answer', $task->reference),
             'decline_url'    => route('grp.tasks.assistant_decline', $task->reference),
             'pass_url'       => route('grp.tasks.assistant_pass', $task->reference),
-            'task_url'       => route('grp.tasks.show', $task->reference),
+            'task_url'       => self::detailsUrl($task),
         ];
+    }
+
+    /**
+     * The conversation, under the shop, so any guru who can open the shop reads it, also a backup
+     * who is not on the task. The task when the conversation is gone.
+     */
+    public static function detailsUrl(StaffTask $task): string
+    {
+        $shop = ShoppingAssistantConversation::with('website.shop.organisation')->find(data_get($task->data, 'conversation_id'))?->website?->shop;
+
+        if (!$shop) {
+            return route('grp.tasks.show', $task->reference);
+        }
+
+        return route('grp.org.shops.show.ai_salesman.conversations.show', [$shop->organisation->slug, $shop->slug, data_get($task->data, 'conversation_ulid')]);
     }
 
     /**

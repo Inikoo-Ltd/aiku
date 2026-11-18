@@ -68,7 +68,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
         }
 
         if ($this->inShopMenu) {
-            return $request->user()->authTo(["websites-view.{$this->organisation->id}", "web.{$this->shop->id}.view", 'group-webmaster.view']);
+            return $request->user()->canSeeShop($this->shop) || $request->user()->authTo(["websites-view.{$this->organisation->id}", "web.{$this->shop->id}.view", 'group-webmaster.view']);
         }
 
         return $this->website ? $this->authorizeWebsiteRoute($request) : $this->canViewGroupShoppingAssistant($request->user());

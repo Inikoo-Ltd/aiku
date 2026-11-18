@@ -21,6 +21,7 @@ use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\CRM\ShoppingAssistant\RecordShoppingAssistantBasketAdd;
 use App\Actions\CRM\WebUser\StoreWebUser;
+use App\Actions\UI\Grp\Layout\GetShopNavigation;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\Web\Website\UpdateWebsite;
@@ -847,8 +848,17 @@ test('the group AI assistant report is only for group-wide viewers, a shop webma
             ->where('routes.conversation.name', 'grp.org.shops.show.ai_salesman.conversations.show')
             ->missing('pageHead.subNavigation')
             ->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->sort()->values()->all() === collect([$ordered->ulid, $clicked->ulid])->sort()->values()->all()));
-    $this->get(route('grp.org.shops.show.ai_salesman.conversations.show', [...$shopParameters, $ordered->ulid]))->assertOk();
+    $this->get(route('grp.org.shops.show.ai_salesman.conversations.show', [...$shopParameters, $ordered->ulid]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['simple']['route']['name'] === 'grp.org.shops.show.ai_salesman.conversations.show'));
     $this->get(route('grp.org.shops.show.ai_salesman.conversations.show', [...$shopParameters, $elsewhere->ulid]))->assertNotFound();
+
+    $shopStaff = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($shopStaff, ["crm.{$this->shop->id}.view"]);
+
+    expect(GetShopNavigation::run($this->shop->refresh(), $shopStaff))->toHaveKey('ai_salesman');
+    $this->get(route('grp.org.shops.show.ai_salesman.show', [...$shopParameters, ...$query]))->assertOk();
+    $this->get(route('grp.org.shops.show.ai_salesman.conversations.show', [...$shopParameters, $ordered->ulid]))->assertOk();
 });
 
 test('the customer page has a Merlin tab with the customer conversations, only when there are some', function () {

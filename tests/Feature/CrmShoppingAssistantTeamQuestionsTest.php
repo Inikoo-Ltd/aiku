@@ -412,10 +412,12 @@ test('the Merlin report counts the guru questions: answered, in time, not answer
         ->and($gurus['closed'])->toBe($before['closed'] + 1)
         ->and($me['answered'])->toBeGreaterThanOrEqual(1)
         ->and($me['declined'])->toBeGreaterThanOrEqual(1)
-        ->and(collect($gurus['latest'])->pluck('status', 'reference')->only([$answered->reference, $declined->reference])->all())->toBe([$declined->reference => 'closed', $answered->reference => 'answered']);
+        ->and(collect($gurus['latest'])->pluck('status', 'reference')->only([$answered->reference, $declined->reference])->all())->toBe([$declined->reference => 'closed', $answered->reference => 'answered'])
+        ->and(collect($gurus['latest'])->firstWhere('reference', $answered->reference)['conversation'])->toBe(data_get($answered->data, 'conversation_ulid'));
 });
 
 test('a customer with a question waiting gets no second task: a different question from another conversation joins it, and the answer lands in the conversation they asked from last', function () {
+    createWebsite($this->shop);
     $conversation = teamQuestionConversation($this);
     $customer     = $conversation->customer;
     $first        = StoreShoppingAssistantTeamQuestion::run($conversation, 'Who is the legal manufacturer of the hemp backpack?', 'fabricant légal du sac ?');
@@ -435,6 +437,7 @@ test('a customer with a question waiting gets no second task: a different questi
         ->and(data_get($task->data, 'conversation_id'))->toBe($later->id)
         ->and($popup['question'])->toBe("1. Who is the legal manufacturer of the hemp backpack?\n2. Is there a list of products with complete compliance documents?")
         ->and($popup['customer_words'])->toBe("1. fabricant légal du sac ?\n2. liste des produits conformes ?")
+        ->and($popup['task_url'])->toBe(route('grp.org.shops.show.ai_salesman.conversations.show', [$customer->organisation->slug, $customer->shop->slug, $later->ulid]))
         ->and($task->description)->toContain('The customer also asked: Is there a list of products with complete compliance documents?')
         ->and(StoreShoppingAssistantTeamQuestion::openFor($later)?->id)->toBe($task->id);
 

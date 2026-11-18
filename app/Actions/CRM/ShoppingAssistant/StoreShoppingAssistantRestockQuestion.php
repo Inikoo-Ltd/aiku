@@ -80,7 +80,7 @@ class StoreShoppingAssistantRestockQuestion
                 $product ? __('Product: :code :name', ['code' => $product->code, 'name' => $product->name]) : null,
                 __('Question: :question', ['question' => $question]),
                 $estimate ? __('What our orders show: :status', ['status' => $estimate['status'] === 'on_order_no_date' ? __('on order, with no expected date still ahead') : __('nothing on order in the last :months months', ['months' => GetProductRestockEstimate::RECENT_MONTHS])]) : null,
-                $conversation->website ? __('Conversation on :website:', ['website' => $conversation->website->domain]).' '.route('grp.org.shops.show.web.analytics.shopping_assistant.conversations.show', [$organisation->slug, $customer->shop->slug, $conversation->website->slug, $conversation->ulid]) : null,
+                $conversation->website ? __('Conversation on :website:', ['website' => $conversation->website->domain]).' '.route('grp.org.shops.show.ai_salesman.conversations.show', [$organisation->slug, $customer->shop->slug, $conversation->ulid]) : null,
             ])),
             'department'       => self::DEPARTMENT,
             'collaborator_ids' => $explicit->pluck('id')->all(),

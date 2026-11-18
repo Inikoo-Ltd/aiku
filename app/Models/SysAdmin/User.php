@@ -469,6 +469,19 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
         });
     }
 
+    /**
+     * Who may open a shop: its dashboard, and what anyone working in it may read there, such as
+     * the AI shopping assistant's conversations.
+     */
+    public function canSeeShop(Shop $shop): bool
+    {
+        return $this->authTo([
+            "org-admin.{$shop->organisation_id}",
+            "org-supervisor.{$shop->organisation_id}",
+            "accounting.{$shop->organisation_id}.view",
+        ]) || $this->authorisedShops()->where('shops.id', $shop->id)->exists();
+    }
+
     public function authorisedShops(): MorphToMany
     {
         return $this->permissionsHolder()->morphedByMany(Shop::class, 'model', 'user_has_authorised_models')->withTimestamps();

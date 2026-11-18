@@ -200,7 +200,8 @@ class GetShoppingAssistantReport
                 'status'    => !isset($task['data']['answered_at']) ? 'open' : (!empty($task['data']['unanswered']) ? 'closed' : 'answered'),
                 'by'        => isset($task['data']['answered_by']) && empty($task['data']['unanswered']) ? ($names[$task['data']['answered_by']] ?? null) : null,
                 'minutes'   => empty($task['data']['unanswered']) ? $minutes($task) : null,
-                'url'       => route('grp.tasks.show', $task['reference']),
+                'url'          => route('grp.tasks.show', $task['reference']),
+                'conversation' => $task['data']['conversation_ulid'] ?? null,
             ])->values()->all(),
         ];
     }
