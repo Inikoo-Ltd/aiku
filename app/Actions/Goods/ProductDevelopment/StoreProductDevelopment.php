@@ -32,6 +32,7 @@ use App\Models\Goods\ProductDevelopmentChecklistTemplate;
 use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\Goods\ProductDevelopmentMember;
 use App\Models\Goods\TradeUnit;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentCopySectionEnum;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
@@ -127,6 +128,7 @@ class StoreProductDevelopment extends OrgAction
                 BreakUserUiProps::dispatch($firstTimeMember)->afterCommit();
             }
 
+            $copies = [];
             foreach (array_values($items) as $position => $item) {
                 $tradeUnit = isset($item['trade_unit_id'])
                     ? TradeUnit::find($item['trade_unit_id'])
@@ -146,6 +148,10 @@ class StoreProductDevelopment extends OrgAction
                     ProductDevelopmentRecipes::linkArtefact($productDevelopment, $developmentItem->setRelation('tradeUnit', $tradeUnit), $creator);
                     ProductDevelopmentRecipes::addComponents($developmentItem, $components);
                 }
+
+                if (!isset($item['trade_unit_id']) && !empty($item['copy_from_trade_unit_id'])) {
+                    $copies[] = [$developmentItem->setRelation('tradeUnit', $tradeUnit), $item['copy_from_trade_unit_id'], $item['copy_sections'] ?? null];
+                }
             }
 
             if ($briefFiles) {
@@ -153,6 +159,18 @@ class StoreProductDevelopment extends OrgAction
             }
 
             $this->recordCreationActivity($productDevelopment);
+
+            foreach ($copies as [$developmentItem, $sourceId, $sections]) {
+                CopyTradeUnitInformation::run(
+                    $productDevelopment,
+                    $developmentItem,
+                    TradeUnit::findOrFail($sourceId),
+                    $sections === null
+                        ? ProductDevelopmentCopySectionEnum::forKind($productDevelopment->kind)
+                        : array_map(fn (string $section) => ProductDevelopmentCopySectionEnum::from($section), $sections)
+                );
+            }
+
             $this->createChecklistItems($productDevelopment);
             ProductDevelopmentHydrateChecklist::run($productDevelopment);
             $this->createOpeningTasks($productDevelopment, $creator);
@@ -302,6 +320,9 @@ class StoreProductDevelopment extends OrgAction
             ],
             'items.*.name'         => ['required_without:items.*.trade_unit_id', 'nullable', 'string', 'max:255'],
             'items.*.brief'        => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'items.*.copy_from_trade_unit_id' => ['sometimes', 'nullable', 'integer', Rule::exists('trade_units', 'id')->where('group_id', $groupId)->whereNull('deleted_at')],
+            'items.*.copy_sections'   => ['sometimes', 'nullable', 'array'],
+            'items.*.copy_sections.*' => [Rule::enum(ProductDevelopmentCopySectionEnum::class)],
             'items.*.images'       => ['sometimes', 'array', 'max:'.UploadProductDevelopmentFiles::MAX_FILES],
             'items.*.images.*'     => ['file', 'max:'.UploadProductDevelopmentFiles::MAX_KILOBYTES, 'extensions:'.self::BRIEF_IMAGE_EXTENSIONS],
             'components'           => ['sometimes', 'array', 'max:100'],
@@ -369,6 +390,12 @@ class StoreProductDevelopment extends OrgAction
         $agentId    = $isRecipe ? null : $this->get('agent_id');
         if ($supplierId && $agentId && (int) Supplier::whereKey($supplierId)->value('agent_id') !== (int) $agentId) {
             $validator->errors()->add('agent_id', __('This supplier belongs to another agent'));
+        }
+
+        foreach ((array) $this->get('items', []) as $index => $item) {
+            if (!empty($item['trade_unit_id']) && !empty($item['copy_from_trade_unit_id'])) {
+                $validator->errors()->add("items.$index.copy_from_trade_unit_id", __('Only a new SKU can copy the information of another product'));
+            }
         }
 
         $agentId = $supplierId ? Supplier::whereKey($supplierId)->value('agent_id') : $agentId;

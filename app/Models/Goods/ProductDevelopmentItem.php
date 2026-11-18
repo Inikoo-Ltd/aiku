@@ -24,8 +24,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $brief the product-specific part of the brief (fragrance, colour, look)
  * @property array<int, string> $label_excluded the pack text left off the label; everything else filled in goes on it
  * @property int $position
+ * @property int|null $copied_from_trade_unit_id the product this SKU started from (HELP-4782)
+ * @property array<int, string>|null $copied_sections what was copied from it (ProductDevelopmentCopySectionEnum values)
  * @property-read ProductDevelopment|null $productDevelopment
  * @property-read TradeUnit|null $tradeUnit
+ * @property-read TradeUnit|null $copiedFromTradeUnit
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFormulation> $formulations
  * @property-read SupplierProduct|null $supplierProduct
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentChecklistItem> $checklistItems
@@ -44,7 +47,8 @@ class ProductDevelopmentItem extends Model
     protected function casts(): array
     {
         return [
-            'label_excluded' => 'array',
+            'label_excluded'  => 'array',
+            'copied_sections' => 'array',
         ];
     }
 
@@ -56,6 +60,11 @@ class ProductDevelopmentItem extends Model
     public function tradeUnit(): BelongsTo
     {
         return $this->belongsTo(TradeUnit::class);
+    }
+
+    public function copiedFromTradeUnit(): BelongsTo
+    {
+        return $this->belongsTo(TradeUnit::class, 'copied_from_trade_unit_id');
     }
 
     public function supplierProduct(): BelongsTo

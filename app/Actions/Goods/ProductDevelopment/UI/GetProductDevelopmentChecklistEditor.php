@@ -18,6 +18,7 @@ use App\Enums\Goods\ProductDevelopment\ProductDevelopmentComponentStatusEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTargetFieldEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentCopySectionEnum;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
@@ -56,7 +57,7 @@ class GetProductDevelopmentChecklistEditor
         $this->viewer      = $viewer;
         $this->canSeeCosts = $canSeeCosts;
 
-        $productDevelopment->loadMissing(['items.tradeUnit', 'items.supplierProduct.currency', 'supplier.currency']);
+        $productDevelopment->loadMissing(['items.tradeUnit', 'items.copiedFromTradeUnit', 'items.supplierProduct.currency', 'supplier.currency']);
         $this->supplierCurrency = $productDevelopment->supplier?->currency?->code;
         $checklistItems = $productDevelopment->checklistItems()
             ->with(['completedBy', 'productDevelopment'])
@@ -81,6 +82,7 @@ class GetProductDevelopmentChecklistEditor
                 'name'              => $item->tradeUnit->name,
                 'supplier_product'  => $item->supplierProduct ? ['id' => $item->supplierProduct->id, 'code' => $item->supplierProduct->code] : null,
                 'can_link_supplier_product' => $canLinkSp && (bool) $productDevelopment->supplier_id,
+                'copied_from'       => $this->copiedFrom($item),
                 'rows'              => $byItem->get($item->id, collect())->map(fn ($row) => $this->row($row, $item))->values()->all(),
                 'label_content_route' => ['name' => 'grp.product_developments.json.label_content', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'item' => $item->id]],
                 'components'        => $onlyRole === ProductDevelopmentMemberRoleEnum::COMPLIANCE && $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE ? $this->components($item) : [],
@@ -104,6 +106,30 @@ class GetProductDevelopmentChecklistEditor
                 'supplier_product' => 'grp.models.product_development.item.supplier_product',
                 'supplier_products_search' => $productDevelopment->supplier_id ? ['name' => 'grp.product_developments.json.supplier_products', 'parameters' => ['productDevelopment' => $productDevelopment->slug]] : null,
             ],
+        ];
+    }
+
+    /**
+     * The product a new SKU started from and what it took, so the copied compliance gets a second look (HELP-4782).
+     *
+     * @return array{code: string, name: string|null, route: array{name: string, parameters: array<string, string>}, sections: array<int, string>, includes_compliance: bool}|null
+     */
+    private function copiedFrom(ProductDevelopmentItem $item): ?array
+    {
+        $source = $item->copiedFromTradeUnit;
+        if (!$source) {
+            return null;
+        }
+
+        $labels   = ProductDevelopmentCopySectionEnum::labels();
+        $sections = $item->copied_sections ?? [];
+
+        return [
+            'code'                => $source->code,
+            'name'                => $source->name,
+            'route'               => ['name' => 'grp.trade_units.units.show', 'parameters' => ['tradeUnit' => $source->slug]],
+            'sections'            => array_values(array_map(fn (string $section) => $labels[$section] ?? $section, $sections)),
+            'includes_compliance' => in_array(ProductDevelopmentCopySectionEnum::COMPLIANCE->value, $sections, true),
         ];
     }
 

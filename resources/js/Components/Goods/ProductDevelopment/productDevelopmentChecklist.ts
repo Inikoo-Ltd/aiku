@@ -45,6 +45,14 @@ export interface ChecklistRow {
     on_label?: boolean
 }
 
+export interface ChecklistCopiedFrom {
+    code: string
+    name: string | null
+    route: routeType
+    sections: string[]
+    includes_compliance: boolean
+}
+
 export interface ChecklistSku {
     id: number
     code: string
@@ -52,6 +60,7 @@ export interface ChecklistSku {
     route: routeType
     supplier_product: { id: number, code: string } | null
     can_link_supplier_product: boolean
+    copied_from?: ChecklistCopiedFrom | null
     rows: ChecklistRow[]
     label_content_route?: routeType
     components?: {

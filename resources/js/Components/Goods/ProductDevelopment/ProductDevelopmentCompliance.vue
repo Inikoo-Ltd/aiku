@@ -15,6 +15,7 @@ import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import ProductDevelopmentLabelPackaging from "@/Components/Goods/ProductDevelopment/ProductDevelopmentLabelPackaging.vue"
 import RecipeIngredients from "@/Components/Goods/ProductDevelopment/Formulation/RecipeIngredients.vue"
 import ProductDevelopmentSkuList from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSkuList.vue"
+import ProductDevelopmentCopiedFrom from "@/Components/Goods/ProductDevelopment/ProductDevelopmentCopiedFrom.vue"
 import { skuProgress, skuProgressPills } from "@/Components/Goods/ProductDevelopment/productDevelopmentSkuProgress"
 import ProductDevelopmentProgressBar from "@/Components/Goods/ProductDevelopment/ProductDevelopmentProgressBar.vue"
 import ProductDevelopmentSpecField from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSpecField.vue"
@@ -125,6 +126,7 @@ function setTemplate(category: string) {
                             <span class="text-xs tabular-nums text-gray-500">{{ summary(selected).done }}/{{ summary(selected).total }}</span>
                         </div>
                     </div>
+                    <ProductDevelopmentCopiedFrom v-if="selected.copied_from" :copiedFrom="selected.copied_from" forCompliance class="mb-4" />
                     <template v-if="view === 'information'">
                         <p v-if="summary(selected).missing.length" class="mb-4 text-xs text-amber-800">
                             <span class="font-medium">{{ ctrans("Still missing:") }}</span> {{ summary(selected).missing.join(", ") }}

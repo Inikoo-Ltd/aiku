@@ -823,3 +823,29 @@ test('ticking task lines by hand keeps what the lines are linked to', function (
     expect($task->data['subtasks'][0])->toMatchArray(['status' => 'done', 'artefact_id' => $experiment->id])
         ->and($task->data['subtasks'][1])->toBe(['title' => 'Call supplier', 'status' => 'todo']);
 });
+
+test('an in-house SKU copied from a product of the factory starts with its recipe', function () {
+    [$original] = branchTestOriginal($this);
+    $source     = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, ['code' => 'CPY'.rand(10000, 99999), 'name' => 'Lavender soap']);
+    $original->update(['trade_unit_id' => $source->id]);
+    $source->update(['net_weight' => 100]);
+
+    $development = \App\Actions\Goods\ProductDevelopment\StoreProductDevelopment::make()->action($this->group, $this->guest->getUser(), [
+        'name'          => 'Lavender soap new wrap',
+        'type'          => 'redesign',
+        'kind'          => 'recipe',
+        'production_id' => $this->production->id,
+        'items'         => [['code' => $source->code.'A', 'name' => 'Lavender soap new wrap', 'copy_from_trade_unit_id' => $source->id, 'copy_sections' => ['formulation']]],
+    ]);
+
+    $item     = $development->items->first()->refresh();
+    $artefact = $item->artefact;
+
+    expect($artefact)->not->toBeNull()
+        ->and($artefact->id)->not->toBe($original->id)
+        ->and($artefact->trade_unit_id)->toBe($item->trade_unit_id)
+        ->and(unifiedRecipeSteps($artefact))->toBe(unifiedRecipeSteps($original))
+        ->and($artefact->refresh()->recommended_batch_size)->toBe(24)
+        ->and($item->tradeUnit->net_weight)->toBeNull()
+        ->and($item->copied_sections)->toBe(['formulation']);
+});
