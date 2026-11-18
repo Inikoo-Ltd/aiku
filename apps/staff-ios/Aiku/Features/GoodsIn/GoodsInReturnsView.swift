@@ -38,7 +38,7 @@ struct GoodsInReturnDetailView: View {
 
     private var goodsReturn: GoodsInReturn { store.goodsReturn(reference) }
     private var canWork: Bool { goodsReturn.state == .received || goodsReturn.state == .returning }
-    private var canUndo: Bool { goodsReturn.remoteActions.contains("undo") }
+    private var canUndo: Bool { goodsReturn.remoteActions.contains(GoodsInActionKey.undo) }
     private var undoablePuts: [GoodsInReturnPut] { canUndo ? goodsReturn.items.flatMap(\.puts) : [] }
     private var selectedItem: GoodsInReturnItem? {
         if let selectedSKO, let item = goodsReturn.items.first(where: { $0.sko == selectedSKO && $0.outcome == nil }) {
@@ -69,7 +69,7 @@ struct GoodsInReturnDetailView: View {
             AppScreen(title: goodsReturn.reference, kicker: "Return · \(goodsReturn.customer)") {
                 content
             } footer: {
-                AikuButton("Set as returned", icon: .check) {
+                AikuButton("Set as returned", look: GoodsInActionKey.look(for: GoodsInActionKey.setAsReturned)) {
                     store.setReturnAsReturned(reference)
                     toasts.show("\(reference) set as returned")
                 }
@@ -100,20 +100,22 @@ struct GoodsInReturnDetailView: View {
         if !undoablePuts.isEmpty {
             SectionHeading("Done on this return")
             CardList(undoablePuts) { put in
-                ListRow(put.sko, subtitle: put.title, icon: .undo, iconTone: .neutral) {
+                ListRow(put.sko, subtitle: put.title, icon: .undo, iconTone: GoodsInActionKey.look(for: GoodsInActionKey.undo).kind.tileTone) {
                     undoingPut = put
                 }
                 .accessibilityIdentifier("goodsIn.return.undo.\(put.id)")
             }
         }
         if canWork, let item = selectedItem {
-            HStack(spacing: 8) {
-                AikuButton("To location") { process(item, .toLocation(item.homeLocation)) }
+            VStack(spacing: 8) {
+                AikuButton("To location", look: GoodsInActionKey.look(for: GoodsInActionKey.putBack)) { process(item, .toLocation(item.homeLocation)) }
                     .accessibilityIdentifier("goodsIn.return.toLocation")
-                AikuButton("Damaged", kind: .tertiary) { process(item, .damaged) }
-                    .accessibilityIdentifier("goodsIn.return.damaged")
-                AikuButton("Not returned", kind: .tertiary) { process(item, .notReturned) }
-                    .accessibilityIdentifier("goodsIn.return.notReturned")
+                HStack(spacing: 8) {
+                    AikuButton("Damaged", icon: .warning, kind: .danger) { process(item, .damaged) }
+                        .accessibilityIdentifier("goodsIn.return.damaged")
+                    AikuButton("Not returned", icon: .xCircle, kind: .danger) { process(item, .notReturned) }
+                        .accessibilityIdentifier("goodsIn.return.notReturned")
+                }
             }
             .lineLimit(2)
             .minimumScaleFactor(0.8)

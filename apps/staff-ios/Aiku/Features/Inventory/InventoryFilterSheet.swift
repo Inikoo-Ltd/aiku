@@ -183,7 +183,7 @@ private struct InventoryFilterSheetLayout<Sections: View>: View {
                     .font(.aiku(12))
                     .foregroundStyle(AikuColor.text3)
                     .frame(maxWidth: .infinity)
-                AikuButton(showTitle, action: onShow)
+                AikuButton(showTitle, icon: .next, action: onShow)
                     .accessibilityIdentifier("inventory.filter.show")
             }
             .padding(.horizontal, 20)

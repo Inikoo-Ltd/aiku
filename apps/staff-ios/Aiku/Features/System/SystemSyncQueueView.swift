@@ -85,7 +85,7 @@ struct SystemSyncQueueView: View {
             }
             .accessibilityIdentifier("system.syncNow")
         } else if !store.openConflicts.isEmpty {
-            AikuButton("Back online · \(conflictCount(store.openConflicts.count)) to resolve") {
+            AikuButton("Back online · \(conflictCount(store.openConflicts.count)) to resolve", icon: .next) {
                 router.open(SystemRoute.conflicts)
             }
             .accessibilityIdentifier("system.openConflicts")

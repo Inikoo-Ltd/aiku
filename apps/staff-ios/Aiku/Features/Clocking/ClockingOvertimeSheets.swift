@@ -83,7 +83,7 @@ struct ClockingOvertimeRequestSheet: View {
                 InlineAlert(tone: .danger, title: "Can’t send this request", message: error.message)
             }
         } footer: {
-            AikuButton(editing == nil ? "Submit request" : "Update request", isLoading: isSending) {
+            AikuButton(editing == nil ? "Submit request" : "Update request", icon: .next, isLoading: isSending) {
                 isSending = true
                 Task {
                     switch await store.submit(draft, editing: editing) {

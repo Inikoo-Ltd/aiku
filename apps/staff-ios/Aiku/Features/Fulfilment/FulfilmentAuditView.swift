@@ -116,7 +116,7 @@ private struct StoredItemAuditScreen: View {
             HelperText("Completing the audit applies the counted quantities to this pallet. Items not counted stay as they are.")
         } footer: {
             if let complete {
-                AikuButton(complete.label.isEmpty ? "Complete audit" : complete.label, icon: .check) {
+                AikuButton(complete.label.isEmpty ? "Complete audit" : complete.label, look: StoredItemAuditActionLooks.look(for: complete.key)) {
                     isConfirmingComplete = true
                 }
                 .disabled(live.isWorking)
@@ -223,7 +223,7 @@ private struct CountSheet: View {
             AikuTextField("Counted", text: $text, error: isMissing ? "Enter the counted quantity." : live.sheetError, keyboard: .numberPad)
                 .accessibilityIdentifier("fulfilment.audit.countField")
         } footer: {
-            AikuButton("Save count", icon: .check) {
+            AikuButton("Save count", look: StoredItemAuditActionLooks.look(for: "count")) {
                 guard let quantity = Int(text.trimmingCharacters(in: .whitespacesAndNewlines)), quantity >= 0 else {
                     isMissing = true
                     return
@@ -235,7 +235,7 @@ private struct CountSheet: View {
             .disabled(live.isWorking)
             .accessibilityIdentifier("fulfilment.audit.saveCount")
             if let deltaID = target.deltaID {
-                AikuButton("Remove count", kind: .danger) {
+                AikuButton("Remove count", icon: .trash, kind: .danger) {
                     Task {
                         if await live.removeCount(deltaID: deltaID) { onClose() }
                     }

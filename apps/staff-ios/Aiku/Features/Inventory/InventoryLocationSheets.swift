@@ -49,7 +49,7 @@ struct InventoryAddLocationSheet: View {
                 FieldError(error)
             }
         } footer: {
-            AikuButton(isSaving ? "Adding…" : selection.map { "Add \($0.code)" } ?? "Add location") {
+            AikuButton(isSaving ? "Adding…" : selection.map { "Add \($0.code)" } ?? "Add location", look: AikuButtonLook(.primary, icon: .plus)) {
                 save()
             }
             .disabled(selection == nil || isSaving)
@@ -136,7 +136,7 @@ struct InventoryRemoveLocationsSheet: View {
                 FieldError(error)
             }
         } footer: {
-            AikuButton(buttonTitle, kind: .danger) {
+            AikuButton(buttonTitle, look: AikuButtonLook(.dangerStrong, icon: .trash)) {
                 save()
             }
             .disabled(selection.isEmpty || isSaving)

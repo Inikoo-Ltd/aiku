@@ -37,7 +37,7 @@ struct GoodsInPendingItems: View {
             }
         }
         if canCheck, let onCheckAll, delivery.items.contains(where: { $0.checked == nil }) {
-            AikuButton("Check all items", icon: .check, kind: .secondary, action: onCheckAll)
+            AikuButton("Check all items", look: GoodsInActionKey.look(for: GoodsInActionKey.check), action: onCheckAll)
                 .accessibilityIdentifier("goodsIn.checkAll")
         }
         HelperText("Tap an item to set its checked quantity or check all. Checking an item as 0 marks it Not received. Checked items can be placed straight away from Booking in.")
@@ -217,9 +217,9 @@ struct GoodsInCheckQuantitySheet: View {
             HelperText("Count in units or in SKOs (outers), as set for the item. Purchasing resolves differences: recount, unit error, supplier claim or surplus accepted.")
                 .padding(.horizontal, 4)
         } footer: {
-            AikuButton("Save \(item.text(quantity)) checked") { onSave(quantity) }
+            AikuButton("Save \(item.text(quantity)) checked", icon: .check) { onSave(quantity) }
                 .accessibilityIdentifier("goodsIn.check.save")
-            AikuButton("Check all \(item.text(item.delivered))", kind: .secondary) { onSave(item.delivered) }
+            AikuButton("Check all \(item.text(item.delivered))", look: GoodsInActionKey.look(for: GoodsInActionKey.check)) { onSave(item.delivered) }
                 .accessibilityIdentifier("goodsIn.check.all")
             if GoodsInQuantity.isZero(item.placedQuantity) {
                 AikuButton("Check as 0 · not received", kind: .danger) { onSave(0) }
