@@ -4674,3 +4674,34 @@ test('the repair of sheet rows duplicated by a goods receipt keeps packed sheet 
         ->and($packedRow->fresh())->not->toBeNull()
         ->and($refreshed)->toBe([$purchaseOrder->id]);
 });
+
+test('packing part of a warehouse row is limited to the units the agent still holds, not the row quantity', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 6)->refresh();
+    $line          = $purchaseOrder->purchaseOrderTransactions()->firstOrFail();
+    $container     = StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder);
+
+    $onContainer = (float) $container->items()->sum('unit_quantity');
+    $row         = App\Models\Procurement\AgentWarehouseStock::create([
+        'group_id'                      => $this->agent->group_id,
+        'agent_id'                      => $purchaseOrder->agent_id,
+        'organisation_id'               => $purchaseOrder->organisation_id,
+        'supplier_product_id'           => $orgSupplierProduct->supplier_product_id,
+        'purchase_order_id'             => $purchaseOrder->id,
+        'purchase_order_transaction_id' => $line->id,
+        'state'                         => App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::RECEIVED,
+        'quantity'                      => $onContainer + 5,
+    ]);
+    $held        = 5.0;
+    $pack        = App\Actions\Procurement\AgentWarehouseStock\PackAgentWarehouseStock::make();
+
+    expect($onContainer)->toBeGreaterThan(0.0)
+        ->and(fn () => $pack->handle($row, $held + 1))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and((float) $row->refresh()->quantity)->toBe($onContainer + 5);
+
+    $packed = $pack->handle($row, $held);
+
+    expect((float) $packed->quantity)->toBe($held)
+        ->and($packed->state)->toBe(App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::PACKED_FOR_NEXT_CONTAINER)
+        ->and((float) $row->refresh()->quantity)->toBe($onContainer);
+});
