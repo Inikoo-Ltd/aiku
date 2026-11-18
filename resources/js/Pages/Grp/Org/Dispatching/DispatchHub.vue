@@ -24,7 +24,6 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useSessionStorage } from "@vueuse/core"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
-import ProductionMaterialRequests from "@/Components/Warehouse/ProductionMaterialRequests.vue"
 
 library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine, faDolly, faIndustry, faClipboardListCheck, faSave, faLock, faChevronDown)
 
@@ -54,8 +53,6 @@ const props = defineProps<{
     }[]
     stage_route?: { name: string; parameters: Record<string, string> }
     release_route?: { name: string; parameters: Record<string, string> }
-    production_materials?: { data: any[] } | null
-    can_work_production_materials?: boolean
     can_edit?: boolean
     reports_route?: { name: string; parameters: Record<string, string> }
     gate_route?: { name: string; parameters: Record<string, string> } | null
@@ -68,7 +65,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const isPersonnelTab = computed(() => currentTab.value === "pickers" || currentTab.value === "packers")
 const isStagingTab = computed(() => currentTab.value === "partner_staging")
-const isProductionMaterialsTab = computed(() => currentTab.value === "production_materials")
 
 const page = usePage()
 const actionError = computed(() => Object.values((page.props.errors ?? {}) as Record<string, string>)[0])
@@ -154,7 +150,7 @@ const trolleyRoute = (trolley: { slug: string }) =>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <div v-if="actionError && (isStagingTab || isProductionMaterialsTab)" class="mx-4 mt-4 rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+    <div v-if="actionError && isStagingTab" class="mx-4 mt-4 rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
         {{ actionError }}
     </div>
 
@@ -230,10 +226,6 @@ const trolleyRoute = (trolley: { slug: string }) =>
                 </tr>
             </tbody>
         </table>
-    </div>
-
-    <div v-else-if="isProductionMaterialsTab && production_materials">
-        <ProductionMaterialRequests :resource="production_materials" :canWork="!!can_work_production_materials" />
     </div>
 
     <template v-else-if="isPersonnelTab">

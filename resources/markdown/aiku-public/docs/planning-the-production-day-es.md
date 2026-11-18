@@ -72,6 +72,22 @@ Hasta que se pulse una de las dos, el trabajo sigue delante de ti cada día. Sus
 
 Cuando un operario cierra un trabajo corto y pasa el resto a uno nuevo (ver [Trabajar la pantalla de planta](/docs/working-the-floor-screen-es)), el trabajo nuevo conserva el día planificado, el lugar en el orden y el operario de cada paso.
 
+## Pedir materiales al almacén
+
+Siempre que la fábrica necesita algo del almacén, cualquiera que trabaje en producción lo pide arriba en **Factory → Operations → Materials check** (Fábrica → Operaciones → Revisión de materiales), bajo **Ask the warehouse** (Pedir al almacén). Cada línea es:
+
+| Campo | Qué poner |
+| --- | --- |
+| SKO | escribe el código o el nombre; la lista muestra cuántos SKO tienen el almacén y la fábrica |
+| Quantity and unit (Cantidad y unidad) | como se lo dirías al almacén: *3 Boxes*, *1 Pallet*, *80 Bags*, *2 SKOs* o *All there is* |
+| Drop point (Punto de entrega) | dónde dejarlo en la fábrica (*Storage room*, *Clean room*, *Bath bomb area*...) |
+| Urgent (Urgente) | el almacén ve primero las líneas urgentes |
+| Note (Nota) | cualquier cosa que el almacén deba saber (*250ml*, *fuera en palés, por favor*) |
+
+**Add line** (Añadir línea) pide varias cosas a la vez, y **Send to warehouse** (Enviar al almacén) las envía. **Asked this week** (Pedido esta semana), debajo, muestra cada petición con quién la hizo y cuándo, y de cada línea si está *To bring* (Por traer), *Delivered* (Entregado; cuántos SKO, por quién, cuándo) o *Can't bring* (No se puede traer) con el motivo del almacén.
+
+El responsable y el supervisor mantienen la lista de puntos de entrega con el botón **Drop points** (Puntos de entrega): añadir, renombrar, subir y bajar o borrar. Un punto de entrega borrado conserva su nombre en las peticiones ya enviadas allí.
+
 ## La revisión de materiales de la mañana
 
 El almacén lleva los materiales a la fábrica en cajas enteras, no en las cantidades exactas del día. **Factory → Operations → Materials check** (Fábrica → Operaciones → Revisión de materiales) lista lo que el plan del día aún necesita, para que la fábrica compruebe lo que hay y pida al almacén el resto en una sola lista clara.
@@ -88,13 +104,15 @@ Cada línea es un material, sumado entre todos los trabajos del día, con los tr
 
 Al escribir un número que falta, la línea muestra lo que traerá el almacén, redondeado a sus cajas: faltan 1.200 con 500 por caja es *traer 3 cajas (1.500)*. Un *Warehouse short* (Almacén sin existencias) en rojo significa que el almacén no tiene tantas, así que lo sabes al instante.
 
-Pulsa **Send to warehouse** (Enviar al almacén). Las líneas que faltan van al almacén como una sola petición, y la petición aparece sobre la lista con cada material marcado *To bring* (Por traer), *Delivered* (Entregado) o *Warehouse short*. Marcar todo como suficiente y enviar deja registrado que la revisión se hizo. Una segunda revisión más tarde en el día solo añade lo que aún falta.
+Pulsa **Send to warehouse** (Enviar al almacén). Las líneas que faltan van al almacén como una sola petición, y la petición aparece bajo **Asked this week** con cada material marcado *To bring* (Por traer), *Delivered* (Entregado) o *Can't bring*. Marcar todo como suficiente y enviar deja registrado que la revisión se hizo. Una segunda revisión más tarde en el día solo añade lo que aún falta.
 
 El responsable o el supervisor hace la revisión, o se la da a un operario con **Checked by** (Revisado por) arriba. Ese operario ve entonces en la pantalla de planta un recordatorio que abre la revisión.
 
 ## El almacén trae los materiales
 
-En el almacén, **Goods out → For production** (Salida de mercancía → Para producción) lista cada material que pidió la fábrica, en el orden de recorrido de la estantería de la que hay que cogerlo, con el código de stock, las cajas que hay que traer y la ubicación de la fábrica a la que van. El preparador elige la estantería, comprueba la cantidad y pulsa **Delivered**. Cuando el almacén no puede traerlo, **Warehouse short** avisa a la fábrica.
+En el almacén, la tarjeta **For production** (Para producción) bajo **Action needed** (Requiere acción) en **Inventory** (Inventario) muestra cuántas líneas espera la fábrica, con las urgentes en la insignia pequeña. Abre **Inventory → For production**: cada línea que falta por traer, primero las urgentes y luego las más antiguas, con lo que se pidió, el punto de entrega, quién lo pidió y cuándo, la nota y la estantería de la que cogerlo. El preparador elige la estantería, escribe los SKO traídos y pulsa **Delivered**. Cuando el almacén no puede traerlo, **Can't bring** pregunta el motivo (*out of stock*, *ordered from supplier*) y avisa a la fábrica. **Done** (Hecho) lista lo que se trajo o se rechazó, con cuánto se tardó.
+
+Si Aiku muestra menos SKO en la estantería de los que se trajeron, la entrega se hace igualmente: lo que Aiku tenía pasa a la fábrica y el resto se marca como *not in Aiku, count it* (no está en Aiku, contarlo), para que se cuente el SKO.
 
 El stock entregado pasa de la estantería a la ubicación de la fábrica. Sigue siendo stock: se cuenta y se ve como antes, y un pedido de cliente aún puede prepararlo allí cuando las estanterías del almacén están vacías, siempre primero las estanterías. Los materiales sin usar se pueden devolver a una estantería desde la página de la ubicación de la fábrica, como cualquier otro movimiento entre ubicaciones.
 
@@ -107,9 +125,11 @@ Cuando se recibe en stock un trabajo terminado, sus materiales se gastan primero
 <li><b>Cambiar el orden del día:</b> escribe un número en <b>Order</b>.</li>
 <li><b>Trabajo sin terminar de ayer:</b> <b>Confirm for</b> el día, o <b>Take off the plan</b>.</li>
 <li><b>Del tablero al plan:</b> el enlace <b>Day plan</b> sobre el tablero.</li>
+<li><b>Pedir algo al almacén:</b> <b>Factory</b> → <b>Operations</b> → <b>Materials check</b> → <b>Ask the warehouse</b> → <b>Send to warehouse</b>.</li>
+<li><b>Cambiar los puntos de entrega:</b> <b>Materials check</b> → <b>Drop points</b>.</li>
 <li><b>Revisar los materiales del día:</b> <b>Factory</b> → <b>Operations</b> → <b>Materials check</b> → <b>Have enough</b> o un número que falta → <b>Send to warehouse</b>.</li>
 <li><b>Dar la revisión a un operario:</b> <b>Materials check</b> → <b>Checked by</b>.</li>
-<li><b>Traer los materiales (almacén):</b> <b>Goods out</b> → <b>For production</b> → <b>Delivered</b>, o <b>Warehouse short</b>.</li>
+<li><b>Traer los materiales (almacén):</b> <b>Inventory</b> → <b>For production</b> → <b>Delivered</b>, o <b>Can't bring</b>.</li>
 </ul>
 </aside>
 
@@ -119,7 +139,8 @@ Cuando se recibe en stock un trabajo terminado, sus materiales se gastan primero
 <li>Planificar un día, dar pasos, cambiar el orden: el puesto <b>Floor supervisor</b> para la fábrica.</li>
 <li>Ver el Day plan sin cambiarlo: <b>Foreman</b>.</li>
 <li>Trabajar un paso que te han dado: <b>Operative</b>, en la pantalla de planta.</li>
-<li>La revisión de materiales: <b>Floor supervisor</b>, o el operario a quien se le dio.</li>
-<li>Traer materiales a la fábrica: un puesto de almacén que trabaje en salida de mercancía.</li>
+<li>Pedir materiales al almacén: cualquiera que vea Operations de la fábrica.</li>
+<li>La revisión de materiales y los puntos de entrega: <b>Floor supervisor</b>; la revisión también el operario a quien se le dio.</li>
+<li>Traer materiales a la fábrica: un puesto de almacén que trabaje en el almacén.</li>
 </ul>
 </aside>

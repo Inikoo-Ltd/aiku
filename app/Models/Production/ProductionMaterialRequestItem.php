@@ -9,6 +9,7 @@
 namespace App\Models\Production;
 
 use App\Enums\Production\ProductionMaterialRequestItem\ProductionMaterialRequestItemStateEnum;
+use App\Enums\Production\ProductionMaterialRequestItem\ProductionMaterialRequestUnitEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
@@ -20,14 +21,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $id
  * @property int $production_material_request_id
- * @property int $raw_material_id
+ * @property int|null $raw_material_id
  * @property int $org_stock_id
- * @property numeric $needed_units
- * @property numeric $missing_units
- * @property numeric $box_units
- * @property int $boxes
- * @property numeric $skos_to_bring
- * @property array<int, string> $job_orders
+ * @property numeric|null $needed_units
+ * @property numeric|null $missing_units
+ * @property numeric|null $box_units
+ * @property int|null $boxes
+ * @property numeric|null $skos_to_bring
+ * @property array<int, string>|null $job_orders
+ * @property int|null $production_drop_point_id
+ * @property numeric|null $requested_quantity
+ * @property ProductionMaterialRequestUnitEnum|null $requested_unit
+ * @property bool $is_urgent
+ * @property string|null $note
+ * @property numeric $unbooked_skos
+ * @property string|null $short_reason
+ * @property \Illuminate\Support\Carbon|null $short_at
  * @property ProductionMaterialRequestItemStateEnum $state
  * @property numeric $delivered_skos
  * @property int|null $delivered_by_user_id
@@ -36,7 +45,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read User|null $deliveredBy
  * @property-read OrgStock $orgStock
- * @property-read RawMaterial $rawMaterial
+ * @property-read RawMaterial|null $rawMaterial
+ * @property-read ProductionDropPoint|null $dropPoint
  * @property-read ProductionMaterialRequest $request
  * @mixin \Eloquent
  */
@@ -47,9 +57,12 @@ class ProductionMaterialRequestItem extends Model
     protected function casts(): array
     {
         return [
-            'state'        => ProductionMaterialRequestItemStateEnum::class,
-            'job_orders'   => 'array',
-            'delivered_at' => 'datetime',
+            'state'          => ProductionMaterialRequestItemStateEnum::class,
+            'requested_unit' => ProductionMaterialRequestUnitEnum::class,
+            'job_orders'     => 'array',
+            'is_urgent'      => 'boolean',
+            'delivered_at'   => 'datetime',
+            'short_at'       => 'datetime',
         ];
     }
 
@@ -66,6 +79,11 @@ class ProductionMaterialRequestItem extends Model
     public function orgStock(): BelongsTo
     {
         return $this->belongsTo(OrgStock::class);
+    }
+
+    public function dropPoint(): BelongsTo
+    {
+        return $this->belongsTo(ProductionDropPoint::class, 'production_drop_point_id')->withTrashed();
     }
 
     public function deliveredBy(): BelongsTo

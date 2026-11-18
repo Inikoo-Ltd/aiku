@@ -3,12 +3,12 @@ import { Link } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faQuestionCircle } from "@fal"
-import { faShoppingBasket, faCheckCircle } from "@fas"
+import { faShoppingBasket, faCheckCircle, faBolt } from "@fas"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { ActionGaugeTS } from "@/types/Components/ActionGauge"
 
-library.add(faQuestionCircle, faShoppingBasket, faCheckCircle)
+library.add(faQuestionCircle, faShoppingBasket, faCheckCircle, faBolt)
 
 defineProps<{
     gauges: ActionGaugeTS[]
@@ -20,6 +20,9 @@ const ringRadius = 26
 const ringCircumference = 2 * Math.PI * ringRadius
 
 const ringTooltip = (gauge: ActionGaugeTS) => {
+    if (gauge.ring_tooltip) {
+        return gauge.ring_tooltip
+    }
     if (!Number.isFinite(gauge.value) || !Number.isFinite(gauge.total) || !gauge.total) {
         return null
     }

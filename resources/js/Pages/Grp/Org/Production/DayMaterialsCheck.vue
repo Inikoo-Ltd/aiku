@@ -14,6 +14,8 @@ import Select from "primevue/select"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import MaterialRequestForm from "@/Components/Production/MaterialRequestForm.vue"
+import DropPointsDialog from "@/Components/Production/DropPointsDialog.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -21,9 +23,9 @@ import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faClipboardCheck, faCheck, faExclamationTriangle, faPaperPlane, faWarehouse, faCalendarDay } from "@fal"
+import { faClipboardCheck, faCheck, faExclamationTriangle, faPaperPlane, faWarehouse, faCalendarDay, faMapMarkerAlt, faBolt, faPencil } from "@fal"
 
-library.add(faClipboardCheck, faCheck, faExclamationTriangle, faPaperPlane, faWarehouse, faCalendarDay)
+library.add(faClipboardCheck, faCheck, faExclamationTriangle, faPaperPlane, faWarehouse, faCalendarDay, faMapMarkerAlt, faBolt, faPencil)
 
 type Line = {
     id: number
@@ -45,12 +47,17 @@ type Line = {
 type RequestItem = {
     id: number
     code: string
-    boxes: number
-    box_units: number
-    skos_to_bring: number
+    name: string | null
+    bring: string
+    drop_point: string | null
+    is_urgent: boolean
+    note: string | null
     delivered_skos: number
     state: "pending" | "delivered" | "short"
     state_label: string
+    short_reason: string | null
+    done_by: string | null
+    done_at: string | null
 }
 
 const props = defineProps<{
@@ -67,8 +74,14 @@ const props = defineProps<{
     checker: string | null
     operators: { id: number, name: string }[]
     jobs_without_materials: string[]
-    requests: { id: number, state: string, state_label: string, submitted_at: string, submitted_by: string | null, items: RequestItem[] }[]
+    requests: { id: number, source: string, state: string, state_label: string, submitted_at: string, submitted_by: string | null, items: RequestItem[] }[]
+    can_request: boolean
+    can_manage_drop_points: boolean
+    drop_points: { id: number, name: string, position: number }[]
+    units: { value: string, label: string }[]
 }>()
+
+const showDropPoints = ref(false)
 
 const locale = useLocaleStore()
 
@@ -173,22 +186,52 @@ const dayPlanRoute = computed(() => route("grp.org.productions.show.operations.d
         {{ jobs_without_materials.join(", ") }}
     </div>
 
-    <div v-for="request in requests" :key="request.id" class="mx-4 mt-2 rounded border border-gray-200 bg-white px-4 py-2 text-sm">
-        <div class="flex flex-wrap items-center gap-x-3 text-gray-700">
-            <FontAwesomeIcon icon="fal fa-paper-plane" class="text-gray-400" fixed-width aria-hidden="true" />
-            <span class="font-medium">{{ request.items.length ? request.state_label : ctrans("Checked") }}</span>
-            <span class="text-gray-500">{{ useFormatTime(request.submitted_at, { formatTime: "hm" }) }}<template v-if="request.submitted_by"> · {{ request.submitted_by }}</template></span>
-            <span v-if="!request.items.length" class="text-gray-500">{{ ctrans("Nothing missing") }}</span>
-        </div>
-        <div v-if="request.items.length" class="mt-1 flex flex-wrap gap-1.5">
-            <span v-for="item in request.items" :key="item.id" class="rounded border px-1.5 py-0.5 text-xs tabular-nums"
-                :class="item.state === 'delivered' ? 'border-green-200 bg-green-50 text-green-800' : item.state === 'short' ? 'border-red-200 bg-red-50 text-red-700' : 'border-gray-200 text-gray-700'">
-                <span class="font-medium">{{ item.code }}</span>
-                {{ item.box_units > 1 ? ctransChoice(":count box|:count boxes", item.boxes) : locale.number(item.skos_to_bring) }}
-                · {{ item.state_label }}<template v-if="item.state === 'short'"> ({{ locale.number(item.delivered_skos) }}/{{ locale.number(item.skos_to_bring) }})</template>
-            </span>
+    <MaterialRequestForm v-if="can_request" :productionId="production_id" :dropPoints="drop_points" :units="units" class="mx-4 mt-4">
+        <template #actions>
+            <Button v-if="can_manage_drop_points" type="tertiary" size="s" :label="ctrans('Drop points')" @click="showDropPoints = true">
+                <template #icon>
+                    <FontAwesomeIcon icon="fal fa-map-marker-alt" fixed-width aria-hidden="true" />
+                </template>
+                <template #iconRight>
+                    <FontAwesomeIcon icon="fal fa-pencil" class="text-gray-400" fixed-width aria-hidden="true" />
+                </template>
+            </Button>
+        </template>
+    </MaterialRequestForm>
+    <DropPointsDialog v-if="can_manage_drop_points" v-model:visible="showDropPoints" :productionId="production_id" :dropPoints="drop_points" />
+
+    <div v-if="requests.length" class="mx-4 mt-4 rounded border border-gray-200 bg-white text-sm">
+        <div class="border-b border-gray-100 px-4 py-2 font-semibold text-gray-700">{{ ctrans("Asked this week") }}</div>
+        <div v-for="request in requests" :key="request.id" class="border-b border-gray-100 px-4 py-2 last:border-b-0">
+            <div class="flex flex-wrap items-center gap-x-3 text-xs text-gray-500">
+                <FontAwesomeIcon icon="fal fa-paper-plane" class="text-gray-400" fixed-width aria-hidden="true" />
+                <span>{{ useFormatTime(request.submitted_at, { formatTime: "hm" }) }}<template v-if="request.submitted_by"> · {{ request.submitted_by }}</template></span>
+                <span v-if="request.source === 'materials_check'">{{ ctrans("Morning check") }}</span>
+                <span v-if="!request.items.length">{{ ctrans("Nothing missing") }}</span>
+            </div>
+            <div class="mt-1 flex flex-col gap-1">
+                <div v-for="item in request.items" :key="item.id" class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span class="w-24 shrink-0 rounded border px-1.5 py-0.5 text-center text-xs"
+                        :class="item.state === 'delivered' ? 'border-green-200 bg-green-50 text-green-800' : item.state === 'short' ? 'border-red-200 bg-red-50 text-red-700' : 'border-gray-200 text-gray-700'">
+                        {{ item.state_label }}
+                    </span>
+                    <FontAwesomeIcon v-if="item.is_urgent && item.state === 'pending'" v-tooltip="ctrans('Urgent')" icon="fal fa-bolt" class="text-amber-600" fixed-width aria-hidden="true" />
+                    <span class="whitespace-nowrap font-medium">{{ item.code }}</span>
+                    <span class="tabular-nums text-gray-700">{{ item.bring }}</span>
+                    <span v-if="item.drop_point" class="text-gray-500">→ {{ item.drop_point }}</span>
+                    <span v-if="item.note" class="text-gray-500">· {{ item.note }}</span>
+                    <span v-if="item.state === 'delivered'" class="text-xs text-gray-500">
+                        {{ ctransChoice(":count SKO by :name, :time|:count SKOs by :name, :time", item.delivered_skos, { count: locale.number(item.delivered_skos), name: item.done_by ?? "-", time: useFormatTime(item.done_at, { formatTime: "hm" }) }) }}
+                    </span>
+                    <span v-else-if="item.state === 'short'" class="text-xs text-red-700">
+                        {{ item.short_reason ?? "" }}<template v-if="item.done_by"> · {{ item.done_by }}</template>
+                    </span>
+                </div>
+            </div>
         </div>
     </div>
+
+    <div class="mx-4 mt-6 text-sm font-semibold text-gray-700">{{ ctrans("Morning check from the day plan") }}</div>
 
     <div v-if="can_check" class="mx-4 mt-4 flex items-center justify-end gap-3 text-sm">
         <span class="text-gray-500">{{ ctrans(":count checked", { count: String(answeredCount) }) }}</span>

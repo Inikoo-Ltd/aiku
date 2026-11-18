@@ -27,6 +27,20 @@ final class MaterialsCheckAuthorisation
         ]);
     }
 
+    /**
+     * Anyone working in the production asks the warehouse for materials, as anyone could write on the sheet it replaces.
+     */
+    public static function canRequestMaterials(User $user, Production $production): bool
+    {
+        return $user->authTo([
+            'org-supervisor.'.$production->organisation_id,
+            'productions-view.'.$production->organisation_id,
+            "productions_operations.$production->id.view",
+            "productions_operations.$production->id.edit",
+            "productions_operations.$production->id.orchestrate",
+        ]);
+    }
+
     public static function checkingRequest(Production $production, string $date): ?ProductionMaterialRequest
     {
         return ProductionMaterialRequest::where('production_id', $production->id)
