@@ -194,6 +194,7 @@ function addProducts() {
 				optionLabel="label"
 				optionValue="id"
 				filter
+				autoFilterFocus
 				:filterFields="['label', 'company_name', 'contact_name']"
 				fluid
 				:loading="isLoadingSuppliers"

@@ -279,6 +279,7 @@ async function submit() {
 						optionLabel="label"
 						optionValue="org_supplier_id"
 						filter
+						autoFilterFocus
 						:placeholder="ctrans('Choose a supplier of the agent')"
 						:emptyMessage="ctrans('The agent has no other supplier in :currency', { currency: options.currency ?? '' })"
 						:class="fieldFocusClass"
