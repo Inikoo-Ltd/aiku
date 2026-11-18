@@ -225,6 +225,18 @@ const suggestion = ref<InstanceType<typeof SuggestSupplierChangeDialog>["$props"
 const suggestDeactivation = (supplier: { id: number; code: string; name: string }) => (suggestion.value = { type: "deactivate", supplier })
 const suggestMerge = (supplier: SupplierLink, group: SupplierLink[]) => (suggestion.value = { type: "merge", supplier, candidates: group.filter((other) => other.id !== supplier.id) })
 
+const mergeTargets = (supplier: SupplierLink, group: SupplierLink[]) => group.filter((other) => other.id !== supplier.id)
+const mergeLabel = (supplier: SupplierLink, group: SupplierLink[]) => {
+	const targets = mergeTargets(supplier, group)
+	return targets.length === 1 ? ctrans("Merge into :code", { code: targets[0].code }) : ctrans("Merge into…")
+}
+const mergeTooltip = (supplier: SupplierLink, group: SupplierLink[]) => {
+	const targets = mergeTargets(supplier, group)
+	return targets.length === 1
+		? ctrans(":code is archived and its products, orders and containers move to :target, which is kept", { code: supplier.code, target: targets[0].code })
+		: ctrans(":code is archived and its products, orders and containers move to the supplier you choose to keep", { code: supplier.code })
+}
+
 const skippingDuplicates = ref<number | null>(null)
 const skipDuplicates = (index: number, group: SupplierLink[]) => {
 	router.post(
@@ -562,7 +574,13 @@ const dormantSuppliers = computed(() => props.data.cleanup.dormant.filter((suppl
 								<span class="flex shrink-0 items-center gap-2 text-xs text-gray-500">
 									{{ supplier.last_ordered_at ? useFormatTime(supplier.last_ordered_at) : ctrans("Never ordered") }}
 									<span v-if="supplier.pending" class="rounded bg-amber-50 px-1.5 text-amber-700">{{ ctrans("Waiting") }}</span>
-									<Button v-else-if="data.permissions.can_suggest" type="tertiary" size="xs" :label="ctrans('Merge')" v-tooltip="ctrans('Suggest merging this record into another one of the group')" @click="suggestMerge(supplier, group.suppliers)">
+									<Button
+										v-else-if="data.permissions.can_suggest"
+										type="tertiary"
+										size="xs"
+										:label="mergeLabel(supplier, group.suppliers)"
+										v-tooltip="mergeTooltip(supplier, group.suppliers)"
+										@click="suggestMerge(supplier, group.suppliers)">
 										<template #icon>
 											<FontAwesomeIcon icon="fal fa-compress-alt" class="text-amber-600" fixed-width aria-hidden="true" />
 										</template>
