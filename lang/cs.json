@@ -1,4 +1,10 @@
 {
+    "Ephemeral note": "Dočasná poznámka",
+    "Add ephemeral note": "Přidat dočasnou poznámku",
+    "hides on :date": "skryje se :date",
+    "Hides in :days days": "Skryje se za :days dní",
+    "A short status everyone sees on this SKO, e.g. waiting for labels. It hides by itself.": "Krátký stav, který u tohoto SKO uvidí všichni, např. čeká na etikety. Sám se skryje.",
+    "Waiting for labels before it can be made": "Čeká na etikety, než se může vyrobit",
     " Products for sale": "Produkty na prodej",
     " Slots": "Sloty",
     " is handling this chat": "se stará o tento chat",

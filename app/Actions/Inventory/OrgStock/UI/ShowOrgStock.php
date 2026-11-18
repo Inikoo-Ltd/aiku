@@ -16,6 +16,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
+use App\Actions\Inventory\OrgStock\UpdateOrgStockEphemeralNote;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
@@ -191,6 +192,16 @@ class ShowOrgStock extends OrgAction
                     'transfer'  => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::transferReason()),
                 ],
                 'org_stock_id'  => $orgStock->id,
+                'ephemeral_note' => UpdateOrgStockEphemeralNote::present($orgStock),
+                'ephemeral_note_route' => $this->canEdit ? [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.ephemeral_note',
+                    'parameters' => [
+                        'organisation' => $orgStock->organisation->slug,
+                        'warehouse'    => $this->warehouse->slug,
+                        'orgStock'     => $orgStock->slug,
+                    ],
+                    'method'     => 'patch',
+                ] : null,
                 'can_link_supplier_products'   => $request->user()->authTo("inventory.{$orgStock->organisation_id}.edit"),
                 'can_create_supplier_products' => $request->user()->authTo("procurement.{$orgStock->organisation_id}.edit"),
                 'discontinue_preview_route' => $canDiscontinue ? [

@@ -100,6 +100,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $main_batch_code_id
  * @property string|null $note_to_pickers
  * @property string|null $note_to_packers
+ * @property string|null $ephemeral_note short status for staff, hidden once ephemeral_note_expires_at passes
+ * @property int|null $ephemeral_note_user_id
+ * @property Carbon|null $ephemeral_note_set_at
+ * @property Carbon|null $ephemeral_note_expires_at
  * @property array<array-key, mixed>|null $consumables [{"code": "IAL01", "quantity": 1}] the packer adds per product ordered
  * @property string|null $barcode the outer/SKO CODE 128 barcode printed on the external packing
  * @property string|null $unit_barcode the EAN13 of the individual unit
@@ -160,6 +164,8 @@ class OrgStock extends Model implements Auditable, HasMedia
         'minimum_stock_alerted_at'         => 'datetime',
         'is_shipment_packaging'            => 'boolean',
         'has_wrong_weight'                 => 'boolean',
+        'ephemeral_note_set_at'            => 'datetime',
+        'ephemeral_note_expires_at'        => 'datetime',
     ];
 
     protected $attributes = [

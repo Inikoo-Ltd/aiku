@@ -1,4 +1,10 @@
 {
+    "Ephemeral note": "Nota temporal",
+    "Add ephemeral note": "Añadir nota temporal",
+    "hides on :date": "se oculta el :date",
+    "Hides in :days days": "Se oculta en :days días",
+    "A short status everyone sees on this SKO, e.g. waiting for labels. It hides by itself.": "Un estado breve que todos ven en este SKO, p. ej. esperando etiquetas. Se oculta solo.",
+    "Waiting for labels before it can be made": "Esperando etiquetas para poder fabricarlo",
     "The delivery address can only be changed before a shipment is created and while the delivery note is not dispatched or cancelled.": "La dirección de entrega solo se puede cambiar antes de crear un envío y mientras el albarán no esté despachado ni cancelado.",
     " Products for sale": "Productos a la venta",
     " Slots": "Huecos",

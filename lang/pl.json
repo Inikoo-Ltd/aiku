@@ -1,4 +1,10 @@
 {
+    "Ephemeral note": "Notatka tymczasowa",
+    "Add ephemeral note": "Dodaj notatkę tymczasową",
+    "hides on :date": "ukryje się :date",
+    "Hides in :days days": "Ukryje się za :days dni",
+    "A short status everyone sees on this SKO, e.g. waiting for labels. It hides by itself.": "Krótki status widoczny dla wszystkich przy tym SKO, np. czeka na etykiety. Ukrywa się sam.",
+    "Waiting for labels before it can be made": "Czeka na etykiety, zanim będzie można go wyprodukować",
     ":count item is out of stock|:count items are out of stock": "Produkty niedostępne: :count|Produkty niedostępne: :count|Produkty niedostępne: :count",
     "Low stock on :count item|Low stock on :count items": "Niski stan magazynowy dla :count produktu|Niski stan magazynowy dla :count produktów|Niski stan magazynowy dla :count produktów",
     " Products for sale": " Produkty na sprzedaż",

@@ -1,4 +1,10 @@
 {
+    "Ephemeral note": "Vorübergehende Notiz",
+    "Add ephemeral note": "Vorübergehende Notiz hinzufügen",
+    "hides on :date": "wird am :date ausgeblendet",
+    "Hides in :days days": "Wird in :days Tagen ausgeblendet",
+    "A short status everyone sees on this SKO, e.g. waiting for labels. It hides by itself.": "Ein kurzer Status, den alle bei dieser SKO sehen, z. B. wartet auf Etiketten. Er wird von selbst ausgeblendet.",
+    "Waiting for labels before it can be made": "Wartet auf Etiketten, bevor es hergestellt werden kann",
     " Products for sale": " Produkte zum Verkauf",
     " Slots": " Slots",
     " is handling this chat": "kümmert sich um diesen Chat",

@@ -1,4 +1,10 @@
 {
+    "Ephemeral note": "Dočasná poznámka",
+    "Add ephemeral note": "Pridať dočasnú poznámku",
+    "hides on :date": "skryje sa :date",
+    "Hides in :days days": "Skryje sa o :days dní",
+    "A short status everyone sees on this SKO, e.g. waiting for labels. It hides by itself.": "Krátky stav, ktorý pri tomto SKO uvidia všetci, napr. čaká na etikety. Sám sa skryje.",
+    "Waiting for labels before it can be made": "Čaká na etikety, kým sa môže vyrobiť",
     "The delivery address can only be changed before a shipment is created and while the delivery note is not dispatched or cancelled.": "Dodaciu adresu je možné zmeniť len pred vytvorením zásielky a kým dodací list nie je odoslaný ani zrušený.",
     " Products for sale": "Produkty na predaj",
     " Slots": "Sloty",

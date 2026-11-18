@@ -1,4 +1,10 @@
 {
+    "Ephemeral note": "Notă temporară",
+    "Add ephemeral note": "Adaugă notă temporară",
+    "hides on :date": "se ascunde pe :date",
+    "Hides in :days days": "Se ascunde în :days zile",
+    "A short status everyone sees on this SKO, e.g. waiting for labels. It hides by itself.": "Un status scurt pe care îl vede toată lumea la acest SKO, de ex. așteaptă etichete. Se ascunde singur.",
+    "Waiting for labels before it can be made": "Așteaptă etichete înainte de a putea fi produs",
     " Products for sale": "Produse de vânzare",
     " Slots": "Sloturi",
     " is handling this chat": "se ocupă de acest chat",

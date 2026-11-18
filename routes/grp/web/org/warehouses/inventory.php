@@ -50,6 +50,7 @@ use App\Actions\Inventory\OrgStock\AssignSkoBarcodeToOrgStock;
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Inventory\OrgStock\GetOrgStockDiscontinuePreview;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
+use App\Actions\Inventory\OrgStock\UpdateOrgStockEphemeralNote;
 use App\Actions\Inventory\OrgStock\UpdateOrgStockUnitBarcode;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexInvoicesInOrgStockFamily;
 use App\Actions\Inventory\OrgStockFamily\UpdateOrgStockFamilyGbPallet;
@@ -85,6 +86,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
     Route::get('discontinue-preview', GetOrgStockDiscontinuePreview::class)->name('discontinue_preview');
     Route::post('discontinue', DiscontinueOrgStocks::class)->name('discontinue');
     Route::patch('{orgStock}/update', UpdateOrgStock::class)->name('update');
+    Route::patch('{orgStock}/ephemeral-note', UpdateOrgStockEphemeralNote::class)->name('ephemeral_note');
     Route::patch('{orgStock}/assign-sko-barcode', AssignSkoBarcodeToOrgStock::class)->name('assign_sko_barcode');
     Route::patch('{orgStock}/update-unit-barcode', UpdateOrgStockUnitBarcode::class)->name('update_unit_barcode');
     Route::get('{orgStock}/label', PdfOrgStockLabel::class)->name('label');
