@@ -15,12 +15,14 @@ use App\Models\Helpers\Media;
 use App\Models\Procurement\PurchaseOrderDepositPayment;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Mpdf\Mpdf;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\Process\ExecutableFinder;
 use ZipArchive;
 
 /**
@@ -132,9 +134,17 @@ class DownloadStockDeliveryImportFileDocuments extends OrgAction
             $coverPdf->Output($cover, 'F');
 
             $output = tempnam(sys_get_temp_dir(), 'import-file-pdf');
-            $result = Process::timeout(300)->run(['gs', '-q', '-dNOPAUSE', '-dBATCH', '-dSAFER', '-sDEVICE=pdfwrite', '-sOutputFile='.$output, $cover, ...$parts]);
+            $ghostscript = (new ExecutableFinder())->find('gs', null, ['/usr/bin', '/usr/local/bin', '/opt/homebrew/bin']);
+            if (!$ghostscript) {
+                Log::warning('Import file documents PDF: Ghostscript not found, sending the ZIP');
+
+                return null;
+            }
+
+            $result = Process::timeout(300)->run([$ghostscript, '-q', '-dNOPAUSE', '-dBATCH', '-dSAFER', '-sDEVICE=pdfwrite', '-sOutputFile='.$output, $cover, ...$parts]);
 
             if (!$result->successful() || !filesize($output)) {
+                Log::warning('Import file documents PDF: Ghostscript failed, sending the ZIP', ['stock_delivery_id' => $stockDelivery->id, 'error' => $result->errorOutput()]);
                 @unlink($output);
 
                 return null;
