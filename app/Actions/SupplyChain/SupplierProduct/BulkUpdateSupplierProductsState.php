@@ -12,6 +12,7 @@ namespace App\Actions\SupplyChain\SupplierProduct;
 use App\Actions\OrgAction;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
+use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use Illuminate\Http\JsonResponse;
@@ -42,6 +43,22 @@ class BulkUpdateSupplierProductsState extends OrgAction
         }
 
         return $supplierProducts->count();
+    }
+
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        if (!$request->has('org_supplier_products')) {
+            return;
+        }
+
+        $this->set(
+            'supplier_products',
+            OrgSupplierProduct::where('group_id', $this->group->id)
+                ->whereIn('id', array_map('intval', (array) $request->input('org_supplier_products')))
+                ->distinct()
+                ->pluck('supplier_product_id')
+                ->all()
+        );
     }
 
     public function rules(): array

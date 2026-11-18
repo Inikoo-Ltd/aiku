@@ -19,6 +19,10 @@ import { faBarcodeRead, faLink } from "@fal"
 import CompletenessBar from "@/Components/Procurement/CompletenessBar.vue"
 import SupplierProductLabelsDialog from "@/Components/SupplyChain/SupplierProductLabelsDialog.vue"
 import SupplierProductsCopyActions from "@/Components/Procurement/SupplierProductsCopyActions.vue"
+import SupplierProductStateSelect from "@/Components/SupplyChain/SupplierProductStateSelect.vue"
+import SupplierProductsBulkStateButton from "@/Components/SupplyChain/SupplierProductsBulkStateButton.vue"
+import Icon from "@/Components/Icon.vue"
+import { SupplierProductStateOption, SupplierProductStateRow } from "@/Composables/useSupplierProductState"
 import { CopyProducts, CopyTarget } from "@/types/supplier-products-copy"
 
 library.add(faBarcodeRead, faLink)
@@ -26,7 +30,7 @@ library.add(faBarcodeRead, faLink)
 const locale = inject("locale", aikuLocaleStructure)
 
 const props = defineProps<{
-  data: object
+  data: { data?: (SupplierProductStateRow & { supplier_product_id: number | null })[] }
   tab?: string
   copyProducts?: CopyProducts | null
   copyTargets?: CopyTarget[]
@@ -36,6 +40,7 @@ const props = defineProps<{
     ids_parameter: string
   }
   linkGroupSkoRoute?: routeType | null
+  stateOptions?: SupplierProductStateOption[] | null
 }>()
 
 const _table = ref<InstanceType<typeof Table> | null>(null)
@@ -43,6 +48,10 @@ const selectedRows = ref<Record<string, boolean>>({})
 const selectedIds = computed(() => Object.keys(selectedRows.value).filter((id) => selectedRows.value[id]).map(Number))
 
 const isLabelsDialogOpen = ref(false)
+
+function reloadData() {
+  router.reload({ only: [props.tab ?? "index"] })
+}
 
 const linkingId = ref<number | null>(null)
 const linkErrors = ref<Record<number, string>>({})
@@ -124,6 +133,14 @@ function orgSupplierRoute(orgSupplierSlug: string) {
       idsParameter="org_supplier_products"
       @copied="_table?.clearSelection()"
     />
+    <SupplierProductsBulkStateButton
+      v-if="stateOptions?.length"
+      :selectedIds="selectedIds"
+      idsParameter="org_supplier_products"
+      :rows="data?.data ?? []"
+      :stateOptions="stateOptions"
+      @saved="reloadData"
+    />
   </div>
   <Table
     ref="_table"
@@ -146,6 +163,20 @@ function orgSupplierRoute(orgSupplierSlug: string) {
         {{ supplier_product.supplier_name }}
       </Link>
       <span v-else>{{ supplier_product.supplier_name }}</span>
+    </template>
+    <template #cell(state)="{ item: supplier_product }">
+      <SupplierProductStateSelect
+        v-if="stateOptions?.length && supplier_product.supplier_product_id"
+        :supplierProductId="supplier_product.supplier_product_id"
+        :code="supplier_product.code"
+        :state="supplier_product.state"
+        :stateOptions="stateOptions"
+        @saved="reloadData"
+      />
+      <span v-else-if="supplier_product.state" class="inline-flex items-center gap-x-1.5 whitespace-nowrap">
+        <Icon :data="supplier_product.state.icon" :title="supplier_product.state.label" />
+        {{ supplier_product.state.label }}
+      </span>
     </template>
     <template #cell(internal_code)="{ item: supplier_product }">
       <Link v-if="supplier_product.internal_code" :href="supplierProductRoute(supplier_product)" class="primaryLink">

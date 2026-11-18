@@ -22,6 +22,8 @@ use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
+use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Enums\UI\Procurement\OrgSupplierProductsTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\AgentSuppliersDataQualityResource;
@@ -149,6 +151,8 @@ class IndexOrgSupplierProducts extends OrgAction
         $queryBuilder->select([
             'org_supplier_products.id',
             'org_supplier_products.slug',
+            'org_supplier_products.supplier_product_id',
+            'supplier_products.state',
             'supplier_products.code',
             'supplier_products.name',
             'supplier_products.cost',
@@ -191,6 +195,7 @@ class IndexOrgSupplierProducts extends OrgAction
         if ($organisationAgent) {
             $queryBuilder
                 ->select([
+                    'supplier_products.state',
                     'supplier_products.code',
                     'supplier_products.name',
                     'supplier_products.cost',
@@ -211,7 +216,7 @@ class IndexOrgSupplierProducts extends OrgAction
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')
-            ->allowedSorts($organisationAgent ? ['code', 'name', 'supplier_name', 'cost', 'internal_code', 'cbm', 'completeness'] : ['code', 'internal_code', 'name', 'supplier_name', 'cost'])
+            ->allowedSorts($organisationAgent ? ['code', 'name', 'supplier_name', 'state', 'cost', 'internal_code', 'cbm', 'completeness'] : ['code', 'internal_code', 'name', 'supplier_name', 'state', 'cost'])
             ->allowedFilters($organisationAgent ? [$globalSearch, ...$this->agentProductFilters()] : [$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString()
@@ -291,6 +296,8 @@ class IndexOrgSupplierProducts extends OrgAction
             if (!$parent instanceof OrgSupplier) {
                 $table->column(key: 'supplier_name', label: __('Supplier'), canBeHidden: false, sortable: true);
             }
+
+            $table->column(key: 'state', label: __('State'), sortable: true);
 
             if ($this->getParentOrganisationAgent($parent)) {
                 $table
@@ -431,6 +438,9 @@ class IndexOrgSupplierProducts extends OrgAction
                         : Inertia::optional(fn () => AgentSuppliersDataQualityResource::collection(IndexAgentSuppliersDataQuality::run($agent, $this->parent, OrgSupplierProductsTabsEnum::SUPPLIERS->value))))
                     : null,
                 'labels_print'  => $this->getLabelsPrint(),
+                'state_options' => $request->user()->authTo(GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value)
+                    ? collect(SupplierProductStateEnum::labels())->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all()
+                    : null,
                 'link_group_sko_route' => $request->user()->authTo("procurement.{$this->organisation->id}.edit")
                     ? ['name' => 'grp.models.org.org_supplier_product.link_group_sko', 'parameters' => ['organisation' => $this->organisation->id]]
                     : null,
