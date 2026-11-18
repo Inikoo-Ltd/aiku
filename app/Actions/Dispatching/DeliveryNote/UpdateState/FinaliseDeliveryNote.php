@@ -28,13 +28,19 @@ class FinaliseDeliveryNote extends OrgAction
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
     use WithUnprintedLeafletsGuard;
+    use WithAlreadyDispatchedGuard;
 
     /**
      * @throws \Throwable
      */
     public function handle(DeliveryNote $deliveryNote, bool $fromOrder = false): DeliveryNote
     {
+        if ($deliveryNote->state === DeliveryNoteStateEnum::DISPATCHED) {
+            return $deliveryNote;
+        }
+
         $oldState = $deliveryNote->state;
+        $alreadyDispatched = false;
         if ($deliveryNote->shipments->isEmpty() && !$deliveryNote->collection_address_id) {
             throw ValidationException::withMessages([
                 'shipment' => __('Shipment should be set before finalizing.')
@@ -47,7 +53,13 @@ class FinaliseDeliveryNote extends OrgAction
             ]);
         }
 
-        $deliveryNote = DB::transaction(function () use ($deliveryNote, $fromOrder) {
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $fromOrder, &$alreadyDispatched) {
+            if ($this->isDispatchedUnderLock($deliveryNote)) {
+                $alreadyDispatched = true;
+
+                return $deliveryNote->refresh();
+            }
+
             data_set($modelData, 'finalised_at', now());
             data_set($modelData, 'state', DeliveryNoteStateEnum::FINALISED->value);
 
@@ -65,6 +77,10 @@ class FinaliseDeliveryNote extends OrgAction
             return $this->update($deliveryNote, $modelData);
         });
 
+        if ($alreadyDispatched) {
+            return $deliveryNote;
+        }
+
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::FINALISED);
 
@@ -76,6 +92,10 @@ class FinaliseDeliveryNote extends OrgAction
      */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote|RedirectResponse
     {
+        if ($deliveryNote->state === DeliveryNoteStateEnum::DISPATCHED) {
+            return $deliveryNote;
+        }
+
         if ($notification = $this->unprintedLeafletsNotification($deliveryNote, __('Every insert must be printed before finalising.'))) {
             return $notification;
         }
