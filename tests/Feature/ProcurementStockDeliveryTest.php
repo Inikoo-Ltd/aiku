@@ -4268,6 +4268,43 @@ test('a file uploaded to the wrong import file step can be removed from the step
     expect(collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->firstWhere('key', 'deposit')['files'])->toBe([]);
 });
 
+test('the import file documents download as one ZIP or one printable PDF in checklist order (HELP-4795)', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'IMPORT-FILE-4795', [10]);
+    $pdfBytes      = function (string $text): string {
+        $mpdf = new \Mpdf\Mpdf(['tempDir' => sys_get_temp_dir().'/mpdf']);
+        $mpdf->WriteHTML($text);
+
+        return $mpdf->Output('', 'S');
+    };
+    $attach        = fn (string $name, string $content, PurchaseOrderAttachmentScopeEnum $scope) => $this->post(
+        route('grp.models.stock-delivery.attachment.attach', ['stockDelivery' => $stockDelivery->id]),
+        ['attachments' => [\Illuminate\Http\UploadedFile::fake()->createWithContent($name, $content)], 'scope' => $scope->value]
+    )->assertSuccessful();
+    $attach('payment.pdf', $pdfBytes('payment'), PurchaseOrderAttachmentScopeEnum::BANK_STATEMENT);
+    $attach('packing.xlsx', 'not a pdf', PurchaseOrderAttachmentScopeEnum::PACKING_LIST);
+    $attach('invoice.pdf', $pdfBytes('invoice'), PurchaseOrderAttachmentScopeEnum::INVOICE);
+
+    $importFile = GetStockDeliveryImportFile::run($stockDelivery->refresh());
+    expect($importFile['documents_count'])->toBe(3);
+    $url = fn (string $format) => route($importFile['documents_route']['name'], [...$importFile['documents_route']['parameters'], 'format' => $format]);
+
+    $zipPath = $this->get($url('zip'))->assertOk()->baseResponse->getFile()->getPathname();
+    $zip     = new ZipArchive();
+    $zip->open($zipPath);
+    expect(collect(range(0, $zip->numFiles - 1))->map(fn (int $index) => $zip->getNameIndex($index))->all())
+        ->toBe(['01 commercial-invoice - invoice.pdf', '02 packing-list - packing.xlsx', '03 balance-payment - payment.pdf']);
+    $zip->close();
+
+    $pdfResponse = $this->get($url('pdf'))->assertOk();
+    $merged      = $pdfResponse->baseResponse->getFile()->getPathname();
+    if (\Illuminate\Support\Facades\Process::run(['which', 'gs'])->successful()) {
+        expect(file_get_contents($merged, length: 5))->toBe('%PDF-')
+            ->and((new \Smalot\PdfParser\Parser())->parseFile($merged)->getPages())->toHaveCount(3);
+    } else {
+        expect($pdfResponse->headers->get('content-disposition'))->toContain('.zip');
+    }
+});
+
 test('a container sheet PO matches a purchase order by its whole reference or its whole number, not by a digit inside it', function () {
     $isSame = fn (string $sheet, string $reference) => (new ReflectionMethod(\App\Actions\GoodsIn\StockDelivery\PreviewStockDeliveryItemsImport::class, 'isSamePurchaseOrder'))
         ->invoke(\App\Actions\GoodsIn\StockDelivery\PreviewStockDeliveryItemsImport::make(), $sheet, $reference);

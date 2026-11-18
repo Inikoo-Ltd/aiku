@@ -426,6 +426,7 @@ use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemPackedInside;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCustomsLine;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCustoms;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryImportFile;
+use App\Actions\GoodsIn\StockDelivery\UI\DownloadStockDeliveryImportFileDocuments;
 use App\Actions\GoodsIn\StockDeliveryClaim\UpdateStockDeliveryClaim;
 use App\Actions\GoodsIn\StockDeliveryFollowUp\CreateSupplierInstructionFromFeedback;
 use App\Actions\GoodsIn\StockDeliveryFollowUp\StoreStockDeliveryFeedback;
@@ -2087,6 +2088,7 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::patch('distribute-extra-cost', DistributeStockDeliveryExtraCost::class)->name('distribute-extra-cost');
     Route::patch('customs', UpdateStockDeliveryCustoms::class)->name('customs.update');
     Route::patch('import-file', UpdateStockDeliveryImportFile::class)->name('import_file.update');
+    Route::get('import-file/documents', DownloadStockDeliveryImportFileDocuments::class)->name('import_file.documents');
     Route::post('cost', StoreStockDeliveryCost::class)->name('cost.store');
     Route::delete('unbacked-costs', RemoveStockDeliveryUnbackedCosts::class)->name('unbacked-costs.remove');
     Route::post('cost/invoice', AttachStockDeliveryCostInvoice::class)->name('cost.invoice.attach');
