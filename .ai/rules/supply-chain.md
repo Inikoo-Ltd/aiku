@@ -40,3 +40,6 @@ Vika, 18 Nov 2026. Approving a merge suggestion (DecideSupplierChangeRequest →
 
 ## The discontinued reason lives in supplier_products.data and the supplier sees it
 Vika, 18 Nov 2026. Setting a supplier product to discontinuing or discontinued (row Set or bulk Set state on Supplier Products) asks for an optional reason, stored in data.discontinued_reason (UpdateSupplierProduct::DISCONTINUED_REASON_KEY, max 500). It is replaced only when discontinued_reason is passed (empty clears it), so automation moving discontinuing to discontinued keeps it, and it is cleared when the state goes back to active or in process. IndexSupplierPortalProducts sends it as status_reason and the supplier portal shows it as a popover on the Discontinued status (hover or click).
+
+## Add to another supplier can make the target the preferred supplier
+Vika, 18 Nov 2026. CopySupplierProductsToSupplier takes make_preferred (checkbox in the Add to another supplier dialog). When set, for every SKO the source product and the target's product both supply, it runs SetStockPreferredSupplierProduct (group priority + local_priority in every organisation), so purchase orders go to the target. It also applies to products the target already had under the same code (not trashed), so the request no longer fails with "already has all" when make_preferred is on.

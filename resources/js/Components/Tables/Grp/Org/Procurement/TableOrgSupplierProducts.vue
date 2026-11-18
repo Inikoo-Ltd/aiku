@@ -14,6 +14,7 @@ import { computed, inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Dialog from "primevue/dialog"
 import Select from "primevue/select"
+import Checkbox from "primevue/checkbox"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -56,10 +57,12 @@ const isLabelsDialogOpen = ref(false)
 const isLoadingTargets = ref(false)
 const isCopying = ref(false)
 const targetSupplierId = ref<number | null>(null)
+const isMakePreferred = ref(false)
 const copyError = ref<string | null>(null)
 const targetAgentId = ref<number | null>(props.copyProducts?.agent_id ?? null)
 const targetAgent = computed(() => props.copyProducts?.agents.find((agent) => agent.id === targetAgentId.value))
 const targetSuppliers = computed(() => (props.copyTargets ?? []).filter((supplier) => supplier.agent_id === targetAgentId.value))
+const targetSupplier = computed(() => targetSuppliers.value.find((supplier) => supplier.id === targetSupplierId.value))
 
 function loadCopyTargets() {
   if (!props.copyTargets) {
@@ -73,6 +76,7 @@ function loadCopyTargets() {
 
 function openCopyDialog() {
   targetSupplierId.value = null
+  isMakePreferred.value = false
   copyError.value = null
   isCopyDialogVisible.value = true
   loadCopyTargets()
@@ -90,7 +94,7 @@ function copySelectedProducts() {
 
   router.post(
     route(props.copyProducts.copy_route.name, [...Object.values(props.copyProducts.copy_route.parameters ?? {}), targetSupplierId.value]),
-    { org_supplier_products: selectedIds.value },
+    { org_supplier_products: selectedIds.value, make_preferred: isMakePreferred.value },
     {
       preserveScroll: true,
       onStart: () => isCopying.value = true,
@@ -336,6 +340,13 @@ function orgSupplierRoute(orgSupplierSlug: string) {
           </div>
         </template>
       </Select>
+      <label for="copy-products-make-preferred" class="mt-2 flex cursor-pointer items-start gap-2">
+        <Checkbox v-model="isMakePreferred" inputId="copy-products-make-preferred" binary class="mt-0.5" />
+        <span class="text-sm">
+          <span class="font-medium text-gray-700">{{ ctrans("Make :supplier as preferred supplier", { supplier: targetSupplier?.label ?? ctrans("this supplier") }) }}</span>
+          <span class="block text-xs text-gray-500">{{ ctrans("Purchase orders for these SKOs will go to this supplier.") }}</span>
+        </span>
+      </label>
       <p v-if="copyError" class="text-sm text-red-500">{{ copyError }}</p>
     </div>
 
