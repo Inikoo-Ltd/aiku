@@ -767,3 +767,54 @@ test('HELP-4731 a supplier uploads shipping documents to its own order from its 
     actingAs($this->adminGuest->getUser());
     $this->post(route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'path' => "purchase-orders/$purchaseOrder->id/documents"]))->assertSessionHasErrors('preview');
 });
+
+/**
+ * @param  list<list<mixed>>  $rows
+ */
+function w4ProposalSheet(array $rows, string $name = 'products.xlsx', ?array $secondSheetRows = null): UploadedFile
+{
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $spreadsheet->getActiveSheet()->fromArray($rows, null, 'A1', true);
+    if ($secondSheetRows) {
+        $spreadsheet->createSheet()->fromArray($secondSheetRows, null, 'A1', true);
+    }
+    $path = tempnam(sys_get_temp_dir(), 'w4').'.xlsx';
+    (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
+
+    return new UploadedFile($path, $name, null, null, true);
+}
+
+function w4ProposalHeadings(): array
+{
+    return (new \App\Exports\SupplyChain\SupplierProductProposalTemplateExport('USD'))->headings();
+}
+
+test('W4 the product upload reads only the template: wrong headings and more than 200 rows are refused, formulas are calculated and formula starts are stripped', function () {
+    [, , $token] = portalSupplier($this);
+    Auth::logout();
+    $route = route('grp.supplier_share.product_proposals.preview', $token);
+
+    $this->postJson($route, ['file' => w4ProposalSheet([['Foo', 'Bar'], ['Bowl', 'Nice']])])->assertJsonValidationErrors('file');
+
+    $tooMany = [w4ProposalHeadings()];
+    for ($i = 1; $i <= \App\Actions\SupplyChain\SupplierSubmission\ImportSupplierPortalProductProposals::MAX_ROWS + 1; $i++) {
+        $tooMany[] = ['Bowl '.$i, 'Hand carved bowl '.$i, 4.5, 'USD', 'piece'];
+    }
+    $this->postJson($route, ['file' => w4ProposalSheet($tooMany)])->assertJsonValidationErrors('file');
+
+    $headings    = array_map(fn (string $heading) => strtoupper(str_replace(' *', '', $heading)), w4ProposalHeadings());
+    $rows        = $this->postJson($route, ['file' => w4ProposalSheet(
+        [$headings, ['=HYPERLINK("http://x.test","Bowl")', '@Hand carved bowl', '=2+2.5', 'usd', 'piece', '100 pieces', 45, '20 cm', '+cmd', 'Paper bag']],
+        secondSheetRows: array_fill(0, 3, ['ignored'])
+    )])->assertOk()->json('rows');
+
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0]['row'])->toBe(2)
+        ->and($rows[0]['values']['name'])->toBe('Bowl')
+        ->and($rows[0]['values']['description'])->toBe('Hand carved bowl')
+        ->and($rows[0]['values']['materials'])->toBe('cmd')
+        ->and((float) $rows[0]['values']['proposed_price'])->toBe(4.5)
+        ->and($rows[0]['values']['currency'])->toBe('USD')
+        ->and($rows[0]['errors'])->toBe([]);
+});
+

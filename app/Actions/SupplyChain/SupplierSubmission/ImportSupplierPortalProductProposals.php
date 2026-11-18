@@ -11,6 +11,7 @@ namespace App\Actions\SupplyChain\SupplierSubmission;
 
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Exports\SupplyChain\SupplierProductProposalTemplateExport;
+use App\Imports\SupplyChain\SupplierProductProposalImport;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierShareLink;
 use Illuminate\Http\JsonResponse;
@@ -91,12 +92,18 @@ class ImportSupplierPortalProductProposals
      */
     private function rowsOf(UploadedFile $file, ?string $currency): array
     {
-        $sheet  = Excel::toArray(new \stdClass(), $file)[0] ?? [];
+        $import = new SupplierProductProposalImport();
+        Excel::import($import, $file);
+
+        $sheet  = $import->rows;
         $fields = array_keys(SupplierProductProposalTemplateExport::COLUMNS);
         $rows   = [];
 
+        $this->assertHeadings(array_values($sheet[0] ?? []));
+
         foreach (array_slice($sheet, 1, preserve_keys: true) as $index => $cells) {
-            $row = [];
+            $cells = array_values($cells);
+            $row   = [];
             foreach ($fields as $position => $field) {
                 $row[$field] = $this->cellValue($field, $cells[$position] ?? null);
             }
@@ -112,10 +119,32 @@ class ImportSupplierPortalProductProposals
         return $rows;
     }
 
+    /**
+     * @param  list<mixed>  $headings
+     */
+    private function assertHeadings(array $headings): void
+    {
+        $expected = array_map(fn (string $heading) => $this->normaliseHeading($heading), array_values(SupplierProductProposalTemplateExport::COLUMNS));
+        $found    = array_map(fn ($heading) => $this->normaliseHeading((string) $heading), array_slice($headings, 0, count($expected)));
+
+        if ($found !== $expected) {
+            throw ValidationException::withMessages(['file' => __('The headings of this file are not the ones of our template. Download the template again and fill it without changing its first row.')]);
+        }
+    }
+
+    private function normaliseHeading(string $heading): string
+    {
+        return (string) preg_replace('/\s+/', ' ', mb_strtolower(trim(rtrim(trim($heading), '*'))));
+    }
+
     private function cellValue(string $field, mixed $value): mixed
     {
         if (is_string($value)) {
             $value = trim($value);
+
+            if (!in_array($field, ['proposed_price', 'lead_time_days'], true)) {
+                $value = ltrim((string) preg_replace('/^[=+\-@\s]+/u', '', $value));
+            }
         }
 
         if ($value === null || $value === '') {
