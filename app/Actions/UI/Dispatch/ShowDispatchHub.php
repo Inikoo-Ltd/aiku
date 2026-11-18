@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Dispatch;
 
+use App\Actions\Dispatching\Capacity\GetWarehouseCapacity;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
@@ -115,6 +116,8 @@ class ShowDispatchHub extends OrgAction
                 'pickers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'pickers', 'pickers_current')),
                 'packers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'packers', 'packers_current')),
                 'partner_staging' => $partnerStaging,
+                'dispatch_capacity' => Inertia::defer(fn () => GetWarehouseCapacity::make()->forOrganisation($this->organisation), 'dispatch_capacity'),
+                'current_warehouse_id' => $warehouse->id,
                 'can_edit'          => $request->user()->authTo("dispatching.{$this->warehouse->id}.edit"),
                 'stage_route'     => $suppliesPartners ? [
                     'name'       => 'grp.org.warehouses.show.dispatching.partner_staging.stage',

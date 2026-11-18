@@ -9153,3 +9153,63 @@ test('a delivery note refuses a picker that is not a user of the group, INI-291'
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote::make()->action($deliveryNote->refresh(), ['picker_user_id' => $this->user->id]);
     expect($deliveryNote->picker_user_id)->toBe($this->user->id);
 });
+
+test('dispatch capacity says when a warehouse is over and how many workers would bring it back', function () {
+    $capacity = \App\Actions\Dispatching\Capacity\GetWarehouseCapacity::make();
+
+    $row = fn (array $overrides) => [
+        'in_per_day' => 100.0, 'out_per_day' => 100.0, 'late_backlog' => 0, 'late_to_pick' => 0, 'late_to_pack' => 0,
+        'picks_per_picker_day' => 20.0, 'packs_per_packer_day' => 20.0, ...$overrides,
+    ];
+
+    $wholesale = $capacity->assess($row(['in_per_day' => 131.0, 'out_per_day' => 106.0, 'late_backlog' => 380, 'late_to_pick' => 342, 'late_to_pack' => 18, 'picks_per_picker_day' => 18.4, 'packs_per_packer_day' => 17.3]));
+    expect($wholesale['status'])->toBe('over')
+        ->and($wholesale['gap_per_day'])->toBe(25.0)
+        ->and($wholesale['bottleneck'])->toBe('picking')
+        ->and($wholesale['extra_picks_per_day'])->toBe(94)
+        ->and($wholesale['extra_packs_per_day'])->toBe(97)
+        ->and($wholesale['extra_pickers'])->toBe(5)
+        ->and($wholesale['extra_packers'])->toBe(6);
+
+    $dropshipping = $capacity->assess($row(['in_per_day' => 225.0, 'out_per_day' => 194.0, 'late_backlog' => 351, 'late_to_pick' => 311, 'late_to_pack' => 34, 'picks_per_picker_day' => 110.0, 'packs_per_packer_day' => 116.0]));
+    expect($dropshipping['status'])->toBe('over')
+        ->and($dropshipping['extra_pickers'])->toBe(1)
+        ->and($dropshipping['extra_packers'])->toBe(1);
+
+    $packing = $capacity->assess($row(['late_backlog' => 210, 'late_to_pick' => 10, 'late_to_pack' => 200]));
+    expect($packing['status'])->toBe('over')
+        ->and($packing['bottleneck'])->toBe('packing')
+        ->and($packing['extra_pickers'])->toBe(0)
+        ->and($packing['extra_packers'])->toBe(2);
+
+    $atCapacity = $capacity->assess($row(['in_per_day' => 199.0, 'out_per_day' => 197.0, 'late_backlog' => 178, 'late_to_pick' => 178]));
+    expect($atCapacity['status'])->toBe('at_capacity')
+        ->and($atCapacity['extra_pickers'])->toBe(2);
+
+    $ok = $capacity->assess($row(['in_per_day' => 166.0, 'out_per_day' => 169.0, 'late_backlog' => 42, 'late_to_pick' => 42]));
+    expect($ok['status'])->toBe('ok')
+        ->and($ok['extra_picks_per_day'])->toBe(0)
+        ->and($ok['extra_pickers'])->toBeNull();
+
+    $unmeasured = $capacity->assess($row(['in_per_day' => 20.0, 'out_per_day' => 17.0, 'late_backlog' => 84, 'late_to_pick' => 84, 'picks_per_picker_day' => null]));
+    expect($unmeasured['status'])->toBe('over')
+        ->and($unmeasured['extra_picks_per_day'])->toBe(20)
+        ->and($unmeasured['extra_pickers'])->toBeNull();
+
+    $dormant = $capacity->assess($row(['in_per_day' => 0.0, 'out_per_day' => 0.0, 'late_backlog' => 12]));
+    expect($dormant['status'])->toBe('no_data')
+        ->and($dormant['extra_picks_per_day'])->toBe(0);
+
+    $stream = \App\Actions\Dispatching\Capacity\GetWarehouseCapacity::DROPSHIPPING;
+    $key    = 'warehouse-over-capacity:'.$this->warehouse->id.':'.$stream;
+    \Illuminate\Support\Facades\Cache::forget($key);
+    expect(\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::run($this->warehouse, $stream)['stream'])->toBe($stream)
+        ->and(\App\Actions\Dispatching\Capacity\IsWarehouseOverCapacity::run($this->warehouse, $stream))->toBeBool();
+    \Illuminate\Support\Facades\Cache::put($key, true, 60);
+    expect(\App\Actions\Dispatching\Capacity\IsWarehouseOverCapacity::run($this->warehouse, $stream))->toBeTrue();
+    \Illuminate\Support\Facades\Cache::forget($key);
+
+    $monday = \Illuminate\Support\Carbon::parse('2026-11-16 09:00:00', 'Europe/London');
+    expect(\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::lateCutoff($monday, 'Europe/London')->toDateTimeString())->toBe('2026-11-13 09:00:00')
+        ->and(\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::lateCutoff($monday->copy()->addDay(), 'Europe/London')->toDateTimeString())->toBe('2026-11-16 09:00:00');
+});
