@@ -4,7 +4,7 @@ export const DEFAULT_EDITOR_TOOLS: string[] = [
 	"alignCenter", "undo", "redo", "highlight", "color", "clear", "image", "video", "table",
 ]
 
-export const BLOG_EDITOR_TOOLS: string[] = [...DEFAULT_EDITOR_TOOLS, "ctaButton"]
+export const BLOG_EDITOR_TOOLS: string[] = [...DEFAULT_EDITOR_TOOLS, "ctaButton", "scriptBlock"]
 
 export const fontSizeInPixels = (fontSize: unknown): string => {
 	if (!fontSize || typeof fontSize !== "string") {

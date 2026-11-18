@@ -38,6 +38,8 @@ import Iframe from "@/Components/Forms/Fields/BubleTextEditor/Iframe/IframeExten
 import { CtaButton, CTA_BUTTON_NODE } from "@/Components/Forms/Fields/BubleTextEditor/CtaButton/CtaButtonExtension"
 import TiptapCtaButtonDialog from "@/Components/Forms/Fields/BubleTextEditor/CtaButton/TiptapCtaButtonDialog.vue"
 import { type CtaButtonAlignment, type CtaButtonAttributes, defaultCtaButtonAttributes } from "@/Components/Forms/Fields/BubleTextEditor/CtaButton/ctaButtonLayout"
+import { ScriptBlock, SCRIPT_BLOCK_NODE } from "@/Components/Forms/Fields/BubleTextEditor/ScriptBlock/ScriptBlockExtension"
+import TiptapScriptBlockDialog from "@/Components/Forms/Fields/BubleTextEditor/ScriptBlock/TiptapScriptBlockDialog.vue"
 import { DEFAULT_EDITOR_TOOLS, fontSizeInPixels } from "@/Components/Forms/Fields/BubleTextEditor/editorTools"
 
 import {
@@ -63,7 +65,7 @@ import {
     faPaintBrushAlt,
     faTextSize,
 } from "@far"
-import { faTable, faPalette, faUnlink, faTimes, faEllipsisH, faChevronDown, faFont, faHeading, faBracketsCurly, faSlidersH, faExchange, faTrashAlt, faHandPointer, faPaste } from "@fal"
+import { faTable, faPalette, faUnlink, faTimes, faEllipsisH, faChevronDown, faFont, faHeading, faBracketsCurly, faSlidersH, faExchange, faTrashAlt, faHandPointer, faPaste, faCode } from "@fal"
 import { faEraser, faTint, faTable as fasTable, } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
@@ -129,6 +131,8 @@ const imageInSettingsDialog = ref<{ position: number, attributes: Record<string,
 const positionOfImageToReplace = ref<number | null>(null)
 const showCtaButtonDialog = ref<boolean>(false)
 const ctaButtonInDialog = ref<{ position: number | null, attributes: CtaButtonAttributes } | null>(null)
+const showScriptBlockDialog = ref<boolean>(false)
+const scriptBlockInDialog = ref<{ position: number | null, html: string } | null>(null)
 const showAddVariableDialog = ref<boolean>(false)
 const showMergeTagDialog = ref<boolean>(false)
 const showLinkDialog = ref<boolean>()
@@ -251,6 +255,11 @@ const editorInstance = useEditor({
         Iframe,
         CtaButton.configure({
             onEdit: (position: number) => openCtaButtonDialog(position),
+        }),
+        ScriptBlock.configure({
+            onEdit: (position: number) => openScriptBlockDialog(position),
+            title: `</> ${ctrans("Script")} · ${ctrans("runs on the website, double click to edit")}`,
+            emptyText: ctrans("Empty script"),
         }),
         Youtube,
         Highlight.configure({
@@ -645,6 +654,48 @@ const selectedCtaButtonAttributes = computed(() =>
     editorInstance.value?.isActive(CTA_BUTTON_NODE) ? editorInstance.value.getAttributes(CTA_BUTTON_NODE) as CtaButtonAttributes : null
 )
 
+function openScriptBlockDialog(position: number | null = null) {
+    const scriptBlock = position === null ? null : editorInstance.value?.state.doc.nodeAt(position)
+    scriptBlockInDialog.value = scriptBlock?.type.name === SCRIPT_BLOCK_NODE
+        ? { position, html: scriptBlock.attrs.html ?? "" }
+        : { position: null, html: "" }
+    showScriptBlockDialog.value = true
+    showDialog.value = true
+}
+
+function closeScriptBlockDialog() {
+    showScriptBlockDialog.value = false
+    showDialog.value = false
+    scriptBlockInDialog.value = null
+}
+
+function saveScriptBlock(html: string) {
+    const editor = editorInstance.value
+    const position = scriptBlockInDialog.value?.position ?? null
+    if (!editor) {
+        return
+    }
+    if (position === null) {
+        editor.chain().focus().insertScriptBlock(html).run()
+        return
+    }
+    const scriptBlock = editor.state.doc.nodeAt(position)
+    if (scriptBlock?.type.name !== SCRIPT_BLOCK_NODE) {
+        return
+    }
+    editor
+        .chain()
+        .focus()
+        .command(({ tr }) => {
+            tr.setNodeMarkup(position, undefined, { ...scriptBlock.attrs, html })
+            return true
+        })
+        .setNodeSelection(position)
+        .run()
+}
+
+const isScriptBlockSelected = computed(() => !!editorInstance.value?.isActive(SCRIPT_BLOCK_NODE))
+
 const ctaButtonAlignmentOptions: Array<{ value: CtaButtonAlignment, label: string, icon: any }> = [
     { value: 'left', label: 'Align Left', icon: faAlignLeft },
     { value: 'center', label: 'Align Center', icon: faAlignCenter },
@@ -813,7 +864,7 @@ const toggleList = (value: string) => {
 }
 
 const hasMoreMenuItems = computed(() =>
-    ['blockquote', 'divider', 'image', 'video', 'table', 'query', 'ctaButton']
+    ['blockquote', 'divider', 'image', 'video', 'table', 'query', 'ctaButton', 'scriptBlock']
         .some(key => props.toggle.includes(key))
 )
 
@@ -1231,7 +1282,7 @@ onMounted(async () => {
                                 <template #menu="{ close }">
                                     <div class="max-h-80 w-52 overflow-y-auto">
                                         <template
-                                            v-if="toggle.includes('image') || toggle.includes('video') || toggle.includes('table') || toggle.includes('blockquote') || toggle.includes('divider') || toggle.includes('ctaButton')">
+                                            v-if="toggle.includes('image') || toggle.includes('video') || toggle.includes('table') || toggle.includes('blockquote') || toggle.includes('divider') || toggle.includes('ctaButton') || toggle.includes('scriptBlock')">
                                             <div class="my-1 h-px bg-gray-200" aria-hidden="true" />
                                             <div class="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
                                                 {{ ctrans('Insert') }}
@@ -1247,6 +1298,12 @@ onMounted(async () => {
                                                 @click="openCtaButtonDialog(); close()">
                                                 <FontAwesomeIcon :icon="faHandPointer" class="h-4 w-4" fixed-width />
                                                 {{ ctrans('Button') }}
+                                            </button>
+                                            <button v-if="toggle.includes('scriptBlock')" type="button"
+                                                class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
+                                                @click="openScriptBlockDialog(); close()">
+                                                <FontAwesomeIcon :icon="faCode" class="h-4 w-4" fixed-width />
+                                                {{ ctrans('Script') }}
                                             </button>
                                             <button v-if="toggle.includes('video')" type="button"
                                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
@@ -1365,6 +1422,21 @@ onMounted(async () => {
                             <FontAwesomeIcon :icon="faSlidersH" class="h-4 w-4" fixed-width />
                         </TiptapToolbarButton>
                         <TiptapToolbarButton :label="ctrans('Remove button')"
+                            @click="editorInstance?.chain().focus().deleteSelection().run()">
+                            <FontAwesomeIcon :icon="faTrashAlt" class="h-4 w-4 text-red-500" fixed-width />
+                        </TiptapToolbarButton>
+                    </section>
+
+                    <section v-if="isScriptBlockSelected"
+                        class="mt-1 flex flex-nowrap items-center gap-0.5 overflow-x-auto border-t border-gray-200 pt-1">
+                        <span class="shrink-0 pr-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                            {{ ctrans('Script') }}
+                        </span>
+                        <TiptapToolbarButton :label="ctrans('Edit script')"
+                            @click="openScriptBlockDialog(editorInstance?.state.selection.from ?? null)">
+                            <FontAwesomeIcon :icon="faSlidersH" class="h-4 w-4" fixed-width />
+                        </TiptapToolbarButton>
+                        <TiptapToolbarButton :label="ctrans('Remove script')"
                             @click="editorInstance?.chain().focus().deleteSelection().run()">
                             <FontAwesomeIcon :icon="faTrashAlt" class="h-4 w-4 text-red-500" fixed-width />
                         </TiptapToolbarButton>
@@ -1537,6 +1609,14 @@ onMounted(async () => {
             :image="imageInSettingsDialog.attributes"
             @close="closeImageSettingsDialog"
             @update="saveImageSettings"
+        />
+        <TiptapScriptBlockDialog
+            v-if="showScriptBlockDialog && scriptBlockInDialog"
+            :show="showScriptBlockDialog"
+            :html="scriptBlockInDialog.html"
+            :isNew="scriptBlockInDialog.position === null"
+            @close="closeScriptBlockDialog"
+            @update="saveScriptBlock"
         />
         <TiptapCtaButtonDialog
             v-if="showCtaButtonDialog && ctaButtonInDialog"

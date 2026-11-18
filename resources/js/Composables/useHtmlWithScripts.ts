@@ -1,4 +1,4 @@
-import { computed, onMounted, Ref, watch } from "vue"
+import { computed, onMounted, type Ref, watch } from "vue"
 
 const scriptTagPattern = /<script\b[^>]*>[\s\S]*?<\/script\s*>/gi
 
@@ -28,6 +28,39 @@ const injectScript = (sourceScript: HTMLScriptElement, target: HTMLElement): Pro
             resolve()
         }
     })
+}
+
+export const encodeScriptBlockHtml = (html: string): string => encodeURIComponent(html)
+
+export const decodeScriptBlockHtml = (encoded: string): string => {
+    try {
+        return decodeURIComponent(encoded)
+    } catch {
+        return encoded
+    }
+}
+
+export const renderHtmlWithScripts = async (target: HTMLElement, html: string): Promise<void> => {
+    target.innerHTML = html.replace(scriptTagPattern, "")
+    for (const script of extractScripts(html)) {
+        await injectScript(script, target)
+    }
+}
+
+export const useInlineScriptBlocks = (html: Ref<string | undefined | null>, container: Ref<HTMLElement | null>) => {
+    const renderScriptBlocks = async () => {
+        const blocks = Array.from(container.value?.querySelectorAll<HTMLElement>("[data-script-block]") ?? [])
+        for (const block of blocks) {
+            block.classList.add("not-prose")
+            block.style.maxWidth = "100%"
+            block.style.overflowX = "auto"
+            block.style.margin = "1.5rem 0"
+            await renderHtmlWithScripts(block, decodeScriptBlockHtml(block.getAttribute("data-html") ?? ""))
+        }
+    }
+
+    onMounted(renderScriptBlocks)
+    watch(html, renderScriptBlocks, { flush: "post" })
 }
 
 export const useHtmlWithScripts = (html: Ref<string | undefined | null>, container: Ref<HTMLElement | null>) => {

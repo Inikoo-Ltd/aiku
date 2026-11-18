@@ -20,7 +20,7 @@ import Image from "@common/Components/Image.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { getStyles } from "@/Composables/styles"
 import { blogTitleInlineHtml, buildBlogTableOfContents, htmlToPlainText } from "@/Iris/Composables/useBlogTableOfContents"
-import { useHtmlWithScripts } from "@/Composables/useHtmlWithScripts"
+import { useHtmlWithScripts, useInlineScriptBlocks } from "@/Composables/useHtmlWithScripts"
 
 library.add(faCube, faLink, faImage, faEnvelope, faFacebook, faTwitter, faLinkedin, faXTwitter, faWhatsapp)
 
@@ -56,6 +56,7 @@ const pageUrl = ref("")
 
 const tableOfContents = computed(() => buildBlogTableOfContents(props.fieldValue?.content ?? ""))
 const contentHtml = computed(() => tableOfContents.value.html)
+useInlineScriptBlocks(contentHtml, contentRef)
 const headings = computed(() => tableOfContents.value.headings)
 
 let headingObserver: IntersectionObserver | null = null
