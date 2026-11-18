@@ -9,7 +9,7 @@ import {
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
     faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
     faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide, faSpellCheck,
-    faArrowUp, faArrowDown,
+    faArrowUp, faArrowDown, faCopy, faPaste,
 } from '@fal'
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
@@ -27,9 +27,10 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { WorkshopShortcut, formatShortcutCombo, useWorkshopShortcuts } from '@/Composables/useWorkshopShortcuts'
 import { ctrans } from '@/Composables/useTrans'
 import {
-    DELETE_SELECTION_COMBOS, UploadedImage, droppedImageFiles, isDraggingFiles, setModuleImage, EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
+    DELETE_SELECTION_COMBOS, ROW_DRAG_MODE, UploadedImage, droppedImageFiles, isDraggingFiles, setModuleImage, EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
     columnWidthPercent, createDynamicBlockRows, createModule, createProductRows, createRow, dynamicContentSource, ProductCard, ProductCardAppearance, isEmptyMergeContent, duplicateWithNewUuids, normaliseEmailJson,
     UNSUBSCRIBE_BLOCK, emailHasUnsubscribeBlock, isTableModule, modulePlaceholder, isUnsubscribeMergeTag, isUnsubscribeModule, moduleDisplayName, paletteModuleTypes, getModuleText, setModuleText,
+    EMAIL_CLIPBOARD_STORAGE_KEY, EmailClipboard, copyEmailSelection, pasteEmailClipboard, readEmailClipboard,
     isRowLockedByUnsubscribe, isUnsubscribeModuleLocked, rowHasUnsubscribeBlock, rowLayouts, setSocialIconSources, hasCurrentVideoEmailThumbnail, videoEmailThumbnailKey, videoThumbnailFromUrl,
 } from './emailWorkshopBlocks'
 import { WebsiteTheme, applyThemeToModule } from './emailWorkshopTheme'
@@ -40,7 +41,7 @@ library.add(
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
     faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
     faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide, faSpellCheck,
-    faArrowUp, faArrowDown,
+    faArrowUp, faArrowDown, faCopy, faPaste,
 )
 
 const props = withDefaults(defineProps<{
@@ -405,6 +406,77 @@ const duplicateSelection = () => {
     }
 }
 
+const readStoredClipboard = (): EmailClipboard | null => {
+    try {
+        return readEmailClipboard(window.localStorage.getItem(EMAIL_CLIPBOARD_STORAGE_KEY))
+    } catch {
+        return null
+    }
+}
+
+const clipboard = ref<EmailClipboard | null>(readStoredClipboard())
+const clipboardNotice = ref<string | null>(null)
+let clipboardNoticeTimer: ReturnType<typeof setTimeout> | null = null
+
+const showClipboardNotice = (message: string) => {
+    clipboardNotice.value = message
+    if (clipboardNoticeTimer) {
+        clearTimeout(clipboardNoticeTimer)
+    }
+    clipboardNoticeTimer = setTimeout(() => clipboardNotice.value = null, 1800)
+}
+
+const copySelection = () => {
+    const copied = copyEmailSelection(selectedModule.value, selectedModule.value ? null : selectedRow.value)
+    if (!copied) {
+        return
+    }
+    clipboard.value = copied
+    try {
+        window.localStorage.setItem(EMAIL_CLIPBOARD_STORAGE_KEY, JSON.stringify(copied))
+    } catch (error) {
+        console.warn('Unable to keep the copied block for other newsletters', error)
+    }
+    showClipboardNotice(copied.kind === 'row' ? ctrans('Row copied') : ctrans('Block copied'))
+}
+
+const pasteClipboard = () => {
+    const source = readStoredClipboard() ?? clipboard.value
+    if (!source) {
+        return
+    }
+    clipboard.value = source
+    const pasted = pasteEmailClipboard(
+        email.value,
+        source,
+        { moduleUuid: selectedModuleUuid.value, rowUuid: selectedRowUuid.value },
+        `${contentWidth.value}px`,
+    )
+    if (!pasted) {
+        return
+    }
+    if (pasted.module) {
+        onModuleAdded(pasted.module, pasted.row)
+    } else {
+        selectRow(pasted.row)
+    }
+    showClipboardNotice(source.kind === 'row' ? ctrans('Row pasted') : ctrans('Block pasted'))
+}
+
+const onClipboardStorage = (event: StorageEvent) => {
+    if (event.key === EMAIL_CLIPBOARD_STORAGE_KEY) {
+        clipboard.value = readEmailClipboard(event.newValue)
+    }
+}
+
+onMounted(() => window.addEventListener('storage', onClipboardStorage))
+onBeforeUnmount(() => {
+    window.removeEventListener('storage', onClipboardStorage)
+    if (clipboardNoticeTimer) {
+        clearTimeout(clipboardNoticeTimer)
+    }
+})
+
 const deleteSelection = () => {
     if (selectedModule.value) {
         deleteSelectedModule()
@@ -414,11 +486,27 @@ const deleteSelection = () => {
 }
 
 const isDraggingRow = ref(false)
+const isDraggingNewRow = ref(false)
 
 const onRowDragStart = () => {
     window.getSelection()?.removeAllRanges()
     isDraggingRow.value = true
 }
+
+const onRowLayoutDragStart = () => {
+    onRowDragStart()
+    isDraggingNewRow.value = true
+}
+
+const onRowDragEnd = () => {
+    isDraggingRow.value = false
+    isDraggingNewRow.value = false
+}
+
+const dropLabels = computed(() => ({
+    '--email-drop-row-label': JSON.stringify(ctrans('Drop row here')),
+    '--email-drop-block-label': JSON.stringify(ctrans('Drop block here')),
+}))
 
 const isFileDragOver = ref(false)
 const uploadingImageCount = ref(0)
@@ -877,6 +965,14 @@ const shortcuts: WorkshopShortcut[] = [
         run: () => redo(), isAvailable: () => canRedo.value,
     },
     {
+        id: 'copy', group: 'Blocks', label: 'Copy selected block or row', combos: [['Mod', 'C']],
+        run: () => copySelection(), isAvailable: () => hasSelection() && !isSelectionLocked.value, skipWhenTextSelected: true,
+    },
+    {
+        id: 'paste', group: 'Blocks', label: 'Paste below the selected block or row', combos: [['Mod', 'V']],
+        run: () => pasteClipboard(), isAvailable: () => !!clipboard.value || !!readStoredClipboard(),
+    },
+    {
         id: 'duplicate', group: 'Blocks', label: 'Duplicate selected block or row', combos: [['Mod', 'D']],
         run: () => duplicateSelection(), isAvailable: () => hasSelection() && !isSelectionLocked.value,
     },
@@ -915,6 +1011,8 @@ const shortcuts: WorkshopShortcut[] = [
 ]
 
 const publishShortcutLabel = formatShortcutCombo(['Mod', 'S'])
+const copyShortcutLabel = formatShortcutCombo(['Mod', 'C'])
+const pasteShortcutLabel = formatShortcutCombo(['Mod', 'V'])
 
 const isShortcutBlocked = () => isShortcutsDialogVisible.value || !!document.querySelector('.p-dialog-mask')
 
@@ -1069,6 +1167,9 @@ defineExpose({
                         </template>
                     </span>
                     <span v-else-if="isDirty" class="ml-3 text-xs text-gray-400">{{ ctrans('Unsaved changes') }}</span>
+                    <span v-if="clipboardNotice" class="ml-3 flex items-center gap-1 whitespace-nowrap text-xs text-green-600" role="status">
+                        <FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />{{ clipboardNotice }}
+                    </span>
                 </div>
 
                 <div class="flex items-center gap-x-1">
@@ -1107,9 +1208,13 @@ defineExpose({
             </div>
 
             <div class="flex min-h-0 flex-1">
-                <main class="relative min-h-0 flex-1 overflow-auto py-1" :class="{ 'show-structure': isStructureVisible, 'mobile-canvas': device === 'mobile', 'desktop-canvas': device === 'desktop', 'outline-dashed outline-2 -outline-offset-4 outline-[var(--app-accent)]': isFileDragOver, 'select-none': isDraggingRow }" :style="{ backgroundColor: canvasBackground }" @click.self="clearSelection"
+                <main class="relative min-h-0 flex-1 overflow-auto py-1" :class="{ 'show-structure': isStructureVisible, 'mobile-canvas': device === 'mobile', 'desktop-canvas': device === 'desktop', 'outline-dashed outline-2 -outline-offset-4 outline-[var(--app-accent)]': isFileDragOver || isDraggingNewRow, 'select-none cursor-grabbing': isDraggingRow }" :style="[{ backgroundColor: canvasBackground }, dropLabels]" @click.self="clearSelection"
                     @dragover="onCanvasDragOver" @dragleave="onCanvasDragLeave" @drop="onCanvasDrop">
-                    <div v-if="isFileDragOver || uploadingImageCount || imageDropError" class="sticky top-0 z-20 mx-auto mb-1 flex w-fit items-center gap-x-2 rounded border bg-white px-3 py-1.5 text-xs shadow"
+                    <div v-if="isDraggingNewRow" class="sticky top-0 z-20 mx-auto mb-1 flex w-fit items-center gap-x-2 rounded border border-[var(--app-accent-muted)] bg-white px-3 py-1.5 text-xs text-gray-700 shadow" aria-live="polite">
+                        <FontAwesomeIcon icon="fal fa-columns" fixed-width aria-hidden="true" />
+                        {{ ctrans('Drop the row where it should go in the email') }}
+                    </div>
+                    <div v-else-if="isFileDragOver || uploadingImageCount || imageDropError" class="sticky top-0 z-20 mx-auto mb-1 flex w-fit items-center gap-x-2 rounded border bg-white px-3 py-1.5 text-xs shadow"
                         :class="imageDropError && !isFileDragOver && !uploadingImageCount ? 'border-red-200 text-red-600' : 'border-[var(--app-accent-muted)] text-gray-700'" aria-live="polite">
                         <template v-if="isFileDragOver">
                             <FontAwesomeIcon icon="fal fa-image" fixed-width aria-hidden="true" />
@@ -1129,9 +1234,9 @@ defineExpose({
                     </div>
                     <div :style="emailFrameStyle">
                         <draggable v-model="email.page.rows" item-key="uuid" group="email-rows" handle=".row-handle" ghost-class="email-row-ghost" class="min-h-[200px]"
-                            :force-fallback="true" fallback-class="email-row-drag-preview" :fallback-on-body="true"
+                            v-bind="ROW_DRAG_MODE"
                             :scroll="true" :scroll-sensitivity="120" :scroll-speed="20" :bubble-scroll="true"
-                            @start="onRowDragStart" @end="isDraggingRow = false">
+                            @start="onRowDragStart" @end="onRowDragEnd">
                             <template #item="{ element: row }">
                                 <div class="email-row group/row relative" :data-row-uuid="row.uuid"
                                     :class="[isRowSelected(row) ? 'z-[1] outline outline-2 -outline-offset-2 outline-[var(--theme-color-4)]' : 'hover:outline hover:outline-2 hover:-outline-offset-2 hover:outline-[color-mix(in_srgb,var(--theme-color-4)_45%,white)]', isHiddenOnCurrentDevice(row.content?.computedStyle) ? 'opacity-40' : '']"
@@ -1163,7 +1268,7 @@ defineExpose({
 
                                     <div class="mx-auto flex transition-[width]" :class="isStackedOnMobile(row) ? 'flex-col' : ''" :style="rowContentStyle(row)" @click.self="selectRow(row)">
                                         <div v-for="column in row.columns" :key="column.uuid" :style="columnStyle(row, column)" class="email-column relative min-w-0">
-                                            <draggable v-model="column.modules" item-key="uuid" group="email-modules" ghost-class="opacity-40" class="min-h-[40px]"
+                                            <draggable v-model="column.modules" item-key="uuid" group="email-modules" ghost-class="email-module-ghost" class="min-h-[40px]"
                                                 filter=".email-inline-editor" :prevent-on-filter="false"
                                                 @add="(event: any) => onModuleAdded(column.modules[event.newIndex], row)">
                                                 <template #item="{ element: module }">
@@ -1243,6 +1348,12 @@ defineExpose({
                                 <button v-if="!isSelectionDeleteLocked" type="button" class="h-7 w-7 rounded hover:bg-gray-100 hover:text-red-500" v-tooltip="ctrans('Delete')" @click="deleteSelection">
                                     <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
                                 </button>
+                                <button v-if="!isSelectionLocked" type="button" class="h-7 w-7 rounded hover:bg-gray-100" v-tooltip="`${ctrans('Copy')} (${copyShortcutLabel})`" :aria-label="ctrans('Copy')" @click="copySelection">
+                                    <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                                </button>
+                                <button v-if="clipboard" type="button" class="h-7 w-7 rounded hover:bg-gray-100" v-tooltip="`${ctrans('Paste below')} (${pasteShortcutLabel})`" :aria-label="ctrans('Paste below')" @click="pasteClipboard">
+                                    <FontAwesomeIcon icon="fal fa-paste" fixed-width aria-hidden="true" />
+                                </button>
                                 <button v-if="!isSelectionLocked" type="button" class="h-7 w-7 rounded hover:bg-gray-100" v-tooltip="ctrans('Duplicate')" @click="duplicateSelection">
                                     <FontAwesomeIcon icon="fal fa-clone" fixed-width aria-hidden="true" />
                                 </button>
@@ -1282,7 +1393,8 @@ defineExpose({
                             <div v-else-if="sidebarTab === 'rows'" class="p-4">
                                 <div class="mb-3 text-[11px] font-semibold uppercase tracking-wider text-gray-700">{{ ctrans('Empty rows') }}</div>
                                 <draggable :list="rowLayouts" :item-key="(layout: number[]) => layout.join('-')" :group="{ name: 'email-rows', pull: 'clone', put: false }"
-                                    :sort="false" :clone="cloneRowLayout" class="space-y-2">
+                                    v-bind="ROW_DRAG_MODE" :sort="false" :clone="cloneRowLayout" class="space-y-2"
+                                    @start="onRowLayoutDragStart" @end="onRowDragEnd">
                                     <template #item="{ element }">
                                         <button type="button" class="flex w-full cursor-grab gap-x-1 rounded border border-gray-200 bg-white p-2 transition hover:border-[var(--theme-color-4)] hover:shadow-md"
                                             @click="addRow(element)">
@@ -1345,23 +1457,69 @@ defineExpose({
 </template>
 
 <style>
-.email-row-drag-preview {
+.email-drag-preview {
     max-height: 72px !important;
     overflow: hidden !important;
-    opacity: 0.85 !important;
-    box-shadow: 0 8px 24px rgb(0 0 0 / 0.2);
+    opacity: 0.9 !important;
+    outline: 2px solid var(--app-accent) !important;
+    box-shadow: 0 12px 28px rgb(0 0 0 / 0.25);
+    rotate: 1deg;
+}
+
+.email-row-ghost,
+.email-module-ghost {
+    position: relative;
+    display: block !important;
+    width: 100% !important;
+    color: transparent !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    border: 2px dashed var(--app-accent) !important;
+    border-radius: 4px;
+    background: var(--app-accent-soft) !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.email-row-ghost {
+    height: 56px !important;
+    min-height: 0 !important;
+}
+
+.email-module-ghost {
+    height: 40px !important;
+    min-height: 0 !important;
+}
+
+.email-row-ghost > *,
+.email-module-ghost > * {
+    visibility: hidden !important;
+}
+
+.email-row-ghost::before,
+.email-module-ghost::before {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--app-accent);
+    visibility: visible;
+}
+
+.email-row-ghost::before {
+    content: var(--email-drop-row-label, "");
+}
+
+.email-module-ghost::before {
+    content: var(--email-drop-block-label, "");
 }
 </style>
 
 <style scoped>
-.email-row-ghost {
-    max-height: 72px;
-    overflow: hidden;
-    opacity: 0.4;
-    outline: 2px dashed var(--theme-color-4);
-    outline-offset: -2px;
-}
-
 .show-structure .email-row::after,
 .show-structure .email-column::after,
 .show-structure .email-module::after {

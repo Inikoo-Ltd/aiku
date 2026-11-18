@@ -19,6 +19,7 @@ import java.io.File
 import java.io.IOException
 import java.time.LocalDate
 import java.time.YearMonth
+import java.util.concurrent.TimeUnit
 
 class OkHttpMobileApi(
     private val client: OkHttpClient,
@@ -27,9 +28,10 @@ class OkHttpMobileApi(
 ) : AuthApi, WarehouseApi, ClockingApi, HrApi, GoodsOutApi, PickingSessionApi, StaffChatApi, InventoryApi, GoodsInApi {
 
     private val apiBaseUrl = baseUrl.trimEnd('/')
-    private val mobileApiUrl = "$apiBaseUrl/app/api/mobile"
+    internal val mobileApiUrl = "$apiBaseUrl/app/api/mobile"
     private val hrApiUrl = "$mobileApiUrl/clocking"
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
+    private val platformClient: OkHttpClient by lazy { client.newBuilder().readTimeout(PLATFORM_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS).build() }
 
     override suspend fun login(credentials: LoginCredentials): LoginResult {
         val body = AuthResponses.json.encodeToString(
@@ -234,11 +236,14 @@ class OkHttpMobileApi(
             ?: GoodsOutResult.Unreachable
 
     override suspend fun write(token: String, deliveryNoteId: Long, write: DeliveryNoteWrite): GoodsOutResult<NoteActionOutcome> =
-        execute(writeRequest("$mobileApiUrl/delivery-notes/$deliveryNoteId", GoodsOutResponses.writeRequest(write), token))
+        execute(
+            writeRequest("$mobileApiUrl/delivery-notes/$deliveryNoteId", GoodsOutResponses.writeRequest(write), token),
+            httpClient = if (write.waitsForPlatform) platformClient else client,
+        )
             ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseWrite(statusCode, responseBody) }
             ?: GoodsOutResult.Unreachable
 
-    private fun writeRequest(baseUrl: String, request: WriteRequest, token: String): Request {
+    internal fun writeRequest(baseUrl: String, request: WriteRequest, token: String): Request {
         val builder = Request.Builder()
             .url("$baseUrl/${request.path}")
             .header("Authorization", "Bearer $token")
@@ -475,7 +480,7 @@ class OkHttpMobileApi(
             ?: GoodsOutResult.Unreachable
     }
 
-    private fun urlWith(path: String, parameters: List<Pair<String, String>>): String = path.toHttpUrl().newBuilder()
+    internal fun urlWith(path: String, parameters: List<Pair<String, String>>): String = path.toHttpUrl().newBuilder()
         .apply { parameters.forEach { (name, value) -> addQueryParameter(name, value) } }
         .build()
         .toString()
@@ -485,7 +490,7 @@ class OkHttpMobileApi(
         return downloadTo(get(attachmentUrl, token), target)
     }
 
-    private suspend fun downloadTo(request: Request, target: File): AttachmentDownload =
+    internal suspend fun downloadTo(request: Request, target: File): AttachmentDownload =
         withContext(ioDispatcher) {
             try {
                 client.newCall(request).execute().use { response ->
@@ -528,27 +533,27 @@ class OkHttpMobileApi(
         }
         .build()
 
-    private fun get(url: String, bearerToken: String): Request = Request.Builder()
+    internal fun get(url: String, bearerToken: String): Request = Request.Builder()
         .url(url)
         .get()
         .header("Authorization", "Bearer $bearerToken")
         .build()
 
-    private fun patch(url: String, body: String, bearerToken: String): Request = Request.Builder()
+    internal fun patch(url: String, body: String, bearerToken: String): Request = Request.Builder()
         .url(url)
         .patch(body.toRequestBody(jsonMediaType))
         .header("Authorization", "Bearer $bearerToken")
         .build()
 
-    private fun post(url: String, body: String, bearerToken: String?): Request = Request.Builder()
+    internal fun post(url: String, body: String, bearerToken: String?): Request = Request.Builder()
         .url(url)
         .post(body.toRequestBody(jsonMediaType))
         .apply { bearerToken?.let { header("Authorization", "Bearer $it") } }
         .build()
 
-    private suspend fun execute(request: Request): Pair<Int, String>? = withContext(ioDispatcher) {
+    internal suspend fun execute(request: Request, httpClient: OkHttpClient = client): Pair<Int, String>? = withContext(ioDispatcher) {
         try {
-            client.newCall(request).execute().use { response -> response.code to response.body.string() }
+            httpClient.newCall(request).execute().use { response -> response.code to response.body.string() }
         } catch (exception: IOException) {
             Log.w(LOG_TAG, "${request.method} ${request.url} failed", exception)
             null
@@ -570,6 +575,7 @@ class OkHttpMobileApi(
 
     private companion object {
         const val LOG_TAG = "AikuApi"
+        const val PLATFORM_WRITE_TIMEOUT_SECONDS = 120L
         const val HTTP_OK = 200
         const val ATTACHMENTS_FIELD = "attachments[]"
     }

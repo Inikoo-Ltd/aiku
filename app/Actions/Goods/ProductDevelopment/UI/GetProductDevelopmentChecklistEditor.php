@@ -16,7 +16,6 @@ use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFactoryPhoto;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentChecklistLevelEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentComponentStatusEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
-use App\Enums\Goods\ProductDevelopment\ProductDevelopmentSampleStatusEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTargetFieldEnum;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
@@ -140,7 +139,7 @@ class GetProductDevelopmentChecklistEditor
      */
     private function formulation(ProductDevelopmentItem $item): ?array
     {
-        $sample = $item->samples()->where('status', ProductDevelopmentSampleStatusEnum::APPROVED->value)->orderByDesc('number')->first();
+        $sample = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::finalSample($item);
 
         return $sample ? [
             'number'      => $sample->reference(),

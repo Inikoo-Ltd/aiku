@@ -11,14 +11,19 @@ import DatePicker from "primevue/datepicker"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import StockDeliveryAgentPayments from "@/Components/Procurement/StockDeliveryAgentPayments.vue"
+import StockDeliverySupplierPayments from "@/Components/Procurement/StockDeliverySupplierPayments.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { useConfirm } from "primevue/useconfirm"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faFolderOpen, faUpload, faUndo, faCheckCircle, faCircle, faMinusCircle, faFileAlt, faMagic } from "@fal"
+import { faFolderOpen, faUpload, faUndo, faCheckCircle, faCircle, faMinusCircle, faFileAlt, faMagic, faBoxUsd, faCoins, faTimes, faLock } from "@fal"
 
-library.add(faFolderOpen, faUpload, faUndo, faCheckCircle, faCircle, faMinusCircle, faFileAlt, faMagic)
+library.add(faFolderOpen, faUpload, faUndo, faCheckCircle, faCircle, faMinusCircle, faFileAlt, faMagic, faBoxUsd, faCoins, faTimes, faLock)
+
+type CostingSection = "invoice" | "landed"
 
 type Status = "done" | "pending" | "na"
 
@@ -31,7 +36,9 @@ type Step = {
 	is_auto: boolean
 	marked: { by: string | null; at: string | null } | null
 	scope: string | null
-	files: { id: number; file_name: string | null; caption: string | null; url: string }[]
+	costing: CostingSection | null
+	upload_in_costing: boolean
+	files: { id: number; media_id: number; is_applied: boolean; file_name: string | null; caption: string | null; url: string }[]
 }
 
 const props = defineProps<{
@@ -57,9 +64,30 @@ const props = defineProps<{
 		can_upload: boolean
 		update_route: routeType
 		attach_route: routeType
+		detach_route: routeType
 	}
 	tab?: string
+	costingAvailable?: Record<CostingSection, boolean>
+	invoice?: {
+		source: string
+		currency: string
+		total: number
+		org_currency?: string | null
+		org_exchange?: number | null
+		charges_list: unknown[]
+		agent?: InstanceType<typeof StockDeliveryAgentPayments>["$props"]["agent"] | null
+		supplier?: InstanceType<typeof StockDeliverySupplierPayments>["$props"]["supplier"] | null
+	} | null
 }>()
+
+const emits = defineEmits<{
+	(e: "openCosting", section: CostingSection): void
+}>()
+
+const costingButtonLabel = computed<Record<CostingSection, string>>(() => ({
+	invoice: ctrans("Adjust costing"),
+	landed: ctrans("Landed costs"),
+}))
 
 const statusOptions = computed(() => [
 	{ label: ctrans("Done"), value: "done" as Status, icon: faCheckCircle, tone: "emerald" as const },
@@ -113,6 +141,31 @@ const upload = (step: Step, event: Event) => {
 			},
 		}
 	)
+}
+
+const removingFileId = ref<number | null>(null)
+const confirm = useConfirm()
+
+const confirmRemoveFile = (step: Step, file: Step["files"][number]) => {
+	confirm.require({
+		group: "stock-delivery",
+		header: ctrans("Remove this file"),
+		message: ctrans(":file is taken off the :step step and off this delivery. Upload it again if you remove it by mistake.", { file: file.caption || file.file_name || "", step: step.label }),
+		rejectProps: { label: ctrans("Cancel") },
+		acceptProps: { label: ctrans("Remove"), severity: "danger" },
+		accept: () => removeFile(step, file),
+	})
+}
+
+const removeFile = (step: Step, file: Step["files"][number]) => {
+	removingFileId.value = file.id
+	errors.value = { ...errors.value, [step.key]: "" }
+	router.delete(route(props.data.detach_route.name, { ...props.data.detach_route.parameters, attachment: file.media_id }), {
+		preserveScroll: true,
+		only: ["import_file"],
+		onError: (bag) => (errors.value = { ...errors.value, [step.key]: Object.values(bag).join(" ") }),
+		onFinish: () => (removingFileId.value = null),
+	})
 }
 
 const statusIconClass: Record<Status, string> = {
@@ -258,11 +311,54 @@ const statusIconClass: Record<Status, string> = {
 						</td>
 						<td class="px-3 py-2">
 							<div class="flex flex-wrap items-center gap-2">
-								<a v-for="file in step.files" :key="file.id" :href="file.url" target="_blank" class="flex max-w-[14rem] items-center gap-1 truncate text-xs text-gray-700 underline decoration-gray-300 hover:decoration-gray-600">
-									<FontAwesomeIcon :icon="faFileAlt" class="text-gray-400" aria-hidden="true" />
-									<span class="truncate">{{ file.caption || file.file_name }}</span>
-								</a>
-								<template v-if="data.can_upload && step.scope">
+								<span v-for="file in step.files" :key="file.id" class="flex max-w-[16rem] items-center gap-1 text-xs">
+									<a :href="file.url" target="_blank" class="flex min-w-0 items-center gap-1 text-gray-700 underline decoration-gray-300 hover:decoration-gray-600">
+										<FontAwesomeIcon :icon="faFileAlt" class="text-gray-400" aria-hidden="true" />
+										<span class="truncate">{{ file.caption || file.file_name }}</span>
+									</a>
+									<LoadingIcon v-if="removingFileId === file.id" />
+									<button
+										v-else-if="data.can_upload && !file.is_applied"
+										type="button"
+										v-tooltip="ctrans('Remove this file')"
+										class="text-red-500 hover:text-red-700"
+										@click="confirmRemoveFile(step, file)"
+									>
+										<FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
+										<span class="sr-only">{{ ctrans("Remove this file") }}</span>
+									</button>
+									<FontAwesomeIcon v-else-if="file.is_applied" v-tooltip="ctrans('Booked in the costing: change it with Adjust costing')" :icon="faLock" class="text-gray-400" fixed-width />
+								</span>
+								<Button
+									v-if="step.costing && costingAvailable?.[step.costing]"
+									type="tertiary"
+									size="xs"
+									:label="costingButtonLabel[step.costing]"
+									@click="emits('openCosting', step.costing)"
+								>
+									<template #icon>
+										<FontAwesomeIcon :icon="step.costing === 'invoice' ? faBoxUsd : faCoins" aria-hidden="true" />
+									</template>
+								</Button>
+								<template v-if="step.key === 'balance_payment' && invoice">
+									<StockDeliveryAgentPayments
+										v-if="invoice.agent"
+										:agent="invoice.agent"
+										:currency="invoice.currency"
+										:hasCharges="invoice.charges_list.length > 0"
+										:isEstimate="invoice.source === 'estimated'"
+									/>
+									<StockDeliverySupplierPayments
+										v-if="invoice.supplier && (invoice.total > 0 || invoice.supplier.payments.length > 0)"
+										:supplier="invoice.supplier"
+										:currency="invoice.currency"
+										:total="invoice.total"
+										:orgCurrency="invoice.org_currency"
+										:orgExchange="invoice.org_exchange"
+										:isEstimate="invoice.source === 'estimated'"
+									/>
+								</template>
+								<template v-if="data.can_upload && step.scope && !(step.upload_in_costing && step.costing && costingAvailable?.[step.costing])">
 									<input :ref="(element) => (fileInputs[step.key] = element as HTMLInputElement | null)" type="file" multiple class="hidden" @change="(event) => upload(step, event)" />
 									<Button type="tertiary" size="xs" :label="ctrans('Upload')" @click="fileInputs[step.key]?.click()">
 										<template #icon>
@@ -277,7 +373,7 @@ const statusIconClass: Record<Status, string> = {
 			</table>
 		</div>
 		<p class="text-xs text-gray-500">
-			{{ ctrans("Steps with a magic wand are ticked from what aiku already has: purchase orders, files by type, payments, the costing checklist and the customs bills. A mark you set wins over it; clear it to go back to aiku's reading. Invoices are read and booked in the costing panel.") }}
+			{{ ctrans("Steps with a magic wand are ticked from what aiku already has: purchase orders, files by type, payments, the costing checklist and the customs bills. A mark you set wins over it; clear it to go back to aiku's reading. The invoice, shipping and customs steps open the costing, where every document uploaded is read and its amounts booked.") }}
 		</p>
 	</div>
 </template>

@@ -315,6 +315,7 @@ private fun StockActions(actions: List<SkoAction>, onAction: (SkoAction) -> Unit
         StockActionButton(
             text = stringResource(R.string.inventory_action_remove_locations),
             onClick = { onAction(SkoAction.RemoveLocations) },
+            icon = R.drawable.ic_ui_trash,
             isDanger = true,
             modifier = Modifier.fillMaxWidth(),
         )

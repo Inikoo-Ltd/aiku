@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Group\GoodsOut;
 
+use App\Actions\Api\Group\Fulfilment\ScanMobileFulfilmentCode;
 use App\Actions\Api\Group\GetMobileWarehouses;
 use App\Actions\Inventory\OrgStock\Json\ScanSkoBarcode;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -30,7 +31,7 @@ class GetMobileScan
     use WithMobileDeliveryNotes;
 
     /**
-     * @return array{code: string, type: string, sko: array<string, mixed>|null, location: array<string, mixed>|null, delivery_note: array<string, mixed>|null, stock_delivery: array<string, mixed>|null}
+     * @return array{code: string, type: string, sko: array<string, mixed>|null, location: array<string, mixed>|null, delivery_note: array<string, mixed>|null, stock_delivery: array<string, mixed>|null, pallet: array<string, mixed>|null, pallet_delivery: array<string, mixed>|null}
      */
     public function handle(Warehouse $warehouse, User $user, string $code): array
     {
@@ -43,6 +44,8 @@ class GetMobileScan
             'location'      => null,
             'delivery_note' => null,
             'stock_delivery' => null,
+            'pallet'          => null,
+            'pallet_delivery' => null,
         ];
 
         if ($can['view_inventory'] && $orgStock = ScanSkoBarcode::make()->handle($warehouse->organisation, $code)) {
@@ -64,6 +67,10 @@ class GetMobileScan
                 'state'       => $stockDelivery->state->value,
                 'state_label' => StockDeliveryStateEnum::labels()[$stockDelivery->state->value],
             ]]);
+        }
+
+        if (ScanMobileFulfilmentCode::canViewFulfilment($user, $warehouse) && $fulfilmentMatch = ScanMobileFulfilmentCode::make()->handle($warehouse, $code)) {
+            return array_merge($result, $fulfilmentMatch);
         }
 
         return $result;
@@ -152,7 +159,7 @@ class GetMobileScan
         /** @var User $user */
         $user = $request->user();
         $can  = app(GetMobileWarehouses::class)->abilities($user, $warehouse);
-        abort_unless($warehouse->group_id === $user->group_id && ($can['view_goods_out'] || $can['view_inventory'] || $can['view_locations'] || $can['view_goods_in'] || $can['view_returns']), 403);
+        abort_unless($warehouse->group_id === $user->group_id && ($can['view_goods_out'] || $can['view_inventory'] || $can['view_locations'] || $can['view_goods_in'] || $can['view_returns'] || ScanMobileFulfilmentCode::canViewFulfilment($user, $warehouse)), 403);
 
         $validated = Validator::make($request->query(), [
             'code' => ['required', 'string', 'max:255'],

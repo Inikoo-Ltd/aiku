@@ -41,7 +41,7 @@ enum SupplierProductStateEnum: string
                 'class'   => 'text-indigo-500'
             ],
             'active'        => [
-                'tooltip' => __('Contacted'),
+                'tooltip' => __('Active'),
                 'icon'    => 'fal fa-chair',
                 'class'   => 'text-green-500'
             ],

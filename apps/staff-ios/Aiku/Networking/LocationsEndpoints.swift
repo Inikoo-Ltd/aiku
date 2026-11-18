@@ -1,12 +1,12 @@
 import Foundation
 
-struct MobileWarehouse: Decodable, Sendable, Equatable {
-    struct Organisation: Decodable, Sendable, Equatable {
+struct MobileWarehouse: Codable, Sendable, Equatable {
+    struct Organisation: Codable, Sendable, Equatable {
         let id: Int
         let name: String
     }
 
-    struct Abilities: Decodable, Sendable, Equatable {
+    struct Abilities: Codable, Sendable, Equatable {
         let viewLocations: Bool
         let editLocations: Bool
         var viewGoodsOut = false

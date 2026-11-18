@@ -32,9 +32,10 @@ class StoreTrialRunJobOrder extends OrgAction
 {
     /**
      * A trial run a product development asks for (product_development set) gets no artisan: it waits for a
-     * production manager to assign and release it.
+     * production manager to assign and release it. The artisan the development proposes is only kept in data, so
+     * that artisan cannot release their own job.
      *
-     * @param array{artefact_id: int, quantity: int, employee_id?: int|null, notes?: string|null, product_development?: string|null} $modelData quantity in units (artefacts)
+     * @param array{artefact_id: int, quantity: int, employee_id?: int|null, notes?: string|null, product_development?: string|null, proposed_employee_id?: int|null} $modelData quantity in units (artefacts)
      */
     public function handle(Production $production, array $modelData): JobOrder
     {
@@ -50,7 +51,12 @@ class StoreTrialRunJobOrder extends OrgAction
 
             $jobOrder->update([
                 'internal_notes' => trim(__('Trial run').($notes !== '' ? ': '.$notes : '')),
-                'data'           => array_merge($jobOrder->data ?? [], ['trial_run' => true], $development ? ['product_development' => $development] : []),
+                'data'           => array_merge(
+                    $jobOrder->data ?? [],
+                    ['trial_run' => true],
+                    $development ? ['product_development' => $development] : [],
+                    $development && Arr::get($modelData, 'proposed_employee_id') ? ['proposed_employee_id' => (int) $modelData['proposed_employee_id']] : []
+                ),
             ]);
 
             StoreJobOrderItem::make()->action($jobOrder, [
@@ -75,6 +81,7 @@ class StoreTrialRunJobOrder extends OrgAction
             'employee_id' => ['sometimes', 'nullable', 'integer', Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id)],
             'notes'       => ['sometimes', 'nullable', 'string', 'max:255'],
             'product_development' => ['sometimes', 'nullable', 'string', 'max:64'],
+            'proposed_employee_id' => ['sometimes', 'nullable', 'integer', Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id)],
         ];
     }
 

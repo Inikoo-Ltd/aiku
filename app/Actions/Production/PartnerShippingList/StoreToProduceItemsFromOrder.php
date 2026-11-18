@@ -27,9 +27,11 @@ class StoreToProduceItemsFromOrder
      * arrives as a plain order. That order leaves out bottles filled to order: a fill line holds the
      * order until it is filled, and the partner purchase order needs the delivery note at once.
      *
+     * $fillsOnly picks up fill lines whose product had no SKO when the order was submitted (HELP-4786).
+     *
      * @return array<int, PartnerShoppingListItem>
      */
-    public function handle(Order $order, bool $fromPartnerPurchaseOrder = false): array
+    public function handle(Order $order, bool $fromPartnerPurchaseOrder = false, bool $fillsOnly = false): array
     {
         $items = [];
         if (!$fromPartnerPurchaseOrder && $order->salesChannel?->code === 'intercompany') {
@@ -61,6 +63,10 @@ class StoreToProduceItemsFromOrder
                     'quantity'        => (float) $transaction->quantity_ordered,
                     'transaction_id'  => $transaction->id,
                 ]);
+                continue;
+            }
+
+            if ($fillsOnly) {
                 continue;
             }
 

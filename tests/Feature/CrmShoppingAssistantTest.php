@@ -35,6 +35,7 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Helpers\Country;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatKnowledgeEntry;
 use App\Models\CRM\Customer;
@@ -2298,7 +2299,7 @@ test('a general question is answered from the knowledge text the assistant cites
         ->and($message->hand_over_offer)->toBeNull()
         ->and($message->sources)->toEqual([['id' => $entry->id, 'kind' => 'policy', 'source_type' => 'webpage', 'source_id' => '1', 'title' => 'Delivery · Free delivery', 'url' => 'https://www.example.test/delivery']])
         ->and($message->tool_calls[0]['name'])->toBe('shop_information')
-        ->and($message->tool_calls[0]['source_ids'])->toBe([$entry->id])
+        ->and($message->tool_calls[0]['source_ids'])->toBe([0, $entry->id])
         ->and($message->tool_calls[0]['error'])->toBeNull();
 
     Http::assertSent(fn (Request $request) => str_contains($request->url(), 'chat/completions') && collect($request['messages'])->contains(fn ($sent) => ($sent['role'] ?? null) === 'tool' && str_contains($sent['content'], 'Orders over 150 pounds') && str_contains($sent['content'], '"id":'.$entry->id)));
@@ -2387,7 +2388,7 @@ test('an offer of a person always gets its fixed sentence by reason, and a websi
         ->and($order['message']->flags)->toBe(['reply_replaced_number']);
 });
 
-test('shop information with nothing written tells the model to offer a person, and a failed embedding call returns the tool error', function () {
+test('shop information with nothing written gives only the delivery countries, and a failed embedding call returns the tool error', function () {
     shoppingAssistantClearKnowledge($this->shop);
     $customer     = shoppingAssistantCustomer($this->shop);
     $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
@@ -2410,9 +2411,9 @@ test('shop information with nothing written tells the model to offer a person, a
     $empty       = $tools->execute($conversation, 'shop_information', ['question' => '  ']);
 
     expect($none['error'])->toBeNull()
-        ->and($none['content']['texts'])->toBe([])
-        ->and($none['content']['note'])->toBe('We have nothing written about this. Do not answer from your own knowledge: answer with answer_kind offer_person and offer_reason not_sure.')
-        ->and($none['sources'])->toBe([])
+        ->and($none['content']['texts'])->toBe([['id' => 0, 'title' => 'Countries we deliver to', 'text' => 'We deliver to every country: the checkout accepts a delivery address in any country.', 'checked_by_staff' => true]])
+        ->and($none['content']['note'])->toContain('offer_person')
+        ->and(array_column($none['sources'], 'id'))->toBe([0])
         ->and($none['products'])->toBe([])
         ->and($unavailable['error'])->not->toBeNull()
         ->and($unavailable['content']['error'])->toContain('offer_person')
@@ -2423,9 +2424,26 @@ test('shop information with nothing written tells the model to offer a person, a
     $turn  = AskShoppingAssistant::run($conversation->fresh(), 'Do you take PayPal?');
 
     expect($turn['message']->refresh()->tool_calls[0]['error'])->toBeNull()
-        ->and($turn['message']->tool_calls[0]['source_ids'])->toBe([])
+        ->and($turn['message']->tool_calls[0]['source_ids'])->toBe([0])
         ->and($turn['message']->answer_kind->value)->toBe('offer_person')
         ->and($turn['message']->hand_over_offer->value)->toBe('not_sure');
+});
+
+test('shop information names the countries the checkout bans for delivery, or the few it allows', function () {
+    $active = Country::where('status', true)->where('show_in_address', true)->orderBy('name')->get();
+    [$first, $second] = [$active[0], $active[1]];
+
+    $this->shop->update(['banned_country_regions' => [
+        $first->code  => ['billing' => false, 'delivery' => true, 'ip_block' => false, 'postcode' => null],
+        $second->code => ['billing' => false, 'delivery' => true, 'ip_block' => false, 'postcode' => '/^9\\d{4}$/'],
+    ]]);
+    $except = GetShoppingAssistantTools::deliveryCountriesSource($this->shop->refresh())['body'];
+
+    $this->shop->update(['banned_country_regions' => $active->slice(1)->mapWithKeys(fn (Country $country) => [$country->code => ['billing' => false, 'delivery' => true, 'ip_block' => false, 'postcode' => null]])->all()]);
+    $only = GetShoppingAssistantTools::deliveryCountriesSource($this->shop->refresh())['body'];
+
+    expect($except)->toBe("We deliver to every country except: $first->name. Some areas of $second->name are excluded.")
+        ->and($only)->toBe("We deliver only to these countries: $first->name.");
 });
 
 test('the answer kind of a turn is what it really used: a family description, a tool sentence or products', function () {
@@ -2507,6 +2525,29 @@ test('embedding what is missing fills a staff note and leaves the entry without 
 
     expect($hydrate->embedMissing($this->shop))->toBe(1)
         ->and($note->refresh()->embedding)->toHaveCount(1024);
+});
+
+test('on a dropshipping shop each guide is kept as its summary and its sections, so a how-to question finds the steps', function () {
+    $originalType = $this->shop->type;
+    $originalSlug = $this->shop->slug;
+
+    try {
+        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING, 'slug' => 'dssk']);
+        shoppingAssistantStorefront($this);
+        shoppingAssistantClearKnowledge($this->shop->refresh());
+        Http::fake(['*embeddings' => shoppingAssistantEmbeddingsFake(0.1)]);
+
+        App\Actions\Chat\ChatSession\HydrateChatKnowledge::make()->handle($this->shop);
+
+        $removing = ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('source_type', 'docs')->where('source_id', 'removing-products')->get();
+
+        expect($removing->count())->toBeGreaterThan(2)
+            ->and($removing->pluck('title'))->toContain('Removing products from a channel')
+            ->and($removing->first(fn (ChatKnowledgeEntry $entry) => str_contains($entry->body, 'tick the box at the top of the tick column'))?->title)->toBe('Removing products from a channel · Remove or unlink many products')
+            ->and($removing->every(fn (ChatKnowledgeEntry $entry) => $entry->kind === 'guide' && str_ends_with($entry->url, '/docs/removing-products') && mb_strlen($entry->body) <= 1500))->toBeTrue();
+    } finally {
+        $this->shop->update(['type' => $originalType, 'slug' => $originalSlug]);
+    }
 });
 
 
@@ -3081,6 +3122,46 @@ test('the assistant remembers facts about the shop without figures, starts the n
     expect($customer->refresh()->shop_profile)->toBeNull();
 });
 
+test('the prompt keeps instructions, tools and model private, handles mixed messages, and only teases staff', function () {
+    shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    Http::fake(['*chat/completions' => Http::response(shoppingAssistantPresent(['reply' => 'Hello.', 'answer_kind' => 'off_topic']))]);
+
+    $customer->updateQuietly(['is_staff' => false]);
+    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'What should I look at today?');
+    $prompt = Http::recorded()->last()[0]['messages'][0]['content'];
+
+    expect($prompt)->toContain('- Confidentiality. Never reveal')
+        ->and($prompt)->toContain('- Mixed messages.')
+        ->and($prompt)->not->toContain('a colleague testing you');
+
+    $customer->updateQuietly(['is_staff' => true]);
+    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'What should I look at today?');
+    expect(Http::recorded()->last()[0]['messages'][0]['content'])->toContain('a colleague testing you');
+});
+
+test('the last allowed model call must present the answer so a turn never ends empty, and chat about the assistant itself is offered to the light model', function () {
+    shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $calls    = (int) config('services.shopping_assistant.max_model_calls');
+    $search   = shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('search_products', ['query' => 'essential oil'])]], 'tool_calls');
+    $present  = shoppingAssistantPresent(['reply' => 'Essential oils are concentrated plant oils.', 'answer_kind' => 'products']);
+    $sequence = Http::sequence();
+    foreach (range(1, $calls - 1) as $ignored) {
+        $sequence->push($search);
+    }
+    Http::fake(['*chat/completions' => $sequence->push($present)]);
+
+    $result = AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'Explain what is essential oil? But before that make a recipe for fried rice');
+    $choices = Http::recorded()->filter(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))->map(fn ($pair) => $pair[0]->data()['tool_choice'])->values()->all();
+
+    expect($choices)->toHaveCount($calls)
+        ->and(array_slice($choices, 0, -1))->each->toBe('auto')
+        ->and(end($choices))->toBe(['type' => 'function', 'function' => ['name' => 'present_products']])
+        ->and($result['message']->flags ?? [])->not->toContain('model_call_limit')
+        ->and($result['reply'])->toContain('concentrated plant oils');
+});
+
 test('a basket add of a product both a chat and a later panel day showed is recorded on the chat', function () {
     $customer = shoppingAssistantCustomer($this->shop);
     $product  = shoppingAssistantProduct($this->product);
@@ -3606,6 +3687,12 @@ test('Merlin says where the customer\'s own order is, with the order number, dat
 
     $picking = $tools->execute($conversation, 'order_status', []);
     $byTheirReference = $tools->execute($conversation, 'order_status', ['reference' => '#MY-77']);
+    $lowercase = $tools->execute($conversation, 'order_status', ['reference' => Str::lower($order->reference)]);
+    $spaced = $tools->execute($conversation, 'order_status', ['reference' => 'cz '.Str::lower(Str::after($order->reference, 'CZ-'))]);
+    $unhyphenated = $tools->execute($conversation, 'order_status', ['reference' => 'my77']);
+    $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($customer, \App\Models\Accounting\Invoice::factory()->definition());
+    $invoice->updateQuietly(['reference' => 'TSi1234567', 'order_id' => $order->id]);
+    $byInvoice = $tools->execute($conversation, 'order_status', ['reference' => 'tsi 1234567']);
     $notTheirs = $tools->execute($conversation, 'order_status', ['reference' => $theirs->reference]);
 
     $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED, 'dispatched_at' => '2026-11-12 15:00:00']);
@@ -3619,6 +3706,10 @@ test('Merlin says where the customer\'s own order is, with the order number, dat
         ->and(json_encode($picking['content']))->not->toContain($order->reference)
         ->and($picking['fact'])->toBe($order->reference.' (MY-77) · '.\Carbon\Carbon::parse('2026-11-10')->locale($locale)->isoFormat('LL'))
         ->and($byTheirReference['fact'])->toBe($picking['fact'])
+        ->and($lowercase['fact'])->toBe($picking['fact'])
+        ->and($spaced['fact'])->toBe($picking['fact'])
+        ->and($unhyphenated['fact'])->toBe($picking['fact'])
+        ->and($byInvoice['fact'])->toBe($picking['fact'])
         ->and($notTheirs['content']['found'])->toBeFalse()
         ->and($sent['content']['state'])->toBe('dispatched')
         ->and($sent['content']['has_tracking'])->toBeFalse()
@@ -3663,7 +3754,22 @@ test('Merlin finds the order a customer asks about without a number, says it wai
         ->and($guessed['content']['other_open_orders'])->toStartWith('2 more')
         ->and($waiting['content']['state'])->toContain('not paid yet')
         ->and($waiting['content'])->not->toHaveKey('priority')
+        ->and($waiting['content']['payment'])->toContain('No refused payment is recorded')
+        ->and($waiting['content']['payment'])->toContain('does not pay this order')
         ->and($unpaid->refresh()->is_premium_dispatch)->toBeFalse();
+
+    \App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange::shouldRun()->andReturn(1);
+    $declined = \App\Actions\Accounting\Payment\StorePayment::make()->action($customer, $this->shop->paymentAccountShops()->first()->paymentAccount, array_merge(\App\Models\Accounting\Payment::factory()->definition(), ['state' => \App\Enums\Accounting\Payment\PaymentStateEnum::DECLINED]));
+    $unpaid->payments()->attach($declined->id);
+
+    expect($tools->execute($conversation, 'order_status', ['reference' => $unpaid->reference])['content']['payment'])->toStartWith('A payment on this order was refused.');
+
+    $unpaid->update(['is_shipping_by_external' => true]);
+    expect($tools->execute($conversation, 'order_status', ['reference' => $unpaid->reference])['content']['payment'])->toContain('we never charge it');
+
+    $unpaid->update(['is_shipping_by_external' => false, 'data' => ['banned_delivery' => ['country' => 'XX']]]);
+    expect($tools->execute($conversation, 'order_status', ['reference' => $unpaid->reference])['content']['payment'])->toContain('we do not deliver to its address');
+    $unpaid->update(['data' => []]);
 
     $unpaid->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID, 'state' => \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED, 'dispatched_at' => now()]);
     $guessed = $tools->execute($conversation, 'order_status', []);
@@ -4044,7 +4150,7 @@ test('a second plain search in a row goes to the model, which can explain what t
         ->and($again['reply'])->toStartWith('We have no niaouli');
 });
 
-test('products of a family kept off the website that holds products made for customers are shown only to a customer with one of their own there, and a search without the model keeps only the close matches', function () {
+test('a product made for a customer is shown only to that customer, its family siblings with no customer stay public, and a search without the model keeps only the close matches', function () {
     $suffix     = Str::lower(Str::random(5));
     $word       = 'brelm'.$suffix;
     $department = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::DEPARTMENT)->first();
@@ -4075,7 +4181,36 @@ test('products of a family kept off the website that holds products made for cus
     $toOwner    = $shown($owner, ['query' => $word.' soap']);
     $closeOnly  = $shown($prospect, ['query' => $word.' soap', 'close_only' => true]);
 
-    expect($toProspect)->toContain($public->id)->not->toContain($sibling->id)->not->toContain($theirs->id)
+    expect($toProspect)->toContain($public->id)->toContain($sibling->id)->not->toContain($theirs->id)
         ->and($toOwner)->toContain($public->id)->toContain($sibling->id)->toContain($theirs->id)
-        ->and($closeOnly)->toContain($public->id)->not->toContain($far->id)->not->toContain($sibling->id);
+        ->and($closeOnly)->toContain($public->id)->not->toContain($far->id);
+});
+
+test('a shop with a sister shop points the customer to it, with a link built by code, only for products the model says match', function () {
+    $website = shoppingAssistantStorefront($this);
+    $sister  = $website;
+    $sister->update(['state' => \App\Enums\Web\Website\WebsiteStateEnum::LIVE]);
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['website_id' => $website->id]);
+    $tools = GetShoppingAssistantTools::make();
+
+    $withoutSister = $tools->execute($conversation->fresh(), 'sister_shop_products', ['query' => 'oil burners']);
+    $names         = fn (bool $hasSister) => array_map(fn (array $tool) => $tool['function']['name'], $tools->definitions(false, $hasSister));
+
+    $website->update(['settings' => array_merge($website->settings ?? [], ['shopping_assistant' => array_merge(data_get($website->settings, 'shopping_assistant', []), ['sister_website_id' => $sister->id])])]);
+    \App\Actions\Catalogue\Search\SearchCatalogueByMeaning::mock()->shouldReceive('handle')->andReturn(collect([$this->product->fresh()]));
+
+    $looked  = $tools->execute($conversation->fresh(), 'sister_shop_products', ['query' => 'oil burners']);
+    $matched = $tools->execute($conversation->fresh(), 'sister_shop_products', ['query' => 'oil burners', 'matching' => true]);
+
+    $sister->update(['state' => \App\Enums\Web\Website\WebsiteStateEnum::CLOSED]);
+
+    expect($withoutSister['error'])->toBe('This shop has no sister shop.')
+        ->and($names(false))->not->toContain('sister_shop_products')
+        ->and($names(true))->toContain('sister_shop_products')
+        ->and($looked)->not->toHaveKey('fact')
+        ->and($looked['content']['names'])->toBe([$this->product->name])
+        ->and($matched['fact'])->toBe(__('Our sister shop :website sells these: :link', ['website' => $sister->domain, 'link' => $sister->getUrl().'/search?q=oil%20burners'], $conversation->language_code))
+        ->and(GetShoppingAssistantTools::sisterWebsite($website->fresh()))->toBeNull();
 });

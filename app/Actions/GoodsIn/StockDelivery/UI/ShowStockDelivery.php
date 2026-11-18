@@ -1668,6 +1668,11 @@ class ShowStockDelivery extends OrgAction
             $navigation[StockDeliveryTabsEnum::CHECKLIST->value]['number'] = $checklist['total'] - $checklist['checked'];
         }
 
+        if (isset($navigation[StockDeliveryTabsEnum::FEEDBACK->value]) && $stockDelivery->feedbacks()->exists()) {
+            $navigation[StockDeliveryTabsEnum::FEEDBACK->value]['icon']      = 'fas fa-star';
+            $navigation[StockDeliveryTabsEnum::FEEDBACK->value]['iconClass'] = 'text-yellow-400';
+        }
+
         if (!$this->goodsIn && $stockDelivery->state === StockDeliveryStateEnum::PLACED && !$this->viewedByAgent) {
             $navigation[StockDeliveryTabsEnum::ITEMS->value]['title'] = __('Items (costing)');
             $navigation[StockDeliveryTabsEnum::ITEMS->value]['icon']  = 'fal fa-box-usd';
@@ -1700,7 +1705,7 @@ class ShowStockDelivery extends OrgAction
 
     private function getGiveFeedbackAction(StockDelivery $stockDelivery): array
     {
-        if (!$this->canGiveFeedback($stockDelivery)) {
+        if (!$this->canGiveFeedback($stockDelivery) || GetStockDeliveryFeedbackForm::suppliersAwaitingFeedback($stockDelivery)->isEmpty()) {
             return [];
         }
 

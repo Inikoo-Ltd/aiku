@@ -8,7 +8,7 @@ final class HardwareScanCaptureView: UIView {
     }
 
     private var buffer = HardwareScanBuffer()
-    private var observers: [NSObjectProtocol] = []
+    nonisolated(unsafe) private var observers: [NSObjectProtocol] = []
 
     override init(frame: CGRect) {
         super.init(frame: frame)

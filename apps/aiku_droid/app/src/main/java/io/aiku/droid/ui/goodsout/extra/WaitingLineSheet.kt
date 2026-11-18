@@ -48,6 +48,7 @@ internal fun WaitingLineSheet(
             AikuButton(
                 text = stringResource(R.string.goodsout_extra_set_as_waiting),
                 onClick = { onConfirm(kind, quantity, note) },
+                style = ButtonStyle.Caution,
                 icon = R.drawable.ic_ui_pause,
                 isLoading = isWorking,
                 height = 52.dp,

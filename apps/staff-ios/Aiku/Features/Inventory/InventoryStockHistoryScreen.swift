@@ -13,30 +13,10 @@ struct InventoryStockHistoryScreen: View {
                     skoReference: skoReference
                 )
             } else {
-                InventoryWarehouseStockHistory()
+                InventorySampleStockHistory(skoReference: skoReference)
             }
         } else {
             InventorySampleStockHistory(skoReference: skoReference)
-        }
-    }
-}
-
-private struct InventoryWarehouseStockHistory: View {
-    @Environment(AppRouter.self) private var router
-    @Environment(Session.self) private var session
-
-    var body: some View {
-        AppScreen(title: "Stock history", kicker: "Inventory · \(session.warehouseLabel)") {
-            ModuleTabs(.inventory, current: .stockHistory)
-        } content: {
-            EmptyState(
-                icon: .history,
-                title: "Stock history is kept per SKO",
-                message: "Open an SKO and tap Stock history to see its movements.",
-                actionTitle: "Open SKOs"
-            ) {
-                router.open(InventoryRoute.skos)
-            }
         }
     }
 }
@@ -102,10 +82,6 @@ private struct InventorySampleStockHistory: View {
             title: "Stock history",
             kicker: skoReference.map { "SKO · \($0)" } ?? "Inventory · \(session.warehouseLabel)"
         ) {
-            if skoReference == nil {
-                ModuleTabs(.inventory, current: .stockHistory)
-            }
-        } content: {
             InventoryScopeChips(
                 options: InventoryHistoryFilter.allCases,
                 selection: filter,

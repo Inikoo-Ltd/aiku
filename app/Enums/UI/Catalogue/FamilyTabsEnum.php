@@ -17,6 +17,7 @@ enum FamilyTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case EDIT_PAGE = 'edit_page';
     case SALES_ANALYSIS = 'sales_analysis';
     case CONTENT = 'content';
     case IMAGES = 'images';
@@ -30,7 +31,6 @@ enum FamilyTabsEnum: string
     case CUSTOMERS = 'customers';
     case RELATED_PRODUCTS    = 'related_products';
     case RELATED_PRODUCT_CATEGORY    = 'related_product_category';
-    case EDIT_PAGE = 'edit_page';
 
     public function blueprint(): array
     {

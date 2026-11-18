@@ -5,12 +5,18 @@ enum ShellScanKind: String, Hashable, Sendable {
     case location
     case sko
     case deliveryNote
+    case stockDelivery
+    case palletDelivery
+    case pallet
 
     var article: String {
         switch self {
         case .location: "a location"
         case .sko: "a SKO"
         case .deliveryNote: "a delivery note"
+        case .stockDelivery: "a stock delivery"
+        case .palletDelivery: "a fulfilment delivery"
+        case .pallet: "a pallet"
         }
     }
 
@@ -19,6 +25,8 @@ enum ShellScanKind: String, Hashable, Sendable {
         case .location: .locations
         case .sko: .sko
         case .deliveryNote: .deliveryNote
+        case .stockDelivery: .stockDelivery
+        case .palletDelivery, .pallet: .pallet
         }
     }
 
@@ -27,6 +35,9 @@ enum ShellScanKind: String, Hashable, Sendable {
         case .location: "Open location"
         case .sko: "Open SKO"
         case .deliveryNote: "Open delivery note"
+        case .stockDelivery: "Open stock delivery"
+        case .palletDelivery: "Open fulfilment delivery"
+        case .pallet: "Open pallet"
         }
     }
 
@@ -35,6 +46,9 @@ enum ShellScanKind: String, Hashable, Sendable {
         case .location: "Location"
         case .sko: "SKO"
         case .deliveryNote: "Delivery note"
+        case .stockDelivery: "Stock delivery"
+        case .palletDelivery: "Fulfilment delivery"
+        case .pallet: "Pallet"
         }
     }
 }
@@ -66,7 +80,10 @@ enum ShellScanCatalog {
     static let capabilities: [(icon: AppIcon, text: String)] = [
         (.sko, "SKO barcode → SKO and its locations"),
         (.locations, "Location label → Location detail"),
-        (.deliveryNote, "Delivery note or tracking number → Delivery note detail")
+        (.deliveryNote, "Delivery note or tracking number → Delivery note detail"),
+        (.stockDelivery, "Stock delivery reference → Stock delivery"),
+        (.pallet, "Fulfilment delivery reference → Fulfilment delivery"),
+        (.pallet, "Pallet label → Pallet")
     ]
 
     static func target(from result: MobileScanResult) -> ShellScanTarget? {
@@ -77,6 +94,12 @@ enum ShellScanCatalog {
             return result.location.map(locationTarget)
         case .deliveryNote:
             return result.deliveryNote.map(deliveryNoteTarget)
+        case .stockDelivery:
+            return result.stockDelivery.map(stockDeliveryTarget)
+        case .palletDelivery:
+            return result.palletDelivery.map(palletDeliveryTarget)
+        case .pallet:
+            return result.pallet.map(palletTarget)
         case .unknown:
             return nil
         }
@@ -118,6 +141,34 @@ enum ShellScanCatalog {
             kind: .deliveryNote,
             detail: parts.isEmpty ? ShellScanKind.deliveryNote.fallbackDetail : parts.joined(separator: " · "),
             link: .goodsOut(.deliveryNoteID(id: note.id))
+        )
+    }
+
+    private static func stockDeliveryTarget(_ delivery: MobileScannedStockDelivery) -> ShellScanTarget {
+        ShellScanTarget(
+            code: delivery.reference,
+            kind: .stockDelivery,
+            detail: delivery.stateLabel ?? ShellScanKind.stockDelivery.fallbackDetail,
+            link: .goodsIn(.scannedStockDelivery(id: delivery.id, reference: delivery.reference))
+        )
+    }
+
+    private static func palletDeliveryTarget(_ delivery: MobileScannedPalletDelivery) -> ShellScanTarget {
+        ShellScanTarget(
+            code: delivery.reference,
+            kind: .palletDelivery,
+            detail: delivery.stateLabel ?? ShellScanKind.palletDelivery.fallbackDetail,
+            link: .fulfilment(.palletDelivery(id: delivery.id, reference: delivery.reference))
+        )
+    }
+
+    private static func palletTarget(_ pallet: MobileScannedPallet) -> ShellScanTarget {
+        let parts = [pallet.stateLabel, pallet.locationCode].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        return ShellScanTarget(
+            code: pallet.reference,
+            kind: .pallet,
+            detail: parts.isEmpty ? ShellScanKind.pallet.fallbackDetail : parts.joined(separator: " · "),
+            link: .fulfilment(.pallet(id: pallet.id, reference: pallet.reference))
         )
     }
 

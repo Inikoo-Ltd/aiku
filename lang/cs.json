@@ -12880,6 +12880,7 @@
     "Not a Guru": "Není Guru",
     "Not a Shopify shop": "Není to obchod Shopify",
     "Not a customer yet? Write to an email address": "Ještě nejste zákazníkem? Napište na e-mailovou adresu",
+    "Not a customer: saved contacts and addresses emailed recently": "Není zákazník: uložené kontakty a nedávno použité adresy",
     "Not a draft": "Není to koncept",
     "Not a known variable:": "Není známá proměnná:",
     "Not a member?": "Nejste členem?",
@@ -26969,5 +26970,6 @@
     ":name is casting a spell…": ":name kouzlí…",
     ":name is gazing into his crystal ball…": ":name hledí do své křišťálové koule…",
     "This one needs a little more thought. Nearly there…": "Tohle chce trochu víc přemýšlení. Skoro hotovo…",
-    "Usually takes about :seconds seconds": "Obvykle to trvá asi :seconds sekund"
+    "Usually takes about :seconds seconds": "Obvykle to trvá asi :seconds sekund",
+    "Our sister shop :website sells these: :link": "Náš sesterský obchod :website tyto produkty nabízí: :link"
 }

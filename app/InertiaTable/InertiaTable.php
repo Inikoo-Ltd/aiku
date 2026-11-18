@@ -642,11 +642,12 @@ class InertiaTable
      * @param  string|null  $defaultValue
      * @param  bool  $noFilterOption
      * @param  string|null  $noFilterOptionLabel
+     * @param  bool|array<string, string>  $withFlags  true when the option keys are country codes, or a map of option key to country code
      *
      * @return $this
      * @noinspection PhpUnused
      */
-    public function selectFilter(string $key, array $options, ?string $label = null, ?string $defaultValue = null, bool $noFilterOption = true, ?string $noFilterOptionLabel = null): self
+    public function selectFilter(string $key, array $options, ?string $label = null, ?string $defaultValue = null, bool $noFilterOption = true, ?string $noFilterOptionLabel = null, bool|array $withFlags = false): self
     {
         $this->filters = $this->filters->reject(function (Filter $filter) use ($key) {
             return $filter->key === $key;
@@ -658,7 +659,8 @@ class InertiaTable
                 noFilterOption: $noFilterOption,
                 noFilterOptionLabel: $noFilterOptionLabel ?: '-',
                 type: 'select',
-                value: $defaultValue
+                value: $defaultValue,
+                flags: $withFlags === true ? array_combine(array_keys($options), array_keys($options)) : ($withFlags ?: [])
             )
         )->values();
 

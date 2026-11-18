@@ -5,11 +5,17 @@ import android.os.Build
 import io.aiku.droid.data.api.AikuHttpClient
 import io.aiku.droid.data.api.AuthApi
 import io.aiku.droid.data.api.ClockingApi
+import io.aiku.droid.data.api.FulfilmentInboundApi
+import io.aiku.droid.data.api.FulfilmentOutboundApi
 import io.aiku.droid.data.api.GoodsInApi
 import io.aiku.droid.data.api.GoodsOutApi
 import io.aiku.droid.data.api.HrApi
 import io.aiku.droid.data.api.InventoryApi
+import io.aiku.droid.data.api.MyWorkApi
+import io.aiku.droid.data.api.OkHttpFulfilmentInboundApi
+import io.aiku.droid.data.api.OkHttpFulfilmentOutboundApi
 import io.aiku.droid.data.api.OkHttpMobileApi
+import io.aiku.droid.data.api.OkHttpMyWorkApi
 import io.aiku.droid.data.api.PickingSessionApi
 import io.aiku.droid.data.api.StaffChatApi
 import io.aiku.droid.data.api.WarehouseApi
@@ -54,6 +60,12 @@ class AppContainer(context: Context) {
     val inventoryApi: InventoryApi = mobileApi
 
     val goodsInApi: GoodsInApi = mobileApi
+
+    val fulfilmentInboundApi: FulfilmentInboundApi = OkHttpFulfilmentInboundApi(mobileApi)
+
+    val fulfilmentOutboundApi: FulfilmentOutboundApi = OkHttpFulfilmentOutboundApi(mobileApi)
+
+    val myWorkApi: MyWorkApi = OkHttpMyWorkApi(mobileApi)
 
     val images: ImageSource = RemoteImages(httpClient, BuildConfig.AIKU_API_BASE_URL)
 

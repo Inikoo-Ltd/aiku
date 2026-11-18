@@ -133,6 +133,7 @@ private struct GoodsOutCustomsTable: View {
                 }
             }
         }
+        .scrollBounceBehavior(.basedOnSize, axes: [.horizontal, .vertical])
         .cardSurface()
     }
 

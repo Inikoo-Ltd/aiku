@@ -50,16 +50,7 @@ class LocationOrgStocksForPickingActionsResource extends JsonResource
 
     public function toArray($request): array
     {
-        $quantityPicked = 0;
-        $pickingId      = null;
-        if ($this->pickings_data) {
-            $pickingsData   = preg_split('/;/', $this->pickings_data);
-            $quantityPicked = $pickingsData[0] ?? 0;
-            $pickingsIds    = preg_split('/,/', $pickingsData[1] ?? []);
-            if (!empty($pickingsIds)) {
-                $pickingId = $pickingsIds[0];
-            }
-        }
+        $quantityPicked = $this->pickings_data ? (explode(';', $this->pickings_data)[0] ?: 0) : 0;
 
         $orgStockPackedIn = $this->org_stock_packed_in;
 
@@ -83,7 +74,6 @@ class LocationOrgStocksForPickingActionsResource extends JsonResource
             ),
             'type'            => $this->type,
             'quantity_picked' => $quantityPicked,
-            'picking_id'      => $pickingId,
         ];
     }
 }

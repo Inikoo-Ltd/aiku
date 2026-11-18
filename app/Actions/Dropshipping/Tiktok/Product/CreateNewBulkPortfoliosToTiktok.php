@@ -10,13 +10,11 @@ namespace App\Actions\Dropshipping\Tiktok\Product;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -24,12 +22,17 @@ class CreateNewBulkPortfoliosToTiktok extends OrgAction implements ShouldBeUniqu
 {
     use WithActionUpdate;
 
+    public string $jobQueue = 'tiktok';
+
     public function getJobUniqueId(CustomerSalesChannel $customerSalesChannel): int
     {
         return $customerSalesChannel->id;
     }
 
     /**
+     * Each product is its own job: one upload takes several TikTok calls, so a channel's whole catalogue in one job
+     * outlived the queue timeout and every retry started again from the first product.
+     *
      * @throws \Exception
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
@@ -38,41 +41,24 @@ class CreateNewBulkPortfoliosToTiktok extends OrgAction implements ShouldBeUniqu
             throw ValidationException::withMessages(['message' => __('No authenticated TikTok channel found.')]);
         }
 
-        $portfoliosIds = DB::table('portfolios')
-            ->select('id')
-            ->where('customer_sales_channel_id', $customerSalesChannel->id)
+        $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
             ->where('status', true)
+            ->where('platform_status', false)
             ->whereIn('id', Arr::get($attributes, 'portfolios'))
             ->get();
 
-        $totalNumber = count($portfoliosIds);
+        $cacheKey = 'upload_progress_'.$customerSalesChannel->id.'_'.uniqid();
+        Cache::put($cacheKey.'_success', 0, now()->addHours(StoreNewProductToCurrentTiktok::BULK_PROGRESS_HOURS));
+        Cache::put($cacheKey.'_fail', 0, now()->addHours(StoreNewProductToCurrentTiktok::BULK_PROGRESS_HOURS));
 
-        // Use a unique key per job/session to avoid cross-request pollution
-        $cacheKey = 'upload_progress_' . $customerSalesChannel->id . '_' . uniqid();
-        Cache::put($cacheKey . '_success', 0, now()->addHour());
-        Cache::put($cacheKey . '_fail', 0, now()->addHour());
+        $bulkProgress = [
+            'cache_key' => $cacheKey,
+            'total'     => $portfolios->count(),
+        ];
 
-        foreach ($portfoliosIds as $portfoliosId) {
-            $portfolio = Portfolio::find($portfoliosId->id);
-            if ($portfolio) {
-                $portfolio = StoreProductToTiktok::run($portfolio);
-
-                if ($portfolio->platform_status) {
-                    Cache::increment($cacheKey . '_success');
-                } else {
-                    Cache::increment($cacheKey . '_fail');
-                }
-
-                UploadProductToSalesChannelProgressEvent::dispatch($customerSalesChannel, $portfolio, [
-                    'total'   => $totalNumber,
-                    'success' => Cache::get($cacheKey . '_success'),
-                    'fail'    => Cache::get($cacheKey . '_fail'),
-                ]);
-            }
+        foreach ($portfolios as $portfolio) {
+            StoreNewProductToCurrentTiktok::dispatch($portfolio, $bulkProgress);
         }
-
-        Cache::forget($cacheKey . '_success');
-        Cache::forget($cacheKey . '_fail');
     }
 
     public function rules(): array

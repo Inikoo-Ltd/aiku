@@ -9,9 +9,10 @@ import androidx.compose.ui.res.stringResource
 import io.aiku.droid.R
 import io.aiku.droid.data.api.DeliveryNote
 import io.aiku.droid.data.api.DeliveryNoteAction
-import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ToggleRow
+import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.goodsout.ActionConfirmSheet
+import io.aiku.droid.ui.goodsout.goodsOutActionLook
 
 @Composable
 internal fun CancelDeliveryNoteSheet(
@@ -28,7 +29,7 @@ internal fun CancelDeliveryNoteSheet(
         title = stringResource(R.string.goodsout_extra_cancel_title, note.reference),
         subtitle = stringResource(R.string.goodsout_extra_cancel_subtitle),
         confirmLabel = action.label.ifBlank { stringResource(R.string.goodsout_extra_cancel_delivery_note) },
-        confirmStyle = ButtonStyle.Danger,
+        confirmLook = goodsOutActionLook(action.key).forConfirm(),
         cancelLabel = stringResource(R.string.goodsout_extra_keep_it),
         hint = stringResource(R.string.goodsout_extra_cancel_hint),
         isWorking = isWorking,

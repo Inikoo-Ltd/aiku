@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
+use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\Helpers\Upload\UI\IndexUploadReports;
 use App\Actions\Procurement\WithParentSiblingsNavigation;
 use App\Actions\OrgAction;
@@ -31,6 +32,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -104,13 +106,14 @@ class IndexSupplierProducts extends OrgAction
             );
         }
 
-        return $queryBuilder
+        $supplierProducts = $queryBuilder
             ->defaultSort('supplier_products.code')
             ->select([
                 'supplier_products.id',
                 'supplier_products.code',
                 'supplier_products.slug',
                 'supplier_products.name',
+                'supplier_products.state',
                 'supplier_products.cost',
                 'currencies.code as currency_code',
                 'suppliers.slug as supplier_slug',
@@ -133,10 +136,37 @@ class IndexSupplierProducts extends OrgAction
                     }
                 }
             })
-            ->allowedSorts(['code', 'name', 'cost', 'supplier_name'])
+            ->allowedSorts(['code', 'name', 'state', 'cost', 'supplier_name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        $this->attachGoodsStates($supplierProducts);
+
+        return $supplierProducts;
+    }
+
+    private function attachGoodsStates(LengthAwarePaginator $supplierProducts): void
+    {
+        $orgStockStates = DB::table('stock_has_supplier_products')
+            ->join('stocks', 'stocks.id', 'stock_has_supplier_products.stock_id')
+            ->join('org_stocks', 'org_stocks.stock_id', 'stock_has_supplier_products.stock_id')
+            ->whereIn('stock_has_supplier_products.supplier_product_id', $supplierProducts->getCollection()->pluck('id'))
+            ->select(['stock_has_supplier_products.supplier_product_id', 'stocks.code as stock_code', 'org_stocks.state'])
+            ->orderBy('stocks.code')
+            ->get()
+            ->groupBy('supplier_product_id');
+
+        foreach ($supplierProducts->getCollection() as $supplierProduct) {
+            $supplierProduct->goods_states = ($orgStockStates->get($supplierProduct->id) ?? collect())
+                ->groupBy('stock_code')
+                ->map(fn ($cells, $stockCode) => [
+                    'stock_code' => $stockCode,
+                    'state'      => ShowGoodsDashboard::groupState($cells->all())[0],
+                ])
+                ->values()
+                ->all();
+        }
     }
 
     public function tableStructure(Group|Agent|Supplier|null $parent = null, ?array $modelOperations = null, $prefix = null): Closure
@@ -168,6 +198,7 @@ class IndexSupplierProducts extends OrgAction
                 $table->column(key: 'supplier_name', label: __('Supplier'), sortable: true);
             }
             $table
+                ->column(key: 'state', label: __('State'), sortable: true)
                 ->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: true, type: 'currency')
                 ->defaultSort('code');
         };
@@ -345,6 +376,9 @@ class IndexSupplierProducts extends OrgAction
                     'plan_route' => ['name' => 'grp.supply-chain.supplier_products.labels.plan'],
                     'pdf_route'  => ['name' => 'grp.supply-chain.supplier_products.labels'],
                 ],
+                'state_options'      => $this->canEdit
+                    ? collect(SupplierProductStateEnum::labels())->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all()
+                    : null,
                 'data'               => SupplierProductsResource::collection($supplier_products),
                 ...($tabs ?? []),
             ],

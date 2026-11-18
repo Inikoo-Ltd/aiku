@@ -14,7 +14,7 @@ trait WithCustomerMailboxBlueprint
     public function customerMailboxBlueprint(Shop $shop, ActionRequest $request): array
     {
         return [
-            'label'  => __('Customer mailbox'),
+            'label'  => __('Gmail inbox'),
             'icon'   => 'fa-light fa-envelope',
             'fields' => [
                 'mailbox'             => [
@@ -50,6 +50,29 @@ trait WithCustomerMailboxBlueprint
                     'label'       => __('Sender name'),
                     'placeholder' => $shop->name,
                     'value'       => Arr::get($shop->settings, 'gmail.sender_name', ''),
+                ],
+                'chat_email_split_new_threads' => [
+                    'type'        => 'toggle',
+                    'label'       => __('Each new email is its own conversation'),
+                    'information' => __('Off: a new email from a customer who already has an open conversation joins that conversation. On: it starts a new conversation, and only replies stay in the conversation they answer.'),
+                    'value'       => (bool) Arr::get($shop->settings, 'chat.email_split_new_threads', false),
+                ],
+                'chat_unclaimed_email_hours' => [
+                    'type'        => 'input_number',
+                    'bind'        => ['step' => '0.5', 'maxFractionDigits' => 1, 'min' => 0, 'max' => 168],
+                    'label'       => __('Email unclaimed after (hours)'),
+                    'information' => __('How long an email conversation may sit with nobody holding it before it joins the unclaimed queue everybody sees. Leave empty or zero to follow the group default.'),
+                    'value'       => ($seconds = Arr::get($shop->settings, 'chat.unclaimed_after_seconds.email')) ? round($seconds / 3600, 1) : '',
+                ],
+                'gmail_showroom_senders' => [
+                    'type'        => 'tags',
+                    'label'       => __('Showroom booking senders'),
+                    'placeholder' => '@calendly.com',
+                    'information' => __('Emails from these addresses, or from a whole domain written as @domain, are filed unread under the Gmail "aiku/showroom" label and never become a chat, even if the sender was once marked as spam. Press Enter to add each one.'),
+                    'value'       => array_keys(array_filter(
+                        Arr::get($shop->settings, 'gmail.labeled_senders') ?? [],
+                        fn ($label) => $label === 'aiku/showroom'
+                    )),
                 ],
             ],
         ];

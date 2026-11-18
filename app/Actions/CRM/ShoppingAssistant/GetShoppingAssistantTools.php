@@ -31,6 +31,7 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Actions\Ordering\Order\UpdateOrderPremiumDispatch;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -50,9 +51,13 @@ use App\Models\Comms\MailshotRecipient;
 use Illuminate\Support\Str;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
+use App\Enums\Web\Website\WebsiteStateEnum;
+use App\Models\Web\Website;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
+use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Country;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -202,9 +207,12 @@ class GetShoppingAssistantTools
     /**
      * @return array<int, array{type: string, function: array{name: string, description: string, parameters: array<string, mixed>}}>
      */
-    public function definitions(bool $dropshipping = false): array
+    public function definitions(bool $dropshipping = false, bool $hasSisterShop = false): array
     {
         $excluded = $dropshipping ? self::NOT_FOR_DROPSHIPPING : self::ONLY_FOR_DROPSHIPPING;
+        if (!$hasSisterShop) {
+            $excluded[] = 'sister_shop_products';
+        }
 
         return array_values(array_filter($this->everyDefinition(), fn (array $tool) => !in_array($tool['function']['name'], $excluded, true)));
     }
@@ -314,8 +322,8 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'order_status',
-                'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, why it has not been dispatched yet, whether it was sent, or for its tracking. Pass the order number they wrote as reference (ours or their own); without one you get their oldest order not dispatched yet, else their latest, so never ask for the number first. It also says when an order waits for payment, and an order still waiting to be picked a day after it was placed is moved to premium dispatch free of charge. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
-                ['reference' => ['type' => 'string', 'description' => 'The order number the customer wrote, exactly as written. Leave it out when they gave none.']]
+                'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, why it has not been dispatched yet, whether it was sent, or for its tracking. Pass the order or invoice number they wrote as reference (ours or their own); without one you get their oldest order not dispatched yet, else their latest, so never ask for the number first. It also says when an order waits for payment, and an order still waiting to be picked a day after it was placed is moved to premium dispatch free of charge. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
+                ['reference' => ['type' => 'string', 'description' => 'The order or invoice number the customer wrote, exactly as written. Leave it out when they gave none.']]
             ),
             $this->tool(
                 'products_not_in_store',
@@ -331,6 +339,12 @@ class GetShoppingAssistantTools
                 'shipping_cost',
                 'What shipping costs for the customer\'s current basket. Use it when the customer asks about shipping, postage, carriage or delivery cost. The sentence with the amount is added under your reply by the system; you get no figure. Returns no products.',
                 []
+            ),
+            $this->tool(
+                'sister_shop_products',
+                'Our sister shop\'s products of a kind this shop does not sell. Use it only after search_products found nothing that is what the customer asked for. Returns the names of the closest products there; they cannot be shown or added to the basket here. When they are what the customer asked for, call it again with matching true and the system adds a sentence with a link to them under your reply.',
+                ['query' => ['type' => 'string', 'description' => 'What the customer is looking for, in a few words.'], 'matching' => ['type' => 'boolean', 'description' => 'True only on the second call, once the names you got are what the customer asked for.']],
+                ['query']
             ),
             $this->tool(
                 'products_on_offer',
@@ -492,6 +506,7 @@ class GetShoppingAssistantTools
                 'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
                 'report_to_engineers'            => $this->reportToEngineers($conversation, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
+                'sister_shop_products'           => $this->sisterShopProducts($conversation, $arguments),
                 'shop_information'               => $this->shopInformation($customer, $arguments),
                 'recent_emails_to_customer'      => $this->recentEmailsToCustomer($customer),
                 default                          => $this->error("Unknown tool $name."),
@@ -1015,32 +1030,56 @@ class GetShoppingAssistantTools
             return $this->error('The shop information is not available right now. Do not answer from your own knowledge: answer with answer_kind offer_person and offer_reason not_sure.');
         }
 
-        if ($entries->isEmpty()) {
-            return [
-                'content'  => ['texts' => [], 'note' => 'We have nothing written about this. Do not answer from your own knowledge: answer with answer_kind offer_person and offer_reason not_sure.'],
-                'products' => [],
-                'error'    => null,
-                'sources'  => [],
-            ];
-        }
+        $sources = $entries->map(fn (ChatKnowledgeEntry $entry) => [
+            'id'          => $entry->id,
+            'kind'        => $entry->kind,
+            'source_type' => $entry->source_type,
+            'source_id'   => $entry->source_id,
+            'title'       => $entry->title,
+            'url'         => $entry->url,
+            'body'        => $entry->body,
+            'checked'     => $entry->is_manual || $entry->source_type === 'verified',
+        ])->prepend(self::deliveryCountriesSource($customer->shop))->values();
 
         return [
             'content'  => [
-                'texts' => $entries->map(fn (ChatKnowledgeEntry $entry) => ['id' => $entry->id, 'title' => $entry->title, 'text' => $entry->body, 'checked_by_staff' => $entry->is_manual || $entry->source_type === 'verified'])->values()->all(),
-                'note'  => 'Answer only if these texts clearly answer the question, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. You may repeat a figure only exactly as a text states it. A text marked checked_by_staff is newer than our pages: when it disagrees with a page, follow it and cite it. Some texts are notes written for our staff: tell the customer only what answers their question, in plain words, and never repeat internal codes, ids, system or file names, what staff can do, or that a page of ours is wrong or out of date. If the texts do not answer the question, do not guess: answer with answer_kind offer_person and offer_reason not_sure.',
+                'texts' => $sources->map(fn (array $source) => ['id' => $source['id'], 'title' => $source['title'], 'text' => $source['body'], 'checked_by_staff' => $source['checked']])->all(),
+                'note'  => 'Answer only if these texts clearly answer the question, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. You may repeat a figure only exactly as a text states it. A text marked checked_by_staff is newer than our pages: when it disagrees with a page, follow it and cite it. The text with id 0 comes from the shop\'s delivery settings, which the checkout enforces: it is the answer to whether we deliver to a country. Some texts are notes written for our staff: tell the customer only what answers their question, in plain words, and never repeat internal codes, ids, system or file names, what staff can do, or that a page of ours is wrong or out of date. If the texts do not answer the question, do not guess: answer with answer_kind offer_person and offer_reason not_sure.',
             ],
             'products' => [],
             'error'    => null,
-            'sources'  => $entries->map(fn (ChatKnowledgeEntry $entry) => [
-                'id'          => $entry->id,
-                'kind'        => $entry->kind,
-                'source_type' => $entry->source_type,
-                'source_id'   => $entry->source_id,
-                'title'       => $entry->title,
-                'url'         => $entry->url,
-                'body'        => $entry->body,
-            ])->values()->all(),
+            'sources'  => $sources->map(fn (array $source) => Arr::except($source, 'checked'))->all(),
         ];
+    }
+
+    /**
+     * The countries the checkout accepts a delivery address in, from the same banned list
+     * GetAddressDataForShop applies (the shop's, or the organisation's when the shop follows it).
+     * Whichever of the two lists is shorter is named: a shop that delivers to one country bans
+     * two hundred. A ban with a postcode pattern covers only part of the country.
+     *
+     * @return array{id: int, kind: string, source_type: string, source_id: string, title: string, url: null, body: string, checked: bool}
+     */
+    public static function deliveryCountriesSource(Shop $shop): array
+    {
+        $target   = data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false) ? $shop->organisation : $shop;
+        $banned   = collect($target->bannedDeliveryCountries());
+        $whole    = $banned->filter(fn (array $ban) => empty($ban['postcode']))->keys();
+        $partial  = $banned->reject(fn (array $ban) => empty($ban['postcode']))->keys();
+        $names    = fn ($codes) => Country::whereIn('code', $codes)->orderBy('name')->pluck('name')->implode(', ');
+        $allowed  = Country::where('status', true)->where('show_in_address', true)->whereNotIn('code', $whole)->pluck('code');
+
+        $body = match (true) {
+            $whole->isEmpty()                   => 'We deliver to every country: the checkout accepts a delivery address in any country.',
+            $allowed->count() < $whole->count() => 'We deliver only to these countries: '.$names($allowed).'.',
+            default                             => 'We deliver to every country except: '.$names($whole).'.',
+        };
+
+        if ($partial->isNotEmpty()) {
+            $body .= ' Some areas of '.$names($partial).' are excluded.';
+        }
+
+        return ['id' => 0, 'kind' => 'shop_setting', 'source_type' => 'shop_setting', 'source_id' => 'delivery_countries', 'title' => 'Countries we deliver to', 'url' => null, 'body' => $body, 'checked' => true];
     }
 
     /**
@@ -1126,7 +1165,7 @@ class GetShoppingAssistantTools
 
     /**
      * Where one of the customer's own orders is, never anybody else's: the order whose number they
-     * wrote (ours, their own reference or their store's), else the last one they placed. The model
+     * wrote (ours, their own reference, their store's or one of its invoices', ignoring case, spaces and hyphens), else the last one they placed. The model
      * gets the state in words and words it in the customer's language; the order number, its date
      * and the carrier, tracking number and tracking link hold digits, so they go under the reply
      * as one line written here.
@@ -1138,11 +1177,12 @@ class GetShoppingAssistantTools
     private function orderStatus(Customer $customer, array $arguments, string $locale): array
     {
         $reference = is_string($arguments['reference'] ?? null) ? trim($arguments['reference'], " \t\n\r#") : '';
+        $comparable = str_replace([' ', '-'], '', mb_strtoupper($reference));
         $orders    = Order::where('customer_id', $customer->id);
 
         $open  = (clone $orders)->whereIn('state', self::ORDER_OPEN_STATES)->orderBy('submitted_at')->orderBy('id')->get();
         $order = $reference !== ''
-            ? $orders->where(fn ($query) => $query->where('reference', $reference)->orWhere('customer_reference', $reference)->orWhere('platform_order_id', $reference))->latest('id')->first()
+            ? $orders->where(fn ($query) => $query->whereRaw("translate(upper(reference), ' -', '') = ?", [$comparable])->orWhereRaw("translate(upper(customer_reference), ' -', '') = ?", [$comparable])->orWhereRaw("translate(upper(platform_order_id), ' -', '') = ?", [$comparable])->orWhereHas('invoices', fn ($invoices) => $invoices->whereRaw("translate(upper(reference), ' -', '') = ?", [$comparable])))->latest('id')->first()
             : ($open->first() ?? $orders->where('state', '!=', OrderStateEnum::CREATING)->latest('submitted_at')->latest('id')->first());
 
         if (!$order) {
@@ -1188,6 +1228,7 @@ class GetShoppingAssistantTools
                 'found'        => true,
                 'state'        => $state,
                 'priority'     => $priority,
+                'payment'      => $this->unpaidOrderPayment($customer, $order),
                 'busy_season'  => in_array(now()->month, [11, 12], true) && in_array($order->state, self::ORDER_OPEN_STATES, true)
                     ? 'It is our Christmas rush, our busiest weeks of the year. Be honest about it: we are working through every order as fast as we can.'
                     : null,
@@ -1200,12 +1241,41 @@ class GetShoppingAssistantTools
                     OrderStateEnum::CANCELLED  => 'the order number and the date it was cancelled',
                     default                    => 'the order number and the date it was placed',
                 },
-                'note'         => 'A line with what line_shows says is added under your reply by the system. Be warm and honest: tell the customer in two or three sentences where the order is, from state, and that the details are below; write no number, date or tracking yourself and never promise a delivery or dispatch date. When priority is given, say sorry for the wait and that, as a thank-you for their patience, we have just moved it to premium dispatch free of charge, so it goes to the front of the picking queue. When it is waiting for payment, say that is what holds it. When it is dispatched without tracking, say there is no tracking number on it. When they need more than this (a late or lost parcel, a change, a cancellation, a refund, a payment problem, an invoice), or the order is on hold, also offer our team: answer_kind offer_person, offer_reason order_question; a plain wait in the queue needs no person.',
+                'note'         => 'A line with what line_shows says is added under your reply by the system. Be warm and honest: tell the customer in two or three sentences where the order is, from state, and that the details are below; write no number, date or tracking yourself and never promise a delivery or dispatch date. When priority is given, say sorry for the wait and that, as a thank-you for their patience, we have just moved it to premium dispatch free of charge, so it goes to the front of the picking queue. When it is waiting for payment, say that is what holds it and tell them how to pay it only from payment; never give a cause of a failed payment that payment does not state. When it is dispatched without tracking, say there is no tracking number on it. When they need more than this (a late or lost parcel, a change, a cancellation, a refund, a payment problem, an invoice), or the order is on hold, also offer our team: answer_kind offer_person, offer_reason order_question; a plain wait in the queue needs no person.',
             ], fn ($value) => $value !== null),
             'products' => [],
             'error'    => null,
             'fact'     => $line,
         ];
+    }
+
+    /**
+     * PRE-118: a saved card is charged only when the order is placed, with no retry, so the
+     * assistant must not blame a card nobody charged nor send the customer to update one.
+     */
+    private function unpaidOrderPayment(Customer $customer, Order $order): ?string
+    {
+        if ($order->state !== OrderStateEnum::SUBMITTED || in_array($order->pay_status, Order::PAY_SETTLED_STATUSES, true)) {
+            return null;
+        }
+
+        if (data_get($order->data, 'banned_delivery')) {
+            return 'It was never charged because we do not deliver to its address, so no payment, top-up or card sends it out: offer a person.';
+        }
+
+        if ($order->is_shipping_by_external) {
+            return 'It is shipped by their sales channel, not by us, so we never charge it and it is not sent from our warehouse: offer a person.';
+        }
+
+        $refused = $order->payments()->whereIn('payments.state', [PaymentStateEnum::ERROR, PaymentStateEnum::DECLINED])->exists();
+        $cause   = $refused
+            ? 'A payment on this order was refused.'
+            : 'No refused payment is recorded on this order: do not guess why it is unpaid, and never say a card payment failed.';
+        $howToPay = self::isDropshipping($customer)
+            ? 'To pay it they top up their balance until it covers the order and then press Pay with balance on the order, or our team can send a payment link.'
+            : 'Our team can send a payment link: offer a person.';
+
+        return $cause.' A saved card is charged only at the moment an order is placed and never again, so saving, adding or updating a card now does not pay this order: never suggest it. '.$howToPay;
     }
 
     /**
@@ -1338,6 +1408,58 @@ class GetShoppingAssistantTools
             'products' => [],
             'error'    => null,
             'fact'     => $fact,
+        ];
+    }
+
+    /**
+     * The live website of the shop customers are sent to for what this one does not sell, set per
+     * website in settings.shopping_assistant.sister_website_id (Raul, 18 Nov 2026: aw-aromatics.com
+     * to ancientwisdom.biz, both in the UK).
+     */
+    public static function sisterWebsite(?Website $website): ?Website
+    {
+        $sisterId = data_get($website?->settings, 'shopping_assistant.sister_website_id');
+
+        return $sisterId ? Website::where('id', $sisterId)->where('state', WebsiteStateEnum::LIVE)->first() : null;
+    }
+
+    /**
+     * ponytail: the model judges from the names whether the sister shop has what was asked, and the
+     * link is added on its word (matching); add a distance bar if links to unrelated searches show up.
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string, names?: array<int, string>}
+     */
+    private function sisterShopProducts(ShoppingAssistantConversation $conversation, array $arguments): array
+    {
+        $query  = is_string($arguments['query'] ?? null) ? trim($arguments['query']) : '';
+        $sister = self::sisterWebsite($conversation->website);
+
+        if (!$sister || $query === '') {
+            return $this->error($sister ? 'query must be a non-empty string.' : 'This shop has no sister shop.');
+        }
+
+        $names = SearchCatalogueByMeaning::run($sister->shop, $query, null, self::DEFAULT_LIMIT)->pluck('name')->filter()->values()->all();
+
+        if (!$names) {
+            return ['content' => ['found' => false, 'note' => 'Our sister shop has nothing like it either. Say we do not have it.'], 'products' => [], 'error' => null];
+        }
+
+        if (!($arguments['matching'] ?? false)) {
+            return [
+                'content'  => ['found' => true, 'sister_shop' => $sister->domain, 'names' => $names, 'note' => 'Products of our sister shop, not of this one. When some are what the customer asked for, call sister_shop_products again with the same query and matching true, and say in one short sentence that our sister shop sells them, without naming or counting them: a link is added under your reply. When none is, say we do not have it and do not mention the sister shop.'],
+                'products' => [],
+                'error'    => null,
+                'names'    => $names,
+            ];
+        }
+
+        return [
+            'content'  => ['found' => true, 'note' => 'A sentence with a link to them in our sister shop is added under your reply.'],
+            'products' => [],
+            'error'    => null,
+            'fact'     => __('Our sister shop :website sells these: :link', ['website' => $sister->domain, 'link' => $sister->getUrl().'/search?q='.rawurlencode($query)], $conversation->language_code),
         ];
     }
 

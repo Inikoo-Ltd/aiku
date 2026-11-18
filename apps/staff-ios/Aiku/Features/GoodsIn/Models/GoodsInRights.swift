@@ -21,6 +21,9 @@ enum GoodsInDeliveryAction: Hashable, Sendable {
     case setAsPlaced
 
     static func available(for delivery: GoodsInDelivery, rights: GoodsInRights) -> Set<GoodsInDeliveryAction> {
+        if delivery.remoteID != nil {
+            return serverActions(for: delivery)
+        }
         var actions: Set<GoodsInDeliveryAction> = []
         let state = delivery.state
         let isBeforeBookingIn = state == .received || state == .checked || state == .notReceived
@@ -44,6 +47,23 @@ enum GoodsInDeliveryAction: Hashable, Sendable {
         }
         if state == .bookedIn, rights.canEditProcurement || rights.canEditAccounting {
             actions.insert(.setAsPlaced)
+        }
+        return actions
+    }
+
+    private static func serverActions(for delivery: GoodsInDelivery) -> Set<GoodsInDeliveryAction> {
+        var actions: Set<GoodsInDeliveryAction> = []
+        if delivery.remoteActions.contains("receive") {
+            actions.insert(.markAsReceived)
+        }
+        if delivery.remoteActions.contains("unreceive") {
+            actions.insert(.unmarkAsReceived)
+        }
+        if delivery.remoteActions.contains("check") {
+            actions.insert(.checkItems)
+        }
+        if delivery.remoteActions.contains("place"), delivery.hasItemsToPlace {
+            actions.insert(.placeItems)
         }
         return actions
     }

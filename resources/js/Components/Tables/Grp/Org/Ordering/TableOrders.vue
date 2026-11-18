@@ -18,7 +18,7 @@ import { faShieldAlt, faStar, faHighlighter, faPennant, faCertificate } from "@f
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
 import { routeType } from "@/types/route"
-import { ctrans } from "@/Composables/useTrans"
+import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { FontAwesomeLayers, FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -333,6 +333,13 @@ const setNewMarkerDate = (newVal: Date) => {
                 <span v-if="order.is_intercompany"
                     v-tooltip="ctrans('Partner order: raised from the partner shopping list, not placed by an outside customer')"
                     class="rounded bg-sky-100 border border-sky-300 px-1 text-xs font-semibold text-sky-700 leading-tight">Partner</span>
+
+                <span v-if="order.held_reason"
+                    v-tooltip="ctrans('Held, not sent to the warehouse: :reason', { reason: order.held_reason })"
+                    class="rounded border px-1 text-xs font-semibold leading-tight"
+                    :class="order.held_days >= 2 ? 'bg-red-100 border-red-300 text-red-700' : 'bg-gray-100 border-gray-300 text-gray-600'">
+                    {{ ctransChoice("Held :count day|Held :count days", order.held_days ?? 0, { count: order.held_days ?? 0 }) }}
+                </span>
 
                 <span v-if="order.is_pre_order"
                     v-tooltip="ctrans('Pre-order: held until its goods arrive, then sent')"

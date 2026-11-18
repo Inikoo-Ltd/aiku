@@ -1,7 +1,6 @@
 package io.aiku.droid.ui.goodsin
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +26,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -46,6 +44,7 @@ import io.aiku.droid.data.api.ReturnState
 import io.aiku.droid.data.api.ReturnType
 import io.aiku.droid.data.api.ReturnWrite
 import io.aiku.droid.ui.components.AikuButton
+import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
@@ -62,6 +61,7 @@ import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.StateTimeline
 import io.aiku.droid.ui.components.TimelineEntry
 import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.goodsout.DisabledActionNotice
 import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
@@ -228,17 +228,18 @@ private fun ReturnContent(viewModel: ReturnViewModel, state: ReturnUiState, cust
                 stringResource(R.string.goodsin_undo_put_body)
             },
             confirmLabel = stringResource(R.string.goodsin_undo),
+            confirmLook = goodsInActionLook(GoodsInActionKey.UNDO).forConfirm(),
             onConfirm = {
                 sheet = null
                 viewModel.undo(current.put.id)
             },
             onDismiss = closeSheet,
-            isDestructive = true,
         )
         ReturnSheet.SetAsReturned -> ConfirmDialog(
             title = stringResource(R.string.goodsin_set_returned_title, customerReturn.reference),
             body = stringResource(R.string.goodsin_set_returned_body),
             confirmLabel = setAsReturned?.label?.ifBlank { null } ?: stringResource(R.string.goodsin_set_returned),
+            confirmLook = goodsInActionLook(GoodsInActionKey.SET_AS_RETURNED).forConfirm(),
             onConfirm = {
                 sheet = null
                 viewModel.setAsReturned()
@@ -274,7 +275,8 @@ private fun returnFooter(
             AikuButton(
                 text = action.label.ifBlank { stringResource(R.string.goodsin_start_return) },
                 onClick = onStart,
-                icon = R.drawable.ic_ui_check,
+                style = goodsInActionLook(action.key).style,
+                icon = goodsInActionLook(action.key).icon,
                 isLoading = working == ReturnWrite.Start,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -283,7 +285,8 @@ private fun returnFooter(
             AikuButton(
                 text = action.label.ifBlank { stringResource(R.string.goodsin_set_returned) },
                 onClick = onSetAsReturned,
-                icon = R.drawable.ic_ui_check,
+                style = goodsInActionLook(action.key).style,
+                icon = goodsInActionLook(action.key).icon,
                 isLoading = working == ReturnWrite.SetAsReturned,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -376,10 +379,31 @@ private fun ReturnItemCard(
             Text(text = breakdown, fontSize = 13.sp, color = colors.textTertiary)
             item.puts.forEach { put -> PutRow(put = put, onUndo = if (canUndo) ({ onUndo(put) }) else null) }
             if (canPutBack) {
+                AikuButton(
+                    text = stringResource(R.string.goodsin_back_to_stock),
+                    onClick = { onAction(ReturnItemAction.BackToStock) },
+                    style = goodsInActionLook(GoodsInActionKey.PUT_BACK).style,
+                    icon = goodsInActionLook(GoodsInActionKey.PUT_BACK).icon,
+                    height = 48.dp,
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    ReturnActionButton(text = stringResource(R.string.goodsin_back_to_stock), isPrimary = true, onClick = { onAction(ReturnItemAction.BackToStock) }, modifier = Modifier.weight(1f))
-                    ReturnActionButton(text = stringResource(R.string.goodsin_damaged), isPrimary = false, onClick = { onAction(ReturnItemAction.Damaged) }, modifier = Modifier.weight(1f))
-                    ReturnActionButton(text = stringResource(R.string.goodsin_not_returned), isPrimary = false, onClick = { onAction(ReturnItemAction.NotReturned) }, modifier = Modifier.weight(1f))
+                    AikuButton(
+                        text = stringResource(R.string.goodsin_damaged),
+                        onClick = { onAction(ReturnItemAction.Damaged) },
+                        style = ButtonStyle.Danger,
+                        icon = R.drawable.ic_ui_warning,
+                        height = 48.dp,
+                        modifier = Modifier.weight(1f),
+                    )
+                    AikuButton(
+                        text = stringResource(R.string.goodsin_not_returned),
+                        onClick = { onAction(ReturnItemAction.NotReturned) },
+                        style = ButtonStyle.Danger,
+                        icon = R.drawable.ic_ui_x_circle,
+                        height = 48.dp,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }
@@ -404,7 +428,7 @@ private fun PutRow(put: ReturnPut, onUndo: (() -> Unit)?) {
                 text = stringResource(R.string.goodsin_undo),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = colors.link,
+                color = colors.cautionInk,
                 modifier = Modifier
                     .heightIn(min = 44.dp)
                     .clip(ControlShape)
@@ -412,30 +436,5 @@ private fun PutRow(put: ReturnPut, onUndo: (() -> Unit)?) {
                     .padding(horizontal = 10.dp, vertical = 12.dp),
             )
         }
-    }
-}
-
-@Composable
-private fun ReturnActionButton(text: String, isPrimary: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = LocalAikuColors.current
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .heightIn(min = 52.dp)
-            .clip(ControlShape)
-            .background(if (isPrimary) colors.primary else colors.surface)
-            .border(width = 1.dp, color = if (isPrimary) colors.primaryBorder else colors.borderStrong, shape = ControlShape)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 6.dp, vertical = 4.dp),
-    ) {
-        Text(
-            text = text,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = if (isPrimary) colors.onPrimary else colors.textSecondary,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-        )
     }
 }

@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
 import io.aiku.droid.ui.components.AikuButton
+import io.aiku.droid.ui.components.ButtonLook
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChipShape
 import io.aiku.droid.ui.components.ControlShape
@@ -208,6 +209,7 @@ internal fun StockActionButton(
 ) {
     val colors = LocalAikuColors.current
     val content = if (isDanger) colors.danger else colors.textSecondary
+    val border = if (isDanger) colors.dangerButtonBorder else colors.borderStrong
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
@@ -216,7 +218,7 @@ internal fun StockActionButton(
             .heightIn(min = 52.dp)
             .clip(ControlShape)
             .background(colors.surface)
-            .border(1.dp, if (isDanger) colors.dangerBorder else colors.borderStrong, ControlShape)
+            .border(if (isDanger) 1.5.dp else 1.dp, border, ControlShape)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 6.dp),
     ) {
@@ -310,13 +312,13 @@ internal fun SheetButtons(
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
-    confirmStyle: ButtonStyle = ButtonStyle.Primary,
+    confirmLook: ButtonLook = ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_next),
     isWorking: Boolean = false,
     showConfirm: Boolean = true,
 ) {
     Column(modifier = modifier.fillMaxWidth().padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (showConfirm) {
-            AikuButton(text = confirmLabel, onClick = onConfirm, style = confirmStyle, isLoading = isWorking, height = 52.dp, modifier = Modifier.fillMaxWidth())
+            AikuButton(text = confirmLabel, onClick = onConfirm, style = confirmLook.style, icon = confirmLook.icon, isLoading = isWorking, height = 52.dp, modifier = Modifier.fillMaxWidth())
         }
         AikuButton(text = stringResource(R.string.dialog_cancel), onClick = onCancel, style = ButtonStyle.Outline, height = 52.dp, modifier = Modifier.fillMaxWidth())
     }

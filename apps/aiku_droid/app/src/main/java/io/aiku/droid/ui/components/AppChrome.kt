@@ -64,7 +64,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.R
+import io.aiku.droid.ui.mywork.LocalWorkBadges
+import io.aiku.droid.ui.mywork.myWorkBadge
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocalWarehouses
@@ -73,7 +76,6 @@ import io.aiku.droid.ui.navigation.ScanRoute
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
 
-private const val SAMPLE_MY_WORK_COUNT = 6
 private const val SAMPLE_INBOX_COUNT = 3
 private const val TAB_HANDOFF_WINDOW_MS = 1500L
 
@@ -448,13 +450,14 @@ fun ScanSquareButton(onClick: () -> Unit, modifier: Modifier = Modifier, size: D
     }
 }
 
-private data class BarItem(val tab: MainTab, @StringRes val label: Int, @DrawableRes val icon: Int, val sampleBadge: Int? = null)
+private data class BarItem(val tab: MainTab, @StringRes val label: Int, @DrawableRes val icon: Int, val badge: Int? = null, val isSampleBadge: Boolean = false)
 
 @Composable
 fun MainBar(active: MainTab?, modifier: Modifier = Modifier) {
     val colors = LocalAikuColors.current
     val navigator = LocalAppNavigator.current
     val showScan = LocalWarehouses.current.isNotEmpty()
+    val badges by LocalWorkBadges.current.badges.collectAsStateWithLifecycle()
 
     CompositionLocalProvider(LocalIndication provides rememberNavFocusIndication()) {
         Row(
@@ -466,13 +469,13 @@ fun MainBar(active: MainTab?, modifier: Modifier = Modifier) {
                 .padding(horizontal = 8.dp, vertical = 8.dp),
         ) {
             BarTab(BarItem(MainTab.Home, R.string.tab_home, R.drawable.ic_ui_home), isActive = active == MainTab.Home, onClick = { navigator.openTab(MainTab.Home) })
-            BarTab(BarItem(MainTab.MyWork, R.string.tab_my_work, R.drawable.ic_ui_my_work, SAMPLE_MY_WORK_COUNT), isActive = active == MainTab.MyWork, onClick = { navigator.openTab(MainTab.MyWork) })
+            BarTab(BarItem(MainTab.MyWork, R.string.tab_my_work, R.drawable.ic_ui_my_work, badges.myWorkBadge), isActive = active == MainTab.MyWork, onClick = { navigator.openTab(MainTab.MyWork) })
             if (showScan) {
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     ScanTabButton(onClick = { navigator.openTab(MainTab.Scan) })
                 }
             }
-            BarTab(BarItem(MainTab.Inbox, R.string.tab_inbox, R.drawable.ic_ui_inbox, SAMPLE_INBOX_COUNT), isActive = active == MainTab.Inbox, onClick = { navigator.openTab(MainTab.Inbox) })
+            BarTab(BarItem(MainTab.Inbox, R.string.tab_inbox, R.drawable.ic_ui_inbox, SAMPLE_INBOX_COUNT, isSampleBadge = true), isActive = active == MainTab.Inbox, onClick = { navigator.openTab(MainTab.Inbox) })
             BarTab(BarItem(MainTab.Menu, R.string.tab_menu, R.drawable.ic_ui_menu), isActive = active == MainTab.Menu, onClick = { navigator.openTab(MainTab.Menu) })
         }
     }
@@ -505,10 +508,10 @@ private fun RowScope.BarTab(item: BarItem, isActive: Boolean, onClick: () -> Uni
             Icon(painter = painterResource(item.icon), contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
             Text(text = stringResource(item.label), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = tint, maxLines = 1)
         }
-        if (item.sampleBadge != null) {
+        if (item.badge != null) {
             CountBadge(
-                count = item.sampleBadge,
-                modifier = Modifier.align(Alignment.TopCenter).offset(x = 15.dp, y = (-1).dp).fakeData(cornerRadius = 12.dp).padding(3.dp),
+                count = item.badge,
+                modifier = Modifier.align(Alignment.TopCenter).offset(x = 15.dp, y = (-1).dp).then(if (item.isSampleBadge) Modifier.fakeData(cornerRadius = 12.dp) else Modifier).padding(3.dp),
             )
         }
     }

@@ -124,7 +124,13 @@ class GoogleMerchantClient
     public function createSupplementalDataSource(string $displayName, ?string $registrationAccountId = null): string
     {
         $registrationAccountId = $registrationAccountId ?: $this->merchantId;
-        $this->request('post', "accounts/v1/accounts/$registrationAccountId/developerRegistration:registerGcp", (object) []);
+        try {
+            $this->request('post', "accounts/v1/accounts/$registrationAccountId/developerRegistration:registerGcp", (object) []);
+        } catch (RequestException $exception) {
+            if ($exception->response->status() !== 409) {
+                throw $exception;
+            }
+        }
 
         return $this->request('post', "datasources/v1/accounts/$this->merchantId/dataSources", [
             'displayName'                   => $displayName,

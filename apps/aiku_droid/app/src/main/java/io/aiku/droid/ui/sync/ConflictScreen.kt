@@ -83,6 +83,7 @@ fun ConflictScreen(reference: String) {
                     ).joinToString(", "),
                 ),
                 onClick = { navigator.open(ResolveConflictsRoute) },
+                icon = R.drawable.ic_ui_check,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
             )

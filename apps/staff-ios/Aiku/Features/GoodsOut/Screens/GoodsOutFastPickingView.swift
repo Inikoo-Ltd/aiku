@@ -96,7 +96,7 @@ struct GoodsOutFastPickingView: View {
                     fullLeading: line.isHandled ? nil : { pickAll(note, line) },
                     fullTrailing: line.isHandled || !allowsNotPicked(note) ? nil : { notPicked(note, line) }
                 ) {
-                    GoodsOutFastPickRow(line: line) {
+                    GoodsOutFastPickRow(line: line, isSending: store.isSending(line.id, on: note.reference)) {
                         open = nil
                         activeSheet = .itemActions(line: line.id)
                     }
@@ -186,16 +186,30 @@ struct GoodsOutFastPickingView: View {
 
     private func pickAll(_ note: GoodsOutDeliveryNote, _ line: GoodsOutLine) {
         if let lineID = line.apiID {
-            GoodsOutRun.action(.pickAll(line: lineID, locationOrgStockID: line.defaultStockLocation?.locationOrgStockID), on: note.reference, fallback: "\(line.sko) picked ×\(line.remaining)", toasts: toasts)
+            sendInBackground(.pickAll(line: lineID, locationOrgStockID: line.defaultStockLocation?.locationOrgStockID), line: line, change: .pickAll, on: note.reference)
             return
         }
         let previous = store.pickAll(note.reference, line: line.id)
         GoodsOutFeedback.done("\(line.sko) picked ×\(line.remaining)", previous: previous, toasts: toasts)
     }
 
+    private func sendInBackground(_ action: GoodsOutNoteAction, line: GoodsOutLine, change: GoodsOutQuickLineChange, on reference: String) {
+        open = nil
+        Task {
+            switch await store.quickLine(action, line: line.id, change: change, on: reference) {
+            case .failed(let message) where !message.isEmpty:
+                toasts.show("\(line.sko): \(message)", tone: .danger)
+            case .nothingChanged(let message?):
+                toasts.show(message, tone: .warn, sticky: false)
+            default:
+                break
+            }
+        }
+    }
+
     private func notPicked(_ note: GoodsOutDeliveryNote, _ line: GoodsOutLine) {
         if let lineID = line.apiID {
-            GoodsOutRun.action(.notPicked(line: lineID, quantity: nil, reason: .outOfStock, note: nil), on: note.reference, fallback: "\(line.sko) not picked · out of stock", toasts: toasts)
+            sendInBackground(.notPicked(line: lineID, quantity: nil, reason: .outOfStock, note: nil), line: line, change: .notPicked(.outOfStock), on: note.reference)
             return
         }
         let previous = store.markNotPicked(note.reference, line: line.id, reason: .outOfStock)
@@ -205,6 +219,7 @@ struct GoodsOutFastPickingView: View {
 
 struct GoodsOutFastPickRow: View {
     let line: GoodsOutLine
+    var isSending = false
     let onMore: () -> Void
 
     private var statusColor: Color {
@@ -265,7 +280,13 @@ struct GoodsOutFastPickRow: View {
                 .font(.aiku(20, .bold))
                 .foregroundStyle(AikuColor.text)
                 .monospacedDigit()
-            IconButton(.more, label: "More for \(line.sko)", tint: AikuColor.text3, action: onMore)
+            if isSending {
+                ProgressView()
+                    .frame(width: 44, height: 44)
+                    .accessibilityLabel("Saving \(line.sko)")
+            } else {
+                IconButton(.more, label: "More for \(line.sko)", tint: AikuColor.text3, action: onMore)
+            }
         }
         .padding(.leading, 14)
         .padding(.trailing, 6)

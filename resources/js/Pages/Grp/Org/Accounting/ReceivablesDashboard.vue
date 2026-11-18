@@ -59,7 +59,7 @@ const props = defineProps<{
 	organisations: { value: string; label: string }[]
 	isGroup: boolean
 	currency: string
-	routes: Record<"index" | "invoices" | "debtors" | "balances", RouteTarget>
+	routes: Record<"index" | "invoices" | "debtors" | "balances" | "cash_on_delivery", RouteTarget>
 	receivables: {
 		total: { amount: number; invoices: number; debtors: number; overdue: number; over_year: number; cod: number; pastpay: number }
 		ageing: { key: string; amount: number; invoices: number }[]
@@ -86,7 +86,7 @@ const organisation = computed({
 	set: (value: string) => router.get(route("grp.financials.receivables.index", value === "all" ? {} : { org: value })),
 })
 
-const listUrl = (section: "invoices" | "debtors" | "balances", query: Record<string, string> = {}) => route(props.routes[section].name, { ...props.routes[section].parameters, ...query })
+const listUrl = (section: "invoices" | "debtors" | "balances" | "cash_on_delivery", query: Record<string, string> = {}) => route(props.routes[section].name, { ...props.routes[section].parameters, ...query })
 
 const total = computed(() => props.receivables.total)
 const share = (amount: number) => (total.value.amount > 0 ? Math.round((amount / total.value.amount) * 100) : 0)
@@ -392,7 +392,10 @@ const balanceSides = computed(() => [
 					{{ ctrans(":amount of the total is owed by other companies of the group.", { amount: money(receivables.companies.amount) }) }}
 					<Link :href="listUrl('invoices', { owed_by: 'companies' })" class="secondaryLink">{{ ctrans(":count invoices", { count: locale.number(receivables.companies.invoices) }) }}</Link>
 				</li>
-				<li v-if="total.cod">{{ ctrans(":amount of the total is cash on delivery, to be paid out by the carrier.", { amount: money(total.cod) }) }}</li>
+				<li v-if="total.cod">
+					{{ ctrans(":amount of the total is cash on delivery, to be paid out by the carrier.", { amount: money(total.cod) }) }}
+					<Link :href="listUrl('cash_on_delivery')" class="secondaryLink">{{ ctrans("Cash on delivery not paid") }}</Link>
+				</li>
 				<li v-if="total.pastpay">{{ ctrans(":amount of the total is to be paid by PastPay.", { amount: money(total.pastpay) }) }}</li>
 			</ul>
 		</DashboardWidgetBox>

@@ -22,6 +22,7 @@ import io.aiku.droid.data.api.Shipper
 import io.aiku.droid.data.api.ShipperDirective
 import io.aiku.droid.data.api.Trolley
 import io.aiku.droid.data.api.WriteErrorKey
+import io.aiku.droid.data.api.waitsForPlatform
 import io.aiku.droid.data.session.SessionRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -197,6 +198,9 @@ class DeliveryNoteViewModel(
                             shipmentFollowUp = followUp,
                             event = if (followUp == null) result.refusal() else null,
                         )
+                    }
+                    if (result is GoodsOutResult.Unreachable && write.waitsForPlatform) {
+                        load()
                     }
                 }
             }

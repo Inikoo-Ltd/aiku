@@ -293,6 +293,19 @@ class ShowInvoice extends OrgAction
         }, $columns);
     }
 
+    /**
+     * @return array{incoterms: ?string, net_weight: ?float}
+     */
+    public function getDownloadPdfExportDetails(Invoice $invoice): array
+    {
+        $netWeight = Arr::get($invoice->data, 'export_details.net_weight');
+
+        return [
+            'incoterms'  => Arr::get($invoice->data, 'export_details.incoterms'),
+            'net_weight' => $netWeight === null ? null : (float)$netWeight,
+        ];
+    }
+
     public function getExportOptions(Invoice $invoice): array
     {
         $options = [
@@ -465,6 +478,7 @@ class ShowInvoice extends OrgAction
                     'workshop_route' => $this->getOutboxRoute($invoice)
                 ],
                 'download_pdf_column'           => $this->getDownloadPdfColumns($invoice),
+                'download_pdf_export_details'   => $this->getDownloadPdfExportDetails($invoice),
                 'is_external'                   => $invoice->shop?->type->value == 'external',
                 'attachmentRoutes'              => [
                     'attachRoute' => [

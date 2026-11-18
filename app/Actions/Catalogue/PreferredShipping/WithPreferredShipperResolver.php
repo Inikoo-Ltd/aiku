@@ -41,6 +41,10 @@ trait WithPreferredShipperResolver
      */
     public function trackingChannel(DeliveryNote $deliveryNote): ?string
     {
+        if ($deliveryNote->orders->first()?->isFromAnkorstore()) {
+            return 'Ankorstore';
+        }
+
         $platformType = $deliveryNote->orders->first()?->customerSalesChannel?->platform?->type;
 
         return match ($platformType) {

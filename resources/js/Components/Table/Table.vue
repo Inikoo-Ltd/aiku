@@ -33,6 +33,7 @@ import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
 import TableOfferFilter from '@/Components/Table/TableOfferFilter.vue'
 import TableFrequencyFilter from '@/Components/Table/TableFrequencyFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
+import TableSelectFilter from './TableSelectFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
 import TableRows from './TableRows.vue'
 import KeyedMemoRows from './KeyedMemoRows'
@@ -1269,18 +1270,13 @@ const getSeverity = (type?: string) => {
 
                         <!-- Filter: select -->
                         <template v-if="queryBuilderData.filters?.length">
-                            <div v-for="selectFilter in queryBuilderData.filters" :key="selectFilter.key"
+                            <TableSelectFilter v-for="selectFilter in queryBuilderData.filters" :key="selectFilter.key"
                                 v-show="selectFilter.type === 'select'"
-                                class="flex items-center gap-x-1.5">
-                                <label class="text-xs text-gray-500 whitespace-nowrap">{{ selectFilter.label }}</label>
-                                <select
-                                    :value="selectFilter.value ?? ''"
-                                    @change="changeFilterValue(selectFilter.key, ($event.target as HTMLSelectElement).value || null)"
-                                    class="text-sm border border-gray-300 rounded px-2 py-0.5 focus:ring-orange-500 focus:border-orange-500 bg-white">
-                                    <option v-if="selectFilter.noFilterOption" value="">{{ selectFilter.noFilterOptionLabel ?? '-' }}</option>
-                                    <option v-for="(label, optionKey) in selectFilter.options" :key="optionKey" :value="optionKey">{{ label }}</option>
-                                </select>
-                            </div>
+                                :label="selectFilter.label"
+                                :options="selectFilter.options"
+                                :value="selectFilter.value"
+                                :flags="selectFilter.flags"
+                                @change="(value) => changeFilterValue(selectFilter.key, value)" />
                         </template>
 
                         <slot name="tableExtraAction" />

@@ -510,12 +510,14 @@ class IndexOrgSupplierProducts extends OrgAction
             ->where('id', '!=', $this->parent->supplier_id)
             ->withCount('supplierProducts')
             ->orderBy('code')
-            ->get(['id', 'agent_id', 'code', 'name'])
+            ->get(['id', 'agent_id', 'code', 'name', 'company_name', 'contact_name'])
             ->map(fn (Supplier $supplier) => [
-                'id'       => $supplier->id,
-                'agent_id' => $supplier->agent_id,
+                'id'              => $supplier->id,
+                'agent_id'        => $supplier->agent_id,
                 'number_products' => $supplier->supplier_products_count,
-                'label'    => $supplier->name && $supplier->name !== $supplier->code ? $supplier->code.' — '.$supplier->name : $supplier->code,
+                'label'           => $supplier->name && $supplier->name !== $supplier->code ? $supplier->code.' — '.$supplier->name : $supplier->code,
+                'company_name'    => $supplier->company_name,
+                'contact_name'    => $supplier->contact_name,
             ])
             ->all();
     }

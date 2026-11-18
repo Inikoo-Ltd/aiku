@@ -23,6 +23,7 @@ use App\Http\Resources\GoodsIn\StockDeliveryFeedbackResource;
 use App\Http\Resources\SupplyChain\SupplierPortalPriceChangesResource;
 use App\Http\Resources\SupplyChain\SupplierPortalPurchaseOrdersResource;
 use App\Models\GoodsIn\StockDeliveryFeedback;
+use App\Models\Helpers\Language;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SupplyChain\SupplierShareLink;
@@ -111,7 +112,7 @@ class ShowSupplierShare
      *
      * @return array<string, mixed>
      */
-    public function portal(Supplier $supplier, ?string $token = null): array
+    public function portal(Supplier $supplier, ?string $token = null, string $language = 'en'): array
     {
         $valuation = GetAgentSalesProducts::make()->valuedBy(null, null, [])->atSupplierPrices($supplier);
 
@@ -131,7 +132,7 @@ class ShowSupplierShare
             'price_changes'        => SupplierPortalPriceChangesResource::collection(IndexSupplierPortalPriceChanges::make()->handle($supplier, 'price_changes'))
                 ->additional(IndexSupplierPortalPriceChanges::make()->facets($supplier, 'price_changes')),
             'sales'                => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
-            'feedback'             => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier), 'feedback'),
+            'feedback'             => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier, null, Language::where('code', $language)->first()), 'feedback'),
             'delivery_feedback'    => Inertia::defer(fn () => StockDeliveryFeedbackResource::collection(
                 StockDeliveryFeedback::where('supplier_id', $supplier->id)->where('created_at', '>=', now()->subYear())
                     ->with(['supplier', 'agent', 'author', 'organisation', 'procurementNote', 'stockDelivery'])
@@ -152,6 +153,9 @@ class ShowSupplierShare
             'purchase_order_production_route' => $token === null
                 ? route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'path' => 'purchase-orders/0/production'])
                 : route('grp.supplier_share.purchase_order.production', ['token' => $token, 'purchaseOrder' => 0]),
+            'purchase_order_deposit_route' => $token === null
+                ? route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'path' => 'purchase-orders/0/deposit'])
+                : route('grp.supplier_share.purchase_order.deposit', ['token' => $token, 'purchaseOrder' => 0]),
             'purchase_order_documents_route' => $token === null
                 ? route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'path' => 'purchase-orders/0/documents'])
                 : route('grp.supplier_share.purchase_order.documents.store', ['token' => $token, 'purchaseOrder' => 0]),
@@ -235,7 +239,7 @@ class ShowSupplierShare
 
             $response = Inertia::render('SupplyChain/SupplierShare', [
                 ...$page,
-                ...$this->portal($supplier, $token),
+                ...$this->portal($supplier, $token, $page['language']),
                 'profile'   => ResolveSupplierPortalProfile::make()->toArray(ResolveSupplierPortalProfile::make()->handle($link, $request)),
                 'submitted' => session('submitted'),
                 'forms'     => $this->forms(

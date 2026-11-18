@@ -43,6 +43,8 @@ import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
+import io.aiku.droid.ui.components.ButtonLook
+import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.DeliveryNoteStage
 import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.ListGroup
@@ -234,7 +236,7 @@ private fun ShipmentFollowUpSheet(note: DeliveryNote, state: DeliveryNoteUiState
                 title = stringResource(R.string.goodsout_override_lock_title),
                 subtitle = null,
                 confirmLabel = stringResource(R.string.goodsout_override_lock_confirm, shipper),
-                icon = R.drawable.ic_ui_lock,
+                confirmLook = ButtonLook(ButtonStyle.Caution, R.drawable.ic_ui_unlock),
                 hint = followUp.message,
                 isWorking = state.isWorking,
                 problem = null,

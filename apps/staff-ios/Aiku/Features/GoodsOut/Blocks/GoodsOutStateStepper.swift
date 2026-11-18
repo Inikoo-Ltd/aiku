@@ -20,6 +20,7 @@ struct GoodsOutStateStepper: View {
             }
             .padding(.horizontal, 16)
         }
+        .scrollBounceBehavior(.basedOnSize, axes: [.horizontal, .vertical])
         .padding(.horizontal, -16)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Delivery note progress")

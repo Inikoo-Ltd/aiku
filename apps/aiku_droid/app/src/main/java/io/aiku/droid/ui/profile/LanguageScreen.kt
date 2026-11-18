@@ -102,6 +102,7 @@ fun LanguageScreen() {
                 AikuButton(
                     text = stringResource(R.string.profile_language_use, selectedLanguage.nativeName),
                     onClick = navigator::back,
+                    icon = R.drawable.ic_ui_check,
                     modifier = Modifier
                         .fillMaxWidth()
                         .fakeData(8.dp),

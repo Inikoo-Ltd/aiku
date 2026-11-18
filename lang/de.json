@@ -12327,6 +12327,7 @@
     "Not a Guru": "Kein Guru",
     "Not a Shopify shop": "Kein Shopify-Shop",
     "Not a customer yet? Write to an email address": "Noch kein Kunde? Schreiben Sie an eine E-Mail-Adresse.",
+    "Not a customer: saved contacts and addresses emailed recently": "Kein Kunde: gespeicherte Kontakte und kürzlich angeschriebene Adressen",
     "Not a draft": "Kein Entwurf",
     "Not a known variable:": "Keine bekannte Variable:",
     "Not a member?": "Noch kein Mitglied?",
@@ -26765,5 +26766,6 @@
     ":name is gazing into his crystal ball…": ":name blickt in seine Kristallkugel…",
     "This one needs a little more thought. Nearly there…": "Das braucht etwas mehr Nachdenken. Gleich fertig…",
     "Usually takes about :seconds seconds": "Dauert meist etwa :seconds Sekunden",
-    "Use my own shipping rates": "Eigene Versandtarife verwenden"
+    "Use my own shipping rates": "Eigene Versandtarife verwenden",
+    "Our sister shop :website sells these: :link": "Unser Schwestershop :website führt diese Produkte: :link"
 }

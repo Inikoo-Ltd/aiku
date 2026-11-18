@@ -1,8 +1,8 @@
 ---
 title: Connecter votre boutique Wix
 summary: Installez notre application sur votre site Wix pour le lier à votre compte dropshipping, vérifiez les trois coches qui indiquent qu'il est prêt, et réparez un canal qui indique qu'il n'est pas connecté.
-date: 2026-09-25
-source_date: 2026-09-28
+date: 2026-11-17
+source_date: 2026-11-17
 tags: wix, wix stores, canal de vente, connecter
 category: sales-channels
 series: wix
@@ -27,7 +27,7 @@ Allez dans <b>Chaînes</b>, appuyez sur <b>Ajouter un canal de vente</b>, puis s
 1. Ouvrez <b>Chaînes</b> dans le menu. La page <b>Canaux de vente</b> liste les canaux que vous avez déjà.
 2. Appuyez sur <b>Ajouter un canal de vente</b>. La page <b>Créer des chaînes</b> s'ouvre.
 3. Trouvez la carte <b>Wix</b> et appuyez sur <b>Connecter</b>. Wix s'ouvre dans un nouvel onglet.
-4. Si Wix vous le demande, connectez-vous. Choisissez le site que vous voulez connecter et installez l'application. Wix affiche les permissions dont l'application a besoin ; acceptez-les pour continuer.
+4. Si Wix vous le demande, connectez-vous. Choisissez le site que vous voulez connecter et installez l'application. Wix affiche les permissions dont l'application a besoin ; acceptez-les pour continuer. Voir <b>Ce que l'application peut voir et faire</b> plus bas.
 5. Une fois l'installation terminée, Wix vous renvoie vers votre compte dropshipping et ouvre le tableau de bord de votre nouveau canal.
 
 <!-- screenshot: la page Créer des chaînes avec la carte Wix et son bouton Connecter -->
@@ -37,6 +37,18 @@ Allez dans <b>Chaînes</b>, appuyez sur <b>Ajouter un canal de vente</b>, puis s
 Terminez l'installation dans les deux heures suivant l'appui sur <b>Connecter</b>. Passé ce délai, le lien expire et vous devez appuyer à nouveau sur <b>Connecter</b>.
 
 Le canal reprend le nom de votre site Wix. Vous pouvez le changer plus tard dans <b>Gérer le canal de vente</b>, <b>Store name</b>.
+
+## Ce que l'application peut voir et faire
+
+Quand vous installez AW Connect, Wix affiche les permissions que demande l'application. Voici à quoi elles nous servent :
+
+- <b>Les produits de votre boutique</b> : nous créons nos produits dans Wix Stores, mettons à jour leurs informations, prix et images, et les retirons quand vous les retirez de votre canal. Vos propres produits que vous ne liez pas aux nôtres sont seulement lus, pour que vous puissiez les associer.
+- <b>Stock</b> : nous tenons à jour le stock de nos produits sur votre site.
+- <b>Commandes</b> : nous lisons les commandes de vos acheteurs, y compris l'adresse de livraison, pour pouvoir envoyer les colis. Si nous annulons une commande de notre côté, nous l'annulons aussi sur Wix.
+- <b>Expédition</b> : quand nous envoyons une commande, nous la marquons comme traitée sur Wix avec le numéro et le lien de suivi.
+- <b>Informations du site</b> : le nom, l'adresse, la devise et la langue de votre site, et l'e-mail du propriétaire du site, que nous utilisons pour lier le site à votre compte de dropshipping.
+
+Nous ne touchons pas à vos paiements Wix, au design de votre site ni à vos autres applications Wix. Wix vous demande d'accepter les permissions pour installer l'application. Si vous préférez ne pas connecter votre site, vous pouvez saisir à la main les commandes de vos acheteurs sur un canal manuel : voir [Passer des commandes manuellement](/docs/placing-orders-manually).
 
 ## Vérifier que le canal est prêt
 

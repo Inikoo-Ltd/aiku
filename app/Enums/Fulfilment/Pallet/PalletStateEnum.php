@@ -208,22 +208,11 @@ enum PalletStateEnum: string
             $stats = $parent->stats;
         }
 
-        return [
-            'in_process'     => $stats->number_pallets_state_in_process,
-            'submitted'      => $stats->number_pallets_state_submitted,
-            'confirmed'      => $stats->number_pallets_state_confirmed,
-            'not_received'   => $stats->number_pallets_state_not_received,
-            'received'       => $stats->number_pallets_state_received,
-            'booking_in'     => $stats->number_pallets_state_booking_in,
-            'booked_in'      => $stats->number_pallets_state_booked_in,
-            'storing'        => $stats->number_pallets_state_storing,
-            'request_return' => $stats->number_pallets_state_request_return,
-            'picking'        => $stats->number_pallets_state_picking,
-            'picked'         => $stats->number_pallets_state_picked,
-            'dispatched'     => $stats->number_pallets_state_disoatched,
-            'lost'           => $stats->number_pallets_state_lost,
-            'damaged'        => $stats->number_pallets_state_damaged,
-            'other_incident' => $stats->number_pallets_state_other
-        ];
+        $counts = [];
+        foreach (self::cases() as $case) {
+            $counts[$case->value] = $stats->{"number_pallets_state_".$case->value};
+        }
+
+        return $counts;
     }
 }

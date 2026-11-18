@@ -25,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * The supplier's products on its page, a page at a time: searched by code or name and filtered by status, each with the
+ * The supplier's products on its page, 250 at a time as the supplier scrolls: searched by code or name and filtered by status, each with the
  * packs sold and their value at the supplier's price in the last twelve whole months and the twelve before. A product
  * with nothing sold before has no percentage, it is new.
  */
@@ -33,7 +33,7 @@ class IndexSupplierPortalProducts
 {
     use AsAction;
 
-    public const int PER_PAGE = 50;
+    public const int PER_PAGE = 250;
 
     public const array STATUSES = ['all', 'active', 'on_hold', 'discontinued'];
 

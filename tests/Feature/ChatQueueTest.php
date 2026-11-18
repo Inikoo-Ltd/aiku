@@ -838,7 +838,7 @@ test('a shop may set its own unclaimed time, and the rest follow the group defau
 
     expect($queue())->toContain($patient->id);
 
-    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['chat_unclaimed_email_seconds' => 86400]);
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['chat_unclaimed_email_hours' => 24]);
 
     \Illuminate\Support\Facades\Cache::forget('chat:unclaimed:overrides:email');
 
@@ -847,7 +847,7 @@ test('a shop may set its own unclaimed time, and the rest follow the group defau
 
     // Nought is not a time, it is "no opinion": stored as one it would drag every conversation
     // on the shop into the queue the moment it arrived.
-    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['chat_unclaimed_email_seconds' => 0]);
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['chat_unclaimed_email_hours' => 0]);
 
     \Illuminate\Support\Facades\Cache::forget('chat:unclaimed:overrides:email');
 
@@ -1797,6 +1797,25 @@ describe('chat spike alert', function () {
         }
         foreach (range(1, \App\Actions\Chat\AlertChatMessageSpikes::MIN_CHATS) as $i) {
             noiseTestEmailSession($this->shop, "busy$i@example.com", 'Busy as usual', 'Where is my order');
+        }
+
+        expect(($this->spikeFor)(\App\Actions\Chat\AlertChatMessageSpikes::make()->handle($this->user->username)))->toBeNull();
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    });
+
+    test('a chat spike while orders are at their usual level or higher is a busy day and does not alert', function () {
+        $submittedAt = [now()->subWeek()->subHour(), now()->subHour(), now()->subMinutes(30)];
+        foreach ($submittedAt as $i => $when) {
+            \App\Actions\Ordering\Order\StoreOrder::make()->action($this->customer, [
+                'reference'        => 'SPIKE'.random_int(100000, 999999).$i,
+                'date'             => $when->toDateString(),
+                'customer_id'      => $this->customer->id,
+                'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+                'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+            ])->updateQuietly(['submitted_at' => $when]);
+        }
+        foreach (range(1, \App\Actions\Chat\AlertChatMessageSpikes::MIN_CHATS) as $i) {
+            noiseTestEmailSession($this->shop, "promo$i@example.com", 'Promo question', 'Is this in stock');
         }
 
         expect(($this->spikeFor)(\App\Actions\Chat\AlertChatMessageSpikes::make()->handle($this->user->username)))->toBeNull();

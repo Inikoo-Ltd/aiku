@@ -44,7 +44,8 @@ class CancelReturnDeliveryNote extends OrgAction
 
         $cancelledRef = $returnDeliveryNote->reference.'-CANCELLED';
 
-        $cancelledCount = DB::table('delivery_notes')
+        $cancelledCount = DB::table('return_delivery_notes')
+            ->where('shop_id', $returnDeliveryNote->shop_id)
             ->where('reference', 'like', $cancelledRef.'%')
             ->count();
 

@@ -41,14 +41,16 @@ class PickNewPalletReturnItem extends OrgAction
                     'type'                 => 'StoredItem',
                     'pallet_id'            => $palletStoredItem->pallet_id,
                     'pallet_stored_item_id' => $palletStoredItem->id,
-                    'quantity_ordered'      => $quantityOrdered
+                    'quantity_ordered'      => $quantityOrdered,
+                    'picking_location_id'   => $palletStoredItem->pallet->location_id,
                 ]
             ]);
 
             $palletReturnItem = PalletReturnItem::where([
-                'pallet_return_id' => $palletReturn->id,
-                'pallet_id'   => $palletStoredItem->pallet->id,
-            ])->first();
+                'pallet_return_id'      => $palletReturn->id,
+                'pallet_id'             => $palletStoredItem->pallet->id,
+                'pallet_stored_item_id' => $palletStoredItem->id,
+            ])->orderByDesc('id')->first();
 
             PickPalletReturnItemInPalletReturnWithStoredItem::run($palletReturnItem, [
                 'quantity_picked' => $quantityOrdered

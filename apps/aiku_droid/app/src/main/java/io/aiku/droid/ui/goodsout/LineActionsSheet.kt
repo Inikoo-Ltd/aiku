@@ -168,7 +168,8 @@ private fun LineActionsContent(
                     pending = LineWrite.PickAll
                     onAct(DeliveryNoteWrite.PickAll(lineId = line.id, locationOrgStockId = location?.locationOrgStockId))
                 },
-                icon = R.drawable.ic_ui_check,
+                style = ButtonStyle.Soft,
+                icon = R.drawable.ic_ui_check_double,
                 isLoading = isWorking && pending == LineWrite.PickAll,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -205,7 +206,8 @@ private fun LineActionsContent(
                     pending = LineWrite.NotPicked
                     onAct(DeliveryNoteWrite.NotPicked(lineId = line.id, quantity = null, reason = reason, note = notPickedNote))
                 },
-                style = ButtonStyle.Danger,
+                style = ButtonStyle.DangerStrong,
+                icon = R.drawable.ic_ui_x_circle,
                 isLoading = isWorking && pending == LineWrite.NotPicked,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -217,7 +219,7 @@ private fun LineActionsContent(
                 AikuButton(
                     text = stringResource(R.string.goodsout_set_as_waiting),
                     onClick = { onWaiting(WaitingKind.Warehouse) },
-                    style = ButtonStyle.Outline,
+                    style = ButtonStyle.Caution,
                     icon = R.drawable.ic_ui_pause,
                     height = 52.dp,
                     modifier = Modifier.weight(1f),
@@ -225,7 +227,8 @@ private fun LineActionsContent(
                 AikuButton(
                     text = stringResource(R.string.goodsout_pass_to_cs),
                     onClick = { onWaiting(WaitingKind.Crm) },
-                    style = ButtonStyle.Outline,
+                    style = ButtonStyle.Caution,
+                    icon = R.drawable.ic_ui_chat,
                     height = 52.dp,
                     modifier = Modifier.weight(1f),
                 )
@@ -291,7 +294,7 @@ private fun PickAtLocation(
         AikuButton(
             text = stringResource(R.string.goodsout_line_save_pick, quantityText(amount), location.code),
             onClick = { onSave(amount) },
-            style = ButtonStyle.Soft,
+            icon = R.drawable.ic_ui_next,
             isLoading = isWorking,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),

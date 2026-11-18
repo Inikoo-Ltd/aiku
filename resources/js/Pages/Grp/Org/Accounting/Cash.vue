@@ -76,6 +76,14 @@ const shortMoney = (amount: number) =>
 const ago = (date: string) => useRangeFromNow(date, { addSuffix: true })
 
 const organisationOptions = computed(() => [{ label: ctrans("All"), value: "all" }, ...props.organisations])
+const view = computed({
+	get: () => "cash",
+	set: () => router.get(route("grp.org.accounting.cash_flow.index", { organisation: route().params.organisation })),
+})
+const viewOptions = [
+	{ label: ctrans("Balances"), value: "cash" },
+	{ label: ctrans("Cash flow"), value: "cash_flow" },
+]
 const organisation = computed({
 	get: () => props.organisation ?? "all",
 	set: (value: string) => router.get(route("grp.financials.cash.index", value === "all" ? {} : { org: value })),
@@ -171,6 +179,7 @@ const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (Math.max(row.a
 				</div>
 			</div>
 			<SegmentedToggle v-if="organisations.length > 1" v-model="organisation" :options="organisationOptions" :aria-label="ctrans('Organisation')" />
+			<SegmentedToggle v-if="!isGroup" v-model="view" :options="viewOptions" :aria-label="ctrans('View')" />
 		</div>
 
 		<div v-if="flagged.length" class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">

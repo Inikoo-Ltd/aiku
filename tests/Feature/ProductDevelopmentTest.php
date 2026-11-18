@@ -2163,6 +2163,76 @@ test('an in-house development makes each SKU as an artefact of its production un
         ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.formulation'));
 });
 
+test('an in-house SKU is formulated in named stages, each with its own trial runs and proposed artisan, and is approved only when every stage is, HELP-4780', function () {
+    [$productDevelopment, $production] = inHouseDevelopment($this);
+    $item         = $productDevelopment->items()->with('tradeUnit')->orderBy('id')->firstOrFail();
+    $organisation = $production->organisation;
+    $artisan      = \App\Actions\HumanResources\Employee\StoreEmployee::make()->action($organisation, [
+        ...\App\Models\HumanResources\Employee::factory()->make(['organisation_id' => $organisation->id])->toArray(),
+        'worker_number'   => 'W'.rand(1000, 9999),
+        'alias'           => 'Alias '.rand(1000, 9999),
+        'type'            => \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+    ]);
+    $recipes = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::class;
+    $blend   = $recipes::formulations($item)->first();
+    $blend->update(['name' => 'Essential oil blend']);
+
+    post(route('grp.models.product_development.item.formulation.store', ['productDevelopmentItem' => $item->id]), ['name' => 'Final product', 'artisan_id' => $artisan->id])->assertRedirect()->assertSessionHasNoErrors();
+    $final = $item->formulations()->where('position', 2)->firstOrFail();
+    expect($final->name)->toBe('Final product')->and($final->artisan_id)->toBe($artisan->id)
+        ->and($recipes::currentFormulation($item->fresh())->id)->toBe($blend->id);
+
+    $store     = \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample::make();
+    $submit    = \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make();
+    $review    = \App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample::make();
+    expect(fn () => $store->action($item->fresh(), $this->user, ['product_development_formulation_id' => $final->id]))->toThrow(ValidationException::class);
+    $blendRun  = $store->action($item->fresh(), $this->user, []);
+    $submit->action($blendRun->fresh(), $this->user);
+    $review->action($blendRun->fresh(), $this->user, ['operation' => 'approve']);
+    expect($blendRun->product_development_formulation_id)->toBe($blend->id)
+        ->and($recipes::approvedItemCount($productDevelopment->fresh()))->toBe(0)
+        ->and($recipes::currentFormulation($item->fresh())->id)->toBe($final->id);
+
+    $jobOrder = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, ['item_ids' => [$item->id], 'quantity' => 2])[0];
+    $finalRun = $item->samples()->where('number', 2)->firstOrFail();
+    expect($finalRun->product_development_formulation_id)->toBe($final->id)
+        ->and($jobOrder->employee_id)->toBeNull()
+        ->and($jobOrder->data['proposed_employee_id'])->toBe($artisan->id)
+        ->and($jobOrder->internal_notes)->toContain('Final product');
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('formulation.skus.0.formulations', 2)
+            ->where('formulation.skus.0.formulations.0.approved', '01')
+            ->where('formulation.skus.0.formulations.1.artisan', $artisan->contact_name)
+            ->where('formulation.skus.0.formulations.1.assignment.value', 'pending_approval')
+            ->where('formulation.skus.0.formulations.1.can_delete', false)
+            ->where('formulation.skus.0.samples.0.formulation_id', $final->id)
+            ->where('formulation.skus.0.final', null)
+            ->where('formulation.progress.done', 0));
+
+    delete(route('grp.models.product_development.formulation.delete', ['productDevelopmentFormulation' => $final->id]))->assertSessionHasErrors('formulation');
+
+    $submit->action($finalRun->fresh(), $this->user);
+    $review->action($finalRun->fresh(), $this->user, ['operation' => 'approve']);
+    expect($recipes::approvedItemCount($productDevelopment->fresh()))->toBe(1);
+
+    patch(route('grp.models.product_development.formulation.update', ['productDevelopmentFormulation' => $final->id]), ['name' => 'Shower steamer', 'artisan_id' => null])->assertRedirect();
+    expect($final->fresh()->name)->toBe('Shower steamer')->and($final->fresh()->artisan_id)->toBeNull();
+
+    post(route('grp.models.product_development.item.formulation.store', ['productDevelopmentItem' => $item->id]), ['name' => 'Fragrance strength'])->assertRedirect();
+    $extra = $item->formulations()->where('position', 3)->firstOrFail();
+    expect($recipes::approvedItemCount($productDevelopment->fresh()))->toBe(0);
+    delete(route('grp.models.product_development.formulation.delete', ['productDevelopmentFormulation' => $extra->id]))->assertRedirect()->assertSessionHasNoErrors();
+    expect($recipes::approvedItemCount($productDevelopment->fresh()))->toBe(1)
+        ->and($recipes::finalSample($item->fresh())->id)->toBe($finalRun->id);
+
+    $productDevelopment->updateQuietly(['current_position' => ProductDevelopmentStageEnum::specsPosition() + 1]);
+    post(route('grp.models.product_development.item.formulation.store', ['productDevelopmentItem' => $item->id]), ['name' => 'Too late'])->assertSessionHasErrors('name');
+});
+
 test('a trial run a development asks for shows the artisan the development, and its first step is the formulation, which the development keeps, HELP-4545', function () {
     [$productDevelopment, $production] = inHouseDevelopment($this, 1);
     $item                              = $productDevelopment->items()->with(['artefact', 'tradeUnit'])->firstOrFail();
@@ -2931,4 +3001,20 @@ test('the AI check sends a slim copy of a print-resolution artwork, keeping its 
         ->and((new \Smalot\PdfParser\Parser())->parseContent($slim)->getText())->toContain('ROSES OF SAWREY ROOM SPRAY')
         ->and(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::slim('small, sent untouched'))->toBe('small, sent untouched')
         ->and(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::slim(str_repeat('not a pdf ', 500_000)))->toBe(str_repeat('not a pdf ', 500_000));
+});
+
+test('a cancelled development leaves the list and the All count, and shows under Cancelled, HELP-4776', function () {
+    $productDevelopment = storeDevelopmentWithNewSkus($this, 1);
+    $productDevelopment->updateQuietly(['status' => ProductDevelopmentStatusEnum::CANCELLED]);
+
+    $response = get(route('grp.product_developments.index', ['perPage' => 500]))->assertOk();
+    $props    = $response->viewData('page')['props'];
+
+    expect(collect($props['data']['data'])->pluck('code'))->not->toContain($productDevelopment->code)
+        ->and($props['filterBar']['counts']['all'])->toBe($props['data']['meta']['total']);
+
+    get(route('grp.product_developments.index', ['filter' => ['status' => 'cancelled'], 'perPage' => 500]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('code')->contains($productDevelopment->code)));
 });

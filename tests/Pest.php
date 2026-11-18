@@ -469,9 +469,9 @@ function createStocks(Group $group): array
             array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE])
         );
     } else {
-        $stock  = $group->stocks()->first();
-        $stock2 = $group->stocks()->skip(1)->first();
-        $stock3 = $group->stocks()->skip(2)->first();
+        $stock  = $group->stocks()->orderBy('id')->first();
+        $stock2 = $group->stocks()->orderBy('id')->skip(1)->first();
+        $stock3 = $group->stocks()->orderBy('id')->skip(2)->first();
     }
 
     return [

@@ -253,6 +253,56 @@ test('assigning a line to an artisan refreshes the manufacture floor tablets', f
     \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\BroadcastManufactureFloorChanged::class, fn ($event) => $event->productionId == $this->production->id);
 });
 
+test('a transaction whose commit fails does not stop the next one telling the floor', function () {
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    $task = \App\Models\Production\JobOrderItemTask::where('job_order_id', $jobOrder->id)->firstOrFail();
+
+    \Illuminate\Support\Facades\DB::statement('create temporary table if not exists failing_commit (id int, constraint failing_commit_unique unique (id) deferrable initially deferred)');
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastManufactureFloorChanged::class]);
+
+    expect(fn () => \Illuminate\Support\Facades\DB::transaction(function () use ($task) {
+        $task->forceFill(['updated_at' => now()->addSecond()])->save();
+        \Illuminate\Support\Facades\DB::insert('insert into failing_commit (id) values (1), (1)');
+    }))->toThrow(\PDOException::class);
+    \Illuminate\Support\Facades\Event::assertNotDispatched(\App\Events\BroadcastManufactureFloorChanged::class);
+    expect(\Illuminate\Support\Facades\DB::transactionLevel())->toBe(0);
+
+    \Illuminate\Support\Facades\DB::transaction(fn () => $task->forceFill(['updated_at' => now()->addSeconds(2)])->save());
+    expect(\Illuminate\Support\Facades\Event::dispatched(\App\Events\BroadcastManufactureFloorChanged::class)->count())->toBeGreaterThanOrEqual(1);
+
+    \Illuminate\Support\Facades\DB::statement('drop table if exists failing_commit');
+});
+
+test('many task saves in one transaction tell the floor once, after the commit, and a rolled back one tells nobody', function () {
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 20]);
+    $tasks = \App\Models\Production\JobOrderItemTask::where('job_order_id', $jobOrder->id)->get();
+    expect($tasks->count())->toBeGreaterThan(1);
+
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastManufactureFloorChanged::class]);
+    $touchAll = fn () => $tasks->each(fn ($task) => $task->forceFill(['updated_at' => now()->addSecond()])->save());
+
+    \Illuminate\Support\Facades\DB::transaction(function () use ($touchAll) {
+        $touchAll();
+        \Illuminate\Support\Facades\Event::assertNotDispatched(\App\Events\BroadcastManufactureFloorChanged::class);
+    });
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastManufactureFloorChanged::class, 1);
+
+    try {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($touchAll) {
+            $touchAll();
+            throw new \RuntimeException('rolled back');
+        });
+    } catch (\RuntimeException) {
+    }
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastManufactureFloorChanged::class, 1);
+
+    $touchAll();
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastManufactureFloorChanged::class, 1 + $tasks->count());
+});
+
 test('to produce board lists each artisan and their share of a split job order', function () {
     $stocks   = createStocks($this->group);
     $orgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
@@ -1822,7 +1872,8 @@ test('a bottle filled to order puts a fill line on To Produce, holds the whole o
     $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
     expect(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::make()->action($order->refresh(), []))->toBeNull()
         ->and($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED)
-        ->and($order->private_warehouse_note)->toContain($product->code);
+        ->and($order->private_warehouse_note)->toContain($product->code)
+        ->and(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::heldReason('Fragile — '.$order->private_warehouse_note))->toBe('waiting for filling: '.$product->code);
 
     $result = \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [$lines[0]->id]);
     $jobOrder = $result['job_orders'][0];
@@ -1856,6 +1907,41 @@ test('a bottle filled to order puts a fill line on To Produce, holds the whole o
     $filledSession = \App\Models\Production\ManufactureTaskSession::where('job_order_item_task_id', $carried->tasks()->first()->id)->latest('id')->first();
     expect(fn () => \App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession::make()->action($filledSession, $this->guest->getUser()))
         ->toThrow(\Illuminate\Validation\ValidationException::class, 'filled for order');
+});
+
+test('a fill product given its SKO after the order was submitted gets its fill line when the order goes to the warehouse', function () {
+    [, , $shop] = createShop();
+    createWarehouse();
+    [, $product] = createProduct($shop);
+    $orgStock    = $product->orgStocks()->first();
+    $product->update(['code' => $orgStock->code.'-10ml']);
+
+    $fill = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FILL-10ML-'.uniqid(), 'name' => 'Fill 10ml']);
+    $fill->update(['settings' => ['fills_size' => '10ml'], 'org_stock_id' => null]);
+
+    $customer = createCustomer($shop);
+    $order    = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'FILLLATE-'.uniqid(),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    $transaction = \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->refresh()->historicAsset, array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+
+    $pivot = \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->where('product_id', $product->id)->first();
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->where('product_id', $product->id)->delete();
+    expect(\App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::run($order->refresh()))->toBe([]);
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->insert((array) $pivot);
+
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+    expect(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::make()->action($order->refresh(), []))->toBeNull()
+        ->and($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED)
+        ->and($order->private_warehouse_note)->toContain('waiting for filling');
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::where('transaction_id', $transaction->id)->sole();
+    expect((float) $line->quantity)->toBe(2.0)
+        ->and($line->org_stock_id)->toBe($orgStock->id);
 });
 
 test('a fill line follows its order line: quantity changes, removal and cancelling the order', function () {
@@ -1941,6 +2027,9 @@ test('a fill line shows on the board as the bottles for its order and shop, and 
         ->and(data_get($card, 'shop_name'))->toBe($shop->name)
         ->and(data_get($card, 'customer_name'))->toBe($customer->name)
         ->and($cardOf(['filter' => ['global' => $order->reference]]))->not->toBeNull();
+
+    $order->update(['submitted_at' => now()->subDays(3)]);
+    expect((int) data_get($cardOf(), 'order_waiting_days'))->toBe(3);
 
     $jobOrder = \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [$line->id])['job_orders'][0];
     expect($jobOrder->jobOrderItems()->first()->displayName())->toContain($order->reference)->toContain($shop->name);
@@ -2206,4 +2295,31 @@ test('a simple board finishes a producing card dropped on Done and receives it i
     } finally {
         $user->employees()->detach($mover->id);
     }
+});
+
+test('a backlog card carries the sales forecast of its SKO', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
+    StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FCST-01', 'name' => 'Forecast line'])->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
+    $orgStocks[0]->stats()->update(['predicted_daily_usage' => 2.5, 'days_of_cover' => 0]);
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stocks[0]->id,
+        'org_stock_id'    => $orgStocks[0]->id,
+        'quantity'        => 5,
+    ]);
+
+    actingAs($this->guest->getUser());
+    $card = collect(collect(get(route('grp.org.productions.show.to_produce.index', [$this->organisation->slug, $this->production->slug]))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->firstWhere('label', 'Backlog')['items'])->firstWhere('id', $line->id);
+
+    expect($card['stock_cover']['daily_usage'])->toBe(2.5)
+        ->and($card['stock_cover']['days'])->toBe(0.0)
+        ->and($card['quarterly_usage'])->toBeArray()
+        ->and($card)->toHaveKey('stock_in_locations');
 });

@@ -8,7 +8,8 @@
 
 namespace App\Models\Production;
 
-use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Model;
@@ -135,8 +136,9 @@ class ManufacturePayrollAdjustment extends Model implements Auditable
     }
 
     /**
-     * Whoever holds an accounting position, even when also an organisation admin (the head of accounts), or else accounting
-     * edit without being the production manager.
+     * Whoever holds an Accounts or Accounting manager position in the organisation, even when also an organisation admin
+     * (the head of accounts), or else accounting edit without being the production manager. Positions, not roles: an
+     * organisation admin's accounting roles are dropped as covered by the admin role.
      */
     public static function isAccountant(User $user, Production $production): bool
     {
@@ -144,10 +146,18 @@ class ManufacturePayrollAdjustment extends Model implements Auditable
             return false;
         }
 
-        return $user->hasRole([
-            RolesEnum::getRoleName(RolesEnum::ACCOUNTING_CLERK->value, $production->organisation),
-            RolesEnum::getRoleName(RolesEnum::ACCOUNTING_SUPERVISOR->value, $production->organisation),
-        ]) || !$user->authTo('org-supervisor.'.$production->organisation_id);
+        return !$user->authTo('org-supervisor.'.$production->organisation_id) || self::holdsAccountingPosition($user, $production->organisation_id);
+    }
+
+    private static function holdsAccountingPosition(User $user, int $organisationId): bool
+    {
+        $accountingPosition = fn ($query) => $query->where('job_positions.organisation_id', $organisationId)->whereIn('job_positions.code', ['acc-m', 'acc-c']);
+
+        return $user->pseudoJobPositions()->where($accountingPosition)->exists()
+            || JobPosition::query()->where($accountingPosition)->whereHas('employees', fn ($query) => $query->whereIn(
+                'employees.id',
+                $user->employees()->wherePivot('status', true)->where('employees.state', '!=', EmployeeStateEnum::LEFT)->select('employees.id')
+            ))->exists();
     }
 
     /**

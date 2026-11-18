@@ -92,8 +92,16 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
          */
         $hasWaitingItems = $deliveryNote->hasBlockingItems();
 
-        if ($hasUnfinishedPackings->count() == 0 && !$hasWaitingItems && !UpdateDeliveryNoteStatePacked::hasMissingParcelDimensions($deliveryNote) && !DeliveryNoteBoxPackingList::make()->missingBoxesMessage($deliveryNote)) {
-            UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $user);
+        if ($hasUnfinishedPackings->count() == 0
+            && !$hasWaitingItems
+            && !$deliveryNote->hasUnprintedLeaflets()
+            && !UpdateDeliveryNoteStatePacked::hasMissingParcelDimensions($deliveryNote)
+            && !DeliveryNoteBoxPackingList::make()->missingBoxesMessage($deliveryNote)) {
+            try {
+                UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $user);
+            } catch (ValidationException) {
+                $deliveryNote->refresh();
+            }
         }
 
         return $deliveryNoteItem;

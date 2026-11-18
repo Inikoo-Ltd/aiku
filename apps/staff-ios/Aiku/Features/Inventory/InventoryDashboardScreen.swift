@@ -22,9 +22,7 @@ struct InventoryDashboardScreen: View {
                 liveContent
             } else {
                 blocks(store.dashboard)
-                SectionHeading("Stock history · today", actionTitle: "All") {
-                    router.open(InventoryRoute.stockHistory)
-                }
+                SectionHeading("Stock history · today")
                 if store.recentMovements.isEmpty {
                     EmptyState(icon: .history, title: "No stock movements today")
                 } else {

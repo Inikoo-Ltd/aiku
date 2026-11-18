@@ -48,6 +48,9 @@ use App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentComponent
 use App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentComponent;
 use App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample;
+use App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentFormulation;
+use App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentFormulation;
+use App\Actions\Goods\ProductDevelopment\Recipe\DeleteProductDevelopmentFormulation;
 use App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Design\CancelProductDevelopmentArtworkInAiku;
@@ -522,6 +525,7 @@ use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
+use App\Actions\Masters\MasterAsset\UpdateMasterAssetMainPrices;
 use App\Actions\Masters\Competitor\RefreshCompetitorIntel;
 use App\Actions\Masters\Competitor\ReviewMasterAssetCompetitorProduct;
 use App\Actions\Masters\Competitor\StoreCompetitor;
@@ -601,6 +605,8 @@ use App\Actions\Procurement\SupplierAgreedTerm\WithdrawSupplierAgreedTerm;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderJourneyStage;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderReference;
+use App\Actions\Procurement\PurchaseOrder\ChangePurchaseOrderSupplier;
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderChangeSupplierOptions;
 use App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage;
 use App\Actions\Procurement\PurchaseOrder\SkipPurchaseOrderStage;
 use App\Actions\Procurement\PurchaseOrderChase\StorePurchaseOrderChase;
@@ -734,6 +740,7 @@ use App\Actions\SupplyChain\SupplierShareLink\RevokeSupplierShareLink;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier;
+use App\Actions\SupplyChain\SupplierProduct\BulkUpdateSupplierProductsState;
 use App\Actions\SupplyChain\SupplierProduct\RepairSupplierProductsSupplier;
 use App\Actions\SupplyChain\SupplierProduct\CheckSupplierProductForm;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProductFromForm;
@@ -897,6 +904,8 @@ use App\Actions\Helpers\TicketProject\AssignWorkToProject;
 use App\Actions\Helpers\TicketProject\AttachWorkToProject;
 use App\Actions\Helpers\TicketProject\StoreTicketProject;
 use App\Actions\Helpers\TicketProject\StoreTicketProjectUpdate;
+use App\Actions\Helpers\TicketProject\UpdateTicketProjectUpdate;
+use App\Actions\Helpers\TicketProject\DeleteTicketProjectUpdate;
 use App\Actions\Helpers\TicketProject\UpdateTicketProject;
 use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\StoreTicket;
@@ -958,6 +967,8 @@ Route::prefix('ticket-project')->name('ticket_project.')->group(function () {
     Route::post('/', StoreTicketProject::class)->name('store');
     Route::patch('{ticketProject:id}', UpdateTicketProject::class)->name('update')->whereNumber('ticketProject');
     Route::post('{ticketProject:id}/update', StoreTicketProjectUpdate::class)->name('update.store')->whereNumber('ticketProject');
+    Route::patch('update/{ticketProjectUpdate:id}', UpdateTicketProjectUpdate::class)->name('update.update')->whereNumber('ticketProjectUpdate');
+    Route::delete('update/{ticketProjectUpdate:id}', DeleteTicketProjectUpdate::class)->name('update.delete')->whereNumber('ticketProjectUpdate');
     Route::post('{ticketProject:id}/work', AttachWorkToProject::class)->name('work.attach')->whereNumber('ticketProject');
 });
 
@@ -1120,6 +1131,7 @@ Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(
 Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(function () {
     Route::patch('update', UpdateMasterAsset::class)->name('update');
     Route::patch('update-prices', UpdateMasterAssetPrices::class)->name('prices.update');
+    Route::patch('update-main-prices', UpdateMasterAssetMainPrices::class)->name('main_prices.update');
     Route::patch('repair-trade-units', RepairMasterAssetTradeUnitsToChildren::class)->name('repair_mismatch_trade_units');
     Route::post('fix-anomalies', FixMasterAssetAnomaliesFromMaster::class)->name('fix_anomalies');
     Route::patch('information', UpdateMasterProductInformation::class)->name('information.update');
@@ -1312,6 +1324,9 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('/bank-transaction/{bankTransaction:id}/customer-credit', PayBankTransactionToCustomerCredit::class)->name('bank_transaction.customer_credit')->withoutScopedBindings();
     Route::post('/bank-transaction/{bankTransaction:id}/dismiss', DismissBankTransaction::class)->name('bank_transaction.dismiss')->withoutScopedBindings();
     Route::post('/bank-transaction/{bankTransaction:id}/restore', RestoreBankTransaction::class)->name('bank_transaction.restore')->withoutScopedBindings();
+    Route::post('/shop/{shop:id}/bank-transaction/{bankTransaction:id}/pay-order', [PayBankTransactionToOrder::class, 'inShop'])->name('shop.bank_transaction.pay_order')->withoutScopedBindings();
+    Route::post('/shop/{shop:id}/bank-transaction/{bankTransaction:id}/customer-credit', [PayBankTransactionToCustomerCredit::class, 'inShop'])->name('shop.bank_transaction.customer_credit')->withoutScopedBindings();
+    Route::post('/shop/{shop:id}/bank-transaction/{bankTransaction:id}/our-customer', [\App\Actions\Accounting\BankTransaction\PointBankTransactionToCustomer::class, 'inShop'])->name('shop.bank_transaction.point_customer')->withoutScopedBindings();
 });
 
 Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilmentTransaction:id}')->group(function () {
@@ -1841,6 +1856,7 @@ Route::post('/supplier-mailshots', StoreSupplierMailshot::class)->name('supplier
 Route::post('/supplier-mailshots/{mailshot:id}/send', SendSupplierMailshot::class)->name('supplier_mailshot.send');
 Route::post('/supplier/{supplier:id}/change-request', StoreSupplierChangeRequest::class)->name('supplier.change_request.store');
 Route::patch('/supplier-change-request/{supplierChangeRequest:id}/decide', DecideSupplierChangeRequest::class)->name('supplier_change_request.decide');
+Route::patch('/supplier-products/state', BulkUpdateSupplierProductsState::class)->name('supplier-products.state.update');
 Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::class)->name('supplier-product.update');
 Route::patch('/org-supplier-product/{orgSupplierProduct:id}', UpdateOrgSupplierProduct::class)->name('org_supplier_product.update');
 Route::patch('/org-supplier-product/{orgSupplierProduct:id}/minimum-carton-order', UpdateOrgSupplierProductMinimumCartonOrder::class)->name('org_supplier_product.minimum_carton_order.update');
@@ -2127,6 +2143,8 @@ Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(functi
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {
     Route::patch('update', UpdatePurchaseOrder::class)->name('update');
     Route::patch('reference', UpdatePurchaseOrderReference::class)->name('reference.update');
+    Route::get('change-supplier', GetPurchaseOrderChangeSupplierOptions::class)->name('change_supplier.options');
+    Route::patch('change-supplier', ChangePurchaseOrderSupplier::class)->name('change_supplier');
     Route::patch('journey-stage', UpdatePurchaseOrderJourneyStage::class)->name('journey_stage');
     Route::patch('stage', MarkPurchaseOrderStage::class)->name('stage');
     Route::patch('skip-stage', SkipPurchaseOrderStage::class)->name('skip_stage');
@@ -2325,6 +2343,9 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::delete('brief-file/{productDevelopmentFile:id}', RemoveProductDevelopmentBriefFile::class)->name('brief_file.remove')->withoutScopedBindings();
     Route::patch('item/{productDevelopmentItem:id}/brief', UpdateProductDevelopmentItemBrief::class)->name('item.brief')->withoutScopedBindings();
     Route::post('item/{productDevelopmentItem:id}/sample', StoreProductDevelopmentSample::class)->name('item.sample.store')->withoutScopedBindings();
+    Route::post('item/{productDevelopmentItem:id}/formulation', StoreProductDevelopmentFormulation::class)->name('item.formulation.store')->withoutScopedBindings();
+    Route::patch('formulation/{productDevelopmentFormulation:id}', UpdateProductDevelopmentFormulation::class)->name('formulation.update')->withoutScopedBindings();
+    Route::delete('formulation/{productDevelopmentFormulation:id}', DeleteProductDevelopmentFormulation::class)->name('formulation.delete')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}', UpdateProductDevelopmentSample::class)->name('sample.update')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}/submit', SubmitProductDevelopmentSample::class)->name('sample.submit')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}/review', ReviewProductDevelopmentSample::class)->name('sample.review')->withoutScopedBindings();

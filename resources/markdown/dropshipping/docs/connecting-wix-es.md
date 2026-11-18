@@ -1,8 +1,8 @@
 ---
 title: Conectar tu tienda Wix
 summary: Instala nuestra aplicación en tu sitio Wix para enlazarlo con tu cuenta de dropshipping, comprueba las tres marcas que indican que está lista, y arregla un canal que dice que no está conectado.
-date: 2026-09-25
-source_date: 2026-09-28
+date: 2026-11-17
+source_date: 2026-11-17
 tags: wix, wix stores, canal de ventas, conectar
 category: sales-channels
 series: wix
@@ -27,7 +27,7 @@ Ve a <b>Canales</b>, pulsa <b>Agregar canal de ventas</b> y luego <b>Conectar</b
 1. Abre <b>Canales</b> en el menú. La página <b>Canales de venta</b> muestra los canales que ya tienes.
 2. Pulsa <b>Agregar canal de ventas</b>. Se abre la página <b>Crear canales</b>.
 3. Busca la tarjeta de <b>Wix</b> y pulsa <b>Conectar</b>. Wix se abre en una pestaña nueva.
-4. Si Wix te lo pide, inicia sesión. Elige el sitio que quieres conectar e instala la aplicación. Wix muestra los permisos que necesita la aplicación; acéptalos para continuar.
+4. Si Wix te lo pide, inicia sesión. Elige el sitio que quieres conectar e instala la aplicación. Wix muestra los permisos que necesita la aplicación; acéptalos para continuar. Consulta <b>Qué puede ver y hacer la aplicación</b> más abajo.
 5. Cuando la instalación termina, Wix te devuelve a tu cuenta de dropshipping y abre el panel de tu nuevo canal.
 
 <!-- screenshot: la página Create Channels con la tarjeta de Wix y su botón Connect -->
@@ -37,6 +37,18 @@ Ve a <b>Canales</b>, pulsa <b>Agregar canal de ventas</b> y luego <b>Conectar</b
 Termina la instalación dentro de las dos horas siguientes a pulsar <b>Conectar</b>. Después el enlace caduca y tienes que pulsar <b>Conectar</b> de nuevo.
 
 El canal recibe el nombre de tu sitio Wix. Puedes cambiarlo más tarde en <b>Gestionar el canal de ventas</b>, <b>Store name</b>.
+
+## Qué puede ver y hacer la aplicación
+
+Cuando instalas AW Connect, Wix muestra los permisos que pide la aplicación. Esto es para lo que los usamos:
+
+- <b>Los productos de tu tienda</b>: creamos nuestros productos en Wix Stores, actualizamos sus datos, precios e imágenes, y los quitamos cuando los quitas de tu canal. Los productos tuyos que no enlazas con los nuestros solo los leemos, para que puedas enlazarlos.
+- <b>Stock</b>: mantenemos al día el stock de nuestros productos en tu sitio.
+- <b>Pedidos</b>: leemos los pedidos de tus compradores, incluida la dirección de entrega, para poder enviar los paquetes. Si cancelamos un pedido por nuestra parte, también lo cancelamos en Wix.
+- <b>Envíos</b>: cuando enviamos un pedido, lo marcamos como completado en Wix con el número y el enlace de seguimiento.
+- <b>Datos del sitio</b>: el nombre, la dirección, la moneda y el idioma de tu sitio, y el email del propietario del sitio, que usamos para enlazar el sitio con tu cuenta de dropshipping.
+
+No tocamos tus pagos de Wix, el diseño de tu sitio ni tus otras aplicaciones de Wix. Wix te pide aceptar los permisos para instalar la aplicación. Si prefieres no conectar tu sitio, puedes introducir a mano los pedidos de tus compradores en un canal manual: consulta [Hacer pedidos manualmente](/docs/placing-orders-manually).
 
 ## Comprobar que el canal está listo
 

@@ -20,6 +20,8 @@ use App\Actions\Dispatching\Shipment\ApiCalls\TrackGlsEsShipments;
 use App\Actions\Inventory\LocationOrgStock\DisassociateEmptyLocationOrgStocks;
 use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
+use App\Actions\Dropshipping\Orderchamp\GetOrderchampOrders;
+use App\Actions\Dropshipping\Ankorstore\GetAnkorstoreOrders;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\SyncDispatchedFaireOrdersTax;
 use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyOrdersAllShops;
@@ -130,6 +132,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('procurement:send-minimum-poke-digests')->everyFifteenMinutes()->onOneServer()->withoutOverlapping();
         $schedule->command('bank-connections:sync')->everyFifteenMinutes()->onOneServer()->withoutOverlapping(60)->runInBackground();
         $schedule->command('bank-transactions:cod-payouts --commit --days=30')->hourlyAt(20)->onOneServer()->withoutOverlapping(60)->runInBackground();
+        $schedule->command('bank-transactions:checkout-payouts --commit')->hourlyAt(25)->onOneServer()->withoutOverlapping(60)->runInBackground();
         $schedule->command('staff-tasks:remind-due')->hourly()->onOneServer();
         $schedule->command('product-developments:remind')->dailyAt('08:00')->timezone('Europe/London')->onOneServer();
         $schedule->command('appointments:close-past')->everyFifteenMinutes()->onOneServer()->withoutOverlapping();
@@ -138,6 +141,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('hr:sync-leave-cover-roles')->hourly()->onOneServer()->withoutOverlapping();
         $schedule->command('hr:add-leave-cover-collaborators')->hourly()->onOneServer()->withoutOverlapping();
         $schedule->command('currency:warm')->everyFourHours()->onOneServer()->withoutOverlapping(30);
+        $schedule->command('currency:fill-today')->dailyAt('23:30')->timezone('UTC')->onOneServer()->withoutOverlapping(30);
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
         $schedule->command('repair:eu-tax-numbers')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping(60);
         $schedule->command('sales-analysis:warm')->dailyAt('01:30')->onOneServer()->withoutOverlapping();
@@ -652,34 +656,6 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            $this->logSchedule(
-                $schedule->command('fetch:stock_movements aroma -N -D 2')->everyTenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'FetchAuroraStockMovementsAroma',
-                ),
-                name: 'FetchAuroraStockMovements',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->command('fetch:stock_movements sk  -N -D 2')->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'FetchAuroraStockMovements',
-                ),
-                name: 'FetchAuroraStockMovementsSk',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-
-            $this->logSchedule(
-                $schedule->command('fetch:stock_movements es -N -D 2')->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'FetchAuroraStockMovementsEs',
-                ),
-                name: 'FetchAuroraStockMovements',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
             foreach (['aw' => '5:05', 'sk' => '5:15', 'es' => '5:25', 'aroma' => '5:35'] as $organisationSlug => $scheduledAt) {
                 $this->logSchedule(
                     $schedule->command('org_stock_movement:calculate_running_values '.$organisationSlug.' --days=2')->dailyAt($scheduledAt)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
@@ -984,6 +960,24 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'GetFaireOrdersAllShops',
                 ),
                 name: 'GetFaireOrdersAllShops',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(GetOrderchampOrders::makeJob())->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'GetOrderchampOrders',
+                ),
+                name: 'GetOrderchampOrders',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(GetAnkorstoreOrders::makeJob())->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'GetAnkorstoreOrders',
+                ),
+                name: 'GetAnkorstoreOrders',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

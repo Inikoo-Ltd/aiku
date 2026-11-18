@@ -57,7 +57,7 @@ struct GoodsOutSwipeRow<Content: View>: View {
             content
                 .offset(x: offset)
                 .animation(dragOffset == nil ? .easeOut(duration: 0.2) : nil, value: offset)
-                .simultaneousGesture(dragGesture)
+                .modifier(GoodsOutSwipeGesture(onChanged: dragChanged, onEnded: dragEnded, fallback: dragGesture))
                 .onTapGesture {
                     if open?.rowID == rowID {
                         open = nil
@@ -122,42 +122,100 @@ struct GoodsOutSwipeRow<Content: View>: View {
         .accessibilityIdentifier("goodsOut.swipe.\(item.id)")
     }
 
-    private var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 12)
-            .onChanged { value in
-                if isHorizontalDrag == nil {
-                    isHorizontalDrag = abs(value.translation.width) > abs(value.translation.height)
-                    if isHorizontalDrag == true, let open, open.rowID != rowID {
-                        self.open = nil
+    private var dragGesture: AnyGesture<Void> {
+        AnyGesture(
+            DragGesture(minimumDistance: 12)
+                .onChanged { value in
+                    if isHorizontalDrag == nil {
+                        isHorizontalDrag = abs(value.translation.width) > abs(value.translation.height)
                     }
+                    guard isHorizontalDrag == true else { return }
+                    dragChanged(value.translation.width)
                 }
-                guard isHorizontalDrag == true else { return }
-                let proposed = restingOffset + value.translation.width
-                let allowLeading = !leadingActions.isEmpty
-                let allowTrailing = !trailingActions.isEmpty
-                let lower: CGFloat = allowTrailing ? -300 : 0
-                let upper: CGFloat = allowLeading ? 300 : 0
-                dragOffset = min(upper, max(lower, proposed))
-            }
-            .onEnded { _ in
-                defer {
-                    isHorizontalDrag = nil
-                }
-                guard isHorizontalDrag == true, let final = dragOffset else { return }
-                dragOffset = nil
-                if final > fullThreshold, let fullLeading {
-                    open = nil
-                    fullLeading()
-                } else if final > openThreshold {
-                    open = GoodsOutSwipeOpen(rowID: rowID, side: .leading)
-                } else if final < -(fullThreshold + 30), let fullTrailing {
-                    open = nil
-                    fullTrailing()
-                } else if final < -openThreshold {
-                    open = GoodsOutSwipeOpen(rowID: rowID, side: .trailing)
-                } else {
-                    open = nil
-                }
-            }
+                .onEnded { _ in dragEnded() }
+                .map { _ in () }
+        )
+    }
+
+    private func dragChanged(_ translation: CGFloat) {
+        isHorizontalDrag = true
+        if dragOffset == nil, let open, open.rowID != rowID {
+            self.open = nil
+        }
+        let lower: CGFloat = trailingActions.isEmpty ? 0 : -300
+        let upper: CGFloat = leadingActions.isEmpty ? 0 : 300
+        dragOffset = min(upper, max(lower, restingOffset + translation))
+    }
+
+    private func dragEnded() {
+        defer { isHorizontalDrag = nil }
+        guard isHorizontalDrag == true, let final = dragOffset else { return }
+        dragOffset = nil
+        if final > fullThreshold, let fullLeading {
+            open = nil
+            fullLeading()
+        } else if final > openThreshold {
+            open = GoodsOutSwipeOpen(rowID: rowID, side: .leading)
+        } else if final < -(fullThreshold + 30), let fullTrailing {
+            open = nil
+            fullTrailing()
+        } else if final < -openThreshold {
+            open = GoodsOutSwipeOpen(rowID: rowID, side: .trailing)
+        } else {
+            open = nil
+        }
+    }
+}
+
+private struct GoodsOutSwipeGesture: ViewModifier {
+    let onChanged: (CGFloat) -> Void
+    let onEnded: () -> Void
+    let fallback: AnyGesture<Void>
+
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, *) {
+            content.gesture(HorizontalPanGesture(onChanged: onChanged, onEnded: onEnded))
+        } else {
+            content.simultaneousGesture(fallback)
+        }
+    }
+}
+
+@available(iOS 18.0, *)
+private struct HorizontalPanGesture: UIGestureRecognizerRepresentable {
+    let onChanged: (CGFloat) -> Void
+    let onEnded: () -> Void
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator {
+        Coordinator()
+    }
+
+    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+        let recognizer = UIPanGestureRecognizer()
+        recognizer.delegate = context.coordinator
+        return recognizer
+    }
+
+    func handleUIGestureRecognizerAction(_ recognizer: UIPanGestureRecognizer, context: Context) {
+        switch recognizer.state {
+        case .began, .changed:
+            onChanged(recognizer.translation(in: recognizer.view).x)
+        case .ended, .cancelled, .failed:
+            onEnded()
+        default:
+            break
+        }
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return false }
+            let velocity = pan.velocity(in: pan.view)
+            return abs(velocity.x) > abs(velocity.y) * 1.2
+        }
+
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy other: UIGestureRecognizer) -> Bool {
+            other.view is UIScrollView
+        }
     }
 }

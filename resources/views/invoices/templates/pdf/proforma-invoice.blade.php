@@ -146,7 +146,7 @@
         </td>
         <td style="text-align: right">
             <div>
-                {{ __('Date') }}: <b>{{ $order->date->copy()->setTimezone($shop->timezone->name)->translatedFormat('j F Y') }}</b>
+                {{ __('Date') }}: <b>{{ ($order->submitted_at ?? $order->date)->copy()->setTimezone($shop->timezone->name)->translatedFormat('j F Y') }}</b>
             </div>
         </td>
     </tr>

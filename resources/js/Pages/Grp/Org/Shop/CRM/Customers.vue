@@ -15,6 +15,7 @@ import { faExclamationCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from '@/types/route'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import UnmatchedBankPaymentsNotice from '@/Components/Accounting/UnmatchedBankPaymentsNotice.vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
 library.add(faCircleNotch, faExclamationCircle, faTachometerAlt, faDownload, faRoute, faTags, faUserCircle)
 
@@ -40,6 +41,7 @@ const props = defineProps<{
     upcomingOutOfStockCount?: number
     upcomingFilter?: string | null
     exportFields?: { key: string; label: string }[]
+    bankPaymentsNotice?: InstanceType<typeof UnmatchedBankPaymentsNotice>['$props']['notice'] | null
 }>()
 
 const downloadUrl = (type: string) => {
@@ -65,6 +67,7 @@ const downloadUrl = (type: string) => {
             </div>
         </template>
     </PageHeading>
+    <UnmatchedBankPaymentsNotice v-if="bankPaymentsNotice" :notice="bankPaymentsNotice" />
 
     <TableTemplateRecipients v-if="filtersStructure" :filters="filters ?? {}" :filters-structure="filtersStructure"
         :recipients-recipe="filters && Object.keys(filters).length ? filters : null" :shop-id="(shop_id as number)"

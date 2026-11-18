@@ -41,8 +41,23 @@ interface Recipe {
     ingredients: Ingredient[]
 }
 
+interface Formulation {
+    id: number
+    position: number
+    name: string
+    artisan_id: number | null
+    artisan: string | null
+    approved: string | null
+    status: Status | null
+    assignment: { value: string, label: string, color: string } | null
+    can_edit: boolean
+    can_delete: boolean
+    routes: Record<"update" | "delete", routeType>
+}
+
 interface Sample {
     id: number
+    formulation_id: number | null
     number: string
     status: Status
     recipe: Recipe | null
@@ -92,10 +107,12 @@ interface Sku {
     recipe_changed: boolean
     can_start_sample: boolean
     no_artefact_reason: string | null
+    formulations: Formulation[]
+    can_add_formulation: boolean
     samples: Sample[]
     components: Component[]
     can_add_component: boolean
-    routes: { sample_store: routeType, component_store: routeType }
+    routes: { sample_store: routeType, component_store: routeType, formulation_store: routeType }
 }
 
 const props = defineProps<{
@@ -106,6 +123,7 @@ const props = defineProps<{
         can_manage: boolean
         can_review: boolean
         can_create_job: boolean
+        artisan_options: { id: number, name: string }[]
         can_approve_components: boolean
         component_search: routeType
         routes: { sample_job: routeType, comments: routeType }
@@ -126,8 +144,8 @@ const entries = computed(() => (props.data?.skus ?? []).map((sku) => ({
     code: sku.code,
     name: sku.name,
     image: sku.image,
-    done: sku.final ? 1 : 0,
-    total: 1,
+    done: sku.formulations.filter((formulation) => formulation.approved).length,
+    total: Math.max(sku.formulations.length, 1),
     badge: sku.final
         ? { label: ctrans("Trial run :number approved", { number: sku.final }), class: productDevelopmentColor("green").active }
         : sku.status
@@ -135,10 +153,81 @@ const entries = computed(() => (props.data?.skus ?? []).map((sku) => ({
             : { label: ctrans("No trial run yet"), class: productDevelopmentColor("gray").active },
 })))
 
-const previousRecipe = (sku: Sku, sample: Sample) => {
-    const index = sku.samples.findIndex((candidate) => candidate.id === sample.id)
+/* Formulation stages */
 
-    return sku.samples.slice(index + 1).find((candidate) => candidate.recipe)?.recipe?.ingredients ?? null
+const selectedFormulationId = ref<number | null>(null)
+const currentFormulation = (sku: Sku) => sku.formulations.find((formulation) => !formulation.approved) ?? sku.formulations[sku.formulations.length - 1] ?? null
+const selectedFormulation = computed(() => {
+    const sku = selected.value
+    if (!sku) {
+        return null
+    }
+
+    return sku.formulations.find((formulation) => formulation.id === selectedFormulationId.value) ?? currentFormulation(sku)
+})
+const stageSamples = computed(() => {
+    const sku = selected.value
+    if (!sku) {
+        return []
+    }
+    if (sku.formulations.length < 2 || !selectedFormulation.value) {
+        return sku.samples
+    }
+
+    return sku.samples.filter((sample) => sample.formulation_id === selectedFormulation.value!.id)
+})
+const openSampleElsewhere = computed(() => {
+    const sku = selected.value
+    const open = sku?.samples.find((sample) => ["in_progress", "ready_for_review"].includes(sample.status.value))
+
+    return open && open.formulation_id !== selectedFormulation.value?.id ? sku!.formulations.find((formulation) => formulation.id === open.formulation_id) ?? null : null
+})
+
+const formulationDialog = ref<{ formulation: Formulation | null, name: string, artisan_id: number | null } | null>(null)
+const formulationErrors = ref<Record<string, string>>({})
+
+function openFormulation(formulation: Formulation | null) {
+    formulationErrors.value = {}
+    formulationDialog.value = { formulation, name: formulation?.name ?? "", artisan_id: formulation?.artisan_id ?? null }
+}
+
+function saveFormulation(sku: Sku) {
+    const dialog = formulationDialog.value
+    if (!dialog) {
+        return
+    }
+    const payload = { name: dialog.name, artisan_id: dialog.artisan_id }
+    const options = {
+        preserveScroll: true,
+        only: [...only, "tabs"],
+        onStart: () => saving.value = true,
+        onFinish: () => saving.value = false,
+        onSuccess: () => formulationDialog.value = null,
+        onError: (errors: Record<string, string>) => formulationErrors.value = errors,
+    }
+    if (dialog.formulation) {
+        router.patch(route(dialog.formulation.routes.update.name, dialog.formulation.routes.update.parameters), payload, options)
+    } else {
+        router.post(route(sku.routes.formulation_store.name, sku.routes.formulation_store.parameters), payload, options)
+    }
+}
+
+function removeFormulation(formulation: Formulation) {
+    router.delete(route(formulation.routes.delete.name, formulation.routes.delete.parameters), {
+        preserveScroll: true,
+        only,
+        onStart: () => saving.value = true,
+        onFinish: () => saving.value = false,
+        onSuccess: () => { formulationDialog.value = null; selectedFormulationId.value = null },
+        onError: (errors) => formulationErrors.value = errors,
+    })
+}
+
+const previousRecipe = (sku: Sku, sample: Sample) => {
+    const samples = sku.samples.filter((candidate) => candidate.formulation_id === sample.formulation_id)
+    const index = samples.findIndex((candidate) => candidate.id === sample.id)
+
+    return samples.slice(index + 1).find((candidate) => candidate.recipe)?.recipe?.ingredients ?? null
 }
 
 /* Start a sample */
@@ -146,7 +235,7 @@ const previousRecipe = (sku: Sku, sample: Sample) => {
 const starting = ref(false)
 
 function startSample(sku: Sku) {
-    router.post(route(sku.routes.sample_store.name, sku.routes.sample_store.parameters), {}, {
+    router.post(route(sku.routes.sample_store.name, sku.routes.sample_store.parameters), { product_development_formulation_id: selectedFormulation.value?.id ?? null }, {
         preserveScroll: true,
         only,
         onStart: () => starting.value = true,
@@ -417,24 +506,55 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                         <p v-if="!componentDialog && Object.keys(componentErrors).length" class="mt-1 text-xs text-red-600">{{ firstError(componentErrors) }}</p>
                     </section>
 
+                    <section>
+                        <div class="mb-2 flex items-center justify-between gap-2">
+                            <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Formulation stages") }}</h4>
+                            <Button v-if="selected.can_add_formulation" type="tertiary" size="xs" :label="ctrans('Add stage')" @click="openFormulation(null)">
+                                <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+                            </Button>
+                        </div>
+                        <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                            <div v-for="formulation in selected.formulations" :key="formulation.id" role="button" tabindex="0"
+                                class="cursor-pointer rounded-md border px-3 py-2 text-left transition-colors"
+                                :class="selectedFormulation?.id === formulation.id ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)]' : 'border-gray-200 hover:bg-gray-50'"
+                                @click="selectedFormulationId = formulation.id" @keydown.enter="selectedFormulationId = formulation.id">
+                                <div class="flex items-center gap-2">
+                                    <span class="whitespace-nowrap text-xs text-gray-400">{{ ctrans("Stage :position", { position: String(formulation.position) }) }}</span>
+                                    <span class="min-w-0 truncate text-sm font-medium text-gray-900">{{ formulation.name }}</span>
+                                    <button v-if="formulation.can_edit" type="button" class="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded text-[var(--app-accent)] hover:bg-[var(--app-accent-soft)]" :aria-label="ctrans('Edit stage')" v-tooltip="ctrans('Edit stage')" @click.stop="openFormulation(formulation)">
+                                        <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                                    </button>
+                                </div>
+                                <div class="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                                    <span v-if="formulation.approved" class="whitespace-nowrap rounded-full border px-2 py-0.5" :class="productDevelopmentColor('green').active">{{ ctrans("Trial run :number approved", { number: formulation.approved }) }}</span>
+                                    <span v-else-if="formulation.status" class="whitespace-nowrap rounded-full border px-2 py-0.5" :class="productDevelopmentColor(formulation.status.color).active">{{ formulation.status.label }}</span>
+                                    <span v-else class="whitespace-nowrap rounded-full border px-2 py-0.5" :class="productDevelopmentColor('gray').active">{{ ctrans("No trial run yet") }}</span>
+                                    <span v-if="formulation.assignment && !formulation.approved" class="whitespace-nowrap rounded-full border px-2 py-0.5" :class="productDevelopmentColor(formulation.assignment.color).active">{{ formulation.assignment.label }}</span>
+                                </div>
+                                <div class="mt-1 whitespace-nowrap text-xs text-gray-500">{{ ctrans("Artisan: :name", { name: formulation.artisan ?? ctrans("not proposed") }) }}</div>
+                            </div>
+                        </div>
+                    </section>
+
                     <section class="space-y-3">
                         <div class="flex items-center justify-between gap-2">
-                            <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Trial runs") }}</h4>
-                            <Button v-if="selected.can_start_sample" type="tertiary" size="xs" :label="ctrans('Start a new trial run')" :loading="starting" @click="startSample(selected)">
+                            <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ selected.formulations.length > 1 && selectedFormulation ? ctrans("Trial runs of :stage", { stage: selectedFormulation.name }) : ctrans("Trial runs") }}</h4>
+                            <span v-if="openSampleElsewhere" class="text-xs text-gray-500">{{ ctrans("A trial run of :stage is open; finish it first", { stage: openSampleElsewhere.name }) }}</span>
+                            <Button v-if="selected.can_start_sample && (!selectedFormulation || selectedFormulation.id === currentFormulation(selected)?.id)" type="tertiary" size="xs" :label="ctrans('Start a new trial run')" :loading="starting" @click="startSample(selected)">
                                 <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                             </Button>
                         </div>
 
-                        <p v-if="!selected.samples.length" class="rounded-md border border-dashed border-gray-300 px-3 py-3 text-center text-xs text-gray-400">{{ ctrans("No trial runs yet") }}</p>
+                        <p v-if="!stageSamples.length" class="rounded-md border border-dashed border-gray-300 px-3 py-3 text-center text-xs text-gray-400">{{ ctrans("No trial runs yet") }}</p>
 
-                        <article v-for="sample in selected.samples" :key="sample.id" class="rounded-lg border border-gray-200">
+                        <article v-for="sample in stageSamples" :key="sample.id" class="rounded-lg border border-gray-200">
                             <header class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5">
                                 <span class="text-sm font-semibold text-gray-900">{{ ctrans("Trial run :number", { number: sample.number }) }}</span>
                                 <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium" :class="productDevelopmentColor(sample.status.color).active">
                                     <FontAwesomeIcon :icon="sample.status.icon" fixed-width aria-hidden="true" />
                                     {{ sample.status.label }}
                                 </span>
-                                <span v-if="selected.final === sample.number" class="rounded-full bg-green-600 px-2 py-0.5 text-xs font-medium text-white">{{ ctrans("Final formulation") }}</span>
+                                <span v-if="selected.formulations.find((formulation) => formulation.id === sample.formulation_id)?.approved === sample.number" class="rounded-full bg-green-600 px-2 py-0.5 text-xs font-medium text-white">{{ ctrans("Final formulation") }}</span>
                                 <span class="text-xs text-gray-500">
                                     {{ ctrans("Made by :name", { name: sample.made_by ?? "—" }) }}
                                     <template v-if="sample.ready_at"> · {{ ctrans("ready :date", { date: formatDate(sample.ready_at) }) }}</template>
@@ -576,6 +696,32 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
             </template>
         </Dialog>
 
+        <Dialog :visible="!!formulationDialog" modal :header="formulationDialog?.formulation ? ctrans('Edit stage') : ctrans('Add stage')" :style="{ width: '28rem' }" :breakpoints="{ '640px': '94vw' }" @update:visible="(visible) => !visible && (formulationDialog = null)">
+            <div v-if="formulationDialog" class="space-y-3 text-sm">
+                <div>
+                    <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Name") }}</label>
+                    <InputText v-model="formulationDialog.name" maxlength="120" class="w-full" :placeholder="ctrans('e.g. Essential oil blend')" :invalid="!!formulationErrors.name" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Artisan for the trial runs") }}</label>
+                    <Select v-model="formulationDialog.artisan_id" :options="data.artisan_options" optionLabel="name" optionValue="id" filter showClear class="w-full" overlayClass="text-sm" :placeholder="ctrans('Let the production manager choose')" />
+                    <p class="mt-1 text-xs text-gray-500">{{ ctrans("The production manager approves the artisan when releasing the trial run.") }}</p>
+                </div>
+                <p v-if="Object.keys(formulationErrors).length" class="text-xs text-red-600">{{ firstError(formulationErrors) }}</p>
+            </div>
+            <template #footer>
+                <Button v-if="formulationDialog?.formulation?.can_delete" type="tertiary" size="xs" :label="ctrans('Remove stage')" class="mr-auto" @click="removeFormulation(formulationDialog.formulation)">
+                    <template #icon><FontAwesomeIcon icon="fal fa-trash-alt" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button type="tertiary" size="xs" :label="ctrans('Cancel')" @click="formulationDialog = null">
+                    <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button type="tertiary" size="xs" :label="ctrans('Save')" :loading="saving" :disabled="!formulationDialog?.name.trim()" @click="selected && saveFormulation(selected)">
+                    <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                </Button>
+            </template>
+        </Dialog>
+
         <Dialog :visible="!!jobDialog" modal :header="ctrans('Raise trial runs')" :style="{ width: '32rem' }" :breakpoints="{ '640px': '94vw' }" @update:visible="(visible) => !visible && (jobDialog = null)">
             <div v-if="jobDialog" class="space-y-3 text-sm">
                 <div>
@@ -598,7 +744,7 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                     <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Instructions") }}</label>
                     <Textarea v-model="jobDialog.instructions" rows="2" autoResize maxlength="200" class="w-full" :placeholder="ctrans('What should the trial run show or test?')" />
                 </div>
-                <p class="text-xs text-gray-500">{{ ctrans("Each SKU gets its next trial run and a draft job order. The production manager picks the artisan and releases it to the floor; what is made comes to the development office.") }}</p>
+                <p class="text-xs text-gray-500">{{ ctrans("Each SKU gets its next trial run, in the stage being worked on, and a draft job order with the stage's proposed artisan. The production manager approves the artisan and releases it to the floor; what is made comes to the development office.") }}</p>
                 <p v-if="Object.keys(jobErrors).length && !jobErrors.item_ids && !jobErrors.quantity" class="text-xs text-red-600">{{ firstError(jobErrors) }}</p>
             </div>
             <template #footer>

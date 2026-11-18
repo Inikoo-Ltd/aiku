@@ -22,6 +22,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\BankConnection;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
+use App\Actions\Dropshipping\Orderchamp\GetOrderchampSettlement;
 use App\Models\Accounting\BankTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
@@ -80,7 +81,7 @@ class MatchBankTransactions
                         'matched_at'  => now(),
                     ]);
                     if ($state === BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE) {
-                        $this->refreshMarketplaceOrders([$order->id]);
+                        $this->refreshMarketplaceOrders($bankTransaction->settledOrderIds());
                     }
                     $counts[$state->value] = ($counts[$state->value] ?? 0) + 1;
                 }
@@ -214,6 +215,10 @@ class MatchBankTransactions
 
         if (preg_match('/^orderchamp\b/i', (string)$bankTransaction->counterparty_name)) {
             return $this->decideOrderchampPayout($bankTransaction);
+        }
+
+        if (preg_match('/^stripe\b/i', (string)$bankTransaction->counterparty_name) && preg_match('/^ankorstore\b/i', (string)$bankTransaction->reference)) {
+            return [BankTransactionMatchStateEnum::UNMATCHED, null, ['provider' => 'ankorstore', 'reason' => 'Ankorstore payout']];
         }
 
         $marketplaceOrderReference = $this->marketplaceOrderReference($bankTransaction);
@@ -797,6 +802,11 @@ class MatchBankTransactions
      */
     private function decideOrderchampPayout(BankTransaction $bankTransaction): array
     {
+        $settled = $this->decideOrderchampSettlement($bankTransaction);
+        if ($settled) {
+            return $settled;
+        }
+
         $received = round((float)$bankTransaction->amount, 2);
         if (!preg_match('/orderchamp ([A-Z]{2}) payment/i', (string)$bankTransaction->reference, $matches)) {
             return [BankTransactionMatchStateEnum::UNMATCHED, null, ['provider' => 'orderchamp', 'reason' => 'Orderchamp payout without its country']];
@@ -847,6 +857,84 @@ class MatchBankTransactions
             'received'   => $received,
             'difference' => round($received - (float)$order->total_amount, 2),
         ]];
+    }
+
+    /**
+     * With the organisation connected to Orderchamp, the settlement the line names says exactly which orders it pays.
+     * Orders imported from Orderchamp carry no payment and become paid by the marketplace, all of them on this one
+     * line; orders keyed in by hand and paid by hand (their payment referenced with the Orderchamp number) make the
+     * line already paid. A settlement Orderchamp cannot find falls back to matching by amount; an API failure throws, so
+     * the line waits in review instead of being guessed by amount.
+     *
+     * @return array{0: BankTransactionMatchStateEnum, 1: Order|null, 2: array<string, mixed>}|null
+     */
+    private function decideOrderchampSettlement(BankTransaction $bankTransaction): ?array
+    {
+        if (!preg_match('/\b(STL\d+)/i', (string)$bankTransaction->reference, $matches)) {
+            return null;
+        }
+        $settlementNumber = strtoupper($matches[1]);
+
+        $settlement = null;
+        $shop       = null;
+        foreach (Shop::where('organisation_id', $bankTransaction->organisation_id)->whereNotNull('settings->orderchamp->access_token')->get() as $shop) {
+            $settlement = GetOrderchampSettlement::run($shop, $settlementNumber);
+            if ($settlement) {
+                break;
+            }
+        }
+        if (!$settlement || !$settlement['orders']) {
+            return null;
+        }
+
+        $orderNumbers = array_keys($settlement['orders']);
+        $orders       = Order::where('shop_id', $shop->id)->whereIn('external_id', $orderNumbers)->get()->keyBy('external_id');
+        $handKeyed    = DB::table('payments')
+            ->join('model_has_payments', fn ($join) => $join->on('model_has_payments.payment_id', 'payments.id')->where('model_has_payments.model_type', 'Order'))
+            ->where('payments.organisation_id', $bankTransaction->organisation_id)
+            ->whereIn('payments.reference', array_diff($orderNumbers, $orders->keys()->all()))
+            ->pluck('model_has_payments.model_id', 'payments.reference');
+        foreach ($handKeyed as $orderNumber => $orderId) {
+            $orders->put($orderNumber, Order::find($orderId));
+        }
+
+        $received  = round((float)$bankTransaction->amount, 2);
+        $matchData = [
+            'provider'          => 'orderchamp',
+            'settlement'        => $settlement['number'],
+            'order_ids'         => $orders->pluck('id')->values()->all(),
+            'order_references'  => $orders->pluck('reference')->values()->all(),
+            'orderchamp_orders' => $orderNumbers,
+            'owed'              => $settlement['amount'],
+            'received'          => $received,
+            'difference'        => round($received - $settlement['amount'], 2),
+            'commission'        => round($orders->sum(fn (Order $order) => (float)$order->commission_amount), 2),
+        ];
+        $firstOrder = $orders->first();
+
+        $missing = array_diff($orderNumbers, $orders->keys()->all());
+        if ($missing) {
+            return [BankTransactionMatchStateEnum::UNMATCHED, null, array_merge($matchData, ['reason' => 'Orderchamp orders not found: '.implode(', ', $missing)])];
+        }
+
+        $imported = $orders->filter(fn (Order $order) => $order->isFromOrderchamp() && $this->successfulPayments($order)->doesntExist());
+        $paid     = $orders->filter(fn (Order $order) => !$order->isFromOrderchamp() && $order->amountStillToPay() <= 0.01);
+        $otherPayout = $orders->contains(fn (Order $order) => BankTransaction::paidByMarketplaceFor($order->id)->where('id', '!=', $bankTransaction->id)->exists());
+
+        $reason = match (true) {
+            $orders->contains(fn (Order $order) => $order->currency_id !== $bankTransaction->currency_id) => 'currency differs from the orders',
+            $orders->contains(fn (Order $order) => $order->state === OrderStateEnum::CANCELLED) => 'an order of the settlement is cancelled',
+            $otherPayout => 'another marketplace payout is already on these orders',
+            abs($matchData['difference']) >= 0.01 => 'the transfer is not the settlement amount',
+            default => null,
+        };
+
+        return match (true) {
+            $reason !== null => [BankTransactionMatchStateEnum::REVIEW, $firstOrder, array_merge($matchData, ['reason' => $reason])],
+            $imported->count() === $orders->count() => [BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE, $firstOrder, $matchData],
+            $paid->count() === $orders->count() => [BankTransactionMatchStateEnum::ALREADY_PAID, $firstOrder, array_merge($matchData, ['reason' => 'Orderchamp orders already paid by hand'])],
+            default => [BankTransactionMatchStateEnum::REVIEW, $firstOrder, array_merge($matchData, ['reason' => 'the settlement mixes orders paid by hand and orders to be paid by Orderchamp'])],
+        };
     }
 
     /**
@@ -1012,14 +1100,14 @@ class MatchBankTransactions
 
     /**
      * Czech and Slovak payers (and DPD CZ cash on delivery) put the order number without its shop prefix in the
-     * variable symbol (VS 20921 for CZ20921), which Fio keeps in column 5. It names the orders of this organisation
+     * variable symbol (VS 20921 for CZ20921), which Fio keeps in column 5 and Tatra in variableSymbol. It names the orders of this organisation
      * in the line's currency whose number is a prefix and those digits.
      *
      * @return list<string>
      */
     public function variableSymbolOrderReferences(BankTransaction $bankTransaction): array
     {
-        $variableSymbol = (string)($bankTransaction->data['movement']['column5']['value'] ?? '');
+        $variableSymbol = (string)($bankTransaction->data['movement']['column5']['value'] ?? $bankTransaction->data['transaction']['variableSymbol'] ?? '');
         if (!preg_match('/^[0-9]{3,8}$/', $variableSymbol)) {
             return [];
         }
@@ -1064,7 +1152,8 @@ class MatchBankTransactions
                 $forgottenMarketplaceOrderIds = BankTransaction::where('bank_connection_id', $bankConnection->id)
                     ->where('match_state', BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE)
                     ->whereNull('payment_id')
-                    ->pluck('order_id')
+                    ->get()
+                    ->flatMap(fn (BankTransaction $bankTransaction) => $bankTransaction->settledOrderIds())
                     ->all();
                 BankTransaction::where('bank_connection_id', $bankConnection->id)
                     ->whereNull('payment_id')

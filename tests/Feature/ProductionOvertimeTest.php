@@ -308,3 +308,86 @@ test('weekend overtime approved ahead pays 1.5 x band 0 only for the planned hou
     $employee->getEffectiveWorkSchedule()->days()->where('day_of_week', 6)->update(['is_working_day' => true, 'start_time' => '08:00:00', 'end_time' => '16:30:00']);
     expect($pay()['total'])->toBe(154.28);
 });
+
+test('two pages rebuilding the same new artisan day at once both load, and the day keeps the figures worked out', function () {
+    $monday   = now()->addYears(6)->addWeeks(rand(0, 40))->startOfWeek();
+    $timezone = $this->organisation->timezone?->name ?? config('app.timezone');
+    $date     = $monday->toDateString();
+    $at       = fn (string $time) => Carbon::parse($date.' '.$time, $timezone)->utc();
+    $employee = overtimeArtisan($this->organisation);
+    $user     = stepTestSecondOperator($this->group);
+    $this->travelTo($at('20:00')->addDay());
+    clockedTimesheet($employee, $date, 540);
+    overtimeSession($this->overtimeTask, $user, $employee, $at('08:00'), 8, '1');
+
+    config(['database.connections.racing_page' => config('database.connections.'.config('database.default'))]);
+    $raced = false;
+    ManufactureArtisanDay::creating(function (ManufactureArtisanDay $day) use (&$raced, $employee) {
+        if ($raced || $day->employee_id != $employee->id) {
+            return;
+        }
+        $raced = true;
+        \Illuminate\Support\Facades\DB::connection('racing_page')->table('manufacture_artisan_days')->insert([
+            'group_id'          => $day->group_id,
+            'organisation_id'   => $day->organisation_id,
+            'production_id'     => $day->production_id,
+            'employee_id'       => $day->employee_id,
+            'date'              => $day->date->toDateString(),
+            'recorded_minutes'  => 0,
+            'tolerance_minutes' => 0,
+            'status'            => 'ok',
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+    });
+
+    try {
+        get(route('grp.org.productions.show.artisans.daily_hours', [$this->organisation->slug, $this->production->slug, 'from' => $date, 'to' => $date]))->assertOk();
+    } finally {
+        \Illuminate\Support\Facades\DB::purge('racing_page');
+    }
+
+    $day = ManufactureArtisanDay::where('production_id', $this->production->id)->where('employee_id', $employee->id)->where('date', $date)->sole();
+    expect($raced)->toBeTrue()
+        ->and($day->recorded_minutes)->toBe(480)
+        ->and($day->clocked_minutes)->toBe(540)
+        ->and($day->expected_minutes)->toBe(480)
+        ->and($day->status)->toBe(\App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayStatusEnum::OVER)
+        ->and($day->user_id)->toBe($user->id);
+});
+
+test('development time is checked against the clocking of the local day it ends on, not the UTC one', function () {
+    $previousTimezoneId = $this->organisation->timezone_id;
+    $this->organisation->update(['timezone_id' => \App\Models\Helpers\Timezone::where('name', 'Asia/Kuala_Lumpur')->value('id')]);
+
+    try {
+        ManufacturePayBand::query()->firstOrCreate(
+            ['production_id' => $this->production->id, 'code' => 'D'],
+            ['group_id' => $this->production->group_id, 'organisation_id' => $this->production->organisation_id, 'name' => 'Development', 'hourly_rate' => 13.30, 'effective_from' => now()->subYears(2)]
+        );
+        $monday = now()->addYears(6)->addWeeks(rand(0, 40))->startOfWeek();
+        $date   = $monday->toDateString();
+        $at     = fn (string $time) => Carbon::parse($date.' '.$time, 'Asia/Kuala_Lumpur')->utc();
+        $this->travelTo($at('20:00'));
+        $employee   = overtimeArtisan($this->organisation);
+        $worker     = stepTestSecondOperator($this->group);
+        $supervisor = stepTestSecondOperator($this->group);
+        \Illuminate\Support\Facades\DB::table('user_has_models')->insert(['group_id' => $this->organisation->group_id, 'organisation_id' => $this->organisation->id, 'user_id' => $worker->id, 'model_type' => 'Employee', 'model_id' => $employee->id, 'status' => true]);
+        clockedTimesheet($employee, $date, 480);
+        $production = $this->production->refresh()->load('organisation.timezone');
+        $add        = fn (string $from, string $to) => \App\Actions\Production\ManufactureTaskSession\AddManufactureDevelopmentTime::make()->action($production, [
+            'employee_id' => $employee->id,
+            'started_at'  => $at($from)->toIso8601String(),
+            'ended_at'    => $at($to)->toIso8601String(),
+            'note'        => 'Paper record',
+        ], $supervisor);
+
+        expect($at('07:00')->toDateString())->not->toBe($date);
+        $session = $add('06:00', '07:00');
+        expect($session->employee_id)->toBe($employee->id)
+            ->and((float) $session->hours)->toBe(1.0)
+            ->and(fn () => $add('07:00', '14:30'))->toThrow(ValidationException::class, 'goes over it, and the time over it is not paid');
+    } finally {
+        $this->organisation->update(['timezone_id' => $previousTimezoneId]);
+    }
+});

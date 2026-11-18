@@ -60,6 +60,7 @@ internal fun UndoStepConfirmSheet(
             AikuButton(
                 text = stringResource(step.confirm),
                 onClick = onConfirm,
+                style = ButtonStyle.Caution,
                 icon = R.drawable.ic_ui_undo,
                 isLoading = isWorking,
                 height = 52.dp,
@@ -89,6 +90,7 @@ internal fun UndoPickingSheet(code: String, picking: LinePicking, isWorking: Boo
             AikuButton(
                 text = stringResource(R.string.goodsout_undo),
                 onClick = onConfirm,
+                style = ButtonStyle.Caution,
                 icon = R.drawable.ic_ui_undo,
                 isLoading = isWorking,
                 height = 52.dp,

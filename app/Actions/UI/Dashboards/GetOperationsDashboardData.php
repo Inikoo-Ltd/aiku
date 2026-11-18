@@ -646,7 +646,9 @@ class GetOperationsDashboardData
             ->where('warehouse_id', $warehouse->id)
             ->whereNull('deleted_at')
             ->where('is_empty', false)
-            ->where(fn (Builder $query) => $query->whereNull('audited_at')->orWhere('audited_at', '<', now()->subDays(90)))
+            ->whereNotExists(fn (Builder $query) => $query->from('location_org_stocks')
+                ->whereColumn('location_org_stocks.location_id', 'locations.id')
+                ->where('location_org_stocks.audited_at', '>=', now()->subDays(90)))
             ->count();
 
         $outOfStock = DB::table('delivery_note_items')

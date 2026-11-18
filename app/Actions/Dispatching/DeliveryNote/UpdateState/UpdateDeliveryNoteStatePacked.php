@@ -170,7 +170,7 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    protected function returnsToFinalised(DeliveryNote $deliveryNote): bool
+    public function returnsToFinalised(DeliveryNote $deliveryNote): bool
     {
         if (!$deliveryNote->finalised_at) {
             return false;

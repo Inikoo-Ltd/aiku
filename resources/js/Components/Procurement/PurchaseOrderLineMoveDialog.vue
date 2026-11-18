@@ -17,7 +17,7 @@ import Checkbox from "primevue/checkbox"
 import RadioButton from "primevue/radiobutton"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faExclamationTriangle, faPlus } from "@fal"
+import { faCheck, faTimes, faExclamationTriangle, faPlus, faExternalLink } from "@fal"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
@@ -34,9 +34,12 @@ type UnsettledPurchaseOrder = {
 
 type SupplierOption = {
 	org_supplier_id: number
+	slug: string
 	is_current: boolean
 	code: string
 	name: string
+	company_name: string | null
+	contact_name: string | null
 	currency: string | null
 	reference: string
 	open_purchase_orders: string[]
@@ -104,6 +107,18 @@ const typedReference = computed(() => purchaseOrderReference.value.trim())
 const joinsOpenOrder = computed(() => !!supplier.value && supplier.value.open_purchase_orders.some((reference) => reference.toLowerCase() === typedReference.value.toLowerCase()))
 const createsNewOrder = computed(() => !!supplier.value && !!typedReference.value && !joinsOpenOrder.value)
 
+const supplierUrl = computed(() => {
+	if (!supplier.value) {
+		return null
+	}
+
+	const routeName = route().current()?.startsWith("grp.org.agent.")
+		? "grp.org.agent.org_suppliers.show"
+		: "grp.org.procurement.org_suppliers.show"
+
+	return route(routeName, { organisation: route().params.organisation, orgSupplier: supplier.value.slug })
+})
+
 const sellsEveryProduct = (option: SupplierOption) => option.products_count === props.items.length
 const sellsSomeProducts = (option: SupplierOption) => option.products_count > 0 && !sellsEveryProduct(option)
 const supplierOptions = computed(() =>
@@ -113,6 +128,7 @@ const supplierOptions = computed(() =>
 		.map((option) => ({
 			...option,
 			label: `${option.code} ${option.name}`,
+			search: [option.code, option.name, option.company_name, option.contact_name].filter(Boolean).join(" "),
 		}))
 )
 
@@ -281,6 +297,7 @@ function submit() {
 					optionLabel="label"
 					optionValue="org_supplier_id"
 					filter
+					:filterFields="['search']"
 					:loading="isFetching"
 					:placeholder="ctrans('Choose a supplier of the same agent')"
 					:emptyMessage="isFetching
@@ -295,6 +312,7 @@ function submit() {
 						<div class="flex w-full min-w-0 items-center gap-2">
 							<span class="whitespace-nowrap font-medium">{{ option.code }}</span>
 							<span class="truncate text-gray-500">{{ option.name }}</span>
+							<span v-if="option.company_name && option.company_name !== option.name" class="truncate text-xs text-gray-400">{{ option.company_name }}</span>
 							<span
 								v-if="sellsEveryProduct(option)"
 								class="ml-auto flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
@@ -311,6 +329,16 @@ function submit() {
 						</div>
 					</template>
 				</Select>
+				<a
+					v-if="supplierUrl"
+					:href="supplierUrl"
+					target="_blank"
+					rel="noopener"
+					class="flex w-fit items-center gap-1 text-xs text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline"
+				>
+					{{ ctrans("Open supplier :supplier", { supplier: supplier?.code ?? "" }) }}
+					<FontAwesomeIcon :icon="faExternalLink" fixed-width aria-hidden="true" />
+				</a>
 				<label class="flex cursor-pointer items-center gap-2 text-xs text-gray-600 w-fit">
 					<Checkbox v-model="onlySuppliersWithProducts" binary size="small" />
 					{{ isMany

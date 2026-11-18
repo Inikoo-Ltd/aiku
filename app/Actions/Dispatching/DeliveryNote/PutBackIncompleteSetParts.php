@@ -46,7 +46,7 @@ class PutBackIncompleteSetParts extends OrgAction
                 $this->reversePicks($deliveryNoteItem, $excess);
             }
 
-            StoreNotPickPicking::make()->action($deliveryNoteItem->refresh(), $user, [
+            StoreNotPickPicking::run($deliveryNoteItem->refresh(), $user, [
                 'quantity'          => $quantityToNotPick,
                 'not_picked_reason' => PickingNotPickedReasonEnum::CANCELLED_BY_WAREHOUSE,
                 'not_picked_note'   => __('Put back: another part of the set was not found'),

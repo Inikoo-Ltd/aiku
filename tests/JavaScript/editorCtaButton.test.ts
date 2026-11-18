@@ -7,7 +7,10 @@ import Text from "@tiptap/extension-text"
 import { CtaButton } from "../../resources/js/Components/Forms/Fields/BubleTextEditor/CtaButton/CtaButtonExtension.ts"
 import {
 	CTA_BUTTON_THEME_BACKGROUND,
+	CTA_BUTTON_PICKER_THEME_HEX,
 	CTA_BUTTON_THEME_TEXT,
+	ctaButtonColorFromPicker,
+	ctaButtonPickerHex,
 	ctaButtonStyle,
 	ctaButtonWrapperStyle,
 	defaultCtaButtonAttributes,
@@ -50,6 +53,24 @@ test("only plain colours reach the style attribute", () => {
 	assert.equal(safeCtaButtonColor("red; background-image: url(https://evil.test)"), null)
 	assert.equal(safeCtaButtonColor("#12"), null)
 	assert.equal(safeCtaButtonColor(""), null)
+})
+
+test("a colour picked in the dialog is kept on the button", () => {
+	assert.equal(ctaButtonColorFromPicker("e11d48"), "#e11d48")
+	assert.equal(ctaButtonColorFromPicker("#0EA5E9"), "#0EA5E9")
+	assert.equal(ctaButtonColorFromPicker("zzz"), null)
+	assert.equal(ctaButtonColorFromPicker({ r: 1, g: 2, b: 3 }), null)
+	assert.equal(ctaButtonColorFromPicker(undefined), null)
+})
+
+test("the picker shows the chosen colour, and a neutral swatch for the website theme", () => {
+	assert.equal(ctaButtonPickerHex("#E11D48"), "e11d48")
+	assert.equal(ctaButtonPickerHex("#abc"), "aabbcc")
+	assert.equal(ctaButtonPickerHex("#11223344"), "112233")
+	assert.equal(ctaButtonPickerHex("rgb(225, 29, 72)"), "e11d48")
+	assert.equal(ctaButtonPickerHex(null), CTA_BUTTON_PICKER_THEME_HEX)
+	assert.equal(ctaButtonPickerHex("red"), CTA_BUTTON_PICKER_THEME_HEX)
+	assert.equal(normaliseCtaButtonAttributes({ backgroundColor: ctaButtonColorFromPicker("e11d48") }).backgroundColor, "#e11d48")
 })
 
 test("a button without its own colours uses the website theme", () => {

@@ -18,6 +18,9 @@ use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Tiktok\Order\FulfillOrderToTiktok;
 use App\Actions\Dropshipping\Tiktok\Order\GetTiktokOrdersApi;
+use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
+use App\Actions\Dispatching\Shipper\StoreShipper;
+use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\Dropshipping\Tiktok\Product\CheckTiktokPortfolio;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Dropshipping\Tiktok\Product\CreateNewAllPortfoliosToTiktok;
@@ -36,6 +39,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -46,6 +50,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -1115,4 +1120,30 @@ test('package dimensions convert the metre marketing dimensions to centimetres a
         'height' => '10.00',
         'unit'   => 'CENTIMETER',
     ]);
+});
+
+test('the tiktok shipper is looked up in the order organisation, never taken from another organisation', function () {
+    $otherOrganisation = Organisation::where('code', 'other')->first()
+        ?? StoreOrganisation::make()->action(
+            $this->group,
+            array_merge(Organisation::factory()->definition(), ['code' => 'other', 'type' => OrganisationTypeEnum::SHOP])
+        );
+
+    $providerName = 'Tk'.Str::random(6).' Express';
+    $code         = Str::slug(substr($providerName, 0, 8));
+
+    $otherOrganisationShipper = StoreShipper::make()->action($otherOrganisation, [
+        'code'     => $code,
+        'name'     => $providerName,
+        'trade_as' => 'Other org',
+    ]);
+
+    $shipper = ProcessTiktokOrderShipment::make()->getShipper($this->organisation, $providerName);
+
+    expect($shipper->id)->not->toBe($otherOrganisationShipper->id)
+        ->and($shipper->organisation_id)->toBe($this->organisation->id)
+        ->and($shipper->code)->toBe($code)
+        ->and($shipper->name)->toBe($providerName.' (TikTok)')
+        ->and($otherOrganisationShipper->refresh()->organisation_id)->toBe($otherOrganisation->id)
+        ->and(ProcessTiktokOrderShipment::make()->getShipper($this->organisation, $providerName)->id)->toBe($shipper->id);
 });

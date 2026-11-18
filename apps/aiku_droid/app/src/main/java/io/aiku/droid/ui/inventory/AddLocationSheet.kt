@@ -15,6 +15,8 @@ import io.aiku.droid.data.api.LocationStockType
 import io.aiku.droid.data.api.OrgStockDetail
 import io.aiku.droid.data.api.OrgStockWrite
 import io.aiku.droid.ui.components.AikuBottomSheet
+import io.aiku.droid.ui.components.ButtonLook
+import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChoiceRow
 import io.aiku.droid.ui.theme.LocalAikuColors
 
@@ -77,6 +79,7 @@ fun AddLocationSheet(
                 }
             },
             onCancel = onDismiss,
+            confirmLook = ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_plus),
             isWorking = isWorking,
         )
     }

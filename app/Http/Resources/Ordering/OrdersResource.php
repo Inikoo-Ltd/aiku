@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Ordering;
 
 use App\Actions\Ordering\Order\UI\IndexOrders;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -155,6 +156,8 @@ class OrdersResource extends JsonResource
             'public_notes'                => $this->public_notes,
             'shipping_notes'              => $this->shipping_notes,
             'private_warehouse_note'      => $this->private_warehouse_note,
+            'held_reason'                 => $this->state === OrderStateEnum::SUBMITTED ? SendOrderToWarehouse::heldReason($this->private_warehouse_note) : null,
+            'held_days'                   => $this->state === OrderStateEnum::SUBMITTED && $this->submitted_at ? (int) Carbon::parse($this->submitted_at)->startOfDay()->diffInDays(today()) : null,
             'shipping_data'               => $this->shipping_data,
             'is_collection'               => (bool)$this->collection_address_id,
             'with_replacement'            => $this->with_replacement,

@@ -8,8 +8,10 @@ import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.ScanLookup
 import io.aiku.droid.data.api.ScanMatch
 import io.aiku.droid.data.session.SessionRepository
+import io.aiku.droid.ui.fulfilment.inbound.palletDeliveryRoute
 import io.aiku.droid.ui.goodsout.deliveryNoteRoute
 import io.aiku.droid.ui.navigation.LocationRoute
+import io.aiku.droid.ui.navigation.PalletRoute
 import io.aiku.droid.ui.navigation.ScanResultRoute
 import io.aiku.droid.ui.navigation.SkuRoute
 import io.aiku.droid.ui.navigation.StockDeliveryRoute
@@ -23,6 +25,8 @@ sealed interface ScanDestination {
     data class Location(val id: Long, val code: String) : ScanDestination
     data class DeliveryNote(val note: DeliveryNoteRow) : ScanDestination
     data class StockDelivery(val id: Long, val reference: String) : ScanDestination
+    data class Pallet(val id: Long, val reference: String) : ScanDestination
+    data class PalletDelivery(val id: Long, val reference: String, val state: String) : ScanDestination
     data class Unknown(val code: String) : ScanDestination
 }
 
@@ -31,11 +35,16 @@ fun ScanLookup.destination(scannedCode: String): ScanDestination {
     val location = location
     val note = deliveryNote
     val stockDelivery = stockDelivery
+    val pallet = pallet
+    val palletDelivery = palletDelivery
     return when {
         type == ScanMatch.SKO && sko != null -> ScanDestination.Sko(id = sko.id, code = sko.code)
         type == ScanMatch.LOCATION && location != null -> ScanDestination.Location(id = location.id, code = location.code)
         type == ScanMatch.DELIVERY_NOTE && note != null -> ScanDestination.DeliveryNote(note)
         type == ScanMatch.STOCK_DELIVERY && stockDelivery != null -> ScanDestination.StockDelivery(id = stockDelivery.id, reference = stockDelivery.reference)
+        type == ScanMatch.PALLET && pallet != null -> ScanDestination.Pallet(id = pallet.id, reference = pallet.reference)
+        type == ScanMatch.PALLET_DELIVERY && palletDelivery != null ->
+            ScanDestination.PalletDelivery(id = palletDelivery.id, reference = palletDelivery.reference, state = palletDelivery.state)
         else -> ScanDestination.Unknown(code.ifBlank { scannedCode })
     }
 }
@@ -45,6 +54,8 @@ fun ScanDestination.route(): Any = when (this) {
     is ScanDestination.Location -> LocationRoute(id = id, code = code)
     is ScanDestination.DeliveryNote -> deliveryNoteRoute(id = note.id, reference = note.reference, state = note.state)
     is ScanDestination.StockDelivery -> StockDeliveryRoute(id = id, reference = reference)
+    is ScanDestination.Pallet -> PalletRoute(id = id, reference = reference)
+    is ScanDestination.PalletDelivery -> palletDeliveryRoute(id = id, reference = reference, state = state)
     is ScanDestination.Unknown -> ScanResultRoute(code = code)
 }
 

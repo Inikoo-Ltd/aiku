@@ -138,6 +138,10 @@ class StoreShipment extends OrgAction
             data_set($modelData, 'tracking_urls', []);
         }
 
+        if ($parent instanceof DeliveryNote && !Arr::has($modelData, 'delivery_type')) {
+            $modelData = array_merge($modelData, GetShipmentDeliveryType::run($parent));
+        }
+
         /** @var Shipment $shipment */
         $shipment = $shipper->shipments()->create($modelData);
         $shipment->refresh();

@@ -2093,3 +2093,35 @@ test('products added from the storefront to a platform channel are checked in th
     Queue::assertPushedOn('ds', JobDecorator::class, fn (JobDecorator $job) => $job->getAction() instanceof CheckNewPortfoliosInPlatform
         && $job->getParameters()[1] === $newPortfolioIds);
 });
+
+test('adding a category keeps going when a product reaches the channel while the job runs', function () {
+    Event::fake([\App\Events\StoreRetinaProductCategoryPortfolioProgressEvent::class]);
+
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->firstOrFail();
+    $channel  = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_multi_channel_race']);
+    $channel->update(['status' => CustomerSalesChannelStatusEnum::OPEN]);
+
+    $family   = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY)->first();
+    $products = collect(range(1, 3))->map(fn () => \App\Actions\Catalogue\Product\StoreProduct::make()->action($family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]]]
+    )));
+
+    $addedByCustomerMeanwhile = false;
+    Portfolio::created(function (Portfolio $portfolio) use ($channel, $products, &$addedByCustomerMeanwhile) {
+        if ($addedByCustomerMeanwhile || $portfolio->customer_sales_channel_id !== $channel->id) {
+            return;
+        }
+        $addedByCustomerMeanwhile = true;
+        $other = $products->first(fn (Product $product) => $product->id !== $portfolio->item_id);
+        StorePortfolio::make()->action($channel, $other, []);
+    });
+
+    \App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfolioToMultiChannels::make()->handle($this->customer, [
+        'customer_sales_channel_ids' => [$channel->id],
+        'item_id'                    => $products->pluck('id')->all(),
+    ]);
+
+    expect($addedByCustomerMeanwhile)->toBeTrue()
+        ->and($channel->portfolios()->whereIn('item_id', $products->pluck('id'))->count())->toBe(3);
+});

@@ -69,6 +69,7 @@ fun LeaveScreen() {
         AikuButton(
             text = stringResource(R.string.clocking_leave_request),
             onClick = { isRequesting = true },
+            icon = R.drawable.ic_ui_plus,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),
         )

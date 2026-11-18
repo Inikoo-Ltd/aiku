@@ -23,6 +23,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import ArtisanPicker from "@/Components/Production/ArtisanPicker.vue"
 import ModalCreateManualJobOrder from "@/Components/Production/ModalCreateManualJobOrder.vue"
+import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
 import DatePicker from "primevue/datepicker"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faCalendarDay, faMagic } from "@fal"
@@ -156,7 +157,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, unit_name?: string | null, is_fill?: boolean, shop_name?: string | null, customer_name?: string | null, order_reference?: string | null, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, loose_pieces?: number, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
+type BoardItem = { id: number, unit_name?: string | null, is_fill?: boolean, order_waiting_days?: number | null, shop_name?: string | null, customer_name?: string | null, order_reference?: string | null, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, loose_pieces?: number, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, stock_cover?: object | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
 
 function artisansOf(item: BoardItem): string[] {
     if (item.current_steps?.length) return [...new Set(item.current_steps.flatMap(step => step.artisans.map(artisan => artisan ?? "")))]
@@ -256,6 +257,14 @@ function unassign(items: BoardItem[]) {
 const assignError = ref<string | null>(null)
 
 type Run = { quantity: number, batch_code: string, expiry_date: string }
+
+const isoToDate = (iso?: string | null): Date | null => {
+    if (!iso) return null
+    const [year, month, day] = iso.split("-").map(Number)
+    return new Date(year, month - 1, day)
+}
+const dateToIso = (date: Date | null | undefined): string => date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : ""
+const expiryPickerPt = { root: { class: "w-full min-w-0" }, pcInputText: { root: { class: "!w-full !min-w-0 !py-0.5 !text-xs" } } }
 
 const extraRuns = reactive<Record<number, Run[]>>({})
 
@@ -719,18 +728,19 @@ function jobOrderHref(item: { job_order_slug: string }) {
                                 </label>
                                 <label class="flex min-w-0 flex-col gap-0.5">
                                     <span class="text-gray-500">{{ ctrans("Expiry date") }}</span>
-                                    <input
-                                        v-model="pendingExpiryDates[item.id]"
-                                        type="date"
+                                    <DatePicker
+                                        :modelValue="isoToDate(pendingExpiryDates[item.id])"
+                                        dateFormat="dd/mm/yy"
                                         :required="labelsNeed(item, 'expiry_date')"
-                                        class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
+                                        :pt="expiryPickerPt"
+                                        @update:modelValue="date => pendingExpiryDates[item.id] = dateToIso(date as Date | null)" />
                                 </label>
                             </div>
                             <template v-if="simpleBoard">
                                 <div v-for="(run, runIndex) in extraRuns[item.id] ?? []" :key="runIndex" class="grid grid-cols-[4rem_1fr_1fr_auto] items-center gap-1.5">
                                     <input v-model.number="run.quantity" type="number" min="1" step="1" required :aria-label="ctrans('SKOs')" class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
                                     <input v-model="run.batch_code" type="text" maxlength="64" :required="labelsNeed(item, 'batch_code')" :aria-label="ctrans('Batch code')" :placeholder="labelsNeed(item, 'batch_code') ? ctrans('Printed on the label') : ctrans('From job order')" class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
-                                    <input v-model="run.expiry_date" type="date" :required="labelsNeed(item, 'expiry_date')" :aria-label="ctrans('Expiry date')" class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
+                                    <DatePicker :modelValue="isoToDate(run.expiry_date)" dateFormat="dd/mm/yy" :required="labelsNeed(item, 'expiry_date')" :aria-label="ctrans('Expiry date')" :pt="expiryPickerPt" @update:modelValue="date => run.expiry_date = dateToIso(date as Date | null)" />
                                     <button type="button" class="px-1 text-gray-400 hover:text-red-600" :title="ctrans('Remove this batch')" @click="extraRuns[item.id].splice(runIndex, 1)">×</button>
                                 </div>
                                 <div class="flex items-center gap-2">
@@ -959,13 +969,23 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     <div class="flex items-center gap-1 text-gray-400">
                         <span>{{ item.buyer_code ?? requesterWithOrder(item) ?? item.notes }}</span>
                         <span v-if="item.family">· {{ item.family }}</span>
+                        <span
+                            v-if="item.order_waiting_days != null"
+                            v-tooltip="ctrans('The customer order waits for these bottles before it can go to the warehouse')"
+                            class="whitespace-nowrap rounded px-1 text-[10px] font-semibold"
+                            :class="item.order_waiting_days >= 2 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'">
+                            {{ ctransChoice("Order waiting :count day|Order waiting :count days", item.order_waiting_days, { count: item.order_waiting_days }) }}
+                        </span>
                         <span v-if="laneIndex === queuedLane && isReassignable(item)" class="ml-auto rounded bg-emerald-50 px-1 text-[10px] font-semibold uppercase text-emerald-700">{{ ctrans("Queued") }}</span>
                         <span v-if="item.job_order_hold_reason" v-tooltip="item.job_order_hold_reason" class="rounded bg-yellow-100 px-1 text-[10px] font-semibold uppercase text-yellow-800" :class="laneIndex === queuedLane && isReassignable(item) ? '' : 'ml-auto'">{{ ctrans("On hold") }}</span>
                         <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink" :class="(laneIndex === queuedLane && isReassignable(item)) || item.job_order_hold_reason ? '' : 'ml-auto'">{{ item.job_order_reference }}</Link>
                     </div>
-                    <div v-if="laneIndex <= LANE_PREPARING" class="text-gray-400">
-                        <span :class="freeStock(item) >= Number(item.quantity) ? 'text-emerald-600' : ''">{{ ctrans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
-                        <span v-if="Number(item.stock_promised) > 0"> · {{ ctrans("promised to pre-picks") }}: {{ useLocaleStore().number(Number(item.stock_promised)) }} · {{ ctrans("not promised") }}: {{ useLocaleStore().number(freeStock(item)) }}</span>
+                    <div v-if="laneIndex <= LANE_PREPARING && item.stock_cover" @click.stop @mousedown.stop>
+                        <PurchaseOrderItemStockInfo :item="item" isOrderClosed hideComing />
+                    </div>
+                    <div v-if="laneIndex <= LANE_PREPARING && (!item.stock_cover || Number(item.stock_promised) > 0)" class="text-gray-400">
+                        <span v-if="!item.stock_cover" :class="freeStock(item) >= Number(item.quantity) ? 'text-emerald-600' : ''">{{ ctrans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
+                        <span v-if="Number(item.stock_promised) > 0"><template v-if="!item.stock_cover"> · </template>{{ ctrans("promised to pre-picks") }}: {{ useLocaleStore().number(Number(item.stock_promised)) }} · {{ ctrans("not promised") }}: {{ useLocaleStore().number(freeStock(item)) }}</span>
                     </div>
                     <div
                         v-if="laneIndex === LANE_PREPARING && item.batch_code"

@@ -160,6 +160,7 @@ trait WithBankLines
             ->where('bank_transactions.direction', $this->direction())
             ->where('bank_transactions.status', BankTransactionStatusEnum::BOOKED)
             ->when($this->direction() === BankTransactionDirectionEnum::OUT, fn ($query) => $query->where('bank_transactions.amount', '<', 0))
+            ->when(isset($this->shop), fn ($query) => $query->whereRaw('bank_transactions.id in ('.IndexBankIncoming::shopLeadSql($this->shop).')'))
             ->when($since, fn ($query) => $query->where('bank_transactions.booked_at', '>=', $since))
             ->when($to, fn ($query) => $query->where('bank_transactions.booked_at', '<=', Carbon::parse($to)->endOfDay()))
             ->join('currencies', 'currencies.id', 'bank_transactions.currency_id')

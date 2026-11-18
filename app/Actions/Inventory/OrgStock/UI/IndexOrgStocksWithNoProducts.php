@@ -137,11 +137,13 @@ class IndexOrgStocksWithNoProducts extends OrgAction
         ];
     }
 
-    public function handle(OrgStockFamily|Organisation $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(OrgStockFamily|Organisation $parent, $prefix = null, $bucket = null, ?Warehouse $onlyWarehouse = null): LengthAwarePaginator
     {
         if ($bucket) {
             $this->bucket = $bucket;
         }
+
+        $onlyWarehouse ??= isset($this->warehouse) ? $this->warehouse : null;
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -339,7 +341,14 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             ->select($selects)
             ->leftJoin('organisations', 'org_stocks.organisation_id', 'organisations.id')
             ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
-            ->leftJoin('warehouses', 'warehouses.organisation_id', 'organisations.id')
+            ->leftJoin('warehouses', function ($join) use ($onlyWarehouse) {
+                $join->on('warehouses.organisation_id', 'organisations.id');
+                if ($onlyWarehouse) {
+                    $join->where('warehouses.id', $onlyWarehouse->id);
+                } else {
+                    $join->whereRaw('warehouses.id = (select min(id) from warehouses as first_warehouse where first_warehouse.organisation_id = organisations.id and first_warehouse.deleted_at is null)');
+                }
+            })
             ->leftJoin('org_stock_stats', 'org_stock_stats.org_stock_id', 'org_stocks.id')
             ->leftJoin('org_stock_families', 'org_stocks.org_stock_family_id', 'org_stock_families.id')
             ->allowedSorts($allowedSorts)

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -158,7 +159,10 @@ import io.aiku.droid.ui.locations.LocationsViewModel
 import io.aiku.droid.ui.locations.WarehouseOverviewScreen
 import io.aiku.droid.ui.locations.WarehouseOverviewViewModel
 import io.aiku.droid.ui.menu.MenuScreen
+import io.aiku.droid.ui.mywork.LocalWorkBadges
 import io.aiku.droid.ui.mywork.MyWorkScreen
+import io.aiku.droid.ui.mywork.MyWorkViewModel
+import io.aiku.droid.ui.mywork.WorkBadgesViewModel
 import io.aiku.droid.ui.navigation.AddShipmentRoute
 import io.aiku.droid.ui.navigation.AppNavigator
 import io.aiku.droid.ui.navigation.AppearanceController
@@ -207,7 +211,6 @@ import io.aiku.droid.ui.navigation.LocationsRoute
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.MenuRoute
 import io.aiku.droid.ui.navigation.MyWorkRoute
-import io.aiku.droid.ui.navigation.NoTasksRoute
 import io.aiku.droid.ui.navigation.NoWarehouseAccess
 import io.aiku.droid.ui.navigation.NotDesignedRoute
 import io.aiku.droid.ui.navigation.OnlineOnlyRoute
@@ -261,7 +264,6 @@ import io.aiku.droid.ui.scan.ScanResultScreen
 import io.aiku.droid.ui.scan.ScanScreen
 import io.aiku.droid.ui.search.SearchScreen
 import io.aiku.droid.ui.states.LoadingScreen
-import io.aiku.droid.ui.states.NoTasksScreen
 import io.aiku.droid.ui.states.NotDesignedScreen
 import io.aiku.droid.ui.states.OfflineScreen
 import io.aiku.droid.ui.states.ReportProblemSheet
@@ -298,8 +300,8 @@ fun SignedInApp(container: AppContainer, session: StaffSession) {
             body = current.message.asText(),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                AikuButton(text = stringResource(R.string.warehouses_retry), onClick = warehousesViewModel::load, modifier = Modifier.fillMaxWidth())
-                AikuButton(text = stringResource(R.string.sign_out), onClick = warehousesViewModel::signOut, style = ButtonStyle.Outline, modifier = Modifier.fillMaxWidth())
+                AikuButton(text = stringResource(R.string.warehouses_retry), onClick = warehousesViewModel::load, icon = R.drawable.ic_states_retry, modifier = Modifier.fillMaxWidth())
+                AikuButton(text = stringResource(R.string.sign_out), onClick = warehousesViewModel::signOut, style = ButtonStyle.Danger, icon = R.drawable.ic_ui_log_out, modifier = Modifier.fillMaxWidth())
             }
         }
         WarehousesUiState.NoWarehouses, is WarehousesUiState.Ready -> {
@@ -352,6 +354,13 @@ private fun WarehouseApp(
             initializer { ClockingCalendarViewModel(container.hrApi, container.sessions) }
         },
     )
+    val badgesViewModel: WorkBadgesViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { WorkBadgesViewModel(container.myWorkApi, container.sessions) }
+        },
+    )
+    LaunchedEffect(selected?.id) { badgesViewModel.showWarehouse(selected?.id) }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { badgesViewModel.refresh() }
     val isClockingSessionExpired by clockingViewModel.isSessionExpired.collectAsStateWithLifecycle()
     val isLeaveSessionExpired by leaveViewModel.isSessionExpired.collectAsStateWithLifecycle()
     val isAdjustmentsSessionExpired by adjustmentsViewModel.isSessionExpired.collectAsStateWithLifecycle()
@@ -393,6 +402,7 @@ private fun WarehouseApp(
         LocalClockingAdjustments provides adjustmentsViewModel,
         LocalOvertime provides overtimeViewModel,
         LocalClockingCalendar provides calendarViewModel,
+        LocalWorkBadges provides badgesViewModel,
         LocalTabHandoff provides remember { TabHandoff() },
         LocalScanController provides container.scans,
         LocalImageSource provides container.images,
@@ -443,7 +453,13 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
         popExitTransition = { ExitTransition.None },
     ) {
         composable<HomeRoute> { HomeScreen() }
-        composable<MyWorkRoute> { MyWorkScreen() }
+        composable<MyWorkRoute> {
+            val work: MyWorkViewModel = viewModel(
+                key = "my-work-$currentWarehouseId",
+                factory = viewModelFactory { initializer { MyWorkViewModel(container.myWorkApi, container.sessions, warehouseId) } },
+            )
+            MyWorkScreen(work = work)
+        }
         composable<ScanRoute> {
             val lookup: ScanLookupViewModel = viewModel(
                 key = "scan-$currentWarehouseId",
@@ -480,7 +496,6 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
         composable<ResolveConflictsRoute> { ResolveConflictsScreen() }
         composable<ConflictRoute> { entry -> entry.toRoute<ConflictRoute>().let { route -> ConflictScreen(route.reference) } }
         composable<OnlineOnlyRoute> { entry -> entry.toRoute<OnlineOnlyRoute>().let { route -> OnlineOnlyScreen(route.reference) } }
-        composable<NoTasksRoute> { NoTasksScreen() }
         composable<StatePreviewRoute> { entry -> entry.toRoute<StatePreviewRoute>().let { route -> StatePreviewScreen(route.kind) } }
         composable<NotDesignedRoute> { entry -> entry.toRoute<NotDesignedRoute>().let { route -> NotDesignedScreen(route.title) } }
         composable<InventoryDashboardRoute> {
@@ -721,21 +736,21 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
             )
             PickedBaysScreen(bays = bays)
         }
-        composable<FulfilmentDeliveriesRoute> { FulfilmentDeliveriesScreen() }
-        composable<FulfilmentDeliveryRoute> { entry -> entry.toRoute<FulfilmentDeliveryRoute>().let { route -> FulfilmentDeliveryScreen(route.reference) } }
-        composable<FulfilmentBookInRoute> { entry -> entry.toRoute<FulfilmentBookInRoute>().let { route -> FulfilmentBookInScreen(route.reference) } }
-        composable<FulfilmentBookedInRoute> { entry -> entry.toRoute<FulfilmentBookedInRoute>().let { route -> FulfilmentBookedInScreen(route.reference) } }
-        composable<StoredPalletsRoute> { StoredPalletsScreen() }
-        composable<PalletRoute> { entry -> entry.toRoute<PalletRoute>().let { route -> PalletScreen(route.reference) } }
-        composable<PalletIncidentsRoute> { PalletIncidentsScreen() }
-        composable<StoredItemsRoute> { StoredItemsScreen() }
-        composable<StoredItemAuditRoute> { entry -> entry.toRoute<StoredItemAuditRoute>().let { route -> StoredItemAuditScreen(route.reference) } }
-        composable<FulfilmentReturnsRoute> { FulfilmentReturnsScreen() }
-        composable<ReturnPickPalletsRoute> { entry -> entry.toRoute<ReturnPickPalletsRoute>().let { route -> ReturnPickPalletsScreen(route.reference) } }
-        composable<ReturnPickItemsRoute> { entry -> entry.toRoute<ReturnPickItemsRoute>().let { route -> ReturnPickItemsScreen(route.reference) } }
-        composable<ReturnPickedRoute> { entry -> entry.toRoute<ReturnPickedRoute>().let { route -> ReturnPickedScreen(route.reference) } }
-        composable<ReturnShipmentRoute> { entry -> entry.toRoute<ReturnShipmentRoute>().let { route -> ReturnShipmentScreen(route.reference) } }
-        composable<ReturnDispatchedRoute> { entry -> entry.toRoute<ReturnDispatchedRoute>().let { route -> ReturnDispatchedScreen(route.reference) } }
+        composable<FulfilmentDeliveriesRoute> { FulfilmentDeliveriesScreen(container = container, warehouseId = currentWarehouseId) }
+        composable<FulfilmentDeliveryRoute> { entry -> entry.toRoute<FulfilmentDeliveryRoute>().let { route -> FulfilmentDeliveryScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<FulfilmentBookInRoute> { entry -> entry.toRoute<FulfilmentBookInRoute>().let { route -> FulfilmentBookInScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<FulfilmentBookedInRoute> { entry -> entry.toRoute<FulfilmentBookedInRoute>().let { route -> FulfilmentBookedInScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<StoredPalletsRoute> { StoredPalletsScreen(container = container, warehouseId = currentWarehouseId) }
+        composable<PalletRoute> { entry -> entry.toRoute<PalletRoute>().let { route -> PalletScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<PalletIncidentsRoute> { PalletIncidentsScreen(container = container, warehouseId = currentWarehouseId) }
+        composable<StoredItemsRoute> { StoredItemsScreen(container = container, warehouseId = currentWarehouseId) }
+        composable<StoredItemAuditRoute> { entry -> entry.toRoute<StoredItemAuditRoute>().let { route -> StoredItemAuditScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<FulfilmentReturnsRoute> { FulfilmentReturnsScreen(container = container, warehouseId = currentWarehouseId) }
+        composable<ReturnPickPalletsRoute> { entry -> entry.toRoute<ReturnPickPalletsRoute>().let { route -> ReturnPickPalletsScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<ReturnPickItemsRoute> { entry -> entry.toRoute<ReturnPickItemsRoute>().let { route -> ReturnPickItemsScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<ReturnPickedRoute> { entry -> entry.toRoute<ReturnPickedRoute>().let { route -> ReturnPickedScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<ReturnShipmentRoute> { entry -> entry.toRoute<ReturnShipmentRoute>().let { route -> ReturnShipmentScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
+        composable<ReturnDispatchedRoute> { entry -> entry.toRoute<ReturnDispatchedRoute>().let { route -> ReturnDispatchedScreen(container = container, warehouseId = currentWarehouseId, id = route.id, reference = route.reference) } }
         composable<ClockingRoute> { ClockingScreen() }
         composable<ClockScanQrRoute> { ClockScanQrScreen() }
         composable<TimesheetsRoute> { TimesheetsScreen() }

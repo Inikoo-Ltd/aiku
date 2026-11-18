@@ -45,9 +45,7 @@ struct ShellWarehouseDashboardView: View {
             }
             if modules.inventory {
                 panel(ShellDashboardContent.inventory, columns: 3) { EmptyView() }
-                SectionHeading("Stock history · today", actionTitle: "All") {
-                    router.open(InventoryRoute.stockHistory)
-                }
+                SectionHeading("Stock history · today")
                 CardList(ShellDashboardContent.movements) { movement in
                     ListRow(movement.sko, subtitle: movement.detail, chips: [movement.change]) {
                         ProductThumb(size: 48, label: "Product photo of \(movement.sko)")

@@ -141,6 +141,7 @@ trait WithReceivables
             ->whereNull('invoices.deleted_at')
             ->whereRaw(self::OWED_SQL.' > 0')
             ->whereRaw("not (shops.type = ? and exists (select 1 from bank_transactions where bank_transactions.order_id = invoices.order_id and bank_transactions.match_state = ?))", [ShopTypeEnum::EXTERNAL->value, BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE->value])
+            ->whereRaw("not exists (select 1 from bank_transactions where bank_transactions.match_state = ? and bank_transactions.match_data->'order_ids' @> to_jsonb(invoices.order_id))", [BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE->value])
             ->when($owedBy === 'legacy', fn ($query) => $query->whereNotNull('invoices.source_id'))
             ->when($owedBy !== null && $owedBy !== 'legacy', fn ($query) => $query->whereNull('invoices.source_id')->where('shops.type', $owedBy === 'marketplaces' ? '=' : '!=', ShopTypeEnum::EXTERNAL->value))
             ->when($owedBy === 'companies', fn ($query) => $query->whereNotNull('invoices.as_organisation_id'))
@@ -173,18 +174,19 @@ trait WithReceivables
     }
 
     /**
-     * @return array{invoices: int, debtors: int, balances: int}
+     * @return array{invoices: int, debtors: int, balances: int, cash_on_delivery: int}
      */
     protected function sectionCounts(): array
     {
         $owed = self::owedInvoices(DB::table('invoices'), $this->parent(), $this->readOrganisations, 'customers')
-            ->selectRaw('count(*) as invoices, count(distinct invoices.customer_id) as debtors')
+            ->selectRaw('count(*) as invoices, count(distinct invoices.customer_id) as debtors, count(*) filter (where invoices.is_cash_on_delivery and exists (select 1 from orders where orders.id = invoices.order_id and orders.dispatched_at is not null)) as cash_on_delivery')
             ->first();
 
         return [
             'invoices' => (int) $owed->invoices,
             'debtors'  => (int) $owed->debtors,
             'balances' => self::customerBalances($this->readOrganisations)->count(),
+            'cash_on_delivery' => (int) $owed->cash_on_delivery,
         ];
     }
 
@@ -197,6 +199,7 @@ trait WithReceivables
             'invoices' => [__('Unpaid invoices'), ['fal', 'fa-file-invoice-dollar']],
             'debtors'  => [__('Debtors'), ['fal', 'fa-user-clock']],
             'balances' => [__('Customer balances'), ['fal', 'fa-piggy-bank']],
+            'cash_on_delivery' => [__('Cash on delivery not paid'), ['fal', 'fa-truck']],
         ], $this->sectionCounts(), array_filter(['org' => $this->organisationSlug]));
     }
 
@@ -226,7 +229,7 @@ trait WithReceivables
         $base       = $this->isGroup() ? 'grp.financials.receivables.' : 'grp.org.accounting.receivables.';
         $parameters = $this->isGroup() ? array_filter(['org' => $this->organisationSlug]) : ['organisation' => $this->organisation->slug];
 
-        return collect(['index', 'invoices', 'debtors', 'balances'])->mapWithKeys(fn (string $section) => [$section => ['name' => $base.$section, 'parameters' => $parameters]])->all();
+        return collect(['index', ...IndexReceivables::SECTIONS])->mapWithKeys(fn (string $section) => [$section => ['name' => $base.$section, 'parameters' => $parameters]])->all();
     }
 
     public function getBreadcrumbs(array $routeParameters): array

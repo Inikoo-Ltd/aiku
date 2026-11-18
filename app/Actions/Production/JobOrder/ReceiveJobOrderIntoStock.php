@@ -284,6 +284,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
 
     /**
      * A step whose mix came from a shared mix already took its raw materials when the mix was recorded (HELP-4562).
+     * A recipe listing the artefact's own stock as a raw material (bulk oils, HELP-4770) never takes it back out.
      */
     private function deductRawMaterials(JobOrderItem $item, float $producedArtefactUnits, ?int $userId): void
     {
@@ -298,7 +299,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
             foreach ($recipeStep->rawMaterials as $recipeStepRawMaterial) {
                 $rawMaterial = $recipeStepRawMaterial->rawMaterial;
 
-                if (!$rawMaterial || !$rawMaterial->org_stock_id || !$rawMaterial->orgStock) {
+                if (!$rawMaterial || !$rawMaterial->org_stock_id || !$rawMaterial->orgStock || $rawMaterial->org_stock_id == $item->artefact->org_stock_id) {
                     continue;
                 }
 

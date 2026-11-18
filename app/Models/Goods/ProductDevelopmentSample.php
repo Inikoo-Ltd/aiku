@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $product_development_id
  * @property int $product_development_item_id
+ * @property int|null $product_development_formulation_id the formulation stage it is a trial run of
  * @property int $number
  * @property ProductDevelopmentSampleStatusEnum $status
  * @property array<string, mixed>|null $recipe the recipe it was made from: steps and ingredients with percentages
@@ -40,6 +41,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read ProductDevelopment|null $productDevelopment
  * @property-read ProductDevelopmentItem|null $item
+ * @property-read ProductDevelopmentFormulation|null $formulation
  * @property-read JobOrder|null $jobOrder
  * @property-read User|null $madeBy
  * @property-read User|null $reviewedBy
@@ -71,6 +73,11 @@ class ProductDevelopmentSample extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(ProductDevelopmentItem::class, 'product_development_item_id');
+    }
+
+    public function formulation(): BelongsTo
+    {
+        return $this->belongsTo(ProductDevelopmentFormulation::class, 'product_development_formulation_id');
     }
 
     public function jobOrder(): BelongsTo

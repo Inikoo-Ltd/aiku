@@ -10,6 +10,7 @@ import { supplierPortalBrandLogos } from "@/Components/Procurement/SupplierPorta
 import { computed } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SupplierPortalStatCard from "@/Components/Procurement/SupplierPortalStatCard.vue"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import type { JourneyRibbon } from "@/Components/SupplyChain/PurchaseOrderJourneyRibbon.vue"
 import Image from "@common/Components/Image.vue"
 import type { Image as ImageProxy } from "@/types/Image"
@@ -216,7 +217,11 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 				<template v-if="summary">
 					<template v-if="summary.ranking">
 						<p class="text-2xl font-semibold tabular-nums text-gray-900">#{{ summary.ranking.position }}</p>
-						<p class="mt-1.5 text-xs text-gray-600">{{ ctrans(":position of :count suppliers in :country", { position: String(summary.ranking.position), count: String(summary.ranking.of), country: summary.country?.name ?? "" }) }}</p>
+						<p class="mt-1.5 text-xs text-gray-600">
+							{{ ctrans(":position of :count suppliers in :country", { position: String(summary.ranking.position), count: String(summary.ranking.of), country: summary.country?.name ?? "" }) }}
+							<InformationIcon
+								:information="ctrans(':count is every :group supplier based in :country that sold to us from :from to :to, with an agent or without. You are ranked by those sales, each at its own prices.', { count: String(summary.ranking.of), group, country: summary.country?.name ?? '', from: useFormatTime(summary.from), to: useFormatTime(summary.to) })" />
+						</p>
 					</template>
 					<p v-else class="text-sm text-gray-500">{{ ctrans("Not enough data to rank") }}</p>
 				</template>

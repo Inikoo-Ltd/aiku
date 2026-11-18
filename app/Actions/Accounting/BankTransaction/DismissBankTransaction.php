@@ -71,6 +71,10 @@ class DismissBankTransaction extends OrgAction
                 ]),
                 'matched_at'  => now(),
             ]);
+            $bankTransaction->recordDecision($alreadyPaid ? 'marked_already_paid' : 'set_aside', array_filter([
+                'order' => $bankTransaction->order?->reference,
+                'note'  => $modelData['note'],
+            ]));
 
             return $bankTransaction;
         });

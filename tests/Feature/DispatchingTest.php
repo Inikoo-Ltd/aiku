@@ -163,6 +163,7 @@ use App\Models\Helpers\Upload;
 use App\Models\Helpers\UploadRecord;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\PickingSession;
 use App\Models\Ordering\Transaction;
@@ -591,6 +592,7 @@ test('pack item', function (Picking $picking) {
     expect($packing)->toBeInstanceOf(Packing::class)
         ->and(intval($packing->quantity))->toBe(10)
         ->and(intval($packing->deliveryNoteItem->quantity_packed))->toBe(10)
+        ->and($packing->deliveryNoteItem->is_packed)->toBeTrue()
         ->and($packing->queued_at)->not->toBeNull()
         ->and($packing->packing_at)->not->toBeNull()
         ->and($packing->done_at)->not->toBeNull()
@@ -1391,6 +1393,7 @@ test('trolley crud and json and showcase', function () {
 
     $deliveryNote = makeDeliveryNote($this);
     AttachTrolleyToDeliveryNote::make()->handle($trolley, $deliveryNote);
+    expect(GetTrolleyShowcase::run($trolley->refresh())['delivery_note'])->toBe($deliveryNote->reference);
     DetachTrolleyFromDeliveryNote::make()->handle($trolley, $deliveryNote);
 
     SyncDeliveryNoteTrolleys::make()->handle($deliveryNote, ['trolleys' => [$trolley->id]]);
@@ -1418,6 +1421,7 @@ test('picked bay crud json showcase hydrator', function () {
 
     $deliveryNote = makeDeliveryNote($this);
     AttachDeliveryNoteToPickedBay::make()->handle($pickedBay, $deliveryNote);
+    expect(GetPickedBayShowcase::run($pickedBay))->toMatchArray(['name' => $pickedBay->code, 'delivery_note' => $deliveryNote->reference]);
 
     PickedBayHydrateNumberDeliveryNotes::run($pickedBay->id);
 });
@@ -1447,6 +1451,11 @@ test('dispatch clerk can view trolleys and picked bays but not create them', fun
 
     expect($headingActions('grp.org.warehouses.show.dispatching.trolleys.index'))->toBe([])
         ->and($headingActions('grp.org.warehouses.show.dispatching.picked_bays.index'))->toBe([]);
+
+    $trolley   = StoreTrolley::make()->handle($this->warehouse, ['name' => 'trolley_clerk_'.Str::random(4)]);
+    $pickedBay = StorePickedBay::make()->handle($this->warehouse, ['code' => 'BAYC'.Str::random(4)]);
+    expect(get(route('grp.org.warehouses.show.dispatching.trolleys.show', [...$parameters, $trolley->slug]))->assertOk()->viewData('page')['props']['pageHead']['actions'])->toBe([])
+        ->and(get(route('grp.org.warehouses.show.dispatching.picked_bays.show', [...$parameters, $pickedBay->slug]))->assertOk()->viewData('page')['props']['pageHead']['actions'])->toBe([]);
     get(route('grp.org.warehouses.show.dispatching.trolleys.create', $parameters))->assertForbidden();
     get(route('grp.org.warehouses.show.dispatching.picked_bays.create', $parameters))->assertForbidden();
 
@@ -1597,6 +1606,15 @@ test('a delivery note shipped by external on an order without a platform still o
     getJson(route('grp.json.mini_delivery_note_shipments', [$deliveryNote->id]))
         ->assertOk()
         ->assertJsonPath('shipment.shipments_routes.submit_route.name', 'grp.models.delivery_note.shipment.store');
+});
+
+test('a queued delivery note with no picker still opens, INI-290', function () {
+    $deliveryNote = makeDeliveryNote($this);
+    $deliveryNote->updateQuietly(['state' => DeliveryNoteStateEnum::QUEUED, 'picker_user_id' => null, 'picker_id' => null]);
+
+    get(route('grp.org.warehouses.show.dispatching.delivery_notes.show', [$deliveryNote->organisation->slug, $deliveryNote->warehouse->slug, $deliveryNote->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.1.label', __('I will pick this'))->etc());
 });
 
 test('UI delivery notes in customer group and org stock', function () {
@@ -2595,7 +2613,9 @@ test('packeta sends a Polish parcel locker delivery to the InPost locker the cus
         ->and($client->packetAttributes['carrierPickupPoint'])->toBe('BYD21N')
         ->and($client->packetAttributes['size'])->toBe(['length' => 350, 'width' => 300, 'height' => 150])
         ->and(mb_strlen((string) $client->packetAttributes['note']))->toBeLessThanOrEqual(128)
-        ->and(base64_decode($response['modelData']['label']))->toBe('carrier-label');
+        ->and(base64_decode($response['modelData']['label']))->toBe('carrier-label')
+        ->and($response['modelData']['delivery_type'])->toBe(\App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum::PICKUP_POINT)
+        ->and($response['modelData']['pickup_point_code'])->toBe('BYD21N');
 })->with([
     'locker in the address'       => ['Parcel Locker Paczkomat InPost BYD21N', null],
     'locker in the shipping note' => ['Elzanowo 10B', "'Send as InPost:{BYD21N}'"],
@@ -3269,8 +3289,39 @@ test('delete shipment action', function () {
         ->and($deliveryNote->shipments()->count())->toBe(0);
 });
 
+test('a shipment records whether it goes home or to a pickup point', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'DT'.Str::random(4), 'name' => 'Dt', 'trade_as' => 'dt']);
+
+    $homeShipment = StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'H'.Str::random(6)]);
+    \App\Actions\Dispatching\Shipment\DeleteShipment::run($homeShipment);
+
+    $deliveryNote->orders->first()->update(['data' => ['ebay_order' => ['fulfillmentStartInstructions' => [['fulfillmentInstructionsType' => 'PREPARE_FOR_PICKUP']]]]]);
+    $pickupShipment = StoreShipment::make()->action($deliveryNote->refresh(), $shipper, ['tracking' => 'P'.Str::random(6)]);
+
+    expect($homeShipment->refresh()->delivery_type)->toBe(\App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum::HOME)
+        ->and($pickupShipment->refresh()->delivery_type)->toBe(\App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum::PICKUP_POINT);
+});
+
+test('repair fills the delivery type of shipments made before it was recorded', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+    $shipper  = StoreShipper::make()->action($this->organisation, ['code' => 'DR'.Str::random(4), 'name' => 'Dr', 'trade_as' => 'dr']);
+    $shipment = StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'R'.Str::random(6)]);
+    $shipment->update(['delivery_type' => null]);
+
+    \App\Actions\Dispatching\Shipment\RepairShipmentDeliveryType::run(true);
+    expect($shipment->refresh()->delivery_type)->toBeNull();
+
+    \App\Actions\Dispatching\Shipment\RepairShipmentDeliveryType::run();
+    expect($shipment->refresh()->delivery_type)->toBe(\App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum::HOME);
+});
+
 test('UI reports and batch code edit', function () {
     get(route('grp.org.reports.packer-performance', [$this->organisation->slug]))->assertOk();
+    get(route('grp.org.reports.shipment-delivery-type', [$this->organisation->slug, 'between' => ['created_at' => now()->subMonth()->format('Ymd').'-'.now()->format('Ymd')]]))
+        ->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->component('Org/Reports/ShipmentDeliveryTypeReport')->has('data'));
     get(route('grp.org.reports.picker-performance', [$this->organisation->slug]))->assertOk();
 
     $orgStock  = makeOrgStock($this);
@@ -3325,6 +3376,39 @@ test('picking upsert pick all split and delete', function () {
 
     \App\Actions\Dispatching\Picking\DeletePicking::make()->action($picking->refresh(), $this->user);
     expect(Picking::find($picking->id))->toBeNull();
+});
+
+test('a pick right after a not pick is applied, pick all leaves the not picked quantity, and a skipped waiting not pick keeps its waiting quantity, INI-290', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 4);
+    $location              = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $los                   = StoreLocationOrgStock::make()->action(
+        orgStock: $item->orgStock,
+        location: $location,
+        modelData: ['quantity' => 200, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+        strict: false
+    );
+
+    expect(StoreNotPickPicking::make()->action($item->refresh(), $this->user, ['quantity' => 1]))->not->toBeNull()
+        ->and($item->refresh()->locked_at)->toBeNull();
+
+    $this->actingAs($this->user);
+    request()->setUserResolver(fn () => $this->user);
+    expect(\App\Actions\Dispatching\Picking\UpsertPicking::run($item, $los, ['quantity' => 3, 'location_org_stock_id' => $los->id]))->toBeTrue()
+        ->and((float) $item->refresh()->quantity_picked)->toBe(7.0);
+
+    expect(\App\Actions\Dispatching\Picking\PickAllItem::run($item, ['location_org_stock_id' => $los->id, 'picker_user_id' => $this->user->id]))->not->toBeNull()
+        ->and((float) $item->refresh()->quantity_picked)->toBe(9.0)
+        ->and((float) $item->quantity_not_picked)->toBe(1.0);
+
+    $item->update(['quantity_waiting_warehouse' => 2, 'locked_at' => now()]);
+    expect(fn () => \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingWarehouse::make()->handle($item->refresh(), $this->user, ['quantity' => 2]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect((float) $item->refresh()->quantity_waiting_warehouse)->toBe(2.0);
+
+    $item->update(['quantity_waiting_warehouse' => 0, 'quantity_waiting_crm' => 2, 'locked_at' => now()]);
+    expect(fn () => \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingCrm::make()->handle($item->refresh(), $this->user, ['quantity' => 2]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect((float) $item->refresh()->quantity_waiting_crm)->toBe(2.0);
 });
 
 test('picking waiting warehouse and crm flow', function () {
@@ -8728,4 +8812,299 @@ test('cancelling a packed order raises a cancellation return instead of creditin
         ->and($returnDeliveryNote->type)->toBe(\App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum::CANCELLATION)
         ->and((float)$returnDeliveryNote->returnDeliveryNoteItem()->first()->total_expected_qty)
         ->toBe((float)$deliveryNoteItem->refresh()->quantity_picked);
+});
+
+test('picking line locations only list the delivery note warehouse and keep the picked quantity (INI-292)', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 4);
+    $sameWarehouseIds      = $item->orgStock->locationOrgStocks()->pluck('id')->all();
+
+    $otherWarehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, [
+        'code' => 'W'.substr(uniqid(), -6),
+        'name' => 'Other picking warehouse',
+    ]);
+    StoreLocationOrgStock::make()->action(
+        orgStock: $item->orgStock,
+        location: StoreLocation::make()->action($otherWarehouse, Location::factory()->definition()),
+        modelData: ['quantity' => 50, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+        strict: false
+    );
+
+    $locations = collect(\App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsGroupedByItemDeliveryNoteResource::make($item)->toArray(request())['locations']->resolve());
+    expect($locations->pluck('id')->all())->toBe($sameWarehouseIds)
+        ->and((float)$locations->first()['quantity_picked'])->toBe(4.0)
+        ->and($locations->first())->not->toHaveKey('picking_id');
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    $row = IndexDeliveryNoteItemsStateHandling::run($deliveryNote, ignoreParentPagination: true, deliveryNoteItemId: $item->id)->first();
+    $stateHandlingLocations = collect(json_decode($row->location_org_stocks, true));
+    expect($stateHandlingLocations->pluck('id')->all())->toBe($sameWarehouseIds)
+        ->and($stateHandlingLocations->first()['pickings_data'])->toStartWith('4')->toEndWith(';');
+});
+
+test('web add shipment refuses a shipper id beyond the shippers id range (INI-292)', function () {
+    $deliveryNote = deliveryNoteForShipping($this);
+
+    post(route('grp.models.delivery_note.shipment.store', $deliveryNote->id), ['shipper_id' => 40000])
+        ->assertSessionHasErrors('shipper_id');
+});
+
+test('cancelling a return numbers the reference after the cancelled returns already there (INI-292)', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $item->update(['quantity_dispatched' => 2]);
+
+    $first     = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+    $reference = $first->reference;
+    expect(\App\Actions\GoodsIn\ReturnDeliveryNote\CancelReturnDeliveryNote::make()->handle($first)->reference)->toBe($reference.'-CANCELLED');
+
+    [$otherDeliveryNote, $otherItem] = handlingDeliveryNoteWithPicking($this);
+    $otherDeliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $otherItem->update(['quantity_dispatched' => 2]);
+    $second = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($otherDeliveryNote, []);
+    $second->update(['reference' => $reference]);
+    expect(\App\Actions\GoodsIn\ReturnDeliveryNote\CancelReturnDeliveryNote::make()->handle($second->refresh())->reference)->toBe($reference.'-CANCELLED-2');
+});
+
+test('dispatch hub pickers now counts the trolleys of their picking sessions (INI-292)', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    StartPickPickingSession::run($pickingSession, []);
+    $trolley = StoreTrolley::make()->handle($this->warehouse, ['name' => 'trolley_ps_'.Str::random(4)]);
+    AttachTrolleyToPickingSession::make()->handle($trolley, $pickingSession->refresh());
+
+    $pickers = get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $this->warehouse->slug]).'?tab=pickers')
+        ->assertOk()->viewData('page')['props']['pickers_current']['data'];
+
+    expect(collect($pickers)->pluck('trolleys')->flatten(1)->pluck('slug')->all())->toContain($trolley->slug);
+});
+
+test('a marketplace order gets the shop default packaging when it goes to the warehouse, not when a page is opened, INI-290', function () {
+    [, , $shop] = createOwnShop('ini-290-dropshipping');
+    $shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+    [, $product] = createProduct($shop);
+    $customer    = createOwnCustomer($shop, 'ini-290-dropshipping');
+
+    $defaultPackaging = \App\Actions\Billables\Packaging\StorePackaging::make()->action($shop, [
+        'code'        => 'STD-'.strtoupper(Str::random(6)),
+        'family_code' => 'STD',
+        'name'        => 'Standard packaging',
+        'type'        => \App\Enums\Catalogue\Packaging\PackagingTypeEnum::STANDARD->value,
+        'price'       => 0,
+        'state'       => \App\Enums\Catalogue\Packaging\PackagingStateEnum::ACTIVE->value,
+    ]);
+    $shop->update(['settings' => array_replace_recursive($shop->settings ?? [], [
+        'packaging_and_inserts' => ['enabled' => true, 'default_packaging_id' => $defaultPackaging->id],
+    ])]);
+
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'O'.Str::random(8),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'billing_address'  => new Address(Address::factory()->definition()),
+    ], strict: false);
+    StoreTransaction::make()->action($order, $product->historicAsset, Transaction::factory()->definition());
+    $order = SubmitOrder::make()->action($order);
+
+    expect($order->refresh()->packaging_id)->toBeNull();
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, ['warehouse_id' => $this->warehouse->id]);
+
+    expect($order->refresh()->packaging_id)->toBe($defaultPackaging->id)
+        ->and($deliveryNote->packaging_id)->toBe($defaultPackaging->id)
+        ->and($order->transactions()->where('model_type', 'Packaging')->where('model_id', $defaultPackaging->id)->count())->toBe(1);
+});
+
+test('return item locations list the SKO locations of the return warehouse only (INI-292)', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $item->update(['quantity_dispatched' => 2]);
+    $sameWarehouseIds = $item->orgStock->locationOrgStocks()->pluck('id')->all();
+
+    $otherWarehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, [
+        'code' => 'W'.substr(uniqid(), -6),
+        'name' => 'Other return warehouse',
+    ]);
+    StoreLocationOrgStock::make()->action(
+        orgStock: $item->orgStock,
+        location: StoreLocation::make()->action($otherWarehouse, Location::factory()->definition()),
+        modelData: ['quantity' => 50, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+        strict: false
+    );
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    $rows = \App\Http\Resources\Procurement\ReturnDeliveryNoteItemsResource::collection(
+        \App\Actions\GoodsIn\ReturnDeliveryNoteItem\IndexReturnDeliveryNoteItems::run($returnDeliveryNote)
+    )->resolve();
+
+    expect(collect($rows[0]['locations'])->pluck('id')->all())->toBe($sameWarehouseIds);
+});
+
+test('a warehouse lists and opens only its own organisation stored items and only its own pallets, INI-290', function () {
+    $palletReturn       = createPalletReturnWithPallet($this);
+    $fulfilmentCustomer = $palletReturn->fulfilmentCustomer;
+    $ownPallet          = $palletReturn->pallets()->first();
+
+    $orgData = \App\Models\SysAdmin\Organisation::factory()->definition();
+    data_set($orgData, 'code', 'acm2');
+    data_set($orgData, 'type', \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP);
+    $otherOrganisation = \App\Models\SysAdmin\Organisation::where('code', 'acm2')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, $orgData);
+    $otherWarehouse = Warehouse::where('organisation_id', $otherOrganisation->id)->first()
+        ?? \App\Actions\Inventory\Warehouse\StoreWarehouse::run($otherOrganisation, Warehouse::factory()->definition());
+
+    $foreignPallet = StorePallet::make()->action($fulfilmentCustomer, array_merge(['warehouse_id' => $this->warehouse->id], Pallet::factory()->definition()));
+    $location      = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $foreignPallet->updateQuietly(['warehouse_id' => $otherWarehouse->id, 'location_id' => $location->id, 'slug' => 'for-'.Str::lower(Str::random(8))]);
+    $ownPallet->updateQuietly(['location_id' => $location->id, 'slug' => $ownPallet->slug ?? 'own-'.Str::lower(Str::random(8))]);
+
+    $ownStoredItem     = StoreStoredItem::make()->action($fulfilmentCustomer, ['reference' => 'OWN'.Str::random(6)]);
+    $foreignStoredItem = StoreStoredItem::make()->action($fulfilmentCustomer, ['reference' => 'FOR'.Str::random(6)]);
+    $foreignStoredItem->updateQuietly(['organisation_id' => $otherOrganisation->id]);
+
+    $ownPallet->storedItems()->attach($ownStoredItem->id, ['quantity' => 1, 'state' => PalletStoredItemStateEnum::ACTIVE]);
+    $foreignPallet->storedItems()->attach($foreignStoredItem->id, ['quantity' => 1, 'state' => PalletStoredItemStateEnum::ACTIVE]);
+
+    $page = fn (string $tab) => get(route('grp.org.warehouses.show.inventory.stored_items.current.index', [
+        $this->organisation->slug,
+        $this->warehouse->slug,
+        'tab'                      => $tab,
+        'stored_items_perPage'     => 1000,
+        'pallet_stored_items_perPage' => 1000,
+    ]))->assertOk()->inertiaProps($tab.'.data');
+
+    $storedItemIds = collect($page('stored_items'))->pluck('id');
+    $palletRows    = collect($page('pallet_stored_items'))->pluck('stored_item_id');
+
+    expect($storedItemIds)->toContain($ownStoredItem->id)->not->toContain($foreignStoredItem->id)
+        ->and($palletRows)->toContain($ownStoredItem->id)->not->toContain($foreignStoredItem->id);
+
+    foreach (['show', 'edit'] as $page) {
+        get(route("grp.org.warehouses.show.inventory.stored_items.current.$page", [$this->organisation->slug, $this->warehouse->slug, $ownStoredItem->slug]))->assertOk();
+        get(route("grp.org.warehouses.show.inventory.stored_items.current.$page", [$this->organisation->slug, $this->warehouse->slug, $foreignStoredItem->slug]))->assertNotFound();
+    }
+
+    foreach (['show', 'edit'] as $page) {
+        get(route("grp.org.warehouses.show.inventory.pallets.current.$page", [$this->organisation->slug, $this->warehouse->slug, $ownPallet->slug]))->assertOk();
+        get(route("grp.org.warehouses.show.inventory.pallets.current.$page", [$this->organisation->slug, $this->warehouse->slug, $foreignPallet->slug]))->assertNotFound();
+    }
+    post(route('grp.org.warehouses.show.inventory.pallets.show.stored-item-audit.create', [$this->organisation->slug, $this->warehouse->slug, $foreignPallet->slug]))->assertNotFound();
+});
+
+test('cancelling with create return writes no not pick for a fully picked line and one for the remainder of a partly picked line (INI-291)', function () {
+    [$fullNote, $fullItem]       = handlingDeliveryNoteWithPicking($this);
+    [$partialNote, $partialItem] = handlingDeliveryNoteWithPicking($this, 4);
+
+    CancelDeliveryNote::make()->action($fullNote, $this->user, true, false, null, true);
+    CancelDeliveryNote::make()->action($partialNote, $this->user, true, false, null, true);
+
+    $notPicks = fn (DeliveryNoteItem $item) => $item->pickings()->where('type', \App\Enums\Dispatching\Picking\PickingTypeEnum::NOT_PICK)->get();
+
+    $partialNotPicks = $notPicks($partialItem);
+
+    expect($notPicks($fullItem))->toHaveCount(0)
+        ->and($partialNotPicks)->toHaveCount(1)
+        ->and((float)$partialNotPicks->first()->quantity)->toBe(6.0)
+        ->and($partialNotPicks->first()->not_picked_reason)->toBe(\App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum::CANCELLED_BY_CUSTOMER);
+});
+
+test('packing the last item of a note with an unprinted insert leaves the note in packing, INI-291', function () {
+    $this->shop->update([
+        'type'     => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING,
+        'settings' => array_merge($this->shop->settings ?? [], ['packaging_and_inserts' => ['enabled' => true]]),
+    ]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($deliveryNote->refresh());
+
+    \App\Models\Dispatching\DeliveryNoteLeaflet::create([
+        'group_id'         => $deliveryNote->group_id,
+        'organisation_id'  => $deliveryNote->organisation_id,
+        'shop_id'          => $deliveryNote->shop_id,
+        'delivery_note_id' => $deliveryNote->id,
+        'type'             => \App\Enums\Catalogue\Leaflet\LeafletTypeEnum::PERSONALISED_MESSAGE,
+        'name'             => 'Personalised message',
+        'message'          => 'Thank you for your order',
+        'data'             => [],
+    ]);
+
+    expect($deliveryNote->refresh()->hasUnprintedLeaflets())->toBeTrue();
+
+    \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking::make()->action($item->refresh(), $this->user, null);
+
+    expect((float)$item->refresh()->quantity_packed)->toBe((float)$item->quantity_picked)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PACKING);
+});
+
+test('changing the user of a picking session gives the notes being handled to the new picker and leaves the others, INI-291', function () {
+    [$handlingNote]  = handlingDeliveryNoteWithPicking($this);
+    [$blockedNote]   = handlingDeliveryNoteWithPicking($this);
+    [$pickedNote]    = handlingDeliveryNoteWithPicking($this);
+    $newPicker       = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+
+    $notes = [$handlingNote, $blockedNote, $pickedNote];
+    collect($notes)->each->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => collect($notes)->pluck('id')->all(),
+        'user_id'        => $this->user->id,
+    ]);
+    collect($notes)->each->updateQuietly(['picker_user_id' => $this->user->id]);
+    $handlingNote->updateQuietly(['state' => DeliveryNoteStateEnum::HANDLING]);
+    $blockedNote->updateQuietly(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+    $pickedNote->updateQuietly(['state' => DeliveryNoteStateEnum::PICKED]);
+
+    UpdatePickingSession::make()->action($pickingSession, ['user_id' => $newPicker->id]);
+
+    expect($handlingNote->refresh()->picker_user_id)->toBe($newPicker->id)
+        ->and($blockedNote->refresh()->picker_user_id)->toBe($newPicker->id)
+        ->and($pickedNote->refresh()->picker_user_id)->toBe($this->user->id);
+});
+
+test('a picking session that already started cannot be started again, nor have notes removed or added, INI-291', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+    $startAt        = (string)$pickingSession->refresh()->start_at;
+
+    expect($pickingSession->state)->toBe(PickingSessionStateEnum::HANDLING);
+
+    foreach ([PickingSessionStateEnum::HANDLING, PickingSessionStateEnum::PICKING_FINISHED] as $state) {
+        $pickingSession->updateQuietly(['state' => $state]);
+
+        expect(fn () => StartPickPickingSession::run($pickingSession->refresh(), []))->toThrow(\Illuminate\Validation\ValidationException::class)
+            ->and(fn () => \App\Actions\Dispatching\PickingSession\RemoveDeliveryNotesFromPickingSession::make()->handle($pickingSession->refresh(), [$deliveryNote->id]))->toThrow(\Illuminate\Validation\ValidationException::class)
+            ->and(fn () => \App\Actions\Dispatching\PickingSession\AddDeliveryNotesToPickingSession::make()->handle($pickingSession->refresh(), [$deliveryNote->id]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+        $pickingSession->refresh();
+        expect($pickingSession->state)->toBe($state)
+            ->and((string)$pickingSession->start_at)->toBe($startAt)
+            ->and($pickingSession->deliveryNotes()->pluck('delivery_notes.id')->all())->toBe([$deliveryNote->id]);
+    }
+});
+
+test('a delivery note refuses a picker that is not a user of the group, INI-291', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $unknownUserId  = \App\Models\SysAdmin\User::max('id') + 1000;
+
+    expect(fn () => \App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote::make()->action($deliveryNote, ['picker_user_id' => $unknownUserId]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote::make()->action($deliveryNote->refresh(), ['picker_user_id' => $this->user->id]);
+    expect($deliveryNote->picker_user_id)->toBe($this->user->id);
 });

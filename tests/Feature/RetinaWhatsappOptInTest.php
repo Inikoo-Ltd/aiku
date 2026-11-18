@@ -37,6 +37,7 @@ beforeAll(function () {
 beforeEach(function () {
     $this->organisation = createOrganisation();
     $this->shop         = createShop()[2];
+    $this->shop->update(['settings' => array_replace_recursive($this->shop->settings ?? [], ['whatsapp' => ['phone_number_id' => '1000000001']])]);
     $this->website      = createWebsite($this->shop);
     if ($this->website->state != WebsiteStateEnum::LIVE) {
         LaunchWebsite::make()->action($this->website);
@@ -358,19 +359,25 @@ test('Not interested hides the dashboard WhatsApp card for good, while Email man
         ->and(GetRetinaWhatsappOptInData::run($this->customer->fresh(), $this->website, dismissible: true)['is_subscribed'])->toBeTrue();
 });
 
-test('the WhatsApp opt-in is offered to wholesale and dropshipping shops only', function () {
-    expect(GetRetinaWhatsappOptInData::isOfferedIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::B2B])))->toBeTrue()
-        ->and(GetRetinaWhatsappOptInData::isOfferedIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::DROPSHIPPING])))->toBeTrue()
-        ->and(GetRetinaWhatsappOptInData::isOfferedIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::FULFILMENT])))->toBeFalse()
+test('the WhatsApp opt-in is offered only by wholesale and dropshipping shops with a connected WhatsApp number', function () {
+    $connected = ['whatsapp' => ['phone_number_id' => '1000000003']];
+    $shopOf    = fn (ShopTypeEnum $type, array $settings = []) => (new App\Models\Catalogue\Shop())->forceFill(['type' => $type, 'settings' => $settings]);
+
+    expect(GetRetinaWhatsappOptInData::isOfferedIn($shopOf(ShopTypeEnum::B2B, $connected)))->toBeTrue()
+        ->and(GetRetinaWhatsappOptInData::isOfferedIn($shopOf(ShopTypeEnum::DROPSHIPPING, $connected)))->toBeTrue()
+        ->and(GetRetinaWhatsappOptInData::isOfferedIn($shopOf(ShopTypeEnum::DROPSHIPPING)))->toBeFalse()
+        ->and(GetRetinaWhatsappOptInData::isOfferedIn($shopOf(ShopTypeEnum::B2B)))->toBeFalse()
+        ->and(GetRetinaWhatsappOptInData::isOfferedIn($shopOf(ShopTypeEnum::FULFILMENT, $connected)))->toBeFalse()
         ->and(GetRetinaWhatsappOptInData::isOfferedIn(null))->toBeFalse()
-        ->and(App\Enums\Comms\Mailshot\MailshotReadyMadeLinkEnum::WHATSAPP_OPT_IN->isAvailableIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::DROPSHIPPING])))->toBeTrue()
-        ->and(App\Enums\Comms\Mailshot\MailshotReadyMadeLinkEnum::WHATSAPP_OPT_IN->isAvailableIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::FULFILMENT])))->toBeFalse();
+        ->and(App\Enums\Comms\Mailshot\MailshotReadyMadeLinkEnum::WHATSAPP_OPT_IN->isAvailableIn($shopOf(ShopTypeEnum::DROPSHIPPING, $connected)))->toBeTrue()
+        ->and(App\Enums\Comms\Mailshot\MailshotReadyMadeLinkEnum::WHATSAPP_OPT_IN->isAvailableIn($shopOf(ShopTypeEnum::DROPSHIPPING)))->toBeFalse();
 });
 
 test('the dropshipping dashboard carries the WhatsApp card and a dismissed customer is sent to email management', function () {
     $shopData = App\Models\Catalogue\Shop::factory()->definition();
     data_set($shopData, 'type', ShopTypeEnum::DROPSHIPPING);
     $shop = App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, $shopData);
+    $shop->update(['settings' => array_replace_recursive($shop->settings ?? [], ['whatsapp' => ['phone_number_id' => '1000000002']])]);
 
     $website = createWebsite($shop);
     if ($website->state != WebsiteStateEnum::LIVE) {

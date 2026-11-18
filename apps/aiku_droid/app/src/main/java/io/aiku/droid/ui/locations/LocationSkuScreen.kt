@@ -147,6 +147,7 @@ private fun LocationSkuContent(state: LocationUiState, location: LocationViewMod
                                 else -> location.update(sko.locationOrgStockId, update)
                             }
                         },
+                        icon = R.drawable.ic_ui_check,
                         isLoading = state.working != null && state.working !is LocationWrite,
                         modifier = Modifier.weight(1f),
                         height = 52.dp,

@@ -7,6 +7,8 @@ use App\Actions\OrgAction;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
+use App\Models\Fulfilment\PalletReturn;
+use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -167,15 +169,15 @@ class CallApiCttEsShipping extends OrgAction
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function handle(DeliveryNote $deliveryNote, Shipper $shipper): array
+    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
         $url = '/manifest/v2.0/shippings';
 
+        $parentResource = $parent instanceof PalletReturn
+            ? ShippingPalletReturnResource::make($parent)->getArray()
+            : GetShippingDeliveryNoteData::run($parent);
 
-        $parentResource = GetShippingDeliveryNoteData::run($deliveryNote);
-
-
-        $parcels = $deliveryNote->parcels ?? [];
+        $parcels = $parent->parcels ?? [];
         $items   = [];
         foreach ($parcels as $parcel) {
             $dimensions = Arr::get($parcel, 'dimensions', []);
@@ -191,7 +193,7 @@ class CallApiCttEsShipping extends OrgAction
         $fromAddress = Arr::get($parentResource, 'from_address', []);
         $toAddress   = Arr::get($parentResource, 'to_address', []);
 
-        $customerReference = Arr::get($parentResource, 'customer_reference', $deliveryNote->reference).'xx';
+        $customerReference = Arr::get($parentResource, 'customer_reference', $parent->reference).'xx';
         if (!app()->environment('production')) {
             $customerReference .= '_'.now()->timestamp;
         }
@@ -200,7 +202,8 @@ class CallApiCttEsShipping extends OrgAction
         $idempotencyKey = hash('sha256', implode('|', [
             'ctt-es',
             $shipper->id,
-            $deliveryNote->id,
+            $parent->getMorphClass(),
+            $parent->id,
             $customerReference,
         ]));
 
@@ -249,7 +252,7 @@ class CallApiCttEsShipping extends OrgAction
             'shipping_date' => now()->format('Y-m-d'),
             'delivery'      => [
                 'contact_name' => Str::limit((string)Arr::get($parentResource, 'to_contact_name'), 60),
-                'comments'     => Str::limit(strip_tags(($deliveryNote->shipping_notes ?? ''))),
+                'comments'     => Str::limit(strip_tags($parent instanceof DeliveryNote ? ($parent->shipping_notes ?? '') : '')),
             ],
             'items'         => $items,
         ];

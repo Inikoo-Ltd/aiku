@@ -9529,5 +9529,6 @@
     ":name is casting a spell…": ":name прави заклинание…",
     ":name is gazing into his crystal ball…": ":name се взира в кристалната си топка…",
     "This one needs a little more thought. Nearly there…": "Това изисква малко повече мисъл. Почти готово…",
-    "Usually takes about :seconds seconds": "Обикновено отнема около :seconds секунди"
+    "Usually takes about :seconds seconds": "Обикновено отнема около :seconds секунди",
+    "Our sister shop :website sells these: :link": "Нашият партньорски магазин :website предлага тези продукти: :link"
 }

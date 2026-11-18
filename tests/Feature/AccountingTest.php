@@ -1143,6 +1143,15 @@ test('UI show accounting dashboard', function () {
             ->has('invoice_countries.periods.1m.countries')
             ->has('invoice_countries.periods.1y.between')
             ->where('invoice_countries.route.name', 'grp.org.accounting.invoices_by_country.index')
+            ->where('invoice_countries.route.parameters.organisation', $this->organisation->slug)
+            ->where('routes.cash_flow.name', 'grp.org.accounting.cash_flow.index')
+            ->missing('financials')
+            ->loadDeferredProps(fn (AssertableInertia $reload) => $reload
+                ->has('financials.cash.amount')
+                ->has('financials.receivables.ageing', 5)
+                ->has('financials.forecast.horizons', 3)
+                ->has('cashFlow.periods', \App\Actions\Accounting\BankBalance\UI\ShowCashFlow::PERIODS)
+                ->has('profitAndLoss.months', \App\Actions\Accounting\ProfitAndLoss\UI\ShowProfitAndLoss::MONTHS))
             ->where('intervals.value', '1m');
     });
 });
@@ -1966,6 +1975,27 @@ test('refund pdf lines include shipping and charge refunds', function () {
     expect($renderedPdfHtml($refund->refresh()))->not->toContain(__('Discount').'</td>')
         ->and(PdfInvoice::make()->processDataExportPdf($invoice)->headers->get('Content-Disposition'))->toBe('inline; filename="'.$invoice->slug.'-invoice.pdf"')
         ->and(PdfInvoice::make()->processDataExportPdf($refund)->headers->get('Content-Disposition'))->toBe('inline; filename="'.$refund->slug.'-credit-note.pdf"');
+
+    expect($renderedPdfHtml($invoice->refresh()))->not->toContain(__('Incoterms'))->not->toContain(__('Net Weight'));
+
+    PdfInvoice::make()->handle($invoice, ['incoterms' => 'DAP', 'net_weight' => 107.5, 'weight' => true]);
+    $exportHtml = $renderedPdfHtml($invoice->refresh());
+
+    expect($exportHtml)->toContain(__('Incoterms').': <b>DAP</b>')
+        ->and($exportHtml)->toContain(__('Net Weight').': <b>107.5 kg</b>')
+        ->and($invoice->data['pdf_columns']['weight'])->toBeTrue();
+
+    PdfInvoice::make()->handle($invoice, ['incoterms' => null]);
+    $clearedHtml = $renderedPdfHtml($invoice->refresh());
+
+    expect($clearedHtml)->not->toContain(__('Incoterms'))
+        ->and($clearedHtml)->toContain(__('Net Weight').': <b>107.5 kg</b>');
+
+    PdfInvoice::make()->handle($invoice, ['net_weight' => '1234.567']);
+    expect($renderedPdfHtml($invoice->refresh()))->toContain(__('Net Weight').': <b>1234.567 kg</b>');
+
+    PdfInvoice::make()->handle($invoice, ['net_weight' => '0.0']);
+    expect($renderedPdfHtml($invoice->refresh()))->not->toContain(__('Net Weight'));
 });
 
 test('shipping and charge invoice lines point to the asset of the zone and of the charge, not to their ids', function () {

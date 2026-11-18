@@ -551,7 +551,7 @@ const costBlocks = computed(() => {
 				: "",
 			percent: invoiceGoods > 0 ? `+${percentOfGoods(invoiceTotal + localTotal - invoiceGoods)}%` : "",
 			status: costing.costs_missing.length
-				? status(ctrans("Costs missing: :costs", { costs: costing.costs_missing.join(", ") }), "")
+				? status(ctrans("Not final"), "")
 				: costing.is_costed
 				? status(estimateRows.length ? ctrans("Costed with an estimate: the real invoice is still to come") : null, ctrans("Costed"))
 				: (isRising ? status(ctrans("This total will increase: an invoice is still to come"), "") : null),
@@ -1384,16 +1384,6 @@ const confirmDeleteStockDelivery = (action: any) => {
 								<div class="flex items-center gap-2 font-medium text-gray-800">
 									<FontAwesomeIcon :icon="openCostBlocks[block.key] ? 'fal fa-chevron-down' : 'fal fa-chevron-right'" class="text-xs text-gray-400" fixed-width aria-hidden="true" />
 									{{ block.title }}
-									<button
-										v-if="block.key === 'landed' && isCostingVisible && !costing.viewed_by_agent"
-										type="button"
-										class="text-gray-400 hover:text-gray-700"
-										:title="ctrans('Edit landed costs')"
-										:aria-label="ctrans('Edit landed costs')"
-										@click.stop="costingSection = 'landed'"
-									>
-										<FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
-									</button>
 								</div>
 								<div v-if="'reference' in block && block.reference" class="pl-6 text-xs text-gray-600">{{ block.reference }}</div>
 								<div v-if="block.detail" class="pl-6 text-xs text-gray-500">{{ block.detail }}</div>
@@ -1404,7 +1394,8 @@ const confirmDeleteStockDelivery = (action: any) => {
 								<span
 									v-if="block.status"
 									class="inline-flex items-start gap-1.5 rounded px-2 py-0.5 text-xs"
-									:class="block.status.isMissing ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-green-800'"
+									:class="[block.status.isMissing ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-green-800', block.status.isMissing && !costing.viewed_by_agent && 'import_file' in tabs.navigation ? 'cursor-pointer hover:underline' : '']"
+									@click="(event: MouseEvent) => { if (block.status?.isMissing && !costing.viewed_by_agent && 'import_file' in tabs.navigation) { event.stopPropagation(); handleTabUpdate('import_file') } }"
 								>
 									<FontAwesomeIcon :icon="block.status.isMissing ? 'fal fa-exclamation-triangle' : 'fal fa-check-circle'" class="mt-0.5" fixed-width aria-hidden="true" />
 									{{ block.status.text }}
@@ -1445,14 +1436,14 @@ const confirmDeleteStockDelivery = (action: any) => {
 									<StockDeliveryServiceInvoices v-if="service_invoices && block.key === 'landed'" :data="service_invoices" />
 									<div class="flex flex-wrap items-center justify-end gap-x-2">
 										<StockDeliveryAgentPayments
-											v-if="blockIndex === 0 && box_stats.invoice?.agent"
+											v-if="costing.viewed_by_agent && blockIndex === 0 && box_stats.invoice?.agent"
 											:agent="box_stats.invoice.agent"
 											:currency="box_stats.invoice.currency"
 											:hasCharges="box_stats.invoice.charges_list.length > 0"
 											:isEstimate="box_stats.invoice.source === 'estimated'"
 										/>
 										<StockDeliverySupplierPayments
-											v-if="blockIndex === 0 && box_stats.invoice?.supplier && (box_stats.invoice.total > 0 || box_stats.invoice.supplier.payments.length > 0)"
+											v-if="costing.viewed_by_agent && blockIndex === 0 && box_stats.invoice?.supplier && (box_stats.invoice.total > 0 || box_stats.invoice.supplier.payments.length > 0)"
 											:supplier="box_stats.invoice.supplier"
 											:currency="box_stats.invoice.currency"
 											:total="box_stats.invoice.total"
@@ -1460,13 +1451,13 @@ const confirmDeleteStockDelivery = (action: any) => {
 											:orgExchange="box_stats.invoice.org_exchange"
 											:isEstimate="box_stats.invoice.source === 'estimated'"
 										/>
-										<div v-if="isInvoiceVisible && !costing.viewed_by_agent && blockIndex === 0" class="mt-3">
+										<div v-if="blockIndex === 0 && !costing.viewed_by_agent && 'import_file' in tabs.navigation" class="mt-3">
 											<Button
 												type="tertiary"
 												size="xs"
-												:label="ctrans('Invoice')"
-												icon="fal fa-box-usd"
-												@click="() => (costingSection = 'invoice')"
+												:label="ctrans('Costs and documents in Import file details')"
+												icon="fal fa-folder-open"
+												@click="() => handleTabUpdate('import_file')"
 											/>
 										</div>
 									</div>
@@ -1559,6 +1550,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 		:breakpoints="{ '1024px': '95vw' }"
 		:pt="{ header: { class: '!px-4 !py-2.5 border-b border-gray-200' }, content: { class: '!p-0' } }"
 		@update:visible="(visible: boolean) => { if (!visible) costingSection = null }"
+		@hide="() => { if (currentTab === 'import_file') router.reload({ only: ['import_file'] }) }"
 	>
 		<template #header>
 			<div class="flex w-full items-center justify-between gap-3">
@@ -1615,8 +1607,12 @@ const confirmDeleteStockDelivery = (action: any) => {
 		:options="currentTab === 'feedback' ? give_feedback : undefined"
 		:storeRoute="currentTab === 'notes' && note_form?.can_write !== false ? note_store_route : undefined"
 			:agreement="currentTab === 'notes' ? note_form : undefined"
+		:costingAvailable="currentTab === 'import_file' && costing && !costing.viewed_by_agent ? { invoice: isInvoiceVisible, landed: isCostingVisible } : undefined"
+		:invoice="currentTab === 'import_file' ? box_stats.invoice : undefined"
+		@openCosting="(section: 'invoice' | 'landed') => (costingSection = section)"
 		:removablePurchaseOrderIds="currentTab === 'purchase_orders' ? removablePurchaseOrderIds : undefined"
 		@removePurchaseOrder="(purchaseOrderId: number) => (purchaseOrderToRemoveId = purchaseOrderId)"
+		@giveFeedback="giveFeedbackOpen = true"
 	>
 		<template #button-empty-state-attachments>
 			<Button

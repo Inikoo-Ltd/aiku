@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithAccountingPagesAuthorisation;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\BankTransaction;
+use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,7 +34,7 @@ class GetBankTransactionOrderCandidates extends OrgAction
     /**
      * @return list<array{id: int, reference: string, customer: string|null, shop: string|null, owed: float, total: float, currency_code: string, date: string|null, amount_matches: bool}>
      */
-    public function handle(BankTransaction $bankTransaction, string $search, bool $byPayer = false, bool $paid = false): array
+    public function handle(BankTransaction $bankTransaction, string $search, bool $byPayer = false, bool $paid = false, ?Shop $shop = null): array
     {
         $matcher = MatchBankTransactions::make();
         $search  = $byPayer ? ($matcher->nameWords($bankTransaction->counterparty_name)[0] ?? '') : trim($search);
@@ -47,6 +48,7 @@ class GetBankTransactionOrderCandidates extends OrgAction
         return Order::query()
             ->where('orders.organisation_id', $bankTransaction->organisation_id)
             ->where('orders.currency_id', $bankTransaction->currency_id)
+            ->when($shop, fn (Builder $query) => $query->where('orders.shop_id', $shop->id))
             ->whereNotIn('orders.state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING])
             ->when(
                 $paid,
@@ -106,5 +108,18 @@ class GetBankTransactionOrderCandidates extends OrgAction
         abort_unless($bankTransaction->organisation_id === $organisation->id, 404);
 
         return $this->handle($bankTransaction, (string)$request->query('search', ''), $request->boolean('payer'), $request->boolean('paid'));
+    }
+
+    /**
+     * Unpaid orders of one shop, for its Bank payments page.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function inShop(Organisation $organisation, Shop $shop, BankTransaction $bankTransaction, ActionRequest $request): array
+    {
+        $this->initialisationFromShop($shop, $request);
+        abort_unless($shop->organisation_id === $organisation->id && $bankTransaction->organisation_id === $organisation->id, 404);
+
+        return $this->handle($bankTransaction, (string)$request->query('search', ''), $request->boolean('payer'), shop: $shop);
     }
 }

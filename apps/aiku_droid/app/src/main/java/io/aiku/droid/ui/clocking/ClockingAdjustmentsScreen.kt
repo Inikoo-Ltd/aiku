@@ -17,10 +17,12 @@ import io.aiku.droid.data.api.ClockingAdjustment
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
+import io.aiku.droid.ui.components.ButtonLook
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ConfirmDialog
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ToastKind
+import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.navigation.MainTab
 
 @Composable
@@ -71,6 +73,7 @@ fun ClockingAdjustmentsScreen() {
         AikuButton(
             text = stringResource(R.string.clocking_adjustment_request),
             onClick = { isRequesting = true },
+            icon = R.drawable.ic_ui_plus,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -100,7 +103,7 @@ fun ClockingAdjustmentsScreen() {
             body = stringResource(R.string.clocking_adjustments_cancel_body, clockingDateLabel(adjustment.date, HR_DATE_PATTERN)),
             confirmLabel = stringResource(R.string.clocking_adjustments_cancel),
             dismissLabel = stringResource(R.string.clocking_adjustments_keep),
-            isDestructive = true,
+            confirmLook = ButtonLook(ButtonStyle.Danger).forConfirm(),
             onConfirm = {
                 cancelling = null
                 controller.cancelAdjustment(adjustment.id)

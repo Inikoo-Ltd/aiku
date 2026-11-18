@@ -602,6 +602,11 @@ struct GoodsOutNoteAction: Equatable, Sendable {
 
     static func line(_ lineID: Int, _ action: String) -> String { "lines/\(lineID)/\(action)" }
 
+    static let platformTimeout: TimeInterval = 120
+    private static let platformPaths: Set<String> = ["set-as-packed", "external-shipment", "finalise", "finalise-and-dispatch", "dispatch"]
+
+    var waitsForPlatform: Bool { method == .post && Self.platformPaths.contains(path) }
+
     static func startPicking(trolleyID: Int?) -> GoodsOutNoteAction { .post("start-picking", ["trolley_id": .optional(trolleyID)]) }
     static let takeOver = GoodsOutNoteAction.post("take-over")
     static func setAsPicked(pickedBayID: Int?) -> GoodsOutNoteAction { .post("set-as-picked", ["picked_bay_id": .optional(pickedBayID)]) }
@@ -676,7 +681,12 @@ extension Endpoint {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         let body = action.body.flatMap { try? encoder.encode($0) }
-        return Endpoint(path: "mobile/delivery-notes/\(noteID)/\(action.path)", method: action.method, body: body)
+        return Endpoint(
+            path: "mobile/delivery-notes/\(noteID)/\(action.path)",
+            method: action.method,
+            body: body,
+            timeout: action.waitsForPlatform ? GoodsOutNoteAction.platformTimeout : nil
+        )
     }
 }
 

@@ -92,6 +92,7 @@ fun CameraBlockedScreen(modifier: Modifier = Modifier, kicker: String? = warehou
                         Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
                     )
                 },
+                icon = R.drawable.ic_ui_next,
             )
             StatesButton(
                 text = stringResource(R.string.states_camera_use_scanner),

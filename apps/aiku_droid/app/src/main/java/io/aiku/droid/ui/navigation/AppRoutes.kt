@@ -18,7 +18,6 @@ import kotlinx.serialization.Serializable
 @Serializable data object ResolveConflictsRoute
 @Serializable data class ConflictRoute(val reference: String)
 @Serializable data class OnlineOnlyRoute(val reference: String)
-@Serializable data object NoTasksRoute
 @Serializable data class StatePreviewRoute(val kind: String)
 @Serializable data class NotDesignedRoute(val title: String)
 @Serializable data object InventoryDashboardRoute
@@ -60,20 +59,20 @@ import kotlinx.serialization.Serializable
 @Serializable data object TrolleysRoute
 @Serializable data object PickedBaysRoute
 @Serializable data object FulfilmentDeliveriesRoute
-@Serializable data class FulfilmentDeliveryRoute(val reference: String)
-@Serializable data class FulfilmentBookInRoute(val reference: String)
-@Serializable data class FulfilmentBookedInRoute(val reference: String)
+@Serializable data class FulfilmentDeliveryRoute(val id: Long, val reference: String)
+@Serializable data class FulfilmentBookInRoute(val id: Long, val reference: String)
+@Serializable data class FulfilmentBookedInRoute(val id: Long, val reference: String)
 @Serializable data object StoredPalletsRoute
-@Serializable data class PalletRoute(val reference: String)
+@Serializable data class PalletRoute(val id: Long, val reference: String)
 @Serializable data object PalletIncidentsRoute
 @Serializable data object StoredItemsRoute
-@Serializable data class StoredItemAuditRoute(val reference: String)
+@Serializable data class StoredItemAuditRoute(val id: Long, val reference: String)
 @Serializable data object FulfilmentReturnsRoute
-@Serializable data class ReturnPickPalletsRoute(val reference: String)
-@Serializable data class ReturnPickItemsRoute(val reference: String)
-@Serializable data class ReturnPickedRoute(val reference: String)
-@Serializable data class ReturnShipmentRoute(val reference: String)
-@Serializable data class ReturnDispatchedRoute(val reference: String)
+@Serializable data class ReturnPickPalletsRoute(val id: Long, val reference: String)
+@Serializable data class ReturnPickItemsRoute(val id: Long, val reference: String)
+@Serializable data class ReturnPickedRoute(val id: Long, val reference: String)
+@Serializable data class ReturnShipmentRoute(val id: Long, val reference: String)
+@Serializable data class ReturnDispatchedRoute(val id: Long, val reference: String)
 @Serializable data object ClockingRoute
 @Serializable data object ClockScanQrRoute
 @Serializable data object TimesheetsRoute

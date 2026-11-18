@@ -1169,16 +1169,6 @@ class EditShop extends OrgAction
                             'information' => __('Slack channels where chat conversations will be shared. Press Enter to add each channel.'),
                             'value'       => Arr::get($shop->settings, 'chat.slack_channels') ?? [],
                         ],
-                        'gmail_showroom_senders' => [
-                            'type'        => 'tags',
-                            'label'       => __('Showroom booking senders'),
-                            'placeholder' => '@calendly.com',
-                            'information' => __('Emails from these addresses, or from a whole domain written as @domain, are filed unread under the Gmail "aiku/showroom" label and never become a chat, even if the sender was once marked as spam. Press Enter to add each one.'),
-                            'value'       => array_keys(array_filter(
-                                Arr::get($shop->settings, 'gmail.labeled_senders') ?? [],
-                                fn ($label) => $label === 'aiku/showroom'
-                            )),
-                        ],
                         'view_contact_options_panel' => [
                             'type'        => 'toggle',
                             'label'       => __('View Contact Options Panel'),
@@ -1206,13 +1196,6 @@ class EditShop extends OrgAction
                             'label'       => __('WhatsApp unclaimed after (seconds)'),
                             'information' => __('Leave empty or zero to follow the group default.'),
                             'value'       => Arr::get($shop->settings, 'chat.unclaimed_after_seconds.whatsapp') ?? '',
-                        ],
-                        'chat_unclaimed_email_seconds'    => [
-                            'type'        => 'input_number',
-                            'bind'        => ['step' => '300', 'maxFractionDigits' => 0, 'min' => 0],
-                            'label'       => __('Email unclaimed after (seconds)'),
-                            'information' => __('Leave empty or zero to follow the group default.'),
-                            'value'       => Arr::get($shop->settings, 'chat.unclaimed_after_seconds.email') ?? '',
                         ],
                         'chat_email_offline_replies' => [
                             'type'        => 'toggle',
@@ -1290,6 +1273,7 @@ class EditShop extends OrgAction
                         ] : [],
                     ],
                 ],
+                $this->customerMailboxBlueprint($shop, $request),
                 [
                     'label'       => __('Google Ads'),
                     'icon'        => 'fa-brands fa-google',
@@ -1417,7 +1401,6 @@ class EditShop extends OrgAction
                         ],
                     ],
                 ],
-                $this->customerMailboxBlueprint($shop, $request),
                 [
                     'label'  => __('HELP Portal'),
                     'icon'   => 'fal fa-life-ring',
@@ -1566,7 +1549,7 @@ class EditShop extends OrgAction
                 __('Appointment settings'),
                 __('Zoom'),
                 __('Google Calendar & Meet'),
-                __('Customer mailbox'),
+                __('Gmail inbox'),
             ];
         }
 
@@ -1576,7 +1559,7 @@ class EditShop extends OrgAction
             }
 
             if ($isExternal && Arr::get($shop->settings, 'chat.enabled', false)) {
-                $allowedBlueprintLabels[] = __('Customer mailbox');
+                $allowedBlueprintLabels[] = __('Gmail inbox');
             }
 
             $filteredBlueprint = [];

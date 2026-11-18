@@ -12385,6 +12385,7 @@
     "Not a Guru": "Nie Guru",
     "Not a Shopify shop": "Nie je obchod Shopify",
     "Not a customer yet? Write to an email address": "Ešte nie je zákazníkom? Napíšte na e-mailovú adresu",
+    "Not a customer: saved contacts and addresses emailed recently": "Nie je zákazník: uložené kontakty a nedávno použité adresy",
     "Not a draft": "Nie je koncept",
     "Not a known variable:": "Neznáma premenná:",
     "Not a member?": "Nie ste členom?",
@@ -26831,5 +26832,6 @@
     "Usually takes about :seconds seconds": "Zvyčajne to trvá asi :seconds sekúnd",
     "Finish booking in?": "Ukončiť bookovanie?",
     "This is the last item to put away. The delivery will be booked in with :count line over or under delivered. Is the delivery done?|This is the last item to put away. The delivery will be booked in with :count lines over or under delivered. Is the delivery done?": "Toto je posledná položka na uskladnenie. Zásielka bude zabookovaná s :count riadkom s nadbytkom alebo nedostatkom. Je zásielka hotová?|Toto je posledná položka na uskladnenie. Zásielka bude zabookovaná s :count riadkami s nadbytkom alebo nedostatkom. Je zásielka hotová?|Toto je posledná položka na uskladnenie. Zásielka bude zabookovaná s :count riadkami s nadbytkom alebo nedostatkom. Je zásielka hotová?",
-    "Yes, delivery is done": "Áno, zásielka je hotová"
+    "Yes, delivery is done": "Áno, zásielka je hotová",
+    "Our sister shop :website sells these: :link": "Náš sesterský obchod :website tieto produkty ponúka: :link"
 }

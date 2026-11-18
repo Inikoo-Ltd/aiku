@@ -7204,5 +7204,6 @@
     ":name is casting a spell…": ":name чаклує…",
     ":name is gazing into his crystal ball…": ":name вдивляється у свою кришталеву кулю…",
     "This one needs a little more thought. Nearly there…": "Це потребує трохи більше роздумів. Майже готово…",
-    "Usually takes about :seconds seconds": "Зазвичай займає близько :seconds секунд"
+    "Usually takes about :seconds seconds": "Зазвичай займає близько :seconds секунд",
+    "Our sister shop :website sells these: :link": "Наш партнерський магазин :website продає ці товари: :link"
 }

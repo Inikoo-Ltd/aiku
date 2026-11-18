@@ -25,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 class VoidManufactureTaskSession extends OrgAction
 {
     use WithManufacturePayrollLock;
+    use WithSessionJobOrderLocks;
 
     public function handle(ManufactureTaskSession $session, array $modelData = []): ManufactureTaskSession
     {
@@ -39,6 +40,19 @@ class VoidManufactureTaskSession extends OrgAction
         if ($session->mix_pool_key && ($reference = ShareMixPool::settledLineOf($session))) {
             throw ValidationException::withMessages([
                 'state' => __('This mix went into :reference, which is already received or closed, it can no longer be voided', ['reference' => $reference]),
+            ]);
+        }
+
+        $this->withSessionLocked($session->id, fn (ManufactureTaskSession $session) => self::jobOrderIdsOfEntry($session), fn (ManufactureTaskSession $session) => $this->void($session, $modelData));
+
+        return $session->refresh();
+    }
+
+    private function void(ManufactureTaskSession $session, array $modelData): ManufactureTaskSession
+    {
+        if ($session->state != ManufactureTaskSessionStateEnum::CLOSED) {
+            throw ValidationException::withMessages([
+                'state' => __('Only a finished task session can be voided'),
             ]);
         }
 

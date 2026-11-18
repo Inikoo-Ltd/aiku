@@ -573,7 +573,7 @@ class UpdateShop extends OrgAction
 
         // Zero and blank both mean "no opinion": the shop is left following the group's time
         // rather than storing a nought that would put every conversation in the queue at once.
-        foreach (['website', 'whatsapp', 'email'] as $chatChannel) {
+        foreach (['website', 'whatsapp'] as $chatChannel) {
             $field = "chat_unclaimed_{$chatChannel}_seconds";
 
             if (!Arr::exists($modelData, $field)) {
@@ -585,10 +585,20 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.chat.unclaimed_after_seconds.$chatChannel", $seconds > 0 ? $seconds : null);
         }
 
+        if (Arr::exists($modelData, 'chat_unclaimed_email_hours')) {
+            $seconds = (int) round((float) Arr::pull($modelData, 'chat_unclaimed_email_hours') * 3600);
+
+            data_set($modelData, 'settings.chat.unclaimed_after_seconds.email', $seconds > 0 ? $seconds : null);
+        }
+
         foreach (['start', 'end'] as $edge) {
             if (Arr::exists($modelData, "chat_hours_$edge")) {
                 data_set($modelData, "settings.chat.hours.$edge", Arr::pull($modelData, "chat_hours_$edge") ?: null);
             }
+        }
+
+        if (Arr::exists($modelData, 'chat_email_split_new_threads')) {
+            data_set($modelData, 'settings.chat.email_split_new_threads', (bool) Arr::pull($modelData, 'chat_email_split_new_threads'));
         }
 
         if (Arr::exists($modelData, 'chat_email_offline_replies')) {
@@ -1183,8 +1193,9 @@ class UpdateShop extends OrgAction
             'chat_hours_end'                                          => ['sometimes', 'nullable', 'date_format:H:i'],
             'chat_unclaimed_website_seconds'                          => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_whatsapp_seconds'                         => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
-            'chat_unclaimed_email_seconds'                            => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
+            'chat_unclaimed_email_hours'                              => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:168'],
             'chat_email_offline_replies'                              => ['sometimes', 'boolean'],
+            'chat_email_split_new_threads'                            => ['sometimes', 'boolean'],
             'chat_whatsapp_offline_replies'                           => ['sometimes', 'boolean'],
             'send_chat_ai_suggestions'                                => ['sometimes', 'boolean'],
             'view_contact_options_panel'                              => ['sometimes', 'boolean'],

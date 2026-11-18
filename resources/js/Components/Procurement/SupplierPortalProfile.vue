@@ -6,14 +6,16 @@ import InputText from "primevue/inputtext"
 import SelectButton from "primevue/selectbutton"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
+import { Cropper } from "vue-advanced-cropper"
+import "vue-advanced-cropper/dist/style.css"
 import type { Image as ImageProxy } from "@/types/Image"
 import { ctrans } from "@/Composables/useTrans"
 import { useColorTheme } from "@/Composables/useStockList"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCamera, faCheck, faBuilding } from "@fal"
+import { faCamera, faCheck, faBuilding, faTimes } from "@fal"
 
-library.add(faCamera, faCheck, faBuilding)
+library.add(faCamera, faCheck, faBuilding, faTimes)
 
 export interface PortalProfile {
 	name: string | null
@@ -42,6 +44,7 @@ const isSaving = ref(false)
 const isSaved = ref(false)
 const errors = ref<Record<string, string>>({})
 const photoInput = ref<HTMLInputElement | null>(null)
+const companyPhotoInput = ref<HTMLInputElement | null>(null)
 
 const themes = useColorTheme.slice(0, 10).map((colours, index) => ({ index, background: colours[0], active: colours[2], accent: colours[3] }))
 
@@ -63,7 +66,7 @@ const save = (data: Record<string, unknown>, onSuccess?: () => void) => {
 	router.post(props.updateRoute, data, {
 		preserveScroll: true,
 		preserveState: true,
-		forceFormData: data.photo !== undefined,
+		forceFormData: data.photo !== undefined || data.company_photo !== undefined,
 		only: ["profile"],
 		onSuccess,
 		onError: (response) => (errors.value = response),
@@ -82,11 +85,56 @@ const chooseTheme = (index: number) => {
 	save({ theme: index })
 }
 
-const choosePhoto = (event: Event) => {
-	const file = (event.target as HTMLInputElement).files?.[0]
-	if (file) {
-		save({ photo: file })
+type PhotoField = "photo" | "company_photo"
+
+const cropper = ref<InstanceType<typeof Cropper> | null>(null)
+const cropSource = ref<string | null>(null)
+const cropField = ref<PhotoField>("photo")
+const isCropping = computed({
+	get: () => cropSource.value !== null,
+	set: (visible: boolean) => {
+		if (!visible) {
+			closeCropper()
+		}
+	},
+})
+
+const closeCropper = () => {
+	if (cropSource.value) {
+		URL.revokeObjectURL(cropSource.value)
 	}
+	cropSource.value = null
+}
+
+const choosePhoto = (field: PhotoField, event: Event) => {
+	const input = event.target as HTMLInputElement
+	const file = input.files?.[0]
+	input.value = ""
+	if (!file) {
+		return
+	}
+	closeCropper()
+	cropField.value = field
+	cropSource.value = URL.createObjectURL(file)
+}
+
+const saveCroppedPhoto = () => {
+	const canvas = cropper.value?.getResult().canvas
+	if (!canvas) {
+		return
+	}
+	const field = cropField.value
+	canvas.toBlob(
+		(blob) => {
+			if (!blob) {
+				return
+			}
+			closeCropper()
+			save({ [field]: new File([blob], `${field}.jpg`, { type: "image/jpeg" }) })
+		},
+		"image/jpeg",
+		0.9
+	)
 }
 
 const openCompanyDetails = () => {
@@ -121,7 +169,7 @@ const openCompanyDetails = () => {
 						<Button type="tertiary" size="xs" :label="profile.avatar ? ctrans('Change photo') : ctrans('Add a photo')" :loading="isSaving" @click="photoInput?.click()">
 							<template #icon><FontAwesomeIcon icon="fal fa-camera" fixed-width aria-hidden="true" /></template>
 						</Button>
-						<input ref="photoInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="choosePhoto" />
+						<input ref="photoInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="choosePhoto('photo', $event)" />
 						<p v-if="errors.photo" class="text-xs text-red-600">{{ errors.photo }}</p>
 					</div>
 				</div>
@@ -167,6 +215,21 @@ const openCompanyDetails = () => {
 					<p v-if="errors.theme" class="text-xs text-red-600">{{ errors.theme }}</p>
 				</div>
 
+				<div class="flex items-center gap-4 border-t border-gray-100 pt-4">
+					<span class="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 text-gray-400">
+						<FontAwesomeIcon icon="fal fa-building" size="lg" fixed-width aria-hidden="true" />
+						<Image v-if="profile.company_logo" :src="profile.company_logo" class="absolute inset-0 h-full w-full object-cover" :alt="ctrans('Company photo')" />
+					</span>
+					<div class="space-y-1">
+						<div class="text-xs font-medium text-gray-500">{{ ctrans("Company photo") }}</div>
+						<Button type="tertiary" size="xs" :label="profile.company_logo ? ctrans('Change company photo') : ctrans('Add a company photo')" :loading="isSaving" @click="companyPhotoInput?.click()">
+							<template #icon><FontAwesomeIcon icon="fal fa-camera" fixed-width aria-hidden="true" /></template>
+						</Button>
+						<input ref="companyPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="choosePhoto('company_photo', $event)" />
+						<p v-if="errors.company_photo" class="text-xs text-red-600">{{ errors.company_photo }}</p>
+					</div>
+				</div>
+
 				<div class="space-y-1 border-t border-gray-100 pt-4">
 					<p class="text-xs text-gray-500">{{ ctrans("Company name, phone, website or address changed? Send it to us: we check it and update it.") }}</p>
 					<Button type="tertiary" size="xs" :label="ctrans('Change company details')" @click="openCompanyDetails">
@@ -174,6 +237,32 @@ const openCompanyDetails = () => {
 					</Button>
 				</div>
 			</div>
+		</Dialog>
+
+		<Dialog v-model:visible="isCropping" modal :header="cropField === 'company_photo' ? ctrans('Crop company photo') : ctrans('Crop your photo')" :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }">
+			<div class="space-y-2">
+				<div class="h-80 w-full overflow-hidden rounded bg-gray-800">
+					<Cropper
+						v-if="cropSource"
+						ref="cropper"
+						class="h-full w-full"
+						:src="cropSource"
+						:stencil-props="{ aspectRatio: 1 }"
+						:canvas="{ maxWidth: 1024, maxHeight: 1024 }"
+						image-restriction="stencil" />
+				</div>
+				<p class="text-xs text-gray-500">{{ ctrans("Drag and resize the square to choose the part of the photo to keep. Scroll to zoom.") }}</p>
+			</div>
+			<template #footer>
+				<div class="flex w-full gap-2">
+					<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="closeCropper">
+						<template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+					</Button>
+					<Button type="primary" full :label="ctrans('Save photo')" :loading="isSaving" @click="saveCroppedPhoto">
+						<template #icon><FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" /></template>
+					</Button>
+				</div>
+			</template>
 		</Dialog>
 	</div>
 </template>

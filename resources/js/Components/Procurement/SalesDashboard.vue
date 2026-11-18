@@ -104,10 +104,13 @@ const problemClass: Record<Problem, string> = {
 	dead: "bg-gray-200 text-gray-600",
 }
 
-const money = (amount: number) =>
-	new Intl.NumberFormat(undefined, { style: "currency", currency: props.sales?.currency ?? "GBP", currencyDisplay: "narrowSymbol", maximumFractionDigits: 0 }).format(Math.round(amount))
-const shortMoney = (amount: number) =>
-	new Intl.NumberFormat(undefined, { style: "currency", currency: props.sales?.currency ?? "GBP", currencyDisplay: "narrowSymbol", notation: "compact", maximumFractionDigits: 1 }).format(amount)
+const formatMoney = (amount: number, options: Intl.NumberFormatOptions) =>
+	new Intl.NumberFormat(undefined, { style: "currency", currency: props.sales?.currency ?? "GBP", currencyDisplay: "narrowSymbol", ...options })
+		.formatToParts(amount)
+		.map((part) => (part.type === "currency" ? part.value.replace(/^[A-Za-z]+(?=\$)/, "") : part.value))
+		.join("")
+const money = (amount: number) => formatMoney(Math.round(amount), { maximumFractionDigits: 0 })
+const shortMoney = (amount: number) => formatMoney(amount, { notation: "compact", maximumFractionDigits: 1 })
 const dateLocale = () => localesCode[props.language || getActiveLanguage()] ?? localesCode.en
 const monthName = (month: number) => format(new Date(props.sales?.year ?? 2000, month - 1, 1), "LLL", { locale: dateLocale() })
 const severityClass: Record<string, string> = {

@@ -15,6 +15,7 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryFeedback;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
@@ -41,17 +42,26 @@ class GetStockDeliveryFeedbackForm
     }
 
     /**
-     * @return array<string, mixed>
+     * @return Collection<int, array{id: int|null, code: string|null, name: string|null}>
      */
-    public function handle(StockDelivery $stockDelivery): array
+    public static function suppliersAwaitingFeedback(StockDelivery $stockDelivery): Collection
     {
         $given     = $stockDelivery->feedbacks()->pluck('supplier_id')->map(fn ($id) => (int) $id);
         $suppliers = StoreStockDeliveryFeedback::suppliersOn($stockDelivery);
 
-        $entries = $suppliers->isEmpty()
+        return $suppliers->isEmpty()
             ? collect($given->isEmpty() ? [['id' => null, 'code' => $stockDelivery->parent_code, 'name' => $stockDelivery->parent_name]] : [])
             : $suppliers->reject(fn (Supplier $supplier) => $given->contains($supplier->id))
-                ->map(fn (Supplier $supplier) => ['id' => $supplier->id, 'code' => $supplier->code, 'name' => $supplier->name]);
+                ->map(fn (Supplier $supplier) => ['id' => $supplier->id, 'code' => $supplier->code, 'name' => $supplier->name])
+                ->values();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function handle(StockDelivery $stockDelivery): array
+    {
+        $entries = self::suppliersAwaitingFeedback($stockDelivery);
 
         return [
             'suppliers'           => $entries->map(fn (array $entry) => [

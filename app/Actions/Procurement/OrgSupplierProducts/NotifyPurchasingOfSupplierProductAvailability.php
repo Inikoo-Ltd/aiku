@@ -27,7 +27,8 @@ use Spatie\Permission\Models\Permission;
 
 /**
  * Tells the purchasing lead of every organisation that buys a product, and whoever last ordered it there, when its
- * agent changes its availability or the supplier proposes a new price from its page.
+ * agent changes its availability or the supplier proposes a new price from its page. The supplier's page has no
+ * signed-in user, so the permission team is set from the product's group, or role-held supervisors are not found.
  */
 class NotifyPurchasingOfSupplierProductAvailability
 {
@@ -105,6 +106,7 @@ class NotifyPurchasingOfSupplierProductAvailability
      */
     public function purchasingLeads(OrgSupplierProduct $orgSupplierProduct, ?User $changedBy): Collection
     {
+        setPermissionsTeamId($orgSupplierProduct->group_id);
         $permissions = Permission::where('name', "org-supervisor.$orgSupplierProduct->organisation_id.procurement")->pluck('name')->all();
         $buyerId     = DB::table('purchase_order_transactions as pot')
             ->join('purchase_orders as po', 'po.id', 'pot.purchase_order_id')

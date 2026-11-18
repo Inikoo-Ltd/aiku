@@ -141,6 +141,8 @@ use App\Actions\Api\Group\Locations\IndexMobileRemovedEmptyLocationOrgStocks;
 use App\Actions\Api\Group\Locations\IndexMobileWarehouseAreas;
 use App\Actions\Api\Group\Locations\ShowMobileLocation;
 use App\Actions\Api\Group\Locations\UpdateMobileEmptyLocationsRemoval;
+use App\Actions\Api\Group\MyWork\GetMobileWarehouseBadges;
+use App\Actions\Api\Group\MyWork\IndexMobileMyWork;
 use App\Actions\SysAdmin\User\PasswordResetLink;
 use App\Http\Middleware\VerifyMobileAppKey;
 use Illuminate\Support\Facades\Route;
@@ -160,6 +162,8 @@ Route::middleware(VerifyMobileAppKey::class)->group(function () {
         Route::post('/password', UpdateMobilePassword::class)->name('password.update')->middleware('throttle:mobile-password-change');
         Route::get('/warehouses', GetMobileWarehouses::class)->name('warehouses');
         Route::get('/permissions', GetMobilePermissions::class)->name('permissions');
+        Route::get('/warehouses/{warehouse:id}/badges', GetMobileWarehouseBadges::class)->name('warehouses.badges');
+        Route::get('/warehouses/{warehouse:id}/my-work', IndexMobileMyWork::class)->name('warehouses.my_work');
         Route::get('/profile', GetMobileProfile::class)->name('profile');
 
         Route::prefix('clocking')->name('clocking.')->group(function () {
@@ -247,6 +251,9 @@ Route::middleware(VerifyMobileAppKey::class)->group(function () {
         Route::get('/warehouses/{warehouse:id}/picking-sessions', IndexMobilePickingSessions::class)->name('warehouses.picking_sessions');
         Route::post('/warehouses/{warehouse:id}/picking-sessions', StoreMobilePickingSession::class)->name('warehouses.picking_sessions.store');
         Route::get('/picking-sessions/{pickingSession:id}', GetMobilePickingSession::class)->name('picking_sessions.show');
+
+        Route::prefix('warehouses/{warehouse:id}')->name('warehouses.')->withoutScopedBindings()->group(__DIR__.'/mobile_fulfilment_inbound.php');
+        Route::prefix('warehouses/{warehouse:id}')->name('warehouses.')->withoutScopedBindings()->group(__DIR__.'/mobile_fulfilment_outbound.php');
 
         Route::prefix('picking-sessions/{pickingSession:id}')->name('picking_sessions.')->group(function () {
             Route::post('/start-picking', StartMobilePickingSession::class)->name('start_picking');

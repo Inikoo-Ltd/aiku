@@ -73,9 +73,10 @@ trait WithLayoutNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'label' => __('Dashboard'),
-                            'icon'  => ['fal', 'fa-chart-network'],
-                            'root'  => 'grp.org.accounting.dashboard',
+                            'label'   => null,
+                            'tooltip' => __('Dashboard'),
+                            'icon'    => ['fal', 'fa-chart-network'],
+                            'root'    => 'grp.org.accounting.dashboard',
                             'route' => [
                                 'name'       => 'grp.org.accounting.dashboard',
                                 'parameters' => [$organisation->slug],
@@ -135,6 +136,7 @@ trait WithLayoutNavigation
                             'label' => __('Cash'),
                             'icon'  => ['fal', 'fa-coins'],
                             'root'  => 'grp.org.accounting.cash.',
+                            'roots' => ['grp.org.accounting.cash_flow.'],
                             'route' => [
                                 'name'       => 'grp.org.accounting.cash.index',
                                 'parameters' => [$organisation->slug],

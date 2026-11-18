@@ -527,14 +527,14 @@ test('an external shop offers offline email replies and a customer mailbox only 
     $sections = $sectionLabels();
 
     expect($sections->get('Chat widget')['fields'])->not->toHaveKey('chat_email_offline_replies')
-        ->and($sections->has('Customer mailbox'))->toBeFalse();
+        ->and($sections->has('Gmail inbox'))->toBeFalse();
 
     $externalShop->update(['settings' => array_merge($externalShop->settings ?? [], ['chat' => ['enabled' => true]])]);
 
     $sections = $sectionLabels();
 
     expect($sections->get('Chat widget')['fields'])->toHaveKey('chat_email_offline_replies')
-        ->and($sections->get('Customer mailbox')['fields'])->toHaveKey('mailbox')
+        ->and($sections->get('Gmail inbox')['fields'])->toHaveKey('mailbox')
         ->and($sections->has('Chat'))->toBeFalse();
 });
 

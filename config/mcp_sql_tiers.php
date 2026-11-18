@@ -131,7 +131,7 @@ return [
             'locations', 'location_*', 'org_stock_movements*', 'org_stock_movement_batches', 'org_stock_histories*', 'org_stock_audit*',
             'organisation_stock_histor*', 'group_stock_histories', 'lost_and_found_stocks', 'stock_transfers', 'debug_stock_updates',
             'pickings', 'picking_*', 'packings', 'packing_benches', 'picked_bay*', 'trolleys', 'sowings', 'shipments', 'model_has_shipments',
-            'shippers', 'shipping_*', 'fulfilments', 'fulfilment_*', 'pallet*', 'stored_item*', 'movement_pallets', 'spaces',
+            'shippers', 'shipping_*', 'fulfilments', 'fulfilment_*', 'pallet*', 'stored_item*', 'spaces',
             'recurring_bill*', 'model_has_recurring_bills', 'rental_agreement*', 'batch_codes', 'serial_references', 'scanner_ips',
         ],
 

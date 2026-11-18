@@ -46,6 +46,7 @@ class SeedFulfilmentPermissions
                         'name'       => $permissionName,
                         'scope_type' => 'Fulfilment',
                         'scope_id'   => $fulfilment->id,
+                        'guard_name' => 'web',
                     ]
                 );
             } catch (Exception) {
@@ -71,6 +72,7 @@ class SeedFulfilmentPermissions
                             'scope_type' => 'Fulfilment',
                             'scope_id'   => $fulfilment->id,
                             'group_id'   => $fulfilment->group_id,
+                            'guard_name' => 'web',
                         ]
                     );
                 }

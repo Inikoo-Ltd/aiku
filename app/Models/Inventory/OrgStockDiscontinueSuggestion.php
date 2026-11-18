@@ -8,6 +8,7 @@
 
 namespace App\Models\Inventory;
 
+use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockDiscontinueSuggestionReasonEnum;
 use App\Enums\Inventory\OrgStock\OrgStockDiscontinueSuggestionSourceEnum;
 use App\Models\Traits\InGroup;
@@ -69,15 +70,18 @@ class OrgStockDiscontinueSuggestion extends Model
     }
 
     /**
+     * Stocks already being discontinued are left out: the decision the suggestions asked for has been taken.
+     *
      * @return array<int, array{times: int, people: int}> keyed by stock id
      */
     public static function tallyByStock(int $groupId): array
     {
         return DB::table('org_stock_discontinue_suggestions')
-            ->where('group_id', $groupId)
-            ->whereNotNull('stock_id')
-            ->groupBy('stock_id')
-            ->selectRaw('stock_id, count(*) as times, count(distinct user_id) as people')
+            ->join('stocks', 'stocks.id', 'org_stock_discontinue_suggestions.stock_id')
+            ->where('org_stock_discontinue_suggestions.group_id', $groupId)
+            ->whereNotIn('stocks.state', [StockStateEnum::DISCONTINUING->value, StockStateEnum::DISCONTINUED->value])
+            ->groupBy('org_stock_discontinue_suggestions.stock_id')
+            ->selectRaw('org_stock_discontinue_suggestions.stock_id, count(*) as times, count(distinct org_stock_discontinue_suggestions.user_id) as people')
             ->get()
             ->mapWithKeys(fn ($row) => [$row->stock_id => ['times' => (int) $row->times, 'people' => (int) $row->people]])
             ->all();

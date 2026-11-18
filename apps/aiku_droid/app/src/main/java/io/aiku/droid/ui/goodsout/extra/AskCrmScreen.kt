@@ -206,6 +206,7 @@ private fun ChatComposer(state: StaffChatUiState, onDraftChange: (String) -> Uni
         AikuButton(
             text = stringResource(R.string.goodsout_extra_send),
             onClick = onSend,
+            icon = R.drawable.ic_ui_next,
             isLoading = state.isSending,
             height = 48.dp,
         )

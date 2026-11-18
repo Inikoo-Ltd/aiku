@@ -17,6 +17,9 @@
 namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
+use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
+use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSession;
+use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateFulfilmentOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
@@ -39,6 +42,12 @@ class SetPalletReturnAsPicked extends OrgAction
         $modelData['state']                                      = PalletReturnStateEnum::PICKED;
 
         $palletReturn = $this->update($palletReturn, $modelData);
+
+        foreach ($palletReturn->pickingSessions()->get() as $pickingSession) {
+            (new CalculateFulfilmentPickingSessionPicks())->action($pickingSession);
+            (new AutoFinishPickingFulfilmentPickingSession())->action($pickingSession);
+            (new AutoFinishPackingFulfilmentPickingSession())->action($pickingSession);
+        }
 
         GroupHydratePalletReturns::dispatch($palletReturn->group);
         OrganisationHydratePalletReturns::dispatch($palletReturn->organisation);

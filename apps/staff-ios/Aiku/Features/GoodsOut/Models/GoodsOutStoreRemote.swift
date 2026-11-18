@@ -123,7 +123,7 @@ extension GoodsOutStore {
     func performForResult(_ action: GoodsOutNoteAction, on reference: String) async -> (outcome: GoodsOutActionOutcome, result: GoodsOutActionResponseDTO.Result?) {
         guard isRemote else { return (.failed(message: "Sign in and choose a warehouse to work on delivery notes."), nil) }
         guard let id = noteID(for: reference) else { return (.failed(message: "This delivery note is not in the selected warehouse."), nil) }
-        guard !workingReferences.contains(reference) else { return (.failed(message: "Still working on the last action."), nil) }
+        guard !isWorking(on: reference) else { return (.failed(message: "Still working on the last action."), nil) }
         setWorking(reference, true)
         defer { setWorking(reference, false) }
         do {
@@ -133,8 +133,14 @@ extension GoodsOutStore {
             return (response.isNothingChanged ? .nothingChanged(message: message) : .done(message: message), response.result)
         } catch {
             if error.isCancellation { return (.failed(message: ""), nil) }
+            await reloadIfPlatformUnanswered(action, error: error, noteID: id)
             return (.failed(message: GoodsOutMapper.message(for: error)), nil)
         }
+    }
+
+    func reloadIfPlatformUnanswered(_ action: GoodsOutNoteAction, error: Error, noteID: Int) async {
+        guard action.waitsForPlatform, error as? APIError == .offline else { return }
+        await loadNote(id: noteID)
     }
 
     func scanToPick(_ reference: String, code: String, line: GoodsOutLine?) async -> (outcome: GoodsOutScanOutcome, message: String?) {

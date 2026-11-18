@@ -14,6 +14,7 @@ use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransact
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Inventory\Location\LocationStatusEnum;
+use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
@@ -146,7 +147,21 @@ class UpsertStockDeliveryItemPlaced extends OrgAction
     private function findOrAssociateLocation(StockDeliveryItem $stockDeliveryItem, int $locationId, ?User $user): LocationOrgStock
     {
         return LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)->where('location_id', $locationId)->first()
-            ?? StoreLocationOrgStock::make()->action($stockDeliveryItem->orgStock, Location::findOrFail($locationId), [], user: $user);
+            ?? StoreLocationOrgStock::make()->action(
+                $stockDeliveryItem->orgStock,
+                Location::findOrFail($locationId),
+                ['type' => $this->newLinkType($stockDeliveryItem)->value],
+                user: $user
+            );
+    }
+
+    private function newLinkType(StockDeliveryItem $stockDeliveryItem): LocationStockTypeEnum
+    {
+        $hasPickingLocation = LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)
+            ->where('type', LocationStockTypeEnum::PICKING->value)
+            ->exists();
+
+        return $hasPickingLocation ? LocationStockTypeEnum::STORING : LocationStockTypeEnum::PICKING;
     }
 
     public function asController(StockDeliveryItem $stockDeliveryItem, ActionRequest $request): StockDeliveryItem

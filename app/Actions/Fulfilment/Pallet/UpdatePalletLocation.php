@@ -14,6 +14,10 @@ use App\Models\Fulfilment\Pallet;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Support\Facades\Event;
+use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
+use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
+use App\Enums\Inventory\Location\LocationStatusEnum;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 
@@ -24,8 +28,10 @@ class UpdatePalletLocation extends OrgAction
     private Pallet $pallet;
     private mixed $scope;
 
-    public function handle(Location $location, Pallet $pallet): Pallet
+    public function handle(?Location $location, Pallet $pallet): Pallet
     {
+        $this->ensureCanMove($location, $pallet);
+
         $oldLocation = $pallet->location;
         $pallet = $this->update($pallet, ['location_id' => $location->id]);
 
@@ -42,7 +48,30 @@ class UpdatePalletLocation extends OrgAction
 
         Event::dispatch(new AuditCustom($pallet));
 
+        if ($oldLocation && $oldLocation->id !== $location->id) {
+            LocationHydratePallets::dispatch($oldLocation);
+        }
+        LocationHydratePallets::dispatch($location);
+
         return $pallet;
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function ensureCanMove(?Location $location, Pallet $pallet): void
+    {
+        $refusal = match (true) {
+            $pallet->status !== PalletStatusEnum::STORING                                                         => __('Only a stored pallet can be moved.'),
+            !$location || $location->warehouse_id !== $pallet->warehouse_id || $location->trashed()               => __('That location is not in this warehouse.'),
+            $location->status !== LocationStatusEnum::OPERATIONAL                                                 => __('This location is not operational.'),
+            !$location->allow_fulfilment                                                                          => __('This location does not take pallets.'),
+            default                                                                                               => null,
+        };
+
+        if ($refusal) {
+            throw ValidationException::withMessages(['location_id' => $refusal]);
+        }
     }
 
     public function authorize(ActionRequest $request): bool
@@ -87,7 +116,7 @@ class UpdatePalletLocation extends OrgAction
         $this->scope  = $warehouse;
         $this->initialisationFromWarehouse($warehouse, $request);
 
-        $newLocation = Location::where('id', $request->only('location_id'))->first();
+        $newLocation = Location::withTrashed()->find($request->integer('location_id'));
 
         return $this->handle($newLocation, $pallet);
     }

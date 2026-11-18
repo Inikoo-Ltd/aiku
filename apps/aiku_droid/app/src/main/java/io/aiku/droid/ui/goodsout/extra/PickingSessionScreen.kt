@@ -1,6 +1,5 @@
 package io.aiku.droid.ui.goodsout.extra
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -49,6 +48,7 @@ import io.aiku.droid.data.api.TrolleyRef
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
+import io.aiku.droid.ui.components.ButtonLook
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.FooterStatus
@@ -61,6 +61,8 @@ import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.forConfirm
+import io.aiku.droid.ui.components.inFooter
 import io.aiku.droid.ui.goodsout.ActionConfirmSheet
 import io.aiku.droid.ui.goodsout.DisabledActionNotice
 import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
@@ -69,6 +71,7 @@ import io.aiku.droid.ui.goodsout.IconInfoRow
 import io.aiku.droid.ui.goodsout.ScanHintCard
 import io.aiku.droid.ui.goodsout.TrolleyChoiceSheet
 import io.aiku.droid.ui.goodsout.deliveryNoteRoute
+import io.aiku.droid.ui.goodsout.goodsOutActionLook
 import io.aiku.droid.ui.goodsout.problemText
 import io.aiku.droid.ui.goodsout.quantityText
 import io.aiku.droid.ui.goodsout.stageOf
@@ -293,7 +296,7 @@ private fun PickingSessionContent(viewModel: PickingSessionViewModel, state: Pic
             title = stringResource(R.string.goodsout_extra_session_detach_title, shown.trolley.name),
             subtitle = stringResource(R.string.goodsout_extra_session_kicker, session.reference),
             confirmLabel = stringResource(R.string.goodsout_trolley_remove),
-            confirmStyle = ButtonStyle.Danger,
+            confirmLook = ButtonLook(ButtonStyle.DangerStrong, R.drawable.ic_ui_trash),
             hint = stringResource(R.string.goodsout_extra_session_detach_hint),
             isWorking = state.isWorking,
             problem = sheetProblem,
@@ -308,7 +311,7 @@ private fun PickingSessionContent(viewModel: PickingSessionViewModel, state: Pic
                 session.deliveryNotes.count { it.hasWaitingItems },
             ),
             confirmLabel = shown.action.label,
-            icon = R.drawable.ic_ui_undo,
+            confirmLook = goodsOutActionLook(shown.action.key).forConfirm(),
             hint = stringResource(R.string.goodsout_extra_session_back_to_picking_hint),
             isWorking = state.isWorking,
             problem = sheetProblem,
@@ -345,24 +348,18 @@ private fun ColumnScope.SessionFooter(session: PickingSession, loadingKey: Strin
         if (action.isDisabled) {
             DisabledActionNotice(action = action)
         } else {
+            val look = goodsOutActionLook(action.key).inFooter(isFirst = action == primary)
             AikuButton(
                 text = action.label,
                 onClick = { onAction(action) },
-                style = if (action == primary) ButtonStyle.Primary else ButtonStyle.Outline,
-                icon = action.sessionIcon(),
+                style = look.style,
+                icon = look.icon,
                 isLoading = action.key == loadingKey,
                 height = if (action == primary) 52.dp else 48.dp,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
     }
-}
-
-@DrawableRes
-private fun DeliveryNoteAction.sessionIcon(): Int? = when (key) {
-    SessionActionKey.SCAN_PICK, SessionActionKey.SCAN_PACK -> R.drawable.ic_ui_scan
-    SessionActionKey.BACK_TO_PICKING -> R.drawable.ic_ui_undo
-    else -> null
 }
 
 @Composable
@@ -373,7 +370,8 @@ private fun RemoveNotesFooter(count: Int, isWorking: Boolean, onRemove: () -> Un
         AikuButton(
             text = pluralStringResource(R.plurals.goodsout_extra_session_remove, count, count),
             onClick = onRemove,
-            style = ButtonStyle.Danger,
+            style = goodsOutActionLook(SessionActionKey.REMOVE_DELIVERY_NOTES).forConfirm().style,
+            icon = goodsOutActionLook(SessionActionKey.REMOVE_DELIVERY_NOTES).forConfirm().icon,
             isLoading = isWorking,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),

@@ -19,8 +19,6 @@ struct InventoryDestination: View {
             InventorySkoDetailScreen(target: .reference(reference))
         case .skoID(let id):
             InventorySkoDetailScreen(target: .id(id))
-        case .stockHistory:
-            InventoryStockHistoryScreen()
         case .skoHistory(let reference):
             InventoryStockHistoryScreen(target: .reference(reference), skoReference: reference)
         case .skoHistoryID(let id, let reference):

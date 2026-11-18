@@ -17,6 +17,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
+use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
 use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\Fulfilment\StoredItemMovement;
 use Lorisleiva\Actions\ActionRequest;
@@ -39,7 +40,10 @@ class UndoStoredItemPick extends OrgAction
         StoredItemMovement::where('pallet_return_item_id', $palletReturnItem->id)->delete();
 
         SetStoredItemReturnAutoServices::run($palletReturnItem->palletReturn, true);
-        RunPalletStoredItemQuantity::run($palletReturnItem->palletStoredItem);
+        $palletStoredItem = RunPalletStoredItemQuantity::run($palletReturnItem->palletStoredItem);
+        if ($palletStoredItem->state === PalletStoredItemStateEnum::RETURNED && (float)$palletStoredItem->quantity > 0) {
+            $palletStoredItem->update(['state' => PalletStoredItemStateEnum::ACTIVE]);
+        }
 
         if ($palletReturnItem->picking_session_id && $palletReturnItem->pickingSession) {
             new CalculateFulfilmentPickingSessionPicks()->action($palletReturnItem->pickingSession);

@@ -31,7 +31,6 @@ import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
-import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChoiceRow
 import io.aiku.droid.ui.components.ConfirmDialog
 import io.aiku.droid.ui.components.DetailCard
@@ -47,6 +46,7 @@ import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.StateStepper
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.components.stockDeliverySteps
 import io.aiku.droid.ui.goodsout.DisabledActionNotice
 import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
@@ -259,6 +259,7 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
                         icon = R.drawable.ic_ui_undo,
                         title = unreceive.label.ifBlank { stringResource(R.string.goodsin_unmark_received) },
                         subtitle = unreceive.disabledReason ?: stringResource(R.string.goodsin_unmark_received_body),
+                        tone = ActionTone.Caution,
                         onClick = if (unreceive.isDisabled) null else ({ openSheet(DeliverySheet.ConfirmUnreceive(unreceive)) }),
                     )
                 }
@@ -268,6 +269,7 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
             title = stringResource(R.string.goodsin_check_all_title),
             body = stringResource(R.string.goodsin_check_all_body),
             confirmLabel = stringResource(R.string.goodsin_check_all_items),
+            confirmLook = goodsInActionLook(GoodsInActionKey.CHECK).forConfirm(),
             onConfirm = {
                 sheet = null
                 viewModel.checkAll()
@@ -283,7 +285,7 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
                 viewModel.unreceive()
             },
             onDismiss = closeSheet,
-            isDestructive = true,
+            confirmLook = goodsInActionLook(GoodsInActionKey.UNRECEIVE).forConfirm(),
         )
         null -> Unit
     }
@@ -336,7 +338,8 @@ private fun deliveryFooter(
                     AikuButton(
                         text = receive.label.ifBlank { stringResource(R.string.goodsin_mark_received) },
                         onClick = onReceive,
-                        icon = R.drawable.ic_ui_check,
+                        style = goodsInActionLook(receive.key).style,
+                        icon = goodsInActionLook(receive.key).icon,
                         isLoading = working == StockDeliveryWrite.Receive,
                         height = 52.dp,
                         modifier = Modifier.fillMaxWidth(),
@@ -356,8 +359,8 @@ private fun deliveryFooter(
                     AikuButton(
                         text = stringResource(R.string.goodsin_check_all_items),
                         onClick = onCheckAll,
-                        style = ButtonStyle.Soft,
-                        icon = R.drawable.ic_ui_check,
+                        style = goodsInActionLook(check.key).style,
+                        icon = goodsInActionLook(check.key).icon,
                         isLoading = working == StockDeliveryWrite.CheckAll,
                         height = 52.dp,
                         modifier = Modifier.fillMaxWidth(),
@@ -375,7 +378,8 @@ private fun deliveryFooter(
                     AikuButton(
                         text = stringResource(R.string.goodsin_place_item, next.code),
                         onClick = { onPlace(next) },
-                        icon = R.drawable.ic_ui_location,
+                        style = goodsInActionLook(place.key).style,
+                        icon = goodsInActionLook(place.key).icon,
                         height = 52.dp,
                         modifier = Modifier.fillMaxWidth(),
                     )

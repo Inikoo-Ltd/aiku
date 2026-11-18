@@ -1342,13 +1342,16 @@ test('checkout payouts pay no order, and their report says which payments they s
 
     $csv = implode("\n", [
         'Action Type,Action ID,Payment ID,Payout ID,Breakdown Type,Processing Currency Amount,Holding Currency,Holding Currency Amount',
-        "Capture,act_1,$paymentReference,00000003YGCF,Gross,100.00,CZK,100.00",
-        "Capture,act_1,$paymentReference,00000003YGCF,Interchange Fee,-0.30,CZK,-0.30",
-        "Capture,act_1,$paymentReference,00000003YGCF,Scheme Fee,-0.20,CZK,-0.20",
-        'Capture,act_2,pay_notinaiku000000000000000000,00000003YGCF,Gross,5.00,CZK,5.00',
-        'Refund,act_3,pay_refunded00000000000000000000,00000003YGCF,Gross,-8.00,CZK,-8.00',
-        'Refund,act_3,pay_refunded00000000000000000000,00000003YGCF,Gateway Fee,-0.50,CZK,-0.50',
+        "Capture,act_1,$paymentReference,00000003YGCF,Capture,100.00,CZK,100.00",
+        "Capture,act_1,$paymentReference,00000003YGCF,Interchange Fixed Fee,-0.30,CZK,-0.30",
+        "Capture,act_1,$paymentReference,00000003YGCF,Scheme Variable Fee,-0.20,CZK,-0.20",
+        'Capture,act_2,pay_notinaiku000000000000000000,00000003YGCF,Capture,5.00,CZK,5.00',
+        'Partial Refund,act_3,pay_refunded00000000000000000000,00000003YGCF,Refund,-8.00,CZK,-8.00',
+        'Refund,act_3,pay_refunded00000000000000000000,00000003YGCF,Refund Fixed Fee,-0.50,CZK,-0.50',
     ]);
+    expect(\App\Actions\Accounting\BankTransaction\ReconcileCheckoutPayouts::make()->payoutIdTag(['tags' => ['payout_id:00000003yvnv']]))->toBe('00000003YVNV')
+        ->and(\App\Actions\Accounting\BankTransaction\ReconcileCheckoutPayouts::make()->payoutIdTag(['tags' => []]))->toBeNull();
+
     $reconciler = \App\Actions\Accounting\BankTransaction\ReconcileCheckoutPayouts::partialMock();
     $reconciler->shouldReceive('payoutReportFiles')->andReturn([
         '00000003YGCF' => ['report_id' => 'rpt_1', 'file_id' => 'file_1'],
@@ -1357,7 +1360,7 @@ test('checkout payouts pay no order, and their report says which payments they s
     $reconciler->shouldReceive('payoutReportCsv')->with(\Mockery::any(), \Mockery::any(), 'rpt_1', 'file_1')->andReturn($csv);
     $reconciler->shouldReceive('payoutReportCsv')->with(\Mockery::any(), \Mockery::any(), 'rpt_2', 'file_2')->andReturn(implode("\n", [
         'Action Type,Payment ID,Breakdown Type,Processing Currency Amount,Holding Currency,Holding Currency Amount',
-        'Capture,pay_short000000000000000000000,Gross,10.00,CZK,10.00',
+        'Capture,pay_short000000000000000000000,Capture,10.00,CZK,10.00',
     ]));
     Config::set('app.sandbox.checkout_com.secret_key', 'sk_test');
 
@@ -2504,7 +2507,8 @@ test('cash shows what the connected banks hold: the group in its currency for th
         ->and(collect($groupCash['unconverted'])->firstWhere('currency', $unrated->code)['amount'])->toEqual(999)
         ->and(collect($groupCash['currencies'])->pluck('key')->all())->toContain($foreign->code)->not->toContain($unrated->code)
         ->and(collect($groupCash['organisations'])->pluck('label')->all())->toContain($this->organisation->name, $otherOrganisation->name)
-        ->and($groupCash['not_connected'])->toContain('Tatra banka')
+        ->and($groupCash['not_connected'])->toBe(\App\Actions\Accounting\BankBalance\UI\ShowCash::notConnected(collect([$this->organisation, $otherOrganisation])))
+        ->and(\App\Actions\Accounting\BankBalance\UI\ShowCash::notConnected(collect([new Organisation(['slug' => 'sk']), new Organisation(['slug' => 'es'])])))->toBe(['Tatra banka', 'Santander', 'Sabadell'])
         ->and(collect($cash(['org' => $otherOrganisation->slug])['connections'])->pluck('id')->all())->toBe([$theirs->id])
         ->and(collect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::make()->handle($admin)['financials']['topMenu']['subSections'])->pluck('route.name')->all())->toContain('grp.financials.cash.index');
 
@@ -2632,6 +2636,7 @@ function fioMovement(int $id, float $amount, ?string $counterAccount, ?string $m
         'column1'  => ['value' => $amount, 'name' => 'Objem', 'id' => 1],
         'column14' => ['value' => $currency, 'name' => 'Měna', 'id' => 14],
         'column2'  => $counterAccount ? ['value' => $counterAccount, 'name' => 'Protiúčet', 'id' => 2] : null,
+        'column3'  => $counterAccount ? ['value' => '0800', 'name' => 'Kód banky', 'id' => 3] : null,
         'column10' => $counterAccount ? ['value' => 'Jan Novák', 'name' => 'Název protiúčtu', 'id' => 10] : null,
         'column16' => $message ? ['value' => $message, 'name' => 'Zpráva pro příjemce', 'id' => 16] : null,
         'column8'  => ['value' => $counterAccount ? 'Bezhotovostní příjem' : 'Poplatek', 'name' => 'Typ', 'id' => 8],
@@ -2666,6 +2671,8 @@ test('a fio account statement is mirrored once, transfers carry the message as r
         ->and($lines['1001']->currency->code)->toBe('CZK')
         ->and($lines['1001']->reference)->toBe('CZ10234')
         ->and($lines['1001']->counterparty_name)->toBe('Jan Novák')
+        ->and($lines['1001']->counterparty_account)->toBe('123456789/0800')
+        ->and($lines['1002']->counterparty_account)->toBeNull()
         ->and($lines['1001']->booked_at->toDateString())->toBe('2026-11-12')
         ->and($lines['1002']->provider_type)->toBe('OTHER')
         ->and((float)$lines['1002']->amount)->toBe(-35.0)
@@ -2709,6 +2716,171 @@ test('a fio payment whose variable symbol is the order number without its prefix
         ->and($matched->order_id)->toBe($order->id)
         ->and($otherCurrency->refresh()->order_id)->toBeNull()
         ->and($noSymbol->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
+});
+
+function tatraTransaction(string $id, float $amount, ?string $debtorIban, ?string $creditorIban, ?string $message, ?string $variableSymbol = null, string $currency = 'EUR'): array
+{
+    return array_filter([
+        'transactionId'                     => $id,
+        'bookingDate'                       => '2026-11-12',
+        'valueDate'                         => '2026-11-12',
+        'transactionAmount'                 => ['currency' => $currency, 'amount' => $amount],
+        'debtorName'                        => $debtorIban ? 'Ján Kováč' : null,
+        'debtorAccount'                     => $debtorIban ? ['iban' => $debtorIban] : null,
+        'creditorName'                      => $creditorIban ? 'Supplier s.r.o.' : null,
+        'creditorAccount'                   => $creditorIban ? ['iban' => $creditorIban] : null,
+        'remittanceInformationUnstructured' => $message,
+        'variableSymbol'                    => $variableSymbol,
+        'transactionState'                  => 'BOOKED',
+    ]);
+}
+
+test('a tatra account is mirrored once through business banking consent, direction from the sign or from our IBAN, every page read', function () {
+    $ours     = 'SK3111000000002612345678';
+    $accounts = ['accounts' => [[
+        'accountId'             => 'tatra-acc-1',
+        'accountReference'      => ['iban' => $ours, 'currency' => 'EUR'],
+        'consentExpirationDate' => '2027-05-16T10:00:00+02:00',
+        'balances'              => [
+            ['balanceAmount' => ['currency' => 'EUR', 'amount' => 999.0], 'balanceType' => 'interimAvailable'],
+            ['balanceAmount' => ['currency' => 'EUR', 'amount' => 8000.0], 'balanceType' => 'closingBooked'],
+            ['balanceAmount' => ['currency' => 'EUR', 'amount' => 8123.4], 'balanceType' => 'interimBooked'],
+        ],
+    ]]];
+    Http::fake([
+        'api.tatrabanka.sk/premium/production/auth/oauth/v2/token' => Http::response(['access_token' => 'tatra-token', 'token_type' => 'Bearer', 'expires_in' => 86400]),
+        'api.tatrabanka.sk/premium/production/v3/accounts*'        => Http::response($accounts),
+        'api.tatrabanka.sk/premium/production/v5/accounts/*'       => Http::sequence()
+            ->push([
+                'transactions' => [
+                    tatraTransaction('t1', 120.5, 'SK8975000000000012345671', $ours, 'Objednavka SK10234'),
+                    tatraTransaction('t2', -45.0, $ours, 'CZ6508000000192000145399', 'Invoice 77'),
+                ],
+                '_links' => ['next' => ['href' => 'https://api.tatrabanka.sk/premium/production/v5/accounts/tatra-acc-1/transactions?page=2']],
+            ])
+            ->push([
+                'transactions' => [
+                    tatraTransaction('t3', 60.0, $ours, 'DE89370400440532013000', null),
+                    tatraTransaction('t4', 10.0, 'AT611904300234573201', 'AT483200000012345864', null),
+                    array_merge(tatraTransaction('t5', 75.0, 'SK8975000000000012345671', $ours, null), ['isReversal' => true]),
+                    tatraTransaction('t6', 5.0, $ours, $ours, null),
+                    array_merge(tatraTransaction('t7', 30.0, 'SK8975000000000012345671', $ours, null), ['transactionState' => 'REJECTED']),
+                ],
+            ])
+            ->push(['transactions' => [tatraTransaction('t1', 120.5, 'SK8975000000000012345671', $ours, 'Objednavka SK10234')]]),
+    ]);
+
+    $bankConnection = StoreBankConnection::run($this->organisation, [
+        'provider'    => BankConnectionProviderEnum::TATRA,
+        'name'        => 'Tatra EUR',
+        'credentials' => 'tatra-client:tatra-secret',
+    ]);
+
+    expect(SyncBankConnection::run($bankConnection, true))->toBe(['synced' => 3, 'skipped' => 4, 'skipped_examples' => [
+        't4: direction not understood',
+        't5: reversal with an unsigned amount, direction not certain',
+        't6: direction not understood',
+        't7: not booked: REJECTED',
+    ]]);
+
+    $lines = BankTransaction::where('bank_connection_id', $bankConnection->id)->get()->keyBy('provider_transaction_id');
+    expect($bankConnection->refresh()->external_id)->toBe('tatra-acc-1')
+        ->and($bankConnection->sync_data['tatra_iban'])->toBe($ours)
+        ->and($lines)->toHaveCount(3)
+        ->and($lines['t1']->direction)->toBe(BankTransactionDirectionEnum::IN)
+        ->and((float)$lines['t1']->amount)->toBe(120.5)
+        ->and($lines['t1']->provider_type)->toBe('TRANSFER')
+        ->and($lines['t1']->reference)->toBe('Objednavka SK10234')
+        ->and($lines['t1']->counterparty_name)->toBe('Ján Kováč')
+        ->and($lines['t1']->counterparty_account)->toBe('SK8975000000000012345671')
+        ->and($lines['t1']->booked_at->toDateString())->toBe('2026-11-12')
+        ->and($lines['t2']->direction)->toBe(BankTransactionDirectionEnum::OUT)
+        ->and((float)$lines['t2']->amount)->toBe(-45.0)
+        ->and($lines['t2']->counterparty_name)->toBe('Supplier s.r.o.')
+        ->and($lines['t3']->direction)->toBe(BankTransactionDirectionEnum::OUT)
+        ->and((float)$lines['t3']->amount)->toBe(-60.0)
+        ->and((float)\App\Models\Accounting\BankBalance::where('bank_connection_id', $bankConnection->id)->value('amount'))->toBe(8123.4);
+
+    expect(SyncBankConnection::run($bankConnection->refresh()))->toBe(['synced' => 0, 'skipped' => 0, 'skipped_examples' => []]);
+
+    Http::assertSent(fn ($request) => str_ends_with($request->url(), '/auth/oauth/v2/token')
+        && $request['grant_type'] === 'client_credentials' && $request['scope'] === 'PREMIUM_AIS'
+        && $request['client_id'] === 'tatra-client' && $request['client_secret'] === 'tatra-secret');
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/v5/accounts/tatra-acc-1/transactions?')
+        && str_contains($request->url(), 'bookingStatus=booked')
+        && $request->hasHeader('Authorization', 'Bearer tatra-token')
+        && $request->hasHeader('X-Request-ID'));
+});
+
+test('a tatra connection whose consent reaches several accounts asks for the account instead of guessing', function () {
+    Http::fake([
+        'api.tatrabanka.sk/premium/production/auth/oauth/v2/token' => Http::response(['access_token' => 'tatra-token']),
+        'api.tatrabanka.sk/premium/production/v3/accounts*'        => Http::response(['accounts' => [
+            ['accountId' => 'eur-acc', 'accountReference' => ['iban' => 'SK1', 'currency' => 'EUR']],
+            ['accountId' => 'usd-acc', 'accountReference' => ['iban' => 'SK2', 'currency' => 'USD']],
+        ]]),
+    ]);
+
+    $bankConnection = StoreBankConnection::run($this->organisation, [
+        'provider'    => BankConnectionProviderEnum::TATRA,
+        'name'        => 'Tatra two accounts',
+        'credentials' => 'tatra-client:tatra-secret',
+    ]);
+
+    expect(SyncBankConnection::run($bankConnection))->toBeNull()
+        ->and($bankConnection->refresh()->state)->toBe(\App\Enums\Accounting\BankConnection\BankConnectionStateEnum::ERROR)
+        ->and($bankConnection->last_error)->toContain('eur-acc SK1 EUR')->toContain('usd-acc SK2 USD');
+});
+
+test('a tatra sync fails loudly instead of losing lines when a full page comes without a next link or the next link leaves the api', function () {
+    $accounts = ['accounts' => [['accountId' => 'tatra-full', 'accountReference' => ['iban' => 'SK3111000000002612345678', 'currency' => 'EUR']]]];
+    $fullPage = array_map(fn (int $i) => tatraTransaction("f$i", -1.0, 'SK3111000000002612345678', 'SK8975000000000012345671', null), range(1, \App\Actions\Accounting\BankConnection\Tatra\SyncTatraBankConnection::PAGE_SIZE));
+    Http::fake([
+        'api.tatrabanka.sk/premium/production/auth/oauth/v2/token' => Http::response(['access_token' => 'tatra-token']),
+        'api.tatrabanka.sk/premium/production/v3/accounts*'        => Http::response($accounts),
+        'api.tatrabanka.sk/premium/production/v5/accounts/*'       => Http::sequence()
+            ->push(['transactions' => $fullPage])
+            ->push(['transactions' => [tatraTransaction('n1', -1.0, 'SK3111000000002612345678', 'SK8975000000000012345671', null)], '_links' => ['next' => ['href' => 'https://evil.example/v5/accounts/tatra-full/transactions?page=2']]]),
+    ]);
+
+    $bankConnection = StoreBankConnection::run($this->organisation, [
+        'provider'    => BankConnectionProviderEnum::TATRA,
+        'name'        => 'Tatra full page',
+        'credentials' => 'tatra-client:tatra-secret',
+    ]);
+
+    expect(SyncBankConnection::run($bankConnection, true))->toBeNull()
+        ->and($bankConnection->refresh()->last_error)->toContain('without a next link')
+        ->and($bankConnection->last_synced_at)->toBeNull()
+        ->and(SyncBankConnection::run($bankConnection, true))->toBeNull()
+        ->and($bankConnection->refresh()->last_error)->toContain('leaves the API')
+        ->and(BankTransaction::where('bank_connection_id', $bankConnection->id)->count())->toBe(0);
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'evil.example'));
+});
+
+test('a tatra payment whose variable symbol is the order number without its prefix is matched to that order', function () {
+    $order          = bankMatchingOrder(createCustomer($this->shop), 212.4);
+    $bankConnection = bankMatchingConnection($this->organisation);
+
+    $line = BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => 'tatra-vs1',
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 212.4,
+        'currency_id'             => $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => 'Platba',
+        'booked_at'               => now(),
+        'data'                    => ['transaction' => ['variableSymbol' => preg_replace('/^[A-Z]+/', '', $order->reference)]],
+    ]);
+
+    MatchBankTransactions::run($bankConnection);
+
+    expect($line->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($line->order_id)->toBe($order->id);
 });
 
 test('a payment quoting the invoice number instead of the order number is matched to the invoiced order', function () {

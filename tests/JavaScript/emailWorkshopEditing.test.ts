@@ -2,7 +2,12 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import {
 	DELETE_SELECTION_COMBOS,
+	EMAIL_CLIPBOARD_STORAGE_KEY,
+	copyEmailSelection,
+	pasteEmailClipboard,
+	readEmailClipboard,
 	MODULE_TYPES,
+	ROW_DRAG_MODE,
 	createDynamicBlockRows,
 	createEmptyEmail,
 	createModule,
@@ -17,6 +22,7 @@ import {
 	unsubscribeBlockCount,
 } from "../../resources/js/Components/CMS/Website/Outboxes/EmailWorkshop/emailWorkshopBlocks.ts"
 import { formattedClipboardContent, stripPastedFormatting } from "../../resources/js/Components/Forms/Fields/BubleTextEditor/pastedHtml.ts"
+import { readFileSync } from "node:fs"
 import { fontSizeInPixels } from "../../resources/js/Components/Forms/Fields/BubleTextEditor/editorTools.ts"
 
 const rowWith = (...modules: any[]) => {
@@ -139,4 +145,126 @@ test("the toolbar shows a pasted pixel font size as it is, and a rem size in pix
 	assert.equal(fontSizeInPixels("26px"), "26")
 	assert.equal(fontSizeInPixels("1.6250rem"), "26")
 	assert.equal(fontSizeInPixels(undefined), "")
+})
+
+test("rows dragged from the Rows tab can be dropped on the canvas because both lists share the fallback drag mode", () => {
+	const workshop = readFileSync(new URL("../../resources/js/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue", import.meta.url), "utf8")
+	const rowLists = [...workshop.matchAll(/<draggable\b(?:=>|[^>])*>/g)].map((match) => match[0]).filter((tag) => tag.includes("email-rows"))
+
+	assert.equal(ROW_DRAG_MODE.forceFallback, true)
+	assert.equal(rowLists.length, 2)
+	rowLists.forEach((rowList) => {
+		assert.match(rowList, /v-bind="ROW_DRAG_MODE"/)
+		assert.doesNotMatch(rowList, /force-fallback/)
+	})
+})
+
+test("while dragging, the landing place is a labelled drop bar and a new row from the Rows tab outlines the canvas", () => {
+	const workshop = readFileSync(new URL("../../resources/js/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue", import.meta.url), "utf8")
+	const draggableTags = [...workshop.matchAll(/<draggable\b(?:=>|[^>])*>/g)].map((match) => match[0])
+	const canvasRows = draggableTags.find((tag) => tag.includes('v-model="email.page.rows"'))!
+	const rowsPalette = draggableTags.find((tag) => tag.includes(":list=\"rowLayouts\""))!
+	const canvasModules = draggableTags.find((tag) => tag.includes('v-model="column.modules"'))!
+
+	assert.equal(ROW_DRAG_MODE.fallbackClass, "email-drag-preview")
+	assert.match(canvasRows, /ghost-class="email-row-ghost"/)
+	assert.match(canvasModules, /ghost-class="email-module-ghost"/)
+	assert.doesNotMatch(rowsPalette, /ghost-class/)
+	assert.match(rowsPalette, /@start="onRowLayoutDragStart"/)
+	assert.match(workshop, /\.email-row-ghost::before \{\s*content: var\(--email-drop-row-label/)
+	assert.match(workshop, /\.email-module-ghost::before \{\s*content: var\(--email-drop-block-label/)
+})
+
+const textModule = (text: string) => {
+	const module = createModule(MODULE_TYPES.text)
+	module.descriptor.text = { html: text }
+
+	return module
+}
+
+test("a copied block pastes below the selected block as a new block with its own ids", () => {
+	const email = createEmptyEmail()
+	const first = textModule("first")
+	const second = textModule("second")
+	const row = rowWith(first, second)
+	email.page.rows = [row]
+
+	const clipboard = copyEmailSelection(first, null)!
+	const pasted = pasteEmailClipboard(email, clipboard, { moduleUuid: first.uuid!, rowUuid: row.uuid! }, "650px")!
+
+	assert.equal(clipboard.kind, "module")
+	assert.deepEqual(row.columns[0].modules.map((module) => module.descriptor.text.html), ["first", "first", "second"])
+	assert.equal(pasted.module, row.columns[0].modules[1])
+	assert.notEqual(pasted.module!.uuid, first.uuid)
+	assert.equal(pasted.row, row)
+})
+
+test("a copied block pastes into an empty column of the selected row, or into a new row when nothing is selected", () => {
+	const email = createEmptyEmail()
+	const filled = createRow([6, 6], "650px")
+	filled.columns[0].modules.push(textModule("left"))
+	email.page.rows = [filled]
+	const clipboard = copyEmailSelection(textModule("copied"), null)!
+
+	pasteEmailClipboard(email, clipboard, { moduleUuid: null, rowUuid: filled.uuid! }, "650px")
+	assert.equal(filled.columns[1].modules[0].descriptor.text.html, "copied")
+
+	const pasted = pasteEmailClipboard(email, clipboard, { moduleUuid: null, rowUuid: null }, "650px")!
+	assert.equal(email.page.rows.length, 2)
+	assert.equal(email.page.rows[1], pasted.row)
+	assert.equal(pasted.row.columns[0].modules[0].descriptor.text.html, "copied")
+})
+
+test("a copied row pastes below the selected row, or below the row of the selected block, with new ids throughout", () => {
+	const email = createEmptyEmail()
+	const inner = textModule("inside")
+	const first = rowWith(inner)
+	const last = rowWith(textModule("last"))
+	email.page.rows = [first, last]
+
+	const clipboard = copyEmailSelection(null, first)!
+	const pasted = pasteEmailClipboard(email, clipboard, { moduleUuid: inner.uuid!, rowUuid: first.uuid! }, "650px")!
+
+	assert.equal(clipboard.kind, "row")
+	assert.deepEqual(email.page.rows.map((row) => row.columns[0].modules[0].descriptor.text.html), ["inside", "inside", "last"])
+	assert.equal(email.page.rows[1], pasted.row)
+	assert.equal(pasted.module, null)
+	assert.notEqual(pasted.row.uuid, first.uuid)
+	assert.notEqual(pasted.row.columns[0].modules[0].uuid, inner.uuid)
+})
+
+test("a copy is a snapshot: editing the original afterwards does not change what is pasted", () => {
+	const email = createEmptyEmail()
+	const original = textModule("before")
+	email.page.rows = [rowWith(original)]
+
+	const clipboard = copyEmailSelection(original, null)!
+	original.descriptor.text.html = "after"
+	const pasted = pasteEmailClipboard(email, clipboard, { moduleUuid: original.uuid!, rowUuid: null }, "650px")!
+
+	assert.equal(pasted.module!.descriptor.text.html, "before")
+})
+
+test("the unsubscribe block and its row cannot be copied or pasted", () => {
+	const email = createEmptyEmail()
+	const unsubscribe = createUnsubscribeModule()
+	const row = rowWith(unsubscribe)
+	email.page.rows = [row]
+
+	assert.equal(copyEmailSelection(unsubscribe, null), null)
+	assert.equal(copyEmailSelection(null, row), null)
+	assert.equal(pasteEmailClipboard(email, { kind: "module", module: unsubscribe }, { moduleUuid: null, rowUuid: null }, "650px"), null)
+	assert.equal(email.page.rows.length, 1)
+	assert.equal(unsubscribeBlockCount(email), 1)
+})
+
+test("a copied block kept in browser storage is read back, and anything else stored there is ignored", () => {
+	const clipboard = copyEmailSelection(textModule("kept"), null)!
+
+	assert.deepEqual(readEmailClipboard(JSON.stringify(clipboard)), clipboard)
+	assert.equal(readEmailClipboard(null), null)
+	assert.equal(readEmailClipboard("not json"), null)
+	assert.equal(readEmailClipboard(JSON.stringify({ kind: "module", module: { type: 1 } })), null)
+	assert.equal(readEmailClipboard(JSON.stringify({ kind: "row", row: { columns: [{}] } })), null)
+	assert.equal(EMAIL_CLIPBOARD_STORAGE_KEY, "aiku.emailWorkshop.clipboard")
 })

@@ -67,7 +67,8 @@ internal fun PickedBaySheet(
                     else -> stringResource(R.string.goodsout_bay_use_none)
                 },
                 onClick = { onConfirm(selectedBay?.id) },
-                icon = if (isSetAsPicked) R.drawable.ic_ui_check else null,
+                style = if (isSetAsPicked) goodsOutActionLook(action.key).style else ButtonStyle.Primary,
+                icon = if (isSetAsPicked) goodsOutActionLook(action.key).icon else R.drawable.ic_ui_area,
                 isLoading = isWorking,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),

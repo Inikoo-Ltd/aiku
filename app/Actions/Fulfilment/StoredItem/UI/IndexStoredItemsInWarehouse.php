@@ -50,12 +50,8 @@ class IndexStoredItemsInWarehouse extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(StoredItem::class);
-        $query->leftJoin('pallet_stored_items', 'pallet_stored_items.stored_item_id', 'stored_items.id');
-        $query->leftJoin('pallets', 'pallet_stored_items.pallet_id', 'pallets.id');
-        $query->where('pallets.warehouse_id', $parent->id);
-
         return QueryBuilder::for(StoredItem::class)
+            ->where('stored_items.organisation_id', $parent->organisation_id)
             ->defaultSort('reference')
             ->allowedSorts(['slug', 'state', 'reference'])
             ->allowedFilters([$globalSearch, 'slug', 'state'])

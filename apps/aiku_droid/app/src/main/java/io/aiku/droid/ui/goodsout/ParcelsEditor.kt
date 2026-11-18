@@ -255,6 +255,7 @@ internal fun DeliveryNoteParcels(note: DeliveryNote, writeErrors: Map<String, Li
                 }
             },
             style = ButtonStyle.Soft,
+            icon = R.drawable.ic_ui_check,
             isLoading = isSaving,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),

@@ -37,6 +37,7 @@ struct LocationsListView: View {
                 }
                 .padding(.horizontal, 16)
             }
+            .scrollBounceBehavior(.basedOnSize, axes: [.horizontal, .vertical])
             .padding(.horizontal, -16)
             SearchField(text: $store.listQuery, placeholder: "Location code (starts with)", onScan: { isScanning = true }) {
                 openTypedOrScannedCode(store.listQuery, onlyResult: locations.count == 1 ? locations.first : nil)

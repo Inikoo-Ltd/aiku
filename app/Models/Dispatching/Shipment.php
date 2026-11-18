@@ -8,6 +8,7 @@
 
 namespace App\Models\Dispatching;
 
+use App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -54,6 +55,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property array<array-key, mixed>|null $label_urls
  * @property string|null $label
  * @property ShipmentLabelTypeEnum $label_type
+ * @property ShipmentDeliveryTypeEnum|null $delivery_type
+ * @property string|null $pickup_point_code
  * @property string|null $trade_as
  * @property numeric|null $cost
  * @property-read Customer|null $customer
@@ -85,6 +88,7 @@ class Shipment extends Model
         'tracking_urls' => 'array',
         'label_urls'    => 'array',
         'label_type'    => ShipmentLabelTypeEnum::class,
+        'delivery_type' => ShipmentDeliveryTypeEnum::class,
         'delivered_at'  => 'datetime',
         'tracked_at'    => 'datetime',
     ];

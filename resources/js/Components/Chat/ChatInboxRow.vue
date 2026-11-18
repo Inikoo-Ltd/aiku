@@ -86,7 +86,7 @@ const promiseLabel = (at: string) => ctx.minuteClock && ctx.formatPromiseTime(at
                 </span>
                 <span v-else-if="c.urgent" :data-tooltip="ctrans('Asks to cancel an order or change its delivery address. First in the queue until answered.')"
                     class="shrink-0 rounded bg-red-600 px-1.5 text-[11px] font-semibold text-white">
-                    {{ c.urgent === 'cancel_order' ? ctrans("Cancel order") : ctrans("Change address") }}
+                    {{ c.urgent === 'cancel_order' ? ctrans("Cancel order") : c.urgent === 'hold_order' ? ctrans("Hold order") : ctrans("Change address") }}
                 </span>
                 <span v-if="c.assistant_hand_over" :data-tooltip="ctrans('Handed over by the AI shopping assistant: :reason', { reason: c.assistant_hand_over.reason_label })"
                     class="shrink-0 rounded bg-gray-100 px-1.5 text-[11px] font-medium text-gray-600">
@@ -278,7 +278,7 @@ const promiseLabel = (at: string) => ctx.minuteClock && ctx.formatPromiseTime(at
                     </span>
                     <span v-else-if="c.urgent" :data-tooltip="ctrans('Asks to cancel an order or change its delivery address. First in the queue until answered.')"
                         class="shrink-0 max-w-full truncate rounded bg-red-600 px-1 font-semibold text-white">
-                        {{ c.urgent === 'cancel_order' ? ctrans("Cancel order") : ctrans("Change address") }}
+                        {{ c.urgent === 'cancel_order' ? ctrans("Cancel order") : c.urgent === 'hold_order' ? ctrans("Hold order") : ctrans("Change address") }}
                     </span>
                     <span v-if="c.assistant_hand_over" :data-tooltip="ctrans('Handed over by the AI shopping assistant: :reason', { reason: c.assistant_hand_over.reason_label })"
                         class="shrink-0 max-w-full truncate rounded bg-gray-100 px-1 font-medium text-gray-600">

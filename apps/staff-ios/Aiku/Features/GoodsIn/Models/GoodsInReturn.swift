@@ -38,16 +38,41 @@ enum GoodsInReturnOutcome: Hashable, Sendable {
     case notReturned
 }
 
+struct GoodsInReturnPut: Identifiable, Hashable, Sendable {
+    let id: Int
+    let sko: String
+    let kind: String
+    let label: String
+    let quantity: Double
+    let location: String?
+    var packedIn = 1
+
+    var title: String {
+        [GoodsInQuantity.text(quantity, packedIn: packedIn), label, location].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    var undoMessage: String {
+        if let location, kind == "sow" {
+            return "\(GoodsInQuantity.text(quantity, packedIn: packedIn)) is taken back out of \(location) and goes back to remaining."
+        }
+        return "The quantity goes back to remaining."
+    }
+}
+
 struct GoodsInReturnItem: Identifiable, Hashable, Sendable {
     let sko: String
     let name: String
-    let quantity: Int
+    let quantity: Double
     let homeLocation: String
     var outcome: GoodsInReturnOutcome?
+    var remoteID: Int? = nil
+    var homeLinkID: Int? = nil
+    var packedIn = 1
+    var puts: [GoodsInReturnPut] = []
 
     var id: String { sko }
 
-    var returnedQuantity: Int {
+    var returnedQuantity: Double {
         if case .toLocation = outcome { quantity } else { 0 }
     }
 
@@ -71,9 +96,9 @@ struct GoodsInReturnItem: Identifiable, Hashable, Sendable {
 
     var subtitle: String {
         switch outcome {
-        case .none: "\(name) · \(quantity.grouped) to process"
-        case .toLocation(let location): "\(quantity.grouped) back in \(location)"
-        case .damaged: "\(name) · \(quantity.grouped) set as damaged"
+        case .none: "\(name) · \(GoodsInQuantity.text(quantity, packedIn: packedIn)) to process"
+        case .toLocation(let location): "\(GoodsInQuantity.text(quantity, packedIn: packedIn)) back in \(location)"
+        case .damaged: "\(name) · \(GoodsInQuantity.text(quantity, packedIn: packedIn)) set as damaged"
         case .notReturned: "\(name) · set as not returned"
         }
     }
@@ -85,6 +110,12 @@ struct GoodsInReturn: Identifiable, Hashable, Sendable {
     var items: [GoodsInReturnItem]
     var isSetAsReturned = false
     var isDone = false
+    var remoteID: Int? = nil
+    var remoteState: GoodsInReturnState? = nil
+    var remoteItemCount: Int? = nil
+    var remoteHandledCount: Int? = nil
+    var remoteActions: Set<String> = []
+    var isDetailLoaded = true
 
     var id: String { reference }
 
@@ -93,15 +124,18 @@ struct GoodsInReturn: Identifiable, Hashable, Sendable {
     var nextPendingItem: GoodsInReturnItem? { items.first { $0.outcome == nil } }
 
     var state: GoodsInReturnState {
+        if let remoteState { return remoteState }
         if isDone { return .done }
         if isSetAsReturned { return .returned }
         return processedCount > 0 ? .returning : .received
     }
 
     var listSubtitle: String {
-        let count = items.count == 1 ? "1 item" : "\(items.count) items"
+        let total = isDetailLoaded ? items.count : (remoteItemCount ?? items.count)
+        let handled = isDetailLoaded ? processedCount : (remoteHandledCount ?? processedCount)
+        let count = total == 1 ? "1 item" : "\(total) items"
         if state == .returning {
-            return "\(customer) · \(processedCount) of \(items.count) items processed"
+            return "\(customer) · \(handled) of \(total) items processed"
         }
         return "\(customer) · \(count)"
     }
@@ -109,6 +143,12 @@ struct GoodsInReturn: Identifiable, Hashable, Sendable {
     mutating func process(_ sko: String, outcome: GoodsInReturnOutcome) {
         guard state == .received || state == .returning, let index = items.firstIndex(where: { $0.sko == sko }), items[index].outcome == nil else { return }
         items[index].outcome = outcome
+    }
+
+    mutating func undo(_ put: GoodsInReturnPut) {
+        guard state == .returning, let index = items.firstIndex(where: { $0.sko == put.sko }) else { return }
+        items[index].puts.removeAll { $0.id == put.id }
+        items[index].outcome = nil
     }
 
     mutating func setAsReturned() {

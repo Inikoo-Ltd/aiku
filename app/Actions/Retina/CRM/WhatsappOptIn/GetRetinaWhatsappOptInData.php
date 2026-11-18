@@ -23,7 +23,9 @@ class GetRetinaWhatsappOptInData
 
     public static function isOfferedIn(?Shop $shop): bool
     {
-        return $shop !== null && in_array($shop->type, self::OFFERED_IN_SHOP_TYPES, true);
+        return $shop !== null
+            && in_array($shop->type, self::OFFERED_IN_SHOP_TYPES, true)
+            && filled(data_get($shop->settings, 'whatsapp.phone_number_id'));
     }
 
     /**

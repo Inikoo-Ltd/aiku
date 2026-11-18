@@ -30,9 +30,11 @@ use Lorisleiva\Actions\ActionRequest;
 class PickPalletReturnItemByScan extends OrgAction
 {
     /**
+     * @param  Collection<int, PalletReturnItem>|null  $pickableItems
+     *
      * @throws \Throwable
      */
-    public function handle(PalletReturn $palletReturn, User $user, array $modelData): array
+    public function handle(PalletReturn $palletReturn, User $user, array $modelData, ?Collection $pickableItems = null): array
     {
         $scanned  = trim((string)data_get($modelData, 'barcode'));
         $quantity = (float)data_get($modelData, 'quantity', 1);
@@ -46,7 +48,7 @@ class PickPalletReturnItemByScan extends OrgAction
             );
         }
 
-        $items        = $this->loadItems($palletReturn);
+        $items        = $pickableItems ?? $this->loadItems($palletReturn);
         $matchedItems = $this->matchItems($items, $scanned);
 
         if ($matchedItems->isEmpty()) {
@@ -60,6 +62,17 @@ class PickPalletReturnItemByScan extends OrgAction
         }
 
         $itemToPick = $matchedItems->first(fn (PalletReturnItem $item) => $this->quantityLeftToPick($item) > 0);
+
+        if (!$itemToPick && $matchedItems->every(fn (PalletReturnItem $item) => $this->isBlocked($item))) {
+            return $this->outcome(
+                $palletReturn,
+                'not_found',
+                $this->blockedReason($matchedItems->first()),
+                $scanned,
+                $matchedItems->first(),
+                knownItems: $items
+            );
+        }
 
         if (!$itemToPick) {
             return $this->outcome(
@@ -113,7 +126,7 @@ class PickPalletReturnItemByScan extends OrgAction
     /**
      * @return Collection<int, PalletReturnItem>
      */
-    protected function loadItems(PalletReturn $palletReturn): Collection
+    public function loadItems(PalletReturn $palletReturn): Collection
     {
         return PalletReturnItem::where('pallet_return_id', $palletReturn->id)
             ->with(['pallet', 'storedItem'])
@@ -130,7 +143,7 @@ class PickPalletReturnItemByScan extends OrgAction
      *
      * @return Collection<int, PalletReturnItem>
      */
-    protected function matchItems(Collection $items, string $scanned): Collection
+    public function matchItems(Collection $items, string $scanned): Collection
     {
         if ($scanned === '') {
             return collect();
@@ -149,6 +162,10 @@ class PickPalletReturnItemByScan extends OrgAction
 
     protected function quantityLeftToPick(PalletReturnItem $item): float
     {
+        if ($this->isBlocked($item)) {
+            return 0;
+        }
+
         if ($item->type == 'Pallet') {
             return $item->state == PalletReturnItemStateEnum::PICKED ? 0 : 1;
         }
@@ -159,7 +176,24 @@ class PickPalletReturnItemByScan extends OrgAction
         );
     }
 
-    protected function itemReference(PalletReturnItem $item): string
+    protected function isBlocked(PalletReturnItem $item): bool
+    {
+        return $this->blockedReason($item) !== null;
+    }
+
+    public function blockedReason(PalletReturnItem $item): ?string
+    {
+        $reference = $this->itemReference($item);
+
+        return match (true) {
+            (bool)$item->has_waiting_crm => __(':reference is waiting for customer service, it can not be picked.', ['reference' => $reference]),
+            $item->state === PalletReturnItemStateEnum::NOT_PICKED,
+            $item->type === 'StoredItem' && $item->getQuantityLeftToPick() <= 0 && (float)$item->quantity_picked <= 0 && (float)$item->quantity_not_picked > 0 => __(':reference was set as not picked.', ['reference' => $reference]),
+            default => null,
+        };
+    }
+
+    public function itemReference(PalletReturnItem $item): string
     {
         return ($item->type == 'Pallet' ? $item->pallet?->reference : $item->storedItem?->reference) ?? '';
     }

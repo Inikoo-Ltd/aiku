@@ -21,6 +21,7 @@ class Filter implements Arrayable
         public string $noFilterOptionLabel,
         public string $type,
         public ?string $value = null,
+        public array $flags = [],
     ) {
     }
 
@@ -33,11 +34,12 @@ class Filter implements Arrayable
         }
 
         return [
-            'key'     => $this->key,
-            'label'   => $this->label,
-            'options' => $options,
-            'value'   => $this->value,
-            'type'    => $this->type,
+            'key'       => $this->key,
+            'label'     => $this->label,
+            'options'   => $options,
+            'value'     => $this->value,
+            'type'      => $this->type,
+            'flags'     => $this->flags,
         ];
     }
 }

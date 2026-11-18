@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\UI;
 
+use App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
 use App\Actions\Ordering\Order\UI\IndexOrders;
@@ -72,6 +73,7 @@ class ShowOrdersBacklog extends OrgAction
                 ],
                 'backlog_filters' => $this->tab == OrdersBacklogTabsEnum::RETURNED->value ? null : $this->getBacklogFilters($parent, $request),
                 'attention'       => IndexOrders::make()->backlogAttention($parent) + ['waiting_items_route' => $waitingItemsData['route']],
+                'bankPaymentsNotice' => $parent instanceof Shop ? IndexBankIncoming::shopNotice($parent, $request->user()) : null,
                 'production_review_bulk_route' => !$parent instanceof Group && IndexOrders::make()->usesProductionReview($parent) ? [
                     'method'     => 'patch',
                     'name'       => 'grp.models.organisation.orders.production_review',

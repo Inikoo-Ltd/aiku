@@ -69,7 +69,7 @@ struct ScanTabView: View {
                 Text(listeningTitle)
                     .font(.aiku(14, .bold))
             }
-            Text("SKO, location or delivery note. Opens the right screen.")
+            Text("SKO, location, delivery note or stock delivery. Opens the right screen.")
                 .font(.aiku(13))
             AikuButton("Scan with camera", icon: .camera, kind: .primary, size: .regular) {
                 lookup.clear()
@@ -100,7 +100,7 @@ struct ScanTabView: View {
                     .foregroundStyle(AikuColor.text4)
                     .padding(.leading, 14)
                     .accessibilityHidden(true)
-                TextField("SKO, location or delivery note", text: $typedCode)
+                TextField("SKO, location, delivery note or stock delivery", text: $typedCode)
                     .font(.aiku(15))
                     .foregroundStyle(AikuColor.text)
                     .textInputAutocapitalization(.characters)

@@ -71,6 +71,7 @@ class ShowPallet extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inWarehouse(Organisation $organisation, Warehouse $warehouse, Pallet $pallet, ActionRequest $request): Pallet
     {
+        abort_if($pallet->warehouse_id !== $warehouse->id, 404);
         $this->parent = $warehouse;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletTabsEnum::values());
 
@@ -80,6 +81,7 @@ class ShowPallet extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inLocation(Organisation $organisation, Warehouse $warehouse, Location $location, Pallet $pallet, ActionRequest $request): Pallet
     {
+        abort_if($pallet->warehouse_id !== $warehouse->id, 404);
         $this->parent = $warehouse;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(PalletTabsEnum::values());
 
@@ -283,6 +285,7 @@ class ShowPallet extends OrgAction
                     'tooltip' => $startPalletAuditLabel,
                     'label'   => $startPalletAuditLabel,
                     'route'   => [
+                        'method'     => 'post',
                         'name'       => 'grp.org.warehouses.show.inventory.pallets.show.stored-item-audit.create',
                         'parameters' => $request->route()->originalParameters()
                     ]
