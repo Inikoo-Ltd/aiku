@@ -5971,6 +5971,51 @@ test('repair dispatches an order left stuck in finalised, backdated and silent',
     Queue::assertNotPushed(\App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers::class);
 });
 
+test('finalising or dispatching an already dispatched delivery note again changes nothing and sends nothing, PRE-119', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SD'.Str::random(4), 'name' => 'Sd', 'trade_as' => 'sd']);
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]);
+
+    $stalePackedNote = DeliveryNote::find($deliveryNote->id);
+
+    Queue::fake();
+    $this->travelTo(now()->subMinutes(15));
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseAndDispatchDeliveryNote::make()->action($deliveryNote->refresh());
+    $this->travelBack();
+
+    $order             = $deliveryNote->orders->first();
+    $firstDispatchedAt = $deliveryNote->dispatched_at->toDateTimeString();
+    $firstFinalisedAt  = $deliveryNote->refresh()->finalised_at;
+    \App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer::assertPushed(1);
+
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseAndDispatchDeliveryNote::make()->action($deliveryNote->refresh());
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote::make()->action($deliveryNote->refresh());
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($deliveryNote->refresh());
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseAndDispatchDeliveryNote::make()->action($stalePackedNote);
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($stalePackedNote);
+
+    $deliveryNote->refresh();
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED)
+        ->and($deliveryNote->dispatched_at->toDateTimeString())->toBe($firstDispatchedAt)
+        ->and($deliveryNote->finalised_at)->toBe($firstFinalisedAt)
+        ->and($deliveryNote->deliveryNoteItems->every(fn ($noteItem) => $noteItem->dispatched_at->toDateTimeString() === $firstDispatchedAt))->toBeTrue()
+        ->and($order->refresh()->dispatched_at->toDateTimeString())->toBe($firstDispatchedAt);
+
+    \App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer::assertPushed(1);
+    \App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers::assertPushed(1);
+
+    $backdate = '2024-03-04 10:00:00';
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($deliveryNote->refresh(), $backdate, true);
+    expect($deliveryNote->refresh()->dispatched_at->toDateTimeString())->toBe($backdate);
+});
+
 test('repair cancel leaves the old pickings and their stock alone', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 

@@ -2,6 +2,7 @@ package io.aiku.droid.ui.inventory
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -10,6 +11,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -34,17 +41,21 @@ import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.WarehouseSection
+import io.aiku.droid.ui.components.tone
 import io.aiku.droid.ui.goodsout.LoadMoreOnScroll
 import io.aiku.droid.ui.goodsout.LoadingMore
 import io.aiku.droid.ui.goodsout.organisationZone
 import io.aiku.droid.ui.locations.ClearFiltersRow
 import io.aiku.droid.ui.locations.LIST_SEPARATOR
 import io.aiku.droid.ui.navigation.LocalAppNavigator
+import io.aiku.droid.ui.navigation.LocationSkuRoute
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.ScanRoute
 import io.aiku.droid.ui.navigation.SkuRoute
 import io.aiku.droid.ui.scan.ScanEffect
 import io.aiku.droid.ui.states.SessionExpiredScreen
+import io.aiku.droid.ui.theme.LocalAikuColors
+import kotlin.math.abs
 
 internal const val ACTIVE_STATE = "active"
 
@@ -55,6 +66,24 @@ internal fun skoListTitle(bucket: SkoBucket): Int = when (bucket) {
     SkoBucket.BelowMinimum -> R.string.inventory_title_below_minimum
     SkoBucket.Negative -> R.string.inventory_title_negative
     else -> R.string.section_skos
+}
+
+data class SkoLocationLine(val code: String, val quantity: String?, val isNegative: Boolean)
+
+internal fun OrgStockRow.locationLine(): SkoLocationLine? {
+    val place = location ?: return null
+    val quantity = locationQuantity
+    return SkoLocationLine(code = place.code, quantity = quantity?.let { stockText(abs(it)) }, isNegative = quantity != null && quantity < 0)
+}
+
+internal fun OrgStockRow.listRoute(): Any {
+    val place = location
+    val linkId = locationOrgStockId
+    return if (place != null && linkId != null) {
+        LocationSkuRoute(locationId = place.id, locationOrgStockId = linkId, locationCode = place.code, skoCode = code)
+    } else {
+        SkuRoute(id = id, code = code)
+    }
 }
 
 @Composable
@@ -152,7 +181,7 @@ private fun SkusContent(state: SkosUiState, skos: SkosViewModel) {
                     if (index > 0) {
                         RowDivider()
                     }
-                    SkoListRow(sko = sko, isAbnormality = filter.bucket == SkoBucket.Abnormality, onOpen = { navigator.open(SkuRoute(id = sko.id, code = sko.code)) })
+                    SkoListRow(sko = sko, isAbnormality = filter.bucket == SkoBucket.Abnormality, onOpen = { navigator.open(sko.listRoute()) })
                 }
             }
             list.isEmpty && search.isNotEmpty() -> BoardFootnote(text = stringResource(R.string.inventory_skos_no_match, search))
@@ -188,11 +217,14 @@ private fun SkusContent(state: SkosUiState, skos: SkosViewModel) {
 @Composable
 private fun SkoListRow(sko: OrgStockRow, isAbnormality: Boolean, onOpen: () -> Unit) {
     val zone = organisationZone()
+    val locationLine = sko.locationLine()
     val subtitle = if (isAbnormality) {
         listOfNotNull(
             sko.name.takeIf { it.isNotBlank() },
             dayText(sko.lastSeenAt, zone)?.let { stringResource(R.string.inventory_last_seen, it) },
         ).joinToString(LIST_SEPARATOR)
+    } else if (locationLine != null) {
+        sko.name
     } else {
         listOfNotNull(
             sko.name.takeIf { it.isNotBlank() },
@@ -207,6 +239,32 @@ private fun SkoListRow(sko: OrgStockRow, isAbnormality: Boolean, onOpen: () -> U
         chipTone = if (isAbnormality) Tone.Danger else Tone.Neutral,
         done = if (isAbnormality) null else stockText(sko.quantityAvailable, sko.quantityAvailableLabel),
         imageUrl = sko.imageUrl,
+        extra = if (locationLine == null) {
+            null
+        } else {
+            { SkoLocationText(locationLine) }
+        },
         onClick = onOpen,
+    )
+}
+
+@Composable
+private fun SkoLocationText(line: SkoLocationLine) {
+    val colors = LocalAikuColors.current
+    val quantity = line.quantity?.let { shown -> if (line.isNegative) stringResource(R.string.inventory_delta_decrease, shown) else shown }
+
+    Text(
+        text = buildAnnotatedString {
+            append(line.code)
+            if (quantity != null) {
+                append(LIST_SEPARATOR)
+                withStyle(SpanStyle(color = if (line.isNegative) colors.tone(Tone.Danger).content else colors.text, fontWeight = FontWeight.Bold)) { append(quantity) }
+            }
+        },
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Medium,
+        color = colors.textSecondary,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
     )
 }

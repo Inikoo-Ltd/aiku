@@ -631,9 +631,10 @@ class ShowManufactureFloor extends OrgAction
     /**
      * What one mix, or one Making of a labelled strand, covers (HELP-4562): every open line of any product
      * waiting for it, how many whole mixes are still to make and how many kg more than these lines need
-     * (all of it is made into pieces), or the strand's extra pieces in stock, given first to the next lines.
+     * (all of it is made into pieces, kept only when its strand's Making is shared), or the strand's extra pieces
+     * in stock, given first to the next lines.
      *
-     * @return array{lines: array<int, array{artefact_code: string, job_order_reference: string, units: float, quantity: float}>, unit: string|null, needed: float, in_stock: float|null, mixes: int|null, batch_kg: float|null, left_after_kg: float|null}|null
+     * @return array{lines: array<int, array{artefact_code: string, job_order_reference: string, units: float, quantity: float}>, unit: string|null, needed: float, in_stock: float|null, mixes: int|null, batch_kg: float|null, left_after_kg: float|null, keeps_extra_pieces: bool}|null
      */
     private function mixPool(JobOrderItemTask $task): ?array
     {
@@ -665,6 +666,7 @@ class ShowManufactureFloor extends OrgAction
                 'mixes'         => $mixes,
                 'batch_kg'      => $batchKg,
                 'left_after_kg' => $mixes !== null ? round($mixes * $batchKg - $needed, 3) : null,
+                'keeps_extra_pieces' => !$isMaking && $lines->isNotEmpty() && ShareMixPool::keepsExtraPieces($lines->first()),
             ];
         })();
     }

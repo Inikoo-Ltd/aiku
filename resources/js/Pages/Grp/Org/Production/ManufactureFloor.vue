@@ -67,6 +67,7 @@ interface MixPool {
     mixes: number | null
     batch_kg: number | null
     left_after_kg: number | null
+    keeps_extra_pieces: boolean
 }
 
 interface FloorTask {
@@ -634,7 +635,7 @@ function startTask(task: FloorTask) {
                         </tbody>
                     </table>
                     <div v-if="selectedTask.mix_pool.in_stock" class="mt-2 text-sm text-gray-700">{{ ctrans('Extra pieces in stock, used first by the next jobs: :count', { count: selectedTask.mix_pool.in_stock }) }}</div>
-                    <div v-if="selectedTask.mix_pool.left_after_kg" class="mt-1 text-sm text-gray-700">{{ ctrans(':kg kg more than these lines need: make all of it, the extra pieces are kept for the next jobs', { kg: selectedTask.mix_pool.left_after_kg }) }}</div>
+                    <div v-if="selectedTask.mix_pool.left_after_kg" class="mt-1 text-sm text-gray-700">{{ selectedTask.mix_pool.keeps_extra_pieces ? ctrans(':kg kg more than these lines need: make all of it, the extra pieces are kept for the next jobs', { kg: selectedTask.mix_pool.left_after_kg }) : ctrans(':kg kg more than these lines need: Aiku does not keep the extra for the next jobs', { kg: selectedTask.mix_pool.left_after_kg }) }}</div>
                 </div>
                 <div v-if="selectedTask.artisan && !selectedTask.is_mine" class="text-gray-500 mb-2">{{ ctrans('For') }} {{ selectedTask.artisan }}</div>
                 <div v-else-if="selectedTask.only_for.length && !selectedTask.artisan" class="text-gray-500 mb-2">{{ ctrans('Only for') }} {{ selectedTask.only_for.join(', ') }}</div>

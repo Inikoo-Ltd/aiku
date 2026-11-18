@@ -14,6 +14,7 @@ use App\Actions\Api\Group\GoodsIn\IndexMobileStockDeliveries;
 use App\Actions\Api\Group\GoodsOut\WithMobileDeliveryNotes;
 use App\Actions\Api\Group\Inventory\IndexMobileOrgStocks;
 use App\Actions\Api\Group\WithMobileModuleAccess;
+use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\UI\Incoming\GetIncomingHubStockDeliveryWidget;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Inventory\Warehouse;
@@ -137,7 +138,7 @@ class GetMobileWarehouseDashboard
         return [
             'number_current_org_stocks' => (int) $inventoryStats?->number_current_org_stocks,
             'below_minimum_stock'       => IndexMobileOrgStocks::numberBelowMinimumStock($warehouse),
-            'negative_stocks'           => IndexMobileOrgStocks::numberNegativeStocks($warehouse),
+            'negative_stocks'           => ShowInventoryDashboard::numberNegativeStocks($warehouse),
             'number_abnormalities'      => (int) $inventoryStats?->number_org_stocks_state_abnormality,
         ];
     }

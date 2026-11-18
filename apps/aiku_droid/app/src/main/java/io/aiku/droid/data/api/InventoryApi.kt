@@ -363,6 +363,9 @@ data class OrgStockRow(
     @Serializable(with = LenientDouble::class) @SerialName("stock_value") val stockValue: Double = 0.0,
     @Serializable(with = LenientInt::class) @SerialName("number_locations") val numberLocations: Int = 0,
     @SerialName("last_seen_at") val lastSeenAt: String? = null,
+    @SerialName("location_org_stock_id") val locationOrgStockId: Long? = null,
+    val location: PlaceRef? = null,
+    @Serializable(with = LenientDoubleOrNull::class) @SerialName("location_quantity") val locationQuantity: Double? = null,
 )
 
 @Serializable
