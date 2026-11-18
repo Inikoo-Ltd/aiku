@@ -12,6 +12,7 @@ namespace App\Actions\Procurement\PurchaseOrder;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Events\BroadcastAgentIncomingPurchaseOrdersChanged;
 use App\Models\Procurement\PurchaseOrder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -28,14 +29,15 @@ class SyncPurchaseOrderPaidFromAgentLedger
 
     /**
      * @param  array{deposit_paid_at: string|null, balance_paid_at: string|null}  $ledgerDatesBefore
+     * @param  list<string>  $fields  the dates to follow; a change of the goods alone only moves the balance date
      */
-    public function handle(PurchaseOrder $purchaseOrder, array $ledgerDatesBefore): PurchaseOrder
+    public function handle(PurchaseOrder $purchaseOrder, array $ledgerDatesBefore, array $fields = ['deposit_paid_at', 'balance_paid_at']): PurchaseOrder
     {
         if (!$purchaseOrder->isAgentOrder()) {
             return $purchaseOrder;
         }
 
-        $ledgerDates = self::ledgerDates($purchaseOrder);
+        $ledgerDates = Arr::only(self::ledgerDates($purchaseOrder), $fields);
 
         $changes = [];
         foreach ($ledgerDates as $field => $ledgerDate) {

@@ -4212,3 +4212,28 @@ test('an expense the agent adds while asking for money records who added it', fu
 
     actingAs($this->adminGuest->getUser());
 });
+
+test('a change of an agent order\'s items only moves its ledger balance date, and cancelling it leaves the dates alone', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $order                = createConfirmedAgentOrder($this, $supplier, $product, 0, 10)->refresh();
+    $line                 = $order->purchaseOrderTransactions()->firstOrFail();
+    $agent                = $orgAgent->agent;
+    $agent->organisation->update(['currency_id' => $order->currency_id]);
+
+    \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $order->organisation_id, 'type' => 'supplier_payment', 'date' => date('Y-m-d'), 'amount' => round((float) $order->cost_items, 2), 'purchase_order_id' => $order->id]);
+    expect($order->refresh()->balance_paid_at)->not->toBeNull();
+    $order->updateQuietly(['deposit_paid_at' => null]);
+
+    \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line, ['quantity_ordered' => 12]);
+    expect($order->refresh()->balance_paid_at)->toBeNull()
+        ->and($order->deposit_paid_at)->toBeNull();
+
+    \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line->refresh(), ['quantity_ordered' => 10]);
+    $balancePaidAt = $order->refresh()->balance_paid_at?->toDateString();
+    expect($balancePaidAt)->toBe(date('Y-m-d'));
+
+    \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled::make()->action($order->refresh());
+    expect($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CANCELLED)
+        ->and($order->balance_paid_at?->toDateString())->toBe($balancePaidAt);
+});

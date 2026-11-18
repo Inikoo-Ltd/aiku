@@ -13,6 +13,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateState;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use RuntimeException;
@@ -37,8 +38,8 @@ class CalculatePurchaseOrderTotalAmounts extends OrgAction
             SyncPurchaseOrderDepositPaid::run($purchaseOrder);
         }
 
-        if ($purchaseOrder->wasChanged('cost_items') && $purchaseOrder->isAgentOrder()) {
-            SyncPurchaseOrderPaidFromAgentLedger::run($purchaseOrder, SyncPurchaseOrderPaidFromAgentLedger::ledgerDates($purchaseOrder, $previousItems));
+        if ($purchaseOrder->wasChanged('cost_items') && $purchaseOrder->isAgentOrder() && $purchaseOrder->state !== PurchaseOrderStateEnum::CANCELLED) {
+            SyncPurchaseOrderPaidFromAgentLedger::run($purchaseOrder, SyncPurchaseOrderPaidFromAgentLedger::ledgerDates($purchaseOrder, $previousItems), ['balance_paid_at']);
         }
 
         PurchaseOrderHydrateState::run($purchaseOrder);
