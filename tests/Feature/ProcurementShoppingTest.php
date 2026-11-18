@@ -4319,3 +4319,28 @@ test('an agent order with a deposit the buyer recorded still follows its ledger 
     \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line->refresh(), ['quantity_ordered' => 10]);
     expect($order->refresh()->balance_paid_at?->toDateString())->toBe(date('Y-m-d'));
 });
+
+test('what a shipment still owes takes off only what was asked or sent for it in the agent\'s currency', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-CUR-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    $otherCurrency = \App\Models\Helpers\Currency::where('id', '!=', $stockDelivery->currency_id)->orderBy('id')->firstOrFail();
+
+    $ledgerLine = fn (array $data) => \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, $data + ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'stock_delivery_id' => $stockDelivery->id]);
+    $ledgerLine(['type' => 'inspection', 'amount' => 1000]);
+    $shipment = fn () => collect(\App\Actions\SupplyChain\DepositRequest\GetAgentMoneyRequestLines::run($agent->refresh(), $client)['shipments'])->firstWhere('stock_delivery_id', $stockDelivery->id);
+
+    $ledgerLine(['type' => 'transfer_received', 'amount' => 300])->update(['currency_id' => $otherCurrency->id]);
+    $depositRequest = \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [
+        ['kind' => 'shipment', 'stock_delivery_id' => $stockDelivery->id, 'amount' => 200],
+    ]]);
+    $depositRequest->update(['currency_id' => $otherCurrency->id]);
+
+    expect($shipment()['due'])->toEqual(1000);
+
+    $ledgerLine(['type' => 'transfer_received', 'amount' => 400]);
+    expect($shipment()['due'])->toEqual(600);
+});
