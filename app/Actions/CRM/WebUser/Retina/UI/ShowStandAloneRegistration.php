@@ -10,6 +10,7 @@
 
 namespace App\Actions\CRM\WebUser\Retina\UI;
 
+use App\Actions\Retina\CRM\WhatsappOptIn\GetRetinaWhatsappOptInData;
 use App\Actions\IrisAction;
 use App\Actions\Traits\WithRetinaAuthRedirect;
 use Inertia\Inertia;
@@ -52,6 +53,7 @@ class ShowStandAloneRegistration extends IrisAction
             'polls' => $pollsResource,
             'client' => $webUser,
             'registration_settings' => Arr::get($this->shop->settings, 'registration', []),
+            'whatsapp_newsletter_offered' => GetRetinaWhatsappOptInData::isOfferedAtRegistration($this->shop),
             'registerRoute' => [
                 'name' => 'retina.register_from_standalone.store',
                 'method' => 'POST'
