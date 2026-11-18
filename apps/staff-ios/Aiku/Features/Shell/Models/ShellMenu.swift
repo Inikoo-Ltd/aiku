@@ -37,6 +37,23 @@ struct ShellMenuItem: Identifiable, Hashable, Sendable {
     let link: ShellLink
 }
 
+struct ShellMenuClocking: Hashable, Sendable {
+    let subtitle: String
+    let isClockedIn: Bool
+
+    @MainActor
+    init?(_ clocking: ClockingStore) {
+        guard clocking.hasLoaded else { return nil }
+        let today = clocking.today
+        isClockedIn = today.isClockedIn
+        if today.isClockedIn {
+            subtitle = today.trackers.last.map { "Clocked in since \(ClockingFormat.shortTime($0.inAt))" } ?? "Clocked in"
+        } else {
+            subtitle = "Clocked out"
+        }
+    }
+}
+
 struct ShellMenuGroup: Identifiable, Hashable, Sendable {
     let id: String
     let title: String
@@ -74,17 +91,24 @@ enum ShellMenuCatalog {
             ShellMenuItem(id: "goodsOut.pickedBays", title: "Picked bays", icon: .shipment, requirement: .goodsOut, link: .dispatch(.pickedBays))
         ]),
         ShellMenuGroup(id: "clocking", title: "Clocking & HR", icon: .clock, note: "All staff", items: [
-            ShellMenuItem(id: "clocking.clocking", title: "Clocking", subtitle: "Clocked in since 08:02", subtitleTone: .success, icon: .clock, iconTone: .success, requirement: .allStaff, link: .clocking(.clocking)),
+            ShellMenuItem(id: "clocking.clocking", title: "Clocking", icon: .clock, requirement: .allStaff, link: .clocking(.clocking)),
             ShellMenuItem(id: "clocking.timesheets", title: "Timesheets", icon: .backlog, requirement: .allStaff, link: .clocking(.timesheets))
         ])
     ]
 
-    static func groups(for modules: ModuleAccess, goodsOutUnassigned: Int = 0) -> [ShellMenuGroup] {
+    static func groups(for modules: ModuleAccess, goodsOutUnassigned: Int = 0, clocking: ShellMenuClocking? = nil) -> [ShellMenuGroup] {
         allGroups.compactMap { group in
             let visible = group.items.filter { $0.requirement.isMet(by: modules) }.map { item in
                 var item = item
                 if item.id == "goodsOut.backlog", goodsOutUnassigned > 0 {
                     item.badge = .pill(Chip("\(goodsOutUnassigned) unassigned", .warn))
+                }
+                if item.id == "clocking.clocking", let clocking {
+                    item.subtitle = clocking.subtitle
+                    if clocking.isClockedIn {
+                        item.subtitleTone = .success
+                        item.iconTone = .success
+                    }
                 }
                 return item
             }

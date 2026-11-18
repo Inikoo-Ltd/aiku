@@ -29,12 +29,13 @@ struct ShellTests {
     }
 
     @Test func homeModulesForStaffOnlyShowClockingAndHr() {
-        let staff = ShellHomeContent.modules(hasWarehouseAccess: false, warehouseLabel: "Main Warehouse · WH1")
-        let warehouse = ShellHomeContent.modules(hasWarehouseAccess: true, warehouseLabel: "Main Warehouse · WH1")
+        let staff = ShellHomeContent.modules(hasWarehouseAccess: false, warehouseLabel: "Main Warehouse · WH1", weekTotal: "29h 05m")
+        let warehouse = ShellHomeContent.modules(hasWarehouseAccess: true, warehouseLabel: "Main Warehouse · WH1", weekTotal: nil)
 
         #expect(staff.map(\.id) == ["hr"])
         #expect(staff.first?.subtitle == "This week 29h 05m")
         #expect(warehouse.map(\.id) == ["warehouse", "hr"])
+        #expect(warehouse.last?.subtitle == "—")
     }
 
     @Test func greetingFollowsTheTimeOfDay() {

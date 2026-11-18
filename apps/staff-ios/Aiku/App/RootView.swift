@@ -82,6 +82,7 @@ struct RootView: View {
     private func signOut() {
         permissionStore.clear()
         warehouseStore.reset()
+        ClockingStore.shared.reset()
         session.modules = .everything
         LocationsStore.shared.resetToSample()
         InventoryFamiliesFeed.shared.reset()

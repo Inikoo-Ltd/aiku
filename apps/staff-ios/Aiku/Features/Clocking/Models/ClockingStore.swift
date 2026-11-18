@@ -149,6 +149,25 @@ final class ClockingStore {
         hasActiveShifts = status.hasShifts
     }
 
+    func reset() {
+        timeZone = .current
+        today = ClockingMapper.day(date: ClockingMapper.dayString(clock(), in: .current), sessions: [], in: .current, isToday: true)
+        pastDays = []
+        enabledMethods = []
+        pin = nil
+        employeeCode = nil
+        employeeName = nil
+        organisationName = nil
+        canEditNotes = false
+        hasActiveShifts = false
+        shifts = []
+        adjustmentRequests = []
+        adjustmentsError = nil
+        hasLoadedAdjustments = false
+        hasLoaded = false
+        loadError = nil
+    }
+
     func setLocation(_ coordinate: ClockingCoordinate?) {
         self.coordinate = coordinate
         location = coordinate == nil ? .needed : .found
