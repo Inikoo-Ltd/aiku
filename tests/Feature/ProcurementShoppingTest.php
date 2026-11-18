@@ -4293,3 +4293,29 @@ test('the agent ledger shows each client\'s suppliers with their own agent fee a
 
     actingAs($this->adminGuest->getUser());
 });
+
+test('an agent order with a deposit the buyer recorded still follows its ledger balance date when a quantity changes', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $order                = createConfirmedAgentOrder($this, $supplier, $product, 0, 10)->refresh();
+    $line                 = $order->purchaseOrderTransactions()->firstOrFail();
+    $agent                = $orgAgent->agent;
+    $agent->organisation->update(['currency_id' => $order->currency_id]);
+
+    $order->depositPayments()->create([
+        'group_id'        => $order->group_id,
+        'organisation_id' => $order->organisation_id,
+        'currency_id'     => $order->currency_id,
+        'amount'          => 1,
+        'date'            => now()->toDateString(),
+        'method'          => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum::CASH,
+    ]);
+    \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $order->organisation_id, 'type' => 'supplier_payment', 'date' => date('Y-m-d'), 'amount' => round((float) $order->cost_items, 2), 'purchase_order_id' => $order->id]);
+    expect($order->refresh()->balance_paid_at?->toDateString())->toBe(date('Y-m-d'));
+
+    \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line, ['quantity_ordered' => 12]);
+    expect($order->refresh()->balance_paid_at)->toBeNull();
+
+    \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line->refresh(), ['quantity_ordered' => 10]);
+    expect($order->refresh()->balance_paid_at?->toDateString())->toBe(date('Y-m-d'));
+});

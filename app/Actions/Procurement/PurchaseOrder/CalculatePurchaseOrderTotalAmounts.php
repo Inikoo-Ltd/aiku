@@ -33,12 +33,13 @@ class CalculatePurchaseOrderTotalAmounts extends OrgAction
             'cost_items' => $itemsNet,
             'cost_total' => $itemsNet,
         ]);
+        $itemsChanged = abs(round($itemsNet, 2) - round($previousItems, 2)) >= 0.005;
 
-        if ($purchaseOrder->wasChanged('cost_items') && $purchaseOrder->depositPayments()->exists()) {
+        if ($itemsChanged && $purchaseOrder->depositPayments()->exists()) {
             SyncPurchaseOrderDepositPaid::run($purchaseOrder);
         }
 
-        if ($purchaseOrder->wasChanged('cost_items') && $purchaseOrder->isAgentOrder() && $purchaseOrder->state !== PurchaseOrderStateEnum::CANCELLED) {
+        if ($itemsChanged && $purchaseOrder->isAgentOrder() && $purchaseOrder->state !== PurchaseOrderStateEnum::CANCELLED) {
             SyncPurchaseOrderPaidFromAgentLedger::run($purchaseOrder, SyncPurchaseOrderPaidFromAgentLedger::ledgerDates($purchaseOrder, $previousItems), ['balance_paid_at']);
         }
 
