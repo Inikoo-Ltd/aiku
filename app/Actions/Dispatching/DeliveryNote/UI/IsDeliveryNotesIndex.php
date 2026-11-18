@@ -109,7 +109,7 @@ trait IsDeliveryNotesIndex
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::CANCELLED);
         } elseif ($bucket == 'dispatched_today') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED)
-                ->where('dispatched_at', Carbon::today());
+                ->where('delivery_notes.dispatched_at', '>=', Carbon::now($parent instanceof Group ? 'UTC' : ($parent->organisation->timezone?->name ?? 'UTC'))->startOfDay()->utc());
         }
 
         $query->leftJoin('delivery_note_order', 'delivery_note_order.delivery_note_id', '=', 'delivery_notes.id');

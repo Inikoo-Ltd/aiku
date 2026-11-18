@@ -9218,7 +9218,7 @@ test('dispatch capacity says when a warehouse is over and how many workers would
 
 test('UI dispatch hub shows delivery notes dispatched today', function () {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
-    $deliveryNote->update(['dispatched_at' => now()]);
+    $deliveryNote->update(['state' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::DISPATCHED, 'dispatched_at' => now()]);
 
     $response = get(route('grp.org.warehouses.show.dispatching.backlog', [
         $this->organisation->slug,
@@ -9230,6 +9230,30 @@ test('UI dispatch hub shows delivery notes dispatched today', function () {
             ->where('delivery_note.metrics', fn ($metrics) => collect($metrics)->last()['key'] === 'dispatched_today')
             ->where('delivery_note.totals.dispatched_today.value', fn ($value) => $value >= 1)
             ->where('delivery_note.data', fn ($data) => collect($data)->sum('dispatched_today.value') >= 1)
+            ->where('delivery_note.totals.dispatched_today.route_target.name', 'grp.org.warehouses.show.dispatching.dispatched_today.delivery-notes')
             ->etc()
     );
+
+    get(route('grp.org.warehouses.show.dispatching.dispatched_today.delivery-notes', [$this->organisation->slug, $this->warehouse->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($deliveryNote->id))->etc());
+});
+
+test('dispatching backlog broadcasts only when a channel count changes', function () {
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastDispatchingBacklogChanged::class]);
+    $hydrate = fn () => \App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotesState::run(
+        $this->organisation->id,
+        \App\Enums\Catalogue\Shop\ShopTypeEnum::B2B,
+        \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::DISPATCHED
+    );
+
+    $this->organisation->orderingStats->update(['number_b2b_shop_delivery_notes_state_dispatched' => 999999]);
+    $hydrate();
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastDispatchingBacklogChanged::class, 1);
+
+    $hydrate();
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastDispatchingBacklogChanged::class, 1);
+
+    get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $this->warehouse->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('live_channel', 'grp.org.'.$this->organisation->id.'.dispatching-backlog')->etc());
 });

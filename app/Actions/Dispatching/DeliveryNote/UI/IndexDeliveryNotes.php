@@ -325,6 +325,27 @@ class IndexDeliveryNotes extends OrgAction
         return $this->handle(parent: $warehouse, bucket: $this->bucket, shopType: $shopType);
     }
 
+    public function dispatchedToday(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'dispatched_today';
+        $this->shopType = 'all';
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
+
+        return $this->handle(parent: $warehouse, bucket: $this->bucket);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function dispatchedTodayShopTypes(Organisation $organisation, Warehouse $warehouse, string $shopType, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'dispatched_today';
+        $this->shopType = $shopType;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
+
+        return $this->handle(parent: $warehouse, bucket: $this->bucket, shopType: $shopType);
+    }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function cancelled(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {

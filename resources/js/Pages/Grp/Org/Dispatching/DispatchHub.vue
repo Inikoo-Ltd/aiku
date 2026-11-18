@@ -9,7 +9,7 @@ import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, reactive, ref, watch } from "vue"
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { ctrans } from "@/Composables/useTrans"
 import { faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine, faDolly, faIndustry, faClipboardListCheck, faSave, faLock, faChevronDown } from "@fal"
@@ -22,7 +22,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlus, faMinus } from "@far"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { useSessionStorage } from "@vueuse/core"
+import { useSessionStorage, useThrottleFn } from "@vueuse/core"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 
 library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine, faDolly, faIndustry, faClipboardListCheck, faSave, faLock, faChevronDown)
@@ -35,6 +35,7 @@ const props = defineProps<{
         navigation: {}
     }
     delivery_note?: object
+    live_channel?: string
     picking_session?: object
     pickers_current?: {}
     packers_current?: {}
@@ -59,6 +60,21 @@ const props = defineProps<{
     intervals: any
     settings: any
 }>()
+
+const reloadBacklog = useThrottleFn(() => router.reload({ only: ["delivery_note"] }), 5000, true)
+
+onMounted(() => {
+    if (props.live_channel) {
+        window.Echo.private(props.live_channel).listen(".dispatching-backlog-changed", reloadBacklog)
+    }
+})
+
+onBeforeUnmount(() => {
+    if (props.live_channel) {
+        window.Echo.leave(props.live_channel)
+    }
+})
+
 
 let currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)

@@ -41,8 +41,21 @@ class GetDispatchHubShowcase
         ];
 
         $dispatchedToday = $this->dispatchedTodayBySlug($warehouse);
+        $shopTypeBySlug  = [
+            'wholesale'            => ShopTypeEnum::B2B->value,
+            self::PARTNERS_CHANNEL => self::PARTNERS_CHANNEL,
+            'marketplaces'         => ShopTypeEnum::EXTERNAL->value,
+            'b2c'                  => ShopTypeEnum::B2C->value,
+            'dropshipping'         => ShopTypeEnum::DROPSHIPPING->value,
+        ];
         foreach ($widgets as $index => $widget) {
             $widgets[$index]['dispatched_today'] = $dispatchedToday[$widget['slug']] ?? 0;
+            if (isset($shopTypeBySlug[$widget['slug']])) {
+                $widgets[$index]['cases']['dispatched_today']['route'] = [
+                    'name'       => 'grp.org.warehouses.show.dispatching.dispatched_today.delivery-notes.shop',
+                    'parameters' => [$organisation->slug, $warehouse->slug, $shopTypeBySlug[$widget['slug']]],
+                ];
+            }
         }
 
         return [
@@ -106,6 +119,7 @@ class GetDispatchHubShowcase
             ->join('shops', 'delivery_notes.shop_id', '=', 'shops.id')
             ->where('delivery_notes.warehouse_id', $warehouse->id)
             ->whereNull('delivery_notes.deleted_at')
+            ->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED)
             ->where('delivery_notes.dispatched_at', '>=', $startOfDay)
             ->selectRaw(Shop::dispatchingChannelSql().' as channel')
             ->selectRaw('exists (select 1 from org_partners where org_partners.customer_id = delivery_notes.customer_id) as is_partner')

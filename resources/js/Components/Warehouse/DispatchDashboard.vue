@@ -20,12 +20,13 @@ import {
     faAllergies,
     faChartLine,
     faShippingFast,
+    faArrowLeft,
 } from "@fal"
 import { faExclamationSquare} from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ctrans } from '@/Composables/useTrans'
 
-library.add(faClock, faList, faExclamationSquare, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine, faShippingFast)
+library.add(faClock, faList, faExclamationSquare, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine, faShippingFast, faArrowLeft)
 
 interface RouteTarget {
     name: string
@@ -406,7 +407,10 @@ const isWeakValue = (value: number | null | undefined) => {
                 <div
                     class="h-14 md:h-20 flex flex-col items-center justify-center font-semibold text-xs md:text-lg gap-1 border-b border-gray-200">
                     <span class="hidden md:inline">{{ ctrans("Total") }}</span>
-                    <Icon v-if="data?.grand_total?.icon" :data="data.grand_total" class='text-xs md:text-lg' />
+                    <span class="flex items-center gap-1.5">
+                        <FontAwesomeIcon :icon="faArrowLeft" class="hidden md:inline text-xs text-gray-400" fixed-width aria-hidden="true" />
+                        <Icon v-if="data?.grand_total?.icon" :data="data.grand_total" class='text-xs md:text-lg' />
+                    </span>
                 </div>
 
                 <component v-for="row in rows" :key="row.key"
