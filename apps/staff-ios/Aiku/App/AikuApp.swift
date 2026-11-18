@@ -7,6 +7,10 @@ struct AikuApp: App {
     @State private var session = Session()
     @State private var authStore = AikuApp.makeAuthStore()
 
+    init() {
+        CrashReporting.start()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
