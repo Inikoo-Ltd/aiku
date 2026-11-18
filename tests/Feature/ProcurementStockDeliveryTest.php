@@ -4719,3 +4719,25 @@ test('the delivery address of a purchase order can change until the goods are ha
         ->toThrow(\Illuminate\Validation\ValidationException::class)
         ->and($purchaseOrder->refresh()->data['delivery_address'])->toBe('W2 Dock 1');
 });
+
+test('renaming a purchase order follows the reference format, keeps the earlier reference and is refused once the order is finished', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 5)->refresh();
+    $before        = $purchaseOrder->reference;
+    $rename        = fn (string $reference) => \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderReference::make()->action($purchaseOrder->refresh(), ['reference' => $reference], $this->adminGuest->getUser());
+
+    expect(fn () => $rename('W2 has spaces'))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $rename('W2-'.$purchaseOrder->id);
+
+    expect($purchaseOrder->refresh()->reference)->toBe('W2-'.$purchaseOrder->id)
+        ->and($purchaseOrder->data['previous_references'][0]['reference'])->toBe($before)
+        ->and($purchaseOrder->data['previous_references'][0]['by'])->toBe($this->adminGuest->getUser()->id);
+
+    foreach ([\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SETTLED, \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::CANCELLED, \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::NOT_RECEIVED] as $state) {
+        $purchaseOrder->updateQuietly(['state' => $state]);
+        expect(fn () => $rename('W2-again-'.$purchaseOrder->id))->toThrow(\Illuminate\Validation\ValidationException::class);
+    }
+
+    expect($purchaseOrder->refresh()->reference)->toBe('W2-'.$purchaseOrder->id);
+});

@@ -67,6 +67,7 @@ use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Models\GoodsIn\StockDelivery;
 use App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderReference;
 use App\Models\SysAdmin\User;
 use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgAgent;
@@ -316,7 +317,7 @@ class ShowPurchaseOrder extends OrgAction
                         },
                     ]),
                 ],
-                'rename_reference'         => $this->canEdit || $this->agentCanEdit ? [
+                'rename_reference'         => ($this->canEdit || $this->agentCanEdit) && UpdatePurchaseOrderReference::isRenameable($purchaseOrder) ? [
                     'availability_route' => [
                         'name'       => 'grp.json.purchase_order.reference_availability',
                         'parameters' => [
