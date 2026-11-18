@@ -21,7 +21,9 @@ enum class ElapsedUnit { JustNow, Minutes, Hours, Days }
 
 data class Elapsed(val unit: ElapsedUnit, val amount: Int)
 
-fun MyWorkRow.route(): Any = when (kind) {
+fun MyWorkRow.route(): Any = workRoute(kind = kind, id = id, reference = reference, state = state, typeGroup = typeGroup)
+
+fun workRoute(kind: MyWorkKind, id: Long, reference: String, state: String, typeGroup: String?): Any = when (kind) {
     MyWorkKind.DeliveryNote -> deliveryNoteRoute(id = id, reference = reference, state = state)
     MyWorkKind.PickingSession -> PickingSessionRoute(id = id, reference = reference)
     MyWorkKind.CustomerReturn -> GoodsInReturnRoute(id = id, reference = reference)

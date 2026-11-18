@@ -18,6 +18,7 @@ class AikuDroidApplication : Application() {
         super.onCreate()
         val isReportingCrashes = startCrashReporting()
         container = AppContainer(this)
+        container.startPush()
         if (isReportingCrashes) {
             reportSignedInUser()
         }

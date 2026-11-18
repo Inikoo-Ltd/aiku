@@ -9,3 +9,4 @@ local.properties
 captures/
 *.jks
 *.keystore
+app/google-services.json

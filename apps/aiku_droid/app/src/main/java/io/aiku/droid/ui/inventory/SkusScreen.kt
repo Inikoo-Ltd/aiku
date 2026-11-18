@@ -1,5 +1,6 @@
 package io.aiku.droid.ui.inventory
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,6 +48,15 @@ import io.aiku.droid.ui.states.SessionExpiredScreen
 
 internal const val ACTIVE_STATE = "active"
 
+internal val skoChipBuckets = listOf(SkoBucket.Current, SkoBucket.Discontinued, SkoBucket.Abnormality, SkoBucket.All)
+
+@StringRes
+internal fun skoListTitle(bucket: SkoBucket): Int = when (bucket) {
+    SkoBucket.BelowMinimum -> R.string.inventory_title_below_minimum
+    SkoBucket.Negative -> R.string.inventory_title_negative
+    else -> R.string.section_skos
+}
+
 @Composable
 fun SkusScreen(skos: SkosViewModel) {
     val state by skos.state.collectAsStateWithLifecycle()
@@ -77,7 +87,7 @@ private fun SkusContent(state: SkosUiState, skos: SkosViewModel) {
         SkoBucket.Abnormality to stringResource(R.string.inventory_chip_abnormalities),
         SkoBucket.All to stringResource(R.string.inventory_all),
     )
-    val tabs = SkoBucket.entries.map { bucket -> FilterOption(label = countLabel(bucketLabels.getValue(bucket), state.counts?.count(bucket))) }
+    val tabs = skoChipBuckets.map { bucket -> FilterOption(label = countLabel(bucketLabels.getValue(bucket), state.counts?.count(bucket))) }
     val outcome = state.scanOutcome
     val noMatchText = (outcome as? StockScanOutcome.NoMatch)?.let { stringResource(R.string.inventory_scan_no_sko, it.code) }
     val failedText = (outcome as? StockScanOutcome.Failed)?.let { scanProblemText(it.code, it.problem) }
@@ -99,6 +109,7 @@ private fun SkusContent(state: SkosUiState, skos: SkosViewModel) {
         header = {
             ModuleHeader(
                 section = WarehouseSection.Skus,
+                title = stringResource(skoListTitle(filter.bucket)),
                 actions = {
                     HeaderIconButton(
                         icon = R.drawable.ic_ui_search,
@@ -119,8 +130,8 @@ private fun SkusContent(state: SkosUiState, skos: SkosViewModel) {
     ) {
         FilterChips(
             options = tabs,
-            selectedIndex = filter.bucket.ordinal,
-            onSelect = { index -> skos.selectBucket(SkoBucket.entries[index]) },
+            selectedIndex = skoChipBuckets.indexOf(filter.bucket),
+            onSelect = { index -> skos.selectBucket(skoChipBuckets[index]) },
         )
         if (filter.isFiltered) {
             ClearFiltersRow(count = filter.activeFilterCount, isSorted = filter.sort != null, onClear = skos::clearFilters, detail = familyCode)

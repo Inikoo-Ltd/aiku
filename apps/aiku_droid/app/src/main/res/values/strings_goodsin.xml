@@ -235,6 +235,7 @@
 
     <string name="goodsin_search_returns">Search returns</string>
     <string name="goodsin_returns_failed">Returns could not be loaded</string>
+    <string name="goodsin_returns_to_process_title">Returns to process</string>
     <string name="goodsin_returns_more_failed">More returns could not be loaded</string>
     <string name="goodsin_returns_no_match">No return matches “%1$s”.</string>
     <string name="goodsin_returns_none">No returns here.</string>

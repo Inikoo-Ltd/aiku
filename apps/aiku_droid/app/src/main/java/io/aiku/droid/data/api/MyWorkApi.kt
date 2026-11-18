@@ -56,6 +56,7 @@ data class MyWorkPage(val rows: List<MyWorkRow>, val counts: MyWorkCounts? = nul
 data class WorkBadges(
     @Serializable(with = LenientIntOrNull::class) @SerialName("my_work") val myWork: Int? = null,
     @Serializable(with = LenientIntOrNull::class) @SerialName("goods_out_unassigned") val goodsOutUnassigned: Int? = null,
+    @Serializable(with = LenientIntOrNull::class) @SerialName("inbox_unread") val inboxUnread: Int? = null,
 )
 
 interface MyWorkApi {

@@ -235,8 +235,21 @@ class InventoryResponsesTest {
         assertEquals("2026-11-01T00:00:00+00:00", row.lastSeenAt)
         assertEquals(3, page.counts?.count(SkoBucket.Abnormality))
         assertEquals(2468, page.counts?.count(SkoBucket.All))
+        assertNull(page.counts?.count(SkoBucket.BelowMinimum))
+        assertNull(page.counts?.count(SkoBucket.Negative))
         assertEquals(120, page.meta.total)
         assertEquals("GBP", page.currencyCode)
+    }
+
+    @Test
+    fun `the SKO list reads the below minimum and negative counts`() {
+        val body = """{"data":[],"meta":{"current_page":1,"last_page":1,"per_page":50,"total":17},
+            "counts":{"current":2345,"discontinued":120,"abnormality":3,"below_minimum":17,"negative":"5","all":2468}}"""
+
+        val counts = (InventoryResponses.parseOrgStocks(200, body) as GoodsOutResult.Loaded).value.counts
+
+        assertEquals(17, counts?.count(SkoBucket.BelowMinimum))
+        assertEquals(5, counts?.count(SkoBucket.Negative))
     }
 
     @Test
@@ -347,6 +360,8 @@ class InventoryResponsesTest {
             listOf("bucket" to "abnormality", "family_id" to "5", "q" to "awo", "sort" to "quantity_available", "page" to "1", "per_page" to "50"),
             InventoryResponses.orgStocksParameters(SkoQuery(bucket = SkoBucket.Abnormality, familyId = 5, search = "awo", sort = SkoSort.StockLowFirst)),
         )
+        assertEquals(listOf("bucket" to "below_minimum", "page" to "1", "per_page" to "50"), InventoryResponses.orgStocksParameters(SkoQuery(bucket = SkoBucket.BelowMinimum)))
+        assertEquals(listOf("bucket" to "negative", "page" to "1", "per_page" to "50"), InventoryResponses.orgStocksParameters(SkoQuery(bucket = SkoBucket.Negative)))
         assertEquals(listOf("flow" to "audit", "page" to "2", "per_page" to "50"), InventoryResponses.movementParameters(MovementFlow.Audit, 2, 50))
         assertEquals(listOf("page" to "1", "per_page" to "50"), InventoryResponses.movementParameters(null, 1, 50))
         assertEquals(listOf("state" to "in_process", "page" to "1", "per_page" to "50"), InventoryResponses.familiesParameters(FamilyQuery(state = FamilyState.InProcess)))
