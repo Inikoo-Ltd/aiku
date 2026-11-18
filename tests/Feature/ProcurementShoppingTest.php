@@ -4161,3 +4161,36 @@ test('only users of the client who see its procurement and are not the agent\'s 
     $page = json_encode($this->withoutVite()->get(route('grp.org.procurement.org_agents.show.edit', [$client->slug, $orgAgent->slug]))->assertOk()->viewData('page')['props']);
     expect(str_contains($page, '"money_request_payer_user_ids"'))->toBeTrue();
 });
+
+test('the agent money requests page lists each open request\'s payers and copied users to remind, loaded once for the page', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-RCP-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    setPermissionsTeamId($this->group->id);
+
+    $payer  = agentOrganisationAdmin($client, 'w3-rcp-p-'.Str::lower(Str::random(6)));
+    $copied = agentOrganisationAdmin($client, 'w3-rcp-c-'.Str::lower(Str::random(6)));
+    \App\Actions\Procurement\OrgAgent\UpdateOrgAgent::make()->action($orgAgent, ['money_request_payer_user_ids' => [$payer->id], 'money_request_cc_user_ids' => [$copied->id, $payer->id]]);
+
+    $requests = collect([15, 25])->map(function (int $amount) use ($agent, $client) {
+        $expense = \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'type' => 'other_expense', 'amount' => $amount, 'notes' => 'Fee '.$amount]);
+
+        return \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [['kind' => 'expense', 'agent_payment_id' => $expense->id, 'amount' => $amount]]]);
+    });
+
+    $expected = \App\Actions\SupplyChain\DepositRequest\NotifyMoneyRequestCreated::emailRecipients($requests->first());
+    expect(collect($expected['to'])->pluck('name')->all())->toBe([$payer->chatName()])
+        ->and(collect($expected['cc'])->pluck('name')->all())->toBe([$copied->chatName()]);
+
+    actingAs(agentOrganisationAdmin($agent->organisation, 'w3-rcp-a-'.Str::lower(Str::random(6))));
+    $rows = collect($this->withoutVite()->get(route('grp.org.agent.accounting.deposit_requests.index', [$agent->organisation->slug]))->assertOk()->viewData('page')['props']['data']['data'])->keyBy('id');
+
+    foreach ($requests as $depositRequest) {
+        expect($rows[$depositRequest->id]['reminder_recipients'])->toBe($expected);
+    }
+
+    actingAs($this->adminGuest->getUser());
+});

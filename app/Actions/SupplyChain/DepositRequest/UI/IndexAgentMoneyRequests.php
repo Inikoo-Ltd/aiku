@@ -83,9 +83,11 @@ class IndexAgentMoneyRequests extends OrgAction
     }
 
     /**
+     * @param  array{to: list<array<string, mixed>>, cc: list<array<string, mixed>>}|null  $reminderRecipients  the request's emailRecipients when already loaded for the page
+     *
      * @return array<string, mixed>
      */
-    public static function row(DepositRequest $depositRequest, ?User $user, bool $forClient): array
+    public static function row(DepositRequest $depositRequest, ?User $user, bool $forClient, ?array $reminderRecipients = null): array
     {
         $total  = round((float) $depositRequest->total, 2);
         $paid   = round((float) $depositRequest->paid, 2);
@@ -124,7 +126,7 @@ class IndexAgentMoneyRequests extends OrgAction
             'last_reminded_by' => $depositRequest->reminder?->chatName(),
             'number_reminders' => $depositRequest->number_reminders,
             'next_reminder_at' => RemindAgentMoneyRequest::nextReminderAt($depositRequest),
-            'reminder_recipients' => $canRemind ? NotifyMoneyRequestCreated::emailRecipients($depositRequest) : null,
+            'reminder_recipients' => $canRemind ? ($reminderRecipients ?? NotifyMoneyRequestCreated::emailRecipients($depositRequest)) : null,
             'lines'         => $depositRequest->items->map(fn (DepositRequestItem $item) => [
                 'kind'          => $item->kind->value,
                 'kind_label'    => DepositRequestItemKindEnum::labels()[$item->kind->value],
@@ -218,7 +220,8 @@ class IndexAgentMoneyRequests extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $requests, ActionRequest $request): Response
     {
-        $user = $request->user();
+        $user               = $request->user();
+        $reminderRecipients = NotifyMoneyRequestCreated::emailRecipientsOf(collect($requests->items())->where('state', DepositRequestStateEnum::REQUESTED));
 
         return Inertia::render(
             'Org/Procurement/AgentMoneyRequests',
@@ -232,7 +235,7 @@ class IndexAgentMoneyRequests extends OrgAction
                 'create_route' => $user->authTo("procurement.{$this->organisation->id}.edit")
                     ? ['name' => 'grp.org.agent.accounting.deposit_requests.create', 'parameters' => [$this->organisation->slug]]
                     : null,
-                'data'        => $requests->through(fn (DepositRequest $depositRequest) => self::row($depositRequest->setRelation('agent', $this->agent), $user, false)),
+                'data'        => $requests->through(fn (DepositRequest $depositRequest) => self::row($depositRequest->setRelation('agent', $this->agent), $user, false, $reminderRecipients[$depositRequest->id] ?? null)),
             ]
         )->table($this->tableStructure());
     }

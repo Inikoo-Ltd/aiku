@@ -90,20 +90,51 @@ class NotifyMoneyRequestCreated
      */
     public static function emailRecipients(DepositRequest $depositRequest): array
     {
-        $recipients = (new self())->recipients(self::userIdsByRole($depositRequest, self::clientOrgAgent($depositRequest)))
-            ->map(fn (array $recipient) => [
-                'role'     => $recipient['role'],
-                'name'     => $recipient['user']->chatName(),
-                'email'    => $recipient['user']->email,
-                'by_email' => (bool) $recipient['user']->email && in_array('email', UserNotificationEnum::MONEY_REQUEST_CREATED->channelsFor($recipient['user']), true),
-            ]);
+        return self::emailRecipientsOf([$depositRequest])[$depositRequest->id];
+    }
 
+    /**
+     * The emailRecipients of several requests, loading their client links and users once.
+     *
+     * @param  iterable<DepositRequest>  $depositRequests
+     *
+     * @return array<int, array{to: list<array{name: string, email: string|null, by_email: bool}>, cc: list<array{name: string, email: string|null, by_email: bool}>}>
+     */
+    public static function emailRecipientsOf(iterable $depositRequests): array
+    {
+        $depositRequests = collect($depositRequests);
+        if ($depositRequests->isEmpty()) {
+            return [];
+        }
+
+        $orgAgents = OrgAgent::whereIn('agent_id', $depositRequests->pluck('agent_id')->unique()->all())
+            ->whereIn('organisation_id', $depositRequests->pluck('organisation_id')->filter()->unique()->all())
+            ->orderBy('id')
+            ->get()
+            ->unique(fn (OrgAgent $orgAgent) => $orgAgent->agent_id.'-'.$orgAgent->organisation_id)
+            ->keyBy(fn (OrgAgent $orgAgent) => $orgAgent->agent_id.'-'.$orgAgent->organisation_id);
+
+        $userIdsByRequest = $depositRequests->mapWithKeys(fn (DepositRequest $depositRequest) => [
+            $depositRequest->id => self::userIdsByRole($depositRequest, $orgAgents->get($depositRequest->agent_id.'-'.$depositRequest->organisation_id)),
+        ]);
+        $users     = self::activeUsersById($userIdsByRequest->flatten()->all());
+        $notifier  = new self();
         $withoutRole = fn ($recipients) => $recipients->map(fn (array $recipient) => Arr::except($recipient, 'role'))->values()->all();
 
-        return [
-            'to' => $withoutRole($recipients->where('role', MoneyRequestCreatedNotification::FOR_PAYER)),
-            'cc' => $withoutRole($recipients->where('role', '!=', MoneyRequestCreatedNotification::FOR_PAYER)),
-        ];
+        return $userIdsByRequest->map(function (array $userIdsByRole) use ($notifier, $users, $withoutRole) {
+            $recipients = $notifier->recipients($userIdsByRole, $users)
+                ->map(fn (array $recipient) => [
+                    'role'     => $recipient['role'],
+                    'name'     => $recipient['user']->chatName(),
+                    'email'    => $recipient['user']->email,
+                    'by_email' => (bool) $recipient['user']->email && in_array('email', UserNotificationEnum::MONEY_REQUEST_CREATED->channelsFor($recipient['user']), true),
+                ]);
+
+            return [
+                'to' => $withoutRole($recipients->where('role', MoneyRequestCreatedNotification::FOR_PAYER)),
+                'cc' => $withoutRole($recipients->where('role', '!=', MoneyRequestCreatedNotification::FOR_PAYER)),
+            ];
+        })->all();
     }
 
     /**
