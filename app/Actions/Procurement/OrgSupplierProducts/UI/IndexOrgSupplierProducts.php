@@ -363,6 +363,7 @@ class IndexOrgSupplierProducts extends OrgAction
         $subNavigation = null;
         $afterTitle    = null;
         $iconRight     = null;
+        $model         = null;
         $tabsNavigation = OrgSupplierProductsTabsEnum::navigationOnly([OrgSupplierProductsTabsEnum::INDEX->value]);
         $agent          = $this->getParentOrganisationAgent($this->parent);
         if ($agent) {
@@ -380,6 +381,7 @@ class IndexOrgSupplierProducts extends OrgAction
             $iconRight     = ['icon' => 'fal fa-box-usd'];
         } elseif ($this->parent instanceof OrgSupplier) {
             $title         = $this->parent->supplier->name;
+            $model         = __('Supplier');
             $icon          = [
                 'icon'  => ['fal', 'fa-person-dolly'],
                 'title' => __('Supplier Products'),
@@ -402,6 +404,7 @@ class IndexOrgSupplierProducts extends OrgAction
                 'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'pageHead'    => [
                     'title'         => $title,
+                    'model'         => $model,
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
                     'afterTitle'    => $afterTitle,

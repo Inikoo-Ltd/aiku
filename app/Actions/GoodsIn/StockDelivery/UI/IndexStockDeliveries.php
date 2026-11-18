@@ -630,6 +630,7 @@ class IndexStockDeliveries extends OrgAction
             $subNavigation = $this->getOrgPartnerNavigation($this->parent);
         } elseif ($this->parent instanceof OrgSupplier) {
             $title         = $this->parent->supplier->name;
+            $model         = __('Supplier');
             $icon          = [
                 'icon'  => ['fal', 'fa-person-dolly'],
                 'title' => $indexLabel,
@@ -648,6 +649,7 @@ class IndexStockDeliveries extends OrgAction
             $subNavigation = $this->getAgentNavigation($this->parent);
         } elseif ($this->parent instanceof Supplier) {
             $title         = $this->parent->name;
+            $model         = __('Supplier');
             $icon          = [
                 'icon'  => ['fal', 'fa-person-dolly'],
                 'title' => $indexLabel,

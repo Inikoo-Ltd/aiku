@@ -589,6 +589,7 @@ class IndexPurchaseOrders extends OrgAction
         ];
         $afterTitle    = null;
         $iconRight     = null;
+        $model         = null;
         $subNavigation = null;
         $actions       = [];
         $purchaseOrdersImport = null;
@@ -635,6 +636,7 @@ class IndexPurchaseOrders extends OrgAction
             ];
         } elseif ($this->parent instanceof OrgSupplier) {
             $title         = $this->parent->supplier->name;
+            $model         = __('Supplier');
             $icon          = [
                 'icon'  => ['fal', 'fa-person-dolly'],
                 'title' => __('Purchase orders'),
@@ -645,6 +647,7 @@ class IndexPurchaseOrders extends OrgAction
             $actions       = [$this->getOrgSupplierPurchaseOrderAction($this->parent)];
         } elseif ($this->parent instanceof Supplier) {
             $title         = $this->parent->name;
+            $model         = __('Supplier');
             $icon          = [
                 'icon'  => ['fal', 'fa-person-dolly'],
                 'title' => __('Purchase orders'),
@@ -683,6 +686,7 @@ class IndexPurchaseOrders extends OrgAction
                 'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'pageHead'    => [
                     'title'         => $title,
+                    'model'         => $model,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
