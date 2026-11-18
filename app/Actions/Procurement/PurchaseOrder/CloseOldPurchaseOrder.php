@@ -239,6 +239,7 @@ class CloseOldPurchaseOrder extends OrgAction
     {
         return [
             'stock_delivery_id' => [
+                'bail',
                 'sometimes',
                 'nullable',
                 'integer',

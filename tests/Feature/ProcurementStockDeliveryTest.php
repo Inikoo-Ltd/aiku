@@ -4816,6 +4816,23 @@ test('checking many goods receipt lines refreshes the hand over of each order on
         ->and($receipt->items()->whereNull('checked_at')->exists())->toBeFalse();
 });
 
+test('Close Old PO takes an order split in aiku from an order started before agent orders were followed here (INI-376)', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+
+    $splitFromOld = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $splitFromNew = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $oldSource    = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $oldSource->updateQuietly(['created_at' => \Illuminate\Support\Carbon::parse(\App\Models\Procurement\PurchaseOrder::AGENT_TRACKING_STARTED_AT)->subMonths(8)]);
+    $splitFromOld->updateQuietly(['data' => [...($splitFromOld->data ?? []), 'split_from' => ['id' => $oldSource->id, 'reference' => $oldSource->reference]]]);
+    $splitFromNew->updateQuietly(['data' => [...($splitFromNew->data ?? []), 'split_from' => ['id' => $splitFromOld->id, 'reference' => $splitFromOld->reference]]]);
+
+    expect(\App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::blockedReason($splitFromOld->refresh()))->toBeNull()
+        ->and(\App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::blockedReason($splitFromNew->refresh()))->not->toBeNull();
+
+    expect(fn () => \App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::make()->action($splitFromOld, ['reason' => 'old', 'stock_delivery_id' => 'abc']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
 test('the rename availability check refuses a reference the rename would refuse for its format', function () {
     [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
     $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 5)->refresh();
