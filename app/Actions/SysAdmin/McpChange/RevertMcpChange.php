@@ -65,6 +65,10 @@ use App\Models\SysAdmin\User;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Models\Web\Redirect;
 use App\Actions\Web\StaticWebsite\RevertStaticWebsiteChange;
+use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -129,6 +133,7 @@ class RevertMcpChange
                 McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING => $this->revertOrgStockAutoOrdering($mcpChange->before),
                 McpChangeTypeEnum::PRODUCT_PACKAGING => $this->revertProductPackaging($mcpChange->before),
                 McpChangeTypeEnum::INFO_WEBSITE_CONTENT => RevertStaticWebsiteChange::run($mcpChange),
+                McpChangeTypeEnum::STAFF_CHAT_LISTS => $this->revertStaffChatLists($mcpChange->before),
             };
 
             $mcpChange->update([
@@ -245,6 +250,19 @@ class RevertMcpChange
         }
 
         UpdateTradeUnit::make()->action(TradeUnit::findOrFail($target['trade_unit_id']), Arr::only($before, GetMcpChangeSnapshot::TRADE_UNIT_FIELDS), strict: false);
+    }
+
+    private function revertStaffChatLists(array $before): void
+    {
+        $fields = fn (array $lists) => collect($lists)->mapWithKeys(fn (array $userIds, string $list) => ['staff_chat_'.GetMcpChangeSnapshot::STAFF_CHAT_LISTS[$list] => $userIds])->all();
+
+        foreach ($before['shops'] as $shopId => $lists) {
+            UpdateShop::make()->action(Shop::findOrFail($shopId), $fields($lists));
+        }
+
+        foreach ($before['organisations'] as $organisationId => $lists) {
+            UpdateOrganisation::make()->action(Organisation::findOrFail($organisationId), $fields($lists));
+        }
     }
 
     private function revertWebsiteRedirects(array $before): void

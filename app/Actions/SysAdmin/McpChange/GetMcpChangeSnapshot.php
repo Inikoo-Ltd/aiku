@@ -56,6 +56,16 @@ class GetMcpChangeSnapshot
         'un_number', 'un_class', 'packing_group', 'proper_shipping_name',
     ];
 
+    /**
+     * The staff chat lists of a shop or organisation, by the key the tools use, with the key under settings.staff_chat.
+     */
+    public const STAFF_CHAT_LISTS = [
+        'crm'              => 'crm_user_ids',
+        'crm_backup'       => 'crm_backup_user_ids',
+        'warehouse'        => 'warehouse_user_ids',
+        'warehouse_backup' => 'warehouse_backup_user_ids',
+    ];
+
     public function handle(McpChangeTypeEnum $type, array $target): array
     {
         return match ($type) {
@@ -78,6 +88,7 @@ class GetMcpChangeSnapshot
             McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS => $this->supplierProductLinks($target),
             McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING => $this->orgStockAutoOrdering($target),
             McpChangeTypeEnum::PRODUCT_PACKAGING => $this->productPackaging($target),
+            McpChangeTypeEnum::STAFF_CHAT_LISTS => $this->staffChatLists($target),
             McpChangeTypeEnum::INFO_WEBSITE_CONTENT => GetStaticWebsiteContentState::run(
                 StaticWebsite::find($target['static_website_id']),
                 $target['pages'] ?? [],
@@ -90,6 +101,22 @@ class GetMcpChangeSnapshot
     {
         if ($type === McpChangeTypeEnum::INFO_WEBSITE_CONTENT) {
             return GetStaticWebsiteContentState::make()->describe($snapshot);
+        }
+
+        if ($type === McpChangeTypeEnum::STAFF_CHAT_LISTS) {
+            $usernames = DB::table('users')->whereIn('id', collect($snapshot)->flatten()->unique()->all())->pluck('username', 'id');
+            $codes     = [
+                'shops'         => DB::table('shops')->whereIn('id', array_keys($snapshot['shops']))->pluck('code', 'id'),
+                'organisations' => DB::table('organisations')->whereIn('id', array_keys($snapshot['organisations']))->pluck('code', 'id'),
+            ];
+
+            return collect(['shops', 'organisations'])
+                ->flatMap(fn (string $level) => collect($snapshot[$level])->map(
+                    fn (array $lists, $id) => ($codes[$level][$id] ?? '#'.$id).($level === 'organisations' ? ' (organisation)' : '').': '.collect($lists)
+                        ->map(fn (array $userIds, string $list) => $list.'='.(collect($userIds)->map(fn ($userId) => $usernames[$userId] ?? '#'.$userId)->implode(', ') ?: '-'))
+                        ->implode('; ')
+                ))
+                ->implode(' | ');
         }
 
         if ($type === McpChangeTypeEnum::STOCK_LOCATIONS) {
@@ -254,6 +281,21 @@ class GetMcpChangeSnapshot
             ->pluck('code', 'id');
 
         return collect($snapshot['ids'])->map(fn ($id) => $codes[$id] ?? '#'.$id)->implode(', ') ?: '-';
+    }
+
+    /**
+     * @return array{shops: array<int, array<string, array<int, int>>>, organisations: array<int, array<string, array<int, int>>>}
+     */
+    private function staffChatLists(array $target): array
+    {
+        $lists = fn (?string $settings) => collect(self::STAFF_CHAT_LISTS)
+            ->map(fn (string $key) => array_values(array_map('intval', Arr::get(json_decode($settings ?? '{}', true) ?? [], 'staff_chat.'.$key) ?? [])))
+            ->all();
+
+        return [
+            'shops'         => DB::table('shops')->whereIn('id', $target['shop_ids'] ?? [])->orderBy('id')->pluck('settings', 'id')->map($lists)->all(),
+            'organisations' => DB::table('organisations')->whereIn('id', $target['organisation_ids'] ?? [])->orderBy('id')->pluck('settings', 'id')->map($lists)->all(),
+        ];
     }
 
     private function websiteRedirects(array $target): array

@@ -4541,3 +4541,84 @@ describe('product packaging tool', function () {
         $call($measured)->assertOk()->assertSee('one trade unit');
     });
 });
+
+describe('staff chat lists tool', function () {
+    beforeEach(function () {
+        $newStaff = fn () => App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->group, array_merge(App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+
+        $this->keeper  = $newStaff();
+        $this->leaver  = $newStaff();
+        $this->joiner  = $newStaff();
+
+        App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, [
+            'staff_chat_crm_user_ids'        => [$this->keeper->id, $this->leaver->id],
+            'staff_chat_crm_backup_user_ids' => [$this->leaver->id],
+        ]);
+
+        $this->user->update(['can_use_mcp_settings' => true]);
+        $this->callTool = fn (array $arguments) => AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\StaffChatListsTool::class, array_merge(['organisation' => $this->organisation->slug], $arguments));
+    });
+
+    test('a user not enrolled is refused and told not to retry', function () {
+        $this->user->update(['can_use_mcp_settings' => false]);
+
+        ($this->callTool)(['shop' => $this->shop->code])->assertHasErrors(['Changing settings is not enabled for this user']);
+    });
+
+    test('shows the lists of the shop with usernames', function () {
+        ($this->callTool)(['shop' => $this->shop->code])
+            ->assertOk()
+            ->assertSee('"crm":[{"username":"'.$this->keeper->username.'"')
+            ->assertSee('"crm_backup":[{"username":"'.$this->leaver->username.'"');
+    });
+
+    test('the preview changes nothing and the confirm removes and adds, logged and revertible', function () {
+        $arguments = ['shop' => $this->shop->code, 'list' => 'crm', 'remove' => [$this->leaver->username], 'add' => [$this->joiner->username]];
+
+        ($this->callTool)($arguments)->assertOk()->assertSee('"would_change":1');
+        expect($this->shop->refresh()->settings['staff_chat']['crm_user_ids'])->toBe([$this->keeper->id, $this->leaver->id]);
+
+        ($this->callTool)([...$arguments, 'confirm' => true, 'request_text' => 'swap them'])->assertOk()->assertSee('"changed":1');
+        expect($this->shop->refresh()->settings['staff_chat']['crm_user_ids'])->toBe([$this->keeper->id, $this->joiner->id])
+            ->and($this->shop->settings['staff_chat']['crm_backup_user_ids'])->toBe([$this->leaver->id]);
+
+        $mcpChange = App\Models\SysAdmin\McpChange::latest('id')->first();
+        expect($mcpChange->type)->toBe(App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::STAFF_CHAT_LISTS)
+            ->and($mcpChange->request_text)->toBe('swap them');
+
+        App\Actions\SysAdmin\McpChange\RevertMcpChange::run($mcpChange, $this->user);
+
+        expect($this->shop->refresh()->settings['staff_chat']['crm_user_ids'])->toBe([$this->keeper->id, $this->leaver->id]);
+    });
+
+    test('every open shop of the organisation is changed when no shop is given', function () {
+        ($this->callTool)(['list' => 'crm_backup', 'remove' => [$this->leaver->username], 'confirm' => true, 'request_text' => 'remove from all shops'])
+            ->assertOk()
+            ->assertSee('list becomes empty');
+
+        expect($this->shop->refresh()->settings['staff_chat']['crm_backup_user_ids'] ?? [])->toBe([]);
+    });
+
+    test('an unknown person changes nothing and the organisation crm list is refused', function () {
+        ($this->callTool)(['shop' => $this->shop->code, 'list' => 'crm', 'remove' => ['nobody-xyz'], 'confirm' => true, 'request_text' => 'remove'])
+            ->assertHasErrors(['nobody-xyz']);
+        ($this->callTool)(['list' => 'crm', 'organisation_list' => true, 'add' => [$this->joiner->username]])
+            ->assertHasErrors(['Ask CRM only uses the shop lists']);
+
+        expect($this->shop->refresh()->settings['staff_chat']['crm_user_ids'])->toBe([$this->keeper->id, $this->leaver->id]);
+    });
+
+    test('a user who is not admin of the shop is refused', function () {
+        $staff = $this->joiner;
+        $staff->update(['can_use_mcp' => true, 'can_use_mcp_settings' => true]);
+
+        AikuServer::actingAs($staff)->tool(App\Mcp\Tools\StaffChatListsTool::class, [
+            'organisation' => $this->organisation->slug,
+            'shop'         => $this->shop->code,
+            'list'         => 'crm',
+            'remove'       => [$this->leaver->username],
+            'confirm'      => true,
+            'request_text' => 'remove',
+        ])->assertHasErrors(['not an admin']);
+    });
+});

@@ -34,6 +34,7 @@ enum McpChangeTypeEnum: string
     case ORG_STOCK_AUTO_ORDERING = 'org_stock_auto_ordering';
     case INFO_WEBSITE_CONTENT = 'info_website_content';
     case PRODUCT_PACKAGING = 'product_packaging';
+    case STAFF_CHAT_LISTS = 'staff_chat_lists';
 
     public static function labels(): array
     {
@@ -58,6 +59,7 @@ enum McpChangeTypeEnum: string
             'org_stock_auto_ordering' => __('SKOs kept out of order suggestions'),
             'info_website_content'  => __('Info website pages and shared parts'),
             'product_packaging'     => __('Product packaging weighed'),
+            'staff_chat_lists'      => __('Who gets Ask CRM and Ask warehouse questions'),
         ];
     }
 
@@ -78,6 +80,7 @@ enum McpChangeTypeEnum: string
             McpChangeTypeEnum::TRADE_UNIT_PROPERTIES, McpChangeTypeEnum::PRODUCT_PACKAGING => 'can_use_mcp_goods',
             McpChangeTypeEnum::STOCK_LOCATIONS => 'can_use_mcp_locations',
             McpChangeTypeEnum::INFO_WEBSITE_CONTENT => 'can_use_mcp_info_websites',
+            McpChangeTypeEnum::STAFF_CHAT_LISTS => 'can_use_mcp_settings',
         };
     }
 
