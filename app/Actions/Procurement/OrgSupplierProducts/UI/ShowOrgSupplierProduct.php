@@ -98,6 +98,7 @@ class ShowOrgSupplierProduct extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'      => $internalCode ?? $supplierCode,
+                    'model'     => __('Supplier Product'),
                     'afterTitle' => ['label' => $internalCode ? $supplierCode.' · '.$orgSupplierProduct->supplierProduct->name : $orgSupplierProduct->supplierProduct->name],
                     'icon'  => [
                         'icon'  => ['fal', 'box-usd'],
