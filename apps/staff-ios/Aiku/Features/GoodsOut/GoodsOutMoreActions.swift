@@ -63,8 +63,6 @@ struct GoodsOutMoreActionsSheet: View {
         return note.allows(.assignPicker) || note.allows(.changePicker) || note.allows(.removePicker)
     }
     private var canRemovePicker: Bool { note.picker != nil && note.allows(.removePicker) }
-    private var showsEmails: Bool { !note.isRemote && (note.state == .dispatched || !note.emails.isEmpty) }
-    private var showsCustoms: Bool { !note.isRemote && !note.isCollection }
     private var canChangePacker: Bool { note.isRemote && note.allows(.changePacker) }
     private var canEditAddress: Bool { note.isRemote && note.allows(.editDeliveryAddress) }
     private var editableNotes: [GoodsOutNoteField] {
@@ -119,16 +117,6 @@ struct GoodsOutMoreActionsSheet: View {
                     close()
                     GoodsOutMoreActions.perform(.askCRM, note: note, router: router, toasts: toasts)
                 }
-                RowDivider()
-                ListRow("Add task", subtitle: "A staff task linked to this delivery note", icon: .check) {
-                    go(GoodsOutRoute.askCRM(reference: note.reference))
-                }
-                if showsEmails {
-                    RowDivider()
-                    ListRow("Dispatched emails", subtitle: "Emails sent to the customer", icon: .email) {
-                        go(GoodsOutRoute.dispatchedEmails(reference: note.reference))
-                    }
-                }
             }
             if !editableNotes.isEmpty || canEditAddress {
                 SheetSectionLabel("Notes & address")
@@ -163,16 +151,6 @@ struct GoodsOutMoreActionsSheet: View {
                         present(.printDeliveryNote)
                     }
                 }
-                if showsCustoms {
-                    RowDivider()
-                    ListRow("Tariff codes / Origin", subtitle: "Customs data for each item", icon: .globe) {
-                        go(GoodsOutRoute.tariffCodes(reference: note.reference))
-                    }
-                    RowDivider()
-                    ListRow("Customs items file", subtitle: "Preview and download for the carrier", icon: .document) {
-                        go(GoodsOutRoute.customsFile(reference: note.reference))
-                    }
-                }
                 if note.canGenerateInvoice, !note.isRemote {
                     RowDivider()
                     ListRow("Generate invoice", subtitle: "When the order has no invoice yet", icon: .document) {
@@ -194,11 +172,6 @@ struct GoodsOutMoreActionsSheet: View {
         } footer: {
             AikuButton("Close", kind: .tertiary, action: close)
         }
-    }
-
-    private func go(_ route: GoodsOutRoute) {
-        close()
-        router.open(route)
     }
 }
 

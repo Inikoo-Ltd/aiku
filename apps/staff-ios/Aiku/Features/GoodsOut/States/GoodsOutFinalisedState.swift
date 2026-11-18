@@ -116,23 +116,11 @@ struct GoodsOutDispatchedStateView: View {
         if note.isRemote {
             GoodsOutRemoteShipmentsBlock(note: note, opener: opener)
                 .goodsOutDocumentPreview(opener)
-        } else if !note.emails.isEmpty {
-            Card {
-                ListRow("Dispatched emails", subtitle: emailsText, icon: .email, iconTone: .success, showsChevron: true) {
-                    router.open(GoodsOutRoute.dispatchedEmails(reference: note.reference))
-                }
-            }
-            .accessibilityIdentifier("goodsOut.dispatchedEmails")
         }
     }
 
     private var detail: String {
         if note.isCollection { return "\(note.parcelCountText) collected by the customer" }
         return "\(note.parcelCountText) with \(note.shipperTitle)"
-    }
-
-    private var emailsText: String {
-        let count = note.emails.count
-        return "\(count) \(count == 1 ? "email" : "emails") sent to the customer"
     }
 }
