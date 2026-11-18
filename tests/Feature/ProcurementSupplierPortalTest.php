@@ -854,3 +854,25 @@ test('W4 supplier planning and deposit notifications are queued and show supplie
         ->and($notification->afterCommit)->toBeTrue();
 });
 
+test('W4 a second identical deposit request from the portal sends no second email and keeps the rest of the order data', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $orgSupplier          = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+    $purchaseOrder        = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $buyer                = $this->adminGuest->getUser();
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now(), 'buyer_id' => $buyer->id, 'data' => ['keep_me' => 'yes']]);
+    Auth::logout();
+    if ($published = \App\Models\SupplyChain\SupplierAgreementVersion::where('group_id', $this->group->id)->where('state', 'published')->first()) {
+        acceptSupplierAgreement($this, $token, $published)->assertSessionHasNoErrors();
+    }
+    Notification::fake();
+
+    $route = route('grp.supplier_share.purchase_order.deposit', ['token' => $token, 'purchaseOrder' => $purchaseOrder->id]);
+    $this->postJson($route, ['choice' => 'request'])->assertOk();
+    $this->postJson($route, ['choice' => 'request'])->assertOk();
+
+    Notification::assertSentToTimes($buyer, \App\Notifications\SupplierDepositRequestedNotification::class, 1);
+    expect($purchaseOrder->fresh()->data)->toHaveKeys(['keep_me', 'supplier_deposit_request']);
+
+    $this->postJson($route, ['choice' => 'not_needed'])->assertJsonValidationErrors('deposit');
+});
+

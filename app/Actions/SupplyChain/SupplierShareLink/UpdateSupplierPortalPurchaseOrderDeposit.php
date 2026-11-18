@@ -19,6 +19,7 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierShareLink;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -44,35 +45,47 @@ class UpdateSupplierPortalPurchaseOrderDeposit
 
     public function handle(Supplier $supplier, int $purchaseOrderId, string $choice, ?int $supplierPortalContactId = null): PurchaseOrder
     {
-        /** @var PurchaseOrder $purchaseOrder */
-        $purchaseOrder = IndexSupplierPortalPurchaseOrders::make()->sent($supplier)->findOrFail($purchaseOrderId);
+        IndexSupplierPortalPurchaseOrders::make()->sent($supplier)->findOrFail($purchaseOrderId);
 
-        $deposit = ShowSupplierPortalPurchaseOrder::make()->deposit($purchaseOrder, $supplier);
-        if (!$deposit['choosable']) {
-            throw ValidationException::withMessages(['deposit' => __('The deposit of this order is already settled.')]);
+        $isNewRequest = false;
+        $purchaseOrder = DB::transaction(function () use ($supplier, $purchaseOrderId, $choice, $supplierPortalContactId, &$isNewRequest) {
+            /** @var PurchaseOrder $purchaseOrder */
+            $purchaseOrder = PurchaseOrder::whereKey($purchaseOrderId)->lockForUpdate()->firstOrFail();
+
+            $deposit = ShowSupplierPortalPurchaseOrder::make()->deposit($purchaseOrder, $supplier);
+            if (!$deposit['choosable']) {
+                $alreadyAnswered = $choice === self::NOT_NEEDED ? $deposit['not_needed'] : $deposit['request'] !== null;
+                if ($alreadyAnswered) {
+                    return $purchaseOrder;
+                }
+
+                throw ValidationException::withMessages(['deposit' => __('The deposit of this order is already settled.')]);
+            }
+
+            if ($choice === self::NOT_NEEDED) {
+                return UpdatePurchaseOrder::make()->action($purchaseOrder, ['deposit_amount' => 0]);
+            }
+
+            if (self::isAgreementMissing($supplier)) {
+                throw ValidationException::withMessages(['deposit' => __('Please accept Supplier Agreement before submitting deposit request.')]);
+            }
+
+            $data                             = $purchaseOrder->data ?? [];
+            $data['supplier_deposit_request'] = [
+                'percentage'                 => self::REQUEST_PERCENTAGE,
+                'amount'                     => $deposit['request_amount'],
+                'requested_at'               => now()->toIso8601String(),
+                'supplier_portal_contact_id' => $supplierPortalContactId,
+            ];
+            $purchaseOrder->update(['data' => $data]);
+            $isNewRequest = true;
+
+            return $purchaseOrder;
+        });
+
+        if ($isNewRequest) {
+            NotifyPurchasingOfSupplierDepositRequest::run($purchaseOrder);
         }
-
-        if ($choice === self::NOT_NEEDED) {
-            return UpdatePurchaseOrder::make()->action($purchaseOrder, ['deposit_amount' => 0]);
-        }
-
-        if (self::isAgreementMissing($supplier)) {
-            throw ValidationException::withMessages(['deposit' => __('Please accept Supplier Agreement before submitting deposit request.')]);
-        }
-
-        $purchaseOrder->update([
-            'data' => [
-                ...($purchaseOrder->data ?? []),
-                'supplier_deposit_request' => [
-                    'percentage'                 => self::REQUEST_PERCENTAGE,
-                    'amount'                     => $deposit['request_amount'],
-                    'requested_at'               => now()->toIso8601String(),
-                    'supplier_portal_contact_id' => $supplierPortalContactId,
-                ],
-            ],
-        ]);
-
-        NotifyPurchasingOfSupplierDepositRequest::run($purchaseOrder);
 
         return $purchaseOrder;
     }

@@ -12,7 +12,9 @@ namespace App\Actions\SupplyChain\SupplierShareLink;
 use App\Actions\SysAdmin\User\NotifyUserOnChosenChannels;
 use App\Enums\SysAdmin\User\UserNotificationEnum;
 use App\Models\Helpers\Language;
+use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\User;
 use App\Notifications\SupplierDepositRequestedNotification;
 use Illuminate\Support\Arr;
@@ -40,7 +42,7 @@ class NotifyPurchasingOfSupplierDepositRequest
 
     public function handle(PurchaseOrder $purchaseOrder): int
     {
-        $purchaseOrder->loadMissing(['organisation', 'currency', 'supplier', 'agent.organisation']);
+        $purchaseOrder->loadMissing(['organisation', 'currency', 'agent.organisation']);
         $request = Arr::get($purchaseOrder->data ?? [], 'supplier_deposit_request');
         if (!$request) {
             return 0;
@@ -50,7 +52,7 @@ class NotifyPurchasingOfSupplierDepositRequest
 
         foreach ($recipients as ['user' => $user, 'route' => $route, 'forAgent' => $forAgent]) {
             $this->withLocale($this->userLocale($user), function () use ($purchaseOrder, $request, $user, $route, $forAgent) {
-                $supplierName = $purchaseOrder->supplier?->officialName() ?? '';
+                $supplierName = $this->supplierOf($purchaseOrder)?->officialName() ?? '';
                 $title        = __(':reference: :supplier asks for a :percentage% deposit', [
                     'reference'  => $purchaseOrder->reference,
                     'supplier'   => $supplierName,
@@ -78,6 +80,15 @@ class NotifyPurchasingOfSupplierDepositRequest
         }
 
         return $recipients->count();
+    }
+
+    private function supplierOf(PurchaseOrder $purchaseOrder): ?Supplier
+    {
+        if ($purchaseOrder->supplier_id) {
+            return Supplier::find($purchaseOrder->supplier_id);
+        }
+
+        return $purchaseOrder->parent instanceof OrgSupplier ? $purchaseOrder->parent->supplier : null;
     }
 
     /**
