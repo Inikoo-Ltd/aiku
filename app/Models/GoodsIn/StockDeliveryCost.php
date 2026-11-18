@@ -39,6 +39,8 @@ use Spatie\MediaLibrary\HasMedia;
  * @property bool $is_estimate
  * @property \Illuminate\Support\Carbon|null $invoice_expected_at
  * @property int|null $stock_delivery_service_invoice_id
+ * @property array<int, string>|null $applies_to_tariff_codes the tariff codes an anti-dumping row was picked for, as shown to the user
+ * @property array<int, int>|null $applies_to_item_ids the delivery lines those tariff codes had when picked: the row goes to these lines only
  * @property-read Currency|null $currency
  * @property-read StockDelivery $stockDelivery
  */
@@ -61,6 +63,7 @@ class StockDeliveryCost extends Model implements HasMedia, Auditable
         'is_waiting_for_invoice',
         'invoice_expected_at',
         'is_estimate',
+        'applies_to_tariff_codes',
     ];
 
     public function generateTags(): array
@@ -79,6 +82,8 @@ class StockDeliveryCost extends Model implements HasMedia, Auditable
         'is_estimate'            => 'boolean',
         'category'               => StockDeliveryServiceInvoiceTypeEnum::class,
         'invoice_expected_at'    => 'date',
+        'applies_to_tariff_codes' => 'array',
+        'applies_to_item_ids'     => 'array',
     ];
 
     public function serviceInvoice(): BelongsTo
@@ -118,6 +123,20 @@ class StockDeliveryCost extends Model implements HasMedia, Auditable
             $days === 0 => __('Invoice expected today'),
             default     => trans_choice('Invoice expected in :count day|Invoice expected in :count days', $days, ['count' => $days]),
         };
+    }
+
+    public function lineCostField(): ?string
+    {
+        if ($this->type === StockDeliveryCostTypeEnum::EXTRA) {
+            return ($this->category ?? StockDeliveryServiceInvoiceTypeEnum::OTHER)->lineCostField();
+        }
+
+        return $this->type->itemCostField();
+    }
+
+    public function appliesByTariffCode(): bool
+    {
+        return $this->type === StockDeliveryCostTypeEnum::EXTRA && (bool) $this->category?->appliesByTariffCode();
     }
 
     public function amountInDeliveryCurrency(): float

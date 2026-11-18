@@ -35,7 +35,7 @@ class UpdateStockDeliveryCost extends OrgAction
             'is_na'       => ['sometimes', 'boolean'],
             'currency_id' => ['sometimes', 'nullable', 'exists:currencies,id'],
             'exchange'    => ['sometimes', 'nullable', 'numeric', 'gt:0'],
-        ], StoreStockDeliveryCost::waitingRules());
+        ], StoreStockDeliveryCost::waitingRules(), StoreStockDeliveryCost::tariffCodeRules());
     }
 
     public function getValidationMessages(): array
@@ -49,9 +49,12 @@ class UpdateStockDeliveryCost extends OrgAction
             $validator->errors()->add('state', __('This stock delivery is costed, an accounting manager can change it with Update costing'));
         }
 
-        if (!$this->asAction && $this->stockDeliveryCost->from_service_invoices) {
+        if (!$this->asAction && $this->stockDeliveryCost->from_service_invoices && array_diff(array_intersect(array_keys($validator->getData()), array_keys($this->rules())), ['applies_to_tariff_codes'])) {
             $validator->errors()->add('type', __('This cost comes from the service invoices, change the invoice instead'));
         }
+
+        $category = $this->has('category') ? StockDeliveryServiceInvoiceTypeEnum::tryFrom((string) $this->get('category')) : $this->stockDeliveryCost->category;
+        StoreStockDeliveryCost::validateTariffCodes($validator, $this->stockDeliveryCost->stockDelivery, $category);
     }
 
     public function handle(StockDeliveryCost $stockDeliveryCost, array $modelData): StockDeliveryCost
@@ -63,9 +66,10 @@ class UpdateStockDeliveryCost extends OrgAction
             unset($modelData['currency_id'], $modelData['exchange']);
         }
 
-        $stockDeliveryCost = $this->update($stockDeliveryCost, StoreStockDeliveryCost::withExchange($stockDeliveryCost->stockDelivery, StoreStockDeliveryCost::withWaiting($modelData, $stockDeliveryCost)));
+        $stockDelivery     = $stockDeliveryCost->stockDelivery;
+        $stockDeliveryCost = $this->update($stockDeliveryCost, StoreStockDeliveryCost::withTariffCodes($stockDelivery, StoreStockDeliveryCost::withExchange($stockDelivery, StoreStockDeliveryCost::withWaiting($modelData, $stockDeliveryCost)), $stockDeliveryCost));
 
-        if ($stockDeliveryCost->wasChanged(['amount', 'currency_id', 'exchange', 'is_na', 'received_at'])) {
+        if ($stockDeliveryCost->wasChanged(['amount', 'currency_id', 'exchange', 'is_na', 'received_at', 'category', 'applies_to_item_ids'])) {
             EvaluateStockDeliveryCosting::run($stockDeliveryCost->stockDelivery);
         }
 

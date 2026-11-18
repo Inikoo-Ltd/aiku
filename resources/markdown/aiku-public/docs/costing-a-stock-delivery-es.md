@@ -1,8 +1,8 @@
 ---
 title: Calcular el coste de una entrega de stock
 summary: Introduce lo que costó realmente una entrega - la factura del agente o del proveedor y las facturas pagadas en destino por transporte, aduanas y portes - para que el stock se valore a su coste puesto en almacén.
-date: 2026-10-13
-source_date: 2026-10-13
+date: 2026-11-18
+source_date: 2026-11-18
 tags: procurement, stock deliveries, costing, landed cost, service invoices, customs
 category: procurement
 ---
@@ -64,7 +64,7 @@ Los tipos de factura son:
 | Freight | por peso |
 | Local transport (port to warehouse) | por peso |
 | Customs duty | por línea de aduana, o por valor cuando no hay declaración |
-| Anti-dumping duty | igual que los aranceles |
+| Anti-dumping duty | por valor, solo entre los productos de los códigos arancelarios que elijas |
 | Other import taxes (plastic, excise) | igual que los aranceles |
 | Import VAT | no se imputa al coste: se recupera en la declaración del IVA |
 | Customs clearance | por valor |
@@ -115,6 +115,14 @@ Pulsa **Edit landed costs** para abrir los costes como una tabla. Cada coste tie
 - **History** - cada cambio de ese coste, con quién lo hizo y cuándo.
 
 Se puede añadir una nota bajo cada coste. **Add extra expense** añade un coste de alguno de los tipos de la lista anterior; para **Other**, indica de qué se trata.
+
+### Derechos antidumping
+
+Los derechos antidumping se cobran solo sobre algunos códigos arancelarios de un contenedor, así que tienen su propia fila y nunca se reparten sobre toda la entrega. Bajo la fila, elige los códigos arancelarios a los que se aplican: la lista muestra cada código arancelario de la entrega con sus productos. El importe se reparte entonces por valor solo entre los productos con esos códigos, y cuenta como arancel en su coste. La fila indica sobre cuántos productos está.
+
+Hasta que se eligen los códigos arancelarios la entrega no se puede costear, y la fila lo indica en rojo. Un producto sin código arancelario no se puede elegir; la fila lista esos productos para que primero des un código arancelario a su unidad comercial. Hasta que la entrega se costea por primera vez, el importe sigue a los productos que llevan los códigos elegidos, así que se tiene en cuenta un código arancelario corregido después. A partir de entonces se queda en los productos con los que se costeó.
+
+Una factura antidumping introducida en las facturas de servicios recibe su propia fila de la misma forma: su importe viene de la factura y eliges sus códigos arancelarios en la entrega.
 
 ## Cuando una factura todavía no ha llegado
 

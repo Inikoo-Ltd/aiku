@@ -2858,7 +2858,8 @@ test('costs typed by hand are handed to whoever adds a service invoice, with the
             ->where('service_invoices.hand_typed.1.kind', 'customs_clearance')
             ->where('service_invoices.cost_kinds.freight', 'shipping')
             ->where('service_invoices.cost_kinds.local_transport', 'shipping')
-            ->where('service_invoices.cost_kinds.anti_dumping', 'duty')
+            ->where('service_invoices.cost_kinds.anti_dumping', 'anti_dumping')
+            ->where('service_invoices.cost_kinds.import_levy', 'duty')
             ->where('service_invoices.cost_kinds.storage', 'storage')
             ->where('service_invoices.cost_kinds.tax', null));
 
@@ -3942,6 +3943,141 @@ test('duty is shared by customs line: a duty-free line takes none, items on no l
 
     expect((float) $first->cost_duties)->toBe(10.0)
         ->and((float) $second->cost_duties)->toBe(30.0);
+});
+
+test('an anti-dumping duty goes only to the lines of the tariff codes it was picked for, to the cent, and holds the costing open until it has some (HELP-4796)', function () {
+    $antiDumpingDelivery = function (string $code): StockDelivery {
+        $stockDelivery = placedStockDeliveryWithTwoLines($this, $code);
+        $stockDelivery->update(['org_exchange' => 1]);
+        foreach ($stockDelivery->items()->with('orgStock.tradeUnits')->orderBy('id')->get()->values() as $index => $item) {
+            \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($item->orgStock->tradeUnits->first(), ['tariff_code' => $index === 0 ? '3406000000' : '6302210089']);
+        }
+        setShippingAndDuty($stockDelivery->refresh(), 0, 40);
+
+        return $stockDelivery->refresh();
+    };
+
+    $stockDelivery = $antiDumpingDelivery('ANTI-DUMPING-'.Str::random(6));
+    [$candles, $textiles] = $stockDelivery->items()->orderBy('id')->get()->all();
+
+    expect($stockDelivery->is_costed)->toBeTrue()
+        ->and((float) $candles->cost_duties)->toBe(10.0)
+        ->and((float) $textiles->cost_duties)->toBe(30.0);
+
+    expect(fn () => StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => 'extra', 'category' => 'customs_clearance', 'amount' => 5, 'received_at' => now(), 'applies_to_tariff_codes' => ['6302210089']]))->toThrow(ValidationException::class)
+        ->and(fn () => StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => 'extra', 'category' => 'anti_dumping', 'amount' => 5, 'received_at' => now(), 'applies_to_tariff_codes' => ['9999999999']]))->toThrow(ValidationException::class);
+
+    $antiDumping = StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => 'extra', 'category' => 'anti_dumping', 'amount' => 0.05, 'received_at' => now()]);
+
+    expect($stockDelivery->refresh()->is_costed)->toBeFalse()
+        ->and(EvaluateStockDeliveryCosting::costsWithoutLines($stockDelivery)->pluck('id')->all())->toBe([$antiDumping->id]);
+
+    UpdateStockDeliveryCost::make()->action($antiDumping, ['applies_to_tariff_codes' => ['3406 00 00 00', '6302.21.00.89']]);
+
+    expect($antiDumping->refresh()->applies_to_tariff_codes)->toBe(['3406000000', '6302210089'])
+        ->and($antiDumping->applies_to_item_ids)->toBe([$candles->id, $textiles->id])
+        ->and((float) $candles->fresh()->cost_duties)->toBe(10.01)
+        ->and((float) $textiles->fresh()->cost_duties)->toBe(30.04)
+        ->and((float) $candles->fresh()->cost_extra)->toBe(20.0)
+        ->and((float) $textiles->fresh()->cost_extra)->toBe(60.0);
+
+    UpdateStockDeliveryCost::make()->action($antiDumping->refresh(), ['amount' => 33.33, 'applies_to_tariff_codes' => ['6302210089']]);
+
+    expect((float) $candles->fresh()->cost_duties)->toBe(10.0)
+        ->and((float) $textiles->fresh()->cost_duties)->toBe(63.33)
+        ->and((float) $textiles->fresh()->cost_total)->toBe(300 + 60 + 63.33)
+        ->and((float) $stockDelivery->refresh()->cost_duties)->toBe(73.33)
+        ->and($stockDelivery->is_costed)->toBeTrue();
+
+    $billed = $antiDumpingDelivery('ANTI-DUMPING-BILL-'.Str::random(6));
+    [$candles, $textiles] = $billed->items()->orderBy('id')->get()->all();
+    StoreStockDeliveryServiceInvoice::make()->action($billed->organisation, [
+        'type'         => StockDeliveryServiceInvoiceTypeEnum::ANTI_DUMPING->value,
+        'issuer'       => 'Customs Broker',
+        'reference'    => 'ADD-'.Str::random(6),
+        'date'         => '2026-11-10',
+        'currency_id'  => $billed->organisation->currency_id,
+        'total_amount' => 25,
+        'allocations'  => [['stock_delivery_id' => $billed->id]],
+    ]);
+    $billRow = $billed->costs()->where('category', 'anti_dumping')->sole();
+
+    expect($billRow->from_service_invoices)->toBeTrue()
+        ->and($billed->costs()->where('type', StockDeliveryCostTypeEnum::DUTY)->sole()->amountInDeliveryCurrency())->toBe(40.0)
+        ->and($billed->refresh()->is_costed)->toBeFalse();
+
+    $this->patch(route('grp.models.stock-delivery-cost.update', $billRow->id), ['amount' => 1])->assertSessionHasErrors('type');
+    $this->patch(route('grp.models.stock-delivery-cost.update', $billRow->id), ['applies_to_tariff_codes' => ['6302210089']])->assertSessionHasNoErrors();
+
+    StoreStockDeliveryServiceInvoice::make()->action($billed->organisation, [
+        'type'         => StockDeliveryServiceInvoiceTypeEnum::FREIGHT->value,
+        'issuer'       => 'Sea Forwarder',
+        'reference'    => 'FWD-'.Str::random(6),
+        'date'         => '2026-11-11',
+        'currency_id'  => $billed->organisation->currency_id,
+        'total_amount' => 40,
+        'allocations'  => [['stock_delivery_id' => $billed->id]],
+    ]);
+
+    expect($billRow->refresh()->applies_to_tariff_codes)->toBe(['6302210089'])
+        ->and((float) $candles->fresh()->cost_duties)->toBe(10.0)
+        ->and((float) $textiles->fresh()->cost_duties)->toBe(55.0)
+        ->and($billed->refresh()->is_costed)->toBeTrue();
+
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $billed->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('costing.tariff_code_options.1.tariff_code', '6302210089')
+            ->where('costing.checklist', fn ($checklist) => collect($checklist)->contains(fn ($row) => $row['category'] === 'anti_dumping' && $row['applies_to_lines'] === 1 && $row['needs_lines'] === false))
+            ->etc());
+
+    $textiles->update(['state' => StockDeliveryItemStateEnum::NOT_RECEIVED, 'not_received_at' => now()]);
+    EvaluateStockDeliveryCosting::run($billed->refresh());
+
+    expect($billed->refresh()->is_costed)->toBeFalse()
+        ->and(EvaluateStockDeliveryCosting::costsWithoutLines($billed)->pluck('id')->all())->toBe([$billRow->id]);
+});
+
+test('an anti-dumping duty follows the tariff codes of the lines until the delivery is first costed, then keeps its lines, and stays out of the customs duty (HELP-4796)', function () {
+    $stockDelivery = placedStockDeliveryWithTwoLines($this, 'ANTI-DUMPING-FOLLOW-'.Str::random(6));
+    $stockDelivery->update(['org_exchange' => 1]);
+    [$candles, $textiles] = $stockDelivery->items()->with('orgStock.tradeUnits')->orderBy('id')->get()->all();
+    $setTariffCode = fn ($item, string $code) => \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($item->orgStock->tradeUnits->first()->refresh(), ['tariff_code' => $code]);
+    $setTariffCode($candles, '3406000000');
+    $setTariffCode($textiles, '6302210089');
+
+    $antiDumping = StoreStockDeliveryCost::make()->action($stockDelivery->refresh(), ['type' => 'extra', 'category' => 'anti_dumping', 'amount' => 20, 'received_at' => now(), 'applies_to_tariff_codes' => ['6302210089']]);
+
+    expect($stockDelivery->refresh()->is_costed)->toBeFalse()
+        ->and((float) $candles->fresh()->cost_duties)->toBe(0.0)
+        ->and((float) $textiles->fresh()->cost_duties)->toBe(20.0);
+
+    $setTariffCode($candles, '6302210089');
+    EvaluateStockDeliveryCosting::run($stockDelivery->refresh());
+
+    expect($antiDumping->refresh()->applies_to_item_ids)->toBe([$candles->id, $textiles->id])
+        ->and((float) $candles->fresh()->cost_duties)->toBe(5.0)
+        ->and((float) $textiles->fresh()->cost_duties)->toBe(15.0);
+
+    UpdateStockDeliveryCustoms::make()->action($stockDelivery->refresh(), [
+        'lines' => [['tariff_code' => '6302 21 00 89', 'duty_rate' => 10, 'customs_value' => 400, 'duty_amount' => 40]],
+    ]);
+    setShippingAndDuty($stockDelivery->refresh(), 0, 40);
+
+    $customs = \App\Actions\GoodsIn\StockDelivery\UI\GetStockDeliveryCustoms::run($stockDelivery->refresh());
+
+    expect($stockDelivery->is_costed)->toBeTrue()
+        ->and((float) $candles->fresh()->cost_duties)->toBe(15.0)
+        ->and((float) $textiles->fresh()->cost_duties)->toBe(45.0)
+        ->and($customs['duty_cost'])->toBe(40.0)
+        ->and($customs['lines'][0]['allocated'])->toBe(40.0)
+        ->and(array_column($customs['items'], 'cost_duties'))->toBe([10.0, 30.0]);
+
+    $setTariffCode($candles, '3406000000');
+    EvaluateStockDeliveryCosting::run($stockDelivery->refresh());
+
+    expect($antiDumping->refresh()->applies_to_item_ids)->toBe([$candles->id, $textiles->id])
+        ->and((float) $candles->fresh()->cost_duties)->toBe(15.0)
+        ->and($stockDelivery->refresh()->is_costed)->toBeTrue();
 });
 
 test('the tariff codes tab groups the items by tariff code and origin, described in English, Slovak and Spanish (HELP-4343)', function () {

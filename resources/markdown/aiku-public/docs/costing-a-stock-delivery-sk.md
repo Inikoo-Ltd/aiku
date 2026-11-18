@@ -1,8 +1,8 @@
 ---
 title: Oceňovanie dodávky na sklad
 summary: Zadajte, koľko dodávka naozaj stála - faktúru agenta alebo dodávateľa a účty zaplatené na mieste za dopravu, clo a prepravu - aby sa sklad ocenil jeho celkovou nákladovou cenou.
-date: 2026-10-13
-source_date: 2026-10-13
+date: 2026-11-18
+source_date: 2026-11-18
 tags: procurement, stock deliveries, costing, landed cost, service invoices, customs
 category: procurement
 ---
@@ -64,7 +64,7 @@ Druhy účtov sú tieto:
 | Freight (preprava) | podľa hmotnosti |
 | Local transport (port to warehouse) (miestna doprava z prístavu do skladu) | podľa hmotnosti |
 | Customs duty (clo) | podľa colného riadku, alebo podľa hodnoty, ak nie je zadané colné vyhlásenie |
-| Anti-dumping duty (antidumpingové clo) | rovnako ako clo |
+| Anti-dumping duty (antidumpingové clo) | podľa hodnoty, len medzi produkty colných kódov, ktoré preň vyberiete |
 | Other import taxes (plastic, excise) (ostatné dovozné dane) | rovnako ako clo |
 | Import VAT (DPH pri dovoze) | neoceňuje sa: vráti sa v daňovom priznaní k DPH |
 | Customs clearance (colné konanie) | podľa hodnoty |
@@ -115,6 +115,14 @@ Stlačte **Edit landed costs** a náklady sa otvoria ako tabuľka. Každý nákl
 - **History** - každá zmena tohto nákladu, s menom toho, kto ju urobil, a časom.
 
 Pod každý náklad môžete pridať poznámku. **Add extra expense** pridá náklad jedného z druhov zo zoznamu vyššie; pri **Other** napíšte, o čo ide.
+
+### Antidumpingové clo
+
+Antidumpingové clo sa platí len z niektorých colných kódov kontajnera, preto má vlastný riadok a nikdy sa nerozdeľuje na celú dodávku. Pod riadkom vyberte colné kódy, na ktoré sa vzťahuje: zoznam ukazuje každý colný kód dodávky s jeho produktmi. Suma sa potom rozdelí podľa hodnoty len medzi produkty s týmito kódmi a v ich nákladoch sa počíta ako clo. Riadok ukazuje, na koľkých produktoch je.
+
+Kým nie sú colné kódy vybrané, dodávku nemožno nakalkulovať a riadok to ukazuje červenou. Produkt bez colného kódu sa vybrať nedá; riadok tieto produkty vypíše, aby ste najprv doplnili colný kód ich obchodnej jednotke. Kým sa dodávka prvýkrát nenakalkuluje, suma sleduje produkty s vybranými kódmi, takže sa zohľadní aj neskôr opravený colný kód. Potom zostáva na produktoch, s ktorými bola nakalkulovaná.
+
+Antidumpingová faktúra zadaná medzi faktúrami za služby dostane vlastný riadok rovnako: jej suma pochádza z faktúry a colné kódy vyberiete na dodávke.
 
 ## Keď účet ešte nedorazil
 

@@ -15,6 +15,7 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\GoodsIn\StockDeliveryCustomsLine;
 use App\Models\GoodsIn\StockDeliveryItem;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
@@ -104,6 +105,70 @@ class DistributeStockDeliveryExtraCost extends OrgAction
             'missing_count' => $missing->count(),
             'missing_codes' => $missing->map(fn (StockDeliveryItem $item) => $item->orgStock?->code)->filter()->unique()->take(5)->values()->all(),
         ];
+    }
+
+    /**
+     * A cost that belongs to some lines only, split among those still taking part by value, to the cent.
+     *
+     * @param  array<int, int>  $itemIds
+     *
+     * @return array<int, float> amount per line id; empty when none of the lines takes part any more
+     */
+    public static function sharesAmong(StockDelivery $stockDelivery, array $itemIds, float $amount): array
+    {
+        $items = self::sharingItems($stockDelivery)->whereIn('id', $itemIds)->orderBy('id')->get();
+
+        if ($items->isEmpty()) {
+            return [];
+        }
+
+        $shares = self::getShares($items, (int) round($amount * 100), self::DISTRIBUTION_BY_VALUE);
+
+        return $items->values()->mapWithKeys(fn (StockDeliveryItem $item, int $index) => [$item->id => $shares[$index] / 100])->all();
+    }
+
+    /**
+     * The lines taking part whose SKO carries one of these tariff codes, compared as digits only.
+     *
+     * @param  array<int, string>  $tariffCodes
+     *
+     * @return array<int, int>
+     */
+    public static function itemIdsWithTariffCodes(StockDelivery $stockDelivery, array $tariffCodes): array
+    {
+        $codes = array_map(StockDeliveryCustomsLine::normaliseTariffCode(...), $tariffCodes);
+
+        return self::sharingItems($stockDelivery)
+            ->with('orgStock.tradeUnits.tariffCodeOverrides')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (StockDeliveryItem $item) => in_array(StockDeliveryCustomsLine::normaliseTariffCode($item->orgStock?->getTariffCode()), $codes, true))
+            ->pluck('id')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The tariff codes of the lines taking part, with their SKOs, for the user to pick an anti-dumping duty's codes
+     * from. SKOs with no tariff code can not be picked: they are listed under '' so the user can give them one.
+     *
+     * @return array<int, array{tariff_code: string, codes: array<int, string>, value: float}>
+     */
+    public static function tariffCodeOptions(StockDelivery $stockDelivery, bool $withoutCode = false): array
+    {
+        return self::sharingItems($stockDelivery)
+            ->with(['orgStock.tradeUnits.tariffCodeOverrides', 'supplierProduct:id,code'])
+            ->get()
+            ->groupBy(fn (StockDeliveryItem $item) => StockDeliveryCustomsLine::normaliseTariffCode($item->orgStock?->getTariffCode()))
+            ->filter(fn (Collection $items, int|string $tariffCode) => ((string) $tariffCode === '') === $withoutCode)
+            ->map(fn (Collection $items, int|string $tariffCode) => [
+                'tariff_code' => (string) $tariffCode,
+                'codes'       => $items->map(fn (StockDeliveryItem $item) => $item->orgStock?->code ?? $item->supplierProduct?->code)->filter()->unique()->sort()->values()->all(),
+                'value'       => round((float) $items->sum(fn (StockDeliveryItem $item) => (float) ($item->cost_items ?? $item->net_amount)), 2),
+            ])
+            ->sortKeys(SORT_STRING)
+            ->values()
+            ->all();
     }
 
     private static function sharingItems(StockDelivery $stockDelivery): HasMany

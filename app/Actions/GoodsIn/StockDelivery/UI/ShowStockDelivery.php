@@ -1264,8 +1264,15 @@ class ShowStockDelivery extends OrgAction
             $row         = $costs->firstWhere('type', $type);
             $checklist[] = $this->costRow($type, $row, $invoices, $uploadRoute($row));
         }
+        $hasTariffCodeRows = !$this->viewedByAgent && $costs->contains(fn (StockDeliveryCost $cost) => $cost->appliesByTariffCode());
+        $withoutLines      = $hasTariffCodeRows ? EvaluateStockDeliveryCosting::costsWithoutLines($stockDelivery, $costs)->pluck('id') : collect();
         foreach ($this->viewedByAgent ? [] : $costs->where('type', StockDeliveryCostTypeEnum::EXTRA) as $row) {
-            $checklist[] = $this->costRow(StockDeliveryCostTypeEnum::EXTRA, $row, $invoices, $uploadRoute($row));
+            $checklist[] = $this->costRow(StockDeliveryCostTypeEnum::EXTRA, $row, $invoices, $uploadRoute($row)) + [
+                'applies_by_tariff_code'  => $row->appliesByTariffCode(),
+                'applies_to_tariff_codes' => $row->applies_to_tariff_codes ?? [],
+                'applies_to_lines'        => count($row->applies_to_item_ids ?? []),
+                'needs_lines'             => $withoutLines->contains($row->id),
+            ];
         }
 
         $agentInvoice = $costs->firstWhere('type', StockDeliveryCostTypeEnum::AGENT_INVOICE);
@@ -1295,6 +1302,8 @@ class ShowStockDelivery extends OrgAction
             'currencies'                 => Currency::orderBy('code')->get(['id', 'code'])->toArray(),
             'checklist'                  => $checklist,
             'extra_types'                => StockDeliveryServiceInvoiceTypeEnum::extraOptions(),
+            'tariff_code_options'        => $hasTariffCodeRows ? DistributeStockDeliveryExtraCost::tariffCodeOptions($stockDelivery) : [],
+            'skos_without_tariff_code'   => $hasTariffCodeRows ? (DistributeStockDeliveryExtraCost::tariffCodeOptions($stockDelivery, withoutCode: true)[0]['codes'] ?? []) : [],
             'costs_missing'              => $this->viewedByAgent ? [] : $stockDelivery->costsMissing(),
             'shipping_basis'             => DistributeStockDeliveryExtraCost::shippingBasis($stockDelivery),
             'agent_invoice_missing'      => !$agentInvoice?->received_at,
@@ -1508,6 +1517,7 @@ class ShowStockDelivery extends OrgAction
             'is_waiting_for_invoice' => __('Waiting for invoice'),
             'invoice_expected_at'    => __('Invoice expected'),
             'is_estimate'            => __('Estimate'),
+            'applies_to_tariff_codes' => __('Tariff codes'),
         ];
 
         $show = fn (string $field, mixed $value): string => match (true) {
@@ -1516,6 +1526,7 @@ class ShowStockDelivery extends OrgAction
             $field === 'currency_id'                                         => Currency::find($value)?->code ?? (string) $value,
             $field === 'category'                                            => StockDeliveryServiceInvoiceTypeEnum::labels()[$value] ?? (string) $value,
             in_array($field, ['received_at', 'invoice_expected_at'])         => Carbon::parse($value)->toDateString(),
+            $field === 'applies_to_tariff_codes'                             => implode(', ', is_string($value) ? (json_decode($value, true) ?: []) : (array) $value) ?: '-',
             default                                                          => (string) $value,
         };
 

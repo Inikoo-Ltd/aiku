@@ -1,7 +1,7 @@
 ---
 title: Costing a stock delivery
 summary: Enter what a delivery really cost - the agent or supplier invoice and the bills paid locally for freight, customs and transport - so the stock is valued at its landed cost.
-date: 2026-10-13
+date: 2026-11-18
 tags: procurement, stock deliveries, costing, landed cost, service invoices, customs
 category: procurement
 help_routes: grp.org.procurement.stock_deliveries, grp.org.procurement.service_invoices, grp.org.procurement.dashboard
@@ -64,7 +64,7 @@ The kinds of bill are:
 | Freight | by weight |
 | Local transport (port to warehouse) | by weight |
 | Customs duty | by customs line, or by value when no declaration is entered |
-| Anti-dumping duty | the same as customs duty |
+| Anti-dumping duty | by value, only over the products of the tariff codes you pick for it |
 | Other import taxes (plastic, excise) | the same as customs duty |
 | Import VAT | not costed: it is recovered in the VAT return |
 | Customs clearance | by value |
@@ -115,6 +115,14 @@ Press **Edit landed costs** to open the costs as a table. Each cost has:
 - **History** - every change to that cost, with who made it and when.
 
 A note can be added under each cost. **Add extra expense** adds a cost of one of the kinds in the list above; for **Other**, say what it is.
+
+### Anti-dumping duty
+
+Anti-dumping duty is charged only on some tariff codes of a container, so it has a row of its own and is never shared over the whole delivery. Under the row, pick the tariff codes it applies to: the list shows each tariff code of the delivery with its products. The duty is then shared by value only over the products with those codes, and counts as duty in their cost. The row says how many products it is on.
+
+Until the tariff codes are picked the delivery can not be costed, and the row says so in red. A product with no tariff code can not be picked; the row lists those products so you can give their trade unit a tariff code first. Until the delivery is costed for the first time, the duty follows the products that carry the picked codes, so a tariff code corrected later is taken into account. After that it stays on the products it was costed on.
+
+An anti-dumping bill entered under service invoices gets its own row in the same way: its amount comes from the bill, and you pick its tariff codes on the delivery.
 
 ## When a bill has not arrived yet
 
