@@ -32,7 +32,7 @@ import { useWindowSize } from "@vueuse/core"
 import { useBundle } from "../../../Composables/useBundle"
 import { useFloatingButtonsDrag } from "@/Iris/Composables/useFloatingButtonsDrag"
 import Image from "@common/Components/Image.vue"
-import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
+import AssistantIcon from "@/Iris/Components/AssistantIcon.vue"
 
 const MessageArea = defineAsyncComponent(() => import("@/Components/Chat/Customer/MessageArea.vue"))
 const MessageHistory = defineAsyncComponent(() => import("@/Components/Chat/MessageHistory.vue"))
@@ -1117,7 +1117,7 @@ if (isClient) {
                             <button v-for="(contactOption, index) in contactOptions" :key="index"
                                 @click="selectContactOption(contactOption)"
                                 class="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-gray-50">
-                                <MerlinIcon v-if="contactOption.isMerlin" mono class="text-lg"
+                                <AssistantIcon v-if="contactOption.isMerlin" mono class="text-lg"
                                     :style="{ color: contactOptionColor(contactOption), width: '1.25em', height: '1.25em' }" />
                                 <FontAwesomeIcon v-else :icon="contactOptionIcon(contactOption)" class="text-lg" fixed-width
                                     :style="{ color: contactOptionColor(contactOption) }" aria-hidden="true" />

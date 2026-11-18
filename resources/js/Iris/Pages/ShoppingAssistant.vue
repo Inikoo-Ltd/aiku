@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
+import AssistantIcon from "@/Iris/Components/AssistantIcon.vue"
 import MerlinThinking from "@/Iris/Components/MerlinThinking.vue"
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import axios from "axios"
@@ -13,7 +13,7 @@ import TabPanels from "primevue/tabpanels"
 import TabPanel from "primevue/tabpanel"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset } from "@far"
+import { faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset, faArrowRight } from "@far"
 import { faThumbsUp, faThumbsDown } from "@far"
 import { faThumbsUp as fasThumbsUp, faThumbsDown as fasThumbsDown } from "@fas"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
@@ -32,7 +32,7 @@ import {
     shoppingAssistantQuestionKey,
     useShoppingAssistant,
 } from "@/Iris/Composables/useShoppingAssistant"
-library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset, faThumbsUp, faThumbsDown, fasThumbsUp, fasThumbsDown)
+library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset, faArrowRight, faThumbsUp, faThumbsDown, fasThumbsUp, fasThumbsDown)
 
 type Card = ProductResource & {
     assistant_reason: string
@@ -83,6 +83,7 @@ const assistantName = computed(() => assistant.value?.name || props.assistant_na
 const isMounted = ref(false)
 const isLayoutReady = computed(() => isMounted.value && !layout.iris_varnish?.isFetching)
 const isLoggedOut = computed(() => isLayoutReady.value && !layout.iris?.is_logged_in)
+const showsRangePanel = computed(() => isLayoutReady.value && !!layout.iris?.is_logged_in && !isDropshipping.value)
 
 const conversation = ref<string | null>(null)
 const messages = ref<Message[]>([])
@@ -101,8 +102,8 @@ const talkError = ref("")
 const handingOver = ref<number | "link" | null>(null)
 const handOverErrors = ref<Record<number, string>>({})
 
-const hasPanelProducts = ref(true)
 const hasForgottenProducts = ref(false)
+const rangePanelHasProducts = ref(true)
 
 const focusLandingTextarea = () => {
     const textarea = document.querySelector<HTMLTextAreaElement>(".landing-textarea")
@@ -116,6 +117,7 @@ const showLanding = computed(() => !messages.value.length && !isPending.value &&
 const isLandingVisible = computed(() => showLanding.value && !!assistant.value)
 const isChatVisible = computed(() => !isLandingVisible.value && (!!assistant.value || messages.value.length > 0 || isPending.value))
 const isMerlin = computed(() => assistantName.value.trim().toLowerCase() === "merlin")
+const isLittleBird = computed(() => assistantName.value.trim().toLowerCase() === "little bird")
 
 const knowsTheRange = computed(() => isDropshipping.value
     ? (props.products_in_range
@@ -131,13 +133,7 @@ const knowsTheRange = computed(() => isDropshipping.value
         })
         : ctrans(":name knows every product in our range and what shops like yours buy most.", { name: assistantName.value })))
 
-const landingIntro = computed(() => isDropshipping.value
-    ? ctrans(":name is your dropshipping coach. Ask in your own words and your own language: how to start, how to connect your Shopify, eBay, WooCommerce, TikTok Shop or Wix store, which products to list, how to price them, and how orders and delivery to your buyers work. When :name is not sure, one of our experts answers.", { name: assistantName.value })
-    : ctrans(":name is a new way to work with us. Ask in your own words and your own language: what sells for shops like yours, a product, offers, delivery, samples or product documents. When :name is not sure, one of our experts answers.", { name: assistantName.value }))
 
-const landingFooter = computed(() => isDropshipping.value
-    ? ctrans("Something not working with your store or orders? :name passes it straight to our engineers.", { name: assistantName.value })
-    : ctrans("Planning a big order? :name passes it to our team.", { name: assistantName.value }))
 
 const PLATFORM_NAMES: Record<string, string> = { shopify: "Shopify", ebay: "eBay", woocommerce: "WooCommerce", tiktok: "TikTok Shop", wix: "Wix", amazon: "Amazon", magento: "Magento", allegro: "Allegro" }
 const NEXT_PLATFORMS = ["shopify", "tiktok", "ebay", "woocommerce"]
@@ -149,52 +145,51 @@ const connectedPlatforms = computed<string[]>(() => {
 
 const nextPlatform = computed(() => NEXT_PLATFORMS.find((slug) => !connectedPlatforms.value.includes(slug)) ?? null)
 
-const starterQuestions = computed(() => isDropshipping.value ? (connectedPlatforms.value.length ? [
+type StarterQuestion = { icon: string, title: string, subtitle?: string, question: string }
+
+const asStarter = (question: string, index: number): StarterQuestion => ({ icon: index % 2 ? "✧" : "✦", title: question, question })
+
+const starterQuestions = computed<StarterQuestion[]>(() => isDropshipping.value ? (connectedPlatforms.value.length ? [
     ...connectedPlatforms.value.slice(0, 2).map((slug) => ctrans("Best sellers to add to my :platform store", { platform: PLATFORM_NAMES[slug] })),
     ctrans("How do I get more sales on :platform?", { platform: PLATFORM_NAMES[connectedPlatforms.value[0]] }),
     ...(nextPlatform.value ? [ctrans("Should I start selling on :platform too?", { platform: PLATFORM_NAMES[nextPlatform.value] })] : []),
     ctrans("How should I set my selling prices?"),
     ctrans("How fast do you send orders to my buyers?"),
-] : [
+].map(asStarter) : [
     ctrans("I am new to dropshipping – how do I start?"),
     ctrans("How do I connect my Shopify store?"),
     ctrans("Best sellers to list on eBay"),
     ctrans("How should I set my selling prices?"),
     ctrans("What sells well for a crystal store?"),
     ctrans("How fast do you send orders to my buyers?"),
-]) : [
-    ctrans("I run a crystal shop – what am I missing?"),
-    ctrans("Low-priced Christmas gifts that sell well"),
-    ctrans("Help me start bath & body"),
-    ...(hasForgottenProducts.value ? [ctrans("What did I use to order that still sells?")] : []),
-    ctrans("Do you send samples?"),
-    ctrans("How fast do you deliver?"),
+].map(asStarter)) : [
+    {
+        icon: "✦",
+        title: ctrans("I run a crystal shop – what am I missing?"),
+        subtitle: ctrans("Find complementary products your customers might love"),
+        question: ctrans("I run a crystal shop – what am I missing?"),
+    },
+    {
+        icon: "▣",
+        title: ctrans("What goes well with crystals?"),
+        subtitle: ctrans("Ideas for cross-selling and building collections"),
+        question: ctrans("What products would pair well with crystals and incense?"),
+    },
+    {
+        icon: "✧",
+        title: ctrans("How can I refresh my displays?"),
+        subtitle: ctrans("Simple merchandising ideas for independent shops"),
+        question: ctrans("How can I refresh my shop display for the next season?"),
+    },
+    {
+        icon: "?",
+        title: ctrans("I’m opening a gift shop. What should I stock?"),
+        subtitle: ctrans("Build a thoughtful first wholesale range"),
+        question: ctrans("I’m opening a gift shop – what should I stock first?"),
+    },
 ])
 
-const steps = computed(() => [
-    isDropshipping.value
-        ? { title: ctrans("Ask anything"), body: ctrans("Starting out, your store, a product or a problem – in your own words.") }
-        : { title: ctrans("Ask anything"), body: ctrans("A question, your shop or what you need – in your own words.") },
-    isDropshipping.value
-        ? { title: ctrans("Get clear steps and products to list"), body: ctrans("What to do next for your store, and products picked for online sellers, each with a one-line reason.") }
-        : { title: ctrans("Get picks with a reason"), body: ctrans("Must-haves and add-ons to your range, each with a one-line reason – all live and in stock.") },
-    isDropshipping.value
-        ? { title: ctrans("Add to your store or keep chatting"), body: ctrans("Send products to your sales channels from each card, ask how to set up your store or start a new conversation.") }
-        : { title: ctrans("Add to basket or keep chatting"), body: ctrans("Add them all in one click, ask a follow-up question or start a new conversation.") },
-])
 
-const promises = computed(() => isDropshipping.value ? [
-    ctrans("Help to set up and connect your store"),
-    ctrans("Products to list, with a reason for each"),
-    ctrans("Tips to get your first sales and grow"),
-    ctrans("Here day and night, also when our team is closed"),
-] : [
-    ctrans("Only products in stock now"),
-    ctrans("Your own trade prices on every card"),
-    ctrans("A reason for every suggestion"),
-    ctrans("Here day and night, also when our team is closed"),
-    ctrans("Problems with your account or our website go straight to our engineers"),
-])
 
 const latestAssistantId = computed(() => [...messages.value].reverse().find((message) => message.role === "assistant")?.id ?? null)
 
@@ -735,181 +730,307 @@ const sendOnEnter = (event: KeyboardEvent) => {
 <template>
     <div :class="isLandingVisible || isChatVisible ? 'landing-page' : 'assistant-page px-4 py-8'">
         <div v-if="isLandingVisible">
-            <section class="landing-hero">
-                <div class="landing-container landing-hero-inner">
-                    <div class="landing-hero-main">
-                        <div class="landing-ask">
+            <section v-if="isLittleBird" class="bird-landing">
+                <div class="bird-wrap">
+                    <div v-if="canTalkToAPerson" class="bird-topbar">
+                        <button type="button" class="bird-talk" :aria-expanded="isTalkBoxOpen" @click="isTalkBoxOpen = !isTalkBoxOpen">
+                            <FontAwesomeIcon icon="far fa-headset" fixed-width aria-hidden="true" />
+                            {{ ctrans("Talk to a person") }}
+                        </button>
+                    </div>
+
+                    <div v-if="isTalkBoxOpen && canTalkToAPerson" class="bird-card bird-talk-box">
+                        <label for="assistant-talk-to-a-person-bird" class="mb-1 block text-sm font-medium">
+                            {{ ctrans("What would you like to ask our team?") }} <span class="text-red-500">*</span>
+                        </label>
+                        <Textarea id="assistant-talk-to-a-person-bird" v-model="talkDraft" rows="3" autoResize maxlength="1000" class="w-full" />
+                        <p v-if="talkError" class="mt-1 text-xs text-red-500">{{ talkError }}</p>
+                        <div class="mt-3 flex w-full gap-2">
+                            <Button
+                                type="tertiary"
+                                class="shrink-0"
+                                :label="ctrans('Cancel')"
+                                :disabled="handingOver !== null"
+                                @click="isTalkBoxOpen = false; talkError = ''"
+                            >
+                                <template #icon>
+                                    <FontAwesomeIcon icon="far fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                            <Button
+                                type="primary"
+                                full
+                                :label="ctrans('Send to our team')"
+                                :loading="handingOver === 'link'"
+                                :disabled="handingOver !== null"
+                                @click="handOver(null, talkDraft)"
+                            >
+                                <template #icon>
+                                    <FontAwesomeIcon icon="far fa-paper-plane" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div class="bird-hero">
+                        <AssistantIcon littleBird class="bird-mark" />
+                        <p class="bird-eyebrow">{{ ctrans("Your AI shopping assistant") }}</p>
+                        <h1 class="bird-title">
+                            {{ ctrans("Ask :name", { name: assistantName }) }}
+                            <span class="bird-beta" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
+                        </h1>
+                        <p class="bird-lead">{{ knowsTheRange }}</p>
+                    </div>
+
+                    <div class="bird-search">
+                        <div class="bird-search-row">
                             <Textarea
                                 v-model="draft"
-                                rows="5"
+                                rows="1"
                                 auto-resize
                                 maxlength="1000"
-                                class="landing-textarea"
-                                :aria-label="ctrans('Ask anything')"
-                                :placeholder="isDropshipping && connectedPlatforms.length
-                                    ? ctrans('e.g. What should I add to my :platform store for Christmas, and how do I get more sales?', { platform: PLATFORM_NAMES[connectedPlatforms[0]] })
-                                    : isDropshipping
-                                    ? ctrans('e.g. I’m starting a Shopify store for crystals. What should I list first, and how do I connect my store?')
-                                    : ctrans('e.g. We’re a small crystal shop in York. What Christmas gifts should we stock, and do you send samples?')"
+                                class="landing-textarea bird-search-input"
+                                :aria-label="ctrans('Ask :name', { name: assistantName })"
+                                :placeholder="ctrans('Ask :name...', { name: assistantName })"
                                 @keydown.enter="sendOnEnter"
                             />
-                            <div class="landing-ask-footer">
-                                <p class="landing-hint">{{ isDropshipping ? ctrans("A question, your store, what you need – the more :name knows, the better the answer.", { name: assistantName }) : ctrans("A question, your shop, what you need – the more :name knows, the better the answer.", { name: assistantName }) }}</p>
-                                <button
-                                    type="button"
-                                    class="landing-ask-button"
-                                    :disabled="!!assistant && !draft.trim()"
-                                    @click="askFromLanding(draft)"
-                                >
-                                    <MerlinIcon v-if="assistant" mono />
-                                    <FontAwesomeIcon v-else icon="far fa-sign-in-alt" fixed-width aria-hidden="true" />
-                                    {{ assistant ? ctrans("Ask :name", { name: assistantName }) : ctrans("Log in to ask :name", { name: assistantName }) }}
-                                </button>
-                            </div>
-                        </div>
-                        <p v-if="errorMessage" class="mt-2 text-xs text-red-500">{{ errorMessage }}</p>
-                        <p v-if="notice" class="mt-2 text-sm text-gray-600">{{ notice }}</p>
-                        <p class="landing-disclaimer">{{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}</p>
-
-                        <div class="landing-chips">
                             <button
-                                v-for="question in starterQuestions"
-                                :key="question"
                                 type="button"
-                                class="landing-chip"
-                                @click="askFromLanding(question)"
+                                class="bird-send"
+                                :disabled="!draft.trim()"
+                                :title="ctrans('Ask :name', { name: assistantName })"
+                                :aria-label="ctrans('Ask :name', { name: assistantName })"
+                                @click="askFromLanding(draft)"
                             >
-                                {{ question }}
+                                <FontAwesomeIcon icon="far fa-arrow-right" fixed-width aria-hidden="true" />
                             </button>
                         </div>
-
-                        <div v-if="canTalkToAPerson" class="landing-talk">
-                            <div class="landing-talk-row">
-                                <span class="text-xs text-gray-500">{{ ctrans("Prefer a person?") }}</span>
-                                <button
-                                    type="button"
-                                    class="landing-chip landing-talk-button"
-                                    :aria-expanded="isTalkBoxOpen"
-                                    @click="isTalkBoxOpen = !isTalkBoxOpen"
-                                >
-                                    <FontAwesomeIcon icon="far fa-headset" fixed-width aria-hidden="true" />
-                                    {{ ctrans("Talk to a person") }}
-                                </button>
-                            </div>
-
-                            <div v-if="isTalkBoxOpen" class="chat-talk-box landing-talk-box">
-                                <label for="assistant-talk-to-a-person-landing" class="mb-1 block text-sm font-medium">
-                                    {{ ctrans("What would you like to ask our team?") }} <span class="text-red-500">*</span>
-                                </label>
-                                <Textarea id="assistant-talk-to-a-person-landing" v-model="talkDraft" rows="3" autoResize maxlength="1000" class="w-full" />
-                                <p v-if="talkError" class="mt-1 text-xs text-red-500">{{ talkError }}</p>
-                                <div class="mt-3 flex w-full gap-2">
-                                    <Button
-                                        type="tertiary"
-                                        class="shrink-0"
-                                        :label="ctrans('Cancel')"
-                                        :disabled="handingOver !== null"
-                                        @click="isTalkBoxOpen = false; talkError = ''"
-                                    >
-                                        <template #icon>
-                                            <FontAwesomeIcon icon="far fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                                        </template>
-                                    </Button>
-                                    <Button
-                                        type="primary"
-                                        full
-                                        :label="ctrans('Send to our team')"
-                                        :loading="handingOver === 'link'"
-                                        :disabled="handingOver !== null"
-                                        @click="handOver(null, talkDraft)"
-                                    >
-                                        <template #icon>
-                                            <FontAwesomeIcon icon="far fa-paper-plane" fixed-width aria-hidden="true" />
-                                        </template>
-                                    </Button>
-                                </div>
-                            </div>
+                        <div class="bird-chips">
+                            <button
+                                v-for="starter in starterQuestions"
+                                :key="starter.question"
+                                type="button"
+                                class="bird-chip"
+                                @click="askFromLanding(starter.question)"
+                            >
+                                {{ starter.title }}
+                            </button>
                         </div>
+                    </div>
+                    <p v-if="errorMessage" class="bird-error">{{ errorMessage }}</p>
+                    <p v-if="notice" class="bird-notice">{{ notice }}</p>
 
-                        <div v-if="isHistoryLoading || history.length" class="landing-history">
-                            <p class="landing-history-title">{{ ctrans("Recent conversations") }}</p>
-                            <div v-if="isHistoryLoading && !history.length" class="flex flex-col gap-1.5">
-                                <div v-for="index in 3" :key="index" class="skeleton h-6 rounded" />
+                    <div class="bird-grid" :class="{ 'bird-grid-with-panel': showsRangePanel && rangePanelHasProducts }">
+                        <section class="bird-card bird-history" :aria-label="ctrans('Recent conversations')">
+                            <h2 class="bird-card-title">{{ ctrans("Recent conversations") }}</h2>
+                            <div v-if="isHistoryLoading && !history.length" class="flex flex-col gap-3">
+                                <div v-for="index in 3" :key="index" class="skeleton h-14 rounded-2xl" />
                             </div>
-                            <nav v-else class="landing-history-list" :aria-label="ctrans('Recent conversations')">
+                            <p v-else-if="!history.length" class="bird-history-empty">{{ ctrans("Your conversations will show here.") }}</p>
+                            <nav v-else class="bird-history-list">
                                 <button
                                     v-for="item in landingHistory"
                                     :key="item.conversation"
                                     type="button"
-                                    class="landing-history-item"
+                                    class="bird-history-item"
                                     @click="openConversation(item.conversation)"
                                 >
-                                    <FontAwesomeIcon icon="far fa-comment-alt" class="landing-history-icon" fixed-width aria-hidden="true" />
-                                    <span class="landing-history-text">{{ item.title }}</span>
-                                    <span class="landing-history-date">{{ historyDate(item.last_message_at) }}</span>
+                                    <span class="bird-history-text">{{ item.title }}</span>
+                                    <span class="bird-history-date">{{ historyDate(item.last_message_at) }}</span>
                                 </button>
                             </nav>
+                        </section>
+
+                        <RangeAdvisorPanel
+                            v-if="showsRangePanel"
+                            littleBird
+                            :assistantName
+                            :fieldValue
+                            :screenType
+                            @loaded="(hasProducts, hasForgotten) => { rangePanelHasProducts = hasProducts; hasForgottenProducts = hasForgotten }"
+                            @tellShop="focusLandingTextarea"
+                        />
+                    </div>
+
+                    <p class="bird-note">{{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}</p>
+                </div>
+            </section>
+
+            <template v-else>
+            <section class="merlin-landing">
+                <div class="merlin-wrap">
+                    <header class="merlin-top">
+                        <div class="merlin-brand">
+                            <AssistantIcon :littleBird="isLittleBird" class="merlin-brand-icon" />
+                            <div class="min-w-0">
+                                <p class="merlin-brand-name">
+                                    {{ assistantName }} <span class="merlin-accent-text" aria-hidden="true">✦</span>
+                                </p>
+                                <p class="merlin-brand-tagline">{{ isDropshipping ? ctrans("Your dropshipping assistant") : ctrans("Your AI shopping assistant") }}</p>
+                            </div>
+                        </div>
+                        <div class="merlin-top-meta">
+                            <span class="beta-tag" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
+                            <span class="merlin-status"><i class="merlin-status-dot" aria-hidden="true" />{{ ctrans("Here to help") }}</span>
+                        </div>
+                    </header>
+
+                    <div class="merlin-hero">
+                        <AssistantIcon :littleBird="isLittleBird" class="merlin-hero-icon" />
+                        <p class="merlin-eyebrow">✦ {{ ctrans("A little magic. A lot of knowledge.") }}</p>
+                        <h1 class="merlin-title">
+                            {{ ctrans("Hello, I'm") }} <em>{{ assistantName }}.</em><br>
+                            {{ ctrans("How can I help?") }}
+                        </h1>
+                        <p class="merlin-intro">{{ knowsTheRange }}</p>
+                        <p v-if="isMerlin" class="merlin-legend">
+                            {{ ctrans("Named after the wise wizard of British legend – a fitting guide for a British company that has travelled the world for good finds since 1995.") }}
+                        </p>
+                    </div>
+
+                    <div class="merlin-suggest">
+                        <p class="merlin-caption">{{ ctrans("Not sure where to start? Try asking me...") }}</p>
+                        <div class="merlin-cards">
+                            <button
+                                v-for="starter in starterQuestions"
+                                :key="starter.question"
+                                type="button"
+                                class="merlin-card"
+                                @click="askFromLanding(starter.question)"
+                            >
+                                <span class="merlin-card-icon" aria-hidden="true">{{ starter.icon }}</span>
+                                <span class="merlin-card-body">
+                                    <span class="merlin-card-text">{{ starter.title }}</span>
+                                    <span v-if="starter.subtitle" class="merlin-card-subtitle">{{ starter.subtitle }}</span>
+                                </span>
+                                <span class="merlin-card-arrow" aria-hidden="true">↗</span>
+                            </button>
                         </div>
                     </div>
 
-                    <aside class="landing-hero-info">
-                        <div class="landing-hero-heading">
-                            <MerlinIcon themed class="landing-hero-logo" />
-                            <div class="min-w-0">
-                                <div class="landing-eyebrow-row">
-                                    <p class="landing-eyebrow">{{ ctrans("Meet :name · Ask us anything", { name: assistantName }) }}</p>
-                                    <span class="beta-tag" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
-                                </div>
+                    <div class="merlin-form">
+                        <Textarea
+                            v-model="draft"
+                            rows="2"
+                            auto-resize
+                            maxlength="1000"
+                            class="landing-textarea merlin-textarea"
+                            :aria-label="ctrans('Ask :name', { name: assistantName })"
+                            :placeholder="isDropshipping && connectedPlatforms.length
+                                ? ctrans('e.g. What should I add to my :platform store for Christmas, and how do I get more sales?', { platform: PLATFORM_NAMES[connectedPlatforms[0]] })
+                                : isDropshipping
+                                ? ctrans('e.g. I’m starting a Shopify store for crystals. What should I list first, and how do I connect my store?')
+                                : ctrans('Ask :name anything...', { name: assistantName })"
+                            @keydown.enter="sendOnEnter"
+                        />
+                        <div class="merlin-form-actions">
+                            <span class="merlin-helper">✦ {{ ctrans("Your next great idea starts here") }}</span>
+                            <button
+                                type="button"
+                                class="merlin-send"
+                                :disabled="!draft.trim()"
+                                :title="ctrans('Ask :name', { name: assistantName })"
+                                :aria-label="ctrans('Ask :name', { name: assistantName })"
+                                @click="askFromLanding(draft)"
+                            >
+                                <FontAwesomeIcon icon="far fa-paper-plane" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
+                    </div>
+                    <p v-if="errorMessage" class="merlin-error">{{ errorMessage }}</p>
+                    <p v-if="notice" class="merlin-notice">{{ notice }}</p>
 
-                                <h1 class="landing-title">
-                                    {{ ctrans("Ask :name anything.", { name: assistantName }) }}<br>
-                                    {{ ctrans("This is not just a search.") }}
-                                </h1>
+                    <aside v-if="canTalkToAPerson" class="merlin-human" :aria-label="ctrans('Talk to a person')">
+                        <div class="merlin-human-row">
+                            <div>
+                                <h3 class="merlin-human-title">{{ ctrans("Prefer to talk to a person?") }}</h3>
+                                <p class="merlin-human-text">{{ ctrans("Our friendly customer service team is here to help.") }}</p>
                             </div>
+                            <button
+                                type="button"
+                                class="merlin-human-link"
+                                :aria-expanded="isTalkBoxOpen"
+                                @click="isTalkBoxOpen = !isTalkBoxOpen"
+                            >
+                                <FontAwesomeIcon icon="far fa-headset" fixed-width aria-hidden="true" />
+                                {{ ctrans("Talk to customer service") }}
+                            </button>
                         </div>
 
-                        <p class="landing-intro">
-                            {{ knowsTheRange }}
-                            {{ landingIntro }}
-                        </p>
-
-                        <p v-if="isMerlin" class="landing-legend">
-                            {{ ctrans("Named after the wise wizard of British legend – a fitting guide for a British company that has travelled the world for good finds since 1995.") }}
-                        </p>
-
-                        <div v-if="!hasPanelProducts" class="landing-steps">
-                            <div v-for="(step, index) in steps" :key="step.title" class="landing-step">
-                                <span class="landing-step-number" aria-hidden="true">{{ index + 1 }}</span>
-                                <div>
-                                    <p class="landing-step-title">{{ step.title }}</p>
-                                    <p class="landing-step-body">{{ step.body }}</p>
-                                </div>
+                        <div v-if="isTalkBoxOpen" class="chat-talk-box merlin-talk-box">
+                            <label for="assistant-talk-to-a-person-landing" class="mb-1 block text-sm font-medium">
+                                {{ ctrans("What would you like to ask our team?") }} <span class="text-red-500">*</span>
+                            </label>
+                            <Textarea id="assistant-talk-to-a-person-landing" v-model="talkDraft" rows="3" autoResize maxlength="1000" class="w-full" />
+                            <p v-if="talkError" class="mt-1 text-xs text-red-500">{{ talkError }}</p>
+                            <div class="mt-3 flex w-full gap-2">
+                                <Button
+                                    type="tertiary"
+                                    class="shrink-0"
+                                    :label="ctrans('Cancel')"
+                                    :disabled="handingOver !== null"
+                                    @click="isTalkBoxOpen = false; talkError = ''"
+                                >
+                                    <template #icon>
+                                        <FontAwesomeIcon icon="far fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                                    </template>
+                                </Button>
+                                <Button
+                                    type="primary"
+                                    full
+                                    :label="ctrans('Send to our team')"
+                                    :loading="handingOver === 'link'"
+                                    :disabled="handingOver !== null"
+                                    @click="handOver(null, talkDraft)"
+                                >
+                                    <template #icon>
+                                        <FontAwesomeIcon icon="far fa-paper-plane" fixed-width aria-hidden="true" />
+                                    </template>
+                                </Button>
                             </div>
                         </div>
-
-                        <ul class="landing-promises">
-                            <li v-for="promise in promises" :key="promise">✓ {{ promise }}</li>
-                            <li>{{ landingFooter }}</li>
-                        </ul>
                     </aside>
+
+                    <div v-if="isHistoryLoading || history.length" class="merlin-history">
+                        <p class="merlin-caption">{{ ctrans("Recent conversations") }}</p>
+                        <div v-if="isHistoryLoading && !history.length" class="flex flex-col gap-1.5">
+                            <div v-for="index in 3" :key="index" class="skeleton h-9 rounded-lg" />
+                        </div>
+                        <nav v-else class="merlin-history-list" :aria-label="ctrans('Recent conversations')">
+                            <button
+                                v-for="item in landingHistory"
+                                :key="item.conversation"
+                                type="button"
+                                class="merlin-history-item"
+                                @click="openConversation(item.conversation)"
+                            >
+                                <FontAwesomeIcon icon="far fa-comment-alt" class="merlin-history-icon" fixed-width aria-hidden="true" />
+                                <span class="merlin-history-text">{{ item.title }}</span>
+                                <span class="merlin-history-date">{{ historyDate(item.last_message_at) }}</span>
+                            </button>
+                        </nav>
+                    </div>
+
+                    <p class="merlin-note">{{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}</p>
                 </div>
             </section>
 
             <RangeAdvisorPanel
-                v-if="isLayoutReady && layout.iris?.is_logged_in && !isDropshipping"
+                v-if="showsRangePanel"
                 :assistantName
                 :fieldValue
                 :screenType
-                @loaded="(hasProducts, hasForgotten) => { hasPanelProducts = hasProducts; hasForgottenProducts = hasForgotten }"
+                @loaded="(_hasProducts, hasForgotten) => { hasForgottenProducts = hasForgotten }"
                 @tellShop="focusLandingTextarea"
             />
+            </template>
         </div>
 
-        <div v-else-if="isChatVisible" class="chat-shell" :class="{ 'chat-shell-collapsed': isSidebarCollapsed }">
+        <div v-else-if="isChatVisible" class="chat-shell" :class="{ 'chat-shell-collapsed': isSidebarCollapsed, 'chat-shell-little-bird': isLittleBird }">
             <aside class="chat-sidebar" :class="{ 'chat-sidebar-open': isHistoryOpen }">
                 <div class="chat-sidebar-top">
                     <span class="chat-sidebar-brand">
-                        <MerlinIcon themed class="chat-sidebar-brand-icon" />
+                        <AssistantIcon :littleBird="isLittleBird" class="chat-sidebar-brand-icon" />
                         {{ assistantName }}
                     </span>
                     <button
@@ -933,7 +1054,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                 <div v-if="isHistoryLoading && !history.length" class="flex flex-col gap-2">
                     <div v-for="index in 4" :key="index" class="skeleton h-9 rounded" />
                 </div>
-                <p v-else-if="!history.length" class="px-2 text-xs text-gray-500">{{ ctrans("Your conversations will show here.") }}</p>
+                <p v-else-if="!history.length" class="chat-muted px-2 text-xs">{{ ctrans("Your conversations will show here.") }}</p>
                 <nav v-else class="flex flex-col gap-0.5">
                     <button
                         v-for="item in history"
@@ -963,7 +1084,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     >
                         <FontAwesomeIcon :icon="isHistoryOpen ? 'far fa-times' : 'far fa-bars'" fixed-width aria-hidden="true" />
                     </button>
-                    <span class="assistant-avatar" aria-hidden="true"><MerlinIcon themed /></span>
+                    <span class="assistant-avatar" aria-hidden="true"><AssistantIcon :littleBird="isLittleBird" /></span>
                     <div class="min-w-0 flex-1">
                         <p class="chat-header-name">
                             {{ assistantName }}
@@ -996,7 +1117,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                         </div>
 
                         <div v-else class="flex gap-3">
-                            <div class="assistant-avatar" aria-hidden="true"><MerlinIcon themed /></div>
+                            <div class="assistant-avatar" aria-hidden="true"><AssistantIcon :littleBird="isLittleBird" /></div>
                             <div class="min-w-0 flex-1">
                                 <p class="chat-text whitespace-pre-line">{{ message.body }}</p>
 
@@ -1014,7 +1135,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                                 <div class="assistant-grid">
                                                     <div v-for="card in tab.cards" :key="`${card.id}-${cardsVersion}`" @click.capture="(event) => recordClick(event, card)">
                                                         <template v-if="isDropshipping">
-                                                            <p class="mb-1 text-xs text-gray-600">{{ card.assistant_reason }}</p>
+                                                            <p class="chat-muted mb-1 text-xs">{{ card.assistant_reason }}</p>
                                                             <div :style="getStyles(fieldValue?.card_product?.properties, screenType)" class="relative flex justify-center rounded">
                                                                 <RenderProductDropshiping :code="productCardCode" :product="card"
                                                                 :productHasPortfolio="card.portfolio_channels ?? []"
@@ -1036,6 +1157,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                         <Button
                                             type="tertiary"
                                             size="xs"
+                                            class="chat-dark-button"
                                             :label="notInBasket(message).length ? ctrans('Add all to basket') : ctrans('All in your basket')"
                                             :disabled="!notInBasket(message).length || addingTo !== null"
                                             :loading="addingTo === message.id"
@@ -1049,32 +1171,35 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                     </div>
                                 </template>
 
-                                <div v-if="message.id === latestAssistantId && message.follow_ups?.length" class="mt-4 flex flex-wrap gap-2">
+                                <div v-if="message.id === latestAssistantId && message.follow_ups?.length" class="merlin-cards chat-follow-ups">
                                     <button
-                                        v-for="followUp in message.follow_ups"
+                                        v-for="(followUp, index) in message.follow_ups"
                                         :key="followUp"
                                         type="button"
-                                        class="landing-chip"
+                                        class="merlin-card"
                                         :disabled="isPending"
                                         @click="send(followUp)"
                                     >
-                                        {{ followUp }}
+                                        <span class="merlin-card-icon" aria-hidden="true">{{ index % 2 ? "✧" : "✦" }}</span>
+                                        <span class="merlin-card-text">{{ followUp }}</span>
+                                        <span class="merlin-card-arrow" aria-hidden="true">↗</span>
                                     </button>
                                 </div>
 
                                 <div v-if="message.hand_over_offer && (handOverAvailable || message.handed_over)" class="mt-3">
-                                    <p v-if="message.handed_over" class="text-xs text-gray-500">{{ ctrans("Passed to our team") }}</p>
+                                    <p v-if="message.handed_over" class="chat-muted text-xs">{{ ctrans("Passed to our team") }}</p>
                                     <Button
                                         v-else
                                         type="tertiary"
                                         size="xs"
+                                        class="chat-dark-button"
                                         :label="ctrans('Talk to our team')"
                                         :disabled="handingOver !== null || isPending"
                                         @click="handOver(message.id)"
                                     >
                                         <template #icon>
                                             <LoadingIcon v-if="handingOver === message.id" />
-                                            <FontAwesomeIcon v-else icon="far fa-headset" class="text-gray-500" fixed-width aria-hidden="true" />
+                                            <FontAwesomeIcon v-else icon="far fa-headset" class="chat-muted" fixed-width aria-hidden="true" />
                                         </template>
                                     </Button>
                                     <p v-if="handOverErrors[message.id]" class="mt-1 text-xs text-red-500">{{ handOverErrors[message.id] }}</p>
@@ -1084,23 +1209,25 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                     <Button
                                         type="tertiary"
                                         size="xs"
+                                        class="chat-dark-button"
                                         :tooltip="ctrans('Helpful')"
                                         :aria-pressed="message.feedback === 'up'"
                                         @click="setFeedback(message, 'up')"
                                     >
                                         <template #icon>
-                                            <FontAwesomeIcon :icon="message.feedback === 'up' ? 'fas fa-thumbs-up' : 'far fa-thumbs-up'" :class="message.feedback === 'up' ? 'text-green-600' : 'text-gray-400'" fixed-width aria-hidden="true" />
+                                            <FontAwesomeIcon :icon="message.feedback === 'up' ? 'fas fa-thumbs-up' : 'far fa-thumbs-up'" :class="message.feedback === 'up' ? 'text-green-500' : 'chat-muted'" fixed-width aria-hidden="true" />
                                         </template>
                                     </Button>
                                     <Button
                                         type="tertiary"
                                         size="xs"
+                                        class="chat-dark-button"
                                         :tooltip="ctrans('Not helpful')"
                                         :aria-pressed="message.feedback === 'down'"
                                         @click="setFeedback(message, 'down')"
                                     >
                                         <template #icon>
-                                            <FontAwesomeIcon :icon="message.feedback === 'down' ? 'fas fa-thumbs-down' : 'far fa-thumbs-down'" :class="message.feedback === 'down' ? 'text-red-500' : 'text-gray-400'" fixed-width aria-hidden="true" />
+                                            <FontAwesomeIcon :icon="message.feedback === 'down' ? 'fas fa-thumbs-down' : 'far fa-thumbs-down'" :class="message.feedback === 'down' ? 'text-red-500' : 'chat-muted'" fixed-width aria-hidden="true" />
                                         </template>
                                     </Button>
                                     <p v-if="feedbackErrors[message.id]" class="text-xs text-red-500">{{ feedbackErrors[message.id] }}</p>
@@ -1110,13 +1237,13 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     </template>
 
                     <div v-if="isPending" class="flex gap-3">
-                        <div class="assistant-avatar assistant-avatar-thinking" aria-hidden="true"><MerlinIcon themed /></div>
+                        <div class="assistant-avatar assistant-avatar-thinking" aria-hidden="true"><AssistantIcon :littleBird="isLittleBird" /></div>
                         <div class="min-w-0 flex-1">
                             <MerlinThinking :name="assistantName" :expected-seconds="assistant?.expected_seconds" />
                         </div>
                     </div>
 
-                    <p v-if="notice" class="text-sm text-gray-600">{{ notice }}</p>
+                    <p v-if="notice" class="chat-muted text-sm">{{ notice }}</p>
                 </div>
 
                 <div class="chat-composer">
@@ -1129,7 +1256,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                         <div class="mt-3 flex w-full gap-2">
                             <Button
                                 type="tertiary"
-                                class="shrink-0"
+                                class="chat-dark-button shrink-0"
                                 :label="ctrans('Cancel')"
                                 :disabled="handingOver !== null"
                                 @click="isTalkBoxOpen = false; talkError = ''"
@@ -1173,7 +1300,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                             :disabled="isPending || !draft.trim()"
                             @click="send(draft)"
                         >
-                            <FontAwesomeIcon icon="far fa-paper-plane" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon :icon="isLittleBird ? 'far fa-arrow-right' : 'far fa-paper-plane'" fixed-width aria-hidden="true" />
                         </button>
                     </div>
                     <p v-if="errorMessage" class="mt-1 text-xs text-red-500">{{ errorMessage }}</p>
@@ -1253,12 +1380,145 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
 .chat-shell {
     --chat-gutter: max(1.5rem, calc((100% - 820px) / 2));
+    --chat-bg: #1d252e;
+    --chat-sidebar: #18212a;
+    --chat-card: #293541;
+    --chat-card-hover: #2e3a46;
+    --chat-bubble: #354350;
+    --chat-edge: #43515d;
+    --chat-edge-strong: #64717b;
+    --chat-muted: #bfccd6;
+    --chat-accent: var(--theme-color-4, #e87928);
+    --chat-accent-text: var(--theme-color-5, #ffffff);
+    --merlin-card: #293541;
+    --merlin-card-hover: #34414e;
+    --merlin-edge: #46535f;
+    --merlin-accent: var(--chat-accent);
     position: relative;
     display: grid;
     width: 100%;
     height: min(85vh, 920px);
     min-height: 560px;
-    border-top: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #e8e8e8);
+    border-top: 1px solid var(--chat-edge);
+    background-color: var(--chat-bg);
+    color: #ffffff;
+}
+
+.chat-muted {
+    color: var(--chat-muted);
+}
+
+.chat-shell .chat-dark-button {
+    border-color: var(--chat-edge);
+    color: #dfe8ef;
+    background-color: transparent;
+}
+
+.chat-shell .chat-dark-button:not(:disabled):hover {
+    border-color: var(--chat-accent);
+    background-color: var(--chat-card-hover);
+}
+
+.chat-shell .chat-dark-button:disabled {
+    color: var(--chat-muted);
+    background-color: transparent;
+    opacity: 0.7;
+}
+
+.chat-shell .assistant-avatar {
+    border-color: var(--chat-edge);
+    background: color-mix(in srgb, var(--chat-accent) 17%, var(--chat-card));
+    box-shadow: none;
+    color: var(--chat-accent);
+}
+
+.chat-shell .assistant-bubble {
+    border: 1px solid #4a5a65;
+    border-radius: 0.8125rem 0.8125rem 0.1875rem 0.8125rem;
+    background-color: var(--chat-bubble);
+    color: #ffffff;
+}
+
+.chat-shell .chat-text {
+    color: #f5f7fa;
+}
+
+.chat-shell .assistant-link {
+    color: color-mix(in srgb, var(--chat-accent) 55%, #ffffff);
+}
+
+.chat-follow-ups {
+    margin-top: 1rem;
+}
+
+.chat-follow-ups .merlin-card:disabled {
+    transform: none;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.chat-shell .landing-textarea {
+    color: #ffffff;
+}
+
+.chat-shell .landing-textarea::placeholder {
+    color: #cbd4dd;
+}
+
+.chat-shell :deep(.p-tabs),
+.chat-shell :deep(.p-tablist),
+.chat-shell :deep(.p-tablist-content),
+.chat-shell :deep(.p-tablist-tab-list),
+.chat-shell :deep(.p-tabpanels),
+.chat-shell :deep(.p-tabpanel) {
+    background: transparent;
+}
+
+.chat-shell :deep(.p-tablist-tab-list) {
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--chat-edge);
+}
+
+.chat-shell :deep(.p-tab) {
+    padding: 0.6875rem 0.9375rem 0.8125rem;
+    border-color: transparent;
+    background: transparent;
+    color: #b9c6d1;
+    font-weight: 700;
+}
+
+.chat-shell :deep(.p-tab:not(.p-tab-active):hover) {
+    color: #ffffff;
+}
+
+.chat-shell :deep(.p-tab-active) {
+    color: color-mix(in srgb, var(--chat-accent) 55%, #ffffff);
+}
+
+.chat-shell :deep(.p-tablist-active-bar) {
+    background: var(--chat-accent);
+}
+
+.chat-shell :deep(.p-tablist-nav-button) {
+    background: var(--chat-bg);
+    color: #ffffff;
+    box-shadow: none;
+}
+
+.chat-shell :deep(.merlin-thinking-caption) {
+    color: var(--chat-muted);
+}
+
+.chat-shell :deep(.merlin-thinking-usually) {
+    color: #a3b0bc;
+}
+
+.chat-shell :deep(.merlin-thinking-bar) {
+    background-color: color-mix(in srgb, var(--chat-accent) 20%, var(--chat-card));
+}
+
+.chat-shell .skeleton {
+    background-color: var(--chat-card);
 }
 
 @media (min-width: 1024px) {
@@ -1271,9 +1531,9 @@ const sendOnEnter = (event: KeyboardEvent) => {
     display: none;
     min-height: 0;
     overflow-y: auto;
-    padding: 0.75rem 0.625rem;
-    background-color: color-mix(in srgb, var(--theme-color-4) 4%, #f7f7f7);
-    border-right: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #e8e8e8);
+    padding: 1.0625rem 0.625rem;
+    background-color: var(--chat-sidebar);
+    border-right: 1px solid var(--chat-edge);
 }
 
 .chat-sidebar-open {
@@ -1284,7 +1544,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     left: 0;
     z-index: 10;
     width: min(85%, 320px);
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.5);
 }
 
 @media (min-width: 1024px) {
@@ -1302,7 +1562,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    padding: 0 0.25rem 0.5rem 0.5rem;
+    padding: 0 0.3125rem 0.9375rem;
 }
 
 .chat-sidebar-brand {
@@ -1312,8 +1572,9 @@ const sendOnEnter = (event: KeyboardEvent) => {
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
-    font-size: 0.9375rem;
+    font-size: 1.0625rem;
     font-weight: 800;
+    color: #ffffff;
 }
 
 .chat-sidebar-brand-icon {
@@ -1328,13 +1589,13 @@ const sendOnEnter = (event: KeyboardEvent) => {
     align-items: center;
     justify-content: center;
     border-radius: 0.5rem;
-    color: #555;
+    color: #d9e3eb;
     transition: background-color 0.15s;
 }
 
 .chat-icon-button:hover {
-    background-color: rgba(0, 0, 0, 0.06);
-    color: #1f1f1f;
+    background-color: var(--chat-card-hover);
+    color: #ffffff;
 }
 
 .chat-sidebar-row {
@@ -1342,26 +1603,29 @@ const sendOnEnter = (event: KeyboardEvent) => {
     align-items: center;
     gap: 0.625rem;
     width: 100%;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
+    margin: 0.5625rem 0 0.5rem;
+    padding: 0.75rem 0.8125rem;
+    border: 1px solid #53616d;
+    border-radius: 0.625rem;
     text-align: left;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
-    color: #1f1f1f;
-    transition: background-color 0.15s;
+    color: #ffffff;
+    transition: background-color 0.15s, border-color 0.15s;
 }
 
 .chat-sidebar-row:hover {
-    background-color: rgba(0, 0, 0, 0.06);
+    border-color: var(--chat-accent);
+    background-color: var(--chat-card-hover);
 }
 
 .chat-sidebar-title {
-    margin: 1rem 0.5rem 0.25rem;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    margin: 1rem 0.3125rem 0.5625rem;
+    font-size: 0.625rem;
+    font-weight: 800;
+    letter-spacing: 0.115em;
     text-transform: uppercase;
-    color: #555;
+    color: #9baab6;
 }
 
 .chat-history-item {
@@ -1369,18 +1633,18 @@ const sendOnEnter = (event: KeyboardEvent) => {
     align-items: baseline;
     gap: 0.5rem;
     width: 100%;
-    padding: 0.375rem 0.5rem;
+    padding: 0.6875rem 0.4375rem;
     text-align: left;
     transition: background-color 0.15s;
 }
 
 .chat-history-item:hover {
-    background-color: rgba(0, 0, 0, 0.04);
+    background-color: var(--chat-card-hover);
 }
 
 .chat-history-item-active {
-    background-color: white;
-    box-shadow: inset 2px 0 0 var(--theme-color-4);
+    background-color: var(--chat-card);
+    box-shadow: inset 2px 0 0 var(--chat-accent);
 }
 
 .chat-history-title {
@@ -1389,14 +1653,14 @@ const sendOnEnter = (event: KeyboardEvent) => {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.8125rem;
-    color: #1f1f1f;
+    font-size: 0.75rem;
+    color: #dfe8ef;
 }
 
 .chat-history-date {
     flex-shrink: 0;
-    font-size: 0.6875rem;
-    color: #777;
+    font-size: 0.625rem;
+    color: #a7b4be;
 }
 
 .chat-main {
@@ -1410,14 +1674,16 @@ const sendOnEnter = (event: KeyboardEvent) => {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 1rem var(--chat-gutter);
-    border-bottom: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #e8e8e8);
+    min-height: 4.625rem;
+    padding: 0.75rem var(--chat-gutter);
+    border-bottom: 1px solid var(--chat-edge);
 }
 
 .chat-header-name {
-    font-size: 1.125rem;
+    font-size: 1.1875rem;
     font-weight: 800;
-    line-height: 1.2;
+    line-height: 1.1;
+    color: #ffffff;
 }
 
 .beta-tag {
@@ -1436,21 +1702,28 @@ const sendOnEnter = (event: KeyboardEvent) => {
     white-space: nowrap;
 }
 
+.chat-shell .beta-tag {
+    border-color: #60707c;
+    color: #ced7df;
+    font-weight: 400;
+}
+
 .chat-header-role {
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    margin-top: 0.3125rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.11em;
     text-transform: uppercase;
-    color: color-mix(in srgb, var(--theme-color-4) 85%, black);
+    color: color-mix(in srgb, var(--chat-accent) 70%, #ffffff);
 }
 
 .chat-history-toggle {
     width: 2.5rem;
     height: 2.5rem;
     flex-shrink: 0;
-    border: 1px solid color-mix(in srgb, var(--theme-color-4) 8%, #d6d6d6);
-    border-radius: 9999px;
-    color: #444;
+    border: 1px solid #55636d;
+    border-radius: 0.5625rem;
+    color: #ffffff;
 }
 
 .chat-history-toggle:hover {
@@ -1492,129 +1765,35 @@ const sendOnEnter = (event: KeyboardEvent) => {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.5rem 0.875rem;
-    border: 1px solid color-mix(in srgb, var(--theme-color-4) 8%, #d6d6d6);
+    padding: 0.625rem 1.0625rem;
+    border: 1px solid #697681;
     border-radius: 9999px;
-    font-size: 0.875rem;
-    color: #1f1f1f;
+    font-size: 0.8125rem;
+    color: #ffffff;
 }
 
 .chat-header-talk {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.5rem 0.875rem;
-    border: 1px solid color-mix(in srgb, var(--theme-color-4) 8%, #d6d6d6);
+    padding: 0.625rem 1.0625rem;
+    border: 1px solid #697681;
     border-radius: 9999px;
-    font-size: 0.875rem;
-    color: #1f1f1f;
+    font-size: 0.8125rem;
+    color: #ffffff;
 }
 
 .chat-header-talk:hover {
     border-color: var(--theme-color-4);
 }
 
-.landing-talk {
-    margin-top: 0.75rem;
-}
-
-.landing-talk-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.375rem;
-}
-
-.landing-talk-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-}
-
-.landing-history {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #dedede);
-}
-
-.landing-history-title {
-    margin-bottom: 0.375rem;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: color-mix(in srgb, var(--theme-color-4) 15%, #7a7a7a);
-}
-
-.landing-history-list {
-    display: flex;
-    flex-direction: column;
-}
-
-.landing-history-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    width: calc(100% + 1rem);
-    margin: 0 -0.5rem;
-    padding: 0.375rem 0.5rem;
-    border-radius: 0.5rem;
-    text-align: left;
-    transition: background-color 0.15s;
-}
-
-.landing-history-item:hover {
-    background-color: rgba(255, 255, 255, 0.7);
-}
-
-.landing-history-item:focus-visible {
-    outline: 2px solid var(--theme-color-4);
-    outline-offset: 1px;
-}
-
-.landing-history-icon {
-    flex-shrink: 0;
-    font-size: 0.75rem;
-    color: color-mix(in srgb, var(--theme-color-4) 15%, #a8a8a8);
-    transition: color 0.15s;
-}
-
-.landing-history-item:hover .landing-history-icon {
-    color: var(--theme-color-4);
-}
-
-.landing-history-text {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 0.8125rem;
-    color: #1f1f1f;
-}
-
-.landing-history-item:hover .landing-history-text {
-    text-decoration: underline;
-    text-underline-offset: 2px;
-}
-
-.landing-history-date {
-    flex-shrink: 0;
-    font-size: 0.6875rem;
-    color: color-mix(in srgb, var(--theme-color-4) 15%, #7a7a7a);
-}
-
-.landing-talk-box {
-    margin-top: 0.75rem;
-    background-color: white;
-}
-
 .chat-talk-box {
     margin-bottom: 0.75rem;
     padding: 1rem;
-    border: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #dedede);
+    border: 1px solid var(--chat-edge);
     border-radius: 0.75rem;
-    background-color: color-mix(in srgb, var(--theme-color-4) 4%, #f7f7f7);
+    background-color: var(--chat-card);
+    color: #ffffff;
 }
 
 .chat-header-new:hover {
@@ -1631,10 +1810,10 @@ const sendOnEnter = (event: KeyboardEvent) => {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 2rem var(--chat-gutter);
+    padding: 2.375rem var(--chat-gutter);
     display: flex;
     flex-direction: column;
-    gap: 1.75rem;
+    gap: 1.625rem;
 }
 
 .chat-text {
@@ -1643,23 +1822,22 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .chat-composer {
-    padding: 0.5rem var(--chat-gutter) 0.625rem;
-    background-color: white;
+    padding: 0.75rem var(--chat-gutter) 1.375rem;
+    background: linear-gradient(0deg, var(--chat-bg) 80%, transparent);
 }
 
 .chat-composer-box {
     display: flex;
     align-items: flex-end;
     gap: 0.5rem;
-    padding: 0.3125rem 0.3125rem 0.3125rem 0.75rem;
-    border: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #dedede);
+    padding: 0.5rem 0.5rem 0.5rem 0.8125rem;
+    border: 1px solid var(--chat-edge-strong);
     border-radius: 1rem;
-    background-color: white;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    background-color: var(--chat-card);
 }
 
 .chat-composer-box:focus-within {
-    border-color: var(--theme-color-4);
+    border-color: var(--chat-accent);
 }
 
 .chat-composer-input {
@@ -1676,19 +1854,19 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .chat-send {
-    width: 2.25rem;
-    height: 2.25rem;
+    width: 2.4375rem;
+    height: 2.4375rem;
     flex-shrink: 0;
-    border-radius: 9999px;
+    border-radius: 0.625rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--theme-color-4);
-    color: var(--theme-color-5);
+    background-color: var(--chat-accent);
+    color: var(--chat-accent-text);
 }
 
 .chat-send:hover:not(:disabled) {
-    background-color: color-mix(in srgb, var(--theme-color-4) 85%, black);
+    background-color: color-mix(in srgb, var(--chat-accent) 85%, #ffffff);
 }
 
 .chat-send:disabled {
@@ -1701,202 +1879,12 @@ const sendOnEnter = (event: KeyboardEvent) => {
     text-align: center;
     font-size: 0.6875rem;
     line-height: 1.4;
-    color: #888;
-}
-
-.landing-chip:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    color: #a3b0bc;
 }
 
 .landing-page {
     width: 100%;
     color: #1f1f1f;
-}
-
-.landing-container {
-    max-width: 1280px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 1rem;
-    padding-right: 1rem;
-}
-
-.landing-hero {
-    background-color: color-mix(in srgb, var(--theme-color-4) 4%, #f7f7f7);
-    padding-top: 2.5rem;
-    padding-bottom: 2.5rem;
-}
-
-.landing-hero-inner {
-    display: grid;
-    gap: 2rem;
-    align-items: start;
-}
-
-@media (min-width: 1024px) {
-    .landing-hero-inner {
-        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-        gap: 3rem;
-    }
-}
-
-.landing-hero-info .landing-title {
-    margin-top: 1rem;
-    font-size: 1.75rem;
-}
-
-.landing-disclaimer {
-    margin-top: 0.5rem;
-    padding: 0 0.25rem;
-    font-size: 0.6875rem;
-    line-height: 1.45;
-    color: #777;
-}
-
-.landing-hero-main .landing-chip {
-    background: transparent;
-    border-color: color-mix(in srgb, #1f1f1f 14%, transparent);
-    padding: 0.25rem 0.625rem;
-    font-size: 0.75rem;
-    color: #555;
-}
-
-.landing-hero-main .landing-chip:hover {
-    color: #1f1f1f;
-    border-color: var(--theme-color-4);
-    background: white;
-}
-
-.landing-hero-main .landing-talk-button,
-.landing-hero-main .landing-talk-button:hover {
-    border: 0;
-    background: transparent;
-    padding: 0.25rem 0;
-    font-size: 0.75rem;
-    color: #555;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-}
-
-.landing-hero-main .landing-talk-button:hover {
-    color: #1f1f1f;
-}
-
-@media (max-width: 639px) {
-    .landing-ask .landing-textarea {
-        min-height: 6.5rem;
-    }
-
-    .landing-ask .landing-ask-button {
-        width: 100%;
-        justify-content: center;
-    }
-}
-
-.landing-hero-info .landing-steps {
-    grid-template-columns: none;
-    padding-top: 1.5rem;
-    padding-bottom: 0;
-}
-
-.landing-hero-info .landing-step-body {
-    max-width: none;
-}
-
-.landing-eyebrow-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.landing-hero-heading {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.landing-hero-heading .landing-hero-logo {
-    width: 3.75rem;
-    height: 3.75rem;
-    filter: drop-shadow(0 8px 16px color-mix(in srgb, var(--theme-color-4) 20%, transparent));
-    animation: landing-hero-logo-float 4s ease-in-out infinite;
-}
-
-.landing-hero-info .landing-hero-heading .landing-title {
-    margin-top: 0.5rem;
-}
-
-@media (min-width: 640px) {
-    .landing-hero-heading .landing-hero-logo {
-        width: 4.75rem;
-        height: 4.75rem;
-    }
-}
-
-@keyframes landing-hero-logo-float {
-    0%, 100% {
-        transform: translateY(0) rotate(0deg);
-    }
-
-    50% {
-        transform: translateY(-6px) rotate(-3deg);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .landing-hero-heading .landing-hero-logo {
-        animation: none;
-    }
-}
-
-.landing-eyebrow {
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: color-mix(in srgb, var(--theme-color-4) 85%, black);
-}
-
-.landing-title {
-    margin-top: 1.75rem;
-    font-size: 2rem;
-    font-weight: 800;
-    line-height: 1.15;
-    letter-spacing: -0.01em;
-}
-
-@media (min-width: 768px) {
-    .landing-title {
-        font-size: 2.5rem;
-    }
-}
-
-.landing-intro {
-    margin-top: 0.875rem;
-    font-size: 0.9375rem;
-    line-height: 1.55;
-    color: #444;
-}
-
-.landing-legend {
-    margin-top: 0.75rem;
-    font-size: 0.75rem;
-    font-style: italic;
-    line-height: 1.5;
-    color: #777;
-}
-
-.landing-ask {
-    padding: 1rem;
-    border: 1.5px solid color-mix(in srgb, var(--theme-color-4) 35%, color-mix(in srgb, var(--theme-color-4) 6%, #dedede));
-    border-radius: 1rem;
-    background-color: white;
-    box-shadow: 0 6px 20px -8px rgb(0 0 0 / 0.15);
-}
-
-.landing-ask:focus-within {
-    border-color: var(--theme-color-4);
 }
 
 .landing-textarea {
@@ -1913,163 +1901,6 @@ const sendOnEnter = (event: KeyboardEvent) => {
 .landing-textarea:focus {
     outline: none;
     box-shadow: none;
-}
-
-.landing-ask-footer {
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #ececec);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-}
-
-.landing-hint {
-    font-size: 0.6875rem;
-    color: #555;
-}
-
-.landing-ask-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.75rem 1.5rem;
-    border-radius: 9999px;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    background-color: var(--theme-color-4);
-    color: var(--theme-color-5);
-    transition: background-color 0.15s;
-}
-
-.landing-ask-button:hover:not(:disabled) {
-    background-color: color-mix(in srgb, var(--theme-color-4) 85%, black);
-}
-
-.landing-ask-button:focus-visible {
-    outline: 2px solid var(--theme-color-4);
-    outline-offset: 2px;
-}
-
-.landing-ask-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.landing-chips {
-    margin-top: 0.875rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-}
-
-.landing-chip {
-    padding: 0.4375rem 0.75rem;
-    border: 1px solid color-mix(in srgb, var(--theme-color-4) 8%, #d6d6d6);
-    border-radius: 9999px;
-    font-size: 0.8125rem;
-    background-color: white;
-    color: #1f1f1f;
-    transition: border-color 0.15s;
-}
-
-.landing-chip:hover {
-    border-color: var(--theme-color-4);
-}
-
-.landing-chip:focus-visible {
-    outline: 2px solid var(--theme-color-4);
-    outline-offset: 2px;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-.landing-steps {
-    display: grid;
-    gap: 1.5rem;
-    padding-top: 2.25rem;
-    padding-bottom: 2.25rem;
-}
-
-@media (min-width: 768px) {
-    .landing-steps {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
-.landing-step {
-    display: flex;
-    gap: 0.75rem;
-}
-
-.landing-step-number {
-    width: 1.75rem;
-    height: 1.75rem;
-    flex-shrink: 0;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    border: 1.5px solid var(--theme-color-4);
-    color: color-mix(in srgb, var(--theme-color-4) 85%, black);
-}
-
-.landing-step-title {
-    font-size: 0.9375rem;
-    font-weight: 700;
-}
-
-.landing-step-body {
-    margin-top: 0.25rem;
-    max-width: 18rem;
-    font-size: 0.8125rem;
-    line-height: 1.55;
-    color: #444;
-}
-
-.landing-promises {
-    margin: 1.25rem 0 0;
-    padding: 0.875rem 0 0;
-    border-top: 1px solid color-mix(in srgb, var(--theme-color-4) 6%, #e8e8e8);
-    list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem 1.25rem;
-    font-size: 0.8125rem;
-    color: #444;
-}
-
-.landing-promises li {
-    margin: 0;
-    padding: 0;
-}
-
-.landing-promises li:last-child {
-    flex-basis: 100%;
-    color: #777;
 }
 
 .assistant-link {
@@ -2112,5 +1943,960 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
 :deep(.p-tablist-active-bar) {
     background: var(--theme-color-0);
+}
+
+.merlin-landing {
+    --merlin-bg: #1d252e;
+    --merlin-card: #293541;
+    --merlin-card-hover: #34414e;
+    --merlin-edge: #46535f;
+    --merlin-muted: #c8d2db;
+    --merlin-accent: var(--theme-color-4, #e87928);
+    --merlin-accent-text: var(--theme-color-5, #fff);
+    background-color: var(--merlin-bg);
+    color: #fff;
+    padding: 0 1rem 3rem;
+    line-height: 1.5;
+}
+
+.merlin-wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
+.merlin-accent-text {
+    color: var(--merlin-accent);
+}
+
+.merlin-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--merlin-edge);
+}
+
+.merlin-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.merlin-brand-icon {
+    width: 3rem;
+    height: 3rem;
+}
+
+.merlin-brand-name {
+    font-size: 1.375rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: #fff;
+}
+
+.merlin-brand-tagline {
+    font-size: 0.75rem;
+    color: var(--merlin-muted);
+}
+
+.merlin-top-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.merlin-status {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #46634e;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    color: #fff;
+}
+
+.merlin-status-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-right: 0.375rem;
+    border-radius: 9999px;
+    background-color: #70dfa0;
+    box-shadow: 0 0 12px #70dfa0;
+}
+
+.merlin-hero {
+    text-align: center;
+    padding: 3.25rem 0 2rem;
+}
+
+.merlin-hero-icon {
+    display: block;
+    width: 10rem;
+    height: 10rem;
+    margin: 0 auto 1.5rem;
+    --merlin-stroke-weight: 0.8;
+    filter: drop-shadow(0 12px 28px color-mix(in srgb, var(--merlin-accent) 30%, transparent));
+}
+
+.merlin-eyebrow {
+    display: inline-block;
+    padding: 0.4375rem 0.9375rem;
+    border: 1px solid color-mix(in srgb, var(--merlin-accent) 50%, transparent);
+    border-radius: 9999px;
+    background-color: color-mix(in srgb, var(--merlin-accent) 11%, transparent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: color-mix(in srgb, var(--merlin-accent) 55%, #fff);
+}
+
+.merlin-title {
+    margin: 1.3rem 0 0.8rem;
+    font-size: clamp(2.125rem, 5vw, 3.625rem);
+    font-weight: 800;
+    line-height: 1.13;
+    letter-spacing: -0.06rem;
+    color: #fff;
+}
+
+.merlin-title em {
+    font-style: normal;
+    color: color-mix(in srgb, var(--merlin-accent) 75%, #fff);
+}
+
+.merlin-intro {
+    max-width: 34.5rem;
+    margin: 0 auto;
+    font-size: 1rem;
+    color: #fff;
+    opacity: 0.88;
+}
+
+.merlin-legend {
+    max-width: 34.5rem;
+    margin: 0.75rem auto 0;
+    font-size: 0.75rem;
+    font-style: italic;
+    color: var(--merlin-muted);
+}
+
+.merlin-suggest,
+.merlin-form,
+.merlin-human,
+.merlin-history,
+.merlin-note,
+.merlin-error,
+.merlin-notice {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.merlin-suggest {
+    margin-top: 0.75rem;
+    margin-bottom: 1.75rem;
+}
+
+.merlin-caption {
+    margin-bottom: 0.9375rem;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--merlin-muted);
+}
+
+.merlin-cards {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.merlin-card {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    width: 100%;
+    padding: 1.1875rem;
+    border: 1px solid var(--merlin-edge);
+    border-radius: 0.9375rem;
+    background-color: var(--merlin-card);
+    color: #fff;
+    text-align: left;
+    transition: transform 0.2s, border-color 0.2s, background-color 0.2s;
+}
+
+.merlin-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--merlin-accent);
+    background-color: var(--merlin-card-hover);
+}
+
+.merlin-card:focus-visible {
+    outline: 2px solid var(--merlin-accent);
+    outline-offset: 2px;
+}
+
+.merlin-card-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 0.75rem;
+    background-color: color-mix(in srgb, var(--merlin-accent) 17%, transparent);
+    font-size: 1.375rem;
+    color: color-mix(in srgb, var(--merlin-accent) 50%, #fff);
+}
+
+.merlin-card-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.merlin-card-text {
+    font-size: 0.9375rem;
+    font-weight: 700;
+}
+
+.merlin-card-subtitle {
+    margin-top: 0.1875rem;
+    font-size: 0.75rem;
+    color: #d7e1e9;
+}
+
+.merlin-card-arrow {
+    margin-left: auto;
+    font-size: 1.3rem;
+    color: color-mix(in srgb, var(--merlin-accent) 75%, #fff);
+}
+
+.merlin-form {
+    padding: 0.8rem;
+    border: 1px solid #64717b;
+    border-radius: 1.0625rem;
+    background-color: var(--merlin-card);
+}
+
+.merlin-form:focus-within {
+    border-color: var(--merlin-accent);
+}
+
+.merlin-form .merlin-textarea {
+    display: block;
+    width: 100%;
+    min-height: 3.4rem;
+    padding: 0.625rem;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    font-size: 0.9375rem;
+    color: #fff;
+}
+
+.merlin-form .merlin-textarea::placeholder {
+    color: #d2d9e0;
+    opacity: 1;
+}
+
+.merlin-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.625rem;
+}
+
+.merlin-helper {
+    font-size: 0.75rem;
+    color: #d2d9e0;
+}
+
+.merlin-send {
+    width: 2.6875rem;
+    height: 2.6875rem;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 0.75rem;
+    background-color: var(--merlin-accent);
+    color: var(--merlin-accent-text);
+    font-size: 1.125rem;
+    transition: background-color 0.15s;
+}
+
+.merlin-send:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--merlin-accent) 85%, #fff);
+}
+
+.merlin-send:focus-visible {
+    outline: 2px solid var(--merlin-accent);
+    outline-offset: 2px;
+}
+
+.merlin-send:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.merlin-error {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: #fca5a5;
+}
+
+.merlin-notice {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--merlin-muted);
+}
+
+.merlin-human {
+    margin-top: 1.5rem;
+    padding: 1.25rem 1.4375rem;
+    border: 1px solid var(--merlin-edge);
+    border-radius: 1rem;
+    background-color: var(--merlin-card);
+}
+
+.merlin-human-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.merlin-human-title {
+    margin: 0 0 0.3rem;
+    font-size: 1.0625rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.merlin-human-text {
+    font-size: 0.8125rem;
+    color: #dce5eb;
+}
+
+.merlin-human-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    padding: 0.8rem 1.125rem;
+    border-radius: 0.6875rem;
+    background-color: var(--merlin-accent);
+    color: var(--merlin-accent-text);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.merlin-human-link:hover {
+    transform: translateY(-2px);
+    background-color: color-mix(in srgb, var(--merlin-accent) 85%, #fff);
+}
+
+.merlin-human-link:focus-visible {
+    outline: 2px solid var(--merlin-accent);
+    outline-offset: 2px;
+}
+
+.merlin-talk-box {
+    margin: 1rem 0 0;
+    background-color: white;
+    color: #1f1f1f;
+}
+
+.merlin-history {
+    margin-top: 1.75rem;
+}
+
+.merlin-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.merlin-history-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--merlin-edge);
+    border-radius: 0.75rem;
+    background-color: var(--merlin-card);
+    color: #fff;
+    text-align: left;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.merlin-history-item:hover {
+    border-color: var(--merlin-accent);
+    background-color: var(--merlin-card-hover);
+}
+
+.merlin-history-item:focus-visible {
+    outline: 2px solid var(--merlin-accent);
+    outline-offset: 2px;
+}
+
+.merlin-history-icon {
+    flex-shrink: 0;
+    color: color-mix(in srgb, var(--merlin-accent) 60%, #fff);
+}
+
+.merlin-history-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.875rem;
+}
+
+.merlin-history-date {
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    color: var(--merlin-muted);
+}
+
+.merlin-note {
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.6875rem;
+    color: #d6dce2;
+}
+
+@media (max-width: 620px) {
+    .merlin-cards {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .merlin-hero {
+        padding: 2rem 0 1.5rem;
+    }
+
+    .merlin-hero-icon {
+        width: 7.8rem;
+        height: 7.8rem;
+    }
+
+    .merlin-title {
+        font-size: 2.25rem;
+    }
+
+    .merlin-intro {
+        font-size: 0.875rem;
+    }
+
+    .merlin-brand-tagline,
+    .merlin-status,
+    .merlin-helper {
+        font-size: 0.625rem;
+    }
+
+    .merlin-card {
+        padding: 0.8rem;
+    }
+
+    .merlin-human-row {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .merlin-human-link {
+        width: 100%;
+    }
+}
+.bird-landing {
+    --bird-ink: #151515;
+    --bird-text: #525252;
+    --bird-muted: #777777;
+    --bird-line: #dedede;
+    --bird-line-strong: #bcbcbc;
+    --bird-soft: #fafafa;
+    --bird-hover: #f4f4f4;
+    min-height: 100vh;
+    padding: 1.875rem 1rem 3.75rem;
+    background-color: #ffffff;
+    color: var(--bird-ink);
+}
+
+.bird-wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+}
+
+.bird-topbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.75rem;
+}
+
+.bird-talk {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.8125rem 1.25rem;
+    border: 1px solid #c9c9c9;
+    border-radius: 9999px;
+    background-color: #ffffff;
+    color: var(--bird-ink);
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+.bird-talk:hover {
+    background-color: #f5f5f5;
+}
+
+.bird-talk-box {
+    max-width: 920px;
+    margin: 0 auto 1.5rem;
+}
+
+.bird-hero {
+    padding: 1.875rem 0.75rem 1.5rem;
+    text-align: center;
+}
+
+.bird-mark {
+    width: 124px;
+    height: 124px;
+    margin: 0 auto 1rem;
+}
+
+.bird-eyebrow {
+    margin-bottom: 0.625rem;
+    color: #666666;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+}
+
+.bird-title {
+    margin: 0 0 0.75rem;
+    color: #111111;
+    font-size: clamp(2.125rem, 6vw, 3.5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+}
+
+.bird-beta {
+    display: inline-block;
+    margin-left: 0.625rem;
+    padding: 0.25rem 0.5625rem;
+    border: 1px solid #dddddd;
+    border-radius: 9999px;
+    background-color: #f5f5f5;
+    color: #666666;
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+.bird-lead {
+    max-width: 760px;
+    margin: 0 auto;
+    color: var(--bird-text);
+    font-size: 1.125rem;
+    line-height: 1.65;
+}
+
+.bird-search {
+    max-width: 920px;
+    margin: 1.875rem auto 0;
+    padding: 1.125rem;
+    border: 1px solid #d8d8d8;
+    border-radius: 1.75rem;
+    background-color: #ffffff;
+    box-shadow: 0 12px 38px rgba(0, 0, 0, 0.055);
+}
+
+.bird-search-row {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.625rem 0.625rem 0.625rem 1rem;
+    border: 1px solid var(--bird-line);
+    border-radius: 1.125rem;
+    background-color: var(--bird-soft);
+}
+
+.bird-search-row:focus-within {
+    border-color: var(--bird-line-strong);
+}
+
+.bird-search .bird-search-input {
+    flex: 1;
+    min-height: 1.5rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--bird-ink);
+    font-size: 1rem;
+}
+
+.bird-search .bird-search-input::placeholder {
+    color: #828282;
+}
+
+.bird-send {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.875rem;
+    height: 2.875rem;
+    flex-shrink: 0;
+    border-radius: 0.875rem;
+    background-color: var(--bird-ink);
+    color: #ffffff;
+    transition: opacity 0.2s;
+}
+
+.bird-send:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.bird-send:focus-visible,
+.bird-chip:focus-visible,
+.bird-talk:focus-visible,
+.bird-history-item:focus-visible {
+    outline: 2px solid var(--bird-ink);
+    outline-offset: 2px;
+}
+
+.bird-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.125rem;
+}
+
+.bird-chip {
+    padding: 0.75rem 1rem;
+    border: 1px solid #d5d5d5;
+    border-radius: 9999px;
+    background-color: #ffffff;
+    color: #333333;
+    font-size: 0.875rem;
+    text-align: center;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.bird-chip:hover {
+    border-color: #999999;
+    background-color: var(--bird-hover);
+}
+
+.bird-error,
+.bird-notice {
+    max-width: 920px;
+    margin: 1rem auto 0;
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+.bird-error {
+    color: #dc2626;
+}
+
+.bird-notice {
+    color: var(--bird-muted);
+}
+
+.bird-grid {
+    display: grid;
+    gap: 1.375rem;
+    margin-top: 2.125rem;
+}
+
+@media (min-width: 900px) {
+    .bird-grid-with-panel {
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.4fr);
+        align-items: start;
+    }
+}
+
+.bird-card {
+    padding: 1.5rem;
+    border: 1px solid #dfdfdf;
+    border-radius: 1.5rem;
+    background-color: #ffffff;
+    box-shadow: 0 7px 30px rgba(0, 0, 0, 0.04);
+}
+
+.bird-card-title {
+    margin: 0 0 1rem;
+    color: var(--bird-ink);
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.bird-history .skeleton {
+    background-color: var(--bird-hover);
+}
+
+.bird-history-empty {
+    color: var(--bird-muted);
+    font-size: 0.9375rem;
+}
+
+.bird-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.bird-history-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e7e7e7;
+    border-radius: 1rem;
+    background-color: var(--bird-soft);
+    text-align: left;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.bird-history-item:hover {
+    border-color: var(--bird-line-strong);
+    background-color: var(--bird-hover);
+}
+
+.bird-history-text {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--bird-ink);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bird-history-date {
+    flex-shrink: 0;
+    color: var(--bird-muted);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+.bird-note {
+    margin-top: 1.5rem;
+    color: var(--bird-muted);
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+@media (max-width: 640px) {
+    .bird-landing {
+        padding: 1.125rem 0.75rem 2.625rem;
+    }
+
+    .bird-topbar {
+        justify-content: stretch;
+    }
+
+    .bird-talk {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .bird-lead {
+        font-size: 1rem;
+    }
+
+    .bird-search {
+        padding: 0.875rem;
+        border-radius: 1.375rem;
+    }
+
+    .bird-search-row {
+        padding: 0.5rem 0.5rem 0.5rem 0.875rem;
+    }
+
+    .bird-send {
+        width: 2.625rem;
+        height: 2.625rem;
+        border-radius: 0.75rem;
+    }
+}
+
+.chat-shell.chat-shell-little-bird {
+    --chat-bg: #ffffff;
+    --chat-sidebar: #fafafa;
+    --chat-card: #fafafa;
+    --chat-card-hover: #f4f4f4;
+    --chat-bubble: #f5f5f5;
+    --chat-edge: #dedede;
+    --chat-edge-strong: #bcbcbc;
+    --chat-muted: #666666;
+    --chat-accent: #151515;
+    --chat-accent-text: #ffffff;
+    --merlin-card: #ffffff;
+    --merlin-card-hover: #f4f4f4;
+    --merlin-edge: #d5d5d5;
+    --merlin-accent: #151515;
+    color: #151515;
+}
+
+.chat-shell-little-bird .chat-text,
+.chat-shell-little-bird .landing-textarea,
+.chat-shell-little-bird .chat-sidebar-brand,
+.chat-shell-little-bird .chat-sidebar-row,
+.chat-shell-little-bird .chat-header-name,
+.chat-shell-little-bird .chat-history-toggle,
+.chat-shell-little-bird .chat-header-new,
+.chat-shell-little-bird .chat-header-talk,
+.chat-shell-little-bird .chat-talk-box,
+.chat-shell-little-bird .chat-icon-button,
+.chat-shell-little-bird .chat-icon-button:hover {
+    color: #151515;
+}
+
+.chat-shell-little-bird .chat-history-title {
+    color: #333333;
+}
+
+.chat-shell-little-bird .chat-sidebar-title,
+.chat-shell-little-bird .chat-history-date,
+.chat-shell-little-bird .chat-composer-hint,
+.chat-shell-little-bird .chat-header-role {
+    color: var(--chat-muted);
+}
+
+.chat-shell-little-bird .landing-textarea::placeholder {
+    color: #828282;
+}
+
+.chat-shell-little-bird .chat-sidebar-row,
+.chat-shell-little-bird .chat-history-toggle,
+.chat-shell-little-bird .chat-header-new,
+.chat-shell-little-bird .chat-header-talk {
+    border-color: #c9c9c9;
+    background-color: #ffffff;
+}
+
+.chat-shell-little-bird .chat-sidebar-row:hover,
+.chat-shell-little-bird .chat-history-toggle:hover,
+.chat-shell-little-bird .chat-header-new:hover,
+.chat-shell-little-bird .chat-header-talk:hover {
+    border-color: #999999;
+    background-color: var(--chat-card-hover);
+}
+
+.chat-shell-little-bird .chat-sidebar-open {
+    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.12);
+}
+
+.chat-shell-little-bird .beta-tag {
+    border-color: #dddddd;
+    background-color: #f5f5f5;
+    color: #666666;
+}
+
+.chat-shell-little-bird .assistant-avatar {
+    border-color: var(--chat-edge);
+    background: #ffffff;
+}
+
+.chat-shell-little-bird .assistant-avatar .little-bird-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.chat-shell-little-bird .chat-sidebar-brand-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.chat-shell-little-bird .assistant-bubble {
+    border-color: #e5e5e5;
+    background-color: var(--chat-bubble);
+    color: #151515;
+}
+
+.chat-shell-little-bird .assistant-link {
+    color: #151515;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.chat-shell-little-bird .chat-dark-button {
+    border-color: #d5d5d5;
+    color: #333333;
+}
+
+.chat-shell-little-bird .chat-dark-button:not(:disabled):hover {
+    border-color: #999999;
+}
+
+.chat-shell-little-bird .merlin-card {
+    color: #333333;
+}
+
+.chat-shell-little-bird .chat-follow-ups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.chat-shell-little-bird .chat-follow-ups .merlin-card {
+    width: auto;
+    padding: 0.75rem 1rem;
+    border-color: #d5d5d5;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+}
+
+.chat-shell-little-bird .chat-follow-ups .merlin-card:not(:disabled):hover {
+    transform: none;
+    border-color: #999999;
+}
+
+.chat-shell-little-bird .chat-follow-ups .merlin-card-text {
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+.chat-shell-little-bird .chat-follow-ups .merlin-card-icon,
+.chat-shell-little-bird .chat-follow-ups .merlin-card-arrow {
+    display: none;
+}
+
+.chat-shell-little-bird :deep(.p-tab) {
+    color: #777777;
+}
+
+.chat-shell-little-bird :deep(.p-tab:not(.p-tab-active):hover),
+.chat-shell-little-bird :deep(.p-tab-active) {
+    color: #151515;
+}
+
+.chat-shell-little-bird :deep(.p-tablist-nav-button) {
+    color: #151515;
+}
+
+.chat-shell-little-bird :deep(.merlin-thinking-usually) {
+    color: var(--chat-muted);
+}
+
+.chat-shell-little-bird .chat-send:hover:not(:disabled) {
+    background-color: #333333;
 }
 </style>

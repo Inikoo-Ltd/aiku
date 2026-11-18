@@ -6,7 +6,7 @@ import { faImage } from "@fal"
 import { faCrown } from "@fas"
 import Image from "@common/Components/Image.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
-import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
+import AssistantIcon from "@/Iris/Components/AssistantIcon.vue"
 import NewAddToCartButton from "@/Components/CMS/Webpage/Products/NewAddToCartButton.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { getBestOffer } from "@/Composables/useOffers"
@@ -29,6 +29,7 @@ const props = defineProps<{
     hasInBasket?: any
     buttonStyle?: object
     buttonStyleHover?: object
+    dark?: boolean
 }>()
 
 const layout: any = inject("layout", retinaLayoutStructure)
@@ -82,7 +83,7 @@ const money = (amount: number) => locale.currencyFormat(currencyCode.value, amou
 </script>
 
 <template>
-    <article class="advisor-card">
+    <article class="advisor-card" :class="{ 'is-dark': dark }">
         <div class="advisor-media">
             <component :is="product.url ? LinkIris : 'div'" :href="product.url ?? undefined" class="advisor-media-link">
                 <Image v-if="image" :src="image" :alt="product.name" class="advisor-image" />
@@ -92,11 +93,11 @@ const money = (amount: number) => locale.currencyFormat(currencyCode.value, amou
             <div v-if="showBestsellerBadge || isMerlinNewArrival" class="advisor-badges">
                 <span v-if="showBestsellerBadge" class="advisor-badge" :title="isMerlinBestseller ? product.assistant_reason : undefined">
                     <FontAwesomeIcon v-if="isBestseller" icon="fas fa-crown" aria-hidden="true" />
-                    <MerlinIcon v-if="isMerlinBestseller" mono class="advisor-badge-merlin" />
+                    <AssistantIcon v-if="isMerlinBestseller" mono class="advisor-badge-merlin" />
                     {{ ctrans("Bestseller") }}
                 </span>
                 <span v-if="isMerlinNewArrival" class="advisor-badge advisor-badge-new" :title="product.assistant_reason">
-                    <MerlinIcon mono class="advisor-badge-merlin" />
+                    <AssistantIcon mono class="advisor-badge-merlin" />
                     {{ ctrans("New In") }}
                 </span>
             </div>
@@ -115,7 +116,7 @@ const money = (amount: number) => locale.currencyFormat(currencyCode.value, amou
 
         <div class="advisor-body">
             <p v-if="showReason" class="advisor-reason" :title="product.assistant_reason">
-                <MerlinIcon mono class="advisor-reason-icon" />
+                <AssistantIcon mono class="advisor-reason-icon" />
                 <span class="advisor-reason-text">{{ product.assistant_reason }}</span>
             </p>
 
@@ -397,5 +398,41 @@ a.advisor-name:hover {
     font-size: 0.6875rem;
     line-height: 1rem;
     color: #4b5563;
+}
+
+.advisor-card.is-dark {
+    border-color: #46535f;
+    border-radius: 0.9375rem;
+    background-color: #293541;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.advisor-card.is-dark:hover {
+    transform: translateY(-2px);
+    border-color: var(--theme-color-4);
+    box-shadow: none;
+}
+
+.is-dark .advisor-body {
+    padding: 0.625rem 0.75rem 0.75rem;
+    border-top: 0;
+}
+
+.is-dark .advisor-reason {
+    color: color-mix(in srgb, var(--theme-color-4) 50%, #ffffff);
+    background-color: color-mix(in srgb, var(--theme-color-4) 17%, transparent);
+}
+
+.is-dark .advisor-name,
+.is-dark .advisor-price {
+    color: #ffffff;
+}
+
+.is-dark .advisor-meta,
+.is-dark .advisor-price-unit,
+.is-dark .advisor-price-per-unit,
+.is-dark .advisor-offer,
+.is-dark .advisor-offer-hint {
+    color: #c8d2db;
 }
 </style>

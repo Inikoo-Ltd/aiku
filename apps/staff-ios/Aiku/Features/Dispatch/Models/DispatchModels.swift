@@ -1,23 +1,5 @@
 import Foundation
 
-struct DispatchShipper: Identifiable, Hashable, Sendable {
-    let name: String
-    let integration: String
-    let shipmentsToday: Int
-
-    var id: String { name }
-
-    var subtitle: String {
-        switch shipmentsToday {
-        case 0: "No shipments today"
-        case 1: "1 shipment today"
-        default: "\(shipmentsToday) shipments today"
-        }
-    }
-
-    var tone: Tone { shipmentsToday > 0 ? .info : .neutral }
-}
-
 enum DispatchProblemKind: String, CaseIterable, Hashable, Sendable {
     case unknownBarcode
     case wrongStock

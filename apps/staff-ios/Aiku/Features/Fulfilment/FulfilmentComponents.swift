@@ -72,48 +72,6 @@ struct FulfilmentScanCard: View {
     }
 }
 
-struct FulfilmentScanPanel: View {
-    let title: String
-    let detail: String
-    let allTitle: String
-    let verb: String
-    let maximum: Int
-    let onAll: () -> Void
-    let onAmount: (Int) -> Void
-    @State private var amount = 1
-
-    var body: some View {
-        Card(padding: 14, spacing: 10) {
-            HStack(spacing: 10) {
-                ProductThumb(size: 48, label: "Product photo of \(title)")
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.aiku(15, .bold))
-                        .foregroundStyle(AikuColor.text)
-                    Text(detail)
-                        .font(.aiku(13, .bold))
-                        .foregroundStyle(AikuColor.warn)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            if maximum > 0 {
-                AikuButton(allTitle, icon: .check, action: onAll)
-                    .accessibilityIdentifier("fulfilment.scanPanel.all")
-                HStack(spacing: 8) {
-                    QuantityStepper(value: $amount, range: 1...max(1, maximum))
-                    AikuButton("\(verb) \(amount)", kind: .tertiary, fullWidth: false) {
-                        onAmount(amount)
-                        amount = 1
-                    }
-                }
-            }
-        }
-        .onChange(of: maximum) { _, newValue in
-            amount = min(amount, max(1, newValue))
-        }
-    }
-}
-
 struct FulfilmentCountLabel: View {
     let done: Int
     let total: Int
@@ -171,45 +129,5 @@ struct FulfilmentNote: View {
     var body: some View {
         HelperText(text)
             .padding(.horizontal, 4)
-    }
-}
-
-struct FulfilmentCameraScan<Panel: View>: View {
-    let kicker: String
-    let title: String
-    var hint = "Point at the barcode"
-    var feedback: String?
-    let onClose: () -> Void
-    let onScan: () -> Void
-    @ViewBuilder var panel: Panel
-
-    init(
-        kicker: String,
-        title: String,
-        hint: String = "Point at the barcode",
-        feedback: String? = nil,
-        onClose: @escaping () -> Void,
-        onScan: @escaping () -> Void,
-        @ViewBuilder panel: () -> Panel
-    ) {
-        self.kicker = kicker
-        self.title = title
-        self.hint = hint
-        self.feedback = feedback
-        self.onClose = onClose
-        self.onScan = onScan
-        self.panel = panel()
-    }
-
-    var body: some View {
-        CameraScanScreen(kicker: kicker, title: title, hint: hint, onClose: onClose, onUseScanner: onClose, onSimulateScan: onScan) {
-            if let feedback {
-                ScanFeedbackBanner(tone: .success, title: feedback)
-            }
-        } panel: {
-            panel
-            AikuButton("Done", kind: .tertiary, action: onClose)
-                .accessibilityIdentifier("fulfilment.scan.done")
-        }
     }
 }

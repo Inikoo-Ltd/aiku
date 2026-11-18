@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import MerlinIcon from '@/Iris/Components/MerlinIcon.vue'
+import AssistantIcon from '@/Iris/Components/AssistantIcon.vue'
 import { inject, ref, computed, watch, onBeforeMount, onMounted, onBeforeUnmount } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import axios from 'axios'
@@ -489,7 +489,7 @@ const isMobileFilterOpen = ref(false)
                             <span class="min-w-0 flex-1">{{ offerLabel }}</span>
                             <Button :label="askLabel" size="sm" @click="openAssistant(searchQuery)">
                                 <template #icon>
-                                    <MerlinIcon mono />
+                                    <AssistantIcon mono />
                                 </template>
                             </Button>
                         </div>

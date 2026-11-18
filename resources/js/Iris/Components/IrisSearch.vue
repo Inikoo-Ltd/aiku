@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
+import AssistantIcon from "@/Iris/Components/AssistantIcon.vue"
 import { ref, computed, watch, onBeforeMount, defineAsyncComponent, nextTick, inject } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { router } from "@inertiajs/vue3"
@@ -269,7 +269,7 @@ const visitSearchPage = () => {
             @click="askAssistant"
         >
             <template #icon>
-                <MerlinIcon themed class="iris-search-ask-icon" />
+                <AssistantIcon themed class="iris-search-ask-icon" />
             </template>
         </Button>
 
@@ -297,7 +297,7 @@ const visitSearchPage = () => {
                     class="flex w-full items-center gap-3 border-b border-gray-200 px-4 pb-3 pt-4 text-left text-sm hover:bg-gray-50"
                     @click="askAssistant"
                 >
-                    <MerlinIcon themed />
+                    <AssistantIcon themed />
                     <span class="min-w-0 flex-1 truncate">
                         <span class="font-semibold">{{ offerLabel }}</span>
                         <span class="text-gray-500"> &ldquo;{{ inputValue.trim() }}&rdquo;</span>
