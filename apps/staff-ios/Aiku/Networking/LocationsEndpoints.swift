@@ -229,6 +229,11 @@ struct MobileLocationOrgStockUpdate: Encodable, Sendable, Equatable {
     var setAsPriorityDropshipping: Bool?
 }
 
+struct MobileLocationOrgStockPickingDefaults: Encodable, Hashable, Sendable {
+    var setAsPriorityWholesale: Bool?
+    var setAsPriorityDropshipping: Bool?
+}
+
 enum MobileStockMovementReason {
     static let transfer = "transfer"
 }
@@ -406,6 +411,10 @@ extension Endpoint {
         .jsonBody("mobile/location-org-stocks/\(linkID)", method: .patch, update)
     }
 
+    static func mobileLocationOrgStockPickingDefaults(linkID: Int, defaults: MobileLocationOrgStockPickingDefaults) -> Endpoint {
+        .jsonBody("mobile/location-org-stocks/\(linkID)", method: .patch, defaults)
+    }
+
     static func mobileEmptyLocationsRemoval(warehouseID: Int, enabled: Bool) -> Endpoint {
         .jsonBody("mobile/warehouses/\(warehouseID)/empty-locations-removal", method: .patch, MobileEmptyLocationsRemovalBody(enabled: enabled))
     }
@@ -458,6 +467,10 @@ extension APIClient {
 
     func updateLocationOrgStock(linkID: Int, update: MobileLocationOrgStockUpdate) async throws -> MobileLocation {
         try await send(.mobileLocationOrgStockUpdate(linkID: linkID, update: update), as: DataEnvelope<MobileLocation>.self).value
+    }
+
+    func setPickingDefaults(linkID: Int, defaults: MobileLocationOrgStockPickingDefaults) async throws {
+        _ = try await send(.mobileLocationOrgStockPickingDefaults(linkID: linkID, defaults: defaults))
     }
 
     func updateEmptyLocationsRemoval(warehouseID: Int, enabled: Bool) async throws -> MobileEmptyLocationsRemoval {

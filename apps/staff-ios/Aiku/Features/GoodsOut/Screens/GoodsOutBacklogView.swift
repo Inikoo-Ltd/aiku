@@ -172,12 +172,6 @@ struct GoodsOutBacklogView: View {
                 }
             }
         }
-        if !store.isRemote {
-            AikuButton("Packing queue · \(store.packingQueue.count) to pack", icon: .swipe, kind: .secondary) {
-                router.open(GoodsOutRoute.packingQueue)
-            }
-            .accessibilityIdentifier("goodsOut.packingQueue")
-        }
     }
 }
 

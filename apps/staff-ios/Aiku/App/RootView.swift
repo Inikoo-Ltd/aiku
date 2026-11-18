@@ -37,6 +37,9 @@ struct RootView: View {
                 session.apply(profile)
             }
         }
+        .onChange(of: authStore.userID, initial: true) { _, userID in
+            CrashReporting.identify(userID: userID)
+        }
         .task(id: authStore.userID) {
             guard let userID = authStore.userID, userID > 0 else { return }
             LocationsStore.shared.beginRemoteLoad()

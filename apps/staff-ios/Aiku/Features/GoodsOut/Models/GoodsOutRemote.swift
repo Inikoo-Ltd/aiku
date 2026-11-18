@@ -112,6 +112,8 @@ struct GoodsOutService: Sendable {
     var write: (@Sendable (Int, GoodsOutNoteAction) async throws -> GoodsOutActionResponseDTO)? = nil
     var shippers: (@Sendable (Int) async throws -> GoodsOutShippersDTO)? = nil
     var document: (@Sendable (Int, GoodsOutDocument) async throws -> Data)? = nil
+    var orgStock: (@Sendable (Int, Int) async throws -> MobileOrgStockDetail)? = nil
+    var setPickingDefaults: (@Sendable (Int, MobileLocationOrgStockPickingDefaults) async throws -> Void)? = nil
 
     static func live(_ client: APIClient) -> GoodsOutService {
         live { client }
@@ -131,7 +133,9 @@ struct GoodsOutService: Sendable {
             dispatchPersonnel: { try await client().goodsOutDispatchPersonnel(warehouseID: $0, role: $1) },
             write: { try await client().goodsOutWrite(noteID: $0, $1) },
             shippers: { try await client().goodsOutShippers(noteID: $0) },
-            document: { try await client().goodsOutDocument(noteID: $0, $1) }
+            document: { try await client().goodsOutDocument(noteID: $0, $1) },
+            orgStock: { try await client().fetchOrgStock(warehouseID: $0, id: $1) },
+            setPickingDefaults: { try await client().setPickingDefaults(linkID: $0, defaults: $1) }
         )
     }
 }
@@ -437,6 +441,7 @@ enum GoodsOutMapper {
         line.quantityToPick = dto.quantityToPick
         line.quantityWaitingWarehouse = dto.quantityWaitingWarehouse ?? 0
         line.noteToPickers = dto.noteToPickers?.text
+        line.orgStockID = dto.orgStock?.id
         line.barcode = dto.orgStock?.barcode.flatMap(nonEmpty)
         line.packing = linePacking(dto)
         line.packedInto = packedInto(dto)

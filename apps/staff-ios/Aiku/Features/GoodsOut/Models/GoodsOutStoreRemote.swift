@@ -9,7 +9,7 @@ extension GoodsOutStore {
         let abilities = warehouse.can
         rights = GoodsOutRights(
             isDispatchingSupervisor: abilities.superviseGoodsOut,
-            canEditStock: false,
+            canEditStock: abilities.moveStock,
             canScanToPick: abilities.pickAndPack,
             canEditOrders: false
         )
