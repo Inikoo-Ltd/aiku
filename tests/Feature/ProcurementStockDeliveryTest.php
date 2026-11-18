@@ -4554,3 +4554,22 @@ test('an order with units ordered at a zero price is not empty and can not be de
 
     expect(\App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders::deletableIds($this->group, [$purchaseOrder->id]))->toBe([$purchaseOrder->id]);
 });
+
+test('clean hand over is recorded on its own only on an agreed order not finished yet, never on a submitted or settled one', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $checks               = array_values(array_diff($orgAgent->agent->poJourney()['ready_checks'], ['compliance']));
+    $fields               = array_map(fn (string $key) => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum::READY_CHECK_FIELDS[$key], $checks);
+    $record               = \App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::make();
+
+    $orders = [];
+    foreach ([\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::CONFIRMED, \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED, \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SETTLED] as $state) {
+        $order = createConfirmedAgentOrder($this, $supplier, $product, 0, 4)->refresh();
+        $order->updateQuietly(['state' => $state, 'handed_over_at' => null, 'sample_approved_at' => now(), ...array_fill_keys($fields, now()->subDays(2))]);
+        $orders[$state->value] = $record->handle($order);
+    }
+
+    expect($orders['confirmed']->handed_over_at)->not->toBeNull()
+        ->and($orders['submitted']->refresh()->handed_over_at)->toBeNull()
+        ->and($orders['settled']->refresh()->handed_over_at)->toBeNull();
+});

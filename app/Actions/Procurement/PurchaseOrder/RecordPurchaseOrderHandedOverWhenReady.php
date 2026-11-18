@@ -12,14 +12,13 @@ namespace App\Actions\Procurement\PurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateState;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
  * Clean Hand Over means the order is ready to be put on a shipment: once every required Ready to Roll check of the
- * agent (balance, QC, packing) is done, the hand over is recorded, dated by the last of them. When one of them is undone
+ * agent (balance, QC, packing) is done on an agreed order not finished yet, the hand over is recorded, dated by the last of them. When one of them is undone
  * the hand over recorded this way is cleared again, until the goods are dispatched. A hand over marked by a person, an
  * order waiting for its sample, or an agent sending on the next container (where the containers complete it) is left
  * alone.
@@ -42,7 +41,7 @@ class RecordPurchaseOrderHandedOverWhenReady
 
         if (!$purchaseOrder->isAgentOrder()
             || $purchaseOrder->choMode() === 'next_container'
-            || in_array($purchaseOrder->state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::CANCELLED, PurchaseOrderStateEnum::NOT_RECEIVED])) {
+            || !$purchaseOrder->state->isAgreed()) {
             return $purchaseOrder;
         }
 
