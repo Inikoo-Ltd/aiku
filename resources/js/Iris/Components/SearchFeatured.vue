@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
+import AssistantIcon from "@/Iris/Components/AssistantIcon.vue"
 import { productNameWithPackAndSize } from "@/Composables/useBasketSizeSuffix"
 import { computed, inject } from 'vue'
 import Skeleton from 'primevue/skeleton'
@@ -210,7 +210,7 @@ const getPricePerUnit = (product: { price_per_unit?: number | null; discounted_p
                     @click="askAssistant"
                 >
                     <template #icon>
-                        <MerlinIcon themed />
+                        <AssistantIcon themed />
                     </template>
                 </Button>
             </div>

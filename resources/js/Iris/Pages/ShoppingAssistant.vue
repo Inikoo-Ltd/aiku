@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
+import AssistantIcon from "@/Iris/Components/AssistantIcon.vue"
 import MerlinThinking from "@/Iris/Components/MerlinThinking.vue"
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import axios from "axios"
@@ -13,7 +13,7 @@ import TabPanels from "primevue/tabpanels"
 import TabPanel from "primevue/tabpanel"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset } from "@far"
+import { faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset, faArrowRight } from "@far"
 import { faThumbsUp, faThumbsDown } from "@far"
 import { faThumbsUp as fasThumbsUp, faThumbsDown as fasThumbsDown } from "@fas"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
@@ -32,7 +32,7 @@ import {
     shoppingAssistantQuestionKey,
     useShoppingAssistant,
 } from "@/Iris/Composables/useShoppingAssistant"
-library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset, faThumbsUp, faThumbsDown, fasThumbsUp, fasThumbsDown)
+library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset, faArrowRight, faThumbsUp, faThumbsDown, fasThumbsUp, fasThumbsDown)
 
 type Card = ProductResource & {
     assistant_reason: string
@@ -83,6 +83,7 @@ const assistantName = computed(() => assistant.value?.name || props.assistant_na
 const isMounted = ref(false)
 const isLayoutReady = computed(() => isMounted.value && !layout.iris_varnish?.isFetching)
 const isLoggedOut = computed(() => isLayoutReady.value && !layout.iris?.is_logged_in)
+const showsRangePanel = computed(() => isLayoutReady.value && !!layout.iris?.is_logged_in && !isDropshipping.value)
 
 const conversation = ref<string | null>(null)
 const messages = ref<Message[]>([])
@@ -102,6 +103,7 @@ const handingOver = ref<number | "link" | null>(null)
 const handOverErrors = ref<Record<number, string>>({})
 
 const hasForgottenProducts = ref(false)
+const rangePanelHasProducts = ref(true)
 
 const focusLandingTextarea = () => {
     const textarea = document.querySelector<HTMLTextAreaElement>(".landing-textarea")
@@ -115,6 +117,7 @@ const showLanding = computed(() => !messages.value.length && !isPending.value &&
 const isLandingVisible = computed(() => showLanding.value && !!assistant.value)
 const isChatVisible = computed(() => !isLandingVisible.value && (!!assistant.value || messages.value.length > 0 || isPending.value))
 const isMerlin = computed(() => assistantName.value.trim().toLowerCase() === "merlin")
+const isLittleBird = computed(() => assistantName.value.trim().toLowerCase() === "little bird")
 
 const knowsTheRange = computed(() => isDropshipping.value
     ? (props.products_in_range
@@ -727,11 +730,138 @@ const sendOnEnter = (event: KeyboardEvent) => {
 <template>
     <div :class="isLandingVisible || isChatVisible ? 'landing-page' : 'assistant-page px-4 py-8'">
         <div v-if="isLandingVisible">
+            <section v-if="isLittleBird" class="bird-landing">
+                <div class="bird-wrap">
+                    <div v-if="canTalkToAPerson" class="bird-topbar">
+                        <button type="button" class="bird-talk" :aria-expanded="isTalkBoxOpen" @click="isTalkBoxOpen = !isTalkBoxOpen">
+                            <FontAwesomeIcon icon="far fa-headset" fixed-width aria-hidden="true" />
+                            {{ ctrans("Talk to a person") }}
+                        </button>
+                    </div>
+
+                    <div v-if="isTalkBoxOpen && canTalkToAPerson" class="bird-card bird-talk-box">
+                        <label for="assistant-talk-to-a-person-bird" class="mb-1 block text-sm font-medium">
+                            {{ ctrans("What would you like to ask our team?") }} <span class="text-red-500">*</span>
+                        </label>
+                        <Textarea id="assistant-talk-to-a-person-bird" v-model="talkDraft" rows="3" autoResize maxlength="1000" class="w-full" />
+                        <p v-if="talkError" class="mt-1 text-xs text-red-500">{{ talkError }}</p>
+                        <div class="mt-3 flex w-full gap-2">
+                            <Button
+                                type="tertiary"
+                                class="shrink-0"
+                                :label="ctrans('Cancel')"
+                                :disabled="handingOver !== null"
+                                @click="isTalkBoxOpen = false; talkError = ''"
+                            >
+                                <template #icon>
+                                    <FontAwesomeIcon icon="far fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                            <Button
+                                type="primary"
+                                full
+                                :label="ctrans('Send to our team')"
+                                :loading="handingOver === 'link'"
+                                :disabled="handingOver !== null"
+                                @click="handOver(null, talkDraft)"
+                            >
+                                <template #icon>
+                                    <FontAwesomeIcon icon="far fa-paper-plane" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div class="bird-hero">
+                        <AssistantIcon littleBird class="bird-mark" />
+                        <p class="bird-eyebrow">{{ ctrans("Your AI shopping assistant") }}</p>
+                        <h1 class="bird-title">
+                            {{ ctrans("Ask :name", { name: assistantName }) }}
+                            <span class="bird-beta" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
+                        </h1>
+                        <p class="bird-lead">{{ knowsTheRange }}</p>
+                    </div>
+
+                    <div class="bird-search">
+                        <div class="bird-search-row">
+                            <Textarea
+                                v-model="draft"
+                                rows="1"
+                                auto-resize
+                                maxlength="1000"
+                                class="landing-textarea bird-search-input"
+                                :aria-label="ctrans('Ask :name', { name: assistantName })"
+                                :placeholder="ctrans('Ask :name...', { name: assistantName })"
+                                @keydown.enter="sendOnEnter"
+                            />
+                            <button
+                                type="button"
+                                class="bird-send"
+                                :disabled="!draft.trim()"
+                                :title="ctrans('Ask :name', { name: assistantName })"
+                                :aria-label="ctrans('Ask :name', { name: assistantName })"
+                                @click="askFromLanding(draft)"
+                            >
+                                <FontAwesomeIcon icon="far fa-arrow-right" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
+                        <div class="bird-chips">
+                            <button
+                                v-for="starter in starterQuestions"
+                                :key="starter.question"
+                                type="button"
+                                class="bird-chip"
+                                @click="askFromLanding(starter.question)"
+                            >
+                                {{ starter.title }}
+                            </button>
+                        </div>
+                    </div>
+                    <p v-if="errorMessage" class="bird-error">{{ errorMessage }}</p>
+                    <p v-if="notice" class="bird-notice">{{ notice }}</p>
+
+                    <div class="bird-grid" :class="{ 'bird-grid-with-panel': showsRangePanel && rangePanelHasProducts }">
+                        <section class="bird-card bird-history" :aria-label="ctrans('Recent conversations')">
+                            <h2 class="bird-card-title">{{ ctrans("Recent conversations") }}</h2>
+                            <div v-if="isHistoryLoading && !history.length" class="flex flex-col gap-3">
+                                <div v-for="index in 3" :key="index" class="skeleton h-14 rounded-2xl" />
+                            </div>
+                            <p v-else-if="!history.length" class="bird-history-empty">{{ ctrans("Your conversations will show here.") }}</p>
+                            <nav v-else class="bird-history-list">
+                                <button
+                                    v-for="item in landingHistory"
+                                    :key="item.conversation"
+                                    type="button"
+                                    class="bird-history-item"
+                                    @click="openConversation(item.conversation)"
+                                >
+                                    <span class="bird-history-text">{{ item.title }}</span>
+                                    <span class="bird-history-date">{{ historyDate(item.last_message_at) }}</span>
+                                </button>
+                            </nav>
+                        </section>
+
+                        <RangeAdvisorPanel
+                            v-if="showsRangePanel"
+                            littleBird
+                            :assistantName
+                            :fieldValue
+                            :screenType
+                            @loaded="(hasProducts, hasForgotten) => { rangePanelHasProducts = hasProducts; hasForgottenProducts = hasForgotten }"
+                            @tellShop="focusLandingTextarea"
+                        />
+                    </div>
+
+                    <p class="bird-note">{{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}</p>
+                </div>
+            </section>
+
+            <template v-else>
             <section class="merlin-landing">
                 <div class="merlin-wrap">
                     <header class="merlin-top">
                         <div class="merlin-brand">
-                            <MerlinIcon themed class="merlin-brand-icon" />
+                            <AssistantIcon :littleBird="isLittleBird" class="merlin-brand-icon" />
                             <div class="min-w-0">
                                 <p class="merlin-brand-name">
                                     {{ assistantName }} <span class="merlin-accent-text" aria-hidden="true">✦</span>
@@ -746,7 +876,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     </header>
 
                     <div class="merlin-hero">
-                        <MerlinIcon themed class="merlin-hero-icon" />
+                        <AssistantIcon :littleBird="isLittleBird" class="merlin-hero-icon" />
                         <p class="merlin-eyebrow">✦ {{ ctrans("A little magic. A lot of knowledge.") }}</p>
                         <h1 class="merlin-title">
                             {{ ctrans("Hello, I'm") }} <em>{{ assistantName }}.</em><br>
@@ -886,20 +1016,21 @@ const sendOnEnter = (event: KeyboardEvent) => {
             </section>
 
             <RangeAdvisorPanel
-                v-if="isLayoutReady && layout.iris?.is_logged_in && !isDropshipping"
+                v-if="showsRangePanel"
                 :assistantName
                 :fieldValue
                 :screenType
                 @loaded="(_hasProducts, hasForgotten) => { hasForgottenProducts = hasForgotten }"
                 @tellShop="focusLandingTextarea"
             />
+            </template>
         </div>
 
-        <div v-else-if="isChatVisible" class="chat-shell" :class="{ 'chat-shell-collapsed': isSidebarCollapsed }">
+        <div v-else-if="isChatVisible" class="chat-shell" :class="{ 'chat-shell-collapsed': isSidebarCollapsed, 'chat-shell-little-bird': isLittleBird }">
             <aside class="chat-sidebar" :class="{ 'chat-sidebar-open': isHistoryOpen }">
                 <div class="chat-sidebar-top">
                     <span class="chat-sidebar-brand">
-                        <MerlinIcon themed class="chat-sidebar-brand-icon" />
+                        <AssistantIcon :littleBird="isLittleBird" class="chat-sidebar-brand-icon" />
                         {{ assistantName }}
                     </span>
                     <button
@@ -953,7 +1084,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     >
                         <FontAwesomeIcon :icon="isHistoryOpen ? 'far fa-times' : 'far fa-bars'" fixed-width aria-hidden="true" />
                     </button>
-                    <span class="assistant-avatar" aria-hidden="true"><MerlinIcon themed /></span>
+                    <span class="assistant-avatar" aria-hidden="true"><AssistantIcon :littleBird="isLittleBird" /></span>
                     <div class="min-w-0 flex-1">
                         <p class="chat-header-name">
                             {{ assistantName }}
@@ -986,7 +1117,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                         </div>
 
                         <div v-else class="flex gap-3">
-                            <div class="assistant-avatar" aria-hidden="true"><MerlinIcon themed /></div>
+                            <div class="assistant-avatar" aria-hidden="true"><AssistantIcon :littleBird="isLittleBird" /></div>
                             <div class="min-w-0 flex-1">
                                 <p class="chat-text whitespace-pre-line">{{ message.body }}</p>
 
@@ -1106,7 +1237,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     </template>
 
                     <div v-if="isPending" class="flex gap-3">
-                        <div class="assistant-avatar assistant-avatar-thinking" aria-hidden="true"><MerlinIcon themed /></div>
+                        <div class="assistant-avatar assistant-avatar-thinking" aria-hidden="true"><AssistantIcon :littleBird="isLittleBird" /></div>
                         <div class="min-w-0 flex-1">
                             <MerlinThinking :name="assistantName" :expected-seconds="assistant?.expected_seconds" />
                         </div>
@@ -1169,7 +1300,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                             :disabled="isPending || !draft.trim()"
                             @click="send(draft)"
                         >
-                            <FontAwesomeIcon icon="far fa-paper-plane" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon :icon="isLittleBird ? 'far fa-arrow-right' : 'far fa-paper-plane'" fixed-width aria-hidden="true" />
                         </button>
                     </div>
                     <p v-if="errorMessage" class="mt-1 text-xs text-red-500">{{ errorMessage }}</p>
@@ -2281,5 +2412,491 @@ const sendOnEnter = (event: KeyboardEvent) => {
     .merlin-human-link {
         width: 100%;
     }
+}
+.bird-landing {
+    --bird-ink: #151515;
+    --bird-text: #525252;
+    --bird-muted: #777777;
+    --bird-line: #dedede;
+    --bird-line-strong: #bcbcbc;
+    --bird-soft: #fafafa;
+    --bird-hover: #f4f4f4;
+    min-height: 100vh;
+    padding: 1.875rem 1rem 3.75rem;
+    background-color: #ffffff;
+    color: var(--bird-ink);
+}
+
+.bird-wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+}
+
+.bird-topbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.75rem;
+}
+
+.bird-talk {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.8125rem 1.25rem;
+    border: 1px solid #c9c9c9;
+    border-radius: 9999px;
+    background-color: #ffffff;
+    color: var(--bird-ink);
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+.bird-talk:hover {
+    background-color: #f5f5f5;
+}
+
+.bird-talk-box {
+    max-width: 920px;
+    margin: 0 auto 1.5rem;
+}
+
+.bird-hero {
+    padding: 1.875rem 0.75rem 1.5rem;
+    text-align: center;
+}
+
+.bird-mark {
+    width: 124px;
+    height: 124px;
+    margin: 0 auto 1rem;
+}
+
+.bird-eyebrow {
+    margin-bottom: 0.625rem;
+    color: #666666;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+}
+
+.bird-title {
+    margin: 0 0 0.75rem;
+    color: #111111;
+    font-size: clamp(2.125rem, 6vw, 3.5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+}
+
+.bird-beta {
+    display: inline-block;
+    margin-left: 0.625rem;
+    padding: 0.25rem 0.5625rem;
+    border: 1px solid #dddddd;
+    border-radius: 9999px;
+    background-color: #f5f5f5;
+    color: #666666;
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+.bird-lead {
+    max-width: 760px;
+    margin: 0 auto;
+    color: var(--bird-text);
+    font-size: 1.125rem;
+    line-height: 1.65;
+}
+
+.bird-search {
+    max-width: 920px;
+    margin: 1.875rem auto 0;
+    padding: 1.125rem;
+    border: 1px solid #d8d8d8;
+    border-radius: 1.75rem;
+    background-color: #ffffff;
+    box-shadow: 0 12px 38px rgba(0, 0, 0, 0.055);
+}
+
+.bird-search-row {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.625rem 0.625rem 0.625rem 1rem;
+    border: 1px solid var(--bird-line);
+    border-radius: 1.125rem;
+    background-color: var(--bird-soft);
+}
+
+.bird-search-row:focus-within {
+    border-color: var(--bird-line-strong);
+}
+
+.bird-search .bird-search-input {
+    flex: 1;
+    min-height: 1.5rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--bird-ink);
+    font-size: 1rem;
+}
+
+.bird-search .bird-search-input::placeholder {
+    color: #828282;
+}
+
+.bird-send {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.875rem;
+    height: 2.875rem;
+    flex-shrink: 0;
+    border-radius: 0.875rem;
+    background-color: var(--bird-ink);
+    color: #ffffff;
+    transition: opacity 0.2s;
+}
+
+.bird-send:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.bird-send:focus-visible,
+.bird-chip:focus-visible,
+.bird-talk:focus-visible,
+.bird-history-item:focus-visible {
+    outline: 2px solid var(--bird-ink);
+    outline-offset: 2px;
+}
+
+.bird-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.125rem;
+}
+
+.bird-chip {
+    padding: 0.75rem 1rem;
+    border: 1px solid #d5d5d5;
+    border-radius: 9999px;
+    background-color: #ffffff;
+    color: #333333;
+    font-size: 0.875rem;
+    text-align: center;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.bird-chip:hover {
+    border-color: #999999;
+    background-color: var(--bird-hover);
+}
+
+.bird-error,
+.bird-notice {
+    max-width: 920px;
+    margin: 1rem auto 0;
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+.bird-error {
+    color: #dc2626;
+}
+
+.bird-notice {
+    color: var(--bird-muted);
+}
+
+.bird-grid {
+    display: grid;
+    gap: 1.375rem;
+    margin-top: 2.125rem;
+}
+
+@media (min-width: 900px) {
+    .bird-grid-with-panel {
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.4fr);
+        align-items: start;
+    }
+}
+
+.bird-card {
+    padding: 1.5rem;
+    border: 1px solid #dfdfdf;
+    border-radius: 1.5rem;
+    background-color: #ffffff;
+    box-shadow: 0 7px 30px rgba(0, 0, 0, 0.04);
+}
+
+.bird-card-title {
+    margin: 0 0 1rem;
+    color: var(--bird-ink);
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.bird-history .skeleton {
+    background-color: var(--bird-hover);
+}
+
+.bird-history-empty {
+    color: var(--bird-muted);
+    font-size: 0.9375rem;
+}
+
+.bird-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.bird-history-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e7e7e7;
+    border-radius: 1rem;
+    background-color: var(--bird-soft);
+    text-align: left;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.bird-history-item:hover {
+    border-color: var(--bird-line-strong);
+    background-color: var(--bird-hover);
+}
+
+.bird-history-text {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--bird-ink);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bird-history-date {
+    flex-shrink: 0;
+    color: var(--bird-muted);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+.bird-note {
+    margin-top: 1.5rem;
+    color: var(--bird-muted);
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+@media (max-width: 640px) {
+    .bird-landing {
+        padding: 1.125rem 0.75rem 2.625rem;
+    }
+
+    .bird-topbar {
+        justify-content: stretch;
+    }
+
+    .bird-talk {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .bird-lead {
+        font-size: 1rem;
+    }
+
+    .bird-search {
+        padding: 0.875rem;
+        border-radius: 1.375rem;
+    }
+
+    .bird-search-row {
+        padding: 0.5rem 0.5rem 0.5rem 0.875rem;
+    }
+
+    .bird-send {
+        width: 2.625rem;
+        height: 2.625rem;
+        border-radius: 0.75rem;
+    }
+}
+
+.chat-shell.chat-shell-little-bird {
+    --chat-bg: #ffffff;
+    --chat-sidebar: #fafafa;
+    --chat-card: #fafafa;
+    --chat-card-hover: #f4f4f4;
+    --chat-bubble: #f5f5f5;
+    --chat-edge: #dedede;
+    --chat-edge-strong: #bcbcbc;
+    --chat-muted: #666666;
+    --chat-accent: #151515;
+    --chat-accent-text: #ffffff;
+    --merlin-card: #ffffff;
+    --merlin-card-hover: #f4f4f4;
+    --merlin-edge: #d5d5d5;
+    --merlin-accent: #151515;
+    color: #151515;
+}
+
+.chat-shell-little-bird .chat-text,
+.chat-shell-little-bird .landing-textarea,
+.chat-shell-little-bird .chat-sidebar-brand,
+.chat-shell-little-bird .chat-sidebar-row,
+.chat-shell-little-bird .chat-header-name,
+.chat-shell-little-bird .chat-history-toggle,
+.chat-shell-little-bird .chat-header-new,
+.chat-shell-little-bird .chat-header-talk,
+.chat-shell-little-bird .chat-talk-box,
+.chat-shell-little-bird .chat-icon-button,
+.chat-shell-little-bird .chat-icon-button:hover {
+    color: #151515;
+}
+
+.chat-shell-little-bird .chat-history-title {
+    color: #333333;
+}
+
+.chat-shell-little-bird .chat-sidebar-title,
+.chat-shell-little-bird .chat-history-date,
+.chat-shell-little-bird .chat-composer-hint,
+.chat-shell-little-bird .chat-header-role {
+    color: var(--chat-muted);
+}
+
+.chat-shell-little-bird .landing-textarea::placeholder {
+    color: #828282;
+}
+
+.chat-shell-little-bird .chat-sidebar-row,
+.chat-shell-little-bird .chat-history-toggle,
+.chat-shell-little-bird .chat-header-new,
+.chat-shell-little-bird .chat-header-talk {
+    border-color: #c9c9c9;
+    background-color: #ffffff;
+}
+
+.chat-shell-little-bird .chat-sidebar-row:hover,
+.chat-shell-little-bird .chat-history-toggle:hover,
+.chat-shell-little-bird .chat-header-new:hover,
+.chat-shell-little-bird .chat-header-talk:hover {
+    border-color: #999999;
+    background-color: var(--chat-card-hover);
+}
+
+.chat-shell-little-bird .chat-sidebar-open {
+    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.12);
+}
+
+.chat-shell-little-bird .beta-tag {
+    border-color: #dddddd;
+    background-color: #f5f5f5;
+    color: #666666;
+}
+
+.chat-shell-little-bird .assistant-avatar {
+    border-color: var(--chat-edge);
+    background: #ffffff;
+}
+
+.chat-shell-little-bird .assistant-avatar .little-bird-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.chat-shell-little-bird .chat-sidebar-brand-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.chat-shell-little-bird .assistant-bubble {
+    border-color: #e5e5e5;
+    background-color: var(--chat-bubble);
+    color: #151515;
+}
+
+.chat-shell-little-bird .assistant-link {
+    color: #151515;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.chat-shell-little-bird .chat-dark-button {
+    border-color: #d5d5d5;
+    color: #333333;
+}
+
+.chat-shell-little-bird .chat-dark-button:not(:disabled):hover {
+    border-color: #999999;
+}
+
+.chat-shell-little-bird .merlin-card {
+    color: #333333;
+}
+
+.chat-shell-little-bird .chat-follow-ups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.chat-shell-little-bird .chat-follow-ups .merlin-card {
+    width: auto;
+    padding: 0.75rem 1rem;
+    border-color: #d5d5d5;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+}
+
+.chat-shell-little-bird .chat-follow-ups .merlin-card:not(:disabled):hover {
+    transform: none;
+    border-color: #999999;
+}
+
+.chat-shell-little-bird .chat-follow-ups .merlin-card-text {
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+.chat-shell-little-bird .chat-follow-ups .merlin-card-icon,
+.chat-shell-little-bird .chat-follow-ups .merlin-card-arrow {
+    display: none;
+}
+
+.chat-shell-little-bird :deep(.p-tab) {
+    color: #777777;
+}
+
+.chat-shell-little-bird :deep(.p-tab:not(.p-tab-active):hover),
+.chat-shell-little-bird :deep(.p-tab-active) {
+    color: #151515;
+}
+
+.chat-shell-little-bird :deep(.p-tablist-nav-button) {
+    color: #151515;
+}
+
+.chat-shell-little-bird :deep(.merlin-thinking-usually) {
+    color: var(--chat-muted);
+}
+
+.chat-shell-little-bird .chat-send:hover:not(:disabled) {
+    background-color: #333333;
 }
 </style>

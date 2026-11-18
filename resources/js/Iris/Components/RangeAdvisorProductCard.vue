@@ -6,7 +6,7 @@ import { faImage } from "@fal"
 import { faCrown } from "@fas"
 import Image from "@common/Components/Image.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
-import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
+import AssistantIcon from "@/Iris/Components/AssistantIcon.vue"
 import NewAddToCartButton from "@/Components/CMS/Webpage/Products/NewAddToCartButton.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { getBestOffer } from "@/Composables/useOffers"
@@ -93,11 +93,11 @@ const money = (amount: number) => locale.currencyFormat(currencyCode.value, amou
             <div v-if="showBestsellerBadge || isMerlinNewArrival" class="advisor-badges">
                 <span v-if="showBestsellerBadge" class="advisor-badge" :title="isMerlinBestseller ? product.assistant_reason : undefined">
                     <FontAwesomeIcon v-if="isBestseller" icon="fas fa-crown" aria-hidden="true" />
-                    <MerlinIcon v-if="isMerlinBestseller" mono class="advisor-badge-merlin" />
+                    <AssistantIcon v-if="isMerlinBestseller" mono class="advisor-badge-merlin" />
                     {{ ctrans("Bestseller") }}
                 </span>
                 <span v-if="isMerlinNewArrival" class="advisor-badge advisor-badge-new" :title="product.assistant_reason">
-                    <MerlinIcon mono class="advisor-badge-merlin" />
+                    <AssistantIcon mono class="advisor-badge-merlin" />
                     {{ ctrans("New In") }}
                 </span>
             </div>
@@ -116,7 +116,7 @@ const money = (amount: number) => locale.currencyFormat(currencyCode.value, amou
 
         <div class="advisor-body">
             <p v-if="showReason" class="advisor-reason" :title="product.assistant_reason">
-                <MerlinIcon mono class="advisor-reason-icon" />
+                <AssistantIcon mono class="advisor-reason-icon" />
                 <span class="advisor-reason-text">{{ product.assistant_reason }}</span>
             </p>
 

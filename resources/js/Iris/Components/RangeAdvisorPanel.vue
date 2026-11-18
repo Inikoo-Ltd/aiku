@@ -14,7 +14,7 @@ import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ctrans } from "@/Composables/useTrans"
 import { getStyles } from "@/Composables/styles"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
+import AssistantIcon from "@/Iris/Components/AssistantIcon.vue"
 import RangeAdvisorProductCard from "@/Iris/Components/RangeAdvisorProductCard.vue"
 import { ProductResource } from "@/types/Iris/Products"
 library.add(faShoppingBasket, faCheck, faTimes)
@@ -28,6 +28,7 @@ type Panel = { shop_type: string | null, country: string | null, has_orders: boo
 const props = defineProps<{
     assistantName: string
     fieldValue?: Record<string, any>
+    littleBird?: boolean
     screenType: "mobile" | "tablet" | "desktop"
 }>()
 
@@ -193,7 +194,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <section v-if="isLoading || panel?.lists.length || panel?.remembered || (panel && !panel.shop_type)" class="range-panel">
+    <section v-if="isLoading || panel?.lists.length || panel?.remembered || (panel && !panel.shop_type)" class="range-panel" :class="{ 'range-panel-little-bird': littleBird }">
         <div class="range-wrap">
         <div v-if="isLoading" class="flex flex-col gap-3" aria-hidden="true">
             <div class="skeleton h-24 rounded-xl" />
@@ -206,7 +207,7 @@ onMounted(async () => {
         <div v-else-if="panel" class="range-shell">
             <header class="range-header">
                 <span class="range-header-badge" aria-hidden="true">
-                    <MerlinIcon themed class="range-header-icon" />
+                    <AssistantIcon :littleBird class="range-header-icon" />
                 </span>
                 <div class="range-header-text">
                     <h2 v-if="panel.lists.length" class="range-title">{{ ctrans(":name noticed", { name: assistantName }) }}</h2>
@@ -234,7 +235,7 @@ onMounted(async () => {
                     @click="emit('tellShop')"
                 >
                     <template #icon>
-                        <MerlinIcon themed />
+                        <AssistantIcon :littleBird class="range-tell-icon" />
                     </template>
                 </Button>
             </header>
@@ -293,7 +294,7 @@ onMounted(async () => {
                                         <p v-if="addErrors[`pack-${pack.family.id}`]" class="mb-2 text-xs text-red-500">{{ addErrors[`pack-${pack.family.id}`] }}</p>
                                         <div class="range-grid">
                                             <div v-for="card in pack.items" :key="`${card.id}-${cardsVersion}`" @click.capture="(event) => recordClick(event, list.key, card)">
-                                    <RangeAdvisorProductCard :product="card" dark
+                                    <RangeAdvisorProductCard :product="card" :dark="!littleBird"
                                         :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', card.id])"
                                         :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
                                         :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false) ?? undefined" />
@@ -305,7 +306,7 @@ onMounted(async () => {
 
                             <div v-else class="range-grid">
                                 <div v-for="card in list.items" :key="`${card.id}-${cardsVersion}`" @click.capture="(event) => recordClick(event, list.key, card)">
-                                    <RangeAdvisorProductCard :product="card" dark
+                                    <RangeAdvisorProductCard :product="card" :dark="!littleBird"
                                         :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', card.id])"
                                         :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
                                         :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false) ?? undefined" />
@@ -643,5 +644,132 @@ a.range-pack-name:hover {
     margin-top: 0.125rem;
     font-size: 0.75rem;
     color: var(--range-muted);
+}
+.range-panel-little-bird {
+    --range-bg: #ffffff;
+    --range-card: #fafafa;
+    --range-card-hover: #f4f4f4;
+    --range-edge: #dedede;
+    --range-muted: #666666;
+    padding: 1.5rem;
+    border: 1px solid #dfdfdf;
+    border-radius: 1.5rem;
+    color: #151515;
+    box-shadow: 0 7px 30px rgba(0, 0, 0, 0.04);
+}
+
+.range-panel-little-bird .range-header {
+    padding: 0;
+    border: 0;
+    background-color: transparent;
+}
+
+.range-panel-little-bird .range-header-badge {
+    background-color: transparent;
+}
+
+.range-panel-little-bird .range-header-icon {
+    width: 3.25rem;
+    height: 3.25rem;
+}
+
+.range-tell-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.range-panel-little-bird .range-title,
+.range-panel-little-bird .range-pack-name,
+.range-panel-little-bird .range-remembered-label {
+    color: #151515;
+}
+
+.range-panel-little-bird .range-tell,
+.range-panel-little-bird .range-pill-button {
+    border-color: #d5d5d5;
+    color: #333333;
+}
+
+.range-panel-little-bird .range-tell:hover,
+.range-panel-little-bird .range-pill-button:not(:disabled):hover {
+    border-color: #999999;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tablist-nav-button) {
+    color: #151515;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tab:not(.p-tab-active):hover) {
+    color: #151515;
+}
+
+@media (max-width: 639px) {
+    .range-panel-little-bird .range-tabs :deep(.p-tablist-tab-list) {
+        border-radius: 0;
+    }
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tablist-tab-list) {
+    gap: 1.375rem;
+    padding: 0 0.25rem;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tab) {
+    padding: 0.25rem 0 0.5rem;
+    border-radius: 0;
+    font-weight: 700;
+    color: #777777;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tab:not(.p-tab-active):hover) {
+    background-color: transparent;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tab-active) {
+    color: #151515;
+    background-color: transparent;
+    box-shadow: inset 0 -2px 0 #151515;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tab-active) .range-count {
+    color: #ffffff;
+    background-color: #151515;
+}
+
+.range-panel-little-bird .range-count {
+    background-color: #f2f2f2;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tab:focus-visible) {
+    outline-color: #151515;
+}
+
+.range-panel-little-bird .range-pack-header {
+    border-left-color: #151515;
+}
+
+.range-panel-little-bird a.range-pack-name:hover {
+    color: #151515;
+}
+
+@media (min-width: 640px) {
+    .range-panel-little-bird .range-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1280px) {
+    .range-panel-little-bird .range-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 639px) {
+    .range-panel-little-bird {
+        padding: 1rem;
+    }
 }
 </style>
