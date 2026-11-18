@@ -57,6 +57,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property ChatAiReactionEnum|null $customer_reaction
  * @property array|null $jev_check
  * @property array|null $claim_check
+ * @property array<int|string, string>|null $staff_translations
+ * @property int|null $written_in_language_id
  * @property \Illuminate\Support\Carbon|null $copied_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -86,6 +88,7 @@ class ChatAiDraft extends Model
         'customer_reaction' => ChatAiReactionEnum::class,
         'jev_check'    => 'array',
         'claim_check'  => 'array',
+        'staff_translations' => 'array',
         'copied_at'    => 'datetime',
     ];
 

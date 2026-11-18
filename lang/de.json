@@ -26819,5 +26819,12 @@
     "Warehouse :warehouse · Factory :factory": "Lager :warehouse · Fabrik :factory",
     "Wrong Weights": "Falsche Gewichte",
     "material": "Material",
-    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO von :name, :time|:count SKOs von :name, :time"
+    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO von :name, :time|:count SKOs von :name, :time",
+    "Edit in my language": "In meiner Sprache bearbeiten",
+    "Remembered for customers who write in :language, until you turn it off": "Gespeichert für Kunden, die auf :language schreiben, bis Sie es ausschalten",
+    "Edit in :mine, send in :theirs": "Auf :mine bearbeiten, auf :theirs senden",
+    "You edit it in :language below. Sent unchanged, the customer gets Aiku's original; changed, your reply is translated into their language before it is sent.": "Sie bearbeiten ihn unten auf :language. Unverändert gesendet erhält der Kunde das Original von Aiku; geändert wird Ihre Antwort vor dem Senden in seine Sprache übersetzt.",
+    "The draft could not be translated for you to edit, so it is in the customer's language.": "Der Entwurf konnte nicht zum Bearbeiten übersetzt werden und ist daher in der Sprache des Kunden.",
+    "That could not be saved": "Das konnte nicht gespeichert werden",
+    "The language of this customer is not known yet": "Die Sprache dieses Kunden ist noch nicht bekannt"
 }

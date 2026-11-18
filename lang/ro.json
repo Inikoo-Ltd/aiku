@@ -26044,5 +26044,12 @@
     "Warehouse :warehouse · Factory :factory": "Depozit :warehouse · Fabrică :factory",
     "Wrong Weights": "Greutăți greșite",
     "material": "material",
-    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO de :name, :time|:count SKO de :name, :time|:count de SKO de :name, :time"
+    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO de :name, :time|:count SKO de :name, :time|:count de SKO de :name, :time",
+    "Edit in my language": "Editează în limba mea",
+    "Remembered for customers who write in :language, until you turn it off": "Se reține pentru clienții care scriu în :language, până când o dezactivezi",
+    "Edit in :mine, send in :theirs": "Editează în :mine, trimite în :theirs",
+    "You edit it in :language below. Sent unchanged, the customer gets Aiku's original; changed, your reply is translated into their language before it is sent.": "Îl editezi mai jos în :language. Trimis neschimbat, clientul primește originalul de la Aiku; dacă îl modifici, răspunsul tău este tradus în limba lui înainte de trimitere.",
+    "The draft could not be translated for you to edit, so it is in the customer's language.": "Ciorna nu a putut fi tradusă pentru editare, așa că este în limba clientului.",
+    "That could not be saved": "Nu s-a putut salva",
+    "The language of this customer is not known yet": "Limba acestui client nu este încă cunoscută"
 }

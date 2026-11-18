@@ -14,6 +14,7 @@ import { faStar } from "@fas"
 import { ctrans } from "@/Composables/useTrans"
 import { formatChatTime } from "@/Composables/chatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import ToggleSwitch from "primevue/toggleswitch"
 
 const props = defineProps<{
     sessionUlid?: string | null
@@ -23,7 +24,7 @@ const props = defineProps<{
     inline?: boolean
 }>()
 
-const emit = defineEmits<{ (e: "use", text: string, draftId?: number): void, (e: "discarded"): void, (e: "disposed"): void, (e: "loaded"): void, (e: "jump-to-message"): void }>()
+const emit = defineEmits<{ (e: "use", text: string, draftId?: number, translated?: boolean): void, (e: "discarded"): void, (e: "disposed"): void, (e: "loaded"): void, (e: "jump-to-message"): void }>()
 
 interface DraftAction {
     index: number
@@ -49,11 +50,14 @@ interface Draft {
     rating: number | null
     reason: string | null
     translate_for_me?: boolean
+    edit_in_my_language?: boolean
+    my_language?: string | null
+    customer_language?: string | null
 }
 
 const draft = ref<Draft | null>(null)
 const checkedOpen = ref(false)
-const staffTranslation = ref<{ language: string, text?: string | null, staff_note: string | null, checked: string[], labels: Record<number, string>, questions?: string[] } | null>(null)
+const staffTranslation = ref<{ language: string, language_id?: number, editable?: boolean, text?: string | null, staff_note: string | null, checked: string[], labels: Record<number, string>, questions?: string[] } | null>(null)
 const showTranslation = ref(false)
 const translating = ref(false)
 const confirming = ref<string | null>(null)
@@ -80,7 +84,7 @@ const toggleHidden = () => {
     }
     if (hidden.value) return
     translateForMe()
-    if (props.inline && draft.value?.text) emit("use", draft.value.text, draft.value.id)
+    offerToEditor()
 }
 const draftOpen = ref(false)
 let channel: any = null
@@ -178,9 +182,7 @@ const copied = () => {
     axios.post(route("grp.api.chats.ai_drafts.copied", [draft.value.id])).catch(() => null)
 }
 
-watch(() => draft.value?.id, (id) => {
-    if (props.inline && id && draft.value?.text && !hidden.value) emit("use", draft.value.text, id)
-})
+watch(() => draft.value?.id, () => offerToEditor())
 
 defineExpose({ take })
 
@@ -214,6 +216,29 @@ const runAction = async (action: DraftAction) => {
     }
 }
 
+let translationRequest: { draftId: number, promise: Promise<void> } | null = null
+const fetchTranslation = (): Promise<void> => {
+    const draftId = draft.value?.id
+    if (!draftId || staffTranslation.value) return Promise.resolve()
+    if (translationRequest?.draftId === draftId) return translationRequest.promise
+
+    translating.value = true
+    const promise = axios.post(route("grp.api.chats.ai_drafts.translate", [draftId]))
+        .then(({ data }) => {
+            if (draft.value?.id === draftId) staffTranslation.value = data.data
+        })
+        .catch(() => {
+            if (draft.value?.id === draftId) failure.value = ctrans("The draft could not be translated")
+        })
+        .finally(() => {
+            if (translationRequest?.draftId === draftId) translationRequest = null
+            translating.value = !!translationRequest
+        })
+    translationRequest = { draftId, promise }
+
+    return promise
+}
+
 const toggleTranslation = async () => {
     if (!draft.value || translating.value) return
     if (staffTranslation.value) {
@@ -222,17 +247,48 @@ const toggleTranslation = async () => {
     }
 
     const draftId = draft.value.id
-    translating.value = true
-    try {
-        const { data } = await axios.post(route("grp.api.chats.ai_drafts.translate", [draftId]))
-        if (draft.value?.id !== draftId) return
-        staffTranslation.value = data.data
-        showTranslation.value = true
-    } catch {
-        failure.value = ctrans("The draft could not be translated")
-    } finally {
-        translating.value = false
+    await fetchTranslation()
+    if (draft.value?.id === draftId && staffTranslation.value) showTranslation.value = true
+}
+
+// HELP-4534: an agent who does not write the customer's language edits the draft in their own;
+// the reply is translated back before it is emailed, and sent unchanged it is Aiku's original.
+const editsInMyLanguage = computed(() => !!draft.value?.translate_for_me && !!draft.value?.edit_in_my_language)
+
+const offerToEditor = async () => {
+    if (!props.inline || !draft.value?.text || hidden.value) return
+    const draftId = draft.value.id
+
+    if (editsInMyLanguage.value) {
+        await fetchTranslation()
+        if (draft.value?.id !== draftId || hidden.value) return
+        if (staffTranslation.value?.editable && staffTranslation.value.text) {
+            emit("use", staffTranslation.value.text, draftId, true)
+            return
+        }
+        failure.value = ctrans("The draft could not be translated for you to edit, so it is in the customer's language.")
     }
+
+    emit("use", draft.value.text, draftId, false)
+}
+
+const savingEditLanguage = ref(false)
+const setEditInMyLanguage = async (on: boolean) => {
+    if (!draft.value || savingEditLanguage.value) return
+    const draftId = draft.value.id
+    draft.value.edit_in_my_language = on
+    failure.value = null
+    savingEditLanguage.value = true
+    try {
+        await axios.post(route("grp.api.chats.ai_drafts.edit_in_my_language", [draftId]), { on })
+    } catch (error: any) {
+        if (draft.value?.id === draftId) draft.value.edit_in_my_language = !on
+        failure.value = error?.response?.data?.message ?? ctrans("That could not be saved")
+        return
+    } finally {
+        savingEditLanguage.value = false
+    }
+    await offerToEditor()
 }
 
 // A draft in a language the agent does not read is shown translated from the start; the customer
@@ -380,9 +436,10 @@ onBeforeUnmount(stopListening)
                         </a>
                     </div>
                 </div>
-                <p v-if="draft.text && showTranslation && staffTranslation?.text" class="mt-1 text-[11px] text-gray-500">{{ ctrans("Translated into :language for you to read: the customer gets the original.", { language: staffTranslation.language }) }}</p>
+                <p v-if="inline && editsInMyLanguage && staffTranslation?.editable" class="mt-1 text-[11px] text-gray-500">{{ ctrans("You edit it in :language below. Sent unchanged, the customer gets Aiku's original; changed, your reply is translated into their language before it is sent.", { language: staffTranslation.language }) }}</p>
+                <p v-else-if="draft.text && showTranslation && staffTranslation?.text" class="mt-1 text-[11px] text-gray-500">{{ ctrans("Translated into :language for you to read: the customer gets the original.", { language: staffTranslation.language }) }}</p>
                 <p v-if="!inline && draft.text" role="button" tabindex="0" :aria-expanded="draftOpen" :title="draftOpen ? undefined : draftText" class="mt-1 cursor-pointer whitespace-pre-line text-gray-800" :class="draftOpen ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'" @click="toggleDraft" @keydown.enter.prevent="toggleDraft" @copy="copied">{{ draftText }}</p>
-                <p v-else-if="inline && draft.text && showTranslation && staffTranslation?.text" class="mt-1 max-h-48 overflow-y-auto whitespace-pre-line text-gray-800" @copy="copied">{{ staffTranslation.text }}</p>
+                <p v-else-if="inline && draft.text && showTranslation && staffTranslation?.text && !(editsInMyLanguage && staffTranslation.editable)" class="mt-1 max-h-48 overflow-y-auto whitespace-pre-line text-gray-800" @copy="copied">{{ staffTranslation.text }}</p>
                 <p v-if="draft.text.includes('[[')" class="mt-1 text-[11px] text-amber-700">{{ ctrans("Fill in or delete the parts marked [[ ]] before sending.") }}</p>
                 <div v-if="draft.checked?.length" class="mt-1 text-[11px] text-gray-500">
                     <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" :aria-expanded="checkedOpen" @click="checkedOpen = !checkedOpen">
@@ -405,6 +462,12 @@ onBeforeUnmount(stopListening)
                             <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
+                    <label v-if="inline && draft.translate_for_me && draft.text" class="flex cursor-pointer items-center gap-1.5 text-[11px] text-gray-600"
+                        :title="draft.customer_language ? ctrans('Remembered for customers who write in :language, until you turn it off', { language: draft.customer_language }) : undefined">
+                        <ToggleSwitch :model-value="!!draft.edit_in_my_language" :disabled="savingEditLanguage || translating"
+                            class="scale-75" @update:model-value="setEditInMyLanguage" />
+                        {{ draft.my_language && draft.customer_language ? ctrans("Edit in :mine, send in :theirs", { mine: draft.my_language, theirs: draft.customer_language }) : ctrans("Edit in my language") }}
+                    </label>
                     <span class="relative ml-auto flex items-center" :title="ctrans('How good is this draft?')">
                         <button v-for="star in 5" :key="star" type="button" class="px-0.5 text-amber-500 hover:scale-110" :aria-label="ctrans(':count stars', { count: star })" @click="rate(star)">
                             <FontAwesomeIcon :icon="(draft.rating ?? 0) >= star ? faStar : faStarEmpty" fixed-width />

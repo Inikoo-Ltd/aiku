@@ -3338,14 +3338,15 @@ describe('customer service tools', function () {
             ->and($shown['actions'][1])->toMatchArray(['index' => 1, 'type' => 'task', 'label' => 'Ask the warehouse to check the box']);
 
         App\Actions\Helpers\Translations\Translate::shouldRun()->andReturnUsing(fn (?string $text) => '[sk] '.$text);
-        $language = $this->user->language_id;
-        $this->user->update(['language_id' => App\Models\Helpers\Language::where('code', 'sk')->value('id')]);
+        $chatAgent = App\Models\Chat\ChatAgent::where('user_id', $this->user->id)->firstOrFail();
+        $language  = $chatAgent->language_id;
+        $chatAgent->update(['language_id' => App\Models\Helpers\Language::where('code', 'sk')->value('id')]);
         postJson(route('grp.api.chats.ai_drafts.translate', [$draft->id]))->assertOk()
             ->assertJsonPath('data.staff_note', '[sk] Before sending: refund the broken one.')
             ->assertJsonPath('data.checked.1', '[sk] No refund given yet')
             ->assertJsonPath('data.labels.1', '[sk] Ask the warehouse to check the box')
             ->assertJsonPath('data.text', '[sk] Sorry it arrived broken, we have refunded it.');
-        $this->user->update(['language_id' => $language]);
+        $chatAgent->update(['language_id' => $language]);
 
         $pageNote = App\Actions\Chat\ChatSession\StoreChatEvent::make()->internalNote($this->chat, 'Checked the order: nothing to confirm yet.', $this->user->id);
         Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);

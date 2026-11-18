@@ -26974,5 +26974,12 @@
     "Warehouse :warehouse · Factory :factory": "Entrepôt :warehouse · Usine :factory",
     "Wrong Weights": "Poids erronés",
     "material": "matière",
-    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO par :name, :time|:count SKO par :name, :time"
+    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO par :name, :time|:count SKO par :name, :time",
+    "Edit in my language": "Modifier dans ma langue",
+    "Remembered for customers who write in :language, until you turn it off": "Mémorisé pour les clients qui écrivent en :language, jusqu'à ce que vous le désactiviez",
+    "Edit in :mine, send in :theirs": "Modifier en :mine, envoyer en :theirs",
+    "You edit it in :language below. Sent unchanged, the customer gets Aiku's original; changed, your reply is translated into their language before it is sent.": "Vous le modifiez ci-dessous en :language. Envoyé sans changement, le client reçoit l'original d'Aiku ; modifié, votre réponse est traduite dans sa langue avant l'envoi.",
+    "The draft could not be translated for you to edit, so it is in the customer's language.": "Le brouillon n'a pas pu être traduit pour être modifié, il est donc dans la langue du client.",
+    "That could not be saved": "Impossible d'enregistrer",
+    "The language of this customer is not known yet": "La langue de ce client n'est pas encore connue"
 }

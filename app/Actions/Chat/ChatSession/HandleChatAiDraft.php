@@ -16,6 +16,7 @@ use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
 use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Actions\Helpers\Translations\Translate;
+use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAiDraft;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\MetaChatMessage;
@@ -111,7 +112,9 @@ class HandleChatAiDraft
 
     private function show(ChatSession|MetaChatSession $chatSession): JsonResponse
     {
-        if (!$this->getAuthorisedChatAgent($chatSession)) {
+        $agent = $this->getAuthorisedChatAgent($chatSession);
+
+        if (!$agent) {
             return response()->json(['success' => false], 403);
         }
 
@@ -147,8 +150,52 @@ class HandleChatAiDraft
             'other_chats'      => $chatSession instanceof ChatSession && data_get($draft->facts, 'questions') ? self::otherOpenChats($chatSession) : [],
             'rating'      => $draft->rating,
             'reason'      => $draft->rating_reason,
-            'translate_for_me' => self::isInAnotherLanguage($chatSession, $draft, request()->user()?->language_id),
+            'translate_for_me' => self::isInAnotherLanguage($chatSession, $draft, self::staffLanguageId($agent, request()->user())),
+            'edit_in_my_language' => self::editsInOwnLanguage($agent, self::replyLanguageId($chatSession, $draft)),
+            'my_language'      => Language::find(self::staffLanguageId($agent, request()->user()) ?? 0)?->name,
+            'customer_language' => Language::find(self::replyLanguageId($chatSession, $draft) ?? 0)?->name,
         ] : null]);
+    }
+
+    /**
+     * The language an agent reads chats in: the one set in their chat settings, else the app's.
+     */
+    public static function staffLanguageId(?ChatAgent $agent, ?User $user): ?int
+    {
+        return $agent?->language_id ?? $user?->language_id;
+    }
+
+    public static function editsInOwnLanguage(?ChatAgent $agent, ?int $customerLanguageId): bool
+    {
+        return $customerLanguageId !== null && in_array($customerLanguageId, $agent?->edit_drafts_in_my_language_for ?? [], true);
+    }
+
+    /**
+     * HELP-4534: an agent who does not write the customer's language edits the draft translated
+     * into their own, and their reply is translated back before it is emailed. Remembered per
+     * agent and per customer language, because many staff write some languages themselves.
+     */
+    public function editInMyLanguage(ChatAiDraft $chatAiDraft, Request $request): JsonResponse
+    {
+        $session = $chatAiDraft->session();
+        $agent   = $session ? $this->getAuthorisedChatAgent($session) : null;
+
+        if (!$agent) {
+            return response()->json(['success' => false], 403);
+        }
+
+        $validated          = $request->validate(['on' => ['required', 'boolean']]);
+        $customerLanguageId = self::replyLanguageId($session, $chatAiDraft);
+
+        if (!$customerLanguageId) {
+            return response()->json(['success' => false, 'message' => __('The language of this customer is not known yet')], 422);
+        }
+
+        $languages = collect($agent->edit_drafts_in_my_language_for ?? [])->reject(fn ($id) => $id === $customerLanguageId);
+
+        $agent->update(['edit_drafts_in_my_language_for' => ($validated['on'] ? $languages->push($customerLanguageId) : $languages)->values()->all() ?: null]);
+
+        return response()->json(['success' => true, 'data' => ['edit_in_my_language' => (bool) $validated['on']]]);
     }
 
     /**
@@ -219,12 +266,13 @@ class HandleChatAiDraft
     public function translateForStaff(ChatAiDraft $chatAiDraft, Request $request): JsonResponse
     {
         $session = $chatAiDraft->session();
+        $agent   = $session ? $this->getAuthorisedChatAgent($session) : null;
 
-        if (!$session || !$this->getAuthorisedChatAgent($session)) {
+        if (!$agent) {
             return response()->json(['success' => false], 403);
         }
 
-        $to      = Language::find($request->user()->language_id) ?? Language::where('code', 'en')->firstOrFail();
+        $to      = Language::find(self::staffLanguageId($agent, $request->user())) ?? Language::where('code', 'en')->firstOrFail();
         $note     = (string) data_get($chatAiDraft->facts, 'staff_note', '');
         $checked  = data_get($chatAiDraft->facts, 'checked', []);
         $labels   = collect(data_get($chatAiDraft->facts, 'actions', []))->filter(fn (array $action) => isset($action['label']))->map(fn (array $action) => $action['label']);
@@ -236,14 +284,37 @@ class HandleChatAiDraft
             ? (($replyLanguageId ? Language::find($replyLanguageId) : null) ?? DetectLanguageWithJev::run($chatAiDraft->text) ?? $from)
             : null;
 
+        $text = $replyFrom && $replyFrom->id !== $to->id ? Translate::run($chatAiDraft->text, $replyFrom, $to) : null;
+
+        if ($text !== null && self::isEditableTranslation($chatAiDraft->text, $text)) {
+            DB::transaction(function () use ($chatAiDraft, $to, $text) {
+                $locked = ChatAiDraft::lockForUpdate()->find($chatAiDraft->id);
+                $locked?->update(['staff_translations' => array_replace($locked->staff_translations ?? [], [$to->id => $text])]);
+            });
+            $chatAiDraft->refresh();
+        }
+
         return response()->json(['success' => true, 'data' => [
-            'language'   => $to->name,
-            'text'       => $replyFrom && $replyFrom->id !== $to->id ? Translate::run($chatAiDraft->text, $replyFrom, $to) : null,
+            'language'    => $to->name,
+            'language_id' => $to->id,
+            'text'        => $text,
+            'editable'    => $text !== null && self::isEditableTranslation($chatAiDraft->text, $text),
             'staff_note' => $note !== '' ? $translate($note) : null,
             'checked'    => array_map($translate, $checked),
             'labels'     => $labels->map($translate)->all(),
             'questions'  => array_map($translate, $questions),
         ]]);
+    }
+
+    /**
+     * A translation the agent may write their reply on: really translated (Translate gives the
+     * text back unchanged when it fails) and keeping every [[ ]] gap, so a gap can never slip
+     * past the send check by being lost in translation.
+     */
+    public static function isEditableTranslation(string $draft, string $translation): bool
+    {
+        return trim($translation) !== '' && trim($translation) !== trim($draft)
+            && preg_match_all(DraftChatReply::GAP, $draft) === preg_match_all(DraftChatReply::GAP, $translation);
     }
 
     private function decide(ChatAiDraft $chatAiDraft, callable $change): JsonResponse

@@ -26885,5 +26885,12 @@
     "Warehouse :skos SKOs": "Sklad :skos SKO",
     "Warehouse :warehouse · Factory :factory": "Sklad :warehouse · Továreň :factory",
     "material": "materiál",
-    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO od :name, :time|:count SKO od :name, :time|:count SKO od :name, :time"
+    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO od :name, :time|:count SKO od :name, :time|:count SKO od :name, :time",
+    "Edit in my language": "Upravovať v mojom jazyku",
+    "Remembered for customers who write in :language, until you turn it off": "Zapamätá sa pre zákazníkov, ktorí píšu v jazyku :language, kým to nevypnete",
+    "Edit in :mine, send in :theirs": "Upravovať v jazyku :mine, odoslať v jazyku :theirs",
+    "You edit it in :language below. Sent unchanged, the customer gets Aiku's original; changed, your reply is translated into their language before it is sent.": "Upravujete ho nižšie v jazyku :language. Ak ho pošlete bez zmien, zákazník dostane originál od Aiku; ak ho zmeníte, vaša odpoveď sa pred odoslaním preloží do jeho jazyka.",
+    "The draft could not be translated for you to edit, so it is in the customer's language.": "Návrh sa nepodarilo preložiť na úpravu, preto je v jazyku zákazníka.",
+    "That could not be saved": "To sa nepodarilo uložiť",
+    "The language of this customer is not known yet": "Jazyk tohto zákazníka zatiaľ nie je známy"
 }
