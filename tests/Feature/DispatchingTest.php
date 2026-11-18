@@ -9215,3 +9215,21 @@ test('dispatch capacity says when a warehouse is over and how many workers would
     expect(\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::lateCutoff($monday, 'Europe/London')->toDateTimeString())->toBe('2026-11-13 09:00:00')
         ->and(\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::lateCutoff($monday->copy()->addDay(), 'Europe/London')->toDateTimeString())->toBe('2026-11-16 09:00:00');
 });
+
+test('UI dispatch hub shows delivery notes dispatched today', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['dispatched_at' => now()]);
+
+    $response = get(route('grp.org.warehouses.show.dispatching.backlog', [
+        $this->organisation->slug,
+        $this->warehouse->slug,
+    ]));
+    $response->assertOk();
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('delivery_note.metrics', fn ($metrics) => collect($metrics)->last()['key'] === 'dispatched_today')
+            ->where('delivery_note.totals.dispatched_today.value', fn ($value) => $value >= 1)
+            ->where('delivery_note.data', fn ($data) => collect($data)->sum('dispatched_today.value') >= 1)
+            ->etc()
+    );
+});

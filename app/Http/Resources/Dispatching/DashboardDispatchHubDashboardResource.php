@@ -78,9 +78,18 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                 'icon'  => ['fal', 'fa-box-check'],
                 'tooltip' => 'Finalised'
             ],
+            [
+                'key'       => 'dispatched_today',
+                'label'     => __('Dispatched'),
+                'sublabel'  => __('today'),
+                'type'      => 'stat',
+                'icon'      => ['fal', 'fa-shipping-fast'],
+                'tooltip'   => __('Dispatched today'),
+                'highlight' => true,
+            ],
         ];
 
-        $allCaseKeysForTotals = ['todo', 'handling', 'handling_blocked', 'picked', 'packing', 'packed', 'finalised'];
+        $allCaseKeysForTotals = ['todo', 'handling', 'handling_blocked', 'picked', 'packing', 'packed', 'finalised', 'dispatched_today'];
 
         $data = [];
         foreach ($widgets as $widget) {
