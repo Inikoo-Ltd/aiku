@@ -952,7 +952,28 @@ test('to restock keeps a stock partly covered by production, asking only for wha
     $row = fn () => collect(get($url)->assertOk()->viewData('page')['props']['data']['data'])->firstWhere('stock_code', $orgStocks[0]->code);
 
     expect((int) $row()['job_units'])->toBe(100)
-        ->and((int) $row()['in_production'])->toBe(0);
+        ->and((int) $row()['in_production'])->toBe(0)
+        ->and((int) $row()['incoming'])->toBe(0);
+
+    $supplier    = \App\Actions\SupplyChain\Supplier\StoreSupplier::make()->action($this->group, \App\Models\SupplyChain\Supplier::factory()->definition());
+    $orgSupplier = \App\Models\Procurement\OrgSupplier::where('supplier_id', $supplier->id)->where('organisation_id', $this->organisation->id)->first()
+        ?? \App\Actions\Procurement\OrgSupplier\StoreOrgSupplier::make()->action($this->organisation, $supplier);
+    $delivery    = \App\Actions\GoodsIn\StockDelivery\StoreStockDelivery::make()->action($orgSupplier, ['reference' => 'SD-RESTOCK-'.uniqid(), 'date' => now()->toDateString()], strict: false);
+    \App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem::make()->action($delivery, null, $orgStocks[0], ['unit_quantity' => 30], strict: false);
+
+    expect((int) $row()['incoming'])->toBe(30)
+        ->and((int) $row()['incoming_timely'])->toBe(0)
+        ->and((int) $row()['job_units'])->toBe(100);
+
+    $delivery->update(['data' => array_merge($delivery->data ?? [], ['estimated_receiving_date' => now()->addYear()->toDateString()])]);
+
+    expect(collect($row()['incoming_lines'])->map(fn ($line) => [$line['kind'], $line['reference'], $line['eta'], $line['units']])->all())->toBe([['delivery', $delivery->reference, now()->addYear()->toDateString(), 30]])
+        ->and((int) $row()['job_units'])->toBe(100);
+
+    $delivery->update(['data' => array_merge($delivery->data ?? [], ['estimated_receiving_date' => now()->toDateString()])]);
+
+    expect((int) $row()['incoming_timely'])->toBe(30)
+        ->and((int) $row()['job_units'])->toBe(70);
 
     $line = \App\Models\Procurement\PartnerShoppingListItem::create([
         'group_id'         => $this->group->id,
@@ -965,7 +986,7 @@ test('to restock keeps a stock partly covered by production, asking only for wha
     ]);
 
     expect((int) $row()['in_production'])->toBe(40)
-        ->and((int) $row()['job_units'])->toBe(60);
+        ->and((int) $row()['job_units'])->toBe(30);
 
     $line->update(['quantity' => 95]);
 
