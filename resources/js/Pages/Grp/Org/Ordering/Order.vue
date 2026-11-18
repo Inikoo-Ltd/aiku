@@ -15,6 +15,7 @@ import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TimelineResponsive from "@/Components/Utils/TimelineResponsive.vue"
 import Popover from "@/Components/Popover.vue"
+import PrimePopover from "primevue/popover"
 import { Checkbox, InputNumber, InputGroup, InputGroupAddon, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
@@ -322,7 +323,7 @@ const props = defineProps<{
     attachments?: {}
     invoices?: {}
     attachmentRoutes?: {}
-    export_proof?: { is_attached: boolean } | null
+    export_proof?: { is_attached: boolean, documents: { intro: string, items: string[] }, legal_basis: string } | null
     address_update_route?: routeType
     billing_address_update_route?: routeType
     addresses?: {}
@@ -356,6 +357,8 @@ const openEmailCustomer = () => {
 
 
 const isModalUploadOpen = ref(false)
+const exportProofHelp = ref()
+const showExportProofHelp = (event: MouseEvent) => exportProofHelp.value?.show(event, event.currentTarget)
 const isModalProductListOpen = ref(false)
 const currentModalItemType = ref('product')
 const locale = inject("locale", aikuLocaleStructure)
@@ -2836,6 +2839,21 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     <span v-if="can_edit && !isEditLocked" class="underline cursor-pointer hover:text-gray-700" @click="isModalUploadOpen = true">
                                         ({{ ctrans("Attach proof of export") }})
                                     </span>
+                                    <span class="ml-0.5 inline-block cursor-help text-gray-400 hover:text-gray-500" @mouseenter="showExportProofHelp" @mouseleave="exportProofHelp?.hide()">
+                                        <FontAwesomeIcon icon="fal fa-question-circle" fixed-width aria-hidden="true" />
+                                    </span>
+                                    <PrimePopover ref="exportProofHelp" class="pointer-events-none">
+                                        <div class="w-[26rem] p-1 text-xs text-gray-600">
+                                            <div class="mb-2 text-sm font-semibold text-gray-800">{{ ctrans("Accepted proof of export") }}</div>
+                                            <p class="mb-1.5">{{ export_proof.documents.intro }}</p>
+                                            <ul class="mb-3 list-disc space-y-1 pl-4">
+                                                <li v-for="item in export_proof.documents.items" :key="item">{{ item }}</li>
+                                            </ul>
+                                            <div class="border-t border-gray-200 pt-2 text-gray-400">
+                                                {{ ctrans("Legal basis") }}: <span class="text-gray-600">{{ export_proof.legal_basis }}</span>
+                                            </div>
+                                        </div>
+                                    </PrimePopover>
                                 </span>
                             </dd>
                         </template>

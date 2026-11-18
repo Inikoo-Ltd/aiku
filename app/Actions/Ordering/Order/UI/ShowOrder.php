@@ -707,6 +707,27 @@ class ShowOrder extends OrgAction
                 ],
                 'export_proof'          => $order->canBeZeroRatedWithExportProof() && $order->canChangeTaxCategory() ? [
                     'is_attached' => $order->hasExportProof(),
+                    'documents'   => $order->organisation->country->code === 'GB'
+                        ? [
+                            'intro' => __('Within 3 months of the sale we need proof the goods left the UK:'),
+                            'items' => [
+                                __('The customs export declaration with its exit confirmation (MRN), or a CMR, bill of lading or air waybill'),
+                                __("Backed by the customer's order and proof of payment"),
+                            ],
+                        ]
+                        : [
+                            'intro' => __('We need both:'),
+                            'items' => [
+                                __("The customer's signed statement that they took the goods to their country, with the date and place of arrival, by the 10th of the following month"),
+                                __("Two transport documents from two independent parties (signed CMR, bill of lading, air waybill or the carrier's invoice), or one of them plus the transport insurance or proof of payment for the transport"),
+                            ],
+                        ],
+                    'legal_basis' => match ($order->organisation->country->code) {
+                        'GB'    => 'HMRC VAT Notice 703, Export of goods from the UK',
+                        'ES'    => 'Art. 45a Regulation (EU) 282/2011; Art. 25 Ley 37/1992 del IVA',
+                        'SK'    => 'Art. 45a Regulation (EU) 282/2011; § 43 zákona č. 222/2004 Z. z. o DPH',
+                        default => 'Art. 45a Regulation (EU) 282/2011',
+                    },
                 ] : null,
                 'attachmentRoutes'      => [
                     'attachRoute' => [
