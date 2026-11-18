@@ -240,6 +240,10 @@ class ShowAgentOrdersBacklog extends OrgAction
         ];
     }
 
+    /**
+     * The incoming orders (submitted, as counted) sent from the same instant the count starts at, whatever the viewer's
+     * time zone.
+     */
     private function recentDrillDown(Organisation $organisation, ?string $clientSlug, CarbonInterface $since): array
     {
         return [
@@ -248,7 +252,7 @@ class ShowAgentOrdersBacklog extends OrgAction
                 'organisation' => $organisation->slug,
                 '_query'       => array_merge(
                     $clientSlug ? ['filter[organisation]' => $clientSlug] : [],
-                    ['between[submitted_at]' => $since->format('Ymd').'-'.now()->format('Ymd'), 'sort' => '-submitted_at'],
+                    ['filter[submitted_since]' => $since->toIso8601String(), 'sort' => '-submitted_at'],
                 ),
             ],
         ];

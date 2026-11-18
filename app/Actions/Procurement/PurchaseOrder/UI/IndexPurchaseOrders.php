@@ -56,6 +56,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilderForSubquery;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -343,12 +344,34 @@ class IndexPurchaseOrders extends OrgAction
                 ] : []),
                 ...($organisationAgent || $this->viewingAgent ? [
                     AllowedFilter::callback('organisation', fn ($query, $value) => $this->whereOrganisation($query, $value)),
+                    AllowedFilter::callback('submitted_since', fn ($query, $value) => $query->where('purchase_orders.submitted_at', '>=', Carbon::parse((string) $value))),
                     AllowedFilter::callback('supplier', fn ($query, $value) => $this->whereSupplier($query, $value)),
                 ] : []),
             ])
-            ->withBetweenDates([$isAgentView ? 'submitted_at' : 'date'])
+            ->withBetweenDates($isAgentView ? [] : ['date'])
+            ->when($isAgentView, fn ($query) => $this->whereSubmittedBetween($query, $prefix))
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    /**
+     * The date range of an agent's list filters on the date it sorts by: when the order was submitted, or its date for
+     * one that came in before submitted_at was recorded. Read as withBetweenDates reads its ranges.
+     */
+    private function whereSubmittedBetween(Builder $query, ?string $prefix): void
+    {
+        $range = Arr::get(request()->input(($prefix ? $prefix.'_' : '').'between', []), 'submitted_at');
+        $parts = $range ? explode('-', (string) $range) : [];
+
+        if (count($parts) !== 2) {
+            return;
+        }
+
+        $timezone = resolveTimezoneHeader();
+        $start    = Carbon::createFromFormat('Ymd', trim($parts[0]), $timezone)->setTimezone('UTC')->startOfDay()->toDateTimeString();
+        $end      = Carbon::createFromFormat('Ymd', trim($parts[1]), $timezone)->setTimezone('UTC')->endOfDay()->toDateTimeString();
+
+        $query->whereBetween(DB::raw('coalesce(purchase_orders.submitted_at, purchase_orders.date)'), [$start, $end]);
     }
 
     /**

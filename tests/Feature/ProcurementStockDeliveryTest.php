@@ -4758,3 +4758,31 @@ test('lines cancelled with the whole order show who cancelled the order and when
             ->where('items.data.0.cancellation.at', $cancelledAt)
             ->etc());
 });
+
+test('an agent\'s recent orders drill down from the exact instant the count starts, and its date range keeps orders with no submitted date by their date', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $agentOrganisation    = $orgAgent->agent->organisation;
+
+    $recent   = createConfirmedAgentOrder($this, $supplier, $product, 0, 2)->refresh();
+    $old      = createConfirmedAgentOrder($this, $supplier, $product, 0, 2)->refresh();
+    $undated  = createConfirmedAgentOrder($this, $supplier, $product, 0, 2)->refresh();
+    $recent->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()->subDays(2)]);
+    $old->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()->subDays(30), 'date' => now()->subDays(30)]);
+    $undated->updateQuietly(['submitted_at' => null, 'date' => now()->subDays(3)]);
+
+    $since    = now()->subDays(\App\Actions\Procurement\PurchaseOrder\UI\ShowAgentOrdersBacklog::RECENT_DAYS)->startOfDay();
+    $drill    = (new ReflectionMethod(\App\Actions\Procurement\PurchaseOrder\UI\ShowAgentOrdersBacklog::class, 'recentDrillDown'))
+        ->invoke(\App\Actions\Procurement\PurchaseOrder\UI\ShowAgentOrdersBacklog::make(), $agentOrganisation, null, $since);
+
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'w2-bl-'.Str::lower(Str::random(6))));
+
+    $slugs = fn (string $routeName, array $query) => collect($this->withoutVite()->get(route($routeName, [$agentOrganisation->slug, ...$query]))
+        ->assertOk()->viewData('page')['props']['data']['data'])->pluck('slug');
+
+    $drilled = $slugs($drill['name'], $drill['parameters']['_query']);
+    expect($drilled)->toContain($recent->slug)->not->toContain($old->slug);
+
+    $inRange = $slugs('grp.org.agent.purchase_orders.index', ['between' => ['submitted_at' => now()->subDays(5)->format('Ymd').'-'.now()->format('Ymd')]]);
+    expect($inRange)->toContain($recent->slug)->toContain($undated->slug)->not->toContain($old->slug);
+});
