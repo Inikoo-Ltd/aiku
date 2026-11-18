@@ -59,10 +59,6 @@ struct LocationsWarehouse: Hashable, Sendable {
         locations.first { $0.code.caseInsensitiveCompare(code) == .orderedSame }
     }
 
-    func locationOrFallback(code: String) -> LocationsLocation? {
-        location(code: code) ?? locations.first
-    }
-
     func locations(inArea code: String) -> [LocationsLocation] {
         LocationsFilter.none.sorted(locations.filter { $0.areaCode.caseInsensitiveCompare(code) == .orderedSame })
     }
