@@ -2067,8 +2067,25 @@ test('a fill line shows on the board as the bottles for its order and shop, and 
     $order->update(['submitted_at' => now()->subDays(3)]);
     expect((int) data_get($cardOf(), 'order_waiting_days'))->toBe(3);
 
+    $blocked = \App\Actions\Production\PartnerShippingList\GetOrdersBlockedByProduction::make();
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::UNPAID]);
+    $unpaidCount = $blocked->handle($shop);
+    $order->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+    expect($blocked->handle($shop))->toBe($unpaidCount + 1)
+        ->and($blocked->notice($this->organisation)['route']['parameters'])->toMatchArray(['production' => $this->production->slug, 'blocking' => '1']);
+    $order->update(['submitted_at' => now()]);
+    expect($blocked->handle($shop))->toBe($unpaidCount);
+    $order->update(['submitted_at' => now()->subDays(3)]);
+
     $jobOrder = \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [$line->id])['job_orders'][0];
     expect($jobOrder->jobOrderItems()->first()->displayName())->toContain($order->reference)->toContain($shop->name);
+
+    if ($jobOrder->refresh()->state === \App\Enums\Production\JobOrder\JobOrderStateEnum::IN_PROCESS) {
+        \App\Actions\Production\JobOrder\ConfirmJobOrder::make()->action($jobOrder);
+    }
+    $fillTaskId = $jobOrder->jobOrderItems()->first()->tasks()->value('id');
+    $floorTask  = collect(get(route('grp.org.productions.show.floor', $routeParameters))->assertOk()->viewData('page')['props']['tasks'])->firstWhere('id', $fillTaskId);
+    expect(data_get($floorTask, 'order_waiting_days'))->toBe(3);
 
     $slips = \App\Actions\Production\JobOrder\FillToOrder::make()->slips($jobOrder);
     expect($slips)->toHaveCount(1)
