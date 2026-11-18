@@ -43,7 +43,7 @@ enum ShellWork {
         ShellWorkItem(reference: "AR24790", state: "To pack", detail: "Delivery note · 6 items · picked 10 min ago", module: .warehouse, tone: .info, link: .goodsOut(.deliveryNote(reference: "AR24790"))),
         ShellWorkItem(reference: "SDaw-0093", state: "To check", detail: "Stock delivery · 6 items received", module: .warehouse, tone: .info, link: .goodsIn(.stockDelivery(reference: "SDaw-0093"))),
         ShellWorkItem(reference: "A-12-03", state: "Audit", detail: "Stock audit · location · 4 SKOs", module: .warehouse, tone: .info, link: .locations(.location(code: "A-12-03"))),
-        ShellWorkItem(reference: "acme-011", state: "Booking in", detail: "Fulfilment delivery · [Customer A] · 3 of 4 pallets", module: .warehouse, tone: .info, link: .fulfilment(.delivery(reference: "acme-011"))),
+        ShellWorkItem(reference: "acme-011", state: "Booking in", detail: "Fulfilment delivery · [Customer A] · 3 of 4 pallets", module: .warehouse, tone: .info, link: .fulfilment(.deliveries)),
         ShellWorkItem(reference: "[Task]", state: "Due today", detail: "From Aiku Tasks · assigned by [Supervisor]", module: .tasks, tone: .neutral, link: nil)
     ]
 
