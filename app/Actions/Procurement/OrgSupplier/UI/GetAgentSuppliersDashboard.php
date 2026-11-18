@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\OrgSupplier\UI;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\SupplyChain\Agent\SkipAgentPossibleDuplicateSuppliers;
 use App\Actions\SupplyChain\SupplierChangeRequest\DecideSupplierChangeRequest;
 use App\Enums\Procurement\PurchaseOrderChase\PurchaseOrderChaseChannelEnum;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteIncidentTypeEnum;
@@ -104,6 +105,7 @@ class GetAgentSuppliersDashboard
         $lastChases  = $this->getLastChases($chaseRows->pluck('id')->all());
 
         return [
+            'skip_duplicates_route' => ['name' => 'grp.models.agent.duplicate_suppliers.skip', 'parameters' => ['agent' => $agent->id]],
             'permissions' => [
                 'can_suggest' => (bool) $user?->authTo(['supply-chain.edit', "procurement.{$organisation->id}.edit"]),
                 'can_decide'  => $user && DecideSupplierChangeRequest::canDecide($user),
@@ -236,7 +238,7 @@ class GetAgentSuppliersDashboard
                         'route'           => $supplierRoute($supplier->org_supplier_slug),
                     ])
                     ->values(),
-                'duplicates' => $this->getPossibleDuplicates($suppliers->where('status', true), $supplierRoute, $pending),
+                'duplicates' => $this->getPossibleDuplicates($agent, $suppliers->where('status', true), $supplierRoute, $pending),
                 'requests'   => $this->getChangeRequests($agent, $supplierRoute),
             ],
             'completeness' => $this->getCompleteness($pastOrders->filter(fn ($order) => Carbon::parse($order->submitted_at)->gt(now()->subMonths(self::SPEND_MONTHS)))),
@@ -562,8 +564,9 @@ class GetAgentSuppliersDashboard
             ]);
     }
 
-    private function getPossibleDuplicates(Collection $suppliers, callable $supplierRoute, Collection $pending): Collection
+    private function getPossibleDuplicates(Agent $agent, Collection $suppliers, callable $supplierRoute, Collection $pending): Collection
     {
+        $skipped = $agent->data[SkipAgentPossibleDuplicateSuppliers::DATA_KEY] ?? [];
         $noise = '/\b(co|ltd|limited|company|factory|trading|industrial|industry|import|export|imp|exp|manufactory|manufacturer|group|corp|corporation|inc|llc|the|and|of)\b/';
 
         $byName  = $suppliers->groupBy(fn ($supplier) => 'name:'.preg_replace('/[^a-z0-9]/', '', preg_replace($noise, '', Str::lower($supplier->name ?? ''))));
@@ -583,6 +586,7 @@ class GetAgentSuppliersDashboard
                 ])->values(),
             ])
             ->unique(fn ($group) => $group['suppliers']->pluck('code')->sort()->implode(','))
+            ->reject(fn ($group) => in_array(SkipAgentPossibleDuplicateSuppliers::groupKey($group['suppliers']->pluck('id')), $skipped))
             ->values();
     }
 

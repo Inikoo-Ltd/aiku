@@ -924,6 +924,7 @@ use App\Actions\SupplyChain\PackingSpec\PdfPackingSpec;
 use App\Actions\SupplyChain\PackingSpec\ReturnPackingSpec;
 use App\Actions\SupplyChain\PackingSpec\StorePackingSpec;
 use App\Actions\SupplyChain\PackingSpec\UpdateAgentPackingSpecCutOff;
+use App\Actions\SupplyChain\Agent\SkipAgentPossibleDuplicateSuppliers;
 use App\Actions\SupplyChain\PackingSpec\UpdateSupplierProductPackingInstructions;
 use App\Actions\SupplyChain\PackingSpec\VerifyPackingSpec;
 use App\Actions\GoodsIn\StockDeliveryPackingCheck\CreateStockDeliveryPackingChecks;
@@ -2039,6 +2040,7 @@ Route::post('supplier/{supplier:id}/agreed-term', [StoreSupplierAgreedTerm::clas
 Route::post('supplier-product/{supplierProduct:id}/agreed-term', [StoreSupplierAgreedTerm::class, 'inSupplierProduct'])->name('supplier-product.agreed_term.store');
 Route::post('agent/{agent:id}/agreed-term', [StoreSupplierAgreedTerm::class, 'inAgent'])->name('agent.agreed_term.store');
 Route::patch('agent/{agent:id}/packing-spec-cut-off', UpdateAgentPackingSpecCutOff::class)->name('agent.packing_spec_cut_off.update');
+Route::post('agent/{agent:id}/skip-duplicate-suppliers', SkipAgentPossibleDuplicateSuppliers::class)->name('agent.duplicate_suppliers.skip');
 Route::patch('supplier-agreed-term/{supplierAgreedTerm:id}/withdraw', [WithdrawSupplierAgreedTerm::class, 'withdraw'])->name('supplier_agreed_term.withdraw');
 Route::post('supplier-agreement-versions', StoreSupplierAgreementVersion::class)->name('supplier_agreement_version.store');
 Route::patch('supplier-agreement-versions/{supplierAgreementVersion:id}', UpdateSupplierAgreementVersion::class)->name('supplier_agreement_version.update');
