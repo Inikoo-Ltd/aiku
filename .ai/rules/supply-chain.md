@@ -37,3 +37,6 @@ Vika, 18 Nov 2026. On an agent supplier's Supplier Products page the agent can p
 
 ## Merging suppliers merges their same-code products first
 Vika, 18 Nov 2026. Approving a merge suggestion (DecideSupplierChangeRequest → MergeSuppliers) used to fail whenever both suppliers had products with the same code, which is common for Aurora duplicates (Gloria → GA had 20). MergeSuppliers now runs MergeSupplierProducts::mergeSupplier (dry run in ensureCanMerge, then fix: true inside the same transaction) before moving anything. It refuses only when a shared product cannot be merged (different units per pack, trade units or SKOs), and the error names each code with its reason.
+
+## The discontinued reason lives in supplier_products.data and the supplier sees it
+Vika, 18 Nov 2026. Setting a supplier product to discontinuing or discontinued (row Set or bulk Set state on Supplier Products) asks for an optional reason, stored in data.discontinued_reason (UpdateSupplierProduct::DISCONTINUED_REASON_KEY, max 500). It is replaced only when discontinued_reason is passed (empty clears it), so automation moving discontinuing to discontinued keeps it, and it is cleared when the state goes back to active or in process. IndexSupplierPortalProducts sends it as status_reason and the supplier portal shows it as a popover on the Discontinued status (hover or click).
