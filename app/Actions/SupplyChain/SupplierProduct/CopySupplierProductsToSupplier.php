@@ -7,6 +7,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockHasSupplierProduct;
 use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
@@ -138,6 +139,10 @@ class CopySupplierProductsToSupplier extends OrgAction
 
     private function makePreferred(SupplierProduct $source, SupplierProduct $target): void
     {
+        if (!$this->canBecomePreferred($target)) {
+            return;
+        }
+
         $sharedStockIds = StockHasSupplierProduct::where('supplier_product_id', $target->id)
             ->whereIn('stock_id', StockHasSupplierProduct::where('supplier_product_id', $source->id)->select('stock_id'))
             ->pluck('stock_id');
@@ -145,6 +150,31 @@ class CopySupplierProductsToSupplier extends OrgAction
         Stock::whereIn('id', $sharedStockIds)
             ->get()
             ->each(fn (Stock $stock) => SetStockPreferredSupplierProduct::make()->handle($stock, $target));
+    }
+
+    private function canBecomePreferred(SupplierProduct $target): bool
+    {
+        return $target->is_available
+            && !in_array($target->state, [SupplierProductStateEnum::DISCONTINUING, SupplierProductStateEnum::DISCONTINUED], true)
+            && $target->supplier?->status;
+    }
+
+    /**
+     * Making the target the preferred supplier re-points the SKOs in every buying organisation, which is the
+     * goods.edit permission SetStockPreferredSupplierProduct asks for, not only the agent's procurement.
+     */
+    public function canMakePreferred(?User $user): bool
+    {
+        return (bool) $user?->authTo('goods.edit');
+    }
+
+    private function assertCanMakePreferred(bool $makePreferred, ?User $user): void
+    {
+        if ($makePreferred && !$this->canMakePreferred($user)) {
+            throw ValidationException::withMessages([
+                'make_preferred' => __('You are not allowed to change the preferred supplier of the SKOs.'),
+            ]);
+        }
     }
 
     /**
@@ -304,7 +334,7 @@ class CopySupplierProductsToSupplier extends OrgAction
      * A free supplier shares with the other free suppliers (listed as agent FREE_SUPPLIERS_KEY) and with
      * the suppliers of the agents the user may edit.
      *
-     * @return array{agent_id: int, agents: array<int, array{id: int, label: string, create_route: array{name: string, parameters: array<int, string>}}>, copy_route: array{name: string, parameters: array<int, int>}, supplier_id: int, source_products_route: array{name: string, parameters: array<int, int>}}|null
+     * @return array{agent_id: int, agents: array<int, array{id: int, label: string, create_route: array{name: string, parameters: array<int, string>}}>, copy_route: array{name: string, parameters: array<int, int>}, supplier_id: int, source_products_route: array{name: string, parameters: array<int, int>}, can_make_preferred: bool}|null
      */
     public function getCopyProductsProps(Supplier $supplier, ?User $user): ?array
     {
@@ -337,6 +367,7 @@ class CopySupplierProductsToSupplier extends OrgAction
                     'name'       => 'grp.json.supplier.supplier_products_to_copy_in_group',
                     'parameters' => [$supplier->id],
                 ],
+                'can_make_preferred' => $this->canMakePreferred($user),
             ];
         }
 
@@ -358,6 +389,7 @@ class CopySupplierProductsToSupplier extends OrgAction
                 'name'       => 'grp.json.supplier.supplier_products_to_copy',
                 'parameters' => [$agent->organisation_id, $supplier->id],
             ],
+            'can_make_preferred' => $this->canMakePreferred($user),
         ];
     }
 
@@ -440,6 +472,7 @@ class CopySupplierProductsToSupplier extends OrgAction
         abort_unless($agent && $accessibleAgents->contains('id', $supplier->agent_id), 404);
 
         $makePreferred = (bool) ($this->validatedData['make_preferred'] ?? false);
+        $this->assertCanMakePreferred($makePreferred, $request->user());
 
         if (isset($this->validatedData['supplier_products'])) {
             return $this->handle(
@@ -468,6 +501,9 @@ class CopySupplierProductsToSupplier extends OrgAction
 
         abort_unless($this->canEditSupplier($supplier, $request->user()), 404);
 
+        $makePreferred = (bool) ($this->validatedData['make_preferred'] ?? false);
+        $this->assertCanMakePreferred($makePreferred, $request->user());
+
         return $this->handle(
             $supplier,
             $this->copyableSupplierProducts($this->getAccessibleAgents($request->user())->pluck('id'), true)
@@ -475,7 +511,7 @@ class CopySupplierProductsToSupplier extends OrgAction
                 ->where('supplier_id', '!=', $supplier->id)
                 ->whereIn('id', $this->validatedData['supplier_products'] ?? [])
                 ->get(),
-            (bool) ($this->validatedData['make_preferred'] ?? false)
+            $makePreferred
         );
     }
 

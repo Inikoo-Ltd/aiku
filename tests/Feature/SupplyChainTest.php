@@ -2449,3 +2449,80 @@ test('an organisation buying from a supplier through an agent can rename it from
     $this->patch(route('grp.models.supplier.update', $supplier->id), ['name' => 'Renamed by buyer'])->assertSessionHasNoErrors();
     expect($supplier->refresh()->name)->toBe('Renamed by buyer');
 });
+
+require_once __DIR__.'/../Support/ProcurementHelpers.php';
+
+function supplyChainFixAgentSuppliers(object $test): array
+{
+    $agent    = StoreAgent::make()->action(group: $test->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($test->organisation, $agent, []);
+
+    [, $sourceOrgSupplierProduct] = createAgentOrgSupplierWithProduct($test, $orgAgent);
+    [$targetOrgSupplier]          = createAgentOrgSupplierWithProduct($test, $orgAgent);
+
+    $orgStock = createOrgStocks($test->organisation, [$test->stocks[0]])[0];
+    \App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock::make()->action($orgStock, $sourceOrgSupplierProduct);
+
+    return [$agent, $sourceOrgSupplierProduct->supplierProduct, $targetOrgSupplier->supplier, $targetOrgSupplier, $orgStock];
+}
+
+function supplyChainFixSameCodeProduct(Supplier $supplier, SupplierProduct $source, \App\Models\Procurement\OrgSupplier $orgSupplier, \App\Models\Inventory\OrgStock $orgStock): SupplierProduct
+{
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => $source->code,
+        'name'             => 'Same product at another supplier',
+        'cost'             => 90,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+
+    $orgSupplierProduct = $supplierProduct->orgSupplierProducts()->where('org_supplier_id', $orgSupplier->id)->first()
+        ?? \App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+    \App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock::make()->action($orgStock, $orgSupplierProduct);
+
+    return $supplierProduct->refresh();
+}
+
+test('make preferred on Add to another supplier needs goods edit and skips discontinued or unavailable targets', function () {
+    [$agent, $source, $target, $targetOrgSupplier, $orgStock] = supplyChainFixAgentSuppliers($this);
+    $targetProduct = supplyChainFixSameCodeProduct($target, $source, $targetOrgSupplier, $orgStock);
+    $priority                  = fn (SupplierProduct $supplierProduct) => \App\Models\Goods\StockHasSupplierProduct::where('stock_id', $this->stocks[0]->id)->where('supplier_product_id', $supplierProduct->id)->value('priority');
+
+    UpdateSupplierProduct::make()->action($targetProduct, ['state' => SupplierProductStateEnum::DISCONTINUED]);
+    \App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier::make()->action($target, collect([$source]), makePreferred: true);
+    expect($priority($targetProduct))->not->toBe(10);
+
+    UpdateSupplierProduct::make()->action($targetProduct, ['state' => SupplierProductStateEnum::ACTIVE, 'is_available' => false]);
+    \App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier::make()->action($target, collect([$source]), makePreferred: true);
+    expect($priority($targetProduct))->not->toBe(10);
+
+    UpdateSupplierProduct::make()->action($targetProduct, ['is_available' => true]);
+    $target->update(['status' => false]);
+    \App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier::make()->action($target, collect([$source]), makePreferred: true);
+    expect($priority($targetProduct))->not->toBe(10);
+
+    $target->update(['status' => true]);
+    \App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier::make()->action($target, collect([$source]), makePreferred: true);
+    expect($priority($targetProduct))->toBe(10);
+
+    \App\Models\Goods\StockHasSupplierProduct::where('stock_id', $this->stocks[0]->id)->update(['priority' => 0]);
+
+    setPermissionsTeamId($this->group->id);
+    $agentClerk = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $agentClerk->stats()->create();
+    $agentClerk->assignRole(RolesEnum::getRoleName(RolesEnum::AGENT_CLERK->value, $agent->organisation));
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+    expect($agentClerk->refresh()->authTo("procurement.{$agent->organisation_id}.edit"))->toBeTrue()
+        ->and($agentClerk->authTo('goods.edit'))->toBeFalse()
+        ->and(\App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier::make()->getCopyProductsProps($target, $agentClerk)['can_make_preferred'])->toBeFalse();
+    actingAs($agentClerk);
+
+    $url = route('grp.models.org.supplier.supplier_products.copy', [$agent->organisation_id, $target->id]);
+    $this->post($url, ['supplier_products' => [$source->id], 'make_preferred' => true])->assertSessionHasErrors('make_preferred');
+    expect($priority($targetProduct))->not->toBe(10);
+
+    [, $otherSource] = supplyChainFixAgentSuppliers($this);
+    $otherSource->update(['agent_id' => $agent->id]);
+    $this->post($url, ['supplier_products' => [$otherSource->id]])->assertSessionHasNoErrors();
+    expect($target->supplierProducts()->where('code', $otherSource->code)->exists())->toBeTrue();
+});
