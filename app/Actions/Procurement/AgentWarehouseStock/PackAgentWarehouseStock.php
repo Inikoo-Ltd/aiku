@@ -54,7 +54,7 @@ class PackAgentWarehouseStock extends OrgAction
         $quantity  = $quantity === null ? $available : round($quantity, 3);
         $code      = $stock->supplierProduct?->code;
 
-        if ($stock->state !== AgentWarehouseStockStateEnum::RECEIVED || $available <= 0 || $held <= self::QUANTITY_TOLERANCE) {
+        if ($stock->state !== AgentWarehouseStockStateEnum::RECEIVED || $available <= 0) {
             throw ValidationException::withMessages(['pack' => __(':code is not waiting to be packed', ['code' => $code])]);
         }
 
