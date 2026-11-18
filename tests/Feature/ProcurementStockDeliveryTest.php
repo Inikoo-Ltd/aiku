@@ -4488,3 +4488,26 @@ test('booking goods into a location the SKO is not linked to links it as picking
     expect($linkType($firstLocation))->toBe(\App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING)
         ->and($linkType($secondLocation))->toBe(\App\Enums\Inventory\LocationStock\LocationStockTypeEnum::STORING);
 });
+
+test('Close Old PO takes only an order imported into aiku with no agent stage recorded (INI-376)', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+
+    $madeInAiku = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $imported   = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $imported->update(['source_id' => $imported->organisation_id.':w2'.$imported->id]);
+    $staged = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $staged->update(['source_id' => $staged->organisation_id.':w2'.$staged->id, 'production_started_at' => now()]);
+
+    expect(\App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::blockedReason($madeInAiku->refresh()))->not->toBeNull()
+        ->and(\App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::blockedReason($staged->refresh()))->not->toBeNull()
+        ->and(\App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::blockedReason($imported->refresh()))->toBeNull();
+
+    expect(fn () => \App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::make()->action($madeInAiku, ['reason' => 'old']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $closed = \App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::make()->action($imported, ['reason' => 'old']);
+
+    expect($closed->state)->toBe(\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SETTLED)
+        ->and($closed->chs_excluded)->toBeTrue()
+        ->and($madeInAiku->refresh()->state)->toBe(\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::CONFIRMED);
+});

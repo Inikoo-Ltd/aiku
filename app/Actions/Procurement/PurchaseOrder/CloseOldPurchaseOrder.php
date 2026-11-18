@@ -18,6 +18,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Events\BroadcastAgentIncomingPurchaseOrdersChanged;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Procurement\AgentGoodsReceiptItem;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,6 +45,22 @@ class CloseOldPurchaseOrder extends OrgAction
         StockDeliveryStateEnum::BOOKING_IN,
         StockDeliveryStateEnum::BOOKED_IN,
         StockDeliveryStateEnum::PLACED,
+    ];
+
+    /**
+     * Dates of the agent's stages 2 to 6 (Agreement to Clean Hand Over). An order with any of them recorded is
+     * followed through its stages in aiku, so it is not an old one. confirmed_at is not one: imported orders carry it.
+     */
+    public const array AGENT_STAGE_FIELDS = [
+        'deposit_paid_at',
+        'approved_ready_at',
+        'sample_approved_at',
+        'production_started_at',
+        'produced_at',
+        'qc_passed_at',
+        'balance_paid_at',
+        'compliance_complete_at',
+        'handed_over_at',
     ];
 
     private PurchaseOrder $purchaseOrder;
@@ -121,8 +138,9 @@ class CloseOldPurchaseOrder extends OrgAction
     }
 
     /**
-     * Why the order can not be closed, null when it can: only an open agent order on no live stock delivery still on
-     * its way, as one there settles through goods-in.
+     * Why the order can not be closed, null when it can: only an open agent order imported into aiku (from Aurora, or
+     * split from an order started before agent orders were followed in aiku) with no agent stage recorded, on no live
+     * stock delivery still on its way, as one there settles through goods-in.
      */
     public static function blockedReason(PurchaseOrder $purchaseOrder): ?string
     {
@@ -134,6 +152,14 @@ class CloseOldPurchaseOrder extends OrgAction
             return __('Only an open order');
         }
 
+        if (!self::isImported($purchaseOrder)) {
+            return __('Only an old order imported into aiku, started before agent orders were followed here');
+        }
+
+        if (self::hasAgentStageRecorded($purchaseOrder)) {
+            return __('Only an order with no agent stage recorded: this one is followed through its stages');
+        }
+
         $onDeliveryOnItsWay = $purchaseOrder->stockDeliveries()
             ->whereNotIn('stock_deliveries.state', [StockDeliveryStateEnum::CANCELLED, StockDeliveryStateEnum::NOT_RECEIVED, ...self::RECEIVED_STATES])
             ->exists();
@@ -142,6 +168,32 @@ class CloseOldPurchaseOrder extends OrgAction
         }
 
         return null;
+    }
+
+    public static function isImported(PurchaseOrder $purchaseOrder): bool
+    {
+        if ($purchaseOrder->source_id !== null) {
+            return true;
+        }
+
+        $startedAt = $purchaseOrder->startedAt();
+
+        return $startedAt !== null && $startedAt->lt(PurchaseOrder::AGENT_TRACKING_STARTED_AT);
+    }
+
+    public static function hasAgentStageRecorded(PurchaseOrder $purchaseOrder): bool
+    {
+        foreach (self::AGENT_STAGE_FIELDS as $field) {
+            if ($purchaseOrder->{$field} !== null) {
+                return true;
+            }
+        }
+
+        if (!empty(Arr::get($purchaseOrder->data, 'stage_skips'))) {
+            return true;
+        }
+
+        return AgentGoodsReceiptItem::where('purchase_order_id', $purchaseOrder->id)->exists();
     }
 
     /**
