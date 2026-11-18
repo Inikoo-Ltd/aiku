@@ -596,7 +596,7 @@ const fetchMessages = async (loadMore: boolean) => {
 // Agent replies and campaign blasts both left this side of the conversation, so both sit
 // on the outgoing side of the thread.
 const isOutgoing = (message: { sender_type?: string }) =>
-    message.sender_type === "agent" || message.sender_type === "system_campaign"
+    message.sender_type === "agent" || message.sender_type === "system_campaign" || message.sender_type === "system_notification"
 
 const unansweredMessageId = computed(() => {
     const lastOutgoingIndex = messagesLocal.value.map(isOutgoing).lastIndexOf(true)

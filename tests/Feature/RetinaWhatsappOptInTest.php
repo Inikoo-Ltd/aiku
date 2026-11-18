@@ -8,6 +8,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Comms\WhatsappCampaign\GetWhatsappRecipientsQuery;
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Actions\Comms\WhatsappSubscriber\SyncCustomerWhatsappSubscriber;
 use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
@@ -18,6 +19,7 @@ use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
+use App\Http\Resources\CRM\CustomerResource;
 use App\Models\Comms\WhatsappSubscriber;
 use App\Models\CRM\Customer;
 use App\Models\Web\Website;
@@ -42,7 +44,7 @@ beforeEach(function () {
     }
     $this->customer = createCustomer($this->shop);
     $this->customer->update(['status' => CustomerStatusEnum::APPROVED, 'phone' => '+44 1632 960001', 'marketing_whatsapp_phone' => null]);
-    $this->customer->comms->update(['is_subscribed_to_whatsapp_newsletter' => false]);
+    $this->customer->comms->update(['is_subscribed_to_whatsapp_newsletter' => false, 'is_subscribed_to_whatsapp_notifications' => false]);
     WhatsappSubscriber::withTrashed()->where('parent_type', 'Customer')->where('parent_id', $this->customer->id)->forceDelete();
     $this->webUser = createWebUser($this->customer);
 
@@ -112,6 +114,88 @@ test('opting in needs the consent tick', function () {
     ])->assertSessionHasErrors('consent');
 
     expect($this->customer->comms->fresh()->is_subscribed_to_whatsapp_newsletter)->toBeFalse();
+});
+
+test('order updates can be chosen without the newsletter', function () {
+    actingAs($this->webUser, 'retina');
+
+    $this->post(route('retina.models.whatsapp_newsletter.subscribe'), [
+        'phone'         => '+447700900123',
+        'notifications' => true,
+        'consent'       => false,
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    $comms = $this->customer->comms->fresh();
+
+    expect($comms->is_subscribed_to_whatsapp_notifications)->toBeTrue()
+        ->and($comms->whatsapp_notifications_subscribed_at)->not->toBeNull()
+        ->and($comms->whatsapp_notifications_subscribed_origin)->toBe('retina_dashboard')
+        ->and($comms->is_subscribed_to_whatsapp_newsletter)->toBeFalse()
+        ->and($this->customer->fresh()->marketing_whatsapp_phone)->toBe('+447700900123')
+        ->and(WhatsappSubscriber::where('parent_type', 'Customer')->where('parent_id', $this->customer->id)->exists())->toBeFalse();
+
+    $data = GetRetinaWhatsappOptInData::run($this->customer->fresh(), $this->website);
+
+    expect($data['is_subscribed'])->toBeTrue()
+        ->and($data['is_subscribed_to_notifications'])->toBeTrue()
+        ->and($data['is_subscribed_to_newsletter'])->toBeFalse();
+});
+
+test('unticking one box while editing turns off only that subscription', function () {
+    actingAs($this->webUser, 'retina');
+
+    $this->post(route('retina.models.whatsapp_newsletter.subscribe'), [
+        'phone' => '+447700900123', 'notifications' => true, 'consent' => true,
+    ])->assertSessionHasNoErrors();
+
+    $this->post(route('retina.models.whatsapp_newsletter.subscribe'), [
+        'phone' => '+447700900123', 'notifications' => true, 'consent' => false,
+    ])->assertSessionHasNoErrors();
+
+    $comms = $this->customer->comms->fresh();
+
+    expect($comms->is_subscribed_to_whatsapp_notifications)->toBeTrue()
+        ->and($comms->is_subscribed_to_whatsapp_newsletter)->toBeFalse()
+        ->and($comms->whatsapp_newsletter_unsubscribed_at)->not->toBeNull()
+        ->and(WhatsappSubscriber::where('parent_type', 'Customer')->where('parent_id', $this->customer->id)->exists())->toBeFalse();
+});
+
+test('staff see the WhatsApp subscriptions of a customer, the Retina email management list does not', function () {
+    $staffSubscriptions = CustomerResource::make($this->customer->fresh())->getArray()['email_subscriptions']['subscriptions'];
+
+    expect($staffSubscriptions['whatsapp_notifications']['field'])->toBe('is_subscribed_to_whatsapp_notifications')
+        ->and($staffSubscriptions['whatsapp_notifications']['is_subscribed'])->toBeFalse()
+        ->and($staffSubscriptions['whatsapp_newsletter']['field'])->toBe('is_subscribed_to_whatsapp_newsletter');
+
+    actingAs($this->webUser, 'retina');
+
+    $this->get(route('retina.sysadmin.email.edit'))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel')
+            ->has('formData.blueprint.0.fields.email_subscriptions.customer.email_subscriptions.subscriptions.newsletters')
+            ->missing('formData.blueprint.0.fields.email_subscriptions.customer.email_subscriptions.subscriptions.whatsapp_notifications')
+            ->missing('formData.blueprint.0.fields.email_subscriptions.customer.email_subscriptions.subscriptions.whatsapp_newsletter'));
+});
+
+test('the checkout offers WhatsApp order and membership updates once the shop has a WhatsApp number, before any outbox is active', function () {
+    $originalSettings = $this->shop->settings;
+    $this->customer->update(['marketing_whatsapp_phone' => '+447700900123']);
+    $sender = SendCustomerNotificationWhatsapp::make();
+
+    $this->shop->update(['settings' => array_merge((array) $originalSettings, ['whatsapp' => ['phone_number_id' => '']])]);
+    expect($sender->canOfferOptIn($this->customer->fresh()))->toBeFalse();
+
+    $this->shop->update(['settings' => array_merge((array) $originalSettings, ['whatsapp' => ['phone_number_id' => '123456789']])]);
+    expect($sender->canOfferOptIn($this->customer->fresh()))->toBeTrue();
+
+    $this->shop->update(['settings' => $originalSettings]);
+});
+
+test('opting in with neither box ticked is refused', function () {
+    actingAs($this->webUser, 'retina');
+
+    $this->post(route('retina.models.whatsapp_newsletter.subscribe'), [
+        'phone' => '+447700900123', 'notifications' => false, 'consent' => false,
+    ])->assertSessionHasErrors('consent');
 });
 
 test('a number without its country code is rejected', function () {
@@ -244,7 +328,7 @@ test('the consent wording shown on the dashboard is the wording stored with the 
     $subscriber = WhatsappSubscriber::where('parent_type', 'Customer')->where('parent_id', $this->customer->id)->first();
 
     expect($shownConsentText)->toContain($this->shop->name)
-        ->toContain('orders, membership, restocks and occasional offers')
+        ->toContain('occasional offers')
         ->and($subscriber->consent['text'])->toBe($shownConsentText);
 });
 

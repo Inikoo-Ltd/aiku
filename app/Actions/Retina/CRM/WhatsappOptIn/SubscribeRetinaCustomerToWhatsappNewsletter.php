@@ -17,6 +17,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class SubscribeRetinaCustomerToWhatsappNewsletter extends RetinaAction
@@ -25,9 +26,24 @@ class SubscribeRetinaCustomerToWhatsappNewsletter extends RetinaAction
 
     private const E164 = '/^\+[1-9][0-9]{7,14}$/';
 
+    /**
+     * The newsletter consent, ticked with the `consent` box: offers and news, which Meta bills
+     * as marketing.
+     */
     public static function consentText(Customer $customer): string
     {
-        return __('Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.', [
+        return __('Yes, I would like to receive occasional offers and news from :brand on WhatsApp.', [
+            'brand' => $customer->shop->name,
+        ]);
+    }
+
+    /**
+     * The order updates consent, ticked with the `notifications` box: the utility messages the
+     * WhatsApp outboxes send, kept apart from the newsletter so either can be chosen alone.
+     */
+    public static function notificationsConsentText(Customer $customer): string
+    {
+        return __('Yes, I would like :brand to send me WhatsApp updates about my orders, deliveries, restocks and membership.', [
             'brand' => $customer->shop->name,
         ]);
     }
@@ -43,7 +59,11 @@ class SubscribeRetinaCustomerToWhatsappNewsletter extends RetinaAction
         return $phone;
     }
 
-    public function handle(Customer $customer, array $modelData): WhatsappSubscriber
+    /**
+     * Each box sets its own subscription when it is sent, so unticking one while editing turns
+     * only that one off. A box that is not sent at all leaves its subscription as it is.
+     */
+    public function handle(Customer $customer, array $modelData): ?WhatsappSubscriber
     {
         $comms = $customer->comms;
         if (!$comms) {
@@ -53,12 +73,30 @@ class SubscribeRetinaCustomerToWhatsappNewsletter extends RetinaAction
         }
 
         return DB::transaction(function () use ($customer, $comms, $modelData) {
-            if (!$comms->is_subscribed_to_whatsapp_newsletter) {
-                UpdateCustomerComms::run($comms, ['is_subscribed_to_whatsapp_newsletter' => true]);
+            $commsData = [];
+
+            if (Arr::has($modelData, 'consent')) {
+                $commsData['is_subscribed_to_whatsapp_newsletter'] = (bool)$modelData['consent'];
+            }
+
+            if (Arr::has($modelData, 'notifications')) {
+                $commsData['is_subscribed_to_whatsapp_notifications'] = (bool)$modelData['notifications'];
+
+                if ($modelData['notifications'] && !$comms->is_subscribed_to_whatsapp_notifications) {
+                    $commsData['whatsapp_notifications_subscribed_origin'] = static::SOURCE;
+                }
+            }
+
+            if ($commsData) {
+                UpdateCustomerComms::run($comms, $commsData);
             }
             $comms->update(['whatsapp_newsletter_opt_in_dismissed_at' => null]);
 
             $customer->update(['marketing_whatsapp_phone' => $modelData['phone']]);
+
+            if (!$comms->is_subscribed_to_whatsapp_newsletter) {
+                return null;
+            }
 
             $subscriber = SyncCustomerWhatsappSubscriber::run($customer);
 
@@ -100,8 +138,9 @@ class SubscribeRetinaCustomerToWhatsappNewsletter extends RetinaAction
     public function rules(): array
     {
         return [
-            'phone'        => ['required', 'string', 'max:20', 'regex:'.self::E164],
-            'consent'      => ['accepted'],
+            'phone'         => ['required', 'string', 'max:20', 'regex:'.self::E164],
+            'consent'       => ['sometimes', 'boolean'],
+            'notifications' => ['sometimes', 'boolean'],
             'utm_source'   => ['sometimes', 'nullable', 'string', 'max:100'],
             'utm_medium'   => ['sometimes', 'nullable', 'string', 'max:100'],
             'utm_campaign' => ['sometimes', 'nullable', 'string', 'max:100'],
@@ -113,11 +152,26 @@ class SubscribeRetinaCustomerToWhatsappNewsletter extends RetinaAction
         return [
             'phone.required'   => __('Please enter your WhatsApp number.'),
             'phone.regex'      => __('Please enter a valid mobile number including the country code.'),
-            'consent.accepted' => __('Please tick the box to confirm you would like WhatsApp updates.'),
         ];
     }
 
-    public function asController(ActionRequest $request): WhatsappSubscriber
+    /**
+     * At least one box must be ticked: unsubscribing from both is the Unsubscribe link's job.
+     */
+    public function afterValidator(Validator $validator): void
+    {
+        if ($validator->errors()->isNotEmpty()) {
+            return;
+        }
+
+        $isTicked = fn (string $field) => filter_var($this->get($field), FILTER_VALIDATE_BOOLEAN);
+
+        if (!$isTicked('consent') && !$isTicked('notifications')) {
+            $validator->errors()->add('consent', __('Please tick at least one box to choose which WhatsApp messages you would like.'));
+        }
+    }
+
+    public function asController(ActionRequest $request): ?WhatsappSubscriber
     {
         $this->initialisation($request);
 

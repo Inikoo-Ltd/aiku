@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\PreOrder;
 
 use App\Actions\Comms\Email\SendPreOrderUpdateEmail;
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
@@ -47,6 +48,7 @@ class RequestPreOrderBalance
             HydratePreOrderReservedStock::run(HydratePreOrderReservedStock::make()->orgStockIds($preOrder));
 
             SendPreOrderUpdateEmail::dispatch($preOrder, SendPreOrderUpdateEmail::BALANCE_REQUEST)->afterCommit();
+            SendCustomerNotificationWhatsapp::dispatchPreOrderUpdate($preOrder, SendPreOrderUpdateEmail::BALANCE_REQUEST)->afterCommit();
 
             return $preOrder;
         });

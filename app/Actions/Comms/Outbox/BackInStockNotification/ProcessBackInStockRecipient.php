@@ -95,7 +95,7 @@ class ProcessBackInStockRecipient
         SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2);
 
         if (!empty($reminderIdsArray)) {
-            BulkDeleteBackInStockReminder::run($reminderIdsArray);
+            SettleBackInStockReminders::run($emailBulkRun->shop, $reminderIdsArray, GetBackInStockCustomersQuery::EMAIL);
         }
 
         ShopHydratePendingBackInStockReminders::run($emailBulkRun->shop);

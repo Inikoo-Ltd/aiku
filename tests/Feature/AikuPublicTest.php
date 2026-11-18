@@ -367,6 +367,8 @@ test('helpFor matches grp routes to docs by longest prefix', function () {
         ->and(BlogPosts::helpFor('grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index')['url'])->toEndWith('/docs/store-upload-errors-ours-or-theirs')
         ->and(BlogPosts::helpFor('grp.org.shops.show.crm.customers.show.customer_sales_channels.index', 'sk')['url'])->toEndWith('/docs/store-upload-errors-ours-or-theirs-sk')
         ->and(BlogPosts::helpFor('grp.org.shops.show.crm.customers.show.customer_sales_channels.show')['url'])->toEndWith('/docs/dropshipping-pricing-rules')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.dashboard.comms.customer_notification_outboxes.index')['url'])->toEndWith('/docs/whatsapp-customer-notifications')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.dashboard.comms.whatsapp_outboxes.show')['title'])->toBe('WhatsApp customer notifications')
         ->and(BlogPosts::helpFor('grp.dashboard.show'))->toBeNull()
         ->and(BlogPosts::helpFor(null))->toBeNull();
 });

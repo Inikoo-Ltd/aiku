@@ -33,17 +33,36 @@ enum WhatsappTemplateTagEnum: string
     case CUSTOMER_REFERENCE = 'Customer Reference';
     case CUSTOMER_REGISTER_DATE = 'Customer Register Date';
     case CUSTOMER_BALANCE = 'Customer Balance';
+    case CUSTOMER_LAST_INVOICE_DATE = 'Customer Last Invoice Date';
+
+    case GOLD_REWARD_DEADLINE = 'Gold Reward Deadline';
 
     case SHOP_NAME = 'Shop Name';
     case SHOP_URL = 'Shop Url';
     case SHOP_EMAIL = 'Shop Email';
     case SHOP_PHONE = 'Shop Phone';
+    case SHOP_BANK_DETAILS = 'Shop Bank Details';
 
     case ORDER_NUMBER = 'Order Number';
     case ORDER_TOTAL = 'Order Total';
     case ORDER_DATE = 'Order Date';
     case ORDER_STATE = 'Order State';
     case ORDER_ITEMS_COUNT = 'Order Items Count';
+    case ORDER_TIME = 'Order Time';
+    case ORDER_URL = 'Order Url';
+    case ORDER_AMOUNT_DUE = 'Order Amount Due';
+    case ORDER_PAYMENT_DEADLINE = 'Order Payment Deadline';
+    case ORDER_DISPATCH_DATE = 'Order Dispatch Date';
+    case ORDER_REVIEW_URL = 'Order Review Url';
+
+    case PRE_ORDER_UPDATE = 'Pre-order Update';
+    case PRE_ORDER_BALANCE_DUE_DATE = 'Pre-order Balance Due Date';
+    case PRE_ORDER_DISPATCH_DATES = 'Pre-order Dispatch Dates';
+
+    case CREDIT_AMOUNT = 'Credit Amount';
+    case CREDIT_REASON = 'Credit Reason';
+
+    case CHAT_URL = 'Chat Url';
 
     case INVOICE_NUMBER = 'Invoice Number';
     case INVOICE_TOTAL = 'Invoice Total';
@@ -53,6 +72,17 @@ enum WhatsappTemplateTagEnum: string
     case DELIVERY_TOWN = 'Delivery Town';
     case DELIVERY_POSTCODE = 'Delivery Postcode';
     case DELIVERY_COUNTRY = 'Delivery Country';
+
+    case PRODUCT_NAMES = 'Product Names';
+    case PRODUCT_NAMES_WITH_LINKS = 'Product Names With Links';
+    case PRODUCT_COUNT = 'Product Count';
+    case PRODUCT_URL = 'Product Url';
+
+    case TRACKING_CARRIER = 'Tracking Carrier';
+    case TRACKING_NUMBER = 'Tracking Number';
+    case TRACKING_URL = 'Tracking Url';
+    case TRACKING_PARCELS = 'Tracking Parcels';
+    case TRACKING_PAGE_URL = 'Tracking Page Url';
 
     case AGENT_NAME = 'Agent Name';
     case AGENT_FIRST_NAME = 'Agent First Name';
@@ -84,17 +114,36 @@ enum WhatsappTemplateTagEnum: string
             self::CUSTOMER_REFERENCE     => 'AWD08605',
             self::CUSTOMER_REGISTER_DATE => '12 Aug 2026',
             self::CUSTOMER_BALANCE       => '£125.00',
+            self::CUSTOMER_LAST_INVOICE_DATE => '12 Aug 2026',
+
+            self::GOLD_REWARD_DEADLINE => '11 Sep 2026',
 
             self::SHOP_NAME  => 'Ancient Wisdom',
             self::SHOP_URL   => 'https://www.ancientwisdom.biz',
             self::SHOP_EMAIL => 'sales@ancientwisdom.biz',
             self::SHOP_PHONE => '+44 1246 264590',
+            self::SHOP_BANK_DETAILS => 'Ancient Wisdom Ltd, Sort code 00-00-00, Account 00000000',
 
             self::ORDER_NUMBER      => 'GB585956',
             self::ORDER_TOTAL       => '£125.00',
             self::ORDER_DATE        => '12 Aug 2026',
             self::ORDER_STATE       => 'Submitted',
             self::ORDER_ITEMS_COUNT => '7',
+            self::ORDER_TIME        => '14:35',
+            self::ORDER_URL         => 'https://www.ancientwisdom.biz/app/orders/gb585956',
+            self::ORDER_AMOUNT_DUE  => '£125.00',
+            self::ORDER_PAYMENT_DEADLINE => '19 Aug 2026',
+            self::ORDER_DISPATCH_DATE    => '13 Aug 2026',
+            self::ORDER_REVIEW_URL       => 'https://www.ancientwisdom.biz/review/1388716/3f9a1c2b7d',
+
+            self::PRE_ORDER_UPDATE           => 'the balance of £80.00 is due by 20 Aug 2026',
+            self::PRE_ORDER_BALANCE_DUE_DATE => '20 Aug 2026',
+            self::PRE_ORDER_DISPATCH_DATES   => '1 Sep 2026 to 15 Sep 2026',
+
+            self::CREDIT_AMOUNT => '£25.00',
+            self::CREDIT_REASON => 'Refund',
+
+            self::CHAT_URL => 'https://www.ancientwisdom.biz/?chat_session=01JC0000000000000000000000',
 
             self::INVOICE_NUMBER => 'AWP26i2481',
             self::INVOICE_TOTAL  => '£63.56',
@@ -104,6 +153,17 @@ enum WhatsappTemplateTagEnum: string
             self::DELIVERY_TOWN     => 'Tipton',
             self::DELIVERY_POSTCODE => 'DY4 7DJ',
             self::DELIVERY_COUNTRY  => 'United Kingdom',
+
+            self::PRODUCT_NAMES => 'Lavender Essential Oil 10ml, Rose Bath Bomb',
+            self::PRODUCT_NAMES_WITH_LINKS => 'Lavender Essential Oil 10ml (https://www.ancientwisdom.biz/lavender-essential-oil-10ml), Rose Bath Bomb (https://www.ancientwisdom.biz/rose-bath-bomb)',
+            self::PRODUCT_COUNT => '2',
+            self::PRODUCT_URL   => 'https://www.ancientwisdom.biz/lavender-essential-oil-10ml',
+
+            self::TRACKING_CARRIER => 'DPD',
+            self::TRACKING_NUMBER  => '15501234567890',
+            self::TRACKING_URL     => 'https://track.dpdlocal.co.uk/parcels/15501234567890',
+            self::TRACKING_PARCELS => 'Parcel 1 of 2: 15501234567101 https://track.dpd.co.uk/parcels/15501234567101, Parcel 2 of 2: 15501234567102 https://track.dpd.co.uk/parcels/15501234567102',
+            self::TRACKING_PAGE_URL => 'https://track.dpd.co.uk/',
 
             self::AGENT_NAME       => 'Rhianne Cartledge',
             self::AGENT_FIRST_NAME => 'Rhianne',
@@ -118,6 +178,12 @@ enum WhatsappTemplateTagEnum: string
             str_starts_with($this->value, 'Order')    => __('Order'),
             str_starts_with($this->value, 'Invoice')  => __('Invoice'),
             str_starts_with($this->value, 'Delivery') => __('Delivery'),
+            str_starts_with($this->value, 'Tracking') => __('Tracking'),
+            str_starts_with($this->value, 'Product')  => __('Product'),
+            str_starts_with($this->value, 'Pre-order') => __('Pre-order'),
+            str_starts_with($this->value, 'Credit')   => __('Credit'),
+            str_starts_with($this->value, 'Chat')     => __('Chat'),
+            str_starts_with($this->value, 'Gold')     => __('Gold reward'),
             default                                   => __('Agent'),
         };
     }

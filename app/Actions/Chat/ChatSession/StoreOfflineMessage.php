@@ -231,6 +231,8 @@ class StoreOfflineMessage
                 'is_offline_message' => true,
             ]),
         ]);
+
+        NotifyOfflineMessageReplyOnWhatsapp::markPending($session);
     }
 
     public function asController(ActionRequest $request): JsonResponse

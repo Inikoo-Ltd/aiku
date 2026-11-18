@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Actions\Retina\CRM\WhatsappOptIn\GetRetinaWhatsappOptInData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\Http\Resources\HasSelfCall;
@@ -58,14 +59,17 @@ class CustomerResource extends JsonResource
 
         $shop = $customer->shop;
 
+        $isStaffViewing = class_basename(request()->user()) !== 'WebUser';
 
         if ($shop?->type == ShopTypeEnum::B2B) {
-            $subscriptions['whatsapp_newsletter'] = [
-                'label'           => __('WhatsApp Newsletter'),
-                'field'           => 'is_subscribed_to_whatsapp_newsletter',
-                'is_subscribed'   => $comms->is_subscribed_to_whatsapp_newsletter,
-                'unsubscribed_at' => $comms->whatsapp_newsletter_unsubscribed_at
-            ];
+            if ($isStaffViewing) {
+                $subscriptions['whatsapp_newsletter'] = [
+                    'label'           => __('WhatsApp Newsletter'),
+                    'field'           => 'is_subscribed_to_whatsapp_newsletter',
+                    'is_subscribed'   => $comms->is_subscribed_to_whatsapp_newsletter,
+                    'unsubscribed_at' => $comms->whatsapp_newsletter_unsubscribed_at
+                ];
+            }
             $subscriptions['reorder_reminder'] = [
                 'label'           => __('Reorder Reminders'),
                 'field'           => 'is_subscribed_to_reorder_reminder',
@@ -81,11 +85,22 @@ class CustomerResource extends JsonResource
                 'unsubscribed_at' => $comms->price_change_notification_unsubscribed_at
             ];
 
-            $subscriptions['whatsapp_newsletter'] = [
-                'label'           => __('WhatsApp Newsletter'),
-                'field'           => 'is_subscribed_to_whatsapp_newsletter',
-                'is_subscribed'   => $comms->is_subscribed_to_whatsapp_newsletter,
-                'unsubscribed_at' => $comms->whatsapp_newsletter_unsubscribed_at
+            if ($isStaffViewing) {
+                $subscriptions['whatsapp_newsletter'] = [
+                    'label'           => __('WhatsApp Newsletter'),
+                    'field'           => 'is_subscribed_to_whatsapp_newsletter',
+                    'is_subscribed'   => $comms->is_subscribed_to_whatsapp_newsletter,
+                    'unsubscribed_at' => $comms->whatsapp_newsletter_unsubscribed_at
+                ];
+            }
+        }
+
+        if ($isStaffViewing && GetRetinaWhatsappOptInData::isOfferedIn($shop)) {
+            $subscriptions['whatsapp_notifications'] = [
+                'label'           => __('WhatsApp Order Updates'),
+                'field'           => 'is_subscribed_to_whatsapp_notifications',
+                'is_subscribed'   => $comms->is_subscribed_to_whatsapp_notifications,
+                'unsubscribed_at' => $comms->whatsapp_notifications_unsubscribed_at
             ];
         }
 
