@@ -319,6 +319,7 @@ Route::get('organisation/{organisation:id}/shop/{shop:id}/bank-transaction/{bank
 Route::get('organisation/{organisation:id}/shop/{shop:id}/bank-transaction/{bankTransaction:id}/customer-candidates', [GetBankTransactionCustomerCandidates::class, 'inShop'])->name('shop.bank_transaction.customer_candidates')->withoutScopedBindings();
 Route::get('organisation/{organisation}/org-supplier-products', GetOrgSupplierProducts::class)->name('org_supplier_products.index');
 Route::get('organisation/{organisation:id}/supplier/{supplier:id}/copy-from/{sourceSupplier:id}', GetSupplierProductsToCopy::class)->name('supplier.supplier_products_to_copy')->withoutScopedBindings();
+Route::get('supplier/{supplier:id}/copy-from/{sourceSupplier:id}', [GetSupplierProductsToCopy::class, 'inGroup'])->name('supplier.supplier_products_to_copy_in_group')->withoutScopedBindings();
 Route::get('supplier-change-request/{supplierChangeRequest:id}/preview', GetSupplierChangeRequestPreview::class)->name('supplier_change_request.preview');
 Route::get('supplier-change-request/{supplierChangeRequest:id}/progress', GetSupplierChangeRequestProgress::class)->name('supplier_change_request.progress');
 Route::get('org-supplier-product/{orgSupplierProduct:id}/minimum-orders', GetOrgSupplierProductMinimumOrders::class)->name('org_supplier_product.minimum_orders');

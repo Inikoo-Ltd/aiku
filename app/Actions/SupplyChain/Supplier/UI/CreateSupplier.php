@@ -20,7 +20,6 @@ use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
-use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -143,15 +142,24 @@ class CreateSupplier extends OrgAction
     {
         $supplierProductIds = array_filter(array_map('intval', (array) $request->query('supplier_products', [])));
 
-        if (!$parent instanceof Agent || !$supplierProductIds) {
+        if ($this->scopeOrganisation || !$supplierProductIds) {
             return [];
         }
 
-        $supplierProducts = SupplierProduct::whereIn('agent_id', CopySupplierProductsToSupplier::make()->getAccessibleAgents($request->user())->pluck('id'))
+        $copySupplierProducts = CopySupplierProductsToSupplier::make();
+
+        $supplierProducts = $copySupplierProducts
+            ->copyableSupplierProducts(
+                $copySupplierProducts->getAccessibleAgents($request->user())->pluck('id'),
+                $copySupplierProducts->canEditFreeSuppliers($request->user())
+            )
+            ->where('group_id', $request->user()->group_id)
             ->whereIn('id', $supplierProductIds)
             ->get(['id', 'agent_id', 'currency_id']);
 
-        if ($supplierProducts->first()?->agent_id === $parent->id) {
+        $parentAgentId = $parent instanceof Agent ? $parent->id : null;
+
+        if ($supplierProducts->isNotEmpty() && $supplierProducts->first()->agent_id === $parentAgentId) {
             $this->copiedProductsCurrencyId = $supplierProducts->first()->currency_id;
         }
 

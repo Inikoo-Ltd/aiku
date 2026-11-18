@@ -28,8 +28,14 @@ class GetSupplierProductsToCopy extends OrgAction
 {
     use WithAgentOrganisation;
 
+    private bool $isInGroup = false;
+
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->isInGroup) {
+            return CopySupplierProductsToSupplier::make()->canEditFreeSuppliers($request->user());
+        }
+
         return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
     }
 
@@ -76,6 +82,23 @@ class GetSupplierProductsToCopy extends OrgAction
             $this->getOrganisationAgent($organisation)
             && $agentIds->contains($supplier->agent_id)
             && $agentIds->contains($sourceSupplier->agent_id),
+            404
+        );
+
+        return $this->handle($supplier, $sourceSupplier);
+    }
+
+    public function inGroup(Supplier $supplier, Supplier $sourceSupplier, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->isInGroup = true;
+        $this->initialisationFromGroup($supplier->group, $request);
+
+        $copySupplierProducts = CopySupplierProductsToSupplier::make();
+
+        abort_unless(
+            $sourceSupplier->group_id === $supplier->group_id
+            && $copySupplierProducts->canEditSupplier($supplier, $request->user())
+            && $copySupplierProducts->canEditSupplier($sourceSupplier, $request->user()),
             404
         );
 

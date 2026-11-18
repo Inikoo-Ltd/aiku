@@ -2005,6 +2005,7 @@ Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
     Route::post('supplier-product/import', ImportSupplierProducts::class)->name('supplier-product.import');
     Route::post('supplier-product/check-form', CheckSupplierProductForm::class)->name('supplier-product.check_form');
     Route::post('supplier-product/from-form', StoreSupplierProductFromForm::class)->name('supplier-product.store_from_form');
+    Route::post('supplier-products/copy', [CopySupplierProductsToSupplier::class, 'inGroup'])->name('supplier_products.copy');
     Route::post('purchase-orders/import/preview', PreviewSupplierPurchaseOrderImport::class)->name('purchase_orders.import.preview');
     Route::post('purchase-orders/import', ImportSupplierPurchaseOrders::class)->name('purchase_orders.import');
 });
