@@ -4511,3 +4511,26 @@ test('Close Old PO takes only an order imported into aiku with no agent stage re
         ->and($closed->chs_excluded)->toBeTrue()
         ->and($madeInAiku->refresh()->state)->toBe(\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::CONFIRMED);
 });
+
+test('Close Old PO offers and accepts only received deliveries through the order\'s agent or from its supplier carrying its SKOs (INI-376)', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+
+    $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $purchaseOrder->update(['source_id' => $purchaseOrder->organisation_id.':w2'.$purchaseOrder->id]);
+
+    $otherSupplierDelivery = createStockDeliveryWithItems($this, 'W2-OTHER-'.Str::random(6), [5]);
+    $agentDelivery         = createStockDeliveryWithItems($this, 'W2-AGENT-'.Str::random(6), [5]);
+    $otherSupplierDelivery->update(['state' => \App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum::PLACED]);
+    $agentDelivery->update(['state' => \App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum::PLACED, 'agent_id' => $purchaseOrder->agent_id]);
+
+    $offered = \App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::linkableStockDeliveries($purchaseOrder->refresh())->pluck('id')->all();
+
+    expect($offered)->toContain($agentDelivery->id)->not->toContain($otherSupplierDelivery->id);
+
+    expect(fn () => \App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::make()->action($purchaseOrder, ['reason' => 'old', 'stock_delivery_id' => $otherSupplierDelivery->id]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    \App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::make()->action($purchaseOrder->refresh(), ['reason' => 'old', 'stock_delivery_id' => $agentDelivery->id]);
+
+    expect($purchaseOrder->refresh()->closedAsOld()['stock_delivery_id'])->toBe($agentDelivery->id);
+});

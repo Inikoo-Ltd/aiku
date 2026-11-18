@@ -25,7 +25,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -197,39 +196,59 @@ class CloseOldPurchaseOrder extends OrgAction
     }
 
     /**
-     * Received stock deliveries of the order's organisation, not linked to it yet, carrying at least one of its SKOs
-     * on lines brought in without an order line (Aurora), newest first, with how many of their items are SKOs of the order.
+     * Received stock deliveries of the order's organisation that may have carried its goods (through its agent, or
+     * straight from its supplier), not linked to it yet, carrying at least one of its SKOs on lines brought in without
+     * an order line (Aurora).
+     *
+     * @return Builder<StockDelivery>
+     */
+    public static function linkableStockDeliveriesQuery(PurchaseOrder $purchaseOrder): Builder
+    {
+        return StockDelivery::query()
+            ->where('organisation_id', $purchaseOrder->organisation_id)
+            ->where(fn (Builder $query) => $query
+                ->where('agent_id', $purchaseOrder->agent_id)
+                ->orWhere(fn (Builder $query) => $query->where('parent_type', $purchaseOrder->parent_type)->where('parent_id', $purchaseOrder->parent_id)))
+            ->whereIn('state', self::RECEIVED_STATES)
+            ->whereDoesntHave('purchaseOrders', fn (Builder $orders) => $orders->where('purchase_orders.id', $purchaseOrder->id))
+            ->whereHas('items', self::carriesOrderSkos($purchaseOrder));
+    }
+
+    /**
+     * The linkable stock deliveries offered in the form, newest first, with how many of their items are SKOs of the order.
      *
      * @return Builder<StockDelivery>
      */
     public static function linkableStockDeliveries(PurchaseOrder $purchaseOrder): Builder
     {
-        $orgStockIds      = $purchaseOrder->purchaseOrderTransactions()->whereNotNull('org_stock_id')->distinct()->pluck('org_stock_id');
-        $carriesOrderSkos = fn ($items) => $items->whereIn('stock_delivery_items.org_stock_id', $orgStockIds)
-            ->whereRaw("stock_delivery_items.data->>'purchase_order_transaction_id' is null");
-
-        return StockDelivery::query()
-            ->where('organisation_id', $purchaseOrder->organisation_id)
-            ->whereIn('state', self::RECEIVED_STATES)
-            ->whereDoesntHave('purchaseOrders', fn (Builder $orders) => $orders->where('purchase_orders.id', $purchaseOrder->id))
-            ->whereHas('items', $carriesOrderSkos)
-            ->withCount(['items as number_matching_items' => $carriesOrderSkos])
+        return self::linkableStockDeliveriesQuery($purchaseOrder)
+            ->withCount(['items as number_matching_items' => self::carriesOrderSkos($purchaseOrder)])
             ->orderByDesc('id')
             ->limit(50);
+    }
+
+    private static function carriesOrderSkos(PurchaseOrder $purchaseOrder): \Closure
+    {
+        $orgStockIds = $purchaseOrder->purchaseOrderTransactions()->whereNotNull('org_stock_id')->distinct()->pluck('org_stock_id');
+
+        return fn ($items) => $items->whereIn('stock_delivery_items.org_stock_id', $orgStockIds)
+            ->whereRaw("stock_delivery_items.data->>'purchase_order_transaction_id' is null");
     }
 
     public function rules(): array
     {
         return [
-            'stock_delivery_id' => ['sometimes', 'nullable', 'integer', Rule::in(self::linkableStockDeliveries($this->purchaseOrder)->pluck('id')->all())],
+            'stock_delivery_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (!self::linkableStockDeliveriesQuery($this->purchaseOrder)->whereKey($value)->exists()) {
+                        $fail(__('This stock delivery is not received, does not carry any SKO of this order, or is already linked'));
+                    }
+                },
+            ],
             'reason'            => ['required', 'string', 'max:500'],
-        ];
-    }
-
-    public function getValidationMessages(): array
-    {
-        return [
-            'stock_delivery_id.in' => __('This stock delivery is not received, does not carry any SKO of this order, or is already linked'),
         ];
     }
 
