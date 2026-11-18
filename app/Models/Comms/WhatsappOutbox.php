@@ -114,20 +114,14 @@ class WhatsappOutbox extends Model
         return $this->isGoldRewardReminder() || $this->code === OutboxCodeEnum::REVIEW_REMINDER;
     }
 
+    /**
+     * WhatsApp has one Gold reward reminder, under the code of the first email reminder; the
+     * email keeps its three.
+     */
+    public const OutboxCodeEnum GOLD_REWARD_REMINDER_CODE = OutboxCodeEnum::GOLD_REWARD_REMINDER_1;
+
     public function isGoldRewardReminder(): bool
     {
-        return in_array($this->code, self::goldRewardReminderCodes(), true);
-    }
-
-    /**
-     * @return array<int, OutboxCodeEnum>
-     */
-    public static function goldRewardReminderCodes(): array
-    {
-        return [
-            OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
-            OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
-            OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
-        ];
+        return $this->code === self::GOLD_REWARD_REMINDER_CODE;
     }
 }

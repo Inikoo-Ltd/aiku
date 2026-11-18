@@ -30,7 +30,6 @@ class SeedShopWhatsappOutboxes
     {
         return [
             OutboxCodeEnum::ORDER_CONFIRMATION,
-            OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_DISPATCHED,
             OutboxCodeEnum::ORDER_PAYMENT_REMINDER,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
@@ -39,8 +38,17 @@ class SeedShopWhatsappOutboxes
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::REVIEW_REMINDER,
-            ...WhatsappOutbox::goldRewardReminderCodes(),
+            WhatsappOutbox::GOLD_REWARD_REMINDER_CODE,
         ];
+    }
+
+    /**
+     * The single WhatsApp Gold reward reminder is not the "1st" of anything, unlike the email
+     * reminder whose code it shares.
+     */
+    public static function name(OutboxCodeEnum $code): string
+    {
+        return $code === WhatsappOutbox::GOLD_REWARD_REMINDER_CODE ? 'Gold reward reminder' : $code->label();
     }
 
     public function handle(Shop $shop): void
@@ -53,7 +61,7 @@ class SeedShopWhatsappOutboxes
             $whatsappOutbox = WhatsappOutbox::withTrashed()->where('shop_id', $shop->id)->where('code', $code->value)->first();
 
             if ($whatsappOutbox) {
-                $whatsappOutbox->update(['name' => $code->label()]);
+                $whatsappOutbox->update(['name' => self::name($code)]);
 
                 continue;
             }
@@ -63,7 +71,7 @@ class SeedShopWhatsappOutboxes
                 'organisation_id' => $shop->organisation_id,
                 'shop_id'         => $shop->id,
                 'code'            => $code,
-                'name'            => $code->label(),
+                'name'            => self::name($code),
                 'state'           => OutboxStateEnum::SUSPENDED,
             ]);
         }

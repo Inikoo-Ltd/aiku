@@ -30,7 +30,6 @@ Click a row to open the outbox.
 | Outbox | When it sends |
 | --- | --- |
 | Order confirmation | When an order is placed |
-| Delivery confirmation | When an order is dispatched |
 | Order dispatched | When an order is dispatched, with the tracking of each parcel |
 | Order payment reminder | When a bank transfer order is still unpaid |
 | Out of stock in order notification | Every few hours, about products in an order that ran out |
@@ -39,7 +38,7 @@ Click a row to open the outbox.
 | Credit balance notification for customer | When the customer's credit balance changes |
 | Chat notification to customer | When staff reply in chat and the customer has left the website |
 | Review reminder | Once a day, a set number of days after dispatch |
-| 1st, 2nd and 3rd Gold reward reminder | Once a day, a set number of days after the customer's last invoice |
+| Gold reward reminder | Once a day, a set number of days after the customer's last invoice |
 
 **WhatsApp and email are separate.** Switching the email off does not stop the WhatsApp message, and the other way round. If both are on, the customer gets both.
 
@@ -52,7 +51,7 @@ Every outbox starts **Off**. To switch one on:
 3. **Fill in the timing**, for the outboxes that need it:
    - *Out of stock in order notification:* **Hours between runs**.
    - *Review reminder:* **Days after dispatch**.
-   - *Gold reward reminders:* **Days after the last invoice**.
+   - *Gold reward reminder:* **Days after the last invoice**.
 4. **Turn on Active.**
 
 aiku will not let you switch an outbox on without an approved Utility template and its timing. Saving tells you what is missing.

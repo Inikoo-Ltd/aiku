@@ -1703,7 +1703,7 @@ test('a back in stock WhatsApp bulk run sends to opted in customers only, in sto
         ->and(\App\Actions\Comms\WhatsappBulkRun\PrepareWhatsappBulkRun::make()->handle($whatsappOutbox->id))->toBeNull();
 });
 
-test('a b2b shop gets the order dispatched and three Gold reward reminder WhatsApp outboxes, and no email outbox for order dispatched', function () {
+test('a b2b shop gets the order dispatched and a single Gold reward reminder WhatsApp outbox, no delivery confirmation one, and no email outbox for order dispatched', function () {
     [, , $shop] = createOwnShop('whatsapp-outbox-seeding');
 
     \App\Actions\Catalogue\Shop\Seeders\SeedShopOutboxes::run($shop);
@@ -1713,11 +1713,29 @@ test('a b2b shop gets the order dispatched and three Gold reward reminder WhatsA
     expect($codes)->toContain(
         \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_DISPATCHED->value,
         \App\Enums\Comms\Outbox\OutboxCodeEnum::GOLD_REWARD_REMINDER_1->value,
-        \App\Enums\Comms\Outbox\OutboxCodeEnum::GOLD_REWARD_REMINDER_2->value,
-        \App\Enums\Comms\Outbox\OutboxCodeEnum::GOLD_REWARD_REMINDER_3->value,
     )
+        ->and($codes)->not->toContain(
+            \App\Enums\Comms\Outbox\OutboxCodeEnum::GOLD_REWARD_REMINDER_2->value,
+            \App\Enums\Comms\Outbox\OutboxCodeEnum::GOLD_REWARD_REMINDER_3->value,
+            \App\Enums\Comms\Outbox\OutboxCodeEnum::DELIVERY_CONFIRMATION->value,
+        )
+        ->and($shop->whatsappOutboxes()->where('code', \App\Enums\Comms\Outbox\OutboxCodeEnum::GOLD_REWARD_REMINDER_1->value)->value('name'))->toBe('Gold reward reminder')
         ->and($shop->whatsappOutboxes()->where('code', \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_DISPATCHED->value)->value('state'))->toBe(\App\Enums\Comms\Outbox\OutboxStateEnum::SUSPENDED->value)
         ->and($shop->outboxes()->where('code', \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_DISPATCHED->value)->exists())->toBeFalse();
+});
+
+test('dispatching an order sends the order dispatched WhatsApp and no delivery confirmation one', function () {
+    [, , $shop] = createOwnShop('whatsapp-order-dispatched');
+    [, , $customer] = whatsappOutboxTestSetup($shop, code: \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_DISPATCHED);
+    [, $product] = createProduct($shop);
+    $order = createOrder($customer, $product);
+
+    \Illuminate\Support\Facades\Queue::fake();
+
+    \App\Actions\Ordering\Order\UpdateState\DispatchOrder::make()->action($order->refresh(), null);
+
+    \App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp::assertPushed(1);
+    \App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp::assertPushed(fn ($action, array $arguments) => $arguments[1] === \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_DISPATCHED);
 });
 
 test('an order dispatched WhatsApp goes out from its own outbox with the order filled in', function () {
@@ -1784,7 +1802,7 @@ test('a Gold reward reminder WhatsApp bulk run sends once a day to opted in cust
 
 test('a Gold reward reminder WhatsApp outbox cannot be activated without the days after the last invoice', function () {
     [, , $shop] = createOwnShop('whatsapp-gold-reward');
-    [$whatsappOutbox] = whatsappOutboxTestSetup($shop, code: \App\Enums\Comms\Outbox\OutboxCodeEnum::GOLD_REWARD_REMINDER_2);
+    [$whatsappOutbox] = whatsappOutboxTestSetup($shop, code: \App\Enums\Comms\Outbox\OutboxCodeEnum::GOLD_REWARD_REMINDER_1);
     $whatsappOutbox->update(['state' => \App\Enums\Comms\Outbox\OutboxStateEnum::SUSPENDED, 'days_after' => null]);
 
     expect(fn () => \App\Actions\Comms\WhatsappOutbox\UpdateWhatsappOutbox::make()->action($whatsappOutbox, ['state' => true]))

@@ -129,7 +129,6 @@ class DispatchOrder extends OrgAction
         if (!$repair) {
             SendDispatchedOrderEmailToSubscribers::dispatch($order);
             SendDispatchedOrderEmailToCustomer::dispatch($order);
-            SendCustomerNotificationWhatsapp::dispatch($order->customer, OutboxCodeEnum::DELIVERY_CONFIRMATION, $order);
             SendCustomerNotificationWhatsapp::dispatch($order->customer, OutboxCodeEnum::ORDER_DISPATCHED, $order);
         }
 

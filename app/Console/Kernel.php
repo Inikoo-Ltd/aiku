@@ -113,7 +113,6 @@ use App\Models\Comms\WhatsappOutbox;
 use App\Traits\LoggableSchedule;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-use Illuminate\Support\Str;
 
 class Kernel extends ConsoleKernel
 {
@@ -951,18 +950,14 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            foreach (WhatsappOutbox::goldRewardReminderCodes() as $goldRewardReminderCode) {
-                $monitorSlug = 'RunWhatsapp'.Str::studly($goldRewardReminderCode->value).'BulkRuns';
-
-                $this->logSchedule(
-                    $schedule->job(RunWhatsappBulkRuns::makeJob($goldRewardReminderCode))->dailyAt('15:10')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                        monitorSlug: $monitorSlug,
-                    ),
-                    name: $monitorSlug,
-                    type: 'job',
-                    scheduledAt: now()->format('H:i')
-                );
-            }
+            $this->logSchedule(
+                $schedule->job(RunWhatsappBulkRuns::makeJob(WhatsappOutbox::GOLD_REWARD_REMINDER_CODE))->dailyAt('15:10')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunWhatsappGoldRewardReminder1BulkRuns',
+                ),
+                name: 'RunWhatsappGoldRewardReminder1BulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
 
             $this->logSchedule(
                 $schedule->job(GetFaireOrdersAllShops::makeJob())->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
