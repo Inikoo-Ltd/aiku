@@ -4842,3 +4842,22 @@ test('the rename availability check refuses a reference the rename would refuse 
         ->and($availability->handle($purchaseOrder, 'W2 has spaces')['format_error'])->not->toBeNull()
         ->and($availability->handle($purchaseOrder, 'W2-ok-'.$purchaseOrder->id)['is_available'])->toBeTrue();
 });
+
+test('an order whose ready to roll checks were all done before it was agreed is handed over as soon as it is agreed', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $checks               = array_values(array_diff($orgAgent->agent->poJourney()['ready_checks'], ['compliance']));
+    $fields               = array_map(fn (string $key) => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum::READY_CHECK_FIELDS[$key], $checks);
+
+    $order = StorePurchaseOrder::make()->action($supplier, \App\Models\Procurement\PurchaseOrder::factory()->definition());
+    StorePurchaseOrderTransaction::make()->action($order, $product->supplierProduct->historicSupplierProduct, $this->orgStocks[0], array_merge(\App\Models\Procurement\PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 4]));
+    $order = UpdatePurchaseOrderStateToSubmitted::make()->action($order->refresh())->refresh();
+    $order->updateQuietly(['handed_over_at' => null, 'sample_approved_at' => now(), ...array_fill_keys($fields, now()->subDays(2))]);
+
+    expect(\App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::run($order)->handed_over_at)->toBeNull();
+
+    $order = \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed::make()->action($order->refresh());
+
+    expect($order->refresh()->handed_over_at)->not->toBeNull()
+        ->and(\App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::wasRecordedAutomatically($order))->toBeTrue();
+});

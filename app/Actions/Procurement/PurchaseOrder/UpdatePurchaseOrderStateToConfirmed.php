@@ -62,7 +62,7 @@ class UpdatePurchaseOrderStateToConfirmed extends OrgAction
 
         $this->purchaseOrderHydrate($purchaseOrder);
 
-        return $purchaseOrder;
+        return RecordPurchaseOrderHandedOverWhenReady::run($purchaseOrder);
     }
 
     public static function pendingAnswersMessage(PurchaseOrder $purchaseOrder): ?string
