@@ -179,17 +179,24 @@ class MergeSupplierProducts
     }
 
     /**
+     * @param  callable(int $done, int $total): void|null  $onProduct
+     *
      * @return array{merged: int, refused: array<string, string>}
      *
      * @throws \Throwable
      */
-    public function mergeSupplier(Supplier $from, Supplier $to, bool $fix = false): array
+    public function mergeSupplier(Supplier $from, Supplier $to, bool $fix = false, ?callable $onProduct = null): array
     {
         $merged              = 0;
         $refused             = [];
         $touchedOrgSuppliers = [];
 
-        foreach ($from->supplierProducts()->get() as $fromProduct) {
+        $fromProducts = $from->supplierProducts()->get();
+        foreach ($fromProducts as $index => $fromProduct) {
+            if ($onProduct) {
+                $onProduct($index, $fromProducts->count());
+            }
+
             $toProduct = $to->supplierProducts()->whereRaw('lower(code) = ?', [mb_strtolower($fromProduct->code)])->first();
             if (!$toProduct) {
                 continue;

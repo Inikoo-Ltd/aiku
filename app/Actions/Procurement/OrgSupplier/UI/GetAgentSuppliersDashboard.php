@@ -561,7 +561,20 @@ class GetAgentSuppliersDashboard
                 'decided_at'    => $request->decided_at,
                 'decision_note' => $request->decision_note,
                 'decide_route'  => ['name' => 'grp.models.supplier_change_request.decide', 'parameters' => ['supplierChangeRequest' => $request->id]],
+                'preview_route' => ['name' => 'grp.json.supplier_change_request.preview', 'parameters' => ['supplierChangeRequest' => $request->id]],
+                'progress_route' => ['name' => 'grp.json.supplier_change_request.progress', 'parameters' => ['supplierChangeRequest' => $request->id]],
+                'progress'       => $request->state === SupplierChangeRequestStateEnum::PENDING ? $this->approvalProgress($request) : null,
             ]);
+    }
+
+    /**
+     * The approval job still running, or the one that failed, so the list shows it in place of the decision buttons.
+     */
+    private function approvalProgress(SupplierChangeRequest $request): ?array
+    {
+        $progress = DecideSupplierChangeRequest::getProgress($request);
+
+        return $progress && $progress['step'] !== 'done' ? $progress : null;
     }
 
     private function getPossibleDuplicates(Agent $agent, Collection $suppliers, callable $supplierRoute, Collection $pending): Collection

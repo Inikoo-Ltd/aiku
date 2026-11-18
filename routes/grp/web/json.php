@@ -144,6 +144,8 @@ use App\Actions\Inventory\OrgStock\Json\FetchOrgStockStocksManagement;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProductMinimumOrders;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
+use App\Actions\SupplyChain\SupplierChangeRequest\Json\GetSupplierChangeRequestPreview;
+use App\Actions\SupplyChain\SupplierChangeRequest\Json\GetSupplierChangeRequestProgress;
 use App\Actions\SupplyChain\SupplierProduct\Json\GetSupplierProductsToCopy;
 use App\Actions\Procurement\OrgSupplier\Json\GetOrgSuppliers;
 use App\Actions\Accounting\BankTransaction\Json\GetBankTransactionCustomerCandidates;
@@ -316,6 +318,8 @@ Route::get('organisation/{organisation:id}/shop/{shop:id}/bank-transaction/{bank
 Route::get('organisation/{organisation:id}/shop/{shop:id}/bank-transaction/{bankTransaction:id}/customer-candidates', [GetBankTransactionCustomerCandidates::class, 'inShop'])->name('shop.bank_transaction.customer_candidates')->withoutScopedBindings();
 Route::get('organisation/{organisation}/org-supplier-products', GetOrgSupplierProducts::class)->name('org_supplier_products.index');
 Route::get('organisation/{organisation:id}/supplier/{supplier:id}/copy-from/{sourceSupplier:id}', GetSupplierProductsToCopy::class)->name('supplier.supplier_products_to_copy')->withoutScopedBindings();
+Route::get('supplier-change-request/{supplierChangeRequest:id}/preview', GetSupplierChangeRequestPreview::class)->name('supplier_change_request.preview');
+Route::get('supplier-change-request/{supplierChangeRequest:id}/progress', GetSupplierChangeRequestProgress::class)->name('supplier_change_request.progress');
 Route::get('org-supplier-product/{orgSupplierProduct:id}/minimum-orders', GetOrgSupplierProductMinimumOrders::class)->name('org_supplier_product.minimum_orders');
 Route::get('organisation/{organisation:id}/org-stock/{orgStock:id}/batch-codes', GetBatchCodes::class)->name('org_stock.batch_codes.index');
 Route::get('barcodes/next-free', GetNextFreeBarcode::class)->name('barcodes.next_free');
