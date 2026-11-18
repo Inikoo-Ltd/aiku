@@ -30,6 +30,8 @@ struct LoginForm: Equatable {
 enum LoginFailure: Error, Equatable, Sendable {
     case invalidCredentials(message: String)
     case otpRequired(message: String)
+    case twoFactorSetupRequired(TwoFactorSetup)
+    case codeRejected(message: String)
     case tooManyAttempts(message: String)
     case offline
     case server(message: String)
@@ -37,7 +39,13 @@ enum LoginFailure: Error, Equatable, Sendable {
     init(_ error: APIError) {
         switch error {
         case .validation(let message, let code):
-            self = code == "otp_required" ? .otpRequired(message: message) : .invalidCredentials(message: message)
+            if code == LoginRejection.codeRequired {
+                self = .otpRequired(message: message)
+            } else if code == LoginRejection.setupRequired {
+                self = .server(message: message)
+            } else {
+                self = .invalidCredentials(message: message)
+            }
         case .tooManyAttempts(let message):
             self = .tooManyAttempts(message: message)
         case .rejected(let message):
@@ -49,10 +57,29 @@ enum LoginFailure: Error, Equatable, Sendable {
         }
     }
 
+    init(_ rejection: LoginRejection) {
+        let codeError = rejection.fieldErrors[LoginRejection.codeField]
+        if rejection.code == LoginRejection.setupRequired {
+            if let setup = rejection.twoFactorSetup, setup.isUsable {
+                self = .twoFactorSetupRequired(setup)
+            } else {
+                self = .server(message: rejection.message)
+            }
+        } else if rejection.code == LoginRejection.codeRequired {
+            self = .otpRequired(message: codeError ?? rejection.message)
+        } else if let codeError {
+            self = .codeRejected(message: codeError)
+        } else {
+            self = .invalidCredentials(message: rejection.fieldErrors[LoginRejection.usernameField] ?? rejection.message)
+        }
+    }
+
     var title: String {
         switch self {
         case .invalidCredentials: "Incorrect username or password"
         case .otpRequired: "Two-factor code needed"
+        case .twoFactorSetupRequired: "Set up two-factor authentication"
+        case .codeRejected: "Code not accepted"
         case .tooManyAttempts: "Too many attempts"
         case .offline: "No connection"
         case .server: "Couldn’t sign in"
@@ -61,8 +88,9 @@ enum LoginFailure: Error, Equatable, Sendable {
 
     var message: String {
         switch self {
-        case .invalidCredentials: "Check your details and try again."
-        case .otpRequired(let message), .tooManyAttempts(let message), .server(let message): message
+        case .invalidCredentials(let message): message.isEmpty ? "Check your details and try again." : message
+        case .otpRequired(let message), .codeRejected(let message), .tooManyAttempts(let message), .server(let message): message
+        case .twoFactorSetupRequired: TwoFactorCopy.setupDescription
         case .offline: "Sign in needs internet — check Wi-Fi and try again."
         }
     }
