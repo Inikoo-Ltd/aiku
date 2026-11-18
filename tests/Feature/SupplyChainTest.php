@@ -2545,3 +2545,34 @@ test('merge preview reports codes shared with a deleted product of either suppli
     $duplicateProduct->delete();
     expect(implode(' ', \App\Actions\SupplyChain\Supplier\MergeSuppliers::make()->blockers($duplicate, $kept)))->toContain($keptProduct->code);
 });
+
+test('a supplier suggestion can not be decided while its approval runs, and the queued approval checks the suppliers again', function () {
+    [, $duplicateProduct, $kept] = supplyChainFixAgentSuppliers($this);
+    $duplicate                   = $duplicateProduct->supplier;
+    $duplicate->update(['currency_id' => $kept->currency_id]);
+    $decide = \App\Actions\SupplyChain\SupplierChangeRequest\DecideSupplierChangeRequest::class;
+
+    $deactivation = \App\Actions\SupplyChain\SupplierChangeRequest\StoreSupplierChangeRequest::make()->action($kept, ['type' => 'deactivate', 'reason' => 'Closed down']);
+    $decide::putProgress($deactivation, 'moving');
+    expect(fn () => $decide::make()->action($deactivation, ['approve' => false, 'decision_note' => 'Still trading']))->toThrow(ValidationException::class)
+        ->and(fn () => $decide::make()->action($deactivation, ['approve' => true]))->toThrow(ValidationException::class);
+
+    Cache::forget($decide::progressKey($deactivation));
+    $lock = Cache::lock($decide::decisionLockKey($deactivation), 60);
+    $lock->get();
+    $this->patch(route('grp.models.supplier_change_request.decide', $deactivation->id), ['approve' => false, 'decision_note' => 'Still trading'])
+        ->assertSessionHasErrors('approve');
+    $lock->release();
+    expect($deactivation->refresh()->state)->toBe(\App\Enums\SupplyChain\SupplierChangeRequest\SupplierChangeRequestStateEnum::PENDING);
+
+    $merge = \App\Actions\SupplyChain\SupplierChangeRequest\StoreSupplierChangeRequest::make()->action($duplicate, ['type' => 'merge', 'target_supplier_id' => $kept->id, 'reason' => 'Same factory']);
+    $kept->update(['status' => false]);
+    $decide::putProgress($merge, 'queued');
+    $decide::make()->asJob($merge, ['approve' => true, 'decided_by_user_id' => null]);
+
+    expect($decide::getProgress($merge)['step'])->toBe('failed')
+        ->and($decide::getProgress($merge)['message'])->toContain($kept->code)
+        ->and($merge->refresh()->state)->toBe(\App\Enums\SupplyChain\SupplierChangeRequest\SupplierChangeRequestStateEnum::PENDING)
+        ->and($duplicateProduct->refresh()->supplier_id)->toBe($duplicate->id)
+        ->and($duplicate->refresh()->status)->toBeTrue();
+});

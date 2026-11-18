@@ -86,6 +86,11 @@ class DecideSupplierChangeRequest extends OrgAction
         return $progress;
     }
 
+    public static function decisionLockKey(SupplierChangeRequest $supplierChangeRequest): string
+    {
+        return 'supplier-change-request-decision:'.$supplierChangeRequest->id;
+    }
+
     public static function isRunning(SupplierChangeRequest $supplierChangeRequest): bool
     {
         $step = Arr::get(self::getProgress($supplierChangeRequest) ?? [], 'step');
@@ -166,37 +171,46 @@ class DecideSupplierChangeRequest extends OrgAction
             return;
         }
 
-        if (!$this->get('approve')) {
-            return;
-        }
-
         if (self::isRunning($this->supplierChangeRequest)) {
             $validator->errors()->add('approve', __('This suggestion is already being approved'));
 
             return;
         }
 
-        $inactive = collect([$this->supplierChangeRequest->supplier, $this->supplierChangeRequest->targetSupplier])->filter()->reject(fn ($supplier) => $supplier->status);
-        if ($inactive->isNotEmpty()) {
-            $validator->errors()->add('approve', __(':codes is no longer active', ['codes' => $inactive->pluck('code')->implode(', ')]));
-
+        if (!$this->get('approve')) {
             return;
         }
 
-        foreach ($this->blockers() as $blocker) {
-            $validator->errors()->add('approve', $blocker);
+        foreach ($this->approvalErrors($this->supplierChangeRequest) as $error) {
+            $validator->errors()->add('approve', $error);
         }
+    }
+
+    /**
+     * Why the suggestion cannot be approved now; checked before queueing and again by the job, as the suppliers may
+     * have changed while it waited.
+     *
+     * @return array<int, string>
+     */
+    private function approvalErrors(SupplierChangeRequest $supplierChangeRequest): array
+    {
+        $inactive = collect([$supplierChangeRequest->supplier, $supplierChangeRequest->targetSupplier])->filter()->reject(fn ($supplier) => $supplier->status);
+        if ($inactive->isNotEmpty()) {
+            return [__(':codes is no longer active', ['codes' => $inactive->pluck('code')->implode(', ')])];
+        }
+
+        return $this->blockers($supplierChangeRequest);
     }
 
     /**
      * @return array<int, string>
      */
-    private function blockers(): array
+    private function blockers(SupplierChangeRequest $supplierChangeRequest): array
     {
-        $supplier = $this->supplierChangeRequest->supplier;
+        $supplier = $supplierChangeRequest->supplier;
 
-        if ($this->supplierChangeRequest->type === SupplierChangeRequestTypeEnum::MERGE) {
-            return MergeSuppliers::make()->blockers($supplier, $this->supplierChangeRequest->targetSupplier);
+        if ($supplierChangeRequest->type === SupplierChangeRequestTypeEnum::MERGE) {
+            return MergeSuppliers::make()->blockers($supplier, $supplierChangeRequest->targetSupplier);
         }
 
         $openOrders = DeactivateSupplier::make()->openPurchaseOrderReferences($supplier);
@@ -208,29 +222,47 @@ class DecideSupplierChangeRequest extends OrgAction
 
     /**
      * An approval deactivates or merges in a queued job, which can take minutes for a supplier with many products;
-     * the dialog follows it through the progress cache. Keeping the supplier is quick and runs at once.
+     * the dialog follows it through the progress cache. Keeping the supplier is quick and runs at once. Deciding holds a
+     * lock on the suggestion, so two clicks can not queue the approval twice or keep a supplier being approved.
      */
     public function asController(SupplierChangeRequest $supplierChangeRequest, ActionRequest $request): SupplierChangeRequest
     {
-        $this->supplierChangeRequest = $supplierChangeRequest;
-        $this->initialisationFromGroup($supplierChangeRequest->group, $request);
+        $lock = Cache::lock(self::decisionLockKey($supplierChangeRequest), 60);
 
-        $modelData = [...Arr::except($this->validatedData, 'decided_by_user_id'), 'decided_by_user_id' => $request->user()->id];
-
-        if (!$modelData['approve']) {
-            return $this->handle($supplierChangeRequest, $modelData);
+        if (!$lock->get()) {
+            throw ValidationException::withMessages(['approve' => __('This suggestion is already being decided')]);
         }
 
-        self::putProgress($supplierChangeRequest, 'queued');
-        self::dispatch($supplierChangeRequest, $modelData);
+        try {
+            $this->supplierChangeRequest = $supplierChangeRequest;
+            $this->initialisationFromGroup($supplierChangeRequest->group, $request);
 
-        return $supplierChangeRequest;
+            $modelData = [...Arr::except($this->validatedData, 'decided_by_user_id'), 'decided_by_user_id' => $request->user()->id];
+
+            if (!$modelData['approve']) {
+                return $this->handle($supplierChangeRequest, $modelData);
+            }
+
+            self::putProgress($supplierChangeRequest, 'queued');
+            self::dispatch($supplierChangeRequest, $modelData);
+
+            return $supplierChangeRequest;
+        } finally {
+            $lock->release();
+        }
     }
 
     public function asJob(SupplierChangeRequest $supplierChangeRequest, array $modelData): void
     {
         if ($supplierChangeRequest->refresh()->state !== SupplierChangeRequestStateEnum::PENDING) {
             self::putProgress($supplierChangeRequest, 'failed', message: __('This suggestion was already decided'));
+
+            return;
+        }
+
+        $errors = $this->approvalErrors($supplierChangeRequest);
+        if ($errors) {
+            self::putProgress($supplierChangeRequest, 'failed', message: implode(' ', $errors));
 
             return;
         }
