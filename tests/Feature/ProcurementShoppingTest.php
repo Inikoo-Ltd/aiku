@@ -4007,3 +4007,53 @@ test('an agent steps through its supplier products by code, not through the same
             ->where('navigation.previous.route.parameters.orgSupplierProduct', $products['B']->first()->slug)
             ->where('navigation.next', null));
 });
+
+test('a ledger line a standing money request asks for keeps its type, order and container and can not be removed until the request is cancelled', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-LOCK-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+
+    $ledgerLine = fn (array $data) => \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, $data + ['organisation_id' => $client->id, 'date' => date('Y-m-d')]);
+    $expense    = $ledgerLine(['type' => 'other_expense', 'amount' => 20, 'notes' => 'Bank charge']);
+    $charge     = $ledgerLine(['type' => 'inspection', 'amount' => 30, 'stock_delivery_id' => $stockDelivery->id]);
+    $unasked    = $ledgerLine(['type' => 'other_expense', 'amount' => 5, 'notes' => 'Courier']);
+
+    $depositRequest = \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [
+        ['kind' => 'expense', 'agent_payment_id' => $expense->id, 'amount' => 20],
+        ['kind' => 'shipment', 'stock_delivery_id' => $stockDelivery->id, 'amount' => 30],
+    ]]);
+
+    expect(\App\Models\SupplyChain\AgentPayment::idsAskedForInMoneyRequest([$expense, $charge, $unasked]))->toEqualCanonicalizing([$expense->id, $charge->id]);
+
+    setPermissionsTeamId($this->group->id);
+    actingAs(agentOrganisationAdmin($agent->organisation, 'w3-lock-'.Str::lower(Str::random(6))));
+
+    $this->patch(route('grp.models.agent_payment.update', $expense->id), ['date' => date('Y-m-d'), 'type' => 'other_expense', 'stock_delivery_id' => $stockDelivery->id])->assertSessionHasErrors('type');
+    $this->patch(route('grp.models.agent_payment.update', $charge->id), ['date' => date('Y-m-d'), 'type' => 'inspection'])->assertSessionHasErrors('type');
+    $this->patch(route('grp.models.agent_payment.update', $charge->id), ['date' => date('Y-m-d'), 'type' => 'samples', 'stock_delivery_id' => $stockDelivery->id])->assertSessionHasErrors('type');
+    $this->patch(route('grp.models.agent_payment.update', $charge->id), ['date' => date('Y-m-d'), 'type' => 'inspection', 'stock_delivery_id' => $stockDelivery->id, 'notes' => 'Second visit'])->assertSessionHasNoErrors();
+    $this->delete(route('grp.models.agent_payment.delete', $expense->id))->assertForbidden();
+    $this->delete(route('grp.models.agent_payment.delete', $charge->id))->assertForbidden();
+    $this->patch(route('grp.models.agent_payment.update', $unasked->id), ['date' => date('Y-m-d'), 'type' => 'samples'])->assertSessionHasNoErrors();
+
+    $rows = collect($this->get(route('grp.org.agent.accounting.ledger.index', [$agent->organisation->slug]))->assertOk()->viewData('page')['props']['data']['data'])->keyBy('id');
+    expect($rows[$expense->id]['money_request_lock'])->not->toBeNull()
+        ->and($rows[$expense->id]['delete_route'])->toBeNull()
+        ->and($rows[$charge->id]['money_request_lock'])->not->toBeNull()
+        ->and($rows[$unasked->id]['money_request_lock'])->toBeNull()
+        ->and($rows[$unasked->id]['delete_route'])->not->toBeNull();
+
+    $depositRequest->update(['state' => \App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::CANCELLED]);
+
+    $this->patch(route('grp.models.agent_payment.update', $charge->id), ['date' => date('Y-m-d'), 'type' => 'samples'])->assertSessionHasNoErrors();
+    $this->delete(route('grp.models.agent_payment.delete', $expense->id))->assertSessionHasNoErrors();
+
+    expect($charge->refresh()->type)->toBe(\App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum::SAMPLES)
+        ->and($charge->stock_delivery_id)->toBeNull()
+        ->and(\App\Models\SupplyChain\AgentPayment::find($expense->id))->toBeNull();
+
+    actingAs($this->adminGuest->getUser());
+});

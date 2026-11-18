@@ -55,10 +55,15 @@ class DeleteAgentPayment extends OrgAction
      * Each side removes only its own lines: a payment the client recorded (against a container or a money request)
      * by the client's purchaser or accountant, every other line of the ledger by the agent's staff. A transfer sent
      * against a money request is never removed: the agent was emailed its bank statement and the request is paid by it.
+     * Neither is a line a standing money request asks the client for, or the client would never be credited for it.
      */
-    public static function canDelete(AgentPayment $agentPayment, User $user): bool
+    public static function canDelete(AgentPayment $agentPayment, User $user, ?bool $isAskedForInMoneyRequest = null): bool
     {
         if ($agentPayment->deposit_request_id !== null) {
+            return false;
+        }
+
+        if ($isAskedForInMoneyRequest ?? $agentPayment->isAskedForInMoneyRequest()) {
             return false;
         }
 

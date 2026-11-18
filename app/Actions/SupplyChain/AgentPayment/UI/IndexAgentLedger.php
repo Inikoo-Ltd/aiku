@@ -332,6 +332,7 @@ class IndexAgentLedger extends OrgAction
         $clients = $this->clients($this->agent);
         $canEdit = $user->authTo("procurement.{$this->organisation->id}.edit");
         $fundedOrders = $this->fundedOrders($entries);
+        $askedForIds  = AgentPayment::idsAskedForInMoneyRequest($entries->items());
 
         return Inertia::render(
             'Org/Procurement/AgentLedger',
@@ -414,7 +415,10 @@ class IndexAgentLedger extends OrgAction
                     'update_route'           => $canEdit && !$entry->isRecordedByClient()
                         ? ['name' => 'grp.models.agent_payment.update', 'parameters' => ['agentPayment' => $entry->id]]
                         : null,
-                    'delete_route'           => DeleteAgentPayment::canDelete($entry, $user)
+                    'money_request_lock'     => in_array($entry->id, $askedForIds, true)
+                        ? __('A money request asks the client for this line: it can not be removed, nor its type, order or container changed, until that request is cancelled or rejected.')
+                        : null,
+                    'delete_route'           => DeleteAgentPayment::canDelete($entry, $user, in_array($entry->id, $askedForIds, true))
                         ? ['name' => 'grp.models.agent_payment.delete', 'parameters' => ['agentPayment' => $entry->id]]
                         : null,
                 ]),

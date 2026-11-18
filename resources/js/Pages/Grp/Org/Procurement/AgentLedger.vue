@@ -18,7 +18,7 @@ import Textarea from "primevue/textarea"
 import { useConfirm } from "primevue/useconfirm"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBook, faCheck, faCheckCircle, faCircle, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt } from "@fal"
+import { faBook, faCheck, faCheckCircle, faCircle, faExclamationTriangle, faLock, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt } from "@fal"
 import { faCheckCircle as fasCheckCircle } from "@fas"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -31,7 +31,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faBook, faCheck, faCheckCircle, fasCheckCircle, faCircle, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt)
+library.add(faBook, faCheck, faCheckCircle, fasCheckCircle, faCircle, faExclamationTriangle, faLock, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt)
 
 interface Wallet {
 	organisation_id: number
@@ -91,6 +91,7 @@ interface EntryRow {
 	review_reason: string | null
 	delete_route: routeType | null
 	update_route: routeType | null
+	money_request_lock: string | null
 }
 
 const props = defineProps<{
@@ -495,6 +496,9 @@ const confirmRemove = (row: EntryRow) =>
 			<button v-if="item.delete_route" type="button" class="text-gray-400 hover:text-red-600" :title="ctrans('Remove')" :aria-label="ctrans('Remove')" @click="confirmRemove(item)">
 				<FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
 			</button>
+			<span v-else-if="item.money_request_lock" class="text-gray-300" v-tooltip="item.money_request_lock" :aria-label="item.money_request_lock">
+				<FontAwesomeIcon icon="fal fa-lock" fixed-width aria-hidden="true" />
+			</span>
 		</template>
 	</Table>
 
@@ -506,7 +510,7 @@ const confirmRemove = (row: EntryRow) =>
 			</label>
 			<label class="block text-sm">
 				<span class="text-gray-600">{{ ctrans("Type") }} <span class="text-red-500">*</span></span>
-				<Select v-model="entry.type" :options="typeOptions" optionLabel="label" optionValue="value" class="mt-1 w-full" :class="fieldFocusClass">
+				<Select v-model="entry.type" :options="typeOptions" optionLabel="label" optionValue="value" :disabled="!!editing?.money_request_lock" class="mt-1 w-full" :class="fieldFocusClass">
 					<template #option="{ option }">
 						<span>{{ option.label }}</span>
 						<span class="ml-2 text-xs" :class="option.money_in ? 'text-green-600' : 'text-gray-400'">{{ option.money_in ? ctrans("In") : ctrans("Out") }}</span>
@@ -530,15 +534,16 @@ const confirmRemove = (row: EntryRow) =>
 			</label>
 			<label class="block text-sm">
 				<span class="text-gray-600">{{ selectedType?.needs_order ? ctrans("Supplier order") : ctrans("Supplier order (optional)") }} <span v-if="selectedType?.needs_order" class="text-red-500">*</span></span>
-				<Select v-model="entry.purchase_order_id" :options="clientOrders" optionLabel="label" optionValue="id" filter showClear :disabled="!entry.organisation_id" class="mt-1 w-full" :class="fieldFocusClass" />
+				<Select v-model="entry.purchase_order_id" :options="clientOrders" optionLabel="label" optionValue="id" filter showClear :disabled="!entry.organisation_id || !!editing?.money_request_lock" class="mt-1 w-full" :class="fieldFocusClass" />
 				<span v-if="selectedType?.needs_order && entry.organisation_id && !clientOrders.length" class="mt-1 block text-xs text-amber-700">
 					{{ ctrans("This client has no open order through you: record it as another type, or choose another client.") }}
 				</span>
 			</label>
 			<label class="block text-sm">
 				<span class="text-gray-600">{{ ctrans("Container (optional)") }}</span>
-				<Select v-model="entry.stock_delivery_id" :options="clientContainers" optionLabel="label" optionValue="id" filter showClear :disabled="!entry.organisation_id" class="mt-1 w-full" :class="fieldFocusClass" />
+				<Select v-model="entry.stock_delivery_id" :options="clientContainers" optionLabel="label" optionValue="id" filter showClear :disabled="!entry.organisation_id || !!editing?.money_request_lock" class="mt-1 w-full" :class="fieldFocusClass" />
 			</label>
+			<p v-if="editing?.money_request_lock" class="text-xs text-amber-700">{{ editing.money_request_lock }}</p>
 			<label v-if="entry.type === 'packaging' && containerSkos.length" class="block text-sm">
 				<span class="text-gray-600">{{ ctrans("SKO it is for (optional)") }}</span>
 				<Select v-model="entry.org_stock_id" :options="containerSkos" optionLabel="label" optionValue="id" filter showClear class="mt-1 w-full" :class="fieldFocusClass" />
