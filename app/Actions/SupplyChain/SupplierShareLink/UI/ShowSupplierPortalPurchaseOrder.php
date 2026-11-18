@@ -98,7 +98,7 @@ class ShowSupplierPortalPurchaseOrder
             ],
             'journey'    => IndexSupplierPortalPurchaseOrderStages::make()->forPurchaseOrder($supplier, $purchaseOrder->id),
             'payments'   => $this->payments($purchaseOrder, $token),
-            'deposit'    => $this->deposit($purchaseOrder),
+            'deposit'    => $this->deposit($purchaseOrder, $supplier),
             'production' => $this->production($purchaseOrder),
             'documents'  => $this->documents($purchaseOrder, $token),
             'lines'      => $lines->map(fn (PurchaseOrderTransaction $line) => $this->line($line, $purchaseOrder))->values()->all(),
@@ -280,7 +280,7 @@ class ShowSupplierPortalPurchaseOrder
      *
      * @return array{choosable: bool, not_needed: bool, request: array{percentage: int, amount: float, requested_at: string}|null, request_percentage: int, request_amount: float, recipients: list<array{name: string, organisation: string}>}
      */
-    public function deposit(PurchaseOrder $purchaseOrder): array
+    public function deposit(PurchaseOrder $purchaseOrder, Supplier $supplier): array
     {
         $request   = Arr::get($purchaseOrder->data ?? [], 'supplier_deposit_request');
         $notNeeded = $purchaseOrder->deposit_amount !== null && (float) $purchaseOrder->deposit_amount == 0 && !$purchaseOrder->isDepositPaid();
@@ -298,6 +298,7 @@ class ShowSupplierPortalPurchaseOrder
             'request_percentage' => UpdateSupplierPortalPurchaseOrderDeposit::REQUEST_PERCENTAGE,
             'request_amount'     => UpdateSupplierPortalPurchaseOrderDeposit::requestAmount($purchaseOrder),
             'recipients'         => $choosable ? NotifyPurchasingOfSupplierDepositRequest::make()->emailRecipients($purchaseOrder) : [],
+            'agreement_missing'  => $choosable && UpdateSupplierPortalPurchaseOrderDeposit::isAgreementMissing($supplier),
         ];
     }
 

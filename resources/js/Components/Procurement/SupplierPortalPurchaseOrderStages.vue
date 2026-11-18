@@ -14,11 +14,11 @@ import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faList, faClipboardList, faPeopleArrows } from "@fal"
+import { faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faList, faClipboardList, faPeopleArrows, faInfoCircle } from "@fal"
 
-library.add(faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faList, faClipboardList, faPeopleArrows)
+library.add(faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faList, faClipboardList, faPeopleArrows, faInfoCircle)
 
-type Stage = { key: string; label: string; description: string; markable: boolean }
+type Stage = { key: string; label: string; description: string; markable: boolean; note: string | null }
 type Filter = "open" | "needs_action" | "completed"
 
 const props = defineProps<{
@@ -104,7 +104,10 @@ const amount = (ribbon: JourneyRibbon): string => (ribbon.amount !== null && rib
 								<FontAwesomeIcon :icon="stageIcons[stage.key]" class="text-base text-gray-600" fixed-width aria-hidden="true" />
 							</div>
 							<div class="mt-1 text-sm font-semibold text-gray-800">{{ stage.label }}</div>
-							<div>{{ stage.description }}</div>
+							<div class="flex items-center justify-center gap-1">
+								{{ stage.description }}
+								<FontAwesomeIcon v-if="stage.note" v-tooltip="stage.note" icon="fal fa-info-circle" class="cursor-help text-[var(--app-accent)]" fixed-width :aria-label="stage.note" />
+							</div>
 						</th>
 						<th class="py-2 pl-3 pr-3 text-left text-sm font-semibold text-gray-700">{{ ctrans("Status") }}</th>
 					</tr>

@@ -68,8 +68,15 @@ class IndexSupplierPortalPurchaseOrderStages
             ->values()
             ->all();
 
+        $agentNames = collect($ribbons)->pluck('agent_name');
+
         return [
-            'stages'  => $this->stages($journey),
+            'stages'  => $this->stages($journey, match (true) {
+                $agentNames->isEmpty()         => null,
+                $agentNames->every(fn ($name) => $name !== null) => true,
+                $agentNames->every(fn ($name) => $name === null) => false,
+                default                        => null,
+            }),
             'ribbons' => $ribbons,
         ];
     }
@@ -91,7 +98,7 @@ class IndexSupplierPortalPurchaseOrderStages
         $ribbon = $this->untilHandOver($ribbon);
 
         return [
-            'stages' => $this->stages($journey),
+            'stages' => $this->stages($journey, ($ribbon['agent_name'] ?? null) !== null),
             'ribbon' => [
                 ...Arr::only($ribbon, ['current_stage', 'current_label', 'status', 'days_overdue', 'eta']),
                 'segments' => array_map(fn (array $segment) => [...$segment, 'mark_column' => null], $ribbon['segments']),
@@ -102,13 +109,30 @@ class IndexSupplierPortalPurchaseOrderStages
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function stages(ShowSupplyChainPurchaseOrderJourney $journey): array
+    private function stages(ShowSupplyChainPurchaseOrderJourney $journey, ?bool $throughAgent = null): array
     {
         return collect($journey->stages())
             ->filter(fn (array $stage) => in_array($stage['key'], self::SUPPLIER_STAGES, true))
-            ->map(fn (array $stage) => [...$stage, 'markable' => false])
+            ->map(fn (array $stage) => [
+                ...$stage,
+                'markable' => false,
+                'note'     => $stage['key'] === 'handed_over' ? $this->cleanHandOverNote($throughAgent) : null,
+            ])
             ->values()
             ->all();
+    }
+
+    /**
+     * What the CHO date means to the supplier: the day it hands the finished stock to the agent, or the day it
+     * dispatches the order to AW when there is no agent. A list of orders that may mix both says both.
+     */
+    private function cleanHandOverNote(?bool $throughAgent): string
+    {
+        return match ($throughAgent) {
+            true    => __('CHO date = Clean Hand Over: the day you hand over the finished stock to the AW Group agent (or that agent\'s shipping agent).'),
+            false   => __('CHO date = Clean Hand Over: the day you dispatch this order to AW Group.'),
+            default => __('CHO date = Clean Hand Over: the day you hand over the finished stock to the AW Group agent (or that agent\'s shipping agent). If there is no agent, it is the day you dispatch the order to AW Group.'),
+        };
     }
 
     /**
