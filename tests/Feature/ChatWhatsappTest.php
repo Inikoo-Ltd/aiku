@@ -1471,6 +1471,7 @@ function whatsappOutboxTestSetup(
     $whatsappOutbox->update([
         'state'                    => \App\Enums\Comms\Outbox\OutboxStateEnum::ACTIVE,
         'meta_message_template_id' => $template->id,
+        'last_sent_at'             => null,
     ]);
 
     $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
@@ -1576,7 +1577,7 @@ test('a WhatsApp customer notification is never sent from a local environment', 
 
 test('an agent chat message and a chat greeting are never sent to WhatsApp from a local environment', function () {
     [, , $shop] = createOwnShop('whatsapp-local-chat');
-    [, $outboxTemplate, $customer] = whatsappOutboxTestSetup($shop);
+    [, $outboxTemplate, $customer] = whatsappOutboxTestSetup($shop, body: 'Hi {{1}}.', tags: ['Customer Name']);
 
     $freeTemplate = $outboxTemplate->replicate()->fill([
         'template_id' => 'free-'.Str::random(10),
@@ -1720,7 +1721,7 @@ test('a b2b shop gets the order dispatched and a single Gold reward reminder Wha
             \App\Enums\Comms\Outbox\OutboxCodeEnum::DELIVERY_CONFIRMATION->value,
         )
         ->and($shop->whatsappOutboxes()->where('code', \App\Enums\Comms\Outbox\OutboxCodeEnum::GOLD_REWARD_REMINDER_1->value)->value('name'))->toBe('Gold reward reminder')
-        ->and($shop->whatsappOutboxes()->where('code', \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_DISPATCHED->value)->value('state'))->toBe(\App\Enums\Comms\Outbox\OutboxStateEnum::SUSPENDED->value)
+        ->and($shop->whatsappOutboxes()->where('code', \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_DISPATCHED->value)->value('state'))->toBe(\App\Enums\Comms\Outbox\OutboxStateEnum::SUSPENDED)
         ->and($shop->outboxes()->where('code', \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_DISPATCHED->value)->exists())->toBeFalse();
 });
 
@@ -1796,7 +1797,7 @@ test('a Gold reward reminder WhatsApp bulk run sends once a day to opted in cust
     $recipient = $bulkRun->recipients()->sole();
 
     expect($recipient->recipient_id)->toBe($customer->id)
-        ->and($recipient->metaChatMessage?->message_text)->toBe('Hi '.$customer->name.', your Gold status ends on '.$lastInvoicedAt->copy()->addDays(30)->format('j M Y').'.')
+        ->and($recipient->metaChatMessage?->message_text)->toBe('Hi '.($customer->contact_name ?? $customer->name).', your Gold status ends on '.$lastInvoicedAt->copy()->addDays(30)->format('j M Y').'.')
         ->and(\App\Actions\Comms\WhatsappBulkRun\PrepareWhatsappBulkRun::make()->handle($whatsappOutbox->id))->toBeNull();
 });
 
@@ -1865,8 +1866,9 @@ function offlineMessageFromLoggedInCustomer(\App\Models\Catalogue\Shop $shop, Cu
     data_set($settings, 'chat.whatsapp_offline_replies', $notifyOnWhatsapp);
     data_set($settings, 'chat.email_offline_replies', false);
     $shop->update(['settings' => $settings]);
+    createWebsite($shop);
 
-    $webUser = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, \App\Models\CRM\WebUser::factory()->definition());
+    $webUser = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer->refresh(), \App\Models\CRM\WebUser::factory()->definition());
     \Illuminate\Support\Facades\Auth::guard('retina')->login($webUser);
 
     return \App\Actions\Chat\ChatSession\StoreOfflineMessage::make()->handle($shop->refresh(), [

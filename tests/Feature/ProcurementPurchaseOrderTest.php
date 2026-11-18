@@ -2049,7 +2049,7 @@ test('merging a duplicate supplier moves its products and orders to the supplier
     [$otherOrgSupplier] = createAgentOrgSupplierWithProduct($this);
     $other              = $otherOrgSupplier->supplier;
     $other->update(['currency_id' => $kept->currency_id]);
-    $other->supplierProducts()->first()->update(['code' => $keptProduct->supplierProduct->code]);
+    $other->supplierProducts()->first()->update(['code' => $keptProduct->supplierProduct->code, 'units_per_pack' => $keptProduct->supplierProduct->units_per_pack + 1]);
     $clash = StoreSupplierChangeRequest::make()->action($other, ['type' => 'merge', 'target_supplier_id' => $kept->id, 'reason' => 'Same factory']);
     expect(fn () => DecideSupplierChangeRequest::make()->action($clash, ['approve' => true]))->toThrow(ValidationException::class)
         ->and($other->refresh()->status)->toBeTrue();

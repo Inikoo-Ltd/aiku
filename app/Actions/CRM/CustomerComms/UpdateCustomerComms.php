@@ -55,7 +55,7 @@ class UpdateCustomerComms extends OrgAction
         $changes = Arr::except($customerComms->getChanges(), ['updated_at', 'last_fetched_at']);
 
         if (Arr::has($changes, 'is_subscribed_to_whatsapp_newsletter')) {
-            SyncCustomerWhatsappSubscriber::run($customerComms->customer);
+            SyncCustomerWhatsappSubscriber::run($customerComms->customer->setRelation('comms', $customerComms));
         }
 
         return $customerComms;
