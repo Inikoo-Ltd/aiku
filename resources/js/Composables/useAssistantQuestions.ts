@@ -1,9 +1,11 @@
 import axios from "axios"
 import { ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
+import { isFocusOn } from "@/Composables/useFocusMode"
 import type { AssistantQuestion } from "@/Components/Utils/AssistantQuestionPopup.vue"
 
 const shown = new Map<string, string>()
+const putAside = new Set<string>()
 let colleagues: Promise<{ id: number, name: string }[]> | null = null
 let heldQuestions: AssistantQuestion[] = []
 
@@ -40,7 +42,7 @@ export const keepAssistantQuestionsPlace = () => {
 }
 
 export const showAssistantQuestion = (question: AssistantQuestion) => {
-    if (shown.get(question.task) === question.question) {
+    if (!question.live || isFocusOn() || putAside.has(question.task) || shown.get(question.task) === question.question) {
         return
     }
     if (shown.has(question.task)) {
@@ -58,6 +60,11 @@ export const showAssistantQuestion = (question: AssistantQuestion) => {
 }
 
 export const forgetAssistantQuestion = (task: string) => {
+    shown.delete(task)
+}
+
+export const putAssistantQuestionAside = (task: string) => {
+    putAside.add(task)
     shown.delete(task)
 }
 

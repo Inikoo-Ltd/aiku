@@ -9,12 +9,13 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTimes, faPaperPlane, faHeadSideBrain, faCheck, faShare, faGripVertical } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { assistantQuestionColleagues, forgetAssistantQuestion, assistantQuestionsOffset, moveAssistantQuestions, keepAssistantQuestionsPlace } from "@/Composables/useAssistantQuestions"
+import { assistantQuestionColleagues, forgetAssistantQuestion, putAssistantQuestionAside, assistantQuestionsOffset, moveAssistantQuestions, keepAssistantQuestionsPlace } from "@/Composables/useAssistantQuestions"
 
 library.add(faTimes, faPaperPlane, faHeadSideBrain, faCheck, faShare, faGripVertical)
 
 export type AssistantQuestion = {
     task: string
+    live: boolean
     question: string
     customer_words: string
     language: string
@@ -66,6 +67,11 @@ const done = () => {
     emit("close")
 }
 
+const later = () => {
+    putAssistantQuestionAside(props.question.task)
+    emit("close")
+}
+
 const post = async (kind: "send" | "decline" | "pass", url: string, payload: Record<string, unknown>) => {
     busy.value = kind
     errorMessage.value = ""
@@ -112,6 +118,7 @@ const pass = () => {
             <div class="-mx-1 -mt-1 flex cursor-move touch-none select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-gray-50" :title="ctrans('Drag to move')" @pointerdown="startMoving">
                 <FontAwesomeIcon icon="fal fa-grip-vertical" class="text-xs text-gray-400" fixed-width aria-hidden="true" />
                 <div class="min-w-0 flex-1 truncate text-xs text-gray-500">{{ ctrans("Merlin needs a guru for :customer (:shop)", { customer: question.customer, shop: question.shop }) }}</div>
+                <Button type="tertiary" size="xs" class="shrink-0" :label="ctrans('Later')" :title="ctrans('Hide it; it stays in your tasks')" @click="later" />
             </div>
 
             <div class="mt-1 min-h-0 flex-1 overflow-y-auto">

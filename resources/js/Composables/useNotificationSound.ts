@@ -7,6 +7,7 @@ import { useLayoutStore } from "@/Stores/layout"
 import { ctrans } from "@/Composables/useTrans"
 import { useWhatsappCall, type WhatsappCall } from "@/Composables/useWhatsappCall"
 import { ALERT_EVENT_WAYS, alertWayAllowed, type AlertEvent, type AlertWay } from "@/Composables/alertEvents"
+import { isFocusOn } from "@/Composables/useFocusMode"
 
 export type NotificationSoundOptions = {
 	frequency?: number
@@ -19,6 +20,7 @@ let audioCtx: AudioContext | null = null
 let audioEl: HTMLAudioElement | null = null
 
 export const playNotificationSound = async (opts: NotificationSoundOptions = {}) => {
+	if (isFocusOn()) return
 	const frequency = opts.frequency ?? 880
 	const volume = opts.volume ?? 0.08
 	const duration = opts.duration ?? 100
@@ -58,6 +60,7 @@ export const setNotificationSoundUrl = (url: string) => {
 }
 
 export const playNotificationSoundFile = async (url?: string) => {
+	if (isFocusOn()) return
 	try {
 		if (url) {
 			setNotificationSoundUrl(url)
@@ -227,6 +230,7 @@ export { ALERT_EVENT_WAYS, type AlertEvent, type AlertWay }
 const alertEventsKey = (userId: number) => `aiku-alert-events-${userId}`
 
 export const alertWayIsOn = (event: AlertEvent, way: AlertWay): boolean => {
+	if (isFocusOn()) return false
 	const user = useLayoutStore().user
 	return alertWayAllowed(user?.id ? readStorage(alertEventsKey(user.id)) : null, user?.settings?.alert_events, event, way)
 }
@@ -388,7 +392,7 @@ const showDesktopAlert = (alert: Alert) => {
  * and rings once, and a tab the browser will not let play sound leaves the ring to the next.
  */
 export const alertOnce = (alert: Alert) =>
-	withTabLock(ALERTS_KEY, async () => {
+	isFocusOn() ? Promise.resolve() : withTabLock(ALERTS_KEY, async () => {
 		const handled: Record<string, number> = readStorage(ALERTS_KEY) ?? {}
 		const now = Date.now()
 		for (const key of Object.keys(handled)) {
@@ -691,6 +695,7 @@ const popupDurationMs = () => (useLayoutStore().user?.settings?.alert_preview_se
 type OrderPopup = Omit<NewOrderEvent, "url"> & { url: string | null; type?: string; sound_blocked?: boolean }
 
 export const showOrderPopup = (event: OrderPopup) => {
+	if (isFocusOn()) return
 	notify({
 		group: "alert-popups",
 		title: event.is_unpaid ? ctrans("Unpaid order · :shop", { shop: event.shop }) : ctrans("New order · :shop", { shop: event.shop }),
@@ -706,6 +711,7 @@ export const showOrderPopup = (event: OrderPopup) => {
 }
 
 export const showTicketPopup = (title: string, body: string, url: string | null) => {
+	if (isFocusOn()) return
 	notify({
 		group: "alert-popups",
 		title,
@@ -716,6 +722,7 @@ export const showTicketPopup = (title: string, body: string, url: string | null)
 }
 
 export const showAssignedPopup = (title: string, body: string, url: string | null) => {
+	if (isFocusOn()) return
 	notify({
 		group: "alert-popups",
 		title,
@@ -777,6 +784,7 @@ export type NewAgentPurchaseOrder = {
 }
 
 export const alertNewAgentPurchaseOrder = (purchaseOrder: NewAgentPurchaseOrder) => {
+	if (isFocusOn()) return
 	const title = ctrans("New PO · :client", { client: purchaseOrder.client })
 	const money = formatMoney(purchaseOrder.amount, purchaseOrder.currency)
 
