@@ -35,7 +35,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property OutboxStateEnum $state
  * @property int|null $meta_message_template_id
  * @property int|null $interval Hours between two bulk runs
- * @property int|null $days_after Days after the last invoice a Gold reward reminder is sent
+ * @property int|null $days_after Days after the last invoice (Gold reward reminder) or after dispatch (review reminder) it is sent
  * @property \Illuminate\Support\Carbon|null $last_sent_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -101,8 +101,17 @@ class WhatsappOutbox extends Model
      */
     public function isBulk(): bool
     {
-        return in_array($this->code, [OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION, OutboxCodeEnum::OOS_NOTIFICATION], true)
+        return in_array($this->code, [OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION, OutboxCodeEnum::OOS_NOTIFICATION, OutboxCodeEnum::REVIEW_REMINDER], true)
             || $this->isGoldRewardReminder();
+    }
+
+    /**
+     * Sent once a day to whoever reached the outbox's `days_after` that day: days after the last
+     * invoice for a Gold reward reminder, after dispatch for a review reminder.
+     */
+    public function sendsDaysAfter(): bool
+    {
+        return $this->isGoldRewardReminder() || $this->code === OutboxCodeEnum::REVIEW_REMINDER;
     }
 
     public function isGoldRewardReminder(): bool

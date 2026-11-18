@@ -32,13 +32,13 @@ class RunWhatsappBulkRuns
             ->each(fn (int $whatsappOutboxId) => PrepareWhatsappBulkRun::dispatch($whatsappOutboxId));
     }
 
-    public string $commandSignature = 'run:whatsapp-bulk-runs {code : oos_in_order_notification, oos_notification or gold_reward_reminder_1/2/3}';
+    public string $commandSignature = 'run:whatsapp-bulk-runs {code : oos_in_order_notification, oos_notification, review_reminder or gold_reward_reminder_1/2/3}';
 
     public function asCommand(Command $command): int
     {
         $outboxCode = OutboxCodeEnum::tryFrom((string) $command->argument('code'));
 
-        if (!in_array($outboxCode, [OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION, OutboxCodeEnum::OOS_NOTIFICATION, ...WhatsappOutbox::goldRewardReminderCodes()], true)) {
+        if (!in_array($outboxCode, [OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION, OutboxCodeEnum::OOS_NOTIFICATION, OutboxCodeEnum::REVIEW_REMINDER, ...WhatsappOutbox::goldRewardReminderCodes()], true)) {
             $command->error('Unknown bulk WhatsApp outbox code.');
 
             return 1;

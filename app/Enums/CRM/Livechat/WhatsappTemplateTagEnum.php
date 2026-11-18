@@ -53,6 +53,7 @@ enum WhatsappTemplateTagEnum: string
     case ORDER_AMOUNT_DUE = 'Order Amount Due';
     case ORDER_PAYMENT_DEADLINE = 'Order Payment Deadline';
     case ORDER_DISPATCH_DATE = 'Order Dispatch Date';
+    case ORDER_REVIEW_URL = 'Order Review Url';
 
     case PRE_ORDER_UPDATE = 'Pre-order Update';
     case PRE_ORDER_BALANCE_DUE_DATE = 'Pre-order Balance Due Date';
@@ -73,12 +74,15 @@ enum WhatsappTemplateTagEnum: string
     case DELIVERY_COUNTRY = 'Delivery Country';
 
     case PRODUCT_NAMES = 'Product Names';
+    case PRODUCT_NAMES_WITH_LINKS = 'Product Names With Links';
     case PRODUCT_COUNT = 'Product Count';
     case PRODUCT_URL = 'Product Url';
 
     case TRACKING_CARRIER = 'Tracking Carrier';
     case TRACKING_NUMBER = 'Tracking Number';
     case TRACKING_URL = 'Tracking Url';
+    case TRACKING_PARCELS = 'Tracking Parcels';
+    case TRACKING_PAGE_URL = 'Tracking Page Url';
 
     case AGENT_NAME = 'Agent Name';
     case AGENT_FIRST_NAME = 'Agent First Name';
@@ -130,6 +134,7 @@ enum WhatsappTemplateTagEnum: string
             self::ORDER_AMOUNT_DUE  => '£125.00',
             self::ORDER_PAYMENT_DEADLINE => '19 Aug 2026',
             self::ORDER_DISPATCH_DATE    => '13 Aug 2026',
+            self::ORDER_REVIEW_URL       => 'https://www.ancientwisdom.biz/review/1388716/3f9a1c2b7d',
 
             self::PRE_ORDER_UPDATE           => 'the balance of £80.00 is due by 20 Aug 2026',
             self::PRE_ORDER_BALANCE_DUE_DATE => '20 Aug 2026',
@@ -150,12 +155,15 @@ enum WhatsappTemplateTagEnum: string
             self::DELIVERY_COUNTRY  => 'United Kingdom',
 
             self::PRODUCT_NAMES => 'Lavender Essential Oil 10ml, Rose Bath Bomb',
+            self::PRODUCT_NAMES_WITH_LINKS => 'Lavender Essential Oil 10ml (https://www.ancientwisdom.biz/lavender-essential-oil-10ml), Rose Bath Bomb (https://www.ancientwisdom.biz/rose-bath-bomb)',
             self::PRODUCT_COUNT => '2',
             self::PRODUCT_URL   => 'https://www.ancientwisdom.biz/lavender-essential-oil-10ml',
 
             self::TRACKING_CARRIER => 'DPD',
             self::TRACKING_NUMBER  => '15501234567890',
             self::TRACKING_URL     => 'https://track.dpdlocal.co.uk/parcels/15501234567890',
+            self::TRACKING_PARCELS => 'Parcel 1 of 2: 15501234567101 https://track.dpd.co.uk/parcels/15501234567101, Parcel 2 of 2: 15501234567102 https://track.dpd.co.uk/parcels/15501234567102',
+            self::TRACKING_PAGE_URL => 'https://track.dpd.co.uk/',
 
             self::AGENT_NAME       => 'Rhianne Cartledge',
             self::AGENT_FIRST_NAME => 'Rhianne',

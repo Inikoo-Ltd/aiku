@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue"
-import { Link, router } from "@inertiajs/vue3"
+import { router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
-import { useFormatTime } from "@/Composables/useFormatTime"
 import Select from "primevue/select"
 import InputNumber from "primevue/inputnumber"
 import ToggleSwitch from "primevue/toggleswitch"
@@ -10,7 +9,7 @@ import Tag from "primevue/tag"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
-import { faEnvelope, faExclamationTriangle } from "@fal"
+import { faExclamationTriangle } from "@fal"
 import { routeType } from "@/types/route"
 
 interface TemplateOption {
@@ -32,16 +31,15 @@ const props = defineProps<{
         is_sending: boolean
         is_connected: boolean
         can_edit: boolean
-        last_sent_at: string | null
         is_bulk: boolean
         interval: number | null
         needs_interval: boolean
         days_after: number | null
         needs_days_after: boolean
+        days_after_from: "last_invoice" | "dispatch"
         template: (TemplateOption & { body: string | null; tags: string[] }) | null
         templates: TemplateOption[]
         stats: { sent: number; delivered: number; read: number; failed: number; sent_1w: number; failed_1w: number }
-        email_outbox: { name: string; state: string; route: routeType } | null
         update_route: routeType
     }
     tab?: string
@@ -180,7 +178,7 @@ const save = (changes: Record<string, unknown>) => {
 
                 <section v-if="data.needs_days_after" class="rounded-lg border border-gray-200 p-4">
                     <label for="whatsapp-outbox-days-after" class="mb-1 block text-xs font-medium text-gray-700">
-                        {{ ctrans("Days after the last invoice") }} <span class="text-red-500">*</span>
+                        {{ data.days_after_from === "dispatch" ? ctrans("Days after dispatch") : ctrans("Days after the last invoice") }} <span class="text-red-500">*</span>
                     </label>
                     <InputNumber
                         inputId="whatsapp-outbox-days-after"
@@ -195,7 +193,11 @@ const save = (changes: Record<string, unknown>) => {
                     />
                     <p v-if="errors.days_after" class="mt-1 text-xs text-red-600">{{ errors.days_after }}</p>
                     <p class="mt-2 text-xs text-gray-500">
-                        {{ ctrans("Sent once a day to customers who opted in to WhatsApp updates, have not ordered since their last invoice, and were last invoiced this many days ago.") }}
+                        {{
+                            data.days_after_from === "dispatch"
+                                ? ctrans("Sent once a day to customers who opted in to WhatsApp updates and review reminders, for orders dispatched this many days ago that have no review yet.")
+                                : ctrans("Sent once a day to customers who opted in to WhatsApp updates, have not ordered since their last invoice, and were last invoiced this many days ago.")
+                        }}
                     </p>
                 </section>
 
@@ -255,21 +257,6 @@ const save = (changes: Record<string, unknown>) => {
                         <div class="text-xs text-gray-500">{{ ctrans("Read") }}</div>
                         <div class="text-xl font-semibold tabular-nums">{{ data.stats.read }}</div>
                     </div>
-                </section>
-
-                <section class="rounded-lg border border-gray-200 p-3 text-xs text-gray-600">
-                    <div class="flex justify-between gap-2">
-                        <span>{{ ctrans("Last sent") }}</span>
-                        <span class="text-gray-800">{{ data.last_sent_at ? useFormatTime(data.last_sent_at, { formatTime: "aiku" }) : "-" }}</span>
-                    </div>
-                    <div v-if="data.email_outbox" class="mt-2 flex items-center justify-between gap-2">
-                        <span>{{ ctrans("Email outbox") }}</span>
-                        <Link :href="route(data.email_outbox.route.name, data.email_outbox.route.parameters)" class="primaryLink inline-flex items-center gap-1">
-                            <FontAwesomeIcon :icon="faEnvelope" fixed-width aria-hidden="true" />
-                            {{ data.email_outbox.name }}
-                        </Link>
-                    </div>
-                    <p class="mt-2 text-gray-400">{{ ctrans("The email and WhatsApp outboxes are switched on and off separately.") }}</p>
                 </section>
             </div>
         </div>

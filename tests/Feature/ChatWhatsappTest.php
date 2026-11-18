@@ -1906,3 +1906,72 @@ test('an offline message answered in a shop without the WhatsApp setting sends n
 
     \App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp::assertNotPushed();
 });
+
+test('the Product Names With Links tag lists each product followed by its page', function () {
+    [, , $shop] = createOwnShop('whatsapp-outboxes');
+    [, , $customer] = whatsappOutboxTestSetup($shop);
+    [, $product] = createProduct($shop);
+    $session = StoreMetaChatSession::run(['shop_id' => $shop->id, 'customer_id' => $customer->id, 'phone_number' => $customer->marketing_whatsapp_phone]);
+
+    $resolved = \App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags::run($session, ['Product Names With Links'], null, null, ['product_ids' => [$product->id]]);
+
+    $url = $product->webpage?->getCanonicalUrl();
+
+    expect($resolved['missing'])->toBe([])
+        ->and($resolved['values'][0])->toBe($url ? $product->name.' ('.$url.')' : $product->name);
+});
+
+test('a review reminder WhatsApp goes to an opted in customer for an order dispatched days_after days ago, with its review link', function () {
+    [, , $shop] = createOwnShop('whatsapp-review-reminder');
+    $shop->update(['is_aiku' => true]);
+    createWebsite($shop);
+
+    [$whatsappOutbox, , $customer] = whatsappOutboxTestSetup(
+        $shop,
+        code: \App\Enums\Comms\Outbox\OutboxCodeEnum::REVIEW_REMINDER,
+        body: 'Hi {{1}}, how was your order {{2}}? Leave your feedback here: {{3}} Thank you.',
+        tags: ['Customer First Name', 'Order Number', 'Order Review Url']
+    );
+    $whatsappOutbox->update(['state' => \App\Enums\Comms\Outbox\OutboxStateEnum::SUSPENDED, 'days_after' => null]);
+
+    expect(fn () => \App\Actions\Comms\WhatsappOutbox\UpdateWhatsappOutbox::make()->action($whatsappOutbox, ['state' => true]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $whatsappOutbox = \App\Actions\Comms\WhatsappOutbox\UpdateWhatsappOutbox::make()->action($whatsappOutbox->refresh(), ['state' => true, 'days_after' => 5]);
+
+    [, $product] = createProduct($shop);
+    $order = createOrder($customer, $product);
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED, 'dispatched_at' => now()->subDays(5)]);
+    \App\Actions\CRM\CustomerComms\UpdateCustomerComms::run($customer->comms, [
+        'is_subscribed_to_whatsapp_notifications' => true,
+        'is_subscribed_to_review_reminder'        => true,
+    ]);
+
+    Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.REVIEW']]])]);
+
+    $bulkRun = \App\Actions\Comms\WhatsappBulkRun\PrepareWhatsappBulkRun::make()->handle($whatsappOutbox->id)->refresh();
+
+    $recipient = $bulkRun->recipients()->sole();
+
+    expect($recipient->recipient_id)->toBe($customer->id)
+        ->and($recipient->metaChatMessage?->message_text)->toContain($order->fresh()->reviewUrl())
+        ->and(\App\Actions\Comms\WhatsappBulkRun\PrepareWhatsappBulkRun::make()->handle($whatsappOutbox->id))->toBeNull();
+});
+
+test('the Tracking Parcels tag numbers every parcel and adds a link only where the carrier stored one', function () {
+    $list = \App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags::parcelList([
+        ['tracking' => '15501234567101', 'url' => 'https://track.dpd.co.uk/parcels/15501234567101'],
+        ['tracking' => '15501234567102', 'url' => null],
+    ]);
+
+    expect($list)->toBe('Parcel 1 of 2: 15501234567101 https://track.dpd.co.uk/parcels/15501234567101, Parcel 2 of 2: 15501234567102')
+        ->and(\App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags::parcelList([]))->toBeNull();
+
+    $many = \App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags::parcelList(array_map(
+        fn (int $number) => ['tracking' => str_pad((string) $number, 25, '0', STR_PAD_LEFT), 'url' => 'https://track.example.com/parcels/'.str_pad((string) $number, 25, '0', STR_PAD_LEFT)],
+        range(1, 30)
+    ));
+
+    expect(mb_strlen($many))->toBeLessThanOrEqual(\App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags::TRACKING_PARCELS_MAX_LENGTH + 30)
+        ->and($many)->toMatch('/and \d+ more parcels$/');
+});

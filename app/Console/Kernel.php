@@ -942,6 +942,15 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
+            $this->logSchedule(
+                $schedule->job(RunWhatsappBulkRuns::makeJob(OutboxCodeEnum::REVIEW_REMINDER))->dailyAt('15:10')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunWhatsappReviewReminderBulkRuns',
+                ),
+                name: 'RunWhatsappReviewReminderBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
             foreach (WhatsappOutbox::goldRewardReminderCodes() as $goldRewardReminderCode) {
                 $monitorSlug = 'RunWhatsapp'.Str::studly($goldRewardReminderCode->value).'BulkRuns';
 

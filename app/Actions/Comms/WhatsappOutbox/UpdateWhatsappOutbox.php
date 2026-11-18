@@ -85,8 +85,10 @@ class UpdateWhatsappOutbox extends OrgAction
 
         $daysAfter = $this->has('days_after') ? $this->get('days_after') : $this->whatsappOutbox->days_after;
 
-        if ($this->whatsappOutbox->isGoldRewardReminder() && blank($daysAfter)) {
-            $validator->errors()->add('days_after', __('Set how many days after the last invoice to send this reminder before activating this outbox, otherwise it will never send.'));
+        if ($this->whatsappOutbox->sendsDaysAfter() && blank($daysAfter)) {
+            $validator->errors()->add('days_after', $this->whatsappOutbox->isGoldRewardReminder()
+                ? __('Set how many days after the last invoice to send this reminder before activating this outbox, otherwise it will never send.')
+                : __('Set how many days after dispatch to send this reminder before activating this outbox, otherwise it will never send.'));
 
             return;
         }

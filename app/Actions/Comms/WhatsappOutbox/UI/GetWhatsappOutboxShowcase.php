@@ -28,7 +28,6 @@ class GetWhatsappOutboxShowcase
     {
         $shop     = $whatsappOutbox->shop;
         $template = $whatsappOutbox->metaMessageTemplate;
-        $outbox   = $shop->outboxes()->where('code', $whatsappOutbox->code->value)->first();
 
         return [
             'id'           => $whatsappOutbox->id,
@@ -39,12 +38,12 @@ class GetWhatsappOutboxShowcase
             'is_sending'   => SendCustomerNotificationWhatsapp::make()->isSendable($whatsappOutbox),
             'is_connected' => filled(Arr::get($shop->settings, 'whatsapp.phone_number_id')),
             'can_edit'     => $canEdit,
-            'last_sent_at' => $whatsappOutbox->last_sent_at,
             'is_bulk'      => $whatsappOutbox->isBulk(),
             'interval'     => $whatsappOutbox->interval,
             'needs_interval' => $whatsappOutbox->code === OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             'days_after'   => $whatsappOutbox->days_after,
-            'needs_days_after' => $whatsappOutbox->isGoldRewardReminder(),
+            'needs_days_after' => $whatsappOutbox->sendsDaysAfter(),
+            'days_after_from'  => $whatsappOutbox->isGoldRewardReminder() ? 'last_invoice' : 'dispatch',
             'template'     => $template ? GetWhatsappOutboxesTab::templateData($template) + [
                 'body' => $this->templateBody($template),
                 'tags' => Arr::get($template->data ?? [], 'merge_tags.body', []),
@@ -57,14 +56,6 @@ class GetWhatsappOutboxShowcase
                 ->values()
                 ->all(),
             'stats'        => $this->stats($whatsappOutbox),
-            'email_outbox' => $outbox ? [
-                'name'  => $outbox->name,
-                'state' => $outbox->state->value,
-                'route' => [
-                    'name'       => 'grp.org.shops.show.dashboard.comms.outboxes.show',
-                    'parameters' => [$shop->organisation->slug, $shop->slug, $outbox->slug],
-                ],
-            ] : null,
             'update_route' => [
                 'name'       => 'grp.models.shop.whatsapp_outboxes.update',
                 'parameters' => [

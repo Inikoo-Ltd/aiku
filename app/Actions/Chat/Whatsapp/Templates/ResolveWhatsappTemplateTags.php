@@ -98,6 +98,7 @@ class ResolveWhatsappTemplateTags
             WhatsappTemplateTagEnum::ORDER_AMOUNT_DUE  => $order ? $this->money(max(0, round((float) $order->total_amount - (float) $order->payment_amount, 2)), $shop) : null,
             WhatsappTemplateTagEnum::ORDER_PAYMENT_DEADLINE => $this->paymentDeadline($order),
             WhatsappTemplateTagEnum::ORDER_DISPATCH_DATE    => $order?->dispatched_at?->format('j M Y'),
+            WhatsappTemplateTagEnum::ORDER_REVIEW_URL       => $this->orderReviewUrls($context, $order),
 
             WhatsappTemplateTagEnum::PRE_ORDER_UPDATE           => $this->preOrderUpdate($context, $shop),
             WhatsappTemplateTagEnum::PRE_ORDER_BALANCE_DUE_DATE => $this->preOrder($context)?->balance_due_at?->format('j M Y'),
@@ -118,12 +119,15 @@ class ResolveWhatsappTemplateTags
             WhatsappTemplateTagEnum::DELIVERY_COUNTRY  => $customer?->deliveryAddress?->country?->name,
 
             WhatsappTemplateTagEnum::PRODUCT_NAMES => $this->productNames($context, $order),
+            WhatsappTemplateTagEnum::PRODUCT_NAMES_WITH_LINKS => $this->productNamesWithLinks($context, $order),
             WhatsappTemplateTagEnum::PRODUCT_COUNT => $this->products($context, $order)->count() ?: null,
             WhatsappTemplateTagEnum::PRODUCT_URL   => $this->products($context, $order)->first()?->webpage?->getCanonicalUrl(),
 
             WhatsappTemplateTagEnum::TRACKING_CARRIER => $this->carrierNames($order),
             WhatsappTemplateTagEnum::TRACKING_NUMBER  => $this->trackingNumbers($order),
             WhatsappTemplateTagEnum::TRACKING_URL     => $this->trackingUrls($order),
+            WhatsappTemplateTagEnum::TRACKING_PARCELS => $this->trackingParcels($order),
+            WhatsappTemplateTagEnum::TRACKING_PAGE_URL => $this->trackingPageUrl($order),
 
             WhatsappTemplateTagEnum::AGENT_NAME       => $agent?->user?->contact_name,
             WhatsappTemplateTagEnum::AGENT_FIRST_NAME => $this->firstWord($agent?->user?->contact_name),
@@ -131,6 +135,12 @@ class ResolveWhatsappTemplateTags
     }
 
     public const PRODUCT_NAMES_MAX_LENGTH = 400;
+
+    /**
+     * Longer than the names alone, because every product carries its link, but still well
+     * inside the 1,024 characters WhatsApp allows for the whole message.
+     */
+    public const PRODUCT_NAMES_WITH_LINKS_MAX_LENGTH = 700;
 
     /**
      * The products the notification is about: the ones it was given, or for a pre-order the
@@ -170,21 +180,67 @@ class ResolveWhatsappTemplateTags
      */
     protected function productNames(array $context, ?Order $order = null): ?string
     {
-        $names = $this->products($context, $order)->pluck('name')->filter()->values();
+        return $this->shortenedList(
+            $this->products($context, $order)->pluck('name')->filter()->values()->all(),
+            self::PRODUCT_NAMES_MAX_LENGTH
+        );
+    }
 
-        if ($names->isEmpty()) {
+    /**
+     * WhatsApp cannot put a link on words, so each name is followed by its page, which the
+     * app turns into a tap target. A product without a page is listed by name only.
+     *
+     * @param  array{product_ids?: array<int, int>, pre_order_id?: int}  $context
+     */
+    protected function productNamesWithLinks(array $context, ?Order $order = null): ?string
+    {
+        return $this->shortenedList(
+            $this->products($context, $order)
+                ->filter(fn (Product $product) => filled($product->name))
+                ->map(function (Product $product): string {
+                    $url = $product->webpage?->getCanonicalUrl();
+
+                    return $url ? $product->name.' ('.$url.')' : $product->name;
+                })
+                ->values()
+                ->all(),
+            self::PRODUCT_NAMES_WITH_LINKS_MAX_LENGTH
+        );
+    }
+
+    /**
+     * The page each order the reminder is about can be reviewed on. A customer with two orders
+     * dispatched the same day gets both, space separated, since WhatsApp refuses newlines.
+     *
+     * @param  array{order_ids?: array<int, int>}  $context
+     */
+    protected function orderReviewUrls(array $context, ?Order $order = null): ?string
+    {
+        $orderIds = array_values(array_unique(array_map('intval', Arr::get($context, 'order_ids', []))));
+
+        $orders = $orderIds ? Order::whereIn('id', $orderIds)->orderBy('id')->get() : collect([$order])->filter();
+
+        return $orders->map(fn (Order $order) => $order->reviewUrl())->filter()->implode(' ') ?: null;
+    }
+
+    /**
+     * @param  array<int, string>  $items
+     */
+    protected function shortenedList(array $items, int $maxLength): ?string
+    {
+        if (!$items) {
             return null;
         }
 
         $shown = [];
-        foreach ($names as $name) {
-            if ($shown && mb_strlen(implode(', ', [...$shown, $name])) > self::PRODUCT_NAMES_MAX_LENGTH) {
+        foreach ($items as $item) {
+            if ($shown && mb_strlen(implode(', ', [...$shown, $item])) > $maxLength) {
                 break;
             }
-            $shown[] = $name;
+            $shown[] = $item;
         }
 
-        $left = $names->count() - count($shown);
+        $left = count($items) - count($shown);
 
         return implode(', ', $shown).($left ? ' '.__('and :count more', ['count' => $left]) : '');
     }
@@ -410,6 +466,74 @@ class ResolveWhatsappTemplateTags
             ->implode(' ');
 
         return $links ?: $this->orderUrl($order);
+    }
+
+    public const TRACKING_PARCELS_MAX_LENGTH = 700;
+
+    /**
+     * Every parcel with its tracking number, and its own link only where the carrier stored one
+     * for that number, the same pairing the delivery confirmation email shows
+     * (RetinaShipmentsResource::formatted_tracking_urls).
+     */
+    protected function trackingParcels(?Order $order): ?string
+    {
+        $parcels = $this->shipments($order)
+            ->flatMap(function (Shipment $shipment) {
+                $trackings = array_values(array_filter($shipment->trackings ?: preg_split('/\s+/', (string) $shipment->tracking)));
+
+                return array_map(fn (string $tracking, int $index) => [
+                    'tracking' => $tracking,
+                    'url'      => Arr::get($shipment->tracking_urls ?? [], $index),
+                ], $trackings, array_keys($trackings));
+            })
+            ->unique('tracking')
+            ->values()
+            ->all();
+
+        return self::parcelList($parcels);
+    }
+
+    /**
+     * @param  array<int, array{tracking: string, url?: string|null}>  $parcels
+     */
+    public static function parcelList(array $parcels): ?string
+    {
+        $total = count($parcels);
+        $shown = [];
+
+        foreach (array_values($parcels) as $index => $parcel) {
+            $entry = __('Parcel :number of :total: :tracking', ['number' => $index + 1, 'total' => $total, 'tracking' => $parcel['tracking']])
+                .(filled($parcel['url'] ?? null) ? ' '.$parcel['url'] : '');
+
+            if ($shown && mb_strlen(implode(', ', [...$shown, $entry])) > self::TRACKING_PARCELS_MAX_LENGTH) {
+                break;
+            }
+            $shown[] = $entry;
+        }
+
+        if (!$shown) {
+            return null;
+        }
+
+        $left = $total - count($shown);
+
+        return implode(', ', $shown).($left ? ' '.__('and :count more parcels', ['count' => $left]) : '');
+    }
+
+    /**
+     * The carrier's own tracking page as set on the shipper, where a number without a link of
+     * its own can be typed in, as the delivery confirmation email links it. An order whose
+     * carrier has none points to the order page, which shows its tracking.
+     */
+    protected function trackingPageUrl(?Order $order): ?string
+    {
+        $pages = $this->shipments($order)
+            ->map(fn (Shipment $shipment) => $shipment->shipper?->tracking_url)
+            ->filter()
+            ->unique()
+            ->implode(' ');
+
+        return $pages ?: $this->orderUrl($order);
     }
 
     /**
