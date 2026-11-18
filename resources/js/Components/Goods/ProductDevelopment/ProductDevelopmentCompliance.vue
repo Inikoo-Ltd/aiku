@@ -189,10 +189,21 @@ function setTemplate(category: string) {
                         </div>
 
                         <section v-if="data.in_house" class="mt-6 border-t border-gray-100 pt-4">
-                            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Approved formulation") }}</h4>
+                            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Approved formulations") }}</h4>
                             <template v-if="selected.formulation">
-                                <RecipeIngredients :ingredients="selected.formulation.ingredients" />
-                                <p class="mt-1 text-xs text-gray-500">{{ ctrans("Trial run :number, the final recipe for the compliance assessment", { number: selected.formulation.number }) }}</p>
+                                <p class="mb-2 text-xs" :class="selected.formulation.complete ? 'text-green-700' : 'text-amber-700'">
+                                    {{ selected.formulation.complete ? ctrans("Final approved formulations: ready for compliance review") : ctrans("Not every stage is approved yet") }}
+                                </p>
+                                <div v-for="stage in selected.formulation.stages" :key="stage.position" class="mb-3 rounded-md border border-gray-200 px-3 py-2">
+                                    <div class="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                                        <span class="whitespace-nowrap text-xs text-gray-400">{{ ctrans("Stage :position", { position: String(stage.position) }) }}</span>
+                                        <span class="font-medium text-gray-900">{{ stage.name }}</span>
+                                        <span class="text-xs text-gray-500">{{ stage.type }}</span>
+                                        <span v-if="stage.artefact" class="whitespace-nowrap text-xs text-gray-500">{{ stage.artefact }}</span>
+                                    </div>
+                                    <RecipeIngredients :ingredients="stage.ingredients" />
+                                    <p class="mt-1 text-xs text-gray-500">{{ stage.is_finished ? ctrans("Trial run :number, the final recipe for the compliance assessment", { number: stage.number }) : ctrans("Trial run :number", { number: stage.number }) }}</p>
+                                </div>
                             </template>
                             <p v-else class="text-xs text-gray-400">{{ ctrans("No trial run approved yet") }}</p>
                         </section>

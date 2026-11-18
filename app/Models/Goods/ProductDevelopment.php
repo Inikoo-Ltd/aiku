@@ -70,6 +70,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentMember> $members
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentStage> $stages
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentItem> $items
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFormulation> $formulations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentDesignSection> $designSections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentArtwork> $artworks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentChecklistItem> $checklistItems
@@ -202,6 +203,11 @@ class ProductDevelopment extends Model implements Auditable, HasMedia
     public function items(): HasMany
     {
         return $this->hasMany(ProductDevelopmentItem::class)->orderBy('position');
+    }
+
+    public function formulations(): HasMany
+    {
+        return $this->hasMany(ProductDevelopmentFormulation::class);
     }
 
     public function checklistItems(): HasMany

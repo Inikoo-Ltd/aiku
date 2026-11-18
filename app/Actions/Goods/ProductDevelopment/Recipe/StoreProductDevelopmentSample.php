@@ -49,10 +49,15 @@ class StoreProductDevelopmentSample extends OrgAction
 
     public function handle(ProductDevelopmentItem $item, User $user, array $modelData): ProductDevelopmentSample
     {
+        $formulation = isset($modelData['product_development_formulation_id'])
+            ? $item->formulations()->findOrFail($modelData['product_development_formulation_id'])
+            : ProductDevelopmentRecipes::currentFormulation($item);
+
         /** @var ProductDevelopmentSample $sample */
         $sample = $item->samples()->create([
             'product_development_id' => $item->product_development_id,
-            'product_development_formulation_id' => $modelData['product_development_formulation_id'] ?? ProductDevelopmentRecipes::currentFormulation($item)->id,
+            'product_development_formulation_id' => $formulation->id,
+            'artefact_id'            => ProductDevelopmentRecipes::stageArtefact($formulation)?->id,
             'number'                 => (int) $item->samples()->max('number') + 1,
             'status'                 => ProductDevelopmentSampleStatusEnum::IN_PROGRESS,
             'batch_size'             => $modelData['batch_size'] ?? null,
@@ -79,11 +84,26 @@ class StoreProductDevelopmentSample extends OrgAction
                 'sometimes',
                 'nullable',
                 'integer',
-                Rule::exists('job_order_items', 'job_order_id')->where('artefact_id', $this->item->artefact_id),
+                Rule::exists('job_order_items', 'job_order_id')->where('artefact_id', $this->expectedArtefactId() ?? 0),
             ],
             'product_development_formulation_id' => ['sometimes', 'nullable', 'integer', Rule::exists('product_development_formulations', 'id')->where('product_development_item_id', $this->item->id)],
             'made_by_id'    => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->item->productDevelopment->group_id)],
         ];
+    }
+
+    /**
+     * The artefact the stage asked for makes its trial runs on: its own for a blend (none until it is made), the
+     * SKU's for the finished product.
+     */
+    private function expectedArtefactId(): ?int
+    {
+        $formulationId = $this->get('product_development_formulation_id');
+        $formulation   = $formulationId ? $this->item->formulations()->find($formulationId) : ProductDevelopmentRecipes::currentFormulation($this->item);
+        if (!$formulation) {
+            return null;
+        }
+
+        return $formulation->type->hasOwnArtefact() ? $formulation->artefact_id : $this->item->artefact_id;
     }
 
     public function afterValidator(Validator $validator): void

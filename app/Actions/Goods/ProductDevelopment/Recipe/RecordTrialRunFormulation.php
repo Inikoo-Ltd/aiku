@@ -129,7 +129,7 @@ class RecordTrialRunFormulation extends OrgAction
     public function handle(JobOrder $jobOrder, User $user, array $modelData): JobOrder
     {
         $sample   = $this->sample ?? self::sampleOf($jobOrder);
-        $artefact = $sample->item->artefact;
+        $artefact = $sample->workingArtefact();
 
         DB::transaction(function () use ($jobOrder, $user, $modelData, $sample, $artefact) {
             $steps = $artefact->recipeSteps()->with('rawMaterials')->get()->keyBy('id');
@@ -213,7 +213,7 @@ class RecordTrialRunFormulation extends OrgAction
             return;
         }
 
-        $artefact = $sample->item->artefact;
+        $artefact = $sample->workingArtefact();
         if (!$artefact || !$this->jobOrder->jobOrderItems()->where('artefact_id', $artefact->id)->exists()) {
             $validator->errors()->add('formulation', __('This job order does not make the trial run of :sku', ['sku' => $sample->item->tradeUnit->code]));
 

@@ -63,9 +63,10 @@ class CreateProductDevelopmentSampleJob extends OrgAction
             foreach ($items as $item) {
                 $open        = $item->samples()->whereIn('status', [ProductDevelopmentSampleStatusEnum::IN_PROGRESS->value, ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW->value])->first();
                 $formulation = $open?->formulation ?? ProductDevelopmentRecipes::currentFormulation($item);
+                $artefact    = $open?->workingArtefact() ?? ProductDevelopmentRecipes::stageArtefact($formulation);
 
                 $jobOrder = StoreTrialRunJobOrder::make()->action($productDevelopment->production, [
-                    'artefact_id'          => $item->artefact_id,
+                    'artefact_id'          => $artefact->id,
                     'quantity'             => (int) $modelData['quantity'],
                     'notes'                => trim($productDevelopment->code.' '.$formulation->name.($notes !== '' ? ': '.$notes : '')),
                     'product_development'  => $productDevelopment->code,

@@ -20,6 +20,9 @@ use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentComponent;
 use App\Models\Goods\ProductDevelopmentFile;
 use App\Models\Goods\ProductDevelopmentFormulation;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentFormulationTypeEnum;
+use App\Models\Production\Artefact;
+use App\Models\Production\RecipeStepRawMaterial;
 use App\Actions\Goods\ProductDevelopment\Recipe\WithProductDevelopmentFormulationRules;
 use App\Models\Production\JobOrder;
 use App\Models\Goods\ProductDevelopmentItem;
@@ -52,7 +55,7 @@ class GetProductDevelopmentFormulation
         $canManage = $access->canManageSamples($viewer, $productDevelopment);
         $canReview = $access->canReviewSamples($viewer, $productDevelopment);
         $items     = $productDevelopment->items()
-            ->with(['tradeUnit', 'artefact.production.organisation', 'artefact.branchedFrom', 'samples.madeBy', 'samples.reviewedBy', 'samples.photos.media', 'samples.jobOrder.employee', 'samples.jobOrder.jobOrderItems.tasks', 'formulations.artisan', 'components.tradeUnit', 'components.approvedBy'])
+            ->with(['tradeUnit', 'artefact.production.organisation', 'artefact.branchedFrom', 'samples.madeBy', 'samples.reviewedBy', 'samples.photos.media', 'samples.jobOrder.employee', 'samples.jobOrder.jobOrderItems.tasks', 'formulations.artisan', 'formulations.artefact.production.organisation', 'samples.artefact', 'components.tradeUnit', 'components.approvedBy'])
             ->orderBy('position')->orderBy('id')
             ->get();
 
@@ -106,12 +109,13 @@ class GetProductDevelopmentFormulation
         $samples      = $item->samples->sortByDesc('number')->values();
         $formulations = $item->formulations;
         $approvedOf   = fn (ProductDevelopmentFormulation $formulation) => $samples->first(fn (ProductDevelopmentSample $sample) => $sample->product_development_formulation_id === $formulation->id && $sample->status === ProductDevelopmentSampleStatusEnum::APPROVED);
-        $final        = $formulations->isEmpty()
-            ? $samples->first(fn (ProductDevelopmentSample $sample) => $sample->status === ProductDevelopmentSampleStatusEnum::APPROVED)
-            : ($formulations->every(fn (ProductDevelopmentFormulation $formulation) => (bool) $approvedOf($formulation)) ? $approvedOf($formulations->last()) : null);
+        $final        = ProductDevelopmentRecipes::finalOf($formulations, $samples);
+        $finished     = ProductDevelopmentRecipes::finishedFormulation($formulations);
         $canChangeStages = $canEdit && ProductDevelopmentRecipes::canChangeFormulations($productDevelopment);
         $open      = $samples->first(fn (ProductDevelopmentSample $sample) => $sample->status->isOpen());
         $latest    = $samples->first();
+        $current   = $formulations->first(fn (ProductDevelopmentFormulation $formulation) => !$approvedOf($formulation)) ?? $formulations->last();
+        $ingredientIds = $artefact ? $this->ingredientArtefactIds($artefact) : [];
 
         return [
             'id'       => $item->id,
@@ -132,7 +136,9 @@ class GetProductDevelopmentFormulation
             'recipe_changed' => $final && $recipe && !self::sameIngredients($final->recipe['ingredients'] ?? [], $recipe['ingredients']),
             'can_start_sample' => $canManage && $artefact && !$open,
             'no_artefact_reason' => !$artefact ? $this->noArtefactReason($productDevelopment, $item) : null,
-            'formulations' => $formulations->map(fn (ProductDevelopmentFormulation $formulation) => $this->formulation($formulation, $samples, $approvedOf($formulation), $canEdit, $canChangeStages && $formulations->count() > 1))->values()->all(),
+            'formulations' => $formulations->map(fn (ProductDevelopmentFormulation $formulation) => $this->formulation($item, $formulation, $samples, $approvedOf($formulation), $canEdit, $canChangeStages, $canChangeStages && $formulations->count() > 1, $current?->id === $formulation->id, $ingredientIds))->values()->all(),
+            'has_finished_stage' => (bool) $finished,
+            'progress' => $this->skuProgress($formulations, $samples, $current, $final, $artefact, (bool) $finished, $approvedOf),
             'can_add_formulation' => $canChangeStages,
             'samples'  => $samples->map(fn (ProductDevelopmentSample $sample) => $this->sample($productDevelopment, $sample, $canManage, $canReview))->all(),
             'components' => $item->components->map(fn (ProductDevelopmentComponent $component) => [
@@ -184,6 +190,8 @@ class GetProductDevelopmentFormulation
             'batch_size'     => $sample->batch_size !== null ? (float) $sample->batch_size : null,
             'batch_unit'     => $sample->batch_unit,
             'notes'          => $sample->notes,
+            'artefact'       => $sample->artefact?->code,
+            'waiting_days'   => self::waitingDays($sample),
             'made_by'        => $sample->madeBy?->contact_name ?: $sample->madeBy?->username ?: $jobOrder?->employee?->contact_name,
             'created_at'     => $sample->created_at?->toIso8601String(),
             'ready_at'       => $sample->ready_at?->toIso8601String(),
@@ -221,26 +229,109 @@ class GetProductDevelopmentFormulation
      *
      * @return array<string, mixed>
      */
-    private function formulation(ProductDevelopmentFormulation $formulation, $samples, ?ProductDevelopmentSample $approved, bool $canEdit, bool $canRemove): array
+    private function formulation(ProductDevelopmentItem $item, ProductDevelopmentFormulation $formulation, $samples, ?ProductDevelopmentSample $approved, bool $canEdit, bool $canChangeType, bool $canRemove, bool $isCurrent, array $ingredientIds): array
     {
-        $latest = $samples->first(fn (ProductDevelopmentSample $sample) => $sample->product_development_formulation_id === $formulation->id);
+        $own      = $samples->filter(fn (ProductDevelopmentSample $sample) => $sample->product_development_formulation_id === $formulation->id);
+        $latest   = $own->first();
+        $artefact = $formulation->type->hasOwnArtefact() ? $formulation->artefact : $item->artefact;
 
         return [
             'id'          => $formulation->id,
             'position'    => $formulation->position,
             'name'        => $formulation->name,
+            'type'        => ['value' => $formulation->type->value, 'label' => ProductDevelopmentFormulationTypeEnum::labels()[$formulation->type->value]],
+            'brief'       => $formulation->brief,
             'artisan_id'  => $formulation->artisan_id,
             'artisan'     => $formulation->artisan?->contact_name,
             'approved'    => $approved?->reference(),
+            'approved_at' => $approved?->reviewed_at?->toIso8601String(),
+            'is_current'  => $isCurrent,
             'status'      => $latest ? $this->status($latest->status) : null,
             'assignment'  => $latest?->jobOrder ? self::assignment($latest->jobOrder) : null,
+            'artefact'    => $artefact ? $this->artefactRow($artefact) : null,
+            'recipe'      => $artefact ? ProductDevelopmentRecipes::recipe($artefact) : null,
+            'in_finished_recipe' => $formulation->type->hasOwnArtefact() && $artefact ? in_array($artefact->id, $ingredientIds, true) : null,
+            'trial_runs'  => ['total' => $own->count(), 'reviewed' => $own->filter(fn (ProductDevelopmentSample $sample) => in_array($sample->status, [ProductDevelopmentSampleStatusEnum::APPROVED, ProductDevelopmentSampleStatusEnum::CHANGES_REQUIRED], true))->count()],
             'can_edit'    => $canEdit,
+            'can_change_type' => $canChangeType && !$approved,
+            'can_create_artefact' => $canEdit && $formulation->type->hasOwnArtefact() && !$formulation->artefact_id && (bool) $item->artefact_id,
             'can_delete'  => $canRemove && !$latest,
             'routes'      => [
                 'update' => ['name' => 'grp.models.product_development.formulation.update', 'parameters' => ['productDevelopmentFormulation' => $formulation->id]],
-                'delete' => ['name' => 'grp.models.product_development.formulation.delete', 'parameters' => ['productDevelopmentFormulation' => $formulation->id]],
+                'delete'   => ['name' => 'grp.models.product_development.formulation.delete', 'parameters' => ['productDevelopmentFormulation' => $formulation->id]],
+                'artefact' => ['name' => 'grp.models.product_development.formulation.artefact', 'parameters' => ['productDevelopmentFormulation' => $formulation->id]],
             ],
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function artefactRow(Artefact $artefact): array
+    {
+        return [
+            'code'  => $artefact->code,
+            'name'  => $artefact->name,
+            'state' => ArtefactStateEnum::labels()[$artefact->state->value] ?? $artefact->state->value,
+            'route' => ['name' => 'grp.org.productions.show.crafts.artefacts.show', 'parameters' => [$artefact->production->organisation->slug, $artefact->production->slug, $artefact->slug]],
+        ];
+    }
+
+    /**
+     * The artefacts the SKU's own recipe uses as in-house ingredients (its approved blends among them).
+     *
+     * @return array<int, int>
+     */
+    private function ingredientArtefactIds(Artefact $artefact): array
+    {
+        return RecipeStepRawMaterial::query()
+            ->join('artefacts_manufacture_tasks', 'artefacts_manufacture_tasks.id', 'recipe_step_raw_materials.artefact_manufacture_task_id')
+            ->join('raw_materials', 'raw_materials.id', 'recipe_step_raw_materials.raw_material_id')
+            ->where('artefacts_manufacture_tasks.artefact_id', $artefact->id)
+            ->whereNotNull('raw_materials.artefact_id')
+            ->distinct()
+            ->pluck('raw_materials.artefact_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * How far the SKU's development has got: stages, trial runs, samples still being made and for how long, the
+     * artefacts its stages are made on, and whether the final formulation is approved.
+     *
+     * @return array<string, mixed>
+     */
+    private function skuProgress($formulations, $samples, ?ProductDevelopmentFormulation $current, ?ProductDevelopmentSample $final, ?Artefact $artefact, bool $hasFinished, \Closure $approvedOf): array
+    {
+        $awaiting = $samples->filter(fn (ProductDevelopmentSample $sample) => $sample->status === ProductDevelopmentSampleStatusEnum::IN_PROGRESS);
+
+        return [
+            'stages'       => $formulations->count(),
+            'current'      => $final ? null : $current?->name,
+            'approved'     => $formulations->filter(fn (ProductDevelopmentFormulation $formulation) => (bool) $approvedOf($formulation))->count(),
+            'trial_runs'   => $samples->filter(fn (ProductDevelopmentSample $sample) => in_array($sample->status, [ProductDevelopmentSampleStatusEnum::APPROVED, ProductDevelopmentSampleStatusEnum::CHANGES_REQUIRED], true))->count(),
+            'awaiting'     => $awaiting->count(),
+            'longest_wait' => $awaiting->map(fn (ProductDevelopmentSample $sample) => self::waitingDays($sample))->max(),
+            'artefacts'    => ($artefact ? 1 : 0) + $formulations->filter(fn (ProductDevelopmentFormulation $formulation) => $formulation->type->hasOwnArtefact() && $formulation->artefact_id)->count(),
+            'final'        => $final?->reference(),
+            'final_status' => match (true) {
+                (bool) $final => ['label' => __('Approved for production'), 'color' => 'green'],
+                !$hasFinished => ['label' => __('No finished product stage'), 'color' => 'amber'],
+                default       => ['label' => __('In development'), 'color' => 'gray'],
+            },
+        ];
+    }
+
+    /**
+     * Days from asking for the sample to it being made, or until today while it is still being made.
+     */
+    public static function waitingDays(ProductDevelopmentSample $sample): ?int
+    {
+        if (!$sample->created_at) {
+            return null;
+        }
+
+        return (int) $sample->created_at->copy()->startOfDay()->diffInDays(($sample->ready_at ?? now())->copy()->startOfDay());
     }
 
     /**

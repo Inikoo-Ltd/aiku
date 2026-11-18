@@ -31,7 +31,7 @@ export interface TrialRunBriefData {
     development: { code: string, name: string }
     sku: { code: string, name: string, image: Record<string, string> | null }
     trial_run: string
-    brief: { development: string | null, sku: string | null }
+    brief: { development: string | null, sku: string | null, stage?: { name: string, type: string, brief: string | null, artefact: string | null } | null }
     references: { name: string | null, mime: string | null, url: string, preview_url: string }[]
     concept: null | {
         version: number
@@ -144,7 +144,7 @@ function saved() {
                     <p v-else class="text-sm text-amber-700">{{ ctrans("Not recorded yet: it is the first step when the trial run starts") }}</p>
                 </div>
 
-                <div v-if="brief.brief.development || brief.brief.sku">
+                <div v-if="brief.brief.development || brief.brief.sku || brief.brief.stage">
                     <h4 class="mb-1 flex items-center gap-1.5 text-sm font-semibold text-gray-800">
                         <FontAwesomeIcon icon="fal fa-file-alt" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />{{ ctrans("Brief") }}
                     </h4>
@@ -152,6 +152,10 @@ function saved() {
                     <div v-if="brief.brief.sku" class="mt-2 rounded-md bg-gray-50 px-3 py-2">
                         <div class="text-xs font-medium text-gray-500">{{ brief.sku.code }} · {{ brief.sku.name }}</div>
                         <p class="whitespace-pre-line text-sm text-gray-700">{{ brief.brief.sku }}</p>
+                    </div>
+                    <div v-if="brief.brief.stage" class="mt-2 rounded-md border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-3 py-2">
+                        <div class="text-xs font-medium text-gray-600">{{ brief.brief.stage.name }} · {{ brief.brief.stage.type }}<template v-if="brief.brief.stage.artefact"> · <span class="whitespace-nowrap">{{ brief.brief.stage.artefact }}</span></template></div>
+                        <p v-if="brief.brief.stage.brief" class="whitespace-pre-line text-sm text-gray-700">{{ brief.brief.stage.brief }}</p>
                     </div>
                 </div>
 

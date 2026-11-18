@@ -51,6 +51,7 @@ use App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentFormulation;
 use App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentFormulation;
 use App\Actions\Goods\ProductDevelopment\Recipe\DeleteProductDevelopmentFormulation;
+use App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentFormulationArtefact;
 use App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Design\CancelProductDevelopmentArtworkInAiku;
@@ -2365,6 +2366,7 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::post('item/{productDevelopmentItem:id}/formulation', StoreProductDevelopmentFormulation::class)->name('item.formulation.store')->withoutScopedBindings();
     Route::patch('formulation/{productDevelopmentFormulation:id}', UpdateProductDevelopmentFormulation::class)->name('formulation.update')->withoutScopedBindings();
     Route::delete('formulation/{productDevelopmentFormulation:id}', DeleteProductDevelopmentFormulation::class)->name('formulation.delete')->withoutScopedBindings();
+    Route::post('formulation/{productDevelopmentFormulation:id}/artefact', CreateProductDevelopmentFormulationArtefact::class)->name('formulation.artefact')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}', UpdateProductDevelopmentSample::class)->name('sample.update')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}/submit', SubmitProductDevelopmentSample::class)->name('sample.submit')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}/review', ReviewProductDevelopmentSample::class)->name('sample.review')->withoutScopedBindings();

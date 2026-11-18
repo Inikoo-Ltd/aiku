@@ -46,7 +46,7 @@ class SubmitProductDevelopmentSample extends OrgAction
     {
         $sample->update([
             'status'   => ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW,
-            'recipe'   => $sample->jobOrder?->data['formulation']['recipe'] ?? ProductDevelopmentRecipes::recipe($sample->item->artefact),
+            'recipe'   => $sample->jobOrder?->data['formulation']['recipe'] ?? ProductDevelopmentRecipes::recipe($sample->workingArtefact()),
             'ready_at' => now(),
         ]);
 
@@ -67,7 +67,7 @@ class SubmitProductDevelopmentSample extends OrgAction
             return;
         }
 
-        if (!$this->sample->item->artefact) {
+        if (!$this->sample->workingArtefact()) {
             $validator->errors()->add('sample', __('This SKU has no recipe in Production'));
         }
     }

@@ -13,6 +13,7 @@ use App\Actions\Goods\ProductDevelopment\RecordProductDevelopmentActivity;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentSampleStatusEnum;
+use App\Actions\Production\Artefact\SetArtefactAsMix;
 use App\Models\Goods\ProductDevelopmentSample;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
@@ -78,7 +79,25 @@ class ReviewProductDevelopmentSample extends OrgAction
         );
         ProductDevelopmentRecipes::notifyProduction($sample, $user);
 
+        if ($approved) {
+            $this->offerAsIngredient($sample);
+        }
+
         return $sample;
+    }
+
+    /**
+     * An approved blend or intermediate made on its stage's own artefact becomes an in-house ingredient, so the
+     * finished product's recipe can use it by its code instead of repeating its ingredients.
+     */
+    private function offerAsIngredient(ProductDevelopmentSample $sample): void
+    {
+        $formulation = $sample->formulation;
+        if (!$formulation?->type->hasOwnArtefact() || !$formulation->artefact || $sample->artefact_id !== $formulation->artefact_id) {
+            return;
+        }
+
+        SetArtefactAsMix::make()->action($formulation->artefact, true);
     }
 
     public function rules(): array

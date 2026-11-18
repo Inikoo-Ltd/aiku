@@ -36,7 +36,7 @@ interface ArtefactShowcaseData {
     artefact_department: { slug: string, name: string } | null
     tags: string[]
     trade_unit: { id: number, code: string, name: string } | null
-    product_developments?: { code: string, name: string, route: { name: string, parameters: Record<string, unknown> } }[]
+    product_developments?: { code: string, name: string, stage?: string | null, route: { name: string, parameters: Record<string, unknown> } }[]
     org_stock: {
         id: number
         code: string
@@ -220,7 +220,7 @@ const onToggleInDevelopment = async (value: boolean) => {
                             :href="route(development.route.name, development.route.parameters)"
                             class="primaryLink"
                             :aria-label="ctrans('Open product development :code', { code: development.code })">
-                            {{ development.code }} <span class="text-gray-500">{{ development.name }}</span>
+                            {{ development.code }} <span class="text-gray-500">{{ development.name }}</span><span v-if="development.stage" class="text-gray-500"> · {{ ctrans("stage :stage", { stage: development.stage }) }}</span>
                         </Link>
                     </dd>
                 </div>
