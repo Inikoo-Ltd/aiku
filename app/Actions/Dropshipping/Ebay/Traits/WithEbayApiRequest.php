@@ -969,6 +969,18 @@ trait WithEbayApiRequest
             ->contains(fn ($error) => str_contains((string) Arr::get($error, 'message'), 'Location information not found'));
     }
 
+    public function isSystemError(mixed $errorResponse): bool
+    {
+        $errors = is_string($errorResponse) ? json_decode($errorResponse, true) : $errorResponse;
+
+        if (!is_array($errors)) {
+            return false;
+        }
+
+        return collect(Arr::get($errors, 'errors', []))
+            ->contains(fn ($error) => (int) Arr::get($error, 'errorId') === 25001);
+    }
+
     public function getMissingListingPolicy(): ?string
     {
         $requiredListingPolicies = [
@@ -1825,6 +1837,17 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('delete', $endpoint);
         } catch (Exception $e) {
             Log::error('Delete eBay Product Error: '.$e->getMessage());
+
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    public function deleteOffer(string $offerId): array
+    {
+        try {
+            return $this->makeEbayRequest('delete', "/sell/inventory/v1/offer/$offerId") ?? [];
+        } catch (Exception $e) {
+            Log::error('Delete eBay Offer Error: '.$e->getMessage());
 
             return ['error' => $e->getMessage()];
         }
