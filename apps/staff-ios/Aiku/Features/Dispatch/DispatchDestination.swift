@@ -11,8 +11,6 @@ struct DispatchDestination: View {
             DispatchSessionByReference(reference: reference, title: reference) { DispatchPickingSessionView(sessionID: $0) }
         case .pickingSessionID(let id):
             DispatchPickingSessionView(sessionID: id)
-        case .shippers:
-            DispatchShippersView()
         case .trolleys:
             DispatchTrolleysView()
         case .pickedBays:

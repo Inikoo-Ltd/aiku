@@ -6,11 +6,13 @@ import Testing
 struct FulfilmentReturnsAPITests {
     private final class RecordingTransport: HTTPTransport, @unchecked Sendable {
         let responses: [String: String]
+        let refusals: [String: String]
         private let lock = NSLock()
         private var recorded: [URLRequest] = []
 
-        init(responses: [String: String]) {
+        init(responses: [String: String], refusals: [String: String] = [:]) {
             self.responses = responses
+            self.refusals = refusals
         }
 
         var requests: [URLRequest] {
@@ -20,6 +22,9 @@ struct FulfilmentReturnsAPITests {
         func data(for request: URLRequest) async throws -> (Data, URLResponse) {
             lock.withLock { recorded.append(request) }
             let path = request.url!.path.replacingOccurrences(of: "/app/api/", with: "")
+            if let refusal = refusals[path] {
+                return (Data(refusal.utf8), HTTPURLResponse(url: request.url!, statusCode: 422, httpVersion: nil, headerFields: nil)!)
+            }
             guard let body = responses[path] else {
                 return (Data(), HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!)
             }
@@ -52,14 +57,14 @@ struct FulfilmentReturnsAPITests {
         "\(base)/6381/parcels": write(palletsReturn),
         "\(base)/6381/shipments": write(palletsReturn, message: "Shipment added."),
         "\(base)/6381/shipments/31": write(palletsReturn),
-        "\(base)/6381/shipments/31/print-label": write(palletsReturn),
-        "\(base)/6381/inserts/print": write(palletsReturn),
+        "\(base)/6381/shipments/31/print-label": write(palletsReturn, message: "Label sent to the printer."),
+        "\(base)/6381/inserts/print": write(palletsReturn, message: "Inserts sent to the printer."),
         "\(base)/6381/shippers": #"{"data":[{"id":4,"code":"dpd","name":"DPD","trade_as":null,"api_shipper":"dpd","type":"api","needs_tracking":false,"is_locked_out":false},{"id":5,"code":"own","name":"Own van","trade_as":null,"api_shipper":null,"type":"manual","needs_tracking":false,"is_locked_out":false}],"directive":{"locked_shipper_id":null,"preferred_shipper_id":null,"locked_by":null,"can_override_lock":false,"tracking_channel":null}}"#,
         "\(base)/6381/shipments/31/label": "%PDF-1.4 label",
     ]
 
-    private func client() -> (RecordingTransport, APIClient) {
-        let transport = RecordingTransport(responses: Self.responses)
+    private func client(refusals: [String: String] = [:]) -> (RecordingTransport, APIClient) {
+        let transport = RecordingTransport(responses: Self.responses, refusals: refusals)
         let client = APIClient(
             configuration: AppConfiguration(apiBaseURL: URL(string: "https://app.aiku.test/app/api")!, mobileAppKey: "key"),
             transport: transport,
@@ -73,8 +78,8 @@ struct FulfilmentReturnsAPITests {
         return try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
     }
 
-    private func live(_ id: Int) async -> (PalletReturnLive, RecordingTransport) {
-        let (transport, client) = client()
+    private func live(_ id: Int, refusals: [String: String] = [:]) async -> (PalletReturnLive, RecordingTransport) {
+        let (transport, client) = client(refusals: refusals)
         let live = PalletReturnLive(warehouseID: 1, returnID: id, apiClient: client, makeRequestID: { "11111111-1111-4111-8111-111111111111" })
         await live.load()
         return (live, transport)
@@ -236,8 +241,31 @@ struct FulfilmentReturnsAPITests {
         #expect(transport.requests.last?.httpMethod == "DELETE")
         #expect(await live.printLabel(31))
         #expect(transport.requests.last?.url?.path.hasSuffix("/shipments/31/print-label") == true)
+        #expect(live.event == .done("Label sent to the printer.", .success))
         #expect(await live.printInserts())
         #expect(transport.requests.last?.url?.path.hasSuffix("/inserts/print") == true)
+        #expect(live.event == .done("Inserts sent to the printer.", .success))
+    }
+
+    @Test func printRefusedByTheServerShowsItsReason() async {
+        let refusal = #"{"message":"Set a preferred printer on the web first.","errors":{"printer":["Set a preferred printer on the web first."]}}"#
+        let (live, _) = await live(6381, refusals: ["\(Self.base)/6381/shipments/31/print-label": refusal])
+
+        #expect(await live.printLabel(31) == false)
+        #expect(live.event == .done("Set a preferred printer on the web first.", .danger))
+        #expect(live.working == nil)
+    }
+
+    @Test func printButtonsFollowWhatTheServerSends() async throws {
+        let (pallets, _) = await live(6381)
+        let detail = try #require(pallets.detail)
+        #expect(detail.inserts.unprinted == 1)
+        #expect(detail.action("print_inserts") == nil)
+        #expect(detail.shipments.first?.isPrintable == true)
+
+        let (items, _) = await live(6385)
+        #expect(items.detail?.shipments.isEmpty == true)
+        #expect(items.detail?.action("print_inserts") == nil)
     }
 
     @Test func labelIsSavedAsAPDF() async throws {

@@ -70,7 +70,6 @@ enum ShellMenuCatalog {
             ShellMenuItem(id: "goodsOut.deliveryNotes", title: "Delivery notes", icon: .deliveryNote, requirement: .goodsOut, link: .goodsOut(.deliveryNotes)),
             ShellMenuItem(id: "goodsOut.fulfilmentReturns", title: "Fulfilment returns", icon: .deliveryNote, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.returns)),
             ShellMenuItem(id: "goodsOut.pickingSessions", title: "Picking sessions", icon: .deliveryNote, requirement: .goodsOut, link: .dispatch(.pickingSessions)),
-            ShellMenuItem(id: "goodsOut.shippers", title: "Shippers", icon: .shipment, requirement: .goodsOut, link: .dispatch(.shippers)),
             ShellMenuItem(id: "goodsOut.trolleys", title: "Trolleys", icon: .shipment, requirement: .goodsOut, link: .dispatch(.trolleys)),
             ShellMenuItem(id: "goodsOut.pickedBays", title: "Picked bays", icon: .shipment, requirement: .goodsOut, link: .dispatch(.pickedBays))
         ]),
