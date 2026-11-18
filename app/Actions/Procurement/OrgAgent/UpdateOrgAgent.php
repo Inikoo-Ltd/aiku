@@ -35,7 +35,7 @@ class UpdateOrgAgent extends OrgAction
     /**
      * Who may be emailed to approve and pay the agent's money requests: an active user of the client who opens the
      * agent page the email links to (procurement view in the client) and is not staff of the agent itself, who would
-     * otherwise approve and pay what it asks for.
+     * otherwise approve and pay what it asks for (an employee of the agent's organisation, or a procurement editor there).
      *
      * @return Builder<User>
      */
@@ -46,10 +46,14 @@ class UpdateOrgAgent extends OrgAction
             return User::whereRaw('false');
         }
 
+        $agentOrganisationId = $orgAgent->agent->organisation_id;
+        $agentStaffPermission = Permission::whereIn('name', ["procurement.$agentOrganisationId", "procurement.$agentOrganisationId.edit"])->pluck('name')->all();
+
         return User::permission($permissions)
             ->where('users.group_id', $orgAgent->group_id)
             ->where('users.status', true)
-            ->whereDoesntHave('employees', fn ($query) => $query->where('employees.organisation_id', $orgAgent->agent->organisation_id));
+            ->whereDoesntHave('employees', fn ($query) => $query->where('employees.organisation_id', $agentOrganisationId))
+            ->when($agentStaffPermission, fn (Builder $query) => $query->whereNotIn('users.id', User::permission($agentStaffPermission)->select('users.id')));
     }
 
     public function handle(OrgAgent $orgAgent, $modelData = []): OrgAgent

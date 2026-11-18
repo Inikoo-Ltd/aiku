@@ -4344,3 +4344,32 @@ test('what a shipment still owes takes off only what was asked or sent for it in
     $ledgerLine(['type' => 'transfer_received', 'amount' => 400]);
     expect($shipment()['due'])->toEqual(600);
 });
+
+test('neither the agent\'s procurement editors nor the user who asked can approve and pay a money request, nor be set to', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-APR-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    setPermissionsTeamId($this->group->id);
+
+    $expense        = \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'type' => 'other_expense', 'amount' => 9, 'notes' => 'Fee']);
+    $depositRequest = \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [['kind' => 'expense', 'agent_payment_id' => $expense->id, 'amount' => 9]]]);
+
+    $clientEditor = agentOrganisationAdmin($client, 'w3-apr-c-'.Str::lower(Str::random(6)));
+    $alsoAgent    = agentOrganisationAdmin($client, 'w3-apr-x-'.Str::lower(Str::random(6)));
+    $alsoAgent->givePermissionTo("procurement.{$agent->organisation_id}.edit");
+    $canPay = fn ($user) => \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::canPay($depositRequest->refresh(), $user->refresh());
+
+    expect($canPay($clientEditor))->toBeTrue()
+        ->and($canPay($alsoAgent))->toBeFalse()
+        ->and(\App\Actions\Procurement\OrgAgent\UpdateOrgAgent::moneyRequestPayerCandidates($orgAgent)->pluck('users.id')->all())->toContain($clientEditor->id)->not->toContain($alsoAgent->id);
+
+    $depositRequest->update(['created_by' => $clientEditor->id]);
+    expect($canPay($clientEditor))->toBeFalse();
+
+    actingAs($alsoAgent);
+    $this->patch(route('grp.models.deposit_request.approve', $depositRequest->id))->assertForbidden();
+    actingAs($this->adminGuest->getUser());
+});

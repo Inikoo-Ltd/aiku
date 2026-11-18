@@ -56,13 +56,19 @@ class ApproveAgentMoneyRequest extends OrgAction
     }
 
     /**
-     * The client's users who may approve and pay a request: its procurement or accounting editors, and the users
+     * The client's users who may approve and pay a request, never the user who asked for it nor the agent's staff
+     * (procurement editors of the agent's organisation): its procurement or accounting editors, and the users
      * set to approve and pay on the client's agent page while they may still be (see UpdateOrgAgent::moneyRequestPayerCandidates).
      */
     public static function canPay(DepositRequest $depositRequest, ?User $user): bool
     {
         $clientId = $depositRequest->organisation_id;
         if ($user === null || $clientId === null) {
+            return false;
+        }
+
+        $agentOrganisationId = $depositRequest->agent?->organisation_id;
+        if ($user->id === $depositRequest->created_by || ($agentOrganisationId !== null && $user->authTo("procurement.$agentOrganisationId.edit"))) {
             return false;
         }
 
