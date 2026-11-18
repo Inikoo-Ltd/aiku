@@ -70,8 +70,9 @@ class EditOrgSupplier extends OrgAction
             ],
         ];
 
-        $selection = AgentOrganisationSelection::fromRequest($request);
-        $blueprint = [...$this->supplierEditSections($supplier), ...$this->labelOrganisationSections($selection, [$statusSection])];
+        $selection           = AgentOrganisationSelection::fromRequest($request, 'supplier');
+        $editsOrganisation   = !$selection || $request->user()->authTo("procurement.$orgSupplier->organisation_id.edit");
+        $blueprint           = [...$this->supplierEditSections($supplier), ...($editsOrganisation ? $this->labelOrganisationSections($selection, [$statusSection]) : [])];
         $updateRoute = [
             'name' => 'grp.models.supplier.update',
             'parameters' => $supplier->id,
@@ -85,7 +86,9 @@ class EditOrgSupplier extends OrgAction
             $blueprint[] = $this->supplierAgentSection($supplier);
         }
 
-        $blueprint = array_merge($blueprint, $this->labelOrganisationSections($selection, $this->procurementSerialReferenceSections($orgSupplier, $orgSupplierUpdateRoute)));
+        if ($editsOrganisation) {
+            $blueprint = array_merge($blueprint, $this->labelOrganisationSections($selection, $this->procurementSerialReferenceSections($orgSupplier, $orgSupplierUpdateRoute)));
+        }
 
         return Inertia::render(
             'EditModel',
@@ -133,7 +136,8 @@ class EditOrgSupplier extends OrgAction
 
     /**
      * On the agent's one page per supplier, fields kept per buying organisation say whose they are: the selected
-     * organisation's, or in All the first buying organisation's (AW).
+     * organisation's, or in All the first buying organisation's (AW). They are saved as that organisation, so only
+     * who may edit its procurement gets them.
      *
      * @param  array<int, array<string, mixed>>  $sections
      * @return array<int, array<string, mixed>>

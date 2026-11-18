@@ -23,6 +23,8 @@ import {
 import SupplierProductShowcase from "@/Components/Showcases/Grp/SupplierProductShowcase.vue";
 import TableSupplierProducts from "@/Components/Tables/Grp/SupplyChain/TableSupplierProducts.vue";
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue";
+import TableStockDeliveries from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveries.vue";
+import TableAgentSupplierProductSuppliers from "@/Components/Tables/Grp/Org/Procurement/TableAgentSupplierProductSuppliers.vue";
 import { capitalize } from "@/Composables/capitalize"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import TableSupplierAgreedTerms from '@/Components/Tables/Grp/Org/Procurement/TableSupplierAgreedTerms.vue'
@@ -54,6 +56,8 @@ const props = defineProps<{
     agreed_terms?: object
     notes?: object
     packing?: object
+    suppliers?: object
+    deliveries?: object
     agreement: object
 }>()
 
@@ -81,6 +85,8 @@ const component = computed(() => {
         showcase: SupplierProductShowcase,
         supplier_products: TableSupplierProducts,
         purchase_orders: TablePurchaseOrders,
+        suppliers: TableAgentSupplierProductSuppliers,
+        deliveries: TableStockDeliveries,
         details: ModelDetails,
         agreed_terms: TableSupplierAgreedTerms,
         notes: TableProcurementNotes,

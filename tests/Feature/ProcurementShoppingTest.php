@@ -3996,15 +3996,15 @@ test('an agent steps through its supplier products by code, not through the same
     $openedInOtherOrganisation = $products['B']->firstWhere('organisation_id', $otherOrganisation->id);
 
     $this->withoutVite()
-        ->get(route('grp.org.agent.org_supplier_products.show', [$agent->organisation->slug, $openedInOtherOrganisation->slug]))
+        ->get(route('grp.org.agent.org_supplier_products.show', [$agent->organisation->slug, $openedInOtherOrganisation->supplierProduct->slug]).'?organisation='.$otherOrganisation->slug)
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('navigation.previous.route.parameters.orgSupplierProduct', $products['A']->first()->slug)
-            ->where('navigation.next.route.parameters.orgSupplierProduct', $products['C']->first()->slug));
+            ->where('navigation.previous.route.parameters.supplierProduct', $products['A']->first()->supplierProduct->slug)
+            ->where('navigation.next.route.parameters.supplierProduct', $products['C']->first()->supplierProduct->slug));
 
-    $this->get(route('grp.org.agent.org_supplier_products.show', [$agent->organisation->slug, $products['C']->last()->slug]))
+    $this->get(route('grp.org.agent.org_supplier_products.show', [$agent->organisation->slug, $products['C']->last()->supplierProduct->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('navigation.previous.route.parameters.orgSupplierProduct', $products['B']->first()->slug)
+            ->where('navigation.previous.route.parameters.supplierProduct', $products['B']->first()->supplierProduct->slug)
             ->where('navigation.next', null));
 });
 

@@ -152,7 +152,7 @@ class CopySupplierProductsToSupplier extends OrgAction
             ->each(fn (Stock $stock) => SetStockPreferredSupplierProduct::make()->handle($stock, $target));
     }
 
-    private function canBecomePreferred(SupplierProduct $target): bool
+    public static function canBecomePreferred(SupplierProduct $target): bool
     {
         return $target->is_available
             && !in_array($target->state, [SupplierProductStateEnum::DISCONTINUING, SupplierProductStateEnum::DISCONTINUED], true)

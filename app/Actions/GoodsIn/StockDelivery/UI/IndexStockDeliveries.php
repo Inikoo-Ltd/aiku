@@ -31,6 +31,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
+use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Organisation;
@@ -54,7 +55,7 @@ class IndexStockDeliveries extends OrgAction
     use WithSupplierSubNavigation;
     use WithAgentOrganisation;
 
-    private Warehouse|Organisation|OrgAgent|OrgPartner|OrgSupplier|Agent|Supplier $parent;
+    private Warehouse|Organisation|OrgAgent|OrgPartner|OrgSupplier|OrgSupplierProduct|Agent|Supplier $parent;
 
     private const array STAGED_STATES = [
         StockDeliveryStateEnum::IN_PROCESS,
@@ -315,7 +316,7 @@ class IndexStockDeliveries extends OrgAction
      */
     private function agentViewingSupplier(): ?Agent
     {
-        return $this->parent instanceof OrgSupplier ? $this->getOrganisationAgent($this->organisation) : null;
+        return $this->parent instanceof OrgSupplier || $this->parent instanceof OrgSupplierProduct ? $this->getOrganisationAgent($this->organisation) : null;
     }
 
     private function applyParentFilter($query)
@@ -327,6 +328,14 @@ class IndexStockDeliveries extends OrgAction
                 ->where('stock_deliveries.agent_id', $this->parent->agent_id);
         } elseif ($this->parent instanceof OrgPartner) {
             $query->where('stock_deliveries.organisation_id', $this->parent->partner->id);
+        } elseif ($this->parent instanceof OrgSupplierProduct && $agent = $this->agentViewingSupplier()) {
+            $query->where(fn ($query) => $this->whereAgentSupplierDelivery($query, $agent, $this->parent->supplierProduct->supplier_id))
+                ->whereExists(fn ($query) => $query->selectRaw('1')->from('stock_delivery_items')
+                    ->whereColumn('stock_delivery_items.stock_delivery_id', 'stock_deliveries.id')
+                    ->where('stock_delivery_items.supplier_product_id', $this->parent->supplier_product_id));
+            if ($selected = AgentOrganisationSelection::fromRequest()?->selected) {
+                $query->where('stock_deliveries.organisation_id', $selected->id);
+            }
         } elseif ($this->parent instanceof OrgSupplier && $agent = $this->agentViewingSupplier()) {
             $query->where(fn ($query) => $this->whereAgentSupplierDelivery($query, $agent, $this->parent->supplier_id));
             if ($selected = AgentOrganisationSelection::fromRequest()?->selected) {
@@ -553,6 +562,18 @@ class IndexStockDeliveries extends OrgAction
         $this->initialisation($organisation, $request);
 
         return $this->handle();
+    }
+
+    /**
+     * The Containers tab of an agent's supplier product: the agent's deliveries carrying it, for every buying
+     * organisation or the one selected.
+     */
+    public function withAgentSupplierProduct(Organisation $organisation, OrgSupplierProduct $orgSupplierProduct): static
+    {
+        $this->organisation = $organisation;
+        $this->parent       = $orgSupplierProduct;
+
+        return $this;
     }
 
     public function inOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): LengthAwarePaginator

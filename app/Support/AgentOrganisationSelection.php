@@ -34,9 +34,13 @@ readonly class AgentOrganisationSelection
     ) {
     }
 
-    public static function fromRequest(?Request $request = null): ?self
+    /**
+     * The selection of the page's own record, or with $parameter (supplier, supplierProduct) of that record,
+     * as a supplier's product page has both.
+     */
+    public static function fromRequest(?Request $request = null, ?string $parameter = null): ?self
     {
-        $selection = ($request ?? request())->attributes->get(self::ATTRIBUTE);
+        $selection = ($request ?? request())->attributes->get($parameter ? self::ATTRIBUTE.'.'.$parameter : self::ATTRIBUTE);
 
         return $selection instanceof self ? $selection : null;
     }

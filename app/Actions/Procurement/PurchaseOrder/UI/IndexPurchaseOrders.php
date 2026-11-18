@@ -258,6 +258,9 @@ class IndexPurchaseOrders extends OrgAction
             $query->joinSub($productTransactions, 'product_transactions', function ($join) {
                 $join->on('purchase_orders.id', '=', 'product_transactions.purchase_order_id');
             });
+            if ($parent instanceof OrgSupplierProduct && $this->viewingAgent && $selected = AgentOrganisationSelection::fromRequest()?->selected) {
+                $query->where('purchase_orders.organisation_id', $selected->id);
+            }
         } else {
             $query->where('purchase_orders.organisation_id', $parent->id);
         }

@@ -17,6 +17,7 @@ use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Support\AgentOrganisationSelection;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditOrgSupplierProduct extends OrgAction
@@ -40,6 +41,7 @@ class EditOrgSupplierProduct extends OrgAction
     public function htmlResponse(OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): Response
     {
         $supplierProduct = $orgSupplierProduct->supplierProduct;
+        $selection       = AgentOrganisationSelection::fromRequest($request, 'supplierProduct');
 
         return Inertia::render(
             'EditModel',
@@ -57,15 +59,17 @@ class EditOrgSupplierProduct extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                            'route' => $selection
+                                ? $selection->route('grp.org.procurement.org_supplier_products.show', $request->route()->originalParameters())
+                                : [
+                                    'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                    'parameters' => array_values($request->route()->originalParameters())
+                                ]
                         ]
                     ]
                 ],
                 'formData'    => $this->organisationAgentSupplies($orgSupplierProduct)
-                    ? $this->getAgentFormData($orgSupplierProduct, $supplierProduct)
+                    ? $this->withOrganisationFields($this->getAgentFormData($orgSupplierProduct, $supplierProduct), $orgSupplierProduct, $selection)
                     : $this->getOrganisationFormData($orgSupplierProduct),
             ]
         );
@@ -189,5 +193,34 @@ class EditOrgSupplierProduct extends OrgAction
             routeParameters: $routeParameters,
             suffix: '('.__('Editing').')'
         );
+    }
+
+    /**
+     * On the agent's one page per supplier product the edit form also has the fields kept per buying organisation,
+     * saying whose they are: the selected organisation's, or in All the first buying organisation's (AW). They are
+     * saved as that organisation, so only who may edit its procurement gets them.
+     *
+     * @param  array{blueprint: array<int, array<string, mixed>>, args: array<string, mixed>}  $formData
+     * @return array{blueprint: array<int, array<string, mixed>>, args: array<string, mixed>}
+     */
+    private function withOrganisationFields(array $formData, OrgSupplierProduct $orgSupplierProduct, ?AgentOrganisationSelection $selection): array
+    {
+        if (!$selection || !request()->user()?->authTo("procurement.$orgSupplierProduct->organisation_id.edit")) {
+            return $formData;
+        }
+
+        $organisationForm = $this->getOrganisationFormData($orgSupplierProduct);
+        $updateRoute      = $organisationForm['args']['updateRoute'];
+
+        foreach ($organisationForm['blueprint'] as $section) {
+            $formData['blueprint'][] = [
+                ...$section,
+                'label'  => $selection->label($section['title']),
+                'title'  => $selection->label($section['title']),
+                'fields' => array_map(fn (array $field) => [...$field, 'label' => $selection->label($field['label']), 'updateRoute' => $updateRoute], $section['fields']),
+            ];
+        }
+
+        return $formData;
     }
 }

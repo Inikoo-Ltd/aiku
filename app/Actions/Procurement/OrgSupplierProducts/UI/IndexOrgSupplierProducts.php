@@ -64,7 +64,7 @@ class IndexOrgSupplierProducts extends OrgAction
 
         $organisationAgent = $this->getParentOrganisationAgent($parent);
 
-        $selection         = $parent instanceof OrgSupplier ? AgentOrganisationSelection::fromRequest() : null;
+        $selection         = $parent instanceof OrgSupplier ? AgentOrganisationSelection::fromRequest(parameter: 'supplier') : null;
 
         if ($parent instanceof OrgAgent) {
             $query->where('org_supplier_products.org_agent_id', $parent->id);
@@ -141,7 +141,7 @@ class IndexOrgSupplierProducts extends OrgAction
 
         if ($parent instanceof OrgAgent) {
             $queryBuilder->where('org_supplier_products.org_agent_id', $parent->id);
-        } elseif ($parent instanceof OrgSupplier && $selection = AgentOrganisationSelection::fromRequest()) {
+        } elseif ($parent instanceof OrgSupplier && $selection = AgentOrganisationSelection::fromRequest(parameter: 'supplier')) {
             $queryBuilder->whereIn('org_supplier_products.org_supplier_id', $selection->selectedRows()->pluck('id'))
                 ->leftJoin('organisations', 'organisations.id', 'org_supplier_products.organisation_id');
         } elseif ($parent instanceof OrgSupplier) {
@@ -168,7 +168,7 @@ class IndexOrgSupplierProducts extends OrgAction
             'currencies.code as currency_code',
         ]);
 
-        if ($parent instanceof OrgSupplier && AgentOrganisationSelection::fromRequest()) {
+        if ($parent instanceof OrgSupplier && AgentOrganisationSelection::fromRequest(parameter: 'supplier')) {
             $queryBuilder->addSelect('organisations.code as organisation_code');
         }
 
@@ -216,9 +216,9 @@ class IndexOrgSupplierProducts extends OrgAction
                     'suppliers.name as supplier_name',
                 ])
                 ->selectRaw('min(org_supplier_products.id) as id')
-                ->selectRaw('min(org_supplier_products.slug) as slug')
-                ->selectRaw('min(org_suppliers.slug) as org_supplier_slug')
-                ->groupBy('supplier_products.id', 'currencies.code', 'suppliers.name');
+                ->selectRaw('supplier_products.slug as slug')
+                ->selectRaw('suppliers.slug as org_supplier_slug')
+                ->groupBy('supplier_products.id', 'currencies.code', 'suppliers.name', 'suppliers.slug');
 
             $this->addAgentProductFacts($queryBuilder, $organisationAgent);
         }
@@ -309,7 +309,7 @@ class IndexOrgSupplierProducts extends OrgAction
                 $table->column(key: 'supplier_name', label: __('Supplier'), canBeHidden: false, sortable: true);
             }
 
-            if ($parent instanceof OrgSupplier && AgentOrganisationSelection::fromRequest()) {
+            if ($parent instanceof OrgSupplier && AgentOrganisationSelection::fromRequest(parameter: 'supplier')) {
                 $table->column(key: 'organisation_code', label: __('Organisation'), canBeHidden: false, sortable: true);
             }
 

@@ -3843,7 +3843,7 @@ test('HELP-4019 an agent sees its product by our code with what to fix, and neve
     StockHasSupplierProduct::firstOrCreate(['stock_id' => $this->stocks[0]->id, 'supplier_product_id' => $orgSupplierProduct->supplier_product_id]);
 
     $this->withoutExceptionHandling();
-    $this->get(route('grp.org.agent.org_supplier_products.show', [$agentOrganisation->slug, $orgSupplierProduct->slug]))
+    $this->get(route('grp.org.agent.org_supplier_products.show', [$agentOrganisation->slug, $orgSupplierProduct->supplierProduct->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('pageHead.title', $this->stocks[0]->code)
             ->where('showcase.agent.internal_code', $this->stocks[0]->code)
@@ -3996,7 +3996,7 @@ test('HELP-4019 an agent sets a family at its supplier, and the products and the
     ])->assertSessionHasNoErrors();
 
     $this->withoutExceptionHandling();
-    $this->get(route('grp.org.agent.org_supplier_products.show', [$agentOrganisation->slug, $orgSupplierProduct->slug]))
+    $this->get(route('grp.org.agent.org_supplier_products.show', [$agentOrganisation->slug, $orgSupplierProduct->supplierProduct->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('showcase.agent.key.moq.cartons', 6)
             ->where('showcase.agent.key.moq.source', 'family')

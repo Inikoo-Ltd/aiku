@@ -76,7 +76,7 @@ class ShowOrgSupplier extends OrgAction
     public function htmlResponse(OrgSupplier $orgSupplier, ActionRequest $request): Response
     {
         $forAgent              = $this->organisation->type === OrganisationTypeEnum::AGENT || $orgSupplier->organisation_id !== $this->organisation->id;
-        $selection             = AgentOrganisationSelection::fromRequest($request);
+        $selection             = AgentOrganisationSelection::fromRequest($request, 'supplier');
         $supplier              = $orgSupplier->supplier;
         $agreementOrganisation = $selection ? $selection->selected : $orgSupplier->organisation;
         $inboxParent           = $selection ? $supplier : $orgSupplier;
@@ -163,8 +163,8 @@ class ShowOrgSupplier extends OrgAction
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value))
             ->table(IndexSupplierAgreedTerms::make()->tableStructure(prefix: SupplierTabsEnum::AGREED_TERMS->value))
-            ->table(IndexProcurementNotes::make()->tableStructure(prefix: SupplierTabsEnum::NOTES->value, withOrganisation: AgentOrganisationSelection::fromRequest($request) !== null))
-            ->table(IndexSupplierMessages::make()->tableStructure(AgentOrganisationSelection::fromRequest($request) ? $orgSupplier->supplier : $orgSupplier, prefix: SupplierTabsEnum::INBOX->value))
+            ->table(IndexProcurementNotes::make()->tableStructure(prefix: SupplierTabsEnum::NOTES->value, withOrganisation: AgentOrganisationSelection::fromRequest($request, 'supplier') !== null))
+            ->table(IndexSupplierMessages::make()->tableStructure(AgentOrganisationSelection::fromRequest($request, 'supplier') ? $orgSupplier->supplier : $orgSupplier, prefix: SupplierTabsEnum::INBOX->value))
             ->table(IndexAttachments::make()->tableStructure(prefix: SupplierTabsEnum::ATTACHMENTS->value));
     }
 
@@ -192,7 +192,7 @@ class ShowOrgSupplier extends OrgAction
         $label = isset($routeParameters['supplier'])
             ? Supplier::where('slug', $routeParameters['supplier'])->value('code')
             : OrgSupplier::where('slug', $routeParameters['orgSupplier'] ?? null)->first()?->supplier->code;
-        $selection = AgentOrganisationSelection::fromRequest();
+        $selection = AgentOrganisationSelection::fromRequest(parameter: 'supplier');
         if ($selection && isset($routeParameters['supplier'])) {
             $routeParameters = $selection->route('', Arr::only($routeParameters, ['organisation', 'supplier']))['parameters'];
         }
@@ -251,7 +251,7 @@ class ShowOrgSupplier extends OrgAction
 
     public function getPrevious(OrgSupplier $orgSupplier, ActionRequest $request): ?array
     {
-        if (AgentOrganisationSelection::fromRequest($request)) {
+        if (AgentOrganisationSelection::fromRequest($request, 'supplier')) {
             return $this->getAgentSupplierNavigation($orgSupplier->supplier, '<');
         }
 
@@ -262,7 +262,7 @@ class ShowOrgSupplier extends OrgAction
 
     public function getNext(OrgSupplier $orgSupplier, ActionRequest $request): ?array
     {
-        if (AgentOrganisationSelection::fromRequest($request)) {
+        if (AgentOrganisationSelection::fromRequest($request, 'supplier')) {
             return $this->getAgentSupplierNavigation($orgSupplier->supplier, '>');
         }
 

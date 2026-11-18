@@ -586,6 +586,7 @@ use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductMinimumC
 use App\Actions\Procurement\PurchaseOrder\PokeOrganisationsForMinimumOrder;
 use App\Actions\Procurement\OrgSupplierProducts\LinkOrgSupplierProductToGroupSko;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductAgentDetails;
+use App\Actions\Procurement\OrgSupplierProducts\SetAgentSupplierProductPreferred;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductCartonBarcode;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductCartonWeights;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductSupplierContacts;
@@ -1239,6 +1240,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('org-supplier/from-supplier/{supplier:id}', [StoreOrgSupplier::class, 'inOrganisation'])->name('org_supplier.store')->withoutScopedBindings();
     Route::post('stock-delivery-service-invoice', StoreStockDeliveryServiceInvoice::class)->name('stock_delivery_service_invoice.store');
     Route::patch('org-supplier-product/{orgSupplierProduct:id}/agent-details', UpdateOrgSupplierProductAgentDetails::class)->name('org_supplier_product.agent_details.update')->withoutScopedBindings();
+    Route::post('agent-supplier-product/{supplierProduct:id}/set-preferred', SetAgentSupplierProductPreferred::class)->name('agent_supplier_product.set_preferred')->withoutScopedBindings();
     Route::patch('agent-supplier/{supplier:id}/family/{stockFamily:id}', UpdateAgentSupplierStockFamily::class)->name('agent_supplier.family.update')->withoutScopedBindings();
     Route::patch('agent-supplier/{supplier:id}/contacts', UpdateAgentSupplierContacts::class)->name('agent_supplier.contacts.update')->withoutScopedBindings();
     Route::patch('org-supplier-product/{orgSupplierProduct:id}/supplier-contacts', UpdateOrgSupplierProductSupplierContacts::class)->name('org_supplier_product.supplier_contacts.update')->withoutScopedBindings();

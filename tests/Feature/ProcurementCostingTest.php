@@ -4998,9 +4998,12 @@ test('an agent has one page per supplier with an organisation selector, and the 
     expect(collect($productRows)->pluck('organisation_code')->unique()->sort()->values()->all())
         ->toBe(OrgSupplierProduct::whereIn('org_supplier_id', OrgSupplier::where('supplier_id', $supplier->id)->select('id'))->with('organisation')->get()->pluck('organisation.code')->unique()->sort()->values()->all());
 
-    $this->get(route('grp.org.agent.org_suppliers.edit', [$agentOrganisation->slug, $supplier->slug]).'?organisation='.$otherBuyer->slug)
-        ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('formData.blueprint', fn ($sections) => collect($sections)->pluck('fields')->collapse()->pluck('label')->contains('Active ('.$otherBuyer->code.')')));
+    $editLabels = fn () => collect($this->get(route('grp.org.agent.org_suppliers.edit', [$agentOrganisation->slug, $supplier->slug]).'?organisation='.$otherBuyer->slug)
+        ->assertOk()->viewData('page')['props']['formData']['blueprint'])->pluck('fields')->collapse()->pluck('label');
+    expect($editLabels()->contains('Active ('.$otherBuyer->code.')'))->toBeFalse();
+    actingAs($this->adminGuest->getUser());
+    expect($editLabels()->contains('Active ('.$otherBuyer->code.')'))->toBeTrue();
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-379b-'.Str::lower(Str::random(6))));
 
     $noteForAll   = App\Actions\Procurement\ProcurementNote\StoreProcurementNote::make()->action($supplier, ['title' => 'INI-379 for all', 'category' => 'currency_payment', 'visibility' => 'agent', 'organisation_id' => null], strict: false);
     $noteForBuyer = App\Actions\Procurement\ProcurementNote\StoreProcurementNote::make()->action($supplier, ['title' => 'INI-379 for buyer', 'category' => 'currency_payment', 'visibility' => 'agent', 'organisation_id' => $otherBuyer->id], strict: false);
@@ -5030,6 +5033,77 @@ test('an agent has one page per supplier with an organisation selector, and the 
     $counterpart = \App\Actions\Procurement\SupplierMessage\AssignSupplierMessage::findCounterpart($agentOrganisation, 'agent_supplier:'.$supplier->id);
     expect($counterpart->is($supplier))->toBeTrue()
         ->and(\App\Models\Procurement\SupplierMessage::counterpartAttributes($counterpart))->toBe(['supplier_id' => $supplier->id, 'org_supplier_id' => null, 'org_agent_id' => null, 'org_partner_id' => null]);
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('an agent has one page per supplier product with an organisation selector and a Suppliers tab where it sets the preferred supplier (INI-380)', function () {
+    $orgAgent          = createFreshOrgAgent($this);
+    $agent             = $orgAgent->agent;
+    $agentOrganisation = $agent->organisation;
+    $otherBuyer        = Organisation::where('code', 'prc2')->first()
+        ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
+    StoreOrgAgent::make()->action($otherBuyer, $agent, []);
+
+    [, $current] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [, $other]   = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $buyer       = $current->organisation;
+    $orgStock    = OrgStock::where('stock_id', $this->stocks[0]->id)->where('organisation_id', $buyer->id)->firstOrFail();
+    foreach ([$current, $other] as $index => $orgSupplierProduct) {
+        $stockLink = StockHasSupplierProduct::firstOrCreate(['stock_id' => $this->stocks[0]->id, 'supplier_product_id' => $orgSupplierProduct->supplier_product_id], ['available' => true, 'priority' => 0]);
+        OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->where('org_supplier_product_id', $orgSupplierProduct->id)->exists()
+            || App\Actions\Inventory\OrgStockHasOrgSupplierProduct\StoreOrgStockHasOrgSupplierProduct::make()->action($stockLink, $orgStock, $orgSupplierProduct, ['status' => true, 'local_priority' => $index === 0 ? 10 : 0], strict: false);
+    }
+    OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->where('org_supplier_product_id', $current->id)->update(['local_priority' => 10]);
+    $currentInOtherBuyer = StoreOrgSupplierProduct::make()->action(OrgSupplier::where('supplier_id', $current->supplierProduct->supplier_id)->where('organisation_id', $otherBuyer->id)->firstOrFail(), $current->supplierProduct);
+
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-380-'.Str::lower(Str::random(6))));
+
+    $page = route('grp.org.agent.org_supplier_products.show', [$agentOrganisation->slug, $current->supplierProduct->slug]);
+    $this->get(route('grp.org.agent.org_supplier_products.show', [$agentOrganisation->slug, $currentInOtherBuyer->slug]))
+        ->assertRedirect($page.'?organisation='.$otherBuyer->slug);
+
+    $suppliersTab = fn (string $url) => $this->get($url)->assertOk()->viewData('page')['props']['suppliers'];
+
+    $all = $suppliersTab($page.'?tab=suppliers');
+    expect(collect($all['data'])->pluck('id')->sort()->values()->all())->toBe(collect([$current->supplier_product_id, $other->supplier_product_id])->sort()->values()->all())
+        ->and(collect($all['preferred_by_organisation'])->pluck('product_code', 'organisation_code')->all())->toBe([$buyer->code => $current->supplierProduct->code, $otherBuyer->code => null])
+        ->and($all['set_preferred']['organisation_id'])->toBeNull();
+
+    $selected = $suppliersTab($page.'?tab=suppliers&organisation='.$buyer->slug);
+    expect($selected['preferred_by_organisation'])->toBeNull()
+        ->and(collect($selected['data'])->firstWhere('is_preferred', true)['id'])->toBe($current->supplier_product_id);
+
+    $this->postJson(route('grp.models.org.agent_supplier_product.set_preferred', [$agentOrganisation->id, $current->supplier_product_id]), ['supplier_product_id' => $other->supplier_product_id])
+        ->assertOk()
+        ->assertJson(['updated' => [$buyer->code], 'skipped' => [$otherBuyer->code]]);
+    expect(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->orderByDesc('local_priority')->value('org_supplier_product_id'))->toBe($other->id);
+
+    $this->postJson(route('grp.models.org.agent_supplier_product.set_preferred', [$agentOrganisation->id, $current->supplier_product_id]), ['supplier_product_id' => $current->supplier_product_id, 'organisation_id' => $otherBuyer->id])
+        ->assertOk()
+        ->assertJson(['updated' => [], 'skipped' => [$otherBuyer->code]]);
+    expect(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->orderByDesc('local_priority')->value('org_supplier_product_id'))->toBe($other->id);
+
+    $this->postJson(route('grp.models.org.agent_supplier_product.set_preferred', [$agentOrganisation->id, $current->supplier_product_id]), ['supplier_product_id' => $current->supplier_product_id, 'organisation_id' => $buyer->id])
+        ->assertOk()
+        ->assertJson(['updated' => [$buyer->code], 'skipped' => []]);
+    expect(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->orderByDesc('local_priority')->value('org_supplier_product_id'))->toBe($current->id);
+
+    $productEditLabels = fn () => collect($this->get(route('grp.org.agent.org_supplier_products.edit', [$agentOrganisation->slug, $current->supplierProduct->slug]).'?organisation='.$otherBuyer->slug)
+        ->assertOk()->viewData('page')['props']['formData']['blueprint'])->pluck('fields')->collapse()->pluck('label');
+    expect($productEditLabels()->contains('Status ('.$otherBuyer->code.')'))->toBeFalse();
+    actingAs($this->adminGuest->getUser());
+    expect($productEditLabels()->contains('Status ('.$otherBuyer->code.')'))->toBeTrue();
+
+    setPermissionsTeamId($this->group->id);
+    actingAs(StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser());
+    $this->postJson(route('grp.models.org.agent_supplier_product.set_preferred', [$agentOrganisation->id, $current->supplier_product_id]), ['supplier_product_id' => $other->supplier_product_id])
+        ->assertForbidden();
+    expect(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->orderByDesc('local_priority')->value('org_supplier_product_id'))->toBe($current->id);
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-380b-'.Str::lower(Str::random(6))));
+
+    $this->get($page.'?tab=deliveries&organisation='.$buyer->slug)->assertOk();
+    $this->get($page.'?tab=purchase_orders&organisation='.$buyer->slug)->assertOk();
 
     actingAs($this->adminGuest->getUser());
 });

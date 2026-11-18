@@ -78,6 +78,7 @@ class ResolveAgentOrganisationSelection
                 slug: $slug,
             );
             $request->attributes->set(AgentOrganisationSelection::ATTRIBUTE, $selection);
+            $request->attributes->set(AgentOrganisationSelection::ATTRIBUTE.'.'.$parameter, $selection);
 
             $this->replaceParameter($route, $parameter, $orgParameter, $selection->pageRow);
         }

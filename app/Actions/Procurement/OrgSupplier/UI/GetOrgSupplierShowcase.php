@@ -82,6 +82,6 @@ class GetOrgSupplierShowcase
      */
     private function withOrganisationLabel(string $reference): string
     {
-        return AgentOrganisationSelection::fromRequest()?->label($reference) ?? $reference;
+        return AgentOrganisationSelection::fromRequest(parameter: 'supplier')?->label($reference) ?? $reference;
     }
 }

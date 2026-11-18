@@ -17,6 +17,7 @@ enum OrgSupplierProductTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case SUPPLIERS = 'suppliers';
     case AGREED_TERMS = 'agreed_terms';
     case NOTES = 'notes';
     case PACKING = 'packing';
@@ -58,6 +59,10 @@ enum OrgSupplierProductTabsEnum: string
                 'icon'  => 'fal fa-box-usd',
             ],
 
+            OrgSupplierProductTabsEnum::SUPPLIERS => [
+                'title' => __('Suppliers'),
+                'icon'  => 'fal fa-person-dolly',
+            ],
             OrgSupplierProductTabsEnum::PURCHASE_ORDERS => [
                 'title' => __('Purchase orders'),
                 'icon'  => 'fal fa-clipboard',

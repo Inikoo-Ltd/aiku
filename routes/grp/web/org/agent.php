@@ -121,7 +121,7 @@ Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
     Route::get('{supplier}/edit', EditOrgSupplier::class)->middleware(ResolveAgentOrganisationSelection::class)->name('edit');
     Route::get('{supplier}/purchase-order/{purchaseOrder}', [ShowPurchaseOrder::class, 'inOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.purchase-orders.show');
     Route::get('{supplier}/supplier-products', [IndexOrgSupplierProducts::class, 'inOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.supplier_products.index');
-    Route::get('{supplier}/supplier-products/{orgSupplierProduct}', [ShowOrgSupplierProduct::class, 'inOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.supplier_products.show');
+    Route::get('{supplier}/supplier-products/{supplierProduct}', [ShowOrgSupplierProduct::class, 'inOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.supplier_products.show');
     Route::get('{supplier}/purchase-orders', [IndexPurchaseOrders::class, 'inOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.purchase_orders.index');
     Route::get('{supplier}/containers', [IndexStockDeliveries::class, 'inOrgSupplier'])->middleware(ResolveAgentOrganisationSelection::class)->name('show.stock_deliveries.index');
     Route::get('{supplier}/repair', IndexRepairSupplierProducts::class)->middleware(ResolveAgentOrganisationSelection::class)->name('show.repair_supplier_products.index');
@@ -134,8 +134,8 @@ Route::prefix('supplier-products')->as('org_supplier_products.')->group(function
     Route::get('', IndexOrgSupplierProducts::class)->name('index');
     Route::get('labels', PdfOrgSupplierProductLabels::class)->name('labels');
     Route::get('labels/plan', GetOrgSupplierProductLabelsPlan::class)->name('labels.plan');
-    Route::get('{orgSupplierProduct}', ShowOrgSupplierProduct::class)->name('show');
-    Route::get('{orgSupplierProduct}/edit', EditOrgSupplierProduct::class)->name('edit');
+    Route::get('{supplierProduct}', ShowOrgSupplierProduct::class)->middleware(ResolveAgentOrganisationSelection::class)->name('show');
+    Route::get('{supplierProduct}/edit', EditOrgSupplierProduct::class)->middleware(ResolveAgentOrganisationSelection::class)->name('edit');
 });
 
 Route::get('sales', ShowAgentSales::class)->name('sales.dashboard');

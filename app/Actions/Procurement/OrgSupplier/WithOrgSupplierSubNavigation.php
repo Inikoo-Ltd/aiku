@@ -31,7 +31,7 @@ trait WithOrgSupplierSubNavigation
      */
     protected function getOrgSupplierPurchaseOrderAction(OrgSupplier $orgSupplier): array
     {
-        $selection = AgentOrganisationSelection::fromRequest();
+        $selection = AgentOrganisationSelection::fromRequest(parameter: 'supplier');
         if ($selection && !$selection->selected && $selection->rows->first() instanceof OrgSupplier) {
             return [
                 'type'   => 'buttonGroup',
@@ -65,7 +65,7 @@ trait WithOrgSupplierSubNavigation
 
     public static function orgSupplierRoute(string $organisationSlug, OrgSupplier $orgSupplier, string $page, ?OrgAgent $orgAgent = null): array
     {
-        $selection = AgentOrganisationSelection::fromRequest();
+        $selection = AgentOrganisationSelection::fromRequest(parameter: 'supplier');
         if (!$orgAgent && $selection) {
             return $selection->route("grp.org.procurement.org_suppliers.$page", ['organisation' => $organisationSlug, 'supplier' => $orgSupplier->supplier->slug]);
         }
@@ -99,7 +99,7 @@ trait WithOrgSupplierSubNavigation
             return null;
         }
 
-        $selection       = AgentOrganisationSelection::fromRequest();
+        $selection       = AgentOrganisationSelection::fromRequest(parameter: 'supplier');
         $organisationIds = $selection?->selected ? [$selection->selected->id] : null;
 
         $purchaseOrders = PurchaseOrder::where('agent_id', $agent->id)
