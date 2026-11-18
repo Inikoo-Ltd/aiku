@@ -165,6 +165,7 @@ class GetGroupNavigation
                             'label' => __('Cash'),
                             'icon'  => ['fal', 'fa-coins'],
                             'root'  => 'grp.financials.cash.',
+                            'roots' => ['grp.financials.cash_flow.'],
                             'route' => [
                                 'name' => 'grp.financials.cash.index',
                             ],

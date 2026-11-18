@@ -14,9 +14,11 @@ use App\Actions\Accounting\BankTransaction\UI\IndexBankOutgoing;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithAccountingPagesAuthorisation;
+use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
 use App\Models\Accounting\BankConnection;
 use App\Models\Helpers\Currency;
+use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -28,8 +30,8 @@ use Lorisleiva\Actions\ActionRequest;
 /**
  * The cash flow of one organisation's connected banks, week by week (Monday to Sunday) or month by month: the cash
  * at the start, the money received and paid by Bank incoming and Bank outgoing section, and the cash at the end.
- * Each organisation is its own company with its own accountants, so there is no group view. Weeks and months follow
- * the organisation's time zone.
+ * The group view adds up the organisations the user may see, each converted to the group's currency at the same
+ * rates, period by period. Weeks and months follow each organisation's time zone.
  *
  * The cash at any moment is worked back from the last balances read from each bank, less the lines booked after them:
  * a currency missing from that reading holds nothing (the bank closed it), and a bank never read is taken as starting
@@ -39,16 +41,70 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowCashFlow extends OrgAction
 {
-    use WithAccountingPagesAuthorisation;
+    use WithAccountingPagesAuthorisation {
+        authorize as authorizeInOrganisation;
+    }
 
     public const array INTERVALS = ['week', 'month'];
 
     public const int PERIODS = 12;
 
+    /** @var Collection<int, Organisation>|null */
+    private ?Collection $groupOrganisations = null;
+
+    private ?string $organisationSlug = null;
+
+    /**
+     * @param Collection<int, Organisation>|null $organisations the organisations read when the parent is the group
+     * @return array<string, mixed>
+     */
+    public function handle(Organisation|Group $parent, string $interval = 'week', ?Carbon $now = null, ?Collection $organisations = null): array
+    {
+        if ($parent instanceof Organisation) {
+            return $this->ofOrganisation($parent, $interval, $now, (int) $parent->currency_id);
+        }
+
+        $target = (int) $parent->currency_id;
+        $each   = ($organisations ?? collect())->map(fn (Organisation $organisation) => [$organisation, $this->ofOrganisation($organisation, $interval, $now, $target)]);
+        $sum    = fn (Collection $sections) => collect($sections->first())->map(fn (float $amount, string $key) => round($sections->sum($key), 2))->all();
+
+        $periods = $each->isEmpty() ? collect() : collect(range(0, self::PERIODS - 1))->map(function (int $index) use ($each, $sum) {
+            $rows = $each->map(fn (array $pair) => $pair[1]['periods'][$index]);
+
+            return array_merge($rows->first(), [
+                'opening'     => round($rows->sum('opening'), 2),
+                'in'          => $sum($rows->pluck('in')),
+                'total_in'    => round($rows->sum('total_in'), 2),
+                'out'         => $sum($rows->pluck('out')),
+                'total_out'   => round($rows->sum('total_out'), 2),
+                'conversions' => round($rows->sum('conversions'), 2),
+                'closing'     => round($rows->sum('closing'), 2),
+            ]);
+        });
+        $withBanks = $each->filter(fn (array $pair) => count($pair[1]['banks']) > 0);
+
+        return [
+            'currency'       => $parent->currency->code,
+            'interval'       => $interval,
+            'periods'        => $periods->all(),
+            'banks'          => $each->flatMap(fn (array $pair) => collect($pair[1]['banks'])->map(fn (array $bank) => array_merge($bank, ['name' => $bank['name'].' ('.$pair[0]->code.')'])))->values()->all(),
+            'timezone'       => $each->pluck('1.timezone')->unique()->implode(', '),
+            'checked_from'   => $withBanks->contains(fn (array $pair) => $pair[1]['checked_from'] === null) ? null : $withBanks->pluck('1.checked_from')->max(),
+            'unconverted'    => $each->flatMap(fn (array $pair) => $pair[1]['unconverted'])->unique()->sort()->values()->all(),
+            'not_connected'  => ShowCash::notConnected($each->pluck(0)),
+            'organisations'  => $withBanks->map(fn (array $pair) => [
+                'code'    => $pair[0]->code,
+                'name'    => $pair[0]->name,
+                'closing' => collect($pair[1]['periods'])->last()['closing'],
+                'net'     => round(collect($pair[1]['periods'])->sum(fn (array $period) => $period['total_in'] - $period['total_out']), 2),
+            ])->values()->all(),
+        ];
+    }
+
     /**
      * @return array<string, mixed>
      */
-    public function handle(Organisation $organisation, string $interval = 'week', ?Carbon $now = null): array
+    private function ofOrganisation(Organisation $organisation, string $interval, ?Carbon $now, int $target): array
     {
         $timezone = $organisation->timezone?->name ?? 'UTC';
         $now      = ($now ?? now())->copy()->setTimezone($timezone);
@@ -57,7 +113,6 @@ class ShowCashFlow extends OrgAction
         $bounds   = $starts->map(fn (Carbon $start) => $start->copy())->push($interval === 'month' ? $current->copy()->addMonthNoOverflow() : $current->copy()->addWeek())
             ->map(fn (Carbon $bound) => $bound->min($now));
         $from     = $starts->first();
-        $target   = (int) $organisation->currency_id;
         $rates    = $this->rates($target, $from->copy()->subDays(30), $now);
         $convert  = fn (float $amount, int $currencyId, Carbon $day) => $currencyId === $target ? $amount : (($rate = $rates($currencyId, $day)) === null ? null : $amount * $rate);
 
@@ -159,7 +214,7 @@ class ShowCashFlow extends OrgAction
         ]);
 
         return [
-            'currency'      => $organisation->currency->code,
+            'currency'      => Currency::find($target)->code,
             'interval'      => $interval,
             'periods'       => $periods->all(),
             'banks'         => $history->map(fn (array $bank) => [
@@ -215,21 +270,52 @@ class ShowCashFlow extends OrgAction
     {
         $this->initialisation($organisation, $request);
 
-        return $this->handle($organisation, in_array($request->query('interval'), self::INTERVALS, true) ? $request->query('interval') : 'week');
+        return $this->handle($organisation, $this->interval($request));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function inGroup(ActionRequest $request): array
+    {
+        $this->groupOrganisations = IndexBankIncoming::accountingOrganisations(group(), $request->user());
+        $this->initialisationFromGroup(group(), $request);
+        $picked                 = is_string($request->query('org')) ? $this->groupOrganisations->firstWhere('slug', $request->query('org')) : null;
+        $this->organisationSlug = $picked?->slug;
+
+        return $this->handle($this->group, $this->interval($request), null, $picked ? collect([$picked]) : $this->groupOrganisations);
+    }
+
+    private function interval(ActionRequest $request): string
+    {
+        return in_array($request->query('interval'), self::INTERVALS, true) ? $request->query('interval') : 'week';
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction || $this->groupOrganisations === null) {
+            return $this->authorizeInOrganisation($request);
+        }
+
+        return $this->groupOrganisations->isNotEmpty();
     }
 
     public function htmlResponse(array $cashFlow, ActionRequest $request): Response
     {
+        $isGroup = $this->groupOrganisations !== null;
+
         return Inertia::render(
             'Org/Accounting/CashFlow',
             [
-                'breadcrumbs'  => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'breadcrumbs'   => $this->getBreadcrumbs($isGroup, $request->route()->originalParameters()),
                 'title'        => __('Cash flow'),
                 'pageHead'     => [
                     'title' => __('Cash flow'),
                     'icon'  => ['fal', 'fa-exchange-alt'],
                 ],
-                'organisation' => $this->organisation->slug,
+                'organisation'  => $isGroup ? $this->organisationSlug : $this->organisation->slug,
+                'organisations' => $isGroup ? $this->groupOrganisations->map(fn (Organisation $organisation) => ['value' => $organisation->slug, 'label' => $organisation->code])->all() : [],
+                'isGroup'       => $isGroup,
                 'inSections'   => collect(IndexBankIncoming::SECTIONS)->mapWithKeys(fn (string $section) => [$section => $this->incomingLabel($section)])->all(),
                 'outSections'  => collect(IndexBankOutgoing::sections())->map(fn (array $section) => $section[0])->all(),
                 'cashFlow'     => $cashFlow,
@@ -248,8 +334,18 @@ class ShowCashFlow extends OrgAction
         };
     }
 
-    public function getBreadcrumbs(array $routeParameters): array
+    public function getBreadcrumbs(bool $isGroup, array $routeParameters): array
     {
+        if ($isGroup) {
+            return array_merge(
+                ShowGroupDashboard::make()->getBreadcrumbs(),
+                [
+                    ['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.financials.dashboard'], 'label' => __('Financials'), 'icon' => 'fal fa-file-invoice-dollar']],
+                    ['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.financials.cash_flow.index'], 'label' => __('Cash flow')]],
+                ]
+            );
+        }
+
         return array_merge(
             ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
             [
