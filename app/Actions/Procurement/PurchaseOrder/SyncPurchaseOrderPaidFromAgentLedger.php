@@ -69,9 +69,13 @@ class SyncPurchaseOrderPaidFromAgentLedger
     }
 
     /**
+     * The balance is paid once the payments in the order's currency add up to its goods: a payment in another currency
+     * is a different amount of money and never counts towards it. $goods is the order's goods, or what they were
+     * before a change.
+     *
      * @return array{deposit_paid_at: string|null, balance_paid_at: string|null}
      */
-    public static function ledgerDates(PurchaseOrder $purchaseOrder): array
+    public static function ledgerDates(PurchaseOrder $purchaseOrder, ?float $goods = null): array
     {
         $payments = DB::table('agent_payments')
             ->where('purchase_order_id', $purchaseOrder->id)
@@ -80,12 +84,12 @@ class SyncPurchaseOrderPaidFromAgentLedger
             ->whereNotNull('date')
             ->orderBy('date')
             ->orderBy('id')
-            ->get(['date', 'amount']);
+            ->get(['date', 'amount', 'currency_id']);
 
-        $goods       = round((float) $purchaseOrder->cost_items, 2);
+        $goods       = round($goods ?? (float) $purchaseOrder->cost_items, 2);
         $paid        = 0.0;
         $balanceDate = null;
-        foreach ($payments as $payment) {
+        foreach ($payments->where('currency_id', $purchaseOrder->currency_id) as $payment) {
             $paid += (float) $payment->amount;
             if ($goods > 0 && round($paid, 2) >= $goods) {
                 $balanceDate = $payment->date;

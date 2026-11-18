@@ -4108,3 +4108,31 @@ test('the agent reminds a client of a money request at most once an hour', funct
 
     actingAs($this->adminGuest->getUser());
 });
+
+test('an agent order is balance paid by the ledger only with supplier payments in its own currency, and owes the balance again once a quantity change raises its total', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $order                = createConfirmedAgentOrder($this, $supplier, $product, 0, 10)->refresh();
+    $line                 = $order->purchaseOrderTransactions()->firstOrFail();
+    $agent                = $orgAgent->agent;
+    $goods                = round((float) $order->cost_items, 2);
+    $otherCurrency        = \App\Models\Helpers\Currency::where('id', '!=', $order->currency_id)->orderBy('id')->firstOrFail();
+    expect($goods)->toBeGreaterThan(0.0);
+
+    $pay = fn (string $type, float $amount) => \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $order->organisation_id, 'type' => $type, 'date' => date('Y-m-d'), 'amount' => $amount, 'purchase_order_id' => $order->id]);
+
+    $agent->organisation->update(['currency_id' => $otherCurrency->id]);
+    $pay('supplier_payment', $goods);
+    expect($order->refresh()->deposit_paid_at)->not->toBeNull()
+        ->and($order->balance_paid_at)->toBeNull();
+
+    $agent->organisation->update(['currency_id' => $order->currency_id]);
+    $pay('supplier_balance', $goods);
+    expect($order->refresh()->balance_paid_at?->toDateString())->toBe(date('Y-m-d'));
+
+    \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line, ['quantity_ordered' => 12]);
+    expect($order->refresh()->balance_paid_at)->toBeNull();
+
+    \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line->refresh(), ['quantity_ordered' => 10]);
+    expect($order->refresh()->balance_paid_at?->toDateString())->toBe(date('Y-m-d'));
+});

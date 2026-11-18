@@ -25,7 +25,8 @@ class CalculatePurchaseOrderTotalAmounts extends OrgAction
      */
     public function handle(PurchaseOrder $purchaseOrder): void
     {
-        $itemsNet = $this->itemsNet($purchaseOrder);
+        $itemsNet      = $this->itemsNet($purchaseOrder);
+        $previousItems = (float) $purchaseOrder->cost_items;
 
         $purchaseOrder->update([
             'cost_items' => $itemsNet,
@@ -34,6 +35,10 @@ class CalculatePurchaseOrderTotalAmounts extends OrgAction
 
         if ($purchaseOrder->wasChanged('cost_items') && $purchaseOrder->depositPayments()->exists()) {
             SyncPurchaseOrderDepositPaid::run($purchaseOrder);
+        }
+
+        if ($purchaseOrder->wasChanged('cost_items') && $purchaseOrder->isAgentOrder()) {
+            SyncPurchaseOrderPaidFromAgentLedger::run($purchaseOrder, SyncPurchaseOrderPaidFromAgentLedger::ledgerDates($purchaseOrder, $previousItems));
         }
 
         PurchaseOrderHydrateState::run($purchaseOrder);
