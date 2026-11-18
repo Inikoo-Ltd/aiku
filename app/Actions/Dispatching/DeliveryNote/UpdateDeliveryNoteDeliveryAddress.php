@@ -16,6 +16,7 @@ use App\Actions\Traits\WithStoreModelAddress;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
+use App\Notifications\Work\WorkNotifier;
 use App\Rules\ValidAddress;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -54,6 +55,7 @@ class UpdateDeliveryNoteDeliveryAddress extends OrgAction
             $deliveryNote->updateQuietly(['address_id' => $address->id]);
         }
         $deliveryNote->update(['delivery_country_id' => $address->country_id]);
+        WorkNotifier::modified($deliveryNote, 'address');
 
         return $deliveryNote;
     }

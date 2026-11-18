@@ -8,7 +8,7 @@ import Image from "@common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { shoppingAssistantConversationKey } from "@/Iris/Composables/useShoppingAssistant"
+import { isLittleBirdName, shoppingAssistantConversationKey } from "@/Iris/Composables/useShoppingAssistant"
 import MerlinThinking from "@/Iris/Components/MerlinThinking.vue"
 
 type Card = { id: number, name: string, url?: string | null, web_images?: any }
@@ -27,6 +27,7 @@ const emit = defineEmits<{ (e: "leave-message"): void }>()
 
 const layout: any = inject("layout", {})
 const assistantName = computed(() => layout?.iris?.shopping_assistant?.name || "Merlin")
+const isLittleBird = computed(() => isLittleBirdName(assistantName.value))
 
 const CARDS_IN_CHAT = 4
 const POLL_INTERVAL_MS = 1500
@@ -212,7 +213,10 @@ onBeforeUnmount(stopPolling)
                 </div>
 
                 <div v-else class="flex gap-2">
-                    <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--app-accent-soft)] text-[var(--app-accent)]" aria-hidden="true">
+                    <span v-if="isLittleBird" class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white" aria-hidden="true">
+                        <img src="/art/little-bird.gif" alt="" class="h-5 w-5 object-contain" />
+                    </span>
+                    <span v-else class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--app-accent-soft)] text-[var(--app-accent)]" aria-hidden="true">
                         <FontAwesomeIcon :icon="faHatWizard" class="text-xs" fixed-width />
                     </span>
                     <div class="min-w-0 flex-1">

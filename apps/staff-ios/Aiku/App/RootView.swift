@@ -37,6 +37,9 @@ struct RootView: View {
                 session.apply(profile)
             }
         }
+        .onChange(of: authStore.userID, initial: true) { _, userID in
+            CrashReporting.identify(userID: userID)
+        }
         .task(id: authStore.userID) {
             guard let userID = authStore.userID, userID > 0 else { return }
             LocationsStore.shared.beginRemoteLoad()
@@ -54,6 +57,10 @@ struct RootView: View {
                 await authStore.refreshProfile()
                 await refreshPermissionsIfSignedIn()
                 await refreshWarehousesIfSignedIn()
+                await WorkBadgesStore.shared.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
+                if warehouseStore.selectedID == nil {
+                    await ShellInboxStore.shared.refreshUnread()
+                }
             }
         }
     }
@@ -81,11 +88,15 @@ struct RootView: View {
     private func signOut() {
         permissionStore.clear()
         warehouseStore.reset()
+        ClockingStore.shared.reset()
         session.modules = .everything
         LocationsStore.shared.resetToSample()
         InventoryFamiliesFeed.shared.reset()
         GoodsInStore.shared.resetToSample()
         PalletDeliveriesFeed.shared.reset()
+        WorkBadgesStore.shared.reset()
+        ShellInboxStore.shared.reset()
+        RecentSearches().clear()
         Task { await authStore.signOut() }
     }
 }

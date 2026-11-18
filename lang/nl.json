@@ -9938,5 +9938,20 @@
     "This one needs a little more thought. Nearly there…": "Hier moet even wat langer over nagedacht worden. Bijna klaar…",
     "Usually takes about :seconds seconds": "Duurt meestal zo'n :seconds seconden",
     "Use my own shipping rates": "Mijn eigen verzendtarieven gebruiken",
-    "Our sister shop :website sells these: :link": "Onze zusterwinkel :website verkoopt deze producten: :link"
+    "Our sister shop :website sells these: :link": "Onze zusterwinkel :website verkoopt deze producten: :link",
+    ":reference assigned to you": ":reference aan jou toegewezen",
+    ":actor assigned :reference to you.": ":actor heeft :reference aan jou toegewezen.",
+    ":reference taken over": ":reference overgenomen",
+    ":actor has taken over :reference, which was assigned to you.": ":actor heeft :reference overgenomen, dat aan jou was toegewezen.",
+    "Removed from :reference": "Verwijderd van :reference",
+    ":actor removed you from :reference.": ":actor heeft je van :reference verwijderd.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor heeft :reference geannuleerd, dat aan jou is toegewezen.",
+    ":reference can go ahead": ":reference kan verder",
+    ":reference is no longer waiting and can be done again.": ":reference wacht niet meer en kan weer worden opgepakt.",
+    ":reference was changed": ":reference is gewijzigd",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Let op: :reference, aan jou toegewezen, is gewijzigd door :actor.",
+    ":actor has updated :reference, which is assigned to you.": ":actor heeft :reference bijgewerkt, dat aan jou is toegewezen.",
+    "Operational": "Operationeel",
+    ":reference cancelled": ":reference geannuleerd",
+    "The customer": "De klant"
 }

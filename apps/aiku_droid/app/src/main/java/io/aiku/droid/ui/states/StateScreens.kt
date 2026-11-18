@@ -346,7 +346,7 @@ fun NoAccessScreen(moduleName: String, missingPermission: String?, activeTab: Ma
 }
 
 @Composable
-fun SearchEmptyState(query: String, onScan: () -> Unit, modifier: Modifier = Modifier) {
+fun SearchEmptyState(query: String, suggestions: List<String>, onSuggestion: (String) -> Unit, onScan: () -> Unit, modifier: Modifier = Modifier) {
     val colors = LocalAikuColors.current
 
     Column(
@@ -373,14 +373,14 @@ fun SearchEmptyState(query: String, onScan: () -> Unit, modifier: Modifier = Mod
                 fontSize = 14.sp,
                 lineHeight = 21.sp,
             )
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .fakeData(8.dp)
-                    .padding(4.dp),
-            ) {
-                statesSearchSuggestionsSample.forEach { suggestion -> SearchSuggestionChip(text = suggestion) }
+            if (suggestions.isNotEmpty()) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(4.dp),
+                ) {
+                    suggestions.forEach { suggestion -> SearchSuggestionChip(text = suggestion, onClick = { onSuggestion(suggestion) }) }
+                }
             }
         }
         Spacer(modifier = Modifier.height(32.dp))
@@ -394,7 +394,7 @@ fun SearchEmptyState(query: String, onScan: () -> Unit, modifier: Modifier = Mod
 }
 
 @Composable
-private fun SearchSuggestionChip(text: String) {
+private fun SearchSuggestionChip(text: String, onClick: () -> Unit) {
     val colors = LocalAikuColors.current
 
     Box(
@@ -404,6 +404,7 @@ private fun SearchSuggestionChip(text: String) {
             .clip(CircleShape)
             .background(colors.surface)
             .border(1.dp, colors.border, CircleShape)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 12.dp),
     ) {
         Text(text = text, fontSize = 13.sp, fontWeight = FontWeight.Normal, color = colors.text)
@@ -498,7 +499,7 @@ private fun NoAccessScreenPreview() {
 private fun SearchEmptyStatePreview() {
     AikuDroidTheme {
         Box(modifier = Modifier.background(LocalAikuColors.current.background).padding(16.dp)) {
-            SearchEmptyState(query = STATES_SEARCH_QUERY_SAMPLE, onScan = {})
+            SearchEmptyState(query = STATES_SEARCH_QUERY_SAMPLE, suggestions = statesSearchSuggestionsSample, onSuggestion = {}, onScan = {})
         }
     }
 }

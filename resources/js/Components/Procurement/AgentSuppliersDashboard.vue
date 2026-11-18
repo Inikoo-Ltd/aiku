@@ -9,7 +9,7 @@ import { computed, inject, ref, watch } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faClipboardList, faBullhorn, faShip, faStopwatch, faBalanceScale, faArchive, faChevronRight, faClone, faPencil, faCompressAlt, faBoxOpen, faExclamationTriangle } from "@fal"
+import { faClipboardList, faBullhorn, faShip, faStopwatch, faBalanceScale, faArchive, faChevronRight, faClone, faPencil, faCompressAlt, faBoxOpen, faExclamationTriangle, faForward } from "@fal"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { ctrans } from "@/Composables/useTrans"
@@ -22,7 +22,7 @@ import SuggestSupplierChangeDialog from "@/Components/Procurement/SuggestSupplie
 import AgentSupplierChangeRequests, { SupplierChangeRequestRow } from "@/Components/Procurement/AgentSupplierChangeRequests.vue"
 import AgentSupplierPacking from "@/Components/Procurement/AgentSupplierPacking.vue"
 
-library.add(faClipboardList, faBullhorn, faShip, faStopwatch, faBalanceScale, faArchive, faChevronRight, faClone, faPencil, faCompressAlt, faBoxOpen, faExclamationTriangle)
+library.add(faClipboardList, faBullhorn, faShip, faStopwatch, faBalanceScale, faArchive, faChevronRight, faClone, faPencil, faCompressAlt, faBoxOpen, faExclamationTriangle, faForward)
 
 type PerformanceRow = {
 	code: string
@@ -45,6 +45,7 @@ type SupplierLink = { id: number; code: string; name: string; pending: string | 
 
 const props = defineProps<{
 	data: {
+		skip_duplicates_route: routeType
 		permissions: { can_suggest: boolean; can_decide: boolean }
 		filters: {
 			buyer: string | null
@@ -223,6 +224,31 @@ const openPanel = ref<routeType | null>(null)
 const suggestion = ref<InstanceType<typeof SuggestSupplierChangeDialog>["$props"]["suggestion"]>(null)
 const suggestDeactivation = (supplier: { id: number; code: string; name: string }) => (suggestion.value = { type: "deactivate", supplier })
 const suggestMerge = (supplier: SupplierLink, group: SupplierLink[]) => (suggestion.value = { type: "merge", supplier, candidates: group.filter((other) => other.id !== supplier.id) })
+
+const mergeTargets = (supplier: SupplierLink, group: SupplierLink[]) => group.filter((other) => other.id !== supplier.id)
+const mergeLabel = (supplier: SupplierLink, group: SupplierLink[]) => {
+	const targets = mergeTargets(supplier, group)
+	return targets.length === 1 ? ctrans("Merge into :code", { code: targets[0].code }) : ctrans("Merge into…")
+}
+const mergeTooltip = (supplier: SupplierLink, group: SupplierLink[]) => {
+	const targets = mergeTargets(supplier, group)
+	return targets.length === 1
+		? ctrans(":code is archived and its products, orders and containers move to :target, which is kept", { code: supplier.code, target: targets[0].code })
+		: ctrans(":code is archived and its products, orders and containers move to the supplier you choose to keep", { code: supplier.code })
+}
+
+const skippingDuplicates = ref<number | null>(null)
+const skipDuplicates = (index: number, group: SupplierLink[]) => {
+	router.post(
+		href(props.data.skip_duplicates_route),
+		{ supplier_ids: group.map((supplier) => supplier.id) },
+		{
+			preserveScroll: true,
+			onStart: () => (skippingDuplicates.value = index),
+			onFinish: () => (skippingDuplicates.value = null),
+		}
+	)
+}
 
 const performanceTab = ref<"top_spend" | "best" | "attention">("top_spend")
 const performanceTabs = computed(() => [
@@ -528,7 +554,18 @@ const dormantSuppliers = computed(() => props.data.cleanup.dormant.filter((suppl
 					<p v-if="!data.cleanup.duplicates.length" class="px-4 py-6 text-center text-sm text-gray-400">{{ ctrans("No possible duplicates found") }}</p>
 					<ul v-else class="divide-y divide-gray-100">
 						<li v-for="(group, index) in data.cleanup.duplicates" :key="index" class="px-4 py-2.5">
-							<div class="text-xs text-gray-400">{{ group.match === "email" ? ctrans("Same email") : ctrans("Same name") }}</div>
+							<div class="flex items-center justify-between gap-2">
+								<span class="text-xs text-gray-400">{{ group.match === "email" ? ctrans("Same email") : ctrans("Same name") }}</span>
+								<Button
+									v-if="data.permissions.can_suggest"
+									type="tertiary"
+									size="xs"
+									icon="fal fa-forward"
+									:label="ctrans('Skip')"
+									:loading="skippingDuplicates === index"
+									v-tooltip="ctrans('These are different suppliers, stop listing them as possible duplicates')"
+									@click="skipDuplicates(index, group.suppliers)" />
+							</div>
 							<div v-for="supplier in group.suppliers" :key="supplier.code" class="flex items-center justify-between gap-2 text-sm">
 								<span class="truncate">
 									<Link v-if="supplier.route" :href="href(supplier.route)" class="font-medium text-gray-700 hover:underline">{{ supplier.code }}</Link>
@@ -537,7 +574,13 @@ const dormantSuppliers = computed(() => props.data.cleanup.dormant.filter((suppl
 								<span class="flex shrink-0 items-center gap-2 text-xs text-gray-500">
 									{{ supplier.last_ordered_at ? useFormatTime(supplier.last_ordered_at) : ctrans("Never ordered") }}
 									<span v-if="supplier.pending" class="rounded bg-amber-50 px-1.5 text-amber-700">{{ ctrans("Waiting") }}</span>
-									<Button v-else-if="data.permissions.can_suggest" type="tertiary" size="xs" :label="ctrans('Merge')" v-tooltip="ctrans('Suggest merging this record into another one of the group')" @click="suggestMerge(supplier, group.suppliers)">
+									<Button
+										v-else-if="data.permissions.can_suggest"
+										type="tertiary"
+										size="xs"
+										:label="mergeLabel(supplier, group.suppliers)"
+										v-tooltip="mergeTooltip(supplier, group.suppliers)"
+										@click="suggestMerge(supplier, group.suppliers)">
 										<template #icon>
 											<FontAwesomeIcon icon="fal fa-compress-alt" class="text-amber-600" fixed-width aria-hidden="true" />
 										</template>

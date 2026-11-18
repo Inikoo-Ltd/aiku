@@ -44,7 +44,7 @@ struct DispatchChooseDeliveryNotesSheet: View {
                 FieldError(problem)
             }
         } footer: {
-            AikuButton(confirmTitle, isLoading: isAdding || store.isCreating) {
+            AikuButton(confirmTitle, look: PickingSessionActionKey.look(for: PickingSessionActionKey.addDeliveryNotes).forConfirm, isLoading: isAdding || store.isCreating) {
                 Task { await confirm() }
             }
             .disabled(chosen.isEmpty)

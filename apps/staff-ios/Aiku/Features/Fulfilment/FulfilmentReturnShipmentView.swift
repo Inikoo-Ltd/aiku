@@ -108,7 +108,7 @@ private struct ReturnShipmentScreen: View {
             AppScreen(title: "Add shipment", kicker: kicker) {
                 form(detail, list: list, selected: selected)
             } footer: {
-                AikuButton(selected.isAPI ? "Create label" : "Add shipment", icon: .goodsOut) {
+                AikuButton(selected.isAPI ? "Create label" : "Add shipment", look: PalletReturnActionLooks.look(for: "add_shipment")) {
                     Task { await submit(selected) }
                 }
                 .disabled(live.isWorking)

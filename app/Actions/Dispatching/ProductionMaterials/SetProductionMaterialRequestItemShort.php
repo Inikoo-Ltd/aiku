@@ -25,7 +25,7 @@ class SetProductionMaterialRequestItemShort extends OrgAction
      * The warehouse cannot bring (the rest of) a material: the factory sees it on its check
      * straight away instead of waiting for it.
      */
-    public function handle(ProductionMaterialRequestItem $item, ?User $user): ProductionMaterialRequestItem
+    public function handle(ProductionMaterialRequestItem $item, ?string $reason, ?User $user): ProductionMaterialRequestItem
     {
         if ($item->state !== ProductionMaterialRequestItemStateEnum::PENDING) {
             throw ValidationException::withMessages(['item' => __('This material is no longer waiting to be brought')]);
@@ -33,6 +33,8 @@ class SetProductionMaterialRequestItemShort extends OrgAction
 
         $item->update([
             'state'                => ProductionMaterialRequestItemStateEnum::SHORT,
+            'short_reason'         => $reason,
+            'short_at'             => now(),
             'delivered_by_user_id' => $user?->id ?? $item->delivered_by_user_id,
         ]);
 
@@ -50,12 +52,19 @@ class SetProductionMaterialRequestItemShort extends OrgAction
         return $this->warehouse->canBeWorkedInBy($request->user());
     }
 
-    public function action(ProductionMaterialRequestItem $item, ?User $user = null): ProductionMaterialRequestItem
+    public function rules(): array
+    {
+        return [
+            'reason' => [$this->asAction ? 'nullable' : 'required', 'string', 'max:255'],
+        ];
+    }
+
+    public function action(ProductionMaterialRequestItem $item, ?string $reason = null, ?User $user = null): ProductionMaterialRequestItem
     {
         $this->asAction = true;
-        $this->initialisationFromWarehouse($item->request->warehouse, []);
+        $this->initialisationFromWarehouse($item->request->warehouse, ['reason' => $reason]);
 
-        return $this->handle($item, $user);
+        return $this->handle($item, $reason, $user);
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ProductionMaterialRequestItem $productionMaterialRequestItem, ActionRequest $request): ProductionMaterialRequestItem
@@ -66,14 +75,14 @@ class SetProductionMaterialRequestItemShort extends OrgAction
             abort(404);
         }
 
-        return $this->handle($productionMaterialRequestItem, $request->user());
+        return $this->handle($productionMaterialRequestItem, $this->validatedData['reason'], $request->user());
     }
 
     public function htmlResponse(): RedirectResponse
     {
         return Redirect::back()->with('notification', [
             'status' => 'success',
-            'title'  => __('Production told the warehouse is short'),
+            'title'  => __("Production told the warehouse can't bring it"),
         ]);
     }
 }

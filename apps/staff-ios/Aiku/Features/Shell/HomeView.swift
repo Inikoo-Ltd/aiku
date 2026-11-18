@@ -3,7 +3,11 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
-    @State private var inbox = ShellInboxStore.shared
+    @Environment(\.apiClient) private var apiClient
+    @State private var warehouseStore = WarehouseStore.shared
+    private let workBadges = WorkBadgesStore.shared
+    private let clocking = ClockingStore.shared
+    private let inbox = ShellInboxStore.shared
 
     var body: some View {
         ScreenScaffold(spacing: 20) {
@@ -20,8 +24,14 @@ struct HomeView: View {
         } footer: {
             EmptyView()
         }
-        .onAppear {
-            session.unreadCount = inbox.unreadCount
+        .task(id: warehouseStore.selectedID) {
+            await workBadges.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
+            if warehouseStore.selectedID == nil {
+                await inbox.refreshUnread()
+            }
+        }
+        .task {
+            await clocking.load()
         }
     }
 
@@ -59,21 +69,32 @@ struct HomeView: View {
     }
 
     private var clockingCard: some View {
-        let status = ShellHomeContent.clockStatus(hasWarehouseAccess: session.hasWarehouseAccess, warehouseName: session.profile.warehouseName)
+        TimelineView(.everyMinute) { _ in
+            clockingCardContent(ShellHomeContent.clockStatus(clocking))
+        }
+    }
+
+    private func clockingCardContent(_ status: ShellClockStatus?) -> some View {
+        let isClockedIn = status?.isClockedIn == true
         return HStack(spacing: 14) {
             AppIcon.clock.image
                 .font(.system(size: 20))
-                .foregroundStyle(status.isClockedIn ? AikuColor.success : AikuColor.text3)
+                .foregroundStyle(isClockedIn ? AikuColor.success : AikuColor.text3)
                 .frame(width: 44, height: 44)
-                .background(status.isClockedIn ? AikuColor.successSoft : AikuColor.bg, in: Circle())
+                .background(isClockedIn ? AikuColor.successSoft : AikuColor.bg, in: Circle())
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(status.title)
-                    .font(.aiku(16, .bold))
-                    .foregroundStyle(AikuColor.text)
-                Text(status.detail)
-                    .font(.aiku(13))
-                    .foregroundStyle(AikuColor.text3)
+            VStack(alignment: .leading, spacing: status == nil ? 8 : 2) {
+                if let status {
+                    Text(status.title)
+                        .font(.aiku(16, .bold))
+                        .foregroundStyle(AikuColor.text)
+                    Text(status.detail)
+                        .font(.aiku(13))
+                        .foregroundStyle(AikuColor.text3)
+                } else {
+                    SkeletonBlock(width: 150, height: 14)
+                    SkeletonBlock(width: 110, height: 11)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             AikuButton("Clocking", size: .small, fullWidth: false) {
@@ -91,7 +112,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeading("Shortcuts")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                ForEach(ShellHomeContent.shortcuts(for: session.visibleModules)) { shortcut in
+                ForEach(ShellHomeContent.shortcuts(for: session.visibleModules, goodsOutUnassigned: workBadges.goodsOutUnassignedCount)) { shortcut in
                     Button {
                         router.shellFollow(shortcut.link)
                     } label: {
@@ -127,7 +148,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeading("Your modules")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .top), count: 2), spacing: 10) {
-                ForEach(ShellHomeContent.modules(hasWarehouseAccess: session.hasWarehouseAccess, warehouseLabel: session.warehouseLabel)) { module in
+                ForEach(ShellHomeContent.modules(hasWarehouseAccess: session.hasWarehouseAccess, warehouseLabel: session.warehouseLabel, weekTotal: ShellHomeContent.weekTotal(clocking))) { module in
                     Button {
                         router.shellFollow(module.link)
                     } label: {

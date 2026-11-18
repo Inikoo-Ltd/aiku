@@ -16,7 +16,7 @@ struct GoodsOutUndoSheet: View {
                 HelperText("Picked quantities are kept, you can pick, change or mark lines as not picked again. The other undo steps work the same way: Undo packing (back to picked), Unpack (removes the parcels), Undispatch (back to finalised).")
             }
         } footer: {
-            AikuButton(step.confirmTitle, icon: .undo, isLoading: store.isWorking(on: note.reference)) {
+            AikuButton(step.confirmTitle, look: GoodsOutActionKey.stepBack, isLoading: store.isWorking(on: note.reference)) {
                 if note.isRemote {
                     runRemote()
                     return

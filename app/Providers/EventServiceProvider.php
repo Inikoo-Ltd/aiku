@@ -6,12 +6,14 @@ use App\Events\BroadcastFulfilmentCustomerNotification;
 use App\Listeners\MeasurementSharedListener;
 use App\Listeners\RememberMcpClientName;
 use App\Listeners\SetAuditUserContext;
+use App\Listeners\SetAuditUserContextFromToken;
 use Illuminate\Auth\Events\Authenticated;
 use App\Listeners\ShopifyAuthenticatedShopWebhookRegister;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Laravel\Mcp\Events\SessionInitialized;
+use Laravel\Sanctum\Events\TokenAuthenticated;
 use Osiset\ShopifyApp\Messaging\Events\ShopAuthenticatedEvent;
 
 class EventServiceProvider extends ServiceProvider
@@ -27,6 +29,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         Authenticated::class => [
             SetAuditUserContext::class,
+        ],
+        TokenAuthenticated::class => [
+            SetAuditUserContextFromToken::class,
         ],
        /* BroadcastFulfilmentCustomerNotification::class => [
             MeasurementSharedListener::class

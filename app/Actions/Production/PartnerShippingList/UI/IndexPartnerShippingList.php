@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\PartnerShippingList\UI;
 
+use App\Actions\Production\PartnerShippingList\GetOrdersBlockedByProduction;
 use App\Models\Inventory\OrgStock;
 use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
@@ -863,6 +864,7 @@ class IndexPartnerShippingList extends OrgAction
                 ],
                 'groupBy'      => $this->groupBy,
                 'simpleBoard'  => $this->production->hasSimpleBoard(),
+                'productionBlockedNotice' => $this->groupBy === 'board' ? GetOrdersBlockedByProduction::make()->notice($this->organisation) : null,
                 'artisanWorkload' => in_array($this->groupBy, ['maker', 'board', 'mixes']) ? $this->getArtisanWorkload() : null,
                 'groups'       => $this->groupBy && $this->groupBy !== 'mixes' ? $this->getGroups($items) : null,
                 'hitchhikers'  => ['count' => $this->hitchhikerCount, 'showing' => $this->showHitchhikers],

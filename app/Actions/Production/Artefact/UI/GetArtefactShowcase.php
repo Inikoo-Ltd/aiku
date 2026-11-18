@@ -169,7 +169,7 @@ class GetArtefactShowcase
         foreach ($warehouseIds as $warehouseId) {
             $permissions[] = "supervisor-stocks.$warehouseId.view";
             $permissions[] = "stocks.$warehouseId.view";
-            $permissions[] = "fulfilment.view.$warehouseId.view";
+            $permissions[] = "fulfilment.$warehouseId.view";
         }
 
         if (!$user->authTo($permissions)) {

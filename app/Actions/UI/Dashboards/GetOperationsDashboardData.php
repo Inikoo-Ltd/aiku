@@ -206,7 +206,7 @@ class GetOperationsDashboardData
         };
     }
 
-    private function deliveryNotes(Warehouse $warehouse, ?string $channel): Builder
+    private static function deliveryNotes(Warehouse $warehouse, ?string $channel): Builder
     {
         return DB::table('delivery_notes')
             ->where('delivery_notes.warehouse_id', $warehouse->id)
@@ -306,16 +306,21 @@ class GetOperationsDashboardData
         return $stages;
     }
 
+    public static function dispatchedBetween(Warehouse $warehouse, ?string $channel, Carbon $from, Carbon $to): Builder
+    {
+        return self::deliveryNotes($warehouse, $channel)
+            ->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED->value)
+            ->where('delivery_notes.dispatched_at', '>=', $from->copy()->utc())
+            ->where('delivery_notes.dispatched_at', '<=', $to->copy()->utc());
+    }
+
     /**
      * Delivery notes dispatched from the start of a day up to the same time of day, so today is
      * compared with yesterday by this time, not with all of yesterday.
      */
     private function dispatchedOn(Warehouse $warehouse, ?string $channel, Carbon $from, Carbon $to): array
     {
-        $row = $this->orderValueJoin($this->deliveryNotes($warehouse, $channel))
-            ->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED->value)
-            ->where('delivery_notes.dispatched_at', '>=', $from->copy()->utc())
-            ->where('delivery_notes.dispatched_at', '<=', $to->copy()->utc())
+        $row = $this->orderValueJoin(self::dispatchedBetween($warehouse, $channel, $from, $to))
             ->selectRaw('count(*) as total, coalesce(sum(delivery_notes.number_items), 0) as lines')
             ->selectRaw("coalesce(sum(case when jsonb_typeof(delivery_notes.parcels) = 'array' then jsonb_array_length(delivery_notes.parcels) else 0 end), 0) as parcels")
             ->selectRaw('coalesce(sum(order_value.org_amount), 0) as org_amount, coalesce(sum(order_value.grp_amount), 0) as grp_amount')

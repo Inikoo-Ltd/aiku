@@ -15,12 +15,14 @@ import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCalendarPlus, faExclamationTriangle, faPaperPlane, faSave, faTimes } from "@fal"
+import SupplierPortalProductProposalUpload from "@/Components/Procurement/SupplierPortalProductProposalUpload.vue"
 
 library.add(faCalendarPlus, faExclamationTriangle, faPaperPlane, faSave, faTimes)
 
 export interface PortalForms {
 	submit: Record<string, string>
 	update: string
+	product_proposals: { template: string; preview: string; import: string; max_rows: number; products_per_request: number }
 	document_types: { value: string; label: string }[]
 	max_files: number
 	max_file_mb: number
@@ -80,6 +82,7 @@ const companyNow = computed<Record<string, string>>(() => ({
 }))
 const sentAs: Record<string, string> = { company_phone: "phone", company_website: "contact_website", company_address: "address" }
 const fileKey = ref(0)
+const isPreviewingSpreadsheet = ref(false)
 
 const blank = () => ({
 	supplier_product_id: null as number | null,
@@ -153,6 +156,7 @@ watch(
 )
 
 watch(type, () => {
+	isPreviewingSpreadsheet.value = false
 	if (props.editing) {
 		return
 	}
@@ -257,7 +261,12 @@ const caption = "font-medium text-gray-700"
 			</div>
 		</template>
 
-		<form class="grid gap-3 md:grid-cols-2" @submit.prevent="send(false)">
+		<template v-if="type === 'product_proposal' && !editing">
+			<SupplierPortalProductProposalUpload :routes="forms.product_proposals" :maxFiles="forms.max_files" :maxFileMb="forms.max_file_mb" @previewing="(isPreviewing) => (isPreviewingSpreadsheet = isPreviewing)" />
+			<p v-if="!isPreviewingSpreadsheet" class="text-xs text-gray-500">{{ ctrans("Or tell us about one product here:") }}</p>
+		</template>
+
+		<form v-if="!(type === 'product_proposal' && isPreviewingSpreadsheet)" class="grid gap-3 md:grid-cols-2" @submit.prevent="send(false)">
 			<template v-if="type === 'referral'">
 				<p class="text-xs text-gray-500 md:col-span-2">{{ ctrans("Small shops that cannot reach your minimum order can buy your products from us. Tell us who they are and we will contact them.") }}</p>
 				<label :class="label"><span :class="caption">{{ ctrans("Business name") }} <span class="text-red-500">*</span></span><InputText v-model="form.company_name" /></label>
@@ -389,8 +398,8 @@ const caption = "font-medium text-gray-700"
 				<Button v-if="type === 'product_proposal' && (!editing || editing.state === 'draft')" type="tertiary" size="xs" :label="ctrans('Save draft')" :loading="form.processing" @click="send(true)">
 					<template #icon><FontAwesomeIcon icon="fal fa-save" fixed-width aria-hidden="true" /></template>
 				</Button>
-				<Button type="tertiary" size="xs" :label="ctrans('Send to :group', { group: String(usePage().props.group ?? '') })" :loading="form.processing" @click="send(false)">
-					<template #icon><FontAwesomeIcon icon="fal fa-paper-plane" class="text-green-600" fixed-width aria-hidden="true" /></template>
+				<Button type="primary" size="xs" :label="ctrans('Send to :group', { group: String(usePage().props.group ?? '') })" :loading="form.processing" @click="send(false)">
+					<template #icon><FontAwesomeIcon icon="fal fa-paper-plane" fixed-width aria-hidden="true" /></template>
 				</Button>
 			</div>
 		</form>

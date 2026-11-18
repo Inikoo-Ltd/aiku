@@ -2,11 +2,14 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct;
 
+use App\Actions\Goods\StockHasSupplierProduct\SetStockPreferredSupplierProduct;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Models\Goods\Stock;
+use App\Models\Goods\StockHasSupplierProduct;
 use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\Agent;
@@ -64,39 +67,68 @@ class CopySupplierProductsToSupplier extends OrgAction
      * product each, with the same code, trade units and SKOs. The copy joins each SKO as a further,
      * not preferred, source. Products the supplier already has under the same code are left alone.
      * A supplier of another agent may work in another currency: money is converted at today's rate.
+     * With $makePreferred the target supplier becomes the preferred supplier of every SKO the source
+     * product supplies, at group level and in every organisation, so purchase orders go to it; this
+     * also applies to products the target already had under the same code, for the SKOs both share.
      *
      * @param  Collection<int, SupplierProduct>  $supplierProducts
      *
      * @throws \Throwable
      */
-    public function handle(Supplier $supplier, Collection $supplierProducts): int
+    public function handle(Supplier $supplier, Collection $supplierProducts, bool $makePreferred = false): int
     {
         $this->assertProductsCanBeCopied($supplier, $supplierProducts);
 
-        $existingCodes = $supplier->supplierProducts()
+        $existingProducts = $supplier->supplierProducts()
             ->withTrashed()
-            ->pluck('code')
-            ->map(fn (string $code) => mb_strtolower($code))
-            ->flip();
+            ->get()
+            ->keyBy(fn (SupplierProduct $supplierProduct) => mb_strtolower($supplierProduct->code));
 
         $supplierProducts = $supplierProducts
-            ->filter(fn (SupplierProduct $supplierProduct) => !$existingCodes->has(mb_strtolower($supplierProduct->code)))
             ->unique(fn (SupplierProduct $supplierProduct) => mb_strtolower($supplierProduct->code))
             ->values();
 
-        if ($supplierProducts->isEmpty()) {
+        [$alreadyThere, $toCopy] = $supplierProducts
+            ->partition(fn (SupplierProduct $supplierProduct) => $existingProducts->has(mb_strtolower($supplierProduct->code)));
+
+        if ($toCopy->isEmpty() && !$makePreferred) {
             throw ValidationException::withMessages([
                 'org_supplier_products' => __('Supplier :supplier already has all the selected products.', ['supplier' => $supplier->code]),
             ]);
         }
 
-        DB::transaction(function () use ($supplier, $supplierProducts) {
-            foreach ($supplierProducts as $supplierProduct) {
-                $this->copySupplierProduct($supplier, $supplierProduct);
+        DB::transaction(function () use ($supplier, $toCopy, $alreadyThere, $existingProducts, $makePreferred) {
+            foreach ($toCopy as $supplierProduct) {
+                $copy = $this->copySupplierProduct($supplier, $supplierProduct);
+
+                if ($makePreferred) {
+                    $this->makePreferred($supplierProduct, $copy);
+                }
+            }
+
+            if ($makePreferred) {
+                foreach ($alreadyThere as $supplierProduct) {
+                    $existing = $existingProducts->get(mb_strtolower($supplierProduct->code));
+
+                    if (!$existing->trashed()) {
+                        $this->makePreferred($supplierProduct, $existing);
+                    }
+                }
             }
         });
 
-        return $supplierProducts->count();
+        return $toCopy->count();
+    }
+
+    private function makePreferred(SupplierProduct $source, SupplierProduct $target): void
+    {
+        $sharedStockIds = StockHasSupplierProduct::where('supplier_product_id', $target->id)
+            ->whereIn('stock_id', StockHasSupplierProduct::where('supplier_product_id', $source->id)->select('stock_id'))
+            ->pluck('stock_id');
+
+        Stock::whereIn('id', $sharedStockIds)
+            ->get()
+            ->each(fn (Stock $stock) => SetStockPreferredSupplierProduct::make()->handle($stock, $target));
     }
 
     /**
@@ -202,6 +234,67 @@ class CopySupplierProductsToSupplier extends OrgAction
     }
 
     /**
+     * What the Supplier Products page of an agent supplier needs to push products to another supplier, pull
+     * products from one, or start a new supplier with them; null when the user may not edit that agent.
+     *
+     * @return array{agent_id: int, agents: array<int, array{id: int, label: string, create_route: array{name: string, parameters: array<int, string>}}>, copy_route: array{name: string, parameters: array<int, int>}, supplier_id: int, source_products_route: array{name: string, parameters: array<int, int>}}|null
+     */
+    public function getCopyProductsProps(Supplier $supplier, ?User $user): ?array
+    {
+        $accessibleAgents = $this->getAccessibleAgents($user);
+        $agent            = $accessibleAgents->firstWhere('id', $supplier->agent_id);
+
+        if (!$agent) {
+            return null;
+        }
+
+        return [
+            'agent_id'   => $agent->id,
+            'agents'     => $accessibleAgents
+                ->map(fn (Agent $accessibleAgent) => [
+                    'id'           => $accessibleAgent->id,
+                    'label'        => $accessibleAgent->organisation->name,
+                    'create_route' => [
+                        'name'       => 'grp.org.procurement.org_suppliers.create_new',
+                        'parameters' => [$accessibleAgent->organisation->slug],
+                    ],
+                ])
+                ->all(),
+            'copy_route' => [
+                'name'       => 'grp.models.org.supplier.supplier_products.copy',
+                'parameters' => [$agent->organisation_id],
+            ],
+            'supplier_id'           => $supplier->id,
+            'source_products_route' => [
+                'name'       => 'grp.json.supplier.supplier_products_to_copy',
+                'parameters' => [$agent->organisation_id, $supplier->id],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<int, array{id: int, agent_id: int, label: string, number_products: int, company_name: string|null, contact_name: string|null}>
+     */
+    public function getCopyTargetsProps(Supplier $supplier, ?User $user): array
+    {
+        return Supplier::whereIn('agent_id', $this->getAccessibleAgents($user)->pluck('id'))
+            ->where('status', true)
+            ->where('id', '!=', $supplier->id)
+            ->withCount('supplierProducts')
+            ->orderBy('code')
+            ->get(['id', 'agent_id', 'code', 'name', 'company_name', 'contact_name'])
+            ->map(fn (Supplier $target) => [
+                'id'              => $target->id,
+                'agent_id'        => $target->agent_id,
+                'number_products' => $target->supplier_products_count,
+                'label'           => $target->name && $target->name !== $target->code ? $target->code.' — '.$target->name : $target->code,
+                'company_name'    => $target->company_name,
+                'contact_name'    => $target->contact_name,
+            ])
+            ->all();
+    }
+
+    /**
      * @param  array<int, int>  $agentIds
      * @param  array<int, int>  $orgSupplierProductIds
      * @return Collection<int, SupplierProduct>
@@ -234,8 +327,11 @@ class CopySupplierProductsToSupplier extends OrgAction
     public function rules(): array
     {
         return [
-            'org_supplier_products'   => ['required', 'array', 'min:1'],
+            'org_supplier_products'   => ['required_without:supplier_products', 'array', 'min:1'],
             'org_supplier_products.*' => ['integer'],
+            'supplier_products'       => ['required_without:org_supplier_products', 'array', 'min:1'],
+            'supplier_products.*'     => ['integer'],
+            'make_preferred'          => ['sometimes', 'boolean'],
         ];
     }
 
@@ -246,10 +342,24 @@ class CopySupplierProductsToSupplier extends OrgAction
     {
         $this->initialisation($organisation, $request);
 
-        $agent = $this->getOrganisationAgent($organisation);
-        abort_unless($agent && $this->getAccessibleAgents($request->user())->contains('id', $supplier->agent_id), 404);
+        $agent            = $this->getOrganisationAgent($organisation);
+        $accessibleAgents = $this->getAccessibleAgents($request->user());
+        abort_unless($agent && $accessibleAgents->contains('id', $supplier->agent_id), 404);
 
-        return $this->handle($supplier, $this->getAgentsSupplierProducts([$agent->id], $this->validatedData['org_supplier_products']));
+        $makePreferred = (bool) ($this->validatedData['make_preferred'] ?? false);
+
+        if (isset($this->validatedData['supplier_products'])) {
+            return $this->handle(
+                $supplier,
+                SupplierProduct::whereIn('agent_id', $accessibleAgents->pluck('id'))
+                    ->where('supplier_id', '!=', $supplier->id)
+                    ->whereIn('id', $this->validatedData['supplier_products'])
+                    ->get(),
+                $makePreferred
+            );
+        }
+
+        return $this->handle($supplier, $this->getAgentsSupplierProducts([$agent->id], $this->validatedData['org_supplier_products']), $makePreferred);
     }
 
     /**
@@ -257,12 +367,12 @@ class CopySupplierProductsToSupplier extends OrgAction
      *
      * @throws \Throwable
      */
-    public function action(Supplier $supplier, Collection $supplierProducts, int $hydratorsDelay = 0): int
+    public function action(Supplier $supplier, Collection $supplierProducts, int $hydratorsDelay = 0, bool $makePreferred = false): int
     {
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
 
-        return $this->handle($supplier, $supplierProducts);
+        return $this->handle($supplier, $supplierProducts, $makePreferred);
     }
 
     public function htmlResponse(): RedirectResponse

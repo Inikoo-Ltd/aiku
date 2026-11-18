@@ -2,10 +2,53 @@ import SwiftUI
 
 enum AikuButtonKind: Sendable {
     case primary
+    case finish
     case secondary
+    case caution
     case tertiary
     case danger
+    case dangerStrong
     case scan
+
+    var defaultIcon: AppIcon? {
+        switch self {
+        case .finish: .check
+        case .danger: .xCircle
+        default: nil
+        }
+    }
+
+    var tileTone: Tone {
+        switch self {
+        case .finish: .success
+        case .caution: .warn
+        case .danger, .dangerStrong: .danger
+        default: .info
+        }
+    }
+}
+
+struct AikuButtonLook: Hashable, Sendable {
+    var kind: AikuButtonKind
+    var icon: AppIcon?
+
+    init(_ kind: AikuButtonKind, icon: AppIcon? = nil) {
+        self.kind = kind
+        self.icon = icon
+    }
+
+    var forConfirm: AikuButtonLook {
+        switch kind {
+        case .danger: AikuButtonLook(.dangerStrong, icon: icon ?? .xCircle)
+        case .secondary: AikuButtonLook(.primary, icon: icon)
+        default: self
+        }
+    }
+
+    func inFooter(isFirst: Bool) -> AikuButtonLook {
+        guard !isFirst, kind == .primary || kind == .finish else { return self }
+        return AikuButtonLook(.secondary, icon: icon)
+    }
 }
 
 enum AikuButtonSize: Sendable {
@@ -47,7 +90,7 @@ struct AikuButtonStyle: ButtonStyle {
             .padding(.horizontal, 14)
             .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: size.height)
             .background(background, in: RoundedRectangle(cornerRadius: radius))
-            .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(border))
+            .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(border, lineWidth: borderWidth))
             .opacity(isEnabled ? (configuration.isPressed ? 0.85 : 1) : 0.55)
             .contentShape(RoundedRectangle(cornerRadius: radius))
     }
@@ -55,9 +98,12 @@ struct AikuButtonStyle: ButtonStyle {
     private var foreground: Color {
         switch kind {
         case .primary: AikuColor.onPrimary
-        case .secondary: AikuColor.ink
+        case .finish: AikuColor.onFinish
+        case .secondary: AikuColor.softInk
+        case .caution: AikuColor.cautionInk
         case .tertiary: AikuColor.text2
         case .danger: AikuColor.danger
+        case .dangerStrong: AikuColor.onDangerStrong
         case .scan: AikuColor.onScan
         }
     }
@@ -65,8 +111,11 @@ struct AikuButtonStyle: ButtonStyle {
     private var background: Color {
         switch kind {
         case .primary: AikuColor.primary
+        case .finish: AikuColor.finish
         case .secondary: AikuColor.soft
+        case .caution: AikuColor.cautionSoft
         case .tertiary, .danger: AikuColor.surface
+        case .dangerStrong: AikuColor.dangerStrong
         case .scan: AikuColor.scan
         }
     }
@@ -74,12 +123,17 @@ struct AikuButtonStyle: ButtonStyle {
     private var border: Color {
         switch kind {
         case .primary: AikuColor.primaryBd
+        case .finish: AikuColor.finish
         case .secondary: AikuColor.softBd
+        case .caution: AikuColor.cautionBd
         case .tertiary: AikuColor.borderStrong
-        case .danger: AikuColor.dangerBd
+        case .danger: AikuColor.dangerButtonBd
+        case .dangerStrong: AikuColor.dangerStrong
         case .scan: .clear
         }
     }
+
+    private var borderWidth: CGFloat { kind == .danger ? 1.5 : 1 }
 }
 
 struct AikuButton: View {
@@ -109,20 +163,41 @@ struct AikuButton: View {
         self.action = action
     }
 
+    init(
+        _ title: String,
+        look: AikuButtonLook,
+        size: AikuButtonSize = .large,
+        isLoading: Bool = false,
+        fullWidth: Bool = true,
+        action: @escaping () -> Void
+    ) {
+        self.init(title, icon: look.icon, kind: look.kind, size: size, isLoading: isLoading, fullWidth: fullWidth, action: action)
+    }
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
                 if isLoading {
                     ProgressView()
-                        .tint(kind == .primary ? AikuColor.onPrimary : AikuColor.ink)
-                } else if let icon {
-                    icon.image.font(.system(size: 17, weight: .medium))
+                        .tint(loadingTint)
+                } else if let shownIcon = icon ?? kind.defaultIcon {
+                    shownIcon.image.font(.system(size: 17, weight: .medium))
                 }
                 Text(title)
             }
         }
         .buttonStyle(AikuButtonStyle(kind: kind, size: size, fullWidth: fullWidth))
         .disabled(isLoading)
+    }
+
+    private var loadingTint: Color {
+        switch kind {
+        case .primary: AikuColor.onPrimary
+        case .finish: AikuColor.onFinish
+        case .dangerStrong: AikuColor.onDangerStrong
+        case .caution: AikuColor.cautionInk
+        default: AikuColor.ink
+        }
     }
 }
 

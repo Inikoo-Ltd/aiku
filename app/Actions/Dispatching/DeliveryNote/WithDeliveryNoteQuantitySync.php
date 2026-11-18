@@ -22,6 +22,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\User;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Support\Collection;
 
 /**
@@ -74,6 +75,7 @@ trait WithDeliveryNoteQuantitySync
             }
 
             $deliveryNoteItem->update(array_merge($dataToBeUpdated, $this->waitingTrimmedTo($deliveryNoteItem, $quantity)));
+            WorkNotifier::modified($deliveryNote, 'lines');
             $waitingChanged = $waitingChanged || $deliveryNoteItem->wasChanged(['quantity_waiting_warehouse', 'quantity_waiting_crm']);
 
             if (abs($quantity - (float)$deliveryNoteItem->quantity_picked) > 0.000001) {

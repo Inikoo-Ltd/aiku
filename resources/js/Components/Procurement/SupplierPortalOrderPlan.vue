@@ -283,10 +283,15 @@ const organisationLine = (organisation: OrderPlanProduct["organisations"][number
 
 		<div class="flex items-start gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 shadow-sm">
 			<FontAwesomeIcon icon="fal fa-info-circle" class="mt-0.5 shrink-0" :style="{ color: accent.colour }" fixed-width aria-hidden="true" />
-			<div class="space-y-1">
-				<p>{{ ctrans("What we may order from you in the next :days days, so you can plan raw materials and production capacity.", { days: horizon }) }}</p>
+			<div class="space-y-2">
+				<p class="font-medium text-gray-800">{{ ctrans("What AW Group may order from you in the next :days days, so you can plan raw materials and production capacity.", { days: horizon }) }}</p>
+				<ol class="list-decimal space-y-0.5 pl-4">
+					<li>{{ ctrans("Check which products AW Group may order, when, and roughly how many.") }}</li>
+					<li>{{ ctrans("If a product needs raw material that takes time to get, click Plan materials to tell AW Group buyers what you will buy or reserve, and until when you can hold it.") }}</li>
+					<li>{{ ctrans("AW Group buyers reply in the Material planning column. Only a purchase order is a commitment to buy.") }}</li>
+				</ol>
 				<p class="text-xs text-gray-500">
-					{{ ctrans("System estimate from our sales forecast for each of our companies, not yet reviewed by AW. Each range covers about 8 in 10 likely outcomes; the order window is when we may place the order, the delivery window when the goods would reach us.") }}
+					{{ ctrans("System estimate from the sales forecast of each AW Group company, not yet reviewed by AW Group. Each range covers about 8 in 10 likely outcomes; the order window is when AW Group may place the order, the delivery window when the goods would reach AW Group.") }}
 					<template v-if="plan?.as_of">{{ ctrans("Calculated :date.", { date: useFormatTime(plan.as_of) }) }}</template>
 				</p>
 			</div>

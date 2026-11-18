@@ -33,7 +33,6 @@ enum SectionID: String, Sendable {
     case deliveryNotes
     case pickingSessions
     case fulfilmentReturns
-    case shippers
     case trolleys
     case pickedBays
 }
@@ -86,7 +85,6 @@ extension AppModule {
             ModuleSection(.deliveryNotes, "Delivery notes", GoodsOutRoute.deliveryNotes),
             ModuleSection(.pickingSessions, "Picking sessions", DispatchRoute.pickingSessions),
             ModuleSection(.fulfilmentReturns, "Fulfilment returns", FulfilmentRoute.returns, fulfilment: true),
-            ModuleSection(.shippers, "Shippers", DispatchRoute.shippers),
             ModuleSection(.trolleys, "Trolleys", DispatchRoute.trolleys),
             ModuleSection(.pickedBays, "Picked bays", DispatchRoute.pickedBays)
         ]

@@ -187,17 +187,8 @@ class StoreSupplierPortalSubmission
                 'permission_confirmed' => ['accepted'],
             ],
             SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL => [
-                'name'           => ['required', 'string', 'max:255'],
-                'description'    => [$required, 'string', 'max:5000'],
-                'proposed_price' => [$required, 'numeric', 'min:0'],
-                'currency'       => [$required, 'string', 'size:3'],
-                'unit_basis'     => [$required, 'string', 'max:255'],
-                'moq'            => $text(),
-                'lead_time_days' => ['nullable', 'integer', 'min:0', 'max:1000'],
-                'materials'      => $text(2000),
-                'dimensions'     => $text(),
-                'packaging'      => $text(2000),
-                'draft'          => ['sometimes', 'boolean'],
+                ...self::productProposalRules($required),
+                'draft' => ['sometimes', 'boolean'],
                 ...$files('jpg,jpeg,png,webp,pdf', false),
             ],
             SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT => [
@@ -249,6 +240,25 @@ class StoreSupplierPortalSubmission
         }
 
         return $rules;
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    public static function productProposalRules(string $required = 'required'): array
+    {
+        return [
+            'name'           => ['required', 'string', 'max:255'],
+            'description'    => [$required, 'string', 'max:5000'],
+            'proposed_price' => [$required, 'numeric', 'min:0'],
+            'currency'       => [$required, 'string', 'size:3'],
+            'unit_basis'     => [$required, 'string', 'max:255'],
+            'moq'            => ['nullable', 'string', 'max:255'],
+            'lead_time_days' => ['nullable', 'integer', 'min:0', 'max:1000'],
+            'materials'      => ['nullable', 'string', 'max:2000'],
+            'dimensions'     => ['nullable', 'string', 'max:255'],
+            'packaging'      => ['nullable', 'string', 'max:2000'],
+        ];
     }
 
     /**

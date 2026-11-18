@@ -18,6 +18,7 @@ use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
+use App\Notifications\Work\WorkNotifier;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -73,6 +74,7 @@ class UpdatePalletReturn extends OrgAction
                 );
             }
 
+            WorkNotifier::modified($palletReturn, 'address');
             Arr::forget($modelData, 'address');
         }
 

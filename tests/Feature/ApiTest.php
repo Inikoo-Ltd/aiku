@@ -567,7 +567,7 @@ test('mobile warehouses let a fulfilment warehouse worker handle fulfilment but 
         ->assertJsonPath('data.0.can.pick_and_pack', false);
 });
 
-test('mobile warehouses let a goods in supervisor view fulfilment as the web does', function () {
+test('mobile warehouses let a goods in supervisor view goods in and fulfilment as the web does', function () {
     config(['app.mobile_app_keys' => ['mobile-test-key']]);
     Auth::shouldUse('web');
     $warehouse = createWarehouse();
@@ -579,6 +579,7 @@ test('mobile warehouses let a goods in supervisor view fulfilment as the web doe
     getJson(route('grp.api.mobile.warehouses'), ['X-Aiku-App-Key' => 'mobile-test-key'])
         ->assertOk()
         ->assertJsonPath('data.0.id', $warehouse->id)
+        ->assertJsonPath('data.0.can.view_goods_in', true)
         ->assertJsonPath('data.0.can.view_fulfilment', true)
         ->assertJsonPath('data.0.can.edit_fulfilment', false);
 });

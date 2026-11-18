@@ -15,6 +15,7 @@ use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -28,6 +29,13 @@ class IndexMobileReturns
 
     public const array SORTS = ['created_at'];
 
+    public const string TO_PROCESS = 'to_process';
+
+    public const array TO_PROCESS_STATES = [
+        ReturnDeliveryNoteStateEnum::RECEIVED,
+        ReturnDeliveryNoteStateEnum::RETURNING,
+    ];
+
     /**
      * @param array{state?: string|null, q?: string|null, sort?: string|null, per_page?: int|null, page?: int|null} $filters
      */
@@ -38,12 +46,8 @@ class IndexMobileReturns
         $sort       = $filters['sort'] ?? '-created_at';
         $descending = str_starts_with($sort, '-');
 
-        return ReturnDeliveryNote::query()
+        return self::returnsQuery($warehouse, $state)
             ->select('return_delivery_notes.*')
-            ->leftJoin('shops', 'return_delivery_notes.shop_id', '=', 'shops.id')
-            ->where('return_delivery_notes.warehouse_id', $warehouse->id)
-            ->where('shops.is_aiku', true)
-            ->when($state !== 'all', fn ($query) => $query->where('return_delivery_notes.state', $state))
             ->when($search !== '', fn ($query) => $query->whereWith('return_delivery_notes.reference', $search))
             ->withCount([
                 'returnDeliveryNoteItem as number_items',
@@ -53,6 +57,16 @@ class IndexMobileReturns
             ->orderBy('return_delivery_notes.'.ltrim($sort, '-'), $descending ? 'desc' : 'asc')
             ->orderBy('return_delivery_notes.id', $descending ? 'desc' : 'asc')
             ->paginate(min((int) ($filters['per_page'] ?? 0), self::WEB_MAX_PER_PAGE) ?: (int) config('ui.table.records_per_page'), ['*'], 'page', (int) ($filters['page'] ?? 1));
+    }
+
+    public static function returnsQuery(Warehouse $warehouse, string $state): Builder
+    {
+        return ReturnDeliveryNote::query()
+            ->leftJoin('shops', 'return_delivery_notes.shop_id', '=', 'shops.id')
+            ->where('return_delivery_notes.warehouse_id', $warehouse->id)
+            ->where('shops.is_aiku', true)
+            ->when($state === self::TO_PROCESS, fn (Builder $query) => $query->whereIn('return_delivery_notes.state', self::TO_PROCESS_STATES))
+            ->when(!in_array($state, ['all', self::TO_PROCESS], true), fn (Builder $query) => $query->where('return_delivery_notes.state', $state));
     }
 
     /**
@@ -86,7 +100,8 @@ class IndexMobileReturns
         foreach (ReturnDeliveryNoteStateEnum::cases() as $state) {
             $counts[$state->value] = (int) $stats?->{'number_return_delivery_notes_state_'.$state->value};
         }
-        $counts['all'] = (int) $stats?->number_return_delivery_notes;
+        $counts[self::TO_PROCESS] = collect(self::TO_PROCESS_STATES)->sum(fn (ReturnDeliveryNoteStateEnum $state) => $counts[$state->value]);
+        $counts['all']            = (int) $stats?->number_return_delivery_notes;
 
         return $counts;
     }
@@ -98,7 +113,7 @@ class IndexMobileReturns
         $this->ensureCanViewReturns($user, $warehouse);
 
         $filters = Validator::make($request->query(), [
-            'state'    => ['sometimes', 'nullable', Rule::in([...ReturnDeliveryNoteStateEnum::values(), 'all'])],
+            'state'    => ['sometimes', 'nullable', Rule::in([...ReturnDeliveryNoteStateEnum::values(), self::TO_PROCESS, 'all'])],
             'q'        => ['sometimes', 'nullable', 'string', 'max:64'],
             'sort'     => ['sometimes', 'nullable', Rule::in(collect(self::SORTS)->flatMap(fn (string $sort) => [$sort, '-'.$sort])->all())],
             'per_page' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:'.self::WEB_MAX_PER_PAGE],

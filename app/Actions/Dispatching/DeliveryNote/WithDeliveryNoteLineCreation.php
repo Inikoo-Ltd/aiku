@@ -18,6 +18,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -56,6 +57,7 @@ trait WithDeliveryNoteLineCreation
 
                 StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
             }
+            WorkNotifier::modified($deliveryNote, 'lines');
 
             /*
              * A line the warehouse has never seen cannot be picked from a note that is already

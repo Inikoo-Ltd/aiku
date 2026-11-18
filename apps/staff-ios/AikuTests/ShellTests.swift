@@ -29,77 +29,19 @@ struct ShellTests {
     }
 
     @Test func homeModulesForStaffOnlyShowClockingAndHr() {
-        let staff = ShellHomeContent.modules(hasWarehouseAccess: false, warehouseLabel: "Main Warehouse · WH1")
-        let warehouse = ShellHomeContent.modules(hasWarehouseAccess: true, warehouseLabel: "Main Warehouse · WH1")
+        let staff = ShellHomeContent.modules(hasWarehouseAccess: false, warehouseLabel: "Main Warehouse · WH1", weekTotal: "29h 05m")
+        let warehouse = ShellHomeContent.modules(hasWarehouseAccess: true, warehouseLabel: "Main Warehouse · WH1", weekTotal: nil)
 
         #expect(staff.map(\.id) == ["hr"])
         #expect(staff.first?.subtitle == "This week 29h 05m")
         #expect(warehouse.map(\.id) == ["warehouse", "hr"])
+        #expect(warehouse.last?.subtitle == "—")
     }
 
     @Test func greetingFollowsTheTimeOfDay() {
         #expect(ShellHomeContent.greeting(hour: 8, firstName: "Alex") == "Good morning, Alex")
         #expect(ShellHomeContent.greeting(hour: 14, firstName: "Sam") == "Good afternoon, Sam")
         #expect(ShellHomeContent.greeting(hour: 21, firstName: "Alex") == "Good evening, Alex")
-    }
-
-    @Test func workFiltersCountItemsPerModule() {
-        let items = ShellWork.items
-
-        #expect(ShellWork.count(items, for: .all) == 6)
-        #expect(ShellWork.count(items, for: .warehouse) == 5)
-        #expect(ShellWork.count(items, for: .tasks) == 1)
-        #expect(ShellWork.filtered(items, by: .tasks).map(\.reference) == ["[Task]"])
-    }
-
-    @Test func workForStaffWithoutWarehouseAccessDropsWarehouseItems() {
-        let visible = ShellWork.visibleItems(ShellWork.items, hasWarehouseAccess: false)
-
-        #expect(visible.allSatisfy { $0.module == .tasks })
-        #expect(ShellWork.filters(for: visible) == [.all, .tasks])
-    }
-
-    @Test func searchMatchesNamesCaseInsensitivelyAndGroupsByKind() {
-        let sections = ShellSearch.sections(for: "lav", scope: .all)
-
-        #expect(sections.map(\.kind) == [.sko, .family])
-        #expect(sections.first?.records.map(\.code) == ["SKO-00412", "SKO-00734", "SKO-01190"])
-        #expect(sections.first?.heading == "SKOs · 3")
-    }
-
-    @Test func searchScopeLimitsTheKinds() {
-        #expect(ShellSearch.sections(for: "A-", scope: .locations).map(\.kind) == [.location])
-        #expect(ShellSearch.sections(for: "lav", scope: .deliveryNotes).isEmpty)
-        #expect(ShellSearch.sections(for: "   ", scope: .all).isEmpty)
-    }
-
-    @Test func highlightSplitsAroundEveryMatch() {
-        let segments = ShellSearch.highlight("Bath bomb – lavender 180g", query: "lav")
-
-        #expect(segments == [
-            ShellHighlightSegment(text: "Bath bomb – ", isMatch: false),
-            ShellHighlightSegment(text: "lav", isMatch: true),
-            ShellHighlightSegment(text: "ender 180g", isMatch: false)
-        ])
-    }
-
-    @Test func rememberingMovesTheTermToTheFrontWithoutDuplicates() {
-        let recents = ShellSearch.remembering("a-12-03", in: ["AR24817", "A-12-03", "bath bomb"])
-
-        #expect(recents == ["a-12-03", "AR24817", "bath bomb"])
-    }
-
-    @MainActor
-    @Test func inboxCountsUnreadAndMarksRead() {
-        let store = ShellInboxStore()
-
-        #expect(store.unreadCount == 4)
-        store.markRead("dn-assigned")
-        #expect(store.unreadCount == 3)
-        store.markRead("dn-assigned")
-        #expect(store.unreadCount == 3)
-        store.markAllRead()
-        #expect(store.unreadCount == 0)
     }
 
     @Test func warehouseConfirmTitleSaysKeepOrSwitch() {

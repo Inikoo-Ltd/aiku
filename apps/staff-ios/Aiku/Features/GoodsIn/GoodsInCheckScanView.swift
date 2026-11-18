@@ -84,7 +84,7 @@ struct GoodsInCheckScanView: View {
                 .font(.aiku(13))
                 .foregroundStyle(AikuColor.text3)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            AikuButton("Check all \(item.text(item.leftToCheck))", kind: .secondary, size: .regular) {
+            AikuButton("Check all \(item.text(item.leftToCheck))", look: GoodsInActionKey.look(for: GoodsInActionKey.check), size: .regular) {
                 store.setChecked(reference, sko: item.sko, quantity: item.delivered)
                 feedback = GoodsInScanFeedback(tone: .success, title: item.sko, detail: "· all \(item.text(item.delivered)) checked")
             }
@@ -108,7 +108,7 @@ struct GoodsInCheckScanView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        AikuButton("Done · back to items", action: onClose)
+        AikuButton("Done · back to items", icon: .check, action: onClose)
             .accessibilityIdentifier("goodsIn.scan.done")
     }
 

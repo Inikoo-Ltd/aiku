@@ -18,6 +18,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\SendsWorkNotifications;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -85,6 +86,7 @@ class ReturnDeliveryNote extends Model implements Auditable
     use HasFactory;
     use InCustomer;
     use HasHistory;
+    use SendsWorkNotifications;
 
     protected $table = 'return_delivery_notes';
 

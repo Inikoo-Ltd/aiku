@@ -139,7 +139,7 @@ class ShowStockDelivery extends OrgAction
             $this->canBookIn    = $this->authToBookIn($request, 'incoming.%d.edit');
             $this->canUnreceive = $this->authToBookIn($request, 'supervisor-incoming.%d');
 
-            return $request->user()->authTo("incoming.{$this->warehouse->id}.view");
+            return ShowIncomingHub::canViewGoodsIn($request->user(), $this->warehouse);
         }
 
         $this->canEdit          = $request->user()->authTo("procurement.{$this->organisation->id}.edit");

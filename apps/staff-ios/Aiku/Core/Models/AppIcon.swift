@@ -87,4 +87,7 @@ enum AppIcon: String, Sendable, CaseIterable {
     case server = "server.rack"
     case trash = "trash"
     case edit = "square.and.pencil"
+    case next = "arrow.right"
+    case unlock = "lock.open"
+    case xCircle = "xmark.circle"
 }

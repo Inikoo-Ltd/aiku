@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Helpers\Country;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -31,6 +32,7 @@ class UpdatePalletReturnDeliveryAddress extends OrgAction
             unset($addressData['can_edit']);
             unset($addressData['can_delete']);
             UpdateAddress::run($palletReturn->deliveryAddress, $addressData);
+            WorkNotifier::modified($palletReturn, 'address');
         }
     }
 

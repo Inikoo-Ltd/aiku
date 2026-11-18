@@ -36,7 +36,7 @@ struct AttachmentPicker: View {
                                     .foregroundStyle(AikuColor.text4)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            IconButton(.close, label: "Remove \(file.name)") {
+                            IconButton(.close, label: "Remove \(file.name)", tint: AikuColor.danger) {
                                 files.removeAll { $0.id == file.id }
                                 problem = nil
                             }
@@ -53,14 +53,14 @@ struct AttachmentPicker: View {
                         Label("Add photo", systemImage: AppIcon.photo.rawValue)
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(AikuButtonStyle(kind: .tertiary, size: .small))
+                    .buttonStyle(AikuButtonStyle(kind: .secondary, size: .small))
                     Button {
                         isImporting = true
                     } label: {
                         Label("Add file", systemImage: AppIcon.document.rawValue)
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(AikuButtonStyle(kind: .tertiary, size: .small))
+                    .buttonStyle(AikuButtonStyle(kind: .secondary, size: .small))
                 }
             }
             if let problem {

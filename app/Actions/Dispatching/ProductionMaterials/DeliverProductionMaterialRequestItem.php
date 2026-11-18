@@ -30,11 +30,13 @@ class DeliverProductionMaterialRequestItem extends OrgAction
 {
     /**
      * Walks a material the factory asked for from a shelf to the factory location. It stays
-     * stock: production uses it up from there, and orders can still pick it.
+     * stock: production uses it up from there, and orders can still pick it. The warehouse
+     * says how many SKOs it brought; what Aiku did not have on that shelf (or anywhere) is
+     * recorded as unbooked, so the stock gets counted, but the delivery is never refused.
      *
      * @throws \Throwable
      */
-    public function handle(ProductionMaterialRequestItem $item, LocationOrgStock $source, float $quantity, ?User $user): ProductionMaterialRequestItem
+    public function handle(ProductionMaterialRequestItem $item, ?LocationOrgStock $source, float $quantity, ?User $user): ProductionMaterialRequestItem
     {
         $production = $item->request->production;
         $factory    = $production->factoryLocation;
@@ -45,36 +47,43 @@ class DeliverProductionMaterialRequestItem extends OrgAction
         if ($item->state !== ProductionMaterialRequestItemStateEnum::PENDING) {
             throw ValidationException::withMessages(['item' => __('This material is no longer waiting to be brought')]);
         }
-        if ($source->org_stock_id !== $item->org_stock_id || $source->warehouse_id !== $item->request->warehouse_id
-            || $source->location_id === $factory->id || $source->location->is_goods_out) {
+        if ($source && ($source->org_stock_id !== $item->org_stock_id || $source->warehouse_id !== $item->request->warehouse_id
+            || $source->location_id === $factory->id || $source->location->is_goods_out)) {
             throw ValidationException::withMessages(['source' => __('Materials can only be taken from a shelf in this warehouse')]);
         }
-        if ($quantity > (float) $source->quantity) {
-            throw ValidationException::withMessages(['quantity' => __('Not that much stock in :location', ['location' => $source->location->code])]);
-        }
 
-        DB::transaction(function () use ($item, $source, $factory, $quantity, $user) {
-            $target = LocationOrgStock::where('location_id', $factory->id)
-                ->where('org_stock_id', $source->org_stock_id)
-                ->first()
-                ?? StoreLocationOrgStock::make()->action($source->orgStock, $factory, [
-                    'type' => LocationStockTypeEnum::PICKING,
-                ]);
+        $moved    = $source ? min($quantity, max(0, (float) $source->quantity)) : 0.0;
+        $unbooked = round($quantity - $moved, 3);
 
-            MoveOrgStockToOtherLocation::make()->action($source, $target, ['quantity' => $quantity], $user);
+        DB::transaction(function () use ($item, $source, $factory, $quantity, $moved, $unbooked, $user) {
+            if ($source && $moved > 0) {
+                $target = LocationOrgStock::where('location_id', $factory->id)
+                    ->where('org_stock_id', $source->org_stock_id)
+                    ->first()
+                    ?? StoreLocationOrgStock::make()->action($source->orgStock, $factory, [
+                        'type' => LocationStockTypeEnum::PICKING,
+                    ]);
+
+                MoveOrgStockToOtherLocation::make()->action($source, $target, ['quantity' => $moved], $user);
+            }
 
             $delivered = round((float) $item->delivered_skos + $quantity, 3);
             $item->update([
                 'delivered_skos'       => $delivered,
+                'unbooked_skos'        => round((float) $item->unbooked_skos + $unbooked, 3),
                 'delivered_by_user_id' => $user?->id,
                 'delivered_at'         => now(),
-                'state'                => $delivered >= (float) $item->skos_to_bring ? ProductionMaterialRequestItemStateEnum::DELIVERED : ProductionMaterialRequestItemStateEnum::PENDING,
+                'state'                => $item->skos_to_bring === null || $delivered >= (float) $item->skos_to_bring
+                    ? ProductionMaterialRequestItemStateEnum::DELIVERED
+                    : ProductionMaterialRequestItemStateEnum::PENDING,
             ]);
 
             self::settleRequest($item);
         });
 
-        OrgStockHydrateQuantityInLocations::run($source->org_stock_id);
+        if ($moved > 0) {
+            OrgStockHydrateQuantityInLocations::run($item->org_stock_id);
+        }
 
         return $item->refresh();
     }
@@ -95,7 +104,7 @@ class DeliverProductionMaterialRequestItem extends OrgAction
     public function rules(): array
     {
         return [
-            'location_org_stock_id' => ['required', 'integer', 'exists:location_org_stocks,id'],
+            'location_org_stock_id' => ['nullable', 'integer', 'exists:location_org_stocks,id'],
             'quantity'              => ['required', 'numeric', 'min:0.001'],
         ];
     }
@@ -112,11 +121,11 @@ class DeliverProductionMaterialRequestItem extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(ProductionMaterialRequestItem $item, LocationOrgStock $source, float $quantity, ?User $user = null): ProductionMaterialRequestItem
+    public function action(ProductionMaterialRequestItem $item, ?LocationOrgStock $source, float $quantity, ?User $user = null): ProductionMaterialRequestItem
     {
         $this->asAction = true;
         $this->initialisationFromWarehouse($item->request->warehouse, [
-            'location_org_stock_id' => $source->id,
+            'location_org_stock_id' => $source?->id,
             'quantity'              => $quantity,
         ]);
 
@@ -136,7 +145,7 @@ class DeliverProductionMaterialRequestItem extends OrgAction
 
         return $this->handle(
             $productionMaterialRequestItem,
-            LocationOrgStock::findOrFail($this->validatedData['location_org_stock_id']),
+            ($this->validatedData['location_org_stock_id'] ?? null) ? LocationOrgStock::findOrFail($this->validatedData['location_org_stock_id']) : null,
             (float) $this->validatedData['quantity'],
             $request->user()
         );

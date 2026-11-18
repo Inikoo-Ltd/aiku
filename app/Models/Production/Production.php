@@ -259,6 +259,11 @@ class Production extends Model implements Auditable
         return $this->hasMany(WorkArea::class);
     }
 
+    public function dropPoints(): HasMany
+    {
+        return $this->hasMany(ProductionDropPoint::class)->orderBy('position')->orderBy('id');
+    }
+
     public function artefacts(): HasMany
     {
         return $this->hasMany(Artefact::class);

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, nextTick, ref, watch } from "vue"
 import { useElementVisibility } from "@vueuse/core"
 import axios from "axios"
 import { debounce } from "lodash-es"
 import InputText from "primevue/inputtext"
 import Checkbox from "primevue/checkbox"
+import Popover from "primevue/popover"
 import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -32,6 +33,7 @@ interface Product {
 	image_full: { original_url: string; download_url: string } | null
 	status: "active" | "on_hold" | "discontinued"
 	status_label: string
+	status_reason: string | null
 	price: number
 	units_per_pack: number
 	packs: number
@@ -162,6 +164,41 @@ const toggleAllShown = (isSelected: boolean) => {
 const money = (amount: number | null, currency: string | null = props.details.currency) =>
 	amount === null ? "—" : currency ? new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: amount < 100 ? 2 : 0 }).format(amount) : String(amount)
 
+const reasonPopover = ref<(InstanceType<typeof Popover> & { container: HTMLElement | null; alignOverlay: () => void }) | null>(null)
+const shownReason = ref<string | null>(null)
+const isReasonPinned = ref(false)
+
+const openReason = async (event: Event, reason: string) => {
+	shownReason.value = reason
+	reasonPopover.value?.show(event, event.currentTarget as HTMLElement)
+	await nextTick()
+	if (reasonPopover.value?.container) {
+		reasonPopover.value.alignOverlay()
+	}
+}
+
+const showReason = (event: Event, reason: string) => {
+	if (!isReasonPinned.value) {
+		openReason(event, reason)
+	}
+}
+
+const hideReason = () => {
+	if (!isReasonPinned.value) {
+		reasonPopover.value?.hide()
+	}
+}
+
+const toggleReason = (event: Event, reason: string) => {
+	if (isReasonPinned.value && shownReason.value === reason) {
+		isReasonPinned.value = false
+		reasonPopover.value?.hide()
+		return
+	}
+	isReasonPinned.value = true
+	openReason(event, reason)
+}
+
 const statusClass = { active: "text-green-700", on_hold: "text-amber-700", discontinued: "text-red-600" }
 const stateClass: Record<string, string> = {
 	draft: "text-gray-500",
@@ -223,7 +260,17 @@ const edit = (submission: EditedSubmission) => {
 						<div class="flex items-baseline justify-between gap-2">
 							<button v-if="productWebsitesRoute" type="button" class="whitespace-nowrap font-semibold text-[var(--app-accent)] hover:underline" @click="openedProductId = product.id">{{ product.code }}</button>
 							<span v-else class="whitespace-nowrap font-semibold text-gray-900">{{ product.code }}</span>
-							<span class="text-sm" :class="statusClass[product.status]">{{ product.status_label }}</span>
+							<button
+								v-if="product.status_reason"
+								type="button"
+								class="cursor-help text-sm underline decoration-dotted underline-offset-2"
+								:class="statusClass[product.status]"
+								:aria-label="`${product.status_label}: ${product.status_reason}`"
+								@mouseenter="showReason($event, product.status_reason)"
+								@mouseleave="hideReason"
+								@click="toggleReason($event, product.status_reason)"
+							>{{ product.status_label }}</button>
+							<span v-else class="text-sm" :class="statusClass[product.status]">{{ product.status_label }}</span>
 						</div>
 						<div class="text-sm text-gray-600">{{ product.name }}</div>
 						<div class="flex flex-wrap items-baseline justify-between gap-x-3 text-sm tabular-nums">
@@ -276,7 +323,18 @@ const edit = (submission: EditedSubmission) => {
 									<span class="text-gray-500">{{ product.name }}</span>
 								</template>
 							</td>
-							<td class="whitespace-nowrap py-1.5 pl-4" :class="statusClass[product.status]">{{ product.status_label }}</td>
+							<td class="whitespace-nowrap py-1.5 pl-4" :class="statusClass[product.status]">
+								<button
+									v-if="product.status_reason"
+									type="button"
+									class="cursor-help underline decoration-dotted underline-offset-2"
+									:aria-label="`${product.status_label}: ${product.status_reason}`"
+									@mouseenter="showReason($event, product.status_reason)"
+									@mouseleave="hideReason"
+									@click="toggleReason($event, product.status_reason)"
+								>{{ product.status_label }}</button>
+								<template v-else>{{ product.status_label }}</template>
+							</td>
 							<td class="whitespace-nowrap py-1.5 pl-6 text-right">
 								{{ money(product.price) }}
 								<span v-if="product.units_per_pack > 1" class="text-xs text-gray-400"> × {{ product.units_per_pack }}</span>
@@ -402,5 +460,8 @@ const edit = (submission: EditedSubmission) => {
 				</table>
 			</div>
 		</section>
+		<Popover ref="reasonPopover" @hide="isReasonPinned = false">
+			<p class="max-w-xs whitespace-pre-line text-xs text-gray-700">{{ shownReason }}</p>
+		</Popover>
 	</div>
 </template>

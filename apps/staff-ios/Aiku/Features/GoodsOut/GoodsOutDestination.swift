@@ -11,26 +11,18 @@ struct GoodsOutDestination: View {
             GoodsOutBacklogView()
         case .deliveryNotes:
             GoodsOutDeliveryNotesView()
+        case .deliveryNotesIn(let state):
+            GoodsOutDeliveryNotesView(initialTab: state)
         case .deliveryNote(let reference):
             GoodsOutDeliveryNoteScreen(reference: reference)
         case .fastPicking(let reference):
             GoodsOutFastPickingView(reference: reference)
-        case .packingQueue:
-            GoodsOutPackingQueueView()
         case .scanToPick(let reference):
             GoodsOutScanToPickView(reference: reference)
         case .addShipment(let reference):
             GoodsOutAddShipmentView(reference: reference)
-        case .manualShipment(let reference):
-            GoodsOutManualShipmentView(reference: reference)
         case .askCRM(let reference):
             GoodsOutAskCRMView(reference: reference, deliveryNoteID: GoodsOutStore.shared.noteID(for: reference))
-        case .tariffCodes(let reference):
-            GoodsOutTariffView(reference: reference)
-        case .customsFile(let reference):
-            GoodsOutCustomsView(reference: reference)
-        case .dispatchedEmails(let reference):
-            GoodsOutDispatchedEmailsView(reference: reference)
         }
     }
 }

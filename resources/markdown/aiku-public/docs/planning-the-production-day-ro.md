@@ -72,6 +72,22 @@ Până nu apeși una dintre cele două, sarcina rămâne în fața ta în fiecar
 
 Când un operator închide o sarcină cu mai puțin și mută restul într-una nouă (vezi [Lucrul cu ecranul de fabrică](/docs/working-the-floor-screen-ro)), sarcina nouă păstrează ziua planificată, locul în ordine și operatorul fiecărui pas.
 
+## Cererea de materiale la depozit
+
+Ori de câte ori fabrica are nevoie de ceva de la depozit, oricine lucrează în producție cere asta sus în **Factory → Operations → Materials check** (Fabrică → Operațiuni → Verificarea materialelor), sub **Ask the warehouse** (Cere de la depozit). Fiecare rând este:
+
+| Câmp | Ce pui |
+| --- | --- |
+| SKO | scrie codul sau numele; lista arată câte SKO au depozitul și fabrica |
+| Quantity and unit | cum i-ai spune depozitului: *3 Boxes*, *1 Pallet*, *80 Bags*, *2 SKOs* sau *All there is* |
+| Drop point | unde în fabrică să fie lăsat (*Storage room*, *Clean room*, *Bath bomb area*...) |
+| Urgent | depozitul vede primele rândurile urgente |
+| Note | orice trebuie să știe depozitul (*250ml*, *vă rog afară pe paleți*) |
+
+**Add line** (Adaugă rând) cere mai multe lucruri deodată, iar **Send to warehouse** (trimite la depozit) le trimite. **Asked this week** (Cerut săptămâna aceasta) de mai jos arată fiecare cerere cu cine a făcut-o și când, iar pentru fiecare rând dacă este *To bring* (de adus), *Delivered* (livrat; câte SKO, de cine, când) sau *Can't bring* (nu se poate aduce) cu motivul depozitului.
+
+Managerul și supervizorul țin lista punctelor de predare cu butonul **Drop points** (Puncte de predare): adaugă, redenumesc, mută în sus și în jos sau șterg. Un punct de predare șters își păstrează numele pe cererile deja trimise acolo.
+
 ## Verificarea de dimineață a materialelor
 
 Depozitul aduce materialele în fabrică în cutii întregi, nu în cantitățile exacte ale zilei. **Factory → Operations → Materials check** (Fabrică → Operațiuni → Verificarea materialelor) listează ce mai are nevoie planul zilei, ca fabrica să verifice ce are și să ceară depozitului restul într-o singură listă clară.
@@ -88,13 +104,15 @@ Fiecare rând este un material, însumat pe toate sarcinile zilei, cu sarcinile 
 
 Când scrii un număr de lipsă, rândul arată ce va aduce depozitul, rotunjit în sus la cutiile lui: dacă lipsesc 1.200 și într-o cutie sunt 500, apare *bring 3 boxes (1.500)* (adu 3 cutii). Un *Warehouse short* (depozitul nu are destul) roșu înseamnă că depozitul nu are atâtea, deci știi imediat.
 
-Apasă **Send to warehouse** (trimite la depozit). Rândurile cu lipsă merg la depozit ca o singură cerere, iar cererea apare deasupra listei, fiecare material marcat *To bring* (de adus), *Delivered* (livrat) sau *Warehouse short*. Dacă bifezi totul ca suficient și trimiți, se înregistrează că verificarea s-a făcut. O a doua verificare mai târziu în zi adaugă doar ce lipsește în continuare.
+Apasă **Send to warehouse** (trimite la depozit). Rândurile cu lipsă merg la depozit ca o singură cerere, iar cererea apare sub **Asked this week**, fiecare material marcat *To bring* (de adus), *Delivered* (livrat) sau *Can't bring*. Dacă bifezi totul ca suficient și trimiți, se înregistrează că verificarea s-a făcut. O a doua verificare mai târziu în zi adaugă doar ce lipsește în continuare.
 
 Managerul sau supervizorul face verificarea sau o dă unui operator prin **Checked by** (verificat de), din partea de sus. Acel operator vede apoi pe ecranul de fabrică un memento care deschide verificarea.
 
 ## Depozitul aduce materialele
 
-În depozit, **Goods out → For production** (Ieșiri de marfă → Pentru producție) listează fiecare material cerut de fabrică, în ordinea de parcurs a raftului de unde se ia, cu codul de stoc, cutiile de adus și locația din fabrică unde merg. Cel care pregătește alege raftul, verifică cantitatea și apasă **Delivered**. Când depozitul nu poate aduce, **Warehouse short** anunță fabrica.
+În depozit, cardul **For production** (Pentru producție) de sub **Action needed** (Necesită acțiune) din **Inventory** (Inventar) arată câte rânduri așteaptă fabrica, cu cele urgente pe insigna mică. Deschide **Inventory → For production**: fiecare rând încă de adus, întâi cele urgente și apoi cele mai vechi, cu ce s-a cerut, punctul de predare, cine a cerut și când, nota și raftul de unde se ia. Cel care pregătește alege raftul, scrie SKO aduse și apasă **Delivered**. Când depozitul nu poate aduce, **Can't bring** întreabă motivul (*out of stock*, *ordered from supplier*) și anunță fabrica. **Done** (Gata) listează ce s-a adus sau refuzat, cu cât a durat.
+
+Dacă Aiku arată pe raft mai puține SKO decât s-au adus, livrarea trece oricum: ce avea Aiku se mută în fabrică, iar restul este marcat *not in Aiku, count it* (nu e în Aiku, numără-l), astfel încât SKO să fie numărat.
 
 Stocul livrat trece de pe raft în locația din fabrică. Rămâne stoc: este numărat și văzut ca înainte, iar o comandă de client îl mai poate culege de acolo când rafturile depozitului sunt goale, rafturile având mereu prioritate. Materialele nefolosite pot fi mutate înapoi pe un raft din pagina locației din fabrică, ca orice altă mutare între locații.
 
@@ -107,9 +125,11 @@ Când o sarcină terminată este recepționată în stoc, materialele ei se cons
 <li><b>Schimbi ordinea zilei:</b> scrie un număr în <b>Order</b>.</li>
 <li><b>Sarcina nefinalizată de ieri:</b> <b>Confirm for</b> ziua, sau <b>Take off the plan</b>.</li>
 <li><b>De pe tablă în plan:</b> linkul <b>Day plan</b> de deasupra tablei.</li>
+<li><b>Ceri ceva de la depozit:</b> <b>Factory</b> → <b>Operations</b> → <b>Materials check</b> → <b>Ask the warehouse</b> → <b>Send to warehouse</b>.</li>
+<li><b>Schimbi punctele de predare:</b> <b>Materials check</b> → <b>Drop points</b>.</li>
 <li><b>Verifici materialele zilei:</b> <b>Factory</b> → <b>Operations</b> → <b>Materials check</b> → <b>Have enough</b> sau un număr de lipsă → <b>Send to warehouse</b>.</li>
 <li><b>Dai verificarea unui operator:</b> <b>Materials check</b> → <b>Checked by</b>.</li>
-<li><b>Aduci materialele (depozit):</b> <b>Goods out</b> → <b>For production</b> → <b>Delivered</b>, sau <b>Warehouse short</b>.</li>
+<li><b>Aduci materialele (depozit):</b> <b>Inventory</b> → <b>For production</b> → <b>Delivered</b>, sau <b>Can't bring</b>.</li>
 </ul>
 </aside>
 
@@ -119,7 +139,8 @@ Când o sarcină terminată este recepționată în stoc, materialele ei se cons
 <li>Planificarea unei zile, darea pașilor, schimbarea ordinii: poziția <b>Floor supervisor</b> pentru fabrică.</li>
 <li>Vizualizarea Day plan fără a o modifica: <b>Foreman</b>.</li>
 <li>Lucrul la un pas dat ție: <b>Operative</b>, pe ecranul de fabrică.</li>
-<li>Verificarea materialelor: <b>Floor supervisor</b>, sau operatorul căruia i-a fost dată.</li>
-<li>Aducerea materialelor în fabrică: o poziție de depozit care lucrează la ieșiri de marfă.</li>
+<li>Cererea de materiale la depozit: oricine vede Operations din fabrică.</li>
+<li>Verificarea materialelor și punctele de predare: <b>Floor supervisor</b>; verificarea și operatorul căruia i-a fost dată.</li>
+<li>Aducerea materialelor în fabrică: o poziție de depozit care lucrează în depozit.</li>
 </ul>
 </aside>

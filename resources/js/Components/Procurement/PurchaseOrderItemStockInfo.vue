@@ -382,7 +382,7 @@ function purchaseOrderRoute(slug: string) {
 		</div>
 
 		<div v-if="hasHistory && (!isOrderLocked || hasPendingQuantityQuery)" class="flex flex-wrap items-center gap-x-3 gap-y-1">
-			<div v-if="!isOrderLocked" class="relative h-2 w-48 shrink-0 overflow-hidden rounded-full bg-gray-100 transition-[height] duration-150 hover:h-3 border border-gray-400">
+			<div v-if="!isOrderLocked" class="relative h-2 w-48 shrink-0 overflow-hidden rounded-full bg-gray-100 border border-gray-400">
 				<div
 					v-for="zone in currentCoverZones"
 					:key="zone.key"

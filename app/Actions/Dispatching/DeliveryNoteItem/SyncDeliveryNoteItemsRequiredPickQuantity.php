@@ -14,6 +14,7 @@ use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
+use App\Notifications\Work\WorkNotifier;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -99,6 +100,7 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
                 'original_quantity_required' => $quantityRequired,
                 'estimated_required_weight'  => (int)($quantityRequired * ($orgStock->stock?->gross_weight ?? 0)),
             ], strict: false);
+            WorkNotifier::modified($deliveryNoteItem->deliveryNote, 'lines');
 
             if ($deliveryNoteItem->composition_dirty_at) {
                 $deliveryNoteItem->update([

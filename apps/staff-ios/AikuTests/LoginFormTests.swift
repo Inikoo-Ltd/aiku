@@ -30,6 +30,9 @@ struct LoginFormTests {
     @Test func failureMessagesMatchTheDesign() {
         #expect(LoginFailure.invalidCredentials(message: "x").title == "Incorrect username or password")
         #expect(LoginFailure.offline.message.contains("Sign in needs internet"))
+        #expect(LoginFailure.invalidCredentials(message: "").message == "Check your details and try again.")
+        #expect(LoginFailure.invalidCredentials(message: "Too many login attempts. Please try again in 42 seconds.").message == "Too many login attempts. Please try again in 42 seconds.")
+        #expect(LoginFailure.codeRejected(message: "Invalid OTP").title == "Code not accepted")
         #expect(LoginState.failed(.offline).failure == .offline)
         #expect(LoginState.signingIn.isSigningIn)
     }

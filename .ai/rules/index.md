@@ -31,6 +31,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/Production/ManufactureArtisanDay/**, app/Actions/Production/ManufactureTaskSession/GetManufacturePayroll.php | .ai/rules/manufacture-artisan-day.md |
 | app/Actions/Production/ManufactureOvertime/** | .ai/rules/manufacture-overtime.md |
 | app/Http/Middleware/Handle*InertiaRequests.php | .ai/rules/middleware.md |
+| app/Notifications/**, app/Actions/**/Notifications/**, app/Actions/Api/Group/**, apps/** | .ai/rules/notifications.md |
 | app/Actions/Ordering/**, resources/js/Pages/Grp/Org/Ordering/** | .ai/rules/ordering.md |
 | app/Actions/Inventory/OrgStock/** | .ai/rules/org-stock.md |
 | routes/grp/web/org/** | .ai/rules/org.md |
@@ -39,6 +40,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/Production/** | .ai/rules/production.md |
 | app/Actions/Iris/Reviews/** | .ai/rules/reviews.md |
 | app/Actions/CRM/ShoppingAssistant/** | .ai/rules/shopping-assistant.md |
+| app/Actions/SupplyChain/SupplierChangeRequest/** | .ai/rules/supplier-change-request.md |
 | app/Actions/SupplyChain/SupplierShareLink/** | .ai/rules/supplier-share-link.md |
 | app/Actions/SupplyChain/** | .ai/rules/supply-chain.md |
 | tests/** | .ai/rules/tests.md |

@@ -47,14 +47,28 @@ final class AuthStore {
         isSignedIn = tokens.load() != nil
     }
 
-    func signIn(username: String, password: String, remember: Bool) async throws(LoginFailure) {
-        let request = MobileLoginRequest(username: username, password: password, deviceName: deviceName)
+    func signIn(
+        username: String,
+        password: String,
+        remember: Bool,
+        oneTimePassword: String? = nil,
+        twoFactorSetupToken: String? = nil
+    ) async throws(LoginFailure) {
+        let request = MobileLoginRequest(
+            username: username,
+            password: password,
+            deviceName: deviceName,
+            oneTimePassword: oneTimePassword,
+            twoFactorSetupToken: twoFactorSetupToken
+        )
         do {
             let response = try await service.login(request)
             tokens.save(response.token, persist: remember)
             profile = response.user
             lastProfileError = nil
             isSignedIn = true
+        } catch let rejection as LoginRejection {
+            throw LoginFailure(rejection)
         } catch let error as APIError {
             throw LoginFailure(error)
         } catch {

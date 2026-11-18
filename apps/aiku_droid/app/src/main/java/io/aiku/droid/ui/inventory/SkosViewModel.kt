@@ -29,6 +29,8 @@ private const val PREVIEW_PER_PAGE = 1
 private const val FAMILY_OPTIONS_PER_PAGE = 150
 private const val MAX_FAMILY_PAGES = 10
 
+internal fun OrgStockRow.listKey(): Any = locationOrgStockId?.let { id to it } ?: id
+
 data class SkoFilter(
     val bucket: SkoBucket = SkoBucket.Current,
     val search: String = "",
@@ -204,7 +206,7 @@ class SkosViewModel(
             when (val result = api.orgStocks(token, warehouseId, filter.query(page = page, perPage = perPage))) {
                 is GoodsOutResult.Loaded -> mutableState.update { current ->
                     current.copy(
-                        list = current.list.loaded(result.value.rows, result.value.meta) { it.id },
+                        list = current.list.loaded(result.value.rows, result.value.meta) { it.listKey() },
                         counts = result.value.counts ?: current.counts,
                         currencyCode = result.value.currencyCode ?: current.currencyCode,
                     )

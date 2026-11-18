@@ -137,7 +137,7 @@ struct GoodsOutPickingFooter: View {
         if let reason = action.disabledReason {
             GoodsOutFooterStatus(title: action.label, detail: reason)
         } else {
-            AikuButton(action.label, isLoading: working, action: run)
+            AikuButton(action.label, look: GoodsOutActionKey.look(for: action.key), isLoading: working, action: run)
                 .accessibilityIdentifier("goodsOut.setAsPicked")
         }
     }

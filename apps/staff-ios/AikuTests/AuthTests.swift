@@ -90,6 +90,7 @@ struct AuthStoreTests {
 
     @Test func apiErrorsMapToLoginFailures() {
         #expect(LoginFailure(.validation(message: "Enter OTP", code: "otp_required")) == .otpRequired(message: "Enter OTP"))
+        #expect(LoginFailure(.validation(message: "Set up two-factor authentication to continue.", code: "two_factor_setup_required")) == .server(message: "Set up two-factor authentication to continue."))
         #expect(LoginFailure(.tooManyAttempts(message: "Wait")) == .tooManyAttempts(message: "Wait"))
         #expect(LoginFailure(.offline) == .offline)
         #expect(LoginFailure(.http(statusCode: 500)).title == "Couldn’t sign in")
@@ -227,7 +228,12 @@ struct AuthAPITests {
     @Test func validationErrorsCarryTheFirstMessage() async {
         let body = #"{"message":"These credentials do not match our records.","errors":{"username":["These credentials do not match our records."]}}"#
 
-        await #expect(throws: APIError.validation(message: "These credentials do not match our records.", code: nil)) {
+        let rejection = LoginRejection(
+            message: "These credentials do not match our records.",
+            fieldErrors: ["username": "These credentials do not match our records."]
+        )
+
+        await #expect(throws: rejection) {
             try await client(StubTransport(status: 422, body: body)).login(MobileLoginRequest(username: "a", password: "b", deviceName: "c"))
         }
     }
@@ -235,7 +241,13 @@ struct AuthAPITests {
     @Test func otpRequiredKeepsItsCode() async {
         let body = #"{"message":"Enter OTP from your Authenticator App","code":"otp_required","errors":{"one_time_password":["Enter OTP from your Authenticator App"]}}"#
 
-        await #expect(throws: APIError.validation(message: "Enter OTP from your Authenticator App", code: "otp_required")) {
+        let rejection = LoginRejection(
+            message: "Enter OTP from your Authenticator App",
+            code: "otp_required",
+            fieldErrors: ["one_time_password": "Enter OTP from your Authenticator App"]
+        )
+
+        await #expect(throws: rejection) {
             try await client(StubTransport(status: 422, body: body)).login(MobileLoginRequest(username: "a", password: "b", deviceName: "c"))
         }
     }

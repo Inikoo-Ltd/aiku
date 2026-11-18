@@ -23,6 +23,7 @@ final class LocationsStore {
     private(set) var lastPage = 0
     private(set) var loadError: String?
     private(set) var detailLoadedCodes: Set<String> = []
+    @ObservationIgnored var selectedWarehouseID: @MainActor () -> Int? = { WarehouseStore.shared.selectedID }
     private(set) var abilities: [String: MobileLocation.Abilities] = [:]
     @ObservationIgnored private var loadedKey: LocationsLoadKey?
 
@@ -217,8 +218,22 @@ final class LocationsStore {
         }
     }
 
+    func location(code: String) -> LocationsLocation? {
+        if let known = warehouse.location(code: code) {
+            return known
+        }
+        return source == .sample ? warehouse.locations.first : nil
+    }
+
     func loadLocation(code: String, apiClient: APIClient) async {
-        guard source == .remote, let id = warehouse.location(code: code)?.remote?.id else { return }
+        guard source == .remote else { return }
+        let known: LocationsLocation?
+        if let loaded = warehouse.location(code: code) {
+            known = loaded
+        } else {
+            known = await locationMatching(scannedCode: code, apiClient: apiClient)
+        }
+        guard let id = known?.remote?.id else { return }
         do {
             applyDetail(try await apiClient.fetchLocation(id: id))
         } catch where error.isCancellation {
@@ -241,9 +256,9 @@ final class LocationsStore {
         if let known = warehouse.location(code: wanted) {
             return known
         }
-        guard source == .remote, let remoteWarehouse else { return nil }
+        guard source == .remote, let warehouseID = remoteWarehouse?.id ?? selectedWarehouseID() else { return nil }
         do {
-            let page = try await apiClient.fetchLocations(warehouseID: remoteWarehouse.id, query: MobileLocationsQuery(search: wanted, perPage: 10))
+            let page = try await apiClient.fetchLocations(warehouseID: warehouseID, query: MobileLocationsQuery(search: wanted, perPage: 10))
             guard let match = page.data.first(where: { $0.code.caseInsensitiveCompare(wanted) == .orderedSame }) else { return nil }
             let location = LocationsLocation(remote: match)
             merge([location], replacingAll: false)

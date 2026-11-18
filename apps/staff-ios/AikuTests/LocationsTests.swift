@@ -218,8 +218,9 @@ struct LocationsTests {
         #expect(warehouse.otherLocation(holding: .wholesale, sko: "SKO-00733", excluding: "A-03-02") == nil)
     }
 
+    @MainActor
     @Test func unknownCodesFallBackToTheFirstSampleRecord() {
-        #expect(warehouse.locationOrFallback(code: "Z-99-99")?.code == "A-03-02")
+        #expect(LocationsStore(warehouse: warehouse).location(code: "Z-99-99")?.code == "A-03-02")
         #expect(warehouse.areaOrFallback(code: "Z")?.code == "A")
         #expect(warehouse.location(code: "a-03-02")?.code == "A-03-02")
     }

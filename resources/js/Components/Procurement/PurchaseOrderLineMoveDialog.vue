@@ -297,6 +297,7 @@ function submit() {
 					optionLabel="label"
 					optionValue="org_supplier_id"
 					filter
+					autoFilterFocus
 					:filterFields="['search']"
 					:loading="isFetching"
 					:placeholder="ctrans('Choose a supplier of the same agent')"

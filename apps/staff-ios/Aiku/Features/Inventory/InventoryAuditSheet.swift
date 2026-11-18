@@ -49,7 +49,7 @@ struct InventoryAuditSheet: View {
                 FieldError(error)
             }
         } footer: {
-            AikuButton(isSaving ? "Saving…" : "Save audit") {
+            AikuButton(isSaving ? "Saving…" : "Save audit", look: AikuButtonLook(.primary, icon: .check)) {
                 save()
             }
             .disabled(!canSave || isSaving)

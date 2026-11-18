@@ -56,7 +56,7 @@ struct LocationsAuditSheet: View {
             HelperText("Each difference needs a reason: decreases such as Count shortage or Damaged stock, increases such as Count gain (stock found). A note is optional.")
             AikuTextField("Note (optional)", text: $note, placeholder: "Broken in box")
         } footer: {
-            AikuButton(missingReasons > 0 ? "Choose a reason for each difference" : "Save audit") {
+            AikuButton(missingReasons > 0 ? "Choose a reason for each difference" : "Save audit", look: AikuButtonLook(.primary, icon: .check)) {
                 onSave(slots.map {
                     LocationsAuditCount(
                         skoReference: $0.skoReference,

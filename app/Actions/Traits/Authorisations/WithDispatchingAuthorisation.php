@@ -27,6 +27,6 @@ trait WithDispatchingAuthorisation
 
     public static function canViewDispatching(User $user, Warehouse $warehouse): bool
     {
-        return $user->authTo(["dispatching.$warehouse->id.view", "fulfilment.$warehouse->id.view"]);
+        return $user->authTo(["dispatching.$warehouse->id.view", "supervisor-dispatching.$warehouse->id", "fulfilment.$warehouse->id.view"]);
     }
 }

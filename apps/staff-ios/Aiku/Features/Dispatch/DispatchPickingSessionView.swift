@@ -193,7 +193,7 @@ struct DispatchPickingSessionView: View {
             } else {
                 AikuButton(
                     "Remove \(PickingSessionFormat.count(chosen.count, "delivery note"))",
-                    kind: .danger,
+                    look: PickingSessionActionKey.look(for: PickingSessionActionKey.removeDeliveryNotes).forConfirm,
                     isLoading: store.working == .removeDeliveryNotes(Array(chosen))
                 ) {
                     Task { await run(.removeDeliveryNotes(item.deliveryNotes.map(\.id).filter(chosen.contains))) }
@@ -212,8 +212,7 @@ struct DispatchPickingSessionView: View {
                     } else {
                         AikuButton(
                             action.label ?? action.key,
-                            icon: icon(for: action.key),
-                            kind: action.key == primaryKey ? .primary : .tertiary,
+                            look: PickingSessionActionKey.look(for: action.key).inFooter(isFirst: action.key == primaryKey),
                             isLoading: action.key == PickingSessionActionKey.startPicking && store.working == .startPicking
                         ) {
                             perform(action.key, session: item)
@@ -222,14 +221,6 @@ struct DispatchPickingSessionView: View {
                     }
                 }
             }
-        }
-    }
-
-    private func icon(for key: String) -> AppIcon? {
-        switch key {
-        case PickingSessionActionKey.scanPick, PickingSessionActionKey.scanPack: .scan
-        case PickingSessionActionKey.backToPicking: .undo
-        default: nil
         }
     }
 
@@ -284,7 +275,7 @@ struct DispatchPickingSessionView: View {
                 HelperText("The trolley becomes free for another delivery note or session.")
                 if let sheetProblem { FieldError(sheetProblem) }
             } footer: {
-                AikuButton("Remove the trolley", kind: .danger, isLoading: store.isWorking) {
+                AikuButton("Remove the trolley", look: AikuButtonLook(.danger, icon: .trash).forConfirm, isLoading: store.isWorking) {
                     Task { await run(.detachTrolley(trolley.id)) }
                 }
                 AikuButton("Cancel", kind: .tertiary) { sheet = nil }

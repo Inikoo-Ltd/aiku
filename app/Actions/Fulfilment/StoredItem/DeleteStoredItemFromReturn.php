@@ -15,6 +15,7 @@ use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
+use App\Notifications\Work\WorkNotifier;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteStoredItemFromReturn extends OrgAction
@@ -28,6 +29,7 @@ class DeleteStoredItemFromReturn extends OrgAction
     {
 
         $palletReturnItem->delete();
+        WorkNotifier::modified($palletReturn, 'lines');
 
         PalletReturnHydratePallets::dispatch($palletReturn);
 

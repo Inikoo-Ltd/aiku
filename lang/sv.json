@@ -9973,5 +9973,20 @@
     ":name is gazing into his crystal ball…": ":name tittar i sin kristallkula…",
     "This one needs a little more thought. Nearly there…": "Den här kräver lite mer eftertanke. Nästan klart…",
     "Usually takes about :seconds seconds": "Tar oftast runt :seconds sekunder",
-    "Our sister shop :website sells these: :link": "Vår systerbutik :website säljer de här produkterna: :link"
+    "Our sister shop :website sells these: :link": "Vår systerbutik :website säljer de här produkterna: :link",
+    ":reference assigned to you": ":reference tilldelad dig",
+    ":actor assigned :reference to you.": ":actor tilldelade dig :reference.",
+    ":reference taken over": ":reference övertagen",
+    ":actor has taken over :reference, which was assigned to you.": ":actor har tagit över :reference, som var tilldelad dig.",
+    "Removed from :reference": "Borttagen från :reference",
+    ":actor removed you from :reference.": ":actor tog bort dig från :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor avbröt :reference, som är tilldelad dig.",
+    ":reference can go ahead": ":reference kan fortsätta",
+    ":reference is no longer waiting and can be done again.": ":reference väntar inte längre och kan göras igen.",
+    ":reference was changed": ":reference har ändrats",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Observera: :reference, tilldelad dig, har ändrats av :actor.",
+    ":actor has updated :reference, which is assigned to you.": ":actor har uppdaterat :reference, som är tilldelad dig.",
+    "Operational": "I drift",
+    ":reference cancelled": ":reference avbruten",
+    "The customer": "Kunden"
 }

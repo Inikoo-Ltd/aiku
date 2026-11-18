@@ -9,7 +9,7 @@
 
 namespace App\Actions\Api\Group\GoodsOut;
 
-use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
+use App\Actions\Api\Group\WithMobileModuleAccess;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Models\Dispatching\Trolley;
 use App\Models\Inventory\Warehouse;
@@ -25,6 +25,7 @@ use Lorisleiva\Actions\Concerns\AsController;
 class IndexMobileDispatchPersonnel
 {
     use AsController;
+    use WithMobileModuleAccess;
 
     /**
      * @return array<int, array{user: array{id: int, name: string|null}, delivery_notes: array<int, array{id: int, reference: string}>, trolleys: array<int, array{id: int, name: string}>, picking_sessions: array<int, array{id: int, reference: string}>}>
@@ -86,7 +87,7 @@ class IndexMobileDispatchPersonnel
     {
         /** @var User $user */
         $user = $request->user();
-        abort_unless($warehouse->group_id === $user->group_id && IndexDeliveryNotes::canViewDispatching($user, $warehouse), 403);
+        abort_unless(self::canViewGoodsOut($user, $warehouse), 403);
 
         $data = Validator::make($request->query(), [
             'role' => ['required', Rule::in(array_keys(ShowDispatchHub::CURRENT_WORK))],

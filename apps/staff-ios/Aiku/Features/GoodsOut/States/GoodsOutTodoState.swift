@@ -28,7 +28,7 @@ struct GoodsOutTodoFooter: View {
         if note.isRemote {
             remoteFooter
         } else {
-            AikuButton("Start picking") {
+            AikuButton("Start picking", look: GoodsOutActionKey.startPicking.look) {
                 present(.trolley(startsPicking: true))
             }
             .accessibilityIdentifier("goodsOut.startPicking")

@@ -229,6 +229,46 @@ class GetOrganisationStockCoverBuckets
     }
 
     /**
+     * The units behind comingSkosExpression, one row per delivery item or ordered line not on a
+     * delivery yet, with the date it is expected: today once the delivery is in the warehouse, the
+     * delivery's estimated receiving date while it travels, the order's expected arrival before it
+     * is on a delivery, null when nobody gave a date.
+     */
+    public static function comingUnitsQuery(int $organisationId): Builder
+    {
+        $landed    = [StockDeliveryStateEnum::RECEIVED->value, StockDeliveryStateEnum::CHECKED->value, StockDeliveryStateEnum::BOOKING_IN->value];
+        $counted   = "'".StockDeliveryStateEnum::CHECKED->value."', '".StockDeliveryStateEnum::BOOKING_IN->value."'";
+        $deadLines = [PurchaseOrderTransactionStateEnum::CANCELLED->value, PurchaseOrderTransactionStateEnum::NOT_RECEIVED->value];
+
+        $deliveries = DB::table('stock_delivery_items')
+            ->join('stock_deliveries', 'stock_deliveries.id', 'stock_delivery_items.stock_delivery_id')
+            ->where('stock_deliveries.organisation_id', $organisationId)
+            ->whereNull('stock_deliveries.deleted_at')
+            ->whereNull('stock_delivery_items.deleted_at')
+            ->whereIn('stock_deliveries.state', array_merge([
+                StockDeliveryStateEnum::IN_PROCESS->value,
+                StockDeliveryStateEnum::CONFIRMED->value,
+                StockDeliveryStateEnum::READY_TO_SHIP->value,
+                StockDeliveryStateEnum::DISPATCHED->value,
+            ], $landed))
+            ->selectRaw("stock_delivery_items.org_stock_id, 'delivery' as kind, stock_deliveries.slug, stock_deliveries.reference, stock_deliveries.parent_name as supplier, stock_deliveries.state::text as state,
+                case when stock_deliveries.state in ('".implode("', '", $landed)."') then current_date else nullif(stock_deliveries.data->>'estimated_receiving_date', '')::date end as eta,
+                greatest(case when stock_deliveries.state in ($counted) then stock_delivery_items.unit_quantity_checked else stock_delivery_items.unit_quantity end - coalesce(stock_delivery_items.unit_quantity_placed, 0), 0) as units");
+
+        $orders = DB::table('purchase_order_transactions')
+            ->join('purchase_orders', 'purchase_orders.id', 'purchase_order_transactions.purchase_order_id')
+            ->where('purchase_orders.organisation_id', $organisationId)
+            ->whereNull('purchase_orders.deleted_at')
+            ->whereNull('purchase_order_transactions.deleted_at')
+            ->whereNotIn('purchase_order_transactions.state', $deadLines)
+            ->whereIn('purchase_orders.state', PurchaseOrderStateEnum::openValues())
+            ->selectRaw("purchase_order_transactions.org_stock_id, 'order' as kind, purchase_orders.slug, purchase_orders.reference, purchase_orders.parent_name as supplier, purchase_orders.state::text as state, purchase_orders.estimated_received_at::date as eta,
+                greatest(purchase_order_transactions.quantity_ordered - (".StoreStockDeliveryFromPurchaseOrder::quantityOnDelivery()->toRawSql()."), 0) as units");
+
+        return DB::query()->fromSub($deliveries->unionAll($orders), 'coming')->where('units', '>', 0);
+    }
+
+    /**
      * SKOs of an org stock on one purchase order still being drafted. Its page judges the stock
      * groups with them, as the line verdict does, so a line already ordered is not called critical
      * next to its own overstock verdict (HELP-4508). A submitted order is already coming.

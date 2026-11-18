@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\UI;
 
+use App\Actions\Dispatching\ProductionMaterials\IndexProductionMaterialRequestItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Actions\Traits\Dashboards\WithLatestStockHistory;
@@ -214,7 +215,7 @@ class ShowInventoryDashboard extends OrgAction
         $numberOrgStocks = $this->organisation->inventoryStats->number_current_org_stocks;
         $percentageOf    = fn (int $count): float => $numberOrgStocks ? round($count / $numberOrgStocks * 100, 1) : 0;
 
-        return [
+        return array_values(array_filter([
             [
                 'key'        => 'urgent_audit',
                 'label'      => __('Urgent audit'),
@@ -250,6 +251,55 @@ class ShowInventoryDashboard extends OrgAction
                     ],
                 ],
             ],
+            $this->getProductionMaterialsGauge($routeParameters),
+        ]));
+    }
+
+    /**
+     * Materials the factory asked for and the warehouse has still to bring, shown only where a
+     * production has its factory location in this warehouse. The ring is the share of today's
+     * lines still open, so it empties as they are brought.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getProductionMaterialsGauge(array $routeParameters): ?array
+    {
+        $hasFactory = $this->organisation->productions()->whereRelation('factoryLocation', 'warehouse_id', $this->warehouse->id)->exists();
+        if (!$hasFactory) {
+            return null;
+        }
+
+        $open      = IndexProductionMaterialRequestItems::pendingItems($this->warehouse)->count();
+        $urgent    = IndexProductionMaterialRequestItems::pendingItems($this->warehouse)->where('production_material_request_items.is_urgent', true)->count();
+        $doneToday = IndexProductionMaterialRequestItems::doneItems($this->warehouse)
+            ->where(fn ($query) => $query
+                ->where('production_material_request_items.delivered_at', '>=', today())
+                ->orWhere('production_material_request_items.short_at', '>=', today()))
+            ->count();
+        $total     = $open + $doneToday;
+
+        return [
+            'key'          => 'production_materials',
+            'label'        => __('For production'),
+            'hint'         => __('Materials the factory asked for. Take them to the drop point and mark them delivered.'),
+            'value'        => $open,
+            'percentage'   => $total ? round($open / $total * 100, 1) : 0,
+            'total'        => $total,
+            'ring_tooltip' => __(':open still to bring, :done done today', ['open' => $open, 'done' => $doneToday]),
+            'color'        => '#0d9488',
+            'route'        => [
+                'name'       => 'grp.org.warehouses.show.inventory.production_materials.index',
+                'parameters' => $routeParameters
+            ],
+            'secondary'    => $urgent ? [
+                'tooltip' => __('Urgent'),
+                'icon'    => 'fas fa-bolt',
+                'value'   => $urgent,
+                'route'   => [
+                    'name'       => 'grp.org.warehouses.show.inventory.production_materials.index',
+                    'parameters' => $routeParameters
+                ],
+            ] : null,
         ];
     }
 

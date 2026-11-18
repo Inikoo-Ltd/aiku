@@ -60,10 +60,11 @@ struct GoodsOutPickLocationSheet: View {
             }
             .disabled(selected == nil)
             .accessibilityIdentifier("goodsOut.pickFromLocation")
-            if store.rights.canEditStock {
+            if store.rights.canEditStock, !note.isRemote || line.orgStockID != nil {
                 AikuButton("Change picking location", kind: .tertiary) {
                     present(.setPickingLocation(line: line.id))
                 }
+                .accessibilityIdentifier("goodsOut.changePickingLocation")
             }
             AikuButton("Cancel", kind: .tertiary) {
                 present(.itemActions(line: line.id))

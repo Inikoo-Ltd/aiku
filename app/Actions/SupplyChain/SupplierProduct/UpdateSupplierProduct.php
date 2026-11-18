@@ -62,6 +62,12 @@ class UpdateSupplierProduct extends OrgAction
 
     public const string FOLLOWS_DISCONTINUING_SKOS_KEY = 'discontinuing_from_skos_at';
     public const string KEPT_ACTIVE_BY_HAND_KEY = 'kept_active_by_hand_at';
+    public const string DISCONTINUED_REASON_KEY = 'discontinued_reason';
+
+    public const array DISCONTINUED_STATES = [
+        SupplierProductStateEnum::DISCONTINUING,
+        SupplierProductStateEnum::DISCONTINUED,
+    ];
 
     public bool $skipHistoric = false;
     public bool $followsSkoStates = false;
@@ -71,6 +77,7 @@ class UpdateSupplierProduct extends OrgAction
     public function handle(SupplierProduct $supplierProduct, array $modelData, bool $skipHistoric = false): SupplierProduct
     {
         $modelData = $this->markStateFollowingSkos($supplierProduct, $modelData);
+        $modelData = $this->recordDiscontinuedReason($supplierProduct, $modelData);
 
         if (Arr::exists($modelData, 'state')) {
             if ($this->parseState($modelData['state']) === SupplierProductStateEnum::DISCONTINUED && $supplierProduct->state !== SupplierProductStateEnum::DISCONTINUED) {
@@ -182,6 +189,27 @@ class UpdateSupplierProduct extends OrgAction
     }
 
     /**
+     * The reason is kept only while the product is discontinuing or discontinued, and only replaced when a reason (even an empty one)
+     * is given, so automation moving discontinuing to discontinued keeps the buyer's reason. The supplier portal shows it.
+     */
+    private function recordDiscontinuedReason(SupplierProduct $supplierProduct, array $modelData): array
+    {
+        $hasReason = Arr::exists($modelData, self::DISCONTINUED_REASON_KEY);
+        $reason    = Arr::pull($modelData, self::DISCONTINUED_REASON_KEY);
+        $state     = Arr::exists($modelData, 'state') ? $this->parseState($modelData['state']) : $supplierProduct->state;
+
+        if (in_array($state, self::DISCONTINUED_STATES, true)) {
+            if ($hasReason) {
+                $modelData['data'][self::DISCONTINUED_REASON_KEY] = trim((string) $reason) ?: null;
+            }
+        } elseif (data_get($supplierProduct->data, self::DISCONTINUED_REASON_KEY) !== null) {
+            $modelData['data'][self::DISCONTINUED_REASON_KEY] = null;
+        }
+
+        return $modelData;
+    }
+
+    /**
      * The availability status is the detailed answer, is_available the yes/no every buyer screen reads; whichever is given sets the other.
      */
     private function syncAvailability(SupplierProduct $supplierProduct, array $modelData): array
@@ -281,6 +309,7 @@ class UpdateSupplierProduct extends OrgAction
             ],
             'name'             => ['sometimes', 'required', 'string', 'max:255'],
             'state'            => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
+            'discontinued_reason' => ['sometimes', 'nullable', 'string', 'max:500'],
             'is_available'     => ['sometimes', 'required', 'boolean'],
             'cost'                     => ['sometimes', 'required', 'numeric', 'min:0'],
             'units_per_pack'           => ['sometimes', 'nullable', 'integer', 'min:1'],

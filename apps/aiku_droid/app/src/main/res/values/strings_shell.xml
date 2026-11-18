@@ -28,7 +28,7 @@
     <string name="menu_search_label">Search SKOs, locations or delivery notes</string>
     <string name="menu_search_placeholder">Search SKO, location, delivery note</string>
     <string name="menu_change">Change</string>
-    <string name="menu_dashboard_subtitle">Backlogs, deliveries, stock movements</string>
+    <string name="menu_dashboard_subtitle">Backlogs, dispatched today, stock alerts</string>
     <string name="menu_fulfilment_tag">Fulfilment</string>
     <string name="menu_all_staff">All staff</string>
     <string name="menu_clocking">Clocking</string>
@@ -45,10 +45,7 @@
     <string name="dashboard_clocking">Clocking</string>
     <string name="dashboard_tap_to_change">%1$s · tap to change</string>
     <string name="dashboard_view">View</string>
-    <string name="dashboard_dispatching_backlog">Dispatching backlog</string>
-    <string name="dashboard_dispatched_today">Dispatched today</string>
     <string name="dashboard_incoming_hub">Incoming hub</string>
-    <string name="dashboard_stock_history_today">Stock history · today</string>
     <string name="dashboard_my_work_note">Your assigned work is in My work.</string>
 
     <string name="scan_title">Scan</string>

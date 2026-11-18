@@ -2073,10 +2073,10 @@ test('INI-255 the floor reads the lines of every mix pool at once and shows what
     $redMix    = $cards->firstWhere('id', $stepOf($redThree, $mixing)->id);
     $redMaking = $cards->first(fn (array $card) => $card['is_shared_mix'] && $card['manufacture_task_id'] == $making->id);
     expect($expectEveryPoolAsOnItsOwn($cards))->toBe(2)
-        ->and($redMix['mix_pool'])->toMatchArray(['unit' => 'kg', 'needed' => 1.0, 'in_stock' => null, 'mixes' => 1, 'batch_kg' => 2.0, 'left_after_kg' => 1.0])
+        ->and($redMix['mix_pool'])->toMatchArray(['unit' => 'kg', 'needed' => 1.0, 'in_stock' => null, 'mixes' => 1, 'batch_kg' => 2.0, 'left_after_kg' => 1.0, 'keeps_extra_pieces' => true])
         ->and(array_column($redMaking['mix_pool']['lines'], 'job_order_reference'))->toBe([$redTwo->jobOrder->reference, $redOne->jobOrder->reference, $redThree->jobOrder->reference])
         ->and(array_column($redMaking['mix_pool']['lines'], 'quantity'))->toBe([18.0, 20.0, 10.0])
-        ->and($redMaking['mix_pool'])->toMatchArray(['unit' => null, 'needed' => 48.0, 'in_stock' => 0.0, 'mixes' => null, 'batch_kg' => null, 'left_after_kg' => null]);
+        ->and($redMaking['mix_pool'])->toMatchArray(['unit' => null, 'needed' => 48.0, 'in_stock' => 0.0, 'mixes' => null, 'batch_kg' => null, 'left_after_kg' => null, 'keeps_extra_pieces' => false]);
 
     $blueOne = $line($artefact('PBA', 'Blue '.$suffix, 0.5), 10);
     $blueTwo = $line($artefact('PBB', 'Blue '.$suffix, 0.5), 40, 3);
@@ -2095,7 +2095,7 @@ test('INI-255 the floor reads the lines of every mix pool at once and shows what
         ->and(array_column($blueMix['mix_pool']['lines'], 'job_order_reference'))->toBe([$blueTwo->jobOrder->reference])
         ->and($blueMix['mix_pool'])->toMatchArray(['needed' => 3.0, 'mixes' => 2, 'left_after_kg' => 1.0])
         ->and(array_column($plainMix['mix_pool']['lines'], 'job_order_reference'))->toBe([$plainTwo->jobOrder->reference, $plainOne->jobOrder->reference])
-        ->and($plainMix['mix_pool'])->toMatchArray(['needed' => 3.0, 'mixes' => 2, 'left_after_kg' => 1.0])
+        ->and($plainMix['mix_pool'])->toMatchArray(['needed' => 3.0, 'mixes' => 2, 'left_after_kg' => 1.0, 'keeps_extra_pieces' => false])
         ->and($queriesWithFourStrands)->toBe($queriesWithOneStrand);
 });
 

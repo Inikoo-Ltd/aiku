@@ -31,7 +31,6 @@ use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\Agent;
-use App\Models\SupplyChain\Supplier;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -469,7 +468,7 @@ class IndexOrgSupplierProducts extends OrgAction
     }
 
     /**
-     * @return array{agent_id: int, agents: array<int, array{id: int, label: string, create_route: array{name: string, parameters: array<int, string>}}>, copy_route: array{name: string, parameters: array<int, int>}}|null
+     * @return array<string, mixed>|null
      */
     private function getCopyProducts(ActionRequest $request): ?array
     {
@@ -477,27 +476,11 @@ class IndexOrgSupplierProducts extends OrgAction
             return null;
         }
 
-        return [
-            'agent_id'   => $this->parent->supplier->agent_id,
-            'agents'     => CopySupplierProductsToSupplier::make()->getAccessibleAgents($request->user())
-                ->map(fn (Agent $agent) => [
-                    'id'           => $agent->id,
-                    'label'        => $agent->organisation->name,
-                    'create_route' => [
-                        'name'       => 'grp.org.procurement.org_suppliers.create_new',
-                        'parameters' => [$agent->organisation->slug],
-                    ],
-                ])
-                ->all(),
-            'copy_route' => [
-                'name'       => 'grp.models.org.supplier.supplier_products.copy',
-                'parameters' => [$this->organisation->id],
-            ],
-        ];
+        return CopySupplierProductsToSupplier::make()->getCopyProductsProps($this->parent->supplier, $request->user());
     }
 
     /**
-     * @return array<int, array{id: int, agent_id: int, label: string, number_products: int}>
+     * @return array<int, array<string, mixed>>
      */
     private function getCopyTargets(ActionRequest $request): array
     {
@@ -505,21 +488,7 @@ class IndexOrgSupplierProducts extends OrgAction
             return [];
         }
 
-        return Supplier::whereIn('agent_id', CopySupplierProductsToSupplier::make()->getAccessibleAgents($request->user())->pluck('id'))
-            ->where('status', true)
-            ->where('id', '!=', $this->parent->supplier_id)
-            ->withCount('supplierProducts')
-            ->orderBy('code')
-            ->get(['id', 'agent_id', 'code', 'name', 'company_name', 'contact_name'])
-            ->map(fn (Supplier $supplier) => [
-                'id'              => $supplier->id,
-                'agent_id'        => $supplier->agent_id,
-                'number_products' => $supplier->supplier_products_count,
-                'label'           => $supplier->name && $supplier->name !== $supplier->code ? $supplier->code.' — '.$supplier->name : $supplier->code,
-                'company_name'    => $supplier->company_name,
-                'contact_name'    => $supplier->contact_name,
-            ])
-            ->all();
+        return CopySupplierProductsToSupplier::make()->getCopyTargetsProps($this->parent->supplier, $request->user());
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

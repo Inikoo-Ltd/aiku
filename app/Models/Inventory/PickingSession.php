@@ -20,6 +20,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Traits\SendsWorkNotifications;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -73,6 +74,7 @@ class PickingSession extends Model
 {
     use HasFactory;
     use HasSlug;
+    use SendsWorkNotifications;
 
     protected $guarded = [];
 

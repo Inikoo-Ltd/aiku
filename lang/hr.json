@@ -9136,5 +9136,20 @@
     ":name is gazing into his crystal ball…": ":name gleda u svoju kristalnu kuglu…",
     "This one needs a little more thought. Nearly there…": "Ovo traži malo više razmišljanja. Skoro gotovo…",
     "Usually takes about :seconds seconds": "Obično traje oko :seconds sekundi",
-    "Our sister shop :website sells these: :link": "Naša sestrinska trgovina :website prodaje ove proizvode: :link"
+    "Our sister shop :website sells these: :link": "Naša sestrinska trgovina :website prodaje ove proizvode: :link",
+    ":reference assigned to you": "Dodijeljeno vam: :reference",
+    ":actor assigned :reference to you.": ":actor vam je dodijelio/la :reference.",
+    ":reference taken over": "Preuzeto: :reference",
+    ":actor has taken over :reference, which was assigned to you.": ":actor je preuzeo/la :reference, koji vam je bio dodijeljen.",
+    "Removed from :reference": "Uklonjeni ste s :reference",
+    ":actor removed you from :reference.": ":actor vas je uklonio/la s :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor je otkazao/la :reference, koji vam je dodijeljen.",
+    ":reference can go ahead": ":reference može se nastaviti",
+    ":reference is no longer waiting and can be done again.": ":reference više ne čeka i može se nastaviti.",
+    ":reference was changed": ":reference je promijenjen",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Pažnja: :actor je promijenio/la :reference, koji vam je dodijeljen.",
+    ":actor has updated :reference, which is assigned to you.": ":actor je ažurirao/la :reference, koji vam je dodijeljen.",
+    "Operational": "U funkciji",
+    ":reference cancelled": ":reference otkazan",
+    "The customer": "Kupac"
 }

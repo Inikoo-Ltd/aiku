@@ -12,6 +12,7 @@ namespace App\Actions\Api\Group\GoodsOut;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
@@ -33,6 +34,7 @@ class TakeOverMobileDeliveryNote
         }
 
         self::claimMobileDeliveryNoteHandling($deliveryNote, $user);
+        WorkNotifier::takenOver($deliveryNote);
 
         return $this->respondWith($deliveryNote, $user, 'done', in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKING, DeliveryNoteStateEnum::PACKED], true)
             ? __('You can work on this delivery note for the next hour. The packer stays the same.')

@@ -427,6 +427,17 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     }
 
     /**
+     * The agent's record that this old order was closed (CloseOldPurchaseOrder): its goods were delivered before the
+     * order was in aiku, so it is settled without goods-in.
+     *
+     * @return array{reason: string, stock_delivery_id: ?int, user_id: ?int, at: string, state_before: string, settled_transaction_ids: list<int>, chs_excluded_before: bool, chs_exclusion_reason_before: ?string}|null
+     */
+    public function closedAsOld(): ?array
+    {
+        return Arr::get($this->data, 'closed_as_old');
+    }
+
+    /**
      * When the order was started. The orders split per supplier on 8 Oct 2026 (INI-059) were created that day and
      * kept their submitted and confirmed dates, so their start is the creation of the order they were split from
      * (data.split_from), soft deleted or kept.

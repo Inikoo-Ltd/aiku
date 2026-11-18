@@ -65,6 +65,8 @@ use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Models\GoodsIn\StockDelivery;
+use App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder;
+use App\Models\SysAdmin\User;
 use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
@@ -988,6 +990,54 @@ class ShowPurchaseOrder extends OrgAction
             'deposit'      => $this->getDepositChoice($purchaseOrder, $buyerCanEdit),
             'sample'       => $this->getSampleChoice($purchaseOrder, $buyerCanEdit),
             'cho'          => $this->getCleanHandover($purchaseOrder),
+            'close_old'    => $this->getCloseOld($purchaseOrder),
+        ];
+    }
+
+    /**
+     * "Close Old PO" for an old agent order whose goods were delivered before it was in aiku: what was recorded, shown
+     * to everyone, and the form and undo for the agent.
+     */
+    private function getCloseOld(PurchaseOrder $purchaseOrder): ?array
+    {
+        $close = $purchaseOrder->closedAsOld();
+
+        if ($close) {
+            $stockDelivery = $close['stock_delivery_id'] ? StockDelivery::find($close['stock_delivery_id']) : null;
+            $user          = $close['user_id'] ? User::find($close['user_id']) : null;
+
+            return [
+                'close'      => [
+                    'reason'         => $close['reason'],
+                    'at'             => $close['at'],
+                    'by'             => $user ? ($user->contact_name ?: $user->username) : null,
+                    'stock_delivery' => $stockDelivery?->reference,
+                ],
+                'undo_route' => $this->agentCanEdit && $purchaseOrder->state === PurchaseOrderStateEnum::SETTLED ? [
+                    'name'       => 'grp.models.purchase-order.undo_close_old',
+                    'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                ] : null,
+            ];
+        }
+
+        if (!$this->agentCanEdit || CloseOldPurchaseOrder::blockedReason($purchaseOrder)) {
+            return null;
+        }
+
+        return [
+            'close'            => null,
+            'route'            => [
+                'name'       => 'grp.models.purchase-order.close_old',
+                'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+            ],
+            'stock_deliveries' => CloseOldPurchaseOrder::linkableStockDeliveries($purchaseOrder)->get()
+                ->map(fn (StockDelivery $stockDelivery) => [
+                    'id'            => $stockDelivery->id,
+                    'reference'     => $stockDelivery->reference,
+                    'state'         => StockDeliveryStateEnum::labels()[$stockDelivery->state->value] ?? $stockDelivery->state->value,
+                    'dispatched_at' => $stockDelivery->dispatched_at?->toDateString(),
+                    'matching'      => (int) $stockDelivery->number_matching_items,
+                ])->values()->all(),
         ];
     }
 

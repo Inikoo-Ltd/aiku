@@ -140,7 +140,7 @@ private struct LocationsStockEditForm: View {
                 AikuButton("Move", kind: .tertiary) { sheet = .move }
                     .disabled(slot.quantity <= 0 || !store.canEditLocations(in: location.code))
                     .accessibilityIdentifier("locations.stockEdit.move")
-                AikuButton("Save") { save() }
+                AikuButton("Save", icon: .check) { save() }
                     .disabled(isSaving || !store.canEditStocks(in: location.code))
                     .accessibilityIdentifier("locations.stockEdit.save")
             }

@@ -18,6 +18,7 @@ use App\Actions\SupplyChain\Agent\UI\ShowAgent;
 use App\Actions\SupplyChain\Agent\WithAgentSubNavigation;
 use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
+use App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\UI\SupplyChain\SupplierProductsTabsEnum;
@@ -341,8 +342,11 @@ class IndexSupplierProducts extends OrgAction
                 ],
             ];
 
-            $supplier = $this->scope;
-            $tabs     = [
+            $supplier     = $this->scope;
+            $copyProducts = CopySupplierProductsToSupplier::make()->getCopyProductsProps($supplier, $request->user());
+            $tabs         = [
+                'copy_products'                       => $copyProducts,
+                'copy_targets'                        => Inertia::optional(fn () => $copyProducts ? CopySupplierProductsToSupplier::make()->getCopyTargetsProps($supplier, $request->user()) : []),
                 'tabs'                                => [
                     'current'    => $this->tab ?: SupplierProductsTabsEnum::PRODUCTS->value,
                     'navigation' => SupplierProductsTabsEnum::navigation(),

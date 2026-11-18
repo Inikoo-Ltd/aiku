@@ -8,10 +8,12 @@
 
 namespace App\Actions\UI\Incoming;
 
+use App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,7 +27,12 @@ class ShowIncomingHub extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("incoming.{$this->warehouse->id}.view");
+        return self::canViewGoodsIn($request->user(), $this->warehouse);
+    }
+
+    public static function canViewGoodsIn(User $user, Warehouse $warehouse): bool
+    {
+        return $user->authTo(["incoming.$warehouse->id.view", "supervisor-incoming.$warehouse->id"]);
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse
@@ -37,6 +44,8 @@ class ShowIncomingHub extends OrgAction
 
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
+        $productionOutput = $this->organisation->productions()->exists() ? GetFinishedProductionJobOrders::run($warehouse) : null;
+
         return Inertia::render(
             'Org/Incoming/IncomingHub',
             [
@@ -51,14 +60,25 @@ class ShowIncomingHub extends OrgAction
                     ],
                     'title' => __('Incoming Hub'),
                 ],
-                'dashboard' => $this->getIncomingDashboard($warehouse),
+                'dashboard' => $this->getIncomingDashboard($warehouse, $productionOutput),
             ]
         );
     }
 
-    private function getIncomingDashboard(Warehouse $warehouse): array
+    /**
+     * @param  array<int, array<string, mixed>>|null  $productionOutput
+     */
+    private function getIncomingDashboard(Warehouse $warehouse, ?array $productionOutput): array
     {
         $parts = [
+            ...($productionOutput === null ? [] : [[
+                'key'       => 'production',
+                'label'     => __('Production'),
+                'short'     => __('PR'),
+                'highlight' => true,
+                'icon'      => 'fal fa-industry',
+                'widget'    => GetIncomingHubProductionWidget::run($warehouse, $productionOutput, $this->canViewJobOrders()),
+            ]]),
             [
                 'key'    => 'stock_deliveries',
                 'label'  => __('Stock Deliveries'),
@@ -77,12 +97,12 @@ class ShowIncomingHub extends OrgAction
                 'short'  => __('AG'),
                 'widget' => GetIncomingHubStockDeliveryWidget::run($warehouse, ['OrgAgent']),
             ],
-            [
+            ...(!$warehouse->organisation->fulfilments()->exists() ? [] : [[
                 'key'    => 'pallet_deliveries',
                 'label'  => __('Fulfilment Deliveries'),
                 'short'  => __('FD'),
                 'widget' => GetIncomingHubPalletDeliveryWidget::run($warehouse),
-            ],
+            ]]),
             [
                 'key'    => 'return_delivery_notes',
                 'label'  => __('Returns'),
@@ -169,7 +189,7 @@ class ShowIncomingHub extends OrgAction
             'dimension' => [
                 'key'   => 'type',
                 'label' => __('Type'),
-                'items' => array_map(fn ($part) => ['key' => $part['key'], 'label' => $part['label'], 'short' => $part['short']], $parts),
+                'items' => array_map(fn ($part) => ['key' => $part['key'], 'label' => $part['label'], 'short' => $part['short'], 'highlight' => $part['highlight'] ?? false, 'icon' => $part['icon'] ?? null], $parts),
             ],
             'metrics'     => $metrics,
             'data'        => $data,
@@ -181,6 +201,17 @@ class ShowIncomingHub extends OrgAction
                 'tooltip' => __('Total Incoming'),
             ],
         ];
+    }
+
+    private function canViewJobOrders(): bool
+    {
+        $production = $this->organisation->productions()->first();
+
+        return $production && request()->user()?->authTo([
+            'org-supervisor.'.$this->organisation->id,
+            'productions-view.'.$this->organisation->id,
+            "productions_operations.$production->id.view",
+        ]);
     }
 
     public function getBreadcrumbs(array $routeParameters): array

@@ -24,6 +24,7 @@ use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\User;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -131,6 +132,7 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
                             ];
 
                             $replacementDeliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNoteItem->deliveryNote, $deliveryNoteItemData);
+                            WorkNotifier::modified($deliveryNoteItem->deliveryNote, 'lines');
 
                             /*
                              * A picker still on the note (AWS38872) was handed the replacement as a

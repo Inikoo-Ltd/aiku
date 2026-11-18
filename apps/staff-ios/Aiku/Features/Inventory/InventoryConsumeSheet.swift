@@ -42,7 +42,7 @@ struct InventoryConsumeSheet: View {
                 FieldError(error)
             }
         } footer: {
-            AikuButton(isSaving ? "Recording…" : "Record consumption") {
+            AikuButton(isSaving ? "Recording…" : "Record consumption", look: AikuButtonLook(.caution, icon: .sko)) {
                 save()
             }
             .disabled(location.isEmpty || quantity > available || isSaving)

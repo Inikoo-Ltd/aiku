@@ -78,6 +78,7 @@ class GetPurchaseOrderTransactionMoveSuppliers extends OrgAction
                     'name'                 => $orgSupplier->supplier->name,
                     'company_name'         => $orgSupplier->supplier->company_name,
                     'contact_name'         => $orgSupplier->supplier->contact_name,
+                    'nickname'             => $orgSupplier->supplier->nickname(),
                     'currency'             => $orgSupplier->supplier->currency?->code,
                     'reference'            => $move->openPurchaseOrderOf($orgSupplier, $purchaseOrder, $openPurchaseOrders)?->reference ?? $move->referenceForMovedLines($purchaseOrder, $orgSupplier, $takenReferences),
                     'open_purchase_orders' => $openPurchaseOrders->pluck('reference')->all(),

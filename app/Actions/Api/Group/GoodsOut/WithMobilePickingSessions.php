@@ -14,7 +14,6 @@ use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemImage;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive;
 use App\Actions\Dispatching\PickingSession\PickPickingSessionItemByScan;
-use App\Actions\Dispatching\PickingSession\UI\IndexPickingSessions;
 use App\Actions\Dispatching\PickingSession\UI\ShowPickingSession;
 use App\Actions\Dispatching\PickingSession\UndoWaitingPickingSession;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -44,7 +43,7 @@ trait WithMobilePickingSessions
     {
         abort_if($pickingSession->type === PickingSessionTypeEnum::FULFILMENT, 404);
         abort_unless($user->authorisedWarehouses()->whereKey($pickingSession->warehouse_id)->exists(), 404);
-        abort_unless(IndexPickingSessions::canViewDispatching($user, $pickingSession->warehouse), 403);
+        abort_unless(self::canViewGoodsOut($user, $pickingSession->warehouse), 403);
     }
 
     protected function ensureCanWorkPickingSession(PickingSession $pickingSession, User $user): void

@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ class FinaliseAndDispatchDeliveryNote extends OrgAction
 {
     use WithDeliveryNoteWorkAuthorisation;
     use WithUnprintedLeafletsGuard;
+    use WithAlreadyDispatchedGuard;
 
     /**
      * @throws \Throwable
@@ -27,6 +29,9 @@ class FinaliseAndDispatchDeliveryNote extends OrgAction
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
         return DB::transaction(function () use ($deliveryNote) {
+            if ($this->isDispatchedUnderLock($deliveryNote)) {
+                return $deliveryNote->refresh();
+            }
 
             $finalisedDeliveryNote = FinaliseDeliveryNote::make()->action($deliveryNote);
 
@@ -45,6 +50,10 @@ class FinaliseAndDispatchDeliveryNote extends OrgAction
      */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): ?RedirectResponse
     {
+        if ($deliveryNote->state === DeliveryNoteStateEnum::DISPATCHED) {
+            return null;
+        }
+
         if ($notification = $this->unprintedLeafletsNotification($deliveryNote, __('Every insert must be printed before finalising and dispatching.'))) {
             return $notification;
         }

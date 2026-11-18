@@ -1,28 +1,34 @@
 import SwiftUI
 
 struct GoodsInReturnsView: View {
+    var scope: GoodsInReturnsScope = .all
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
     private let store = GoodsInStore.shared
 
     var body: some View {
-        AppScreen(title: "Returns", kicker: "Goods in · \(session.warehouseLabel)") {
+        let listed = store.visibleReturns(in: scope)
+        AppScreen(title: scope.title, kicker: "Goods in · \(session.warehouseLabel)") {
             ModuleTabs(.goodsIn, current: .goodsInReturns)
         } content: {
             if store.isRemote, let message = store.loadError {
                 InlineAlert(title: "Couldn’t load returns", message: message)
             }
-            if store.isRemote, store.listedReturns.isEmpty, store.isLoadingReturns {
+            if store.isRemote, listed.isEmpty, store.isLoadingReturns || (store.returnsScope != scope && store.loadError == nil) {
                 ProgressView()
                     .frame(maxWidth: .infinity, minHeight: 88)
+            } else if listed.isEmpty, scope == .toProcess, store.loadError == nil {
+                EmptyState(icon: .checkCircle, title: "No returns to process")
             }
-            CardList(store.listedReturns) { item in
+            CardList(listed) { item in
                 ListRow(item.reference, subtitle: item.listSubtitle, chips: [item.state.chip]) {
                     router.open(GoodsInRoute.returnDetail(reference: item.reference))
                 }
                 .accessibilityIdentifier("goodsIn.return.\(item.reference)")
             }
-            HelperText("Customer returns arriving at goods in. Each item goes back to a location, or is set as damaged or not returned.")
+            HelperText(scope == .toProcess
+                ? "Customer returns received or being returned to locations."
+                : "Customer returns arriving at goods in. Each item goes back to a location, or is set as damaged or not returned.")
                 .padding(.horizontal, 4)
         }
     }
@@ -38,7 +44,7 @@ struct GoodsInReturnDetailView: View {
 
     private var goodsReturn: GoodsInReturn { store.goodsReturn(reference) }
     private var canWork: Bool { goodsReturn.state == .received || goodsReturn.state == .returning }
-    private var canUndo: Bool { goodsReturn.remoteActions.contains("undo") }
+    private var canUndo: Bool { goodsReturn.remoteActions.contains(GoodsInActionKey.undo) }
     private var undoablePuts: [GoodsInReturnPut] { canUndo ? goodsReturn.items.flatMap(\.puts) : [] }
     private var selectedItem: GoodsInReturnItem? {
         if let selectedSKO, let item = goodsReturn.items.first(where: { $0.sko == selectedSKO && $0.outcome == nil }) {
@@ -69,7 +75,7 @@ struct GoodsInReturnDetailView: View {
             AppScreen(title: goodsReturn.reference, kicker: "Return · \(goodsReturn.customer)") {
                 content
             } footer: {
-                AikuButton("Set as returned", icon: .check) {
+                AikuButton("Set as returned", look: GoodsInActionKey.look(for: GoodsInActionKey.setAsReturned)) {
                     store.setReturnAsReturned(reference)
                     toasts.show("\(reference) set as returned")
                 }
@@ -100,20 +106,22 @@ struct GoodsInReturnDetailView: View {
         if !undoablePuts.isEmpty {
             SectionHeading("Done on this return")
             CardList(undoablePuts) { put in
-                ListRow(put.sko, subtitle: put.title, icon: .undo, iconTone: .neutral) {
+                ListRow(put.sko, subtitle: put.title, icon: .undo, iconTone: GoodsInActionKey.look(for: GoodsInActionKey.undo).kind.tileTone) {
                     undoingPut = put
                 }
                 .accessibilityIdentifier("goodsIn.return.undo.\(put.id)")
             }
         }
         if canWork, let item = selectedItem {
-            HStack(spacing: 8) {
-                AikuButton("To location") { process(item, .toLocation(item.homeLocation)) }
+            VStack(spacing: 8) {
+                AikuButton("To location", look: GoodsInActionKey.look(for: GoodsInActionKey.putBack)) { process(item, .toLocation(item.homeLocation)) }
                     .accessibilityIdentifier("goodsIn.return.toLocation")
-                AikuButton("Damaged", kind: .tertiary) { process(item, .damaged) }
-                    .accessibilityIdentifier("goodsIn.return.damaged")
-                AikuButton("Not returned", kind: .tertiary) { process(item, .notReturned) }
-                    .accessibilityIdentifier("goodsIn.return.notReturned")
+                HStack(spacing: 8) {
+                    AikuButton("Damaged", icon: .warning, kind: .danger) { process(item, .damaged) }
+                        .accessibilityIdentifier("goodsIn.return.damaged")
+                    AikuButton("Not returned", icon: .xCircle, kind: .danger) { process(item, .notReturned) }
+                        .accessibilityIdentifier("goodsIn.return.notReturned")
+                }
             }
             .lineLimit(2)
             .minimumScaleFactor(0.8)

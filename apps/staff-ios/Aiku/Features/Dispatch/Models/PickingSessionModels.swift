@@ -327,6 +327,13 @@ extension MobileSessionPickedBay {
     var chip: Chip { isFree ? Chip("Free", .success) : Chip("In use", .info) }
 }
 
+extension MobileSessionPickedBay.DeliveryNote {
+    var chip: Chip {
+        let tone = state.flatMap(GoodsOutDeliveryNoteState.init(apiState:))?.tone ?? .neutral
+        return Chip(stateLabel ?? state ?? "", tone)
+    }
+}
+
 enum PickingSessionErrorText {
     static func message(_ error: Error, offline: String = "This needs internet. Check Wi-Fi and try again.") -> String {
         if let apiError = error as? APIError {

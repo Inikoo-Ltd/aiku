@@ -523,12 +523,27 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-BRD', 'name' => 'Board area']);
     $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-BRD', 'name' => 'Board loc'] + \App\Models\Inventory\Location::factory()->definition());
     actingAs($this->guest->getUser()->fresh());
-    $hubProps  = fn () => get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))
+    $hubProps  = fn (array $query = []) => get(route('grp.org.warehouses.show.incoming.production_output.index', [$this->organisation->slug, $warehouse->slug, ...$query]))
         ->assertOk()->viewData('page')['props'];
     $hubRows   = fn () => collect($hubProps()['production_output']['data']);
     $hubOutput = fn () => $hubRows()->pluck('job_order_reference')->all();
+    $waiting   = $hubRows()->flatMap(fn ($row) => collect($row['destinations'])->pluck('type')->unique())->countBy();
+    $incoming  = get(route('grp.org.warehouses.show.incoming.backlog', [$this->organisation->slug, $warehouse->slug]))->assertOk()->viewData('page')['props']['dashboard'];
     expect($hubOutput())->toContain($jobOrder->reference)
-        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count(\App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders::run($warehouse)));
+        ->and($incoming['dimension']['items'][0])->toMatchArray(['key' => 'production', 'highlight' => true, 'icon' => 'fal fa-industry'])
+        ->and(collect($incoming['dimension']['items'])->contains('key', 'pallet_deliveries'))->toBe($this->organisation->fulfilments()->exists())
+        ->and($incoming['data']['production']['arriving']['series'])->toHaveCount(3)
+        ->and($incoming['data']['production']['booked_in']['route_target']['parameters']['filter[state]'] ?? 'received')->toBe('received')
+        ->and($incoming['data']['production']['received']['total']['value'])->toBe(($waiting['stock'] ?? 0) + ($waiting['partner'] ?? 0))
+        ->and($incoming['row_totals']['production']['value'])->toBe($incoming['data']['production']['arriving']['value'] + ($waiting['stock'] ?? 0) + ($waiting['partner'] ?? 0) + $incoming['data']['production']['booked_in']['value'])
+        ->and($incoming['data']['production']['arriving']['value'])->toBe(array_sum(array_column($incoming['data']['production']['arriving']['series'], 'value')))
+        ->and(\App\Models\Production\JobOrder::where('organisation_id', $this->organisation->id)->where('state', 'confirmed')->whereNotIn('id', $hubRows()->pluck('job_order_id'))->count())->toBe($incoming['data']['production']['arriving']['series'][2]['value'])
+        ->and($incoming['data']['production']['received']['value'])->toBe($waiting['stock'] ?? 0)
+        ->and($incoming['data']['production']['received']['route_target']['parameters']['destination'])->toBe('stock')
+        ->and($incoming['data']['production']['received']['suffix']['value'])->toBe($waiting['partner'] ?? 0)
+        ->and(collect($hubProps(['destination' => 'stock'])['production_output']['data'])->flatMap(fn ($row) => $row['destinations'])->pluck('type')->unique()->all())->toBe($waiting['stock'] ?? 0 ? ['stock'] : [])
+        ->and($hubProps()['put_away_route']['name'])->toBe('grp.org.warehouses.show.incoming.production_output.put_away')
+        ->and(get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))->assertOk()->viewData('page')['props'])->not->toHaveKey('production_output');
 
     $stockItem        = $hubRows()->firstWhere('job_order_reference', $jobOrder->reference);
     $stockDestination = collect($stockItem['destinations'])->firstWhere('type', 'stock');
@@ -952,7 +967,28 @@ test('to restock keeps a stock partly covered by production, asking only for wha
     $row = fn () => collect(get($url)->assertOk()->viewData('page')['props']['data']['data'])->firstWhere('stock_code', $orgStocks[0]->code);
 
     expect((int) $row()['job_units'])->toBe(100)
-        ->and((int) $row()['in_production'])->toBe(0);
+        ->and((int) $row()['in_production'])->toBe(0)
+        ->and((int) $row()['incoming'])->toBe(0);
+
+    $supplier    = \App\Actions\SupplyChain\Supplier\StoreSupplier::make()->action($this->group, \App\Models\SupplyChain\Supplier::factory()->definition());
+    $orgSupplier = \App\Models\Procurement\OrgSupplier::where('supplier_id', $supplier->id)->where('organisation_id', $this->organisation->id)->first()
+        ?? \App\Actions\Procurement\OrgSupplier\StoreOrgSupplier::make()->action($this->organisation, $supplier);
+    $delivery    = \App\Actions\GoodsIn\StockDelivery\StoreStockDelivery::make()->action($orgSupplier, ['reference' => 'SD-RESTOCK-'.uniqid(), 'date' => now()->toDateString()], strict: false);
+    \App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem::make()->action($delivery, null, $orgStocks[0], ['unit_quantity' => 30], strict: false);
+
+    expect((int) $row()['incoming'])->toBe(30)
+        ->and((int) $row()['incoming_timely'])->toBe(0)
+        ->and((int) $row()['job_units'])->toBe(100);
+
+    $delivery->update(['data' => array_merge($delivery->data ?? [], ['estimated_receiving_date' => now()->addYear()->toDateString()])]);
+
+    expect(collect($row()['incoming_lines'])->map(fn ($line) => [$line['kind'], $line['reference'], $line['eta'], $line['units']])->all())->toBe([['delivery', $delivery->reference, now()->addYear()->toDateString(), 30]])
+        ->and((int) $row()['job_units'])->toBe(100);
+
+    $delivery->update(['data' => array_merge($delivery->data ?? [], ['estimated_receiving_date' => now()->toDateString()])]);
+
+    expect((int) $row()['incoming_timely'])->toBe(30)
+        ->and((int) $row()['job_units'])->toBe(70);
 
     $line = \App\Models\Procurement\PartnerShoppingListItem::create([
         'group_id'         => $this->group->id,
@@ -965,7 +1001,7 @@ test('to restock keeps a stock partly covered by production, asking only for wha
     ]);
 
     expect((int) $row()['in_production'])->toBe(40)
-        ->and((int) $row()['job_units'])->toBe(60);
+        ->and((int) $row()['job_units'])->toBe(30);
 
     $line->update(['quantity' => 95]);
 
@@ -2031,8 +2067,25 @@ test('a fill line shows on the board as the bottles for its order and shop, and 
     $order->update(['submitted_at' => now()->subDays(3)]);
     expect((int) data_get($cardOf(), 'order_waiting_days'))->toBe(3);
 
+    $blocked = \App\Actions\Production\PartnerShippingList\GetOrdersBlockedByProduction::make();
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::UNPAID]);
+    $unpaidCount = $blocked->handle($shop);
+    $order->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+    expect($blocked->handle($shop))->toBe($unpaidCount + 1)
+        ->and($blocked->notice($this->organisation)['route']['parameters'])->toMatchArray(['production' => $this->production->slug, 'blocking' => '1']);
+    $order->update(['submitted_at' => now()]);
+    expect($blocked->handle($shop))->toBe($unpaidCount);
+    $order->update(['submitted_at' => now()->subDays(3)]);
+
     $jobOrder = \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [$line->id])['job_orders'][0];
     expect($jobOrder->jobOrderItems()->first()->displayName())->toContain($order->reference)->toContain($shop->name);
+
+    if ($jobOrder->refresh()->state === \App\Enums\Production\JobOrder\JobOrderStateEnum::IN_PROCESS) {
+        \App\Actions\Production\JobOrder\ConfirmJobOrder::make()->action($jobOrder);
+    }
+    $fillTaskId = $jobOrder->jobOrderItems()->first()->tasks()->value('id');
+    $floorTask  = collect(get(route('grp.org.productions.show.floor', $routeParameters))->assertOk()->viewData('page')['props']['tasks'])->firstWhere('id', $fillTaskId);
+    expect(data_get($floorTask, 'order_waiting_days'))->toBe(3);
 
     $slips = \App\Actions\Production\JobOrder\FillToOrder::make()->slips($jobOrder);
     expect($slips)->toHaveCount(1)

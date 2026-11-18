@@ -28,7 +28,7 @@ struct InventorySkoListScreen: View {
 
     var body: some View {
         AppScreen(
-            title: isAbnormalities ? "Abnormalities" : "SKOs",
+            title: scope.listTitle,
             kicker: isAbnormalities ? "SKOs · Abnormalities" : "Inventory · \(session.warehouseLabel)",
             actions: isAbnormalities ? [] : [
                 HeaderAction(.filter, label: "Filter", badge: warehouse == nil ? store.filter.activeCount : feed.filter.activeCount) { isFiltering = true }
@@ -37,7 +37,7 @@ struct InventorySkoListScreen: View {
             ModuleTabs(.inventory, current: .skos)
         } content: {
             InventoryScopeChips(
-                options: InventorySkoScope.allCases,
+                options: InventorySkoScope.chipScopes,
                 selection: scope,
                 title: \.title,
                 count: { option in
@@ -194,7 +194,7 @@ struct InventorySkoListScreen: View {
         } else if filterCount > 0 {
             EmptyState(icon: .filter, title: "No SKOs match the filters", actionTitle: "Reset filters", action: reset)
         } else {
-            EmptyState(icon: .sko, title: isAbnormalities ? "No abnormalities" : "No \(scope.title.lowercased()) SKOs")
+            EmptyState(icon: .sko, title: scope.emptyTitle)
         }
     }
 

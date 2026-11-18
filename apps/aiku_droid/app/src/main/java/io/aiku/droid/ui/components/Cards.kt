@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
@@ -106,8 +107,16 @@ fun SectionTitle(
     }
 }
 
+enum class LabelCase {
+    Upper,
+    AsWritten,
+    ;
+
+    fun applyTo(text: String): String = if (this == Upper) text.uppercase() else text
+}
+
 @Composable
-fun GroupLabel(text: String, modifier: Modifier = Modifier, @DrawableRes icon: Int? = null) {
+fun GroupLabel(text: String, modifier: Modifier = Modifier, @DrawableRes icon: Int? = null, case: LabelCase = LabelCase.Upper) {
     val colors = LocalAikuColors.current
 
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.padding(horizontal = 4.dp)) {
@@ -115,7 +124,13 @@ fun GroupLabel(text: String, modifier: Modifier = Modifier, @DrawableRes icon: I
             Icon(painter = painterResource(icon), contentDescription = null, tint = colors.textTertiary, modifier = Modifier.size(16.dp))
             Box(modifier = Modifier.size(6.dp))
         }
-        Text(text = text.uppercase(), fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.7.sp, color = colors.textTertiary)
+        Text(
+            text = case.applyTo(text),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = if (case == LabelCase.Upper) 0.7.sp else TextUnit.Unspecified,
+            color = colors.textTertiary,
+        )
     }
 }
 

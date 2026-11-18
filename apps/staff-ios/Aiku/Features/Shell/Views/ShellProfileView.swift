@@ -10,6 +10,7 @@ struct ShellProfileView: View {
     @AppStorage(ScanSettingsKey.vibrate) private var vibrates = true
     @AppStorage(ShellLanguages.storageKey) private var languageID = ShellLanguages.defaultID
     @State private var isChoosingWarehouse = false
+    private let clocking = ClockingStore.shared
 
     var body: some View {
         AppScreen(title: "Profile", kicker: "Account", spacing: 16) {
@@ -41,7 +42,7 @@ struct ShellProfileView: View {
                         router.open(ClockingRoute.clocking)
                     }
                     RowDivider()
-                    ShellValueRow(title: "Timesheets", value: ShellProfileContent.timesheetSummary) {
+                    ShellValueRow(title: "Timesheets", value: ShellHomeContent.weekTotal(clocking).map { "This week \($0)" } ?? "—") {
                         router.open(ClockingRoute.timesheets)
                     }
                 }
@@ -85,6 +86,7 @@ struct ShellProfileView: View {
         }
         .shellWarehouseSheet(isPresented: $isChoosingWarehouse)
         .task { await authStore.refreshProfile() }
+        .task { await clocking.load() }
         .screenRefreshable { await authStore.refreshProfile() }
     }
 

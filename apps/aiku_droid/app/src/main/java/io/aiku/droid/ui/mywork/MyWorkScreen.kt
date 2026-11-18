@@ -212,7 +212,7 @@ private fun workSize(row: MyWorkRow, count: Int): String {
 }
 
 @Composable
-private fun elapsedText(elapsed: Elapsed): String = when (elapsed.unit) {
+internal fun elapsedText(elapsed: Elapsed): String = when (elapsed.unit) {
     ElapsedUnit.JustNow -> stringResource(R.string.mywork_since_just_now)
     ElapsedUnit.Minutes -> pluralStringResource(R.plurals.mywork_since_minutes, elapsed.amount, elapsed.amount)
     ElapsedUnit.Hours -> pluralStringResource(R.plurals.mywork_since_hours, elapsed.amount, elapsed.amount)

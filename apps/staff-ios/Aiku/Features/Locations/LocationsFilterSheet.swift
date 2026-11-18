@@ -77,7 +77,7 @@ struct LocationsFilterSheet: View {
                     .font(.aiku(12))
                     .foregroundStyle(AikuColor.text3)
                     .frame(maxWidth: .infinity)
-                AikuButton(applyTitle) {
+                AikuButton(applyTitle, icon: .next) {
                     onApply(draft)
                 }
                 .accessibilityIdentifier("locations.filter.apply")

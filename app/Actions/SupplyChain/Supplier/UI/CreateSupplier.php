@@ -20,6 +20,7 @@ use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -60,8 +61,12 @@ class CreateSupplier extends OrgAction
         $routeName       = $request->route()->getName();
         $routeParameters = array_values($request->route()->originalParameters());
 
-        $copiedOrgSupplierProductIds = $this->getCopiedOrgSupplierProductIds($parent, $request);
-        $numberCopiedProducts        = count($copiedOrgSupplierProductIds);
+        $copiedSupplierProductIds    = $this->getCopiedSupplierProductIds($parent, $request);
+        $copiedOrgSupplierProductIds = $copiedSupplierProductIds ? [] : $this->getCopiedOrgSupplierProductIds($parent, $request);
+        $numberCopiedProducts        = count($copiedSupplierProductIds) ?: count($copiedOrgSupplierProductIds);
+        $copiedProductsBody          = $copiedSupplierProductIds
+            ? ['supplier_products' => $copiedSupplierProductIds]
+            : ['org_supplier_products' => $copiedOrgSupplierProductIds];
 
         return Inertia::render(
             'CreateModel',
@@ -90,7 +95,7 @@ class CreateSupplier extends OrgAction
                 ],
                 'formData'    => [
                     'blueprint' => $this->getBlueprint($parent),
-                    'route'     => $this->getStoreRoute($parent) + ($numberCopiedProducts ? ['body' => ['org_supplier_products' => $copiedOrgSupplierProductIds]] : []),
+                    'route'     => $this->getStoreRoute($parent) + ($numberCopiedProducts ? ['body' => $copiedProductsBody] : []),
                 ],
             ]
         );
@@ -127,6 +132,30 @@ class CreateSupplier extends OrgAction
         $this->initialisationFromGroup($organisation->group, $request);
 
         return $this->handle($organisation->group, $request);
+    }
+
+    /**
+     * The group Supplier Products page selects supplier products, not the rows of one organisation.
+     *
+     * @return array<int, int>
+     */
+    private function getCopiedSupplierProductIds(Group|Agent $parent, ActionRequest $request): array
+    {
+        $supplierProductIds = array_filter(array_map('intval', (array) $request->query('supplier_products', [])));
+
+        if (!$parent instanceof Agent || !$supplierProductIds) {
+            return [];
+        }
+
+        $supplierProducts = SupplierProduct::whereIn('agent_id', CopySupplierProductsToSupplier::make()->getAccessibleAgents($request->user())->pluck('id'))
+            ->whereIn('id', $supplierProductIds)
+            ->get(['id', 'agent_id', 'currency_id']);
+
+        if ($supplierProducts->first()?->agent_id === $parent->id) {
+            $this->copiedProductsCurrencyId = $supplierProducts->first()->currency_id;
+        }
+
+        return $supplierProducts->pluck('id')->all();
     }
 
     /**

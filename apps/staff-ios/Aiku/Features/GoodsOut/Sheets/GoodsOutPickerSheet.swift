@@ -59,7 +59,7 @@ struct GoodsOutPickerSheet: View {
             }
             .accessibilityIdentifier("goodsOut.assignPicker")
             if note.picker != nil {
-                AikuButton("Remove picker", kind: .danger) {
+                AikuButton("Remove picker", look: GoodsOutActionKey.removePicker.look) {
                     let previous = store.removePicker(note.reference)
                     close()
                     GoodsOutFeedback.done("Picker removed · \(note.reference) is back to To do", tone: .info, previous: previous, toasts: toasts)
@@ -98,7 +98,7 @@ struct GoodsOutPickerSheet: View {
             .accessibilityIdentifier("goodsOut.assignPicker")
         }
         if note.action(.removePicker) != nil {
-            AikuButton("Remove picker", kind: .danger) {
+            AikuButton("Remove picker", look: GoodsOutActionKey.removePicker.look) {
                 GoodsOutRun.action(.setPicker(userID: nil), on: note.reference, fallback: "Picker removed · \(note.reference) is back to To do", toasts: toasts, onDone: { close() })
             }
         }

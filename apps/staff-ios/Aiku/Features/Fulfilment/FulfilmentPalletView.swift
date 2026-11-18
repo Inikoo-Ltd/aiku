@@ -295,7 +295,7 @@ private struct PalletIncidentReportSheet: View {
             HelperText("Saved as the incident report with your name and today’s date. The pallet’s location is cleared.")
         } footer: {
             if let selected {
-                AikuButton(selected == "lost" ? "Set as lost" : "Set as damaged", kind: .danger) {
+                AikuButton(selected == "lost" ? "Set as lost" : "Set as damaged", look: FulfilmentInboundActionLooks.look(for: selected == "lost" ? "lost" : "damaged")) {
                     Task {
                         if await live.reportIncident(state: selected, message: String(note.prefix(1000))) { onClose() }
                     }
