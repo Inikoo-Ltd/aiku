@@ -76,12 +76,19 @@ class ImportSupplierPortalProductProposals
      */
     public function handle(SupplierShareLink $link, array $products): array
     {
-        return DB::transaction(fn () => array_map(function (array $product) use ($link) {
-            $row = (int) Arr::pull($product, 'row');
-            StoreSupplierPortalSubmission::make()->handle($link, SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL, $product);
+        $store     = StoreSupplierPortalSubmission::make();
+        $submitted = DB::transaction(fn () => array_map(function (array $product) use ($link, $store) {
+            $row   = (int) Arr::pull($product, 'row');
+            $files = Arr::pull($product, 'files', []);
 
-            return $row;
+            return ['row' => $row, 'files' => $files, 'submission' => $store->handle($link, SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL, $product)];
         }, $products));
+
+        foreach ($submitted as $sent) {
+            $store->attachFiles($sent['submission'], SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL, $sent['files']);
+        }
+
+        return array_column($submitted, 'row');
     }
 
     /**

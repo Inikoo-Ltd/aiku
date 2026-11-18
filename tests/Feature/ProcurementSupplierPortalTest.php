@@ -918,3 +918,20 @@ test('W4 the product upload preview has its own rate limit, apart from the submi
         ->and($preview[0]->key)->not->toBe($submit[0]->key);
 });
 
+test('W4 products sent from the upload are saved with their pictures attached once the products are stored', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    Auth::logout();
+
+    $this->postJson(route('grp.supplier_share.product_proposals.import', $token), ['products' => [[
+        'row'            => 2,
+        'name'           => 'Mango wood bowl',
+        'description'    => 'Hand carved bowl',
+        'proposed_price' => 4.5,
+        'currency'       => 'USD',
+        'unit_basis'     => 'piece',
+        'files'          => [UploadedFile::fake()->image('bowl.jpg', 100, 100)],
+    ]]])->assertOk()->assertJson(['sent' => [2]]);
+
+    $submission = SupplierSubmission::where('supplier_id', $supplier->id)->where('type', SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL)->sole();
+    expect($submission->attachments()->count())->toBe(1);
+});
