@@ -20,6 +20,9 @@ use App\Actions\Production\MaterialRequest\MaterialsCheckAuthorisation;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Actions\Production\JobOrder\FillToOrder;
+use App\Models\Production\JobOrderItem;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
@@ -560,6 +563,17 @@ class ShowManufactureFloor extends OrgAction
         })->values()->all();
     }
 
+    /** Days a customer order still held back from the warehouse has waited for this fill line, as the To Produce board counts them */
+    protected function orderWaitingDays(JobOrderItem $item): ?int
+    {
+        if (!Arr::has($item->data, 'fill')) {
+            return null;
+        }
+        $order = FillToOrder::make()->orderFor($item);
+
+        return $order?->state === OrderStateEnum::SUBMITTED && $order->submitted_at ? (int) $order->submitted_at->copy()->startOfDay()->diffInDays(today()) : null;
+    }
+
     /**
      * @param Collection<int, JobOrderItemTask>|null $group the steps combined with this one, itself included
      */
@@ -584,6 +598,7 @@ class ShowManufactureFloor extends OrgAction
             'artefact_image'      => $isCombined || !$task->jobOrderItem->artefact->tradeUnit?->image_id ? null : $task->jobOrderItem->artefact->tradeUnit->imageSources(320, 320),
             'job_order_reference' => $members->map(fn (JobOrderItemTask $member) => $member->jobOrder->reference)->unique()->implode(', '),
             'order_reference'     => $isCombined ? null : Arr::get($task->jobOrderItem->data, 'order'),
+            'order_waiting_days'  => $isCombined ? null : $this->orderWaitingDays($task->jobOrderItem),
             'packing_slips_url'   => !$isCombined && Arr::has($task->jobOrderItem->data, 'fill') ? route('grp.org.productions.show.operations.job-orders.packing_slips', ['organisation' => $this->organisation->slug, 'production' => $this->production->slug, 'jobOrder' => $task->jobOrder->slug]) : null,
             'continued_from'      => Arr::has($task->jobOrder->data, 'carried_from') ? SettleShortJobOrderItemTask::baseReference($task->jobOrder) : null,
             'continued_in'        => $this->continuedIn($task),
