@@ -907,3 +907,14 @@ test('W4 the supplier records production only from the day the order was agreed,
     expect($purchaseOrder->fresh()->production_started_at)->toBeNull();
 });
 
+test('W4 the product upload preview has its own rate limit, apart from the submit one', function () {
+    $request = \Illuminate\Http\Request::create('/x');
+    $request->setRouteResolver(fn () => (new \Illuminate\Routing\Route('POST', '/x/{token}', []))->bind($request));
+
+    $preview = \Illuminate\Support\Facades\RateLimiter::limiter('supplier-portal-preview')($request);
+    $submit  = \Illuminate\Support\Facades\RateLimiter::limiter('supplier-portal-submit')($request);
+
+    expect($preview[0]->maxAttempts)->toBe(60)
+        ->and($preview[0]->key)->not->toBe($submit[0]->key);
+});
+

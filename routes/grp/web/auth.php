@@ -55,7 +55,7 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::post('code', SendSupplierShareCode::class)->middleware('throttle:supplier-share-code')->name('send_code');
         Route::post('verify', VerifySupplierShareCode::class)->middleware('throttle:supplier-share-verify')->name('verify');
         Route::get('product-proposals/template', DownloadSupplierPortalProductProposalTemplate::class)->name('product_proposals.template');
-        Route::post('product-proposals/preview', [ImportSupplierPortalProductProposals::class, 'preview'])->middleware('throttle:supplier-portal-submit')->name('product_proposals.preview');
+        Route::post('product-proposals/preview', [ImportSupplierPortalProductProposals::class, 'preview'])->middleware('throttle:supplier-portal-preview')->name('product_proposals.preview');
         Route::post('product-proposals/import', ImportSupplierPortalProductProposals::class)->middleware('throttle:supplier-portal-batch')->name('product_proposals.import');
         Route::post('submissions/{type}', StoreSupplierPortalSubmission::class)->middleware('throttle:supplier-portal-submit')->where('type', '[a-z_]+')->name('submit');
         Route::post('submissions/{submission}/update', [StoreSupplierPortalSubmission::class, 'inSubmission'])->middleware('throttle:supplier-portal-submit')->whereNumber('submission')->name('submission.update');
