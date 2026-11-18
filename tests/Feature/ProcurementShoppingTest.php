@@ -4345,7 +4345,7 @@ test('what a shipment still owes takes off only what was asked or sent for it in
     expect($shipment()['due'])->toEqual(600);
 });
 
-test('neither the agent\'s procurement editors nor the user who asked can approve and pay a money request, nor be set to', function () {
+test('neither the agent\'s employees nor the user who asked can approve and pay a money request, while a client editor who also edits the agent\'s procurement can and may be set to', function () {
     $orgAgent      = createFreshOrgAgent($this);
     $agent         = $orgAgent->agent;
     $stockDelivery = createStockDeliveryWithItems($this, 'W3-APR-'.Str::random(6), [10]);
@@ -4362,14 +4362,21 @@ test('neither the agent\'s procurement editors nor the user who asked can approv
     $alsoAgent->givePermissionTo("procurement.{$agent->organisation_id}.edit");
     $canPay = fn ($user) => \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::canPay($depositRequest->refresh(), $user->refresh());
 
+    $agentEmployee = agentOrganisationAdmin($agent->organisation, 'w3-apr-e-'.Str::lower(Str::random(6)));
+    $agentEmployee->givePermissionTo("procurement.$client->id.edit");
+
     expect($canPay($clientEditor))->toBeTrue()
-        ->and($canPay($alsoAgent))->toBeFalse()
-        ->and(\App\Actions\Procurement\OrgAgent\UpdateOrgAgent::moneyRequestPayerCandidates($orgAgent)->pluck('users.id')->all())->toContain($clientEditor->id)->not->toContain($alsoAgent->id);
+        ->and($canPay($alsoAgent))->toBeTrue()
+        ->and($canPay($agentEmployee))->toBeFalse()
+        ->and(\App\Actions\Procurement\OrgAgent\UpdateOrgAgent::moneyRequestPayerCandidates($orgAgent)->pluck('users.id')->all())->toContain($clientEditor->id)->toContain($alsoAgent->id)->not->toContain($agentEmployee->id);
 
     $depositRequest->update(['created_by' => $clientEditor->id]);
     expect($canPay($clientEditor))->toBeFalse();
 
-    actingAs($alsoAgent);
+    actingAs($agentEmployee);
     $this->patch(route('grp.models.deposit_request.approve', $depositRequest->id))->assertForbidden();
+    actingAs($alsoAgent);
+    $this->patch(route('grp.models.deposit_request.approve', $depositRequest->id))->assertSessionHasNoErrors();
+    expect($depositRequest->refresh()->approved_by)->toBe($alsoAgent->id);
     actingAs($this->adminGuest->getUser());
 });
