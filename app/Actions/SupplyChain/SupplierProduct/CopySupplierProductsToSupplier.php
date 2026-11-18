@@ -234,6 +234,67 @@ class CopySupplierProductsToSupplier extends OrgAction
     }
 
     /**
+     * What the Supplier Products page of an agent supplier needs to push products to another supplier, pull
+     * products from one, or start a new supplier with them; null when the user may not edit that agent.
+     *
+     * @return array{agent_id: int, agents: array<int, array{id: int, label: string, create_route: array{name: string, parameters: array<int, string>}}>, copy_route: array{name: string, parameters: array<int, int>}, supplier_id: int, source_products_route: array{name: string, parameters: array<int, int>}}|null
+     */
+    public function getCopyProductsProps(Supplier $supplier, ?User $user): ?array
+    {
+        $accessibleAgents = $this->getAccessibleAgents($user);
+        $agent            = $accessibleAgents->firstWhere('id', $supplier->agent_id);
+
+        if (!$agent) {
+            return null;
+        }
+
+        return [
+            'agent_id'   => $agent->id,
+            'agents'     => $accessibleAgents
+                ->map(fn (Agent $accessibleAgent) => [
+                    'id'           => $accessibleAgent->id,
+                    'label'        => $accessibleAgent->organisation->name,
+                    'create_route' => [
+                        'name'       => 'grp.org.procurement.org_suppliers.create_new',
+                        'parameters' => [$accessibleAgent->organisation->slug],
+                    ],
+                ])
+                ->all(),
+            'copy_route' => [
+                'name'       => 'grp.models.org.supplier.supplier_products.copy',
+                'parameters' => [$agent->organisation_id],
+            ],
+            'supplier_id'           => $supplier->id,
+            'source_products_route' => [
+                'name'       => 'grp.json.supplier.supplier_products_to_copy',
+                'parameters' => [$agent->organisation_id, $supplier->id],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<int, array{id: int, agent_id: int, label: string, number_products: int, company_name: string|null, contact_name: string|null}>
+     */
+    public function getCopyTargetsProps(Supplier $supplier, ?User $user): array
+    {
+        return Supplier::whereIn('agent_id', $this->getAccessibleAgents($user)->pluck('id'))
+            ->where('status', true)
+            ->where('id', '!=', $supplier->id)
+            ->withCount('supplierProducts')
+            ->orderBy('code')
+            ->get(['id', 'agent_id', 'code', 'name', 'company_name', 'contact_name'])
+            ->map(fn (Supplier $target) => [
+                'id'              => $target->id,
+                'agent_id'        => $target->agent_id,
+                'number_products' => $target->supplier_products_count,
+                'label'           => $target->name && $target->name !== $target->code ? $target->code.' — '.$target->name : $target->code,
+                'company_name'    => $target->company_name,
+                'contact_name'    => $target->contact_name,
+            ])
+            ->all();
+    }
+
+    /**
      * @param  array<int, int>  $agentIds
      * @param  array<int, int>  $orgSupplierProductIds
      * @return Collection<int, SupplierProduct>

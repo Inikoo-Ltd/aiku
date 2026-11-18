@@ -19,6 +19,8 @@ import Table from '@/Components/Table/Table.vue';
 import Icon from "@/Components/Icon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SupplierProductLabelsDialog from "@/Components/SupplyChain/SupplierProductLabelsDialog.vue"
+import SupplierProductsCopyActions from "@/Components/Procurement/SupplierProductsCopyActions.vue"
+import { CopyProducts, CopyTarget } from "@/types/supplier-products-copy"
 import { ctrans } from "@/Composables/useTrans"
 import {SupplierProduct} from "@/types/supplier-product";
 import { routeType } from "@/types/route"
@@ -55,7 +57,11 @@ const props = defineProps<{
         pdf_route: routeType
     }
     stateOptions?: { value: string, label: string }[] | null
+    copyProducts?: CopyProducts | null
+    copyTargets?: CopyTarget[]
 }>()
+
+const _table = ref<InstanceType<typeof Table> | null>(null)
 
 const selectedRows = ref<Record<string, boolean>>({})
 const selectedSupplierProductIds = computed(() => Object.keys(selectedRows.value).filter((id) => selectedRows.value[id]).map(Number))
@@ -235,9 +241,18 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
 
 <template>
     <div>
-        <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="Boolean(labelsPrint)" @onSelectRow="(rows) => selectedRows = { ...rows }">
-            <template v-if="labelsPrint" #add-on-button>
+        <Table ref="_table" :resource="data" :name="tab" class="mt-5" :isCheckBox="Boolean(labelsPrint || copyProducts)" @onSelectRow="(rows) => selectedRows = { ...rows }">
+            <template v-if="labelsPrint || copyProducts" #add-on-button>
+                <SupplierProductsCopyActions
+                    v-if="copyProducts"
+                    :copyProducts="copyProducts"
+                    :copyTargets="copyTargets"
+                    :selectedIds="selectedSupplierProductIds"
+                    idsParameter="supplier_products"
+                    @copied="_table?.clearSelection()"
+                />
                 <Button
+                    v-if="labelsPrint"
                     type="tertiary"
                     :label="ctrans('Print barcodes (:count)', { count: selectedSupplierProductIds.length })"
                     :disabled="!selectedSupplierProductIds.length"
