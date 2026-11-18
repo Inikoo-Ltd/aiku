@@ -256,7 +256,8 @@ class GetAgentMoneyRequestLines
 
     /**
      * Every shipment the agent paid charges for on the client's behalf, with what is still to ask for: the charges
-     * less what was asked for the shipment in a request still standing or, when more, sent against it directly.
+     * less what was asked for the shipment in a request still standing and what was sent against it directly: the
+     * transfers of a request never carry a shipment, so the two never count the same money.
      *
      * @return list<array{stock_delivery_id: int, stock_delivery_slug: string, reference: string, state: string|null, charges: list<array{type: string, label: string, amount: float}>, total: float, requested: float, due: float}>
      */
@@ -313,7 +314,7 @@ class GetAgentMoneyRequestLines
             $first         = $rows->first();
             $total         = round((float) $rows->sum('amount'), 2);
             $requestedHere = round((float) ($requested[$stockDeliveryId] ?? 0), 2);
-            $covered       = max($requestedHere, round((float) ($sentAgainstShipment[$stockDeliveryId] ?? 0), 2));
+            $covered       = $requestedHere + round((float) ($sentAgainstShipment[$stockDeliveryId] ?? 0), 2);
 
             return [
                 'stock_delivery_id'   => (int) $stockDeliveryId,

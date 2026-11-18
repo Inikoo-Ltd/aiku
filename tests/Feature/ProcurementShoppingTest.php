@@ -4057,3 +4057,25 @@ test('a ledger line a standing money request asks for keeps its type, order and 
 
     actingAs($this->adminGuest->getUser());
 });
+
+test('what a shipment still owes takes off both what a money request asked for it and what the client sent against the container directly', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-DUE-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+
+    $ledgerLine = fn (array $data) => \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, $data + ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'stock_delivery_id' => $stockDelivery->id]);
+    $ledgerLine(['type' => 'inspection', 'amount' => 1000]);
+    $shipment = fn () => collect(\App\Actions\SupplyChain\DepositRequest\GetAgentMoneyRequestLines::run($agent->refresh(), $client)['shipments'])->firstWhere('stock_delivery_id', $stockDelivery->id);
+
+    $ledgerLine(['type' => 'transfer_received', 'amount' => 500]);
+    expect($shipment()['due'])->toEqual(500);
+
+    \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [
+        ['kind' => 'shipment', 'stock_delivery_id' => $stockDelivery->id, 'amount' => 500],
+    ]]);
+
+    expect($shipment())->toBeNull();
+});
