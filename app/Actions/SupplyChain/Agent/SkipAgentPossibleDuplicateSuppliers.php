@@ -12,6 +12,7 @@ namespace App\Actions\SupplyChain\Agent;
 use App\Actions\OrgAction;
 use App\Models\SupplyChain\Agent;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -32,15 +33,18 @@ class SkipAgentPossibleDuplicateSuppliers extends OrgAction
 
     public function handle(Agent $agent, array $supplierIds): Agent
     {
-        $data    = $agent->data ?? [];
-        $skipped = $data[self::DATA_KEY] ?? [];
+        DB::transaction(function () use ($agent, $supplierIds) {
+            $lockedAgent = Agent::whereKey($agent->id)->lockForUpdate()->firstOrFail();
+            $data        = $lockedAgent->data ?? [];
+            $skipped     = $data[self::DATA_KEY] ?? [];
 
-        $skipped[] = self::groupKey($supplierIds);
+            $skipped[] = self::groupKey($supplierIds);
 
-        $data[self::DATA_KEY] = array_values(array_unique($skipped));
-        $agent->update(['data' => $data]);
+            $data[self::DATA_KEY] = array_values(array_unique($skipped));
+            $lockedAgent->update(['data' => $data]);
+        });
 
-        return $agent;
+        return $agent->refresh();
     }
 
     public function authorize(ActionRequest $request): bool

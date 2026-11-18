@@ -2622,3 +2622,18 @@ test('bulk state change keeps each product discontinued reason when no reason is
     ])->assertJsonValidationErrors('supplier_products');
     expect($supplierProduct->refresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUING);
 });
+
+test('skipping possible duplicate suppliers keeps the groups skipped from a stale copy of the agent', function () {
+    [$agent, $supplierProduct, $other] = supplyChainFixAgentSuppliers($this);
+    $third                             = StoreSupplier::make()->action($agent, Supplier::factory()->definition());
+    $staleAgent                        = Agent::find($agent->id);
+    $skip                              = \App\Actions\SupplyChain\Agent\SkipAgentPossibleDuplicateSuppliers::class;
+
+    $skip::make()->action($agent, ['supplier_ids' => [$supplierProduct->supplier_id, $other->id]]);
+    $skip::make()->action($staleAgent, ['supplier_ids' => [$other->id, $third->id]]);
+
+    expect($agent->refresh()->data[$skip::DATA_KEY])->toContain(
+        $skip::groupKey([$supplierProduct->supplier_id, $other->id]),
+        $skip::groupKey([$other->id, $third->id])
+    );
+});
