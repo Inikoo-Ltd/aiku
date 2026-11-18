@@ -7,6 +7,7 @@ enum GoodsInRoute: Hashable, Sendable {
     case scannedStockDelivery(id: Int, reference: String)
     case returns
     case returnDetail(reference: String)
+    case returnID(id: Int, reference: String)
     case placeItem(reference: String, sko: String)
     case placeNewItem(reference: String, sko: String)
 }

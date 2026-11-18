@@ -43,6 +43,9 @@ struct RootView: View {
             await warehouseStore.load(for: userID, apiClient: apiClient)
             applySelectedWarehouse()
         }
+        .task(id: warehouseStore.selectedID) {
+            await refreshMyWorkCount()
+        }
         .onChange(of: resolvedModules, initial: true) { _, modules in
             if let modules {
                 session.modules = modules
@@ -54,6 +57,7 @@ struct RootView: View {
                 await authStore.refreshProfile()
                 await refreshPermissionsIfSignedIn()
                 await refreshWarehousesIfSignedIn()
+                await refreshMyWorkCount()
             }
         }
     }
@@ -73,6 +77,14 @@ struct RootView: View {
         applySelectedWarehouse()
     }
 
+    private func refreshMyWorkCount() async {
+        guard authStore.isSignedIn, let warehouseID = warehouseStore.selectedID else { return }
+        await MyWorkStore.shared.load(warehouseID: warehouseID, service: .live(apiClient))
+        if MyWorkStore.shared.hasLoaded {
+            session.assignedCount = MyWorkStore.shared.counts.total
+        }
+    }
+
     private func applySelectedWarehouse() {
         guard let warehouse = warehouseStore.selected else { return }
         session.apply(warehouse: warehouse.name, code: warehouse.code, organisation: warehouse.organisation.name)
@@ -86,6 +98,7 @@ struct RootView: View {
         InventoryFamiliesFeed.shared.reset()
         GoodsInStore.shared.resetToSample()
         PalletDeliveriesFeed.shared.reset()
+        MyWorkStore.shared.reset()
         Task { await authStore.signOut() }
     }
 }

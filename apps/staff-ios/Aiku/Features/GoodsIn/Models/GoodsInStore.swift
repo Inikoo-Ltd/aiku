@@ -470,7 +470,12 @@ final class GoodsInStore {
     }
 
     func loadReturn(_ reference: String, apiClient: APIClient) async {
-        guard isRemote, let warehouseID, let id = returns.first(where: { $0.reference == reference })?.remoteID else { return }
+        guard let id = returns.first(where: { $0.reference == reference })?.remoteID else { return }
+        await loadReturn(id: id, apiClient: apiClient)
+    }
+
+    func loadReturn(id: Int, apiClient: APIClient) async {
+        guard isRemote, let warehouseID else { return }
         do {
             storeReturn(try await apiClient.fetchReturn(warehouseID: warehouseID, id: id))
             loadError = nil
