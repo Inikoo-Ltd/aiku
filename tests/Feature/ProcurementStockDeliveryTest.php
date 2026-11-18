@@ -4597,3 +4597,35 @@ test('changing the supplier of an agent order joins only an open order of the ne
         ->and($source->refresh()->state)->toBe(\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::CANCELLED)
         ->and($draft->refresh()->purchaseOrderTransactions()->count())->toBe(0);
 });
+
+test('the undo move button of the items table reads why it is blocked from one batch of queries for every moved line', function () {
+    $orgAgent                     = createFreshOrgAgent($this);
+    [$fromSupplier, $fromProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [$toSupplier, $toProduct]     = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    \App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock::make()->action($this->orgStocks[0], $toProduct);
+    $order     = createConfirmedAgentOrder($this, $fromSupplier, $fromProduct, 0, 30)->refresh();
+    $openOrder = createConfirmedAgentOrder($this, $toSupplier, $toProduct, 1, 5)->refresh();
+    $line      = $order->purchaseOrderTransactions()->firstOrFail();
+
+    $moved = \App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier::make()->action($line, ['org_supplier_id' => $toSupplier->id, 'quantity' => 10, 'reference' => $openOrder->reference])['moved'];
+    $lines = fn () => $openOrder->purchaseOrderTransactions()->get();
+
+    expect(\App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction::blockedReasons($lines()))
+        ->toBe([$openOrder->purchaseOrderTransactions()->where('id', '!=', $moved->id)->value('id') => 'This item was not moved from another order', $moved->id => null]);
+
+    $order->update(['production_started_at' => now()]);
+
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+    $reasons = \App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction::blockedReasons($lines());
+    $queries = count(\Illuminate\Support\Facades\DB::getQueryLog());
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    $blocked = 'The supplier is already making '.$order->reference;
+    $moved->refresh()->setAttribute('undo_move_blocked_reason', $reasons[$moved->id]);
+    $resource = (new \App\Http\Resources\Procurement\PurchaseOrderTransactionResource($moved))->toArray(request());
+
+    expect($reasons[$moved->id])->toBe($blocked)
+        ->and(\App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction::blockedReason($moved->refresh()))->toBe($blocked)
+        ->and($resource['undoMove']['blocked_reason'])->toBe($blocked)
+        ->and($queries)->toBeLessThanOrEqual(7);
+});

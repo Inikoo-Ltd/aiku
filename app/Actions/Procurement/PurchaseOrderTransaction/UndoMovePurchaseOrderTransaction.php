@@ -25,6 +25,7 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionState
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -99,36 +100,69 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
      */
     public static function blockedReason(PurchaseOrderTransaction $movedTransaction): ?string
     {
-        $movedFrom = Arr::get($movedTransaction->data, 'moved_from');
+        return self::blockedReasons(new EloquentCollection([$movedTransaction]))[$movedTransaction->id];
+    }
 
-        if (!$movedFrom) {
-            return __('This item was not moved from another order');
-        }
+    /**
+     * blockedReason for many moved lines at once, with the same few queries whatever their number, for the items table.
+     *
+     * @param  EloquentCollection<int, PurchaseOrderTransaction>  $movedTransactions
+     * @return array<int, string|null>
+     */
+    public static function blockedReasons(EloquentCollection $movedTransactions): array
+    {
+        $movedTransactions->loadMissing('purchaseOrder');
 
-        if (Arr::get($movedFrom, 'undone_at')) {
-            return __('These units were already given back to :reference', ['reference' => $movedFrom['reference']]);
-        }
+        $moves              = $movedTransactions->mapWithKeys(fn (PurchaseOrderTransaction $transaction) => [$transaction->id => Arr::get($transaction->data, 'moved_from')]);
+        $pending            = $moves->filter(fn ($movedFrom) => $movedFrom && !Arr::get($movedFrom, 'undone_at'));
+        $sourceOrders       = PurchaseOrder::whereIn('id', $pending->pluck('purchase_order_id')->filter()->unique()->all())->get()->keyBy('id');
+        $sourceTransactions = PurchaseOrderTransaction::whereIn('id', $pending->pluck('purchase_order_transaction_id')->filter()->unique()->all())->get()->keyBy('id');
+        $onDelivery         = array_flip(MovePurchaseOrderTransactionToSupplier::idsOnDelivery(
+            $movedTransactions->pluck('id')->merge($sourceTransactions->keys())->map(fn ($id) => (int) $id)->unique()->values()->all()
+        ));
+        $sourcesOnDelivery  = $sourceOrders->isEmpty() ? [] : array_flip(PurchaseOrder::whereIn('id', $sourceOrders->keys()->all())
+            ->whereHas('stockDeliveries', fn ($deliveries) => $deliveries->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all());
 
-        if (!MovePurchaseOrderTransactionToSupplier::isMovable($movedTransaction)) {
-            return __('Only items not yet in production nor on a stock delivery can go back to their supplier');
-        }
+        return $movedTransactions->mapWithKeys(function (PurchaseOrderTransaction $movedTransaction) use ($moves, $sourceOrders, $sourceTransactions, $onDelivery, $sourcesOnDelivery) {
+            $movedFrom = $moves->get($movedTransaction->id);
 
-        $sourcePurchaseOrder = PurchaseOrder::find($movedFrom['purchase_order_id']);
-        $sourceTransaction   = $sourcePurchaseOrder
-            ? PurchaseOrderTransaction::where('purchase_order_id', $sourcePurchaseOrder->id)->find($movedFrom['purchase_order_transaction_id'])
-            : null;
+            if (!$movedFrom) {
+                return [$movedTransaction->id => __('This item was not moved from another order')];
+            }
 
-        if (!$sourceTransaction) {
-            return __(':reference no longer exists', ['reference' => $movedFrom['reference']]);
-        }
+            if (Arr::get($movedFrom, 'undone_at')) {
+                return [$movedTransaction->id => __('These units were already given back to :reference', ['reference' => $movedFrom['reference']])];
+            }
 
+            if (!MovePurchaseOrderTransactionToSupplier::isMovable($movedTransaction, isset($onDelivery[$movedTransaction->id]))) {
+                return [$movedTransaction->id => __('Only items not yet in production nor on a stock delivery can go back to their supplier')];
+            }
+
+            $sourcePurchaseOrder = $sourceOrders->get($movedFrom['purchase_order_id']);
+            $sourceTransaction   = $sourcePurchaseOrder ? $sourceTransactions->get($movedFrom['purchase_order_transaction_id']) : null;
+
+            if (!$sourceTransaction || $sourceTransaction->purchase_order_id !== $sourcePurchaseOrder->id) {
+                return [$movedTransaction->id => __(':reference no longer exists', ['reference' => $movedFrom['reference']])];
+            }
+
+            $sourceTransaction->setRelation('purchaseOrder', $sourcePurchaseOrder);
+
+            return [$movedTransaction->id => self::sourceBlockedReason($sourcePurchaseOrder, $sourceTransaction, isset($onDelivery[$sourceTransaction->id]), isset($sourcesOnDelivery[$sourcePurchaseOrder->id]))];
+        })->all();
+    }
+
+    private static function sourceBlockedReason(PurchaseOrder $sourcePurchaseOrder, PurchaseOrderTransaction $sourceTransaction, bool $sourceTransactionOnDelivery, bool $sourceOnDelivery): ?string
+    {
         if ($sourcePurchaseOrder->state === PurchaseOrderStateEnum::CANCELLED) {
             if (Arr::get($sourcePurchaseOrder->data, 'cancellation.source') !== UpdatePurchaseOrderStateToCancelled::SOURCE_MOVED
                 || !in_array(Arr::get($sourcePurchaseOrder->data, 'cancellation.state'), PurchaseOrderStateEnum::openValues(), true)) {
                 return __(':reference was cancelled: order the item again instead', ['reference' => $sourcePurchaseOrder->reference]);
             }
 
-            return $sourcePurchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists()
+            return $sourceOnDelivery
                 ? __(':reference has a stock delivery', ['reference' => $sourcePurchaseOrder->reference])
                 : null;
         }
@@ -141,7 +175,7 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
             return __('The supplier is already making :reference', ['reference' => $sourcePurchaseOrder->reference]);
         }
 
-        if ($sourceTransaction->state !== PurchaseOrderTransactionStateEnum::CANCELLED && !MovePurchaseOrderTransactionToSupplier::isMovable($sourceTransaction)) {
+        if ($sourceTransaction->state !== PurchaseOrderTransactionStateEnum::CANCELLED && !MovePurchaseOrderTransactionToSupplier::isMovable($sourceTransaction, $sourceTransactionOnDelivery)) {
             return __('The item on :reference is on a stock delivery', ['reference' => $sourcePurchaseOrder->reference]);
         }
 

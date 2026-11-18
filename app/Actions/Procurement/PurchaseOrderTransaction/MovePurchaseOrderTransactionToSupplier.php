@@ -193,7 +193,10 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
     /**
      * The same lines a cancellation accepts: submitted or confirmed, not on a stock delivery, supplier not making them yet.
      */
-    public static function isMovable(PurchaseOrderTransaction $purchaseOrderTransaction): bool
+    /**
+     * @param  bool|null  $isOnDelivery  already known for a batch of lines, looked up when null
+     */
+    public static function isMovable(PurchaseOrderTransaction $purchaseOrderTransaction, ?bool $isOnDelivery = null): bool
     {
         $purchaseOrder = $purchaseOrderTransaction->purchaseOrder;
 
@@ -203,14 +206,31 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             && in_array($purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
             && !$purchaseOrder->areLinesLockedByProduction()
             && $purchaseOrderTransaction->org_stock_id !== null
-            && !self::isOnDelivery($purchaseOrderTransaction);
+            && !($isOnDelivery ?? self::isOnDelivery($purchaseOrderTransaction));
     }
 
     private static function isOnDelivery(PurchaseOrderTransaction $purchaseOrderTransaction): bool
     {
-        return PurchaseOrderTransaction::whereKey($purchaseOrderTransaction->id)
+        return in_array($purchaseOrderTransaction->id, self::idsOnDelivery([$purchaseOrderTransaction->id]), true);
+    }
+
+    /**
+     * Which of these lines have units on a live stock delivery, in one query.
+     *
+     * @param  array<int, int>  $purchaseOrderTransactionIds
+     * @return array<int, int>
+     */
+    public static function idsOnDelivery(array $purchaseOrderTransactionIds): array
+    {
+        if ($purchaseOrderTransactionIds === []) {
+            return [];
+        }
+
+        return PurchaseOrderTransaction::whereIn('id', $purchaseOrderTransactionIds)
             ->whereExists(fn (Builder $items) => StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction($items))
-            ->exists();
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     private function ensureMovable(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $purchaseOrderTransaction, float $quantity): void

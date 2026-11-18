@@ -385,7 +385,9 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'post',
             ],
-            'blocked_reason' => UndoMovePurchaseOrderTransaction::blockedReason($transaction),
+            'blocked_reason' => array_key_exists('undo_move_blocked_reason', $transaction->getAttributes())
+                ? $transaction->getAttribute('undo_move_blocked_reason')
+                : UndoMovePurchaseOrderTransaction::blockedReason($transaction),
         ];
     }
 

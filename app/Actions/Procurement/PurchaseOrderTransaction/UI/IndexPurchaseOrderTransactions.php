@@ -26,6 +26,7 @@ use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\PurchaseOrder;
@@ -189,6 +190,9 @@ class IndexPurchaseOrderTransactions extends OrgAction
         $partnerStocks       = $parent->parent instanceof OrgPartner ? $this->partnerStocks($parent->parent, $orgStockIds) : collect();
         $cancellations       = $this->cancellations($paginator->getCollection()->where('state', PurchaseOrderTransactionStateEnum::CANCELLED)->pluck('id'));
         $moveTrail           = $this->moveTrail($paginator->getCollection());
+        $undoMoveBlocked     = UndoMovePurchaseOrderTransaction::blockedReasons($paginator->getCollection()->filter(
+            fn (PurchaseOrderTransaction $transaction) => Arr::get($transaction->data, 'moved_from') && !Arr::get($transaction->data, 'moved_from.undone_at') && $transaction->state !== PurchaseOrderTransactionStateEnum::CANCELLED
+        )->values());
         $paginator->getCollection()->each(
             fn (PurchaseOrderTransaction $transaction) => $transaction
                 ->setAttribute('quarterly_usage', $quarterlyUsage->get($transaction->org_stock_id) ?? collect())
@@ -204,6 +208,11 @@ class IndexPurchaseOrderTransactions extends OrgAction
                 ] : null)
                 ->setAttribute('move_trail', $moveTrail($transaction))
         );
+        foreach ($paginator->getCollection() as $transaction) {
+            if (array_key_exists($transaction->id, $undoMoveBlocked)) {
+                $transaction->setAttribute('undo_move_blocked_reason', $undoMoveBlocked[$transaction->id]);
+            }
+        }
         IndexPurchaseOrderOrgSupplierProducts::make()->attachOtherOpenPurchaseOrders($paginator, $parent->organisation_id, $parent->id);
 
         return $paginator;
