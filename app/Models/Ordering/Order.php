@@ -40,7 +40,6 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Models\Helpers\TaxCategory;
-use App\Models\Helpers\TaxNumber;
 use App\Models\Reviews\OrderReviewStat;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Group;
@@ -250,6 +249,8 @@ class Order extends Model implements HasMedia, Auditable
     use HasSearch;
     /** @see Order::scopePaySettled() - the only statuses that owe nothing */
     public const PAY_SETTLED_STATUSES = [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED];
+
+    public const EXPORT_PROOF_ATTACHMENT_SCOPE = 'export_proof';
 
     protected $casts = [
         'handled_in_aurora'             => 'boolean',
@@ -589,17 +590,32 @@ class Order extends Model implements HasMedia, Auditable
 
     /**
      * A collection order is handed over at the shop's premises, so its tax follows that address, not the customer's (HELP-3494).
-     * A customer with a valid tax number keeps being taxed where they are based: a business collecting to take the goods
-     * abroad stays zero-rated
+     * A business taking the goods abroad is zero-rated only once the proof of export is attached to the order (HELP-4811)
      */
-    public function taxableDeliveryAddress(?TaxNumber $taxNumber): ?Address
+    public function taxableDeliveryAddress(): ?Address
     {
-        return $this->isTaxedAtCollectionAddress($taxNumber) ? $this->shop->collectionAddress : $this->deliveryAddress;
+        return $this->isTaxedAtCollectionAddress() ? $this->shop->collectionAddress : $this->deliveryAddress;
     }
 
-    public function isTaxedAtCollectionAddress(?TaxNumber $taxNumber): bool
+    public function isTaxedAtCollectionAddress(): bool
     {
-        return $this->collection_address_id && !$taxNumber?->valid && $this->shop->collectionAddress;
+        return $this->collection_address_id
+            && $this->shop->collectionAddress
+            && !($this->canBeZeroRatedWithExportProof() && $this->hasExportProof());
+    }
+
+    public function canBeZeroRatedWithExportProof(): bool
+    {
+        return $this->collection_address_id
+            && $this->shop->collectionAddress
+            && $this->customer?->taxNumber?->valid
+            && $this->deliveryAddress?->country_id
+            && $this->deliveryAddress->country_id != $this->shop->collectionAddress->country_id;
+    }
+
+    public function hasExportProof(): bool
+    {
+        return $this->attachments()->wherePivot('scope', self::EXPORT_PROOF_ATTACHMENT_SCOPE)->exists();
     }
 
     /**

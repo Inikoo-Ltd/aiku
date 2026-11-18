@@ -1,4 +1,8 @@
 {
+    "Proof of export": "Prueba de exportación",
+    "Proof of export attached: the order is zero-rated": "Prueba de exportación adjunta: el pedido va exento de IVA",
+    "Collected here, so local VAT is charged. It is zero-rated once the proof that the goods left the country is attached": "Se recoge aquí, así que se cobra el IVA local. Queda exento cuando se adjunta la prueba de que la mercancía salió del país",
+    "Attach proof of export": "Adjuntar prueba de exportación",
     "The invoice date could not be saved": "No se pudo guardar la fecha de la factura",
     "No tax number": "Sin NIF/IVA",
     "Change the tax number on this invoice and on the customer": "Cambiar el NIF/IVA en esta factura y en el cliente",

@@ -1,4 +1,8 @@
 {
+    "Proof of export": "Doklad o vývoze",
+    "Proof of export attached: the order is zero-rated": "Doklad o vývoze priložený: objednávka je oslobodená od DPH",
+    "Collected here, so local VAT is charged. It is zero-rated once the proof that the goods left the country is attached": "Vyzdvihnutie tu, preto sa účtuje miestna DPH. Oslobodenie platí po priložení dokladu, že tovar opustil krajinu",
+    "Attach proof of export": "Priložiť doklad o vývoze",
     "The invoice date could not be saved": "Dátum faktúry sa nepodarilo uložiť",
     "No tax number": "Bez IČ DPH",
     "Change the tax number on this invoice and on the customer": "Zmeniť IČ DPH na tejto faktúre aj u zákazníka",

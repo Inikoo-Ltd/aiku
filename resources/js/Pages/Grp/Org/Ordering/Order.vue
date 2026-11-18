@@ -322,6 +322,7 @@ const props = defineProps<{
     attachments?: {}
     invoices?: {}
     attachmentRoutes?: {}
+    export_proof?: { is_attached: boolean } | null
     address_update_route?: routeType
     billing_address_update_route?: routeType
     addresses?: {}
@@ -2817,6 +2818,27 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             </dd>
                         </template>
 
+                        <template #cell_tax_1="{ fieldSummary }">
+                            <dt class="col-span-3 flex flex-col">
+                                <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                    <span>{{ fieldSummary.label }}</span>
+                                </div>
+                                <span v-if="fieldSummary.information" class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
+                            </dt>
+                            <dd v-if="export_proof" class="order-last col-span-7 mt-0.5 mb-1 flex items-start gap-x-1.5 text-xs text-gray-500">
+                                <FontAwesomeIcon :icon="export_proof.is_attached ? faCheck : faExclamationTriangle" fixed-width aria-hidden="true"
+                                    :class="export_proof.is_attached ? 'text-green-600 pt-0.5' : 'text-amber-500 pt-0.5'" />
+                                <span v-if="export_proof.is_attached">
+                                    {{ ctrans("Proof of export attached: the order is zero-rated") }}
+                                </span>
+                                <span v-else>
+                                    {{ ctrans("Collected here, so local VAT is charged. It is zero-rated once the proof that the goods left the country is attached") }}
+                                    <span v-if="can_edit && !isEditLocked" class="underline cursor-pointer hover:text-gray-700" @click="isModalUploadOpen = true">
+                                        ({{ ctrans("Attach proof of export") }})
+                                    </span>
+                                </span>
+                            </dd>
+                        </template>
                         <template #cell_charges_1="{ fieldSummary }">
                             <dt class="col-span-3 flex flex-col">
                                 <div class="flex items-center leading-none" :class="fieldSummary.label_class">
@@ -3547,8 +3569,12 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         information: 'The list of column file: customer_reference, notes, stored_items'
     }" :attachmentRoutes="attachmentRoutes" :options="[
         {
-            name: 'Other',
+            name: ctrans('Other'),
             code: 'other'
+        },
+        {
+            name: ctrans('Proof of export'),
+            code: 'export_proof'
         }
     ]" />
     <EmailCustomerDialog v-if="email_customer" v-model:visible="isEmailCustomerOpen" :send-route="email_customer.route"

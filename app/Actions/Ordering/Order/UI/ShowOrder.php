@@ -705,6 +705,9 @@ class ShowOrder extends OrgAction
                         ]
                     ]
                 ],
+                'export_proof'          => $order->canBeZeroRatedWithExportProof() && $order->canChangeTaxCategory() ? [
+                    'is_attached' => $order->hasExportProof(),
+                ] : null,
                 'attachmentRoutes'      => [
                     'attachRoute' => [
                         'name'       => 'grp.models.order.attachment.attach',

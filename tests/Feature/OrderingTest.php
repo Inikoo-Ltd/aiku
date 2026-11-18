@@ -89,6 +89,7 @@ use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Order\UI\GetEcomOrderActions;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\ResetOrderTaxCategory;
+use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrderGiftMessage;
@@ -4707,7 +4708,7 @@ test('an order switched to collection is taxed where it is collected, not where 
         expect($order->collection_address_id)->toBe($showroom->id)
             ->and($order->tax_category_id)->toBe($spanishVat->id)
             ->and((float)$order->tax_amount)->toBeGreaterThan(0.0)
-            ->and($order->taxableDeliveryAddress(new \App\Models\Helpers\TaxNumber(['valid' => true]))->id)->toBe($ceuta->id);
+            ->and($order->taxableDeliveryAddress()->id)->toBe($showroom->id);
 
         UpdateOrder::make()->action($order, ['collection_address_id' => null]);
         expect($order->refresh()->tax_category_id)->toBe(1);
@@ -4716,6 +4717,55 @@ test('an order switched to collection is taxed where it is collected, not where 
         UpdateOrder::make()->action($order->refresh(), ['collection_address_id' => $ceuta->id]);
         ResetOrderTaxCategory::run($order->refresh());
         expect($order->refresh()->tax_category_id)->toBe(1);
+    } finally {
+        DB::rollBack();
+    }
+});
+
+test('a business collecting with a valid EU tax number pays local VAT until the proof of export is attached (HELP-4811)', function () {
+    DB::beginTransaction();
+    try {
+        $spain = Country::where('code', 'ES')->first();
+        $malta = Country::where('code', 'MT')->first();
+        $this->organisation->forceFill(['country_id' => $spain->id])->save();
+        $spanishVat = TaxCategory::where('type', \App\Enums\Helpers\TaxCategories\TaxCategoryTypeEnum::STANDARD)->where('country_id', $spain->id)->where('status', true)->first();
+
+        $addressIn = fn (Country $country, string $postalCode) => \App\Models\Helpers\Address::create(array_merge(
+            \App\Models\Helpers\Address::factory()->definition(),
+            ['group_id' => $this->shop->group_id, 'country_code' => $country->code, 'country_id' => $country->id, 'postal_code' => $postalCode]
+        ));
+        $showroom = $addressIn($spain, '29004');
+        $this->shop->update(['collection_address_id' => $showroom->id]);
+
+        $customer = freshCustomerLike($this->shop, $this->customer);
+        StoreTaxNumber::make()->handle($customer, ['number' => '19061423', 'country_id' => $malta->id], strict: false)->update(['valid' => true]);
+        $customer->refresh();
+
+        $order = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+        $valletta = $addressIn($malta, 'VLT 1000');
+        $order->update(['billing_address_id' => $valletta->id, 'delivery_address_id' => $valletta->id]);
+        ResetOrderTaxCategory::run($order->refresh());
+        expect($order->refresh()->tax_category_id)->toBe(2);
+
+        UpdateOrder::make()->action($order, ['collection_address_id' => $showroom->id]);
+        $order->refresh();
+        expect($order->tax_category_id)->toBe($spanishVat->id)
+            ->and((float)$order->tax_amount)->toBeGreaterThan(0.0)
+            ->and($order->canBeZeroRatedWithExportProof())->toBeTrue();
+
+        $pdf = fn (string $name) => UploadedFile::fake()->create($name, 10, 'application/pdf');
+        \App\Actions\Helpers\Media\AttachAttachmentToModel::make()->action($order, ['attachments' => [$pdf('photo.pdf')], 'scope' => 'other']);
+        expect($order->refresh()->tax_category_id)->toBe($spanishVat->id);
+
+        \App\Actions\Helpers\Media\AttachAttachmentToModel::make()->action($order, ['attachments' => [$pdf('cmr.pdf')], 'scope' => Order::EXPORT_PROOF_ATTACHMENT_SCOPE]);
+        $order->refresh();
+        expect($order->tax_category_id)->toBe(2)
+            ->and((float)$order->tax_amount)->toBe(0.0);
+
+        $proof = $order->attachments()->wherePivot('scope', Order::EXPORT_PROOF_ATTACHMENT_SCOPE)->first();
+        \App\Actions\Helpers\Media\DetachAttachmentFromModel::run($order, $proof);
+        expect($order->refresh()->tax_category_id)->toBe($spanishVat->id);
     } finally {
         DB::rollBack();
     }
