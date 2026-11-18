@@ -4629,3 +4629,48 @@ test('the undo move button of the items table reads why it is blocked from one b
         ->and($resource['undoMove']['blocked_reason'])->toBe($blocked)
         ->and($queries)->toBeLessThanOrEqual(7);
 });
+
+test('the repair of sheet rows duplicated by a goods receipt keeps packed sheet rows, keeps to the purchase order asked and refreshes the orders it changed', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $supplierProduct = $orgSupplierProduct->supplierProduct;
+    $purchaseOrder   = StorePurchaseOrder::make()->action($orgSupplier, \App\Models\Procurement\PurchaseOrder::factory()->definition());
+    $line            = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...\App\Models\Procurement\PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 40]);
+    $purchaseOrder->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now(), 'sample_approved_at' => now()]);
+    $line->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum::SUBMITTED]);
+    App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($this->agent, [
+        'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => 40]],
+    ]);
+    $sheetRow = fn (\App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum $state) => App\Models\Procurement\AgentWarehouseStock::create([
+        'group_id'            => $this->agent->group_id,
+        'agent_id'            => $this->agent->id,
+        'organisation_id'     => $purchaseOrder->organisation_id,
+        'supplier_product_id' => $supplierProduct->id,
+        'purchase_order_id'   => $purchaseOrder->id,
+        'state'               => $state,
+        'quantity'            => 20,
+    ]);
+    $receivedRow = $sheetRow(\App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::RECEIVED);
+    $packedRow   = $sheetRow(\App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::PACKED_FOR_NEXT_CONTAINER);
+    $repair      = App\Actions\Procurement\AgentWarehouseStock\RepairAgentWarehouseStocksDuplicatedByGoodsReceipts::make();
+    $backupsBefore = glob(storage_path('app/repairs/agent-warehouse-stocks-duplicated-by-goods-receipts/*.jsonl')) ?: [];
+
+    expect($repair->handle(true, purchaseOrderId: $purchaseOrder->id + 100000))->toBeEmpty();
+
+    $refreshed = [];
+    $this->mock(\App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::class)
+        ->shouldReceive('forPurchaseOrderIds')
+        ->once()
+        ->andReturnUsing(function ($ids) use (&$refreshed) {
+            $refreshed = collect($ids)->values()->all();
+        });
+
+    $results = collect($repair->handle(true, purchaseOrderId: $purchaseOrder->id));
+    array_map('unlink', array_diff(glob(storage_path('app/repairs/agent-warehouse-stocks-duplicated-by-goods-receipts/*.jsonl')) ?: [], $backupsBefore));
+
+    expect($results)->toHaveCount(1)
+        ->and($results->first()['deleted_sheet_rows'])->toBe([$receivedRow->id])
+        ->and($results->first()['kept_sheet_rows'])->toBe([$packedRow->id])
+        ->and($receivedRow->fresh())->toBeNull()
+        ->and($packedRow->fresh())->not->toBeNull()
+        ->and($refreshed)->toBe([$purchaseOrder->id]);
+});
