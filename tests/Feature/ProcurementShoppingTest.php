@@ -4237,3 +4237,34 @@ test('a change of an agent order\'s items only moves its ledger balance date, an
     expect($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CANCELLED)
         ->and($order->balance_paid_at?->toDateString())->toBe($balancePaidAt);
 });
+
+test('a payer saved before the payer rules can no longer approve once they are the agent\'s staff, and the money tab the email links to needs the client\'s procurement view', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-PAY-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    setPermissionsTeamId($this->group->id);
+
+    $expense        = \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'type' => 'other_expense', 'amount' => 9, 'notes' => 'Fee']);
+    $depositRequest = \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [['kind' => 'expense', 'agent_payment_id' => $expense->id, 'amount' => 9]]]);
+
+    $agentStaff = agentOrganisationAdmin($agent->organisation, 'w3-pay-s-'.Str::lower(Str::random(6)));
+    $orgAgent->update(['settings' => ['money_requests' => ['payer_user_ids' => [$agentStaff->id]]]]);
+    $moneyTab = route('grp.org.procurement.org_agents.show', [$client->slug, $orgAgent->slug, 'tab' => 'money']);
+
+    actingAs($agentStaff);
+    $this->withoutVite()->get($moneyTab)->assertForbidden();
+    expect(\App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::canPay($depositRequest, $agentStaff))->toBeFalse();
+    $this->patch(route('grp.models.deposit_request.approve', $depositRequest->id))->assertForbidden();
+
+    $agentStaff->givePermissionTo("procurement.$client->id.view");
+    expect(\App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::canPay($depositRequest, $agentStaff->refresh()))->toBeFalse();
+
+    $clientUser = agentOrganisationAdmin($client, 'w3-pay-u-'.Str::lower(Str::random(6)));
+    actingAs($clientUser);
+    $this->withoutVite()->get($moneyTab)->assertOk();
+
+    actingAs($this->adminGuest->getUser());
+});
