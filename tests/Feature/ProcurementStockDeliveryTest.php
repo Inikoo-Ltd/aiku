@@ -4786,3 +4786,32 @@ test('an agent\'s recent orders drill down from the exact instant the count star
     $inRange = $slugs('grp.org.agent.purchase_orders.index', ['between' => ['submitted_at' => now()->subDays(5)->format('Ymd').'-'.now()->format('Ymd')]]);
     expect($inRange)->toContain($recent->slug)->toContain($undated->slug)->not->toContain($old->slug);
 });
+
+test('checking many goods receipt lines refreshes the hand over of each order once, after every line is checked', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $first                = createConfirmedAgentOrder($this, $supplier, $product, 0, 4)->refresh();
+    $second               = createConfirmedAgentOrder($this, $supplier, $product, 1, 4)->refresh();
+    $first->updateQuietly(['sample_approved_at' => now(), 'production_started_at' => now()]);
+    $second->updateQuietly(['sample_approved_at' => now(), 'production_started_at' => now()]);
+
+    $receipt = App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($orgAgent->agent, [
+        'lines' => [
+            ['purchase_order_transaction_id' => $first->purchaseOrderTransactions()->value('id'), 'quantity' => 4],
+            ['purchase_order_transaction_id' => $second->purchaseOrderTransactions()->value('id'), 'quantity' => 4],
+        ],
+    ]);
+
+    $calls = [];
+    $this->mock(\App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::class)
+        ->shouldReceive('forPurchaseOrderIds')
+        ->andReturnUsing(function ($ids) use (&$calls) {
+            $calls[] = collect($ids)->unique()->sort()->values()->all();
+        });
+
+    $checked = App\Actions\Procurement\AgentGoodsReceipt\CheckAgentGoodsReceiptItems::make()->handle($orgAgent->agent->organisation, $receipt->items()->pluck('id')->all());
+
+    expect($checked)->toBe(2)
+        ->and($calls)->toBe([collect([$first->id, $second->id])->sort()->values()->all()])
+        ->and($receipt->items()->whereNull('checked_at')->exists())->toBeFalse();
+});
