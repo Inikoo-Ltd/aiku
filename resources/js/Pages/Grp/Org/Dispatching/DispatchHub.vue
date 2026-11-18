@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Deferred, Head, Link, router, usePage } from "@inertiajs/vue3"
+import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -15,7 +15,6 @@ import { ctrans } from "@/Composables/useTrans"
 import { faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine, faDolly, faIndustry, faClipboardListCheck, faSave, faLock, faChevronDown } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue"
-import DispatchCapacityPanel from "@/Components/Warehouse/DispatchCapacityPanel.vue"
 import Table from "@/Components/Table/Table.vue"
 import InputNumber from "primevue/inputnumber"
 import Select from "primevue/select"
@@ -55,8 +54,6 @@ const props = defineProps<{
     stage_route?: { name: string; parameters: Record<string, string> }
     release_route?: { name: string; parameters: Record<string, string> }
     can_edit?: boolean
-    dispatch_capacity?: InstanceType<typeof DispatchCapacityPanel>["$props"]["rows"]
-    current_warehouse_id?: number
     reports_route?: { name: string; parameters: Record<string, string> }
     gate_route?: { name: string; parameters: Record<string, string> } | null
     intervals: any
@@ -280,17 +277,10 @@ const trolleyRoute = (trolley: { slug: string }) =>
         </div>
     </template>
 
-    <template v-else>
-        <component
-            :is="DispatchDashboard"
-            :tab="currentTab"
-            :data="currentTab === 'picking_session' ? picking_session : delivery_note"
-        ></component>
-        <Deferred data="dispatch_capacity">
-            <template #fallback>
-                <div class="skeleton mx-4 mt-6 h-32 rounded-lg" />
-            </template>
-            <DispatchCapacityPanel v-if="dispatch_capacity" :rows="dispatch_capacity" :currentWarehouseId="current_warehouse_id" />
-        </Deferred>
-    </template>
+    <component
+        v-else
+        :is="DispatchDashboard"
+        :tab="currentTab"
+        :data="currentTab === 'picking_session' ? picking_session : delivery_note"
+    ></component>
 </template>

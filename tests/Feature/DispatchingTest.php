@@ -9158,20 +9158,20 @@ test('dispatch capacity says when a warehouse is over and how many workers would
     $capacity = \App\Actions\Dispatching\Capacity\GetWarehouseCapacity::make();
 
     $row = fn (array $overrides) => [
-        'in_per_day' => 100.0, 'out_per_day' => 100.0, 'late_backlog' => 0, 'late_to_pick' => 0, 'late_to_pack' => 0,
+        'in_per_day' => 100.0, 'out_per_day' => 100.0, 'picked_per_day' => 100.0, 'packed_per_day' => 100.0, 'late_backlog' => 0, 'late_to_pick' => 0, 'late_to_pack' => 0,
         'picks_per_picker_day' => 20.0, 'packs_per_packer_day' => 20.0, ...$overrides,
     ];
 
-    $wholesale = $capacity->assess($row(['in_per_day' => 131.0, 'out_per_day' => 106.0, 'late_backlog' => 380, 'late_to_pick' => 342, 'late_to_pack' => 18, 'picks_per_picker_day' => 18.4, 'packs_per_packer_day' => 17.3]));
+    $wholesale = $capacity->assess($row(['in_per_day' => 131.0, 'out_per_day' => 106.0, 'picked_per_day' => 108.0, 'packed_per_day' => 106.0, 'late_backlog' => 380, 'late_to_pick' => 342, 'late_to_pack' => 18, 'picks_per_picker_day' => 18.4, 'packs_per_packer_day' => 17.3]));
     expect($wholesale['status'])->toBe('over')
         ->and($wholesale['gap_per_day'])->toBe(25.0)
         ->and($wholesale['bottleneck'])->toBe('picking')
-        ->and($wholesale['extra_picks_per_day'])->toBe(94)
+        ->and($wholesale['extra_picks_per_day'])->toBe(92)
         ->and($wholesale['extra_packs_per_day'])->toBe(97)
         ->and($wholesale['extra_pickers'])->toBe(5)
         ->and($wholesale['extra_packers'])->toBe(6);
 
-    $dropshipping = $capacity->assess($row(['in_per_day' => 225.0, 'out_per_day' => 194.0, 'late_backlog' => 351, 'late_to_pick' => 311, 'late_to_pack' => 34, 'picks_per_picker_day' => 110.0, 'packs_per_packer_day' => 116.0]));
+    $dropshipping = $capacity->assess($row(['in_per_day' => 225.0, 'out_per_day' => 194.0, 'picked_per_day' => 200.0, 'packed_per_day' => 194.0, 'late_backlog' => 351, 'late_to_pick' => 311, 'late_to_pack' => 34, 'picks_per_picker_day' => 110.0, 'packs_per_packer_day' => 116.0]));
     expect($dropshipping['status'])->toBe('over')
         ->and($dropshipping['extra_pickers'])->toBe(1)
         ->and($dropshipping['extra_packers'])->toBe(1);
@@ -9184,14 +9184,15 @@ test('dispatch capacity says when a warehouse is over and how many workers would
 
     $atCapacity = $capacity->assess($row(['in_per_day' => 199.0, 'out_per_day' => 197.0, 'late_backlog' => 178, 'late_to_pick' => 178]));
     expect($atCapacity['status'])->toBe('at_capacity')
-        ->and($atCapacity['extra_pickers'])->toBe(2);
+        ->and($atCapacity['extra_pickers'])->toBeNull()
+        ->and($atCapacity['extra_picks_per_day'])->toBe(0);
 
     $ok = $capacity->assess($row(['in_per_day' => 166.0, 'out_per_day' => 169.0, 'late_backlog' => 42, 'late_to_pick' => 42]));
     expect($ok['status'])->toBe('ok')
         ->and($ok['extra_picks_per_day'])->toBe(0)
         ->and($ok['extra_pickers'])->toBeNull();
 
-    $unmeasured = $capacity->assess($row(['in_per_day' => 20.0, 'out_per_day' => 17.0, 'late_backlog' => 84, 'late_to_pick' => 84, 'picks_per_picker_day' => null]));
+    $unmeasured = $capacity->assess($row(['in_per_day' => 20.0, 'out_per_day' => 17.0, 'picked_per_day' => 17.0, 'packed_per_day' => 17.0, 'late_backlog' => 84, 'late_to_pick' => 84, 'picks_per_picker_day' => null]));
     expect($unmeasured['status'])->toBe('over')
         ->and($unmeasured['extra_picks_per_day'])->toBe(20)
         ->and($unmeasured['extra_pickers'])->toBeNull();
@@ -9204,6 +9205,7 @@ test('dispatch capacity says when a warehouse is over and how many workers would
     $key    = 'warehouse-over-capacity:'.$this->warehouse->id.':'.$stream;
     \Illuminate\Support\Facades\Cache::forget($key);
     expect(\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::run($this->warehouse, $stream)['stream'])->toBe($stream)
+        ->and(\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::make()->forWarehouse($this->warehouse))->toBeArray()
         ->and(\App\Actions\Dispatching\Capacity\IsWarehouseOverCapacity::run($this->warehouse, $stream))->toBeBool();
     \Illuminate\Support\Facades\Cache::put($key, true, 60);
     expect(\App\Actions\Dispatching\Capacity\IsWarehouseOverCapacity::run($this->warehouse, $stream))->toBeTrue();

@@ -12,7 +12,6 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Inventory\Warehouse;
-use App\Models\SysAdmin\Organisation;
 use Closure;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -23,7 +22,8 @@ class GetWarehouseCapacity
 {
     use AsObject;
 
-    public const int WINDOW_DAYS = 14;
+    public const int DEMAND_DAYS = 7;
+    public const int OUTPUT_DAYS = 28;
     public const int BACKLOG_CLEARING_DAYS = 5;
     public const int MIN_NOTES_FOR_A_WORKER_DAY = 5;
     public const int MIN_WORKER_DAYS = 10;
@@ -65,10 +65,19 @@ class GetWarehouseCapacity
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function forOrganisation(Organisation $organisation, ?Carbon $now = null): array
+    public function forWarehouse(Warehouse $warehouse, ?Carbon $now = null): array
     {
-        return $organisation->warehouses()->orderBy('code')->get()
-            ->flatMap(fn (Warehouse $warehouse) => array_map(fn (string $stream) => $this->handle($warehouse, $stream, $now), self::STREAMS))
+        $now ??= now();
+        $lastDispatchedAt = DB::table('delivery_notes')->where('warehouse_id', $warehouse->id)->whereNull('deleted_at')->where('dispatched_at', '<=', $now)->max('dispatched_at');
+        if ($lastDispatchedAt === null) {
+            return [];
+        }
+
+        $lastDispatchedAt = Carbon::parse($lastDispatchedAt);
+        $asOf             = $lastDispatchedAt->lt($now->copy()->subDay()) ? $lastDispatchedAt : null;
+
+        return collect(self::STREAMS)
+            ->map(fn (string $stream) => [...$this->handle($warehouse, $stream, $asOf ?? $now), 'as_of' => $asOf?->toIso8601String()])
             ->filter(fn (array $row) => $row['in_per_day'] > 0 || $row['out_per_day'] > 0 || $row['backlog'] > 0)
             ->values()
             ->all();
@@ -97,7 +106,8 @@ class GetWarehouseCapacity
      */
     private function metrics(Warehouse $warehouse, string $stream, Carbon $now, string $timezone): array
     {
-        $from                = $now->copy()->subDays(self::WINDOW_DAYS);
+        $from                = $now->copy()->subDays(self::DEMAND_DAYS);
+        $outputFrom          = $now->copy()->subDays(self::OUTPUT_DAYS);
         $lateCutoff          = self::lateCutoff($now, $timezone)->utc();
         $dropshippingShopIds = DB::table('shops')->whereRaw(Shop::dispatchingChannelSql().' = ?', [ShopTypeEnum::DROPSHIPPING->value])->pluck('id');
         $notes               = fn () => DB::table('delivery_notes')->where('warehouse_id', $warehouse->id)->whereNull('deleted_at')
@@ -107,7 +117,9 @@ class GetWarehouseCapacity
                 fn ($query) => $query->where(fn ($query) => $query->whereNotIn('shop_id', $dropshippingShopIds)->orWhereNull('shop_id'))
             );
 
-        $in  = $notes()->whereBetween('date', [$from, $now])->count();
+        $in     = $notes()->whereBetween('date', [$from, $now])->count();
+        $picked = $notes()->whereBetween('picked_at', [$from, $now])->count();
+        $packed = $notes()->whereBetween('packed_at', [$from, $now])->count();
         $out = $notes()->whereBetween('dispatched_at', [$from, $now])
             ->selectRaw('count(*) as dispatched, percentile_cont(0.5) within group (order by extract(epoch from dispatched_at - date) / 3600) as median_hours')
             ->first();
@@ -122,22 +134,26 @@ class GetWarehouseCapacity
             )
             ->first();
 
-        $pickerDays  = $this->workerDays($notes, 'picker_user_id', 'picked_at', $from, $now, $timezone);
-        $packerDays  = $this->workerDays($notes, 'packer_user_id', 'packed_at', $from, $now, $timezone);
-        $workingDays = $pickerDays->merge($packerDays)->pluck('day')->unique()->count() ?: self::WINDOW_DAYS;
+        $pickerDays  = $this->workerDays($notes, 'picker_user_id', 'picked_at', $outputFrom, $now, $timezone);
+        $packerDays  = $this->workerDays($notes, 'packer_user_id', 'packed_at', $outputFrom, $now, $timezone);
+        $firstDay    = $from->copy()->setTimezone($timezone)->toDateString();
+        $recent      = fn (Collection $days) => $days->filter(fn ($workerDay) => $workerDay->day > $firstDay);
+        $workingDays = $recent($pickerDays->merge($packerDays))->pluck('day')->unique()->count() ?: 5;
         $perWorker   = fn (Collection $days) => $days->count() >= self::MIN_WORKER_DAYS ? round($days->sum('notes') / $days->count(), 1) : null;
 
         return [
             'in_per_day'           => round($in / $workingDays, 1),
             'out_per_day'          => round(((int) $out->dispatched) / $workingDays, 1),
+            'picked_per_day'       => round($picked / $workingDays, 1),
+            'packed_per_day'       => round($packed / $workingDays, 1),
             'median_hours'         => $out->median_hours === null ? null : round((float) $out->median_hours, 1),
             'backlog'              => (int) $backlog->total,
             'late_backlog'         => (int) $backlog->late,
             'late_to_pick'         => (int) $backlog->late_to_pick,
             'late_to_pack'         => (int) $backlog->late_to_pack,
             'working_days'         => $workingDays,
-            'pickers'              => $pickerDays->pluck('user_id')->unique()->count(),
-            'packers'              => $packerDays->pluck('user_id')->unique()->count(),
+            'pickers'              => $recent($pickerDays)->pluck('user_id')->unique()->count(),
+            'packers'              => $recent($packerDays)->pluck('user_id')->unique()->count(),
             'picks_per_picker_day' => $perWorker($pickerDays),
             'packs_per_packer_day' => $perWorker($packerDays),
         ];
@@ -157,7 +173,7 @@ class GetWarehouseCapacity
     }
 
     /**
-     * @param array{in_per_day: float, out_per_day: float, late_backlog: int, late_to_pick: int, late_to_pack: int, picks_per_picker_day: float|null, packs_per_packer_day: float|null} $row
+     * @param array{in_per_day: float, out_per_day: float, picked_per_day: float, packed_per_day: float, late_backlog: int, late_to_pick: int, late_to_pack: int, picks_per_picker_day: float|null, packs_per_packer_day: float|null} $row
      *
      * @return array<string, mixed>
      */
@@ -175,19 +191,18 @@ class GetWarehouseCapacity
             default                                                    => 'ok',
         };
 
-        $isShort    = in_array($status, ['over', 'at_capacity']);
-        $keepUp     = max($gap, 0);
-        $extraPicks = $keepUp + $row['late_to_pick'] / self::BACKLOG_CLEARING_DAYS;
-        $extraPacks = $keepUp + ($row['late_to_pick'] + $row['late_to_pack']) / self::BACKLOG_CLEARING_DAYS;
-        $workersFor = fn (float $notesPerDay, ?float $perWorker) => $isShort && $perWorker ? (int) max(0, ceil($notesPerDay / $perWorker - 0.2)) : null;
+        $isOver     = $status === 'over';
+        $extraPicks = max(0, $row['in_per_day'] + $row['late_to_pick'] / self::BACKLOG_CLEARING_DAYS - $row['picked_per_day']);
+        $extraPacks = max(0, $row['in_per_day'] + ($row['late_to_pick'] + $row['late_to_pack']) / self::BACKLOG_CLEARING_DAYS - $row['packed_per_day']);
+        $workersFor = fn (float $notesPerDay, ?float $perWorker) => $isOver && $perWorker ? (int) max(0, ceil($notesPerDay / $perWorker - 0.2)) : null;
 
         return [
             ...$row,
             'status'                => $status,
             'gap_per_day'           => $gap,
             'bottleneck'            => $row['late_to_pick'] >= $row['late_to_pack'] ? 'picking' : 'packing',
-            'extra_picks_per_day'   => $isShort ? (int) ceil($extraPicks) : 0,
-            'extra_packs_per_day'   => $isShort ? (int) ceil($extraPacks) : 0,
+            'extra_picks_per_day'   => $isOver ? (int) ceil($extraPicks) : 0,
+            'extra_packs_per_day'   => $isOver ? (int) ceil($extraPacks) : 0,
             'extra_pickers'         => $workersFor($extraPicks, $row['picks_per_picker_day']),
             'extra_packers'         => $workersFor($extraPacks, $row['packs_per_packer_day']),
             'backlog_clearing_days' => self::BACKLOG_CLEARING_DAYS,

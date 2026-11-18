@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Tag from "primevue/tag"
 import { ctrans } from "@/Composables/useTrans"
+import { useFormatTime } from "@/Composables/useFormatTime"
 
 type CapacityRow = {
     warehouse_id: number
@@ -26,11 +27,11 @@ type CapacityRow = {
     extra_pickers: number | null
     extra_packers: number | null
     backlog_clearing_days: number
+    as_of: string | null
 }
 
 defineProps<{
     rows: CapacityRow[]
-    currentWarehouseId?: number
 }>()
 
 const statusLabel = {
@@ -56,25 +57,26 @@ const signed = (value: number) => (value > 0 ? "+" : "") + value
 </script>
 
 <template>
-    <section class="mx-4 mt-6 mb-4 rounded-lg border border-gray-200 dark:border-gray-700">
-        <header class="flex flex-wrap items-baseline justify-between gap-2 border-b border-gray-200 px-4 py-2 dark:border-gray-700">
-            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ ctrans("Warehouse capacity") }}</h3>
-            <span class="text-xs text-gray-500">{{ ctrans("Orders and replacements, last 14 days, per working day. Fulfilment returns are not counted.") }}</span>
+    <section class="rounded-lg bg-white shadow ring-1 ring-gray-200">
+        <header class="flex flex-wrap items-baseline justify-between gap-2 px-4 pt-4">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ ctrans("Staffing: dispatch capacity") }}</h3>
+            <span class="text-xs text-gray-500">
+                <span v-if="rows[0]?.as_of" class="font-medium text-amber-700">{{ ctrans("Nothing dispatched since :date, showing the days up to then.", { date: useFormatTime(rows[0].as_of) }) }}</span>
+                {{ ctrans("Orders and replacements per working day over the last 7 days; what one picker or packer does over the last 28 days. Fulfilment returns are not counted.") }}
+            </span>
         </header>
 
-        <div v-if="!rows.length" class="px-4 py-6 text-center text-sm text-gray-400">{{ ctrans("No orders in the last 14 days") }}</div>
+        <div v-if="!rows.length" class="px-4 py-6 text-center text-sm text-gray-400">{{ ctrans("Nothing dispatched from this warehouse yet") }}</div>
 
-        <div v-else class="grid gap-3 p-3 md:grid-cols-2 xl:grid-cols-3">
+        <div v-else class="grid gap-3 p-4 lg:grid-cols-2">
             <div
                 v-for="row in rows"
                 :key="row.warehouse_id + row.stream"
-                class="rounded-md border px-3 py-2"
-                :class="row.warehouse_id === currentWarehouseId ? 'border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)]' : 'border-gray-200 dark:border-gray-700'"
+                class="rounded-md border border-gray-200 px-3 py-2 dark:border-gray-700"
             >
                 <div class="flex items-center justify-between gap-2">
                     <div class="truncate text-sm">
-                        <span class="font-semibold whitespace-nowrap">{{ row.code }}</span>
-                        <span class="ml-1 font-medium">{{ streamLabel[row.stream] }}</span>
+                        <span class="font-semibold">{{ streamLabel[row.stream] }}</span>
                     </div>
                     <Tag :value="statusLabel[row.status]" :pt="{ root: { class: ['shrink-0 !text-xs !font-medium', statusClass[row.status]] } }" />
                 </div>
@@ -98,7 +100,15 @@ const signed = (value: number) => (value > 0 ? "+" : "") + value
                     </div>
                 </dl>
 
-                <div v-if="row.status === 'over' || row.status === 'at_capacity'" class="mt-2 border-t border-gray-100 pt-2 text-xs dark:border-gray-800">
+                <div v-if="row.status === 'at_capacity'" class="mt-2 border-t border-gray-100 pt-2 text-xs text-gray-600 dark:border-gray-800 dark:text-gray-300">
+                    {{ row.gap_per_day > 0
+                        ? ctrans("Not over yet, but orders arrive :gap a day faster than they leave.", { gap: Math.round(row.gap_per_day) })
+                        : ctrans("Keeping up, with no room to spare.") }}
+                    {{ row.bottleneck === "picking"
+                        ? ctrans("If it gets worse, add pickers first: :pick late orders wait to be picked, :pack to be packed.", { pick: row.late_to_pick, pack: row.late_to_pack })
+                        : ctrans("If it gets worse, add packers first: :pack late orders wait to be packed, :pick to be picked.", { pick: row.late_to_pick, pack: row.late_to_pack }) }}
+                </div>
+                <div v-if="row.status === 'over'" class="mt-2 border-t border-gray-100 pt-2 text-xs dark:border-gray-800">
                     <div class="text-gray-600 dark:text-gray-300">
                         {{ row.bottleneck === "picking"
                             ? ctrans("Late orders are waiting for pickers: :pick to pick, :pack to pack.", { pick: row.late_to_pick, pack: row.late_to_pack })
@@ -108,7 +118,7 @@ const signed = (value: number) => (value > 0 ? "+" : "") + value
                         <div v-for="role in (row.bottleneck === 'picking' ? ['picking', 'packing'] : ['packing', 'picking'])" :key="role">
                             <template v-if="role === 'picking'">
                                 <div class="text-sm font-semibold whitespace-nowrap">
-                                    {{ row.extra_pickers === null ? ctrans(":orders more picks a day", { orders: row.extra_picks_per_day }) : ctrans("+:workers pickers", { workers: row.extra_pickers }) }}
+                                    {{ row.extra_pickers === null ? ctrans(":orders more picks a day", { orders: row.extra_picks_per_day }) : ctrans("Pickers: +:workers", { workers: row.extra_pickers }) }}
                                 </div>
                                 <div class="text-gray-500">
                                     {{ row.picks_per_picker_day === null
@@ -118,7 +128,7 @@ const signed = (value: number) => (value > 0 ? "+" : "") + value
                             </template>
                             <template v-else>
                                 <div class="text-sm font-semibold whitespace-nowrap">
-                                    {{ row.extra_packers === null ? ctrans(":orders more packs a day", { orders: row.extra_packs_per_day }) : ctrans("+:workers packers", { workers: row.extra_packers }) }}
+                                    {{ row.extra_packers === null ? ctrans(":orders more packs a day", { orders: row.extra_packs_per_day }) : ctrans("Packers: +:workers", { workers: row.extra_packers }) }}
                                 </div>
                                 <div class="text-gray-500">
                                     {{ row.packs_per_packer_day === null
