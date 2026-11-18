@@ -272,17 +272,16 @@ private struct PalletReturnScreen: View {
                     "Customer inserts",
                     subtitle: detail.inserts.unprinted > 0 ? "\(detail.inserts.unprinted) not printed" : "All printed",
                     icon: .printer,
-                    iconTone: detail.inserts.unprinted > 0 ? .warn : .success
-                ) {
-                    EmptyView()
-                } trailing: {
-                    if let print = detail.action("print_inserts") {
-                        LinkButton(print.label.isEmpty ? "Print" : print.label) {
-                            Task { await live.printInserts() }
+                    iconTone: detail.inserts.unprinted > 0 ? .warn : .success,
+                    trailing: {
+                        if let print = detail.action("print_inserts") {
+                            LinkButton(print.label.isEmpty ? "Print" : print.label) {
+                                Task { await live.printInserts() }
+                            }
+                            .disabled(live.isWorking)
                         }
-                        .disabled(live.isWorking)
                     }
-                }
+                )
             }
         }
         parcels(detail)
@@ -693,13 +692,11 @@ private struct PalletLineSheet: View {
                 .foregroundStyle(AikuColor.text2)
             if !line.storedItems.isEmpty {
                 CardList(line.storedItems) { item in
-                    ListRow(item.reference ?? "", subtitle: item.name) {
-                        EmptyView()
-                    } trailing: {
+                    ListRow(item.reference ?? "", subtitle: item.name, trailing: {
                         Text(item.quantity.grouped)
                             .font(.aiku(15, .bold))
                             .foregroundStyle(AikuColor.text)
-                    }
+                    })
                 }
             }
             if let message = live.sheetError {
