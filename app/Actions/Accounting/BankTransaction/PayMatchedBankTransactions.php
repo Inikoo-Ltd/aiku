@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\BankTransaction;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Invoice\AttachPaymentToInvoice;
+use App\Actions\Accounting\Invoice\PayInvoice;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
@@ -23,6 +24,7 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\BankConnection;
@@ -96,8 +98,8 @@ class PayMatchedBankTransactions
                 return 'no payment account for this currency';
             }
 
-            if (!$bankTransaction->order_id && isset($bankTransaction->match_data['invoice_id'])) {
-                return $this->payInvoice($bankTransaction, $paymentAccount);
+            if (!$bankTransaction->order_id && (isset($bankTransaction->match_data['customer_id']) || isset($bankTransaction->match_data['invoice_id']))) {
+                return $this->payFulfilmentCustomer($bankTransaction);
             }
 
             Order::lockForUpdate()->findOrFail($bankTransaction->order_id);
@@ -117,11 +119,6 @@ class PayMatchedBankTransactions
             return $this->recordLine($bankConnection, $bankTransaction, $order, $paymentAccount, $matchData['received'], round($matchData['owed'] - $matchData['received'], 2), []);
         });
 
-        if ($paid instanceof Invoice) {
-            ProcessInvoicePaidNotification::dispatch($paid->id);
-
-            return 'paid';
-        }
         if (!$paid instanceof Order) {
             return $paid ?? 'skipped';
         }
@@ -239,6 +236,10 @@ class PayMatchedBankTransactions
                 'notes'      => trim('Bank transfer '.($bankTransaction->reference ?? '')),
             ]);
 
+            $paidInvoices = $customer->shop->type === ShopTypeEnum::FULFILMENT && !MatchBankTransactions::make()->fulfilmentAccountProblem($customer)
+                ? $this->payFulfilmentInvoicesFromCredit($customer, $received, $bankTransaction, $bankTransaction->match_data['invoice_ids'] ?? [])
+                : [];
+
             $bankTransaction->update([
                 'match_state' => BankTransactionMatchStateEnum::MATCHED,
                 'order_id'    => null,
@@ -252,7 +253,7 @@ class PayMatchedBankTransactions
                     'credit_customer_name'  => $customer->name,
                     'credit_transaction_id' => $creditTransaction->id,
                     'paid_at'               => now()->toIso8601String(),
-                ]),
+                ], $paidInvoices ? ['paid_invoices' => $paidInvoices] : []),
             ]);
 
             return $creditTransaction;
@@ -321,15 +322,16 @@ class PayMatchedBankTransactions
     }
 
     /**
-     * A fulfilment invoice is paid with exactly the money that arrived, decided again under the invoice's lock.
+     * A fulfilment customer's transfer, decided again under the customer's lock: the money goes to their credit and
+     * pays their open invoices, the ones named first and then the oldest.
      */
-    private function payInvoice(BankTransaction $bankTransaction, PaymentAccount $paymentAccount): Invoice|string
+    private function payFulfilmentCustomer(BankTransaction $bankTransaction): string
     {
-        $invoice = Invoice::lockForUpdate()->findOrFail($bankTransaction->match_data['invoice_id']);
-
         $matcher = MatchBankTransactions::make();
+        Customer::lockForUpdate()->findOrFail($bankTransaction->match_data['customer_id'] ?? Invoice::findOrFail($bankTransaction->match_data['invoice_id'])->customer_id);
+
         [$state, , $matchData] = $matcher->decideInvoice($bankTransaction, $matcher->orderReferenceTokens($bankTransaction->reference));
-        if ($state !== BankTransactionMatchStateEnum::MATCHED || $matchData['invoice_id'] !== $invoice->id) {
+        if ($state !== BankTransactionMatchStateEnum::MATCHED) {
             $bankTransaction->update([
                 'match_state' => $state,
                 'match_data'  => array_merge($matchData, ['decided_again_at_pay_time' => true]),
@@ -339,21 +341,53 @@ class PayMatchedBankTransactions
             return 'decided again: '.$state->value;
         }
 
-        $payment = StorePayment::make()->action($invoice->customer, $paymentAccount, [
-            'amount'    => $matchData['received'],
-            'reference' => $bankTransaction->reference ? mb_substr($bankTransaction->reference, 0, 255) : null,
-            'status'    => PaymentStatusEnum::SUCCESS,
-            'state'     => PaymentStateEnum::COMPLETED,
-            'data'      => ['bank_transaction_id' => $bankTransaction->id],
-        ]);
-        AttachPaymentToInvoice::make()->action($invoice, $payment, []);
+        $bankTransaction->update(['match_data' => $matchData]);
+        $this->payToCustomerCredit($bankTransaction, Customer::findOrFail($matchData['customer_id']), 'auto-pay');
 
-        $bankTransaction->update([
-            'payment_id' => $payment->id,
-            'match_data' => array_merge($bankTransaction->match_data, ['paid_at' => now()->toIso8601String()]),
-        ]);
+        return 'paid';
+    }
 
-        return $invoice;
+    /**
+     * Money a fulfilment customer sent, already added to their credit, pays their open invoices from that credit: the
+     * ones named first, then the oldest, each with as much as it still owes, until the money runs out. What is left
+     * stays as their credit.
+     *
+     * @param list<int> $firstIds
+     *
+     * @return array<string, float> amount paid per invoice reference
+     *
+     * @throws \Throwable
+     */
+    public function payFulfilmentInvoicesFromCredit(Customer $customer, float $amount, BankTransaction $bankTransaction, array $firstIds): array
+    {
+        $creditAccount = $customer->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()?->paymentAccount;
+        if (!$creditAccount) {
+            return [];
+        }
+
+        $paid = [];
+        foreach (MatchBankTransactions::make()->fulfilmentOpenInvoices($customer, $firstIds) as ['invoice' => $invoice, 'owed' => $owed]) {
+            $locked = Invoice::lockForUpdate()->findOrFail($invoice->id);
+            $owed   = round($owed - ((float)$locked->payment_amount - (float)$invoice->payment_amount), 2);
+            $pay    = round(min($amount, $owed), 2);
+            if ($amount <= 0.01) {
+                break;
+            }
+            if ($pay <= 0.01) {
+                continue;
+            }
+            PayInvoice::make()->handle($invoice, $creditAccount, [
+                'amount'    => $pay,
+                'reference' => $bankTransaction->reference ? mb_substr($bankTransaction->reference, 0, 255) : null,
+                'status'    => PaymentStatusEnum::SUCCESS,
+                'state'     => PaymentStateEnum::COMPLETED,
+                'data'      => ['bank_transaction_id' => $bankTransaction->id],
+            ]);
+            $paid[$invoice->reference] = $pay;
+            $amount = round($amount - $pay, 2);
+        }
+
+        return $paid;
     }
 
     /**

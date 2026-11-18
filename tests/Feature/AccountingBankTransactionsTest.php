@@ -1557,35 +1557,54 @@ test('a pastpay payout in forints or lei follows that currency fees and may sett
                 && count($row['payout']['orders']) === 2)));
 });
 
-test('bank lines naming a fulfilment invoice are matched and paid onto it, or already paid when staff recorded it by hand', function () {
-    GetCurrencyExchange::shouldRun()->andReturn(1.0);
-
-    $fulfilmentShop = \App\Models\Catalogue\Shop::where('organisation_id', $this->organisation->id)->where('type', \App\Enums\Catalogue\Shop\ShopTypeEnum::FULFILMENT)->first()
-        ?? \App\Actions\Catalogue\Shop\StoreShop::run($this->organisation, array_merge(\App\Models\Catalogue\Shop::factory()->definition(), [
+function bankMatchingFulfilmentShop(\App\Models\SysAdmin\Organisation $organisation, int $currencyId): \App\Models\Catalogue\Shop
+{
+    return \App\Models\Catalogue\Shop::where('organisation_id', $organisation->id)->where('type', \App\Enums\Catalogue\Shop\ShopTypeEnum::FULFILMENT)->first()
+        ?? \App\Actions\Catalogue\Shop\StoreShop::run($organisation, array_merge(\App\Models\Catalogue\Shop::factory()->definition(), [
             'type'        => \App\Enums\Catalogue\Shop\ShopTypeEnum::FULFILMENT->value,
             'warehouses'  => [createWarehouse()->id],
-            'currency_id' => $this->shop->currency_id,
+            'currency_id' => $currencyId,
         ]));
+}
+
+function bankMatchingFulfilmentCustomer(\App\Models\Catalogue\Shop $shop): \App\Models\CRM\Customer
+{
+    return \App\Actions\CRM\Customer\StoreCustomer::make()->action($shop, \App\Models\CRM\Customer::factory()->definition());
+}
+
+function bankMatchingFulfilmentInvoice(\App\Models\CRM\Customer $customer, float $total, ?string $date = null): \App\Models\Accounting\Invoice
+{
+    $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($customer, \App\Models\Accounting\Invoice::factory()->definition());
+    $invoice->updateQuietly(['reference' => 'EUFi'.random_int(100000, 999999), 'total_amount' => $total, 'payment_amount' => 0, 'currency_id' => $customer->shop->currency_id, 'date' => $date ?? now()->toDateString()]);
+
+    return $invoice->refresh();
+}
+
+function bankMatchingPayByHand(\App\Models\Accounting\Invoice $invoice, \App\Models\Accounting\PaymentAccount $bankAccount, float $amount): \App\Models\Accounting\Payment
+{
+    $payment = \App\Actions\Accounting\Payment\StorePayment::make()->action($invoice->customer, $bankAccount, [
+        'amount' => $amount,
+        'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+        'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+    ]);
+    \App\Actions\Accounting\Invoice\AttachPaymentToInvoice::make()->action($invoice, $payment, []);
+
+    return $payment;
+}
+
+test('a fulfilment customer\'s transfer goes to their credit and pays the invoice named, then their oldest open invoices', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $fulfilmentShop = bankMatchingFulfilmentShop($this->organisation, $this->shop->currency_id);
     $bankConnection = bankMatchingConnection($this->organisation);
     $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
         $this->organisation,
         PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
         ['code' => 'inv'.random_int(1000, 9999), 'name' => 'Invoice paid test']
     );
-    $invoice = function (float $total) use ($fulfilmentShop) {
-        $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action(createCustomer($fulfilmentShop), \App\Models\Accounting\Invoice::factory()->definition());
-        $invoice->updateQuietly(['reference' => 'EUFi'.random_int(100000, 999999), 'total_amount' => $total, 'payment_amount' => 0, 'currency_id' => $this->shop->currency_id]);
+    SetBankConnectionAutoPay::run($bankConnection, [$fulfilmentShop->currency->code => $bankAccount->code]);
+    $bankConnection->refresh();
 
-        return $invoice->refresh();
-    };
-    $payByHand = function (\App\Models\Accounting\Invoice $invoice, float $amount) use ($bankAccount) {
-        $payment = \App\Actions\Accounting\Payment\StorePayment::make()->action($invoice->customer, $bankAccount, [
-            'amount' => $amount,
-            'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
-            'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
-        ]);
-        \App\Actions\Accounting\Invoice\AttachPaymentToInvoice::make()->action($invoice, $payment, []);
-    };
     $line = fn (string $id, string $reference, float $amount) => BankTransaction::create([
         'group_id'                => $bankConnection->group_id,
         'organisation_id'         => $bankConnection->organisation_id,
@@ -1594,54 +1613,66 @@ test('bank lines naming a fulfilment invoice are matched and paid onto it, or al
         'provider_type'           => 'TRANSFER',
         'direction'               => BankTransactionDirectionEnum::IN,
         'amount'                  => $amount,
-        'currency_id'             => $this->shop->currency_id,
+        'currency_id'             => $fulfilmentShop->currency_id,
         'status'                  => BankTransactionStatusEnum::BOOKED,
         'reference'               => $reference,
         'booked_at'               => now()->addMinute(),
     ]);
 
-    $byHand = $invoice(184.80);
-    $unpaid = $invoice(388.86);
-    $short  = $invoice(500);
-    $payByHand($byHand, 184.80);
+    $customer   = bankMatchingFulfilmentCustomer($fulfilmentShop);
+    $old        = bankMatchingFulfilmentInvoice($customer, 184.80, now()->subYears(2)->toDateString());
+    bankMatchingPayByHand($old, $bankAccount, 184.80);
+    $july       = bankMatchingFulfilmentInvoice($customer, 300, now()->subMonths(4)->toDateString());
+    $august     = bankMatchingFulfilmentInvoice($customer, 200, now()->subMonths(3)->toDateString());
+    $september  = bankMatchingFulfilmentInvoice($customer, 150, now()->subMonths(2)->toDateString());
+    $creditNote = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($customer, \App\Models\Accounting\Invoice::factory()->definition());
+    $creditNote->updateQuietly(['type' => \App\Enums\Accounting\Invoice\InvoiceTypeEnum::REFUND, 'original_invoice_id' => $august->id, 'total_amount' => -200, 'payment_amount' => 0, 'in_process' => false, 'currency_id' => $fulfilmentShop->currency_id]);
 
-    SetBankConnectionAutoPay::run($bankConnection, [$this->shop->currency->code => $bankAccount->code]);
-    $bankConnection->refresh();
+    $settled   = bankMatchingFulfilmentCustomer($fulfilmentShop);
+    $settledIn = bankMatchingFulfilmentInvoice($settled, 50);
+    bankMatchingPayByHand($settledIn, $bankAccount, 50)->updateQuietly(['date' => now()->subDays(60)]);
 
     $lines = [
-        'byHand' => $line('fi1', $byHand->reference.'/'.$byHand->reference, 184.80),
-        'part'   => $line('fi2', $byHand->reference.'/'.$byHand->reference, 100),
-        'unpaid' => $line('fi3', strtoupper($unpaid->reference).'/'.strtoupper($unpaid->reference), 388.86),
-        'twice'  => $line('fi4', $unpaid->reference, 388.86),
-        'short'  => $line('fi5', $short->reference, 495),
+        'byHand'  => $line('fi1', $old->reference.'/'.$old->reference, 184.80),
+        'oldName' => $line('fi2', strtoupper($old->reference), 100),
+        'named'   => $line('fi3', $september->reference, 400),
+        'nothing' => $line('fi4', $settledIn->reference, 30),
     ];
     MatchBankTransactions::run($bankConnection);
 
     expect($lines['byHand']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
-        ->and($lines['byHand']->match_data['invoice_ids'])->toBe([$byHand->id])
-        ->and($lines['part']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
-        ->and($lines['unpaid']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
-        ->and($lines['unpaid']->order_id)->toBeNull()
-        ->and($lines['twice']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
-        ->and($lines['twice']->match_data['reason'])->toBe('another bank line is already matched to this invoice')
-        ->and($lines['short']->refresh()->match_data['reason'])->toBe('pays less than the invoice owes');
+        ->and($lines['byHand']->match_data['invoice_ids'])->toBe([$old->id])
+        ->and($lines['oldName']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($lines['oldName']->match_data['customer_id'])->toBe($customer->id)
+        ->and($lines['oldName']->match_data['owed'])->toEqual(450)
+        ->and($lines['named']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($lines['nothing']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($lines['nothing']->match_data['reason'])->toBe('the customer owes nothing');
 
-    expect(PayMatchedBankTransactions::run($bankConnection))->toBe(['paid' => 1])
-        ->and((float)$lines['unpaid']->refresh()->payment->amount)->toBe(388.86)
-        ->and($lines['unpaid']->payment->payment_account_id)->toBe($bankAccount->id)
-        ->and((float)$unpaid->refresh()->payment_amount)->toBe(388.86);
+    expect(PayMatchedBankTransactions::run($bankConnection))->toBe(['paid' => 2])
+        ->and($lines['oldName']->refresh()->match_data['paid_invoices'])->toEqual([$july->reference => 100])
+        ->and((float)$lines['oldName']->payment->amount)->toBe(100.0)
+        ->and($lines['oldName']->payment->payment_account_id)->toBe($bankAccount->id)
+        ->and($lines['named']->refresh()->match_data['paid_invoices'])->toEqual([$september->reference => 150, $july->reference => 200])
+        ->and((float)$july->refresh()->payment_amount)->toBe(300.0)
+        ->and((float)$september->refresh()->payment_amount)->toBe(150.0)
+        ->and((float)$august->refresh()->payment_amount)->toBe(0.0)
+        ->and((float)$customer->refresh()->balance)->toBe(50.0);
 
-    CancelPayment::make()->handle($lines['unpaid']->payment);
-    $lines['unpaid']->refresh()->update(['match_state' => null]);
+    CancelPayment::make()->handle($lines['named']->payment);
+    expect((float)$september->refresh()->payment_amount)->toBe(0.0)
+        ->and((float)$july->refresh()->payment_amount)->toBe(100.0)
+        ->and((float)$customer->refresh()->balance)->toBe(0.0)
+        ->and($lines['named']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW);
+
+    $lines['named']->update(['match_state' => null]);
     MatchBankTransactions::run($bankConnection);
-    expect($lines['unpaid']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
-        ->and($lines['unpaid']->match_data['reason'])->toBe('a payment from this line on this invoice was cancelled');
+    expect($lines['named']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($lines['named']->match_data['reason'])->toBe('a payment from this line was cancelled');
 
-    $payByHand($short, 495);
-    MatchBankTransactions::run($bankConnection);
-
-    expect($lines['short']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
-        ->and($lines['twice']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW);
+    PayMatchedBankTransactions::make()->payToCustomerCredit($lines['named'], $customer, 'Tomas');
+    expect($lines['named']->refresh()->match_data['paid_invoices'])->toEqual([$september->reference => 150, $july->reference => 200])
+        ->and((float)$customer->refresh()->balance)->toBe(50.0);
 });
 
 test('bank-transactions:match --unmatched decides again only the lines left unmatched', function () {
@@ -1672,31 +1703,30 @@ test('bank-transactions:match --unmatched decides again only the lines left unma
         ->and($byHand->match_data['reason'])->toBe('kept');
 });
 
-test('a fulfilment customer paying without the invoice number is matched by payer name and amount to their oldest invoice still owing it', function () {
+test('a fulfilment customer paying without an invoice number is matched by payer name; split payments recorded by hand are already paid; customers whose invoices miss payments go to review', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
 
-    $fulfilmentShop = \App\Models\Catalogue\Shop::where('organisation_id', $this->organisation->id)->where('type', \App\Enums\Catalogue\Shop\ShopTypeEnum::FULFILMENT)->first()
-        ?? \App\Actions\Catalogue\Shop\StoreShop::run($this->organisation, array_merge(\App\Models\Catalogue\Shop::factory()->definition(), [
-            'type'        => \App\Enums\Catalogue\Shop\ShopTypeEnum::FULFILMENT->value,
-            'warehouses'  => [createWarehouse()->id],
-            'currency_id' => $this->shop->currency_id,
-        ]));
+    $fulfilmentShop = bankMatchingFulfilmentShop($this->organisation, $this->shop->currency_id);
     $bankConnection = bankMatchingConnection($this->organisation);
     $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
         $this->organisation,
         PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
         ['code' => 'pay'.random_int(1000, 9999), 'name' => 'Payer name test']
     );
-    $customer = createCustomer($fulfilmentShop);
-    $suffix   = random_int(1000, 9999);
-    $customer->updateQuietly(['company_name' => "Quokka Storage $suffix s.r.o."]);
-    $invoice = function (float $total, string $date) use ($customer) {
-        $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($customer, \App\Models\Accounting\Invoice::factory()->definition());
-        $invoice->updateQuietly(['reference' => 'EUFi'.random_int(100000, 999999), 'total_amount' => $total, 'payment_amount' => 0, 'currency_id' => $this->shop->currency_id, 'date' => $date]);
+    SetBankConnectionAutoPay::run($bankConnection, [$fulfilmentShop->currency->code => $bankAccount->code]);
+    $bankConnection->refresh();
 
-        return $invoice->refresh();
-    };
-    $line = fn (string $id, string $payer, float $amount) => BankTransaction::create([
+    $suffix   = random_int(1000, 9999);
+    $customer = bankMatchingFulfilmentCustomer($fulfilmentShop);
+    $customer->updateQuietly(['company_name' => "Quokka Storage $suffix s.r.o."]);
+    $messy = bankMatchingFulfilmentCustomer($fulfilmentShop);
+    $messy->updateQuietly(['company_name' => "Wombat Haulage $suffix Ltd"]);
+    $alsoShopper = bankMatchingFulfilmentCustomer($fulfilmentShop);
+    $alsoShopper->updateQuietly(['company_name' => "Koala Freight $suffix Ltd"]);
+    bankMatchingFulfilmentInvoice($alsoShopper, 90);
+    \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, \App\Models\CRM\Customer::factory()->definition())->updateQuietly(['company_name' => "KOALA FREIGHT $suffix LTD."]);
+
+    $line = fn (string $id, string $payer, float $amount, string $reference = 'storage fee') => BankTransaction::create([
         'group_id'                => $bankConnection->group_id,
         'organisation_id'         => $bankConnection->organisation_id,
         'bank_connection_id'      => $bankConnection->id,
@@ -1704,48 +1734,64 @@ test('a fulfilment customer paying without the invoice number is matched by paye
         'provider_type'           => 'TRANSFER',
         'direction'               => BankTransactionDirectionEnum::IN,
         'amount'                  => $amount,
-        'currency_id'             => $this->shop->currency_id,
+        'currency_id'             => $fulfilmentShop->currency_id,
         'status'                  => BankTransactionStatusEnum::BOOKED,
         'counterparty_name'       => $payer,
-        'reference'               => 'storage fee',
-        'booked_at'               => now(),
+        'reference'               => $reference,
+        'booked_at'               => now()->addMinute(),
     ]);
 
-    $september = $invoice(250, now()->subDays(60)->toDateString());
-    $october   = $invoice(250, now()->subDays(30)->toDateString());
-    $handPaid  = $invoice(80, now()->subDays(30)->toDateString());
-    $invoice(120, now()->addDays(5)->toDateString());
+    $september = bankMatchingFulfilmentInvoice($customer, 250, now()->subDays(60)->toDateString());
+    $october   = bankMatchingFulfilmentInvoice($customer, 250, now()->subDays(30)->toDateString());
+    $split     = bankMatchingFulfilmentInvoice($customer, 84.49, now()->subDays(30)->toDateString());
+    bankMatchingPayByHand($split, $bankAccount, 70.42);
+    bankMatchingPayByHand($split, $bankAccount, 14.07);
 
-    $payment = \App\Actions\Accounting\Payment\StorePayment::make()->action($customer, $bankAccount, [
-        'amount' => 80,
+    bankMatchingFulfilmentInvoice($messy, 500, now()->subDays(30)->toDateString());
+    \App\Actions\Accounting\Payment\StorePayment::make()->action($messy, $bankAccount, [
+        'amount' => 120,
         'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
         'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
-    ]);
-    \App\Actions\Accounting\Invoice\AttachPaymentToInvoice::make()->action($handPaid, $payment, []);
+    ])->updateQuietly(['date' => now()->subDays(60)]);
+
+    $numbat = bankMatchingFulfilmentCustomer($fulfilmentShop);
+    $numbatInvoice = bankMatchingFulfilmentInvoice($numbat, 400);
+    bankMatchingPayByHand($numbatInvoice, $bankAccount, 100);
 
     $lines = [
-        'first'    => $line('pn1', "QUOKKA STORAGE $suffix S. R. O.", 250),
-        'second'   => $line('pn2', "Quokka Storage $suffix s.r.o.", 250),
-        'third'    => $line('pn3', "Quokka Storage $suffix s.r.o.", 250),
-        'handPaid' => $line('pn4', "Quokka Storage $suffix s.r.o.", 80),
-        'future'   => $line('pn5', "Quokka Storage $suffix s.r.o.", 120),
-        'stranger' => $line('pn6', 'Someone Else Ltd', 250),
+        'splitOne'  => $line('pn2', "Quokka Storage $suffix s.r.o.", 70.42, $split->reference),
+        'splitTwo'  => $line('pn3', "Quokka Storage $suffix s.r.o.", 14.07, $split->reference),
+        'byName'    => $line('pn1', "QUOKKA STORAGE $suffix S. R. O.", 300),
+        'unexplained' => $line('pn7', 'Numbat', 400, $numbatInvoice->reference),
+        'messy'     => $line('pn4', "Wombat Haulage $suffix Ltd", 500),
+        'stranger'  => $line('pn5', 'Someone Else Ltd', 250),
+        'shopper'   => $line('pn6', "Koala Freight $suffix Ltd", 90),
     ];
     MatchBankTransactions::run($bankConnection);
 
-    expect($lines['first']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
-        ->and($lines['first']->match_data['invoice_id'])->toBe($september->id)
-        ->and($lines['first']->match_data['matched_by'])->toBe('payer and amount')
-        ->and($lines['second']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
-        ->and($lines['second']->match_data['invoice_id'])->toBe($october->id)
-        ->and($lines['third']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
-        ->and($lines['handPaid']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
-        ->and($lines['handPaid']->match_data['invoice_ids'])->toBe([$handPaid->id])
-        ->and($lines['future']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
-        ->and($lines['future']->match_data['reason'])->toBe('fulfilment customer, no invoice of this amount')
+    expect($lines['byName']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($lines['byName']->match_data['matched_by'])->toBe('payer')
+        ->and($lines['splitOne']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($lines['splitTwo']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($lines['splitOne']->match_data['hand_payment_ids'])->toHaveCount(1)
+        ->and($lines['splitOne']->match_data['hand_payment_ids'])->not->toBe($lines['splitTwo']->match_data['hand_payment_ids'])
+        ->and($lines['messy']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($lines['messy']->match_data['reason'])->toBe('payments of this customer are on no invoice: put them on their invoices first')
         ->and($lines['stranger']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED)
-        ->and($lines['third']->match_data['reason'])->toBe('the invoices of this amount from this payer are settled or matched to other lines')
-        ->and($lines['stranger']->match_data['reason'])->toBe('no order number in the reference');
+        ->and($lines['stranger']->match_data['reason'])->toBe('no order number in the reference')
+        ->and($lines['shopper']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($lines['shopper']->match_data['reason'])->toBe('the payer is also a customer of another shop')
+        ->and($lines['unexplained']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($lines['unexplained']->match_data['reason'])->toBe('staff recorded other bank payments for this customer around this date');
+
+    expect(PayMatchedBankTransactions::run($bankConnection))->toBe(['paid' => 1])
+        ->and($lines['byName']->refresh()->match_data['paid_invoices'])->toEqual([$september->reference => 250, $october->reference => 50])
+        ->and((float)$october->refresh()->payment_amount)->toBe(50.0)
+        ->and((float)$customer->refresh()->balance)->toBe(0.0);
+
+    PayMatchedBankTransactions::make()->payToCustomerCredit($lines['messy'], $messy, 'Tomas');
+    expect($lines['messy']->refresh()->match_data)->not->toHaveKey('paid_invoices')
+        ->and((float)$messy->refresh()->balance)->toBe(500.0);
 });
 
 test('a carrier cash on delivery payout is read from its emailed list: payments staff typed are linked, missing ones recorded, differences reported', function () {
