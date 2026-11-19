@@ -8,10 +8,7 @@
 
 namespace App\Exports\Dispatching;
 
-use App\Actions\Dispatching\PartnerShipment\GetPartnerShipmentCustomsLines;
-use App\Models\Accounting\Invoice;
-use App\Models\Dispatching\PartnerShipment;
-use App\Models\Helpers\Address;
+use App\Models\Dispatching\PartnerCustomsInvoice;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
@@ -22,13 +19,13 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
  */
 class PartnerShipmentCustomsInvoiceExport implements FromArray, ShouldAutoSize
 {
-    public function __construct(public PartnerShipment $partnerShipment, public string $split)
+    public function __construct(public PartnerCustomsInvoice $customsInvoice)
     {
     }
 
     public function reference(): string
     {
-        return $this->partnerShipment->documentReference(array_search($this->split, $this->partnerShipment->splits, true));
+        return $this->customsInvoice->reference;
     }
 
     /**
@@ -36,58 +33,45 @@ class PartnerShipmentCustomsInvoiceExport implements FromArray, ShouldAutoSize
      */
     public function array(): array
     {
-        $shipment   = $this->partnerShipment;
-        $orgPartner = $shipment->orgPartner;
-        $firstNote  = $shipment->deliveryNotes()->with(['shop', 'customer'])->orderBy('delivery_notes.id')->first();
-        $shop       = $firstNote?->shop;
-        $consignee  = $firstNote?->customer;
-        $seller     = $shipment->organisation;
-        $currency   = $shop?->currency?->code ?? $seller->currency->code;
-        $locale     = strtolower((string) $orgPartner->partner->country?->code);
-        $hasLocale  = in_array($locale, ['es', 'sk'], true);
+        $locale = app()->getLocale();
+        app()->setLocale('en');
+        try {
+            return $this->rows();
+        } finally {
+            app()->setLocale($locale);
+        }
+    }
 
-        $lines = GetPartnerShipmentCustomsLines::make()
-            ->handle($orgPartner, $shipment->deliveryNotes()->pluck('delivery_notes.id')->all())
-            ->get($this->split, collect());
+    /**
+     * @return array<int, array<int, mixed>>
+     */
+    private function rows(): array
+    {
+        $shipment   = $this->customsInvoice->partnerShipment;
+        $header     = $shipment->data;
+        $currency   = $header['currency'];
+        $locale     = $header['locale'];
+        $hasLocale  = $locale !== null;
 
-        $taxNumber = $shop?->taxNumber;
-        $eori      = $taxNumber && strtoupper((string) $taxNumber->country_code) === 'GB'
-            ? preg_replace('/\D/', '', $taxNumber->number).'000'
-            : null;
+        $lines = $this->customsInvoice->lines()->get();
 
-        $deliveryNotes = $shipment->deliveryNotes()->orderBy('reference')->pluck('reference');
-        $invoices      = Invoice::query()
-            ->whereIn('order_id', fn ($query) => $query->select('order_id')->from('delivery_note_order')
-                ->whereIn('delivery_note_id', $shipment->deliveryNotes()->select('delivery_notes.id')))
-            ->whereNull('deleted_at')
-            ->orderBy('reference')
-            ->pluck('reference');
+        $rows = [];
+        if ($shipment->voided_at) {
+            $rows[] = [sprintf('VOID %s: %s', $shipment->voided_at->format('d/m/Y'), $shipment->void_reason)];
+        }
 
         $rows = [
-            [__('INVOICE'), '', '', '', '', '', $this->reference(), $shipment->date->format('d/m/Y'), GetPartnerShipmentCustomsLines::splitLabel($orgPartner, $this->split)],
+            ...$rows,
+            [__('INVOICE'), '', '', '', '', '', $this->reference(), $this->customsInvoice->date->format('d/m/Y'), $this->customsInvoice->label],
             [],
-            [__('Shipper/Exporter'), $this->party(
-                $seller->name,
-                $seller->address,
-                $shop?->phone,
-                $shop?->email,
-                $taxNumber?->getFormattedTaxNumber(),
-                $shop?->identity_document_number
-            )],
-            [__('Consignee'), $this->party(
-                $consignee?->company_name ?: $orgPartner->partner->name,
-                $consignee?->address ?? $orgPartner->partner->address,
-                $consignee?->phone,
-                $consignee?->email,
-                $consignee?->taxNumber?->getFormattedTaxNumber(),
-                null
-            )],
+            [__('Shipper/Exporter'), $header['shipper']],
+            [__('Consignee'), $header['consignee']],
             [__('Mode of transport'), __('By road')],
             [__('Shipping terms'), __('Delivered At Place (DAP) Incoterms 2020')],
-            [__('Final destination'), implode(', ', array_filter([$consignee?->address?->locality ?? $orgPartner->partner->address?->locality, $consignee?->address?->country_code ?? $orgPartner->partner->address?->country_code]))],
+            [__('Final destination'), $header['final_destination']],
             [__('Number of pallets'), $shipment->number_pallets],
-            [__('Delivery notes'), $deliveryNotes->implode(', ')],
-            [__('Invoices'), $invoices->implode(', ')],
+            [__('Delivery notes'), implode(', ', $header['delivery_notes'])],
+            [__('Invoices'), implode(', ', $header['invoices'])],
             [],
             $this->withLocaleColumn([
                 __('Product references'),
@@ -114,9 +98,9 @@ class PartnerShipmentCustomsInvoiceExport implements FromArray, ShouldAutoSize
                 $units,
                 (float) $line->amount,
                 (float) $line->net_weight,
-                (float) $line->weight,
+                (float) $line->gross_weight,
                 $line->origin ?? '',
-            ], $hasLocale ? ($line->{'description_'.$locale} ?? '') : null);
+            ], $hasLocale ? ($line->local_description ?? '') : null);
         }
 
         $rows[] = $this->withLocaleColumn([
@@ -128,20 +112,17 @@ class PartnerShipmentCustomsInvoiceExport implements FromArray, ShouldAutoSize
             $lines->sum(fn ($line) => (float) $line->units),
             round($lines->sum(fn ($line) => (float) $line->amount), 2),
             round($lines->sum(fn ($line) => (float) $line->net_weight), 3),
-            round($lines->sum(fn ($line) => (float) $line->weight), 3),
+            round($lines->sum(fn ($line) => (float) $line->gross_weight), 3),
         ], $hasLocale ? '' : null);
 
-        $isNonPreferential = $this->split === 'main' && $orgPartner->split_gb_origin;
-        if ($eori && !$isNonPreferential) {
+        if ($this->customsInvoice->with_origin_declaration) {
             $rows[] = [];
-            $rows[] = [__(
-                'The exporter of the products covered by this document (EORI: GB:eori XI EORI: XI:eori) declares that, except where otherwise clearly indicated, the products are of United Kingdom preferential origin. :place, :date, :exporter',
-                [
-                    'eori'     => $eori,
-                    'place'    => $seller->address?->locality,
-                    'date'     => $shipment->date->format('d.m.Y'),
-                    'exporter' => $seller->name,
-                ]
+            $rows[] = [sprintf(
+                'The exporter of the products covered by this document (EORI: GB%1$s XI EORI: XI%1$s) declares that, except where otherwise clearly indicated, the products are of United Kingdom preferential origin. %2$s, %3$s, %4$s',
+                $header['eori'],
+                $header['seller_locality'],
+                $this->customsInvoice->date->format('d.m.Y'),
+                $header['seller_name']
             )];
         }
 
@@ -160,17 +141,5 @@ class PartnerShipmentCustomsInvoiceExport implements FromArray, ShouldAutoSize
         }
 
         return $row;
-    }
-
-    private function party(string $name, ?Address $address, ?string $phone, ?string $email, ?string $taxNumber, ?string $registrationNumber): string
-    {
-        return implode('  ', array_filter([
-            $name,
-            $address ? implode(', ', array_filter([$address->address_line_1, $address->address_line_2, $address->locality, $address->postal_code, $address->country_code])) : null,
-            $phone,
-            $email,
-            $taxNumber ? __('VAT').': '.$taxNumber : null,
-            $registrationNumber ? __('Reg. No').': '.$registrationNumber : null,
-        ]));
     }
 }

@@ -16,6 +16,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\PartnerShipment;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -23,6 +24,14 @@ class UndispatchDeliveryNote extends OrgAction
 {
     public function handle(DeliveryNote $deliveryNote): void
     {
+        $consolidation = PartnerShipment::whereNotNull('dispatched_at')
+            ->whereNull('voided_at')
+            ->whereHas('deliveryNotes', fn ($query) => $query->where('delivery_notes.id', $deliveryNote->id))
+            ->value('reference');
+        if ($consolidation) {
+            throw ValidationException::withMessages(['message' => __('This delivery note left on consolidated delivery note :reference with its customs invoices, so it cannot be undispatched. Raise a ticket to sort it out.', ['reference' => $consolidation])]);
+        }
+
         if ($deliveryNote->orders?->first()?->invoices()?->exists() && $deliveryNote->type == DeliveryNoteTypeEnum::ORDER) {
             throw ValidationException::withMessages(['message' => __('You need to delete invoice before undispatching a delivery note.')]);
         }

@@ -35,6 +35,7 @@ enum McpChangeTypeEnum: string
     case INFO_WEBSITE_CONTENT = 'info_website_content';
     case PRODUCT_PACKAGING = 'product_packaging';
     case STAFF_CHAT_LISTS = 'staff_chat_lists';
+    case CUSTOMS_INVOICE = 'customs_invoice';
 
     public static function labels(): array
     {
@@ -60,6 +61,7 @@ enum McpChangeTypeEnum: string
             'info_website_content'  => __('Info website pages and shared parts'),
             'product_packaging'     => __('Product packaging weighed'),
             'staff_chat_lists'      => __('Who gets Ask CRM and Ask warehouse questions'),
+            'customs_invoice'       => __('Customs invoices for a truck to a partner'),
         ];
     }
 
@@ -71,7 +73,7 @@ enum McpChangeTypeEnum: string
         return match ($this) {
             McpChangeTypeEnum::RELATED_PRODUCTS, McpChangeTypeEnum::WEBSITE_REDIRECTS => 'can_use_mcp_web',
             McpChangeTypeEnum::ORG_STOCK_STATE, McpChangeTypeEnum::SUPPLIER_PRODUCT_AVAILABILITY => 'can_use_mcp_discontinue',
-            McpChangeTypeEnum::PARTNER_SHOPPING_LIST, McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS, McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING => 'can_use_mcp_procurement',
+            McpChangeTypeEnum::PARTNER_SHOPPING_LIST, McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS, McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING, McpChangeTypeEnum::CUSTOMS_INVOICE => 'can_use_mcp_procurement',
             McpChangeTypeEnum::PRODUCTION_RECORD, McpChangeTypeEnum::PRODUCTION_RECIPE, McpChangeTypeEnum::PRODUCTION_SETUP => 'can_use_mcp_production',
             McpChangeTypeEnum::PLACED_ORDER => 'can_use_mcp_place_orders',
             McpChangeTypeEnum::MASTER_PRICES => 'can_use_mcp_prices',
@@ -87,9 +89,10 @@ enum McpChangeTypeEnum: string
     /**
      * An order sent to a supplier, a reply emailed to a customer or a credit on their balance has
      * already left the building: it is undone by a person, with the other party, never from the log.
+     * A customs invoice may already be with the forwarder or customs, and its number is used.
      */
     public function canBeReverted(): bool
     {
-        return !in_array($this, [McpChangeTypeEnum::PLACED_ORDER, McpChangeTypeEnum::CUSTOMER_SERVICE]);
+        return !in_array($this, [McpChangeTypeEnum::PLACED_ORDER, McpChangeTypeEnum::CUSTOMER_SERVICE, McpChangeTypeEnum::CUSTOMS_INVOICE]);
     }
 }

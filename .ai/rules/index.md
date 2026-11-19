@@ -36,6 +36,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/Inventory/OrgStock/** | .ai/rules/org-stock.md |
 | routes/grp/web/org/** | .ai/rules/org.md |
 | app/Enums/Comms/Outbox/** | .ai/rules/outbox.md |
+| app/Actions/Dispatching/PartnerShipment/** | .ai/rules/partner-shipment.md |
 | resources/js/Components/Procurement/** | .ai/rules/procurement.md |
 | app/Actions/Goods/ProductDevelopment/** | .ai/rules/product-development.md |
 | app/Actions/Production/** | .ai/rules/production.md |

@@ -22,6 +22,7 @@ enum DispatchHubTabsEnum: string
     case PICKERS = 'pickers';
     case PACKERS = 'packers';
     case PARTNER_STAGING = 'partner_staging';
+    case CONSOLIDATED = 'consolidated';
 
     public function blueprint(): array
     {
@@ -45,6 +46,10 @@ enum DispatchHubTabsEnum: string
             DispatchHubTabsEnum::PARTNER_STAGING => [
                 'title' => __('Pre-pick'),
                 'icon'  => 'fal fa-dolly',
+            ],
+            DispatchHubTabsEnum::CONSOLIDATED => [
+                'title' => __('Consolidated'),
+                'icon'  => 'fal fa-layer-group',
             ],
         };
     }

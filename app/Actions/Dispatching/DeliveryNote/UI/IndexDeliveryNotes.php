@@ -8,6 +8,8 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UI;
 
+use App\Actions\Dispatching\PartnerShipment\PutDeliveryNotesOnPartnerShipment;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
@@ -110,7 +112,15 @@ class IndexDeliveryNotes extends OrgAction
                 "todo"        => $todo,
                 'shopType'    => $this->shopType,
                 'bucket'      => $this->bucket,
-                'picking_session_route' => $pickingSessionRoute
+                'picking_session_route' => $pickingSessionRoute,
+                'truck'       => $this->parent instanceof Warehouse
+                    ? PutDeliveryNotesOnPartnerShipment::listOptions(
+                        $this->warehouse,
+                        (string) $this->bucket,
+                        $this->shopType,
+                        $request->user()->authTo(WarehousePermissionsEnum::getDispatchingEditPermissionNames($this->organisation))
+                    )
+                    : null,
             ]
         )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket, shopType: $this->shopType));
     }

@@ -8,11 +8,15 @@
 
 namespace App\Actions\Dispatching\PartnerShipment;
 
+use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\PartnerShipment;
+use App\Models\Inventory\Warehouse;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,19 +25,25 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
+/**
+ * Puts a partner's packed or finalised delivery notes on a truck, the consolidated delivery note
+ * (HELP-4482). Its customs invoices are made later with StorePartnerCustomsInvoices, once every
+ * note is invoiced.
+ */
 class StorePartnerShipment extends OrgAction
 {
     /**
-     * Notes of a partner that can go on a truck: packed or later, from any of our shops (each shop
-     * has its own customer record for the partner), not on another shipment. Dispatched ones only for
-     * 30 days, so a shipment can still be made up after the truck left.
+     * Notes of a partner that can go on a truck: packed or finalised, from any of our shops (each
+     * shop has its own customer record for the partner), not on another truck. Dispatched ones only
+     * for 30 days, so a truck can still be made up after it left.
      *
      * @return Builder<DeliveryNote>
      */
-    public static function eligibleDeliveryNotesQuery(OrgPartner $orgPartner): Builder
+    public static function eligibleDeliveryNotesQuery(OrgPartner $orgPartner, ?Warehouse $warehouse = null): Builder
     {
         return DeliveryNote::query()
             ->where('delivery_notes.organisation_id', $orgPartner->organisation_id)
+            ->when($warehouse, fn (Builder $query) => $query->where('delivery_notes.warehouse_id', $warehouse->id))
             ->whereIn(
                 'delivery_notes.customer_id',
                 Customer::query()->select('id')
@@ -48,77 +58,61 @@ class StorePartnerShipment extends OrgAction
                 ->whereColumn('partner_shipment_delivery_notes.delivery_note_id', 'delivery_notes.id'));
     }
 
-    /**
-     * @return array{prefix: string, first_number: int}
-     */
-    public static function nextNumber(OrgPartner $orgPartner): array
+    public static function serialReference(OrgPartner $orgPartner, SerialReferenceModelEnum $model): void
     {
-        $last = PartnerShipment::where('org_partner_id', $orgPartner->id)->orderByDesc('id')->first();
+        $prefix = strtoupper(substr($orgPartner->organisation->code, 0, 3).$orgPartner->partner->code);
+        $orgPartner->serialReferences()->firstOrCreate(
+            ['model' => $model],
+            [
+                'organisation_id' => $orgPartner->organisation_id,
+                'format'          => $model === SerialReferenceModelEnum::PARTNER_SHIPMENT ? $prefix.'-C%04d' : $prefix.'%04d',
+            ]
+        );
+    }
 
-        if ($last) {
-            return ['prefix' => $last->prefix, 'first_number' => $last->first_number + count($last->splits)];
+    public static function nextReference(OrgPartner $orgPartner, SerialReferenceModelEnum $model = SerialReferenceModelEnum::CUSTOMS_INVOICE): string
+    {
+        $serialReference = $orgPartner->serialReferences()->where('model', $model)->first();
+        if (!$serialReference) {
+            $prefix = strtoupper(substr($orgPartner->organisation->code, 0, 3).$orgPartner->partner->code);
+
+            return sprintf($model === SerialReferenceModelEnum::PARTNER_SHIPMENT ? $prefix.'-C%04d' : $prefix.'%04d', 1);
         }
 
-        return [
-            'prefix'       => strtoupper(substr($orgPartner->organisation->code, 0, 3).$orgPartner->partner->code),
-            'first_number' => 1,
-        ];
+        return sprintf($serialReference->format, $serialReference->serial + 1);
     }
 
     /**
-     * @param array{delivery_note_ids: array<int, int>, prefix: string, first_number: int, date: string, number_pallets?: int|null} $modelData
+     * @param array{delivery_note_ids: array<int, int>, date: string, number_pallets?: int|null} $modelData
      *
      * @throws \Throwable
      */
-    public function handle(OrgPartner $orgPartner, array $modelData): PartnerShipment
+    public function handle(Warehouse $warehouse, OrgPartner $orgPartner, array $modelData): PartnerShipment
     {
-        return DB::transaction(function () use ($orgPartner, $modelData) {
+        return DB::transaction(function () use ($warehouse, $orgPartner, $modelData) {
             DB::select('select pg_advisory_xact_lock(4482, ?)', [$orgPartner->id]);
 
             $requestedIds = array_values(array_unique(array_map('intval', $modelData['delivery_note_ids'])));
-
-            $eligibleIds = self::eligibleDeliveryNotesQuery($orgPartner)
+            $eligibleIds  = self::eligibleDeliveryNotesQuery($orgPartner, $warehouse)
                 ->whereIn('delivery_notes.id', $requestedIds)
                 ->pluck('delivery_notes.id')
                 ->all();
 
             if (count($eligibleIds) !== count($requestedIds)) {
                 throw ValidationException::withMessages([
-                    'delivery_note_ids' => __('Some delivery notes are not packed, are not for this partner or are already on another shipment'),
+                    'delivery_note_ids' => __('Some delivery notes are not packed or finalised, are not for this partner or are already on another consolidation'),
                 ]);
             }
 
-            $lines      = GetPartnerShipmentCustomsLines::make()->handle($orgPartner, $requestedIds);
-            $incomplete = $lines->flatten(1)->where('is_incomplete', true);
-            if ($incomplete->isNotEmpty()) {
-                $parts = $incomplete->flatMap(fn ($line) => collect(json_decode($line->offenders ?? '[]', true))->pluck('part'))->filter()->unique()->sort()->values();
-
-                throw ValidationException::withMessages([
-                    'delivery_note_ids' => __('Set the tariff code and country of origin of: :parts', ['parts' => $parts->implode(', ')]),
-                ]);
-            }
-
-            $splits      = $lines->keys()->values()->all();
-            $firstNumber = (int) $modelData['first_number'];
-            $overlaps    = PartnerShipment::where('org_partner_id', $orgPartner->id)
-                ->where('prefix', $modelData['prefix'])
-                ->where('first_number', '<', $firstNumber + count($splits))
-                ->whereRaw('first_number + jsonb_array_length(splits) > ?', [$firstNumber])
-                ->exists();
-            if ($overlaps) {
-                throw ValidationException::withMessages([
-                    'first_number' => __('These invoice numbers are already used, next free one is :number', ['number' => self::nextNumber($orgPartner)['first_number']]),
-                ]);
-            }
+            self::serialReference($orgPartner, SerialReferenceModelEnum::PARTNER_SHIPMENT);
 
             /** @var PartnerShipment $partnerShipment */
             $partnerShipment = PartnerShipment::create([
                 'group_id'        => $orgPartner->group_id,
                 'organisation_id' => $orgPartner->organisation_id,
                 'org_partner_id'  => $orgPartner->id,
-                'prefix'          => $modelData['prefix'],
-                'first_number'    => $firstNumber,
-                'splits'          => $splits,
+                'warehouse_id'    => $warehouse->id,
+                'reference'       => GetSerialReference::run($orgPartner, SerialReferenceModelEnum::PARTNER_SHIPMENT),
                 'date'            => $modelData['date'],
                 'number_pallets'  => $modelData['number_pallets'] ?? null,
             ]);
@@ -134,7 +128,7 @@ class StorePartnerShipment extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        return $request->user()->authTo(WarehousePermissionsEnum::getDispatchingEditPermissionNames($this->organisation));
     }
 
     public function rules(): array
@@ -142,8 +136,6 @@ class StorePartnerShipment extends OrgAction
         return [
             'delivery_note_ids'   => ['required', 'array', 'min:1'],
             'delivery_note_ids.*' => ['integer'],
-            'prefix'              => ['required', 'string', 'max:32', 'alpha_num'],
-            'first_number'        => ['required', 'integer', 'min:1'],
             'date'                => ['required', 'date'],
             'number_pallets'      => ['sometimes', 'nullable', 'integer', 'min:0', 'max:999'],
         ];
@@ -152,30 +144,32 @@ class StorePartnerShipment extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Organisation $organisation, OrgPartner $orgPartner, ActionRequest $request): PartnerShipment
+    public function asController(Organisation $organisation, Warehouse $warehouse, OrgPartner $orgPartner, ActionRequest $request): PartnerShipment
     {
-        abort_unless($orgPartner->organisation_id === $organisation->id, 404);
+        abort_unless($orgPartner->organisation_id === $organisation->id && $warehouse->organisation_id === $organisation->id, 404);
+        $this->warehouse = $warehouse;
         $this->initialisation($organisation, $request);
 
-        return $this->handle($orgPartner, $this->validatedData);
+        return $this->handle($warehouse, $orgPartner, $this->validatedData);
     }
 
     public function htmlResponse(PartnerShipment $partnerShipment): RedirectResponse
     {
-        return redirect()->route('grp.org.procurement.org_partners.show.customs_invoices.index', [
+        return redirect()->route('grp.org.warehouses.show.dispatching.partner_shipments.show', [
             $partnerShipment->organisation->slug,
-            $partnerShipment->org_partner_id,
+            $this->warehouse->slug,
+            $partnerShipment->id,
         ]);
     }
 
     /**
      * @throws \Throwable
      */
-    public function action(OrgPartner $orgPartner, array $modelData): PartnerShipment
+    public function action(Warehouse $warehouse, OrgPartner $orgPartner, array $modelData): PartnerShipment
     {
         $this->asAction = true;
         $this->initialisation($orgPartner->organisation, $modelData);
 
-        return $this->handle($orgPartner, $this->validatedData);
+        return $this->handle($warehouse, $orgPartner, $this->validatedData);
     }
 }

@@ -94,6 +94,10 @@ class RevertMcpChange
             throw ValidationException::withMessages(['message' => __('An order already sent cannot be taken back automatically. Cancel it with the partner or supplier.')]);
         }
 
+        if ($mcpChange->type === McpChangeTypeEnum::CUSTOMS_INVOICE) {
+            throw ValidationException::withMessages(['message' => __('Customs invoices keep their numbers once issued and cannot be taken back automatically.')]);
+        }
+
         if (!$mcpChange->type->canBeReverted()) {
             throw ValidationException::withMessages(['message' => __('What was done for a customer cannot be taken back automatically. Put it right in the chat or on the order.')]);
         }
@@ -120,7 +124,7 @@ class RevertMcpChange
                 McpChangeTypeEnum::PARTNER_SHOPPING_LIST => $this->revertPartnerShoppingList($mcpChange->before, $mcpChange->after),
                 McpChangeTypeEnum::PRODUCTION_RECORD => $this->revertProductionRecord($target, $mcpChange->before),
                 McpChangeTypeEnum::PRODUCTION_RECIPE => $this->revertProductionRecipes($mcpChange),
-                McpChangeTypeEnum::PLACED_ORDER, McpChangeTypeEnum::CUSTOMER_SERVICE => null,
+                McpChangeTypeEnum::PLACED_ORDER, McpChangeTypeEnum::CUSTOMER_SERVICE, McpChangeTypeEnum::CUSTOMS_INVOICE => null,
                 McpChangeTypeEnum::CHAT_SPAM => UnmarkChatSessionAsSpam::make()->handle(ChatSession::findOrFail($target['chat_session_id']), $this->chatAgentProfileFor($user), unblockSender: false),
                 McpChangeTypeEnum::CHAT_CLOSED => ReopenChatSession::make()->handle(ChatSession::findOrFail($target['chat_session_id']), $this->chatAgentProfileFor($user)),
                 McpChangeTypeEnum::MASTER_PRICES => $this->revertMasterPrices($mcpChange->before),

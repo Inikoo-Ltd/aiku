@@ -9,10 +9,10 @@
 namespace App\Actions\Dispatching\PartnerShipment;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Exports\Dispatching\PartnerShipmentCustomsInvoiceExport;
+use App\Models\Dispatching\PartnerCustomsInvoice;
 use App\Models\Dispatching\PartnerShipment;
-use App\Models\Procurement\OrgPartner;
+use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use Maatwebsite\Excel\Facades\Excel;
@@ -20,25 +20,21 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ExportPartnerShipmentCustomsInvoice extends OrgAction
 {
-    use WithProcurementAuthorisation;
-
-    public function handle(PartnerShipment $partnerShipment, string $split): BinaryFileResponse
+    public function authorize(ActionRequest $request): bool
     {
-        $export = new PartnerShipmentCustomsInvoiceExport($partnerShipment, $split);
-
-        return Excel::download($export, $export->reference().'.xlsx');
+        return PartnerShipment::canBeSeenBy($request->user(), $this->organisation);
     }
 
-    public function asController(Organisation $organisation, OrgPartner $orgPartner, PartnerShipment $partnerShipment, string $split, ActionRequest $request): BinaryFileResponse
+    public function handle(PartnerCustomsInvoice $customsInvoice): BinaryFileResponse
     {
-        abort_unless(
-            $orgPartner->organisation_id === $organisation->id
-            && $partnerShipment->org_partner_id === $orgPartner->id
-            && in_array($split, $partnerShipment->splits, true),
-            404
-        );
+        return Excel::download(new PartnerShipmentCustomsInvoiceExport($customsInvoice), $customsInvoice->reference.'.xlsx');
+    }
+
+    public function asController(Organisation $organisation, Warehouse $warehouse, PartnerCustomsInvoice $partnerCustomsInvoice, ActionRequest $request): BinaryFileResponse
+    {
+        abort_unless($partnerCustomsInvoice->organisation_id === $organisation->id && $warehouse->organisation_id === $organisation->id && $partnerCustomsInvoice->partnerShipment->warehouse_id === $warehouse->id, 404);
         $this->initialisation($organisation, $request);
 
-        return $this->handle($partnerShipment, $split);
+        return $this->handle($partnerCustomsInvoice);
     }
 }

@@ -16,6 +16,7 @@ import { faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, f
 import { library } from "@fortawesome/fontawesome-svg-core"
 import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue"
 import Table from "@/Components/Table/Table.vue"
+import TablePartnerShipments from "@/Components/Tables/Grp/Org/Dispatching/TablePartnerShipments.vue"
 import InputNumber from "primevue/inputnumber"
 import Select from "primevue/select"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -39,6 +40,8 @@ const props = defineProps<{
     picking_session?: object
     pickers_current?: {}
     packers_current?: {}
+    consolidated?: {} | null
+    consolidated_routes?: { index: { name: string; parameters: Record<string, string> | string[] }; consolidate: { name: string; parameters: Record<string, string> | string[] } } | null
     partner_staging?: {
         org_partner_id: number
         org_stock_id: number
@@ -81,6 +84,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const isPersonnelTab = computed(() => currentTab.value === "pickers" || currentTab.value === "packers")
 const isStagingTab = computed(() => currentTab.value === "partner_staging")
+const isConsolidatedTab = computed(() => currentTab.value === "consolidated")
 
 const page = usePage()
 const actionError = computed(() => Object.values((page.props.errors ?? {}) as Record<string, string>)[0])
@@ -242,6 +246,18 @@ const trolleyRoute = (trolley: { slug: string }) =>
                 </tr>
             </tbody>
         </table>
+    </div>
+
+    <div v-else-if="isConsolidatedTab && consolidated" class="px-4 pt-2">
+        <div class="flex justify-end gap-4">
+            <Link v-if="consolidated_routes" :href="route(consolidated_routes.consolidate.name, consolidated_routes.consolidate.parameters)" class="text-sm font-medium text-gray-700 hover:underline">
+                {{ ctrans("Consolidate finalised delivery notes") }} →
+            </Link>
+            <Link v-if="consolidated_routes" :href="route(consolidated_routes.index.name, consolidated_routes.index.parameters)" class="text-sm font-medium text-gray-700 hover:underline">
+                {{ ctrans("All consolidated delivery notes") }} →
+            </Link>
+        </div>
+        <TablePartnerShipments :data="consolidated" name="consolidated" />
     </div>
 
     <template v-else-if="isPersonnelTab">

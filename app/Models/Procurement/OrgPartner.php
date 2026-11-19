@@ -9,7 +9,9 @@
 namespace App\Models\Procurement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Models\Dispatching\PartnerCustomsInvoice;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Helpers\SerialReference;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\InOrganisation;
@@ -71,6 +73,16 @@ class OrgPartner extends Model
     public function purchaseOrders(): MorphMany
     {
         return $this->morphMany(PurchaseOrder::class, 'parent');
+    }
+
+    public function serialReferences(): MorphMany
+    {
+        return $this->morphMany(SerialReference::class, 'container');
+    }
+
+    public function customsInvoices(): HasMany
+    {
+        return $this->hasMany(PartnerCustomsInvoice::class);
     }
 
     public function stockDeliveries(): MorphMany

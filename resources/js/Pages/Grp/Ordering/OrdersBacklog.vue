@@ -15,6 +15,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faBoxOpen, faAppleCrate } from '@fal'
 import { useTabChange, useCurrentTab } from '@/Composables/tab-change'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
+import TablePartnerShipments from "@/Components/Tables/Grp/Org/Dispatching/TablePartnerShipments.vue"
 import TableDeliveryNotes from '@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue'
 import { computed } from 'vue'
 import { routeType } from '@/types/route'
@@ -49,6 +50,7 @@ const props = defineProps<{
     packing?: {}
     returned?: {}
     pre_orders?: {}
+    consolidated?: {} | null
     backlog_filters?: {
         prefix: string
         current: { scope: 'domestic' | 'export' | null, channel: 'direct' | 'partner' | null, production_review?: 'reviewed' | 'unreviewed' | null, attention?: 'stuck' | 'waiting_stock' | 'waiting_cs' | null, payment?: 'paid' | 'unpaid' | null }
@@ -126,6 +128,7 @@ const stageDescriptions = computed<Record<string, string>>(() => ({
     dispatched_today: ctrans('Left the warehouse today'),
     returned: ctrans('Returns received from customers'),
     pre_orders: ctrans('Orders with a pre-order, from the supplier order to dispatch, earliest estimated dispatch first'),
+    consolidated: ctrans('Consolidated delivery notes to partners: click a number to download its customs invoice'),
 }))
 
 const stageLabels = computed(() => Object.fromEntries(
@@ -161,7 +164,8 @@ const component = computed(() => {
       finalised: TableOrders,
       dispatched_today: TableOrders,
       pre_orders: TableOrders,
-      returned: TableDeliveryNotes
+      returned: TableDeliveryNotes,
+      consolidated: TablePartnerShipments
     }
 
     return components[currentTab.value]

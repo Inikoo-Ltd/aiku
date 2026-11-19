@@ -8553,7 +8553,7 @@ test('delivery notes index flags export orders of uk organisations, HELP-4446', 
     $deliveryNote->update(['delivery_country_id' => $originalDeliveryCountryId]);
 });
 
-test('a partner shipment makes one customs invoice per split from packed quantities of notes from any shop (HELP-4482)', function () {
+test('a consolidated delivery note to a partner takes packed and finalised notes, makes frozen customs invoices per split once every note is invoiced, dispatches them together and can be voided (HELP-4482)', function () {
     $partnerCode  = 'PSHIP'.random_int(100, 999);
     $partner      = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, [
         'code' => $partnerCode,
@@ -8596,60 +8596,242 @@ test('a partner shipment makes one customs invoice per split from packed quantit
     DB::table('model_has_trade_units')->where('model_type', 'OrgStock')->where('model_id', $notes->last()->deliveryNoteItems()->first()->org_stock_id)->update(['quantity' => 10]);
     $orgPartner->update(['customer_id' => \App\Models\CRM\Customer::query()->whereNotIn('id', $notes->pluck('customer_id'))->value('id')]);
 
-    expect(\App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::eligibleDeliveryNotesQuery($orgPartner)->pluck('delivery_notes.id')->all())
+    $invoiceFor = function ($note) {
+        $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($note->orders()->first(), \App\Models\Accounting\Invoice::factory()->definition());
+        $invoice->update(['in_process' => false, 'date' => now()]);
+
+        return $invoice;
+    };
+    $firstInvoice = $invoiceFor($notes->first());
+    $notes->first()->update(['state' => DeliveryNoteStateEnum::FINALISED]);
+    $references   = $notes->pluck('reference')->all();
+    $prefix       = strtoupper(substr($this->organisation->code, 0, 3).$partnerCode);
+    $warehouseRoute = [$this->organisation->slug, $this->warehouse->slug];
+
+    expect(\App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::eligibleDeliveryNotesQuery($orgPartner, $this->warehouse)->pluck('delivery_notes.id')->all())
         ->toEqualCanonicalizing($noteIds);
 
-    $partnerRoute = [$this->organisation->slug, $orgPartner->id];
-    $this->get(route('grp.org.procurement.org_partners.show.customs_invoices.create', $partnerRoute))
+    $this->get(route('grp.org.warehouses.show.dispatching.partner_shipments.create', [...$warehouseRoute, $orgPartner->id]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('Procurement/CreatePartnerShipment')
-            ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->sort()->values()->all() === collect($noteIds)->sort()->values()->all()));
+            ->component('Org/Dispatching/CreatePartnerShipment')
+            ->where('defaults.next_reference', $prefix.'-C0001')
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->sort()->values()->all() === collect($noteIds)->sort()->values()->all()
+                && collect($rows)->firstWhere('id', $noteIds[1])['is_invoiced'] === false
+                && collect($rows)->firstWhere('id', $noteIds[0])['invoice'] === $firstInvoice->reference));
 
-    $partnerShipment = \App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::make()->action($orgPartner, [
-        'delivery_note_ids' => $noteIds,
-        'prefix'            => 'AR'.$partnerCode,
-        'first_number'      => 75,
-        'date'              => '2026-11-03',
-        'number_pallets'    => 10,
+    $user = $this->adminGuest->getUser();
+    $user->update(['can_use_mcp' => true, 'can_use_mcp_procurement' => false]);
+    $truckTool = fn (array $arguments) => \App\Mcp\Servers\AikuServer::actingAs($user)->tool(\App\Mcp\Tools\PartnerCustomsInvoiceTool::class, [
+        'organisation' => $this->organisation->slug,
+        'partner'      => $partnerCode,
+        ...$arguments,
     ]);
+    $orgPartner->serialReferences()->firstOrCreate(['model' => \App\Enums\Helpers\SerialReference\SerialReferenceModelEnum::CUSTOMS_INVOICE], ['organisation_id' => $orgPartner->organisation_id, 'format' => $prefix.'%04d'])->update(['serial' => 74]);
+    $truckTool(['delivery_notes' => $references])
+        ->assertOk()
+        ->assertSee(['"label":"Cosmetics"', '"label":"Non cosmetics"', '"not_found":[]', '"next_consolidated":"'.$prefix.'-C0001"', '"next_customs_invoice":"'.$prefix.'0075"', '"waiting_for_invoices":["'.$references[1].'"]']);
+    $creation = [
+        'delivery_notes' => $references,
+        'date'           => '2026-11-03',
+        'number_pallets' => 10,
+        'create'         => true,
+        'request_text'   => 'put these on a truck',
+    ];
+    $truckTool($creation)->assertHasErrors(['not enabled']);
+    $user->update(['can_use_mcp_procurement' => true]);
+    $truckTool($creation)->assertOk()->assertSee(['"consolidated":"'.$prefix.'-C0001"', '"waiting_for_invoices":["'.$references[1].' (Packed)"]', '"customs_invoices":[]']);
 
-    expect($partnerShipment->splits)->toBe(['main', 'cosmetic'])
-        ->and($partnerShipment->documentReference(1))->toBe('AR'.$partnerCode.'0076');
+    $truck      = \App\Models\Dispatching\PartnerShipment::where('org_partner_id', $orgPartner->id)->sole();
+    $truckRoute = [...$warehouseRoute, $truck->id];
+    expect($truck->warehouse_id)->toBe($this->warehouse->id)
+        ->and($truck->deliveryNotes()->pluck('delivery_notes.id')->all())->toEqualCanonicalizing($noteIds)
+        ->and(\App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::eligibleDeliveryNotesQuery($orgPartner)->exists())->toBeFalse()
+        ->and(fn () => \App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::make()->action($this->warehouse, $orgPartner, ['delivery_note_ids' => [$noteIds[0]], 'date' => '2026-11-04']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $this->post(route('grp.org.warehouses.show.dispatching.partner_shipments.customs', $truckRoute))->assertSessionHasErrors('customs');
+    $this->patch(route('grp.org.warehouses.show.dispatching.partner_shipments.dispatch', $truckRoute))->assertSessionHasErrors('dispatch');
+    expect($truck->refresh()->customsInvoices()->exists())->toBeFalse();
+
+    $secondInvoice = $invoiceFor($notes->last());
+    $this->post(route('grp.org.warehouses.show.dispatching.partner_shipments.customs', $truckRoute))->assertSessionHasErrors('customs');
+    $notes->last()->update(['state' => DeliveryNoteStateEnum::FINALISED]);
+    $this->post(route('grp.org.warehouses.show.dispatching.partner_shipments.customs', $truckRoute))->assertSessionHasNoErrors();
+    $truck->refresh();
+    $cosmeticInvoice = $truck->customsInvoices()->where('split', 'cosmetic')->sole();
+    expect($truck->customs_invoiced_at)->not->toBeNull()
+        ->and($truck->customsInvoices()->pluck('reference', 'split')->all())->toBe(['main' => $prefix.'0075', 'cosmetic' => $prefix.'0076'])
+        ->and($truck->data['invoices'])->toEqualCanonicalizing([$firstInvoice->reference, $secondInvoice->reference])
+        ->and($truck->data['delivery_notes'])->toEqualCanonicalizing($references)
+        ->and(fn () => $truck->invoices()->attach($firstInvoice->id))->toThrow(\Illuminate\Database\QueryException::class);
+    $this->post(route('grp.org.warehouses.show.dispatching.partner_shipments.customs', $truckRoute))->assertSessionHasErrors('customs');
 
     $lines = \App\Actions\Dispatching\PartnerShipment\GetPartnerShipmentCustomsLines::make()->handle($orgPartner, $noteIds);
     expect($lines->get('main')->pluck('tariff_code')->all())->toBe(['3301 29 4900'])
-        ->and($lines->get('cosmetic')->pluck('tariff_code')->all())->toBe(['3304 99 0000'])
         ->and((float) $lines->get('main')->first()->units)->toBe(7.0)
         ->and((float) $lines->get('main')->first()->amount)->toBe(round((float) $packedItem->transaction->net_amount, 2))
         ->and((float) $lines->get('cosmetic')->first()->amount)->toBe(round((float) $notes->last()->deliveryNoteItems()->first()->transaction->net_amount, 2));
 
-    $this->get(route('grp.org.procurement.org_partners.show.customs_invoices.index', $partnerRoute))
+    $this->get(route('grp.org.warehouses.show.dispatching.partner_shipments.index', $warehouseRoute))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('Procurement/PartnerShipments')
-            ->where('data.data.0.documents.1.reference', 'AR'.$partnerCode.'0076'));
-    $this->get(route('grp.org.procurement.org_partners.show.customs_invoices.export', [...$partnerRoute, $partnerShipment->id, 'cosmetic']))
+            ->component('Org/Dispatching/PartnerShipments')
+            ->where('data.data', fn ($rows) => collect($rows)->where('reference', $prefix.'-C0001')->where('number_delivery_notes', 2)->count() === 1
+                && collect(collect($rows)->firstWhere('reference', $prefix.'-C0001')['customs_invoices'])->pluck('reference')->all() === [$prefix.'0075', $prefix.'0076']));
+    $this->get(route('grp.org.warehouses.show.dispatching.partner_shipments.show', $truckRoute))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Dispatching/PartnerShipment')
+            ->where('truck.state', 'customs_ready')
+            ->where('waiting', [])
+            ->has('customsInvoices', 2)
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->sort()->values()->all() === collect($noteIds)->sort()->values()->all()));
+    $this->get(route('grp.org.warehouses.show.dispatching.customs_invoices.export', [...$warehouseRoute, $cosmeticInvoice->id]))
         ->assertOk()
-        ->assertDownload('AR'.$partnerCode.'0076.xlsx');
+        ->assertDownload($prefix.'0076.xlsx');
+    $this->get(route('grp.org.warehouses.show.dispatching.partner_shipments.packing_list', $truckRoute))
+        ->assertOk()
+        ->assertDownload($prefix.'-C0001.xlsx');
+    $packingList = (new \App\Exports\Dispatching\PartnerShipmentPackingListExport($truck))->array();
+    expect(collect($packingList)->pluck(0)->all())->toContain(...$references)
+        ->and(collect($packingList)->firstWhere(0, $references[1])[1])->toBe($secondInvoice->reference);
 
-    $export = new \App\Exports\Dispatching\PartnerShipmentCustomsInvoiceExport($partnerShipment->refresh(), 'cosmetic');
-    $rows   = $export->array();
+    $rows     = (new \App\Exports\Dispatching\PartnerShipmentCustomsInvoiceExport($cosmeticInvoice))->array();
     $headings = collect($rows)->first(fn (array $row) => ($row[0] ?? null) === 'Product references');
     $lineRow  = collect($rows)->first(fn (array $row) => in_array('3304 99 0000', $row, true));
-    expect($rows[3][1])->toStartWith($notes->first()->customer->company_name ?: $partner->name)
-        ->and(count($lineRow))->toBe(count($headings))
-        ->and($lineRow[array_search('Tariff code', $headings, true)])->toBe('3304 99 0000')
-        ->and($lineRow[array_search('Units', $headings, true)])->toBe(7.0);
-    expect($rows[0][6])->toBe('AR'.$partnerCode.'0076')
-        ->and(collect($rows)->contains(fn (array $row) => in_array('3304 99 0000', $row, true)))->toBeTrue()
+    expect($rows[0][6])->toBe($prefix.'0076')
+        ->and($rows[3][1])->toStartWith($notes->first()->customer->company_name ?: $partner->name)
+        ->and($lineRow[array_search('Units', $headings, true)])->toBe(7.0)
         ->and(collect($rows)->contains(fn (array $row) => in_array('3301 29 4900', $row, true)))->toBeFalse();
 
-    expect(\App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::eligibleDeliveryNotesQuery($orgPartner)->exists())->toBeFalse()
-        ->and(fn () => \App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::make()->action($orgPartner, [
-            'delivery_note_ids' => [$noteIds[0]],
-            'prefix'            => 'AR'.$partnerCode,
-            'first_number'      => 77,
-            'date'              => '2026-11-04',
-        ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    $notes->last()->deliveryNoteItems()->first()->orgStock->stock->update(['is_cosmetic' => false]);
+    $notes->first()->shop->update(['identity_document_number' => 'CHANGED-'.$partnerCode]);
+    $notes->first()->deliveryNoteItems()->first()->update(['quantity_packed' => 99]);
+    $orgPartner->update(['split_cosmetics' => false]);
+    app()->setLocale('es');
+    expect((new \App\Exports\Dispatching\PartnerShipmentCustomsInvoiceExport($cosmeticInvoice->refresh()))->array())->toBe($rows);
+    app()->setLocale('en');
+
+    $change = \App\Models\SysAdmin\McpChange::where('type', \App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::CUSTOMS_INVOICE)->latest('id')->firstOrFail();
+    expect($change->data['after_text'])->toContain($prefix.'-C0001')
+        ->and(fn () => \App\Actions\SysAdmin\McpChange\RevertMcpChange::make()->handle($change, $user))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $notes->last()->update(['state' => DeliveryNoteStateEnum::CANCELLED]);
+    $this->patch(route('grp.org.warehouses.show.dispatching.partner_shipments.dispatch', $truckRoute))->assertSessionHasErrors('dispatch');
+    expect($truck->refresh()->dispatched_at)->toBeNull()
+        ->and($notes->last()->refresh()->state)->toBe(DeliveryNoteStateEnum::CANCELLED);
+    $notes->last()->update(['state' => DeliveryNoteStateEnum::FINALISED]);
+    $otherWarehouse = \App\Models\Inventory\Warehouse::where('id', '!=', $this->warehouse->id)->first();
+    if ($otherWarehouse) {
+        $this->patch(route('grp.org.warehouses.show.dispatching.partner_shipments.dispatch', [$this->organisation->slug, $otherWarehouse->slug, $truck->id]))->assertNotFound();
+        $this->get(route('grp.org.warehouses.show.dispatching.partner_shipments.index', [$this->organisation->slug, $otherWarehouse->slug]))->assertNotFound();
+    }
+    $this->patch(route('grp.org.warehouses.show.dispatching.partner_shipments.dispatch', $truckRoute))->assertSessionHasNoErrors();
+    expect($truck->refresh()->dispatched_at)->not->toBeNull()
+        ->and(DeliveryNote::whereIn('id', $noteIds)->pluck('state')->unique()->all())->toEqual([DeliveryNoteStateEnum::DISPATCHED]);
+
+    expect(fn () => \App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote::make()->handle($notes->first()->refresh()))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, $prefix.'-C0001');
+    expect($notes->first()->refresh()->state)->toBe(DeliveryNoteStateEnum::DISPATCHED);
+
+    $voidRoute = route('grp.org.warehouses.show.dispatching.partner_shipments.void', $truckRoute);
+    $this->patch($voidRoute, ['void_reason' => ''])->assertSessionHasErrors('void_reason');
+    $this->patch($voidRoute, ['void_reason' => 'wrong notes on the truck'])->assertSessionHasNoErrors();
+    $truck->refresh();
+    expect($truck->voided_at)->not->toBeNull()
+        ->and($truck->voided_by_user_id)->toBe($user->id)
+        ->and($truck->deliveryNotes()->exists())->toBeFalse()
+        ->and($truck->invoices()->exists())->toBeFalse()
+        ->and($truck->customsInvoices()->count())->toBe(2)
+        ->and((new \App\Exports\Dispatching\PartnerShipmentCustomsInvoiceExport($cosmeticInvoice->refresh()))->array()[0][0])->toStartWith('VOID')
+        ->and(\App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::eligibleDeliveryNotesQuery($orgPartner, $this->warehouse)->pluck('delivery_notes.id')->all())->toEqualCanonicalizing($noteIds);
+    $this->patch($voidRoute, ['void_reason' => 'again'])->assertSessionHasErrors('void_reason');
+
+    $secondTruck = \App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::make()->action($this->warehouse, $orgPartner, ['delivery_note_ids' => $noteIds, 'date' => '2026-11-05']);
+    \App\Actions\Dispatching\PartnerShipment\StorePartnerCustomsInvoices::make()->handle($secondTruck);
+    expect($secondTruck->reference)->toBe($prefix.'-C0002')
+        ->and($secondTruck->customsInvoices()->pluck('reference')->all())->toBe([$prefix.'0077']);
+
+    \App\Actions\Dispatching\PartnerShipment\VoidPartnerShipment::make()->handle($secondTruck, $user, 'test list flow');
+    $this->get(route('grp.org.warehouses.show.dispatching.dispatched.delivery-notes.shop', [...$warehouseRoute, 'partners']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('truck', null));
+    $putOnRoute = route('grp.org.warehouses.show.dispatching.partner_shipments.put_on', $warehouseRoute);
+    $this->post($putOnRoute, ['delivery_note_ids' => [$noteIds[0]]])->assertRedirect();
+    $listTruck = \App\Models\Dispatching\PartnerShipment::where('org_partner_id', $orgPartner->id)->latest('id')->first();
+    expect($listTruck->reference)->toBe($prefix.'-C0003')
+        ->and($listTruck->deliveryNotes()->pluck('delivery_notes.id')->all())->toBe([$noteIds[0]]);
+    DeliveryNote::whereIn('id', $noteIds)->update(['state' => DeliveryNoteStateEnum::FINALISED]);
+    $this->get(route('grp.org.warehouses.show.dispatching.finalised.delivery-notes.shop', [...$warehouseRoute, 'partners']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('truck.trucks', fn ($trucks) => collect($trucks)->pluck('id')->contains($listTruck->id)));
+    $this->post($putOnRoute, ['delivery_note_ids' => [$noteIds[1]], 'partner_shipment_id' => $listTruck->id])->assertRedirect();
+    expect($listTruck->deliveryNotes()->pluck('delivery_notes.id')->sort()->values()->all())->toBe(collect($noteIds)->sort()->values()->all());
+    $this->post($putOnRoute, ['delivery_note_ids' => [$noteIds[1]], 'partner_shipment_id' => $listTruck->id])->assertSessionHasErrors('delivery_note_ids');
+    \App\Actions\Dispatching\PartnerShipment\StorePartnerCustomsInvoices::make()->handle($listTruck);
+    $this->post($putOnRoute, ['delivery_note_ids' => [$noteIds[0]], 'partner_shipment_id' => $listTruck->id])->assertSessionHasErrors('partner_shipment_id');
+
+    $otherCode    = 'PSHOX'.random_int(100, 999);
+    $otherPartner = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, [
+        'code' => $otherCode,
+        'name' => $otherCode,
+        'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP,
+    ] + \App\Models\SysAdmin\Organisation::factory()->definition());
+    $otherOrgPartner = \App\Models\Procurement\OrgPartner::firstOrCreate(
+        ['group_id' => $this->group->id, 'organisation_id' => $this->organisation->id, 'partner_id' => $otherPartner->id],
+        ['status' => true],
+    );
+    $otherCustomer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, \App\Models\CRM\Customer::factory()->definition());
+    $otherCustomer->update(['as_organisation_id' => $otherPartner->id]);
+    [$otherNote] = handlingDeliveryNoteWithPicking($this);
+    $otherNote->update(['customer_id' => $otherCustomer->id, 'state' => DeliveryNoteStateEnum::PACKED]);
+    [$ownNote] = handlingDeliveryNoteWithPicking($this);
+    $ownNote->update(['customer_id' => $partnerCustomer->id, 'state' => DeliveryNoteStateEnum::PACKED]);
+    $trucksBefore = \App\Models\Dispatching\PartnerShipment::count();
+
+    $this->post($putOnRoute, ['delivery_note_ids' => [$ownNote->id, $otherNote->id]])->assertSessionHasErrors('delivery_note_ids');
+    expect(fn () => \App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::make()->action($this->warehouse, $orgPartner, ['delivery_note_ids' => [$ownNote->id, $otherNote->id], 'date' => '2026-11-06']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    $otherTruck = \App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::make()->action($this->warehouse, $otherOrgPartner, ['delivery_note_ids' => [$otherNote->id], 'date' => '2026-11-06']);
+    $this->post($putOnRoute, ['delivery_note_ids' => [$ownNote->id], 'partner_shipment_id' => $otherTruck->id])->assertSessionHasErrors('partner_shipment_id');
+    expect(\App\Models\Dispatching\PartnerShipment::count())->toBe($trucksBefore + 1)
+        ->and($otherTruck->deliveryNotes()->pluck('delivery_notes.id')->all())->toBe([$otherNote->id]);
+    $listNotes = \App\Actions\Dispatching\PartnerShipment\PutDeliveryNotesOnPartnerShipment::listOptions($this->warehouse, 'packed', 'partners', true, [$ownNote->id, $otherNote->id])['notes'];
+    expect($listNotes[$otherNote->id])->toBe([
+        'reference' => $otherNote->reference,
+        'partner'   => $otherCode,
+        'truck'     => $otherTruck->reference,
+        'truck_url' => route('grp.org.warehouses.show.dispatching.partner_shipments.show', [...$warehouseRoute, $otherTruck->id]),
+    ])
+        ->and($listNotes[$ownNote->id])->toBe(['reference' => $ownNote->reference, 'partner' => $partnerCode, 'truck' => null, 'truck_url' => null]);
+
+    $orgPartner->update(['goods_out_location_id' => \App\Models\Inventory\Location::where('warehouse_id', $this->warehouse->id)->value('id')]);
+    $this->get(route('grp.org.warehouses.show.dispatching.backlog', [...$warehouseRoute, 'tab' => 'consolidated']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('tabs.navigation.consolidated.number', \App\Models\Dispatching\PartnerShipment::where('warehouse_id', $this->warehouse->id)->whereNull('dispatched_at')->whereNull('voided_at')->count())
+            ->where('consolidated.data', fn ($rows) => collect($rows)->pluck('reference')->contains($listTruck->reference)));
+    $this->get(route('grp.org.shops.show.ordering.backlog', [$this->organisation->slug, $this->shop->slug, 'tab' => 'consolidated']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('backlog_filters', null)
+            ->where('consolidated.data', fn ($rows) => collect($rows)->pluck('reference')->contains($listTruck->reference)));
+
+    $csUser = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->group, \App\Models\SysAdmin\Guest::factory()->definition())->getUser();
+    actingAsUserWithOnlyPermissions($csUser, ["orders.{$this->shop->id}.view"]);
+    $listCustomsInvoice = $listTruck->customsInvoices()->first();
+    $this->get(route('grp.org.warehouses.show.dispatching.partner_shipments.show', [...$warehouseRoute, $listTruck->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('canWork', false)->where('canVoid', false));
+    $this->get(route('grp.org.warehouses.show.dispatching.customs_invoices.export', [...$warehouseRoute, $listCustomsInvoice->id]))->assertOk();
+    $this->get(route('grp.org.warehouses.show.dispatching.partner_shipments.packing_list', [...$warehouseRoute, $listTruck->id]))->assertOk();
+    $this->patch(route('grp.org.warehouses.show.dispatching.partner_shipments.void', [...$warehouseRoute, $listTruck->id]), ['void_reason' => 'not mine'])->assertForbidden();
+    $this->patch(route('grp.org.warehouses.show.dispatching.partner_shipments.dispatch', [...$warehouseRoute, $listTruck->id]))->assertForbidden();
+    actingAsUserWithOnlyPermissions($csUser, []);
+    $this->get(route('grp.org.warehouses.show.dispatching.customs_invoices.export', [...$warehouseRoute, $listCustomsInvoice->id]))->assertForbidden();
+    \Pest\Laravel\actingAs($user);
+
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()->handle($otherNote->refresh(), $user, modifyOrder: false);
+    expect($otherTruck->deliveryNotes()->exists())->toBeFalse();
+
+    $openTruck = \App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::make()->action($this->warehouse, $orgPartner, ['delivery_note_ids' => [$ownNote->id], 'date' => '2026-11-07']);
+    \App\Actions\Dispatching\PartnerShipment\VoidPartnerShipment::make()->handle($openTruck, $user, 'opened by mistake');
+    expect($openTruck->refresh()->data['delivery_notes'])->toBe([$ownNote->reference])
+        ->and($openTruck->deliveryNotes()->exists())->toBeFalse();
+
 });
 
 test('flags a SKO whose weighed parcels disagree with its weight, ignoring shared boxes and needing three parcels, and clears it once the weight is corrected', function () {

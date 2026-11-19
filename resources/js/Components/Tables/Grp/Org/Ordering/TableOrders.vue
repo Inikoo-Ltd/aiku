@@ -13,7 +13,7 @@ import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import DatePicker from '@vuepic/vue-datepicker'
-import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt, faInfoCircle, faGlobe, faClock, faCheckCircle, faCheck, faHandPaper, faBoxOpen, faCircle, faAdjust, faPlusCircle, faUndoAlt, faQuestionCircle } from "@fal"
+import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt, faInfoCircle, faGlobeStand, faClock, faCheckCircle, faCheck, faHandPaper, faBoxOpen, faCircle, faAdjust, faPlusCircle, faUndoAlt, faQuestionCircle } from "@fal"
 import { faShieldAlt, faStar, faHighlighter, faPennant, faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
@@ -293,7 +293,7 @@ const setNewMarkerDate = (newVal: Date) => {
         <template #cell(state)="{ item: order }">
             <FontAwesomeIcon v-if="order.state === 'in_warehouse'" v-tooltip="ctrans('Ready to be picked: picking has not started')" :icon="faClock" class="text-gray-500" fixed-width aria-hidden="true" />
             <Icon v-else :data="order.state_icon" />
-            <FontAwesomeIcon v-if="order.is_export" v-tooltip="ctrans('Export')" :icon="faGlobe" class="ml-1 text-[--app-accent]" fixed-width />
+            <FontAwesomeIcon v-if="order.is_export" v-tooltip="ctrans('Export')" :icon="faGlobeStand" class="ml-1 text-sky-600" fixed-width />
         </template>
 
 

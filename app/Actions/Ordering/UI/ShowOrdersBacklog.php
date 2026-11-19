@@ -17,7 +17,10 @@ use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Production\PartnerShippingList\GetOrdersBlockedByProduction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Actions\Traits\WithTabsBox;
+use App\Actions\Dispatching\PartnerShipment\UI\IndexPartnerShipments;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
+use App\Models\Dispatching\PartnerShipment;
+use App\Models\Procurement\OrgPartner;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Http\Resources\Procurement\ReturnDeliveryNotesResource;
 use App\Models\Catalogue\Shop;
@@ -59,6 +62,10 @@ class ShowOrdersBacklog extends OrgAction
         $waitingItemsData = $this->buildWaitingItemsData($parent, $request);
         $tabsBox          = $this->getTabsBox($parent, $waitingItemsData);
         $tabsBox[]        = $this->getPreOrdersTabsBox($parent);
+        $showConsolidated = $this->showsConsolidated($parent);
+        if ($showConsolidated) {
+            $tabsBox[] = $this->getConsolidatedTabsBox($parent);
+        }
 
         return Inertia::render(
             'Ordering/OrdersBacklog',
@@ -72,7 +79,7 @@ class ShowOrdersBacklog extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $tabsBox
                 ],
-                'backlog_filters' => $this->tab == OrdersBacklogTabsEnum::RETURNED->value ? null : $this->getBacklogFilters($parent, $request),
+                'backlog_filters' => in_array($this->tab, [OrdersBacklogTabsEnum::RETURNED->value, OrdersBacklogTabsEnum::CONSOLIDATED->value], true) ? null : $this->getBacklogFilters($parent, $request),
                 'attention'       => IndexOrders::make()->backlogAttention($parent) + ['waiting_items_route' => $waitingItemsData['route']],
                 'bankPaymentsNotice' => $parent instanceof Shop ? IndexBankIncoming::shopNotice($parent, $request->user()) : null,
                 'productionBlockedNotice' => $parent instanceof Group ? null : GetOrdersBlockedByProduction::make()->notice($parent),
@@ -130,6 +137,10 @@ class ShowOrdersBacklog extends OrgAction
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PRE_ORDERS->value, bucket: OrdersBacklogTabsEnum::PRE_ORDERS->value))
                     : Inertia::optional(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PRE_ORDERS->value, bucket: OrdersBacklogTabsEnum::PRE_ORDERS->value))),
 
+                OrdersBacklogTabsEnum::CONSOLIDATED->value => !$showConsolidated ? null : ($this->tab == OrdersBacklogTabsEnum::CONSOLIDATED->value ?
+                    fn () => IndexPartnerShipments::make()->handle($parent, OrdersBacklogTabsEnum::CONSOLIDATED->value)
+                    : Inertia::optional(fn () => IndexPartnerShipments::make()->handle($parent, OrdersBacklogTabsEnum::CONSOLIDATED->value))),
+
                 OrdersBacklogTabsEnum::RETURNED->value => $this->tab == OrdersBacklogTabsEnum::RETURNED->value ?
                     fn () => ReturnDeliveryNotesResource::collection(IndexReturnDeliveryNotes::run(parent: $parent, prefix: OrdersBacklogTabsEnum::RETURNED->value, bucket: OrdersBacklogTabsEnum::RETURNED->value))
                     : Inertia::optional(fn () => ReturnDeliveryNotesResource::collection(IndexReturnDeliveryNotes::run(parent: $parent, prefix: OrdersBacklogTabsEnum::RETURNED->value, bucket: OrdersBacklogTabsEnum::RETURNED->value))),
@@ -151,7 +162,52 @@ class ShowOrdersBacklog extends OrgAction
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value))
 
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::PRE_ORDERS->value, bucket: OrdersBacklogTabsEnum::PRE_ORDERS->value))
-            ->table(IndexReturnDeliveryNotes::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::RETURNED->value, bucket: OrdersBacklogTabsEnum::RETURNED->value));
+            ->table(IndexReturnDeliveryNotes::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::RETURNED->value, bucket: OrdersBacklogTabsEnum::RETURNED->value))
+            ->table(IndexPartnerShipments::make()->tableStructure(OrdersBacklogTabsEnum::CONSOLIDATED->value));
+    }
+
+    /**
+     * Organisations that send goods to partners (HELP-4482): customer services see the
+     * consolidated delivery notes and their customs invoices here, read only.
+     */
+    protected function showsConsolidated(Group|Organisation|Shop $parent): bool
+    {
+        return OrgPartner::query()
+            ->when($parent instanceof Group, fn ($query) => $query->where('group_id', $parent->id))
+            ->when(!$parent instanceof Group, fn ($query) => $query->where('organisation_id', $parent instanceof Shop ? $parent->organisation_id : $parent->id))
+            ->whereNotNull('goods_out_location_id')
+            ->exists();
+    }
+
+    protected function getConsolidatedTabsBox(Group|Organisation|Shop $parent): array
+    {
+        $open = PartnerShipment::query()
+            ->when($parent instanceof Group, fn ($query) => $query->where('group_id', $parent->id))
+            ->when(!$parent instanceof Group, fn ($query) => $query->where('organisation_id', $parent instanceof Shop ? $parent->organisation_id : $parent->id))
+            ->whereNull('dispatched_at')
+            ->whereNull('voided_at')
+            ->count();
+
+        return [
+            'label'         => __('Consolidated'),
+            'currency_code' => $parent->currency->code,
+            'tabs'          => [
+                [
+                    'tab_slug'  => OrdersBacklogTabsEnum::CONSOLIDATED->value,
+                    'label'     => __('Consolidated'),
+                    'value'     => $open,
+                    'icon_data' => [
+                        'tooltip' => __('Consolidated delivery notes to partners, with their customs invoices'),
+                        'icon'    => 'fal fa-layer-group',
+                        'class'   => 'text-gray-500',
+                        'color'   => 'gray',
+                        'app'     => ['name' => 'layer-group', 'type' => 'font-awesome-5'],
+                    ],
+                    'type'      => 'number',
+                ],
+            ],
+            'children'      => [],
+        ];
     }
 
     /**

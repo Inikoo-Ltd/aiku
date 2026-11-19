@@ -39,12 +39,35 @@ use App\Actions\Dispatching\Trolley\UI\CreateTrolley;
 use App\Actions\Dispatching\Trolley\UI\EditTrolley;
 use App\Actions\Dispatching\Trolley\UI\IndexTrolleys;
 use App\Actions\Dispatching\Trolley\UI\ShowTrolley;
+use App\Actions\Dispatching\PartnerShipment\ExportPartnerShipmentCustomsInvoice;
+use App\Actions\Dispatching\PartnerShipment\StorePartnerShipment;
+use App\Actions\Dispatching\PartnerShipment\UI\CreatePartnerShipment;
+use App\Actions\Dispatching\PartnerShipment\DispatchPartnerShipment;
+use App\Actions\Dispatching\PartnerShipment\ExportPartnerShipmentPackingList;
+use App\Actions\Dispatching\PartnerShipment\PutDeliveryNotesOnPartnerShipment;
+use App\Actions\Dispatching\PartnerShipment\StorePartnerCustomsInvoices;
+use App\Actions\Dispatching\PartnerShipment\UI\IndexPartnerShipments;
+use App\Actions\Dispatching\PartnerShipment\UI\ShowPartnerShipment;
+use App\Actions\Dispatching\PartnerShipment\VoidPartnerShipment;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Actions\UI\Dispatch\ShowDispatchReports;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowDispatchHub::class)->name('backlog');
 Route::get('/reports', ShowDispatchReports::class)->name('reports');
+
+Route::prefix('consolidated')->as('partner_shipments.')->group(function () {
+    Route::get('', IndexPartnerShipments::class)->name('index');
+    Route::post('put-on', PutDeliveryNotesOnPartnerShipment::class)->name('put_on');
+    Route::get('partner/{orgPartner}/create', CreatePartnerShipment::class)->name('create');
+    Route::post('partner/{orgPartner}', StorePartnerShipment::class)->name('store');
+    Route::get('{partnerShipment}', ShowPartnerShipment::class)->name('show');
+    Route::get('{partnerShipment}/packing-list', ExportPartnerShipmentPackingList::class)->name('packing_list');
+    Route::post('{partnerShipment}/customs-invoices', StorePartnerCustomsInvoices::class)->name('customs');
+    Route::patch('{partnerShipment}/dispatch', DispatchPartnerShipment::class)->name('dispatch');
+    Route::patch('{partnerShipment}/void', VoidPartnerShipment::class)->name('void');
+});
+Route::get('customs-invoices/{partnerCustomsInvoice}/xlsx', ExportPartnerShipmentCustomsInvoice::class)->name('customs_invoices.export');
 Route::get('/gate', IndexOrdersAtGate::class)->name('gate');
 Route::post('/partner-staging/stage', StagePartnerStock::class)->name('partner_staging.stage');
 Route::post('/partner-staging/release', ReleasePartnerStagingTask::class)->name('partner_staging.release');

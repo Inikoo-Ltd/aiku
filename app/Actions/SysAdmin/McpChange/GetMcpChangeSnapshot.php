@@ -20,6 +20,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Models\Chat\ChatSession;
+use App\Models\Dispatching\PartnerShipment;
 use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\UpcomingTransaction;
@@ -89,6 +90,12 @@ class GetMcpChangeSnapshot
             McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING => $this->orgStockAutoOrdering($target),
             McpChangeTypeEnum::PRODUCT_PACKAGING => $this->productPackaging($target),
             McpChangeTypeEnum::STAFF_CHAT_LISTS => $this->staffChatLists($target),
+            McpChangeTypeEnum::CUSTOMS_INVOICE => ['shipments' => PartnerShipment::where('org_partner_id', $target['org_partner_id'])
+                ->with('customsInvoices')
+                ->orderBy('id')
+                ->get()
+                ->mapWithKeys(fn (PartnerShipment $partnerShipment) => [$partnerShipment->id => [$partnerShipment->reference, ...$partnerShipment->customsInvoices->pluck('reference')->all()]])
+                ->all()],
             McpChangeTypeEnum::INFO_WEBSITE_CONTENT => GetStaticWebsiteContentState::run(
                 StaticWebsite::find($target['static_website_id']),
                 $target['pages'] ?? [],
@@ -232,6 +239,10 @@ class GetMcpChangeSnapshot
                     .', '.count($snapshot['order']['refunds']).' refunds, '.count($snapshot['order']['replacements']).' replacements, '.$snapshot['order']['follow_ons'].' in next order'
                     .collect($snapshot['order']['notes'])->filter()->map(fn ($note, $field) => ', '.$field.': '.$note)->implode('') : null,
             ])->filter()->implode('; ');
+        }
+
+        if ($type === McpChangeTypeEnum::CUSTOMS_INVOICE) {
+            return collect($snapshot['shipments'])->map(fn (array $references) => array_shift($references).($references ? ' ('.implode(', ', $references).')' : ' (no customs invoices yet)'))->implode(', ') ?: 'no trucks';
         }
 
         if ($type === McpChangeTypeEnum::CHAT_CLOSED) {

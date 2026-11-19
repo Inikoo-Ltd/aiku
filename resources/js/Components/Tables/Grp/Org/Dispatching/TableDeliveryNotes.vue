@@ -21,8 +21,8 @@ import NotesDisplay from "@/Components/NotesDisplay.vue"
 import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/WaitingOppositeCountBadge.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faMapMarkerAlt, faTruck, faYinYang, faCalendarAlt, faHistory } from "@fal"
-import { faCertificate, faPlane } from "@fas"
+import { faMapMarkerAlt, faTruck, faYinYang, faCalendarAlt, faHistory, faGlobeStand, faLayerGroup } from "@fal"
+import { faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faTruck, faYinYang)
 
@@ -30,7 +30,12 @@ const props = defineProps<{
 	data: TableTS
 	tab?: string
 	bucket?: string
+	selectable?: boolean
+	disabledCheckbox?: (row: { id: number }) => boolean
+	truckOf?: (row: { id: number }) => { reference: string; url: string } | null
 }>()
+
+const emit = defineEmits<{ (e: "selectRow", rows: Record<string, boolean>): void }>()
 
 
 
@@ -269,7 +274,17 @@ const dateColumnOptions = computed(() => [
 </script>
 
 <template>
-	<Table :resource="data" :name="tab" class="mt-5">
+	<Table :resource="data" :name="tab" class="mt-5" :isCheckBox="selectable" :disabledCheckbox="disabledCheckbox ?? (() => false)" @onSelectRow="(rows: Record<string, boolean>) => emit('selectRow', rows)">
+		<template #disable-checkbox="{ data: row }">
+			<Link
+				v-if="row && truckOf?.(row)"
+				:href="truckOf(row)!.url"
+				v-tooltip="ctrans('Consolidated in :reference', { reference: truckOf(row)!.reference })"
+				class="mx-auto block w-fit p-2 text-gray-500 hover:text-[var(--app-accent)]">
+				<FontAwesomeIcon :icon="faLayerGroup" fixed-width aria-hidden="true" />
+			</Link>
+			<span v-else class="block p-2" aria-hidden="true"></span>
+		</template>
 		<template #tableExtraAction v-if="hasDateColumnToggle">
 			<div class="flex items-center gap-x-1.5">
 				<label class="text-xs text-gray-500 whitespace-nowrap">
@@ -339,7 +354,7 @@ const dateColumnOptions = computed(() => [
 					<FontAwesomeIcon
 						v-if="deliveryNote.is_export"
 						v-tooltip="ctrans('Export order: check labels, box size and weight limits for :country', { country: deliveryNote.country?.name ?? ctrans('this destination') })"
-						:icon="faPlane"
+						:icon="faGlobeStand"
 						class="text-sky-600"
 						fixed-width
 						aria-hidden="true" />

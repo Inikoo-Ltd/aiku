@@ -14,6 +14,7 @@ use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\PartnerShipment;
 use App\Models\Dispatching\Trolley;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +37,7 @@ class DeleteDeliveryNote extends OrgAction
             DB::table('delivery_note_has_trolleys')->where('delivery_note_id', $deliveryNote->id)->delete();
             DetachDeliveryNoteFromPickedBays::run($deliveryNote);
             DB::table('picking_session_has_delivery_notes')->where('delivery_note_id', $deliveryNote->id)->delete();
+            PartnerShipment::releaseDeliveryNote($deliveryNote->id);
 
 
             Trolley::where('current_delivery_note_id', $deliveryNote->id)->update(['current_delivery_note_id' => null]);

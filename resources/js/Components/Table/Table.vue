@@ -1515,7 +1515,7 @@ const getSeverity = (type?: string) => {
                                         >
 
                                                 <td v-if="isCheckBox" key="checkbox" class="">
-                                                    <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`">
+                                                    <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`" :data="item">
                                                         <FontAwesomeIcon v-if="disabledCheckbox(item)"
                                                             icon="fal fa-minus-square"
                                                             class='text-gray-400 p-2 cursor-not-allowed text-lg mx-auto block'
@@ -1591,7 +1591,7 @@ const getSeverity = (type?: string) => {
                                                             : 'hover:bg-gray-50'
                                             ]">
                                             <td v-if="isCheckBox" key="checkbox" class="">
-                                                <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`">
+                                                <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`" :data="item">
                                                     <FontAwesomeIcon v-if="disabledCheckbox(item)"
                                                         icon="fal fa-minus-square"
                                                         class='text-gray-400 p-2 cursor-not-allowed text-lg mx-auto block'
@@ -1663,7 +1663,7 @@ const getSeverity = (type?: string) => {
                                             <td v-if="isCheckBox" key="checkbox" class="">
 
 
-                                                <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`">
+                                                <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`" :data="item">
                                                     <FontAwesomeIcon v-if="disabledCheckbox(item)"
                                                         icon="fal fa-minus-square"
                                                         class='text-gray-400 p-2 cursor-not-allowed text-lg mx-auto block'

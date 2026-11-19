@@ -38,6 +38,7 @@ enum OrdersBacklogTabsEnum: string
     case RETURNED = 'returned';
 
     case PRE_ORDERS = 'pre_orders';
+    case CONSOLIDATED = 'consolidated';
 
     /**
      * The order states these tabs put in front of staff. Anything live and outside this list is in

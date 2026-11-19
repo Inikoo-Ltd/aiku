@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Actions\Inventory\WarehouseTeam\UI\ShowWarehouseTeam;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
@@ -355,6 +356,20 @@ class GetWarehouseNavigation
                                 ],
                             ]
                         ],
+                        ShowDispatchHub::suppliesPartners($warehouse) ?
+                        [
+                            'label' => __('Consolidated'),
+                            'tooltip' => __('Consolidated delivery notes to partners and their customs invoices'),
+                            'icon'  => ['fal', 'fa-layer-group'],
+                            'root'  => 'grp.org.warehouses.show.dispatching.partner_shipments.',
+                            'route' => [
+                                "name"       => "grp.org.warehouses.show.dispatching.partner_shipments.index",
+                                "parameters" => [
+                                    $warehouse->organisation->slug,
+                                    $warehouse->slug
+                                ],
+                            ]
+                        ] : null,
                         [
                             'label' => __('Reports'),
                             'tooltip' => __('Pickers and packers performance reports'),

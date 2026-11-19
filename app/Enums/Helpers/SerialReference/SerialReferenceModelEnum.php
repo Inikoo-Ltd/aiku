@@ -32,5 +32,7 @@ enum SerialReferenceModelEnum: string
     case PICKING_SESSION = 'picking_session';
     case REFUND = 'refund';
     case JOB_ORDER = 'job_order';
+    case CUSTOMS_INVOICE = 'customs_invoice';
+    case PARTNER_SHIPMENT = 'partner_shipment';
 
 }

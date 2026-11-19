@@ -8,6 +8,8 @@
 
 namespace App\Actions\UI\Dispatch;
 
+use App\Actions\Dispatching\PartnerShipment\UI\IndexPartnerShipments;
+use App\Models\Dispatching\PartnerShipment;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
@@ -66,7 +68,7 @@ class ShowDispatchHub extends OrgAction
      * having partners says nothing. What marks an aroma type seller is having somewhere to
      * gather a partner's stock: no goods out location, nothing to pre-pick into.
      */
-    private function suppliesPartners(Warehouse $warehouse): bool
+    public static function suppliesPartners(Warehouse $warehouse): bool
     {
         return OrgPartner::where('organisation_id', $warehouse->organisation_id)
             ->whereNotNull('goods_out_location_id')
@@ -76,14 +78,16 @@ class ShowDispatchHub extends OrgAction
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
         $userSettings   = $request->user()->settings;
-        $suppliesPartners = $this->suppliesPartners($warehouse);
+        $suppliesPartners = self::suppliesPartners($warehouse);
         $hiddenTabs       = array_filter([
             $suppliesPartners ? null : DispatchHubTabsEnum::PARTNER_STAGING,
+            $suppliesPartners ? null : DispatchHubTabsEnum::CONSOLIDATED,
         ]);
         $partnerStaging   = $suppliesPartners ? GetPartnerStagingTasks::run($warehouse) : null;
         $navigation       = DispatchHubTabsEnum::navigationExcept(array_values($hiddenTabs));
         if ($partnerStaging !== null) {
             $navigation[DispatchHubTabsEnum::PARTNER_STAGING->value]['number'] = count($partnerStaging);
+            $navigation[DispatchHubTabsEnum::CONSOLIDATED->value]['number']    = PartnerShipment::where('warehouse_id', $warehouse->id)->whereNull('dispatched_at')->whereNull('voided_at')->count();
         }
 
         return Inertia::render(
@@ -117,6 +121,11 @@ class ShowDispatchHub extends OrgAction
                 'pickers_current' => fn () => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'pickers', 'pickers_current')),
                 'packers_current' => fn () => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'packers', 'packers_current')),
                 'partner_staging' => $partnerStaging,
+                'consolidated'    => $suppliesPartners ? fn () => IndexPartnerShipments::make()->handle($warehouse, 'consolidated') : null,
+                'consolidated_routes' => $suppliesPartners ? [
+                    'index'       => ['name' => 'grp.org.warehouses.show.dispatching.partner_shipments.index', 'parameters' => $request->route()->originalParameters()],
+                    'consolidate' => ['name' => 'grp.org.warehouses.show.dispatching.finalised.delivery-notes.shop', 'parameters' => [...array_values($request->route()->originalParameters()), 'partners']],
+                ] : null,
                 'can_edit'          => $request->user()->authTo("dispatching.{$this->warehouse->id}.edit"),
                 'stage_route'     => $suppliesPartners ? [
                     'name'       => 'grp.org.warehouses.show.dispatching.partner_staging.stage',
@@ -137,7 +146,8 @@ class ShowDispatchHub extends OrgAction
             ]
         )
             ->table($this->currentWorkTableStructure('pickers_current', __('Picker')))
-            ->table($this->currentWorkTableStructure('packers_current', __('Packer')));
+            ->table($this->currentWorkTableStructure('packers_current', __('Packer')))
+            ->table(IndexPartnerShipments::make()->tableStructure('consolidated'));
     }
 
     private function getPickingSessionStats(Warehouse $warehouse): array

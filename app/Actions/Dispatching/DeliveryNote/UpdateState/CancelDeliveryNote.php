@@ -31,6 +31,7 @@ use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\PartnerShipment;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\LocationOrgStock;
@@ -90,6 +91,7 @@ class CancelDeliveryNote extends OrgAction
 
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData, $modifyOrder, $user, $repair, $createReturn) {
             $deliveryNote = $this->update($deliveryNote, $modelData);
+            PartnerShipment::releaseDeliveryNote($deliveryNote->id);
 
             if ($repair) {
                 foreach ($deliveryNote->deliveryNoteItems as $item) {
