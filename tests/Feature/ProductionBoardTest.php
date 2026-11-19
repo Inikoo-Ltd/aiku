@@ -1978,6 +1978,15 @@ test('a fill product given its SKO after the order was submitted gets its fill l
     $line = \App\Models\Procurement\PartnerShoppingListItem::where('transaction_id', $transaction->id)->sole();
     expect((float) $line->quantity)->toBe(2.0)
         ->and($line->org_stock_id)->toBe($orgStock->id);
+
+    $orgStock->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUING]);
+    actingAs($this->guest->getUser());
+    $listed = fn () => collect(get(route('grp.org.productions.show.to_produce.list', [$this->organisation->slug, $this->production->slug]))
+        ->assertOk()->viewData('page')['props']['data']['data'])->pluck('id')->all();
+    expect($listed())->toContain($line->id);
+
+    $transaction->update(['state' => \App\Enums\Ordering\Transaction\TransactionStateEnum::CANCELLED]);
+    expect($listed())->not->toContain($line->id);
 });
 
 test('a fill line follows its order line: quantity changes, removal and cancelling the order', function () {

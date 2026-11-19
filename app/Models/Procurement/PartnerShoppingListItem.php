@@ -10,6 +10,7 @@ namespace App\Models\Procurement;
 
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Events\BroadcastPartnerProductionChanged;
@@ -191,6 +192,9 @@ class PartnerShoppingListItem extends Model
             })
             ->where(function ($query) use ($items, $orgStocks) {
                 $query->whereNotNull("$items.job_order_id")
+                    ->orWhereExists(fn ($query) => $query->from('transactions as ordered_line')
+                        ->whereColumn('ordered_line.id', "$items.transaction_id")
+                        ->where('ordered_line.state', '!=', TransactionStateEnum::CANCELLED->value))
                     ->orWhereNull("$orgStocks.state")
                     ->orWhereNotIn("$orgStocks.state", [OrgStockStateEnum::DISCONTINUING->value, OrgStockStateEnum::DISCONTINUED->value]);
             });
