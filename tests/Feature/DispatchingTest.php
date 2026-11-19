@@ -3998,10 +3998,11 @@ test('carrier api apc-gb success', function () {
                 'Messages' => ['Code' => 'SUCCESS'],
                 'Order'    => [
                     'OrderNumber'     => 'APC123',
+                    'WayBill'         => '2026111304810790209288',
                     'Label'           => ['Content' => base64_encode('label')],
                     'ShipmentDetails' => [
-                        'NumberOfPieces' => 1,
-                        'Items'          => ['Item' => ['TrackingNumber' => 'TRKAPC']],
+                        'NumberOfPieces' => 2,
+                        'Items'          => ['Item' => [['TrackingNumber' => '2026111304810790209288001'], ['TrackingNumber' => '2026111304810790209288002']]],
                     ],
                 ],
             ],
@@ -4012,7 +4013,10 @@ test('carrier api apc-gb success', function () {
     $deliveryNote = deliveryNoteForShipping($this);
 
     $shipment = StoreShipment::make()->action($deliveryNote, $shipper, []);
-    expect($shipment)->toBeInstanceOf(Shipment::class);
+    expect($shipment)->toBeInstanceOf(Shipment::class)
+        ->and($shipment->tracking)->toBe('2026111304810790209288')
+        ->and($shipment->trackings)->toBe(['2026111304810790209288'])
+        ->and($shipment->number_parcels)->toBe(2);
 });
 
 test('carrier api dpd-sk success', function () {

@@ -223,13 +223,17 @@ class CallApiApcGbShipping extends OrgAction
             $modelData['trackings']     = [];
             $modelData['tracking_urls'] = [];
 
-
-            $itemsData = Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.Items.Item', []);
-            if (Arr::has($itemsData, 'TrackingNumber')) {
-                $modelData['trackings'][] = Arr::get($itemsData, 'TrackingNumber');
+            $wayBill = Arr::get($apiResponse, 'Orders.Order.WayBill');
+            if ($wayBill) {
+                $modelData['trackings'][] = $wayBill;
             } else {
-                foreach ($itemsData as $item) {
-                    $modelData['trackings'][] = Arr::get($item, 'TrackingNumber');
+                $itemsData = Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.Items.Item', []);
+                if (Arr::has($itemsData, 'TrackingNumber')) {
+                    $modelData['trackings'][] = Arr::get($itemsData, 'TrackingNumber');
+                } else {
+                    foreach ($itemsData as $item) {
+                        $modelData['trackings'][] = Arr::get($item, 'TrackingNumber');
+                    }
                 }
             }
 
