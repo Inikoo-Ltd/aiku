@@ -56,20 +56,29 @@ enum AppLanguages {
 @Observable
 final class LanguageStore {
     static let shared = LanguageStore()
-    static let storageKey = "app.language"
+    nonisolated static let storageKey = "app.language"
+    nonisolated static let pendingKey = "app.language.pending"
+
+    nonisolated static func savedLanguageID(in defaults: UserDefaults = .standard) -> String? {
+        AppLanguages.supportedID(defaults.string(forKey: storageKey))
+    }
 
     private(set) var languageID: String
+    private(set) var pendingID: String?
     private var translations: Bundle?
+    @ObservationIgnored private var accountLanguageID: String?
+    @ObservationIgnored private var isSendingPending = false
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let bundle: Bundle
 
     init(defaults: UserDefaults = .standard, bundle: Bundle = .main, preferredLanguages: [String] = Locale.preferredLanguages) {
         self.defaults = defaults
         self.bundle = bundle
-        let stored = AppLanguages.supportedID(defaults.string(forKey: Self.storageKey))
+        let stored = Self.savedLanguageID(in: defaults)
         let preferred = preferredLanguages.lazy.compactMap { AppLanguages.supportedID($0) }.first
         let id = stored ?? preferred ?? AppLanguages.defaultID
         languageID = id
+        pendingID = AppLanguages.supportedID(defaults.string(forKey: Self.pendingKey))
         translations = Self.translations(for: id, in: bundle)
     }
 
@@ -83,9 +92,57 @@ final class LanguageStore {
 
     func select(_ id: String) {
         let supported = AppLanguages.supportedID(id) ?? AppLanguages.defaultID
-        languageID = supported
-        translations = Self.translations(for: supported, in: bundle)
-        defaults.set(supported, forKey: Self.storageKey)
+        apply(supported)
+        setPending(supported)
+    }
+
+    func applyAccountLanguage(_ code: String?) {
+        guard let id = AppLanguages.supportedID(code) else { return }
+        accountLanguageID = id
+        guard pendingID == nil, id != languageID else { return }
+        apply(id)
+    }
+
+    func sendPending(using update: (String) async throws -> String?) async {
+        guard !isSendingPending else { return }
+        isSendingPending = true
+        defer { isSendingPending = false }
+        while let pending = pendingID {
+            do {
+                let accountCode = try await update(pending)
+                guard pendingID == pending else { continue }
+                setPending(nil)
+                applyAccountLanguage(accountCode)
+            } catch is FormValidationError {
+                guard pendingID == pending else { continue }
+                setPending(nil)
+                if let accountLanguageID {
+                    apply(accountLanguageID)
+                }
+            } catch {
+                return
+            }
+        }
+    }
+
+    func forgetAccount() {
+        accountLanguageID = nil
+        setPending(nil)
+    }
+
+    private func apply(_ id: String) {
+        languageID = id
+        translations = Self.translations(for: id, in: bundle)
+        defaults.set(id, forKey: Self.storageKey)
+    }
+
+    private func setPending(_ id: String?) {
+        pendingID = id
+        if let id {
+            defaults.set(id, forKey: Self.pendingKey)
+        } else {
+            defaults.removeObject(forKey: Self.pendingKey)
+        }
     }
 
     func text(_ key: String) -> String {

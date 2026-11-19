@@ -52,20 +52,27 @@ protocol HTTPTransport: Sendable {
 extension URLSession: HTTPTransport {}
 
 final class APIClient: Sendable {
-    static let shared = APIClient(configuration: .current, tokenProvider: { KeychainTokenStore.shared.load() })
+    static let shared = APIClient(
+        configuration: .current,
+        tokenProvider: { KeychainTokenStore.shared.load() },
+        languageProvider: { LanguageStore.savedLanguageID() }
+    )
 
     private let configuration: AppConfiguration
     private let transport: HTTPTransport
     private let tokenProvider: @Sendable () -> String?
+    private let languageProvider: @Sendable () -> String?
 
     init(
         configuration: AppConfiguration,
         transport: HTTPTransport = URLSession.shared,
-        tokenProvider: @escaping @Sendable () -> String? = { nil }
+        tokenProvider: @escaping @Sendable () -> String? = { nil },
+        languageProvider: @escaping @Sendable () -> String? = { nil }
     ) {
         self.configuration = configuration
         self.transport = transport
         self.tokenProvider = tokenProvider
+        self.languageProvider = languageProvider
     }
 
     func makeRequest(for endpoint: Endpoint) -> URLRequest {
@@ -83,6 +90,9 @@ final class APIClient: Sendable {
             request.timeoutInterval = timeout
         }
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let language = languageProvider() {
+            request.setValue(language, forHTTPHeaderField: "Accept-Language")
+        }
         if let mobileAppKey = configuration.mobileAppKey {
             request.setValue(mobileAppKey, forHTTPHeaderField: "X-Aiku-App-Key")
         }

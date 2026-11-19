@@ -32,6 +32,14 @@ struct APIClientTests {
         #expect(client.makeRequest(for: .profile).timeoutInterval == URLRequest(url: URL(string: "https://example.test")!).timeoutInterval)
     }
 
+    @Test func asksForTheAppLanguage() {
+        let chosen = APIClient(configuration: configuration, languageProvider: { "de" }).makeRequest(for: .profile)
+        let unset = APIClient(configuration: configuration).makeRequest(for: .profile)
+
+        #expect(chosen.value(forHTTPHeaderField: "Accept-Language") == "de")
+        #expect(unset.value(forHTTPHeaderField: "Accept-Language") == nil)
+    }
+
     @Test func omitsAuthorizationWithoutToken() {
         let request = APIClient(configuration: configuration).makeRequest(for: .profile)
 

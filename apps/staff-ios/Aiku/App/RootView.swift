@@ -27,6 +27,7 @@ struct RootView: View {
         }
         .task(id: authStore.isSignedIn) {
             await authStore.refreshProfile()
+            await sendPendingLanguage()
             await refreshPermissionsIfSignedIn()
         }
         .onChange(of: authStore.profile, initial: true) { _, profile in
@@ -37,7 +38,12 @@ struct RootView: View {
         .onChange(of: authStore.mobileProfile, initial: true) { _, profile in
             if let profile {
                 session.apply(profile)
+                languages.applyAccountLanguage(profile.language?.code)
             }
+        }
+        .onChange(of: languages.pendingID, initial: true) { _, pending in
+            guard pending != nil, authStore.isSignedIn else { return }
+            Task { await sendPendingLanguage() }
         }
         .onChange(of: authStore.userID, initial: true) { _, userID in
             CrashReporting.identify(userID: userID)
@@ -57,6 +63,7 @@ struct RootView: View {
             guard phase == .active else { return }
             Task {
                 await authStore.refreshProfile()
+                await sendPendingLanguage()
                 await refreshPermissionsIfSignedIn()
                 await refreshWarehousesIfSignedIn()
                 await WorkBadgesStore.shared.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
@@ -69,6 +76,13 @@ struct RootView: View {
 
     private var resolvedModules: ModuleAccess? {
         ModuleAccess.resolve(warehouse: warehouseStore.selected, isSignedIn: (authStore.userID ?? 0) > 0)
+    }
+
+    private func sendPendingLanguage() async {
+        guard authStore.isSignedIn else { return }
+        await languages.sendPending { code in
+            try await apiClient.updateProfileLanguage(code).language?.code
+        }
     }
 
     private func refreshPermissionsIfSignedIn() async {
@@ -99,6 +113,7 @@ struct RootView: View {
         WorkBadgesStore.shared.reset()
         ShellInboxStore.shared.reset()
         RecentSearches().clear()
+        languages.forgetAccount()
         Task { await authStore.signOut() }
     }
 }
