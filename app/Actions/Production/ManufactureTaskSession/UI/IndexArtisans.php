@@ -123,10 +123,25 @@ class IndexArtisans extends OrgAction
 
         $payTypeHistory = $this->payTypeHistory($sessions->pluck('employee')->filter()->unique('id'));
 
-        $totals = function (Collection $sessions): array {
+        $bandOrder = ['0', '1', '2', '3', 'D', 'DG'];
+        $bands     = fn (Collection $sessions): array => $sessions
+            ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
+            ->whereNotNull('band_code')
+            ->groupBy('band_code')
+            ->map(fn (Collection $bandSessions, string|int $band) => [
+                'band'   => (string) $band,
+                'hours'  => round($bandSessions->sum(fn (ManufactureTaskSession $session) => $session->paidHours()), 2),
+                'earned' => $this->canSeePay ? round((float) $bandSessions->sum('pay'), 2) : null,
+            ])
+            ->sortBy(fn (array $split) => array_search($split['band'], $bandOrder, true) === false ? PHP_INT_MAX : array_search($split['band'], $bandOrder, true))
+            ->values()
+            ->all();
+
+        $totals = function (Collection $sessions) use ($bands): array {
             $closed = $sessions->where('state', ManufactureTaskSessionStateEnum::CLOSED);
 
             return [
+                'bands'             => $bands($sessions),
                 'number_sessions'   => $closed->count(),
                 'hours'             => round($closed->sum(fn (ManufactureTaskSession $session) => $session->paidHours()), 2),
                 'quantity_made'     => round((float)$closed->sum('quantity_made'), 2),
@@ -197,6 +212,7 @@ class IndexArtisans extends OrgAction
             'units_per_hour'      => $session->paidHours() > 0 ? round($session->quantity_made / $session->paidHours(), 1) : null,
             'standard_rate'       => $session->standard_rate === null ? null : (float)$session->standard_rate,
             'edited_tiers'        => $session->tier_thresholds,
+            'band_code'           => $session->state == ManufactureTaskSessionStateEnum::CLOSED ? $session->band_code : null,
             'is_under_target'     => $session->is_under_target && $session->state == ManufactureTaskSessionStateEnum::CLOSED,
             'is_impossible_rate'  => $session->state == ManufactureTaskSessionStateEnum::CLOSED && $session->paidHours() > 0 && CloseManufactureTaskSession::make()->isImpossibleRate($session),
             'is_hourly'           => $session->artisan_pay_type == ArtisanPayTypeEnum::HOURLY,
@@ -218,7 +234,7 @@ class IndexArtisans extends OrgAction
 
         $artisans = $sessions
             ->groupBy('user_id')
-            ->map(function (Collection $allUserSessions) use ($totals, $serializeSession, $timeEdit, $from, $to, $payTypeHistory, $artisanWorkAreas) {
+            ->map(function (Collection $allUserSessions) use ($totals, $bands, $serializeSession, $timeEdit, $from, $to, $payTypeHistory, $artisanWorkAreas) {
                 /** @var ManufactureTaskSession $first */
                 $first         = $allUserSessions->first();
                 $userSessions  = $allUserSessions->reject(fn (ManufactureTaskSession $session) => $session->isNonProductive());
@@ -256,6 +272,7 @@ class IndexArtisans extends OrgAction
                     'quantity_made'     => $artisanTotals['quantity_made'],
                     'quantity_rejected' => $artisanTotals['quantity_rejected'],
                     'earned'            => $artisanTotals['earned'],
+                    'bands'             => $bands($allUserSessions),
                     'non_productive'    => $this->nonProductiveSummary($allUserSessions->filter(fn (ManufactureTaskSession $session) => $session->isNonProductive()), $timeEdit),
                     'under_target_open' => $userSessions->filter(fn (ManufactureTaskSession $session) => $session->is_under_target && $session->state == ManufactureTaskSessionStateEnum::CLOSED && !$session->under_target_reviewed_at)->count(),
                     'jobs'              => $userSessions
@@ -413,6 +430,7 @@ class IndexArtisans extends OrgAction
                 'ended_at'            => $session->ended_at,
                 'break_minutes'       => (int) $session->break_minutes,
                 'pay'                 => !$this->canSeePay || $session->pay === null ? null : (float) $session->pay,
+                'band_code'           => $session->state == ManufactureTaskSessionStateEnum::CLOSED ? $session->band_code : null,
                 'moved_into'          => $session->movedInto?->stepName(),
                 'undo_move_route'     => $session->movedInto && $this->canChangeAt($session->started_at) ? [
                     'name'       => 'grp.models.manufacture-task-session.undo_preparation_move',

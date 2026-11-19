@@ -84,6 +84,7 @@ interface ArtisanSession extends TimeEditFields {
     units_per_hour: number | null
     standard_rate: number | null
     edited_tiers: null | { source: 'artefact' | 'family', thresholds: Record<string, number> }
+    band_code: string | null
     is_under_target: boolean
     is_impossible_rate?: boolean
     is_hourly: boolean
@@ -93,10 +94,17 @@ interface ArtisanSession extends TimeEditFields {
     preparation_minutes: number | null
 }
 
+interface BandSplit {
+    band: string
+    hours: number
+    earned: number | null
+}
+
 interface ArtisanJobStep {
     manufacture_task_id: number
     task_name: string
     hours: number
+    bands: BandSplit[]
     quantity_made: number
     quantity_rejected: number
     earned: number | null
@@ -128,6 +136,7 @@ interface NonProductiveSummary {
         ended_at: string
         break_minutes: number
         pay: number | null
+        band_code: string | null
         moved_into: string | null
         undo_move_route: null | { name: string, parameters: object }
         void_route: null | { name: string, parameters: object }
@@ -139,6 +148,7 @@ interface ArtisanJob {
     job_order_reference: string
     artefact_code: string
     hours: number
+    bands: BandSplit[]
     quantity_made: number
     quantity_rejected: number
     earned: number | null
@@ -215,6 +225,7 @@ type Props = {
         quantity_made: number
         quantity_rejected: number
         earned: number | null
+        bands: BandSplit[]
         under_target_open: number
         non_productive: NonProductiveSummary
         jobs: ArtisanJob[]
@@ -800,6 +811,16 @@ function clockTime(iso: string | null) {
     return iso ? new Date(iso).toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }) : "—"
 }
 
+const bandClasses: Record<string, string> = {
+    "0": "bg-gray-100 text-gray-700",
+    "1": "bg-sky-100 text-sky-800",
+    "2": "bg-teal-100 text-teal-800",
+    "3": "bg-violet-100 text-violet-800",
+    "D": "bg-fuchsia-100 text-fuchsia-800",
+    "DG": "bg-pink-100 text-pink-800",
+}
+const bandClass = (band: string) => bandClasses[band] ?? "bg-gray-100 text-gray-700"
+
 const clockHours = (hours: number | string) => {
     const minutes = Math.round(Number(hours) * 60)
     return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`
@@ -1067,6 +1088,17 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
 
                 <template v-if="expanded.has(artisan.user_id)">
 
+                    <tr v-if="artisan.bands.length" class="border-t border-gray-100">
+                        <td colspan="10" class="py-1.5 pl-4 pr-4">
+                            <div class="flex flex-wrap items-center gap-2 text-xs">
+                                <span class="font-medium text-gray-700">{{ ctrans('Pay bands') }}</span>
+                                <span v-for="split in artisan.bands" :key="split.band" class="rounded px-1.5 py-0.5 font-medium whitespace-nowrap" :class="bandClass(split.band)">
+                                    {{ ctrans('Band') }} {{ split.band }} · {{ clockHours(split.hours) }}<template v-if="can_see_pay && split.earned !== null"> · {{ money(split.earned) }}</template>
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+
                     <template v-if="artisan.non_productive.sessions.length">
                         <tr class="cursor-pointer border-t border-gray-100 font-medium text-gray-700 hover:bg-gray-50" @click="toggleNonProductive(artisan.user_id)">
                             <td class="py-1.5 pl-4 pr-4 whitespace-nowrap">
@@ -1087,6 +1119,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                                         {{ useFormatTime(session.ended_at) }}
 <span class="text-gray-600">{{ hourMinute(session.started_at) }} – {{ hourMinute(session.ended_at) }}</span>
                                         <span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ session.activity }}</span>
+                                        <span v-if="session.band_code" class="rounded px-1.5 py-0.5 text-xs font-medium" :class="bandClass(session.band_code)">{{ ctrans('Band') }} {{ session.band_code }}</span>
                                         <span v-if="session.reason" class="text-xs text-gray-600">{{ session.reason }}<template v-if="session.reason_note">: <span v-tooltip="session.reason_note_original ? ctrans('Typed as: :text', { text: session.reason_note_original }) : undefined" :class="session.reason_note_original ? 'cursor-help underline decoration-dotted' : ''">{{ session.reason_note }}</span></template></span>
                                         <span class="text-xs">{{ session.job_order_reference ?? ctrans('General') }}</span>
                                         <span v-if="session.break_minutes" class="text-xs">{{ ctrans(':minutes m break', { minutes: session.break_minutes }) }}</span>
@@ -1123,7 +1156,10 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                             <td class="py-1.5 px-3 text-right">{{ clockHours(job.hours) }}</td>
                             <td class="py-1.5 px-3 text-right">{{ quantityLabel(job.quantity_made) }}</td>
                             <td class="py-1.5 px-3 text-right text-red-500">{{ job.quantity_rejected ? quantityLabel(job.quantity_rejected) : '' }}</td>
-                            <td colspan="3"></td>
+                            <td class="py-1.5 px-3 text-right text-xs font-normal whitespace-nowrap">
+                                <span v-for="split in job.bands.length > 1 ? job.bands : []" :key="split.band" class="ml-1 rounded px-1.5 py-0.5 font-medium" :class="bandClass(split.band)">{{ ctrans('Band') }} {{ split.band }} {{ clockHours(split.hours) }}</span>
+                            </td>
+                            <td colspan="2"></td>
                             <td v-if="can_see_pay" class="py-1.5 px-3 text-right">{{ money(job.earned) }}</td>
                             <td></td>
                         </tr>
@@ -1134,7 +1170,10 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                                 <td class="py-1 px-3 text-right">{{ clockHours(step.hours) }}</td>
                                 <td class="py-1 px-3 text-right">{{ quantityLabel(step.quantity_made) }}</td>
                                 <td class="py-1 px-3 text-right text-red-500">{{ step.quantity_rejected ? quantityLabel(step.quantity_rejected) : '' }}</td>
-                                <td colspan="3"></td>
+                                <td class="py-1 px-3 text-right whitespace-nowrap">
+                                    <span v-for="split in step.bands.length > 1 ? step.bands : []" :key="split.band" class="ml-1 rounded px-1.5 py-0.5 font-medium" :class="bandClass(split.band)">{{ ctrans('Band') }} {{ split.band }} {{ clockHours(split.hours) }}</span>
+                                </td>
+                                <td colspan="2"></td>
                                 <td v-if="can_see_pay" class="py-1 px-3 text-right">{{ money(step.earned) }}</td>
                                 <td></td>
                             </tr>
@@ -1159,6 +1198,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                                     <td class="py-1.5 px-3 text-right text-red-500">{{ session.quantity_rejected ? quantityLabel(session.quantity_rejected) : '' }}</td>
                                     <td class="py-1.5 px-3 text-right whitespace-nowrap" :class="session.is_under_target ? 'text-amber-700' : 'text-gray-400'">
                                         <template v-if="session.standard_rate !== null">{{ session.units_per_hour ?? 0 }} / {{ session.standard_rate }}</template>
+                                        <span v-if="session.band_code" class="ml-2 rounded px-1.5 py-0.5 text-xs font-medium" :class="bandClass(session.band_code)">{{ ctrans('Band') }} {{ session.band_code }}</span>
                                     </td>
                                     <td></td>
                                     <td class="py-1.5 px-3 text-right">

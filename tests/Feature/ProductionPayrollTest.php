@@ -599,6 +599,26 @@ describe('production reward pay bands', function () {
         expect($sessionAtBand3->band_code)->toBe('3');
     });
 
+    test('performance shows the band each session was paid at and the hours per band', function () {
+        $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => 10000]);
+        $atBand1 = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run(makePayBandSession($this->payBandJobOrderItemTask, 15342, 1.5));
+        $atBand3 = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run(makePayBandSession($this->payBandJobOrderItemTask, 23604, 2));
+
+        $artisans = collect(get(route('grp.org.productions.show.artisans.index', [$this->organisation->slug, $this->production->slug, 'from' => now()->toDateString(), 'to' => now()->addDay()->toDateString()]))
+            ->assertOk()->viewData('page')['props']['artisans']);
+        $step = $artisans->pluck('jobs')->flatten(1)->pluck('steps')->flatten(1)
+            ->first(fn (array $step) => collect($step['sessions'])->pluck('id')->contains($atBand1->id));
+        $sessions = collect($step['sessions'])->keyBy('id');
+
+        expect($sessions[$atBand1->id]['band_code'])->toBe('1')
+            ->and($sessions[$atBand3->id]['band_code'])->toBe('3')
+            ->and($step['bands'])->toBe([
+                ['band' => '1', 'hours' => 1.5, 'earned' => (float) $atBand1->pay],
+                ['band' => '3', 'hours' => 2.0, 'earned' => (float) $atBand3->pay],
+            ])
+            ->and(collect($artisans->firstWhere('user_id', auth()->id())['bands'])->pluck('band'))->toContain('1', '3');
+    });
+
     test('a non production activity always pays band 0 with no units per hour', function () {
         $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => 152]);
         $session = makePayBandSession(
