@@ -909,3 +909,32 @@ test('the Merlin report estimates staff time pessimistically: half the answered 
 
     expect($time)->toBe(['saved_hours' => 0.2, 'added_hours' => 0.1, 'net_hours' => 0.1]);
 });
+
+test('when Merlin is not sure, what it did find is shown before the team sentence only when Jev finds it follows from its tool results', function () {
+    config(['services.shopping_assistant.premium_model' => null]);
+    $draft = 'Orders usually leave our warehouse within a few working days of being placed.';
+    $turn  = fn (Illuminate\Http\Client\ResponseSequence $sequence) => $sequence
+        ->push(['choices' => [['finish_reason' => 'tool_calls', 'message' => ['role' => 'assistant', 'content' => null, 'tool_calls' => [[
+            'id' => 'call_times', 'type' => 'function', 'function' => ['name' => 'dispatch_times', 'arguments' => '{}'],
+        ]]]]], 'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 20, 'cost' => 0.01]])
+        ->push(['choices' => [['finish_reason' => 'tool_calls', 'message' => ['role' => 'assistant', 'content' => null, 'tool_calls' => [[
+            'id' => 'call_present', 'type' => 'function', 'function' => ['name' => 'present_products', 'arguments' => json_encode(['reply' => $draft, 'answer_kind' => 'offer_person', 'offer_reason' => 'not_sure'])],
+        ]]]]], 'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 20, 'cost' => 0.01]]);
+    Http::fake([
+        '*chat/completions' => $turn($turn(Http::sequence())),
+        '*alpha/decisions'  => fn ($request) => Http::response(['answers' => ['answer' => ['noul' => str_contains($request->body(), 'follow from the evidence') ? $this->followsFromEvidence : null]]]),
+    ]);
+
+    $kept = teamQuestionConversation($this);
+    $this->followsFromEvidence = 0.95;
+    $first = AskShoppingAssistant::run($kept, 'How long until my order to Lisbon arrives?');
+
+    $refused = teamQuestionConversation($this);
+    $this->followsFromEvidence = 0.2;
+    $second = AskShoppingAssistant::run($refused, 'How long until my parcel to Porto gets there?');
+
+    expect($first['message']->flags)->toContain('partial_answer')->toContain('asked_team')
+        ->and($first['reply'])->toStartWith($draft."\n\n")
+        ->and($second['message']->flags)->toContain('partial_answer_refused')->toContain('asked_team')
+        ->and($second['reply'])->not->toContain($draft);
+});
