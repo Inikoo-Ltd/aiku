@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\AI\UI;
 
+use App\Actions\Chat\Reports\GetChatAiAcceptance;
 use App\Actions\Chat\Reports\GetChatAiAccountUsage;
 use App\Actions\Helpers\AI\GetOpenRouterBalance;
 use App\Actions\OrgAction;
@@ -152,8 +153,23 @@ class ShowAiDashboard extends OrgAction
                 'daily'       => $this->getDaily(),
                 'models'      => $this->getModels(),
                 'claudeUsage' => GetChatAiAccountUsage::run($this->group),
+                'csSuggestions' => fn () => $this->csSuggestions(),
             ]
         )->table($this->tableStructure());
+    }
+
+    /**
+     * @return array{rate: ?int, decided: int, target: int}
+     */
+    private function csSuggestions(): array
+    {
+        $acceptance = GetChatAiAcceptance::run($this->group);
+
+        return [
+            'rate'    => $acceptance['decided'] ? (int) round(100 * $acceptance['adopted'] / $acceptance['decided']) : null,
+            'decided' => $acceptance['decided'],
+            'target'  => $acceptance['target'],
+        ];
     }
 
     /**

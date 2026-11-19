@@ -328,6 +328,11 @@ class ShowGroupChatAutomation extends OrgAction
                 'route' => ['name' => 'grp.chat.ai.dashboard', 'parameters' => []],
             ],
             [
+                'label' => __('Suggestions taken'),
+                'root'  => 'grp.chat.ai.acceptance',
+                'route' => ['name' => 'grp.chat.ai.acceptance', 'parameters' => []],
+            ],
+            [
                 'label' => __('Confidence map'),
                 'root'  => 'grp.chat.ai.confidence',
                 'route' => ['name' => 'grp.chat.ai.confidence', 'parameters' => []],
@@ -335,7 +340,7 @@ class ShowGroupChatAutomation extends OrgAction
             $tab(__('Sent to customers'), 'grp.chat.ai.sent', self::SENT),
             $tab(__('Noise checks'), 'grp.chat.ai.noise_checks', self::NOISE_CHECKS),
             ...(request()->user() && IndexChatAikuDrafts::make()->shopIdsFor(request()->user())->isNotEmpty() ? [[
-                'label' => __('Drafts by Aiku'),
+                'label' => __('Suggestions'),
                 'root'  => 'grp.chat.ai.aiku_drafts',
                 'route' => ['name' => 'grp.chat.ai.aiku_drafts', 'parameters' => []],
             ], [

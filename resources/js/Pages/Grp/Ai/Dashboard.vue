@@ -49,6 +49,7 @@ const props = defineProps<{
     totals: { today: number, week: number, month: number, year: number, calls_month: number, tokens_month: number }
     daily: { day: string, cost: number, calls: number }[]
     models: { model: string, label: string, cost: number, calls: number, tokens: number }[]
+    csSuggestions?: { rate: number | null, decided: number, target: number }
 }>()
 
 const moneyColumns = ["today", "week", "month", "year"] as const
@@ -108,6 +109,13 @@ const { lastUpdate, isLive } = useLiveAiUsage(["features", "totals", "queryBuild
             <div v-else class="col-span-2 rounded-xl border border-gray-200 bg-white p-4 text-xs text-gray-500 shadow-sm sm:col-span-3">
                 {{ ctrans("OpenRouter balance not available: the key is not set or OpenRouter did not answer.") }}
             </div>
+            <Link v-if="csSuggestions" :href="route('grp.chat.ai.acceptance')" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:bg-gray-50" v-tooltip="ctrans('Open suggestions taken, per shop and per person')">
+                <div class="text-xs text-gray-500">{{ ctrans("CS suggestions taken, 28 days") }}</div>
+                <div class="mt-1 text-xl font-semibold tabular-nums" :class="csSuggestions.rate !== null && csSuggestions.rate >= csSuggestions.target ? 'text-green-700' : 'text-gray-900'">
+                    {{ csSuggestions.rate === null ? "—" : csSuggestions.rate + "%" }}
+                    <span class="text-xs font-normal text-gray-500">{{ ctrans("of :count, target :target%", { count: csSuggestions.decided.toLocaleString(), target: csSuggestions.target }) }}</span>
+                </div>
+            </Link>
         </div>
         <p class="-mt-3 text-xs text-gray-500">{{ ctrans("Spend includes what OpenAI charges on our own OpenAI key (BYOK); the OpenRouter boxes only show OpenRouter credit.") }}</p>
 

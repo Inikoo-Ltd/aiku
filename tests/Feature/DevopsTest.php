@@ -429,7 +429,8 @@ it('records each ai call under its feature, rolls it into the ai time series and
             ->has('daily', 1)
             ->where('models.0.label', 'GPT-4o-mini')
             ->where('models.0.calls', 2)
-            ->has('claudeUsage'));
+            ->has('claudeUsage')
+            ->where('csSuggestions.target', App\Actions\Chat\Reports\GetChatAiAcceptance::HIGH));
 
     $this->get(route('grp.ai.dashboard', ['sort' => 'tokens_month']))->assertOk();
 

@@ -1888,3 +1888,93 @@ test('the shop facts say how long products are usually out of stock, only from e
         ->and($facts::restockText((object) ['spells' => 960, 'half' => 42.5, 'three_quarters' => 110]))
         ->toBe('When a product runs out of stock we restock it, unless it is being discontinued. Over the last 12 months, half of the products that ran out were back in stock within 43 days, and 3 in 4 within 110 days. For one product, the expected date depends on what is on order.');
 });
+
+test('suggestions taken counts only drafts with an outcome, per shop for everyone and per person only for supervisors, and the suggestions list filters by them', function () {
+    $clerk = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true, 'contact_name' => 'Acceptance Clerk']);
+    makeChatWorker($clerk, $this->shop);
+    $session = noiseTestEmailSession($this->shop, 'taken@example.com', 'Invoice please', 'Can I have my invoice?');
+
+    $row = fn () => collect(\App\Actions\Chat\Reports\GetChatAiAcceptance::make()->byShop($this->shop->group)->get())->firstWhere('shop_id', $this->shop->id);
+    $before = $row();
+    $draft  = fn (?string $changeClass, array $more = []) => \App\Models\Chat\ChatAiDraft::create($more + [
+        'group_id'           => $this->shop->group_id,
+        'organisation_id'    => $this->shop->organisation_id,
+        'shop_id'            => $this->shop->id,
+        'chat_session_id'    => $session->id,
+        'trigger_message_id' => $session->messages()->value('id'),
+        'topic'              => \App\Enums\CRM\Livechat\ChatTopicEnum::PAYMENT_INVOICE,
+        'facts'              => ['mode' => \App\Actions\Chat\ChatSession\DraftChatReply::ASSISTANT],
+        'text'               => 'Here is your invoice, acceptance test.',
+        'status'             => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED,
+        'intent'             => 'invoice_copy',
+        'change_class'       => $changeClass,
+        'decided_by_user_id' => $clerk->id,
+    ]);
+
+    $made = collect([
+        $draft('as_is'),
+        $draft('gaps_filled'),
+        $draft('big', ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::EDITED]),
+        $draft('rewritten', ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::EDITED]),
+        $draft('discarded', ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]),
+        $draft(null, ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::PENDING, 'decided_by_user_id' => null]),
+        $draft(null, ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED, 'decided_by_user_id' => null]),
+    ]);
+    $clerkAgent = \App\Models\Chat\ChatAgent::updateOrCreate(['user_id' => $clerk->id], ['max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => false, 'is_available' => false, 'current_chat_count' => 0]);
+    $ownReply   = \App\Models\Chat\ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => \App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT,
+        'sender_type'     => \App\Enums\CRM\Livechat\ChatSenderTypeEnum::AGENT,
+        'sender_id'       => $clerkAgent->id,
+        'message_text'    => 'Invoice attached.',
+    ]);
+    $made->push($draft('own_reply', ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED, 'decided_by_user_id' => null, 'reply_message_id' => $ownReply->id]));
+
+    $after = $row();
+    $delta = fn (string $column) => (int) $after->$column - (int) ($before?->$column ?? 0);
+    expect($delta('decided'))->toBe(6)
+        ->and($delta('adopted'))->toBe(3)
+        ->and($delta('rewritten'))->toBe(1)
+        ->and($delta('ignored'))->toBe(1)
+        ->and($delta('discarded'))->toBe(1)
+        ->and($delta('d0'))->toBe(6)
+        ->and(\App\Actions\Chat\Reports\GetChatAiAcceptance::band(14, 20))->toBe('high')
+        ->and(\App\Actions\Chat\Reports\GetChatAiAcceptance::band(8, 20))->toBe('medium')
+        ->and(\App\Actions\Chat\Reports\GetChatAiAcceptance::band(7, 20))->toBe('low')
+        ->and(\App\Actions\Chat\Reports\GetChatAiAcceptance::band(9, 9))->toBeNull();
+
+    expect(\App\Actions\Chat\UI\IndexChatAiAcceptance::make()->supervisedShopIds($clerk))->toBeEmpty()
+        ->and(\App\Actions\Chat\UI\IndexChatAiAcceptance::make()->supervisedShopIds($this->user)->all())->toContain($this->shop->id);
+
+    actingAs($this->user);
+    $list = fn (array $filter) => collect(get(route('grp.chat.ai.aiku_drafts', ['filter' => $filter, 'perPage' => 100]))->assertOk()->viewData('page')['props']['data']['data'])
+        ->filter(fn ($item) => $item['text'] === 'Here is your invoice, acceptance test.');
+    expect($list(['shop' => $this->shop->slug, 'outcome' => 'discarded'])->first()['reply'])->toBe('Invoice attached.')
+        ->and($list(['shop' => $this->shop->slug, 'outcome' => 'rewritten']))->toHaveCount(1)
+        ->and($list(['shop' => $this->shop->slug, 'outcome' => 'pending'])->first()['outcome'])->toBe('pending')
+        ->and($list(['staff' => (string) $clerk->id])->count())->toBe(6)
+        ->and($list(['outcome' => 'own_reply', 'shop' => $this->shop->slug])->first()['decided_by'])->toBe('Acceptance Clerk')
+        ->and($list(['band' => \App\Actions\Chat\Reports\GetChatAiAcceptance::band((int) $after->adopted, (int) $after->decided) ?? 'few', 'shop' => $this->shop->slug]))->toHaveCount(8)
+        ->and($list(['band' => 'nonsense', 'shop' => $this->shop->slug]))->toBeEmpty()
+        ->and($list(['staff' => (string) $clerk->id])->first())->toMatchArray(['decided_by' => 'Acceptance Clerk', 'question' => 'Can I have my invoice?'])
+        ->and($list(['shop' => $this->shop->slug, 'week' => now()->subWeeks(3)->toDateString()]))->toBeEmpty();
+
+    $filterKeys = fn (array $props) => collect($props['queryBuilderProps']['default']['filters'] ?? [])->pluck('key');
+    expect($filterKeys(get(route('grp.chat.ai.aiku_drafts'))->viewData('page')['props']))->toContain('staff', 'band', 'shop');
+
+    actingAs($clerk);
+    $clerkPage = get(route('grp.chat.ai.aiku_drafts', ['filter' => ['shop' => $this->shop->slug], 'perPage' => 100]))->assertOk()->viewData('page')['props'];
+    expect(collect($clerkPage['data']['data'])->filter(fn ($item) => $item['text'] === 'Here is your invoice, acceptance test.')->pluck('decided_by')->filter())->toBeEmpty()
+        ->and($filterKeys($clerkPage))->not->toContain('staff')->toContain('shop')
+        ->and(collect(get(route('grp.chat.ai.aiku_drafts', ['filter' => ['staff' => (string) $clerk->id], 'perPage' => 100]))->assertOk()->viewData('page')['props']['data']['data']))->toBeEmpty();
+
+    actingAs($this->user);
+    get(route('grp.chat.ai.acceptance'))->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->component('Chat/ChatAiAcceptance')
+            ->where('shops.data', fn ($rows) => collect($rows)->contains(fn ($shop) => $shop['shop_code'] === $this->shop->code && count($shop['weeks']) === 8))
+            ->where('users.data', fn ($rows) => collect($rows)->contains(fn ($user) => $user['user_name'] === 'Acceptance Clerk' && $user['decided'] === 6 && $user['rate'] === 50)));
+
+    \App\Models\Chat\ChatAiDraft::whereIn('id', $made->pluck('id'))->delete();
+    $session->messages()->withTrashed()->forceDelete();
+    $session->forceDelete();
+});
