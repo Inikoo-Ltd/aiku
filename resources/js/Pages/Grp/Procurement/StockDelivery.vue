@@ -903,7 +903,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 	<PageHeading :data="pageHeadWithoutSettings">
 		<template #otherBefore>
 			<Action v-if="settingsAction" :action="settingsAction" />
-			<span v-if="add_item_not_on_purchase_order" v-tooltip="ctrans('The supplier sent a product that is on none of the purchase orders')">
+			<span v-if="add_item_not_on_purchase_order" v-tooltip="ctrans('A product arrived that is on none of the purchase orders')">
 				<Button type="tertiary" :label="ctrans('Add item not ordered')" @click="openAddItemNotOnPurchaseOrder">
 					<template #icon>
 						<FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />

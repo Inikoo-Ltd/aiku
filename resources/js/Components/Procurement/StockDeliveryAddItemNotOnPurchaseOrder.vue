@@ -19,7 +19,7 @@ import { routeType } from "@/types/route"
 type Product = { id: number; code: string | null; name: string | null }
 
 const props = defineProps<{
-	addRoute: routeType
+	addRoute: routeType & { field?: string }
 	products: Product[] | null | undefined
 }>()
 
@@ -41,7 +41,7 @@ watch(visible, (isVisible) => {
 const submit = () => {
 	router.post(
 		route(props.addRoute.name, props.addRoute.parameters),
-		{ org_supplier_product_id: productId.value, sko_quantity: skoQuantity.value },
+		{ [props.addRoute.field ?? "org_supplier_product_id"]: productId.value, sko_quantity: skoQuantity.value },
 		{
 			preserveScroll: true,
 			onStart: () => (isSubmitting.value = true),
@@ -57,7 +57,7 @@ const submit = () => {
 	<Dialog v-model:visible="visible" modal :header="ctrans('Add item not on the purchase order')" :style="{ width: '32rem' }" :breakpoints="{ '640px': '95vw' }">
 		<div class="space-y-4 text-sm">
 			<p class="text-gray-500">
-				{{ ctrans("The supplier sent a product that is on none of this delivery's purchase orders. It is added as received and counted, at the supplier's price, and then put away like the other lines.") }}
+				{{ ctrans("A product arrived that is on none of this delivery's purchase orders. It is added as received and counted, at its purchase price, and then put away like the other lines.") }}
 			</p>
 
 			<label class="block space-y-1">
@@ -71,8 +71,9 @@ const submit = () => {
 					:optionLabel="(product: Product) => `${product.code ?? ''} ${product.name ?? ''}`"
 					filter
 					fluid
+					:virtualScrollerOptions="{ itemSize: 38 }"
 					:placeholder="ctrans('Search by code or name')"
-					:emptyMessage="ctrans('This supplier has no active products')"
+					:emptyMessage="ctrans('No products to add')"
 				>
 					<template #option="{ option }">
 						<span class="whitespace-nowrap font-medium">{{ option.code }}</span>

@@ -153,18 +153,27 @@ class StorePurchaseOrderTransaction extends OrgAction
                 $fail(__(':code is already on this purchase order, change its quantity instead', ['code' => $orgStock->code]));
             }
 
-            $product   = GetPartnerSellingProduct::run($purchaseOrder->parent, $orgStock->stock_id);
-            $unitPrice = $product ? GetPartnerSellingProduct::make()->unitPrice($product) : null;
+            $unitPrice = $this->partnerUnitCost($purchaseOrder->parent, $orgStock);
             if ($unitPrice === null) {
                 $fail(__(':partner does not sell :code', ['partner' => $purchaseOrder->parent->partner->name, 'code' => $orgStock->code]));
             }
-            $unitPrice = $this->partnerLandedUnitCost($purchaseOrder->parent, $orgStock) ?? $unitPrice * GetPartnerBuyingPriceFactor::run($purchaseOrder->parent);
 
             return $this->handle($purchaseOrder, null, $orgStock, array_merge($modelData, [
                 'unit_cost'  => round($unitPrice, 6),
                 'net_amount' => round($unitPrice * (float) $modelData['quantity_ordered'], 2),
             ]));
         });
+    }
+
+    public function partnerUnitCost(OrgPartner $orgPartner, OrgStock $orgStock): ?float
+    {
+        $product   = GetPartnerSellingProduct::run($orgPartner, $orgStock->stock_id);
+        $unitPrice = $product ? GetPartnerSellingProduct::make()->unitPrice($product) : null;
+        if ($unitPrice === null) {
+            return null;
+        }
+
+        return $this->partnerLandedUnitCost($orgPartner, $orgStock) ?? $unitPrice * GetPartnerBuyingPriceFactor::run($orgPartner);
     }
 
     public function partnerLandedUnitCost(OrgPartner $orgPartner, OrgStock $orgStock): ?float

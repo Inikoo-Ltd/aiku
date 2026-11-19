@@ -9,6 +9,8 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\GoodsIn\StockDelivery\AddItemNotOnPurchaseOrderToStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Models\SysAdmin\User;
 use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryUnderOverDeliveredItems;
@@ -1511,6 +1513,67 @@ describe('partner shopping list', function () {
 
         DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
         $sellerOrgStock->update(['packed_in' => $packedIn]);
+    });
+
+    test('a partner delivery takes a SKO that arrived without being ordered, counted and priced as a partner purchase order line (HELP-4828)', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+        $user = $this->adminGuest->getUser();
+
+        $item          = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 20]);
+        $order         = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]])['orders'][0];
+        $stockDelivery = SendPartnerOrderToWarehouse::make()->action($order);
+
+        expect(AddItemNotOnPurchaseOrderToStockDelivery::acceptsItems($stockDelivery))->toBeFalse();
+
+        $stockDelivery->updateQuietly(['state' => StockDeliveryStateEnum::RECEIVED]);
+        $stockDelivery->refresh();
+
+        expect(AddItemNotOnPurchaseOrderToStockDelivery::acceptsItems($stockDelivery))->toBeTrue();
+
+        $notStockedByPartner = createOrgStocks($this->orgPartner->organisation, [StoreStock::make()->action($seller->group, Stock::factory()->definition())])[0];
+        expect(fn () => AddItemNotOnPurchaseOrderToStockDelivery::make()->action($stockDelivery, $user, ['org_stock_id' => $notStockedByPartner->id, 'sko_quantity' => 2]))
+            ->toThrow(ValidationException::class);
+
+        expect(fn () => AddItemNotOnPurchaseOrderToStockDelivery::make()->action($stockDelivery, $user, ['org_stock_id' => $this->buyerOrgStock->id, 'sko_quantity' => 2]))
+            ->toThrow(ValidationException::class, 'already on this delivery');
+
+        $extraStock = StoreStock::make()->action($seller->group, Stock::factory()->definition());
+        createOrgStocks($seller, [$extraStock]);
+        $extraProduct = \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->sellerShop, array_merge(
+            \App\Models\Catalogue\Product::factory()->definition(),
+            [
+                'state'       => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE,
+                'price'       => 50,
+                'trade_units' => [['id' => $extraStock->tradeUnits()->firstOrFail()->id, 'quantity' => 1]],
+            ]
+        ));
+        $extraOrgStock = createOrgStocks($this->orgPartner->organisation, [$extraStock])[0];
+        $unitCost         = StorePurchaseOrderTransaction::make()->partnerUnitCost($this->orgPartner, $extraOrgStock);
+        $price            = $extraProduct->price;
+
+        $extraProduct->update(['price' => 0]);
+        expect(collect(ShowStockDelivery::make()->getProductsNotOnPurchaseOrder($stockDelivery))->pluck('id'))->not->toContain($extraOrgStock->id)
+            ->and(fn () => AddItemNotOnPurchaseOrderToStockDelivery::make()->action($stockDelivery, $user, ['org_stock_id' => $extraOrgStock->id, 'sko_quantity' => 2]))
+            ->toThrow(ValidationException::class);
+        $extraProduct->update(['price' => $price]);
+
+        expect($unitCost)->toBeGreaterThan(0)
+            ->and(collect(ShowStockDelivery::make()->getProductsNotOnPurchaseOrder($stockDelivery))->pluck('id'))->toContain($extraOrgStock->id)
+            ->not->toContain($this->buyerOrgStock->id);
+
+        $itemsBefore = $stockDelivery->items()->count();
+        $added       = AddItemNotOnPurchaseOrderToStockDelivery::make()->action($stockDelivery, $user, ['org_stock_id' => $extraOrgStock->id, 'sko_quantity' => 2]);
+        $units       = 2 * (float) ($extraOrgStock->packed_in ?: 1);
+
+        expect($added->org_stock_id)->toBe($extraOrgStock->id)
+            ->and($added->state)->toBe(StockDeliveryItemStateEnum::CHECKED)
+            ->and((float) $added->unit_quantity_checked)->toBe($units)
+            ->and((float) $added->net_amount)->toBe(round($unitCost * $units, 2))
+            ->and($added->data['not_on_purchase_order']['by'])->toBe($user->id)
+            ->and($stockDelivery->items()->count())->toBe($itemsBefore + 1);
     });
 
     test('mirror stock delivery has one item per stock when the delivery note carries the stock on two lines', function () {

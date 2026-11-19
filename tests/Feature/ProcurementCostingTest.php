@@ -3866,6 +3866,7 @@ test('a product the supplier sent that is on no purchase order is added to the d
     $stockDelivery->update(['org_exchange' => 1, 'grp_exchange' => 1]);
     $orgSupplierProduct = OrgSupplierProduct::where('organisation_id', $stockDelivery->organisation_id)->where('supplier_product_id', $stockDelivery->items()->value('supplier_product_id'))->firstOrFail();
     AttachOrgSupplierProductToOrgStock::make()->action($stockDelivery->items()->first()->orgStock, $orgSupplierProduct);
+    $stockDelivery->items()->first()->update(['org_stock_id' => $this->orgStocks[1]->id]);
 
     expect(fn () => AddItemNotOnPurchaseOrderToStockDelivery::make()->action($stockDelivery, $user, ['org_supplier_product_id' => $orgSupplierProduct->id, 'sko_quantity' => 6]))
         ->toThrow(ValidationException::class);
@@ -3891,6 +3892,9 @@ test('a product the supplier sent that is on no purchase order is added to the d
         ->and($item->data['not_on_purchase_order']['by'])->toBe($user->id)
         ->and($item->orgStockMovementCost()['cost_per_sku'])->toEqual(100 * $packedIn)
         ->and($stockDelivery->refresh()->items()->count())->toBe(2);
+
+    expect(fn () => AddItemNotOnPurchaseOrderToStockDelivery::make()->action($stockDelivery->refresh(), $user, ['org_supplier_product_id' => $orgSupplierProduct->id, 'sko_quantity' => 1]))
+        ->toThrow(ValidationException::class, 'already on this delivery');
 
     $stockDelivery->update(['is_costed' => true]);
     expect(fn () => AddItemNotOnPurchaseOrderToStockDelivery::make()->action($stockDelivery->refresh(), $user, ['org_supplier_product_id' => $orgSupplierProduct->id, 'sko_quantity' => 1]))

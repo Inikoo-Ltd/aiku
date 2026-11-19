@@ -75,6 +75,7 @@ use App\Models\Accounting\Invoice;
 use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Inventory\OrgStock;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\SupplyChain\AgentInvoice;
 use App\Models\GoodsIn\StockDeliveryCost;
@@ -283,6 +284,7 @@ class ShowStockDelivery extends OrgAction
                     'method'     => 'post',
                     'name'       => 'grp.models.stock-delivery.items_not_on_purchase_order.add',
                     'parameters' => ['stockDelivery' => $stockDelivery->id],
+                    'field'      => AddItemNotOnPurchaseOrderToStockDelivery::isPartnerDelivery($stockDelivery) ? 'org_stock_id' : 'org_supplier_product_id',
                 ] : null,
                 'products_not_on_purchase_order' => $canAddItemNotOnPurchaseOrder ? Inertia::optional(fn () => $this->getProductsNotOnPurchaseOrder($stockDelivery)) : null,
                 'attachmentScopes' => PurchaseOrderAttachmentScopeEnum::options(),
@@ -1619,6 +1621,15 @@ class ShowStockDelivery extends OrgAction
      */
     public function getProductsNotOnPurchaseOrder(StockDelivery $stockDelivery): array
     {
+        if (AddItemNotOnPurchaseOrderToStockDelivery::isPartnerDelivery($stockDelivery)) {
+            return AddItemNotOnPurchaseOrderToStockDelivery::addablePartnerOrgStocks($stockDelivery)
+                ->orderBy('org_stocks.code')
+                ->get(['org_stocks.id', 'org_stocks.code', 'org_stocks.name'])
+                ->map(fn (OrgStock $orgStock) => ['id' => $orgStock->id, 'code' => $orgStock->code, 'name' => $orgStock->name])
+                ->values()
+                ->all();
+        }
+
         return AddItemNotOnPurchaseOrderToStockDelivery::addableOrgSupplierProducts($stockDelivery)
             ->join('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id')
             ->orderBy('supplier_products.code')
