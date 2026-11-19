@@ -6,12 +6,13 @@
 -->
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import axios from "axios"
 import Menu from "primevue/menu"
 import type { MenuItem } from "primevue/menuitem"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import ProductImageViewerDialog from "@/Components/Product/ProductImageViewerDialog.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import Image from "@common/Components/Image.vue"
@@ -111,6 +112,17 @@ const openPreferredMenu = (event: Event, supplierProductId: number, preferredOrg
     preferredMenu.value?.toggle(event)
 }
 
+const viewerImages = ref<{ source: object; alt?: string }[]>([])
+const isImageViewerVisible = ref(false)
+
+const openImageViewer = (image: object, alt: string | null) => {
+    viewerImages.value = [{ source: image, alt: alt ?? undefined }]
+    isImageViewerVisible.value = true
+}
+
+const supplierParties = computed(() => props.parties.filter((party) => party.type !== "agent"))
+const agentParties = computed(() => props.parties.filter((party) => party.type === "agent"))
+
 const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
 </script>
 
@@ -120,12 +132,32 @@ const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:g
             <Icon :data="{ icon: 'fal fa-person-dolly' }" />
             {{ ctrans("Provided by") }}
         </h3>
-        <div :class="gridClass">
-            <component :is="party.route ? Link : 'div'" v-for="party in parties" :key="party.label"
+        <div v-if="agentParties.length" :class="gridClass">
+            <component :is="party.route ? Link : 'div'" v-for="party in agentParties" :key="party.label"
                 :href="party.route ? route(party.route.name, party.route.parameters) : undefined"
                 class="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 transition hover:border-gray-300 hover:bg-gray-50">
-                <Image v-if="party.image" :src="party.image" class="h-8 w-8 shrink-0" />
-                <Icon v-else :data="{ icon: party.icon }" class="w-8 shrink-0 text-center text-gray-400" />
+                <button v-if="party.image" type="button" class="h-12 w-12 shrink-0 cursor-zoom-in overflow-hidden rounded" v-tooltip="ctrans('View image')"
+                    @click.prevent.stop="openImageViewer(party.image, party.name)">
+                    <Image :src="party.image" class="h-full w-full" />
+                </button>
+                <Icon v-else :data="{ icon: party.icon }" class="w-12 shrink-0 text-center text-2xl text-gray-400" />
+                <div class="min-w-0">
+                    <div class="text-xs uppercase tracking-wide text-gray-400">{{ party.label }}</div>
+                    <div class="truncate text-sm font-medium text-gray-700">{{ party.name }}</div>
+                </div>
+                <span class="ml-auto whitespace-nowrap text-xs tabular-nums text-gray-400">{{ party.code }}</span>
+            </component>
+        </div>
+
+        <div :class="[gridClass, { 'mt-2': agentParties.length }]">
+            <component :is="party.route ? Link : 'div'" v-for="party in supplierParties" :key="party.label"
+                :href="party.route ? route(party.route.name, party.route.parameters) : undefined"
+                class="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 transition hover:border-gray-300 hover:bg-gray-50">
+                <button v-if="party.image" type="button" class="h-12 w-12 shrink-0 cursor-zoom-in overflow-hidden rounded" v-tooltip="ctrans('View image')"
+                    @click.prevent.stop="openImageViewer(party.image, party.name)">
+                    <Image :src="party.image" class="h-full w-full" />
+                </button>
+                <Icon v-else :data="{ icon: party.icon }" class="w-12 shrink-0 text-center text-2xl text-gray-400" />
                 <div class="min-w-0">
                     <div class="text-xs uppercase tracking-wide text-gray-400">{{ party.label }}</div>
                     <div class="truncate text-sm font-medium text-gray-700">{{ party.name }}</div>
@@ -156,18 +188,21 @@ const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:g
             </div>
             <div :class="gridClass">
                 <div v-for="other in otherSuppliers" :key="other.supplier_code + other.code"
-                    class="flex items-center gap-3 rounded-lg border border-dashed border-gray-200 px-3 py-2">
-                    <Link :href="route(other.supplier_route.name, other.supplier_route.parameters)" class="shrink-0"
+                    class="flex items-center gap-2 rounded-md border border-dashed border-gray-200 px-2 py-1.5">
+                    <button v-if="other.image" type="button" class="h-8 w-8 shrink-0 cursor-zoom-in overflow-hidden rounded" v-tooltip="ctrans('View image')"
+                        @click="openImageViewer(other.image, other.supplier_name)">
+                        <Image :src="other.image" class="h-full w-full" />
+                    </button>
+                    <Link v-else :href="route(other.supplier_route.name, other.supplier_route.parameters)" class="shrink-0"
                         v-tooltip="ctrans('Open supplier')">
-                        <Image v-if="other.image" :src="other.image" class="h-8 w-8" />
-                        <Icon v-else :data="{ icon: 'fal fa-person-dolly' }" class="w-8 text-center text-gray-400" />
+                        <Icon :data="{ icon: 'fal fa-person-dolly' }" class="w-8 text-center text-lg text-gray-400" />
                     </Link>
                     <div class="min-w-0">
                         <Link :href="route(other.supplier_route.name, other.supplier_route.parameters)"
-                            class="block truncate text-sm font-medium text-gray-700 hover:text-gray-900 hover:underline">
+                            class="block truncate text-xs font-medium text-gray-600 hover:text-gray-900 hover:underline">
                             {{ other.supplier_name }}
                         </Link>
-                        <div class="whitespace-nowrap text-xs text-gray-400">
+                        <div class="whitespace-nowrap text-xxs text-gray-400">
                             <Link v-if="other.route" :href="route(other.route.name, other.route.parameters)"
                                 class="hover:text-gray-700 hover:underline" v-tooltip="ctrans('Open supplier product')">
                                 {{ other.code }}
@@ -192,11 +227,12 @@ const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:g
                             <div v-if="result?.id === other.id" class="mt-1 text-xs" :class="{ 'text-red-600': result.tone === 'error', 'text-amber-600': result.tone === 'skipped', 'text-green-700': result.tone === 'done' }">{{ result.message }}</div>
                         </template>
                     </div>
-                    <span class="ml-auto whitespace-nowrap text-xs tabular-nums text-gray-400">{{ other.supplier_code }}</span>
+                    <span class="ml-auto whitespace-nowrap text-xxs tabular-nums text-gray-400">{{ other.supplier_code }}</span>
                 </div>
             </div>
         </template>
 
         <Menu id="provided-by-preferred-menu" ref="preferredMenu" :model="preferredMenuItems" popup class="text-sm" />
+        <ProductImageViewerDialog v-if="viewerImages.length" v-model:visible="isImageViewerVisible" :images="viewerImages" />
     </div>
 </template>
