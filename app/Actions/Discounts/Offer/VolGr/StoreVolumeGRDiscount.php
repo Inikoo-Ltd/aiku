@@ -16,6 +16,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\Rules\WithStoreOfferRules;
 use App\Actions\Traits\WithStoreOffer;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
+use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
@@ -61,13 +62,12 @@ class StoreVolumeGRDiscount extends OrgAction
             return null;
         }
 
-        if ($itemQuantity == 1) {
-            $type = 'Category Ordered';
-        } else {
-            $type = 'Category Quantity Ordered';
-        }
         if ($interval) {
-            $type = $type.' Order Interval';
+            $type = OfferTypeEnum::CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL->value;
+        } elseif ($itemQuantity == 1) {
+            $type = OfferTypeEnum::CATEGORY_ORDERED->value;
+        } else {
+            $type = OfferTypeEnum::CATEGORY_QUANTITY_ORDERED->value;
         }
         data_set($modelData, 'type', $type);
 

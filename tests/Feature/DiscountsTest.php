@@ -3927,6 +3927,52 @@ test('finish and update volume gr offer from master', function () {
         ->and($offer->status)->toBeTrue();
 });
 
+test('master volume gr offer from quantity 1 to 12 updates the same offer', function () {
+    $shop = $this->shop;
+    if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::VOLUME_DISCOUNT)->exists()) {
+        SeedShopOfferCampaigns::run($shop);
+    }
+
+    $masterShop = StoreMasterShop::make()->action(group(), [
+        'type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::B2B,
+        'code' => 'MSH-'.uniqid(),
+        'name' => 'Test Master Shop',
+    ]);
+    $masterShop->update(['gold_reward_eligible' => true]);
+
+    $masterProductCategory = StoreMasterFamily::make()->handle($masterShop, [
+        'code' => 'MASTER-GR1-'.uniqid(),
+        'name' => 'Master GR Family qty 1',
+    ]);
+    $masterProductCategory->update([
+        'gr_vol_discount_quantity'   => 1,
+        'gr_vol_discount_percentage' => 10,
+    ]);
+
+    /** @var ProductCategory $category */
+    $category = ProductCategory::factory()->create([
+        'shop_id'                    => $shop->id,
+        'organisation_id'            => $shop->organisation_id,
+        'group_id'                   => $shop->group_id,
+        'code'                       => 'GR1-'.uniqid(),
+        'type'                       => ProductCategoryTypeEnum::FAMILY->value,
+        'follow_master_gr'           => true,
+        'master_product_category_id' => $masterProductCategory->id,
+    ]);
+
+    UpdateVolumeGrOfferFromMaster::run($masterProductCategory);
+
+    $masterProductCategory->update(['gr_vol_discount_quantity' => 12]);
+    UpdateVolumeGrOfferFromMaster::run($masterProductCategory);
+
+    $offers = Offer::where('trigger_type', 'ProductCategory')->where('trigger_id', $category->id)->get();
+
+    expect($offers)->toHaveCount(1)
+        ->and($offers->first()->type)->toBe(OfferTypeEnum::CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL->value)
+        ->and($offers->first()->state)->toBe(OfferStateEnum::ACTIVE)
+        ->and(data_get($offers->first()->trigger_data, 'item_quantity'))->toBe(12);
+});
+
 test('repair aurora submitted transaction snapshots', function () {
     $basketOrder       = StoreOrder::make()->action($this->customer, []);
     $basketTransaction = StoreTransaction::make()->action($basketOrder, $this->product->currentHistoricProduct, ['quantity_ordered' => 1]);
