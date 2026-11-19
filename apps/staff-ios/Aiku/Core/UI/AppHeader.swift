@@ -55,12 +55,12 @@ struct HeaderTitleRow: View {
             backButton
             VStack(alignment: .leading, spacing: 0) {
                 if let kicker {
-                    Text(kicker)
+                    Text(L10n.text(kicker))
                         .font(.aiku(12))
                         .foregroundStyle(AikuColor.onNav2)
                         .lineLimit(1)
                 }
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(20, .bold))
                     .foregroundStyle(AikuColor.onNav)
                     .lineLimit(1)

@@ -37,7 +37,7 @@ struct MainTabBar: View {
                             CountBadge(count: badge).offset(x: 14, y: -6)
                         }
                     }
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(11, .semibold))
                     .lineLimit(1)
             }

@@ -42,11 +42,11 @@ struct LabeledProgress: View {
     var body: some View {
         VStack(spacing: 6) {
             HStack {
-                Text(label)
+                Text(L10n.text(label))
                     .font(.aiku(13, .semibold))
                     .foregroundStyle(AikuColor.text2)
                 Spacer()
-                Text(detail)
+                Text(L10n.text(detail))
                     .font(.aiku(13))
                     .foregroundStyle(AikuColor.text3)
             }
@@ -83,11 +83,11 @@ struct InlineAlert<Actions: View>: View {
                 .foregroundStyle(tone.foreground)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(14, .semibold))
                     .foregroundStyle(tone.ink)
                 if let message {
-                    Text(message)
+                    Text(L10n.text(message))
                         .font(.aiku(13))
                         .foregroundStyle(tone.ink)
                 }
@@ -123,7 +123,7 @@ struct HelperText: View {
     }
 
     var body: some View {
-        Text(text)
+        Text(L10n.text(text))
             .font(.aiku(12))
             .foregroundStyle(AikuColor.text4)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -152,11 +152,11 @@ struct EmptyState: View {
                 .font(.system(size: 26))
                 .foregroundStyle(AikuColor.text4)
                 .accessibilityHidden(true)
-            Text(title)
+            Text(L10n.text(title))
                 .font(.aiku(14, .semibold))
                 .foregroundStyle(AikuColor.text)
             if let message {
-                Text(message)
+                Text(L10n.text(message))
                     .font(.aiku(13))
                     .foregroundStyle(AikuColor.text3)
             }
@@ -208,14 +208,14 @@ struct FullScreenMessage<Actions: View>: View {
                 .background(tone.background, in: Circle())
                 .accessibilityHidden(true)
             VStack(spacing: 6) {
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(22, .bold))
                     .foregroundStyle(AikuColor.text)
-                Text(message)
+                Text(L10n.text(message))
                     .font(.aiku(15))
                     .foregroundStyle(AikuColor.text3)
                 if let detail {
-                    Text(detail)
+                    Text(L10n.text(detail))
                         .font(.aiku(13))
                         .foregroundStyle(AikuColor.text4)
                         .padding(.top, 2)
@@ -332,13 +332,13 @@ struct ToastView: View {
                 .frame(width: 26, height: 26)
                 .background(badgeColor, in: Circle())
                 .accessibilityHidden(true)
-            Text(message.text)
+            Text(L10n.text(message.text))
                 .font(.aiku(14))
                 .foregroundStyle(AikuColor.toastText)
                 .frame(maxWidth: .infinity, alignment: .leading)
             if let actionTitle = message.actionTitle {
                 Button(action: onAction) {
-                    Text(actionTitle)
+                    Text(L10n.text(actionTitle))
                         .font(.aiku(14, .semibold))
                         .foregroundStyle(Color(hex: 0xFDE047))
                         .frame(minHeight: 32)

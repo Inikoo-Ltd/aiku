@@ -183,7 +183,7 @@ struct AikuButton: View {
                 } else if let shownIcon = icon ?? kind.defaultIcon {
                     shownIcon.image.font(.system(size: 17, weight: .medium))
                 }
-                Text(title)
+                Text(L10n.text(title))
             }
         }
         .buttonStyle(AikuButtonStyle(kind: kind, size: size, fullWidth: fullWidth))
@@ -214,7 +214,7 @@ struct LinkButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title)
+            Text(L10n.text(title))
                 .font(.aiku(size, .semibold))
                 .foregroundStyle(AikuColor.link)
                 .frame(minHeight: 44)

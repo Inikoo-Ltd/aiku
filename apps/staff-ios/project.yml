@@ -1,6 +1,7 @@
 name: Aiku
 options:
   bundleIdPrefix: com.inikoo
+  developmentLanguage: en
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -33,6 +34,8 @@ targets:
       path: Aiku/Resources/Info.plist
       properties:
         CFBundleDisplayName: Aiku
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, bg, cs, de, es, fr, hi, hr, hu, id, it, ja, lv, ne, nl, pl, pt, ro, sk, sv, tr, uk, zh-Hans]
         AikuAPIBaseURL: $(API_BASE_URL)
         AikuMobileAppKey: $(AIKU_MOBILE_APP_KEY)
         AikuSentryDSN: $(AIKU_SENTRY_DSN)

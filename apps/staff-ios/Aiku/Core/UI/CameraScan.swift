@@ -18,7 +18,7 @@ struct ScanFeedbackBanner: View {
             icon.image
                 .font(.system(size: 17, weight: .semibold))
                 .accessibilityHidden(true)
-            (Text(title).fontWeight(.bold) + Text(detail.map { " \($0)" } ?? ""))
+            (Text(L10n.text(title)).fontWeight(.bold) + Text(detail.map { " \($0)" } ?? ""))
                 .font(.aiku(14))
                 .frame(maxWidth: .infinity, alignment: .leading)
             if let note {
@@ -194,10 +194,10 @@ struct CameraScanScreen<Feedback: View, Panel: View>: View {
         HStack(spacing: 8) {
             circleButton(.close, label: "Close scanner", action: onClose)
             VStack(spacing: 0) {
-                Text(kicker)
+                Text(L10n.text(kicker))
                     .font(.aiku(12))
                     .foregroundStyle(Color(hex: 0xD1D5DB))
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(16, .bold))
                     .foregroundStyle(.white)
             }

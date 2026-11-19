@@ -24,12 +24,12 @@ struct SheetScaffold<Content: View, Footer: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: spacing) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(18, .bold))
                     .foregroundStyle(AikuColor.text)
                     .accessibilityAddTraits(.isHeader)
                 if let subtitle {
-                    Text(subtitle)
+                    Text(L10n.text(subtitle))
                         .font(.aiku(14))
                         .foregroundStyle(AikuColor.text3)
                 }
@@ -63,7 +63,7 @@ struct SheetSectionLabel: View {
     }
 
     var body: some View {
-        Text(text.uppercased())
+        Text(L10n.text(text).uppercased(with: LanguageStore.shared.locale))
             .font(.aiku(12, .bold))
             .tracking(0.6)
             .foregroundStyle(AikuColor.text3)
@@ -124,7 +124,7 @@ extension View {
             Button(cancelTitle, role: .cancel) {}
             Button(confirmTitle, role: isDestructive ? .destructive : nil, action: onConfirm)
         } message: {
-            Text(message)
+            Text(L10n.text(message))
         }
     }
 }

@@ -40,6 +40,12 @@ Most screens still run on sample data so developers can see each screen before i
 - `Features/<Area>`: `Login`, `Shell` (Home, My work, Scan, Inbox, Menu, Profile, Appearance), `Inventory`, `Locations`, `GoodsIn`, `GoodsOut`, `Dispatch`, `Fulfilment`, `Clocking`, `System` (sync queue, conflicts, error and empty states; Debug builds open them from Profile › Design states).
 - `Networking`: `APIClient`, `Endpoint`, `APIError`, auth endpoints.
 
+## Languages
+
+- The app offers the 23 languages of the web (`Core/Localization/AppLanguage.swift`), chosen in Profile › Language and saved on the device (`LanguageStore`, defaulting to the phone's language when supported); it switches at once, without a restart.
+- Translations live in `Aiku/Resources/Localizable.xcstrings`, keyed by the English text like the web's `lang/*.json`. Shared components (`Core/UI`, Shell rows) look their texts up with `L10n.text(_:)`, falling back to the English text, so texts from the server pass through unchanged; `Text("literal")` follows the root `\.locale`. Values, codes and names are never translated.
+- Wording already on the web is reused from `lang/<code>.json`; the rest is machine-translated and marked `needs_review` in the catalogue for a native speaker. Interpolated texts (with `\(...)`) are not translated yet.
+
 ## Scanning
 
 - A Bluetooth or built-in scanner works as a hardware keyboard: it types the code and Enter. `.hardwareScanner { code in }` captures that on a screen without a text field or on-screen keyboard. It is on the Scan tab, scan to pick, scan to pack, picking sessions and the barcode camera screens, and is off when Profile › Scanning is set to Camera.

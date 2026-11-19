@@ -8,7 +8,7 @@ struct ShellProfileView: View {
     @AppStorage(ScanSettingsKey.inputMode) private var inputMode = ScanInputMode.automatic
     @AppStorage(ScanSettingsKey.sound) private var playsSound = true
     @AppStorage(ScanSettingsKey.vibrate) private var vibrates = true
-    @AppStorage(ShellLanguages.storageKey) private var languageID = ShellLanguages.defaultID
+    private let languages = LanguageStore.shared
     @State private var isChoosingWarehouse = false
     private let clocking = ClockingStore.shared
 
@@ -53,7 +53,7 @@ struct ShellProfileView: View {
                         router.open(ShellRoute.appearance)
                     }
                     RowDivider()
-                    ShellValueRow(title: "Language", value: ShellLanguages.language(id: languageID).nativeName) {
+                    ShellValueRow(title: "Language", value: languages.current.nativeName) {
                         router.open(ShellRoute.language)
                     }
                     RowDivider()
