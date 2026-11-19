@@ -3347,7 +3347,7 @@ test('Merlin sends a confirmed problem straight to the engineers as a MER ticket
     $originalType = $this->shop->type;
 
     try {
-        \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('noul')->andReturn(0.93);
+        \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('noul')->andReturn(0.93, 0.1);
         $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
         $customer = shoppingAssistantCustomer($this->shop->refresh());
         $channel  = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::SHOPIFY)->firstOrFail(), ['reference' => 'mer-'.Str::random(6)]);
@@ -3399,6 +3399,28 @@ test('Merlin raises no ticket for a problem it cannot show is ours, or that the 
         ->and($doubted['content']['reported'])->toBeFalse()
         ->and($doubted['content']['note'])->toContain('offer_person')
         ->and($doubted)->not->toHaveKey('fact')
+        ->and(\App\Models\Helpers\Ticket::where('customer_id', $customer->id)->count())->toBe(0);
+});
+
+test('Merlin sends a confirmed report of missing product information to the products department as a task, not to the engineers, and a repeat adds to the same task', function () {
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('noul')->andReturn(0.93);
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $arguments    = ['summary' => '16 hoodies have no weight', 'details' => 'The Stone Washed Hoody Shirts have no weight, so Shopify postage is wrong.', 'kind' => 'support', 'tried_fix' => true, 'why_only_us' => 'Product weights are our own records.'];
+
+    $first  = $tools->execute($conversation, 'report_to_engineers', $arguments);
+    $second = $tools->execute($conversation, 'report_to_engineers', [...$arguments, 'details' => 'The scarves have no weight either.']);
+
+    $task = \App\Models\Tasks\StaffTask::where('data->kind', \App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantEngineerTicket::CATALOGUE_TASK_KIND)->where('data->customer_id', $customer->id)->sole();
+
+    expect($first['content']['reported'])->toBeTrue()
+        ->and($first['content']['to_product_team'])->toBeTrue()
+        ->and($first)->not->toHaveKey('fact')
+        ->and($second['content']['to_product_team'])->toBeTrue()
+        ->and($task->department)->toBe('products')
+        ->and($task->subject)->toBe('16 hoodies have no weight')
+        ->and($task->description)->toContain($conversation->ulid)
         ->and(\App\Models\Helpers\Ticket::where('customer_id', $customer->id)->count())->toBe(0);
 });
 

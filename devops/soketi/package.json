@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "dependencies": {
+    "@soketi/soketi": "1.6.1"
+  },
+  "overrides": {
+    "uWebSockets.js": "https://github.com/uNetworking/uWebSockets.js/archive/refs/tags/v20.71.0.tar.gz"
+  }
+}

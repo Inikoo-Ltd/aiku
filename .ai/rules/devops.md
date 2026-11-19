@@ -16,3 +16,6 @@ The Cloudflare edge adds Last-Modified to the logged-out HTML it stores (origin 
 
 ## MySQL runs only on litio, without binary logs
 Aurora's MySQL lives only on litio (10.0.0.1). boro's stale replica, which had not changed since Feb 2025, was removed with its data on 14 Nov 2026 (INI-258), and litio runs with disable_log_bin because nothing replicates from it. Don't reinstall MySQL on boro or turn binlog back on without a replica that needs it. mysql.service in supervisor.conf's After= is a no-op on boro and is kept for litio. On litio the default `php` CLI is 7.4 (for Aurora): run aiku artisan there with `php8.4`.
+
+## soketi runs on Node 24 only through the uWebSockets.js override
+soketi is unmaintained (last release 1.6.1, Mar 2024) and pins uWebSockets.js v20.10.0, which ships binaries for Node 14/16/18 only. devops/soketi/package.json overrides it with the v20.71.0 tarball (binaries for ABI 127/137/147 = Node 22/24/26); install with `npm ci --omit=dev --ignore-scripts` in /opt/soketi-1.6.1, never `npm install -g` (global installs ignore overrides). Bumping Node: first check that the uWS tag has a uws_linux_x64_<process.versions.modules>.node. Replacing soketi with a maintained Pusher-protocol server is the long-term fix.
