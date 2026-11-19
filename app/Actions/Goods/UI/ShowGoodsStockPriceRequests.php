@@ -145,7 +145,7 @@ class ShowGoodsStockPriceRequests extends OrgAction
             ->whereHas('stocks', fn (Builder $query) => $query->where('stocks.id', $stock->id))
             ->where('type', MasterAssetTypeEnum::PRODUCT)
             ->where('status', true)
-            ->with('masterShop')
+            ->with(['masterShop', 'masterFamily'])
             ->addSelect([
                 'stocks_in_product' => DB::table('master_asset_has_stocks')
                     ->selectRaw('count(distinct stock_id)')
@@ -176,6 +176,10 @@ class ShowGoodsStockPriceRequests extends OrgAction
                     'prices'          => $mainCurrencies->mapWithKeys(fn (string $currencyCode) => [$currencyCode => $this->value($masterAsset->master_prices, $currencyCode)])->all(),
                     'rrps'            => $mainCurrencies->mapWithKeys(fn (string $currencyCode) => [$currencyCode => $this->value($masterAsset->master_rrps, $currencyCode)])->all(),
                     'url'             => $masterAsset->masterShop ? route('grp.masters.master_shops.show.master_products.show', [$masterAsset->masterShop->slug, $masterAsset->slug]) : null,
+                    'master_family'   => $masterAsset->masterShop && $masterAsset->masterFamily ? [
+                        'code'        => $masterAsset->masterFamily->code,
+                        'pricing_url' => route('grp.masters.master_shops.show.master_families.master_products.index', [$masterAsset->masterShop->slug, $masterAsset->masterFamily->slug, 'tab' => 'pricing']),
+                    ] : null,
                     'update_route'    => [
                         'name'       => 'grp.models.master_asset.main_prices.update',
                         'parameters' => ['masterAsset' => $masterAsset->id],

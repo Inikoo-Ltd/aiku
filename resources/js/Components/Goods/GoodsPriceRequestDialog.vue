@@ -58,6 +58,7 @@ interface MasterProduct {
     prices: Record<string, number | null>
     rrps: Record<string, number | null>
     url: string | null
+    master_family: { code: string; pricing_url: string } | null
     update_route: routeType
 }
 
@@ -95,6 +96,15 @@ const savingMasterId = ref<number | null>(null)
 const masterErrors = reactive<Record<number, string | null>>({})
 const savedMasterId = ref<number | null>(null)
 
+function rrpsPerUnit(masterProduct: MasterProduct): Record<string, number | null> {
+    const units = masterProduct.units || 1
+    return Object.fromEntries(Object.entries(masterProduct.rrps).map(([currency, rrp]) => [currency, rrp === null ? null : rrp / units]))
+}
+
+function rrpsPerOuter(rrps: Record<string, number>, units: number): Record<string, number> {
+    return Object.fromEntries(Object.entries(rrps).map(([currency, rrp]) => [currency, Math.round(rrp * (units || 1) * 100) / 100]))
+}
+
 async function fetchData(): Promise<void> {
     if (!props.stockSlug) {
         return
@@ -106,7 +116,7 @@ async function fetchData(): Promise<void> {
         const response = await axios.get(route("grp.goods.products.price_requests", { stock: props.stockSlug }))
         data.value = response.data
         for (const masterProduct of data.value?.master_products ?? []) {
-            masterForms[masterProduct.id] = { prices: { ...masterProduct.prices }, rrps: { ...masterProduct.rrps } }
+            masterForms[masterProduct.id] = { prices: { ...masterProduct.prices }, rrps: rrpsPerUnit(masterProduct) }
         }
         for (const request of data.value?.requests ?? []) {
             updateSupplierCost[request.id] ??= request.can_update_supplier_cost
@@ -214,8 +224,9 @@ function isMasterChanged(masterProduct: MasterProduct): boolean {
         return false
     }
 
+    const savedRrps = rrpsPerUnit(masterProduct)
     return masterProduct.main_currencies.some(
-        (currency) => (form.prices[currency] ?? null) !== (masterProduct.prices[currency] ?? null) || (form.rrps[currency] ?? null) !== (masterProduct.rrps[currency] ?? null)
+        (currency) => (form.prices[currency] ?? null) !== (masterProduct.prices[currency] ?? null) || (form.rrps[currency] ?? null) !== (savedRrps[currency] ?? null)
     )
 }
 
@@ -233,7 +244,7 @@ function saveMaster(masterProduct: MasterProduct): void {
         route(masterProduct.update_route.name, masterProduct.update_route.parameters),
         {
             master_prices: changedValues(form.prices, masterProduct.prices),
-            master_rrps: changedValues(form.rrps, masterProduct.rrps),
+            master_rrps: rrpsPerOuter(changedValues(form.rrps, rrpsPerUnit(masterProduct)), masterProduct.units),
         },
         {
             preserveState: true,
@@ -380,6 +391,16 @@ function saveMaster(masterProduct: MasterProduct): void {
                         </span>
                         <span class="min-w-0 flex-1 truncate">{{ masterProduct.name }}</span>
                         <span class="text-gray-500">{{ ctrans(":units units per outer", { units: masterProduct.units }) }}</span>
+                        <a
+                            v-if="masterProduct.master_family"
+                            :href="masterProduct.master_family.pricing_url"
+                            target="_blank"
+                            v-tooltip="ctrans('Open the pricing of every product in :family to change the siblings too', { family: masterProduct.master_family.code })"
+                            class="flex items-center gap-1 whitespace-nowrap text-[var(--app-accent)] hover:underline"
+                        >
+                            {{ ctrans("Family :family pricing", { family: masterProduct.master_family.code }) }}
+                            <FontAwesomeIcon :icon="faExternalLink" class="text-[10px]" aria-hidden="true" />
+                        </a>
                         <span v-if="masterProduct.cost !== null" class="text-gray-500">{{ ctrans("Cost :cost", { cost: money(masterProduct.cost_currency, masterProduct.cost) }) }}</span>
                     </div>
 
@@ -388,7 +409,7 @@ function saveMaster(masterProduct: MasterProduct): void {
                             <tr>
                                 <th class="w-16 pr-3 font-medium">{{ ctrans("Currency") }}</th>
                                 <th class="pr-3 font-medium">{{ ctrans("Price per outer") }}</th>
-                                <th class="pr-3 font-medium">{{ ctrans("RRP per outer") }}</th>
+                                <th class="pr-3 font-medium">{{ ctrans("RRP per unit") }}</th>
                                 <th class="font-medium">{{ ctrans("Margin") }}</th>
                             </tr>
                         </thead>
@@ -417,7 +438,7 @@ function saveMaster(masterProduct: MasterProduct): void {
                                         :aria-label="ctrans('RRP in :currency', { currency })"
                                         size="small"
                                     />
-                                    <span v-else>{{ money(currency, masterProduct.rrps[currency]) }}</span>
+                                    <span v-else>{{ money(currency, rrpsPerUnit(masterProduct)[currency]) }}</span>
                                 </td>
                                 <td class="py-1">
                                     <span v-if="margin(masterProduct, currency) !== null" :class="(margin(masterProduct, currency) as number) < 0 ? 'text-red-600' : 'text-gray-700'">{{ margin(masterProduct, currency) }}%</span>
