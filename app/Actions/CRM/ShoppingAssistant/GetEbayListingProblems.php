@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\ShoppingAssistant;
 
+use App\Actions\Dropshipping\Ebay\Product\UpdateEbayPortfolio;
 use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -99,9 +100,8 @@ class GetEbayListingProblems
 
             $rows = $failed->orderByDesc('updated_at')->limit(self::MAX_FAILED)->get(['item_code', 'item_name', 'upload_warning', 'errors_response']);
             foreach ($rows as $row) {
-                $message  = self::messageOf($row->upload_warning, $row->errors_response);
-                $cause    = self::causeOf($message);
-                $causes[] = $cause;
+                [$cause, $message] = self::refusalOf($row->upload_warning, $row->errors_response);
+                $causes[]          = $cause;
 
                 if ($cause === 'needs_our_data') {
                     $dataGaps[$row->item_code] = $message;
@@ -140,6 +140,40 @@ class GetEbayListingProblems
             'error'    => null,
             'fact'     => implode("\n", $facts),
         ];
+    }
+
+    /**
+     * eBay's own "ended item" verdict from the stock sync is the newest word on a listing, so it wins over an
+     * older upload_warning. Otherwise eBay's upload_warning decides, because a failed match stores our generic
+     * "not in the listing yet" (translated) in errors_response beside eBay's real refusal (INI-393).
+     *
+     * @return array{0: string, 1: string} the cause and the message it was read from
+     */
+    public static function refusalOf(?string $warning, mixed $errors): array
+    {
+        $decoded = is_string($errors) ? json_decode($errors, true) : $errors;
+        $warningErrors = is_string($warning) ? json_decode($warning, true) : null;
+
+        if (is_array($warningErrors)) {
+            $warningErrors = array_is_list($warningErrors) ? $warningErrors : [$warningErrors];
+            $warning       = self::messageOf(null, $warningErrors);
+        }
+
+        if (UpdateEbayPortfolio::isListingEndedError($decoded)) {
+            return ['listing_ended', self::messageOf(null, $decoded)];
+        }
+
+        if (is_array($warningErrors) && UpdateEbayPortfolio::isListingEndedError($warningErrors)) {
+            return ['listing_ended', $warning];
+        }
+
+        if (filled($warning) && ($cause = self::causeOf($warning)) !== 'other') {
+            return [$cause, trim($warning)];
+        }
+
+        $message = self::messageOf($warning, $errors);
+
+        return [self::causeOf($message), $message];
     }
 
     public static function messageOf(?string $warning, mixed $errors): string
