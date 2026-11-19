@@ -69,6 +69,11 @@ class IndexMobileStockDeliveries
             ->paginate(min((int) ($filters['per_page'] ?? 0), self::WEB_MAX_PER_PAGE) ?: (int) config('ui.table.records_per_page'), ['*'], 'page', (int) ($filters['page'] ?? 1));
     }
 
+    public static function numberInState(Warehouse $warehouse, string $state): int
+    {
+        return (new self())->sourceQuery($warehouse, null)->where('stock_deliveries.state', $state)->count();
+    }
+
     private function sourceQuery(Warehouse $warehouse, ?string $source): Builder
     {
         return StockDelivery::query()

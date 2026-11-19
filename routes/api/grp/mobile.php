@@ -19,6 +19,7 @@ use App\Actions\Api\Group\Chat\IndexMobileStaffMessages;
 use App\Actions\Api\Group\Chat\OpenMobileDeliveryNoteChat;
 use App\Actions\Api\Group\Chat\OpenMobilePickingSessionChat;
 use App\Actions\Api\Group\Chat\SendMobileStaffMessage;
+use App\Actions\Api\Group\Auth\GetMobileAppVersion;
 use App\Actions\Api\Group\Auth\LoginMobileApp;
 use App\Actions\Api\Group\Auth\LogoutMobileApp;
 use App\Actions\Api\Group\Auth\ResetMobilePassword;
@@ -153,14 +154,16 @@ use App\Actions\Api\Group\MyWork\IndexMobileMyWork;
 use App\Actions\Api\Group\Search\GetMobileSearch;
 use App\Actions\Api\Group\Dashboard\GetMobileWarehouseDashboard;
 use App\Actions\SysAdmin\User\PasswordResetLink;
+use App\Http\Middleware\SetMobileApiLocale;
 use App\Http\Middleware\VerifyMobileAppKey;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(VerifyMobileAppKey::class)->group(function () {
+Route::middleware([VerifyMobileAppKey::class, SetMobileApiLocale::class])->group(function () {
     Route::get('/ping', function () {
         return 'pong';
     })->name('ping');
 
+    Route::get('/app-version', GetMobileAppVersion::class)->name('app_version');
     Route::post('/login', LoginMobileApp::class)->name('login')->middleware('throttle:mobile-login');
     Route::post('/password/reset-link', PasswordResetLink::class)->name('password.reset_link')->middleware('throttle:6,1');
     Route::post('/password/reset-code', SendMobilePasswordResetCode::class)->name('password.reset_code')->middleware('throttle:mobile-password-reset');

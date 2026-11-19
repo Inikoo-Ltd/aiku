@@ -315,6 +315,20 @@ return [
     ],
     'mobile_app_keys' => array_values(array_filter(array_map('trim', explode(',', (string) env('MOBILE_APP_KEYS', ''))))),
     'mobile_two_factor' => (bool) env('MOBILE_TWO_FACTOR', true),
+    'mobile_versions' => [
+        'android' => [
+            'minimum_version_code' => env('MOBILE_ANDROID_MIN_VERSION_CODE', 1),
+            'latest_version_code'  => env('MOBILE_ANDROID_LATEST_VERSION_CODE', 1),
+            'latest_version_name'  => env('MOBILE_ANDROID_LATEST_VERSION_NAME', '0.1.0'),
+            'update_url'           => env('MOBILE_ANDROID_UPDATE_URL'),
+        ],
+        'ios'     => [
+            'minimum_version_code' => env('MOBILE_IOS_MIN_VERSION_CODE', 1),
+            'latest_version_code'  => env('MOBILE_IOS_LATEST_VERSION_CODE', 1),
+            'latest_version_name'  => env('MOBILE_IOS_LATEST_VERSION_NAME', '0.1.0'),
+            'update_url'           => env('MOBILE_IOS_UPDATE_URL'),
+        ],
+    ],
 
     'master'  => env('MASTER_SERVER', true),
     'slave'   => env('SLAVE_SERVER', true),
