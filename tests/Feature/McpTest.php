@@ -3040,7 +3040,19 @@ describe('customer service tools', function () {
         $shopType = $this->shop->type;
         $this->shop->update(['type' => App\Enums\Catalogue\Shop\ShopTypeEnum::B2B]);
         $opened = json_decode((string) app(App\Mcp\Tools\CustomerServiceChatTool::class)->handle(new Laravel\Mcp\Request(['chat_id' => $this->chat->ulid]))->content(), true);
+        $whatsapp = mcpTestWhatsappChat($this->shop, $this->csCustomer, 'My candle holders arrived broken', now()->subMinutes(20));
+        App\Models\Chat\MetaChatMessage::create([
+            'meta_chat_session_id' => $whatsapp->id,
+            'meta_channel_id'      => $whatsapp->meta_channel_id,
+            'message_type'         => App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT,
+            'sender_type'          => App\Enums\CRM\Livechat\ChatSenderTypeEnum::AGENT,
+            'message_text'         => str_repeat('b', 80),
+            'is_read'              => true,
+        ]);
+        $openedWhatsapp = json_decode((string) app(App\Mcp\Tools\CustomerServiceChatTool::class)->handle(new Laravel\Mcp\Request(['chat_id' => $whatsapp->ulid]))->content(), true);
         $this->shop->update(['type' => $shopType]);
+        expect($openedWhatsapp['house_rules']['typical_staff_reply_chars'])->toBe(80)
+            ->and($openedWhatsapp['how_to_answer'])->toContain('at most 240 characters')->toContain('only the one thing asked');
         expect($opened['house_rules']['typical_staff_reply_chars'])->toBe(100)
             ->and($opened['house_rules']['shop_facts'])->toBe([['title' => 'Currency', 'body' => 'Prices are in GBP']])
             ->and($opened['how_to_answer'])->toContain('at most 300 characters')

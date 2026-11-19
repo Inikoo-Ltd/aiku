@@ -176,7 +176,9 @@ class CustomerServiceChatTool extends AikuCustomerServiceTool
 
         $limit = self::B2B_DRAFT_LENGTH_TIMES * $typical;
 
-        return "Staff in this wholesale shop usually answer in about {$typical} characters (house_rules.typical_staff_reply_chars) and rewrite long drafts: keep the draft close to that, at most {$limit} characters, unless the customer asked several separate questions. No recap of the order, no apology paragraph, no list of what you checked (that goes in checked).";
+        $onWhatsapp = $chatSession instanceof MetaChatSession ? ' On WhatsApp staff answer only the one thing asked, in a line or two, with no greeting paragraph and no extras the customer did not ask for.' : '';
+
+        return "Staff in this wholesale shop usually answer in about {$typical} characters on this channel (house_rules.typical_staff_reply_chars) and rewrite long drafts: keep the draft close to that, at most {$limit} characters, unless the customer asked several separate questions. No recap of the order, no apology paragraph, no list of what you checked (that goes in checked).{$onWhatsapp}";
     }
 
     /**
@@ -185,18 +187,23 @@ class CustomerServiceChatTool extends AikuCustomerServiceTool
      */
     private function typicalStaffReplyChars(ChatSession|MetaChatSession $chatSession): ?int
     {
-        $shopId = $chatSession->shop_id;
+        $shopId   = $chatSession->shop_id;
+        $whatsapp = $chatSession instanceof MetaChatSession;
+        $messages = $whatsapp ? 'meta_chat_messages' : 'chat_messages';
+        $sessions = $whatsapp ? 'meta_chat_sessions' : 'chat_sessions';
+        $link     = $whatsapp ? 'meta_chat_session_id' : 'chat_session_id';
 
-        return Cache::remember('cs-typical-reply-chars:'.$shopId, self::TYPICAL_REPLY_CACHE_SECONDS, function () use ($shopId) {
-            $median = DB::table('chat_messages')
-                ->join('chat_sessions', 'chat_sessions.id', '=', 'chat_messages.chat_session_id')
-                ->where('chat_sessions.shop_id', $shopId)
-                ->where('chat_messages.sender_type', ChatSenderTypeEnum::AGENT->value)
-                ->where('chat_messages.created_at', '>=', now()->subDays(self::TYPICAL_REPLY_DAYS))
+        return Cache::remember('cs-typical-reply-chars:'.($whatsapp ? 'whatsapp:' : '').$shopId, self::TYPICAL_REPLY_CACHE_SECONDS, function () use ($shopId, $messages, $sessions, $link, $whatsapp) {
+            $median = DB::table($messages)
+                ->join($sessions, "{$sessions}.id", '=', "{$messages}.{$link}")
+                ->where("{$sessions}.shop_id", $shopId)
+                ->where("{$messages}.sender_type", ChatSenderTypeEnum::AGENT->value)
+                ->where("{$messages}.created_at", '>=', now()->subDays(self::TYPICAL_REPLY_DAYS))
                 ->whereNotExists(fn ($fromDraft) => $fromDraft->from('chat_ai_drafts')
-                    ->whereColumn('chat_ai_drafts.reply_message_id', 'chat_messages.id')
+                    ->whereColumn('chat_ai_drafts.reply_message_id', "{$messages}.id")
+                    ->whereNotNull($whatsapp ? 'chat_ai_drafts.meta_chat_session_id' : 'chat_ai_drafts.chat_session_id')
                     ->whereIn('chat_ai_drafts.status', [ChatAiDraftStatusEnum::USED->value, ChatAiDraftStatusEnum::EDITED->value]))
-                ->selectRaw('percentile_cont(0.5) within group (order by length(chat_messages.message_text)) as median')
+                ->selectRaw("percentile_cont(0.5) within group (order by length({$messages}.message_text)) as median")
                 ->value('median');
 
             return $median ? (int) round((float) $median) : null;
