@@ -1962,7 +1962,7 @@ test('a planned big order becomes one high priority customer services task for t
         ->and($task->description)->toContain('asked for a call to discuss terms')
         ->and($task->description)->toContain('mornings')
         ->and($task->description)->toContain('Christmas stock for two shops')
-        ->and($task->description)->toContain('/analytics/ai-assistant/conversations/'.$conversation->ulid)
+        ->and($task->description)->toContain('/ai-salesman/conversations/'.$conversation->ulid)
         ->and($task->collaborators()->pluck('users.id')->all())->toContain($manager->id);
     Illuminate\Support\Facades\Notification::assertSentTo($manager, App\Notifications\ShoppingAssistantSalesLeadNotification::class, fn ($notification) => !$notification->isReminder);
 
