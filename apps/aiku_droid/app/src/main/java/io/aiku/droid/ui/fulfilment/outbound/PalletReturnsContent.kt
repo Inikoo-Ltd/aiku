@@ -19,6 +19,7 @@ import io.aiku.droid.ui.components.FilterOption
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SearchField
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -84,6 +85,7 @@ internal fun PalletReturnsContent(returns: PalletReturnsViewModel) {
         activeTab = MainTab.Menu,
         showBar = true,
         scrollState = scrollState,
+        refresh = PullRefresh(isRefreshing = list.isRefreshing, onRefresh = returns::refresh),
     ) {
         FilterChips(
             options = states.map { FilterOption(label = filterChipLabel(stateFilterLabel(it), state.counts?.states?.count(it.key))) },

@@ -60,6 +60,7 @@ import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.InlineAlert
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.QrCode
 import io.aiku.droid.ui.components.qrMatrixOf
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -120,6 +121,7 @@ fun ClockingScreen() {
         },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = { clocking.refresh(isPull = true) }),
     ) {
         state.statusProblem?.let { problem -> ClockingLoadProblem(problem = problem, onRetry = clocking::refresh) }
         when {

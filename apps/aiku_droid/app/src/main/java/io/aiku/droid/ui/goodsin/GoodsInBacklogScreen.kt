@@ -36,6 +36,7 @@ import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.WarehouseSection
@@ -59,13 +60,13 @@ fun GoodsInBacklogScreen(backlog: GoodsInBacklogViewModel) {
         if (state.isSessionExpired) {
             SessionExpiredScreen(onSignIn = backlog::signInAgain)
         } else {
-            GoodsInBacklogContent(state = state, onRetry = backlog::retry)
+            GoodsInBacklogContent(state = state, onRetry = backlog::retry, onRefresh = backlog::refresh)
         }
     }
 }
 
 @Composable
-private fun GoodsInBacklogContent(state: GoodsInBacklogUiState, onRetry: () -> Unit) {
+private fun GoodsInBacklogContent(state: GoodsInBacklogUiState, onRetry: () -> Unit, onRefresh: () -> Unit) {
     val navigator = LocalAppNavigator.current
     val can = LocalWarehouse.current.can
     val rows = state.rows?.filter { it.isVisible(can) }
@@ -74,6 +75,7 @@ private fun GoodsInBacklogContent(state: GoodsInBacklogUiState, onRetry: () -> U
         header = { ModuleHeader(section = WarehouseSection.GoodsInBacklog, title = stringResource(R.string.goodsin_hub_title)) },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = onRefresh),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.goodsin_hub_failed), onRetry = onRetry) }
         when {

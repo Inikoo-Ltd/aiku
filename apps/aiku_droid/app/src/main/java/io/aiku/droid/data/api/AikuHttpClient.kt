@@ -3,6 +3,7 @@ package io.aiku.droid.data.api
 import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.decodeCertificatePem
 import java.net.InetAddress
@@ -15,18 +16,12 @@ object AikuHttpClient {
         appKey: String,
         developmentHostAddress: String,
         developmentCaCertificate: String,
+        acceptLanguage: () -> String,
     ): OkHttpClient {
         val builder = OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
-            .addInterceptor { chain ->
-                chain.proceed(
-                    chain.request().newBuilder()
-                        .header("X-Aiku-App-Key", appKey)
-                        .header("Accept", "application/json")
-                        .build(),
-                )
-            }
+            .addInterceptor { chain -> chain.proceed(chain.request().withAikuHeaders(appKey, acceptLanguage())) }
 
         if (developmentHostAddress.isNotBlank()) {
             builder.dns(ApiHostDns(apiHost = apiBaseUrl.toHttpUrl().host, hostAddress = developmentHostAddress))
@@ -43,6 +38,12 @@ object AikuHttpClient {
         return builder.build()
     }
 }
+
+internal fun Request.withAikuHeaders(appKey: String, acceptLanguage: String): Request = newBuilder()
+    .header("X-Aiku-App-Key", appKey)
+    .header("Accept", "application/json")
+    .header("Accept-Language", acceptLanguage)
+    .build()
 
 private class ApiHostDns(private val apiHost: String, private val hostAddress: String) : Dns {
     override fun lookup(hostname: String): List<InetAddress> =

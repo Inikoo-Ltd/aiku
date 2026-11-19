@@ -1,5 +1,6 @@
 package io.aiku.droid
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,6 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import io.aiku.droid.data.settings.DeviceAppLocales
 import io.aiku.droid.push.PushData
 import io.aiku.droid.ui.app.SignedInApp
 import io.aiku.droid.ui.login.LoginScreen
@@ -18,13 +20,20 @@ import io.aiku.droid.ui.login.LoginViewModel
 import io.aiku.droid.ui.scan.HardwareScanKeys
 import io.aiku.droid.ui.scan.HardwareScanWindowCallback
 import io.aiku.droid.ui.theme.AikuDroidTheme
+import io.aiku.droid.ui.update.UpdateRequiredScreen
+import io.aiku.droid.update.AppUpdate
 
 class MainActivity : ComponentActivity() {
 
     private val container: AppContainer get() = (application as AikuDroidApplication).container
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(DeviceAppLocales.localised(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        container.language.refresh()
         enableEdgeToEdge()
         if (savedInstanceState == null) {
             receivePushTap(intent)
@@ -36,10 +45,19 @@ class MainActivity : ComponentActivity() {
         )
         setContent {
             val appearance by container.settings.appearance.collectAsStateWithLifecycle()
+            val update by container.appVersions.update.collectAsStateWithLifecycle()
             AikuDroidTheme(appearance = appearance) {
-                AikuDroidApp(container)
+                when (val current = update) {
+                    is AppUpdate.Required -> UpdateRequiredScreen(update = current)
+                    else -> AikuDroidApp(container)
+                }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        container.appVersions.check()
     }
 
     override fun onNewIntent(intent: Intent) {

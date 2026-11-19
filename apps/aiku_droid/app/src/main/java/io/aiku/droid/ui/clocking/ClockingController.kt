@@ -46,6 +46,7 @@ data class TimesheetWeekState(
     val requestedFrom: LocalDate? = null,
     val period: TimesheetPeriod? = null,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val problem: ClockingProblem? = null,
 )
 
@@ -53,12 +54,14 @@ data class TimesheetDayState(
     val date: LocalDate,
     val timesheet: Timesheet? = null,
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val problem: ClockingProblem? = null,
 )
 
 data class ClockingUiState(
     val status: ClockingStatus? = null,
     val isLoadingStatus: Boolean = false,
+    val isRefreshing: Boolean = false,
     val statusProblem: ClockingProblem? = null,
     val thisWeek: TimesheetPeriod? = null,
     val week: TimesheetWeekState = TimesheetWeekState(),
@@ -81,11 +84,11 @@ data class ClockingUiState(
 interface ClockingController {
     val state: StateFlow<ClockingUiState>
 
-    fun refresh()
+    fun refresh(isPull: Boolean = false)
 
-    fun loadWeek(from: LocalDate?)
+    fun loadWeek(from: LocalDate?, isPull: Boolean = false)
 
-    fun loadDay(date: LocalDate)
+    fun loadDay(date: LocalDate, isPull: Boolean = false)
 
     fun loadShifts()
 
@@ -100,9 +103,9 @@ interface ClockingController {
 
 private object NoClocking : ClockingController {
     override val state: StateFlow<ClockingUiState> = MutableStateFlow(ClockingUiState()).asStateFlow()
-    override fun refresh() = Unit
-    override fun loadWeek(from: LocalDate?) = Unit
-    override fun loadDay(date: LocalDate) = Unit
+    override fun refresh(isPull: Boolean) = Unit
+    override fun loadWeek(from: LocalDate?, isPull: Boolean) = Unit
+    override fun loadDay(date: LocalDate, isPull: Boolean) = Unit
     override fun loadShifts() = Unit
     override fun prepareScan(setup: ClockingScanSetup) = Unit
     override fun restartScan() = Unit

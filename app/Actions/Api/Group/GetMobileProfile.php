@@ -21,7 +21,7 @@ class GetMobileProfile
     use AsController;
 
     /**
-     * @return array{id: int, username: string, name: string|null, position: string|null, job_title: string|null, job_positions: array<int, array{code: string, name: string}>, organisation: array{id: int, code: string, name: string}|null}
+     * @return array{id: int, username: string, name: string|null, position: string|null, job_title: string|null, job_positions: array<int, array{code: string, name: string}>, organisation: array{id: int, code: string, name: string}|null, language: array{code: string, name: string}|null}
      */
     public function handle(User $user): array
     {
@@ -40,6 +40,10 @@ class GetMobileProfile
             'position'      => $jobTitle ?? ($jobPositions->pluck('name')->implode(', ') ?: null),
             'job_title'     => $jobTitle,
             'job_positions' => $jobPositions->all(),
+            'language'      => $user->language ? [
+                'code' => $user->language->code,
+                'name' => $user->language->native_name ?: $user->language->name,
+            ] : null,
             'organisation'  => $employee ? [
                 'id'   => $employee->organisation->id,
                 'code' => $employee->organisation->code,

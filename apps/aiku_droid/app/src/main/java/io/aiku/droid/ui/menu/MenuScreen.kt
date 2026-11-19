@@ -44,10 +44,10 @@ import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.WarehouseModule
 import io.aiku.droid.ui.components.WarehouseSection
-import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.components.initialsOf
 import io.aiku.droid.ui.components.warehouseKicker
 import io.aiku.droid.ui.mywork.LocalWorkBadges
+import io.aiku.droid.ui.mywork.goodsInReceivedBadge
 import io.aiku.droid.ui.mywork.goodsOutUnassignedBadge
 import io.aiku.droid.ui.navigation.AppearanceRoute
 import io.aiku.droid.ui.navigation.ClockingRoute
@@ -62,7 +62,7 @@ import io.aiku.droid.ui.navigation.TimesheetsRoute
 import io.aiku.droid.ui.navigation.WarehouseDashboardRoute
 import io.aiku.droid.ui.theme.LocalAikuColors
 
-private data class SectionBadge(val text: String, val isWarn: Boolean, val isSample: Boolean = false)
+private data class SectionBadge(val text: String, val isWarn: Boolean)
 
 private val moduleIcons = mapOf(
     WarehouseModule.Inventory to R.drawable.ic_ui_pallet,
@@ -92,10 +92,6 @@ private val sectionIcons = mapOf(
     WarehouseSection.PickedBays to R.drawable.ic_ui_shipper,
 )
 
-private val sampleBadges = mapOf(
-    WarehouseSection.StockDeliveries to SectionBadge(MenuSamples.RECEIVED_DELIVERIES, isWarn = false, isSample = true),
-)
-
 @Composable
 fun MenuScreen() {
     val colors = LocalAikuColors.current
@@ -111,7 +107,13 @@ fun MenuScreen() {
     val unassignedBadge = badges.goodsOutUnassignedBadge?.let { count ->
         SectionBadge(pluralStringResource(R.plurals.mywork_badge_unassigned, count, count), isWarn = true)
     }
-    val sectionBadges = sampleBadges + listOfNotNull(unassignedBadge?.let { WarehouseSection.GoodsOutBacklog to it })
+    val receivedBadge = badges.goodsInReceivedBadge?.let { count ->
+        SectionBadge(pluralStringResource(R.plurals.menu_badge_received, count, count), isWarn = false)
+    }
+    val sectionBadges = listOfNotNull(
+        unassignedBadge?.let { WarehouseSection.GoodsOutBacklog to it },
+        receivedBadge?.let { WarehouseSection.StockDeliveries to it },
+    ).toMap()
 
     LaunchedEffect(Unit) { workBadges.refresh() }
 
@@ -339,7 +341,6 @@ private fun MenuRow(
                 fontWeight = FontWeight.SemiBold,
                 color = if (badge.isWarn) colors.warn else colors.success,
                 modifier = Modifier
-                    .then(if (badge.isSample) Modifier.fakeData(cornerRadius = 999.dp) else Modifier)
                     .clip(RoundedCornerShape(999.dp))
                     .background(if (badge.isWarn) colors.warnSoft else colors.successSoft)
                     .padding(horizontal = 8.dp, vertical = 3.dp),
@@ -352,8 +353,4 @@ private fun MenuRow(
 @Composable
 private fun Chevron() {
     Icon(painter = painterResource(R.drawable.ic_ui_next), contentDescription = null, tint = LocalAikuColors.current.faint, modifier = Modifier.size(20.dp))
-}
-
-internal object MenuSamples {
-    const val RECEIVED_DELIVERIES = "2 received"
 }

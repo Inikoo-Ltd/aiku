@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -65,6 +66,20 @@ class StoredItemsViewModelTest {
         dispatcher.scheduler.advanceTimeBy(301)
 
         assertEquals(StoredItemQuery(state = StoredItemStateFilter.Discontinuing, search = "mug", perPage = 2), api.storedItemQueries.last())
+    }
+
+    @Test
+    fun `pulling to refresh reloads the first page of stored items`() {
+        api.storedItemPages = { query -> GoodsOutResult.Loaded(StoredItemPage(rows = listOf(StoredItemRow(id = 1, reference = "SI-1")), meta = ListMeta(currentPage = query.page))) }
+        val items = StoredItemsViewModel(api, FakeSessions(), warehouseId = 1)
+        items.onStart()
+        api.storedItemPages = { query -> GoodsOutResult.Loaded(StoredItemPage(rows = listOf(StoredItemRow(id = 4, reference = "SI-4")), meta = ListMeta(currentPage = query.page))) }
+
+        items.refresh()
+
+        assertEquals(listOf(4L), items.state.value.list.rows.map { it.id })
+        assertEquals(2, api.storedItemQueries.size)
+        assertFalse(items.state.value.list.isRefreshing)
     }
 
     @Test

@@ -63,6 +63,7 @@ import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ListRow
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -73,6 +74,7 @@ import io.aiku.droid.ui.components.WarehouseSection
 import io.aiku.droid.ui.goodsout.extra.KICKER_SEPARATOR
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
+import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
 import io.aiku.droid.ui.scan.ScanProblem
 import io.aiku.droid.ui.states.SessionExpiredScreen
@@ -100,6 +102,7 @@ fun DeliveryNotesScreen(notes: DeliveryNotesViewModel) {
 private fun DeliveryNotesContent(state: DeliveryNotesUiState, notes: DeliveryNotesViewModel) {
     val navigator = LocalAppNavigator.current
     val toasts = LocalToasts.current
+    val scanFeedback = LocalScanController.current.feedback
     val scrollState = rememberScrollState()
     var showFilter by remember { mutableStateOf(false) }
     val filter = state.filter
@@ -139,7 +142,10 @@ private fun DeliveryNotesContent(state: DeliveryNotesUiState, notes: DeliveryNot
     LaunchedEffect(state.scanOutcome) {
         when (val outcome = state.scanOutcome) {
             is ListScanOutcome.Open -> navigator.open(deliveryNoteRoute(id = outcome.note.id, reference = outcome.note.reference, state = outcome.note.state))
-            is ListScanOutcome.NoDeliveryNote -> noNoteText?.let { toasts.show(it, ToastKind.Info) }
+            is ListScanOutcome.NoDeliveryNote -> {
+                scanFeedback.rejected()
+                noNoteText?.let { toasts.show(it, ToastKind.Info) }
+            }
             is ListScanOutcome.Failed -> scanFailedText?.let { toasts.show(it, ToastKind.Error) }
             null -> return@LaunchedEffect
         }
@@ -178,6 +184,7 @@ private fun DeliveryNotesContent(state: DeliveryNotesUiState, notes: DeliveryNot
         showBar = true,
         scrollState = scrollState,
         footer = selection?.let { selected -> { SelectionFooter(state = state, selected = selected.size, notes = notes) } },
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = notes::refresh, isEnabled = !state.isSubmittingSelection),
     ) {
         FilterChips(
             options = stateOptions,
@@ -209,7 +216,7 @@ private fun DeliveryNotesContent(state: DeliveryNotesUiState, notes: DeliveryNot
                     )
                 }
             }
-            list.hasLoaded && list.loadingPage == null -> EmptyState(
+            list.hasLoaded && (list.loadingPage == null || state.isRefreshing) -> EmptyState(
                 icon = R.drawable.ic_ui_delivery_note,
                 title = stringResource(R.string.goodsout_list_empty_title),
                 body = stringResource(if (filter.isFiltered) R.string.goodsout_list_empty_filtered_body else R.string.goodsout_list_empty_body),

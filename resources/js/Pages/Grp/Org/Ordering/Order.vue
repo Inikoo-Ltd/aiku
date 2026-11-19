@@ -15,6 +15,7 @@ import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TimelineResponsive from "@/Components/Utils/TimelineResponsive.vue"
 import Popover from "@/Components/Popover.vue"
+import PrimePopover from "primevue/popover"
 import { Checkbox, InputNumber, InputGroup, InputGroupAddon, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
@@ -322,6 +323,7 @@ const props = defineProps<{
     attachments?: {}
     invoices?: {}
     attachmentRoutes?: {}
+    export_proof?: { is_attached: boolean, documents: { intro: string, items: string[] }, legal_basis: string } | null
     address_update_route?: routeType
     billing_address_update_route?: routeType
     addresses?: {}
@@ -355,6 +357,8 @@ const openEmailCustomer = () => {
 
 
 const isModalUploadOpen = ref(false)
+const exportProofHelp = ref()
+const showExportProofHelp = (event: MouseEvent) => exportProofHelp.value?.show(event, event.currentTarget)
 const isModalProductListOpen = ref(false)
 const currentModalItemType = ref('product')
 const locale = inject("locale", aikuLocaleStructure)
@@ -2817,6 +2821,42 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             </dd>
                         </template>
 
+                        <template #cell_tax_1="{ fieldSummary }">
+                            <dt class="col-span-3 flex flex-col">
+                                <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                    <span>{{ fieldSummary.label }}</span>
+                                </div>
+                                <span v-if="fieldSummary.information" class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
+                            </dt>
+                            <dd v-if="export_proof" class="order-last col-span-7 mt-0.5 mb-1 flex items-start gap-x-1.5 text-xs text-gray-500">
+                                <FontAwesomeIcon :icon="export_proof.is_attached ? faCheck : faExclamationTriangle" fixed-width aria-hidden="true"
+                                    :class="export_proof.is_attached ? 'text-green-600 pt-0.5' : 'text-amber-500 pt-0.5'" />
+                                <span v-if="export_proof.is_attached">
+                                    {{ ctrans("Proof of export attached: the order is zero-rated") }}
+                                </span>
+                                <span v-else>
+                                    {{ ctrans("Collected here, so local VAT is charged. It is zero-rated once the proof that the goods left the country is attached") }}
+                                    <span v-if="can_edit && !isEditLocked" class="underline cursor-pointer hover:text-gray-700" @click="isModalUploadOpen = true">
+                                        ({{ ctrans("Attach proof of export") }})
+                                    </span>
+                                    <span class="ml-0.5 inline-block cursor-help text-gray-400 hover:text-gray-500" @mouseenter="showExportProofHelp" @mouseleave="exportProofHelp?.hide()">
+                                        <FontAwesomeIcon icon="fal fa-question-circle" fixed-width aria-hidden="true" />
+                                    </span>
+                                    <PrimePopover ref="exportProofHelp" class="pointer-events-none">
+                                        <div class="w-[26rem] p-1 text-xs text-gray-600">
+                                            <div class="mb-2 text-sm font-semibold text-gray-800">{{ ctrans("Accepted proof of export") }}</div>
+                                            <p class="mb-1.5">{{ export_proof.documents.intro }}</p>
+                                            <ul class="mb-3 list-disc space-y-1 pl-4">
+                                                <li v-for="item in export_proof.documents.items" :key="item">{{ item }}</li>
+                                            </ul>
+                                            <div class="border-t border-gray-200 pt-2 text-gray-400">
+                                                {{ ctrans("Legal basis") }}: <span class="text-gray-600">{{ export_proof.legal_basis }}</span>
+                                            </div>
+                                        </div>
+                                    </PrimePopover>
+                                </span>
+                            </dd>
+                        </template>
                         <template #cell_charges_1="{ fieldSummary }">
                             <dt class="col-span-3 flex flex-col">
                                 <div class="flex items-center leading-none" :class="fieldSummary.label_class">
@@ -3547,8 +3587,12 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         information: 'The list of column file: customer_reference, notes, stored_items'
     }" :attachmentRoutes="attachmentRoutes" :options="[
         {
-            name: 'Other',
+            name: ctrans('Other'),
             code: 'other'
+        },
+        {
+            name: ctrans('Proof of export'),
+            code: 'export_proof'
         }
     ]" />
     <EmailCustomerDialog v-if="email_customer" v-model:visible="isEmailCustomerOpen" :send-route="email_customer.route"

@@ -14,6 +14,7 @@ import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -65,6 +66,7 @@ private fun SkuFamilyContent(state: SkoFamilyUiState, family: SkoFamilyViewModel
         activeTab = MainTab.Menu,
         showBar = true,
         scrollState = scrollState,
+        refresh = PullRefresh(isRefreshing = list.isRefreshing, onRefresh = family::refresh),
     ) {
         if (summary != null) {
             InventoryStatGrid(

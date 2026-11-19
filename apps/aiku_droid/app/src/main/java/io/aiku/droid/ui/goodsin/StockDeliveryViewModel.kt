@@ -40,6 +40,7 @@ sealed interface LineScanOutcome {
 data class StockDeliveryUiState(
     val delivery: StockDelivery? = null,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val problem: GoodsOutProblem? = null,
     val isSessionExpired: Boolean = false,
     val chosenView: DeliveryView? = null,
@@ -115,6 +116,12 @@ class StockDeliveryViewModel(
     }
 
     fun retry() = load()
+
+    fun refresh() {
+        if (!mutableState.value.isWorking) {
+            load(isPull = true)
+        }
+    }
 
     fun signInAgain() {
         sessions.end()
@@ -219,7 +226,7 @@ class StockDeliveryViewModel(
             return
         }
         loadJob?.cancel()
-        mutableState.update { it.copy(working = write, event = null, isLoading = false, writeErrors = emptyMap(), unsurePlacement = null) }
+        mutableState.update { it.copy(working = write, event = null, isLoading = false, isRefreshing = false, writeErrors = emptyMap(), unsurePlacement = null) }
 
         viewModelScope.launch {
             when (val result = api.writeStockDelivery(token, warehouseId, stockDeliveryId, write)) {
@@ -257,16 +264,16 @@ class StockDeliveryViewModel(
         }
     }
 
-    private fun load() {
+    private fun load(isPull: Boolean = false) {
         val token = token() ?: return
         loadJob?.cancel()
-        mutableState.update { it.copy(isLoading = true, problem = null) }
+        mutableState.update { it.copy(isLoading = true, isRefreshing = isPull, problem = null) }
 
         loadJob = viewModelScope.launch {
             when (val result = api.stockDelivery(token, warehouseId, stockDeliveryId)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(delivery = result.value, isLoading = false) }
-                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isSessionExpired = true) }
-                else -> mutableState.update { it.copy(isLoading = false, problem = result.problem()) }
+                is GoodsOutResult.Loaded -> mutableState.update { it.copy(delivery = result.value, isLoading = false, isRefreshing = false) }
+                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
+                else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
             }
         }
     }

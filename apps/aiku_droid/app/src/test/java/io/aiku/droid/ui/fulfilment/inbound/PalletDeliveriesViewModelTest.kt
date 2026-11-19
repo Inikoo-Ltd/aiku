@@ -58,6 +58,19 @@ class PalletDeliveriesViewModelTest {
     private fun viewModel() = PalletDeliveriesViewModel(api, FakeSessions(), warehouseId = 1, perPage = 50)
 
     @Test
+    fun `pulling to refresh reloads the first page`() {
+        val deliveries = viewModel()
+        deliveries.onStart()
+        deliveries.loadMore()
+
+        deliveries.refresh()
+
+        assertEquals(listOf(1, 2, 1), api.deliveryQueries.map { it.page })
+        assertEquals(listOf(1L, 2L), deliveries.state.value.list.rows.map { it.id })
+        assertFalse(deliveries.state.value.list.isRefreshing)
+    }
+
+    @Test
     fun `opening loads the active deliveries with the counts per state`() {
         val deliveries = viewModel()
 

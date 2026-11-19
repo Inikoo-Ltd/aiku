@@ -44,6 +44,7 @@ import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ProductPhoto
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.ToastKind
@@ -169,6 +170,7 @@ private fun LocationSkuContent(state: LocationUiState, location: LocationViewMod
         activeTab = MainTab.Menu,
         showBar = true,
         footer = footer,
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = location::refresh, isEnabled = !state.isWorking),
     ) {
         val current = draft
         when {

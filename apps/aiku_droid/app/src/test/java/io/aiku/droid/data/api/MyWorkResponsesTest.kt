@@ -24,6 +24,19 @@ class MyWorkResponsesTest {
     }
 
     @Test
+    fun `badges read the goods in received count`() {
+        val badges = (MyWorkResponses.parseBadges(200, """{"data":{"my_work":1,"goods_in_received":3}}""") as GoodsOutResult.Loaded).value
+        val asText = (MyWorkResponses.parseBadges(200, """{"data":{"goods_in_received":"5"}}""") as GoodsOutResult.Loaded).value
+        val withoutRight = (MyWorkResponses.parseBadges(200, """{"data":{"my_work":1,"goods_in_received":null}}""") as GoodsOutResult.Loaded).value
+        val oldServer = (MyWorkResponses.parseBadges(200, """{"data":{"my_work":1,"goods_out_unassigned":2}}""") as GoodsOutResult.Loaded).value
+
+        assertEquals(WorkBadges(myWork = 1, goodsInReceived = 3), badges)
+        assertEquals(5, asText.goodsInReceived)
+        assertNull(withoutRight.goodsInReceived)
+        assertNull(oldServer.goodsInReceived)
+    }
+
+    @Test
     fun `badges keep a null or missing count as null`() {
         val withoutRight = (MyWorkResponses.parseBadges(200, """{"data":{"my_work":0,"goods_out_unassigned":null}}""") as GoodsOutResult.Loaded).value
         val missing = (MyWorkResponses.parseBadges(200, """{"data":{}}""") as GoodsOutResult.Loaded).value

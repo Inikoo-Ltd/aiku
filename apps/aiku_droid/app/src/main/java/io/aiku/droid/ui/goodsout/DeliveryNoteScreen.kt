@@ -46,6 +46,7 @@ import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.NoteCard
 import io.aiku.droid.ui.components.PlatformChip
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -70,6 +71,7 @@ import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.ScanToPickRoute
+import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.theme.LocalAikuColors
@@ -97,17 +99,23 @@ fun DeliveryNoteScreen(note: DeliveryNoteViewModel, reference: String) {
         when {
             state.isSessionExpired -> SessionExpiredScreen(onSignIn = note::signInAgain)
             loaded != null -> DeliveryNoteContent(viewModel = note, state = state, note = loaded)
-            else -> DeliveryNoteLoading(reference = reference, problem = state.problem, onRetry = note::retry)
+            else -> DeliveryNoteLoading(
+                reference = reference,
+                problem = state.problem,
+                onRetry = note::retry,
+                refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = note::refresh),
+            )
         }
     }
 }
 
 @Composable
-private fun DeliveryNoteLoading(reference: String, problem: GoodsOutProblem?, onRetry: () -> Unit) {
+private fun DeliveryNoteLoading(reference: String, problem: GoodsOutProblem?, onRetry: () -> Unit, refresh: PullRefresh) {
     AppScreen(
         header = { AppHeader(title = reference, kicker = stringResource(R.string.goodsout_card_delivery_note)) },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = refresh,
     ) {
         if (problem == null) {
             SkeletonListCard(rows = 2)
@@ -140,6 +148,7 @@ internal fun DeliveryNoteEvents(
     val navigator = LocalAppNavigator.current
     val toasts = LocalToasts.current
     val resources = LocalResources.current
+    val scanFeedback = LocalScanController.current.feedback
     val problemTexts = GoodsOutProblem.entries.associateWith { problemText(it) }
 
     LaunchedEffect(event) {
@@ -159,7 +168,10 @@ internal fun DeliveryNoteEvents(
                 val text = event.message.ifBlank { problemTexts.getValue(event.problem) }
                 if (onSheetProblem != null) onSheetProblem(text) else toasts.show(text, ToastKind.Error)
             }
-            is DeliveryNoteEvent.ScanFeedback -> event.message?.let { toasts.show(it, ToastKind.Error) }
+            is DeliveryNoteEvent.ScanFeedback -> {
+                scanFeedback.rejected()
+                event.message?.let { toasts.show(it, ToastKind.Error) }
+            }
             is DeliveryNoteEvent.LineDone -> {
                 toasts.show(resources.getString(R.string.goodsout_scan_line_done_toast, event.code), ToastKind.Success)
                 onLineDone(event)
@@ -236,6 +248,7 @@ private fun DeliveryNoteContent(viewModel: DeliveryNoteViewModel, state: Deliver
         showBar = true,
         bottomPanel = scanTarget?.let { target -> { NoteScanPanel(note = note, target = target, state = state, viewModel = viewModel) } },
         footer = deliveryNoteFooter(note = note, loadingKey = if (state.isWorking && sheet == null) directActionKey(note) else null, onAction = runAction),
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = state.canRefresh),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.goodsout_note_refresh_failed_title), onRetry = viewModel::retry) }
         DeliveryNoteNotices(note = note)

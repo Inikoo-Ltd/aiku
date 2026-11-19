@@ -46,6 +46,7 @@ data class PickingSessionList(
 data class PickingSessionsUiState(
     val state: PickingSessionState? = null,
     val list: PickingSessionList = PickingSessionList(),
+    val isRefreshing: Boolean = false,
     val counts: Map<String, Int> = emptyMap(),
     val isSessionExpired: Boolean = false,
 )
@@ -84,6 +85,14 @@ class PickingSessionsViewModel(
 
     fun retry() = loadPage(mutableState.value.list.failedPage ?: 1)
 
+    fun refresh() {
+        if (sessions.session.value == null) {
+            return
+        }
+        mutableState.update { it.copy(isRefreshing = true) }
+        loadPage(1)
+    }
+
     fun signInAgain() {
         sessions.end()
     }
@@ -99,11 +108,12 @@ class PickingSessionsViewModel(
                 is GoodsOutResult.Loaded -> mutableState.update {
                     it.copy(
                         list = it.list.loaded(result.value.sessions, result.value.pagination),
+                        isRefreshing = false,
                         counts = result.value.counts.ifEmpty { it.counts },
                     )
                 }
-                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isSessionExpired = true) }
-                else -> mutableState.update { it.copy(list = it.list.failed(page, result.problem())) }
+                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isRefreshing = false, isSessionExpired = true) }
+                else -> mutableState.update { it.copy(list = it.list.failed(page, result.problem()), isRefreshing = false) }
             }
         }
     }

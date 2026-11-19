@@ -57,6 +57,19 @@ class PalletsViewModelTest {
     private fun viewModel(filter: PalletFilter = PalletFilter.Storing) = PalletsViewModel(api, FakeSessions(), warehouseId = 1, initialFilter = filter, perPage = 50)
 
     @Test
+    fun `pulling to refresh reloads the first page of pallets`() {
+        val pallets = viewModel()
+        pallets.onStart()
+        pallets.loadMore()
+
+        pallets.refresh()
+
+        assertEquals(listOf(1, 2, 1), api.palletQueries.map { it.page })
+        assertEquals(listOf(1L, 2L), pallets.state.value.list.rows.map { it.id })
+        assertFalse(pallets.state.value.list.isRefreshing)
+    }
+
+    @Test
     fun `stored pallets open on storing with both count groups`() {
         val pallets = viewModel()
 

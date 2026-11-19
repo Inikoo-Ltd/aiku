@@ -91,6 +91,14 @@ class PalletsViewModel(
         loadPage(mutableState.value.list.failedPage ?: 1)
     }
 
+    fun refresh() {
+        if (sessions.session.value == null) {
+            return
+        }
+        mutableState.update { it.copy(list = it.list.refreshing()) }
+        loadPage(1)
+    }
+
     fun lookUpScan(code: String) {
         val scanned = code.trim()
         if (scanned.isEmpty() || mutableState.value.lookingUpCode != null) {

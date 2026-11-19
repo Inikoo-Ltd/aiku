@@ -140,6 +140,7 @@ sealed interface SelectionOutcome {
 data class DeliveryNotesUiState(
     val filter: DeliveryNoteFilter = DeliveryNoteFilter(),
     val list: DeliveryNoteList = DeliveryNoteList(),
+    val isRefreshing: Boolean = false,
     val canWorkInWarehouse: Boolean = false,
     val counts: DeliveryNoteCounts? = null,
     val preview: FilterPreview? = null,
@@ -225,6 +226,15 @@ class DeliveryNotesViewModel(
         if (mutableState.value.counts == null) {
             loadCounts()
         }
+    }
+
+    fun refresh() {
+        if (currentToken() == null || mutableState.value.isSubmittingSelection) {
+            return
+        }
+        mutableState.update { it.copy(isRefreshing = true) }
+        loadCounts()
+        loadPage(1)
     }
 
     fun previewTotal(draft: DeliveryNoteFilter) {
@@ -348,11 +358,12 @@ class DeliveryNotesViewModel(
                 is GoodsOutResult.Loaded -> mutableState.update { current ->
                     current.copy(
                         list = current.list.loaded(result.value.notes, result.value.pagination),
+                        isRefreshing = false,
                         canWorkInWarehouse = result.value.canWorkInWarehouse,
                     )
                 }
-                GoodsOutResult.SessionExpired -> expireSession()
-                else -> mutableState.update { it.copy(list = it.list.failed(page, result.problem())) }
+                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isRefreshing = false, isSessionExpired = true) }
+                else -> mutableState.update { it.copy(list = it.list.failed(page, result.problem()), isRefreshing = false) }
             }
         }
     }

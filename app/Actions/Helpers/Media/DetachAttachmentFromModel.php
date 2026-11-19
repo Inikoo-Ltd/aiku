@@ -24,6 +24,7 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Media;
 use App\Models\HumanResources\Employee;
 use App\Models\Ordering\Order;
+use App\Actions\Ordering\Order\ResetOrderTaxCategory;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
@@ -40,6 +41,9 @@ class DetachAttachmentFromModel extends OrgAction
         $scope = $model->attachments()->where('media.id', $attachment->id)->first()?->pivot->scope;
         $model->attachments()->detach($attachment->id);
         $model->refresh();
+        if ($model instanceof Order && $scope === Order::EXPORT_PROOF_ATTACHMENT_SCOPE) {
+            ResetOrderTaxCategory::run($model);
+        }
         if (($model instanceof TradeUnit || $model instanceof TradeUnitFamily) && in_array($scope, TradeAttachmentScopeEnum::publicScopes())) {
             $attachment->setCustomProperty('detached_from', array_merge($attachment->getCustomProperty('detached_from', []), [[
                 'model_type' => $model->getMorphClass(),

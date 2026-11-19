@@ -76,6 +76,17 @@ class LocationViewModelTest {
     }
 
     @Test
+    fun `pulling to refresh loads the location again`() {
+        val location = loaded()
+        api.location = GoodsOutResult.Loaded(detail(code = "A-03-03"))
+
+        location.refresh()
+
+        assertEquals("A-03-03", location.state.value.location?.code)
+        assertFalse(location.state.value.isRefreshing)
+    }
+
+    @Test
     fun `moving and removing follow location edit, auditing follows stock edit`() {
         val none = WarehouseAbilities()
 

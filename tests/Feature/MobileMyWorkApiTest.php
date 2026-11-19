@@ -265,19 +265,19 @@ test('my work and its badge skip the sources the user can not open, and the unas
     $assignTo(myWorkUser($this));
     myWorkGet($this->warehouse)->assertOk()->assertJsonPath('counts', ['total' => 4, 'delivery_notes' => 1, 'picking_sessions' => 1, 'returns' => 1, 'pallet_returns' => 1]);
     expect($kinds())->toBe(['delivery_note', 'pallet_return', 'picking_session', 'return'])
-        ->and(myWorkBadges($this->warehouse)->assertOk()->json('data'))->toBe(['my_work' => 4, 'goods_out_unassigned' => 1, 'inbox_unread' => 0]);
+        ->and(myWorkBadges($this->warehouse)->assertOk()->json('data'))->toBe(['my_work' => 4, 'goods_out_unassigned' => 1, 'goods_in_received' => null, 'inbox_unread' => 0]);
 
     $assignTo(myWorkUser($this, [RolesEnum::RETURNS_CLERK], []));
     myWorkGet($this->warehouse)->assertOk()->assertJsonPath('counts', ['total' => 1, 'delivery_notes' => 0, 'picking_sessions' => 0, 'returns' => 1, 'pallet_returns' => 0]);
     expect($kinds())->toBe(['return'])
-        ->and(myWorkBadges($this->warehouse)->assertOk()->json('data'))->toBe(['my_work' => 1, 'goods_out_unassigned' => null, 'inbox_unread' => 0]);
+        ->and(myWorkBadges($this->warehouse)->assertOk()->json('data'))->toBe(['my_work' => 1, 'goods_out_unassigned' => null, 'goods_in_received' => null, 'inbox_unread' => 0]);
 
     $assignTo(myWorkUser($this, [], ["locations.{$this->warehouse->id}.view"]));
     myWorkGet($this->warehouse)
         ->assertOk()
         ->assertJsonPath('data', [])
         ->assertJsonPath('counts', ['total' => 0, 'delivery_notes' => 0, 'picking_sessions' => 0, 'returns' => 0, 'pallet_returns' => 0]);
-    expect(myWorkBadges($this->warehouse)->assertOk()->json('data'))->toBe(['my_work' => 0, 'goods_out_unassigned' => null, 'inbox_unread' => 0]);
+    expect(myWorkBadges($this->warehouse)->assertOk()->json('data'))->toBe(['my_work' => 0, 'goods_out_unassigned' => null, 'goods_in_received' => null, 'inbox_unread' => 0]);
 });
 
 test('my work puts waiting first, then the oldest, and caps the list while counting everything', function () {
@@ -339,4 +339,13 @@ test('my work and badges are not found on a warehouse the user is not authorised
     myWorkBadges($otherWarehouse)->assertNotFound();
     myWorkGet($this->warehouse)->assertOk();
     myWorkBadges($this->warehouse)->assertOk();
+});
+
+test('the goods in badge counts received stock deliveries, the same number the received list shows', function () {
+    myWorkUser($this, [], ["incoming.{$this->warehouse->id}.view"]);
+
+    $badge     = myWorkBadges($this->warehouse)->assertOk()->json('data.goods_in_received');
+    $listTotal = getGoodsOut('grp.api.mobile.warehouses.stock_deliveries', $this->warehouse->id, ['state' => 'received'])->assertOk()->json('meta.total');
+
+    expect($badge)->toBeInt()->toBe($listTotal);
 });

@@ -18,6 +18,7 @@ import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.ButtonStyle
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.navigation.MainTab
 import java.time.ZoneId
 
@@ -50,6 +51,7 @@ fun OvertimeScreen() {
         activeTab = MainTab.Menu,
         showBar = true,
         scrollState = scrollState,
+        refresh = PullRefresh(isRefreshing = state.list.isRefreshing, onRefresh = controller::refresh),
     ) {
         AikuButton(
             text = stringResource(R.string.clocking_overtime_request),

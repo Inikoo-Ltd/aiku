@@ -54,6 +54,7 @@ import io.aiku.droid.ui.locations.locationSubtitle
 import io.aiku.droid.ui.scan.BarcodeSet
 import io.aiku.droid.ui.scan.CameraBarcodePreview
 import io.aiku.droid.ui.scan.ScanEffect
+import io.aiku.droid.ui.scan.ScanMissEffect
 import io.aiku.droid.ui.scan.ScanProblem
 import io.aiku.droid.ui.scan.rememberCameraAccess
 import io.aiku.droid.ui.theme.LocalAikuColors
@@ -150,6 +151,7 @@ internal fun LocationPicker(
     val picked = state.picked
 
     ScanEffect { scan -> onScanned(scan.code) }
+    ScanMissEffect(miss = state.notALocation)
 
     SearchScanField(
         placeholder = placeholder,

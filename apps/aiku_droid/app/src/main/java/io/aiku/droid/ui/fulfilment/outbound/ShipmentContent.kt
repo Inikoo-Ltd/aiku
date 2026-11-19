@@ -48,6 +48,7 @@ import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.ListGroup
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SearchField
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -124,31 +125,54 @@ internal fun ShipmentContent(viewModel: PalletReturnViewModel, state: PalletRetu
         showBar = true,
         footer = selected?.takeIf { canAdd }?.let { shipper ->
             {
-                AikuButton(
-                    text = stringResource(if (shipper.isApi) R.string.goodsout_add_shipment_create_label else R.string.goodsout_add_shipment),
-                    onClick = {
-                        problem = null
-                        if (shipper.isApi) {
-                            when (val check = checkParcels(parcels, withBoxes = false)) {
-                                is ParcelCheck.Valid -> viewModel.createShipment(shipper.id, tracking = null, parcels = check.parcels.takeIf { parcels != saved })
-                                is ParcelCheck.Invalid -> parcelCheck = check
-                            }
-                        } else {
-                            val manualTracking = tracking.trim().takeIf { it.isNotEmpty() }
-                            if (shipper.needsTracking && manualTracking == null) {
-                                trackingMissing = true
-                            } else {
-                                viewModel.createShipment(shipper.id, tracking = manualTracking, parcels = null)
-                            }
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    if (!shipper.isApi) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            FieldLabel(text = stringResource(if (shipper.needsTracking) R.string.goodsout_tracking_number else R.string.goodsout_tracking_number_optional))
+                            PlainTextField(
+                                value = tracking,
+                                onValueChange = {
+                                    tracking = it
+                                    trackingMissing = false
+                                },
+                            )
+                            trackingError?.let { Text(text = it, fontSize = 12.sp, color = colors.danger) }
                         }
-                    },
-                    icon = R.drawable.ic_ui_truck,
-                    isLoading = isAdding,
-                    height = 52.dp,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                    }
+                    AikuButton(
+                        text = stringResource(if (shipper.isApi) R.string.goodsout_add_shipment_create_label else R.string.goodsout_add_shipment),
+                        onClick = {
+                            problem = null
+                            if (shipper.isApi) {
+                                when (val check = checkParcels(parcels, withBoxes = false)) {
+                                    is ParcelCheck.Valid -> viewModel.createShipment(shipper.id, tracking = null, parcels = check.parcels.takeIf { parcels != saved })
+                                    is ParcelCheck.Invalid -> parcelCheck = check
+                                }
+                            } else {
+                                val manualTracking = tracking.trim().takeIf { it.isNotEmpty() }
+                                if (shipper.needsTracking && manualTracking == null) {
+                                    trackingMissing = true
+                                } else {
+                                    viewModel.createShipment(shipper.id, tracking = manualTracking, parcels = null)
+                                }
+                            }
+                        },
+                        icon = R.drawable.ic_ui_truck,
+                        isLoading = isAdding,
+                        height = 52.dp,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         },
+        refresh = PullRefresh(
+            isRefreshing = state.isRefreshing,
+            onRefresh = {
+                viewModel.refresh()
+                viewModel.loadShippers()
+            },
+            isEnabled = state.canRefresh,
+        ),
     ) {
         ReturnRefreshProblem(problem = state.problem, onRetry = viewModel::retry)
         if (!canAdd) {
@@ -194,19 +218,6 @@ internal fun ShipmentContent(viewModel: PalletReturnViewModel, state: PalletRetu
                 }
             }
             shipperErrors.takeIf { it.isNotEmpty() }?.let { InlineAlert(title = it.joinToString(" "), tone = AlertTone.Danger) }
-            if (selected != null && !selected.isApi) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    FieldLabel(text = stringResource(if (selected.needsTracking) R.string.goodsout_tracking_number else R.string.goodsout_tracking_number_optional))
-                    PlainTextField(
-                        value = tracking,
-                        onValueChange = {
-                            tracking = it
-                            trackingMissing = false
-                        },
-                    )
-                    trackingError?.let { Text(text = it, fontSize = 12.sp, color = colors.danger) }
-                }
-            }
             if (selected?.isApi == true) {
                 ReturnParcelsEditor(
                     inputs = parcels,

@@ -1,3 +1,4 @@
+import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 import java.util.Properties
 
 plugins {
@@ -6,8 +7,11 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-if (file("google-services.json").exists()) {
+val firebaseConfigured: Boolean = file("google-services.json").exists()
+
+if (firebaseConfigured) {
     apply(plugin = libs.plugins.google.services.get().pluginId)
+    apply(plugin = libs.plugins.firebase.appdistribution.get().pluginId)
 }
 
 val localProperties = Properties().apply {
@@ -15,6 +19,30 @@ val localProperties = Properties().apply {
 }
 
 fun localProperty(name: String, fallback: String = ""): String = localProperties.getProperty(name, fallback).trim()
+
+fun localOrGradleProperty(name: String, fallback: String): String =
+    localProperty(name)
+        .ifEmpty { providers.gradleProperty(name).orNull.orEmpty().trim() }
+        .ifEmpty { fallback }
+
+val appVersionCode: Int = localOrGradleProperty("aiku.versionCode", "1").let { configured ->
+    configured.toIntOrNull()?.takeIf { it > 0 }
+        ?: throw GradleException("aiku.versionCode must be a positive whole number, not \"$configured\".")
+}
+
+val appVersionName: String = localOrGradleProperty("aiku.versionName", "0.1.0")
+
+val releaseSigningKeys = listOf("aiku.releaseStoreFile", "aiku.releaseStorePassword", "aiku.releaseKeyAlias", "aiku.releaseKeyPassword")
+
+val releaseStoreFile: File? = localProperty("aiku.releaseStoreFile").takeIf { it.isNotEmpty() }?.let { file(it) }
+
+val releaseSigningProblem: String? = releaseSigningKeys.filter { localProperty(it).isEmpty() }.let { missingKeys ->
+    when {
+        missingKeys.isNotEmpty() -> "local.properties has no ${missingKeys.joinToString(", ")}"
+        releaseStoreFile?.isFile != true -> "aiku.releaseStoreFile in local.properties points to no file"
+        else -> null
+    }
+}
 
 fun String.asBuildConfigString(): String =
     "\"" + replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "").replace("\n", "\\n") + "\""
@@ -46,11 +74,22 @@ android {
         applicationId = "io.aiku.droid"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         buildConfigField("String", "AIKU_APP_KEY", localProperty("aiku.appKey").asBuildConfigString())
         buildConfigField("String", "SENTRY_DSN", localProperty("aiku.sentryDsn").asBuildConfigString())
+    }
+
+    signingConfigs {
+        if (releaseSigningProblem == null) {
+            create("release") {
+                storeFile = releaseStoreFile
+                storePassword = localProperty("aiku.releaseStorePassword")
+                keyAlias = localProperty("aiku.releaseKeyAlias")
+                keyPassword = localProperty("aiku.releaseKeyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -60,9 +99,19 @@ android {
             buildConfigField("String", "DEVELOPMENT_CA_CERTIFICATE", developmentCaCertificate.asBuildConfigString())
         }
         release {
+            signingConfig = signingConfigs.findByName("release")
             buildConfigField("String", "AIKU_API_BASE_URL", "https://app.aiku.io".asBuildConfigString())
             buildConfigField("String", "DEVELOPMENT_HOST_ADDRESS", "".asBuildConfigString())
             buildConfigField("String", "DEVELOPMENT_CA_CERTIFICATE", "".asBuildConfigString())
+
+            if (firebaseConfigured) {
+                firebaseAppDistribution {
+                    artifactType = "APK"
+                    groups = localProperty("aiku.appDistributionGroups").ifEmpty { "warehouse-pilot" }
+                    localProperty("aiku.appDistributionCredentials").takeIf { it.isNotEmpty() }?.let { serviceCredentialsFile = it }
+                    file("release-notes.txt").takeIf { it.isFile }?.let { releaseNotesFile = it.path }
+                }
+            }
         }
     }
 
@@ -74,6 +123,22 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+}
+
+releaseSigningProblem?.let { problem ->
+    val unsignedReleaseMessage = "Release signing is off ($problem): the release APK is unsigned, so it cannot be installed or sent to App Distribution. See Release in CLAUDE.md."
+    tasks.named { it == "assembleRelease" }.configureEach {
+        doLast { logger.warn(unsignedReleaseMessage) }
+    }
+    tasks.named { it == "appDistributionUploadRelease" }.configureEach {
+        doFirst { throw GradleException(unsignedReleaseMessage) }
     }
 }
 

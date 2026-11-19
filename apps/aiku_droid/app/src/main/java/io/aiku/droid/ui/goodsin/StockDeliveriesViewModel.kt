@@ -128,6 +128,14 @@ class StockDeliveriesViewModel(
         loadPage(mutableState.value.list.failedPage ?: 1)
     }
 
+    fun refresh() {
+        if (token() == null) {
+            return
+        }
+        mutableState.update { it.copy(list = it.list.refreshing()) }
+        loadPage(1)
+    }
+
     fun previewTotal(draft: StockDeliveryFilter) {
         previewJob?.cancel()
         if (mutableState.value.totalFor(draft) != null) {

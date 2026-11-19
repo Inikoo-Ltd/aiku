@@ -118,6 +118,7 @@ private val CodeTextStyle = TextStyle(fontFamily = Inter, fontSize = 20.sp, font
 private const val AIKU_EMAIL_LINK = "mailto:hello@aiku.io"
 private const val SETUP_KEY_GROUP = 4
 private const val SECONDS_PER_MINUTE = 60
+private const val DISABLED_ALPHA = 0.8f
 
 @Composable
 fun LoginScreen(
@@ -341,7 +342,7 @@ private fun CredentialsStep(state: LoginUiState, actions: LoginActions) {
 private fun OneTimePasswordStep(state: LoginUiState, actions: LoginActions) {
     val keyboard = LocalSoftwareKeyboardController.current
     val codeFocus = remember { FocusRequester() }
-    val isEnabled = !state.isSubmitting
+    val isEnabled = state.areStepButtonsEnabled
 
     LaunchedEffect(Unit) { codeFocus.requestFocus() }
 
@@ -375,7 +376,7 @@ private fun OneTimePasswordStep(state: LoginUiState, actions: LoginActions) {
                 actions.verifyOneTimePassword()
             },
         )
-        TertiaryButton(text = stringResource(R.string.back_to_sign_in), onClick = actions::backToCredentials)
+        TertiaryButton(text = stringResource(R.string.back_to_sign_in), onClick = actions::backToCredentials, isEnabled = isEnabled)
     }
 }
 
@@ -384,7 +385,7 @@ private fun TwoFactorSetupStep(state: LoginUiState, actions: LoginActions) {
     val setup = state.twoFactorSetup ?: return
     val keyboard = LocalSoftwareKeyboardController.current
     val context = LocalContext.current
-    val isEnabled = !state.isSubmitting
+    val isEnabled = state.areStepButtonsEnabled
     var isAuthenticatorMissing by remember(setup.otpauthUrl) { mutableStateOf(false) }
 
     StepHeading(
@@ -398,13 +399,14 @@ private fun TwoFactorSetupStep(state: LoginUiState, actions: LoginActions) {
             text = stringResource(R.string.two_factor_open_app),
             iconResource = R.drawable.ic_shield_check,
             onClick = { isAuthenticatorMissing = !openAuthenticator(context, setup.otpauthUrl) },
+            isEnabled = isEnabled,
         )
         if (isAuthenticatorMissing) {
             HintBox(text = stringResource(R.string.two_factor_no_app))
         }
     }
 
-    SetupKeyPanel(setup = setup)
+    SetupKeyPanel(setup = setup, isEnabled = isEnabled)
 
     LabelledField(label = stringResource(R.string.otp_label), isEnabled = isEnabled, error = state.oneTimePasswordError) {
         OneTimeCodeInput(
@@ -429,12 +431,12 @@ private fun TwoFactorSetupStep(state: LoginUiState, actions: LoginActions) {
                 actions.verifyOneTimePassword()
             },
         )
-        TertiaryButton(text = stringResource(R.string.back_to_sign_in), onClick = actions::backToCredentials)
+        TertiaryButton(text = stringResource(R.string.back_to_sign_in), onClick = actions::backToCredentials, isEnabled = isEnabled)
     }
 }
 
 @Composable
-private fun SetupKeyPanel(setup: TwoFactorSetup) {
+private fun SetupKeyPanel(setup: TwoFactorSetup, isEnabled: Boolean) {
     val colors = LocalAikuColors.current
     val matrix = remember(setup.otpauthUrl) { qrMatrixOf(setup.otpauthUrl) }
 
@@ -478,27 +480,29 @@ private fun SetupKeyPanel(setup: TwoFactorSetup) {
                 textAlign = TextAlign.Center,
             )
         }
-        CopyKeyButton(secret = setup.secret)
+        CopyKeyButton(secret = setup.secret, isEnabled = isEnabled)
     }
 }
 
 @Composable
-private fun CopyKeyButton(secret: String) {
+private fun CopyKeyButton(secret: String, isEnabled: Boolean) {
     val colors = LocalAikuColors.current
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val clipLabel = stringResource(R.string.two_factor_key_clip_label)
     var isCopied by remember(secret) { mutableStateOf(false) }
+    val content = if (isEnabled) colors.textSecondary else colors.textQuaternary
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .heightIn(min = LinkHeight)
+            .alpha(if (isEnabled) 1f else DISABLED_ALPHA)
             .clip(ControlShape)
             .background(colors.surface)
             .border(1.dp, colors.borderStrong, ControlShape)
-            .clickable(role = Role.Button) {
+            .clickable(enabled = isEnabled, role = Role.Button) {
                 scope.launch {
                     clipboard.setClipEntry(ClipEntry(sensitiveClip(clipLabel, secret)))
                     isCopied = true
@@ -509,14 +513,14 @@ private fun CopyKeyButton(secret: String) {
         Icon(
             painter = painterResource(if (isCopied) R.drawable.ic_ui_check else R.drawable.ic_ui_clipboard),
             contentDescription = null,
-            tint = if (isCopied) colors.success else colors.textSecondary,
+            tint = if (isCopied && isEnabled) colors.success else content,
             modifier = Modifier.size(18.dp),
         )
         Text(
             text = stringResource(if (isCopied) R.string.two_factor_key_copied else R.string.two_factor_copy_key),
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            color = colors.textSecondary,
+            color = content,
         )
     }
 }
@@ -587,7 +591,7 @@ private fun PasswordResetStep(state: LoginUiState, actions: LoginActions) {
 @Composable
 private fun PasswordResetCodeStep(state: LoginUiState, actions: LoginActions) {
     val keyboard = LocalSoftwareKeyboardController.current
-    val isEnabled = !state.isSubmitting
+    val isEnabled = state.areStepButtonsEnabled
     val submit = {
         keyboard?.hide()
         actions.resetPassword()
@@ -664,17 +668,18 @@ private fun ResendCode(state: LoginUiState, actions: LoginActions) {
                 text = stringResource(if (state.isResending) R.string.reset_sending else R.string.reset_new_code),
                 iconResource = R.drawable.ic_ui_mail,
                 onClick = actions::resendPasswordResetCode,
+                isEnabled = state.areStepButtonsEnabled,
             )
         }
         else -> Text(
             text = stringResource(if (state.isResending) R.string.reset_sending else R.string.reset_resend),
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
-            color = colors.link,
+            color = if (state.areStepButtonsEnabled) colors.link else colors.textQuaternary,
             modifier = Modifier
                 .heightIn(min = LinkHeight)
                 .clip(ControlShape)
-                .clickable(enabled = !state.isResending, role = Role.Button, onClick = actions::resendPasswordResetCode)
+                .clickable(enabled = !state.isResending && state.areStepButtonsEnabled, role = Role.Button, onClick = actions::resendPasswordResetCode)
                 .padding(vertical = 13.dp),
         )
     }
@@ -1022,7 +1027,7 @@ private fun PrimaryButton(text: String, isLoading: Boolean, onClick: () -> Unit)
 }
 
 @Composable
-private fun TertiaryButton(text: String, onClick: () -> Unit, iconResource: Int? = null) {
+private fun TertiaryButton(text: String, onClick: () -> Unit, iconResource: Int? = null, isEnabled: Boolean = true) {
     val colors = LocalAikuColors.current
 
     Row(
@@ -1031,15 +1036,21 @@ private fun TertiaryButton(text: String, onClick: () -> Unit, iconResource: Int?
         modifier = Modifier
             .fillMaxWidth()
             .height(ControlHeight)
+            .alpha(if (isEnabled) 1f else DISABLED_ALPHA)
             .clip(ControlShape)
             .border(1.dp, colors.borderStrong, ControlShape)
-            .clickable(role = Role.Button, onClick = onClick),
+            .clickable(enabled = isEnabled, role = Role.Button, onClick = onClick),
     ) {
         if (iconResource != null) {
-            Icon(painter = painterResource(iconResource), contentDescription = null, tint = colors.link, modifier = Modifier.size(20.dp))
+            Icon(
+                painter = painterResource(iconResource),
+                contentDescription = null,
+                tint = if (isEnabled) colors.link else colors.textQuaternary,
+                modifier = Modifier.size(20.dp),
+            )
             Spacer(modifier = Modifier.width(8.dp))
         }
-        Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.textSecondary)
+        Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = if (isEnabled) colors.textSecondary else colors.textQuaternary)
     }
 }
 

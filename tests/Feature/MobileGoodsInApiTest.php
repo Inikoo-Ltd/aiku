@@ -51,6 +51,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 
+use function Pest\Laravel\getJson;
+
 require_once __DIR__.'/../Support/MobileApiHelpers.php';
 require_once __DIR__.'/../Support/MobileGoodsOutHelpers.php';
 
@@ -227,6 +229,20 @@ test('mobile goods in hub gives the web hub figures, fulfilment and returns only
 
     mobileGoodsInClerk($this, [RolesEnum::RETURNS_CLERK]);
     getGoodsOut('grp.api.mobile.warehouses.goods_in_hub', $this->warehouse->id)->assertForbidden();
+});
+
+test('mobile goods in hub labels follow the language the app sends in Accept-Language', function () {
+    mobileGoodsInClerk($this);
+    $labels = fn (array $headers) => collect(getJson(route('grp.api.mobile.warehouses.goods_in_hub', $this->warehouse->id), ['X-Aiku-App-Key' => 'mobile-test-key', ...$headers])
+        ->assertOk()
+        ->json('data'))->pluck('label', 'key')->only(['stock_deliveries', 'returns'])->all();
+
+    expect($labels(['Accept-Language' => 'sk']))->toBe(['stock_deliveries' => __('Stock Deliveries', [], 'sk'), 'returns' => __('Returns', [], 'sk')])
+        ->and($labels(['Accept-Language' => 'zh-Hans']))->toBe(['stock_deliveries' => __('Stock Deliveries', [], 'zh-Hans'), 'returns' => __('Returns', [], 'zh-Hans')])
+        ->and($labels(['Accept-Language' => 'sk'])['stock_deliveries'])->not->toBe('Stock Deliveries')
+        ->and($labels(['Accept-Language' => 'el']))->toBe(['stock_deliveries' => 'Stock Deliveries', 'returns' => 'Returns'])
+        ->and($labels([]))->toBe(['stock_deliveries' => 'Stock Deliveries', 'returns' => 'Returns'])
+        ->and(app()->getLocale())->toBe('en');
 });
 
 test('mobile stock delivery list filters by state, source, search and dispatched date, sorts and counts per state', function () {

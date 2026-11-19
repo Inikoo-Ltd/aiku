@@ -40,17 +40,20 @@ data class PagedList<T>(
     val loadingPage: Int? = null,
     val problem: GoodsOutProblem? = null,
     val failedPage: Int? = null,
+    val isRefreshing: Boolean = false,
 ) {
     val hasLoaded: Boolean get() = page > 0
     val hasMore: Boolean get() = hasLoaded && page < lastPage
     val canLoadMore: Boolean get() = hasMore && loadingPage == null
     val canLoadMoreOnScroll: Boolean get() = canLoadMore && problem == null
     val isLoadingMore: Boolean get() = (loadingPage ?: 0) > 1
-    val isEmpty: Boolean get() = hasLoaded && loadingPage == null && rows.isEmpty()
+    val isEmpty: Boolean get() = hasLoaded && (loadingPage == null || isRefreshing) && rows.isEmpty()
     val firstPageProblem: GoodsOutProblem? get() = problem?.takeIf { failedPage == 1 }
     val nextPageProblem: GoodsOutProblem? get() = problem?.takeIf { (failedPage ?: 0) > 1 }
 
     fun loading(page: Int): PagedList<T> = copy(loadingPage = page, problem = null, failedPage = null)
+
+    fun refreshing(): PagedList<T> = copy(isRefreshing = true)
 
     fun loaded(pageRows: List<T>, meta: ListMeta, key: (T) -> Any): PagedList<T> {
         val loadedPage = meta.currentPage
@@ -58,7 +61,7 @@ data class PagedList<T>(
         return PagedList(rows = merged, page = loadedPage, lastPage = meta.lastPage, total = meta.total)
     }
 
-    fun failed(page: Int, problem: GoodsOutProblem): PagedList<T> = copy(loadingPage = null, problem = problem, failedPage = page)
+    fun failed(page: Int, problem: GoodsOutProblem): PagedList<T> = copy(loadingPage = null, problem = problem, failedPage = page, isRefreshing = false)
 }
 
 sealed interface StockEvent {

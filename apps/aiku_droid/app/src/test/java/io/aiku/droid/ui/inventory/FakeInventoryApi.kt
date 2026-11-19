@@ -29,6 +29,7 @@ import io.aiku.droid.data.api.StockMovementReasons
 import io.aiku.droid.data.api.WarehouseArea
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.data.session.StaffSession
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,7 +51,9 @@ data class MovementRequest(val orgStockId: Long?, val locationId: Long?, val flo
 
 class FakeInventoryApi : InventoryApi {
     var overview: GoodsOutResult<LocationsOverview> = GoodsOutResult.Unreachable
+    var overviewRequests = 0
     var removal: GoodsOutResult<EmptyLocationsRemoval> = GoodsOutResult.Unreachable
+    var removalGate: CompletableDeferred<Unit>? = null
     val removalRequests = mutableListOf<Boolean>()
     var areas: GoodsOutResult<List<WarehouseArea>> = GoodsOutResult.Loaded(emptyList())
     val areaSearches = mutableListOf<String?>()
@@ -77,10 +80,14 @@ class FakeInventoryApi : InventoryApi {
     var familyPages: (FamilyQuery) -> GoodsOutResult<FamilyPage> = { GoodsOutResult.Loaded(FamilyPage(emptyList(), ListMeta())) }
     var familySkos: GoodsOutResult<FamilySkoPage> = GoodsOutResult.Unreachable
 
-    override suspend fun locationsOverview(token: String, warehouseId: Long): GoodsOutResult<LocationsOverview> = overview
+    override suspend fun locationsOverview(token: String, warehouseId: Long): GoodsOutResult<LocationsOverview> {
+        overviewRequests++
+        return overview
+    }
 
     override suspend fun setEmptyLocationsRemoval(token: String, warehouseId: Long, enabled: Boolean): GoodsOutResult<EmptyLocationsRemoval> {
         removalRequests += enabled
+        removalGate?.await()
         return removal
     }
 

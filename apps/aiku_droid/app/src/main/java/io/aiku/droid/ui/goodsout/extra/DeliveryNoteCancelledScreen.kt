@@ -37,6 +37,7 @@ import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -65,13 +66,19 @@ fun DeliveryNoteCancelledScreen(note: DeliveryNoteViewModel, reference: String) 
         if (state.isSessionExpired) {
             SessionExpiredScreen(onSignIn = note::signInAgain)
         } else {
-            CancelledContent(reference = loaded?.reference ?: reference, note = loaded, problem = state.problem, onRetry = note::retry)
+            CancelledContent(
+                reference = loaded?.reference ?: reference,
+                note = loaded,
+                problem = state.problem,
+                onRetry = note::retry,
+                refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = note::refresh, isEnabled = state.canRefresh),
+            )
         }
     }
 }
 
 @Composable
-private fun CancelledContent(reference: String, note: DeliveryNote?, problem: GoodsOutProblem?, onRetry: () -> Unit) {
+private fun CancelledContent(reference: String, note: DeliveryNote?, problem: GoodsOutProblem?, onRetry: () -> Unit, refresh: PullRefresh) {
     val navigator = LocalAppNavigator.current
     val canViewReturns = LocalWarehouse.current.can.viewReturns
 
@@ -88,6 +95,7 @@ private fun CancelledContent(reference: String, note: DeliveryNote?, problem: Go
                 modifier = Modifier.fillMaxWidth(),
             )
         },
+        refresh = refresh,
     ) {
         problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.goodsout_note_failed_title, reference), onRetry = onRetry) }
         if (note == null) {

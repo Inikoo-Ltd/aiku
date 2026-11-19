@@ -113,6 +113,9 @@ class LoginViewModel(
     }
 
     override fun backToCredentials() {
+        if (mutableState.value.isSubmitting) {
+            return
+        }
         submission?.cancel()
         resendCooldown?.cancel()
         mutableState.update {

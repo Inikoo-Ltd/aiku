@@ -58,6 +58,22 @@ class StockDeliveriesViewModelTest {
     private fun viewModel(filter: StockDeliveryFilter = StockDeliveryFilter()) = StockDeliveriesViewModel(api, FakeSessions(), warehouseId = 1, initialFilter = filter, perPage = 50)
 
     @Test
+    fun `pulling to refresh reloads the first page and keeps the rows until it arrives`() {
+        val deliveries = viewModel()
+        deliveries.onStart()
+        deliveries.loadMore()
+        api.deliveryPages = { GoodsOutResult.Loaded(StockDeliveryPage(rows(9L..9L), ListMeta(currentPage = 1, lastPage = 1, perPage = 50, total = 1), counts)) }
+
+        deliveries.refresh()
+
+        val state = deliveries.state.value
+        assertEquals(listOf(9L), state.list.rows.map { it.id })
+        assertFalse(state.list.isRefreshing)
+        assertEquals(1, api.deliveryQueries.last().page)
+        assertEquals(3, api.deliveryQueries.size)
+    }
+
+    @Test
     fun `opening loads the active deliveries with the counts per state`() {
         val deliveries = viewModel()
 

@@ -33,6 +33,7 @@ import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.ConfirmDialog
 import io.aiku.droid.ui.components.FooterStatus
 import io.aiku.droid.ui.components.LocalToasts
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.fulfilment.inbound.BookInPanel
@@ -53,6 +54,7 @@ import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
 import io.aiku.droid.ui.navigation.FulfilmentBookedInRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
+import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
 import io.aiku.droid.ui.states.SessionExpiredScreen
 
@@ -81,6 +83,7 @@ fun FulfilmentBookInScreen(container: AppContainer, warehouseId: Long, id: Long,
                 problem = state.problem,
                 failedTitle = stringResource(R.string.fulfilment_inbound_delivery_failed, reference),
                 onRetry = delivery::retry,
+                refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = delivery::refresh),
             )
         }
     }
@@ -103,6 +106,7 @@ private fun BookInContent(viewModel: PalletDeliveryViewModel, state: PalletDeliv
     val fieldError = listOf(FulfilmentInboundErrorKey.LOCATION_ID, FulfilmentInboundErrorKey.LOCATION_CODE)
         .firstNotNullOfOrNull { state.writeErrors[it]?.firstOrNull() }
     val scanMiss = state.scanMiss
+    val scanFeedback = LocalScanController.current.feedback
     val missText = scanMiss?.let { stringResource(R.string.fulfilment_inbound_scan_not_on_delivery, it.code, delivery.reference) }
 
     GoodsInEvents(
@@ -118,6 +122,7 @@ private fun BookInContent(viewModel: PalletDeliveryViewModel, state: PalletDeliv
     ScanEffect(enabled = canScan && confirm == null) { scan -> viewModel.scanForBookIn(scan.code) }
     LaunchedEffect(scanMiss) {
         if (scanMiss != null) {
+            scanFeedback.rejected()
             missText?.let { toasts.show(it, ToastKind.Info) }
             viewModel.scanMissHandled()
         }
@@ -135,6 +140,7 @@ private fun BookInContent(viewModel: PalletDeliveryViewModel, state: PalletDeliv
         showBar = true,
         scrollState = scrollState,
         footer = bookInFooter(delivery = delivery, progress = progress, working = state.working, onFinish = { confirm = BookInConfirm.Finish }),
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = !state.isWorking),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.fulfilment_inbound_delivery_refresh_failed), onRetry = viewModel::retry) }
         PalletDeliveryStatus(delivery = delivery)

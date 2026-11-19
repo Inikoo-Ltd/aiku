@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 data class GoodsOutBacklogUiState(
     val counts: DeliveryNoteCounts? = null,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val problem: GoodsOutProblem? = null,
     val isSessionExpired: Boolean = false,
     val pickers: Choices<DispatchPerson> = Choices(),
@@ -47,6 +48,11 @@ class GoodsOutBacklogViewModel(
 
     fun retry() = load()
 
+    fun refresh() {
+        load(isPull = true)
+        personnelJobs.keys.toList().forEach(::loadPersonnel)
+    }
+
     fun loadPersonnel(role: DispatchRole) {
         val token = sessions.session.value?.token ?: return
         if (personnelJobs[role]?.isActive == true) {
@@ -67,16 +73,16 @@ class GoodsOutBacklogViewModel(
         sessions.end()
     }
 
-    private fun load() {
+    private fun load(isPull: Boolean = false) {
         val token = sessions.session.value?.token ?: return
         countsJob?.cancel()
-        mutableState.update { it.copy(isLoading = true, problem = null) }
+        mutableState.update { it.copy(isLoading = true, isRefreshing = isPull, problem = null) }
 
         countsJob = viewModelScope.launch {
             when (val result = api.deliveryNoteCounts(token, warehouseId, picker = null)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(counts = result.value, isLoading = false) }
-                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isSessionExpired = true) }
-                else -> mutableState.update { it.copy(isLoading = false, problem = result.problem()) }
+                is GoodsOutResult.Loaded -> mutableState.update { it.copy(counts = result.value, isLoading = false, isRefreshing = false) }
+                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
+                else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
             }
         }
     }

@@ -100,22 +100,24 @@ fun AppScreen(
     contentPadding: PaddingValues = PaddingValues(16.dp),
     spacing: Dp = 14.dp,
     scrollState: ScrollState = rememberScrollState(),
+    refresh: PullRefresh? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = LocalAikuColors.current
 
     Column(modifier = modifier.fillMaxSize().background(colors.background)) {
         header()
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(scrollState)
-                .then(if (!showBar && footer == null && bottomPanel == null) Modifier.navigationBarsPadding() else Modifier)
-                .padding(contentPadding),
-            verticalArrangement = Arrangement.spacedBy(spacing),
-            content = content,
-        )
+        PullRefreshBox(refresh = refresh, modifier = Modifier.weight(1f).fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .then(if (!showBar && footer == null && bottomPanel == null) Modifier.navigationBarsPadding() else Modifier)
+                    .padding(contentPadding),
+                verticalArrangement = Arrangement.spacedBy(spacing),
+                content = content,
+            )
+        }
         if (bottomPanel != null) {
             Box(modifier = if (showBar || footer != null) Modifier else Modifier.navigationBarsPadding()) { bottomPanel() }
         }

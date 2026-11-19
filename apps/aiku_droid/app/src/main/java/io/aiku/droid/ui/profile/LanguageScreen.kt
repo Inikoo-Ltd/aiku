@@ -1,5 +1,6 @@
 package io.aiku.droid.ui.profile
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -17,13 +18,9 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,30 +30,34 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.R
-import io.aiku.droid.ui.components.AikuButton
+import io.aiku.droid.data.settings.AppLanguage
+import io.aiku.droid.data.settings.AppLanguageSettings
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.RowDivider
-import io.aiku.droid.ui.components.fakeData
-import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.theme.LocalAikuColors
 
-private data class SampleLanguage(val code: String, val nativeName: String, val englishName: String)
+@Composable
+fun LanguageScreen(settings: AppLanguageSettings) {
+    val current by settings.current.collectAsStateWithLifecycle()
+    val activity = LocalActivity.current
 
-private val SampleLanguages = listOf(
-    SampleLanguage(code = "en", nativeName = "English", englishName = "English"),
-    SampleLanguage(code = "es", nativeName = "Español", englishName = "Spanish"),
-    SampleLanguage(code = "sk", nativeName = "Slovenčina", englishName = "Slovak"),
-)
+    LanguageList(
+        current = current,
+        onChoose = { language ->
+            if (settings.choose(language)) {
+                activity?.recreate()
+            }
+        },
+    )
+}
 
 @Composable
-fun LanguageScreen() {
+private fun LanguageList(current: AppLanguage, onChoose: (AppLanguage) -> Unit) {
     val colors = LocalAikuColors.current
-    val navigator = LocalAppNavigator.current
-    var selectedCode by rememberSaveable { mutableStateOf(SampleLanguages.first().code) }
-    val selectedLanguage = SampleLanguages.firstOrNull { it.code == selectedCode } ?: SampleLanguages.first()
 
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
         AppHeader(
@@ -69,6 +70,7 @@ fun LanguageScreen() {
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .navigationBarsPadding()
                 .padding(16.dp),
         ) {
             Text(
@@ -78,43 +80,24 @@ fun LanguageScreen() {
                 color = colors.textTertiary,
                 modifier = Modifier.padding(horizontal = 4.dp),
             )
-            ListGroup(modifier = Modifier.fakeData().selectableGroup()) {
-                SampleLanguages.forEachIndexed { index, language ->
+            ListGroup(modifier = Modifier.selectableGroup()) {
+                AppLanguage.entries.forEachIndexed { index, language ->
                     if (index > 0) {
                         RowDivider()
                     }
                     LanguageRow(
                         language = language,
-                        isSelected = language.code == selectedLanguage.code,
-                        onSelect = { selectedCode = language.code },
+                        isSelected = language == current,
+                        onSelect = { onChoose(language) },
                     )
                 }
-            }
-        }
-        Column(modifier = Modifier.fillMaxWidth().background(colors.surface)) {
-            HorizontalDivider(thickness = 1.dp, color = colors.border)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            ) {
-                AikuButton(
-                    text = stringResource(R.string.profile_language_use, selectedLanguage.nativeName),
-                    onClick = navigator::back,
-                    icon = R.drawable.ic_ui_check,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fakeData(8.dp),
-                    height = 52.dp,
-                )
             }
         }
     }
 }
 
 @Composable
-private fun LanguageRow(language: SampleLanguage, isSelected: Boolean, onSelect: () -> Unit) {
+private fun LanguageRow(language: AppLanguage, isSelected: Boolean, onSelect: () -> Unit) {
     val colors = LocalAikuColors.current
 
     Row(
@@ -128,8 +111,8 @@ private fun LanguageRow(language: SampleLanguage, isSelected: Boolean, onSelect:
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(text = language.nativeName, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
-            Text(text = language.englishName, fontSize = 12.sp, color = colors.textTertiary)
+            Text(text = stringResource(language.nativeName), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
+            Text(text = stringResource(language.label), fontSize = 12.sp, color = colors.textTertiary)
         }
         Box(
             modifier = Modifier
@@ -145,10 +128,10 @@ private fun LanguageRow(language: SampleLanguage, isSelected: Boolean, onSelect:
     }
 }
 
-@Preview
+@Preview(heightDp = 1500)
 @Composable
 private fun LanguageScreenPreview() {
     AikuDroidTheme {
-        LanguageScreen()
+        LanguageList(current = AppLanguage.Slovak, onChoose = {})
     }
 }

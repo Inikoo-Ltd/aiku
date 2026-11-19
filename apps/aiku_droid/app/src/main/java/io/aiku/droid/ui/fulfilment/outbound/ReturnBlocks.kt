@@ -41,6 +41,7 @@ import io.aiku.droid.ui.components.DetailCard
 import io.aiku.droid.ui.components.DetailLine
 import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.NoteCard
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.StateStepper
 import io.aiku.droid.ui.components.Step
@@ -103,7 +104,12 @@ internal fun PalletReturnFrame(
                 FollowReturnState(palletReturn = loaded, screen = screen, onHandOver = viewModel::handOver)
             }
         }
-        else -> ReturnLoading(reference = reference, problem = state.problem, onRetry = viewModel::retry)
+        else -> ReturnLoading(
+            reference = reference,
+            problem = state.problem,
+            onRetry = viewModel::retry,
+            refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh),
+        )
     }
 }
 
@@ -121,11 +127,12 @@ private fun FollowReturnState(palletReturn: PalletReturn, screen: ReturnScreen, 
 }
 
 @Composable
-private fun ReturnLoading(reference: String, problem: GoodsOutProblem?, onRetry: () -> Unit) {
+private fun ReturnLoading(reference: String, problem: GoodsOutProblem?, onRetry: () -> Unit, refresh: PullRefresh) {
     AppScreen(
         header = { AppHeader(title = reference, kicker = stringResource(R.string.fulfilment_return_kicker)) },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = refresh,
     ) {
         if (problem == null) {
             SkeletonListCard(rows = 2)

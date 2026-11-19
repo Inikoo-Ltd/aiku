@@ -33,3 +33,5 @@ val WorkBadges.myWorkBadge: Int? get() = visibleBadgeCount(myWork)
 val WorkBadges.goodsOutUnassignedBadge: Int? get() = visibleBadgeCount(goodsOutUnassigned)
 
 val WorkBadges.inboxBadge: Int? get() = visibleBadgeCount(inboxUnread)
+
+val WorkBadges.goodsInReceivedBadge: Int? get() = visibleBadgeCount(goodsInReceived)

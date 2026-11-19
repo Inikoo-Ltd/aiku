@@ -27,6 +27,7 @@ import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.FooterStatus
 import io.aiku.droid.ui.components.IconTile
 import io.aiku.droid.ui.components.ListGroup
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.inFooter
 import io.aiku.droid.ui.components.rememberFileOpener
@@ -160,6 +161,7 @@ internal fun PickedContent(viewModel: PalletReturnViewModel, state: PalletReturn
                 firstShipment == null -> FooterStatus(title = palletReturn.stateLabel)
             }
         },
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = state.canRefresh),
     ) {
         ReturnRefreshProblem(problem = state.problem, onRetry = viewModel::retry)
         ReturnStateBlock(palletReturn = palletReturn)
@@ -269,6 +271,7 @@ internal fun DispatchedContent(viewModel: PalletReturnViewModel, state: PalletRe
         header = { ReturnHeader(palletReturn = palletReturn) },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = state.canRefresh),
     ) {
         ReturnRefreshProblem(problem = state.problem, onRetry = viewModel::retry)
         ReturnStateBlock(palletReturn = palletReturn)

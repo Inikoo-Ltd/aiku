@@ -41,6 +41,7 @@ import io.aiku.droid.data.api.Trolley
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.data.session.StaffSession
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,6 +52,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -74,6 +76,28 @@ class PickingSessionViewModelTest {
     @After
     fun restoreMainDispatcher() {
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `pulling to refresh reloads the session, but not while an action is being saved`() {
+        api.session = session(PickingSessionState.Handling)
+        val viewModel = loadedViewModel()
+        api.session = session(PickingSessionState.PickingFinished)
+
+        viewModel.refresh()
+
+        assertEquals(session(PickingSessionState.PickingFinished), viewModel.state.value.session)
+        assertFalse(viewModel.state.value.isRefreshing)
+
+        val gate = CompletableDeferred<Unit>()
+        api.writeGate = gate
+        viewModel.act(PickingSessionWrite.StartPicking)
+        api.session = session(PickingSessionState.Handling)
+        viewModel.refresh()
+
+        assertEquals(session(PickingSessionState.PickingFinished), viewModel.state.value.session)
+        assertFalse(viewModel.state.value.isRefreshing)
+        gate.complete(Unit)
     }
 
     @Test
@@ -241,6 +265,7 @@ class PickingSessionViewModelTest {
         var scanResult: GoodsOutResult<SessionScanPickOutcome> = GoodsOutResult.Unreachable
         val writes = mutableListOf<PickingSessionWrite>()
         val scans = mutableListOf<ScanPickRequest>()
+        var writeGate: CompletableDeferred<Unit>? = null
 
         override suspend fun pickingSessions(token: String, warehouseId: Long, state: PickingSessionState?, page: Int): GoodsOutResult<PickingSessionPage> =
             GoodsOutResult.Unreachable
@@ -253,6 +278,7 @@ class PickingSessionViewModelTest {
 
         override suspend fun writeSession(token: String, sessionId: Long, write: PickingSessionWrite): GoodsOutResult<SessionActionOutcome> {
             writes += write
+            writeGate?.await()
             return writeResult
         }
 

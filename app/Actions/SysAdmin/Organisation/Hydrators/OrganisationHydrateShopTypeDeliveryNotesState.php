@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Events\BroadcastDispatchingBacklogChanged;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\Organisation;
@@ -113,7 +114,15 @@ class OrganisationHydrateShopTypeDeliveryNotesState implements ShouldBeUniqueUnt
             $updateData["number_".$shopTypeEnum->snake()."_shop_delivery_notes"] = $countTotal;
         }
 
-        $organisation->orderingStats()->update($updateData);
+        $orderingStats = $organisation->orderingStats;
+        if (!$orderingStats) {
+            return;
+        }
+        $orderingStats->fill($updateData);
+        if ($orderingStats->isDirty()) {
+            $orderingStats->save();
+            rescue(fn () => BroadcastDispatchingBacklogChanged::dispatch($organisation->id));
+        }
     }
 
 

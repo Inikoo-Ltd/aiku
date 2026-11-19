@@ -174,6 +174,14 @@ class WorkBadgesViewModelTest {
     }
 
     @Test
+    fun `received stock deliveries show only when there are some`() {
+        assertEquals(2, WorkBadges(goodsInReceived = 2).goodsInReceivedBadge)
+        assertEquals(null, WorkBadges(goodsInReceived = 0).goodsInReceivedBadge)
+        assertEquals(null, WorkBadges(goodsInReceived = null).goodsInReceivedBadge)
+        assertEquals(null, WorkBadges(myWork = 4, goodsOutUnassigned = 1).goodsInReceivedBadge)
+    }
+
+    @Test
     fun `badge text tops out at 99+`() {
         assertEquals("1", badgeText(1))
         assertEquals("99", badgeText(99))

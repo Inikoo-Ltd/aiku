@@ -32,6 +32,7 @@ import io.aiku.droid.ui.components.FooterStatus
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.NoteCard
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.fulfilment.inbound.DeliveryPalletList
@@ -83,6 +84,7 @@ fun FulfilmentDeliveryScreen(container: AppContainer, warehouseId: Long, id: Lon
                 problem = state.problem,
                 failedTitle = stringResource(R.string.fulfilment_inbound_delivery_failed, reference),
                 onRetry = delivery::retry,
+                refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = delivery::refresh),
             )
         }
     }
@@ -117,6 +119,7 @@ private fun PalletDeliveryContent(viewModel: PalletDeliveryViewModel, state: Pal
             onStartBooking = viewModel::startBooking,
             onBookIn = { navigator.switchSection(FulfilmentBookInRoute(id = delivery.id, reference = delivery.reference)) },
         ),
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = !state.isWorking),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.fulfilment_inbound_delivery_refresh_failed), onRetry = viewModel::retry) }
         PalletDeliveryStatus(delivery = delivery)

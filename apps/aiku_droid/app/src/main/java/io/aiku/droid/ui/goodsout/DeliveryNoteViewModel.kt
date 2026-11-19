@@ -88,6 +88,7 @@ private sealed interface QueuedScan {
 data class DeliveryNoteUiState(
     val note: DeliveryNote? = null,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val problem: GoodsOutProblem? = null,
     val isSessionExpired: Boolean = false,
     val working: DeliveryNoteWrite? = null,
@@ -104,6 +105,8 @@ data class DeliveryNoteUiState(
     val shipperDirective: ShipperDirective? = null,
 ) {
     val isWorking: Boolean get() = working != null
+
+    val canRefresh: Boolean get() = !isWorking && queuedScans == 0
 }
 
 class DeliveryNoteHandoff {
@@ -143,6 +146,12 @@ class DeliveryNoteViewModel(
 
     fun retry() = load()
 
+    fun refresh() {
+        if (mutableState.value.canRefresh) {
+            load(isPull = true)
+        }
+    }
+
     fun signInAgain() {
         sessions.end()
     }
@@ -162,7 +171,7 @@ class DeliveryNoteViewModel(
             return
         }
         loadJob?.cancel()
-        mutableState.update { it.copy(working = write, event = null, isLoading = false, writeErrors = emptyMap()) }
+        mutableState.update { it.copy(working = write, event = null, isLoading = false, isRefreshing = false, writeErrors = emptyMap()) }
 
         viewModelScope.launch {
             when (val result = api.write(token, deliveryNoteId, write)) {
@@ -471,16 +480,16 @@ class DeliveryNoteViewModel(
         }
     }
 
-    private fun load() {
+    private fun load(isPull: Boolean = false) {
         val token = sessions.session.value?.token ?: return
         loadJob?.cancel()
-        mutableState.update { it.copy(isLoading = true, problem = null) }
+        mutableState.update { it.copy(isLoading = true, isRefreshing = isPull, problem = null) }
 
         loadJob = viewModelScope.launch {
             when (val result = api.deliveryNote(token, deliveryNoteId)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(note = result.value, isLoading = false) }
-                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isSessionExpired = true) }
-                else -> mutableState.update { it.copy(isLoading = false, problem = result.problem()) }
+                is GoodsOutResult.Loaded -> mutableState.update { it.copy(note = result.value, isLoading = false, isRefreshing = false) }
+                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
+                else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
             }
         }
     }

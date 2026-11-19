@@ -39,6 +39,7 @@ import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.EmptyState
 import io.aiku.droid.ui.components.GroupLabel
 import io.aiku.droid.ui.components.ListGroup
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.SkeletonStatCard
@@ -93,6 +94,7 @@ fun TimesheetDayScreen(date: String) {
         activeTab = null,
         showBar = false,
         spacing = 16.dp,
+        refresh = PullRefresh(isRefreshing = dayState?.isRefreshing == true, onRefresh = { day?.let { clocking.loadDay(it, isPull = true) } }),
         footer = {
             if (timesheet?.hasPendingAdjustment == true) {
                 Row(
@@ -131,7 +133,7 @@ fun TimesheetDayScreen(date: String) {
         dayState?.problem?.let { problem -> ClockingLoadProblem(problem = problem, onRetry = { day?.let(clocking::loadDay) }) }
         when {
             timesheet != null -> TimesheetDayContent(timesheet = timesheet, status = state.status, zone = state.zone, today = state.today, now = now)
-            day != null && (dayState == null || dayState.isLoading) -> {
+            day != null && (dayState == null || dayState.isLoading && !dayState.isRefreshing) -> {
                 SkeletonStatCard()
                 SkeletonListCard(rows = 3)
             }

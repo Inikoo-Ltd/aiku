@@ -2,13 +2,16 @@ package io.aiku.droid.ui.fulfilment.outbound
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import io.aiku.droid.data.api.AuditItemTarget
 import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.PalletReturnScanStatus
+import io.aiku.droid.data.api.StoredItemAuditWrite
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.goodsout.problem
 import io.aiku.droid.ui.goodsout.problemText
+import io.aiku.droid.ui.scan.LocalScanController
 
 sealed interface OutboundEvent {
     data class Done(val action: Any, val message: String?, val isNothingChanged: Boolean) : OutboundEvent
@@ -31,6 +34,14 @@ internal fun GoodsOutResult<*>.outboundRefusal(action: Any?): OutboundEvent.Refu
 
 internal val GoodsOutResult<*>.isUnsure: Boolean get() = this == GoodsOutResult.Unreachable || this is GoodsOutResult.ServerError
 
+internal val OutboundEvent.isScanMiss: Boolean
+    get() = when (this) {
+        is OutboundEvent.Scanned -> status != PalletReturnScanStatus.PICKED
+        is OutboundEvent.NotOnReturn -> true
+        is OutboundEvent.Refused -> message.isNotBlank() && (action as? StoredItemAuditWrite.Add)?.target is AuditItemTarget.Barcode
+        else -> false
+    }
+
 internal fun scanToastKind(status: String): ToastKind = when (status) {
     PalletReturnScanStatus.PICKED -> ToastKind.Success
     PalletReturnScanStatus.ALREADY_PICKED -> ToastKind.Info
@@ -48,9 +59,13 @@ internal fun OutboundEvents(
     onLineFound: (Long) -> Unit = {},
 ) {
     val toasts = LocalToasts.current
+    val scanFeedback = LocalScanController.current.feedback
     val problemTexts = GoodsOutProblem.entries.associateWith { problemText(it) }
 
     LaunchedEffect(event) {
+        if (event?.isScanMiss == true) {
+            scanFeedback.rejected()
+        }
         when (event) {
             is OutboundEvent.Done -> {
                 (event.message ?: doneText(event))?.let { toasts.show(it, if (event.isNothingChanged) ToastKind.Info else ToastKind.Success) }

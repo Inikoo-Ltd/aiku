@@ -80,7 +80,7 @@ class UpdateOrder extends OrgAction
                         country: $order->organisation->country,
                         taxNumber: $taxNumber,
                         billingAddress: $order->billingAddress,
-                        deliveryAddress: $order->taxableDeliveryAddress($taxNumber),
+                        deliveryAddress: $order->taxableDeliveryAddress(),
                         isRe: $order->is_re,
                     )->id
                 ]);

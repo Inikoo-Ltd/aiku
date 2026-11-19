@@ -28,6 +28,7 @@ data object StartAudit
 data class PalletUiState(
     val pallet: Pallet? = null,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val problem: GoodsOutProblem? = null,
     val isSessionExpired: Boolean = false,
     val working: Any? = null,
@@ -70,6 +71,12 @@ class PalletViewModel(
     }
 
     fun retry() = load()
+
+    fun refresh() {
+        if (!mutableState.value.isWorking) {
+            load(isPull = true)
+        }
+    }
 
     fun signInAgain() {
         sessions.end()
@@ -121,7 +128,7 @@ class PalletViewModel(
             return
         }
         loadJob?.cancel()
-        mutableState.update { it.copy(working = write, event = null, isLoading = false, writeErrors = emptyMap()) }
+        mutableState.update { it.copy(working = write, event = null, isLoading = false, isRefreshing = false, writeErrors = emptyMap()) }
 
         viewModelScope.launch {
             when (val result = api.writePallet(token, warehouseId, palletId, write)) {
@@ -152,16 +159,16 @@ class PalletViewModel(
         }
     }
 
-    private fun load() {
+    private fun load(isPull: Boolean = false) {
         val token = token() ?: return
         loadJob?.cancel()
-        mutableState.update { it.copy(isLoading = true, problem = null) }
+        mutableState.update { it.copy(isLoading = true, isRefreshing = isPull, problem = null) }
 
         loadJob = viewModelScope.launch {
             when (val result = api.pallet(token, warehouseId, palletId)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(pallet = result.value, isLoading = false) }
-                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isSessionExpired = true) }
-                else -> mutableState.update { it.copy(isLoading = false, problem = result.problem()) }
+                is GoodsOutResult.Loaded -> mutableState.update { it.copy(pallet = result.value, isLoading = false, isRefreshing = false) }
+                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
+                else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
             }
         }
     }

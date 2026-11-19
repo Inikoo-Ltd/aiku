@@ -68,6 +68,17 @@ class PalletDeliveryViewModelTest {
     }
 
     @Test
+    fun `pulling to refresh loads the delivery again`() {
+        val delivery = viewModel(testDelivery("confirmed", listOf(testPallet(1, state = "confirmed"))))
+        api.delivery = GoodsOutResult.Loaded(testDelivery("received", listOf(testPallet(1, state = "received"))))
+
+        delivery.refresh()
+
+        assertEquals("received", delivery.state.value.delivery?.state)
+        assertFalse(delivery.state.value.isRefreshing)
+    }
+
+    @Test
     fun `receiving keeps the re-read detail and its message`() {
         val delivery = viewModel(testDelivery("confirmed", listOf(testPallet(1, state = "confirmed")), actions = actions(FulfilmentInboundActionKey.RECEIVE)))
         api.deliveryWriteResults = answer(testDelivery("received", listOf(testPallet(1, state = "received")), actions = actions(FulfilmentInboundActionKey.START_BOOKING)))

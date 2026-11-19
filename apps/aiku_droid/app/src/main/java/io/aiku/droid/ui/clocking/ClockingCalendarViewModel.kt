@@ -18,6 +18,7 @@ import java.time.YearMonth
 data class ClockingCalendarUiState(
     val months: Map<YearMonth, HolidayCalendar> = emptyMap(),
     val loadingMonth: YearMonth? = null,
+    val isRefreshing: Boolean = false,
     val failedMonth: YearMonth? = null,
     val problem: ClockingProblem? = null,
 )
@@ -25,7 +26,7 @@ data class ClockingCalendarUiState(
 interface ClockingCalendarController {
     val state: StateFlow<ClockingCalendarUiState>
 
-    fun loadMonth(month: YearMonth)
+    fun loadMonth(month: YearMonth, isPull: Boolean = false)
 }
 
 class ClockingCalendarViewModel(
@@ -49,16 +50,16 @@ class ClockingCalendarViewModel(
         }
     }
 
-    override fun loadMonth(month: YearMonth) {
+    override fun loadMonth(month: YearMonth, isPull: Boolean) {
         val token = sessions.session.value?.token ?: return
         monthJob?.cancel()
-        mutableState.update { it.copy(loadingMonth = month, failedMonth = null, problem = null) }
+        mutableState.update { it.copy(loadingMonth = month, isRefreshing = isPull, failedMonth = null, problem = null) }
 
         monthJob = viewModelScope.launch {
             when (val result = hrApi.holidayCalendar(token, month)) {
-                is ClockingResult.Loaded -> mutableState.update { it.copy(months = it.months + (month to result.value), loadingMonth = null) }
+                is ClockingResult.Loaded -> mutableState.update { it.copy(months = it.months + (month to result.value), loadingMonth = null, isRefreshing = false) }
                 ClockingResult.SessionExpired -> mutableSessionExpired.value = true
-                else -> mutableState.update { it.copy(loadingMonth = null, failedMonth = month, problem = clockingProblemOf(result)) }
+                else -> mutableState.update { it.copy(loadingMonth = null, isRefreshing = false, failedMonth = month, problem = clockingProblemOf(result)) }
             }
         }
     }
@@ -66,7 +67,7 @@ class ClockingCalendarViewModel(
 
 private object NoClockingCalendar : ClockingCalendarController {
     override val state: StateFlow<ClockingCalendarUiState> = MutableStateFlow(ClockingCalendarUiState()).asStateFlow()
-    override fun loadMonth(month: YearMonth) = Unit
+    override fun loadMonth(month: YearMonth, isPull: Boolean) = Unit
 }
 
 val LocalClockingCalendar = staticCompositionLocalOf<ClockingCalendarController> { NoClockingCalendar }

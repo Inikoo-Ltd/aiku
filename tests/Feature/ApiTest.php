@@ -53,6 +53,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Chat\ChatAiAccountUsageSample;
+use App\Models\Helpers\Language;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -1412,6 +1413,45 @@ test('the app profile shows the job title and the organisation of the current em
         ->assertJsonPath('data.organisation.code', $this->organisation->code)
         ->assertJsonPath('data.organisation.name', $this->organisation->name)
         ->assertJsonMissingPath('data.salary');
+});
+
+test('the app profile shows the Aiku account language and the app can change it', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [, $user] = createClockingEmployeeUser($this->organisation);
+    $english = Language::where('code', 'en')->firstOrFail();
+    $german  = Language::where('code', 'de')->firstOrFail();
+    $user->update(['language_id' => $english->id]);
+    Sanctum::actingAs($user, ['mobile']);
+
+    getJson(route('grp.api.mobile.profile'), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.language', ['code' => 'en', 'name' => $english->native_name ?: $english->name]);
+
+    patchJson(route('grp.api.mobile.profile.language'), ['language' => 'de'], ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.id', $user->id)
+        ->assertJsonPath('data.language', ['code' => 'de', 'name' => $german->native_name ?: $german->name]);
+
+    expect($user->refresh()->language_id)->toBe($german->id);
+
+    patchJson(route('grp.api.mobile.profile.language'), ['language' => 'zh-Hans'], ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.language.code', 'zh-Hans');
+});
+
+test('the app cannot set a language the web does not offer', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [, $user] = createClockingEmployeeUser($this->organisation);
+    $before   = $user->language_id;
+    Sanctum::actingAs($user, ['mobile']);
+
+    foreach ([['language' => 'el'], ['language' => 'xx'], ['language' => 'DE'], ['language' => ''], []] as $body) {
+        patchJson(route('grp.api.mobile.profile.language'), $body, ['X-Aiku-App-Key' => 'mobile-test-key'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('language');
+    }
+
+    expect($user->refresh()->language_id)->toBe($before);
 });
 
 test('the app profile of a user with no employment has no position or organisation', function () {

@@ -111,7 +111,7 @@ struct ScanTabView: View {
                     .padding(.horizontal, 10)
                     .accessibilityLabel("Type code")
                     .accessibilityIdentifier("shell.scan.codeField")
-                Button("Open", action: submitTypedCode)
+                Button("Go", action: submitTypedCode)
                     .font(.aiku(14, .semibold))
                     .foregroundStyle(AikuColor.link)
                     .frame(minWidth: 56, minHeight: 44)

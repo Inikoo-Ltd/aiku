@@ -50,6 +50,8 @@ data class LoginUiState(
     val passwordFocusRequest: Int = 0,
 ) {
     val isResetCodeUsedUp: Boolean get() = wrongResetCodes >= MAX_RESET_CODE_TRIES
+
+    val areStepButtonsEnabled: Boolean get() = !isSubmitting
 }
 
 interface LoginActions {

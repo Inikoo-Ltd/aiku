@@ -31,6 +31,8 @@ interface ClockingAdjustmentsController : AttachmentSource {
 
     fun load()
 
+    fun refresh()
+
     fun loadMore()
 
     fun resetSubmission()
@@ -66,6 +68,15 @@ class ClockingAdjustmentsViewModel(
     }
 
     override fun load() = loadPage(1)
+
+    override fun refresh() {
+        val current = mutableState.value
+        if (currentToken() == null || current.submission == HrSubmission.Sending || current.cancellation == HrSubmission.Sending) {
+            return
+        }
+        mutableState.update { it.copy(list = it.list.refreshing()) }
+        loadPage(1)
+    }
 
     override fun loadMore() {
         val list = mutableState.value.list
@@ -156,6 +167,7 @@ class ClockingAdjustmentsViewModel(
 private object NoClockingAdjustments : ClockingAdjustmentsController {
     override val state: StateFlow<ClockingAdjustmentsUiState> = MutableStateFlow(ClockingAdjustmentsUiState()).asStateFlow()
     override fun load() = Unit
+    override fun refresh() = Unit
     override fun loadMore() = Unit
     override fun resetSubmission() = Unit
     override fun requestAdjustment(input: ClockingAdjustmentInput) = Unit

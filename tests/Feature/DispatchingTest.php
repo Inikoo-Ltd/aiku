@@ -2623,6 +2623,31 @@ test('packeta sends a Polish parcel locker delivery to the InPost locker the cus
     'bare code as customer note'  => ['Elzanowo 10B', null, ' byd21n '],
 ]);
 
+test('packeta refuses a pick-up point it cannot book instead of booking home delivery', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $poland = \App\Models\Helpers\Country::where('code', 'PL')->firstOrFail();
+    \App\Actions\Dispatching\DeliveryNote\StoreDeliveryNoteAddress::make()->action($deliveryNote, ['address' => new Address(array_merge(Address::factory()->definition(), [
+        'address_line_1' => 'PickUp Point Orlen Paczka BB-323760-D4-05',
+        'address_line_2' => 'Toruńska 30',
+        'locality'       => 'Bydgoszcz',
+        'postal_code'    => '85-023',
+        'country_id'     => $poland->id,
+        'country_code'   => 'PL',
+    ]))]);
+    $deliveryNote->update(['is_cash_on_delivery' => false, 'parcels' => [['weight' => 1, 'dimensions' => [10, 10, 10]]], 'shipping_notes' => null, 'customer_notes' => null]);
+
+    config(['app.sandbox.shipper_packeta_access_token' => json_encode(['api_password' => 'test'])]);
+    $client = fakePacketaSoapClient(true);
+    $action = \Mockery::mock(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::class)->makePartial();
+    $action->shouldReceive('soapClient')->andReturn($client);
+
+    $response = $action->handle($deliveryNote->refresh(), new \App\Models\Dispatching\Shipper());
+
+    expect($response['status'])->toBe('fail')
+        ->and($response['errorData']['message'])->toContain('Book it manually')
+        ->and($client->packetAttributes)->toBe([]);
+});
+
 test('packeta sends the customer email when the delivery note has none', function (?string $noteEmail, string $expectedEmail) {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote->customer->update(['email' => 'dropshipper@example.com']);
@@ -9218,7 +9243,7 @@ test('dispatch capacity says when a warehouse is over and how many workers would
 
 test('UI dispatch hub shows delivery notes dispatched today', function () {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
-    $deliveryNote->update(['dispatched_at' => now()]);
+    $deliveryNote->update(['state' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::DISPATCHED, 'dispatched_at' => now()]);
 
     $response = get(route('grp.org.warehouses.show.dispatching.backlog', [
         $this->organisation->slug,
@@ -9230,6 +9255,30 @@ test('UI dispatch hub shows delivery notes dispatched today', function () {
             ->where('delivery_note.metrics', fn ($metrics) => collect($metrics)->last()['key'] === 'dispatched_today')
             ->where('delivery_note.totals.dispatched_today.value', fn ($value) => $value >= 1)
             ->where('delivery_note.data', fn ($data) => collect($data)->sum('dispatched_today.value') >= 1)
+            ->where('delivery_note.totals.dispatched_today.route_target.name', 'grp.org.warehouses.show.dispatching.dispatched_today.delivery-notes')
             ->etc()
     );
+
+    get(route('grp.org.warehouses.show.dispatching.dispatched_today.delivery-notes', [$this->organisation->slug, $this->warehouse->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($deliveryNote->id))->etc());
+});
+
+test('dispatching backlog broadcasts only when a channel count changes', function () {
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastDispatchingBacklogChanged::class]);
+    $hydrate = fn () => \App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotesState::run(
+        $this->organisation->id,
+        \App\Enums\Catalogue\Shop\ShopTypeEnum::B2B,
+        \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::DISPATCHED
+    );
+
+    $this->organisation->orderingStats->update(['number_b2b_shop_delivery_notes_state_dispatched' => 999999]);
+    $hydrate();
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastDispatchingBacklogChanged::class, 1);
+
+    $hydrate();
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastDispatchingBacklogChanged::class, 1);
+
+    get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $this->warehouse->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('live_channel', 'grp.org.'.$this->organisation->id.'.dispatching-backlog')->etc());
 });

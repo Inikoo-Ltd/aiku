@@ -20,6 +20,7 @@ import io.aiku.droid.ui.components.FilterChips
 import io.aiku.droid.ui.components.FilterOption
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -109,6 +110,7 @@ private fun PickingSessionsContent(state: PickingSessionsUiState, sessions: Pick
         activeTab = MainTab.Menu,
         showBar = true,
         scrollState = scrollState,
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = sessions::refresh),
     ) {
         FilterChips(options = options, selectedIndex = sessionFilters.indexOf(state.state), onSelect = { index -> sessions.selectState(sessionFilters[index]) })
         list.firstPageProblem?.let { problem ->
@@ -129,7 +131,7 @@ private fun PickingSessionsContent(state: PickingSessionsUiState, sessions: Pick
                     )
                 }
             }
-            list.hasLoaded && list.loadingPage == null -> EmptyState(
+            list.hasLoaded && (list.loadingPage == null || state.isRefreshing) -> EmptyState(
                 icon = R.drawable.ic_ui_trolley,
                 title = stringResource(R.string.goodsout_extra_sessions_empty_title),
                 body = stringResource(R.string.goodsout_extra_sessions_empty_body),

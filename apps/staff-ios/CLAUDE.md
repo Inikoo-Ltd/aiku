@@ -42,7 +42,7 @@ Most screens still run on sample data so developers can see each screen before i
 
 ## Languages
 
-- The app offers the 23 languages of the web (`Core/Localization/AppLanguage.swift`), chosen in Profile › Language and saved on the device (`LanguageStore`, defaulting to the phone's language when supported); it switches at once, without a restart.
+- The app offers the 23 languages of the web (`Core/Localization/AppLanguage.swift`), chosen in Profile › Language or from the globe on the sign-in screen, and saved on the device (`LanguageStore`, defaulting to the phone's language when supported); it switches at once, without a restart.
 - Translations live in `Aiku/Resources/Localizable.xcstrings`, keyed by the English text like the web's `lang/*.json`. Shared components (`Core/UI`, Shell rows) look their texts up with `L10n.text(_:)`, falling back to the English text, so texts from the server pass through unchanged; `Text("literal")` follows the root `\.locale`. Values, codes and names are never translated.
 - Wording already on the web is reused from `lang/<code>.json`; the rest is machine-translated and marked `needs_review` in the catalogue for a native speaker. Interpolated texts (with `\(...)`) are not translated yet.
 

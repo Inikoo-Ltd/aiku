@@ -82,6 +82,14 @@ class StockMovementsViewModel(
         loadPage(mutableState.value.list.failedPage ?: 1)
     }
 
+    fun refresh() {
+        if (sessions.session.value == null) {
+            return
+        }
+        mutableState.update { it.copy(list = it.list.refreshing()) }
+        loadPage(1)
+    }
+
     fun signInAgain() {
         sessions.end()
     }

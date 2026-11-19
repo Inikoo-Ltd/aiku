@@ -95,6 +95,30 @@ class ReturnsViewModelTest {
     }
 
     @Test
+    fun `pulling to refresh reloads the returns list and the open return`() {
+        val returns = ReturnsViewModel(api, FakeSessions(), warehouseId = 1, perPage = 50)
+        returns.onStart()
+        api.returnPages = { query -> GoodsOutResult.Loaded(ReturnPage(rows = listOf(CustomerReturnRow(id = 9, reference = "R-9")), meta = ListMeta(currentPage = query.page))) }
+
+        returns.refresh()
+
+        assertEquals(listOf(9L), returns.state.value.list.rows.map { it.id })
+        assertFalse(returns.state.value.list.isRefreshing)
+        assertEquals(2, api.returnQueries.size)
+
+        api.customerReturn = GoodsOutResult.Loaded(customerReturn(ReturnState.RECEIVED, item(remaining = 3.0)))
+        val detail = ReturnViewModel(api, FakeSessions(), warehouseId = 1, returnId = 5)
+        detail.onStart()
+        val returning = customerReturn(ReturnState.RETURNING, item(remaining = 3.0))
+        api.customerReturn = GoodsOutResult.Loaded(returning)
+
+        detail.refresh()
+
+        assertEquals(returning, detail.state.value.customerReturn)
+        assertFalse(detail.state.value.isRefreshing)
+    }
+
+    @Test
     fun `returns to process asks for received and returning together and is named in the title`() {
         val returns = ReturnsViewModel(api, FakeSessions(), warehouseId = 1, initialState = ReturnStateFilter.ToProcess)
 

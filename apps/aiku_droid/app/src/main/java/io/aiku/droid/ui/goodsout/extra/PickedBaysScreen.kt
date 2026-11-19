@@ -22,6 +22,7 @@ import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.Tone
@@ -49,6 +50,7 @@ fun PickedBaysScreen(bays: EquipmentListViewModel<PickedBay>) {
             header = { ModuleHeader(section = WarehouseSection.PickedBays) },
             activeTab = MainTab.Menu,
             showBar = true,
+            refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = bays::refresh),
         ) {
             EquipmentList(
                 state = state,

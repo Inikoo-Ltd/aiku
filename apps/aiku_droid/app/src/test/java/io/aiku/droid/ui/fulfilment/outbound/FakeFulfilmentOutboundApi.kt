@@ -29,6 +29,7 @@ import io.aiku.droid.data.api.StoredItemDetail
 import io.aiku.droid.data.api.StoredItemPage
 import io.aiku.droid.data.api.StoredItemQuery
 import java.io.File
+import kotlinx.coroutines.CompletableDeferred
 
 class FakeFulfilmentOutboundApi : FulfilmentOutboundApi {
     val returnQueries = mutableListOf<PalletReturnQuery>()
@@ -36,6 +37,7 @@ class FakeFulfilmentOutboundApi : FulfilmentOutboundApi {
     var palletReturn: GoodsOutResult<PalletReturn> = GoodsOutResult.Unreachable
     val writes = mutableListOf<PalletReturnWrite>()
     var writeResults: (PalletReturnWrite) -> GoodsOutResult<PalletReturnOutcome> = { GoodsOutResult.Unreachable }
+    var writeGate: CompletableDeferred<Unit>? = null
     val scans = mutableListOf<PalletReturnScanRequest>()
     var scanResults: (PalletReturnScanRequest) -> GoodsOutResult<PalletReturnScanOutcome> = { GoodsOutResult.Unreachable }
     var shippers: GoodsOutResult<List<Shipper>> = GoodsOutResult.Loaded(emptyList())
@@ -58,6 +60,7 @@ class FakeFulfilmentOutboundApi : FulfilmentOutboundApi {
 
     override suspend fun writePalletReturn(token: String, warehouseId: Long, returnId: Long, write: PalletReturnWrite): GoodsOutResult<PalletReturnOutcome> {
         writes += write
+        writeGate?.await()
         return writeResults(write)
     }
 

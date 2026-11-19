@@ -18,6 +18,7 @@ import io.aiku.droid.ui.components.FilterOption
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.WarehouseSection
@@ -76,6 +77,7 @@ private fun PalletIncidentsContent(state: PalletsUiState, incidents: PalletsView
         activeTab = MainTab.Menu,
         showBar = true,
         scrollState = scrollState,
+        refresh = PullRefresh(isRefreshing = list.isRefreshing, onRefresh = incidents::refresh),
     ) {
         FilterChips(
             options = incidentChips.map { incidentState ->

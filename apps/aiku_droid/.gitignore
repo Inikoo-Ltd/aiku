@@ -10,3 +10,4 @@ captures/
 *.jks
 *.keystore
 app/google-services.json
+app/release-notes.txt

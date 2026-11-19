@@ -27,6 +27,7 @@ use App\Models\Goods\TradeUnitFamily;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\HumanResources\Employee;
 use App\Models\Ordering\Order;
+use App\Actions\Ordering\Order\ResetOrderTaxCategory;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
@@ -90,6 +91,10 @@ class AttachAttachmentToModel extends OrgAction
             ];
 
             SaveModelAttachment::make()->action($model, $attachmentData);
+        }
+
+        if ($model instanceof Order && Arr::get($modelData, 'scope') === Order::EXPORT_PROOF_ATTACHMENT_SCOPE) {
+            ResetOrderTaxCategory::run($model);
         }
 
         if (($model instanceof TradeUnit || $model instanceof TradeUnitFamily) && Arr::get($modelData, 'scope') !== 'labeling_guide') {

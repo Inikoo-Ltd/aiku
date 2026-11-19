@@ -48,6 +48,7 @@ import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.EmptyState
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SegmentedControl
@@ -101,6 +102,7 @@ fun GoodsOutBacklogScreen(backlog: GoodsOutBacklogViewModel) {
             },
             activeTab = MainTab.Menu,
             showBar = true,
+            refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = backlog::refresh),
         ) {
             SegmentedControl(
                 options = segments,

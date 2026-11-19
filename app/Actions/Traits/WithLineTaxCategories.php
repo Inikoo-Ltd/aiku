@@ -231,7 +231,7 @@ trait WithLineTaxCategories
      * figure labelled with the order's headline rate. External (Faire) orders keep the
      * single payload figure, theirs is not derived from the lines.
      *
-     * @return array<int, array{label: string, information: string, price_total: mixed}>
+     * @return array<int, array{label: string, information: string, price_total: mixed, slot_name: string}>
      */
     public function getOrderTaxRows(Order $order): array
     {
@@ -245,6 +245,7 @@ trait WithLineTaxCategories
                         ? __('on').' '.$order->currency->symbol.number_format($taxRow['net_amount'], 2)
                         : '',
                     'price_total' => $taxRow['tax_amount'],
+                    'slot_name'   => 'tax',
                 ];
             }
         }
@@ -254,6 +255,7 @@ trait WithLineTaxCategories
                 'label'       => __('Tax'),
                 'information' => '',
                 'price_total' => $order->tax_amount,
+                'slot_name'   => 'tax',
             ];
         }
 

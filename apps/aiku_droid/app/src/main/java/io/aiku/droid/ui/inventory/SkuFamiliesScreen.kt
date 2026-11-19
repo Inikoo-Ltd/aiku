@@ -19,6 +19,7 @@ import io.aiku.droid.ui.components.FilterChips
 import io.aiku.droid.ui.components.FilterOption
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SearchField
@@ -69,6 +70,7 @@ private fun SkuFamiliesContent(state: SkoFamiliesUiState, families: SkoFamiliesV
         activeTab = MainTab.Menu,
         showBar = true,
         scrollState = scrollState,
+        refresh = PullRefresh(isRefreshing = list.isRefreshing, onRefresh = families::refresh),
     ) {
         FilterChips(
             options = familyStates.map { FilterOption(label = countLabel(stateLabels.getValue(it), state.counts?.count(it))) },

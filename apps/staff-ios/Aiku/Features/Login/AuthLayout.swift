@@ -70,7 +70,7 @@ struct AuthLayout<Card: View>: View {
             } label: {
                 HStack(spacing: 4) {
                     AppIcon.globe.image.font(.system(size: 14))
-                    Text("English").font(.aiku(13))
+                    Text(LanguageStore.shared.current.nativeName).font(.aiku(13))
                 }
                 .foregroundStyle(AikuColor.text3)
                 .padding(.horizontal, 10)
@@ -78,7 +78,7 @@ struct AuthLayout<Card: View>: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Language: English")
+            .accessibilityLabel("\(L10n.text("Language")): \(LanguageStore.shared.current.nativeName)")
             .accessibilityIdentifier("login.language")
         }
         .padding(.horizontal, 24)
@@ -211,16 +211,21 @@ struct AuthTextLink: View {
 
 struct LanguageSheet: View {
     let onClose: () -> Void
+    private let languages = LanguageStore.shared
 
     var body: some View {
         SheetScaffold(title: "Language", subtitle: "Changes the app language for you only.") {
-            RadioCard("English", subtitle: "English", isSelected: true, action: onClose)
-            RadioCard("Español", subtitle: "Spanish · coming later", isSelected: false, action: {})
-                .disabled(true)
-                .opacity(0.6)
-            RadioCard("Slovenčina", subtitle: "Slovak · coming later", isSelected: false, action: {})
-                .disabled(true)
-                .opacity(0.6)
+            ScrollView {
+                VStack(spacing: 8) {
+                    ForEach(AppLanguages.all, id: \.id) { language in
+                        RadioCard(language.nativeName, subtitle: language.englishName, isSelected: language.id == languages.languageID, action: {
+                            languages.select(language.id)
+                            onClose()
+                        })
+                    }
+                }
+            }
+            .frame(maxHeight: 420)
         } footer: {
             AikuButton("Done", kind: .tertiary, action: onClose)
         }

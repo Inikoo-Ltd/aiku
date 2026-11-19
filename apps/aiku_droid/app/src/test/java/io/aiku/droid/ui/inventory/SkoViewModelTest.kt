@@ -68,6 +68,18 @@ class SkoViewModelTest {
     }
 
     @Test
+    fun `pulling to refresh loads the SKO again`() {
+        val sko = loaded()
+        api.orgStock = GoodsOutResult.Loaded(detail.copy(quantityInLocations = 40.0))
+
+        sko.refresh()
+
+        assertEquals(listOf(77L, 77L), api.orgStockRequests)
+        assertEquals(40.0, sko.state.value.orgStock?.quantityInLocations ?: 0.0, 0.0)
+        assertFalse(sko.state.value.isRefreshing)
+    }
+
+    @Test
     fun `opening loads the SKO and its latest movements`() {
         val sko = loaded()
 

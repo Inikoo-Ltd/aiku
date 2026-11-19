@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="scan_ready_title">Ready — scan with your scanner</string>
+    <string name="scan_ready_scanner_chosen">Profile → Scanning is set to Bluetooth scanner, so the camera stays off.</string>
+    <string name="scan_ready_scanner_connected">A scanner is connected, so the camera stays off.</string>
+    <string name="scan_ready_use_camera">Use the camera this time</string>
+    <plurals name="menu_badge_received">
+        <item quantity="one">%d received</item>
+        <item quantity="other">%d received</item>
+    </plurals>
+</resources>
