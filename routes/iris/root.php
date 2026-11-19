@@ -11,6 +11,9 @@ use App\Actions\Helpers\Media\UI\ShowIrisAudio;
 use App\Actions\Iris\Appointment\ShowIrisAppointment;
 use App\Actions\Iris\Media\DownloadIrisAttachment;
 use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Website\LlmsTxt\ServeLlmsTxt;
@@ -41,8 +44,10 @@ use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
 
-Route::get('favicon.ico', ShowIrisFavicon::class)->name('iris_favicon');
-Route::get('{icon}', ShowIrisFavicon::class)->where('icon', 'apple-touch-icon(-\d+x\d+)?(-precomposed)?\.png')->name('iris_apple_touch_icon');
+Route::withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, VerifyCsrfToken::class])->group(function () {
+    Route::get('favicon.ico', ShowIrisFavicon::class)->name('iris_favicon');
+    Route::get('{icon}', ShowIrisFavicon::class)->where('icon', 'apple-touch-icon(-\d+x\d+)?(-precomposed)?\.png')->name('iris_apple_touch_icon');
+});
 
 Route::get('{path}', function () {
     return redirect('/image_not_found.png');

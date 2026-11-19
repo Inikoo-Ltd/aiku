@@ -28,6 +28,9 @@ use App\Models\Web\Website;
 use Illuminate\Http\Request;
 use App\Actions\Web\Webpage\Iris\ShowIrisFavicon;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Session\Middleware\StartSession;
+use App\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -1418,7 +1421,7 @@ test('iris website data links its live terms page, the licence Google Images rea
         ->and($termsWebpage->fresh()->getCanonicalUrl())->toEndWith('terms-and-conditions');
 });
 
-test('favicon and apple touch icons redirect to the website icon and allow an hour of caching', function () {
+test('favicon and apple touch icons redirect to the website icon without a session cookie, so the edge can keep them an hour', function () {
     $favicons = ['48' => 'https://media.test/icon-48.png', '180' => 'https://media.test/icon-180.png'];
 
     foreach ([
@@ -1433,6 +1436,7 @@ test('favicon and apple touch icons redirect to the website icon and allow an ho
         $response = ShowIrisFavicon::make()->asController($request);
 
         expect(app('router')->getRoutes()->match($request)->getName())->toBe($routeName)
+            ->and(app('router')->getRoutes()->match($request)->excludedMiddleware())->toBe([StartSession::class, ShareErrorsFromSession::class, VerifyCsrfToken::class])
             ->and($response->getTargetUrl())->toBe($favicons[$size])
             ->and($response->headers->get('Cache-Control'))->toBe('max-age=3600, public');
     }
