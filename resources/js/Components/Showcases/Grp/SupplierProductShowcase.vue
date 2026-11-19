@@ -178,6 +178,7 @@ const props = defineProps<{
             image: object | null
             route: routeType
         }[]
+        preferred_in?: string[]
         other_suppliers?: {
             supplier_code: string
             supplier_name: string
@@ -799,7 +800,7 @@ const [DefineProductExtras, ReuseProductExtras] = createReusableTemplate()
             </template>
             <template v-if="data.parties.length || data.other_suppliers?.length" #aside>
                 <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <SupplierProductProvidedBy :parties="data.parties" :otherSuppliers="data.other_suppliers ?? []" compact />
+                    <SupplierProductProvidedBy :parties="data.parties" :otherSuppliers="data.other_suppliers ?? []" :preferredIn="data.preferred_in ?? []" :productCode="data.product.code" compact />
                 </section>
             </template>
         </AgentSupplierProductPanel>

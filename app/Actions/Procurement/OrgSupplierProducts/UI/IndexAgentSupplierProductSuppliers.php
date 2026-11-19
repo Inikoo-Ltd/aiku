@@ -75,7 +75,7 @@ class IndexAgentSupplierProductSuppliers extends OrgAction
      * The other suppliers of the agent that supply the same SKU, for the Provided by box of the showcase,
      * each linked to its own page when the agent has one.
      *
-     * @return array<int, array{supplier_code: string, supplier_name: string, image: array<string, mixed>|null, code: string, is_available: bool, supplier_route: array<string, mixed>, route: array<string, mixed>|null}>
+     * @return array<int, array{supplier_code: string, supplier_name: string, image: array<string, mixed>|null, code: string, is_available: bool, preferred_in: array<int, string>, supplier_route: array<string, mixed>, route: array<string, mixed>|null}>
      */
     public static function otherSuppliers(SupplierProduct $supplierProduct, AgentOrganisationSelection $selection, Organisation $agentOrganisation): array
     {
@@ -102,6 +102,8 @@ class IndexAgentSupplierProductSuppliers extends OrgAction
                 'suppliers.slug as supplier_slug',
             ]);
 
+        $preferredIn = self::preferredInByProduct($supplierProduct, $agent);
+
         $withPage = OrgSupplierProduct::whereIn('supplier_product_id', $others->pluck('id'))
             ->whereIn('org_agent_id', OrgAgent::where('agent_id', $agent->id)->select('id'))
             ->distinct()
@@ -114,11 +116,39 @@ class IndexAgentSupplierProductSuppliers extends OrgAction
             'image'         => $other->supplier?->imageSources(),
             'code'          => $other->code,
             'is_available'  => (bool) $other->is_available,
+            'preferred_in'  => $preferredIn[$other->id] ?? [],
             'supplier_route' => $selection->route('grp.org.procurement.org_suppliers.show', ['organisation' => $agentOrganisation->slug, 'supplier' => $other->supplier_slug]),
             'route'         => in_array($other->id, $withPage, true)
                 ? $selection->route('grp.org.procurement.org_supplier_products.show', ['organisation' => $agentOrganisation->slug, 'supplierProduct' => $other->slug])
                 : null,
         ])->values()->all();
+    }
+
+    /**
+     * The organisations the agent buys for whose SKO of this product orders from each supplier product, by
+     * supplier product id: the active link with the highest local_priority, the oldest link on a tie.
+     *
+     * @return array<int, array<int, string>>
+     */
+    public static function preferredInByProduct(SupplierProduct $supplierProduct, Agent $agent): array
+    {
+        $preferredLinks = OrgStockHasOrgSupplierProduct::query()
+            ->join('org_stocks', 'org_stocks.id', 'org_stock_has_org_supplier_products.org_stock_id')
+            ->join('org_supplier_products', 'org_supplier_products.id', 'org_stock_has_org_supplier_products.org_supplier_product_id')
+            ->join('organisations', 'organisations.id', 'org_stocks.organisation_id')
+            ->whereIn('org_stocks.stock_id', self::stockIds($supplierProduct))
+            ->whereIn('org_stocks.organisation_id', OrgAgent::where('agent_id', $agent->id)->select('organisation_id'))
+            ->where('org_stock_has_org_supplier_products.status', true)
+            ->selectRaw('distinct on (org_stocks.id) org_stocks.id, organisations.code as organisation_code, org_supplier_products.supplier_product_id')
+            ->orderBy('org_stocks.id')
+            ->orderByDesc('org_stock_has_org_supplier_products.local_priority')
+            ->orderBy('org_stock_has_org_supplier_products.id')
+            ->toBase()
+            ->get();
+
+        return $preferredLinks->groupBy('supplier_product_id')
+            ->map(fn ($links) => $links->pluck('organisation_code')->unique()->sort()->values()->all())
+            ->all();
     }
 
     /**

@@ -318,6 +318,7 @@ trait WithSupplierProductShowcase
         }
 
         return [
+            'type'  => 'supplier',
             'label' => __('Supplier'),
             'icon'  => 'fal fa-person-dolly',
             'name'  => $supplier->name,
@@ -337,6 +338,7 @@ trait WithSupplierProductShowcase
         }
 
         return [
+            'type'  => 'agent',
             'label' => __('Agent'),
             'icon'  => 'fal fa-people-arrows',
             'name'  => $agent->organisation->name,
@@ -356,6 +358,7 @@ trait WithSupplierProductShowcase
         }
 
         return [
+            'type'  => 'supplier',
             'label' => __('Supplier'),
             'icon'  => 'fal fa-person-dolly',
             'name'  => $orgSupplier->supplier->name,
@@ -378,6 +381,7 @@ trait WithSupplierProductShowcase
         }
 
         return [
+            'type'  => 'agent',
             'label' => __('Agent'),
             'icon'  => 'fal fa-people-arrows',
             'name'  => $orgAgent->agent->organisation->name,

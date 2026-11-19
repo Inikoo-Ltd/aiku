@@ -11,9 +11,14 @@ import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import Image from "@common/Components/Image.vue"
 import Icon from "@/Components/Icon.vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faStar } from "@fal"
+
+library.add(faStar)
 
 const props = defineProps<{
     parties: {
+        type?: string
         label: string
         icon: string
         name: string | null
@@ -27,11 +32,25 @@ const props = defineProps<{
         image: object | null
         code: string
         is_available: boolean
+        preferred_in?: string[]
         supplier_route: routeType
         route: routeType | null
     }[]
+    preferredIn?: string[]
+    productCode?: string
     compact?: boolean
 }>()
+
+const preferredLabel = (organisationCodes: string[]) => ctrans("Preferred in :organisations", { organisations: organisationCodes.join(", ") })
+
+const preferredTooltip = (productCode: string | null | undefined, organisationCodes: string[], supplierName: string | null) =>
+    ctrans("Purchase orders for :product from :organisations will be produced by :supplier", {
+        product: productCode ?? "",
+        organisations: organisationCodes.join(", "),
+        supplier: supplierName ?? "",
+    })
+
+const preferredBadgeClass = "mt-1 inline-flex items-center gap-1 rounded-full bg-[var(--app-accent-soft)] px-2 py-0.5 text-xs font-medium text-[var(--app-accent-strong)]"
 
 const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
 </script>
@@ -51,6 +70,10 @@ const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:g
                 <div class="min-w-0">
                     <div class="text-xs uppercase tracking-wide text-gray-400">{{ party.label }}</div>
                     <div class="truncate text-sm font-medium text-gray-700">{{ party.name }}</div>
+                    <span v-if="party.type === 'supplier' && preferredIn?.length" :class="preferredBadgeClass" v-tooltip="preferredTooltip(productCode, preferredIn, party.name)">
+                        <Icon :data="{ icon: 'fal fa-star' }" />
+                        {{ preferredLabel(preferredIn) }}
+                    </span>
                 </div>
                 <span class="ml-auto whitespace-nowrap text-xs tabular-nums text-gray-400">{{ party.code }}</span>
             </component>
@@ -81,6 +104,10 @@ const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:g
                             <span v-else>{{ other.code }}</span>
                             <span v-if="!other.is_available" class="ml-1 text-red-600">· {{ ctrans("Unavailable") }}</span>
                         </div>
+                        <span v-if="other.preferred_in?.length" :class="preferredBadgeClass" v-tooltip="preferredTooltip(other.code, other.preferred_in, other.supplier_name)">
+                            <Icon :data="{ icon: 'fal fa-star' }" />
+                            {{ preferredLabel(other.preferred_in) }}
+                        </span>
                     </div>
                     <span class="ml-auto whitespace-nowrap text-xs tabular-nums text-gray-400">{{ other.supplier_code }}</span>
                 </div>

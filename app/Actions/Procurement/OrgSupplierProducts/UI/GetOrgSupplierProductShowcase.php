@@ -48,6 +48,7 @@ class GetOrgSupplierProductShowcase
                 [
                     'agent'           => GetOrgSupplierProductAgentPanel::run($orgSupplierProduct, $viewingOrganisation, $this->canEditCarton($orgSupplierProduct)),
                     'other_suppliers' => $selection ? IndexAgentSupplierProductSuppliers::otherSuppliers($orgSupplierProduct->supplierProduct, $selection, $viewingOrganisation) : [],
+                    'preferred_in'    => $viewingOrganisation->agent ? (IndexAgentSupplierProductSuppliers::preferredInByProduct($orgSupplierProduct->supplierProduct, $viewingOrganisation->agent)[$orgSupplierProduct->supplier_product_id] ?? []) : [],
                 ]
             ));
         }
