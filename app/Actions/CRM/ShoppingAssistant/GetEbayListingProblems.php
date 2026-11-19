@@ -148,8 +148,9 @@ class GetEbayListingProblems
 
     /**
      * eBay's own "ended item" verdict from the stock sync is the newest word on a listing, so it wins over an
-     * older upload_warning. Otherwise eBay's upload_warning decides, because a failed match stores our generic
-     * "not in the listing yet" (translated) in errors_response beside eBay's real refusal (INI-393).
+     * older upload_warning. Otherwise eBay's upload_warning decides, even when no pattern knows it (then eBay's own
+     * words are shown), because a failed match stores our generic "not in the listing yet" (translated) in
+     * errors_response beside eBay's real refusal, and that generic text reads as an ended listing (INI-393).
      *
      * @return array{0: string, 1: string} the cause and the message it was read from
      */
@@ -171,8 +172,8 @@ class GetEbayListingProblems
             return ['listing_ended', $warning];
         }
 
-        if (filled($warning) && ($cause = self::causeOf($warning)) !== 'other') {
-            return [$cause, trim($warning)];
+        if (filled($warning)) {
+            return [self::causeOf($warning), trim($warning)];
         }
 
         $message = self::messageOf($warning, $errors);
@@ -202,15 +203,15 @@ class GetEbayListingProblems
         $text = Str::lower($message);
 
         return match (true) {
-            (bool) preg_match('/number of items|amount you can list|reached the amount|reached the number/u', $text)                          => 'selling_limit',
-            (bool) preg_match('/seller account|cuenta de vendedor|additional information|verkäuferkonto/u', $text)                             => 'seller_account',
+            (bool) preg_match('/number of items|amount you can list|reached the amount|reached the number|número máximo de artículos|cantidad máxima que puedes|höchstbetrag|höchstanzahl/u', $text)                          => 'selling_limit',
+            (bool) preg_match('/seller account|cuenta de vendedor|vendedores verificados|additional information|verkäuferkonto/u', $text)                             => 'seller_account',
             (bool) preg_match('/fulfil+ment policy|postage service|return policy|payment policy/u', $text)                                    => 'business_policy',
             (bool) preg_match('/minimum price|price in the listing/u', $text)                                                                 => 'price_below_minimum',
-            (bool) preg_match('/improper words|violation of ebay/u', $text)                                                                    => 'ebay_policy',
+            (bool) preg_match('/improper words|violation of ebay|unzulässige begriffe|ebay-grundsätze|is suspended|restricted your ability|open issues on your account|hold has been placed/u', $text)                                                                    => 'ebay_policy',
             (bool) preg_match('/overseas warehouse|different from your registered|whappeals/u', $text)                                         => 'overseas_block',
             (bool) preg_match('/ended item|offer is not available|not in the listing yet/u', $text)                                            => 'listing_ended',
             (bool) preg_match('/too many requests|system error|internal server|internal error|unable to process|timed out|time-out/u', $text) => 'ebay_temporary',
-            (bool) preg_match('/item specific|aspects|isbn|está vacío|condition|category|item\.country|description/u', $text)                 => 'needs_our_data',
+            (bool) preg_match('/item specific|aspects|isbn|\bean\b|\bgtin\b|\bupc\b|está vacío|condition|category|kategorie|item\.country|description|picture|imageurls/u', $text)                 => 'needs_our_data',
             (bool) preg_match('/offer entity already exists|product not found|availability not found|\bsku\b/u', $text)                       => 'ours',
             (bool) preg_match('/token|authori[sz]|expired/u', $text)                                                                           => 'connection',
             default                                                                                                                            => 'other',
