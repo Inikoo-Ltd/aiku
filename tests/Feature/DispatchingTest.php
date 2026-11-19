@@ -2623,6 +2623,31 @@ test('packeta sends a Polish parcel locker delivery to the InPost locker the cus
     'bare code as customer note'  => ['Elzanowo 10B', null, ' byd21n '],
 ]);
 
+test('packeta refuses a pick-up point it cannot book instead of booking home delivery', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $poland = \App\Models\Helpers\Country::where('code', 'PL')->firstOrFail();
+    \App\Actions\Dispatching\DeliveryNote\StoreDeliveryNoteAddress::make()->action($deliveryNote, ['address' => new Address(array_merge(Address::factory()->definition(), [
+        'address_line_1' => 'PickUp Point Orlen Paczka BB-323760-D4-05',
+        'address_line_2' => 'Toruńska 30',
+        'locality'       => 'Bydgoszcz',
+        'postal_code'    => '85-023',
+        'country_id'     => $poland->id,
+        'country_code'   => 'PL',
+    ]))]);
+    $deliveryNote->update(['is_cash_on_delivery' => false, 'parcels' => [['weight' => 1, 'dimensions' => [10, 10, 10]]], 'shipping_notes' => null, 'customer_notes' => null]);
+
+    config(['app.sandbox.shipper_packeta_access_token' => json_encode(['api_password' => 'test'])]);
+    $client = fakePacketaSoapClient(true);
+    $action = \Mockery::mock(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::class)->makePartial();
+    $action->shouldReceive('soapClient')->andReturn($client);
+
+    $response = $action->handle($deliveryNote->refresh(), new \App\Models\Dispatching\Shipper());
+
+    expect($response['status'])->toBe('fail')
+        ->and($response['errorData']['message'])->toContain('Book it manually')
+        ->and($client->packetAttributes)->toBe([]);
+});
+
 test('packeta sends the customer email when the delivery note has none', function (?string $noteEmail, string $expectedEmail) {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote->customer->update(['email' => 'dropshipper@example.com']);

@@ -10,6 +10,7 @@
 
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
+use App\Actions\Dispatching\Shipment\GetShipmentDeliveryType;
 use App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum;
@@ -88,6 +89,15 @@ class CallApiPacketaShipping extends OrgAction
             $parent->shipping_notes,
             $parent->customer_notes,
         ]);
+        if (!$lockerCode && $parent instanceof DeliveryNote && GetShipmentDeliveryType::run($parent)['delivery_type'] === ShipmentDeliveryTypeEnum::PICKUP_POINT) {
+            return [
+                'status'    => 'fail',
+                'errorData' => [
+                    'message' => 'This delivery goes to a pick-up point that Packeta cannot book automatically (only Polish InPost parcel lockers under 15 kg are supported). Book it manually with the pick-up point.',
+                ],
+                'modelData' => [],
+            ];
+        }
         $addressId   = $lockerCode ? self::PL_INPOST_PACZKOMATY_BOX : $this->getAddressIdByCountryCode($countryCode, $weight);
         if (is_null($addressId)) {
             return [
