@@ -55,11 +55,12 @@ class StoreToProduceItemsFromOrder
                 if ($fromPartnerPurchaseOrder) {
                     continue;
                 }
+                $bulk    = FillToOrder::make()->bulkOrgStock($product);
                 $items[] = PartnerShoppingListItem::create([
                     'group_id'        => $order->group_id,
                     'organisation_id' => $order->organisation_id,
-                    'stock_id'        => $product->orgStocks->first()->stock_id,
-                    'org_stock_id'    => $product->orgStocks->first()->id,
+                    'stock_id'        => $bulk->stock_id,
+                    'org_stock_id'    => $bulk->id,
                     'quantity'        => (float) $transaction->quantity_ordered,
                     'transaction_id'  => $transaction->id,
                 ]);

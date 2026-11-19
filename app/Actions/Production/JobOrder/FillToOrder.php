@@ -17,6 +17,7 @@ use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -41,18 +42,29 @@ class FillToOrder
 
     public function artefactFor(mixed $product): ?Artefact
     {
-        if (!$product instanceof Product || $product->orgStocks->count() !== 1) {
+        $bulk = $this->bulkOrgStock($product);
+        if (!$bulk) {
             return null;
         }
 
-        $prefix = $product->orgStocks->first()->code.'-';
-        if (!Str::startsWith(mb_strtolower($product->code), mb_strtolower($prefix))) {
-            return null;
-        }
+        $prefix = $bulk->code.'-';
 
         return Artefact::where('organisation_id', $product->organisation_id)
             ->whereRaw("lower(settings->>'fills_size') = ?", [mb_strtolower(Str::after(mb_strtolower($product->code), mb_strtolower($prefix)))])
             ->whereIn('state', ArtefactStateEnum::launched())
+            ->first();
+    }
+
+    /** The SKO the bottle is filled from: the one its code starts with, so a decant that also lists its bottle and cap is still found (HELP-4823) */
+    public function bulkOrgStock(mixed $product): ?OrgStock
+    {
+        if (!$product instanceof Product) {
+            return null;
+        }
+
+        return $product->orgStocks
+            ->filter(fn (OrgStock $orgStock) => Str::startsWith(mb_strtolower($product->code), mb_strtolower($orgStock->code.'-')))
+            ->sortByDesc(fn (OrgStock $orgStock) => mb_strlen($orgStock->code))
             ->first();
     }
 

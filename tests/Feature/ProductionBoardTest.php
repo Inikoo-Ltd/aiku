@@ -1945,6 +1945,39 @@ test('a bottle filled to order puts a fill line on To Produce, holds the whole o
         ->toThrow(\Illuminate\Validation\ValidationException::class, 'filled for order');
 });
 
+test('a decant that also lists its bottle and cap SKOs is still filled to order from its bulk SKO', function () {
+    [, , $shop] = createShop();
+    createWarehouse();
+    [, $product] = createProduct($shop);
+    [, $bottle]  = createProduct($shop);
+    $orgStock    = $product->orgStocks()->first();
+    $bottleStock = $bottle->orgStocks()->first();
+    $product->orgStocks()->attach($bottleStock->id, ['quantity' => 1]);
+    $product->update(['code' => $orgStock->code.'-10ml']);
+    $product->refresh();
+
+    $fill = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FILL-10ML-'.uniqid(), 'name' => 'Fill 10ml']);
+    $fill->update(['settings' => ['fills_size' => '10ml'], 'org_stock_id' => null]);
+
+    $customer = createCustomer($shop);
+    $order    = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'FILL-'.uniqid(),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+    $orgStock->update(['quantity_in_locations' => 100, 'quantity_available' => 100]);
+
+    $lines = \App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::run($order->refresh());
+    expect($product->orgStocks()->count())->toBe(2)
+        ->and(\App\Actions\Production\JobOrder\FillToOrder::make()->artefactFor($product)?->settings['fills_size'])->toBe('10ml')
+        ->and($lines)->toHaveCount(1)
+        ->and((float) $lines[0]->quantity)->toBe(2.0)
+        ->and($lines[0]->org_stock_id)->toBe($orgStock->id);
+});
+
 test('a fill product given its SKO after the order was submitted gets its fill line when the order goes to the warehouse', function () {
     [, , $shop] = createShop();
     createWarehouse();
