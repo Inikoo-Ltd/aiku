@@ -40,6 +40,7 @@ import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.LocalToasts
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -60,6 +61,7 @@ import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.PlaceItemRoute
 import io.aiku.droid.ui.navigation.StockDeliveryScanRoute
+import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import java.time.ZoneId
@@ -84,17 +86,23 @@ fun StockDeliveryScreen(delivery: StockDeliveryViewModel, reference: String) {
         when {
             state.isSessionExpired -> SessionExpiredScreen(onSignIn = delivery::signInAgain)
             loaded != null -> StockDeliveryContent(viewModel = delivery, state = state, delivery = loaded)
-            else -> StockDeliveryLoading(reference = reference, problem = state.problem, onRetry = delivery::retry)
+            else -> StockDeliveryLoading(
+                reference = reference,
+                problem = state.problem,
+                onRetry = delivery::retry,
+                refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = delivery::refresh),
+            )
         }
     }
 }
 
 @Composable
-internal fun StockDeliveryLoading(reference: String, problem: GoodsOutProblem?, onRetry: () -> Unit) {
+internal fun StockDeliveryLoading(reference: String, problem: GoodsOutProblem?, onRetry: () -> Unit, refresh: PullRefresh? = null) {
     AppScreen(
         header = { AppHeader(title = reference, kicker = stringResource(R.string.goodsin_kicker_stock_delivery_plain)) },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = refresh,
     ) {
         if (problem == null) {
             SkeletonListCard(rows = 2)
@@ -109,6 +117,7 @@ internal fun StockDeliveryLoading(reference: String, problem: GoodsOutProblem?, 
 private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: StockDeliveryUiState, delivery: StockDelivery) {
     val navigator = LocalAppNavigator.current
     val toasts = LocalToasts.current
+    val scanFeedback = LocalScanController.current.feedback
     val resources = LocalResources.current
     val zone = organisationZone()
     var sheet by remember { mutableStateOf<DeliverySheet?>(null) }
@@ -152,7 +161,10 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
         when (outcome) {
             is LineScanOutcome.Line -> openLine(outcome.itemId)
             is LineScanOutcome.Choose -> openSheet(DeliverySheet.ChooseLine(outcome.code, outcome.itemIds))
-            is LineScanOutcome.NotOnDelivery -> notOnDeliveryText?.let { toasts.show(it, ToastKind.Info) }
+            is LineScanOutcome.NotOnDelivery -> {
+                scanFeedback.rejected()
+                notOnDeliveryText?.let { toasts.show(it, ToastKind.Info) }
+            }
             is LineScanOutcome.Failed -> failedText?.let { toasts.show(it, ToastKind.Error) }
             null -> return@LaunchedEffect
         }
@@ -186,6 +198,7 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
             onCheckAll = { openSheet(DeliverySheet.ConfirmCheckAll) },
             onPlace = openPlace,
         ),
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = !state.isWorking),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.goodsin_delivery_refresh_failed), onRetry = viewModel::retry) }
         DeliveryStatus(delivery = delivery)

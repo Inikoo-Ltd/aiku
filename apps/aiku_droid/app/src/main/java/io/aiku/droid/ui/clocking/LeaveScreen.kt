@@ -34,6 +34,7 @@ import io.aiku.droid.ui.components.AikuCard
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.ButtonStyle
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.theme.LocalAikuColors
 
@@ -62,6 +63,7 @@ fun LeaveScreen() {
         activeTab = MainTab.Menu,
         showBar = true,
         scrollState = scrollState,
+        refresh = PullRefresh(isRefreshing = state.list.isRefreshing, onRefresh = controller::refresh),
     ) {
         if (overview?.balance != null) {
             LeaveBalanceCards(overview = overview)

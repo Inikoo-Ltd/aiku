@@ -12,6 +12,7 @@ import io.aiku.droid.data.api.TwoFactorSetup
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.data.session.StaffSession
 import io.aiku.droid.ui.UiMessage
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -187,6 +188,79 @@ class LoginViewModelTest {
         assertEquals(" picker ", state.username)
         assertEquals("", state.password)
         assertEquals("", state.oneTimePassword)
+    }
+
+    @Test
+    fun `while the code is being verified the step buttons are off and going back is ignored until it fails`() {
+        val api = FakeAuthApi(
+            LoginResult.OneTimePasswordRequired,
+            LoginResult.Rejected(Rejection(mapOf("one_time_password" to "Invalid OTP is given. Please check your Authenticator App"))),
+        )
+        val viewModel = filledFormFor(api)
+        viewModel.signIn()
+        assertTrue(viewModel.state.value.areStepButtonsEnabled)
+        val gate = CompletableDeferred<Unit>()
+        api.loginGate = gate
+
+        viewModel.onOneTimePasswordChange("123456")
+
+        assertTrue(viewModel.state.value.isSubmitting)
+        assertFalse(viewModel.state.value.areStepButtonsEnabled)
+
+        viewModel.backToCredentials()
+
+        assertEquals(LoginStep.OneTimePassword, viewModel.state.value.step)
+        assertTrue(viewModel.state.value.isSubmitting)
+
+        gate.complete(Unit)
+
+        val state = viewModel.state.value
+        assertEquals(LoginStep.OneTimePassword, state.step)
+        assertTrue(state.areStepButtonsEnabled)
+        assertEquals(UiMessage.FromServer("Invalid OTP is given. Please check your Authenticator App"), state.oneTimePasswordError)
+
+        viewModel.backToCredentials()
+
+        assertEquals(LoginStep.Credentials, viewModel.state.value.step)
+    }
+
+    @Test
+    fun `the setup step buttons are off while the code is being verified and back on when it is done`() {
+        val api = FakeAuthApi(LoginResult.TwoFactorSetupRequired(setup), LoginResult.SignedIn(session))
+        val viewModel = filledFormFor(api)
+        viewModel.signIn()
+        val gate = CompletableDeferred<Unit>()
+        api.loginGate = gate
+
+        viewModel.onOneTimePasswordChange("654321")
+
+        assertFalse(viewModel.state.value.areStepButtonsEnabled)
+        viewModel.backToCredentials()
+        assertEquals(LoginStep.TwoFactorSetup, viewModel.state.value.step)
+
+        gate.complete(Unit)
+
+        assertTrue(viewModel.state.value.areStepButtonsEnabled)
+        assertEquals(session, sessions.session.value)
+    }
+
+    @Test
+    fun `the reset code step buttons are off while the new password is being saved`() {
+        val api = FakeAuthApi(resetResults = listOf(PasswordResult.Rejected(Rejection(mapOf("code" to "The code is wrong or has expired.")))))
+        val viewModel = filledResetFor(api)
+        val gate = CompletableDeferred<Unit>()
+        api.resetGate = gate
+
+        viewModel.resetPassword()
+
+        assertFalse(viewModel.state.value.areStepButtonsEnabled)
+        viewModel.backToCredentials()
+        assertEquals(LoginStep.PasswordResetCode, viewModel.state.value.step)
+
+        gate.complete(Unit)
+
+        assertTrue(viewModel.state.value.areStepButtonsEnabled)
+        assertEquals(LoginStep.PasswordResetCode, viewModel.state.value.step)
     }
 
     @Test
@@ -549,9 +623,12 @@ class LoginViewModelTest {
         val loginRequests = mutableListOf<LoginCredentials>()
         val resetCodeLogins = mutableListOf<String>()
         val resets = mutableListOf<PasswordReset>()
+        var loginGate: CompletableDeferred<Unit>? = null
+        var resetGate: CompletableDeferred<Unit>? = null
 
         override suspend fun login(credentials: LoginCredentials): LoginResult {
             loginRequests += credentials
+            loginGate?.await()
             return queuedLoginResults.removeFirst()
         }
 
@@ -564,6 +641,7 @@ class LoginViewModelTest {
 
         override suspend fun resetPassword(reset: PasswordReset): PasswordResult {
             resets += reset
+            resetGate?.await()
             return queuedResetResults.removeFirstOrNull() ?: PasswordResult.Done
         }
 

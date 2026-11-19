@@ -15,6 +15,7 @@ import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.EmptyState
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -45,6 +46,7 @@ fun TrolleysScreen(trolleys: EquipmentListViewModel<Trolley>) {
             header = { ModuleHeader(section = WarehouseSection.Trolleys) },
             activeTab = MainTab.Menu,
             showBar = true,
+            refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = trolleys::refresh),
         ) {
             EquipmentList(
                 state = state,

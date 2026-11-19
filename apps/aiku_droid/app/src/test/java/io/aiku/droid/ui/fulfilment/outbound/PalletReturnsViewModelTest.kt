@@ -63,6 +63,20 @@ class PalletReturnsViewModelTest {
     }
 
     @Test
+    fun `pulling to refresh reloads the first page`() {
+        api.returnPages = { query -> GoodsOutResult.Loaded(PalletReturnPage(rows = listOf(PalletReturnRow(id = 1, reference = "r-1")), meta = ListMeta(currentPage = query.page))) }
+        val returns = PalletReturnsViewModel(api, FakeSessions(), warehouseId = 1)
+        returns.onStart()
+        api.returnPages = { query -> GoodsOutResult.Loaded(PalletReturnPage(rows = listOf(PalletReturnRow(id = 2, reference = "r-2")), meta = ListMeta(currentPage = query.page))) }
+
+        returns.refresh()
+
+        assertEquals(listOf(2L), returns.state.value.list.rows.map { it.id })
+        assertEquals(2, api.returnQueries.size)
+        assertTrue(!returns.state.value.list.isRefreshing)
+    }
+
+    @Test
     fun `state, type and search filters reload from the first page`() {
         val returns = PalletReturnsViewModel(api, FakeSessions(), warehouseId = 1)
         returns.onStart()

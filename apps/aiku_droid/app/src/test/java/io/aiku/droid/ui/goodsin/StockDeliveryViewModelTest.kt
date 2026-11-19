@@ -17,6 +17,7 @@ import io.aiku.droid.ui.components.StockDeliveryStage
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.inventory.FakeInventoryApi
 import io.aiku.droid.ui.inventory.FakeSessions
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -56,6 +57,29 @@ class StockDeliveryViewModelTest {
 
     private fun answer(delivery: StockDelivery, message: String? = null, status: String = GoodsInWriteStatus.DONE): (StockDeliveryWrite) -> GoodsOutResult<StockDeliveryOutcome> =
         { GoodsOutResult.Loaded(StockDeliveryOutcome(delivery = delivery, status = status, message = message)) }
+
+    @Test
+    fun `pulling to refresh reloads the delivery, but not while a write is being saved`() {
+        val received = stockDelivery(state = "received", items = listOf(deliveryItem(id = 1)))
+        val checked = stockDelivery(state = "checked", items = listOf(deliveryItem(id = 1, checked = 10.0)))
+        val delivery = viewModel(received)
+        api.delivery = GoodsOutResult.Loaded(checked)
+
+        delivery.refresh()
+
+        assertEquals(checked, delivery.state.value.delivery)
+        assertFalse(delivery.state.value.isRefreshing)
+
+        val gate = CompletableDeferred<Unit>()
+        api.deliveryWriteGate = gate
+        api.delivery = GoodsOutResult.Loaded(received)
+        delivery.checkAll()
+        delivery.refresh()
+
+        assertEquals(checked, delivery.state.value.delivery)
+        assertFalse(delivery.state.value.isRefreshing)
+        gate.complete(Unit)
+    }
 
     @Test
     fun `the detail opens on the step that needs work`() {

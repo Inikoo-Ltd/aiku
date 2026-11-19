@@ -20,6 +20,7 @@ import io.aiku.droid.data.api.StockDeliveryOutcome
 import io.aiku.droid.data.api.StockDeliveryPage
 import io.aiku.droid.data.api.StockDeliveryQuery
 import io.aiku.droid.data.api.StockDeliveryWrite
+import kotlinx.coroutines.CompletableDeferred
 
 class FakeGoodsInApi : GoodsInApi {
     var hub: GoodsOutResult<List<GoodsInHubRow>> = GoodsOutResult.Unreachable
@@ -28,6 +29,7 @@ class FakeGoodsInApi : GoodsInApi {
     var delivery: GoodsOutResult<StockDelivery> = GoodsOutResult.Unreachable
     val deliveryWrites = mutableListOf<StockDeliveryWrite>()
     var deliveryWriteResults: (StockDeliveryWrite) -> GoodsOutResult<StockDeliveryOutcome> = { GoodsOutResult.Unreachable }
+    var deliveryWriteGate: CompletableDeferred<Unit>? = null
     val returnQueries = mutableListOf<ReturnQuery>()
     var returnPages: (ReturnQuery) -> GoodsOutResult<ReturnPage> = { GoodsOutResult.Loaded(ReturnPage(emptyList(), ListMeta())) }
     var customerReturn: GoodsOutResult<CustomerReturn> = GoodsOutResult.Unreachable
@@ -47,6 +49,7 @@ class FakeGoodsInApi : GoodsInApi {
 
     override suspend fun writeStockDelivery(token: String, warehouseId: Long, stockDeliveryId: Long, write: StockDeliveryWrite): GoodsOutResult<StockDeliveryOutcome> {
         deliveryWrites += write
+        deliveryWriteGate?.await()
         return deliveryWriteResults(write)
     }
 

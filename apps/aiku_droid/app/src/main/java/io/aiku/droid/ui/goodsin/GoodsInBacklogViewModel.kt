@@ -73,6 +73,7 @@ private fun HubFigure.returnState(): ReturnStateFilter? = when (this) {
 data class GoodsInBacklogUiState(
     val rows: List<GoodsInHubRow>? = null,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val problem: GoodsOutProblem? = null,
     val isSessionExpired: Boolean = false,
 )
@@ -96,18 +97,21 @@ class GoodsInBacklogViewModel(
 
     fun retry() = load()
 
+    fun refresh() = load(isPull = true)
+
     fun signInAgain() {
         sessions.end()
     }
 
-    private fun load() {
+    private fun load(isPull: Boolean = false) {
         val token = sessions.session.value?.token ?: return
-        mutableState.update { it.copy(isLoading = true, problem = null) }
+        loadJob?.cancel()
+        mutableState.update { it.copy(isLoading = true, isRefreshing = isPull, problem = null) }
         loadJob = viewModelScope.launch {
             when (val result = api.goodsInHub(token, warehouseId)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(rows = result.value, isLoading = false) }
-                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isSessionExpired = true) }
-                else -> mutableState.update { it.copy(isLoading = false, problem = result.problem()) }
+                is GoodsOutResult.Loaded -> mutableState.update { it.copy(rows = result.value, isLoading = false, isRefreshing = false) }
+                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
+                else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
             }
         }
     }

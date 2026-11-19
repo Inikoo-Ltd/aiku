@@ -14,6 +14,7 @@ import io.aiku.droid.data.api.ReturnOtherPallet
 import io.aiku.droid.data.api.Shipper
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.inventory.FakeSessions
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -75,6 +76,30 @@ class PalletReturnViewModelTest {
             ),
         ),
     )
+
+    @Test
+    fun `pulling to refresh loads the return again, but not while a write is being sent`() {
+        val detail = viewModel(palletReturn(state = "picking", keys = listOf(PalletReturnActionKey.FINISH_PICKING)))
+        api.palletReturn = GoodsOutResult.Loaded(palletReturn(state = "picked", keys = listOf(PalletReturnActionKey.DISPATCH)))
+
+        detail.refresh()
+
+        assertEquals("picked", detail.state.value.palletReturn?.state)
+        assertFalse(detail.state.value.isRefreshing)
+
+        val gate = CompletableDeferred<Unit>()
+        api.writeGate = gate
+        api.writeResults = answer(palletReturn(state = "dispatched"))
+        detail.dispatch()
+        api.palletReturn = GoodsOutResult.Loaded(palletReturn(state = "picking"))
+
+        assertFalse(detail.state.value.canRefresh)
+        detail.refresh()
+
+        assertEquals("picked", detail.state.value.palletReturn?.state)
+        gate.complete(Unit)
+        assertEquals("dispatched", detail.state.value.palletReturn?.state)
+    }
 
     @Test
     fun `the return loads and the transitions send their writes and report done`() {

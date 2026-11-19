@@ -90,9 +90,10 @@ fun CameraBarcodePreview(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentOnScanned by rememberUpdatedState(onScanned)
+    val feedback = LocalScanController.current.feedback
     val controller = remember(context) { LifecycleCameraController(context) }
 
-    DisposableEffect(controller, lifecycleOwner, barcodes, isSingleShot) {
+    DisposableEffect(controller, lifecycleOwner, barcodes, isSingleShot, feedback) {
         val executor = ContextCompat.getMainExecutor(context)
         val scanner = BarcodeScanning.getClient(barcodes.scannerOptions())
         val repeats = RepeatedScanFilter()
@@ -109,6 +110,7 @@ fun CameraBarcodePreview(
                         hasScanned = true
                         controller.clearImageAnalysisAnalyzer()
                     }
+                    feedback.accepted()
                     currentOnScanned(code)
                 }
             },

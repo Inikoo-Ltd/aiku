@@ -13,11 +13,15 @@ interface WarehouseSelection {
     var selectedWarehouseId: Long?
 }
 
-class DeviceSettings(private val preferences: SharedPreferences) : WarehouseSelection {
+class DeviceSettings(private val preferences: SharedPreferences) : WarehouseSelection, ScanSettings {
 
     private val currentAppearance = MutableStateFlow(readAppearance())
 
     val appearance: StateFlow<Appearance> = currentAppearance.asStateFlow()
+
+    private val currentScanPreferences = MutableStateFlow(readScanPreferences())
+
+    override val scanPreferences: StateFlow<ScanPreferences> = currentScanPreferences.asStateFlow()
 
     fun updateAppearance(appearance: Appearance) {
         preferences.edit {
@@ -25,6 +29,15 @@ class DeviceSettings(private val preferences: SharedPreferences) : WarehouseSele
             putString(MODE_KEY, appearance.mode.name)
         }
         currentAppearance.value = appearance
+    }
+
+    override fun updateScanPreferences(chosen: ScanPreferences) {
+        preferences.edit {
+            putString(SCAN_MODE_KEY, chosen.mode.name)
+            putBoolean(SCAN_SOUND_KEY, chosen.isSoundOn)
+            putBoolean(SCAN_VIBRATION_KEY, chosen.isVibrationOn)
+        }
+        currentScanPreferences.value = chosen
     }
 
     override var selectedWarehouseId: Long?
@@ -38,10 +51,22 @@ class DeviceSettings(private val preferences: SharedPreferences) : WarehouseSele
         mode = ThemeMode.entries.firstOrNull { it.name == preferences.getString(MODE_KEY, null) } ?: ThemeMode.System,
     )
 
+    private fun readScanPreferences(): ScanPreferences {
+        val defaults = ScanPreferences()
+        return ScanPreferences(
+            mode = ScanMode.entries.firstOrNull { it.name == preferences.getString(SCAN_MODE_KEY, null) } ?: defaults.mode,
+            isSoundOn = preferences.getBoolean(SCAN_SOUND_KEY, defaults.isSoundOn),
+            isVibrationOn = preferences.getBoolean(SCAN_VIBRATION_KEY, defaults.isVibrationOn),
+        )
+    }
+
     private companion object {
         const val THEME_KEY = "appearance_theme"
         const val MODE_KEY = "appearance_mode"
         const val SELECTED_WAREHOUSE_KEY = "selected_warehouse_id"
+        const val SCAN_MODE_KEY = "scan_mode"
+        const val SCAN_SOUND_KEY = "scan_sound"
+        const val SCAN_VIBRATION_KEY = "scan_vibration"
         const val NO_WAREHOUSE = -1L
     }
 }

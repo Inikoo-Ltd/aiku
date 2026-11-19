@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -67,8 +68,12 @@ import io.aiku.droid.ui.navigation.ClockingErrorRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.scan.BarcodeSet
 import io.aiku.droid.ui.scan.CameraBarcodePreview
+import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
+import io.aiku.droid.ui.scan.ScannerReadyNotice
+import io.aiku.droid.ui.scan.ScannerReadyReason
 import io.aiku.droid.ui.scan.rememberCameraAccess
+import io.aiku.droid.ui.scan.rememberScanCamera
 import io.aiku.droid.ui.theme.Inter
 import kotlinx.coroutines.delay
 import java.time.ZoneId
@@ -90,8 +95,12 @@ fun ClockScanQrScreen() {
     val scan = state.scan
     val refusedFallback = stringResource(R.string.clocking_scan_refused_fallback)
     val failedMessage = (scan as? ClockingScanState.Failed)?.let { stringResource(R.string.clocking_scan_server_error, it.statusCode) }
+    val scanFeedback = LocalScanController.current.feedback
 
     LaunchedEffect(scan) {
+        if (scan is ClockingScanState.Refused) {
+            scanFeedback.rejected()
+        }
         val errorRoute = when (scan) {
             is ClockingScanState.Refused -> ClockingErrorRoute(
                 kind = ClockingErrorKind.QrInvalid.key,
@@ -121,19 +130,32 @@ fun ClockScanQrScreen() {
 
 @Composable
 private fun ClockScanCamera(isSending: Boolean, onScanned: (String) -> Unit) {
-    val cameraAccess = rememberCameraAccess()
+    val scanCamera = rememberScanCamera()
+    val cameraAccess = if (scanCamera.isOn) rememberCameraAccess() else null
 
     ScanEffect(enabled = !isSending) { scan -> onScanned(scan.code) }
 
-    if (cameraAccess.isRefused) {
+    if (cameraAccess?.isRefused == true) {
         ClockingErrorScreen(error = ClockingErrorKind.CameraBlocked, message = null, scanned = null)
     } else {
-        ClockScanViewfinder(showCamera = cameraAccess.isAllowed, isSending = isSending, onScanned = onScanned)
+        ClockScanViewfinder(
+            showCamera = cameraAccess?.isAllowed == true,
+            scannerReady = scanCamera.scannerReady,
+            onUseCamera = scanCamera.useCamera,
+            isSending = isSending,
+            onScanned = onScanned,
+        )
     }
 }
 
 @Composable
-private fun ClockScanViewfinder(showCamera: Boolean, isSending: Boolean, onScanned: (String) -> Unit) {
+private fun ClockScanViewfinder(
+    showCamera: Boolean,
+    scannerReady: ScannerReadyReason?,
+    onUseCamera: () -> Unit,
+    isSending: Boolean,
+    onScanned: (String) -> Unit,
+) {
     val camera = rememberClockingDarkColors()
     val navigator = LocalAppNavigator.current
     val closeDescription = stringResource(R.string.clocking_scan_close_camera)
@@ -170,45 +192,49 @@ private fun ClockScanViewfinder(showCamera: Boolean, isSending: Boolean, onScann
             if (showCamera) {
                 CameraBarcodePreview(barcodes = BarcodeSet.Clocking, onScanned = onScanned, modifier = Modifier.fillMaxSize(), isSingleShot = true)
             }
-            Box(
-                modifier = Modifier
-                    .align(BiasAlignment(horizontalBias = 0f, verticalBias = VIEWFINDER_VERTICAL_BIAS))
-                    .size(ViewfinderFrameSize)
-                    .drawBehind {
-                        val stroke = ViewfinderBracketStroke.toPx()
-                        val arm = ViewfinderBracketArm.toPx()
-                        listOf(
-                            Offset(0f, 0f),
-                            Offset(size.width - arm, 0f),
-                            Offset(0f, size.height - arm),
-                            Offset(size.width - arm, size.height - arm),
-                        ).forEach { corner ->
-                            clipRect(left = corner.x, top = corner.y, right = corner.x + arm, bottom = corner.y + arm) {
-                                drawRoundRect(
-                                    color = Color.White,
-                                    topLeft = Offset(stroke / 2, stroke / 2),
-                                    size = Size(size.width - stroke, size.height - stroke),
-                                    cornerRadius = CornerRadius(ViewfinderBracketRadius.toPx()),
-                                    style = Stroke(width = stroke),
-                                )
+            if (scannerReady != null) {
+                ScannerReadyNotice(reason = scannerReady, onUseCamera = onUseCamera, modifier = Modifier.align(Alignment.Center))
+            } else {
+                Box(
+                    modifier = Modifier
+                        .align(BiasAlignment(horizontalBias = 0f, verticalBias = VIEWFINDER_VERTICAL_BIAS))
+                        .size(ViewfinderFrameSize)
+                        .drawBehind {
+                            val stroke = ViewfinderBracketStroke.toPx()
+                            val arm = ViewfinderBracketArm.toPx()
+                            listOf(
+                                Offset(0f, 0f),
+                                Offset(size.width - arm, 0f),
+                                Offset(0f, size.height - arm),
+                                Offset(size.width - arm, size.height - arm),
+                            ).forEach { corner ->
+                                clipRect(left = corner.x, top = corner.y, right = corner.x + arm, bottom = corner.y + arm) {
+                                    drawRoundRect(
+                                        color = Color.White,
+                                        topLeft = Offset(stroke / 2, stroke / 2),
+                                        size = Size(size.width - stroke, size.height - stroke),
+                                        cornerRadius = CornerRadius(ViewfinderBracketRadius.toPx()),
+                                        style = Stroke(width = stroke),
+                                    )
+                                }
                             }
-                        }
-                        val inset = ViewfinderLineInset.toPx()
-                        val lineTop = ViewfinderLineTop.toPx()
-                        val lineHeight = 2.dp.toPx()
-                        val glow = 5.dp.toPx()
-                        drawRect(
-                            color = camera.success.copy(alpha = 0.35f),
-                            topLeft = Offset(inset, lineTop - glow),
-                            size = Size(size.width - 2 * inset, lineHeight + 2 * glow),
-                        )
-                        drawRect(
-                            color = camera.success,
-                            topLeft = Offset(inset, lineTop),
-                            size = Size(size.width - 2 * inset, lineHeight),
-                        )
-                    },
-            )
+                            val inset = ViewfinderLineInset.toPx()
+                            val lineTop = ViewfinderLineTop.toPx()
+                            val lineHeight = 2.dp.toPx()
+                            val glow = 5.dp.toPx()
+                            drawRect(
+                                color = camera.success.copy(alpha = 0.35f),
+                                topLeft = Offset(inset, lineTop - glow),
+                                size = Size(size.width - 2 * inset, lineHeight + 2 * glow),
+                            )
+                            drawRect(
+                                color = camera.success,
+                                topLeft = Offset(inset, lineTop),
+                                size = Size(size.width - 2 * inset, lineHeight),
+                            )
+                        },
+                )
+            }
             if (isSending) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -226,16 +252,20 @@ private fun ClockScanViewfinder(showCamera: Boolean, isSending: Boolean, onScann
                 }
             }
         }
-        Text(
-            text = stringResource(R.string.clocking_scan_hint),
-            fontSize = 15.sp,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 48.dp),
-        )
+        if (scannerReady == null) {
+            Text(
+                text = stringResource(R.string.clocking_scan_hint),
+                fontSize = 15.sp,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 48.dp),
+            )
+        } else {
+            Spacer(modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 48.dp))
+        }
     }
 }
 

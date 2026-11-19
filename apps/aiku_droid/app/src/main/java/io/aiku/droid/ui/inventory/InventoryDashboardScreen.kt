@@ -16,6 +16,7 @@ import io.aiku.droid.ui.components.DetailCard
 import io.aiku.droid.ui.components.DetailLine
 import io.aiku.droid.ui.components.HeaderIconButton
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.Tone
@@ -37,13 +38,13 @@ fun InventoryDashboardScreen(dashboard: InventoryDashboardViewModel) {
         if (state.isSessionExpired) {
             SessionExpiredScreen(onSignIn = dashboard::signInAgain)
         } else {
-            InventoryDashboardContent(state = state, onRetry = dashboard::retry)
+            InventoryDashboardContent(state = state, onRetry = dashboard::retry, onRefresh = dashboard::refresh)
         }
     }
 }
 
 @Composable
-private fun InventoryDashboardContent(state: InventoryDashboardUiState, onRetry: () -> Unit) {
+private fun InventoryDashboardContent(state: InventoryDashboardUiState, onRetry: () -> Unit, onRefresh: () -> Unit) {
     val navigator = LocalAppNavigator.current
 
     AppScreen(
@@ -63,6 +64,7 @@ private fun InventoryDashboardContent(state: InventoryDashboardUiState, onRetry:
         },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = onRefresh),
     ) {
         val dashboard = state.dashboard
         when {

@@ -28,6 +28,8 @@ interface OvertimeController {
 
     fun load()
 
+    fun refresh()
+
     fun loadMore()
 
     fun resetSubmission()
@@ -60,6 +62,14 @@ class OvertimeViewModel(
     }
 
     override fun load() = loadPage(1)
+
+    override fun refresh() {
+        if (currentToken() == null || mutableState.value.submission == HrSubmission.Sending) {
+            return
+        }
+        mutableState.update { it.copy(list = it.list.refreshing()) }
+        loadPage(1)
+    }
 
     override fun loadMore() {
         val list = mutableState.value.list
@@ -125,6 +135,7 @@ class OvertimeViewModel(
 private object NoOvertime : OvertimeController {
     override val state: StateFlow<OvertimeUiState> = MutableStateFlow(OvertimeUiState()).asStateFlow()
     override fun load() = Unit
+    override fun refresh() = Unit
     override fun loadMore() = Unit
     override fun resetSubmission() = Unit
     override fun requestOvertime(input: OvertimeRequestInput) = Unit

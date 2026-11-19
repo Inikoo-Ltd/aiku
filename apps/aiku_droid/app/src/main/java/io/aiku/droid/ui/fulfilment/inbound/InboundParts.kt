@@ -27,6 +27,7 @@ import io.aiku.droid.ui.components.ButtonLook
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChoiceRow
 import io.aiku.droid.ui.components.InlineAlert
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.SearchScanField
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.StateStepper
@@ -177,11 +178,12 @@ internal fun PalletDeliveryStatus(delivery: PalletDelivery) {
 }
 
 @Composable
-internal fun InboundLoading(title: String, kicker: String, problem: GoodsOutProblem?, failedTitle: String, onRetry: () -> Unit) {
+internal fun InboundLoading(title: String, kicker: String, problem: GoodsOutProblem?, failedTitle: String, onRetry: () -> Unit, refresh: PullRefresh? = null) {
     AppScreen(
         header = { AppHeader(title = title, kicker = kicker) },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = refresh,
     ) {
         if (problem == null) {
             SkeletonListCard(rows = 2)

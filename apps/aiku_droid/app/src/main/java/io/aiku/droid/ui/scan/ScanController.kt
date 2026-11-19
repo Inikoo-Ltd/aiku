@@ -9,13 +9,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import io.aiku.droid.data.settings.ScanPreferences
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 enum class ScanSource { Camera, Hardware }
 
 data class Scan(val code: String, val source: ScanSource)
 
-class ScanController {
+class ScanController(
+    val preferences: StateFlow<ScanPreferences> = MutableStateFlow(ScanPreferences()),
+    signals: ScanSignals = SilentScanSignals,
+) {
     private val listeners = mutableListOf<(Scan) -> Unit>()
+
+    val feedback = ScanFeedback(preferences = { preferences.value }, signals = signals)
 
     val isListening: Boolean get() = listeners.isNotEmpty()
 
@@ -26,6 +34,9 @@ class ScanController {
 
     fun emit(scan: Scan): Boolean {
         val listener = listeners.lastOrNull() ?: return false
+        if (scan.source == ScanSource.Hardware) {
+            feedback.accepted()
+        }
         listener(scan)
         return true
     }

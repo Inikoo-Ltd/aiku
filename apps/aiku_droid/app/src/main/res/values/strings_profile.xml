@@ -57,7 +57,7 @@
     <string name="profile_preview_receive">Receive</string>
     <string name="profile_org_colour">Colour per organisation</string>
     <string name="profile_org_colour_caption">Different bar colour for each organisation</string>
-    <string name="profile_saved_note">Saved to your profile — matches Appearance in the Aiku web app.</string>
+    <string name="profile_saved_note">Saved on this phone only. The Aiku web app keeps its own appearance.</string>
 
     <plurals name="profile_switcher_warehouse_count">
         <item quantity="one">%1$d warehouse</item>
@@ -67,6 +67,5 @@
     <string name="profile_switcher_keep">Keep %1$s</string>
     <string name="profile_switcher_switch_to">Switch to %1$s</string>
 
-    <string name="profile_language_intro">Changes the app language for you only. Product names, customer names and notes stay as they are in Aiku.</string>
-    <string name="profile_language_use">Use %1$s</string>
+    <string name="profile_language_intro">Changes the app language on this phone only. Your Aiku account language, notifications, product names, customer names and notes stay as they are.</string>
 </resources>

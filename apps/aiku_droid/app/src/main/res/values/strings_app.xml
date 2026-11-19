@@ -1,0 +1,63 @@
+<resources>
+    <string name="app_language_en_native" translatable="false">English</string>
+    <string name="app_language_bg_native" translatable="false">Български</string>
+    <string name="app_language_cs_native" translatable="false">Čeština</string>
+    <string name="app_language_de_native" translatable="false">Deutsch</string>
+    <string name="app_language_es_native" translatable="false">Español</string>
+    <string name="app_language_fr_native" translatable="false">Français</string>
+    <string name="app_language_hi_native" translatable="false">हिन्दी</string>
+    <string name="app_language_hr_native" translatable="false">Hrvatski</string>
+    <string name="app_language_hu_native" translatable="false">Magyar</string>
+    <string name="app_language_id_native" translatable="false">Bahasa Indonesia</string>
+    <string name="app_language_it_native" translatable="false">Italiano</string>
+    <string name="app_language_ja_native" translatable="false">日本語</string>
+    <string name="app_language_lv_native" translatable="false">Latviešu</string>
+    <string name="app_language_ne_native" translatable="false">नेपाली</string>
+    <string name="app_language_nl_native" translatable="false">Nederlands</string>
+    <string name="app_language_pl_native" translatable="false">Polski</string>
+    <string name="app_language_pt_native" translatable="false">Português</string>
+    <string name="app_language_ro_native" translatable="false">Română</string>
+    <string name="app_language_sk_native" translatable="false">Slovenčina</string>
+    <string name="app_language_sv_native" translatable="false">Svenska</string>
+    <string name="app_language_tr_native" translatable="false">Türkçe</string>
+    <string name="app_language_uk_native" translatable="false">Українська</string>
+    <string name="app_language_zh_hans_native" translatable="false">简体中文</string>
+
+    <string name="app_language_en">English</string>
+    <string name="app_language_bg">Bulgarian</string>
+    <string name="app_language_cs">Czech</string>
+    <string name="app_language_de">German</string>
+    <string name="app_language_es">Spanish</string>
+    <string name="app_language_fr">French</string>
+    <string name="app_language_hi">Hindi</string>
+    <string name="app_language_hr">Croatian</string>
+    <string name="app_language_hu">Hungarian</string>
+    <string name="app_language_id">Indonesian</string>
+    <string name="app_language_it">Italian</string>
+    <string name="app_language_ja">Japanese</string>
+    <string name="app_language_lv">Latvian</string>
+    <string name="app_language_ne">Nepali</string>
+    <string name="app_language_nl">Dutch</string>
+    <string name="app_language_pl">Polish</string>
+    <string name="app_language_pt">Portuguese</string>
+    <string name="app_language_ro">Romanian</string>
+    <string name="app_language_sk">Slovak</string>
+    <string name="app_language_sv">Swedish</string>
+    <string name="app_language_tr">Turkish</string>
+    <string name="app_language_uk">Ukrainian</string>
+    <string name="app_language_zh_hans">Chinese (Simplified)</string>
+
+    <string name="app_notifications_on">On</string>
+    <string name="app_notifications_off">Off</string>
+    <string name="app_version_value">%1$s (%2$d)</string>
+
+    <string name="app_update_required_title">Update required</string>
+    <string name="app_update_required_body">This version of the app (%1$s) can no longer be used. Install version %2$s to keep working.</string>
+    <string name="app_update_ask_supervisor">Ask your supervisor to install the new version on this phone.</string>
+    <string name="app_update_button">Update</string>
+    <string name="app_update_available_title">Version %1$s is available</string>
+    <string name="app_update_available_body">Update when you have a moment.</string>
+    <string name="app_update_available_ask_supervisor">Ask your supervisor to install it when convenient.</string>
+    <string name="app_update_dismiss">Dismiss</string>
+    <string name="app_update_no_app">No app on this phone can open the update link.</string>
+</resources>

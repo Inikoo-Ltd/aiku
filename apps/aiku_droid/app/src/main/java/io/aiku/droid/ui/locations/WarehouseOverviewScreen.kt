@@ -19,6 +19,7 @@ import io.aiku.droid.ui.components.AikuCard
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.ToastKind
@@ -77,6 +78,7 @@ private fun WarehouseOverviewContent(state: WarehouseOverviewUiState, overview: 
         header = { ModuleHeader(WarehouseSection.WarehouseOverview, title = warehouse.name) },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = overview::refresh, isEnabled = !state.isSavingAutoRemove),
     ) {
         val loaded = state.overview
         when {

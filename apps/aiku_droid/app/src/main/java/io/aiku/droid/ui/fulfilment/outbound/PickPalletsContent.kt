@@ -27,6 +27,7 @@ import io.aiku.droid.ui.components.ConfirmDialog
 import io.aiku.droid.ui.components.FooterStatus
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.fulfilment.FulfilmentScanPrompt
@@ -86,6 +87,7 @@ internal fun PickPalletsContent(viewModel: PalletReturnViewModel, state: PalletR
             onPick = { line -> viewModel.pickPallet(line.lineId) },
             onNotPicked = { line -> openSheet(PalletSheet.NotPicked(line.lineId)) },
         ),
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = state.canRefresh),
     ) {
         ReturnRefreshProblem(problem = state.problem, onRetry = viewModel::retry)
         ReturnUnsureAlert(state = state, onRetry = viewModel::retryUnsure)

@@ -35,6 +35,19 @@ class StockMovementsViewModelTest {
     }
 
     @Test
+    fun `pulling to refresh reloads the first page of the history`() {
+        val history = StockMovementsViewModel(api, FakeSessions(), MovementSource.Location(locationId = 220))
+        history.onStart()
+        history.loadMore()
+
+        history.refresh()
+
+        assertEquals(listOf(1, 2, 1), api.movementRequests.map { it.page })
+        assertEquals(listOf(1L, 2L), history.state.value.list.rows.map { it.id })
+        assertFalse(history.state.value.list.isRefreshing)
+    }
+
+    @Test
     fun `an SKO history pages and filters by flow`() {
         val history = StockMovementsViewModel(api, FakeSessions(), MovementSource.Sko(warehouseId = 1, orgStockId = 77))
         history.onStart()

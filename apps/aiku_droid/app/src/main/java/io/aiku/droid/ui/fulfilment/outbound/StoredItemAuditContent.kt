@@ -40,6 +40,7 @@ import io.aiku.droid.ui.components.IconTile
 import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SearchField
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -87,16 +88,22 @@ internal fun StoredItemAuditContent(audit: StoredItemAuditViewModel, reference: 
     when {
         state.isSessionExpired -> SessionExpiredScreen(onSignIn = audit::signInAgain)
         loaded != null -> AuditContent(viewModel = audit, state = state, audit = loaded)
-        else -> AuditLoading(reference = reference, problem = state.problem, onRetry = audit::retry)
+        else -> AuditLoading(
+            reference = reference,
+            problem = state.problem,
+            onRetry = audit::retry,
+            refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = audit::refresh),
+        )
     }
 }
 
 @Composable
-private fun AuditLoading(reference: String, problem: GoodsOutProblem?, onRetry: () -> Unit) {
+private fun AuditLoading(reference: String, problem: GoodsOutProblem?, onRetry: () -> Unit, refresh: PullRefresh) {
     AppScreen(
         header = { AppHeader(title = reference, kicker = stringResource(R.string.fulfilment_audit_kicker)) },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = refresh,
     ) {
         if (problem == null) {
             SkeletonListCard(rows = 2)
@@ -174,6 +181,7 @@ private fun AuditContent(viewModel: StoredItemAuditViewModel, state: StoredItemA
                 )
             }
         },
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = state.canRefresh),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.fulfilment_out_refresh_failed), onRetry = viewModel::retry) }
         state.unsure?.let { unsure ->

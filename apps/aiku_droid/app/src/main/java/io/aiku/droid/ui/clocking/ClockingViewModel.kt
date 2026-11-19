@@ -50,17 +50,17 @@ class ClockingViewModel(
         }
     }
 
-    override fun refresh() {
+    override fun refresh(isPull: Boolean) {
         val token = currentToken() ?: return
         statusJob?.cancel()
-        mutableState.update { it.copy(isLoadingStatus = true) }
+        mutableState.update { it.copy(isLoadingStatus = true, isRefreshing = isPull) }
 
         statusJob = viewModelScope.launch {
             launch {
                 when (val result = clockingApi.clocking(token)) {
-                    is ClockingResult.Loaded -> mutableState.update { it.copy(status = result.value, isLoadingStatus = false, statusProblem = null) }
+                    is ClockingResult.Loaded -> mutableState.update { it.copy(status = result.value, isLoadingStatus = false, isRefreshing = false, statusProblem = null) }
                     ClockingResult.SessionExpired -> expireSession()
-                    else -> mutableState.update { it.copy(isLoadingStatus = false, statusProblem = problemOf(result)) }
+                    else -> mutableState.update { it.copy(isLoadingStatus = false, isRefreshing = false, statusProblem = problemOf(result)) }
                 }
             }
             launch {
@@ -73,34 +73,34 @@ class ClockingViewModel(
         }
     }
 
-    override fun loadWeek(from: LocalDate?) {
+    override fun loadWeek(from: LocalDate?, isPull: Boolean) {
         val token = currentToken() ?: return
         weekJob?.cancel()
         mutableState.update { current ->
             val keptPeriod = current.week.period.takeIf { current.week.requestedFrom == from }
-            current.copy(week = TimesheetWeekState(requestedFrom = from, period = keptPeriod, isLoading = true))
+            current.copy(week = TimesheetWeekState(requestedFrom = from, period = keptPeriod, isLoading = true, isRefreshing = isPull))
         }
 
         weekJob = viewModelScope.launch {
             when (val result = clockingApi.timesheets(token, from = from, to = from?.plusDays(DAYS_AFTER_MONDAY))) {
                 is ClockingResult.Loaded -> mutableState.update { current ->
                     current.copy(
-                        week = current.week.copy(period = result.value, isLoading = false, problem = null),
+                        week = current.week.copy(period = result.value, isLoading = false, isRefreshing = false, problem = null),
                         thisWeek = if (from == null) result.value else current.thisWeek,
                     )
                 }
                 ClockingResult.SessionExpired -> expireSession()
-                else -> mutableState.update { it.copy(week = it.week.copy(isLoading = false, problem = problemOf(result))) }
+                else -> mutableState.update { it.copy(week = it.week.copy(isLoading = false, isRefreshing = false, problem = problemOf(result))) }
             }
         }
     }
 
-    override fun loadDay(date: LocalDate) {
+    override fun loadDay(date: LocalDate, isPull: Boolean) {
         val token = currentToken() ?: return
         dayJob?.cancel()
         mutableState.update { current ->
             val keptTimesheet = current.day?.takeIf { it.date == date }?.timesheet
-            current.copy(day = TimesheetDayState(date = date, timesheet = keptTimesheet, isLoading = true))
+            current.copy(day = TimesheetDayState(date = date, timesheet = keptTimesheet, isLoading = true, isRefreshing = isPull))
         }
 
         dayJob = viewModelScope.launch {
@@ -111,7 +111,7 @@ class ClockingViewModel(
                 }
                 ClockingResult.SessionExpired -> expireSession()
                 else -> mutableState.update { current ->
-                    current.copy(day = current.day?.copy(isLoading = false, problem = problemOf(result)))
+                    current.copy(day = current.day?.copy(isLoading = false, isRefreshing = false, problem = problemOf(result)))
                 }
             }
         }

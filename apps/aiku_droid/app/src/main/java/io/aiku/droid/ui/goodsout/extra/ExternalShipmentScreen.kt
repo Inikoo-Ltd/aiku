@@ -37,6 +37,7 @@ import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.DeliveryNoteStage
 import io.aiku.droid.ui.components.FooterStatus
 import io.aiku.droid.ui.components.InlineAlert
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.StateStepper
@@ -74,6 +75,7 @@ fun ExternalShipmentScreen(note: DeliveryNoteViewModel, reference: String) {
                 header = { AppHeader(title = reference, kicker = stringResource(R.string.goodsout_extra_delivery_note)) },
                 activeTab = MainTab.Menu,
                 showBar = true,
+                refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = note::refresh),
             ) {
                 val problem = state.problem
                 if (problem == null) {
@@ -132,6 +134,7 @@ private fun ExternalShipmentContent(viewModel: DeliveryNoteViewModel, state: Del
                 )
             }
         },
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = state.canRefresh),
     ) {
         StateStepper(steps = deliveryNoteSteps(note.stage ?: DeliveryNoteStage.Packed))
         PlatformShipmentCard(platform = engine)

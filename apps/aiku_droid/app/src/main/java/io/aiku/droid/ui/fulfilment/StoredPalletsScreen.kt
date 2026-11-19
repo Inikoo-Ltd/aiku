@@ -21,6 +21,7 @@ import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SearchScanField
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -44,6 +45,7 @@ import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.PalletIncidentsRoute
 import io.aiku.droid.ui.navigation.PalletRoute
 import io.aiku.droid.ui.navigation.ScanRoute
+import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
 import io.aiku.droid.ui.states.SessionExpiredScreen
 
@@ -67,6 +69,7 @@ fun StoredPalletsScreen(container: AppContainer, warehouseId: Long) {
 private fun StoredPalletsContent(state: PalletsUiState, pallets: PalletsViewModel) {
     val navigator = LocalAppNavigator.current
     val toasts = LocalToasts.current
+    val scanFeedback = LocalScanController.current.feedback
     val scrollState = rememberScrollState()
     val list = state.list
     val search = state.search.trim()
@@ -80,7 +83,10 @@ private fun StoredPalletsContent(state: PalletsUiState, pallets: PalletsViewMode
     LaunchedEffect(outcome) {
         when (outcome) {
             is StockScanOutcome.Open -> navigator.open(outcome.route)
-            is StockScanOutcome.NoMatch -> noMatchText?.let { toasts.show(it, ToastKind.Info) }
+            is StockScanOutcome.NoMatch -> {
+                scanFeedback.rejected()
+                noMatchText?.let { toasts.show(it, ToastKind.Info) }
+            }
             is StockScanOutcome.Failed -> failedText?.let { toasts.show(it, ToastKind.Error) }
             null -> return@LaunchedEffect
         }
@@ -92,6 +98,7 @@ private fun StoredPalletsContent(state: PalletsUiState, pallets: PalletsViewMode
         activeTab = MainTab.Menu,
         showBar = true,
         scrollState = scrollState,
+        refresh = PullRefresh(isRefreshing = list.isRefreshing, onRefresh = pallets::refresh),
     ) {
         FilterChips(
             options = filters.map { FilterOption(label = filterChipLabel(label = stringResource(it.chip().label), count = state.counts?.count(it.key))) },

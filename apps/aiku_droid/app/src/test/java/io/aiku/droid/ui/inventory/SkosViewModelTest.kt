@@ -57,6 +57,20 @@ class SkosViewModelTest {
     private fun viewModel(bucket: SkoBucket = SkoBucket.Current) = SkosViewModel(api, FakeSessions(), warehouseId = 1, initialBucket = bucket, perPage = 50)
 
     @Test
+    fun `pulling to refresh reloads the first page`() {
+        val skos = viewModel()
+        skos.onStart()
+        skos.loadMore()
+
+        skos.refresh()
+
+        assertEquals(listOf(1L, 2L), skos.state.value.list.rows.map { it.id })
+        assertEquals(1, api.skoQueries.last().page)
+        assertEquals(3, api.skoQueries.size)
+        assertFalse(skos.state.value.list.isRefreshing)
+    }
+
+    @Test
     fun `opening loads the current SKOs with the bucket counts and the currency`() {
         val skos = viewModel()
 

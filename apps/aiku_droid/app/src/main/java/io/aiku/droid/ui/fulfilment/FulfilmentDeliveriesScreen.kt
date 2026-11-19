@@ -23,6 +23,7 @@ import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SearchScanField
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -46,6 +47,7 @@ import io.aiku.droid.ui.inventory.scanProblemText
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.ScanRoute
+import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
 import io.aiku.droid.ui.states.SessionExpiredScreen
 
@@ -69,6 +71,7 @@ fun FulfilmentDeliveriesScreen(container: AppContainer, warehouseId: Long) {
 private fun FulfilmentDeliveriesContent(state: PalletDeliveriesUiState, deliveries: PalletDeliveriesViewModel) {
     val navigator = LocalAppNavigator.current
     val toasts = LocalToasts.current
+    val scanFeedback = LocalScanController.current.feedback
     val scrollState = rememberScrollState()
     val list = state.list
     val search = state.search.trim()
@@ -82,7 +85,10 @@ private fun FulfilmentDeliveriesContent(state: PalletDeliveriesUiState, deliveri
     LaunchedEffect(outcome) {
         when (outcome) {
             is StockScanOutcome.Open -> navigator.open(outcome.route)
-            is StockScanOutcome.NoMatch -> noMatchText?.let { toasts.show(it, ToastKind.Info) }
+            is StockScanOutcome.NoMatch -> {
+                scanFeedback.rejected()
+                noMatchText?.let { toasts.show(it, ToastKind.Info) }
+            }
             is StockScanOutcome.Failed -> failedText?.let { toasts.show(it, ToastKind.Error) }
             null -> return@LaunchedEffect
         }
@@ -94,6 +100,7 @@ private fun FulfilmentDeliveriesContent(state: PalletDeliveriesUiState, deliveri
         activeTab = MainTab.Menu,
         showBar = true,
         scrollState = scrollState,
+        refresh = PullRefresh(isRefreshing = list.isRefreshing, onRefresh = deliveries::refresh),
     ) {
         FilterChips(
             options = filters.map { FilterOption(label = filterChipLabel(label = deliveryFilterLabel(it), count = state.counts?.count(it.key))) },

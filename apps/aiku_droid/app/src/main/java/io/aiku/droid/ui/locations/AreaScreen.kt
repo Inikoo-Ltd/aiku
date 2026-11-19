@@ -12,6 +12,7 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.Ability
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.goodsout.LoadMoreOnScroll
@@ -39,13 +40,23 @@ fun AreaScreen(areas: AreasViewModel, locations: LocationsViewModel, areaId: Lon
         if (areasState.isSessionExpired || state.isSessionExpired) {
             SessionExpiredScreen(onSignIn = locations::signInAgain)
         } else {
-            AreaContent(areasState = areasState, state = state, locations = locations, areaId = areaId, code = code)
+            AreaContent(
+                areasState = areasState,
+                state = state,
+                locations = locations,
+                areaId = areaId,
+                code = code,
+                onRefresh = {
+                    areas.refresh()
+                    locations.refresh()
+                },
+            )
         }
     }
 }
 
 @Composable
-private fun AreaContent(areasState: AreasUiState, state: LocationsUiState, locations: LocationsViewModel, areaId: Long, code: String) {
+private fun AreaContent(areasState: AreasUiState, state: LocationsUiState, locations: LocationsViewModel, areaId: Long, code: String, onRefresh: () -> Unit) {
     val colors = LocalAikuColors.current
     val navigator = LocalAppNavigator.current
     val scrollState = rememberScrollState()
@@ -59,6 +70,7 @@ private fun AreaContent(areasState: AreasUiState, state: LocationsUiState, locat
         activeTab = MainTab.Menu,
         showBar = true,
         scrollState = scrollState,
+        refresh = PullRefresh(isRefreshing = areasState.isRefreshing || list.isRefreshing, onRefresh = onRefresh),
     ) {
         if (area != null) {
             LocationsStatRow {

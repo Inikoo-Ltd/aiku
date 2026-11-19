@@ -60,6 +60,22 @@ class LocationsViewModelTest {
         LocationsViewModel(api, FakeSessions(), warehouseId = 1, initialTab = tab, areaId = areaId, perPage = 50)
 
     @Test
+    fun `pulling to refresh reloads the first page and the tab counts`() {
+        val locations = viewModel()
+        locations.onStart()
+        locations.loadMore()
+        val before = api.locationQueries.size
+
+        locations.refresh()
+
+        val asked = api.locationQueries.drop(before)
+        assertTrue(asked.any { it.page == 1 && it.perPage == 50 })
+        assertTrue(asked.any { it.perPage == 1 })
+        assertEquals(listOf(1L, 2L), locations.state.value.list.rows.map { it.id })
+        assertFalse(locations.state.value.list.isRefreshing)
+    }
+
+    @Test
     fun `opening loads the first page from meta and a count for every tab`() {
         val locations = viewModel()
 

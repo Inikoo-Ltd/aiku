@@ -37,6 +37,7 @@ import io.aiku.droid.ui.components.HeaderIconButton
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ProductPhoto
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -124,6 +125,7 @@ private fun SkuContent(state: SkoUiState, sko: SkoViewModel, code: String) {
         },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = sko::refresh, isEnabled = !state.isWorking),
     ) {
         when {
             detail != null -> SkuBlocks(detail = detail, state = state, actions = actions, onAction = { openSheet = it })

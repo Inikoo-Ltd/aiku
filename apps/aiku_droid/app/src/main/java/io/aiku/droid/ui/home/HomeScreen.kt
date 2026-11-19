@@ -46,6 +46,7 @@ import io.aiku.droid.ui.components.AvatarButton
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.CountBadge
 import io.aiku.droid.ui.components.GroupLabel
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.SkeletonBlock
 import io.aiku.droid.ui.components.goodsInEntry
 import io.aiku.droid.ui.components.initialsOf
@@ -64,6 +65,8 @@ import io.aiku.droid.ui.navigation.ProfileRoute
 import io.aiku.droid.ui.navigation.SkusRoute
 import io.aiku.droid.ui.navigation.WarehouseDashboardRoute
 import io.aiku.droid.ui.theme.LocalAikuColors
+import io.aiku.droid.ui.update.AppUpdateBanner
+import io.aiku.droid.update.AppUpdate
 import java.time.LocalTime
 
 private const val MORNING_ENDS_AT = 12
@@ -73,7 +76,7 @@ private const val SHORTCUT_COLUMNS = 4
 private data class Shortcut(@StringRes val label: Int, @DrawableRes val icon: Int, val route: Any, val badge: Int? = null)
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(update: AppUpdate.Available? = null, onDismissUpdate: () -> Unit = {}) {
     val colors = LocalAikuColors.current
     val navigator = LocalAppNavigator.current
     val can = LocalWarehouse.current.can
@@ -96,7 +99,21 @@ fun HomeScreen() {
         workBadges.refresh()
     }
 
-    AppScreen(header = { HomeHeader() }, activeTab = MainTab.Home, spacing = 20.dp) {
+    AppScreen(
+        header = { HomeHeader() },
+        activeTab = MainTab.Home,
+        spacing = 20.dp,
+        refresh = PullRefresh(
+            isRefreshing = clockingState.isRefreshing,
+            onRefresh = {
+                clocking.refresh(isPull = true)
+                workBadges.refresh()
+            },
+        ),
+    ) {
+        if (update != null) {
+            AppUpdateBanner(update = update, onDismiss = onDismissUpdate)
+        }
         ClockingCard(summary = clockingSummaryLines(clockingState, now), onOpen = { navigator.open(ClockingRoute) })
         if (hasWarehouse && shortcuts.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

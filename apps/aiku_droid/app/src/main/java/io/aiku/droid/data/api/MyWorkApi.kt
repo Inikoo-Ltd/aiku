@@ -57,6 +57,7 @@ data class WorkBadges(
     @Serializable(with = LenientIntOrNull::class) @SerialName("my_work") val myWork: Int? = null,
     @Serializable(with = LenientIntOrNull::class) @SerialName("goods_out_unassigned") val goodsOutUnassigned: Int? = null,
     @Serializable(with = LenientIntOrNull::class) @SerialName("inbox_unread") val inboxUnread: Int? = null,
+    @Serializable(with = LenientIntOrNull::class) @SerialName("goods_in_received") val goodsInReceived: Int? = null,
 )
 
 interface MyWorkApi {

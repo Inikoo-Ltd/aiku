@@ -487,7 +487,10 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
         popEnterTransition = { EnterTransition.None },
         popExitTransition = { ExitTransition.None },
     ) {
-        composable<HomeRoute> { HomeScreen() }
+        composable<HomeRoute> {
+            val update by container.appVersions.banner.collectAsStateWithLifecycle()
+            HomeScreen(update = update, onDismissUpdate = container.appVersions::dismissBanner)
+        }
         composable<MyWorkRoute> {
             val work: MyWorkViewModel = viewModel(
                 key = "my-work-$currentWarehouseId",
@@ -531,10 +534,20 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
                 },
             )
             val profileDetails by profileDetailsViewModel.profile.collectAsStateWithLifecycle()
-            ProfileScreen(details = profileDetails)
+            val language by container.language.current.collectAsStateWithLifecycle()
+            val isProfileRefreshing by profileDetailsViewModel.isRefreshing.collectAsStateWithLifecycle()
+            val scanning by container.settings.scanPreferences.collectAsStateWithLifecycle()
+            ProfileScreen(
+                details = profileDetails,
+                language = language,
+                isRefreshing = isProfileRefreshing,
+                onRefresh = { profileDetailsViewModel.refresh(isPull = true) },
+                scanning = scanning,
+                onScanningChange = container.settings::updateScanPreferences,
+            )
         }
         composable<AppearanceRoute> { AppearanceScreen() }
-        composable<LanguageRoute> { LanguageScreen() }
+        composable<LanguageRoute> { LanguageScreen(settings = container.language) }
         composable<ChangePasswordRoute> {
             val changePasswordViewModel: ChangePasswordViewModel = viewModel(
                 factory = viewModelFactory {

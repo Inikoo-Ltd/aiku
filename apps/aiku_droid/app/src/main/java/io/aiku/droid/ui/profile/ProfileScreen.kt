@@ -27,12 +27,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -42,10 +43,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.BuildConfig
 import io.aiku.droid.R
 import io.aiku.droid.data.api.StaffProfile
+import io.aiku.droid.data.settings.AppLanguage
+import io.aiku.droid.data.settings.ScanMode
+import io.aiku.droid.data.settings.ScanPreferences
 import io.aiku.droid.ui.clocking.LocalClocking
 import io.aiku.droid.ui.clocking.clockingWeekTotal
 import io.aiku.droid.ui.clocking.rememberClockingNow
@@ -57,6 +63,7 @@ import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.GroupLabel
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ListRow
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.navigation.AppearanceRoute
@@ -68,7 +75,6 @@ import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocalWarehouses
-import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.NoWarehouseAccess
 import io.aiku.droid.ui.navigation.StatePreviewRoute
 import io.aiku.droid.ui.navigation.SyncQueueRoute
@@ -78,15 +84,13 @@ import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 private object ProfileSample {
-    const val LANGUAGE = "English"
-    const val NOTIFICATIONS = "On"
     const val SYNC_WAITING = 3
 }
 
-private enum class ProfileScanMode(@StringRes val label: Int, @StringRes val caption: Int?) {
-    Automatic(R.string.profile_scan_automatic, R.string.profile_scan_automatic_caption),
-    ScannerDevice(R.string.profile_scan_device, null),
-    Camera(R.string.profile_scan_camera, null),
+private enum class ProfileScanMode(val mode: ScanMode, @StringRes val label: Int, @StringRes val caption: Int?) {
+    Automatic(ScanMode.Automatic, R.string.profile_scan_automatic, R.string.profile_scan_automatic_caption),
+    ScannerDevice(ScanMode.Scanner, R.string.profile_scan_device, null),
+    Camera(ScanMode.Camera, R.string.profile_scan_camera, null),
 }
 
 private fun initialsOf(displayName: String, username: String): String {
@@ -96,16 +100,28 @@ private fun initialsOf(displayName: String, username: String): String {
 }
 
 @Composable
-fun ProfileScreen(details: StaffProfile? = null) {
+fun ProfileScreen(
+    details: StaffProfile? = null,
+    language: AppLanguage = AppLanguage.English,
+    isRefreshing: Boolean = false,
+    onRefresh: () -> Unit = {},
+    scanning: ScanPreferences = ScanPreferences(),
+    onScanningChange: (ScanPreferences) -> Unit = {},
+) {
     val colors = LocalAikuColors.current
+    val context = LocalContext.current
     val staff = LocalStaff.current
     val warehouse = LocalWarehouse.current
     val hasWarehouse = LocalWarehouses.current.isNotEmpty()
     val navigator = LocalAppNavigator.current
-    val clockingState by LocalClocking.current.state.collectAsStateWithLifecycle()
+    val clocking = LocalClocking.current
+    val clockingState by clocking.state.collectAsStateWithLifecycle()
     val clockingStatus = clockingState.status
     val weekTotal = clockingWeekTotal(clockingState, rememberClockingNow())
     val noValue = stringResource(R.string.clocking_no_value)
+    var areNotificationsAllowed by remember { mutableStateOf(context.areWorkNotificationsAllowed()) }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { areNotificationsAllowed = context.areWorkNotificationsAllowed() }
 
     AppScreen(
         header = {
@@ -114,6 +130,13 @@ fun ProfileScreen(details: StaffProfile? = null) {
                 kicker = stringResource(R.string.profile_kicker),
             )
         },
+        refresh = PullRefresh(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                onRefresh()
+                clocking.refresh()
+            },
+        ),
     ) {
         UserCard(
             displayName = staff.displayName,
@@ -129,7 +152,7 @@ fun ProfileScreen(details: StaffProfile? = null) {
         }
 
         ProfileSection(title = stringResource(R.string.profile_scanning)) {
-            ScanningGroup()
+            ScanningGroup(preferences = scanning, onChange = onScanningChange)
         }
 
         ProfileSection(title = stringResource(R.string.profile_work)) {
@@ -163,8 +186,7 @@ fun ProfileScreen(details: StaffProfile? = null) {
                 RowDivider()
                 AppRow(
                     label = stringResource(R.string.profile_language),
-                    value = ProfileSample.LANGUAGE,
-                    isSampleValue = true,
+                    value = stringResource(language.nativeName),
                     onClick = { navigator.open(LanguageRoute) },
                 )
                 RowDivider()
@@ -177,12 +199,14 @@ fun ProfileScreen(details: StaffProfile? = null) {
                 RowDivider()
                 AppRow(
                     label = stringResource(R.string.profile_notifications),
-                    value = ProfileSample.NOTIFICATIONS,
-                    isSampleValue = true,
-                    onClick = { navigator.openTab(MainTab.Inbox) },
+                    value = stringResource(notificationsValue(areNotificationsAllowed)),
+                    onClick = { context.openNotificationSettings() },
                 )
                 RowDivider()
-                AppRow(label = stringResource(R.string.profile_version), value = BuildConfig.VERSION_NAME)
+                AppRow(
+                    label = stringResource(R.string.profile_version),
+                    value = stringResource(R.string.app_version_value, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+                )
             }
         }
 
@@ -344,21 +368,25 @@ private fun WarehouseRow(label: String, onChange: () -> Unit) {
 }
 
 @Composable
-private fun ScanningGroup() {
-    var mode by rememberSaveable { mutableStateOf(ProfileScanMode.Automatic) }
-    var isSoundOn by rememberSaveable { mutableStateOf(true) }
-    var isVibrationOn by rememberSaveable { mutableStateOf(true) }
-
-    ListGroup(modifier = Modifier.fakeData(12.dp)) {
+private fun ScanningGroup(preferences: ScanPreferences, onChange: (ScanPreferences) -> Unit) {
+    ListGroup {
         Column(modifier = Modifier.selectableGroup()) {
             ProfileScanMode.entries.forEach { option ->
-                ScanModeRow(option = option, isSelected = option == mode, onSelect = { mode = option })
+                ScanModeRow(option = option, isSelected = option.mode == preferences.mode, onSelect = { onChange(preferences.copy(mode = option.mode)) })
                 RowDivider()
             }
         }
-        ScanCheckRow(label = stringResource(R.string.profile_scan_sound), isChecked = isSoundOn, onToggle = { isSoundOn = it })
+        ScanCheckRow(
+            label = stringResource(R.string.profile_scan_sound),
+            isChecked = preferences.isSoundOn,
+            onToggle = { onChange(preferences.copy(isSoundOn = it)) },
+        )
         RowDivider()
-        ScanCheckRow(label = stringResource(R.string.profile_scan_vibrate), isChecked = isVibrationOn, onToggle = { isVibrationOn = it })
+        ScanCheckRow(
+            label = stringResource(R.string.profile_scan_vibrate),
+            isChecked = preferences.isVibrationOn,
+            onToggle = { onChange(preferences.copy(isVibrationOn = it)) },
+        )
     }
 }
 

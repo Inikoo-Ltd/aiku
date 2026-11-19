@@ -46,6 +46,7 @@ import io.aiku.droid.ui.navigation.DeliveryNoteDispatchedRoute
 import io.aiku.droid.ui.navigation.DeliveryNotePackingRoute
 import io.aiku.droid.ui.navigation.DeliveryNotePickedRoute
 import io.aiku.droid.ui.navigation.DeliveryNotePickingRoute
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -104,6 +105,73 @@ class DeliveryNoteViewModelTest {
 
         viewModel.eventHandled()
         assertNull(viewModel.state.value.event)
+    }
+
+    @Test
+    fun `pulling to refresh reloads the note and keeps the current one on screen until it arrives`() {
+        api.note = note(state = "handling")
+        val viewModel = loadedViewModel()
+        val gate = CompletableDeferred<Unit>()
+        api.noteGate = gate
+        api.note = note(state = "picked")
+
+        viewModel.refresh()
+
+        assertEquals(2, api.noteLoads)
+        assertTrue(viewModel.state.value.isRefreshing)
+        assertEquals(note(state = "handling"), viewModel.state.value.note)
+
+        gate.complete(Unit)
+
+        assertFalse(viewModel.state.value.isRefreshing)
+        assertEquals(note(state = "picked"), viewModel.state.value.note)
+    }
+
+    @Test
+    fun `a failed refresh keeps the note and shows the problem`() {
+        api.note = note(state = "handling")
+        val viewModel = loadedViewModel()
+        api.note = null
+
+        viewModel.refresh()
+
+        assertFalse(viewModel.state.value.isRefreshing)
+        assertEquals(note(state = "handling"), viewModel.state.value.note)
+        assertEquals(GoodsOutProblem.Offline, viewModel.state.value.problem)
+    }
+
+    @Test
+    fun `pulling to refresh does nothing while an action is being saved`() {
+        api.note = note(state = "handling")
+        val viewModel = loadedViewModel()
+        val gate = CompletableDeferred<Unit>()
+        api.writeGate = gate
+        api.writeResult = GoodsOutResult.Loaded(NoteActionOutcome(note = note(state = "handling"), status = "done", message = null))
+        viewModel.act(DeliveryNoteWrite.PickAll(lineId = LINE_ID, locationOrgStockId = null))
+
+        assertFalse(viewModel.state.value.canRefresh)
+        viewModel.refresh()
+
+        assertEquals(1, api.noteLoads)
+        assertFalse(viewModel.state.value.isRefreshing)
+
+        gate.complete(Unit)
+
+        assertTrue(viewModel.state.value.canRefresh)
+    }
+
+    @Test
+    fun `an action started during a refresh stops the refresh`() {
+        api.note = note(state = "handling")
+        val viewModel = loadedViewModel()
+        api.noteGate = CompletableDeferred()
+        api.writeResult = GoodsOutResult.Loaded(NoteActionOutcome(note = note(state = "picked"), status = "done", message = null))
+
+        viewModel.refresh()
+        viewModel.act(DeliveryNoteWrite.PickAll(lineId = LINE_ID, locationOrgStockId = null))
+
+        assertFalse(viewModel.state.value.isRefreshing)
+        assertEquals(note(state = "picked"), viewModel.state.value.note)
     }
 
     @Test
@@ -699,18 +767,25 @@ class DeliveryNoteViewModelTest {
         val packScans = mutableListOf<ScanPackRequest>()
         val downloads = mutableListOf<String>()
         val trolleyRequests = mutableListOf<Pair<Long, Boolean>>()
+        var noteLoads = 0
+        var noteGate: CompletableDeferred<Unit>? = null
+        var writeGate: CompletableDeferred<Unit>? = null
 
         override suspend fun deliveryNotes(token: String, warehouseId: Long, query: DeliveryNoteQuery): GoodsOutResult<DeliveryNotePage> = GoodsOutResult.Unreachable
 
         override suspend fun deliveryNoteCounts(token: String, warehouseId: Long, picker: PickerFilter?): GoodsOutResult<DeliveryNoteCounts> = GoodsOutResult.Unreachable
 
-        override suspend fun deliveryNote(token: String, deliveryNoteId: Long): GoodsOutResult<DeliveryNote> =
-            note?.let { GoodsOutResult.Loaded(it) } ?: GoodsOutResult.Unreachable
+        override suspend fun deliveryNote(token: String, deliveryNoteId: Long): GoodsOutResult<DeliveryNote> {
+            noteLoads++
+            noteGate?.await()
+            return note?.let { GoodsOutResult.Loaded(it) } ?: GoodsOutResult.Unreachable
+        }
 
         override suspend fun scan(token: String, warehouseId: Long, code: String): GoodsOutResult<ScanLookup> = GoodsOutResult.Unreachable
 
         override suspend fun write(token: String, deliveryNoteId: Long, write: DeliveryNoteWrite): GoodsOutResult<NoteActionOutcome> {
             writes += write
+            writeGate?.await()
             return writeResult
         }
 

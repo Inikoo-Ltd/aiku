@@ -94,6 +94,9 @@ fun ScanScreen(lookup: ScanLookupViewModel) {
 
     LaunchedEffect(state) {
         val found = state as? ScanLookupState.Found ?: return@LaunchedEffect
+        if (found.destination is ScanDestination.Unknown) {
+            scans.feedback.rejected()
+        }
         lookup.destinationOpened()
         navigator.switchSection(found.destination.route())
     }
@@ -138,14 +141,17 @@ private fun ScanViewfinderLayout(
     onClose: () -> Unit,
 ) {
     val camera = rememberCameraColors()
-    val cameraAccess = rememberCameraAccess()
+    val scanCamera = rememberScanCamera()
+    val cameraAccess = if (scanCamera.isOn) rememberCameraAccess() else null
 
     CompositionLocalProvider(LocalAikuColors provides camera) {
         ScanViewfinderContent(
             state = state,
             camera = camera,
-            isCameraAllowed = cameraAccess.isAllowed,
-            isCameraRefused = cameraAccess.isRefused,
+            isCameraAllowed = cameraAccess?.isAllowed == true,
+            isCameraRefused = cameraAccess?.isRefused == true,
+            scannerReady = scanCamera.scannerReady,
+            onUseCamera = scanCamera.useCamera,
             isTorchOn = isTorchOn,
             onToggleTorch = onToggleTorch,
             onCameraScan = onCameraScan,
@@ -161,6 +167,8 @@ private fun ScanViewfinderContent(
     camera: AikuColors,
     isCameraAllowed: Boolean,
     isCameraRefused: Boolean,
+    scannerReady: ScannerReadyReason?,
+    onUseCamera: () -> Unit,
     isTorchOn: Boolean,
     onToggleTorch: () -> Unit,
     onCameraScan: (String) -> Unit,
@@ -195,31 +203,35 @@ private fun ScanViewfinderContent(
             if (isCameraAllowed) {
                 CameraBarcodePreview(barcodes = BarcodeSet.Warehouse, onScanned = onCameraScan, isTorchOn = isTorchOn, modifier = Modifier.fillMaxSize())
             }
-            Box(
-                modifier = Modifier
-                    .align(BiasAlignment(horizontalBias = 0f, verticalBias = VIEWFINDER_VERTICAL_BIAS))
-                    .size(width = ViewfinderWidth, height = ViewfinderHeight)
-                    .drawBehind {
-                        val stroke = ViewfinderBracketStroke.toPx()
-                        val arm = ViewfinderBracketArm.toPx()
-                        listOf(
-                            Offset(0f, 0f),
-                            Offset(size.width - arm, 0f),
-                            Offset(0f, size.height - arm),
-                            Offset(size.width - arm, size.height - arm),
-                        ).forEach { corner ->
-                            clipRect(left = corner.x, top = corner.y, right = corner.x + arm, bottom = corner.y + arm) {
-                                drawRoundRect(
-                                    color = camera.scan,
-                                    topLeft = Offset(stroke / 2, stroke / 2),
-                                    size = Size(size.width - stroke, size.height - stroke),
-                                    cornerRadius = CornerRadius(ViewfinderBracketRadius.toPx()),
-                                    style = Stroke(width = stroke),
-                                )
+            if (scannerReady != null) {
+                ScannerReadyNotice(reason = scannerReady, onUseCamera = onUseCamera, modifier = Modifier.align(Alignment.Center))
+            } else {
+                Box(
+                    modifier = Modifier
+                        .align(BiasAlignment(horizontalBias = 0f, verticalBias = VIEWFINDER_VERTICAL_BIAS))
+                        .size(width = ViewfinderWidth, height = ViewfinderHeight)
+                        .drawBehind {
+                            val stroke = ViewfinderBracketStroke.toPx()
+                            val arm = ViewfinderBracketArm.toPx()
+                            listOf(
+                                Offset(0f, 0f),
+                                Offset(size.width - arm, 0f),
+                                Offset(0f, size.height - arm),
+                                Offset(size.width - arm, size.height - arm),
+                            ).forEach { corner ->
+                                clipRect(left = corner.x, top = corner.y, right = corner.x + arm, bottom = corner.y + arm) {
+                                    drawRoundRect(
+                                        color = camera.scan,
+                                        topLeft = Offset(stroke / 2, stroke / 2),
+                                        size = Size(size.width - stroke, size.height - stroke),
+                                        cornerRadius = CornerRadius(ViewfinderBracketRadius.toPx()),
+                                        style = Stroke(width = stroke),
+                                    )
+                                }
                             }
-                        }
-                    },
-            )
+                        },
+                )
+            }
             if (isCameraRefused) {
                 CameraOffNotice(colors = camera, modifier = Modifier.align(Alignment.Center))
             }

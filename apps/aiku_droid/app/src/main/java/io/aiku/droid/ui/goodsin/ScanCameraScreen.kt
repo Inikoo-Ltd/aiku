@@ -81,8 +81,11 @@ import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.scan.BarcodeSet
 import io.aiku.droid.ui.scan.CameraBarcodePreview
+import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
+import io.aiku.droid.ui.scan.ScannerReadyNotice
 import io.aiku.droid.ui.scan.rememberCameraAccess
+import io.aiku.droid.ui.scan.rememberScanCamera
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.theme.LocalAikuColors
 
@@ -121,7 +124,10 @@ private fun ScanCameraContent(viewModel: StockDeliveryViewModel, state: StockDel
     val colors = LocalAikuColors.current
     val navigator = LocalAppNavigator.current
     val resources = LocalResources.current
-    val access = rememberCameraAccess()
+    val scanCamera = rememberScanCamera()
+    val access = if (scanCamera.isOn) rememberCameraAccess() else null
+    val isCameraAllowed = access?.isAllowed == true
+    val scanFeedback = LocalScanController.current.feedback
     var isTorchOn by remember { mutableStateOf(false) }
     var currentItemId by remember { mutableStateOf<Long?>(null) }
     var feedback by remember { mutableStateOf<CameraFeedback?>(null) }
@@ -153,7 +159,10 @@ private fun ScanCameraContent(viewModel: StockDeliveryViewModel, state: StockDel
         when (outcome) {
             is LineScanOutcome.Line -> showLine(outcome.itemId)
             is LineScanOutcome.Choose -> sheet = CameraSheet.ChooseLine(outcome.code, outcome.itemIds)
-            is LineScanOutcome.NotOnDelivery -> feedback = notOnDelivery?.let { CameraFeedback.Problem(it) }
+            is LineScanOutcome.NotOnDelivery -> {
+                scanFeedback.rejected()
+                feedback = notOnDelivery?.let { CameraFeedback.Problem(it) }
+            }
             is LineScanOutcome.Failed -> feedback = failed?.let { CameraFeedback.Problem(it) }
             null -> return@LaunchedEffect
         }
@@ -173,31 +182,36 @@ private fun ScanCameraContent(viewModel: StockDeliveryViewModel, state: StockDel
             CameraTopBar(
                 reference = delivery.reference,
                 isTorchOn = isTorchOn,
-                showTorch = access.isAllowed,
+                showTorch = isCameraAllowed,
                 onToggleTorch = { isTorchOn = !isTorchOn },
                 onClose = { navigator.back() },
             )
             Spacer(modifier = Modifier.height(16.dp))
-            CameraModeSwitch(onBluetoothScanner = { navigator.back() })
+            CameraModeSwitch(isCameraOn = scanCamera.isOn, onCamera = scanCamera.useCamera, onBluetoothScanner = { navigator.back() })
             Spacer(modifier = Modifier.height(24.dp))
-            Viewfinder {
-                if (access.isAllowed && sheet == null) {
-                    CameraBarcodePreview(
-                        barcodes = BarcodeSet.Warehouse,
-                        onScanned = viewModel::scanLine,
-                        isTorchOn = isTorchOn,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+            val scannerReady = scanCamera.scannerReady
+            if (scannerReady != null) {
+                ScannerReadyNotice(reason = scannerReady, onUseCamera = scanCamera.useCamera)
+            } else {
+                Viewfinder {
+                    if (isCameraAllowed && sheet == null) {
+                        CameraBarcodePreview(
+                            barcodes = BarcodeSet.Warehouse,
+                            onScanned = viewModel::scanLine,
+                            isTorchOn = isTorchOn,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(if (access?.isRefused == true) R.string.scan_camera_off_body else R.string.goodsin_point_at_barcode),
+                    fontSize = 14.sp,
+                    color = colors.onNav,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(if (access.isRefused) R.string.scan_camera_off_body else R.string.goodsin_point_at_barcode),
-                fontSize = 14.sp,
-                color = colors.onNav,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
             Spacer(modifier = Modifier.height(16.dp))
             val lookingUp = state.lookingUpCode
             when {
@@ -292,7 +306,7 @@ private fun CameraRoundButton(@DrawableRes icon: Int, description: String, onCli
 }
 
 @Composable
-private fun CameraModeSwitch(onBluetoothScanner: () -> Unit) {
+private fun CameraModeSwitch(isCameraOn: Boolean, onCamera: () -> Unit, onBluetoothScanner: () -> Unit) {
     val colors = LocalAikuColors.current
 
     Row(
@@ -301,8 +315,13 @@ private fun CameraModeSwitch(onBluetoothScanner: () -> Unit) {
             .background(colors.scrim.copy(alpha = CAMERA_OVERLAY_ALPHA))
             .padding(horizontal = 2.dp),
     ) {
-        CameraModePill(icon = R.drawable.ic_ui_camera, label = stringResource(R.string.goodsin_camera), isActive = true, onClick = {})
-        CameraModePill(icon = R.drawable.ic_ui_scanner, label = stringResource(R.string.goodsin_bluetooth_scanner), isActive = false, onClick = onBluetoothScanner)
+        CameraModePill(icon = R.drawable.ic_ui_camera, label = stringResource(R.string.goodsin_camera), isActive = isCameraOn, onClick = if (isCameraOn) ({}) else onCamera)
+        CameraModePill(
+            icon = R.drawable.ic_ui_scanner,
+            label = stringResource(R.string.goodsin_bluetooth_scanner),
+            isActive = !isCameraOn,
+            onClick = if (isCameraOn) onBluetoothScanner else ({}),
+        )
     }
 }
 

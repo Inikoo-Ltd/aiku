@@ -97,6 +97,23 @@ class DeliveryNotesViewModelTest {
     }
 
     @Test
+    fun `pulling to refresh reloads the counts and the first page and replaces the rows`() {
+        api.pages[DeliveryNoteBucket.Unassigned] = listOf(rows(1L..2L))
+        val viewModel = viewModel()
+        viewModel.onStart()
+        api.pages[DeliveryNoteBucket.Unassigned] = listOf(rows(3L..3L))
+
+        viewModel.refresh()
+
+        val state = viewModel.state.value
+        assertFalse(state.isRefreshing)
+        assertEquals(listOf(3L), state.list.notes.map { it.id })
+        assertEquals(2, api.queries.size)
+        assertEquals(1, api.queries.last().page)
+        assertEquals(2, api.countRequests.size)
+    }
+
+    @Test
     fun `switching bucket replaces the rows with the first page of the new bucket`() {
         api.pages[DeliveryNoteBucket.Unassigned] = listOf(rows(1L..2L))
         api.pages[DeliveryNoteBucket.Handling] = listOf(rows(10L..10L))

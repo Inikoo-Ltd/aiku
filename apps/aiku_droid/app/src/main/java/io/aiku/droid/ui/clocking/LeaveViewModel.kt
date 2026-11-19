@@ -32,6 +32,8 @@ interface LeaveController : AttachmentSource {
 
     fun load()
 
+    fun refresh()
+
     fun loadMore()
 
     fun resetSubmission()
@@ -64,6 +66,14 @@ class LeaveViewModel(
     }
 
     override fun load() = loadPage(1)
+
+    override fun refresh() {
+        if (currentToken() == null || mutableState.value.submission == HrSubmission.Sending) {
+            return
+        }
+        mutableState.update { it.copy(list = it.list.refreshing()) }
+        loadPage(1)
+    }
 
     override fun loadMore() {
         val list = mutableState.value.list
@@ -139,6 +149,7 @@ class LeaveViewModel(
 private object NoLeave : LeaveController {
     override val state: StateFlow<LeaveUiState> = MutableStateFlow(LeaveUiState()).asStateFlow()
     override fun load() = Unit
+    override fun refresh() = Unit
     override fun loadMore() = Unit
     override fun resetSubmission() = Unit
     override fun requestLeave(input: LeaveRequestInput) = Unit

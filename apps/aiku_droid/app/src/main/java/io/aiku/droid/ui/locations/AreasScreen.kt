@@ -13,6 +13,7 @@ import io.aiku.droid.data.api.WarehouseArea
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ModuleHeader
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SearchScanField
@@ -52,6 +53,7 @@ private fun AreasContent(state: AreasUiState, areas: AreasViewModel) {
         header = { ModuleHeader(WarehouseSection.Areas) },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = areas::refresh),
     ) {
         SearchScanField(
             placeholder = stringResource(R.string.locations_areas_search),

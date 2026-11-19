@@ -55,6 +55,7 @@ import io.aiku.droid.ui.components.DetailLine
 import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -103,17 +104,23 @@ fun GoodsInReturnScreen(customerReturn: ReturnViewModel, reference: String) {
         when {
             state.isSessionExpired -> SessionExpiredScreen(onSignIn = customerReturn::signInAgain)
             loaded != null -> ReturnContent(viewModel = customerReturn, state = state, customerReturn = loaded)
-            else -> ReturnLoading(reference = reference, problem = state.problem, onRetry = customerReturn::retry)
+            else -> ReturnLoading(
+                reference = reference,
+                problem = state.problem,
+                onRetry = customerReturn::retry,
+                refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = customerReturn::refresh),
+            )
         }
     }
 }
 
 @Composable
-private fun ReturnLoading(reference: String, problem: GoodsOutProblem?, onRetry: () -> Unit) {
+private fun ReturnLoading(reference: String, problem: GoodsOutProblem?, onRetry: () -> Unit, refresh: PullRefresh) {
     AppScreen(
         header = { AppHeader(title = reference, kicker = stringResource(R.string.goodsin_kicker_return_plain)) },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = refresh,
     ) {
         if (problem == null) {
             SkeletonListCard(rows = 2)
@@ -173,6 +180,7 @@ private fun ReturnContent(viewModel: ReturnViewModel, state: ReturnUiState, cust
             onStart = viewModel::start,
             onSetAsReturned = { openSheet(ReturnSheet.SetAsReturned) },
         ),
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = !state.isWorking),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.goodsin_return_refresh_failed), onRetry = viewModel::retry) }
         if (customerReturn.state == ReturnState.CANCELLED) {

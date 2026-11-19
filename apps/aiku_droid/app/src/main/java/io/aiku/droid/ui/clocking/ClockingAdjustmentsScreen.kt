@@ -21,6 +21,7 @@ import io.aiku.droid.ui.components.ButtonLook
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ConfirmDialog
 import io.aiku.droid.ui.components.LocalToasts
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.navigation.MainTab
@@ -68,6 +69,7 @@ fun ClockingAdjustmentsScreen() {
         activeTab = MainTab.Menu,
         showBar = true,
         scrollState = scrollState,
+        refresh = PullRefresh(isRefreshing = state.list.isRefreshing, onRefresh = controller::refresh),
     ) {
         HrSectionIntro(text = stringResource(R.string.clocking_adjustments_intro))
         AikuButton(

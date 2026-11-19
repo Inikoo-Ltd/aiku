@@ -39,6 +39,7 @@ import io.aiku.droid.ui.components.DetailLine
 import io.aiku.droid.ui.components.IconTile
 import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.ListGroup
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.tone
@@ -97,6 +98,7 @@ fun PalletScreen(container: AppContainer, warehouseId: Long, id: Long, reference
                 problem = state.problem,
                 failedTitle = stringResource(R.string.fulfilment_inbound_pallet_failed, reference),
                 onRetry = pallet::retry,
+                refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = pallet::refresh),
             )
         }
     }
@@ -176,6 +178,7 @@ private fun PalletContent(viewModel: PalletViewModel, state: PalletUiState, pall
         },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = !state.isWorking),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.fulfilment_inbound_pallet_refresh_failed), onRetry = viewModel::retry) }
         PalletFactsCard(pallet = pallet)

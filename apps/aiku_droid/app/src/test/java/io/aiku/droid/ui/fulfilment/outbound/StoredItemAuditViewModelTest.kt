@@ -62,6 +62,17 @@ class StoredItemAuditViewModelTest {
         { GoodsOutResult.Loaded(StoredItemAuditOutcome(audit = after, status = OutboundWriteStatus.DONE, message = message)) }
 
     @Test
+    fun `pulling to refresh loads the audit again`() {
+        val detail = viewModel(audit(counted = null))
+        api.audit = GoodsOutResult.Loaded(audit(counted = 3))
+
+        detail.refresh()
+
+        assertEquals(audit(counted = 3), detail.state.value.audit)
+        assertFalse(detail.state.value.isRefreshing)
+    }
+
+    @Test
     fun `counting, removing a count and completing send their writes`() {
         api.auditWriteResults = answer(audit(38, StoredItemAuditActionKey.COUNT, StoredItemAuditActionKey.COMPLETE))
         val detail = viewModel(audit(null, StoredItemAuditActionKey.COUNT))

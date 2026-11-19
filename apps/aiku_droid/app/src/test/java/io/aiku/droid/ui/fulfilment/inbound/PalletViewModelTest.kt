@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -53,6 +54,17 @@ class PalletViewModelTest {
 
     private fun answer(pallet: Pallet, message: String? = null, status: String = GoodsInWriteStatus.DONE): (PalletWrite) -> GoodsOutResult<PalletOutcome> =
         { GoodsOutResult.Loaded(PalletOutcome(pallet = pallet, status = status, message = message)) }
+
+    @Test
+    fun `pulling to refresh loads the pallet again`() {
+        val pallet = viewModel(storing)
+        api.pallet = GoodsOutResult.Loaded(storing.copy(state = "damaged"))
+
+        pallet.refresh()
+
+        assertEquals("damaged", pallet.state.value.pallet?.state)
+        assertFalse(pallet.state.value.isRefreshing)
+    }
 
     @Test
     fun `only the incidents the server offers can be reported`() {

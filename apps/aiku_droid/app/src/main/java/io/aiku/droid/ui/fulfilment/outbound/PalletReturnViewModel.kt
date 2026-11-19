@@ -68,6 +68,7 @@ class PalletReturnHandoff {
 data class PalletReturnUiState(
     val palletReturn: PalletReturn? = null,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val problem: GoodsOutProblem? = null,
     val isSessionExpired: Boolean = false,
     val working: PalletReturnWrite? = null,
@@ -80,6 +81,8 @@ data class PalletReturnUiState(
     val shippers: Choices<Shipper> = Choices(),
 ) {
     val isWorking: Boolean get() = working != null || scanning != null
+
+    val canRefresh: Boolean get() = !isWorking && queuedScans == 0
 }
 
 class PalletReturnViewModel(
@@ -105,6 +108,12 @@ class PalletReturnViewModel(
     }
 
     fun retry() = load()
+
+    fun refresh() {
+        if (drainJob?.isActive != true) {
+            load(isPull = true)
+        }
+    }
 
     fun signInAgain() {
         sessions.end()
@@ -247,7 +256,7 @@ class PalletReturnViewModel(
         }
         loadJob?.cancel()
         pending.addLast(task)
-        mutableState.update { it.copy(queuedScans = pending.count { queued -> queued is ReturnTask.Scan }, isLoading = false, unsure = null) }
+        mutableState.update { it.copy(queuedScans = pending.count { queued -> queued is ReturnTask.Scan }, isLoading = false, isRefreshing = false, unsure = null) }
         if (drainJob?.isActive != true) {
             drainJob = viewModelScope.launch { drain() }
         }
@@ -340,16 +349,16 @@ class PalletReturnViewModel(
             else -> result
         }
 
-    private fun load() {
+    private fun load(isPull: Boolean = false) {
         val token = token() ?: return
         loadJob?.cancel()
-        mutableState.update { it.copy(isLoading = true, problem = null) }
+        mutableState.update { it.copy(isLoading = true, isRefreshing = isPull, problem = null) }
 
         loadJob = viewModelScope.launch {
             when (val result = api.palletReturn(token, warehouseId, returnId)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(palletReturn = result.value, isLoading = false) }
-                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isSessionExpired = true) }
-                else -> mutableState.update { it.copy(isLoading = false, problem = result.problem()) }
+                is GoodsOutResult.Loaded -> mutableState.update { it.copy(palletReturn = result.value, isLoading = false, isRefreshing = false) }
+                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
+                else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
             }
         }
     }

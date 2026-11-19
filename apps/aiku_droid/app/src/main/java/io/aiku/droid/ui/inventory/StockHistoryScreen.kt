@@ -15,6 +15,7 @@ import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.FilterChips
 import io.aiku.droid.ui.components.FilterOption
 import io.aiku.droid.ui.components.ListGroup
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -67,6 +68,7 @@ private fun StockHistoryContent(state: StockMovementsUiState, movements: StockMo
         activeTab = MainTab.Menu,
         showBar = true,
         scrollState = scrollState,
+        refresh = PullRefresh(isRefreshing = list.isRefreshing, onRefresh = movements::refresh),
     ) {
         if (movements.canFilterByFlow) {
             FilterChips(

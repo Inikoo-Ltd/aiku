@@ -55,6 +55,7 @@ import io.aiku.droid.ui.components.FooterStatus
 import io.aiku.droid.ui.components.HeaderIconButton
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.LocalToasts
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -82,6 +83,7 @@ import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.PackByScanRoute
 import io.aiku.droid.ui.navigation.PickByLocationRoute
+import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.theme.LocalAikuColors
 
@@ -111,17 +113,24 @@ fun PickingSessionScreen(session: PickingSessionViewModel, reference: String) {
         when {
             state.isSessionExpired -> SessionExpiredScreen(onSignIn = session::signInAgain)
             loaded != null -> PickingSessionContent(viewModel = session, state = state, session = loaded)
-            else -> SessionLoading(title = reference, kicker = stringResource(R.string.goodsout_extra_picking_session), problem = state.problem, onRetry = session::retry)
+            else -> SessionLoading(
+                title = reference,
+                kicker = stringResource(R.string.goodsout_extra_picking_session),
+                problem = state.problem,
+                onRetry = session::retry,
+                refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = session::refresh),
+            )
         }
     }
 }
 
 @Composable
-internal fun SessionLoading(title: String, kicker: String, problem: GoodsOutProblem?, onRetry: () -> Unit) {
+internal fun SessionLoading(title: String, kicker: String, problem: GoodsOutProblem?, onRetry: () -> Unit, refresh: PullRefresh? = null) {
     AppScreen(
         header = { AppHeader(title = title, kicker = kicker) },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = refresh,
     ) {
         if (problem == null) {
             SkeletonListCard(rows = 2)
@@ -142,6 +151,7 @@ internal fun SessionEvents(
 ) {
     val toasts = LocalToasts.current
     val resources = LocalResources.current
+    val scanFeedback = LocalScanController.current.feedback
     val problemTexts = GoodsOutProblem.entries.associateWith { problemText(it) }
 
     LaunchedEffect(event) {
@@ -154,7 +164,10 @@ internal fun SessionEvents(
                 val text = event.message.ifBlank { problemTexts.getValue(event.problem) }
                 if (onSheetProblem != null) onSheetProblem(text) else toasts.show(text, ToastKind.Error)
             }
-            is SessionEvent.ScanFeedback -> event.message?.let { toasts.show(it, ToastKind.Error) }
+            is SessionEvent.ScanFeedback -> {
+                scanFeedback.rejected()
+                event.message?.let { toasts.show(it, ToastKind.Error) }
+            }
             is SessionEvent.LineDone -> toasts.show(resources.getString(R.string.goodsout_scan_line_done_toast, event.code), ToastKind.Success)
             is SessionEvent.LocationDone -> toasts.show(resources.getString(R.string.goodsout_extra_location_done, event.location), ToastKind.Success)
             SessionEvent.AllPicked -> {
@@ -250,6 +263,7 @@ private fun PickingSessionContent(viewModel: PickingSessionViewModel, state: Pic
                 SessionFooter(session = session, loadingKey = if (state.working == PickingSessionWrite.StartPicking) SessionActionKey.START_PICKING else null, onAction = runAction)
             }
         },
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = state.canRefresh),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.goodsout_extra_session_refresh_failed), onRetry = viewModel::retry) }
         SessionSummaryCard(session = session)

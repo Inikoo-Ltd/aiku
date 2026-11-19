@@ -28,6 +28,7 @@ private const val SCANNED_ADD = 1
 data class StoredItemAuditUiState(
     val audit: StoredItemAudit? = null,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val problem: GoodsOutProblem? = null,
     val isSessionExpired: Boolean = false,
     val working: StoredItemAuditWrite? = null,
@@ -40,6 +41,8 @@ data class StoredItemAuditUiState(
     val choices: Choices<OutboundStoredItemRef> = Choices(),
 ) {
     val isWorking: Boolean get() = working != null
+
+    val canRefresh: Boolean get() = !isWorking && queuedScans == 0
 }
 
 class StoredItemAuditViewModel(
@@ -65,6 +68,12 @@ class StoredItemAuditViewModel(
     }
 
     fun retry() = load()
+
+    fun refresh() {
+        if (drainJob?.isActive != true) {
+            load(isPull = true)
+        }
+    }
 
     fun signInAgain() {
         sessions.end()
@@ -137,7 +146,7 @@ class StoredItemAuditViewModel(
         }
         loadJob?.cancel()
         pending.addLast(write)
-        mutableState.update { it.copy(queuedScans = pending.count { queued -> queued is StoredItemAuditWrite.Add }, isLoading = false, unsure = null) }
+        mutableState.update { it.copy(queuedScans = pending.count { queued -> queued is StoredItemAuditWrite.Add }, isLoading = false, isRefreshing = false, unsure = null) }
         if (drainJob?.isActive != true) {
             drainJob = viewModelScope.launch { drain() }
         }
@@ -181,16 +190,16 @@ class StoredItemAuditViewModel(
         }
     }
 
-    private fun load() {
+    private fun load(isPull: Boolean = false) {
         val token = token() ?: return
         loadJob?.cancel()
-        mutableState.update { it.copy(isLoading = true, problem = null) }
+        mutableState.update { it.copy(isLoading = true, isRefreshing = isPull, problem = null) }
 
         loadJob = viewModelScope.launch {
             when (val result = api.storedItemAudit(token, warehouseId, auditId)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(audit = result.value, isLoading = false) }
-                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isSessionExpired = true) }
-                else -> mutableState.update { it.copy(isLoading = false, problem = result.problem()) }
+                is GoodsOutResult.Loaded -> mutableState.update { it.copy(audit = result.value, isLoading = false, isRefreshing = false) }
+                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
+                else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
             }
         }
     }

@@ -19,6 +19,7 @@ import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.ButtonStyle
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.fulfilment.inbound.DeliveryPalletList
 import io.aiku.droid.ui.fulfilment.inbound.InboundLoading
 import io.aiku.droid.ui.fulfilment.inbound.PalletDeliveryStatus
@@ -54,6 +55,7 @@ fun FulfilmentBookedInScreen(container: AppContainer, warehouseId: Long, id: Lon
                 problem = state.problem,
                 failedTitle = stringResource(R.string.fulfilment_inbound_delivery_failed, reference),
                 onRetry = delivery::retry,
+                refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = delivery::refresh),
             )
         }
     }
@@ -69,6 +71,7 @@ private fun BookedInContent(viewModel: PalletDeliveryViewModel, state: PalletDel
         header = { AppHeader(title = delivery.reference, kicker = deliveryKicker(delivery)) },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = !state.isWorking),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.fulfilment_inbound_delivery_refresh_failed), onRetry = viewModel::retry) }
         PalletDeliveryStatus(delivery = delivery)

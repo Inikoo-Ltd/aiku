@@ -22,6 +22,7 @@ data class PagedList<T>(
     val loadingPage: Int? = null,
     val problem: ClockingProblem? = null,
     val failedPage: Int? = null,
+    val isRefreshing: Boolean = false,
 ) {
     val hasLoaded: Boolean get() = page > 0
     val hasMore: Boolean get() = hasLoaded && page < lastPage
@@ -33,13 +34,15 @@ data class PagedList<T>(
 
     fun loading(page: Int): PagedList<T> = copy(loadingPage = page, problem = null, failedPage = null)
 
+    fun refreshing(): PagedList<T> = copy(isRefreshing = true)
+
     fun loaded(pageItems: List<T>, pagination: HrPagination?, idOf: (T) -> Long): PagedList<T> {
         val loadedPage = pagination?.currentPage ?: 1
         val merged = if (loadedPage <= 1) pageItems else (items + pageItems).distinctBy(idOf)
         return PagedList(items = merged, page = loadedPage, lastPage = pagination?.lastPage ?: loadedPage)
     }
 
-    fun failed(page: Int, problem: ClockingProblem): PagedList<T> = copy(loadingPage = null, problem = problem, failedPage = page)
+    fun failed(page: Int, problem: ClockingProblem): PagedList<T> = copy(loadingPage = null, problem = problem, failedPage = page, isRefreshing = false)
 }
 
 sealed interface HrSubmission {

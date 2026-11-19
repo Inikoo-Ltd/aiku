@@ -110,7 +110,6 @@ fun AppearanceScreen() {
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
-                    .fakeData(8.dp)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             )
         }

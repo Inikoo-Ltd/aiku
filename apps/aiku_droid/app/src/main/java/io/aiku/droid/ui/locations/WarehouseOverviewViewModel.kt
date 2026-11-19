@@ -25,6 +25,7 @@ data class AutoRemoveChange(val enabled: Boolean)
 data class WarehouseOverviewUiState(
     val overview: LocationsOverview? = null,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val problem: GoodsOutProblem? = null,
     val isSessionExpired: Boolean = false,
     val isSavingAutoRemove: Boolean = false,
@@ -50,12 +51,19 @@ class WarehouseOverviewViewModel(
 
     fun retry() = load()
 
+    fun refresh() {
+        if (!mutableState.value.isSavingAutoRemove) {
+            load(isPull = true)
+        }
+    }
+
     fun setAutoRemove(enabled: Boolean) {
         val token = sessions.session.value?.token ?: return
         if (mutableState.value.overview == null || mutableState.value.isSavingAutoRemove) {
             return
         }
-        mutableState.update { it.copy(isSavingAutoRemove = true, event = null) }
+        loadJob?.cancel()
+        mutableState.update { it.copy(isSavingAutoRemove = true, isLoading = false, isRefreshing = false, event = null) }
 
         viewModelScope.launch {
             when (val result = api.setEmptyLocationsRemoval(token, warehouseId, enabled)) {
@@ -80,16 +88,16 @@ class WarehouseOverviewViewModel(
         sessions.end()
     }
 
-    private fun load() {
+    private fun load(isPull: Boolean = false) {
         val token = sessions.session.value?.token ?: return
         loadJob?.cancel()
-        mutableState.update { it.copy(isLoading = true, problem = null) }
+        mutableState.update { it.copy(isLoading = true, isRefreshing = isPull, problem = null) }
 
         loadJob = viewModelScope.launch {
             when (val result = api.locationsOverview(token, warehouseId)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(overview = result.value, isLoading = false) }
-                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isSessionExpired = true) }
-                else -> mutableState.update { it.copy(isLoading = false, problem = result.problem()) }
+                is GoodsOutResult.Loaded -> mutableState.update { it.copy(overview = result.value, isLoading = false, isRefreshing = false) }
+                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
+                else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
             }
         }
     }
@@ -100,6 +108,7 @@ data class AreasUiState(
     val areas: List<WarehouseArea>? = null,
     val currencyCode: String? = null,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val problem: GoodsOutProblem? = null,
     val isSessionExpired: Boolean = false,
 ) {
@@ -134,6 +143,8 @@ class AreasViewModel(
 
     fun retry() = load(debounce = false)
 
+    fun refresh() = load(debounce = false, isPull = true)
+
     fun signInAgain() {
         sessions.end()
     }
@@ -149,9 +160,10 @@ class AreasViewModel(
         }
     }
 
-    private fun load(debounce: Boolean) {
+    private fun load(debounce: Boolean, isPull: Boolean = false) {
         val token = sessions.session.value?.token ?: return
         loadJob?.cancel()
+        mutableState.update { it.copy(isRefreshing = isPull) }
 
         loadJob = viewModelScope.launch {
             if (debounce) {
@@ -159,9 +171,9 @@ class AreasViewModel(
             }
             mutableState.update { it.copy(isLoading = true, problem = null) }
             when (val result = api.areas(token, warehouseId, mutableState.value.search)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(areas = result.value, isLoading = false) }
-                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isSessionExpired = true) }
-                else -> mutableState.update { it.copy(isLoading = false, problem = result.problem()) }
+                is GoodsOutResult.Loaded -> mutableState.update { it.copy(areas = result.value, isLoading = false, isRefreshing = false) }
+                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
+                else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
             }
         }
     }

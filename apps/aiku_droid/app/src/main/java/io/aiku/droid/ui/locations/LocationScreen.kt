@@ -46,6 +46,7 @@ import io.aiku.droid.ui.components.HeaderIconButton
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.LocalToasts
+import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
@@ -127,6 +128,7 @@ private fun LocationContent(state: LocationUiState, location: LocationViewModel,
         },
         activeTab = MainTab.Menu,
         showBar = true,
+        refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = location::refresh, isEnabled = !state.isWorking),
     ) {
         when {
             detail != null -> LocationBlocks(detail = detail, actions = actions, onAction = { openSheet = it })
