@@ -27,13 +27,24 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolleysInDeliveryNote.vue"
 import Select from 'primevue/select';
 import Dialog from "primevue/dialog"
+import Popover from "primevue/popover"
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import { faExchangeAlt, faLock , faLockOpen} from "@far"
-import { faVideo } from "@fal"
+import { faVideo, faInfoCircle, faCheck, faThumbsUp } from "@fal"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 
-library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt, faFilePdf)
+library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt, faFilePdf, faInfoCircle, faCheck, faThumbsUp)
+
+const packingTargetPopover = ref()
+const parcelsVsTarget = computed(() => {
+    const target = props.boxStats?.products?.packing_target?.boxes
+    const parcels = props.boxStats?.parcels?.length ?? 0
+    return target && parcels > 0 ? parcels - target : null
+})
+const showPackingTarget = (event: MouseEvent) => packingTargetPopover.value?.show(event)
+const hidePackingTarget = () => packingTargetPopover.value?.hide()
+const togglePackingTarget = (event: MouseEvent) => packingTargetPopover.value?.toggle(event)
 
 const props = withDefaults(defineProps<{
     boxStats: {
@@ -67,6 +78,15 @@ const props = withDefaults(defineProps<{
         is_forbidden_delivery?: boolean
         products: {
             estimated_weight: number
+            packing_target?: {
+                boxes: number
+                max_weight: number
+                box_size: string
+                heavy_items: string[]
+                bulky_items: string[]
+                unknown_items?: string[]
+                first_boxes: number | null
+            } | null
             number_items?: number
             number_skos?: number
             number_units?: number
@@ -779,6 +799,7 @@ function returnNoteRoute(returnDeliveryNote) {
                         </dd>
                     </dl>
 
+
                     <slot name="margin" />
 
                     <!-- Section: Parcels -->
@@ -788,7 +809,43 @@ function returnNoteRoute(returnDeliveryNote) {
                             fixed-width aria-hidden='true' />
                         <div class=" group w-full pl-px">
                             <div class="leading-4 xtext-base flex justify-between w-full py-1">
-                                <div class="text-gray-500">{{ ctrans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
+                                <div class="flex items-start gap-x-2 text-gray-500">
+                                    <span>{{ ctrans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</span>
+                                    <div v-if="boxStats?.products?.packing_target" class="mt-px text-xs italic text-gray-400">
+                                        <div class="flex items-center gap-x-1">
+                                            <span>{{ ctrans("target") }}: {{ boxStats.products.packing_target.boxes }} {{ boxStats.products.packing_target.boxes === 1 ? ctrans("box") : ctrans("boxes") }}</span>
+                                            <FontAwesomeIcon v-if="parcelsVsTarget === 0" v-tooltip="ctrans('Matches the target')" icon="fal fa-check" fixed-width aria-hidden="true" class="text-green-500" />
+                                            <FontAwesomeIcon v-else-if="parcelsVsTarget !== null && parcelsVsTarget < 0" v-tooltip="ctrans(':count under target', { count: -parcelsVsTarget })" icon="fal fa-thumbs-up" fixed-width aria-hidden="true" class="text-green-500" />
+                                            <button v-if="parcelsVsTarget === null" type="button" class="cursor-help not-italic text-gray-400 hover:text-gray-600"
+                                                :aria-label="ctrans('Packing target details')"
+                                                @mouseenter="showPackingTarget" @mouseleave="hidePackingTarget" @click="togglePackingTarget">
+                                                <FontAwesomeIcon icon="fal fa-info-circle" fixed-width aria-hidden="true" />
+                                            </button>
+                                        </div>
+                                        <div v-if="parcelsVsTarget !== null && parcelsVsTarget > 0" class="not-italic text-red-500">
+                                            {{ ctrans(":count over target", { count: parcelsVsTarget }) }}
+                                        </div>
+                                        <Popover ref="packingTargetPopover">
+                                            <div class="w-72 p-1 text-xs text-gray-600 space-y-1.5">
+                                                <div class="text-sm font-semibold text-gray-800">{{ ctrans("Packing target") }}</div>
+                                                <div>{{ boxStats.products.packing_target.box_size }} cm · {{ ctrans(":weight kg max per box", { weight: locale.number(boxStats.products.packing_target.max_weight) }) }}</div>
+                                                <div class="text-gray-500">{{ ctrans("Worked out from what similar orders were packed in") }}</div>
+                                                <div v-if="boxStats.products.packing_target.first_boxes && boxStats.products.packing_target.first_boxes !== boxStats.products.packing_target.boxes">
+                                                    {{ ctrans("First estimate: :boxes", { boxes: boxStats.products.packing_target.first_boxes }) }}
+                                                </div>
+                                                <div v-if="boxStats.products.packing_target.unknown_items?.length">
+                                                    {{ ctrans("No weight or packing history") }}: <span class="whitespace-nowrap">{{ boxStats.products.packing_target.unknown_items.join(", ") }}</span>
+                                                </div>
+                                                <div v-if="boxStats.products.packing_target.heavy_items?.length">
+                                                    {{ ctrans("Over the box weight limit on its own") }}: <span class="whitespace-nowrap">{{ boxStats.products.packing_target.heavy_items.join(", ") }}</span>
+                                                </div>
+                                                <div v-if="boxStats.products.packing_target.bulky_items?.length">
+                                                    {{ ctrans("Needs its own box") }}: <span class="whitespace-nowrap">{{ boxStats.products.packing_target.bulky_items.join(", ") }}</span>
+                                                </div>
+                                            </div>
+                                        </Popover>
+                                    </div>
+                                </div>
 
                                 <template v-if="isEditable">
                                     <!-- Can't edit Parcels if Shipment has set AND already dispatched-->

@@ -43,6 +43,8 @@ class CalculateDeliveryNoteTotalAmounts extends OrgAction
 
         DeliveryNoteHydrateItems::run($deliveryNote);
 
+        EstimateDeliveryNoteBoxes::run($deliveryNote);
+
 
     }
 

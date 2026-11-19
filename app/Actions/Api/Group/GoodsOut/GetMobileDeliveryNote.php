@@ -102,6 +102,7 @@ class GetMobileDeliveryNote
                 'number_skos'         => $pickingTotals['number_skos'],
                 'number_units'        => $pickingTotals['number_units'],
                 'estimated_weight_kg' => ($deliveryNote->estimated_weight ?? 0) / 1000,
+                'packing_target'      => $showDeliveryNote->getPackingTarget($deliveryNote),
                 ...$showDeliveryNote->getEstimatedHandlingMinutes($deliveryNote, $pickingTotals['number_skos']),
             ],
             'picker'                  => $this->userIdAndName($deliveryNote->pickerUser),
