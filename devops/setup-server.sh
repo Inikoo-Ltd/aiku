@@ -205,6 +205,12 @@ else
   echo "  skipped (INSTALL_SOKETI=0 — soketi runs on the edge host only)"
 fi
 
+echo "apparmor:"
+place "$DEVOPS/apparmor/chrome-headless-shell" /etc/apparmor.d/chrome-headless-shell
+if [[ $DRY_RUN != 1 ]]; then
+  apparmor_parser -r /etc/apparmor.d/chrome-headless-shell
+fi
+
 echo "sysctl:"
 for conf in 99-aiku.conf 90-nonlocal-bind.conf; do
   place "$DEVOPS/sysctl/$conf" "/etc/sysctl.d/$conf"

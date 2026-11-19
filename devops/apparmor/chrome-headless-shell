@@ -1,0 +1,14 @@
+# Browsershot's Chrome (puppeteer's chrome-headless-shell, downloaded by the deploy's npm ci)
+# needs user namespaces for its sandbox, and Ubuntu 24.04 blocks them for unprofiled binaries
+# (kernel.apparmor_restrict_unprivileged_userns=1): Chrome then dies with "No usable sandbox!".
+# Same shape as Ubuntu's own /etc/apparmor.d/chrome: unconfined, plus userns, for this one path.
+# aiku on boro, litio and the DR box; staging on helio.
+
+abi <abi/4.0>,
+include <tunables/global>
+
+profile chrome-headless-shell /home/{aiku,staging}/.cache/puppeteer/chrome-headless-shell/*/chrome-headless-shell-linux64/chrome-headless-shell flags=(unconfined) {
+  userns,
+
+  include if exists <local/chrome-headless-shell>
+}

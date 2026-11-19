@@ -41,7 +41,9 @@ apt-get install -y \
   php8.4-mysql php8.4-opcache php8.4-pgsql php8.4-readline php8.4-redis php8.4-soap \
   php8.4-sqlite3 php8.4-xml php8.4-zip composer \
   nginx haproxy varnish redis-server supervisor ghostscript rclone \
-  docker-ce docker-ce-cli docker-compose-plugin
+  docker-ce docker-ce-cli docker-compose-plugin \
+  libnspr4 libnss3 libatk1.0-0t64 libatk-bridge2.0-0t64 libatspi2.0-0t64 libxcomposite1 libxdamage1 \
+  libxext6 libxfixes3 libxrandr2 libgbm1 libasound2t64
 
 curl -fsSL "https://dl.typesense.org/releases/$TYPESENSE_VERSION/typesense-server-$TYPESENSE_VERSION-amd64.deb" -o /tmp/typesense.deb
 apt-get install -y /tmp/typesense.deb
@@ -60,6 +62,9 @@ docker pull "$IMGPROXY_IMAGE"
 # default.vcl imports querystring, which no package ships: boro's copy, built by hand in Oct 2025
 # for Varnish 8.0, is kept in the repo
 install -m 755 "$(dirname "${BASH_SOURCE[0]}")/../varnish/vmods/libvmod_querystring.so" /usr/lib/varnish/vmods/
+# Browsershot's Chrome needs the libraries above and this profile, or it cannot start on 24.04
+install -m 644 "$(dirname "${BASH_SOURCE[0]}")/../apparmor/chrome-headless-shell" /etc/apparmor.d/
+apparmor_parser -r /etc/apparmor.d/chrome-headless-shell
 # HAProxy owns port 80
 rm -f /etc/nginx/sites-enabled/default
 
