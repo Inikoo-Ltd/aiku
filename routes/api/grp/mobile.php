@@ -40,6 +40,7 @@ use App\Actions\Api\Group\Clocking\UpdateMobileClockingNotes;
 use App\Actions\Api\Group\Clocking\UpdateMobileLeave;
 use App\Actions\Api\Group\Clocking\UpdateMobileOvertimeRequest;
 use App\Actions\Api\Group\GetMobileProfile;
+use App\Actions\Api\Group\UpdateMobileProfileLanguage;
 use App\Actions\Api\Group\GetMobileWarehouses;
 use App\Actions\Api\Group\GoodsIn\CheckAllMobileStockDeliveryItems;
 use App\Actions\Api\Group\GoodsIn\CheckMobileStockDeliveryItem;
@@ -179,6 +180,7 @@ Route::middleware([VerifyMobileAppKey::class, SetMobileApiLocale::class])->group
         Route::get('/warehouses/{warehouse:id}/search', GetMobileSearch::class)->name('warehouses.search');
         Route::get('/warehouses/{warehouse:id}/dashboard', GetMobileWarehouseDashboard::class)->name('warehouses.dashboard');
         Route::get('/profile', GetMobileProfile::class)->name('profile');
+        Route::patch('/profile/language', UpdateMobileProfileLanguage::class)->name('profile.language');
         Route::put('/push-token', UpdateMobilePushToken::class)->name('push_token.update');
         Route::delete('/push-token', DeleteMobilePushToken::class)->name('push_token.delete');
 
