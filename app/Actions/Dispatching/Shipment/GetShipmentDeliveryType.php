@@ -21,7 +21,7 @@ class GetShipmentDeliveryType
 
     private const string WOO_PICKUP_METHOD_PATTERN = '/parcel_machine|pickup_point|parcel_locker|paczkomat|parcelshop/i';
 
-    private const string LOCKER_TEXT_PATTERN = '/paczkomat|parcel\s*locker|inpost\s*locker|z-?box\b|pickup\s*point|parcel\s*shop|packstation|v[ýy]dejn|odb[eě]rn[éeý]\s*m[íi]st|pakiautomaat/iu';
+    private const string LOCKER_TEXT_PATTERN = '/paczkomat|parcel\s*locker|inpost\s*locker|z-?box\b|pickup\s*point|parcel\s*shop|packstation|v[ýy]dejn|odb[eě]rn[éeý]\s*m[íi]st|pakiautomaat|orlen\s*paczk|punk\w*\s+(odbioru|partnersk|pocztex)|pocztex\s*\(?\s*(sklep\s+)?[żz]abka/iu';
 
     /**
      * @return array{delivery_type: ShipmentDeliveryTypeEnum, pickup_point_code: string|null}
