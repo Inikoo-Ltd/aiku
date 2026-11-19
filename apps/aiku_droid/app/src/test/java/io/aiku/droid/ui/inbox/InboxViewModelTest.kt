@@ -4,6 +4,7 @@ import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.InboxNotification
 import io.aiku.droid.data.api.InboxPage
 import io.aiku.droid.data.api.ListMeta
+import io.aiku.droid.data.cache.testScreenCache
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.inventory.FakeSessions
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +43,7 @@ class InboxViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun inbox() = InboxViewModel(api, FakeSessions(), arrivals, now = { readTime })
+    private fun inbox() = InboxViewModel(api, FakeSessions(), arrivals, testScreenCache(), now = { readTime })
 
     private fun page(rows: List<InboxNotification>, current: Int = 1, last: Int = 1, unread: Int? = rows.count { it.isUnread }) =
         GoodsOutResult.Loaded(InboxPage(rows, ListMeta(currentPage = current, lastPage = last, perPage = 30, total = rows.size), unread))

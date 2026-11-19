@@ -6,6 +6,9 @@ import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.InboxApi
 import io.aiku.droid.data.api.InboxNotification
 import io.aiku.droid.data.api.InboxPage
+import io.aiku.droid.data.api.InboxResponses
+import io.aiku.droid.data.cache.CachedScreens
+import io.aiku.droid.data.cache.ScreenCache
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.goodsout.problem
@@ -29,6 +32,7 @@ data class InboxUiState(
     val failedPage: Int? = null,
     val markAllProblem: GoodsOutProblem? = null,
     val isSessionExpired: Boolean = false,
+    val cachedAt: Instant? = null,
 ) {
     val hasLoaded: Boolean get() = page > 0
     val isEmpty: Boolean get() = hasLoaded && notifications.isEmpty() && problem == null
@@ -37,12 +41,14 @@ data class InboxUiState(
     val firstPageProblem: GoodsOutProblem? get() = problem?.takeIf { failedPage == 1 }
     val nextPageProblem: GoodsOutProblem? get() = problem?.takeIf { (failedPage ?: 0) > 1 }
     val unreadCount: Int get() = unread ?: notifications.count { it.isUnread }
+    val lastUpdated: Instant? get() = cachedAt?.takeIf { firstPageProblem != null }
 }
 
 class InboxViewModel(
     private val api: InboxApi,
     private val sessions: SessionRepository,
     arrivals: Flow<Unit>,
+    private val cache: ScreenCache,
     private val now: () -> Instant = Instant::now,
 ) : ViewModel() {
 
@@ -142,9 +148,12 @@ class InboxViewModel(
     private fun loadPage(page: Int, isPull: Boolean) {
         val token = sessions.session.value?.token ?: return
         listJob?.cancel()
-        mutableState.update { it.copy(loadingPage = page, isRefreshing = isPull, problem = null, failedPage = null) }
+        mutableState.update { it.copy(loadingPage = page, isRefreshing = isPull || it.cachedAt != null, problem = null, failedPage = null) }
 
         listJob = viewModelScope.launch {
+            if (page == 1 && !mutableState.value.hasLoaded) {
+                showCachedCopy()
+            }
             when (val result = api.notifications(token, page)) {
                 is GoodsOutResult.Loaded -> mutableState.update { it.loaded(result.value) }
                 GoodsOutResult.SessionExpired -> mutableState.update { it.copy(loadingPage = null, isRefreshing = false, isSessionExpired = true) }
@@ -153,6 +162,11 @@ class InboxViewModel(
                 }
             }
         }
+    }
+
+    private suspend fun showCachedCopy() {
+        val cached = cache.read(CachedScreens.USER_SCOPED, CachedScreens.inbox(InboxResponses.DEFAULT_FILTER)) ?: return
+        mutableState.update { it.loaded(cached.value).copy(loadingPage = 1, isRefreshing = true, cachedAt = cached.fetchedAt) }
     }
 
     private fun InboxUiState.loaded(inboxPage: InboxPage): InboxUiState {
@@ -167,6 +181,7 @@ class InboxViewModel(
             isRefreshing = false,
             problem = null,
             failedPage = null,
+            cachedAt = null,
         )
     }
 }

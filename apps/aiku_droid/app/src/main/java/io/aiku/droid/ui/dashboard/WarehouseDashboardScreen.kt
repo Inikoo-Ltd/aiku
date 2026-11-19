@@ -54,6 +54,7 @@ import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.HeaderIconButton
+import io.aiku.droid.ui.components.LastUpdatedNote
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.Tone
@@ -171,6 +172,7 @@ private fun WarehouseDashboardContent(state: WarehouseDashboardUiState, onRefres
             state.problem?.let { problem ->
                 GoodsOutLoadProblem(problem = problem, title = stringResource(R.string.dashboard_failed), onRetry = onRetry)
             }
+            state.lastUpdated?.let { updatedAt -> LastUpdatedNote(updatedAt = updatedAt) }
             if (state.isLoading) {
                 SkeletonListCard(rows = 2)
                 SkeletonListCard(rows = 2)

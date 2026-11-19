@@ -50,6 +50,7 @@ import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.SkeletonBlock
 import io.aiku.droid.ui.components.goodsInEntry
 import io.aiku.droid.ui.components.initialsOf
+import io.aiku.droid.ui.components.lastUpdatedLabel
 import io.aiku.droid.ui.components.warehouseKicker
 import io.aiku.droid.ui.mywork.LocalWorkBadges
 import io.aiku.droid.ui.mywork.goodsOutUnassignedBadge
@@ -67,6 +68,7 @@ import io.aiku.droid.ui.navigation.WarehouseDashboardRoute
 import io.aiku.droid.ui.theme.LocalAikuColors
 import io.aiku.droid.ui.update.AppUpdateBanner
 import io.aiku.droid.update.AppUpdate
+import java.time.Instant
 import java.time.LocalTime
 
 private const val MORNING_ENDS_AT = 12
@@ -114,7 +116,7 @@ fun HomeScreen(update: AppUpdate.Available? = null, onDismissUpdate: () -> Unit 
         if (update != null) {
             AppUpdateBanner(update = update, onDismiss = onDismissUpdate)
         }
-        ClockingCard(summary = clockingSummaryLines(clockingState, now), onOpen = { navigator.open(ClockingRoute) })
+        ClockingCard(summary = clockingSummaryLines(clockingState, now), lastUpdated = clockingState.lastUpdated, onOpen = { navigator.open(ClockingRoute) })
         if (hasWarehouse && shortcuts.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 GroupLabel(text = stringResource(R.string.home_shortcuts))
@@ -213,7 +215,7 @@ private fun HomeHeader() {
 }
 
 @Composable
-private fun ClockingCard(summary: ClockingSummaryLines?, onOpen: () -> Unit) {
+private fun ClockingCard(summary: ClockingSummaryLines?, lastUpdated: Instant?, onOpen: () -> Unit) {
     val colors = LocalAikuColors.current
     val isClockedIn = summary?.isClockedIn == true
     val (iconBackground, iconTint) = if (isClockedIn) colors.successSoft to colors.success else colors.background to colors.textTertiary
@@ -238,6 +240,9 @@ private fun ClockingCard(summary: ClockingSummaryLines?, onOpen: () -> Unit) {
             } else {
                 Text(text = summary.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.text)
                 Text(text = summary.subtitle, fontSize = 13.sp, color = colors.textTertiary)
+                if (lastUpdated != null) {
+                    Text(text = lastUpdatedLabel(lastUpdated), fontSize = 12.sp, color = colors.textTertiary)
+                }
             }
         }
         Box(

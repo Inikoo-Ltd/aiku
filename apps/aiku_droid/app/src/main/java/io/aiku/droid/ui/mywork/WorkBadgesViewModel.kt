@@ -6,6 +6,8 @@ import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.InboxApi
 import io.aiku.droid.data.api.MyWorkApi
 import io.aiku.droid.data.api.WorkBadges
+import io.aiku.droid.data.cache.CachedScreens
+import io.aiku.droid.data.cache.ScreenCache
 import io.aiku.droid.data.session.SessionRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +22,7 @@ class WorkBadgesViewModel(
     private val api: MyWorkApi,
     private val sessions: SessionRepository,
     private val inbox: InboxApi,
+    private val cache: ScreenCache,
 ) : ViewModel(), WorkBadgesController {
 
     private val mutableBadges = MutableStateFlow(WorkBadges())
@@ -27,6 +30,7 @@ class WorkBadgesViewModel(
 
     private var shown: ShownWarehouse? = null
     private var refreshJob: Job? = null
+    private var hasWarehouseBadges = false
 
     init {
         viewModelScope.launch {
@@ -70,8 +74,17 @@ class WorkBadgesViewModel(
     }
 
     private suspend fun refreshWarehouse(token: String, warehouseId: Long) {
+        if (!hasWarehouseBadges) {
+            cache.read(warehouseId, CachedScreens.workBadges)?.let { cached ->
+                mutableBadges.value = cached.value
+                hasWarehouseBadges = true
+            }
+        }
         when (val result = api.badges(token, warehouseId)) {
-            is GoodsOutResult.Loaded -> mutableBadges.value = result.value
+            is GoodsOutResult.Loaded -> {
+                mutableBadges.value = result.value
+                hasWarehouseBadges = true
+            }
             GoodsOutResult.Unreachable, is GoodsOutResult.ServerError -> Unit
             else -> mutableBadges.value = WorkBadges()
         }
@@ -87,6 +100,7 @@ class WorkBadgesViewModel(
 
     private fun clear() {
         refreshJob?.cancel()
+        hasWarehouseBadges = false
         mutableBadges.value = WorkBadges()
     }
 

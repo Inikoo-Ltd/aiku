@@ -96,7 +96,7 @@ internal fun ClockingErrorScreen(error: ClockingErrorKind, message: String?, sca
     var showWorkingHours by remember { mutableStateOf(false) }
     val backToClocking = { navigator.switchSection(ClockingRoute) }
     val openCameraWithoutLocation = {
-        if (state.status?.hasShifts == true) {
+        if (state.actionableStatus?.hasShifts == true) {
             showWorkingHours = true
         } else {
             clocking.prepareScan(ClockingScanSetup())

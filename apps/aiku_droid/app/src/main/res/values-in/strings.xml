@@ -44,6 +44,7 @@
     <string name="app_update_required_title">Pembaruan diperlukan</string>
     <string name="app_version_value">%1$s (%2$d)</string>
     <string name="back_to_sign_in">Kembali ke halaman masuk</string>
+    <string name="cache_last_updated">Terakhir diperbarui %1$s</string>
     <string name="clocking_adjustment_both">Keduanya</string>
     <string name="clocking_adjustment_date">Tanggal</string>
     <string name="clocking_adjustment_missing">Absensi yang terlewat</string>

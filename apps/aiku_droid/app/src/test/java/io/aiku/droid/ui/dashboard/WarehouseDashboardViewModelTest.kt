@@ -6,6 +6,7 @@ import io.aiku.droid.data.api.DispatchedToday
 import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.WarehouseDashboard
 import io.aiku.droid.data.api.WarehouseDashboardApi
+import io.aiku.droid.data.cache.testScreenCache
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.inventory.FakeSessions
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +42,7 @@ class WarehouseDashboardViewModelTest {
     @Test
     fun `opening loads this warehouse's figures and keeps the blocks the user has no right to as null`() {
         api.result = GoodsOutResult.Loaded(WarehouseDashboard(goodsOut = goodsOut, inventory = inventory))
-        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = 4)
+        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = 4, cache = testScreenCache())
 
         assertTrue(dashboard.state.value.isLoading)
 
@@ -57,7 +58,7 @@ class WarehouseDashboardViewModelTest {
     @Test
     fun `pull to refresh reloads and replaces the figures`() {
         api.result = GoodsOutResult.Loaded(WarehouseDashboard(goodsOut = goodsOut))
-        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = 4)
+        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = 4, cache = testScreenCache())
         dashboard.onStart()
 
         api.result = GoodsOutResult.Loaded(WarehouseDashboard(goodsOut = goodsOut.copy(unassigned = 40)))
@@ -70,7 +71,7 @@ class WarehouseDashboardViewModelTest {
 
     @Test
     fun `no block at all leaves an empty dashboard`() {
-        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = 4)
+        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = 4, cache = testScreenCache())
 
         dashboard.onStart()
 
@@ -81,7 +82,7 @@ class WarehouseDashboardViewModelTest {
     @Test
     fun `a failed load shows the problem and retry clears it`() {
         api.result = GoodsOutResult.Unreachable
-        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = 4)
+        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = 4, cache = testScreenCache())
 
         dashboard.onStart()
 
@@ -98,7 +99,7 @@ class WarehouseDashboardViewModelTest {
     @Test
     fun `a failed refresh keeps the figures already shown`() {
         api.result = GoodsOutResult.Loaded(WarehouseDashboard(goodsOut = goodsOut))
-        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = 4)
+        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = 4, cache = testScreenCache())
         dashboard.onStart()
 
         api.result = GoodsOutResult.ServerError(500)
@@ -111,7 +112,7 @@ class WarehouseDashboardViewModelTest {
 
     @Test
     fun `without a warehouse nothing is asked and no block shows`() {
-        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = null)
+        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = null, cache = testScreenCache())
 
         dashboard.onStart()
 
@@ -122,7 +123,7 @@ class WarehouseDashboardViewModelTest {
     @Test
     fun `an expired session asks to sign in again`() {
         api.result = GoodsOutResult.SessionExpired
-        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = 4)
+        val dashboard = WarehouseDashboardViewModel(api, FakeSessions(), warehouseId = 4, cache = testScreenCache())
 
         dashboard.onStart()
 

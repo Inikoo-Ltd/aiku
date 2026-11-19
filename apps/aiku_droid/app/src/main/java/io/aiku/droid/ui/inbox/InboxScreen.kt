@@ -60,6 +60,7 @@ import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.ChipShape
 import io.aiku.droid.ui.components.EmptyState
 import io.aiku.droid.ui.components.GroupLabel
+import io.aiku.droid.ui.components.LastUpdatedNote
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.RowDivider
@@ -167,6 +168,7 @@ private fun InboxContent(state: InboxUiState, actions: InboxActions) {
             state.firstPageProblem?.let { problem ->
                 GoodsOutLoadProblem(problem = problem, title = stringResource(R.string.inbox_failed), onRetry = actions.onRetry)
             }
+            state.lastUpdated?.let { updatedAt -> LastUpdatedNote(updatedAt = updatedAt) }
             when {
                 state.notifications.isNotEmpty() -> {
                     MarkAllReadLink(onClick = actions.onMarkAllRead)
