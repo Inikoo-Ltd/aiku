@@ -387,13 +387,14 @@ class UpdateFaireOrder extends OrgAction
 
     /**
      * Faire only adds the VAT on shipping once the shipment is pushed at dispatch, after the last full
-     * sync, so dispatched orders kept the items-only tax (HELP-3694). Only that exact case is fixed:
-     * any other difference from Faire on an issued invoice is left alone, never rewritten.
+     * sync, so dispatched orders kept the items-only tax (HELP-3694). Only that case, and a shipping
+     * just mirrored from Faire (HELP-4826), take Faire's tax: any other difference on an issued
+     * invoice is left alone, never rewritten.
      */
     public function syncFaireTax(Order $order): void
     {
         $orderFaireData = $order->shop->getFaireOrder($order->external_id);
-        $this->syncFaireShipping($order, $orderFaireData);
+        $isShippingMirrored = $this->syncFaireShipping($order, $orderFaireData);
 
         $taxes = collect(Arr::get($orderFaireData, 'payout_costs.taxes', []));
         if ($taxes->isEmpty()) {
@@ -406,7 +407,7 @@ class UpdateFaireOrder extends OrgAction
         $faireTax     = round($this->getFaireTaxAmount($orderFaireData, $order->shop) + $damagedTax, 2);
 
         $order->refresh();
-        if ($faireTax - $itemsTax < 0.01 || abs((float)$order->tax_amount - $itemsTax) >= 0.01) {
+        if (!$isShippingMirrored && ($faireTax - $itemsTax < 0.01 || abs((float)$order->tax_amount - $itemsTax) >= 0.01)) {
             return;
         }
 
@@ -417,7 +418,7 @@ class UpdateFaireOrder extends OrgAction
         ]);
 
         $invoice = $this->getInvoiceToDiscount($order);
-        if ($invoice && abs((float)$invoice->tax_amount - $itemsTax) < 0.01) {
+        if ($invoice && ($isShippingMirrored || abs((float)$invoice->tax_amount - $itemsTax) < 0.01)) {
             $invoice->update([
                 'tax_amount'   => $faireTax,
                 'total_amount' => $invoice->net_amount + $faireTax,
@@ -428,21 +429,26 @@ class UpdateFaireOrder extends OrgAction
     /**
      * Faire pays shipping only on orders we ship ourselves: staff enter the cost on Faire, which
      * reimburses it in the payout as shipments.maker_cost. Nobody types it in Aiku (HELP-3906).
-     * Once Faire has a shipment we sent on our own, its cost is mirrored onto the order and the
-     * issued invoice, also when staff correct or clear it on Faire later (HELP-4826). Without one,
-     * as on a Faire label where the shipping is the retailer's, it only fills an order that has none.
-     * The tax stays whatever Faire stated.
+     * When every shipment on Faire is one we sent on our own, its cost is mirrored onto the order
+     * and an issued invoice without refunds, also when staff correct or clear it on Faire later
+     * (HELP-4826). With a Faire label among them the shipping is the retailer's, typed by staff,
+     * so it only fills an order that has none. The tax stays whatever Faire stated.
      */
-    public function syncFaireShipping(Order $order, array $orderFaireData): void
+    public function syncFaireShipping(Order $order, array $orderFaireData): bool
     {
-        $faireShipping  = $this->getFaireShippingAmount($orderFaireData, $order->shop);
-        $orderShipping  = (float)$order->shipping_amount;
-        $isShippedByUs  = collect(Arr::get($orderFaireData, 'shipments', []))->contains('shipping_type', 'SHIP_ON_YOUR_OWN');
-        if (abs($faireShipping - $orderShipping) < 0.01 || (!$isShippedByUs && ($faireShipping < 0.01 || $orderShipping >= 0.01))) {
-            return;
+        $faireShipping = $this->getFaireShippingAmount($orderFaireData, $order->shop);
+        $orderShipping = (float)$order->shipping_amount;
+        $shipments     = collect(Arr::get($orderFaireData, 'shipments', []));
+        $isShippedByUs = $shipments->isNotEmpty() && $shipments->every(fn (array $shipment) => Arr::get($shipment, 'shipping_type') === 'SHIP_ON_YOUR_OWN');
+        $invoice       = $this->getInvoiceToDiscount($order);
+        $isMirrored    = $isShippedByUs && !$invoice?->refunds()->exists();
+        if (abs($faireShipping - $orderShipping) < 0.01 || (!$isMirrored && ($faireShipping < 0.01 || $orderShipping >= 0.01))) {
+            return false;
         }
 
         $this->setFaireShipping($order, $faireShipping);
+
+        return true;
     }
 
     public function setFaireShipping(Order $order, float $faireShipping): void

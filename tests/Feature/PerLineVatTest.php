@@ -660,11 +660,14 @@ test('the shipping faire reimburses fills an order with none, and once we shippe
     expect((float)$order->refresh()->shipping_amount)->toBe(12.34)
         ->and($invoice->invoiceTransactions()->where('model_type', 'ShippingZone')->count())->toBe(1);
 
-    $shippedByUs = fn (int $amountMinor) => ['shipments' => [
-        ['shipping_type' => 'SHIP_WITH_FAIRE', 'maker_cost' => ['amount_minor' => 0]],
-        ['shipping_type' => 'SHIP_ON_YOUR_OWN', 'maker_cost' => ['amount_minor' => $amountMinor]],
-    ]];
+    $shippedByUs     = fn (int $amountMinor) => ['shipments' => [['shipping_type' => 'SHIP_ON_YOUR_OWN', 'maker_cost' => ['amount_minor' => $amountMinor]]]];
     $invoiceShipping = fn () => (float)$invoice->invoiceTransactions()->where('model_type', 'ShippingZone')->sum('net_amount');
+
+    $action->syncFaireShipping($order, ['shipments' => [
+        ['shipping_type' => 'SHIP_WITH_FAIRE', 'maker_cost' => ['amount_minor' => 0]],
+        ['shipping_type' => 'SHIP_ON_YOUR_OWN', 'maker_cost' => ['amount_minor' => 0]],
+    ]]);
+    expect((float)$order->refresh()->shipping_amount)->toBe(12.34);
 
     $action->syncFaireShipping($order, $shippedByUs(2000));
     expect((float)$order->refresh()->shipping_amount)->toBe(20.0)
@@ -680,6 +683,22 @@ test('the shipping faire reimburses fills an order with none, and once we shippe
         ->and($invoiceShipping())->toBe(0.0)
         ->and(round((float)$invoice->refresh()->net_amount, 2))->toBe(round($invoiceNet, 2))
         ->and((float)$invoice->tax_amount)->toBe($invoiceTax);
+
+    $currency = $order->shop->currency->code;
+    $order->updateQuietly(['external_id' => 'bo_help4826']);
+    Http::fake(['*faire.com/*' => Http::response([
+        ...$shippedByUs(500),
+        'payout_costs' => ['taxes' => [
+            ['taxable_item_type' => 'ORDER_ITEM', 'tax_type' => 'VAT', 'value' => ['amount_minor' => (int)round($orderTax * 100), 'currency' => $currency]],
+            ['taxable_item_type' => 'SHIPPING', 'tax_type' => 'VAT', 'value' => ['amount_minor' => 100, 'currency' => $currency]],
+        ]],
+    ])]);
+    $action->syncFaireTax($order->refresh());
+    expect((float)$order->refresh()->shipping_amount)->toBe(5.0)
+        ->and(round((float)$order->tax_amount, 2))->toBe(round($orderTax + 1, 2))
+        ->and(round((float)$order->total_amount, 2))->toBe(round((float)$order->net_amount + $orderTax + 1, 2))
+        ->and(round((float)$invoice->refresh()->tax_amount, 2))->toBe(round($invoiceTax + 1, 2))
+        ->and($invoiceShipping())->toBe(5.0);
 
     $invoice->delete();
 });
