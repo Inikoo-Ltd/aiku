@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\DepositRequest\GetAgentMoneyRequestLines;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
@@ -56,7 +57,8 @@ class CreateAgentMoneyRequest extends OrgAction
         ], $due['orders']);
         $due['shipments'] = array_map(fn (array $shipment) => [
             ...$shipment,
-            'route' => ['name' => 'grp.org.agent.stock_deliveries.show', 'parameters' => ['organisation' => $organisation->slug, 'stockDelivery' => $shipment['stock_delivery_slug']]],
+            'state_icon' => $shipment['state'] ? StockDeliveryStateEnum::stateIcon()[$shipment['state']] ?? null : null,
+            'route'      => ['name' => 'grp.org.agent.stock_deliveries.show', 'parameters' => ['organisation' => $organisation->slug, 'stockDelivery' => $shipment['stock_delivery_slug']]],
         ], $due['shipments']);
         $due['expenses'] = array_map(fn (array $expense) => [
             ...$expense,

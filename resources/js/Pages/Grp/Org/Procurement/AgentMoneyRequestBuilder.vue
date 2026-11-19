@@ -15,9 +15,10 @@ import Select from "primevue/select"
 import Textarea from "primevue/textarea"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd } from "@fal"
+import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd, faCheckDouble } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import Icon from "@/Components/Icon.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import AgentMoneyRequestExpenseDialog from "@/Components/Procurement/AgentMoneyRequestExpenseDialog.vue"
@@ -27,7 +28,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd)
+library.add(faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd, faCheckDouble)
 
 interface DueOrder {
 	purchase_order_id: number
@@ -53,6 +54,8 @@ interface DueOrder {
 interface DueShipment {
 	stock_delivery_id: number
 	reference: string
+	state: string | null
+	state_icon: { tooltip: string; icon: string; class: string } | null
 	route: routeType
 	charges: { type: string; label: string; amount: number }[]
 	total: number
@@ -115,8 +118,6 @@ interface Line {
 	due: number
 }
 
-const isBalanceAlreadyPaid = (order: DueOrder | null) => !!order && (!order.is_open || order.paid_to_supplier > order.requested + order.advance_due + 0.005)
-
 const emptyLine = { purchase_order_id: null, stock_delivery_id: null, agent_payment_id: null, order: null, shipment: null, expense: null }
 
 const orderLine = (kind: "advance" | "balance", order: DueOrder, due: number): Line => ({
@@ -159,7 +160,7 @@ watch(
 	lines,
 	(current) => {
 		current.forEach((line) => {
-			if (!(line.key in ticked)) ticked[line.key] = line.kind !== "balance" || isBalanceAlreadyPaid(line.order)
+			if (!(line.key in ticked)) ticked[line.key] = false
 			const amount = amounts[line.key]
 			const untouched = amount === undefined || amount === null || amount === offeredDue[line.key]
 			amounts[line.key] = untouched ? line.due : Math.min(amount, line.due)
@@ -205,6 +206,9 @@ const tickedCount = computed(() => visibleLines.value.filter((line) => ticked[li
 const allTicked = computed(() => visibleLines.value.length > 0 && tickedCount.value === visibleLines.value.length)
 const someTicked = computed(() => tickedCount.value > 0 && !allTicked.value)
 const tickAll = (value: boolean) => visibleLines.value.forEach((line) => (ticked[line.key] = value))
+const depositLines = computed(() => lines.value.filter((line) => line.kind === "advance"))
+const allDepositsTicked = computed(() => depositLines.value.length > 0 && depositLines.value.every((line) => ticked[line.key]))
+const tickAllDeposits = () => depositLines.value.forEach((line) => (ticked[line.key] = true))
 
 const chosen = computed(() => lines.value.filter((line) => ticked[line.key] && Number(amounts[line.key]) > 0))
 const subtotal = computed(() => chosen.value.reduce((sum, line) => sum + Number(amounts[line.key]), 0))
@@ -337,6 +341,15 @@ const send = () => {
 			<div class="flex flex-wrap items-center gap-3">
 				<SegmentedToggle v-model="lineFilter" :options="lineFilterOptions" :ariaLabel="ctrans('Show the lines for')" />
 				<span class="text-sm text-gray-600">{{ ctrans(":count of :total lines selected", { count: String(chosen.length), total: String(lines.length) }) }}</span>
+				<Button
+					v-if="depositLines.length"
+					type="tertiary"
+					size="xs"
+					icon="fal fa-check-double"
+					:label="ctrans('Select all deposits (:count)', { count: String(depositLines.length) })"
+					:disabled="allDepositsTicked"
+					@click="tickAllDeposits"
+				/>
 			</div>
 			<span class="flex items-baseline gap-2">
 				<span class="text-xs uppercase tracking-wide text-gray-500">{{ ctrans("To ask for") }}</span>
@@ -411,6 +424,10 @@ const send = () => {
 								<span class="flex items-center gap-1">
 									<FontAwesomeIcon v-tooltip="ctrans('Shipment')" icon="fal fa-shipping-fast" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
 									<Link :href="route(line.shipment.route.name, line.shipment.route.parameters)" class="whitespace-nowrap text-sm font-semibold text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline">{{ line.shipment.reference }}</Link>
+									<span v-if="line.shipment.state_icon" class="ml-1 inline-flex items-center gap-1 whitespace-nowrap rounded border border-gray-200 px-1.5 text-gray-700">
+										<Icon :data="line.shipment.state_icon" />
+										{{ line.shipment.state_icon.tooltip }}
+									</span>
 								</span>
 								<span class="ml-auto shrink-0 whitespace-nowrap rounded border border-gray-200 px-1.5 font-medium text-gray-700">{{ ctrans("Shipment costs") }}</span>
 							</div>
