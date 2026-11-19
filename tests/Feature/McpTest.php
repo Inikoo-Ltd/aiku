@@ -3026,6 +3026,28 @@ describe('customer service tools', function () {
             ->assertSee($order->reference)
             ->assertSee($this->product->code);
 
+        App\Models\Chat\ChatMessage::create([
+            'chat_session_id' => $this->chat->id,
+            'message_type'    => App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT,
+            'sender_type'     => App\Enums\CRM\Livechat\ChatSenderTypeEnum::AGENT,
+            'message_text'    => str_repeat('a', 100),
+        ]);
+        App\Actions\Chat\ChatSession\GetChatShopFacts::mock()->shouldReceive('shopFacts')->andReturn([['title' => 'Currency', 'body' => 'Prices are in GBP']]);
+        Illuminate\Support\Facades\Cache::flush();
+        $shopType = $this->shop->type;
+        $this->shop->update(['type' => App\Enums\Catalogue\Shop\ShopTypeEnum::B2B]);
+        $opened = json_decode((string) app(App\Mcp\Tools\CustomerServiceChatTool::class)->handle(new Laravel\Mcp\Request(['chat_id' => $this->chat->ulid]))->content(), true);
+        $this->shop->update(['type' => $shopType]);
+        expect($opened['house_rules']['typical_staff_reply_chars'])->toBe(100)
+            ->and($opened['house_rules']['shop_facts'])->toBe([['title' => 'Currency', 'body' => 'Prices are in GBP']])
+            ->and($opened['how_to_answer'])->toContain('at most 300 characters');
+
+        $this->mock(App\Actions\CRM\ShoppingAssistant\GetOrderDispatchOutlook::class)->shouldReceive('handle')
+            ->andReturn(['kind' => 'estimate', 'from' => Carbon\Carbon::parse('2026-11-23'), 'to' => Carbon\Carbon::parse('2026-11-25'), 'delivery_note_id' => 1], ['kind' => 'waiting_decision', 'items' => ['Candle holder'], 'delivery_note_id' => 1]);
+        $outlook = fn () => json_decode((string) app(App\Mcp\Tools\CustomerServiceChatTool::class)->handle(new Laravel\Mcp\Request(['chat_id' => $this->chat->ulid, 'order' => $order->reference]))->content(), true)['order']['dispatch_outlook'];
+        expect($outlook())->toMatchArray(['kind' => 'estimate', 'from' => '2026-11-23', 'to' => '2026-11-25'])
+            ->and($outlook())->toMatchArray(['kind' => 'waiting_decision', 'items' => ['Candle holder']])->not->toHaveKey('delivery_note_id');
+
         AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\CustomerServiceChatTool::class, ['chat_id' => '01NOTACHATID0000000000000'])
             ->assertHasErrors(['No chat with that ID']);
 
@@ -4297,7 +4319,30 @@ describe('customer service tools', function () {
         expect($draft->facts['facts_used'])->toBe([$fact->id]);
 
         $this->actingAs($this->user);
+        $agentReply = function (string $text) {
+            $this->travel(1)->seconds();
+            $reply = App\Models\Chat\ChatMessage::create([
+                'chat_session_id' => $this->chat->id,
+                'message_type'    => App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT,
+                'sender_type'     => App\Enums\CRM\Livechat\ChatSenderTypeEnum::AGENT,
+                'sender_id'       => App\Models\Chat\ChatAgent::where('user_id', $this->user->id)->value('id'),
+                'message_text'    => $text,
+            ]);
+            App\Actions\Chat\ChatSession\SettleChatAiDraft::run($this->chat, $reply);
+        };
+
         App\Actions\Chat\ChatSession\HandleChatAiDraft::make()->discard($draft);
+        expect($fact->refresh()->status)->toBe('active');
+        $agentReply('Hi, orders under £3 carry a £1 charge.');
+        expect($fact->refresh()->status)->toBe('active')
+            ->and((float) $draft->refresh()->words_kept)->toBe(1.0)
+            ->and($draft->status)->toBe(App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED);
+
+        $this->travel(1)->seconds();
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Orders under £3 carry a £1 charge, as before.', 'facts_used' => [$fact->id]])->assertOk();
+        $draft = App\Actions\Chat\ChatSession\DraftChatReply::pendingDraft($this->chat);
+        App\Actions\Chat\ChatSession\HandleChatAiDraft::make()->discard($draft);
+        $agentReply('Let me check with the warehouse and come back to you.');
 
         expect($fact->refresh()->status)->toBe('disputed')
             ->and($fact->evidence['disputes'][0]['draft_id'])->toBe($draft->id);

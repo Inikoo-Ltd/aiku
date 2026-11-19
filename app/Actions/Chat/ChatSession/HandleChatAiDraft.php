@@ -31,8 +31,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * What the inbox does with a draft: read the one waiting, take it into the composer, throw it
- * away, or give it stars. Throwing it away, or rating it a wrong fact, stops trusting the verified
- * facts it was built on. Staff agents on the conversation only: the draft carries a customer's order details
+ * away, or give it stars. Rating it a wrong fact stops trusting the verified facts it was built on;
+ * throwing it away only does once the agent's reply says something else (SettleChatAiDraft), since
+ * staff often discard to clear the box and then type the same answer. Staff agents on the conversation only: the draft carries a customer's order details
  * and must never reach the widget, which reads the same session endpoints without logging in.
  */
 class HandleChatAiDraft
@@ -73,7 +74,6 @@ class HandleChatAiDraft
                 'decided_by_user_id' => $userId,
                 'decided_at'         => now(),
             ]);
-            RememberVerifiedChatFact::disputeFactsOf($chatAiDraft, 'Staff discarded a draft built on it', $userId);
             MeasureChatAiDraft::run($chatAiDraft);
         });
     }

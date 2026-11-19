@@ -117,7 +117,7 @@ class ChatSession extends Model implements Auditable
 
     public const int AI_HELD_UNANSWERED_MINUTES = 30;
 
-    public const int AI_OPENED_UNANSWERED_MINUTES = 120;
+    public const int AI_OPENED_UNANSWERED_MINUTES = 30;
 
     public const int AI_OPENED_UNANSWERED_MAX_HOURS = 48;
 

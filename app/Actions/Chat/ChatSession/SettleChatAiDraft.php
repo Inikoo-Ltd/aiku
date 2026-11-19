@@ -35,6 +35,7 @@ class SettleChatAiDraft
     public function handle(ChatSession|MetaChatSession $chatSession, ChatMessage|MetaChatMessage $reply): ?ChatAiDraft
     {
         ClassifyChatTurn::recordReply($chatSession, $reply);
+        self::settleDiscarded($chatSession, $reply);
 
         $pending = DraftChatReply::pendingDraft($chatSession);
 
@@ -82,6 +83,39 @@ class SettleChatAiDraft
     }
 
     /**
+     * Drafts discarded since the agent last wrote, now that the reply shows why: a reply that
+     * says what the draft said means the box was only cleared to type, so its facts stay trusted;
+     * a different reply disputes them. The status stays discarded, as staff saw it.
+     */
+    private static function settleDiscarded(ChatSession|MetaChatSession $chatSession, ChatMessage|MetaChatMessage $reply): void
+    {
+        $lastAgentReplyAt = self::lastAgentReplyAt($chatSession, $reply);
+        $replyText        = (string) $reply->message_text;
+
+        ChatAiDraft::where($chatSession instanceof ChatSession ? 'chat_session_id' : 'meta_chat_session_id', $chatSession->id)
+            ->where('status', ChatAiDraftStatusEnum::DISCARDED)
+            ->whereNull('words_kept')
+            ->when($lastAgentReplyAt, fn ($query) => $query->where('decided_at', '>', $lastAgentReplyAt))
+            ->get()
+            ->each(function (ChatAiDraft $discarded) use ($replyText) {
+                $kept = self::draftWordsKept($discarded->text, $replyText);
+                $discarded->update(['words_kept' => round($kept, 3)]);
+
+                if ($kept < self::REWORDED) {
+                    RememberVerifiedChatFact::disputeFactsOf($discarded, 'Staff discarded a draft built on it and replied differently', $discarded->decided_by_user_id);
+                }
+            });
+    }
+
+    private static function lastAgentReplyAt(ChatSession|MetaChatSession $chatSession, ChatMessage|MetaChatMessage $reply): ?string
+    {
+        return $chatSession->messages()
+            ->where('sender_type', ChatSenderTypeEnum::AGENT)
+            ->where('id', '<', $reply->id)
+            ->max('created_at');
+    }
+
+    /**
      * Drafts a newer customer message replaced while the agent was still writing: the agent
      * may be sending one of those rather than the one waiting now.
      *
@@ -89,10 +123,7 @@ class SettleChatAiDraft
      */
     private static function replacedSinceLastAgentReply(ChatSession|MetaChatSession $chatSession, ChatMessage|MetaChatMessage $reply, ChatAiDraft $pending): Collection
     {
-        $lastAgentReplyAt = $chatSession->messages()
-            ->where('sender_type', ChatSenderTypeEnum::AGENT)
-            ->where('id', '<', $reply->id)
-            ->max('created_at');
+        $lastAgentReplyAt = self::lastAgentReplyAt($chatSession, $reply);
 
         return ChatAiDraft::where($chatSession instanceof ChatSession ? 'chat_session_id' : 'meta_chat_session_id', $chatSession->id)
             ->where('status', ChatAiDraftStatusEnum::SUPERSEDED)
