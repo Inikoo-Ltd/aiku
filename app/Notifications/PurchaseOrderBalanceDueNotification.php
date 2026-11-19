@@ -12,6 +12,7 @@ use App\Notifications\Concerns\SendsMailThroughSes;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\HtmlString;
 
 class PurchaseOrderBalanceDueNotification extends Notification
 {
@@ -59,9 +60,24 @@ class PurchaseOrderBalanceDueNotification extends Notification
     {
         return $this->newMailMessage()
             ->subject($this->title())
-            ->line($this->title())
+            ->line($this->titleWithOrderLink())
             ->line($this->body())
-            ->action(__('Open the order'), route($this->route()['name'], $this->route()['parameters']));
+            ->action(__('Open the order'), $this->orderUrl());
+    }
+
+    private function titleWithOrderLink(): HtmlString
+    {
+        $reference = e($this->purchaseOrder->reference);
+        $link      = '<a href="'.e($this->orderUrl()).'" style="white-space: nowrap;">'.$reference.'</a>';
+        $title     = e($this->title());
+        $position  = strpos($title, $reference);
+
+        return new HtmlString($position === false ? $title : substr_replace($title, $link, $position, strlen($reference)));
+    }
+
+    private function orderUrl(): string
+    {
+        return route($this->route()['name'], $this->route()['parameters']);
     }
 
     public function route(): array
