@@ -10,7 +10,7 @@ struct FieldLabel: View {
     }
 
     var body: some View {
-        Text(text)
+        Text(L10n.text(text))
             .font(.aiku(14, .medium))
             .foregroundStyle(isDisabled ? AikuColor.text4 : AikuColor.text2)
     }
@@ -26,7 +26,7 @@ struct FieldError: View {
     var body: some View {
         HStack(spacing: 6) {
             AppIcon.error.image.font(.system(size: 14))
-            Text(message).font(.aiku(13))
+            Text(L10n.text(message)).font(.aiku(13))
         }
         .foregroundStyle(AikuColor.danger)
         .accessibilityElement(children: .combine)
@@ -279,11 +279,11 @@ struct RadioCard<Trailing: View>: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
+                    Text(L10n.text(title))
                         .font(.aiku(15, .semibold))
                         .foregroundStyle(AikuColor.text)
                     if let subtitle {
-                        Text(subtitle)
+                        Text(L10n.text(subtitle))
                             .font(.aiku(12))
                             .foregroundStyle(AikuColor.text3)
                     }
@@ -338,11 +338,11 @@ struct CheckboxRow: View {
                     .font(.system(size: 20))
                     .foregroundStyle(isOn ? AikuColor.primary : AikuColor.borderStrong)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
+                    Text(L10n.text(title))
                         .font(.aiku(14))
                         .foregroundStyle(AikuColor.text2)
                     if let subtitle {
-                        Text(subtitle)
+                        Text(L10n.text(subtitle))
                             .font(.aiku(12))
                             .foregroundStyle(AikuColor.text3)
                     }
@@ -372,11 +372,11 @@ struct ToggleRow: View {
     var body: some View {
         Toggle(isOn: $isOn) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(15, .semibold))
                     .foregroundStyle(AikuColor.text)
                 if let subtitle {
-                    Text(subtitle)
+                    Text(L10n.text(subtitle))
                         .font(.aiku(13))
                         .foregroundStyle(AikuColor.text3)
                 }

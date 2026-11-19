@@ -14,11 +14,11 @@ struct ShellMenuRow: View {
             HStack(spacing: 12) {
                 IconTile(icon, tone: iconTone, size: 36, radius: 8)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
+                    Text(L10n.text(title))
                         .font(.aiku(15, .semibold))
                         .foregroundStyle(AikuColor.text)
                     if let subtitle {
-                        Text(subtitle)
+                        Text(L10n.text(subtitle))
                             .font(.aiku(12))
                             .foregroundStyle(subtitleTone?.foreground ?? AikuColor.text3)
                     }
@@ -86,12 +86,12 @@ struct ShellValueRow: View {
 
     private var label: some View {
         HStack(spacing: 12) {
-            Text(title)
+            Text(L10n.text(title))
                 .font(.aiku(15))
                 .foregroundStyle(AikuColor.text)
                 .frame(maxWidth: .infinity, alignment: .leading)
             if let value {
-                Text(value)
+                Text(L10n.text(value))
                     .font(.aiku(14))
                     .foregroundStyle(valueTone?.foreground ?? AikuColor.text3)
                     .lineLimit(1)
@@ -132,13 +132,13 @@ struct ShellGroupHeading: View {
             icon.image
                 .font(.system(size: 14))
                 .accessibilityHidden(true)
-            Text(title.uppercased())
+            Text(L10n.text(title).uppercased(with: LanguageStore.shared.locale))
                 .font(.aiku(12, .bold))
                 .tracking(0.7)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             if let note {
-                Text(note)
+                Text(L10n.text(note))
                     .font(.aiku(11, .semibold))
                     .foregroundStyle(AikuColor.text4)
             }
@@ -164,7 +164,7 @@ struct ShellWarehouseRow: View {
                         .accessibilityHidden(true)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(label)
+                    Text(L10n.text(label))
                         .font(.aiku(12))
                         .foregroundStyle(AikuColor.text3)
                     Text(value)

@@ -52,10 +52,9 @@ struct ShellTests {
         #expect(ShellWarehouseDirectory.confirmTitle(selected: spain, current: current) == "Switch to AW Spain · Main Warehouse")
     }
 
-    @Test func languageFallsBackToEnglishAndOnlyEnglishIsTranslated() {
-        #expect(ShellLanguages.language(id: "xx").id == "en")
-        #expect(ShellLanguages.language(id: "sk").nativeName == "Slovenčina")
-        #expect(ShellLanguages.isTranslated("en"))
-        #expect(!ShellLanguages.isTranslated("es"))
+    @Test func languageListMatchesTheWebAndFallsBackToEnglish() {
+        #expect(AppLanguages.all.count == 23)
+        #expect(AppLanguages.language(id: "xx").id == "en")
+        #expect(AppLanguages.language(id: "sk").nativeName == "Slovenčina")
     }
 }

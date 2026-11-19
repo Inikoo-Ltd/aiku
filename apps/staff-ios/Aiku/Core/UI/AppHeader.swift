@@ -55,12 +55,12 @@ struct HeaderTitleRow: View {
             backButton
             VStack(alignment: .leading, spacing: 0) {
                 if let kicker {
-                    Text(kicker)
+                    Text(L10n.text(kicker))
                         .font(.aiku(12))
                         .foregroundStyle(AikuColor.onNav2)
                         .lineLimit(1)
                 }
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(20, .bold))
                     .foregroundStyle(AikuColor.onNav)
                     .lineLimit(1)
@@ -194,7 +194,7 @@ struct ModuleTabs: View {
     }
 
     var body: some View {
-        let sections = module.sections(includingFulfilment: session.hasFulfilmentAccess)
+        let sections = module.sections(for: session.visibleModules)
         PillTabs(sections.map { PillTab(id: $0.id.rawValue, title: $0.title) }, selectedID: current.rawValue) { tab in
             guard tab.id != current.rawValue, let section = sections.first(where: { $0.id.rawValue == tab.id }) else { return }
             section.show(router, true)

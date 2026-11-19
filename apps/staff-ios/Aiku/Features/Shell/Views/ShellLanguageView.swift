@@ -3,18 +3,18 @@ import SwiftUI
 struct ShellLanguageView: View {
     @Environment(AppRouter.self) private var router
     @Environment(ToastCenter.self) private var toasts
-    @AppStorage(ShellLanguages.storageKey) private var languageID = ShellLanguages.defaultID
     @State private var selectedID: String?
+    private let languages = LanguageStore.shared
 
     var body: some View {
-        let chosen = ShellLanguages.language(id: selectedID ?? languageID)
+        let chosen = AppLanguages.language(id: selectedID ?? languages.languageID)
         AppScreen(title: "Language", kicker: "Profile", spacing: 12) {
             Text("Changes the app language for you only. Product names, customer names and notes stay as they are in Aiku.")
                 .font(.aiku(13))
                 .foregroundStyle(AikuColor.text3)
                 .padding(.horizontal, 4)
             Card {
-                ForEach(Array(ShellLanguages.all.enumerated()), id: \.element.id) { index, language in
+                ForEach(Array(AppLanguages.all.enumerated()), id: \.element.id) { index, language in
                     if index > 0 {
                         RowDivider()
                     }
@@ -29,7 +29,7 @@ struct ShellLanguageView: View {
         }
     }
 
-    private func row(_ language: ShellLanguage, isOn: Bool) -> some View {
+    private func row(_ language: AppLanguage, isOn: Bool) -> some View {
         Button {
             selectedID = language.id
         } label: {
@@ -55,9 +55,9 @@ struct ShellLanguageView: View {
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
-    private func save(_ language: ShellLanguage) {
-        languageID = language.id
-        if ShellLanguages.isTranslated(language.id) {
+    private func save(_ language: AppLanguage) {
+        languages.select(language.id)
+        if languages.isTranslated(language.id) {
             toasts.show("Language set to \(language.nativeName)")
         } else {
             toasts.show("\(language.nativeName) saved · the app stays in English until translations arrive", tone: .info)

@@ -101,8 +101,10 @@ struct SessionTests {
 
     @MainActor
     @Test func fulfilmentSectionsNeedFulfilmentAccess() {
-        let withFulfilment = AppModule.goodsIn.sections(includingFulfilment: true).map(\.id)
-        let without = AppModule.goodsIn.sections(includingFulfilment: false).map(\.id)
+        var withoutFulfilment = ModuleAccess.everything
+        withoutFulfilment.fulfilment = false
+        let withFulfilment: [SectionID] = AppModule.goodsIn.sections(for: .everything).map(\.id)
+        let without: [SectionID] = AppModule.goodsIn.sections(for: withoutFulfilment).map(\.id)
 
         #expect(withFulfilment == [.goodsInBacklog, .stockDeliveries, .fulfilmentDeliveries, .goodsInReturns])
         #expect(without == [.goodsInBacklog, .stockDeliveries, .goodsInReturns])

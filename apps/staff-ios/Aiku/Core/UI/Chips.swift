@@ -21,7 +21,7 @@ struct StatusChip: View {
     }
 
     var body: some View {
-        Text(text)
+        Text(L10n.text(text))
             .font(.aiku(style == .tag ? 11 : 12, .semibold))
             .lineLimit(1)
             .fixedSize()
@@ -61,7 +61,7 @@ struct FilterChip: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
-                Text(title)
+                Text(L10n.text(title))
                 if let count {
                     Text("\(count)").foregroundStyle(isSelected ? AikuColor.ink : AikuColor.text4)
                 }

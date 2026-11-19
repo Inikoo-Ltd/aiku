@@ -6,7 +6,14 @@ struct ShellShortcut: Identifiable, Hashable, Sendable {
     let icon: AppIcon
     var badge: Int?
     let requirement: ShellAccessRequirement
-    let link: ShellLink
+    var link: ShellLink
+
+    func opening(for modules: ModuleAccess) -> ShellShortcut {
+        guard id == "goodsIn", !modules.goodsIn, modules.returns else { return self }
+        var shortcut = self
+        shortcut.link = .goodsIn(.returns)
+        return shortcut
+    }
 }
 
 struct ShellHomeModule: Identifiable, Hashable, Sendable {
@@ -28,14 +35,14 @@ enum ShellHomeContent {
 
     static let shortcuts: [ShellShortcut] = [
         ShellShortcut(id: "goodsOut", title: "Goods out", icon: .goodsOut, requirement: .goodsOut, link: .goodsOut(.deliveryNotes)),
-        ShellShortcut(id: "goodsIn", title: "Goods in", icon: .goodsIn, requirement: .goodsIn, link: .goodsIn(.stockDeliveries)),
+        ShellShortcut(id: "goodsIn", title: "Goods in", icon: .goodsIn, requirement: .goodsInModule, link: .goodsIn(.stockDeliveries)),
         ShellShortcut(id: "inventory", title: "Inventory", icon: .inventory, requirement: .inventory, link: .inventory(.skos)),
         ShellShortcut(id: "locations", title: "Locations", icon: .locations, requirement: .locations, link: .locations(.locations))
     ]
 
     static func shortcuts(for modules: ModuleAccess, goodsOutUnassigned: Int = 0) -> [ShellShortcut] {
         shortcuts.filter { $0.requirement.isMet(by: modules) }.map { shortcut in
-            var shortcut = shortcut
+            var shortcut = shortcut.opening(for: modules)
             if shortcut.id == "goodsOut", goodsOutUnassigned > 0 {
                 shortcut.badge = goodsOutUnassigned
             }

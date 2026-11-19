@@ -159,7 +159,7 @@ struct ListRow<Leading: View, Trailing: View>: View {
             leading
             VStack(alignment: .leading, spacing: 3) {
                 FlowLayout(spacing: 8, lineSpacing: 4) {
-                    Text(title)
+                    Text(L10n.text(title))
                         .font(.aiku(15, .bold))
                         .foregroundStyle(AikuColor.text)
                     ForEach(chips, id: \.self) { chip in
@@ -167,7 +167,7 @@ struct ListRow<Leading: View, Trailing: View>: View {
                     }
                 }
                 if let subtitle {
-                    Text(subtitle)
+                    Text(L10n.text(subtitle))
                         .font(.aiku(13))
                         .foregroundStyle(AikuColor.text3)
                         .multilineTextAlignment(.leading)
@@ -288,7 +288,7 @@ struct StatTile: View {
                 .foregroundStyle(tone?.foreground ?? AikuColor.text)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-            Text(label)
+            Text(L10n.text(label))
                 .font(.aiku(12))
                 .foregroundStyle(AikuColor.text3)
                 .multilineTextAlignment(.leading)
@@ -333,20 +333,20 @@ struct SectionHeading: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(isUppercased ? title.uppercased() : title)
+            Text(isUppercased ? L10n.text(title).uppercased(with: LanguageStore.shared.locale) : L10n.text(title))
                 .font(.aiku(13, .bold))
                 .tracking(isUppercased ? 0.8 : 0)
                 .foregroundStyle(AikuColor.text3)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             if let detail {
-                Text(detail)
+                Text(L10n.text(detail))
                     .font(.aiku(13))
                     .foregroundStyle(AikuColor.text3)
             }
             if let actionTitle, let action {
                 Button(action: action) {
-                    Text(actionTitle)
+                    Text(L10n.text(actionTitle))
                         .font(.aiku(13, .semibold))
                         .foregroundStyle(AikuColor.link)
                 }
@@ -370,7 +370,7 @@ struct KeyValueRow: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(label)
+            Text(L10n.text(label))
                 .font(.aiku(14))
                 .foregroundStyle(AikuColor.text3)
             Spacer(minLength: 8)
@@ -409,7 +409,7 @@ struct ActivityRow: View {
                 .background(tone.background, in: Circle())
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                (Text(title).fontWeight(.semibold) + Text(detail.map { " · \($0)" } ?? ""))
+                (Text(L10n.text(title)).fontWeight(.semibold) + Text(detail.map { " · \($0)" } ?? ""))
                     .font(.aiku(14))
                     .foregroundStyle(AikuColor.text)
                 Text(meta)

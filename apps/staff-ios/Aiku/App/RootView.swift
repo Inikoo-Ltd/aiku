@@ -9,6 +9,7 @@ struct RootView: View {
     @Environment(\.apiClient) private var apiClient
     private let theme = ThemeStore.shared
     private let warehouseStore = WarehouseStore.shared
+    private let languages = LanguageStore.shared
 
     var body: some View {
         Group {
@@ -19,6 +20,7 @@ struct RootView: View {
                 AuthFlowView()
             }
         }
+        .environment(\.locale, languages.locale)
         .preferredColorScheme(theme.mode.colorScheme)
         .onChange(of: colorScheme, initial: true) { _, scheme in
             theme.systemIsDark = scheme == .dark
@@ -66,7 +68,7 @@ struct RootView: View {
     }
 
     private var resolvedModules: ModuleAccess? {
-        ModuleAccess.resolve(warehouse: warehouseStore.selected, permissions: permissionStore.current)
+        ModuleAccess.resolve(warehouse: warehouseStore.selected, isSignedIn: (authStore.userID ?? 0) > 0)
     }
 
     private func refreshPermissionsIfSignedIn() async {

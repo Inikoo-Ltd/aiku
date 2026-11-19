@@ -40,14 +40,14 @@ enum SectionID: String, Sendable {
 struct ModuleSection: Identifiable {
     let id: SectionID
     let title: String
-    let requiresFulfilment: Bool
+    let requirement: ShellAccessRequirement?
     let show: @MainActor (AppRouter, Bool) -> Void
 
     @MainActor
-    init<R: Hashable>(_ id: SectionID, _ title: String, _ route: R, fulfilment: Bool = false) {
+    init<R: Hashable>(_ id: SectionID, _ title: String, _ route: R, requires requirement: ShellAccessRequirement? = nil) {
         self.id = id
         self.title = title
-        requiresFulfilment = fulfilment
+        self.requirement = requirement
         show = { router, replacing in
             if replacing {
                 router.replace(with: route)
@@ -60,14 +60,14 @@ struct ModuleSection: Identifiable {
 
 extension AppModule {
     @MainActor
-    func sections(includingFulfilment: Bool) -> [ModuleSection] {
+    func sections(for modules: ModuleAccess) -> [ModuleSection] {
         let all: [ModuleSection] = switch self {
         case .inventory: [
             ModuleSection(.inventoryDashboard, "Dashboard", InventoryRoute.dashboard),
             ModuleSection(.skoFamilies, "SKO families", InventoryRoute.families),
             ModuleSection(.skos, "SKOs", InventoryRoute.skos),
-            ModuleSection(.storedPallets, "Stored pallets", FulfilmentRoute.pallets, fulfilment: true),
-            ModuleSection(.storedItems, "Stored items", FulfilmentRoute.storedItems, fulfilment: true)
+            ModuleSection(.storedPallets, "Stored pallets", FulfilmentRoute.pallets, requires: .fulfilment),
+            ModuleSection(.storedItems, "Stored items", FulfilmentRoute.storedItems, requires: .fulfilment)
         ]
         case .locations: [
             ModuleSection(.warehouse, "Warehouse", LocationsRoute.warehouse),
@@ -75,20 +75,20 @@ extension AppModule {
             ModuleSection(.locations, "Locations", LocationsRoute.locations)
         ]
         case .goodsIn: [
-            ModuleSection(.goodsInBacklog, "Backlog", GoodsInRoute.backlog),
-            ModuleSection(.stockDeliveries, "Stock deliveries", GoodsInRoute.stockDeliveries),
-            ModuleSection(.fulfilmentDeliveries, "Fulfilment deliveries", FulfilmentRoute.deliveries, fulfilment: true),
-            ModuleSection(.goodsInReturns, "Returns", GoodsInRoute.returns)
+            ModuleSection(.goodsInBacklog, "Backlog", GoodsInRoute.backlog, requires: .goodsIn),
+            ModuleSection(.stockDeliveries, "Stock deliveries", GoodsInRoute.stockDeliveries, requires: .goodsIn),
+            ModuleSection(.fulfilmentDeliveries, "Fulfilment deliveries", FulfilmentRoute.deliveries, requires: .fulfilment),
+            ModuleSection(.goodsInReturns, "Returns", GoodsInRoute.returns, requires: .returns)
         ]
         case .goodsOut: [
             ModuleSection(.goodsOutBacklog, "Backlog", GoodsOutRoute.backlog),
             ModuleSection(.deliveryNotes, "Delivery notes", GoodsOutRoute.deliveryNotes),
             ModuleSection(.pickingSessions, "Picking sessions", DispatchRoute.pickingSessions),
-            ModuleSection(.fulfilmentReturns, "Fulfilment returns", FulfilmentRoute.returns, fulfilment: true),
+            ModuleSection(.fulfilmentReturns, "Fulfilment returns", FulfilmentRoute.returns, requires: .fulfilment),
             ModuleSection(.trolleys, "Trolleys", DispatchRoute.trolleys),
             ModuleSection(.pickedBays, "Picked bays", DispatchRoute.pickedBays)
         ]
         }
-        return all.filter { includingFulfilment || !$0.requiresFulfilment }
+        return all.filter { $0.requirement?.isMet(by: modules) ?? true }
     }
 }

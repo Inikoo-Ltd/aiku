@@ -5,6 +5,8 @@ enum ShellAccessRequirement: Hashable, Sendable {
     case inventory
     case locations
     case goodsIn
+    case returns
+    case goodsInModule
     case goodsOut
     case fulfilment
 
@@ -14,6 +16,8 @@ enum ShellAccessRequirement: Hashable, Sendable {
         case .inventory: modules.inventory
         case .locations: modules.locations
         case .goodsIn: modules.goodsIn
+        case .returns: modules.returns
+        case .goodsInModule: modules.hasGoodsInModule
         case .goodsOut: modules.goodsOut
         case .fulfilment: modules.fulfilment
         }
@@ -80,7 +84,7 @@ enum ShellMenuCatalog {
             ShellMenuItem(id: "goodsIn.backlog", title: "Backlog", icon: .backlog, requirement: .goodsIn, link: .goodsIn(.backlog)),
             ShellMenuItem(id: "goodsIn.stockDeliveries", title: "Stock deliveries", icon: .stockDelivery, badge: .pill(Chip("2 received", .success)), requirement: .goodsIn, link: .goodsIn(.stockDeliveries)),
             ShellMenuItem(id: "goodsIn.fulfilmentDeliveries", title: "Fulfilment deliveries", icon: .stockDelivery, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.deliveries)),
-            ShellMenuItem(id: "goodsIn.returns", title: "Returns", icon: .stockDelivery, requirement: .goodsIn, link: .goodsIn(.returns))
+            ShellMenuItem(id: "goodsIn.returns", title: "Returns", icon: .stockDelivery, requirement: .returns, link: .goodsIn(.returns))
         ]),
         ShellMenuGroup(id: "goodsOut", title: "Goods out", icon: .goodsOut, items: [
             ShellMenuItem(id: "goodsOut.backlog", title: "Backlog", icon: .backlog, requirement: .goodsOut, link: .goodsOut(.backlog)),
