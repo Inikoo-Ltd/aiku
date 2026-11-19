@@ -26737,6 +26737,7 @@
     "This one fails because of a problem on our side, not yours: our team needs to look at it.": "Dieser Artikel scheitert an einem Problem auf unserer Seite, nicht auf Ihrer: Unser Team muss sich das ansehen.",
     "eBay said: \":message\"": "eBay antwortete: \":message\"",
     "In your basket (packs ordered × units in each pack = units):": "In Ihrem Warenkorb (bestellte Packungen × Stück pro Packung = Stück):",
+    "On its way to us: :families.": "Auf dem Weg zu uns: :families.",
     "Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.": "Nach dem aktuellen Arbeitsstand unseres Lagers in dieser Woche schätzen wir, dass Ihre Bestellung am :day versandt wird. Das ist eine Schätzung, kein garantiertes Datum.",
     "Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.": "Nach dem aktuellen Arbeitsstand unseres Lagers in dieser Woche schätzen wir, dass Ihre Bestellung zwischen :from und :to versandt wird. Das ist eine Schätzung, kein garantiertes Datum.",
     "These items of your order could not be picked: :items. Our team needs to know whether to send the order without them or with a replacement.": "Diese Artikel Ihrer Bestellung konnten nicht kommissioniert werden: :items. Unser Team muss wissen, ob die Bestellung ohne sie oder mit einem Ersatz verschickt werden soll.",

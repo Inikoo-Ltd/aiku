@@ -4510,3 +4510,38 @@ test('an order waiting in the warehouse gets an estimated dispatch day range wit
     expect($late['fact'])->toContain(__('Your order has been waiting longer than it should. Our team has been told and will look into it.', [], 'en'));
     Carbon::setTestNow();
 });
+
+test('coming soon lists, by family name only, the new ranges whose stock is on an agreed order, never one made for a customer or one with nothing on its way', function () {
+    $department = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $family     = fn (string $name) => \App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($department, array_merge(\App\Models\Catalogue\ProductCategory::factory()->definition(), ['type' => \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY->value, 'name' => $name]));
+    $suffix     = fake()->lexify('?????');
+    $ranges     = ['onItsWay' => $family('Lotus Lanterns '.$suffix), 'exclusive' => $family('Private Label Soaps '.$suffix), 'stale' => $family('Old Promise Candles '.$suffix)];
+    $customer   = shoppingAssistantCustomer($this->shop);
+    $comingSoon = function (string $key, bool $onOrder) use ($ranges): Product {
+        $orgStock = shoppingAssistantOrgStock($this);
+        $product  = shoppingAssistantProductOn($this, [$orgStock->id]);
+        $product->update(['family_id' => $ranges[$key]->id, 'status' => ProductStatusEnum::COMING_SOON, 'state' => ProductStateEnum::ACTIVE]);
+        if ($onOrder) {
+            shoppingAssistantPurchaseOrderLine($this, $orgStock->id, now()->subDays(5)->toDateTimeString(), null, 'confirmed');
+        }
+
+        return $product;
+    };
+    $comingSoon('onItsWay', true);
+    $exclusive = $comingSoon('exclusive', true);
+    $comingSoon('stale', false);
+    DB::table('product_has_exclusive_customers')->insert(['product_id' => $exclusive->id, 'customer_id' => $customer->id, 'created_at' => now(), 'updated_at' => now()]);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'es']);
+    $result = GetShoppingAssistantTools::make()->execute($conversation->fresh(), 'coming_soon', []);
+
+    expect($result['error'])->toBeNull()
+        ->and($result['content']['ranges'])->toContain('Lotus Lanterns '.$suffix)
+        ->and($result['content']['ranges'])->not->toContain('Private Label Soaps '.$suffix)
+        ->and($result['content']['ranges'])->not->toContain('Old Promise Candles '.$suffix)
+        ->and(json_encode($result['content']))->not->toMatch('/\d/')
+        ->and($result['fact'])->toStartWith(Str::before(__('On its way to us: :families.', [], 'es'), ':families'))
+        ->and($result['fact'])->toContain('Lotus Lanterns '.$suffix)
+        ->and(collect(GetShoppingAssistantTools::make()->definitions())->pluck('function.name'))->toContain('coming_soon');
+});

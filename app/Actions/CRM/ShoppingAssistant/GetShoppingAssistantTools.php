@@ -341,6 +341,11 @@ class GetShoppingAssistantTools
                 ['reference' => ['type' => 'string', 'description' => 'The order, basket or invoice number the customer wrote, exactly as written, also when they call it a product. Leave it out when they gave none.']]
             ),
             $this->tool(
+                'coming_soon',
+                'The new ranges on their way to us that are not in stock yet: families whose new products are on an agreed purchase order or a delivery not yet in our warehouse. Use it when the customer asks in general what is new, coming soon or arriving. The system lists the range names under your reply; it gives no dates, prices or quantities. Returns no products.',
+                []
+            ),
+            $this->tool(
                 'ebay_listing_problems',
                 'Why their products do not list on their own eBay channels, from what eBay answered our uploads: per channel whether it is connected, how many products are listed, drafts, refused or not sent yet, and for the latest refused products the cause and the fix. Call it first, before shop_information, whenever they ask about eBay listings, uploads, errors, drafts, limits or products missing from eBay. The system adds the lines under your reply; you get the causes only. Returns no products.',
                 []
@@ -527,6 +532,7 @@ class GetShoppingAssistantTools
                 'account_details'                => $this->accountDetails($customer, $conversation->language_code),
                 'products_not_in_store'          => $this->productsNotInStore($customer, $conversation->language_code),
                 'ebay_listing_problems'          => GetEbayListingProblems::make()->handle($customer, $conversation->language_code, $conversation),
+                'coming_soon'                    => GetComingSoon::make()->handle($customer, $conversation->language_code, $this->sendsBackInStockEmails($customer)),
                 'order_status'                   => $this->orderStatus($customer, $arguments, $conversation->language_code, $conversation),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'product_documents'              => $this->productDocuments($customer, $arguments, $conversation->language_code),

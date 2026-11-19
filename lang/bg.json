@@ -9485,6 +9485,7 @@
     "This one fails because of a problem on our side, not yours: our team needs to look at it.": "Този продукт не минава заради проблем от наша страна, не от ваша: екипът ни трябва да го провери.",
     "eBay said: \":message\"": "eBay отговори: \":message\"",
     "In your basket (packs ordered × units in each pack = units):": "Във вашата количка (поръчани опаковки × бройки в опаковка = бройки):",
+    "On its way to us: :families.": "На път към нас: :families.",
     "Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.": "Според това как работи складът ни тази седмица, очакваме поръчката ви да бъде изпратена на :day. Това е прогноза, а не гарантирана дата.",
     "Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.": "Според това как работи складът ни тази седмица, очакваме поръчката ви да бъде изпратена между :from и :to. Това е прогноза, а не гарантирана дата.",
     "These items of your order could not be picked: :items. Our team needs to know whether to send the order without them or with a replacement.": "Тези артикули от поръчката ви не можаха да бъдат взети: :items. Екипът ни трябва да знае дали да изпрати поръчката без тях или със заместител.",

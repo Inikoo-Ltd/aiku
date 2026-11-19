@@ -9094,6 +9094,7 @@
     "This one fails because of a problem on our side, not yours: our team needs to look at it.": "Ez a termék a mi oldalunkon lévő hiba miatt nem megy át, nem az Ön hibájából: csapatunknak meg kell néznie.",
     "eBay said: \":message\"": "Az eBay válasza: \":message\"",
     "In your basket (packs ordered × units in each pack = units):": "A kosarában (rendelt csomag × darab csomagonként = darab):",
+    "On its way to us: :families.": "Úton hozzánk: :families.",
     "Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.": "Raktárunk e heti működése alapján úgy becsüljük, hogy rendelése :day napon indul. Ez becslés, nem garantált dátum.",
     "Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.": "Raktárunk e heti működése alapján úgy becsüljük, hogy rendelése :from és :to között indul. Ez becslés, nem garantált dátum.",
     "These items of your order could not be picked: :items. Our team needs to know whether to send the order without them or with a replacement.": "Rendelésének ezeket a tételeit nem sikerült összeszedni: :items. Csapatunknak tudnia kell, hogy nélkülük vagy helyettesítő termékkel küldje-e a rendelést.",

@@ -7160,6 +7160,7 @@
     "This one fails because of a problem on our side, not yours: our team needs to look at it.": "Цей товар не проходить через проблему з нашого боку, не з вашого: наша команда має це перевірити.",
     "eBay said: \":message\"": "eBay відповів: \":message\"",
     "In your basket (packs ordered × units in each pack = units):": "У вашому кошику (замовлені упаковки × штук в упаковці = штук):",
+    "On its way to us: :families.": "Вже на шляху до нас: :families.",
     "Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.": "З огляду на те, як працює наш склад цього тижня, ми оцінюємо, що ваше замовлення буде відправлено :day. Це оцінка, а не гарантована дата.",
     "Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.": "З огляду на те, як працює наш склад цього тижня, ми оцінюємо, що ваше замовлення буде відправлено між :from і :to. Це оцінка, а не гарантована дата.",
     "These items of your order could not be picked: :items. Our team needs to know whether to send the order without them or with a replacement.": "Ці товари з вашого замовлення не вдалося зібрати: :items. Нашій команді потрібно знати, чи надсилати замовлення без них, чи із заміною.",
