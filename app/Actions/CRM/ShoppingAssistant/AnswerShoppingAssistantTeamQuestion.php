@@ -18,6 +18,7 @@ use App\Actions\Tasks\UpdateStaffTask;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Chat\ChatKnowledgeEntry;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\Helpers\Language;
 use App\Models\SysAdmin\User;
@@ -113,9 +114,12 @@ class AnswerShoppingAssistantTeamQuestion
         }
 
         $shop = Shop::find(data_get($task->data, 'shop_id'));
-        if ($keepForEveryone && $shop) {
-            UpdateShopChatKnowledgeNote::make()->handle($shop, null, ['title' => mb_substr(str_replace("\n", ' ', $question), 0, 200), 'body' => mb_substr($answer, 0, 2000)], $user, $this->needsSecondYes($task, $user) ? 'proposed' : 'active');
+        if ($keepForEveryone && $shop && !IsAboutOneCustomer::run($question, $answer)) {
+            $note = UpdateShopChatKnowledgeNote::make()->handle($shop, null, ['title' => self::noteTitle($question), 'body' => mb_substr($answer, 0, 2000)], $user, $this->needsSecondYes($task, $user) ? 'proposed' : 'active');
+            $task->update(['data' => [...$task->data, 'kept_note_id' => $note->id]]);
             dispatch(fn () => HydrateChatKnowledge::make()->embedMissing($shop));
+        } elseif ($keepForEveryone) {
+            $task->update(['data' => [...$task->data, 'kept_for_everyone' => false]]);
         }
 
         if ($task->status->isOpen()) {
@@ -123,6 +127,36 @@ class AnswerShoppingAssistantTeamQuestion
         }
 
         return 'answered';
+    }
+
+    public static function noteTitle(string $question): string
+    {
+        return mb_substr(str_replace("\n", ' ', $question), 0, 200);
+    }
+
+    /**
+     * The shop notes kept from a customer's questions, removed when the customer is anonymised
+     * (INI-390): a note carries the customer's own question as its title. Tasks answered before
+     * kept_note_id was recorded are matched by that title in the task's shop.
+     */
+    public static function deleteKeptNotesOf(int $customerId): void
+    {
+        StaffTask::where('data->kind', StoreShoppingAssistantTeamQuestion::TASK_KIND)
+            ->where('data->customer_id', $customerId)
+            ->get()
+            ->each(function (StaffTask $task) {
+                $noteId = data_get($task->data, 'kept_note_id');
+                $notes  = ChatKnowledgeEntry::where('is_manual', true)->where('kind', 'note');
+
+                if ($noteId) {
+                    $notes->whereKey($noteId)->delete();
+                } elseif (data_get($task->data, 'kept_for_everyone') && data_get($task->data, 'shop_id')) {
+                    $notes->where('shop_id', data_get($task->data, 'shop_id'))
+                        ->where('title', self::noteTitle(StoreShoppingAssistantTeamQuestion::questionText($task)))
+                        ->where('created_at', '>=', $task->created_at)
+                        ->delete();
+                }
+            });
     }
 
     /**

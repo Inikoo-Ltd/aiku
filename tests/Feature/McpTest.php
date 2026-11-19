@@ -4276,6 +4276,9 @@ describe('customer service tools', function () {
         expect(App\Actions\Chat\ChatSession\RememberVerifiedChatFact::facts($this->shop)->first()->status)->toBe('candidate');
         ($this->csTool)(App\Mcp\Tools\CustomerServiceChatTool::class, [])->assertOk()->assertDontSee('below £3 of goods, net');
 
+        App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer::mock()->shouldReceive('handle')->andReturn(true, false);
+        $remember('A £1 small order charge applies below £3 of goods, net', 'select * from charges where id = 7', $otherChat)->assertOk();
+        expect(App\Actions\Chat\ChatSession\RememberVerifiedChatFact::facts($this->shop)->first()->status)->toBe('candidate');
         $remember('A £1 small order charge applies below £3 of goods, net', 'select * from charges where id = 7', $otherChat)->assertOk();
 
         $facts = App\Actions\Chat\ChatSession\RememberVerifiedChatFact::facts($this->shop)->get();
@@ -4284,7 +4287,7 @@ describe('customer service tools', function () {
             ->and($fact->body)->toBe('A £1 small order charge applies below £3 of goods, net')
             ->and($fact->status)->toBe('active')
             ->and($fact->expires_at->isFuture())->toBeTrue()
-            ->and(array_column($fact->evidence['verifications'], 'chat'))->toBe([$this->chat->ulid, $this->chat->ulid, $otherChat->ulid]);
+            ->and(array_column($fact->evidence['verifications'], 'chat'))->toBe([$this->chat->ulid, $this->chat->ulid, $otherChat->ulid, $otherChat->ulid]);
 
         ($this->csTool)(App\Mcp\Tools\CustomerServiceChatTool::class, [])
             ->assertOk()->assertSee('verified_facts')->assertSee('below £3 of goods, net');

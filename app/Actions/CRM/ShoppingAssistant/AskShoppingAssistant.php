@@ -274,6 +274,18 @@ class AskShoppingAssistant
             $turn['flags'][] = 'premium_retry';
         }
 
+        if ($turn['answer'] === null && $turn['found'] && !$this->hasActed($turn)) {
+            $foundIds        = array_keys($turn['found']);
+            $turn['answer']  = [
+                'reply'       => __('Here are some ideas for your shop.', [], $conversation->language_code),
+                'answer_kind' => ShoppingAssistantAnswerKindEnum::PRODUCTS->value,
+                'must_haves'  => array_slice($foundIds, 0, GetShoppingAssistantTools::USUAL_PER_GROUP),
+                'add_ons'     => array_slice($foundIds, GetShoppingAssistantTools::USUAL_PER_GROUP, GetShoppingAssistantTools::MAX_PER_GROUP - GetShoppingAssistantTools::USUAL_PER_GROUP),
+                'follow_ups'  => [],
+            ];
+            $turn['flags'][] = 'answered_from_found';
+        }
+
         $this->followReplyLanguage($conversation, $turn['answer']['language'] ?? null);
 
         $flags          = $turn['flags'];
@@ -355,7 +367,9 @@ class AskShoppingAssistant
             } elseif ($team && in_array($team['status'], ['created', 'already_asked'], true)) {
                 $offerReason = null;
                 $flags[]     = 'asked_team';
-                $reply       = $this->teamSentence($conversation, $team['live']);
+                $reply       = !$askedTeam && $team['status'] === 'already_asked'
+                    ? __('I have added this to your question that is already with our team. Their answer will appear here in this chat, and if you have left by then, we will send it to you.', [], $conversation->language_code)
+                    : $this->teamSentence($conversation, $team['live']);
                 $isFixed     = true;
                 $groups      = ['must_haves' => collect(), 'add_ons' => collect()];
             }
@@ -1114,8 +1128,9 @@ class AskShoppingAssistant
             return null;
         }
 
-        $previous = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->latest('id')->first(['body', 'flags']);
-        if (preg_match('/[?？؟]/u', (string) $previous?->body) || in_array('plain_search', Arr::wrap($previous?->flags), true)) {
+        $previous       = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->latest('id')->first(['body', 'flags', 'tool_calls']);
+        $lookedAtOrders = collect(Arr::wrap($previous?->tool_calls))->contains(fn ($toolCall) => is_array($toolCall) && ($toolCall['name'] ?? null) === 'order_status');
+        if (preg_match('/[?？؟]/u', (string) $previous?->body) || in_array('plain_search', Arr::wrap($previous?->flags), true) || $lookedAtOrders || GetShoppingAssistantTools::ownOrderNamedIn($customer, $query)) {
             return null;
         }
 
@@ -1244,7 +1259,7 @@ class AskShoppingAssistant
     }
 
     /**
-     * A size or percentage written as in a product or family name ("190g", "50mm", "10 ml", "41x31cm", "1.5-2kg", "100%") is taken out of the text first;
+     * A size or percentage written as in a product or family name ("190g", "50mm", "10 ml", "41x31cm", "1.5-2kg", "100%") is taken out of the text first, and so is a capitalised word followed by its number exactly as in a name ("Top 12", INI-389; never "of 3" or "de 6");
      * so is how many products the answer shows ($shownCounts), but only right before a word that starts
      * like a word of a product or family name ("16 soaps", "10 Kerzen"): "6 left", "6 shops", "6 zł" or
      * "6 euros" never pass as a count. Every number left must be one the customer wrote, so "£10" or
@@ -1257,6 +1272,11 @@ class AskShoppingAssistant
         preg_match_all('/\d+(?:[.,]\d+)?(?:\s?[x\-–]\s?\d+(?:[.,]\d+)?)*\s?(?:\p{L}+|%)/iu', $productNames, $sizes);
         foreach (array_unique($sizes[0]) as $size) {
             $text = preg_replace('/(?<![\d.,£€$])'.preg_quote($size, '/').'(?![\p{L}\d])/iu', ' ', $text);
+        }
+
+        preg_match_all('/(?<![\p{L}\d])\p{Lu}\p{L}{2,}\h+\d+(?![\d.,]?\d|\h?(?:\p{L}|%))/u', $productNames, $labels);
+        foreach (array_unique($labels[0]) as $label) {
+            $text = preg_replace('/(?<![\p{L}\d])'.preg_quote($label, '/').'(?![\d.,]?\d)/u', ' ', $text);
         }
 
         preg_match_all(self::SIZE_PATTERN, $productNames, $nameSizes, PREG_SET_ORDER);
@@ -1452,7 +1472,7 @@ class AskShoppingAssistant
             : '- When the customer asks how quickly orders are dispatched, call dispatch_times; when they ask what shipping costs, call shipping_cost. The system adds the sentence with the real figure under your reply: write one short lead-in with no figure, and never promise a delivery date.';
         $leadRule     = $dropshipping
             ? ''
-            : "\n- Whenever the customer says how much they plan or would order, call big_order_lead with that amount; the system decides whether it is big enough for a call. If it is, ask whether they want a call from our team, on the phone number in their account or another one, and when suits them, and call big_order_lead again with their answer. Never say who will call or promise a discount or a time we did not agree.";
+            : "\n- Whenever the customer says how much they plan or would order, call big_order_lead with that amount; the system decides whether it is big enough for a call. When they give a number of pieces rather than a value, never ask them to work out what it comes to: ask in plain words roughly what budget they have in mind for the order. If it is big enough, ask whether they want a call from our team, on the phone number in their account or another one, and when suits them, and call big_order_lead again with their answer. Never say who will call or promise a discount or a time we did not agree.";
         $notBetterPrice   = $dropshipping ? '' : ' or better_price_options';
         $neverBetterPrice = $dropshipping ? '' : ', never better_price_options';
         $priceRule        = $dropshipping
@@ -1468,6 +1488,7 @@ Dropshipping coaching and selling:
 - Many customers are new to dropshipping. Explain general ideas plainly when asked or when it helps them move on: what dropshipping is, choosing a niche and products, writing listings and photos, setting their own selling price above our price so they keep a margin, marketing, customer service, returns from their buyers. Answer these from your own knowledge with answer_kind coaching, two to four short sentences, with no figures (no percentages, prices, earnings or times), and never promise sales, earnings or success.
 - How our service works (our integrations, how to connect or reconnect a store, how products and stock are sent to their store, how orders reach us, payment, our fees, branding, packing, returns to us) is never answered from your own knowledge: call shop_information and answer only from the texts it returns, citing them. If they do not answer it, call ask_our_team. Never invent steps, menus or buttons of our website or of their platform.
 - Use their sales channels above to give the next step: no store connected yet (none, or only manual orders), encourage them to connect the store or marketplace they sell on; a channel with no products, suggest best sellers to add to it; products but no orders yet, give one practical tip to get the first sale (listing titles, photos, price, promotion) and suggest more products; a connection problem, say so plainly and help with shop_information; products added to a channel that are not in the store yet, bring it up only when it bears on what they ask (a product missing from their store, stock that does not update, an order that did not arrive) and call products_not_in_store so they see which ones, never as a remark at the end of another answer. Never say how many products or orders they have. Never explain how to connect a store they already have connected; help them sell more there instead. When they already sell on one platform and it fits the conversation, suggest opening another they do not have yet (for example TikTok Shop, eBay or Shopify) to reach more buyers with the same products, never claiming how much more they will sell.
+- When they ask why products do not list or upload on eBay, about an eBay error, drafts or selling limits, call ebay_listing_problems before shop_information: it reads what eBay answered for their own products and gives the fix for each cause.
 - Be an enthusiastic, honest salesperson: encourage them to start or grow, suggest best sellers and products that suit their niche, and end with a clear next step or a question that keeps them going. Never pressure them and never say something is guaranteed to sell.
 - They sell to the public, so the shops like yours are online sellers like them: "shop" in the rules above means their online store.
 RULES : '';

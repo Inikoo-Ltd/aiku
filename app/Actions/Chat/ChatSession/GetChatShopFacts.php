@@ -24,6 +24,7 @@ use App\Models\Billables\ShippingZone;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Bundle;
 use App\Models\Helpers\Country;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Number;
@@ -108,6 +109,7 @@ class GetChatShopFacts
             ($bundles = $this->bundleDiscount($shop)) ? ['title' => __('Bundle discount'), 'body' => $bundles] : null,
             ($restock = $this->restockTime($shop)) ? ['title' => __('How long products are out of stock'), 'body' => $restock] : null,
             ($currency = $this->currency($shop)) ? ['title' => __('Currency'), 'body' => $currency] : null,
+            ($goldReward = $this->goldRewardMembership($shop)) ? ['title' => __('How to keep Gold Reward membership'), 'body' => $goldReward] : null,
             ($couriers = self::couriersText($this->shipmentsByCountryAndShipper($shop))) ? ['title' => __('Delivery companies (couriers) we use'), 'body' => $couriers] : null,
             $this->dropshippingShop($shop),
             ...$this->homeShops($shop),
@@ -232,6 +234,37 @@ class GetChatShopFacts
         }
 
         return __('Prices on this website are in :currency (:code), and orders are invoiced and paid in :code. The website cannot show prices in another currency and the currency cannot be changed.', ['currency' => $shop->currency->name, 'code' => $shop->currency->code]);
+    }
+
+    /**
+     * How Gold Reward membership is kept, the storefront's rule (HasGrData::getGrData): a customer is a member for the
+     * shop's interval after their last invoiced order, whatever its amount, or while staff extended it (INI-389: "how
+     * much must I buy to keep Gold Reward?" went to a guru). Only where member prices exist (volume offers on ranges).
+     */
+    private function goldRewardMembership(Shop $shop): ?string
+    {
+        $offers = $shop->offers_data ?? [];
+
+        if (!Arr::get($offers, 'gr.active') || !$this->shopHasMemberPrices($shop)) {
+            return null;
+        }
+
+        return __(':label membership: a customer becomes a member when an order of theirs is invoiced, and stays a member for :days days after their last invoiced order. There is no minimum amount to spend to keep it: any order invoiced within those :days days keeps the membership going. Members get member prices on every range that has them; a customer who is not a member gets the same price on a range by ordering enough of it at once.', [
+            'label' => Arr::get($offers, 'gr.label') ?: 'Gold Reward',
+            'days'  => (int) Arr::get($offers, 'gr.interval', 30),
+        ]);
+    }
+
+    protected function shopHasMemberPrices(Shop $shop): bool
+    {
+        return DB::table('offers')
+            ->join('offer_campaigns', 'offer_campaigns.id', '=', 'offers.offer_campaign_id')
+            ->where('offers.shop_id', $shop->id)
+            ->where('offer_campaigns.type', 'volume-discount')
+            ->where('offers.status', true)
+            ->where('offers.state', 'active')
+            ->where('offers.trigger_type', 'ProductCategory')
+            ->exists();
     }
 
     /**

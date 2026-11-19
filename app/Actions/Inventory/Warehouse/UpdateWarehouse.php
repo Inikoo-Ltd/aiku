@@ -30,11 +30,24 @@ class UpdateWarehouse extends OrgAction
     use WithModelAddressActions;
     use WithWarehouseManagementEditAuthorisation;
 
+    public const array PACKING_BOX_FIELDS = [
+        'packing_box_length'     => 'length',
+        'packing_box_width'      => 'width',
+        'packing_box_height'     => 'height',
+        'packing_box_max_weight' => 'max_weight',
+    ];
+
     public function handle(Warehouse $warehouse, array $modelData): Warehouse
     {
         if (Arr::has($modelData, 'address')) {
             $addressData = Arr::pull($modelData, 'address');
             $warehouse   = $this->updateModelAddress($warehouse, $addressData);
+        }
+
+        foreach (self::PACKING_BOX_FIELDS as $field => $key) {
+            if (Arr::has($modelData, $field)) {
+                data_set($modelData, "settings.packing_box.$key", (float) Arr::pull($modelData, $field));
+            }
         }
 
         $warehouse = $this->update($warehouse, $modelData, ['data', 'settings']);
@@ -75,6 +88,10 @@ class UpdateWarehouse extends OrgAction
             'allow_fulfilment'   => ['sometimes', 'required', 'boolean'],
             'allow_dropshipping' => ['sometimes', 'required', 'boolean'],
             'address'            => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
+            'packing_box_length'     => ['sometimes', 'required', 'numeric', 'min:5', 'max:300'],
+            'packing_box_width'      => ['sometimes', 'required', 'numeric', 'min:5', 'max:300'],
+            'packing_box_height'     => ['sometimes', 'required', 'numeric', 'min:5', 'max:300'],
+            'packing_box_max_weight' => ['sometimes', 'required', 'numeric', 'min:1', 'max:1000'],
 
         ];
 

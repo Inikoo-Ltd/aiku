@@ -55,6 +55,16 @@ class GetShoppingAssistantReport
 
     public const array QUESTION_BUCKETS = ['1', '2', '3', '4+'];
 
+    public const array STAFF_TIME_ANSWER_KINDS = ['shop_answer', 'tool', 'coaching'];
+
+    public const float STAFF_TIME_SAVED_SHARE = 0.5;
+
+    public const int SAVED_MINUTES = 4;
+
+    public const int TEAM_QUESTION_MINUTES = 6;
+
+    public const int HAND_OVER_MINUTES = 10;
+
     /**
      * @param  Filters  $filters
      */
@@ -80,6 +90,8 @@ class GetShoppingAssistantReport
         $costOf       = fn (array $period) => $period['cost'] * ($usdRate ?? 1);
 
         $metric = fn (string $key) => ['value' => $current[$key], 'previous' => $previous[$key]];
+        $staff  = $this->staffTime($filters, $from, $to);
+        $staffBefore = $this->staffTime($filters, $previousFrom, $previousTo);
 
         return [
             'mature_until'  => $matureUntil?->toDateString(),
@@ -106,6 +118,9 @@ class GetShoppingAssistantReport
                 'aov_assistant'            => $metric('aov_assistant'),
                 'aov_others'               => $metric('aov_others'),
                 'new_families'             => $metric('new_families'),
+                'staff_hours'              => ['value' => $staff['net_hours'], 'previous' => $staffBefore['net_hours']],
+                'staff_hours_saved'        => ['value' => $staff['saved_hours'], 'previous' => $staffBefore['saved_hours']],
+                'staff_hours_added'        => ['value' => $staff['added_hours'], 'previous' => $staffBefore['added_hours']],
             ],
             'cost_currency' => $costCurrency,
             'funnel'        => array_map(
@@ -908,6 +923,60 @@ class GetShoppingAssistantReport
         }
 
         return $allowed !== null && in_array($suffix, $allowed, true) ? $value : null;
+    }
+
+    /**
+     * INI-395, Raul 19 Nov 2026: staff time, in hours only, worked out pessimistically. Saved: the
+     * conversations of real customers in which Merlin answered a question itself and that customer
+     * opened no chat or email in the next 24 hours (Merlin's own hand-over chats left out), halved
+     * because some would never have written, at SAVED_MINUTES each. Conversations whose last answer
+     * is under a day old are not counted yet. Added: every question passed to the team (the questions
+     * joined to a task count too) at TEAM_QUESTION_MINUTES and every hand-over at HAND_OVER_MINUTES.
+     *
+     * @param  Filters  $filters
+     *
+     * @return array{saved_hours: float, added_hours: float, net_hours: float}
+     */
+    public function staffTime(array $filters, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $conversations = $this->conversationsQuery($filters, $from, $to);
+        $kinds         = $this->quoted(self::STAFF_TIME_ANSWER_KINDS);
+
+        $row = DB::selectOne(
+            <<<SQL
+            with convs as ({$conversations->toSql()}),
+            answered as (
+                select convs.id, convs.customer_id, max(msgs.created_at) as answered_at
+                from convs
+                join customers on customers.id = convs.customer_id and coalesce(customers.is_staff, false) = false
+                join shopping_assistant_messages msgs on msgs.shopping_assistant_conversation_id = convs.id
+                where msgs.role = 'assistant' and msgs.answer_kind in ({$kinds})
+                    and coalesce(msgs.flags::text, '') not like '%asked_team%'
+                group by convs.id, convs.customer_id
+            )
+            select
+                (select count(*) from answered
+                    where answered.answered_at < now() - interval '24 hours'
+                    and not exists (
+                        select 1 from chat_sessions
+                        join web_users on web_users.id = chat_sessions.web_user_id
+                        where web_users.customer_id = answered.customer_id
+                            and chat_sessions.noise_source is null
+                            and chat_sessions.created_at between answered.answered_at and answered.answered_at + interval '24 hours'
+                            and not exists (select 1 from shopping_assistant_hand_overs where shopping_assistant_hand_overs.chat_session_id = chat_sessions.id)
+                    )) as saved,
+                (select coalesce(sum(1 + coalesce(jsonb_array_length(staff_tasks.data->'more_questions'), 0)), 0) from staff_tasks
+                    join convs on convs.id = (staff_tasks.data->>'conversation_id')::bigint
+                    where staff_tasks.data->>'kind' = ?) as team_questions,
+                (select count(*) from shopping_assistant_hand_overs join convs on convs.id = shopping_assistant_hand_overs.shopping_assistant_conversation_id) as hand_overs
+            SQL,
+            [...$conversations->getBindings(), StoreShoppingAssistantTeamQuestion::TASK_KIND]
+        );
+
+        $saved = round(((int) $row->saved) * self::STAFF_TIME_SAVED_SHARE * self::SAVED_MINUTES / 60, 1);
+        $added = round((((int) $row->team_questions) * self::TEAM_QUESTION_MINUTES + ((int) $row->hand_overs) * self::HAND_OVER_MINUTES) / 60, 1);
+
+        return ['saved_hours' => $saved, 'added_hours' => $added, 'net_hours' => round($saved - $added, 1)];
     }
 
     /**

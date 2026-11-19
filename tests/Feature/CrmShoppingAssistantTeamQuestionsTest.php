@@ -60,7 +60,9 @@ beforeEach(function () {
     $this->notAnAnswerProbability = null;
     $this->followsFromEvidence    = null;
     $this->isFault                = null;
+    $this->aboutOneCustomer       = 0.05;
     Http::fake(['*alpha/decisions' => fn ($request) => Http::response(['answers' => ['answer' => ['noul' => match (true) {
+        str_contains($request->body(), 'specific customer')          => $this->aboutOneCustomer,
         str_contains($request->body(), 'follow from the evidence')   => $this->followsFromEvidence,
         str_contains($request->body(), 'engineers must look at it') => $this->isFault,
         default                                                      => $this->notAnAnswerProbability,
@@ -830,4 +832,80 @@ test('focus mode, chosen next to the search, skips a guru who is online, drops t
     actingAs($this->person)->patch(route('grp.models.profile.update'), ['focus_minutes' => 45])->assertSessionHasErrors('focus_minutes');
     actingAs($this->person)->patch(route('grp.models.profile.update'), ['focus_minutes' => 0]);
     expect($this->person->refresh()->isFocusing())->toBeFalse();
+});
+
+test('a follow-up Merlin is not sure of, while the customer\'s question already waits with our team, is added to it and says where the answer will come, not that it was just passed on', function () {
+    $conversation = teamQuestionConversation($this);
+    StoreShoppingAssistantTeamQuestion::run($conversation, 'Is there a declaration of conformity for the selenite lamp?', 'declaration of conformity?');
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(['choices' => [['finish_reason' => 'tool_calls', 'message' => ['role' => 'assistant', 'content' => null, 'tool_calls' => [[
+            'id' => 'call_present', 'type' => 'function', 'function' => ['name' => 'present_products', 'arguments' => json_encode(['reply' => 'I cannot say how long.', 'answer_kind' => 'offer_person', 'offer_reason' => 'not_sure'])],
+        ]]]]], 'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 20, 'cost' => 0.01]])]);
+
+    $turn = AskShoppingAssistant::run($conversation->fresh(), 'will they get back to me on here?');
+
+    expect($turn['message']->flags)->toBe(['asked_team'])
+        ->and($turn['reply'])->toBe(__('I have added this to your question that is already with our team. Their answer will appear here in this chat, and if you have left by then, we will send it to you.', [], $conversation->language_code));
+});
+
+test('a staff answer about one customer is never kept as knowledge for every customer, and an answer given by marking the task done is never kept', function () {
+    $conversation = teamQuestionConversation($this);
+    $first        = StoreShoppingAssistantTeamQuestion::run($conversation, 'Can I get a discount on my order?', 'discount please');
+    $notesBefore  = ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count();
+    $this->aboutOneCustomer = 0.9;
+
+    AnswerShoppingAssistantTeamQuestion::run($first['task'], $this->user, 'Jane, we have refunded 12.40 on your last order and you get 10% off the next one.');
+
+    $other  = teamQuestionConversation($this);
+    $second = StoreShoppingAssistantTeamQuestion::run($other, 'Do you sell samples?', 'samples?');
+    $this->aboutOneCustomer = 0.05;
+    UpdateStaffTask::run($second['task'], $this->user, ['status' => StaffTaskStatusEnum::DONE->value, 'note' => 'We do not sell samples; single units can be ordered.']);
+
+    expect(ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count())->toBe($notesBefore)
+        ->and(\App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer::run('Contact', 'Write to buyer@example-shop.test'))->toBeTrue();
+
+    $this->aboutOneCustomer = null;
+    expect(\App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer::run('Samples', 'We do not sell samples.'))->toBeTrue();
+
+    $this->aboutOneCustomer = 0.05;
+    expect(\App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer::run('Samples', 'We do not sell samples. Ask care@ancientwisdom.biz.'))->toBeFalse();
+});
+
+test('the shop notes kept from a customer\'s questions are deleted when the customer is anonymised, and a refused keep is recorded as not kept', function () {
+    $conversation = teamQuestionConversation($this);
+    $customer     = $conversation->customer;
+    $kept         = StoreShoppingAssistantTeamQuestion::run($conversation, 'Do you sell gift wrapping?', 'gift wrap?')['task'];
+    AnswerShoppingAssistantTeamQuestion::run($kept, $this->user, 'We do not offer gift wrapping.');
+    $noteId = data_get($kept->refresh()->data, 'kept_note_id');
+
+    $other   = teamQuestionConversation($this);
+    $refused = StoreShoppingAssistantTeamQuestion::run($other, 'Can I get a discount?', 'discount?')['task'];
+    $this->aboutOneCustomer = 0.9;
+    AnswerShoppingAssistantTeamQuestion::run($refused, $this->user, 'You personally get 10% off your next order.');
+
+    expect($noteId)->not->toBeNull()
+        ->and(ChatKnowledgeEntry::whereKey($noteId)->exists())->toBeTrue()
+        ->and(data_get($refused->refresh()->data, 'kept_for_everyone'))->toBeFalse()
+        ->and(data_get($refused->data, 'kept_note_id'))->toBeNull();
+
+    \App\Actions\CRM\Customer\AnonymiseCustomer::make()->action($customer->refresh(), 'Erasure request', false);
+
+    expect(ChatKnowledgeEntry::whereKey($noteId)->exists())->toBeFalse();
+});
+
+test('the Merlin report estimates staff time pessimistically: half the answered conversations with no contact after at four minutes each, minus six minutes per question passed to the team', function () {
+    Carbon::setTestNow(CarbonImmutable::parse('2025-02-03 10:00:00'));
+    $answered = collect(range(1, 6))->map(function () {
+        $conversation = teamQuestionConversation($this);
+        $conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'Orders over 150 get 10% off.', 'answer_kind' => 'shop_answer']);
+
+        return $conversation;
+    });
+    StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Do you sell samples?', 'samples?');
+    Carbon::setTestNow();
+
+    $filters = ['website_ids' => [$answered->first()->website_id], 'search_website_ids' => [$answered->first()->website_id], 'language' => null, 'entry_point' => null, 'shop_type' => null, 'country' => null];
+    $time    = App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport::make()->staffTime($filters, CarbonImmutable::parse('2025-02-03')->startOfDay(), CarbonImmutable::parse('2025-02-03')->endOfDay());
+
+    expect($time)->toBe(['saved_hours' => 0.2, 'added_hours' => 0.1, 'net_hours' => 0.1]);
 });

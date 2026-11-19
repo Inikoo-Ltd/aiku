@@ -20,6 +20,9 @@ use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Actions\Iris\Basket\StoreEcomBasketTransactions;
 use App\Actions\Tasks\GetAikuAssistant;
+use App\Actions\Tasks\StoreStaffTask;
+use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Models\Tasks\StaffTask;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Helpers\NaturalLanguage;
@@ -148,7 +151,7 @@ class GetShoppingAssistantTools
      */
     public const array NOT_FOR_DROPSHIPPING = ['add_to_basket', 'shipping_cost', 'big_order_lead', 'better_price_options'];
 
-    public const array ONLY_FOR_DROPSHIPPING = ['products_not_in_store'];
+    public const array ONLY_FOR_DROPSHIPPING = ['products_not_in_store', 'ebay_listing_problems'];
 
     private const int MAX_NOT_IN_STORE = 10;
 
@@ -157,6 +160,12 @@ class GetShoppingAssistantTools
     public const int PRIORITY_AFTER_HOURS = 24;
 
     public const int PRIORITY_PER_DAY = 3;
+
+    public const int MAX_BASKET_LINES = 30;
+
+    public const string STUCK_ORDER_TASK_KIND = 'shopping_assistant_stuck_order';
+
+    public const string STUCK_ORDER_DEPARTMENT = 'customer-services';
 
     private const array ORDER_OPEN_STATES = [
         OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::HANDLING, OrderStateEnum::HANDLING_BLOCKED,
@@ -260,7 +269,7 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'best_sellers_for_similar_shops',
-                'Best sellers among the shops closest to this customer: the same kind of shop when we know theirs, otherwise every shop, nearby first. Each product\'s why says exactly which shops it is about. Use it when the customer asks what sells well, wants ideas, or is starting or refreshing their range; with kind when they ask for the best sellers of one kind of product. Returns the top of the ranking, best first, not a full list. Returns products with id, name, family and why.',
+                'Best sellers among the shops closest to this customer: the same kind of shop when we know theirs, otherwise every shop, nearby first. Each product\'s why says exactly which shops it is about. Use it when the customer asks what sells well, wants ideas, or is starting or refreshing their range; with kind when they ask for the best sellers of one kind of product. Returns the top of the ranking, best first, not a full list. Returns products with id, name, family and why. If the customer asks how close those shops are, where they are or which shops they are, answer it yourself and never pass it to our team: we never share which shops they are or where, to protect our customers\' privacy; the ranking combines many trade shops, with the nearest counting most, and a product is only in it when several different shops bought it, so it is never what one neighbouring shop buys; and offer to narrow it to shops like theirs if they tell you what kind of shop they run. Never give a distance, a radius, a town, a number of shops or anything else about other customers. If they insist, say plainly that we do not disclose it, and that their own shop\'s purchases are protected the same way; never hint or guess.',
                 ['kind' => $kind, 'limit' => $limit]
             ),
             $this->tool(
@@ -329,7 +338,12 @@ class GetShoppingAssistantTools
             $this->tool(
                 'order_status',
                 'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, why it has not been dispatched yet, whether it was sent, or for its tracking. Pass the order or invoice number they wrote as reference (ours or their own); without one you get their oldest order not dispatched yet, else their latest, so never ask for the number first. It also says when an order waits for payment, and an order still waiting to be picked a day after it was placed may be moved to premium dispatch free of charge: only when the result gives priority. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
-                ['reference' => ['type' => 'string', 'description' => 'The order or invoice number the customer wrote, exactly as written. Leave it out when they gave none.']]
+                ['reference' => ['type' => 'string', 'description' => 'The order, basket or invoice number the customer wrote, exactly as written, also when they call it a product. Leave it out when they gave none.']]
+            ),
+            $this->tool(
+                'ebay_listing_problems',
+                'Why their products do not list on their own eBay channels, from what eBay answered our uploads: per channel whether it is connected, how many products are listed, drafts, refused or not sent yet, and for the latest refused products the cause and the fix. Call it first, before shop_information, whenever they ask about eBay listings, uploads, errors, drafts, limits or products missing from eBay. The system adds the lines under your reply; you get the causes only. Returns no products.',
+                []
             ),
             $this->tool(
                 'products_not_in_store',
@@ -512,7 +526,8 @@ class GetShoppingAssistantTools
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
                 'account_details'                => $this->accountDetails($customer, $conversation->language_code),
                 'products_not_in_store'          => $this->productsNotInStore($customer, $conversation->language_code),
-                'order_status'                   => $this->orderStatus($customer, $arguments, $conversation->language_code),
+                'ebay_listing_problems'          => GetEbayListingProblems::make()->handle($customer, $conversation->language_code, $conversation),
+                'order_status'                   => $this->orderStatus($customer, $arguments, $conversation->language_code, $conversation),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'product_documents'              => $this->productDocuments($customer, $arguments, $conversation->language_code),
                 'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
@@ -563,6 +578,10 @@ class GetShoppingAssistantTools
 
         if ($query === '' && !$sort) {
             return $this->error('query must be a non-empty string.');
+        }
+
+        if ($query !== '' && ($ownOrder = self::ownOrderNamedIn($customer, $query))) {
+            return ['content' => ['products' => [], 'own_order' => $ownOrder->reference, 'note' => 'That number is the customer\'s own '.($ownOrder->state === OrderStateEnum::CREATING ? 'basket' : 'order').', not a product: call order_status with it as reference and answer from that.'], 'products' => [], 'error' => null];
         }
 
         $limit        = $this->limit($arguments);
@@ -1056,7 +1075,7 @@ class GetShoppingAssistantTools
         return [
             'content'  => [
                 'texts' => $sources->map(fn (array $source) => ['id' => $source['id'], 'title' => $source['title'], 'text' => $source['body'], 'checked_by_staff' => $source['checked']])->all(),
-                'note'  => 'Answer only if these texts clearly answer the question, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. You may repeat a figure only exactly as a text states it. A text marked checked_by_staff is newer than our pages: when it disagrees with a page, follow it and cite it. The text with id 0 comes from the shop\'s delivery settings, which the checkout enforces: it is the answer to whether we deliver to a country. Some texts are notes written for our staff: tell the customer only what answers their question, in plain words, and never repeat internal codes, ids, system or file names, what staff can do, or that a page of ours is wrong or out of date. If the texts do not answer the question, do not guess: answer with answer_kind offer_person and offer_reason not_sure.',
+                'note'  => 'Answer only if these texts clearly answer the question, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. You may repeat a figure only exactly as a text states it. A text marked checked_by_staff is newer than our pages: when it disagrees with a page, follow it and cite it. The text with id 0 comes from the shop\'s delivery settings, which the checkout enforces: it is the answer to whether we deliver to a country. Some texts are notes written for our staff: tell the customer only what answers their question, in plain words, and never repeat internal codes, ids, system or file names, what staff can do, or that a page of ours is wrong or out of date. Never repeat anything about one specific customer (a name, contact, address, order, invoice or payment number, an amount refunded or owed, or a deal made only for them): skip that part, it is not for this customer. If the texts do not answer the question, do not guess: answer with answer_kind offer_person and offer_reason not_sure.',
             ],
             'products' => [],
             'error'    => null,
@@ -1210,7 +1229,7 @@ class GetShoppingAssistantTools
      *
      * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
      */
-    private function orderStatus(Customer $customer, array $arguments, string $locale): array
+    private function orderStatus(Customer $customer, array $arguments, string $locale, ?ShoppingAssistantConversation $conversation = null): array
     {
         $reference = is_string($arguments['reference'] ?? null) ? trim($arguments['reference'], " \t\n\r#") : '';
         $comparable = str_replace([' ', '-'], '', mb_strtoupper($reference));
@@ -1257,12 +1276,27 @@ class GetShoppingAssistantTools
             ...$tracking->all(),
         ]));
 
-        $priority = $this->priorityFor($order);
+        $priority    = $this->priorityFor($order);
+        $basketLines = $order->state === OrderStateEnum::CREATING ? $this->basketLines($order, $locale) : [];
+        if ($basketLines) {
+            $line .= "\n".__('In your basket (packs ordered × units in each pack = units):', [], $locale)."\n".implode("\n", $basketLines);
+        }
+
+        $outlook = !$priority && in_array($order->state, self::ORDER_OPEN_STATES, true) && !$this->unpaidOrderPayment($customer, $order)
+            ? $this->dispatchOutlook($order, $locale, $conversation)
+            : null;
+        if ($outlook) {
+            $line .= "\n".$outlook['sentence'];
+        }
 
         return [
             'content'  => array_filter([
                 'found'        => true,
                 'state'        => $state,
+                'dispatch'     => $outlook['note'] ?? null,
+                'basket'       => $basketLines
+                    ? 'Under your reply the system lists each product in this basket with the packs ordered × the units in each pack = the units they get. Answer questions about pack sizes or how many units they get by pointing to those lines, without writing the figures yourself.'
+                    : null,
                 'priority'     => $priority,
                 'payment'      => $this->unpaidOrderPayment($customer, $order),
                 'busy_season'  => in_array(now()->month, [11, 12], true) && in_array($order->state, self::ORDER_OPEN_STATES, true)
@@ -1283,6 +1317,137 @@ class GetShoppingAssistantTools
             'error'    => null,
             'fact'     => $line,
         ];
+    }
+
+    /**
+     * INI-392: the estimated dispatch day range, or why the order is stuck, as a sentence written by
+     * code under the reply. Each one is recorded so estimates can be checked against the real
+     * dispatch date; a stuck order also gets one customer services task, whatever the customer
+     * does next. The queue size and the pace never leave GetOrderDispatchOutlook.
+     *
+     * @return array{sentence: string, note: string}|null
+     */
+    private function dispatchOutlook(Order $order, string $locale, ?ShoppingAssistantConversation $conversation): ?array
+    {
+        $outlook = GetOrderDispatchOutlook::run($order);
+        if (!$outlook) {
+            return null;
+        }
+
+        $day      = fn (Carbon $date) => $date->copy()->locale($locale)->isoFormat('dddd D MMMM');
+        $sentence = match ($outlook['kind']) {
+            'estimate' => $outlook['from']->isSameDay($outlook['to'])
+                ? __('Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.', ['day' => $day($outlook['from'])], $locale)
+                : __('Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.', ['from' => $day($outlook['from']), 'to' => $day($outlook['to'])], $locale),
+            'waiting_decision' => __('These items of your order could not be picked: :items. Our team needs to know whether to send the order without them or with a replacement.', ['items' => implode(', ', $outlook['items'])], $locale),
+            'warehouse_hold'   => __('Your order is on hold in our warehouse while we sort something out. Our team has been told and will look into it.', [], $locale),
+            default            => __('Your order has been waiting longer than it should. Our team has been told and will look into it.', [], $locale),
+        };
+
+        $stuck  = $outlook['kind'] !== 'estimate';
+        $taskId = $stuck ? $this->stuckOrderTask($order, $outlook, $conversation)?->id : null;
+
+        DB::table('shopping_assistant_dispatch_outlooks')->insert([
+            'organisation_id'                     => $order->organisation_id,
+            'order_id'                            => $order->id,
+            'delivery_note_id'                    => $outlook['delivery_note_id'],
+            'shopping_assistant_conversation_id'  => $conversation?->id,
+            'kind'                                => $outlook['kind'],
+            'estimated_from'                      => isset($outlook['from']) ? $outlook['from']->toDateString() : null,
+            'estimated_to'                        => isset($outlook['to']) ? $outlook['to']->toDateString() : null,
+            'staff_task_id'                       => $taskId,
+            'created_at'                          => now(),
+        ]);
+
+        return [
+            'sentence' => $sentence,
+            'note'     => $stuck
+                ? 'The order is stuck and the line under your reply says why, written by the system. Say it plainly and kindly in one or two sentences without repeating item names, and that our team has been told; then offer our team: answer_kind offer_person, offer_reason order_question. Never give a dispatch date.'
+                : 'The line under your reply gives an estimated dispatch day range, worked out from how our warehouse is running this week. Mention that an estimate is below, never write a date or a number of days yourself, and never call it a promise or a guarantee.',
+        ];
+    }
+
+    /**
+     * One open customer services task per stuck order: Merlin found it held, waiting on a decision or
+     * far past this week's pace while the customer was asking about it.
+     *
+     * @param  array<string, mixed>  $outlook
+     */
+    private function stuckOrderTask(Order $order, array $outlook, ?ShoppingAssistantConversation $conversation): ?StaffTask
+    {
+        $open = StaffTask::open()->where('data->kind', self::STUCK_ORDER_TASK_KIND)->where('data->order_id', $order->id)->latest('id')->first();
+        if ($open) {
+            return $open;
+        }
+
+        if (!in_array(self::STUCK_ORDER_DEPARTMENT, array_column(StaffTask::departments($order->group_id), 'value'), true)) {
+            Log::warning('Stuck order task not raised: no '.self::STUCK_ORDER_DEPARTMENT.' department in group '.$order->group_id);
+
+            return null;
+        }
+
+        $why = match ($outlook['kind']) {
+            'waiting_decision' => 'Items a picker could not find are waiting for customer services: '.implode(', ', $outlook['items'] ?? []).'. The customer is told our team needs to decide with them whether to send it without them or with a replacement.',
+            'warehouse_hold'   => 'The delivery note is on hold in the warehouse.',
+            default            => 'It has been waiting in the warehouse far longer than this week\'s pace.',
+        };
+
+        return StoreStaffTask::run(GetAikuAssistant::run($order->group_id), [
+            'subject'     => mb_substr('Stuck order '.$order->reference.' the customer asked Merlin about', 0, 255),
+            'description' => implode("\n\n", array_filter([
+                'Merlin, the AI shopping assistant, was asked about this order and found it stuck, and told the customer our team has been told.',
+                $why,
+                'Customer: '.$order->customer?->name.' ('.$order->customer?->reference.')',
+                $conversation ? 'Conversation: '.route('grp.org.shops.show.ai_salesman.conversations.show', [$order->organisation->slug, $order->shop->slug, $conversation->ulid]) : null,
+            ])),
+            'department'  => self::STUCK_ORDER_DEPARTMENT,
+            'priority'    => ChatPriorityEnum::HIGH->value,
+            'model_type'  => 'Order',
+            'model_id'    => $order->id,
+            'data'        => [
+                'kind'            => self::STUCK_ORDER_TASK_KIND,
+                'organisation_id' => $order->organisation_id,
+                'shop_id'         => $order->shop_id,
+                'customer_id'     => $order->customer_id,
+                'order_id'        => $order->id,
+                'outlook'         => $outlook['kind'],
+                'conversation_id' => $conversation?->id,
+            ],
+        ]);
+    }
+
+    /**
+     * One line per product in a basket, its lines added together: code, name, packs × units in a
+     * pack = units, so "if I order 20, do I get 60?" is answered by code, not by the model.
+     *
+     * @return array<int, string>
+     */
+    private function basketLines(Order $order, string $locale): array
+    {
+        $quantities = Transaction::where('order_id', $order->id)
+            ->where('model_type', 'Product')
+            ->where('is_gift', false)
+            ->groupBy('model_id')
+            ->selectRaw('model_id, sum(quantity_ordered) as quantity')
+            ->pluck('quantity', 'model_id');
+
+        if ($quantities->isEmpty()) {
+            return [];
+        }
+
+        $number = fn (float $value) => Number::format($value, maxPrecision: 3, locale: $locale) ?: (string) $value;
+
+        return Product::whereIn('id', $quantities->keys())
+            ->orderBy('code')
+            ->limit(self::MAX_BASKET_LINES)
+            ->get(['id', 'code', 'name', 'units'])
+            ->map(function (Product $product) use ($quantities, $number) {
+                $packs = (float) $quantities[$product->id];
+                $units = (float) $product->units ?: 1.0;
+
+                return implode(' · ', [$product->code, $product->name, $number($packs).' × '.$number($units).' = '.$number($packs * $units)]);
+            })
+            ->all();
     }
 
     /**
@@ -1547,9 +1712,10 @@ class GetShoppingAssistantTools
         return [
             'content'  => [
                 'gold_reward'  => $hasGr ? ($isMember ? 'member' : 'not_member') : 'not_offered',
+                'keeping_membership' => $hasGr ? 'There is no minimum amount to spend: membership lasts a set number of days after each invoiced order, whatever its amount, so the next invoiced order keeps it going. Answer a question about keeping it yourself, without figures (the sentences below give the date and days), and never pass it to our team.' : null,
                 'calls_offered' => $offersCalls,
                 'note'         => $offersCalls
-                    ? 'Sentences with the details are added under your reply: never repeat their figures or dates. In one or two sentences: say you cannot change prices yourself, offer lower-priced options of what they asked for (search_products with sort cheapest), and ask how much they plan to order. Never promise a discount.'
+                    ? 'Sentences with the details are added under your reply: never repeat their figures or dates. In one or two sentences: say you cannot change prices yourself, offer lower-priced options of what they asked for (search_products with sort cheapest), and, unless they already said, ask in plain words roughly what budget they have in mind for the order (if they gave a number of pieces, never ask them to work out what it comes to). Never promise a discount.'
                     : 'Sentences with the details are added under your reply: never repeat their figures or dates. In one or two sentences: say you cannot change prices yourself and offer lower-priced options of what they asked for (search_products with sort cheapest). Calls from our team are not offered in this shop: do not offer one or ask how much they plan to order. Never promise a discount.',
             ],
             'products' => [],
@@ -1843,7 +2009,7 @@ class GetShoppingAssistantTools
         $locale   = $conversation->language_code;
         $currency = $customer->shop->currency->code;
         $money    = fn ($amount) => Number::currency((float) $amount, $currency, $locale);
-        $products = Product::where('shop_id', $customer->shop_id)->whereIn('id', $ids)->get()->sortBy(fn (Product $product) => $ids->search($product->id))->values();
+        $products = Product::where('shop_id', $customer->shop_id)->visibleToCustomer($customer->id)->whereIn('id', $ids)->get()->sortBy(fn (Product $product) => $ids->search($product->id))->values();
 
         $lines = $products->map(fn (Product $product) => implode(' · ', array_filter([
             $product->code,
@@ -2084,6 +2250,33 @@ class GetShoppingAssistantTools
         }
 
         return ['type' => 'function', 'function' => ['name' => $name, 'description' => $description, 'parameters' => $parameters]];
+    }
+
+    /**
+     * One of the customer's own orders or baskets whose number appears in the text (ours, their
+     * own reference, their store's or one of its invoices', ignoring case, spaces and hyphens), so
+     * a number like "AWD202765" or "#RO008374" is never searched as a product.
+     */
+    public static function ownOrderNamedIn(Customer $customer, string $text): ?Order
+    {
+        $tokens = collect(preg_split('/[\s,;#]+/u', mb_strtoupper($text), -1, PREG_SPLIT_NO_EMPTY) ?: [])
+            ->map(fn (string $token) => str_replace('-', '', trim($token, '.:()!?"\'')))
+            ->filter(fn (string $token) => mb_strlen($token) >= 5 && preg_match('/\d/', $token))
+            ->unique()
+            ->values()
+            ->all();
+
+        if (!$tokens) {
+            return null;
+        }
+
+        return Order::where('customer_id', $customer->id)
+            ->where(fn ($query) => $query->whereIn(DB::raw("translate(upper(reference), ' -', '')"), $tokens)
+                ->orWhereIn(DB::raw("translate(upper(customer_reference), ' -', '')"), $tokens)
+                ->orWhereIn(DB::raw("translate(upper(platform_order_id), ' -', '')"), $tokens)
+                ->orWhereHas('invoices', fn ($invoices) => $invoices->whereIn(DB::raw("translate(upper(reference), ' -', '')"), $tokens)))
+            ->latest('id')
+            ->first();
     }
 
     public static function isDropshipping(Customer $customer): bool

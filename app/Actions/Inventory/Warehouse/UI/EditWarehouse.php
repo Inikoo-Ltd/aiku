@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\Warehouse\UI;
 
+use App\Actions\Dispatching\DeliveryNote\EstimateDeliveryNoteBoxes;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseManagementEditAuthorisation;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -57,6 +58,35 @@ class EditWarehouse extends OrgAction
                     'value'   => AddressFormFieldsResource::make($warehouse->address)->getArray(),
                     'options' => [
                     ]
+                ],
+            ]
+        ];
+
+        $packingBox             = EstimateDeliveryNoteBoxes::box($warehouse);
+        $sections['packing']    = [
+            'label'  => __('Packing'),
+            'icon'   => 'fal fa-box',
+            'fields' => [
+                'packing_box_length'     => [
+                    'type'        => 'input_number',
+                    'label'       => __('Standard box length (cm)'),
+                    'information' => __('The packing target on delivery notes counts boxes of this size'),
+                    'value'       => $packingBox['length'],
+                ],
+                'packing_box_width'      => [
+                    'type'  => 'input_number',
+                    'label' => __('Standard box width (cm)'),
+                    'value' => $packingBox['width'],
+                ],
+                'packing_box_height'     => [
+                    'type'  => 'input_number',
+                    'label' => __('Standard box height (cm)'),
+                    'value' => $packingBox['height'],
+                ],
+                'packing_box_max_weight' => [
+                    'type'  => 'input_number',
+                    'label' => __('Maximum weight per box (kg)'),
+                    'value' => $packingBox['max_weight'],
                 ],
             ]
         ];

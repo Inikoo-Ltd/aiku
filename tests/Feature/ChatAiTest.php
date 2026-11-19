@@ -1247,6 +1247,30 @@ test('a dropshipping shop tells the assistant its bundle discount, the default 1
     expect(collect(\App\Actions\Chat\ChatSession\GetChatShopFacts::make()->shopFacts($shop))->firstWhere('title', 'Bundle discount'))->toBeNull();
 });
 
+test('a shop with member prices tells the assistant how Gold Reward membership is kept, with no minimum spend', function () {
+    $facts = new class () extends \App\Actions\Chat\ChatSession\GetChatShopFacts {
+        public bool $hasMemberPrices = true;
+
+        protected function shopHasMemberPrices(\App\Models\Catalogue\Shop $shop): bool
+        {
+            return $this->hasMemberPrices;
+        }
+    };
+    $shop              = $this->shop->replicate();
+    $shop->offers_data = ['gr' => ['active' => true, 'interval' => 45, 'label' => 'Gold Reward']];
+    $gr                = fn () => collect($facts->shopFacts($shop))->firstWhere('title', 'How to keep Gold Reward membership');
+
+    expect($gr()['body'])->toContain('stays a member for 45 days after their last invoiced order')
+        ->toContain('There is no minimum amount to spend to keep it');
+
+    $facts->hasMemberPrices = false;
+    expect($gr())->toBeNull();
+
+    $facts->hasMemberPrices = true;
+    $shop->offers_data      = ['gr' => ['active' => false]];
+    expect($gr())->toBeNull();
+});
+
 test('each active charge is described with its amount and when the checkout adds it', function () {
     $facts  = \App\Actions\Chat\ChatSession\GetChatShopFacts::make();
     $money  = fn (float $amount) => \Illuminate\Support\Number::currency($amount, $this->shop->currency?->code ?? 'GBP');

@@ -1014,6 +1014,28 @@ class ShowDeliveryNote extends OrgAction
         return null;
     }
 
+    /**
+     * @return array{boxes: int, max_weight: float|null, box_size: string, heavy_items: array<int, string>, bulky_items: array<int, string>, unknown_items: array<int, string>, first_boxes: int|null}|null
+     */
+    public function getPackingTarget(DeliveryNote $deliveryNote): ?array
+    {
+        if (!$deliveryNote->estimated_boxes) {
+            return null;
+        }
+
+        $estimate = $deliveryNote->boxes_estimate ?? [];
+
+        return [
+            'boxes'        => $deliveryNote->estimated_boxes,
+            'max_weight'   => Arr::get($estimate, 'box.max_weight'),
+            'box_size'     => collect(['length', 'width', 'height'])->map(fn (string $side) => (float) Arr::get($estimate, "box.$side"))->implode('×'),
+            'heavy_items'  => Arr::get($estimate, 'heavy_items', []),
+            'bulky_items'   => Arr::get($estimate, 'bulky_items', []),
+            'unknown_items' => Arr::get($estimate, 'unknown_items', []),
+            'first_boxes'   => Arr::get($estimate, 'first.boxes'),
+        ];
+    }
+
     public function getBoxStats(DeliveryNote $deliveryNote): array
     {
         $estWeight     = ($deliveryNote->estimated_weight ?? 0) / 1000;
@@ -1085,6 +1107,7 @@ class ShowDeliveryNote extends OrgAction
             ],
             'products'                     => [
                 'estimated_weight' => $estWeight,
+                'packing_target'   => $this->getPackingTarget($deliveryNote),
                 'number_items'     => $deliveryNote->number_items,
                 'number_skos'      => $pickingTotals['number_skos'],
                 'number_units'     => $pickingTotals['number_units'],

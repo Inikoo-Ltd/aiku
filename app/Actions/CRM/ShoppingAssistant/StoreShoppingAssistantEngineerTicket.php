@@ -235,7 +235,7 @@ class StoreShoppingAssistantEngineerTicket
         );
     }
 
-    private function storeCatalogueTask(ShoppingAssistantConversation $conversation, string $summary, string $details, string $words): StaffTask
+    public function storeCatalogueTask(ShoppingAssistantConversation $conversation, string $summary, string $details, string $words): StaffTask
     {
         $customer  = $conversation->customer;
         $assistant = GetAikuAssistant::run($customer->group_id);

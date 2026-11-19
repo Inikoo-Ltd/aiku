@@ -295,6 +295,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('org_stocks:learn_packed_volume')->dailyAt('03:50')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'LearnOrgStocksPackedVolume',
+                ),
+                name: 'LearnOrgStocksPackedVolume',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->job(MonitorWebsitesUptime::makeJob())->everyTwoMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'MonitorWebsitesUptime',
                 ),
