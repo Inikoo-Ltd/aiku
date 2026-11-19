@@ -3714,6 +3714,64 @@ test('on a dropshipping shop Merlin can list the products added to a store chann
     }
 });
 
+test('on a dropshipping shop Merlin reads why products do not list on the customer\'s own eBay channels, with each cause and fix written by code, never another customer\'s', function () {
+    $originalType = $this->shop->type;
+
+    try {
+        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+        shoppingAssistantStorefront($this);
+        $customer     = shoppingAssistantCustomer($this->shop->refresh());
+        $stranger     = shoppingAssistantCustomer($this->shop);
+        $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+        $conversation->update(['language_code' => 'en']);
+        $tools        = GetShoppingAssistantTools::make();
+        $ebay         = \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::EBAY)->firstOrFail();
+
+        expect($tools->execute($conversation, 'ebay_listing_problems', [])['content']['has_ebay'])->toBeFalse();
+
+        $channel = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, $ebay, ['reference' => 'ebay-'.Str::random(6)]);
+        $channel->update(['name' => 'Moon eBay', 'connection_status' => \App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum::CONNECTED, 'settings' => array_merge($channel->settings ?? [], ['upload_as_draft' => true])]);
+        $theirs  = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($stranger, $ebay, ['reference' => 'ebay-'.Str::random(6)]);
+        $portfolio = fn ($owner, $onChannel, string $code, bool $listed, ?string $warning = null, mixed $errors = null, array $data = []) => DB::table('portfolios')->insert([
+            'group_id' => $owner->group_id, 'organisation_id' => $owner->organisation_id, 'shop_id' => $owner->shop_id, 'customer_id' => $owner->id,
+            'customer_sales_channel_id' => $onChannel->id, 'platform_id' => $ebay->id, 'item_type' => 'Product', 'item_id' => shoppingAssistantProduct($this->product)->id, 'item_code' => $code, 'item_name' => 'Bath Bomb '.$code,
+            'status' => true, 'platform_status' => $listed, 'upload_warning' => $warning, 'errors_response' => $errors === null ? null : json_encode($errors),
+            'data' => json_encode($data), 'settings' => '{}', 'platform_product_id' => $listed || $data ? 'offer-'.$code : null,
+        ]);
+
+        $portfolio($customer, $channel, 'EB-01', true);
+        $portfolio($customer, $channel, 'EB-02', false, null, null, ['is_platform_draft' => true]);
+        $portfolio($customer, $channel, 'EB-03', false, 'A user error has occurred. This listing would cause you to exceed the number of items you can list. You can list up to 6 more items this month.');
+        $portfolio($customer, $channel, 'EB-04', false, null, ['message' => 'A user error has occurred. The item specific Brand is missing. Add Brand to this listing, enter a valid value, and then try again.']);
+        $portfolio($customer, $channel, 'EB-05', false, null, [['domain' => 'API_INVENTORY', 'errorId' => 25002, 'message' => 'A user error has occurred. You are not allowed to revise an ended item "960079898083".']]);
+        $portfolio($customer, $channel, 'EB-06', false);
+        $portfolio($stranger, $theirs, 'XX-99', false, 'A user error has occurred. Before you can list this item we need some additional information to create a seller account.');
+
+        $result = $tools->execute($conversation, 'ebay_listing_problems', []);
+        $fact   = $result['fact'];
+
+        expect($result['error'])->toBeNull()
+            ->and($result['content']['causes'])->toContain('drafts', 'selling_limit', 'needs_our_data', 'listing_ended')
+            ->and($result['content'])->not->toHaveKey('ours_to_fix')
+            ->and($result['content']['product_data'])->toContain('products team has been asked')
+            ->and(\App\Models\Tasks\StaffTask::where('data->kind', \App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantEngineerTicket::CATALOGUE_TASK_KIND)->where('data->customer_id', $customer->id)->first()?->description)->toContain('EB-04')
+            ->and(json_encode($result['content']))->not->toMatch('/\d/')
+            ->and($fact)->toContain(__('eBay ":channel": :listed listed, :drafts drafts not published, :failed refused by eBay, :waiting not sent yet.', ['channel' => 'Moon eBay', 'listed' => 1, 'drafts' => 1, 'failed' => 3, 'waiting' => 1], 'en'))
+            ->and($fact)->toContain(__('Upload as draft is on in Manage Sales Channel, so new uploads stay drafts.', [], 'en'))
+            ->and($fact)->toContain('EB-03 · Bath Bomb EB-03 · '.__('Your eBay selling limit for this month is reached: upload fewer or cheaper products, ask eBay to raise your limits, or wait for next month.', [], 'en'))
+            ->and($fact)->toContain('EB-04 · Bath Bomb EB-04 · '.__('eBay needs information about this product that only we can add: we are looking at it.', [], 'en'))
+            ->and($fact)->toContain('EB-05 · Bath Bomb EB-05 · '.__('The listing no longer exists on eBay: press Create new product to list it again.', [], 'en'))
+            ->and($fact)->not->toContain('XX-99')
+            ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::causeOf('Se ha producido un error en el sistema. Para poder poner en venta este artículo, necesitamos información adicional que permita crear una cuenta de vendedor.'))->toBe('seller_account')
+            ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::causeOf('The eBay listing associated with the inventory item, or the unpublished offer, has invalid data in the associated fulfilment policy.'))->toBe('business_policy')
+            ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::causeOf('Too many requests.'))->toBe('ebay_temporary')
+            ->and(collect($tools->definitions(true))->pluck('function.name'))->toContain('ebay_listing_problems')
+            ->and(collect($tools->definitions())->pluck('function.name'))->not->toContain('ebay_listing_problems');
+    } finally {
+        $this->shop->update(['type' => $originalType]);
+    }
+});
+
 test('Merlin says where the customer\'s own order is, with the order number, date and tracking written by the system, and an offer of a person after it keeps that line', function () {
     $website  = createWebsite($this->shop);
     $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => true])]);

@@ -148,7 +148,7 @@ class GetShoppingAssistantTools
      */
     public const array NOT_FOR_DROPSHIPPING = ['add_to_basket', 'shipping_cost', 'big_order_lead', 'better_price_options'];
 
-    public const array ONLY_FOR_DROPSHIPPING = ['products_not_in_store'];
+    public const array ONLY_FOR_DROPSHIPPING = ['products_not_in_store', 'ebay_listing_problems'];
 
     private const int MAX_NOT_IN_STORE = 10;
 
@@ -334,6 +334,11 @@ class GetShoppingAssistantTools
                 ['reference' => ['type' => 'string', 'description' => 'The order, basket or invoice number the customer wrote, exactly as written, also when they call it a product. Leave it out when they gave none.']]
             ),
             $this->tool(
+                'ebay_listing_problems',
+                'Why their products do not list on their own eBay channels, from what eBay answered our uploads: per channel whether it is connected, how many products are listed, drafts, refused or not sent yet, and for the latest refused products the cause and the fix. Call it first, before shop_information, whenever they ask about eBay listings, uploads, errors, drafts, limits or products missing from eBay. The system adds the lines under your reply; you get the causes only. Returns no products.',
+                []
+            ),
+            $this->tool(
                 'products_not_in_store',
                 'The products the customer added to one of their sales channels that are not in their store yet: not sent to it, or not matched with a listing they already have there, so stock is not updated and orders for them cannot reach us. Use it when they ask which products are not linked, are missing from their store or do not sync, or why an order placed in their store did not arrive. The system adds the list under your reply; you get no names. Returns no products.',
                 []
@@ -514,6 +519,7 @@ class GetShoppingAssistantTools
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
                 'account_details'                => $this->accountDetails($customer, $conversation->language_code),
                 'products_not_in_store'          => $this->productsNotInStore($customer, $conversation->language_code),
+                'ebay_listing_problems'          => GetEbayListingProblems::make()->handle($customer, $conversation->language_code, $conversation),
                 'order_status'                   => $this->orderStatus($customer, $arguments, $conversation->language_code),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'product_documents'              => $this->productDocuments($customer, $arguments, $conversation->language_code),
