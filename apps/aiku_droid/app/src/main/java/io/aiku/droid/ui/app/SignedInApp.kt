@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -289,15 +290,15 @@ import io.aiku.droid.ui.sync.SyncQueueScreen
 import io.aiku.droid.ui.theme.Appearance
 import java.time.LocalDate
 
+fun warehousesViewModelFactory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
+    initializer {
+        WarehousesViewModel(container.warehouseApi, container.authApi, container.sessions, container.settings, container.warehouseCache, container.pushRegistration, container.recentSearches)
+    }
+}
+
 @Composable
 fun SignedInApp(container: AppContainer, session: StaffSession) {
-    val warehousesViewModel: WarehousesViewModel = viewModel(
-        factory = viewModelFactory {
-            initializer {
-                WarehousesViewModel(container.warehouseApi, container.authApi, container.sessions, container.settings, container.warehouseCache, container.pushRegistration, container.recentSearches)
-            }
-        },
-    )
+    val warehousesViewModel: WarehousesViewModel = viewModel(factory = warehousesViewModelFactory(container))
     val state by warehousesViewModel.state.collectAsStateWithLifecycle()
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) { warehousesViewModel.refresh() }

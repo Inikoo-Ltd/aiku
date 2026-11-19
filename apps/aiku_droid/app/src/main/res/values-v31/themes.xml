@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.AikuDroid" parent="Base.Theme.AikuDroid">
+        <item name="android:navigationBarColor">@color/splash_background</item>
+        <item name="android:windowLightNavigationBar">@bool/splash_light_system_bars</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/aiku_invader_splash</item>
+    </style>
+</resources>
