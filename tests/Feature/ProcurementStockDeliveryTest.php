@@ -24,6 +24,9 @@ use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
+use App\Actions\GoodsIn\StockDelivery\ReopenStockDeliveryCosting;
+use App\Actions\GoodsIn\StockDelivery\FinishStockDeliveryCosting;
+use App\Actions\SupplyChain\StockDeliveryInvoice\StoreActualStockDeliveryInvoice;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\UpdatePurchaseOrdersCostedFromStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
@@ -3092,6 +3095,70 @@ describe('stock delivery costing checklist', function () {
             ->and($stockDelivery->is_costed)->toBeTrue()
             ->and((float) $stockDelivery->cost_items)->toBe(134.64)
             ->and((float) $item->refresh()->cost_items)->toBe(134.64)
+            ->and($item->is_costed)->toBeTrue();
+    });
+
+    test('a partner delivery takes the local duty of the receiving organisation on top of the partner prices (INI-399)', function () {
+        $orgStock      = OrgStock::where('organisation_id', $this->orgPartner->organisation_id)->first();
+        $stockDelivery = StoreStockDelivery::make()->action($this->orgPartner, [
+            'reference' => 'PARTNER-DUTY-'.StockDelivery::count(),
+            'date'      => date('Y-m-d'),
+            'state'     => StockDeliveryStateEnum::CHECKED,
+        ], strict: false);
+        $item = StoreStockDeliveryItem::make()->action($stockDelivery, null, $orgStock, [
+            'unit_quantity'        => 10,
+            'unit_quantity_placed' => 10,
+            'state'                => StockDeliveryItemStateEnum::PLACED,
+        ], strict: false);
+        $item = UpdateStockDeliveryItem::make()->action($item, ['net_amount' => 200], strict: false);
+
+        expect(fn () => StoreActualStockDeliveryInvoice::make()->handle($stockDelivery, ['reference' => 'GBi-TEST', 'date' => date('Y-m-d'), 'goods_amount' => 200, 'charges' => []]))
+            ->toThrow(ValidationException::class);
+
+        StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value, 'amount' => 30, 'received_at' => date('Y-m-d')]);
+
+        expect($stockDelivery->refresh()->is_costed)->toBeFalse()
+            ->and($stockDelivery->costsMissing())->toBe([]);
+
+        UpdateStockDeliveryStateFromGoodsIn::run($stockDelivery);
+
+        $stockDelivery->refresh();
+        expect($stockDelivery->state)->toBe(StockDeliveryStateEnum::PLACED)
+            ->and($stockDelivery->is_costed)->toBeTrue()
+            ->and((float) $item->refresh()->cost_items)->toBe(200.0)
+            ->and((float) $item->cost_duties)->toBe(30.0)
+            ->and($stockDelivery->isCostingReopenable())->toBeTrue();
+    });
+
+    test('a partner delivery costed before its duty was known takes it through Update costing (INI-399, GB592627)', function () {
+        $orgStock      = OrgStock::where('organisation_id', $this->orgPartner->organisation_id)->first();
+        $stockDelivery = StoreStockDelivery::make()->action($this->orgPartner, [
+            'reference' => 'PARTNER-REOPEN-'.StockDelivery::count(),
+            'date'      => date('Y-m-d'),
+            'state'     => StockDeliveryStateEnum::RECEIVED,
+        ], strict: false);
+        $item = StoreStockDeliveryItem::make()->action($stockDelivery, null, $orgStock, [
+            'unit_quantity' => 10,
+            'state'         => StockDeliveryItemStateEnum::RECEIVED,
+        ], strict: false);
+        UpdateStockDeliveryItem::make()->action($item, ['net_amount' => 100], strict: false);
+        $stockDelivery->update(['is_costed' => true]);
+
+        $stockDelivery = ReopenStockDeliveryCosting::make()->action($stockDelivery->refresh(), ['reason' => 'Import duty paid at customs']);
+        $duty          = StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value, 'is_waiting_for_invoice' => true, 'invoice_expected_in_days' => 3]);
+
+        expect($stockDelivery->refresh()->is_costed)->toBeFalse()
+            ->and($stockDelivery->costsMissing())->toHaveCount(1)
+            ->and(StockDelivery::whereKey($stockDelivery->id)->withCostsMissing()->exists())->toBeTrue();
+
+        UpdateStockDeliveryCost::make()->action($duty->refresh(), ['amount' => 25, 'received_at' => date('Y-m-d'), 'is_waiting_for_invoice' => false]);
+        expect($stockDelivery->refresh()->is_costed)->toBeFalse();
+
+        $stockDelivery = FinishStockDeliveryCosting::make()->action($stockDelivery);
+
+        expect($stockDelivery->is_costed)->toBeTrue()
+            ->and(Arr::has($stockDelivery->data, 'costing_reopened'))->toBeFalse()
+            ->and((float) $item->refresh()->cost_duties)->toBe(25.0)
             ->and($item->is_costed)->toBeTrue();
     });
 

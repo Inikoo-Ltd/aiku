@@ -42,6 +42,10 @@ class StoreActualStockDeliveryInvoice extends OrgAction
      */
     public function handle(StockDelivery $stockDelivery, array $modelData): AgentInvoice|SupplierInvoice
     {
+        if ($stockDelivery->parent_type === 'OrgPartner') {
+            throw ValidationException::withMessages(['invoice' => __('This is a partner delivery: its invoice is the partner\'s own and its goods are costed from the partner order.')]);
+        }
+
         $invoice = $stockDelivery->agent_id ? $stockDelivery->agentInvoice()->first() : $stockDelivery->supplierInvoice()->first();
 
         if ($invoice?->source === StockDeliveryInvoiceSourceEnum::AGENT) {

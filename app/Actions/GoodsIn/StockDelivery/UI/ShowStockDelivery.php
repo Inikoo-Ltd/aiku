@@ -864,7 +864,7 @@ class ShowStockDelivery extends OrgAction
                 ] : null,
             ],
             'invoice' => $this->viewedByAgent && !$stockDelivery->agent_id ? null : $this->getInvoiceSummary($stockDelivery),
-            'invoice_entry' => $this->canEdit && $this->canEditPayments && !$stockDelivery->isManagedByPartner() && ($stockDelivery->agent_id ? $stockDelivery->agentInvoice()->first()?->source : null) !== StockDeliveryInvoiceSourceEnum::AGENT ? [
+            'invoice_entry' => $this->canEdit && $this->canEditPayments && $stockDelivery->parent_type !== 'OrgPartner' && !$stockDelivery->isManagedByPartner() && ($stockDelivery->agent_id ? $stockDelivery->agentInvoice()->first()?->source : null) !== StockDeliveryInvoiceSourceEnum::AGENT ? [
                 'route' => [
                     'name'       => 'grp.models.stock-delivery.invoice.store',
                     'parameters' => [$stockDelivery->id],
@@ -1213,7 +1213,7 @@ class ShowStockDelivery extends OrgAction
      */
     private function getServiceInvoices(StockDelivery $stockDelivery): ?array
     {
-        if ($this->organisation->type === OrganisationTypeEnum::AGENT || $stockDelivery->parent_type === 'OrgPartner'
+        if ($this->organisation->type === OrganisationTypeEnum::AGENT
             || !request()->user()?->authTo(["procurement.{$this->organisation->id}.view", "accounting.{$this->organisation->id}.view"])) {
             return null;
         }

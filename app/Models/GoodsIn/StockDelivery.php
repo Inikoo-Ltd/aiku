@@ -374,7 +374,6 @@ class StockDelivery extends Model implements HasMedia, Auditable
     public function isCostingReopenable(): bool
     {
         return $this->is_costed
-            && $this->parent_type !== 'OrgPartner'
             && !in_array($this->state, [StockDeliveryStateEnum::CANCELLED, StockDeliveryStateEnum::NOT_RECEIVED], true);
     }
 
@@ -428,18 +427,28 @@ class StockDelivery extends Model implements HasMedia, Auditable
     /**
      * The costs procurement still owes on a delivery: the agent or supplier invoice, the shipping and the duty
      * each need an amount, an estimate or a not applicable. They never hold the warehouse back; procurement is
-     * told when booking in starts and reminded every day. Deliveries created before the rule started and partner
-     * deliveries, which cost themselves, owe nothing.
+     * told when booking in starts and reminded every day. Deliveries created before the rule started owe nothing.
+     * A partner delivery costs its goods itself and owes only the local costs it was given that are not received or
+     * N/A yet (INI-399).
      *
      * @return array<int, string> labels of the costs still missing
      */
     public function costsMissing(): array
     {
-        if ($this->is_costed || $this->parent_type === 'OrgPartner' || in_array($this->state, self::STATES_WITHOUT_COSTS, true) || $this->created_at?->lt(self::COSTS_REQUIRED_FROM)) {
+        if ($this->is_costed || in_array($this->state, self::STATES_WITHOUT_COSTS, true) || $this->created_at?->lt(self::COSTS_REQUIRED_FROM)) {
             return [];
         }
 
         $costs   = $this->costs()->get();
+
+        if ($this->parent_type === 'OrgPartner') {
+            return $costs
+                ->reject(fn (StockDeliveryCost $cost) => $cost->type === StockDeliveryCostTypeEnum::AGENT_INVOICE || $cost->received_at || $cost->is_na)
+                ->map(fn (StockDeliveryCost $cost) => $cost->label ?: StockDeliveryCostTypeEnum::labels()[$cost->type->value])
+                ->values()
+                ->all();
+        }
+
         $isReady = fn (StockDeliveryCostTypeEnum $type) => (bool) $costs->first(fn (StockDeliveryCost $cost) => $cost->type === $type && ($cost->received_at || $cost->is_na));
         $missing = [];
 
@@ -458,13 +467,16 @@ class StockDelivery extends Model implements HasMedia, Auditable
 
     /**
      * The work queue of whoever costs deliveries: not costed, on its way or arrived, with activity in the last
-     * months, so the old deliveries that were never costed stay out. Partner deliveries cost themselves.
+     * months, so the old deliveries that were never costed stay out. Partner deliveries cost themselves when placed,
+     * so one only waits here when it is placed and a local cost of its own is still open.
      */
     public function scopeToCost(Builder $query): Builder
     {
         return $query
             ->where('stock_deliveries.is_costed', false)
-            ->where('stock_deliveries.parent_type', '!=', 'OrgPartner')
+            ->where(fn ($query) => $query
+                ->where('stock_deliveries.parent_type', '!=', 'OrgPartner')
+                ->orWhere('stock_deliveries.state', StockDeliveryStateEnum::PLACED))
             ->whereIn('stock_deliveries.state', [
                 StockDeliveryStateEnum::DISPATCHED,
                 StockDeliveryStateEnum::RECEIVED,
@@ -487,15 +499,23 @@ class StockDelivery extends Model implements HasMedia, Auditable
         return $query
             ->where('stock_deliveries.is_costed', false)
             ->whereNotIn('stock_deliveries.state', self::STATES_WITHOUT_COSTS)
-            ->where('stock_deliveries.parent_type', '!=', 'OrgPartner')
             ->where('stock_deliveries.created_at', '>=', self::COSTS_REQUIRED_FROM)
             ->where(fn ($query) => $query
-                ->whereDoesntHave('costs', $isReady(StockDeliveryCostTypeEnum::SHIPPING))
-                ->orWhereDoesntHave('costs', $isReady(StockDeliveryCostTypeEnum::DUTY))
+                ->where(fn ($query) => $query
+                    ->where('stock_deliveries.parent_type', 'OrgPartner')
+                    ->whereHas('costs', fn ($query) => $query
+                        ->where('type', '!=', StockDeliveryCostTypeEnum::AGENT_INVOICE)
+                        ->whereNull('received_at')
+                        ->where('is_na', false)))
                 ->orWhere(fn ($query) => $query
-                    ->whereDoesntHave('costs', $isReady(StockDeliveryCostTypeEnum::AGENT_INVOICE))
-                    ->whereDoesntHave('agentInvoice')
-                    ->whereDoesntHave('supplierInvoice')));
+                    ->where('stock_deliveries.parent_type', '!=', 'OrgPartner')
+                    ->where(fn ($query) => $query
+                        ->whereDoesntHave('costs', $isReady(StockDeliveryCostTypeEnum::SHIPPING))
+                        ->orWhereDoesntHave('costs', $isReady(StockDeliveryCostTypeEnum::DUTY))
+                        ->orWhere(fn ($query) => $query
+                            ->whereDoesntHave('costs', $isReady(StockDeliveryCostTypeEnum::AGENT_INVOICE))
+                            ->whereDoesntHave('agentInvoice')
+                            ->whereDoesntHave('supplierInvoice')))));
     }
 
     public function serviceInvoices(): BelongsToMany

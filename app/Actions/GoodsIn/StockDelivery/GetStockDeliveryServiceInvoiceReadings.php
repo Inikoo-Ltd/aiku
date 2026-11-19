@@ -100,7 +100,6 @@ class GetStockDeliveryServiceInvoiceReadings
             __('A service invoice of the same amount is already on this delivery, check it is not this one and enter it by hand.') => !$applied && $currency && $lines && $stockDelivery->serviceInvoices()->where('currency_id', $currency->id)->where('total_amount', $linesTotal)->exists(),
             __('The invoice is larger than the value of the goods of the delivery.') => $currency && $this->exceedsGoodsValue($stockDelivery, $currency, $linesTotal),
             __('This delivery is costed, an accounting manager can change it with Update costing.') => (bool) $stockDelivery->is_costed,
-            __('This is a partner delivery, which has no landed costs of its own.') => $stockDelivery->parent_type === 'OrgPartner',
             __('This delivery is cancelled or was not received.') => in_array($stockDelivery->state, [StockDeliveryStateEnum::CANCELLED, StockDeliveryStateEnum::NOT_RECEIVED], true),
         ]));
 

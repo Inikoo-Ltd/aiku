@@ -487,7 +487,7 @@ const costBlocks = computed(() => {
 		.filter(row => !row.paid_at)
 		.reduce((sum, row) => sum + (row.allocations.find(allocation => allocation.stock_delivery_id === props.service_invoices?.stock_delivery_id)?.amount ?? 0) * Number(row.exchange), 0)
 	const invoiceBalance = agentInvoice && agentInvoice.balance_due !== null && agentInvoiceRate !== null ? agentInvoice.balance_due * agentInvoiceRate : null
-	const pendingLocalCosts = costing.checklist.filter(row => row.type !== "agent_invoice" && !row.received_at && !row.is_na)
+	const pendingLocalCosts = costing.checklist.filter(row => row.type !== "agent_invoice" && !row.received_at && !row.is_na && (!costing.is_partner || !!row.id))
 	const waiting = (rows: typeof pendingLocalCosts) => rows.filter(row => row.is_waiting_for_invoice).map(row => `${row.label}: ${row.waiting_label}`)
 	const missingLocalCosts = pendingLocalCosts.filter(row => !row.is_waiting_for_invoice).map(row => row.label)
 	const localCostsStatus = [
@@ -500,8 +500,8 @@ const costBlocks = computed(() => {
 	const invoiceEstimate = estimateRows.filter(row => row.type === "agent_invoice").map(estimateText)[0]
 	const localEstimates = estimateRows.filter(row => row.type !== "agent_invoice").map(estimateText)
 	const isRising = pendingLocalCosts.some(row => row.is_waiting_for_invoice)
-	const status = (missing: string | null, done: string) =>
-		!isCostingVisible.value || costing.is_partner ? null : { isMissing: !!missing, text: missing ?? done }
+	const status = (missing: string | null, done: string, isLocal = false) =>
+		!isCostingVisible.value || (costing.is_partner && !isLocal) ? null : { isMissing: !!missing, text: missing ?? done }
 
 	const invoiceBlock = {
 		...firstBlock,
@@ -530,7 +530,7 @@ const costBlocks = computed(() => {
 				...(serviceInvoiceRows.length ? [ctrans(":count service invoices, :unpaid unpaid", { count: String(serviceInvoiceRows.length), unpaid: String(serviceInvoiceRows.filter(row => !row.paid_at).length) })] : []),
 				...(localEstimates.length ? [ctrans(":count estimated", { count: String(localEstimates.length) })] : []),
 			].join(" · "),
-			status: status([localCostsStatus, ...localEstimates].filter(Boolean).join(" · ") || null, ctrans("Local costs complete")),
+			status: status([localCostsStatus, ...localEstimates].filter(Boolean).join(" · ") || null, ctrans("Local costs complete"), true),
 			title: ctrans("Landed costs"),
 			rows: localCosts.map(row => ({
 				label: row.label,
@@ -1607,7 +1607,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 		:options="currentTab === 'feedback' ? give_feedback : undefined"
 		:storeRoute="currentTab === 'notes' && note_form?.can_write !== false ? note_store_route : undefined"
 			:agreement="currentTab === 'notes' ? note_form : undefined"
-		:costingAvailable="currentTab === 'import_file' && costing && !costing.viewed_by_agent ? { invoice: isInvoiceVisible, landed: isCostingVisible } : undefined"
+		:costingAvailable="currentTab === 'import_file' && costing && !costing.viewed_by_agent ? { invoice: isInvoiceVisible && !costing.is_partner, landed: isCostingVisible } : undefined"
 		:invoice="currentTab === 'import_file' ? box_stats.invoice : undefined"
 		@openCosting="(section: 'invoice' | 'landed') => (costingSection = section)"
 		:removablePurchaseOrderIds="currentTab === 'purchase_orders' ? removablePurchaseOrderIds : undefined"

@@ -370,10 +370,10 @@ const removeExtra = (row: CostRow) => {
                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
                 {{ costing.agent_invoice_waiting ?? ctrans("Agent invoice not received") }}
             </span>
-            <span v-if="costing.is_partner" class="text-sm text-gray-500">{{ ctrans("Automatic, from the partner's order prices") }}</span>
+            <span v-if="costing.is_partner && isInvoiceSection" class="text-sm text-gray-500">{{ ctrans("Automatic, from the partner's order prices") }}</span>
         </div>
 
-        <div v-if="costing.partner_invoice" class="mb-3 grid gap-1 text-sm">
+        <div v-if="costing.partner_invoice && isInvoiceSection" class="mb-3 grid gap-1 text-sm">
             <div class="flex gap-3">
                 <span class="w-40 shrink-0">{{ ctrans("Partner invoice :reference", { reference: costing.partner_invoice.reference }) }}</span>
                 <span>{{ locale.currencyFormat(costing.currency ?? "", costing.partner_invoice.net_amount) }}</span>
@@ -396,7 +396,7 @@ const removeExtra = (row: CostRow) => {
             </div>
         </div>
 
-        <p v-if="!costing.is_partner" class="mb-3 text-sm text-gray-500">
+        <p v-if="!costing.is_partner || !isInvoiceSection" class="mb-3 text-sm text-gray-500">
             {{ isInvoiceSection
                 ? ctrans("The invoice of the agent or supplier for the goods and their own charges, with the deposits and payments made to them.")
                 : ctrans("Freight, customs, transport and any other cost of bringing the goods in that is paid to someone else, never to the agent or supplier.") }}
@@ -407,7 +407,7 @@ const removeExtra = (row: CostRow) => {
             {{ ctrans("The lines add up to :allocated of :field, the cost is :amount. Change the lines until they match.", { allocated: String(totals.allocated), field: String(field).replace("cost_", ""), amount: String(totals.amount) }) }}
         </div>
 
-        <template v-if="!costing.is_partner">
+        <template v-if="!costing.is_partner || !isInvoiceSection">
             <div v-if="errorMessage" class="mb-2 flex items-center gap-1 text-sm text-red-600" role="alert">
                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
                 {{ errorMessage }}
