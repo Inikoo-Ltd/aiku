@@ -359,7 +359,10 @@ class CloseManufactureTaskSession extends OrgAction
     private function shareOut(ManufactureTaskSession $session, Collection $members, array $modelData, bool $wholeUnits = true): Collection
     {
         $weights  = ManufactureTaskSession::combinedWeights($members);
-        $made     = self::apportion((float) $modelData['quantity_made'], $weights, $wholeUnits);
+        $leftPerMember = $members->mapWithKeys(fn (JobOrderItemTask $member) => [$member->id => round(max(0, (float) $member->quantity_required - (float) $member->quantity_made), 3)]);
+        $made     = abs((float) $modelData['quantity_made'] - $leftPerMember->sum()) < 0.001
+            ? $leftPerMember->all()
+            : self::apportion((float) $modelData['quantity_made'], $weights, $wholeUnits);
         $rejected = self::apportion((float) ($modelData['quantity_rejected'] ?? 0), $weights, $wholeUnits);
 
         $session->shares()->delete();

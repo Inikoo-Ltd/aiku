@@ -1261,6 +1261,16 @@ describe('production reward pay bands', function () {
         expect((float) $taskA->refresh()->quantity_made)->toBe(0.0)
             ->and((float) $taskB->refresh()->quantity_made)->toBe(0.0);
 
+        $taskA->update(['quantity_required' => 7.333]);
+        $taskB->update(['quantity_required' => 31.667]);
+        $wholeBatch = StartManufactureTaskSession::make()->action($this->guest->getUser(), $taskA);
+        $wholeBatch->update(['started_at' => now()->subHours(2)]);
+        $wholeBatch = CloseManufactureTaskSession::make()->action($wholeBatch, ['quantity_made' => 39])->refresh();
+        expect($wholeBatch->shares->pluck('quantity_made', 'job_order_item_task_id')->map(fn ($quantity) => (float) $quantity)->all())->toBe([$taskA->id => 7.333, $taskB->id => 31.667])
+            ->and($taskA->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+            ->and($taskB->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+        \App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession::make()->action($wholeBatch);
+
         \App\Actions\Production\JobOrderItemTask\SeparateJobOrderItemTasks::make()->action($taskA);
         expect($taskA->refresh()->combined_task_id)->toBeNull()
             ->and($taskB->refresh()->combined_task_id)->toBeNull();
