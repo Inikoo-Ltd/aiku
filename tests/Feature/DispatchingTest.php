@@ -8732,7 +8732,10 @@ test('a consolidated delivery note to a partner takes packed and finalised notes
     $otherWarehouse = \App\Models\Inventory\Warehouse::where('id', '!=', $this->warehouse->id)->first();
     if ($otherWarehouse) {
         $this->patch(route('grp.org.warehouses.show.dispatching.partner_shipments.dispatch', [$this->organisation->slug, $otherWarehouse->slug, $truck->id]))->assertNotFound();
-        $this->get(route('grp.org.warehouses.show.dispatching.partner_shipments.index', [$this->organisation->slug, $otherWarehouse->slug]))->assertNotFound();
+    }
+    $foreignWarehouse = \App\Models\Inventory\Warehouse::where('organisation_id', '!=', $this->organisation->id)->first();
+    if ($foreignWarehouse) {
+        $this->get(route('grp.org.warehouses.show.dispatching.partner_shipments.index', [$this->organisation->slug, $foreignWarehouse->slug]))->assertNotFound();
     }
     $this->patch(route('grp.org.warehouses.show.dispatching.partner_shipments.dispatch', $truckRoute))->assertSessionHasNoErrors();
     expect($truck->refresh()->dispatched_at)->not->toBeNull()
