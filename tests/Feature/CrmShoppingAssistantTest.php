@@ -3761,6 +3761,7 @@ test('on a dropshipping shop Merlin reads why products do not list on the custom
             ->and($fact)->toContain('EB-03 · Bath Bomb EB-03 · '.__('Your eBay selling limit for this month is reached: upload fewer or cheaper products, ask eBay to raise your limits, or wait for next month.', [], 'en'))
             ->and($fact)->toContain('EB-04 · Bath Bomb EB-04 · '.__('eBay needs information about this product that only we can add: we are looking at it.', [], 'en'))
             ->and($fact)->toContain('EB-05 · Bath Bomb EB-05 · '.__('The listing no longer exists on eBay: press Create new product to list it again.', [], 'en'))
+            ->and($fact)->toContain(__('Tip: turn on "Out-of-stock control" in your eBay selling preferences, so eBay keeps your listings when a product runs out instead of ending them.', [], 'en'))
             ->and($fact)->not->toContain('XX-99')
             ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::causeOf('Se ha producido un error en el sistema. Para poder poner en venta este artículo, necesitamos información adicional que permita crear una cuenta de vendedor.'))->toBe('seller_account')
             ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::causeOf('The eBay listing associated with the inventory item, or the unpublished offer, has invalid data in the associated fulfilment policy.'))->toBe('business_policy')

@@ -119,6 +119,10 @@ class GetEbayListingProblems
 
         $causes = array_values(array_unique($causes));
 
+        if (in_array('listing_ended', $causes, true)) {
+            $facts[] = __('Tip: turn on "Out-of-stock control" in your eBay selling preferences, so eBay keeps your listings when a product runs out instead of ending them.', [], $locale);
+        }
+
         if ($dataGaps && $conversation) {
             StoreShoppingAssistantEngineerTicket::make()->storeCatalogueTask(
                 $conversation,
