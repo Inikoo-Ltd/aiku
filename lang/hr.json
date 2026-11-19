@@ -9151,5 +9151,8 @@
     ":actor has updated :reference, which is assigned to you.": ":actor je ažurirao/la :reference, koji vam je dodijeljen.",
     "Operational": "U funkciji",
     ":reference cancelled": ":reference otkazan",
-    "The customer": "Kupac"
+    "The customer": "Kupac",
+    "Your account with us was opened on :date.": "Vaš račun kod nas otvoren je :date.",
+    "Credit on your account: :amount.": "Kredit na vašem računu: :amount.",
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Pri plaćanju se najprije koristi vaš kredit, a ostatak se plaća načinom plaćanja koji odaberete."
 }

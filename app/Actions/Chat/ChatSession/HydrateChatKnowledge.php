@@ -27,8 +27,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Copies what a shop already says into its knowledge base, so the AI answers from short, current
  * entries instead of fetching whole pages: each section of the returns, delivery and terms pages,
- * what the shop's settings say (delivery prices per zone, blocked countries, offers, payment
- * methods) and, for dropshipping, the /docs guides (each guide's summary and each of its sections, so
+ * what the shop's settings and records say (delivery prices per zone, blocked countries, offers, payment
+ * methods, currency, the couriers per destination country) and, for dropshipping, the /docs guides (each guide's summary and each of its sections, so
  * a how-to question finds the steps and not only the one-line summary). Run every hour and on demand; entries staff
  * wrote are never touched.
  *

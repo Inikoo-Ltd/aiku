@@ -4288,3 +4288,25 @@ test('a shop with a sister shop points the customer to it, with a link built by 
         ->and($matched['fact'])->toBe(__('Our sister shop :website sells these: :link', ['website' => $sister->domain, 'link' => $sister->getUrl().'/search?q=oil%20burners'], $conversation->language_code))
         ->and(GetShoppingAssistantTools::sisterWebsite($website->fresh()))->toBeNull();
 });
+
+test('account details give the date the account was opened and its credit as sentences under the reply, never a figure written by the AI', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $customer->update(['registered_at' => '2024-03-03 10:00:00', 'balance' => 0]);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $locale       = $conversation->language_code;
+    $date         = \Carbon\Carbon::parse('2024-03-03');
+    $opened       = __('Your account with us was opened on :date.', ['date' => $date->locale($locale)->isoFormat('LL') ?: $date->locale('en')->isoFormat('LL')], $locale);
+
+    $noCredit = $tools->execute($conversation, 'account_details', []);
+    $customer->update(['balance' => 12.5]);
+    $credit = $tools->execute($conversation->setRelation('customer', $customer->refresh()), 'account_details', []);
+
+    expect($noCredit['fact'])->toBe($opened)
+        ->and($noCredit['content']['has_credit'])->toBeFalse()
+        ->and($credit['fact'])->toStartWith($opened)
+        ->and($credit['fact'])->toContain(Illuminate\Support\Number::currency(12.5, $this->shop->currency->code, $locale))
+        ->and($credit['fact'])->toEndWith(__('At checkout your credit is used first, and the rest is paid with the payment method you choose.', [], $locale))
+        ->and(json_encode($credit['content']))->not->toMatch('/\d/')
+        ->and(collect(GetShoppingAssistantTools::make()->definitions())->pluck('function.name'))->toContain('account_details');
+});

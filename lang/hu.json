@@ -9154,5 +9154,8 @@
     ":actor has updated :reference, which is assigned to you.": ":actor frissítette ezt: :reference (hozzád rendelve).",
     "Operational": "Működő",
     ":reference cancelled": ":reference törölve",
-    "The customer": "Az ügyfél"
+    "The customer": "Az ügyfél",
+    "Your account with us was opened on :date.": "Fiókja nálunk :date napon nyílt.",
+    "Credit on your account: :amount.": "Jóváírás a fiókjában: :amount.",
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "A pénztárnál először a jóváírását használjuk fel, a többit az Ön által választott fizetési móddal fizeti."
 }

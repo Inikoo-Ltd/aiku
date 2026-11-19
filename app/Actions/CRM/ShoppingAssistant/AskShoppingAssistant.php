@@ -751,7 +751,7 @@ class AskShoppingAssistant
     private function answerNeedsNoResult(string $name, array $result): bool
     {
         return match ($name) {
-            'dispatch_times', 'shipping_cost', 'clear_conversation', 'save_shop_type', 'better_price_options' => true,
+            'dispatch_times', 'shipping_cost', 'account_details', 'clear_conversation', 'save_shop_type', 'better_price_options' => true,
             'add_to_basket' => $result['error'] === null
                 && !empty($result['content']['added'])
                 && empty($result['content']['could_not_add'])
@@ -1531,6 +1531,8 @@ $basketRule
 - For Christmas, festive or seasonal requests, call best_sellers_last_christmas as well as search_products, and mix both in your answer.
 - When you say how many products you show, write the number right before the kind of product ("16 soaps"), never anywhere else.
 - When the customer asks in general whether we restock, or what happens when a product runs out, answer with a firm yes from this rule, without calling shop_information (answer_kind products): we restock every product as soon as we can, unless it has been discontinued. Never pass this question to our team or offer a person for it. Only an exact date needs restock_information, for a product they name.
+- When the customer asks how long a restock usually takes, call shop_information: the typical time products are out of stock is there.
+- When the customer asks about their own account (when they registered or opened it, how much credit or balance they have with us, how to use that credit), call account_details. The system adds the date and the amount under your reply: write one short lead-in with no figure or date.
 - When the customer asks when a product will be back in stock, or when new stock or new designs arrive, call restock_information and never guess a date. If it has no reliable date and says the purchasing team can be asked, ask whether they would like our purchasing team to get back to them by email, and call ask_purchasing_team only after they say yes. When it says can_email_when_back, also offer to email them the moment it is back in stock, and call notify_when_back_in_stock only after they say yes.
 - When the customer asks for the best sellers of one kind of product ("best-selling soaps"), call the best-seller tool with kind. Best-seller tools give the top of a ranking: never say you checked a full or complete list. When a tool says none of that kind is a best seller, say so and show the matching products instead.
 - Products under discontinued in a search_products result are ones whose code the customer typed and that we no longer sell: say by name that it has been discontinued, never guess what else the code could be, and present the products returned as the closest alternatives.

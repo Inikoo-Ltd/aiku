@@ -26902,5 +26902,8 @@
     "The language of this customer is not known yet": "Todavía no se conoce el idioma de este cliente",
     "What the customer gets if you send it unchanged": "Lo que recibe el cliente si lo envías sin cambios",
     "Draft by Aiku in :mine: change what you need, it is sent in :theirs": "Borrador de Aiku en :mine: cambia lo que necesites, se envía en :theirs",
-    "the customer's language": "el idioma del cliente"
+    "the customer's language": "el idioma del cliente",
+    "Your account with us was opened on :date.": "Su cuenta con nosotros se abrió el :date.",
+    "Credit on your account: :amount.": "Saldo a favor en su cuenta: :amount.",
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Al pagar, primero se usa su saldo a favor y el resto se paga con el método de pago que elija."
 }

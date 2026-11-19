@@ -31,8 +31,9 @@ use Locale;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * What the shop's own settings say about delivery, payment and offers, one entry each, for the
- * knowledge base: read from this shop's settings, never by a query a model writes.
+ * What the shop's own settings say about delivery, payment, offers and currency, and which couriers carried its
+ * shipments, one entry each, for the knowledge base: read from this shop's settings and records, never by a query a
+ * model writes.
  */
 class GetChatShopFacts
 {
@@ -42,6 +43,48 @@ class GetChatShopFacts
     public const array DROPSHIPPING_SHOP_BY_ORGANISATION = ['aw' => 'awd', 'sk' => 'dssk', 'es' => 'dse', 'aroma' => 'awd'];
 
     public const int HOME_SHOP_MIN_CUSTOMERS = 10;
+
+    public const int COURIER_DAYS = 30;
+
+    public const int RESTOCK_MONTHS = 12;
+
+    public const int RESTOCK_MIN_SPELLS = 30;
+
+    public const int COURIER_MIN_SHIPMENTS = 10;
+
+    public const int COURIER_MAX_COUNTRIES = 12;
+
+    public const int COURIER_MIN_SHARE = 5;
+
+    /**
+     * Shippers whose labels a marketplace buys (Faire, TikTok Shop, marketplace UPS): they carry that marketplace's
+     * orders, never one placed on our website, so they are not "the couriers we use".
+     */
+    public const string MARKETPLACE_SHIPPER = '/\((faire|tiktok)\)|market ?places/i';
+
+    /**
+     * The carrier a shipper record is, from its name and trade name: one carrier has several shipper records (API,
+     * manual tracking, Faire labels) and some trade as another (ITD prints Royal Mail labels).
+     */
+    public const array CARRIER_BRANDS = [
+        '/\bitd\b|royal mail/'                => 'Royal Mail',
+        '/\bapc\b/'                           => 'APC',
+        '/\bdpd|parcel distribution/'         => 'DPD',
+        '/\bgls\b|general logistics/'         => 'GLS',
+        '/\bups\b/'                           => 'UPS',
+        '/\bdhl/'                             => 'DHL',
+        '/fedex/'                             => 'FedEx',
+        '/\btnt\b/'                           => 'TNT',
+        '/\bevri\b/'                          => 'Evri',
+        '/correos express/'                   => 'Correos Express',
+        '/correos/'                           => 'Correos',
+        '/\bctt\b/'                           => 'CTT',
+        '/packeta|paketa/'                    => 'Packeta',
+        '/schenker|shenker/'                  => 'DB Schenker',
+        '/kuehne/'                            => 'Kuehne+Nagel',
+        '/slovak parcel service/'             => 'Slovak Parcel Service',
+        '/slovensk[aá] po[sš]ta/u'            => 'Slovenská pošta',
+    ];
 
     /**
      * What the shop's own settings say, one entry each, for the knowledge base.
@@ -63,6 +106,9 @@ class GetChatShopFacts
             ($methods = $this->paymentMethods($shop)) ? ['title' => __('Payment methods'), 'body' => $methods] : null,
             ($charges = $this->charges($shop)) ? ['title' => __('Charges'), 'body' => $charges] : null,
             ($bundles = $this->bundleDiscount($shop)) ? ['title' => __('Bundle discount'), 'body' => $bundles] : null,
+            ($restock = $this->restockTime($shop)) ? ['title' => __('How long products are out of stock'), 'body' => $restock] : null,
+            ($currency = $this->currency($shop)) ? ['title' => __('Currency'), 'body' => $currency] : null,
+            ($couriers = self::couriersText($this->shipmentsByCountryAndShipper($shop))) ? ['title' => __('Delivery companies (couriers) we use'), 'body' => $couriers] : null,
             $this->dropshippingShop($shop),
             ...$this->homeShops($shop),
         ]));
@@ -173,6 +219,142 @@ class GetChatShopFacts
              where orders.submitted_at > now() - interval '12 months' and orders.state <> 'cancelled' and shops.state = 'open' and shops.master_shop_id is not null
              group by shops.id, shops.master_shop_id, addresses.country_code, organisation_addresses.country_code"
         ));
+    }
+
+    /**
+     * The shop's currency, which every price, basket, invoice and payment of the shop is in: the website has no
+     * currency switch (INI-386: customers asked Merlin how to see prices in US dollars or euros).
+     */
+    private function currency(Shop $shop): ?string
+    {
+        if (!$shop->currency) {
+            return null;
+        }
+
+        return __('Prices on this website are in :currency (:code), and orders are invoiced and paid in :code. The website cannot show prices in another currency and the currency cannot be changed.', ['currency' => $shop->currency->name, 'code' => $shop->currency->code]);
+    }
+
+    /**
+     * How long the shop's products stayed out of stock before coming back, over the last RESTOCK_MONTHS months (INI-386:
+     * "how long does a restock usually take?" went to a guru). A spell is the days a stock it sells had nothing in
+     * its locations, counted only when stock came back within those months; a day or less is noise. Twice the months
+     * of history are read so a long spell that began earlier is counted whole, not cut at the window. Products being discontinued
+     * are left out: they are not restocked. Stock belongs to the organisation, so the figure is its stocks sold active in
+     * any of its shops, read once a day per organisation. Null under RESTOCK_MIN_SPELLS spells: no claim from a few.
+     */
+    private function restockTime(Shop $shop): ?string
+    {
+        $row = Cache::remember("chat-shop-facts:restock-time:$shop->organisation_id", now()->addDay(), fn () => DB::selectOne(
+            "with history as (
+                select org_stock_histories.org_stock_id, org_stock_histories.date, org_stock_histories.quantity_in_locations <= 0 as is_out
+                from org_stock_histories
+                where org_stock_histories.organisation_id = ? and org_stock_histories.date > current_date - 2 * ?::int
+                    and org_stock_histories.org_stock_id in (
+                        select product_has_org_stocks.org_stock_id from product_has_org_stocks
+                        join products on products.id = product_has_org_stocks.product_id
+                        join shops on shops.id = products.shop_id
+                        where shops.organisation_id = ? and products.state = 'active'
+                    )
+            ), islands as (
+                select org_stock_id, date, is_out, lead(is_out) over (partition by org_stock_id order by date) as next_is_out,
+                    date - (row_number() over (partition by org_stock_id, is_out order by date))::int as island
+                from history
+            ), spells as (
+                select org_stock_id, min(date) as started, max(date) as ended, max(date) - min(date) + 1 as days, bool_or(next_is_out is false) as came_back
+                from islands where is_out group by org_stock_id, island
+            )
+            select count(*) as spells,
+                percentile_cont(0.5) within group (order by days) as half,
+                percentile_cont(0.75) within group (order by days) as three_quarters
+            from spells
+            where came_back and days >= 2 and ended > current_date - ?::int and started > (select min(date) from history)",
+            [$shop->organisation_id, self::RESTOCK_MONTHS * 30, $shop->organisation_id, self::RESTOCK_MONTHS * 30]
+        ));
+
+        return self::restockText($row);
+    }
+
+    /**
+     * @param  ?object{spells: int, half: float, three_quarters: float}  $row
+     */
+    public static function restockText(?object $row): ?string
+    {
+        if (!$row || $row->spells < self::RESTOCK_MIN_SPELLS) {
+            return null;
+        }
+
+        return __('When a product runs out of stock we restock it, unless it is being discontinued. Over the last :months months, half of the products that ran out were back in stock within :half days, and 3 in 4 within :three_quarters days. For one product, the expected date depends on what is on order.', [
+            'months'         => self::RESTOCK_MONTHS,
+            'half'           => (int) ceil($row->half),
+            'three_quarters' => (int) ceil($row->three_quarters),
+        ]);
+    }
+
+    /**
+     * Which couriers carried the shop's shipments to each destination country over the last COURIER_DAYS days, by
+     * share of shipments (INI-386: "which delivery company do you use?" went to a guru although the shipments say).
+     * Marketplace label shippers are left out. Countries with fewer than COURIER_MIN_SHIPMENTS shipments say nothing; carriers under COURIER_MIN_SHARE% of a
+     * country are folded into "other couriers". Null when no country has enough shipments.
+     *
+     * @param  iterable<object{country_code: string, name: string, trade_as: ?string, shipments: int}>  $rows
+     */
+    public static function couriersText(iterable $rows): ?string
+    {
+        $countries = collect($rows)
+            ->reject(fn (object $row) => preg_match(self::MARKETPLACE_SHIPPER, $row->name))
+            ->groupBy('country_code')
+            ->map(fn ($rows) => $rows->groupBy(fn (object $row) => self::carrierBrand($row->name, $row->trade_as))->map(fn ($rows) => (int) $rows->sum('shipments'))->sortDesc())
+            ->filter(fn ($carriers) => $carriers->sum() >= self::COURIER_MIN_SHIPMENTS)
+            ->sortByDesc(fn ($carriers) => $carriers->sum())
+            ->take(self::COURIER_MAX_COUNTRIES);
+
+        if ($countries->isEmpty()) {
+            return null;
+        }
+
+        $lines = $countries->map(function ($carriers, string $countryCode) {
+            $total  = $carriers->sum();
+            $shares = $carriers->map(fn (int $shipments) => (int) round(100 * $shipments / $total));
+            $named  = $shares->filter(fn (int $share) => $share >= self::COURIER_MIN_SHARE);
+            $other  = 100 - $named->sum();
+
+            return (Locale::getDisplayRegion('-'.$countryCode, 'en') ?: $countryCode).': '
+                .$named->map(fn (int $share, string $carrier) => $carrier.' '.$share.'%')->join(', ')
+                .($other > 0 && $named->count() < $carriers->count() ? ', '.__('other couriers').' '.$other.'%' : '');
+        });
+
+        return __('The delivery companies (couriers) that carried our shipments in the last :days days, by destination country, with their share of the shipments', ['days' => self::COURIER_DAYS]).': '.$lines->join('; ').'.';
+    }
+
+    public static function carrierBrand(string $name, ?string $tradeAs): string
+    {
+        $text = mb_strtolower($name.' '.$tradeAs);
+
+        foreach (self::CARRIER_BRANDS as $pattern => $brand) {
+            if (preg_match($pattern, $text)) {
+                return $brand;
+            }
+        }
+
+        return trim(preg_replace('/\s*(\(.*\)|-\s.*|\blegacy\b)\s*$/i', '', $name) ?: $name);
+    }
+
+    /**
+     * @return array<int, object{country_code: string, name: string, trade_as: ?string, shipments: int}>
+     */
+    private function shipmentsByCountryAndShipper(Shop $shop): array
+    {
+        return DB::select(
+            "select countries.code as country_code, shippers.name, shippers.trade_as, count(distinct shipments.id) as shipments
+             from shipments
+             join shippers on shippers.id = shipments.shipper_id
+             join model_has_shipments on model_has_shipments.shipment_id = shipments.id and model_has_shipments.model_type = 'DeliveryNote'
+             join delivery_notes on delivery_notes.id = model_has_shipments.model_id
+             join countries on countries.id = delivery_notes.delivery_country_id
+             where shipments.shop_id = ? and shipments.created_at > ? and shipments.deleted_at is null
+             group by countries.code, shippers.name, shippers.trade_as",
+            [$shop->id, now()->subDays(self::COURIER_DAYS)->toDateTimeString()]
+        );
     }
 
     private function zoneCountries($zone): string
