@@ -135,11 +135,13 @@ class ShowSupplierShare
                 ->additional(IndexSupplierPortalPriceChanges::make()->facets($supplier, 'price_changes')),
             'sales'                => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
             'feedback'             => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier, null, Language::where('code', $language)->first()), 'feedback'),
-            'delivery_feedback'    => Inertia::defer(fn () => StockDeliveryFeedbackResource::collection(
-                StockDeliveryFeedback::where('supplier_id', $supplier->id)->where('created_at', '>=', now()->subYear())
-                    ->with(['supplier', 'agent', 'author', 'organisation', 'procurementNote', 'stockDelivery'])
-                    ->latest('id')->get()
-            )->resolve(), 'delivery_feedback'),
+            'delivery_feedback'    => Inertia::defer(fn () => StockDeliveryFeedbackResource::forSupplier(
+                StockDeliveryFeedback::whereNotNull('sent_at')->where('sent_at', '>=', now()->subYear())
+                    ->where(fn ($query) => $query->where('supplier_id', $supplier->id)->orWhereHas('items', fn ($items) => $items->where('supplier_id', $supplier->id)))
+                    ->with(['supplier', 'agent', 'author', 'organisation', 'procurementNote', 'stockDelivery', 'items' => fn ($items) => $items->where('supplier_id', $supplier->id)->with(['supplier', 'procurementNote', 'stockDeliveryItem.orgStock', 'stockDeliveryItem.supplierProduct'])])
+                    ->latest('sent_at')->get(),
+                $supplier->id
+            ), 'delivery_feedback'),
             'agreement'            => GetSupplierPortalAgreement::make()->handle(
                 $supplier,
                 $token === null ? route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'agreement']) : route('grp.supplier_share.agreement.accept', $token)

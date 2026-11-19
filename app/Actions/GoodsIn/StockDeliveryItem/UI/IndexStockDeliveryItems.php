@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDeliveryItem\UI;
 
+use App\Actions\GoodsIn\StockDeliveryFollowUp\StoreStockDeliveryFeedback;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -178,6 +179,7 @@ class IndexStockDeliveryItems extends OrgAction
             'stockDelivery.currency',
             'sowings' => fn ($sowings) => $sowings->where('type', SowingTypeEnum::SOW)->orderBy('id')->with('location'),
             'batches.batchCode',
+            'feedback',
         ]);
 
         $weight = DB::table('model_has_trade_units as mhtu')
@@ -260,9 +262,9 @@ class IndexStockDeliveryItems extends OrgAction
      * Without booking in (the procurement page) a delivery in the warehouse lists what was ordered, checked
      * and placed, with nothing to type; the counting and placing columns belong to goods in.
      */
-    public function tableStructure(StockDelivery $stockDelivery, ?string $prefix = null, bool $withCosting = true, bool $bookingIn = true): Closure
+    public function tableStructure(StockDelivery $stockDelivery, ?string $prefix = null, bool $withCosting = true, bool $bookingIn = true, bool $withFeedback = true): Closure
     {
-        return function (InertiaTable $table) use ($stockDelivery, $prefix, $withCosting, $bookingIn) {
+        return function (InertiaTable $table) use ($stockDelivery, $prefix, $withCosting, $bookingIn, $withFeedback) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -299,8 +301,11 @@ class IndexStockDeliveryItems extends OrgAction
                 StockDeliveryStateEnum::READY_TO_SHIP,
             ];
 
+            $withFeedback = $withFeedback && in_array($stockDelivery->state, StoreStockDeliveryFeedback::STATES, true);
+
             if ($withCosting && $stockDelivery->state === StockDeliveryStateEnum::PLACED) {
                 $this->costingColumns($table, $stockDelivery);
+                $this->feedbackColumn($table, $withFeedback);
 
                 return;
             }
@@ -347,7 +352,19 @@ class IndexStockDeliveryItems extends OrgAction
 
                 $table->defaultSort('code');
             }
+
+            $this->feedbackColumn($table, $withFeedback);
         };
+    }
+
+    /**
+     * The row icon to put a note on a line for its supplier, or open the one already there.
+     */
+    private function feedbackColumn(InertiaTable $table, bool $withFeedback): void
+    {
+        if ($withFeedback) {
+            $table->column(key: 'feedback', label: ['fal', 'fa-comment-alt-exclamation'], canBeHidden: false, align: 'right');
+        }
     }
 
     private function costingColumns(InertiaTable $table, StockDelivery $stockDelivery): void

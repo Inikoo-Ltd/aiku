@@ -186,6 +186,11 @@ class StockDeliveryItem extends Model implements Auditable
         return $this->hasOne(StockDeliveryClaim::class);
     }
 
+    public function feedback(): HasOne
+    {
+        return $this->hasOne(StockDeliveryItemFeedback::class);
+    }
+
     public function sowings(): HasMany
     {
         return $this->hasMany(Sowing::class);

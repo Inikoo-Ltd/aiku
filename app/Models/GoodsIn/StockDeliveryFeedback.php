@@ -16,10 +16,14 @@ use App\Models\SysAdmin\User;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * What the receiving organisation tells a supplier (and its agent) about one delivery: one per supplier on the
- * delivery. It is a message only: it never touches stock, claims, discrepancy outcomes or money.
+ * The feedback round of one delivery, one per delivery: the general part (stars, topics, comment, photos) is for
+ * whoever sent it (the agent of a consolidated container, else its only supplier or partner, supplier_id set only
+ * when the delivery has one supplier) and its items are notes on single lines, each for that line's supplier. Notes
+ * can come before the stars: until sent_at the round is a draft nobody outside sees. A message only: it never
+ * touches stock, claims, discrepancy outcomes or money.
  *
  * @property int $id
  * @property int $group_id
@@ -30,10 +34,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $org_partner_id
  * @property int|null $buyer_id
  * @property int|null $author_id
- * @property int $rating
+ * @property int|null $rating
  * @property array<int, string> $topics
  * @property string|null $comment
  * @property int|null $procurement_note_id
+ * @property \Illuminate\Support\Carbon|null $sent_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read StockDelivery $stockDelivery
@@ -43,6 +48,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read User|null $buyer
  * @property-read User|null $author
  * @property-read ProcurementNote|null $procurementNote
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, StockDeliveryItemFeedback> $items
  */
 class StockDeliveryFeedback extends Model
 {
@@ -59,7 +65,8 @@ class StockDeliveryFeedback extends Model
     protected function casts(): array
     {
         return [
-            'topics' => 'array',
+            'topics'  => 'array',
+            'sent_at' => 'datetime',
         ];
     }
 
@@ -96,5 +103,15 @@ class StockDeliveryFeedback extends Model
     public function procurementNote(): BelongsTo
     {
         return $this->belongsTo(ProcurementNote::class);
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(StockDeliveryItemFeedback::class)->orderBy('id');
+    }
+
+    public function isSent(): bool
+    {
+        return $this->sent_at !== null;
     }
 }

@@ -432,8 +432,12 @@ use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryImportFile;
 use App\Actions\GoodsIn\StockDelivery\UI\DownloadStockDeliveryImportFileDocuments;
 use App\Actions\GoodsIn\StockDeliveryClaim\UpdateStockDeliveryClaim;
 use App\Actions\GoodsIn\StockDeliveryFollowUp\CreateSupplierInstructionFromFeedback;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\CreateSupplierInstructionFromItemFeedback;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\DeleteStockDeliveryItemFeedback;
 use App\Actions\GoodsIn\StockDeliveryFollowUp\StoreStockDeliveryFeedback;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\StoreStockDeliveryItemFeedback;
 use App\Actions\GoodsIn\StockDeliveryFollowUp\UpdateStockDeliveryFeedback;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\UpdateStockDeliveryItemFeedback;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemBatches;
 use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
@@ -2132,6 +2136,7 @@ Route::name('stock-delivery-deposit-application.')->prefix('stock-delivery-depos
 Route::post('stock-delivery-packing-check/{stockDeliveryPackingCheck:id}', RecordStockDeliveryPackingCheck::class)->name('stock_delivery_packing_check.record');
 
 Route::name('stock-delivery-item.')->prefix('stock-delivery-item/{stockDeliveryItem:id}')->group(function () {
+    Route::post('feedback', StoreStockDeliveryItemFeedback::class)->name('feedback.store');
     Route::patch('confirm', UpdateStateToConfirmedStockDeliveryItem::class)->name('confirm')->withoutScopedBindings();
     Route::patch('ready-to-ship', UpdateStateToReadyToShipStockDeliveryItem::class)->name('ready-to-ship')->withoutScopedBindings();
     Route::patch('set-checked', SetStockDeliveryItemCheckedQuantity::class)->name('set-checked')->withoutScopedBindings();
@@ -2152,6 +2157,12 @@ Route::post('stock-delivery-claim/{stockDeliveryClaim:id}/update', UpdateStockDe
 Route::name('stock-delivery-feedback.')->prefix('stock-delivery-feedback/{stockDeliveryFeedback:id}')->group(function () {
     Route::patch('', UpdateStockDeliveryFeedback::class)->name('update');
     Route::post('instruction', CreateSupplierInstructionFromFeedback::class)->name('instruction.store');
+});
+
+Route::name('stock-delivery-item-feedback.')->prefix('stock-delivery-item-feedback/{stockDeliveryItemFeedback:id}')->group(function () {
+    Route::patch('', UpdateStockDeliveryItemFeedback::class)->name('update');
+    Route::delete('', DeleteStockDeliveryItemFeedback::class)->name('delete');
+    Route::post('instruction', CreateSupplierInstructionFromItemFeedback::class)->name('instruction.store');
 });
 
 Route::name('org-supplier.')->prefix('org-supplier/{orgSupplier:id}')->group(function () {

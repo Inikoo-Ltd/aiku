@@ -10,31 +10,29 @@ namespace App\Actions\GoodsIn\StockDeliveryFollowUp;
 
 use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\User\NotifyUserOnChosenChannels;
 use App\Actions\Traits\Authorisations\WithGoodsInBookInAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryFollowUp\StockDeliveryFeedbackTopicEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
-use App\Enums\SysAdmin\User\UserNotificationEnum;
-use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryFeedback;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\User;
-use App\Notifications\StockDeliveryFeedbackNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Receiving staff tell a supplier how its part of a delivery arrived, once per supplier on the delivery: a second
- * submit gets the first feedback back and tells nobody again. It is only a message: stock, claims, discrepancy
- * outcomes and money are never touched, and nothing is ever rated by itself. The buyer is told in aiku; the
- * supplier reads it on its portal.
+ * Receiving staff send the feedback round of a delivery, once per delivery: the stars, topics, comment and photos are
+ * for whoever sent it (the agent of a consolidated container, else its only supplier or partner), and the notes
+ * already put on single lines go out with it to their own suppliers. A second submit gets the round back and tells
+ * nobody again. It is only a message: stock, claims, discrepancy outcomes and money are never touched. The buyers are
+ * told in aiku; suppliers read their part on their portal, the agent on the delivery.
  */
 class StoreStockDeliveryFeedback extends OrgAction
 {
@@ -51,56 +49,51 @@ class StoreStockDeliveryFeedback extends OrgAction
 
     public function handle(StockDelivery $stockDelivery, User $author, array $modelData): StockDeliveryFeedback
     {
-        $supplierId = Arr::get($modelData, 'supplier_id');
+        $roundId = self::round($stockDelivery, $author)->id;
+        $sent    = DB::transaction(function () use ($roundId, $author, $modelData) {
+            $round = StockDeliveryFeedback::lockForUpdate()->findOrFail($roundId);
+            if ($round->isSent()) {
+                return null;
+            }
 
-        $feedback = StockDeliveryFeedback::createOrFirst(['stock_delivery_id' => $stockDelivery->id, 'supplier_id' => $supplierId], [
+            $round->update([
+                'author_id' => $author->id,
+                'rating'    => (int) $modelData['rating'],
+                'topics'    => array_values(array_unique(Arr::get($modelData, 'topics', []))),
+                'comment'   => Arr::get($modelData, 'comment'),
+                'sent_at'   => now(),
+            ]);
+
+            return $round;
+        });
+
+        if (!$sent) {
+            return StockDeliveryFeedback::findOrFail($roundId);
+        }
+
+        self::savePhotos($sent, Arr::get($modelData, 'photos', []));
+        NotifyStockDeliveryFeedback::run($sent, $author, $sent->items()->with('stockDeliveryItem.orgStock')->get(), withGeneral: true);
+
+        return $sent->refresh();
+    }
+
+    /**
+     * The delivery's round, made as a draft (no stars, not sent) the first time anyone gives feedback on it.
+     */
+    public static function round(StockDelivery $stockDelivery, User $author): StockDeliveryFeedback
+    {
+        $suppliers  = self::suppliersOn($stockDelivery);
+        $supplierId = $suppliers->count() === 1 ? $suppliers->first()->id : null;
+
+        return StockDeliveryFeedback::createOrFirst(['stock_delivery_id' => $stockDelivery->id], [
             'group_id'        => $stockDelivery->group_id,
             'organisation_id' => $stockDelivery->organisation_id,
+            'supplier_id'     => $supplierId,
             'agent_id'        => $stockDelivery->agent_id,
             'org_partner_id'  => $stockDelivery->parent_type === 'OrgPartner' ? $stockDelivery->parent_id : null,
             'buyer_id'        => ResolveStockDeliveryBuyer::run($stockDelivery, null, $supplierId),
             'author_id'       => $author->id,
-            'rating'          => (int) $modelData['rating'],
-            'topics'          => array_values(array_unique(Arr::get($modelData, 'topics', []))),
-            'comment'         => Arr::get($modelData, 'comment'),
         ]);
-
-        if (!$feedback->wasRecentlyCreated) {
-            return $feedback;
-        }
-
-        self::savePhotos($feedback, Arr::get($modelData, 'photos', []));
-        $this->notifyBuyer($feedback, $author);
-
-        return $feedback;
-    }
-
-    private function notifyBuyer(StockDeliveryFeedback $feedback, User $author): void
-    {
-        $buyer = $feedback->buyer;
-        if (!$buyer || !$buyer->status || $buyer->id === $author->id) {
-            return;
-        }
-
-        $stockDelivery = $feedback->stockDelivery;
-        $title         = __(':stars stars for :supplier on delivery :reference', [
-            'stars'     => $feedback->rating,
-            'supplier'  => $feedback->supplier?->name ?? $stockDelivery->parent_name,
-            'reference' => $stockDelivery->reference,
-        ]);
-        $route = [
-            'name'       => 'grp.org.procurement.stock_deliveries.show',
-            'parameters' => ['organisation' => $stockDelivery->organisation->slug, 'stockDelivery' => $stockDelivery->slug, 'tab' => StockDeliveryTabsEnum::FEEDBACK->value],
-        ];
-
-        NotifyUserOnChosenChannels::run(
-            $buyer,
-            UserNotificationEnum::DELIVERY_FEEDBACK,
-            new StockDeliveryFeedbackNotification($title, (string) $feedback->comment, UserNotificationEnum::DELIVERY_FEEDBACK->value, (string) $feedback->id, $route),
-            $title,
-            (string) $feedback->comment,
-            route($route['name'], $route['parameters'])
-        );
     }
 
     /**
@@ -147,33 +140,15 @@ class StoreStockDeliveryFeedback extends OrgAction
     {
         return [
             ...self::feedbackRules(),
-            'supplier_id' => ['sometimes', 'nullable', 'integer'],
             'photos'      => ['sometimes', 'array', 'max:10'],
             'photos.*'    => ['file', 'mimes:jpg,jpeg,png,webp,heic,pdf', 'max:20480'],
         ];
-    }
-
-    public function prepareForValidation(): void
-    {
-        if (!$this->has('supplier_id')) {
-            $suppliers = self::suppliersOn($this->stockDelivery);
-            $this->set('supplier_id', $suppliers->count() === 1 ? $suppliers->first()->id : null);
-        }
     }
 
     public function afterValidator(Validator $validator): void
     {
         if (!in_array($this->stockDelivery->state, self::STATES, true)) {
             $validator->errors()->add('rating', __('Feedback can be given once the delivery is checked'));
-        }
-
-        $suppliers  = self::suppliersOn($this->stockDelivery)->pluck('id');
-        $supplierId = $this->get('supplier_id');
-        if ($suppliers->isNotEmpty() && !$suppliers->contains($supplierId)) {
-            $validator->errors()->add('supplier_id', __('Choose the supplier this feedback is about'));
-        }
-        if ($suppliers->isEmpty() && $supplierId) {
-            $validator->errors()->add('supplier_id', __('This delivery has no supplier to choose'));
         }
     }
 

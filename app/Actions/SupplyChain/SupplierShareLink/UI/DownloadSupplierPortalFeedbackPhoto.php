@@ -19,8 +19,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * A photo of a delivery feedback, to view or download from the supplier page. Only the photos of feedback about the
- * supplier's own goods can be reached through its link.
+ * A photo of a delivery feedback, to view or download from the supplier page. Only the photos of a sent round
+ * addressed to the supplier, or of notes on its own lines, can be reached through its link.
  */
 class DownloadSupplierPortalFeedbackPhoto
 {
@@ -35,14 +35,24 @@ class DownloadSupplierPortalFeedbackPhoto
 
     public function isFeedbackPhoto(Supplier $supplier, Media $media): bool
     {
-        return DB::table('model_has_attachments')
-            ->join('stock_delivery_feedbacks', fn ($join) => $join->on('stock_delivery_feedbacks.stock_delivery_id', 'model_has_attachments.model_id')
-                ->whereRaw("model_has_attachments.sub_scope = 'feedback:' || stock_delivery_feedbacks.id"))
+        $attachments = fn () => DB::table('model_has_attachments')
             ->where('model_has_attachments.model_type', 'StockDelivery')
             ->where('model_has_attachments.scope', PurchaseOrderAttachmentScopeEnum::FEEDBACK->value)
-            ->where('model_has_attachments.media_id', $media->id)
+            ->where('model_has_attachments.media_id', $media->id);
+
+        return $attachments()
+            ->join('stock_delivery_feedbacks', fn ($join) => $join->on('stock_delivery_feedbacks.stock_delivery_id', 'model_has_attachments.model_id')
+                ->whereRaw("model_has_attachments.sub_scope = 'feedback:' || stock_delivery_feedbacks.id"))
             ->where('stock_delivery_feedbacks.supplier_id', $supplier->id)
-            ->exists();
+            ->whereNotNull('stock_delivery_feedbacks.sent_at')
+            ->exists()
+            || $attachments()
+                ->join('stock_delivery_item_feedbacks', fn ($join) => $join->on('stock_delivery_item_feedbacks.stock_delivery_id', 'model_has_attachments.model_id')
+                    ->whereRaw("model_has_attachments.sub_scope = 'feedback_item:' || stock_delivery_item_feedbacks.id"))
+                ->join('stock_delivery_feedbacks', 'stock_delivery_feedbacks.id', 'stock_delivery_item_feedbacks.stock_delivery_feedback_id')
+                ->where('stock_delivery_item_feedbacks.supplier_id', $supplier->id)
+                ->whereNotNull('stock_delivery_feedbacks.sent_at')
+                ->exists();
     }
 
     public function asController(string $token, Media $media, Request $request): BinaryFileResponse

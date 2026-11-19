@@ -4,7 +4,6 @@ import { useForm } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
 import FileUpload from "primevue/fileupload"
 import Rating from "primevue/rating"
-import Select from "primevue/select"
 import SelectButton from "primevue/selectbutton"
 import Textarea from "primevue/textarea"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -14,7 +13,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPaperPlane, faTimes } from "@fal"
 
 export interface FeedbackOptions {
-	suppliers?: { id: number | null; code: string | null; name: string | null; purchase_orders: string[] }[]
+	sent?: boolean
+	recipient?: { code: string | null; name: string | null; is_agent: boolean }
+	purchase_orders?: string[]
+	items_noted?: number
+	issues: { value: string; label: string }[]
+	item_store_route?: routeType
 	rating_descriptions: { value: number; label: string }[]
 	topics: { value: string; label: string }[]
 	default_comments: Record<number, string>
@@ -42,33 +46,27 @@ const emit = defineEmits<{
 const visible = defineModel<boolean>("visible", { default: false })
 
 const form = useForm<{
-	supplier_id: number | null
 	rating: number | null
 	topics: string[]
 	comment: string
 	photos: File[]
 }>({
-	supplier_id: null,
 	rating: null,
 	topics: [],
 	comment: "",
 	photos: [],
 })
 
-const suppliers = computed(() => props.options.suppliers ?? [])
-const supplier = computed(() => suppliers.value.find((entry) => entry.id === form.supplier_id) ?? (suppliers.value.length === 1 ? suppliers.value[0] : null))
 const isEditing = computed(() => !!props.feedback)
-const needsSupplier = computed(() => !isEditing.value && suppliers.value.length > 1)
 const needsComment = computed(() => form.rating !== null && form.rating < 5)
 const ratingDescription = computed(() => props.options.rating_descriptions.find((description) => description.value === form.rating)?.label)
-const canSubmit = computed(() => form.rating !== null && (!needsComment.value || !!form.comment.trim()) && (!needsSupplier.value || form.supplier_id !== null))
+const canSubmit = computed(() => form.rating !== null && (!needsComment.value || !!form.comment.trim()))
 
 watch(visible, (isVisible) => {
 	if (!isVisible) {
 		return
 	}
 	form.clearErrors()
-	form.supplier_id = suppliers.value.length === 1 ? suppliers.value[0].id : null
 	form.rating = props.feedback?.rating ?? null
 	form.topics = props.feedback?.topics.map((topic) => topic.value) ?? []
 	form.comment = props.feedback?.comment ?? ""
@@ -106,16 +104,18 @@ const submit = () => {
 <template>
 	<Dialog v-model:visible="visible" modal :header="isEditing ? ctrans('Edit delivery feedback') : ctrans('Give delivery feedback')" :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
 		<div class="space-y-4 text-sm">
-			<label v-if="needsSupplier" class="block space-y-1">
-				<span class="text-xs text-gray-500">{{ ctrans("Supplier") }} <span class="text-red-500">*</span></span>
-				<Select v-model="form.supplier_id" :options="suppliers" optionValue="id" :optionLabel="(entry) => `${entry.code} · ${entry.name}`" :placeholder="ctrans('Choose the supplier this feedback is about')" fluid />
-			</label>
-			<div v-if="!isEditing && supplier" class="rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
-				<span class="whitespace-nowrap font-medium text-gray-800">{{ supplier.code }}</span>
-				<span class="ml-1">{{ supplier.name }}</span>
-				<div v-if="supplier.purchase_orders.length" class="mt-0.5">
+			<div v-if="!isEditing && options.recipient" class="rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
+				<span>{{ options.recipient.is_agent ? ctrans("For the agent") : ctrans("For") }}</span>
+				<span class="ml-1 whitespace-nowrap font-medium text-gray-800">{{ options.recipient.code }}</span>
+				<span class="ml-1">{{ options.recipient.name }}</span>
+				<div v-if="options.purchase_orders?.length" class="mt-0.5">
 					{{ ctrans("Purchase orders") }}:
-					<span v-for="(reference, index) in supplier.purchase_orders" :key="reference" class="whitespace-nowrap">{{ reference }}<template v-if="index < supplier.purchase_orders.length - 1">, </template></span>
+					<span v-for="(reference, index) in options.purchase_orders" :key="reference" class="whitespace-nowrap">{{ reference }}<template v-if="index < options.purchase_orders.length - 1">, </template></span>
+				</div>
+				<div class="mt-1">
+					{{ options.items_noted
+						? ctrans(":count item notes go with it, each to the supplier of its line.", { count: options.items_noted })
+						: ctrans("To tell a supplier about one item (rotten, broken, wrong item), use the icon on its row in the Items tab.") }}
 				</div>
 			</div>
 
@@ -131,7 +131,7 @@ const submit = () => {
 			</div>
 
 			<label class="block space-y-1">
-				<span class="text-xs text-gray-500">{{ ctrans("Comment for the supplier") }} <span v-if="needsComment" class="text-red-500">*</span></span>
+				<span class="text-xs text-gray-500">{{ options.recipient?.is_agent ? ctrans("Comment for the agent") : ctrans("Comment for the supplier") }} <span v-if="needsComment" class="text-red-500">*</span></span>
 				<Textarea v-model="form.comment" rows="3" autoResize fluid :placeholder="form.rating ? options.placeholders[form.rating] : undefined" />
 			</label>
 

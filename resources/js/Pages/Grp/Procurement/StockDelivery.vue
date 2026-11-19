@@ -1072,7 +1072,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 
 		<template #button-give-feedback="{ action }">
 			<Button
-				v-if="give_feedback?.suppliers?.length"
+				v-if="give_feedback && !give_feedback.sent"
 				:style="action.style"
 				:label="action.label"
 				:icon="action.icon"
@@ -1605,6 +1605,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 		:scopeOptions="currentTab === 'attachments' ? attachmentScopes : undefined"
 		:readonly="currentTab === 'attachments' ? !attachmentRoutes.canChange : undefined"
 		:options="currentTab === 'feedback' ? give_feedback : undefined"
+		:feedbackOptions="['items', 'pending_items', 'done_items'].includes(currentTab) ? give_feedback : undefined"
 		:storeRoute="currentTab === 'notes' && note_form?.can_write !== false ? note_store_route : undefined"
 			:agreement="currentTab === 'notes' ? note_form : undefined"
 		:costingAvailable="currentTab === 'import_file' && costing && !costing.viewed_by_agent ? { invoice: isInvoiceVisible && !costing.is_partner, landed: isCostingVisible } : undefined"

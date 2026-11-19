@@ -10,18 +10,17 @@ namespace App\Actions\GoodsIn\StockDeliveryFollowUp\UI;
 
 use App\Actions\GoodsIn\StockDeliveryFollowUp\StoreStockDeliveryFeedback;
 use App\Enums\GoodsIn\StockDeliveryFollowUp\StockDeliveryFeedbackTopicEnum;
+use App\Enums\GoodsIn\StockDeliveryFollowUp\StockDeliveryItemFeedbackIssueEnum;
 use App\Http\Resources\GoodsIn\StockDeliveryFeedbackResource;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryFeedback;
-use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\User;
-use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
- * What the delivery page needs to give and show feedback. The form offers only the suppliers on the delivery with
- * no feedback yet (a delivery with no supplier products, a partner one, is one entry), with nothing preselected.
- * No money, so the warehouse page gets it too.
+ * What the delivery page needs to give and show feedback: the round's general part goes to whoever sent the delivery
+ * (the agent of a consolidated container, else its supplier or partner) and each line of the items table can take a
+ * note for its own supplier. No money, so the warehouse page gets it too.
  */
 class GetStockDeliveryFeedbackForm
 {
@@ -42,34 +41,24 @@ class GetStockDeliveryFeedbackForm
     }
 
     /**
-     * @return Collection<int, array{id: int|null, code: string|null, name: string|null}>
-     */
-    public static function suppliersAwaitingFeedback(StockDelivery $stockDelivery): Collection
-    {
-        $given     = $stockDelivery->feedbacks()->pluck('supplier_id')->map(fn ($id) => (int) $id);
-        $suppliers = StoreStockDeliveryFeedback::suppliersOn($stockDelivery);
-
-        return $suppliers->isEmpty()
-            ? collect($given->isEmpty() ? [['id' => null, 'code' => $stockDelivery->parent_code, 'name' => $stockDelivery->parent_name]] : [])
-            : $suppliers->reject(fn (Supplier $supplier) => $given->contains($supplier->id))
-                ->map(fn (Supplier $supplier) => ['id' => $supplier->id, 'code' => $supplier->code, 'name' => $supplier->name])
-                ->values();
-    }
-
-    /**
      * @return array<string, mixed>
      */
     public function handle(StockDelivery $stockDelivery): array
     {
-        $entries = self::suppliersAwaitingFeedback($stockDelivery);
+        $round = $stockDelivery->feedback;
 
         return [
-            'suppliers'           => $entries->map(fn (array $entry) => [
-                ...$entry,
-                'purchase_orders' => StockDeliveryFeedbackResource::purchaseOrders(new StockDeliveryFeedback(['stock_delivery_id' => $stockDelivery->id, 'supplier_id' => $entry['id']])),
-            ])->values()->all(),
+            'sent'                => (bool) $round?->isSent(),
+            'recipient'           => StockDeliveryFeedbackResource::recipient($round ?? new StockDeliveryFeedback([
+                'stock_delivery_id' => $stockDelivery->id,
+                'supplier_id'       => ($suppliers = StoreStockDeliveryFeedback::suppliersOn($stockDelivery))->count() === 1 ? $suppliers->first()->id : null,
+                'agent_id'          => $stockDelivery->agent_id,
+            ])),
+            'purchase_orders'     => StockDeliveryFeedbackResource::purchaseOrders($round ?? new StockDeliveryFeedback(['stock_delivery_id' => $stockDelivery->id])),
+            'items_noted'         => $round ? $round->items()->count() : 0,
             'rating_descriptions' => collect(self::ratingDescriptions())->map(fn (string $label, int $rating) => ['value' => $rating, 'label' => $label])->values()->all(),
             'topics'              => collect(StockDeliveryFeedbackTopicEnum::labels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
+            'issues'              => collect(StockDeliveryItemFeedbackIssueEnum::labels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
             'default_comments'    => [
                 5 => __('Thank you. Goods received in perfect condition, quantities correct and packaging excellent.'),
             ],
@@ -82,30 +71,56 @@ class GetStockDeliveryFeedbackForm
                 'parameters' => ['stockDelivery' => $stockDelivery->id],
                 'method'     => 'post',
             ],
+            'item_store_route'    => [
+                'name'       => 'grp.models.stock-delivery-item.feedback.store',
+                'parameters' => [],
+                'method'     => 'post',
+            ],
         ];
     }
 
     /**
-     * One card per feedback, each with the open discrepancies of its supplier on the delivery and the actions the
-     * user may take on it.
+     * The round as one card, with the open discrepancies of the delivery (of its supplier when it has one) and the
+     * actions the user may take on it and on each line note. The agent sees the round only once sent, without names.
      *
      * @return array<int, array<string, mixed>>
      */
-    public static function cards(StockDelivery $stockDelivery, User $user, bool $canEdit): array
+    public static function cards(StockDelivery $stockDelivery, User $user, bool $canEdit, bool $forAgent = false): array
     {
         return $stockDelivery->feedbacks()
-            ->with(['supplier', 'agent', 'author', 'organisation', 'procurementNote', 'stockDelivery'])
+            ->when($forAgent, fn ($query) => $query->whereNotNull('sent_at'), fn ($query) => $query->where(fn ($query) => $query->whereNotNull('sent_at')->orWhereHas('items')))
+            ->with(['supplier', 'agent', 'author', 'organisation', 'procurementNote', 'stockDelivery', 'items' => fn ($query) => $query->with(['supplier', 'author', 'procurementNote', 'stockDeliveryItem.orgStock', 'stockDeliveryItem.supplierProduct'])])
             ->orderBy('id')
             ->get()
-            ->map(fn (StockDeliveryFeedback $feedback) => [
-                ...StockDeliveryFeedbackResource::make($feedback)->resolve(),
-                'open_discrepancies'     => StockDeliveryFeedbackResource::openDiscrepancies($feedback),
-                'make_instruction_route' => $canEdit && $feedback->supplier_id && !$feedback->procurement_note_id
-                    ? ['name' => 'grp.models.stock-delivery-feedback.instruction.store', 'parameters' => ['stockDeliveryFeedback' => $feedback->id], 'method' => 'post']
-                    : null,
-                'update_route'           => $feedback->author_id === $user->id
-                    ? ['name' => 'grp.models.stock-delivery-feedback.update', 'parameters' => ['stockDeliveryFeedback' => $feedback->id], 'method' => 'patch']
-                    : null,
-            ])->all();
+            ->map(function (StockDeliveryFeedback $feedback) use ($user, $canEdit, $forAgent) {
+                $card = StockDeliveryFeedbackResource::make($feedback)->resolve();
+                $card['items'] = collect($card['items'])->map(fn (array $note) => [
+                    ...$note,
+                    'author'                 => $forAgent ? null : $note['author'],
+                    'author_id'              => $forAgent ? null : $note['author_id'],
+                    'make_instruction_route' => !$forAgent && $canEdit && $note['supplier'] && !$note['instruction']
+                        ? ['name' => 'grp.models.stock-delivery-item-feedback.instruction.store', 'parameters' => ['stockDeliveryItemFeedback' => $note['id']], 'method' => 'post']
+                        : null,
+                    'update_route'           => !$forAgent && $note['author_id'] === $user->id
+                        ? ['name' => 'grp.models.stock-delivery-item-feedback.update', 'parameters' => ['stockDeliveryItemFeedback' => $note['id']], 'method' => 'patch']
+                        : null,
+                    'delete_route'           => !$forAgent && !$feedback->isSent() && $note['author_id'] === $user->id && !$note['instruction']
+                        ? ['name' => 'grp.models.stock-delivery-item-feedback.delete', 'parameters' => ['stockDeliveryItemFeedback' => $note['id']], 'method' => 'delete']
+                        : null,
+                ])->all();
+
+                return [
+                    ...$card,
+                    'author'                 => $forAgent ? null : $card['author'],
+                    'author_id'              => $forAgent ? null : $card['author_id'],
+                    'open_discrepancies'     => $forAgent ? [] : StockDeliveryFeedbackResource::openDiscrepancies($feedback),
+                    'make_instruction_route' => !$forAgent && $canEdit && $feedback->isSent() && $feedback->supplier_id && !$feedback->procurement_note_id
+                        ? ['name' => 'grp.models.stock-delivery-feedback.instruction.store', 'parameters' => ['stockDeliveryFeedback' => $feedback->id], 'method' => 'post']
+                        : null,
+                    'update_route'           => !$forAgent && $feedback->isSent() && $feedback->author_id === $user->id
+                        ? ['name' => 'grp.models.stock-delivery-feedback.update', 'parameters' => ['stockDeliveryFeedback' => $feedback->id], 'method' => 'patch']
+                        : null,
+                ];
+            })->all();
     }
 }

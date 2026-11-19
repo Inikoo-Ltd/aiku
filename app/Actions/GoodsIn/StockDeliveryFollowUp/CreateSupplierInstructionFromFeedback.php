@@ -14,6 +14,8 @@ use App\Enums\GoodsIn\StockDeliveryFollowUp\StockDeliveryFeedbackTopicEnum;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteCategoryEnum;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteVisibilityEnum;
 use App\Models\GoodsIn\StockDeliveryFeedback;
+use App\Models\Procurement\ProcurementNote;
+use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -46,19 +48,24 @@ class CreateSupplierInstructionFromFeedback extends OrgAction
             throw ValidationException::withMessages(['body' => __('Only feedback about a supplier can become a supplier instruction')]);
         }
 
-        $note = StoreProcurementNote::make()->action($supplier, [
-            'title'           => Arr::get($modelData, 'title'),
-            'body'            => $modelData['body'],
-            'category'        => self::category($feedback->topics)->value,
-            'visibility'      => ($supplier->agent_id ? ProcurementNoteVisibilityEnum::AGENT : ProcurementNoteVisibilityEnum::SUPPLIER)->value,
-            'is_pinned'       => true,
-            'organisation_id' => $feedback->organisation_id,
-            'author_user_id'  => $user->id,
-        ], strict: false);
+        $note = self::pinnedNote($supplier, $feedback->organisation_id, $user, $modelData, self::category($feedback->topics));
 
         $feedback->update(['procurement_note_id' => $note->id]);
 
         return $feedback->refresh();
+    }
+
+    public static function pinnedNote(Supplier $supplier, int $organisationId, User $user, array $modelData, ProcurementNoteCategoryEnum $category): ProcurementNote
+    {
+        return StoreProcurementNote::make()->action($supplier, [
+            'title'           => Arr::get($modelData, 'title'),
+            'body'            => $modelData['body'],
+            'category'        => $category->value,
+            'visibility'      => ($supplier->agent_id ? ProcurementNoteVisibilityEnum::AGENT : ProcurementNoteVisibilityEnum::SUPPLIER)->value,
+            'is_pinned'       => true,
+            'organisation_id' => $organisationId,
+            'author_user_id'  => $user->id,
+        ], strict: false);
     }
 
     /**

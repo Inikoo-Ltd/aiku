@@ -381,9 +381,9 @@ class ShowStockDelivery extends OrgAction
                     fn () => HistoryResource::collection(IndexHistory::run($stockDelivery, StockDeliveryTabsEnum::HISTORY->value, auditScope: $this->historyAuditScope($stockDelivery)))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stockDelivery, StockDeliveryTabsEnum::HISTORY->value, auditScope: $this->historyAuditScope($stockDelivery)))),
             ]
-        )->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::ITEMS->value, withCosting: !$this->viewedByAgent, bookingIn: false))
-            ->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::PENDING_ITEMS->value, withCosting: false))
-            ->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::DONE_ITEMS->value, withCosting: false))
+        )->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::ITEMS->value, withCosting: !$this->viewedByAgent, bookingIn: false, withFeedback: !$this->viewedByAgent))
+            ->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::PENDING_ITEMS->value, withCosting: false, withFeedback: !$this->viewedByAgent))
+            ->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::DONE_ITEMS->value, withCosting: false, withFeedback: !$this->viewedByAgent))
             ->table(IndexStockDeliveryUnderOverDeliveredItems::make()->tableStructure(prefix: StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value))
             ->table(IndexPurchaseOrders::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::PURCHASE_ORDERS->value, withRemoveFromContainer: $this->canRemovePurchaseOrders))
             ->table(IndexAttachments::make()->tableStructure(prefix: StockDeliveryTabsEnum::ATTACHMENTS->value))
@@ -1683,7 +1683,7 @@ class ShowStockDelivery extends OrgAction
             $navigation[StockDeliveryTabsEnum::CHECKLIST->value]['number'] = $checklist['total'] - $checklist['checked'];
         }
 
-        if (isset($navigation[StockDeliveryTabsEnum::FEEDBACK->value]) && $stockDelivery->feedbacks()->exists()) {
+        if (isset($navigation[StockDeliveryTabsEnum::FEEDBACK->value]) && $stockDelivery->feedbacks()->where(fn ($query) => $query->whereNotNull('sent_at')->orWhereHas('items'))->exists()) {
             $navigation[StockDeliveryTabsEnum::FEEDBACK->value]['icon']      = 'fas fa-star';
             $navigation[StockDeliveryTabsEnum::FEEDBACK->value]['iconClass'] = 'text-yellow-400';
         }
@@ -1720,7 +1720,7 @@ class ShowStockDelivery extends OrgAction
 
     private function getGiveFeedbackAction(StockDelivery $stockDelivery): array
     {
-        if (!$this->canGiveFeedback($stockDelivery) || GetStockDeliveryFeedbackForm::suppliersAwaitingFeedback($stockDelivery)->isEmpty()) {
+        if (!$this->canGiveFeedback($stockDelivery) || $stockDelivery->feedback?->isSent()) {
             return [];
         }
 
@@ -1739,7 +1739,7 @@ class ShowStockDelivery extends OrgAction
     private function getFeedback(StockDelivery $stockDelivery, ActionRequest $request): array
     {
         return [
-            'cards' => GetStockDeliveryFeedbackForm::cards($stockDelivery, $request->user(), !$this->goodsIn && $request->user()->authTo("procurement.$stockDelivery->organisation_id.edit")),
+            'cards' => GetStockDeliveryFeedbackForm::cards($stockDelivery, $request->user(), !$this->goodsIn && !$this->viewedByAgent && $request->user()->authTo("procurement.$stockDelivery->organisation_id.edit"), forAgent: $this->viewedByAgent),
         ];
     }
 
@@ -1799,7 +1799,7 @@ class ShowStockDelivery extends OrgAction
             $tabs = array_values(array_diff($tabs, [StockDeliveryTabsEnum::PACKING_CHECKS->value]));
         }
 
-        if ($this->viewedByAgent || !in_array($stockDelivery->state, StoreStockDeliveryFeedback::STATES, true)) {
+        if (!in_array($stockDelivery->state, StoreStockDeliveryFeedback::STATES, true) || ($this->viewedByAgent && !$stockDelivery->feedback?->isSent())) {
             $tabs = array_values(array_diff($tabs, [StockDeliveryTabsEnum::FEEDBACK->value]));
         }
 

@@ -18,11 +18,13 @@ import LabelPickingLocation from '@/Components/Warehouse/DeliveryNotes/LabelPick
 import SelectPickingLocation from '@/Components/Warehouse/DeliveryNotes/SelectPickingLocation.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import StockDeliveryItemBatches from '@/Components/Procurement/StockDeliveryItemBatches.vue'
+import StockDeliveryItemFeedbackDialog, { type ItemFeedbackOptions, type ItemFeedbackLine } from '@/Components/Procurement/StockDeliveryItemFeedbackDialog.vue'
 import { routeType } from '@/types/route'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInventory, faBox, faSpellCheck, faBoxCheck, faTrashAlt, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faSave, faUndoAlt, faHandHoldingBox, faBoxOpen, faTimes, faPencil, faExclamationCircle as falExclamationCircle } from '@fal'
+import { faInventory, faBox, faSpellCheck, faBoxCheck, faTrashAlt, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faSave, faUndoAlt, faHandHoldingBox, faBoxOpen, faTimes, faPencil, faCommentAltExclamation, faExclamationCircle as falExclamationCircle } from '@fal'
+import { faCommentAltExclamation as fasCommentAltExclamation } from '@fas'
 import { faExclamationCircle, faSpinner } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import InputNumber from 'primevue/inputnumber'
@@ -32,7 +34,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import { ctrans, ctransChoice } from '@/Composables/useTrans'
 import { skoAndCartonPackingLabel } from '@/Composables/packs'
 
-library.add(faInventory, faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faSave, faUndoAlt, faHandHoldingBox, faBoxOpen, faTimes, faPencil, falExclamationCircle)
+library.add(faInventory, faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faSave, faUndoAlt, faHandHoldingBox, faBoxOpen, faTimes, faPencil, faCommentAltExclamation, falExclamationCircle)
 
 import DiscontinueSuggestion from "@/Components/Procurement/DiscontinueSuggestion.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -45,7 +47,22 @@ const props = defineProps<{
         currency: string | null
         distributeExtraCostRoute: routeType | null
     }
+    feedbackOptions?: ItemFeedbackOptions | null
 }>()
+
+const feedbackLine = ref<ItemFeedbackLine | null>(null)
+const isFeedbackOpen = ref(false)
+
+function openItemFeedback(item: any) {
+    feedbackLine.value = {
+        id: item.id,
+        code: item.code ?? item.org_stock_code,
+        description: item.org_stock_name,
+        supplier_code: item.supplier_code,
+        feedback: item.feedback,
+    }
+    isFeedbackOpen.value = true
+}
 
 const locale = useLocaleStore()
 const confirm = useConfirm()
@@ -719,6 +736,36 @@ async function savePackedInside(item: any, outerItemId: number | null) {
             </div>
         </template>
 
+        <template #cell(feedback)="{ item }">
+            <button
+                v-if="item.feedback && feedbackOptions"
+                type="button"
+                class="rounded p-1 text-amber-500 hover:bg-gray-100"
+                v-tooltip="item.feedback.issue_label + (item.feedback.comment ? ': ' + item.feedback.comment : '')"
+                :aria-label="ctrans('Item feedback')"
+                @click="openItemFeedback(item)"
+            >
+                <FontAwesomeIcon :icon="fasCommentAltExclamation" fixed-width aria-hidden="true" />
+            </button>
+            <span
+                v-else-if="item.feedback"
+                class="p-1 text-amber-500"
+                v-tooltip="item.feedback.issue_label + (item.feedback.comment ? ': ' + item.feedback.comment : '')"
+            >
+                <FontAwesomeIcon :icon="fasCommentAltExclamation" fixed-width :aria-label="ctrans('Item feedback')" />
+            </span>
+            <button
+                v-else-if="feedbackOptions"
+                type="button"
+                class="rounded p-1 text-gray-300 hover:bg-gray-100 hover:text-gray-500"
+                v-tooltip="ctrans('Report a problem with this item to its supplier')"
+                :aria-label="ctrans('Report a problem with this item')"
+                @click="openItemFeedback(item)"
+            >
+                <FontAwesomeIcon :icon="faCommentAltExclamation" fixed-width aria-hidden="true" />
+            </button>
+        </template>
+
         <template #cell(units_in)="{ item }">
             <Button
                 v-if="item.receivedAfterAllRoute"
@@ -1390,4 +1437,10 @@ async function savePackedInside(item: any, outerItemId: number | null) {
             <Button type="primary" icon="fal fa-save" :label="ctrans('Save')" :disabled="!isNewQuantityValid" :loading="isChangingQuantity" @click="saveNewQuantity" />
         </template>
     </Dialog>
+    <StockDeliveryItemFeedbackDialog
+        v-if="feedbackOptions"
+        v-model:visible="isFeedbackOpen"
+        :options="feedbackOptions"
+        :line="feedbackLine"
+    />
 </template>

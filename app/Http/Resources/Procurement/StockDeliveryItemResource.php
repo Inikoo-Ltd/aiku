@@ -55,6 +55,7 @@ class StockDeliveryItemResource extends JsonResource
         $row['ready_to_ship_item_ids'] = $rows->filter(fn (array $line) => $line['readyToShipRoute'])->pluck('id')->values()->all();
         $row['remove_item_ids']        = $rows->filter(fn (array $line) => $line['removeRoute'])->pluck('id')->values()->all();
         $row['purchase_orders'] = $rows->map(fn (array $line) => Arr::only($line, ['purchase_order_reference', 'purchase_order_slug', 'unit_quantity']))->all();
+        $row['feedback']        = $rows->pluck('feedback')->filter()->first();
 
         if ($rows->count() === 1) {
             return $row;
@@ -242,6 +243,14 @@ class StockDeliveryItemResource extends JsonResource
             'has_available_qty'     => $checked - $placed > 0,
             'is_editable'           => $isEditable,
             'can_undo_sowings'      => $item->state !== StockDeliveryItemStateEnum::CANCELLED && (bool) $item->stockDelivery?->acceptsPutAwayUndo(),
+            'feedback'              => $item->relationLoaded('feedback') && $item->feedback && $request->route('organisation')?->id === $item->organisation_id ? [
+                'id'          => $item->feedback->id,
+                'issue'       => $item->feedback->issue->value,
+                'issue_label' => $item->feedback->issue->label(),
+                'comment'     => $item->feedback->comment,
+                'is_mine'     => $item->feedback->author_id === $request->user()?->id,
+            ] : null,
+            'supplier_code'         => $item->supplierProduct?->supplier?->code,
             'finishes_booking_in_with_discrepancies' => $finishingDiscrepancies,
             'locations'             => $locations,
             'has_picking_location'  => $locations->contains(fn ($location) => $location->default_wholesale_picking_location || $location->default_dropshipping_picking_location),

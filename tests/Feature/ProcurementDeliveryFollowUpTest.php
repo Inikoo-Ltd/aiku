@@ -13,7 +13,9 @@ use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateToReceived;
 use App\Actions\GoodsIn\StockDeliveryClaim\UpdateStockDeliveryClaim;
 use App\Actions\GoodsIn\StockDeliveryFollowUp\CreateSupplierInstructionFromFeedback;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\CreateSupplierInstructionFromItemFeedback;
 use App\Actions\GoodsIn\StockDeliveryFollowUp\StoreStockDeliveryFeedback;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\StoreStockDeliveryItemFeedback;
 use App\Actions\GoodsIn\StockDeliveryFollowUp\UI\IndexBuyerDeliveryDiscrepancies;
 use App\Actions\GoodsIn\StockDeliveryItem\ResolveStockDeliveryItemDiscrepancy;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
@@ -219,43 +221,138 @@ test('a five-star feedback is stored and reaches the buyer notification and the 
             ->etc()));
 });
 
-test('another supplier on the same consolidated delivery does not see the feedback', function () {
-    $agent = followUpAgent($this);
+test('a consolidated container gets one round for the agent, and each item note reaches only its own supplier', function () {
+    Notification::fake();
+    $agent  = followUpAgent($this);
     $author = $this->adminGuest->getUser();
+    $buyerA = followUpBuyer($this, 'fup-cons-a');
+    $buyerB = followUpBuyer($this, 'fup-cons-b');
     [$orgSupplierA, $productA] = followUpSupplier($this, $agent);
-    [, $productB]              = followUpSupplier($this, $agent);
+    [$orgSupplierB, $productB] = followUpSupplier($this, $agent);
 
-    $stockDelivery = followUpCheck(followUpDelivery($this, $orgSupplierA, [[$productA, 0, 10], [$productB, 1, 10]], $agent), [10, 10]);
+    $stockDelivery = followUpDelivery($this, $orgSupplierA, [[$productA, 0, 10], [$productB, 1, 10]], $agent);
+    followUpOrder($this, $orgSupplierA, $productA, 0, $buyerA, $stockDelivery);
+    followUpOrder($this, $orgSupplierB, $productB, 1, $buyerB, $stockDelivery);
+    $stockDelivery = followUpCheck($stockDelivery, [10, 10]);
+    [$lineA, $lineB] = $stockDelivery->items()->orderBy('id')->get()->all();
 
-    expect(fn () => followUpFeedback($stockDelivery, $author, ['rating' => 5, 'comment' => 'ok']))->toThrow(ValidationException::class);
-    expect(collect(\App\Actions\GoodsIn\StockDeliveryFollowUp\UI\GetStockDeliveryFeedbackForm::run($stockDelivery->refresh())['suppliers'])->pluck('id')->sort()->values()->all())
-        ->toBe(collect([$productA->supplier_id, $productB->supplier_id])->sort()->values()->all());
+    expect(fn () => StoreStockDeliveryItemFeedback::make()->action($lineB, $author, ['issue' => 'other']))->toThrow(ValidationException::class);
 
-    $feedbackA = followUpFeedback($stockDelivery, $author, ['supplier_id' => $productA->supplier_id, 'rating' => 5, 'comment' => 'Perfect', 'photos' => [UploadedFile::fake()->image('cartons.jpg')]]);
-    $feedbackB = followUpFeedback($stockDelivery, $author, ['supplier_id' => $productB->supplier_id, 'rating' => 2, 'comment' => 'Broken cartons', 'topics' => ['packing']]);
+    $noteB = StoreStockDeliveryItemFeedback::make()->action($lineB, $author, ['issue' => 'product_quality', 'comment' => 'Rotten', 'photos' => [UploadedFile::fake()->image('rotten.jpg')]]);
+    $round = $noteB->feedback;
+    expect($noteB->supplier_id)->toBe($productB->supplier_id)
+        ->and($noteB->agent_id)->toBe($agent->id)
+        ->and($noteB->buyer_id)->toBe($buyerB->id)
+        ->and($round->isSent())->toBeFalse()
+        ->and($round->rating)->toBeNull()
+        ->and(StoreStockDeliveryItemFeedback::make()->action($lineB, $author, ['issue' => 'damaged'])->id)->toBe($noteB->id);
+    Notification::assertNothingSent();
 
-    expect($feedbackA->agent_id)->toBe($agent->id)
-        ->and(collect(\App\Actions\GoodsIn\StockDeliveryFollowUp\UI\GetStockDeliveryFeedbackForm::run($stockDelivery->refresh())['suppliers']))->toBeEmpty();
+    $props = $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab=items')->viewData('page')['props'];
+    $rows  = collect($props['items']['data'])->keyBy('id');
+    expect($rows[$lineB->id]['feedback']['issue'])->toBe('product_quality')
+        ->and($rows[$lineB->id]['feedback']['is_mine'])->toBeTrue()
+        ->and($rows[$lineA->id]['feedback'])->toBeNull()
+        ->and($props['give_feedback']['sent'])->toBeFalse()
+        ->and($props['give_feedback']['recipient'])->toBe(['code' => $agent->code, 'name' => $agent->name, 'is_agent' => true])
+        ->and($props['give_feedback']['items_noted'])->toBe(1)
+        ->and(collect($props['pageHead']['actions'])->pluck('key'))->toContain('give_feedback');
 
+    setPermissionsTeamId($this->group->id);
+    $agentViewer = agentOrganisationAdmin($agent->organisation, 'fup-agt-'.Str::lower(Str::random(6)));
+    $agentPage   = fn (string $tab) => $this->get(route('grp.org.agent.stock_deliveries.show', [$agent->organisation->slug, $stockDelivery->slug]).'?tab='.$tab)->viewData('page')['props'];
+    actingAs($agentViewer);
+    $agentProps = $agentPage('items');
+    expect(array_keys($agentProps['tabs']['navigation']))->not->toContain('feedback')
+        ->and(collect($agentProps['items']['data'])->pluck('feedback')->filter()->all())->toBe([])
+        ->and($agentProps['give_feedback'])->toBeNull();
+    actingAs($author);
+
+    $sent = followUpFeedback($stockDelivery, $author, ['rating' => 3, 'comment' => 'Container arrived with mixed cartons', 'topics' => ['packing']]);
+    expect($sent->id)->toBe($round->id)
+        ->and($sent->supplier_id)->toBeNull()
+        ->and($sent->agent_id)->toBe($agent->id)
+        ->and($sent->isSent())->toBeTrue()
+        ->and($noteB->refresh()->notified_at)->not->toBeNull()
+        ->and(StockDeliveryFeedback::where('stock_delivery_id', $stockDelivery->id)->count())->toBe(1);
+    Notification::assertSentToTimes($buyerB, StockDeliveryFeedbackNotification::class, 1);
+    $sentToA = Notification::sent($buyerA, StockDeliveryFeedbackNotification::class)->count();
+    expect($sentToA + 1)->toBe($sent->buyer_id === $buyerA->id ? 2 : 1);
+
+    followUpFeedback($stockDelivery, $author, ['rating' => 1, 'comment' => 'Clicked twice']);
+    expect($sent->refresh()->rating)->toBe(3);
+    Notification::assertSentToTimes($buyerB, StockDeliveryFeedbackNotification::class, 1);
+
+    StoreStockDeliveryItemFeedback::make()->action($lineA, $author, ['issue' => 'carton_labels', 'comment' => 'Labels underneath']);
+    Notification::assertSentToTimes($buyerA, StockDeliveryFeedbackNotification::class, $sentToA + 1);
+
+    $instruction = CreateSupplierInstructionFromItemFeedback::make()->action($noteB->refresh(), $author, ['body' => 'Check freshness before packing'])->procurementNote;
+    expect($instruction->subject_id)->toBe($productB->supplier_id)
+        ->and($instruction->category)->toBe(ProcurementNoteCategoryEnum::PRODUCT)
+        ->and($instruction->visibility)->toBe(ProcurementNoteVisibilityEnum::AGENT);
+
+    actingAs($agentViewer);
+    $agentCard = $agentPage('feedback')['feedback']['cards'][0];
+    expect($agentCard['comment'])->toBe('Container arrived with mixed cartons')
+        ->and($agentCard['author'])->toBeNull()
+        ->and($agentCard['update_route'])->toBeNull()
+        ->and($agentCard['open_discrepancies'])->toBe([])
+        ->and(collect($agentCard['items'])->pluck('author')->filter()->all())->toBe([])
+        ->and(collect($agentCard['items'])->pluck('update_route')->filter()->all())->toBe([]);
+    actingAs($author);
+
+    $tokenB = portalToken($productB->supplier);
+    $tokenA = portalToken($productA->supplier);
     Auth::logout();
-    foreach ([[$productA, $feedbackA], [$productB, $feedbackB]] as [$product, $feedback]) {
-        $this->get(route('grp.supplier_share.show', portalToken($product->supplier)))
-            ->assertInertia(fn ($page) => $page->loadDeferredProps('delivery_feedback', fn ($reload) => $reload
-                ->where('delivery_feedback', fn ($cards) => collect($cards)->pluck('id')->all() === [$feedback->id])
-                ->etc()));
-    }
-
-    $tokenA    = portalToken($productA->supplier);
-    $mediaUlid = \Illuminate\Support\Facades\DB::table('model_has_attachments')->join('media', 'media.id', 'model_has_attachments.media_id')
-        ->where('model_has_attachments.sub_scope', 'feedback:'.$feedbackA->id)->value('media.ulid');
-    $photoUrl  = route('grp.supplier_share.feedback_photo', ['token' => $tokenA, 'media' => $mediaUlid, 'inline' => true]);
+    $this->get(route('grp.supplier_share.show', $tokenB))
+        ->assertInertia(fn ($page) => $page->loadDeferredProps('delivery_feedback', fn ($reload) => $reload
+            ->has('delivery_feedback', 1)
+            ->where('delivery_feedback.0.rating', null)
+            ->where('delivery_feedback.0.comment', null)
+            ->has('delivery_feedback.0.items', 1)
+            ->where('delivery_feedback.0.items.0.comment', 'Rotten')
+            ->where('delivery_feedback.0.items.0.author', null)
+            ->etc()));
     $this->get(route('grp.supplier_share.show', $tokenA))
         ->assertInertia(fn ($page) => $page->loadDeferredProps('delivery_feedback', fn ($reload) => $reload
-            ->where('delivery_feedback.0.photos.0.url', $photoUrl)
+            ->has('delivery_feedback', 1)
+            ->where('delivery_feedback.0.comment', null)
+            ->where('delivery_feedback.0.items', fn ($items) => collect($items)->pluck('comment')->all() === ['Labels underneath'])
             ->etc()));
 
-    $this->get($photoUrl)->assertOk();
-    $this->get(route('grp.supplier_share.feedback_photo', ['token' => portalToken($productB->supplier), 'media' => $mediaUlid]))->assertNotFound();
+    $mediaUlid = \Illuminate\Support\Facades\DB::table('model_has_attachments')->join('media', 'media.id', 'model_has_attachments.media_id')
+        ->where('model_has_attachments.sub_scope', StoreStockDeliveryItemFeedback::photoSubScope($noteB->id))->value('media.ulid');
+    $this->get(route('grp.supplier_share.feedback_photo', ['token' => $tokenB, 'media' => $mediaUlid]))->assertOk();
+    $this->get(route('grp.supplier_share.feedback_photo', ['token' => $tokenA, 'media' => $mediaUlid]))->assertNotFound();
+});
+
+test('only its author changes or removes an item note, a grouped row shows the note of any of its lines', function () {
+    $buyer = followUpBuyer($this, 'fup-note');
+    [$orgSupplier, $supplierProduct] = followUpSupplier($this, $this->group);
+    $stockDelivery = followUpCheck(followUpDelivery($this, $orgSupplier, [[$supplierProduct, 0, 10], [$supplierProduct, 0, 5]]), [10, 5]);
+    [$firstLine, $line] = $stockDelivery->items()->orderBy('id')->get()->all();
+
+    $this->post(route('grp.models.stock-delivery-item.feedback.store', $line->id), ['issue' => 'damaged', 'comment' => 'Two broken'])->assertSessionHasNoErrors();
+    $note = $line->refresh()->feedback;
+    $rows = collect($this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab=items')->viewData('page')['props']['items']['data']);
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0]['id'])->toBe($firstLine->id)
+        ->and($rows[0]['feedback']['id'])->toBe($note->id);
+
+    actingAs($buyer);
+    $this->patch(route('grp.models.stock-delivery-item-feedback.update', $note->id), ['issue' => 'damaged', 'comment' => 'Not mine'])->assertForbidden();
+    $this->delete(route('grp.models.stock-delivery-item-feedback.delete', $note->id))->assertForbidden();
+    actingAs($this->adminGuest->getUser());
+    $this->patch(route('grp.models.stock-delivery-item-feedback.update', $note->id), ['issue' => 'wrong_item', 'comment' => 'Sent ABC instead'])->assertSessionHasNoErrors();
+    expect($note->refresh()->comment)->toBe('Sent ABC instead');
+    $this->delete(route('grp.models.stock-delivery-item-feedback.delete', $note->id))->assertSessionHasNoErrors();
+    $cards = $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab=feedback')->viewData('page')['props']['feedback']['cards'];
+    expect($line->refresh()->feedback)->toBeNull()
+        ->and($cards)->toBe([]);
+
+    $kept = StoreStockDeliveryItemFeedback::make()->action($line, $this->adminGuest->getUser(), ['issue' => 'damaged', 'comment' => 'One broken']);
+    followUpFeedback($stockDelivery, $this->adminGuest->getUser(), ['rating' => 4, 'comment' => 'Fine apart from one']);
+    $this->delete(route('grp.models.stock-delivery-item-feedback.delete', $kept->id))->assertForbidden();
 });
 
 test('a repeated submit makes no duplicate feedback and no second notification, a separate partial delivery gets its own', function () {
@@ -319,7 +416,7 @@ test('feedback leaves stock, claims and discrepancy outcomes unchanged, and only
         ->and($card['update_route']['name'])->toBe('grp.models.stock-delivery-feedback.update')
         ->and($card['make_instruction_route'])->toBeNull()
         ->and($card['instruction']['body'])->toBe('Count before packing')
-        ->and($props['give_feedback']['suppliers'])->toBe([])
+        ->and($props['give_feedback']['sent'])->toBeTrue()
         ->and($props['give_feedback']['default_comments'][5])->toContain('perfect condition')
         ->and(collect($props['pageHead']['actions'])->pluck('key'))->not->toContain('give_feedback');
 });
