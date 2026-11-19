@@ -25,6 +25,7 @@ use App\Models\Procurement\AgentGoodsReceiptItem;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\User;
 use App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -348,7 +349,8 @@ class GetPurchaseOrderStages
             'caption'     => Stage::captions()[$stage->value] ?? null,
             'reached'     => $stages[$stage->value]['reached'],
             'current'     => $stage->value === $current,
-            'date'        => $stages[$stage->value]['date'],
+            'date'        => $stages[$stage->value]['date']
+                ?? ($stage === Stage::DEPOSIT_PAID && $this->depositNotRequired($purchaseOrder) ? Arr::get($purchaseOrder->data, 'deposit_not_required_at') : null),
             'by'          => $names->get($stages[$stage->value]['user_id']),
             'expected'    => $expected[$stage->value]['date'] ?? null,
             'expected_note' => $expected[$stage->value]['note'] ?? null,
