@@ -1,7 +1,7 @@
 ---
 title: Planning the production day
 summary: For the production manager and the floor supervisor - putting jobs on a day's plan without naming anyone, giving each step to an operator, and what happens to work not finished on its day.
-date: 2026-10-15
+date: 2026-11-19
 tags: production, planning, floor
 category: production
 help_routes: grp.org.productions.show.operations.day_plan, grp.org.productions.show.operations.materials_check
@@ -71,6 +71,14 @@ A planned job with steps still open after its day is not dropped. From the next 
 Until one of the two is pressed, the job stays in front of you every day. Its steps also stay on the floor screens of the operators they were given to, so someone who paused a mix yesterday can carry on this morning.
 
 When an operator closes a job short and moves the rest to a new job (see [Working the floor screen](/docs/working-the-floor-screen)), the new job keeps the planned day, the place in the order and the operator of each step.
+
+## When a product is made from another product
+
+Some products are made from another product of the factory: a Puckator jumbo bath bomb (PuckJBB-04) is a JBB-04 bath bomb from stock, shrink-wrapped and labelled. When there are not enough JBB-04 in stock for it, the card on the **To produce** board and its job on the **Day plan** say so in amber, for example *Needs 3 SKO JBB-04, not in stock: make JBB-04 first*. Jobs already on the plan take the stock first, then the backlog cards, oldest first.
+
+Press **Create JBB-04 job** next to the message: the **Create job order** window opens with JBB-04 and the missing SKOs already filled in, and a note saying which product it is for. Check it, choose the artisan and save. Once a JBB-04 job is made for stock, the message turns blue, *Waits for 3 SKO JBB-04 from* the new job, until the bath bombs are made. A JBB-04 job made for a customer or partner order does not count, because those bath bombs are already promised.
+
+The message goes once the step that uses JBB-04 is done.
 
 ## Asking the warehouse for materials
 

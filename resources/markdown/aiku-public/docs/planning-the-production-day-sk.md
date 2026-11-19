@@ -2,7 +2,7 @@
 title: Plánovanie výrobného dňa
 summary: Pre výrobného manažéra a vedúceho dielne - zaradenie úloh do denného plánu bez uvedenia mena, pridelenie každého kroku operátorovi a čo sa stane s prácou, ktorá sa v daný deň nedokončila.
 date: 2026-10-15
-source_date: 2026-10-15
+source_date: 2026-11-19
 tags: production, planning, floor
 category: production
 series: Ordering from partners
@@ -71,6 +71,14 @@ Naplánovaná úloha s otvorenými krokmi po svojom dni nezmizne. Od nasledujúc
 Kým sa nestlačí jedno z týchto dvoch, úloha vám zostáva na očiach každý deň. Jej kroky zostávajú aj na obrazovkách dielne operátorov, ktorým boli pridelené, takže kto včera zmes pozastavil, môže pokračovať ráno.
 
 Keď operátor uzavrie úlohu s menším počtom a zvyšok presunie do novej úlohy (pozrite [Práca s obrazovkou dielne](/docs/working-the-floor-screen-sk)), nová úloha si ponechá naplánovaný deň, miesto v poradí a operátora každého kroku.
+
+## Keď sa výrobok vyrába z iného výrobku
+
+Niektoré výrobky sa vyrábajú z iného výrobku továrne: veľká bomba do kúpeľa Puckator (PuckJBB-04) je bomba JBB-04 zo skladu, zabalená do zmršťovacej fólie a označená etiketou. Keď nie je na sklade dosť JBB-04 pre tento výrobok, karta na tabuli **To produce** (Na výrobu) a jej úloha v **Day plan** (Denný plán) to oranžovou farbou oznámia, napríklad *Needs 3 SKO JBB-04, not in stock: make JBB-04 first* (Potrebuje 3 SKO JBB-04, nie sú na sklade: najprv vyrobte JBB-04). Úlohy, ktoré už sú v pláne, berú zásobu ako prvé, potom karty z nevybavených, od najstaršej.
+
+Vedľa správy stlačte **Create JBB-04 job** (Vytvoriť úlohu JBB-04): otvorí sa okno **Create job order** (Vytvoriť pracovný príkaz) s už vyplneným JBB-04 a chýbajúcimi SKO a s poznámkou, pre aký výrobok je určený. Skontrolujte ho, vyberte remeselníka a uložte. Keď je úloha JBB-04 vytvorená pre sklad, správa sa zmení na modrú, *Waits for 3 SKO JBB-04 from* (Čaká na 3 SKO JBB-04 z) novej úlohy, kým sa bomby nevyrobia. Úloha JBB-04 vytvorená pre objednávku zákazníka alebo partnera sa nezapočítava, pretože tieto bomby sú už pridelené.
+
+Správa zmizne, keď je hotový krok, ktorý JBB-04 používa.
 
 ## Vyžiadanie materiálu od skladu
 

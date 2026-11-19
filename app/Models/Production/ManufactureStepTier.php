@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $artefact_id
  * @property int|null $artefact_family_id
  * @property int $manufacture_task_id
+ * @property string|null $label
  * @property array<string, float>|null $thresholds
  * @property array<string, float>|null $previous_thresholds
  * @property Carbon $effective_from
@@ -48,10 +49,10 @@ class ManufactureStepTier extends Model
     /**
      * @return array{source: string, thresholds: array<string, float>}|null
      */
-    public static function inForce(?int $artefactId, ?int $artefactFamilyId, int $manufactureTaskId, Carbon $at, float $target): ?array
+    public static function inForce(?int $artefactId, ?int $artefactFamilyId, int $manufactureTaskId, Carbon $at, float $target, ?string $label = null): ?array
     {
         foreach (['artefact' => $artefactId, 'family' => $artefactFamilyId] as $source => $id) {
-            $thresholds = $id ? self::lastFor($source, $id, $manufactureTaskId, $at)?->thresholds : null;
+            $thresholds = $id ? self::lastFor($source, $id, $manufactureTaskId, $at, $label)?->thresholds : null;
             if (self::isAboveTarget($thresholds, $target)) {
                 return ['source' => $source, 'thresholds' => $thresholds];
             }
@@ -71,9 +72,13 @@ class ManufactureStepTier extends Model
         return $thresholds && $target !== null && min($thresholds) > $target;
     }
 
-    public static function lastFor(string $source, int $id, int $manufactureTaskId, ?Carbon $at = null): ?self
+    /**
+     * Tiers belong to a recipe step, so a task used twice (Shrinking – Bomb, Shrinking – Tray, HELP-4837) has its own per label.
+     */
+    public static function lastFor(string $source, int $id, int $manufactureTaskId, ?Carbon $at = null, ?string $label = null): ?self
     {
-        return self::where($source == 'artefact' ? 'artefact_id' : 'artefact_family_id', $id)
+        return ArtefactStepTarget::withLabel(self::query(), $label)
+            ->where($source == 'artefact' ? 'artefact_id' : 'artefact_family_id', $id)
             ->where('manufacture_task_id', $manufactureTaskId)
             ->when($at, fn ($query) => $query->where('effective_from', '<=', $at))
             ->orderByDesc('effective_from')

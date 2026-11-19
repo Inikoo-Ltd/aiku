@@ -2,7 +2,7 @@
 title: Planificarea zilei de producție
 summary: Pentru managerul de producție și supervizorul de hală - cum pui sarcinile în planul unei zile fără să numești pe nimeni, cum dai fiecare pas unui operator și ce se întâmplă cu munca nefinalizată în ziua ei.
 date: 2026-10-15
-source_date: 2026-10-15
+source_date: 2026-11-19
 tags: production, planning, floor
 category: production
 series: Ordering from partners
@@ -71,6 +71,14 @@ O sarcină planificată cu pași încă deschiși după ziua ei nu este abandona
 Până nu apeși una dintre cele două, sarcina rămâne în fața ta în fiecare zi. Pașii ei rămân și pe ecranele de fabrică ale operatorilor cărora le-au fost dați, așa că cine a pus ieri un mix în pauză poate continua în dimineața asta.
 
 Când un operator închide o sarcină cu mai puțin și mută restul într-una nouă (vezi [Lucrul cu ecranul de fabrică](/docs/working-the-floor-screen-ro)), sarcina nouă păstrează ziua planificată, locul în ordine și operatorul fiecărui pas.
+
+## Când un produs se face din alt produs
+
+Unele produse se fac dintr-un alt produs al fabricii: un jumbo bath bomb Puckator (PuckJBB-04) este o bilă de baie JBB-04 din stoc, învelită în folie termocontractibilă și etichetată. Când nu sunt destule JBB-04 în stoc pentru el, cartela de pe tabla **To produce** și sarcina ei din **Day plan** spun asta în chihlimbariu, de exemplu *Needs 3 SKO JBB-04, not in stock: make JBB-04 first* (are nevoie de 3 SKO JBB-04, nu sunt în stoc: fă mai întâi JBB-04). Sarcinile deja puse în plan iau primele din stoc, apoi cartelele din backlog, cele mai vechi întâi.
+
+Apasă **Create JBB-04 job** lângă mesaj: se deschide fereastra **Create job order** cu JBB-04 și SKO-urile lipsă deja completate, plus o notă care spune pentru ce produs este. Verific-o, alege artizanul și salvează. Odată ce o sarcină JBB-04 este făcută pentru stoc, mesajul devine albastru, *Waits for 3 SKO JBB-04 from* (așteaptă 3 SKO JBB-04 de la) noua sarcină, până când bilele de baie sunt gata. O sarcină JBB-04 făcută pentru o comandă de client sau de partener nu se numără, pentru că acele bile de baie sunt deja promise.
+
+Mesajul dispare când pasul care folosește JBB-04 este terminat.
 
 ## Cererea de materiale la depozit
 

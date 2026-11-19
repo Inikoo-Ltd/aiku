@@ -2,7 +2,7 @@
 title: Planificar el día de producción
 summary: Para el responsable de producción y el supervisor de planta - poner trabajos en el plan de un día sin nombrar a nadie, dar cada paso a un operario, y qué pasa con el trabajo que no se terminó en su día.
 date: 2026-10-15
-source_date: 2026-10-15
+source_date: 2026-11-19
 tags: production, planning, floor
 category: production
 series: Ordering from partners
@@ -71,6 +71,14 @@ Un trabajo planificado con pasos aún abiertos después de su día no se descart
 Hasta que se pulse una de las dos, el trabajo sigue delante de ti cada día. Sus pasos también siguen en las pantallas de planta de los operarios a quienes se dieron, así que quien pausó una mezcla ayer puede seguir esta mañana.
 
 Cuando un operario cierra un trabajo corto y pasa el resto a uno nuevo (ver [Trabajar la pantalla de planta](/docs/working-the-floor-screen-es)), el trabajo nuevo conserva el día planificado, el lugar en el orden y el operario de cada paso.
+
+## Cuando un producto se fabrica a partir de otro producto
+
+Algunos productos se fabrican a partir de otro producto de la fábrica: una bomba de baño jumbo de Puckator (PuckJBB-04) es una bomba de baño JBB-04 del stock, envuelta en film retráctil y etiquetada. Cuando no hay suficientes JBB-04 en stock para fabricarla, la tarjeta del tablero **To produce** y su trabajo en el **Day plan** lo dicen en ámbar, por ejemplo *Needs 3 SKO JBB-04, not in stock: make JBB-04 first* (Necesita 3 SKO de JBB-04, sin stock: fabrica primero JBB-04). Los trabajos que ya están en el plan toman el stock primero, y después las tarjetas de **Backlog**, de la más antigua a la más reciente.
+
+Pulsa **Create JBB-04 job** (Crear trabajo de JBB-04) junto al mensaje: se abre la ventana **Create job order** (Crear orden de trabajo) con JBB-04 y los SKO que faltan ya rellenados, y una nota que dice para qué producto es. Revísala, elige al artesano y guarda. Cuando ya hay un trabajo de JBB-04 hecho para stock, el mensaje se vuelve azul, *Waits for 3 SKO JBB-04 from* (Espera 3 SKO de JBB-04 de) el nuevo trabajo, hasta que las bombas de baño estén fabricadas. Un trabajo de JBB-04 hecho para un pedido de cliente o de socio no cuenta, porque esas bombas de baño ya están comprometidas.
+
+El mensaje desaparece cuando se hace el paso que usa JBB-04.
 
 ## Pedir materiales al almacén
 

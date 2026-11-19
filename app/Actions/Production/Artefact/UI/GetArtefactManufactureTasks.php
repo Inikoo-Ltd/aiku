@@ -44,10 +44,10 @@ class GetArtefactManufactureTasks
             ->orderByDesc('effective_from')
             ->orderByDesc('id')
             ->get()
-            ->groupBy('manufacture_task_id');
+            ->groupBy(fn (ManufactureStepTier $tier) => ArtefactManufactureTask::key($tier->manufacture_task_id, $tier->label));
 
         $recipe = $artefact->manufactureTasks->map(function (ManufactureTask $task) use ($artefact, $bands, $history, $timezone, $tierHistory) {
-            $stepTiers  = $tierHistory[$task->id] ?? collect();
+            $stepTiers  = $tierHistory[ArtefactManufactureTask::key($task->id, $task->pivot->label)] ?? collect();
             $ownTiers   = $stepTiers->firstWhere('artefact_id', $artefact->id)?->thresholds;
             $familyTier = $stepTiers->firstWhere('artefact_family_id', '!=', null)?->thresholds;
             $target     = $task->pivot->standard_rate ?? $task->standard_rate;

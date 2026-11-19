@@ -2,7 +2,7 @@
 title: Plánování výrobního dne
 summary: Pro manažera výroby a vedoucí výroby - zařazení úkolů do plánu dne bez uvedení jména, přidělení každého kroku dělníkovi a co se stane s prací, která se ten den nedokončila.
 date: 2026-10-15
-source_date: 2026-10-15
+source_date: 2026-11-19
 tags: production, planning, floor
 category: production
 series: Ordering from partners
@@ -71,6 +71,14 @@ Naplánovaný úkol s kroky, které zůstaly po jeho dni otevřené, se neztrat�
 Dokud se nestiskne jedno z obojího, úkol vám zůstává před očima každý den. Jeho kroky zůstávají i na obrazovkách dílny dělníků, kterým byly přiděleny, takže kdo včera pozastavil směs, může dnes ráno pokračovat.
 
 Když dělník uzavře úkol s menším množstvím a zbytek přesune do nového úkolu (viz [Práce s obrazovkou dílny](/docs/working-the-floor-screen-cs)), nový úkol si ponechá naplánovaný den, místo v pořadí a dělníka u každého kroku.
+
+## Když se výrobek vyrábí z jiného výrobku
+
+Některé výrobky se vyrábějí z jiného výrobku továrny: jumbo bomba do koupele Puckator (PuckJBB-04) je bomba do koupele JBB-04 ze skladu, zabalená do smršťovací fólie a opatřená etiketou. Když na ni není dost JBB-04 na skladě, karta na nástěnce **To produce** a její úkol v **Day plan** to oranžově oznámí, například *Needs 3 SKO JBB-04, not in stock: make JBB-04 first* (Potřebuje 3 SKO JBB-04, není skladem: nejdřív vyrobte JBB-04). Sklad nejdřív dostanou úkoly, které už jsou v plánu, poté karty v Backlog, od nejstarší.
+
+Stiskněte **Create JBB-04 job** (Vytvořit úkol JBB-04) vedle zprávy: otevře se okno **Create job order** (Vytvořit výrobní příkaz) s již vyplněným JBB-04 a chybějícími SKO a s poznámkou, pro který výrobek je určen. Zkontrolujte ho, vyberte dělníka a uložte. Jakmile je úkol JBB-04 vytvořen pro sklad, zpráva zmodrá, *Waits for 3 SKO JBB-04 from* (Čeká na 3 SKO JBB-04 z) nového úkolu, dokud se bomby do koupele nevyrobí. Úkol JBB-04 vytvořený pro objednávku zákazníka nebo partnera se nepočítá, protože tyto bomby jsou už slíbeny.
+
+Zpráva zmizí, jakmile je hotov krok, který JBB-04 používá.
 
 ## Vyžádání materiálu od skladu
 

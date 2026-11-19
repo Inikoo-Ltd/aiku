@@ -2509,6 +2509,31 @@ describe('production reward pay bands', function () {
         ManufactureTaskSession::where('user_id', auth()->id())->where('state', ManufactureTaskSessionStateEnum::OPEN)->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]);
     });
 
+    test('a task used twice in a recipe has edited tiers per step label, so Bomb tiers never pay the Tray step (HELP-4837)', function () {
+        [$artefact, , $task] = makeTierStep($this->production);
+        \App\Actions\Production\Artefact\SetArtefactsRecipe::make()->action($this->production, ['artefacts' => [$artefact->id], 'steps' => [
+            ['manufacture_task_id' => $task->id, 'label' => 'Bomb', 'position' => 1, 'units_per_artefact' => 1, 'standard_rate' => 100, 'waits_for' => []],
+            ['manufacture_task_id' => $task->id, 'label' => 'Tray', 'position' => 2, 'units_per_artefact' => 1, 'standard_rate' => 20, 'waits_for' => []],
+        ]]);
+        $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+        $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 1000]);
+        ConfirmJobOrder::make()->action($jobOrder);
+        $bombSession = makePayBandSession($jobOrderItem->tasks()->where('label', 'Bomb')->first(), 112, 1);
+        $traySession = makePayBandSession($jobOrderItem->tasks()->where('label', 'Tray')->first(), 23, 1);
+
+        post(route('grp.models.artefact.manufacture-task.tiers', [$artefact->id, $task->id]), ['apply_to' => 'family', 'label' => 'bomb', 'thresholds' => ['1' => 105, '2' => 110, '3' => 125]])
+            ->assertSessionHasNoErrors();
+
+        expect($bombSession->refresh()->band_code)->toBe('2')
+            ->and($bombSession->tier_thresholds['source'])->toBe('family')
+            ->and(\App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($traySession->refresh())->tier_thresholds)->toBeNull()
+            ->and(\App\Models\Production\ManufactureStepTier::where('manufacture_task_id', $task->id)->latest('id')->first()->label)->toBe('bomb');
+
+        $recipe = collect(\App\Actions\Production\Artefact\UI\GetArtefactManufactureTasks::run($artefact->refresh())['recipe'])->keyBy('label');
+        expect($recipe['Bomb']['tiers']['source'])->toBe('family')
+            ->and($recipe['Tray']['tiers']['family'])->toBeNull();
+    });
+
     test('development on no job order is started on the tablet by artisans it is switched on for, with a reason, and paid at the Development rate (HELP-4648)', function () {
         $this->travelTo(now()->addYears(7)->startOfWeek()->addDays(2)->setTime(9, 0));
         \App\Models\HumanResources\Employee::enableAuditing();

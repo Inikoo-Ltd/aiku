@@ -14,6 +14,7 @@ use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTy
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactManufactureTask;
+use App\Models\Production\ArtefactStepTarget;
 use App\Models\Production\ManufacturePayBand;
 use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\ManufactureStepTier;
@@ -27,7 +28,8 @@ use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Pay band thresholds typed by hand for a recipe step, on the artefact or on every artefact of its family (HELP-4465).
+ * Pay band thresholds typed by hand for a recipe step, on the artefact or on every artefact of its family (HELP-4465),
+ * per step label when the task is in the recipe more than once (HELP-4837).
  * They apply from the start of the day they are saved: today's sessions on the step are paid again, earlier days stay
  * as they were paid. No thresholds puts the step back on the ones calculated from the band multipliers.
  */
@@ -40,12 +42,13 @@ class SetManufactureStepTiers extends OrgAction
     /**
      * @param  array<string, float|int|string>|null  $thresholds
      */
-    public function handle(Artefact $artefact, ManufactureTask $manufactureTask, string $applyTo, ?array $thresholds): ?ManufactureStepTier
+    public function handle(Artefact $artefact, ManufactureTask $manufactureTask, string $applyTo, ?array $thresholds, ?string $label = null): ?ManufactureStepTier
     {
+        $label      = trim((string) $label) === '' ? null : trim($label);
         $source     = $applyTo == 'family' ? 'family' : 'artefact';
         $parentId   = $source == 'family' ? $artefact->artefact_family_id : $artefact->id;
         $thresholds = $thresholds === null ? null : array_map(fn ($threshold) => round((float) $threshold, 4), $thresholds);
-        $previous   = ManufactureStepTier::lastFor($source, $parentId, $manufactureTask->id)?->thresholds;
+        $previous   = ManufactureStepTier::lastFor($source, $parentId, $manufactureTask->id, null, $label)?->thresholds;
 
         if ($previous == $thresholds) {
             return null;
@@ -53,11 +56,12 @@ class SetManufactureStepTiers extends OrgAction
 
         $effectiveFrom = now($artefact->organisation->timezone?->name ?? config('app.timezone'))->startOfDay()->utc();
 
-        return DB::transaction(function () use ($artefact, $manufactureTask, $source, $parentId, $thresholds, $previous, $effectiveFrom) {
+        return DB::transaction(function () use ($artefact, $manufactureTask, $source, $parentId, $thresholds, $previous, $effectiveFrom, $label) {
             $tier = ManufactureStepTier::create([
                 'artefact_id'         => $source == 'artefact' ? $parentId : null,
                 'artefact_family_id'  => $source == 'family' ? $parentId : null,
                 'manufacture_task_id' => $manufactureTask->id,
+                'label'               => $label,
                 'thresholds'          => $thresholds,
                 'previous_thresholds' => $previous,
                 'effective_from'      => $effectiveFrom,
@@ -71,6 +75,7 @@ class SetManufactureStepTiers extends OrgAction
                 ->where('is_combined', false)
                 ->whereNotNull('ended_at')
                 ->where('started_at', '>=', $effectiveFrom->copy()->max(ManufacturePayrollAdjustment::lockedBefore($artefact->production)))
+                ->whereHas('jobOrderItemTask', fn ($query) => ArtefactStepTarget::withLabel($query, $label))
                 ->whereHas('jobOrderItemTask.jobOrderItem.artefact', fn ($query) => $source == 'family'
                     ? $query->where('artefact_family_id', $parentId)
                     : $query->where('artefacts.id', $parentId))
@@ -113,6 +118,7 @@ class SetManufactureStepTiers extends OrgAction
     {
         return [
             'apply_to'     => ['required', Rule::in(['artefact', 'family'])],
+            'label'        => ['sometimes', 'nullable', 'string', 'max:255'],
             'thresholds'   => ['present', 'nullable', 'array'],
             'thresholds.*' => ['required', 'numeric', 'gt:0', 'max:1000000'],
         ];
@@ -174,7 +180,7 @@ class SetManufactureStepTiers extends OrgAction
      */
     private function highestTarget(): ?float
     {
-        $rates = ArtefactManufactureTask::query()
+        $rates = ArtefactStepTarget::withLabel(ArtefactManufactureTask::query(), $this->get('label'))
             ->where('manufacture_task_id', $this->manufactureTask->id)
             ->when(
                 $this->get('apply_to') == 'family',
@@ -195,7 +201,7 @@ class SetManufactureStepTiers extends OrgAction
         $this->manufactureTask = $manufactureTask;
         $this->initialisationFromProduction($artefact->production, $modelData);
 
-        return $this->handle($artefact, $manufactureTask, $this->validatedData['apply_to'], $this->validatedData['thresholds']);
+        return $this->handle($artefact, $manufactureTask, $this->validatedData['apply_to'], $this->validatedData['thresholds'], $this->validatedData['label'] ?? null);
     }
 
     public function asController(Artefact $artefact, ManufactureTask $manufactureTask, ActionRequest $request): ?ManufactureStepTier
@@ -204,7 +210,7 @@ class SetManufactureStepTiers extends OrgAction
         $this->manufactureTask = $manufactureTask;
         $this->initialisationFromProduction($artefact->production, $request);
 
-        return $this->handle($artefact, $manufactureTask, $this->validatedData['apply_to'], $this->validatedData['thresholds']);
+        return $this->handle($artefact, $manufactureTask, $this->validatedData['apply_to'], $this->validatedData['thresholds'], $this->validatedData['label'] ?? null);
     }
 
     public function htmlResponse(): RedirectResponse

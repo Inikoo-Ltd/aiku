@@ -2,7 +2,7 @@
 title: Planowanie dnia produkcji
 summary: Dla kierownika produkcji i kierownika hali - wstawianie zadań do planu dnia bez wskazywania osoby, przydzielanie każdego kroku pracownikowi oraz co dzieje się z pracą niezakończoną w swoim dniu.
 date: 2026-10-15
-source_date: 2026-10-15
+source_date: 2026-11-19
 tags: production, planning, floor
 category: production
 series: Ordering from partners
@@ -71,6 +71,14 @@ Zaplanowane zadanie z otwartymi krokami po upływie swojego dnia nie przepada. O
 Dopóki nie zostanie naciśnięte jedno z dwóch, zadanie zostaje przed Tobą każdego dnia. Jego kroki zostają też na ekranach hali pracowników, którym je przydzielono, więc ktoś, kto wczoraj zatrzymał mieszankę, może ją dokończyć dziś rano.
 
 Gdy pracownik zamyka zadanie z mniejszą ilością i przenosi resztę do nowego zadania (zobacz [Praca z ekranem hali](/docs/working-the-floor-screen-pl)), nowe zadanie zachowuje zaplanowany dzień, miejsce w kolejności i pracownika każdego kroku.
+
+## Gdy produkt powstaje z innego produktu
+
+Niektóre produkty powstają z innego produktu fabryki: jumbo kula do kąpieli Puckator (PuckJBB-04) to kula JBB-04 ze stanu magazynowego, zafoliowana i oznaczona etykietą. Gdy JBB-04 nie ma dość na stanie, karta na tablicy **To produce** i jej zadanie w **Day plan** mówią o tym na bursztynowo, na przykład *Needs 3 SKO JBB-04, not in stock: make JBB-04 first* (Potrzeba 3 SKO JBB-04, brak na stanie: najpierw wykonaj JBB-04). Zadania już w planie biorą stan jako pierwsze, potem karty z zaległości, od najstarszej.
+
+Naciśnij **Create JBB-04 job** (Utwórz zadanie JBB-04) obok komunikatu: otworzy się okno **Create job order** (Utwórz zlecenie produkcyjne) z już wpisanym JBB-04 i brakującymi SKO oraz z notatką, dla jakiego produktu jest to zadanie. Sprawdź je, wybierz pracownika i zapisz. Gdy zadanie JBB-04 jest wykonywane na stan, komunikat zmienia się na niebieski, *Waits for 3 SKO JBB-04 from* (Czeka na 3 SKO JBB-04 z) nowego zadania, aż kule do kąpieli powstaną. Zadanie JBB-04 wykonywane na zamówienie klienta lub partnera się nie liczy, bo te kule są już obiecane.
+
+Komunikat znika, gdy krok używający JBB-04 jest zrobiony.
 
 ## Prośba do magazynu o materiały
 

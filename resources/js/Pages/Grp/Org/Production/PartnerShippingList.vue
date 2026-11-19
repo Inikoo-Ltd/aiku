@@ -24,6 +24,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import ArtisanPicker from "@/Components/Production/ArtisanPicker.vue"
 import ModalCreateManualJobOrder from "@/Components/Production/ModalCreateManualJobOrder.vue"
+import IngredientShortfalls, { type IngredientShortfall } from "@/Components/Production/IngredientShortfalls.vue"
 import RunExpiryInput, { expiryFromMonths, type PeriodAfterOpeningOption, type RunShelfLife } from "@/Components/Production/RunExpiryInput.vue"
 import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
 import DatePicker from "primevue/datepicker"
@@ -133,11 +134,21 @@ const props = defineProps<{
 const selected = reactive<Record<number, number>>({})
 
 const isCreatingJobOrder = ref(false)
+const jobOrderPrefill = ref<{ artefact_id: number, quantity: number, notes: string } | null>(null)
 const pageUrl = new URL(window.location.href)
 if (pageUrl.searchParams.has("create")) {
     isCreatingJobOrder.value = !!props.canCreateJobOrder
-    pageUrl.searchParams.delete("create")
+    const makeArtefactId = Number(pageUrl.searchParams.get("make"))
+    if (makeArtefactId) {
+        jobOrderPrefill.value = { artefact_id: makeArtefactId, quantity: Math.max(1, Number(pageUrl.searchParams.get("skos")) || 1), notes: pageUrl.searchParams.get("notes") ?? "" }
+    }
+    ;["create", "make", "skos", "notes"].forEach(key => pageUrl.searchParams.delete(key))
     window.history.replaceState(window.history.state, "", pageUrl.toString())
+}
+
+function createIngredientJob(item: BoardItem, shortfall: IngredientShortfall) {
+    jobOrderPrefill.value = { artefact_id: shortfall.artefact_id, quantity: shortfall.short_skos, notes: ctrans("For :code", { code: item.stock_code }) }
+    isCreatingJobOrder.value = true
 }
 
 const hiddenGroupsKey = `to-produce-hidden-${props.groupBy}`
@@ -165,7 +176,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, unit_name?: string | null, is_fill?: boolean, order_waiting_days?: number | null, shop_name?: string | null, customer_name?: string | null, order_reference?: string | null, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, loose_pieces?: number, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, stock_cover?: object | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, run_period_after_opening?: string | null, shelf_life?: RunShelfLife | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
+type BoardItem = { id: number, unit_name?: string | null, is_fill?: boolean, order_waiting_days?: number | null, shop_name?: string | null, customer_name?: string | null, order_reference?: string | null, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, loose_pieces?: number, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, stock_cover?: object | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, run_period_after_opening?: string | null, shelf_life?: RunShelfLife | null, label_expiry_date?: string | null, ingredient_shortfalls?: IngredientShortfall[], pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
 
 function artisansOf(item: BoardItem): string[] {
     if (item.current_steps?.length) return [...new Set(item.current_steps.flatMap(step => step.artisans.map(artisan => artisan ?? "")))]
@@ -850,7 +861,8 @@ function jobOrderHref(item: { job_order_slug: string }) {
         :isOpen="isCreatingJobOrder"
         :options="manualJobOrder ?? null"
         :artisans="(artisanWorkload ?? []).filter(artisan => !artisan.hidden)"
-        @onClose="isCreatingJobOrder = false" />
+        :prefill="jobOrderPrefill"
+        @onClose="isCreatingJobOrder = false; jobOrderPrefill = null" />
 
     <div v-if="groupBy === 'board' && groups" class="mx-4 mt-4 text-sm">
         <div class="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 dark:border-gray-700 dark:bg-gray-900">
@@ -1029,6 +1041,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         </span>
                     </div>
                     <div class="truncate text-gray-600" :title="item.stock_name">{{ item.stock_name }}</div>
+                    <IngredientShortfalls v-if="item.ingredient_shortfalls?.length" :shortfalls="item.ingredient_shortfalls" :canCreate="canCreateJobOrder" @create="(shortfall) => createIngredientJob(item, shortfall)" />
                     <div v-if="item.loose_pieces" class="text-amber-600">{{ ctrans(':count loose pieces left, not in a full pack', { count: item.loose_pieces }) }}</div>
                     <div class="flex items-center gap-1 text-gray-400">
                         <span>{{ item.buyer_code ?? requesterWithOrder(item) ?? item.notes }}</span>

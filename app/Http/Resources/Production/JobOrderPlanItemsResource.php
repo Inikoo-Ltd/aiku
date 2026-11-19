@@ -28,6 +28,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string|null $artefact_code
  * @property string|null $artefact_name
  * @property int|null $artefact_department_id
+ * @property array<int, array<string, mixed>> $ingredient_shortfalls
  * @property-read \Illuminate\Database\Eloquent\Collection<int, JobOrderItemTask> $tasks
  */
 class JobOrderPlanItemsResource extends JsonResource
@@ -49,6 +50,7 @@ class JobOrderPlanItemsResource extends JsonResource
             'artefact_name'   => $this->artefact_name,
             'artefact_department_id' => $this->artefact_department_id,
             'quantity'        => (float) $this->quantity,
+            'ingredient_shortfalls' => $this->ingredient_shortfalls ?? [],
             'carry_over'      => JobOrderItem::carryOverLabel(JobOrderItem::carryOver(collect([$this->resource]))),
             'steps'           => $this->tasks->map(fn (JobOrderItemTask $task) => [
                 'id'                => $task->id,

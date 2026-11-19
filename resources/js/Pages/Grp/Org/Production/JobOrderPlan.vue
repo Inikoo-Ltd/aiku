@@ -13,6 +13,7 @@ import Select from "primevue/select"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import IngredientShortfalls, { type IngredientShortfall } from "@/Components/Production/IngredientShortfalls.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -57,6 +58,7 @@ type PlanItem = {
     artefact_name: string | null
     artefact_department_id: number | null
     quantity: number
+    ingredient_shortfalls: IngredientShortfall[]
     steps: Step[]
 }
 
@@ -74,6 +76,15 @@ const props = defineProps<{
 usePoll(30000, { only: ["data", "summary"] })
 
 const locale = useLocaleStore()
+
+const ingredientJobHref = (item: PlanItem) => (shortfall: IngredientShortfall) => route("grp.org.productions.show.to_produce.index", {
+    organisation: route().params["organisation"],
+    production: route().params["production"],
+    create: 1,
+    make: shortfall.artefact_id,
+    skos: shortfall.short_skos,
+    notes: ctrans("For :code", { code: `${item.reference} ${item.artefact_code ?? ""}`.trim() }),
+})
 
 const toIsoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 
@@ -154,6 +165,7 @@ function setPosition(item: PlanItem, position: number | null) {
         <template #cell(artefact_code)="{ item }">
             <div class="font-medium">{{ item.artefact_code }}</div>
             <div class="text-xs text-gray-500">{{ item.artefact_name }}</div>
+            <IngredientShortfalls :shortfalls="(item as PlanItem).ingredient_shortfalls ?? []" :canCreate="can_edit" :createHref="ingredientJobHref(item as PlanItem)" />
         </template>
 
         <template #cell(quantity)="{ item }">

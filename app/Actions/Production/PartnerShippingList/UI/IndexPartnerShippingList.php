@@ -17,6 +17,7 @@ use App\Actions\OrgAction;
 use App\Actions\Production\Artisan\GetArtisanDepartments;
 use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
+use App\Actions\Production\JobOrder\GetMadeIngredientShortfalls;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\PartnerShippingList\GetProductionSurplusInPipeline;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
@@ -544,6 +545,7 @@ class IndexPartnerShippingList extends OrgAction
 
         $this->markSurplusInPipeline($backlogItems);
         $this->attachStockCover($preparingItems->concat($backlogItems));
+        $this->attachIngredientShortfalls($preparingItems->concat($backlogItems), $byLane->only(['assigned', 'producing'])->flatten(1));
 
         $preparingItems->concat($backlogItems)->concat($assignedItems)->each(function ($item) use ($publishedLabels, $shelfLives) {
             $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
@@ -584,6 +586,33 @@ class IndexPartnerShippingList extends OrgAction
             $item->units_per_pack     = (float) ($item->packed_in ?: 1);
             $item->quarterly_usage    = $quarterlyUsage->get($orgStock->id) ?? [];
             $item->stock_cover        = GetOrgStockBuyingSignals::run($orgStock);
+        });
+    }
+
+    /**
+     * Made products a card's recipe uses that stock will not cover (HELP-4837: PuckJBB needs JBB trays). Jobs take
+     * the stock first, then the backlog oldest first. Only the first card of a job order and stock carries them.
+     */
+    private function attachIngredientShortfalls(Collection $backlogItems, Collection $jobItems): void
+    {
+        $backlogItems = $backlogItems->filter(fn ($item) => $item->artefact_id && empty($item->is_fill))->sortBy(fn ($item) => [$item->created_at, $item->id]);
+        $shortfalls   = GetMadeIngredientShortfalls::run($this->production, $backlogItems->map(function ($item) {
+            $toMake = (float) ($item->quantity_to_produce ?? $item->quantity) - (float) Arr::get($item->pipeline ?? [], 'pending_booking', 0) - (float) Arr::get($item->pipeline ?? [], 'in_production', 0);
+
+            return [
+                'key'         => $item->id,
+                'artefact_id' => $item->artefact_id,
+                'units'       => $toMake > 0 ? (float) BatchedUnitsForDemand::run($toMake, $item->packed_in, $item->batch_size) : 0.0,
+            ];
+        })->values());
+
+        $backlogItems->each(fn ($item) => $item->ingredient_shortfalls = $shortfalls['backlog'][$item->id] ?? []);
+
+        $seen = [];
+        $jobItems->filter(fn ($item) => $item->job_order_id && $item->artefact_id)->each(function ($item) use ($shortfalls, &$seen) {
+            $key                         = GetMadeIngredientShortfalls::jobCardKey($item->job_order_id, $item->artefact_id);
+            $item->ingredient_shortfalls = isset($seen[$key]) ? [] : ($shortfalls['job_cards'][$key] ?? []);
+            $seen[$key]                  = true;
         });
     }
 

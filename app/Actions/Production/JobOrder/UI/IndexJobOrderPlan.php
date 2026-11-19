@@ -10,6 +10,7 @@ namespace App\Actions\Production\JobOrder\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Production\Artisan\GetArtisanDepartments;
+use App\Actions\Production\JobOrder\GetMadeIngredientShortfalls;
 use App\Actions\Production\Production\UI\ShowOperationsDashboard;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
@@ -103,9 +104,11 @@ class IndexJobOrderPlan extends OrgAction
             'jobOrder.employee',
         ]);
 
-        $today = self::today($production);
-        $paginator->getCollection()->each(function (JobOrderItem $item) use ($today) {
+        $today      = self::today($production);
+        $shortfalls = GetMadeIngredientShortfalls::run($production)['job_items'];
+        $paginator->getCollection()->each(function (JobOrderItem $item) use ($today, $shortfalls) {
             $item->setAttribute('plan_today', $today);
+            $item->setAttribute('ingredient_shortfalls', $shortfalls[$item->id] ?? []);
             $item->tasks->each(fn (JobOrderItemTask $task) => $task->setRelation('jobOrderItem', $item));
         });
 

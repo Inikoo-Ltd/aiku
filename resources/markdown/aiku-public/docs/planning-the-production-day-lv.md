@@ -2,7 +2,7 @@
 title: Ražošanas dienas plānošana
 summary: Ražošanas vadītājam un maiņas vadītājam - darbu ievietošana dienas plānā, nenorādot nevienu cilvēku, katra soļa nodošana strādniekam un kas notiek ar darbu, kas savā dienā nav pabeigts.
 date: 2026-10-15
-source_date: 2026-10-15
+source_date: 2026-11-19
 tags: production, planning, floor
 category: production
 series: Ordering from partners
@@ -71,6 +71,14 @@ Ieplānots darbs, kuram pēc savas dienas vēl ir atvērti soļi, netiek aizmirs
 Kamēr nav nospiesta viena no abām, darbs katru dienu paliek tavā redzeslokā. Tā soļi paliek arī to strādnieku ražotnes ekrānos, kuriem tie nodoti, tāpēc tas, kurš vakar pārtrauca maisījumu, to var turpināt šorīt.
 
 Kad strādnieks aizver darbu pie mazāka daudzuma un atlikumu pārceļ uz jaunu darbu (skaties [Darbs ar ražotnes ekrānu](/docs/working-the-floor-screen-lv)), jaunais darbs saglabā ieplānoto dienu, vietu secībā un katra soļa strādnieku.
+
+## Kad produktu izgatavo no cita produkta
+
+Daži produkti tiek izgatavoti no cita ražotnes produkta: Puckator liela vannas bumba (PuckJBB-04) ir JBB-04 vannas bumba no krājuma, kas ievilkta plēvē un apzīmēta ar etiķeti. Ja tai krājumā nepietiek JBB-04, kartīte dēlī **To produce** (Ražojamie darbi) un tās darbs sadaļā **Day plan** (Dienas plāns) to norāda oranžā krāsā, piemēram, *Needs 3 SKO JBB-04, not in stock: make JBB-04 first* (Vajag 3 SKO JBB-04, krājumā nav: vispirms izgatavo JBB-04). Plānā jau esošie darbi krājumu ņem pirmie, pēc tiem - pieprasījumu kartītes, vecākās pirmās.
+
+Nospied **Create JBB-04 job** (Izveidot JBB-04 darbu) blakus ziņojumam: atveras logs **Create job order** (Izveidot darba uzdevumu), kurā JBB-04 un trūkstošie SKO jau ir ievadīti, ar piezīmi, kuram produktam tas paredzēts. Pārbaudi, izvēlies strādnieku un saglabā. Kad JBB-04 darbs krājumam ir izveidots, ziņojums kļūst zils, *Waits for 3 SKO JBB-04 from* (Gaida 3 SKO JBB-04 no) jaunā darba, līdz vannas bumbas ir izgatavotas. JBB-04 darbs, kas izgatavots klienta vai partnera pasūtījumam, neskaitās, jo šīs vannas bumbas jau ir apsolītas.
+
+Ziņojums pazūd, kad solis, kas izmanto JBB-04, ir pabeigts.
 
 ## Materiālu pieprasīšana noliktavai
 

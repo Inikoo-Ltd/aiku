@@ -631,6 +631,7 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
 
             <RecipeStepTiers
                 :stepId="row.id"
+                :stepLabel="row.label"
                 :stepName="row.step_name"
                 :targets="row.targets"
                 :tiers="row.tiers"

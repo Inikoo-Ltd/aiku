@@ -31,6 +31,7 @@ interface TierChange {
 
 const props = defineProps<{
     stepId: number
+    stepLabel?: string | null
     stepName: string
     targets: { code: string, name: string, units_per_hour: number, calculated_units_per_hour: number }[]
     tiers: { source: 'artefact' | 'family' | null, target: number | null, artefact: Thresholds | null, family: Thresholds | null, history: TierChange[] }
@@ -93,7 +94,7 @@ function send(thresholds: Thresholds | null) {
     error.value = null
     router.post(
         route(props.route.name, { ...props.route.parameters, manufactureTask: props.stepId }),
-        { apply_to: applyTo.value, thresholds },
+        { apply_to: applyTo.value, thresholds, label: props.stepLabel ?? null },
         {
             preserveScroll: true,
             onSuccess: () => { visible.value = false },

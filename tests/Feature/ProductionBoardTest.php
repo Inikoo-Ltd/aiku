@@ -2500,3 +2500,75 @@ test('a backlog card carries the sales forecast of its SKO', function () {
         ->and($card['quarterly_usage'])->toBeArray()
         ->and($card)->toHaveKey('stock_in_locations');
 });
+
+test('a backlog card and a job whose recipe uses a product made here flag what stock cannot cover, net of that product\'s surplus in production (HELP-4837)', function () {
+    $newMade = function (string $code) {
+        $stock    = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
+        $orgStock = createOrgStocks($this->organisation, [$stock])[0];
+        $orgStock->update(['packed_in' => 16, 'quantity_in_locations' => 0, 'quantity_available' => 0]);
+
+        return StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code, 'name' => $code, 'org_stock_id' => $orgStock->id]);
+    };
+    $recipe = fn (\App\Models\Production\Artefact $artefact, int $rawMaterialId) => \App\Actions\Production\Artefact\SetArtefactsRecipe::make()->action($this->production, ['artefacts' => [$artefact->id], 'steps' => [
+        ['manufacture_task_id' => $this->manufactureTask->id, 'position' => 1, 'units_per_artefact' => 1, 'waits_for' => [], 'raw_materials' => [['raw_material_id' => $rawMaterialId, 'quantity_per_unit' => 1]]],
+    ]]);
+    $suffix = (string) rand(1000, 9999);
+    $bomb   = $newMade('JBBT'.$suffix);
+    $puck   = $newMade('PUCKT'.$suffix);
+    $bomb->orgStock->update(['quantity_available' => 1]);
+
+    $bombMaterial = StoreRawMaterial::make()->action($this->production, [
+        'type'         => RawMaterialTypeEnum::STOCK->value,
+        'code'         => 'JBBT'.$suffix,
+        'description'  => 'Jumbo bath bomb',
+        'unit'         => RawMaterialUnitEnum::UNIT->value,
+        'org_stock_id' => $bomb->org_stock_id,
+    ]);
+    $recipe($puck, $bombMaterial->id);
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $puck->orgStock->stock_id,
+        'org_stock_id'    => $puck->org_stock_id,
+        'quantity'        => 3,
+    ]);
+    $card = fn () => collect(collect(get(route('grp.org.productions.show.to_produce.index', [$this->organisation->slug, $this->production->slug]))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->firstWhere('label', 'Backlog')['items'])->firstWhere('id', $line->id);
+
+    expect($card()['ingredient_shortfalls'])->toBe([]);
+
+    $recipe($bomb, $this->rawMaterial->id);
+    expect($card()['ingredient_shortfalls'])->toHaveCount(1)
+        ->and($card()['ingredient_shortfalls'][0])->toMatchArray([
+            'code'          => $bomb->orgStock->code,
+            'artefact_id'   => $bomb->id,
+            'is_made_here'  => true,
+            'needed_pieces' => 48.0,
+            'short_skos'    => 2,
+            'waiting_for'   => [],
+        ]);
+
+    $bombJob = \App\Actions\Production\JobOrder\StoreManualJobOrder::make()->action($this->production, ['reason' => 'stock', 'lines' => [['artefact_id' => $bomb->id, 'quantity' => 1]]]);
+    expect($card()['ingredient_shortfalls'][0])->toMatchArray(['short_skos' => 1, 'not_in_stock_skos' => 2, 'waiting_for' => [$bombJob->reference]]);
+
+    \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $bomb->orgStock->stock_id,
+        'org_stock_id'    => $bomb->org_stock_id,
+        'partner_organisation_id' => $this->organisation->id,
+        'quantity'        => 1,
+        'job_order_id'    => $bombJob->id,
+    ]);
+    expect($card()['ingredient_shortfalls'][0])->toMatchArray(['short_skos' => 2, 'waiting_for' => []]);
+
+    $bomb->orgStock->update(['quantity_available' => 0]);
+    $puckJob     = \App\Actions\Production\JobOrder\StoreManualJobOrder::make()->action($this->production, ['reason' => 'stock', 'lines' => [['artefact_id' => $puck->id, 'quantity' => 1]]]);
+    $puckJobLine = $puckJob->jobOrderItems()->first();
+    expect(\App\Actions\Production\JobOrder\GetMadeIngredientShortfalls::run($this->production)['job_items'][$puckJobLine->id][0])->toMatchArray(['short_skos' => 1]);
+
+    $puckJobLine->tasks()->update(['state' => \App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum::DONE]);
+    expect(\App\Actions\Production\JobOrder\GetMadeIngredientShortfalls::run($this->production)['job_items'])->not->toHaveKey($puckJobLine->id);
+});

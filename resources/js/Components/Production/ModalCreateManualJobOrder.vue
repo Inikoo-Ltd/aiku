@@ -20,6 +20,7 @@ const props = defineProps<{
     isOpen: boolean
     options: { reasons: string[], periods_after_opening?: PeriodAfterOpeningOption[], artefacts: ArtefactOption[] } | null
     artisans: { id: number, name: string, department_ids?: number[] }[]
+    prefill?: { artefact_id: number, quantity: number, notes: string } | null
 }>()
 
 const emits = defineEmits<{ (e: "onClose"): void }>()
@@ -47,6 +48,17 @@ watch(() => props.isOpen, (open) => {
     if (open && !props.options) {
         router.reload({ only: ["manualJobOrder"] })
     }
+}, { immediate: true })
+
+watch(() => [props.isOpen, props.options, props.prefill] as const, ([open, options, prefill]) => {
+    const artefact = open && prefill && !form.lines.length ? options?.artefacts.find(candidate => candidate.id === prefill.artefact_id) : null
+    if (!artefact || !prefill) {
+        return
+    }
+    addLine(artefact)
+    form.lines[0].quantity = prefill.quantity
+    form.reason = "stock"
+    form.notes = prefill.notes
 }, { immediate: true })
 
 const reasonOptions = computed(() => (props.options?.reasons ?? []).map(reason => ({ value: reason, label: reasonLabels[reason] ?? reason })))
