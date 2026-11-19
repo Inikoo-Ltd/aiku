@@ -161,6 +161,9 @@ const groupGridClass = (count: number): string => {
 
 const isComplete = (stage: Stage): boolean => stage.reached || !!stage.not_required
 
+const zeroDate = computed(() => props.stages.find((stage) => stage.number === 1)?.date ?? null)
+const zeroOffset = (stage: Stage): number | null => zeroDate.value && stage.date && isComplete(stage) ? daysBetween(zeroDate.value, stage.date) : null
+
 const stageMarks = (stage: Stage) => stage.marks.filter((mark) => !(mark.field === "compliance_complete_at" && stage.checks?.some((check) => check.key === "compliance")))
 const isRequiredSkip = (check: Check) => check.skipped && check.required !== false
 const checkMark = (stage: Stage, check: Check) => check.key === "compliance" ? stage.marks.find((mark) => mark.field === "compliance_complete_at") ?? null : null
@@ -547,14 +550,14 @@ function save() {
                     @click="stage.key === 'handed_over' && (choStage = stage)"
                 >
                     <FontAwesomeIcon v-if="stage.unpaid" icon="fal fa-exclamation-circle" class="text-amber-600" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-else-if="isComplete(stage)" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
                     <span v-else class="w-4 text-center tabular-nums">{{ stage.number }}</span>
                     {{ stage.label }}
+                    <FontAwesomeIcon v-if="!stage.unpaid && isComplete(stage)" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
                 </component>
                 <div v-if="stage.caption" class="text-xs text-gray-400 italic">{{ stage.caption }}</div>
             </div>
 
-            <div>
+            <div class="flex flex-col">
             <div class="mt-1 tabular-nums" :class="stage.date ? 'text-gray-700' : 'text-gray-400'">
                 <template v-if="stage.not_required"><span class="text-green-700">{{ ctrans("Not required") }}</span></template>
                 <template v-else-if="stage.unpaid"><span class="text-amber-700">{{ ctrans("Not paid") }}</span></template>
@@ -802,6 +805,7 @@ function save() {
             </div>
 
             <slot :name="`stage-${stage.key}`" :stage="stage" />
+            <div v-if="zeroOffset(stage) !== null" class="mt-auto self-end pt-2 text-xs font-medium tabular-nums text-gray-500" v-tooltip="ctrans('Days since stage 1 (Z)')">Z+{{ zeroOffset(stage) }}</div>
             </div>
         </div>
     </div>
