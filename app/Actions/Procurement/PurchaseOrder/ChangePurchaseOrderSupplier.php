@@ -16,6 +16,7 @@ use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransact
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydratePurchaseOrders;
 use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier;
 use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydratePurchaseOrders;
+use App\Actions\SupplyChain\SupplierProduct\Hydrators\SupplierProductHydrateLeadTime;
 use App\Actions\Traits\Authorisations\WithPurchaseOrderAgentEditAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -25,6 +26,7 @@ use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
@@ -41,6 +43,10 @@ use Lorisleiva\Actions\ActionRequest;
  * supplier's code, or joins an order the new supplier already has with the agent ($into): the lines, the goods received,
  * the deposits and the money requested or paid for it go there, and the emptied order is cancelled. Not once items of
  * either order are on a stock delivery.
+ *
+ * A settled order (Counted & Costed) with no money on it is only corrected: it is re-pointed to the new supplier, never
+ * merged, and the stock delivery items received for its lines take the new supplier's product too. Quantities, amounts,
+ * costs and stock stay as they were, and so does the stock delivery's own supplier.
  */
 class ChangePurchaseOrderSupplier extends OrgAction
 {
@@ -55,7 +61,9 @@ class ChangePurchaseOrderSupplier extends OrgAction
         $newOrgSupplier = null;
         $into           = null;
 
-        $result = DB::transaction(function () use ($purchaseOrder, $modelData, $user, &$oldOrgSupplier, &$newOrgSupplier, &$into) {
+        $leadTimeSupplierProductIds = [];
+
+        $result = DB::transaction(function () use ($purchaseOrder, $modelData, $user, &$oldOrgSupplier, &$newOrgSupplier, &$into, &$leadTimeSupplierProductIds) {
             $purchaseOrder = PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->firstOrFail();
 
             if ($blockedReason = self::blockedReason($purchaseOrder)) {
@@ -65,6 +73,12 @@ class ChangePurchaseOrderSupplier extends OrgAction
             $oldOrgSupplier = $purchaseOrder->parent;
             $newOrgSupplier = self::targetOrgSupplier($purchaseOrder, (int) $modelData['org_supplier_id']);
             $newSupplier    = $newOrgSupplier->supplier;
+            $isCorrection   = self::isSettledCorrection($purchaseOrder);
+
+            if ($isCorrection && Arr::get($modelData, 'into_purchase_order_id')) {
+                throw ValidationException::withMessages(['into_purchase_order_id' => __('A settled order can only change its supplier, it can not join another order')]);
+            }
+
             $into           = $this->intoPurchaseOrder($purchaseOrder, $newOrgSupplier, Arr::get($modelData, 'into_purchase_order_id'));
             $reference      = $into ? null : (trim((string) Arr::get($modelData, 'reference')) ?: self::referenceFor($purchaseOrder, $newSupplier->code));
 
@@ -76,8 +90,10 @@ class ChangePurchaseOrderSupplier extends OrgAction
             $linesForm             = collect(Arr::get($modelData, 'lines', []))->keyBy('id');
             $changedTransactionIds = [];
             $changedAt             = now()->toIso8601String();
+            $deliveryItemsByLine   = $isCorrection ? self::stockDeliveryItemIdsOfLines($purchaseOrder) : [];
 
             foreach (self::linesToChange($purchaseOrder) as $transaction) {
+                $oldSupplierProductId = $transaction->supplier_product_id;
                 $orgSupplierProduct = $this->orgSupplierProductFor($newOrgSupplier, $transaction, $linesForm->get($transaction->id, []), $purchaseOrder);
                 $supplierProduct    = $orgSupplierProduct->supplierProduct;
 
@@ -104,6 +120,20 @@ class ChangePurchaseOrderSupplier extends OrgAction
                 $receivedRows = array_merge(['supplier_product_id' => $supplierProduct->id], $into ? ['purchase_order_id' => $into->id] : []);
                 DB::table('agent_warehouse_stocks')->where('purchase_order_transaction_id', $transaction->id)->update($receivedRows);
                 DB::table('agent_goods_receipt_items')->where('purchase_order_transaction_id', $transaction->id)->update($receivedRows);
+
+                if ($deliveryItemsByLine[$transaction->id] ?? []) {
+                    DB::table('stock_delivery_items')->whereIn('id', $deliveryItemsByLine[$transaction->id])->update([
+                        'supplier_product_id'          => $supplierProduct->id,
+                        'historic_supplier_product_id' => $supplierProduct->current_historic_supplier_product_id ?? $transaction->historic_supplier_product_id,
+                        'org_supplier_product_id'      => $orgSupplierProduct->id,
+                    ]);
+                }
+
+                if ($isCorrection) {
+                    $leadTimeSupplierProductIds[] = $oldSupplierProductId;
+                    $leadTimeSupplierProductIds[] = $supplierProduct->id;
+                }
+
                 $changedTransactionIds[] = $transaction->id;
             }
 
@@ -123,6 +153,12 @@ class ChangePurchaseOrderSupplier extends OrgAction
                 'by'                => $user?->id,
                 'at'                => $changedAt,
             ];
+
+            if ($isCorrection) {
+                $changedFrom['settled_correction'] = [
+                    'stock_delivery_item_ids' => array_values(array_merge(...array_values($deliveryItemsByLine ?: [[]]))),
+                ];
+            }
 
             if ($into) {
                 return $this->mergeInto($purchaseOrder, $into, $changedFrom, $ledgerDatesBefore);
@@ -153,6 +189,10 @@ class ChangePurchaseOrderSupplier extends OrgAction
             OrgSupplierHydratePurchaseOrders::dispatch($orgSupplier);
             SupplierHydratePurchaseOrders::dispatch($orgSupplier->supplier);
         }
+
+        SupplierProduct::whereIn('id', array_unique(array_filter($leadTimeSupplierProductIds)))
+            ->get()
+            ->each(fn (SupplierProduct $supplierProduct) => SupplierProductHydrateLeadTime::dispatch($supplierProduct));
 
         return $result;
     }
@@ -261,15 +301,20 @@ class ChangePurchaseOrderSupplier extends OrgAction
 
     public static function canChange(PurchaseOrder $purchaseOrder): bool
     {
-        return $purchaseOrder->isAgentOrder()
-            && in_array($purchaseOrder->state, PurchaseOrderStateEnum::live(), true)
-            && !self::isOnStockDelivery($purchaseOrder);
+        return self::blockedReason($purchaseOrder) === null;
+    }
+
+    public static function isSettledCorrection(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->state === PurchaseOrderStateEnum::SETTLED;
     }
 
     public static function blockedReason(PurchaseOrder $purchaseOrder): ?string
     {
         return match (true) {
             !$purchaseOrder->isAgentOrder() => __('Only the supplier of an order through an agent can change'),
+            self::isSettledCorrection($purchaseOrder) && self::hasMoney($purchaseOrder) => __('This order is settled and has deposits or payments on it: its supplier can no longer change'),
+            self::isSettledCorrection($purchaseOrder) => null,
             !in_array($purchaseOrder->state, PurchaseOrderStateEnum::live(), true) => __('This order is :state: its supplier can no longer change', ['state' => PurchaseOrderStateEnum::labels()[$purchaseOrder->state->value] ?? $purchaseOrder->state->value]),
             self::isOnStockDelivery($purchaseOrder) => __('Items of this order are on a stock delivery: take them off before changing the supplier'),
             default => null,
@@ -420,6 +465,74 @@ class ChangePurchaseOrderSupplier extends OrgAction
         if (!$newSupplierHasRow) {
             DB::table('agent_supplier_purchase_orders')->where('id', $legacyOrder->id)->update(['supplier_id' => $newSupplier->id]);
         }
+    }
+
+    private static function hasMoney(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->isDepositPaid()
+            || DB::table('agent_payments')->where('purchase_order_id', $purchaseOrder->id)->exists()
+            || DB::table('deposit_request_items')->where('purchase_order_id', $purchaseOrder->id)->exists()
+            || DB::table('aspo_deposits')->where('purchase_order_id', $purchaseOrder->id)->exists();
+    }
+
+    /**
+     * The stock delivery items received for each line of a settled order: the items naming the line, and items brought in
+     * without an order line (Aurora) on the order's deliveries with the line's SKO and supplier product, taken only when
+     * no other order on that delivery has a line of the same supplier product, so another order's item is never re-pointed.
+     *
+     * @return array<int, array<int, int>>
+     */
+    public static function stockDeliveryItemIdsOfLines(PurchaseOrder $purchaseOrder): array
+    {
+        $lines       = self::linesToChange($purchaseOrder);
+        $deliveryIds = $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->pluck('stock_deliveries.id');
+
+        $itemIdsByLine = DB::table('stock_delivery_items')
+            ->whereNull('deleted_at')
+            ->whereIn(DB::raw("(data->>'purchase_order_transaction_id')::bigint"), $lines->pluck('id'))
+            ->get(['id', DB::raw("(data->>'purchase_order_transaction_id')::bigint as purchase_order_transaction_id")])
+            ->groupBy('purchase_order_transaction_id')
+            ->map(fn (Collection $items) => $items->pluck('id')->all())
+            ->all();
+
+        if ($deliveryIds->isEmpty()) {
+            return $itemIdsByLine;
+        }
+
+        $supplierProductsOnOtherOrders = DB::table('purchase_order_stock_delivery')
+            ->join('purchase_order_transactions', 'purchase_order_transactions.purchase_order_id', 'purchase_order_stock_delivery.purchase_order_id')
+            ->whereIn('purchase_order_stock_delivery.stock_delivery_id', $deliveryIds)
+            ->where('purchase_order_stock_delivery.purchase_order_id', '!=', $purchaseOrder->id)
+            ->where('purchase_order_transactions.state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED->value)
+            ->whereIn('purchase_order_transactions.supplier_product_id', $lines->pluck('supplier_product_id')->filter())
+            ->select('purchase_order_stock_delivery.stock_delivery_id', 'purchase_order_transactions.supplier_product_id')
+            ->distinct()
+            ->get()
+            ->map(fn (object $row) => $row->stock_delivery_id.'-'.$row->supplier_product_id)
+            ->flip();
+
+        foreach ($lines as $line) {
+            if (isset($itemIdsByLine[$line->id]) || !$line->supplier_product_id || !$line->org_stock_id) {
+                continue;
+            }
+
+            $legacyItemIds = DB::table('stock_delivery_items')
+                ->whereNull('deleted_at')
+                ->whereIn('stock_delivery_id', $deliveryIds)
+                ->where('org_stock_id', $line->org_stock_id)
+                ->where('supplier_product_id', $line->supplier_product_id)
+                ->whereRaw("data->>'purchase_order_transaction_id' is null")
+                ->get(['id', 'stock_delivery_id'])
+                ->reject(fn (object $item) => $supplierProductsOnOtherOrders->has($item->stock_delivery_id.'-'.$line->supplier_product_id))
+                ->pluck('id')
+                ->all();
+
+            if ($legacyItemIds) {
+                $itemIdsByLine[$line->id] = $legacyItemIds;
+            }
+        }
+
+        return $itemIdsByLine;
     }
 
     private static function isOnStockDelivery(PurchaseOrder $purchaseOrder): bool

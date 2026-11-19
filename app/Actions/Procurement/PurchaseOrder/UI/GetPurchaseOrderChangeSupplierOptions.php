@@ -36,7 +36,9 @@ class GetPurchaseOrderChangeSupplierOptions extends OrgAction
         $suppliers = collect(GetPurchaseOrderTransactionMoveSuppliers::make()->handle($purchaseOrder, $lines))
             ->reject(fn (array $supplier) => $supplier['is_current'] || $supplier['currency'] !== $currency);
 
-        $ordersToJoinBySupplier = ChangePurchaseOrderSupplier::purchaseOrdersToJoinQuery($purchaseOrder, $suppliers->pluck('org_supplier_id')->all())
+        $isCorrection = ChangePurchaseOrderSupplier::isSettledCorrection($purchaseOrder);
+
+        $ordersToJoinBySupplier = $isCorrection ? collect() : ChangePurchaseOrderSupplier::purchaseOrdersToJoinQuery($purchaseOrder, $suppliers->pluck('org_supplier_id')->all())
             ->orderByRaw('agent_order_reference is not distinct from ? desc', [$purchaseOrder->agent_order_reference])
             ->orderByDesc('id')
             ->get(['id', 'parent_id', 'reference', 'slug', 'state', 'agent_order_reference', 'number_purchase_order_transactions'])
@@ -68,6 +70,7 @@ class GetPurchaseOrderChangeSupplierOptions extends OrgAction
 
         return [
             'blocked_reason' => ChangePurchaseOrderSupplier::blockedReason($purchaseOrder),
+            'is_correction'  => $isCorrection,
             'reference'      => $purchaseOrder->reference,
             'slug'           => $purchaseOrder->slug,
             'supplier'       => [

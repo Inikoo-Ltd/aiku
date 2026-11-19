@@ -63,6 +63,7 @@ type Money = {
 
 type Options = {
 	blocked_reason: string | null
+	is_correction: boolean
 	reference: string
 	slug: string
 	supplier: { code: string; name: string }
@@ -264,7 +265,11 @@ async function submit() {
 			</p>
 
 			<template v-else>
-				<p class="text-xs text-gray-600">
+				<p v-if="options.is_correction" class="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+					<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-amber-500" fixed-width aria-hidden="true" />
+					<span>{{ ctrans("This order is settled: only its supplier is corrected. The items and the stock delivery items received for them take the products of the new supplier; quantities, costs and stock do not change.") }}</span>
+				</p>
+				<p v-else class="text-xs text-gray-600">
 					{{ ctrans("Use this when the goods of this order are made by another supplier of the agent than :supplier. The items move to that supplier with their agreed prices and goods received, as a new order or into an order it already has.", { supplier: options.supplier.name }) }}
 				</p>
 
@@ -317,7 +322,7 @@ async function submit() {
 						<span class="truncate">{{ targetSupplier.name }}</span>
 					</div>
 
-					<div class="space-y-1">
+					<div v-if="!options.is_correction" class="space-y-1">
 						<span class="block text-xs text-gray-500">{{ ctrans("Into order") }} <span class="text-red-500">*</span></span>
 						<Select
 							v-model="intoPurchaseOrderId"

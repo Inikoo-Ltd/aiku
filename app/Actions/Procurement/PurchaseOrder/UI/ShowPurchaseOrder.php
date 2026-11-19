@@ -862,7 +862,9 @@ class ShowPurchaseOrder extends OrgAction
         if (ChangePurchaseOrderSupplier::canChange($purchaseOrder)) {
             $actions[] = [
                 'label'   => __('Change supplier'),
-                'tooltip' => __('The goods of this order are made by another supplier of the agent: move the whole order to that supplier'),
+                'tooltip' => ChangePurchaseOrderSupplier::isSettledCorrection($purchaseOrder)
+                    ? __('This order was raised under the wrong supplier of the agent: correct its supplier, quantities and costs stay as they are')
+                    : __('The goods of this order are made by another supplier of the agent: move the whole order to that supplier'),
                 'type'    => 'button',
                 'style'   => 'secondary',
                 'icon'    => 'fal fa-people-arrows',
