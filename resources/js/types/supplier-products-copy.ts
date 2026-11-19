@@ -13,6 +13,7 @@ export interface CopyProducts {
 	copy_route: routeType
 	supplier_id: number
 	source_products_route: routeType
+	can_make_preferred: boolean
 }
 
 export interface CopyTarget {

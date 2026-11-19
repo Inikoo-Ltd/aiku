@@ -89,16 +89,7 @@ class StoreSupplierPortalSubmission
             ]);
         }
 
-        foreach ($files as $file) {
-            /** @var UploadedFile $file */
-            SaveModelAttachment::make()->action($submission, [
-                'path'         => $file->getPathname(),
-                'originalName' => $file->getClientOriginalName(),
-                'extension'    => $file->guessExtension() ?? 'bin',
-                'scope'        => $type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT ? (string) Arr::get($submission->data, 'document_type', SupplyChainAttachmentScopeEnum::OTHER->value) : $type->value,
-                'caption'      => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
-            ]);
-        }
+        $this->attachFiles($submission, $type, $files);
 
         if ($type === SupplierSubmissionTypeEnum::PRICE_CHANGE) {
             $this->holdForPriceChange($submission);
@@ -110,6 +101,22 @@ class StoreSupplierPortalSubmission
         }
 
         return $submission;
+    }
+
+    /**
+     * @param  array<int, UploadedFile>  $files
+     */
+    public function attachFiles(SupplierSubmission $submission, SupplierSubmissionTypeEnum $type, array $files): void
+    {
+        foreach ($files as $file) {
+            SaveModelAttachment::make()->action($submission, [
+                'path'         => $file->getPathname(),
+                'originalName' => $file->getClientOriginalName(),
+                'extension'    => $file->guessExtension() ?? 'bin',
+                'scope'        => $type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT ? (string) Arr::get($submission->data, 'document_type', SupplyChainAttachmentScopeEnum::OTHER->value) : $type->value,
+                'caption'      => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+            ]);
+        }
     }
 
     /**

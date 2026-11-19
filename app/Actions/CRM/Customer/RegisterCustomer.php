@@ -9,6 +9,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\Retina\CRM\WhatsappOptIn\GetRetinaWhatsappOptInData;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Comms\Email\SendCustomerWelcomeEmail;
 use App\Actions\Comms\Email\SendNewCustomerNotification;
@@ -56,7 +57,7 @@ class RegisterCustomer extends OrgAction
             data_set($modelData, 'email_subscriptions.is_subscribed_to_marketing', true);
         }
 
-        if (Arr::pull($modelData, 'is_whatsapp_newsletter_opt_in', false)) {
+        if (Arr::pull($modelData, 'is_whatsapp_newsletter_opt_in', false) && GetRetinaWhatsappOptInData::isOfferedIn($shop)) {
             data_set($modelData, 'email_subscriptions.is_subscribed_to_whatsapp_newsletter', true);
         }
 

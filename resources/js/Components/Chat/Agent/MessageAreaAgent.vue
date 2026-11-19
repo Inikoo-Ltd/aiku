@@ -809,7 +809,11 @@ const aiDraftBox = ref<InstanceType<typeof ChatAiDraftBox> | null>(null)
 const aiDraftText = ref<string | null>(null)
 let aiDraftId: number | null = null
 let latestAiDraftId: number | null = null
-const heldAiDraft = ref<{ text: string, draftId?: number } | null>(null)
+const heldAiDraft = ref<{ text: string, draftId?: number, translated?: { mine: string, theirs: string } | null } | null>(null)
+// HELP-4534: the reply box holds Aiku's draft translated into the agent's language; the server
+// sends Aiku's original when it goes out unchanged, and translates it back when it was changed.
+const aiDraftTranslationOf = ref<number | null>(null)
+const aiDraftLanguages = ref<{ mine: string, theirs: string } | null>(null)
 
 const { colleagueDraft, isLoaded: isReplyDraftLoaded, saveFailed: replyDraftSaveFailed, carriedOnBy, takeOverColleagueDraft, refreshColleagueDraft } = useChatReplyDraft(
     () => props.session?.ulid,
@@ -821,6 +825,7 @@ watch(() => props.session?.ulid, () => {
     aiDraftText.value = null
     heldAiDraft.value = null
     latestAiDraftId = null
+    aiDraftTranslationOf.value = null
 })
 
 // ponytail: one storage key per draft an agent emptied out of the box, never pruned; a few bytes each, sweep them if it ever matters
@@ -842,11 +847,11 @@ const markCleared = (draftId: number) => {
 
 // An email reply starts from Aiku's draft, unless the agent has begun one of their own or
 // already cleared this draft out of the box. A newer draft replaces an older one left untouched.
-const offerAiDraft = (text: string, draftId?: number) => {
+const offerAiDraft = (text: string, draftId?: number, translated: { mine: string, theirs: string } | null = null) => {
     if (draftId) latestAiDraftId = draftId
     // The agent's own saved reply, or a colleague's, comes before Aiku's draft (HELP-4523).
     if (!isReplyDraftLoaded.value || colleagueDraft.value) {
-        heldAiDraft.value = { text, draftId }
+        heldAiDraft.value = { text, draftId, translated }
         return
     }
 
@@ -861,26 +866,29 @@ const offerAiDraft = (text: string, draftId?: number) => {
     aiDraftId = draftId ?? null
     newMessage.value = text
     aiDraftText.value = text
+    aiDraftTranslationOf.value = translated && draftId ? draftId : null
+    aiDraftLanguages.value = translated && draftId ? translated : null
 }
 
 watch(isReplyDraftLoaded, (loaded) => {
     if (!loaded || colleagueDraft.value || !heldAiDraft.value) return
-    const { text, draftId } = heldAiDraft.value
+    const { text, draftId, translated } = heldAiDraft.value
     heldAiDraft.value = null
-    offerAiDraft(text, draftId)
+    offerAiDraft(text, draftId, translated)
 })
 
 const startFromAiDraftInstead = () => {
     const held = heldAiDraft.value
     colleagueDraft.value = null
     heldAiDraft.value = null
-    if (held) offerAiDraft(held.text, held.draftId)
+    if (held) offerAiDraft(held.text, held.draftId, held.translated)
 }
 
 const replyDraftError = ref<string | null>(null)
 const continueColleagueDraft = async () => {
     replyDraftError.value = null
     aiDraftText.value = null
+    aiDraftTranslationOf.value = null
     heldAiDraft.value = null
     try {
         await takeOverColleagueDraft()
@@ -893,7 +901,10 @@ const continueColleagueDraft = async () => {
 }
 
 const clearAiDraft = () => {
-    if (aiDraftText.value !== null && newMessage.value === aiDraftText.value) newMessage.value = ""
+    if (aiDraftText.value !== null && newMessage.value === aiDraftText.value) {
+        newMessage.value = ""
+        aiDraftTranslationOf.value = null
+    }
     aiDraftText.value = null
 }
 
@@ -996,6 +1007,7 @@ const onEditorInput = (text: string) => {
         markCleared(aiDraftId)
         aiDraftText.value = null
     }
+    if (!text.trim()) aiDraftTranslationOf.value = null
     dropDeletedPictures(text)
     handleTyping()
 
@@ -1241,8 +1253,10 @@ const sendMessage = async () => {
 
     const text = newMessage.value
     const sessionUlid = props.session?.ulid
+    const draftTranslationOf = aiDraftTranslationOf.value
     if (latestAiDraftId) markCleared(latestAiDraftId)
     aiDraftText.value = null
+    aiDraftTranslationOf.value = null
     newMessage.value = ""
     typingUser.value = null
 
@@ -1267,6 +1281,7 @@ const sendMessage = async () => {
         tempId,
         is_email_notif: isEmailNotif.value,
         email_cc_excluded: emailCopyExcluded.value,
+        ai_draft_translation_of: draftTranslationOf,
         onFailed: markFailed,
     }
 
@@ -2152,16 +2167,17 @@ const handleClickOutside = (e: MouseEvent) => {
 
             <div :class="isEmailChat ? 'flex flex-wrap items-start gap-2' : ''">
             <div class="relative min-w-0 flex-1 basis-[28rem] rounded-xl border bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow"
-                :class="aiDraftInEditor ? 'border-[--app-accent-muted]' : 'border-gray-200'">
+                :class="aiDraftInEditor && aiDraftTranslationOf ? 'border-[var(--app-accent)] ring-2 ring-[var(--app-accent-soft)]' : aiDraftInEditor ? 'border-[--app-accent-muted]' : 'border-gray-200'">
                 <div v-if="isEmailChat" role="separator" aria-orientation="horizontal"
                     v-tooltip="ctrans('Drag to resize, double-click to reset')"
                     class="group/resize absolute inset-x-0 -top-1.5 z-10 flex h-3 cursor-row-resize justify-center"
                     @pointerdown="startComposerResize" @dblclick="resetComposerHeight">
                     <span class="mt-1 h-1 w-10 rounded-full bg-gray-300 transition-colors group-hover/resize:bg-[--app-accent]" />
                 </div>
-                <div v-if="aiDraftInEditor" class="flex items-center gap-1.5 px-4 pt-2 text-[11px] font-medium text-gray-500">
+                <div v-if="aiDraftInEditor" class="flex items-center gap-1.5 px-4 pt-2 text-[11px] font-medium" :class="aiDraftTranslationOf ? 'text-[var(--app-accent)]' : 'text-gray-500'">
                     <img src="/art/invader.svg" class="h-3 select-none" alt="" />
-                    {{ ctrans("Draft by Aiku: read it, change what you need, then send") }}
+                    <template v-if="aiDraftTranslationOf && aiDraftLanguages">{{ ctrans("Draft by Aiku in :mine: change what you need, it is sent in :theirs", aiDraftLanguages) }}</template>
+                    <template v-else>{{ ctrans("Draft by Aiku: read it, change what you need, then send") }}</template>
                 </div>
                 <ChatMessageEditor ref="messageEditor" :key="isEmailChat ? 'email' : 'chat'" v-model="newMessage" @update:model-value="onEditorInput"
                     @picture-refused="composerError = PICTURE_NOT_TAKEN()"

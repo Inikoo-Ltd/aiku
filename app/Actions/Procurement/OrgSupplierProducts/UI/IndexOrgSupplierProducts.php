@@ -22,6 +22,8 @@ use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
+use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Enums\UI\Procurement\OrgSupplierProductsTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\AgentSuppliersDataQualityResource;
@@ -40,6 +42,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Support\AgentOrganisationSelection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -61,8 +64,12 @@ class IndexOrgSupplierProducts extends OrgAction
 
         $organisationAgent = $this->getParentOrganisationAgent($parent);
 
+        $selection         = $parent instanceof OrgSupplier ? AgentOrganisationSelection::fromRequest(parameter: 'supplier') : null;
+
         if ($parent instanceof OrgAgent) {
             $query->where('org_supplier_products.org_agent_id', $parent->id);
+        } elseif ($selection) {
+            $query->whereIn('org_supplier_products.org_supplier_id', $selection->selectedRows()->pluck('id'));
         } elseif ($parent instanceof OrgSupplier) {
             $query->where('org_supplier_products.org_supplier_id', $parent->id);
         } elseif ($organisationAgent) {
@@ -76,7 +83,7 @@ class IndexOrgSupplierProducts extends OrgAction
         }
 
         $counts = $query
-            ->selectRaw('supplier_products.state, count(distinct supplier_products.id) as total')
+            ->selectRaw('supplier_products.state, '.($selection ? 'count(*)' : 'count(distinct supplier_products.id)').' as total')
             ->groupBy('supplier_products.state')
             ->pluck('total', 'supplier_products.state');
 
@@ -134,6 +141,9 @@ class IndexOrgSupplierProducts extends OrgAction
 
         if ($parent instanceof OrgAgent) {
             $queryBuilder->where('org_supplier_products.org_agent_id', $parent->id);
+        } elseif ($parent instanceof OrgSupplier && $selection = AgentOrganisationSelection::fromRequest(parameter: 'supplier')) {
+            $queryBuilder->whereIn('org_supplier_products.org_supplier_id', $selection->selectedRows()->pluck('id'))
+                ->leftJoin('organisations', 'organisations.id', 'org_supplier_products.organisation_id');
         } elseif ($parent instanceof OrgSupplier) {
             $queryBuilder->where('org_supplier_products.org_supplier_id', $parent->id);
         } elseif ($organisationAgent) {
@@ -149,12 +159,18 @@ class IndexOrgSupplierProducts extends OrgAction
         $queryBuilder->select([
             'org_supplier_products.id',
             'org_supplier_products.slug',
+            'org_supplier_products.supplier_product_id',
+            'supplier_products.state',
             'supplier_products.code',
             'supplier_products.name',
             'supplier_products.cost',
             'supplier_products.units_per_carton',
             'currencies.code as currency_code',
         ]);
+
+        if ($parent instanceof OrgSupplier && AgentOrganisationSelection::fromRequest(parameter: 'supplier')) {
+            $queryBuilder->addSelect('organisations.code as organisation_code');
+        }
 
         if (!$parent instanceof OrgSupplier) {
             $queryBuilder
@@ -191,6 +207,7 @@ class IndexOrgSupplierProducts extends OrgAction
         if ($organisationAgent) {
             $queryBuilder
                 ->select([
+                    'supplier_products.state',
                     'supplier_products.code',
                     'supplier_products.name',
                     'supplier_products.cost',
@@ -199,9 +216,9 @@ class IndexOrgSupplierProducts extends OrgAction
                     'suppliers.name as supplier_name',
                 ])
                 ->selectRaw('min(org_supplier_products.id) as id')
-                ->selectRaw('min(org_supplier_products.slug) as slug')
-                ->selectRaw('min(org_suppliers.slug) as org_supplier_slug')
-                ->groupBy('supplier_products.id', 'currencies.code', 'suppliers.name');
+                ->selectRaw('supplier_products.slug as slug')
+                ->selectRaw('suppliers.slug as org_supplier_slug')
+                ->groupBy('supplier_products.id', 'currencies.code', 'suppliers.name', 'suppliers.slug');
 
             $this->addAgentProductFacts($queryBuilder, $organisationAgent);
         }
@@ -211,7 +228,7 @@ class IndexOrgSupplierProducts extends OrgAction
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')
-            ->allowedSorts($organisationAgent ? ['code', 'name', 'supplier_name', 'cost', 'internal_code', 'cbm', 'completeness'] : ['code', 'internal_code', 'name', 'supplier_name', 'cost'])
+            ->allowedSorts($organisationAgent ? ['code', 'name', 'supplier_name', 'state', 'cost', 'internal_code', 'cbm', 'completeness', 'organisation_code'] : ['code', 'internal_code', 'name', 'supplier_name', 'state', 'cost', 'organisation_code'])
             ->allowedFilters($organisationAgent ? [$globalSearch, ...$this->agentProductFilters()] : [$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString()
@@ -292,6 +309,12 @@ class IndexOrgSupplierProducts extends OrgAction
                 $table->column(key: 'supplier_name', label: __('Supplier'), canBeHidden: false, sortable: true);
             }
 
+            if ($parent instanceof OrgSupplier && AgentOrganisationSelection::fromRequest(parameter: 'supplier')) {
+                $table->column(key: 'organisation_code', label: __('Organisation'), canBeHidden: false, sortable: true);
+            }
+
+            $table->column(key: 'state', label: __('State'), sortable: true);
+
             if ($this->getParentOrganisationAgent($parent)) {
                 $table
                     ->selectFilter('focus', [
@@ -363,6 +386,7 @@ class IndexOrgSupplierProducts extends OrgAction
         $subNavigation = null;
         $afterTitle    = null;
         $iconRight     = null;
+        $model         = null;
         $tabsNavigation = OrgSupplierProductsTabsEnum::navigationOnly([OrgSupplierProductsTabsEnum::INDEX->value]);
         $agent          = $this->getParentOrganisationAgent($this->parent);
         if ($agent) {
@@ -380,6 +404,7 @@ class IndexOrgSupplierProducts extends OrgAction
             $iconRight     = ['icon' => 'fal fa-box-usd'];
         } elseif ($this->parent instanceof OrgSupplier) {
             $title         = $this->parent->supplier->name;
+            $model         = __('Supplier');
             $icon          = [
                 'icon'  => ['fal', 'fa-person-dolly'],
                 'title' => __('Supplier Products'),
@@ -402,6 +427,7 @@ class IndexOrgSupplierProducts extends OrgAction
                 'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'pageHead'    => [
                     'title'         => $title,
+                    'model'         => $model,
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
                     'afterTitle'    => $afterTitle,
@@ -428,6 +454,9 @@ class IndexOrgSupplierProducts extends OrgAction
                         : Inertia::optional(fn () => AgentSuppliersDataQualityResource::collection(IndexAgentSuppliersDataQuality::run($agent, $this->parent, OrgSupplierProductsTabsEnum::SUPPLIERS->value))))
                     : null,
                 'labels_print'  => $this->getLabelsPrint(),
+                'state_options' => $request->user()->authTo(GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value)
+                    ? collect(SupplierProductStateEnum::labels())->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all()
+                    : null,
                 'link_group_sko_route' => $request->user()->authTo("procurement.{$this->organisation->id}.edit")
                     ? ['name' => 'grp.models.org.org_supplier_product.link_group_sko', 'parameters' => ['organisation' => $this->organisation->id]]
                     : null,

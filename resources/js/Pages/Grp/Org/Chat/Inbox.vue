@@ -2891,13 +2891,14 @@ const updateUrl = (ulid: string) => {
     window.history.replaceState(window.history.state, "", url)
 }
 
-const handleSendMessage = async ({ text, files, message_type, is_email_notif, email_cc_excluded, content_ids, onFailed }: {
+const handleSendMessage = async ({ text, files, message_type, is_email_notif, email_cc_excluded, ai_draft_translation_of, content_ids, onFailed }: {
     text: string
     files?: File[]
     message_type: "text" | "image" | "file"
     tempId: number
     is_email_notif: boolean
     email_cc_excluded?: string[]
+    ai_draft_translation_of?: number | null
     content_ids?: string[]
     onFailed?: (message: string) => void
 }) => {
@@ -2912,6 +2913,7 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, em
         formData.append("sender_type", "agent")
         formData.append("is_email_notif", String(is_email_notif ?? false))
         email_cc_excluded?.forEach((address) => formData.append("email_cc_excluded[]", address))
+        if (ai_draft_translation_of) formData.append("ai_draft_translation_of", String(ai_draft_translation_of))
 
         if (files?.length === 1 && !content_ids?.some(Boolean)) {
             formData.append(message_type === "image" ? "image" : "file", files[0])

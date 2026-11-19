@@ -9,6 +9,7 @@
 
 namespace App\Actions\Procurement\AgentGoodsReceipt;
 
+use App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady;
 use App\Actions\OrgAction;
 use App\Models\Procurement\AgentGoodsReceiptItem;
 use App\Models\SysAdmin\Organisation;
@@ -45,7 +46,7 @@ class CheckAgentGoodsReceiptItems extends OrgAction
         DB::transaction(function () use ($unchecked, $user) {
             foreach ($unchecked as $item) {
                 try {
-                    CheckAgentGoodsReceiptItem::make()->handle($item, ['quantity_rejected' => 0], $user);
+                    CheckAgentGoodsReceiptItem::make()->handle($item, ['quantity_rejected' => 0], $user, refreshesOrder: false);
                 } catch (ValidationException $exception) {
                     throw ValidationException::withMessages([
                         'items' => $item->supplierProduct?->code.': '.collect($exception->errors())->flatten()->first(),
@@ -53,6 +54,8 @@ class CheckAgentGoodsReceiptItems extends OrgAction
                 }
             }
         });
+
+        RecordPurchaseOrderHandedOverWhenReady::make()->forPurchaseOrderIds($unchecked->pluck('purchase_order_id'));
 
         return $unchecked->count();
     }

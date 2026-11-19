@@ -14,6 +14,7 @@ use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\SysAdmin\Organisation;
+use App\Support\AgentOrganisationSelection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetOrgSupplierShowcase
@@ -43,15 +44,15 @@ class GetOrgSupplierShowcase
                 'photo'      => $supplier->imageSources(320, 320),
                 'supplierInfo' => [
                     ...$this->supplierInfo($supplier),
-                    'next_purchase_order_reference' => $this->nextPurchaseOrderReference($orgSupplier),
-                    'next_stock_delivery_reference' => $this->nextStockDeliveryReference($orgSupplier),
+                    'next_purchase_order_reference' => $this->withOrganisationLabel($this->nextPurchaseOrderReference($orgSupplier)),
+                    'next_stock_delivery_reference' => $this->withOrganisationLabel($this->nextStockDeliveryReference($orgSupplier)),
                 ],
             ],
             'stats'       => [
                 [
                     'label' => __('Products'),
                     'icon'  => 'fal fa-box-usd',
-                    'count' => $orgSupplier->stats->number_current_org_supplier_products,
+                    'count' => $agentNumbers['products'] ?? $orgSupplier->stats->number_current_org_supplier_products,
                     'route' => ShowOrgSupplier::orgSupplierRoute($organisationSlug, $orgSupplier, 'show.supplier_products.index', $orgAgent),
                 ],
                 [
@@ -60,6 +61,12 @@ class GetOrgSupplierShowcase
                     'count' => $agentNumbers['purchase_orders'] ?? $orgSupplier->stats->number_purchase_orders,
                     'route' => ShowOrgSupplier::orgSupplierRoute($organisationSlug, $orgSupplier, 'show.purchase_orders.index', $orgAgent),
                 ],
+                ...($agentNumbers ? [[
+                    'label' => __('Open purchase orders'),
+                    'icon'  => 'fal fa-clipboard',
+                    'count' => $agentNumbers['open_purchase_orders'],
+                    'route' => ShowOrgSupplier::orgSupplierRoute($organisationSlug, $orgSupplier, 'show.purchase_orders.index', $orgAgent),
+                ]] : []),
                 [
                     'label' => __('Deliveries'),
                     'icon'  => 'fal fa-truck-container',
@@ -68,5 +75,13 @@ class GetOrgSupplierShowcase
                 ],
             ],
         ];
+    }
+
+    /**
+     * The next numbers belong to one buying organisation; on the agent's one page per supplier they say whose.
+     */
+    private function withOrganisationLabel(string $reference): string
+    {
+        return AgentOrganisationSelection::fromRequest(parameter: 'supplier')?->label($reference) ?? $reference;
     }
 }

@@ -15,8 +15,12 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Procurement\OrgAgent\OrgAgentOrderContainerEnum;
 use App\Models\Procurement\OrgAgent;
+use App\Models\SysAdmin\Permission;
+use App\Models\SysAdmin\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrgAgent extends OrgAction
@@ -25,6 +29,28 @@ class UpdateOrgAgent extends OrgAction
     use WithActionUpdate;
     use WithProcurementSerialReferences;
 
+
+    private OrgAgent $orgAgent;
+
+    /**
+     * Who may be emailed to approve and pay the agent's money requests: an active user of the client who opens the
+     * agent page the email links to (procurement view in the client) and is not staff of the agent itself, who would
+     * otherwise approve and pay what it asks for.
+     *
+     * @return Builder<User>
+     */
+    public static function moneyRequestPayerCandidates(OrgAgent $orgAgent): Builder
+    {
+        $permissions = Permission::whereIn('name', ["procurement.$orgAgent->organisation_id", "procurement.$orgAgent->organisation_id.view"])->pluck('name')->all();
+        if ($permissions === []) {
+            return User::whereRaw('false');
+        }
+
+        return User::permission($permissions)
+            ->where('users.group_id', $orgAgent->group_id)
+            ->where('users.status', true)
+            ->whereDoesntHave('employees', fn ($query) => $query->where('employees.organisation_id', $orgAgent->agent->organisation_id));
+    }
 
     public function handle(OrgAgent $orgAgent, $modelData = []): OrgAgent
     {
@@ -58,8 +84,22 @@ class UpdateOrgAgent extends OrgAction
         ], $this->procurementSerialReferenceRules());
     }
 
+    public function afterValidator(Validator $validator): void
+    {
+        $payerIds = array_values(array_unique(array_map('intval', array_filter((array) $this->get('money_request_payer_user_ids'), 'is_numeric'))));
+        if ($payerIds === []) {
+            return;
+        }
+
+        $allowed = self::moneyRequestPayerCandidates($this->orgAgent)->whereIn('users.id', $payerIds)->count();
+        if ($allowed !== count($payerIds)) {
+            $validator->errors()->add('money_request_payer_user_ids', __('Only active users of this organisation who can see its procurement, and are not staff of the agent, can approve and pay its money requests.'));
+        }
+    }
+
     public function asController(OrgAgent $orgAgent, ActionRequest $request): OrgAgent
     {
+        $this->orgAgent = $orgAgent;
         $this->initialisation($orgAgent->organisation, $request);
 
         return $this->handle($orgAgent, $this->validatedData);
@@ -68,6 +108,7 @@ class UpdateOrgAgent extends OrgAction
     public function action(OrgAgent $orgAgent, $modelData, $hydratorsDelay = 0): OrgAgent
     {
         $this->asAction       = true;
+        $this->orgAgent       = $orgAgent;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($orgAgent->organisation, $modelData);
 

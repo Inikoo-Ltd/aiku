@@ -68,6 +68,7 @@ interface ComponentRow {
     trade_unit_id: number | null
     code: string
     name: string
+    url?: string | null
     quantity: number | null
     note: string
 }
@@ -100,10 +101,11 @@ const form = reactive({
 })
 
 const components = ref<ComponentRow[]>([])
-const addComponentRow = () => components.value.push({ trade_unit_id: null, code: "", name: "", quantity: null, note: "" })
-const onComponentPicked = (row: ComponentRow, option: { code?: string, name?: string, label: string }) => {
+const addComponentRow = () => components.value.push({ trade_unit_id: null, code: "", name: "", url: null, quantity: null, note: "" })
+const onComponentPicked = (row: ComponentRow, option: { code?: string, name?: string, url?: string | null, label: string }) => {
     row.code = option.code ?? option.label
     row.name = option.name ?? ""
+    row.url = option.url ?? null
 }
 
 const newSku = (): SkuRow => ({ mode: "new", code: "", name: "", trade_unit_id: null, brief: "", images: [] })
@@ -427,8 +429,8 @@ function submit() {
                         <table class="w-full min-w-[40rem] text-sm">
                             <thead class="whitespace-nowrap bg-gray-50 text-left text-xs font-medium text-gray-500">
                                 <tr>
-                                    <th class="w-52 px-3 py-2">{{ ctrans("Product code") }}</th>
-                                    <th class="px-3 py-2">{{ ctrans("Product name") }}</th>
+                                    <th class="w-52 px-3 py-2">{{ ctrans("Trade unit code") }}</th>
+                                    <th class="px-3 py-2">{{ ctrans("Trade unit name") }}</th>
                                     <th class="w-36 px-3 py-2">{{ ctrans("Needed to start production") }}</th>
                                     <th class="w-48 px-3 py-2">{{ ctrans("Notes") }}</th>
                                     <th class="w-12 px-3 py-2" />
@@ -440,7 +442,10 @@ function submit() {
                                         <ProductDevelopmentRemoteSelect v-model="row.trade_unit_id" :searchRoute="searchRoutes.trade_units" :placeholder="ctrans('Search by code')" @picked="(option) => onComponentPicked(row, option)" />
                                         <p v-if="error(`components.${index}.trade_unit_id`)" class="mt-1 text-xs text-red-600">{{ error(`components.${index}.trade_unit_id`) }}</p>
                                     </td>
-                                    <td class="px-3 py-2 pt-4 text-gray-700">{{ row.name || "—" }}</td>
+                                    <td class="px-3 py-2 pt-4 text-gray-700">
+                                        <a v-if="row.url" :href="row.url" target="_blank" rel="noopener" class="hover:text-[var(--app-accent)] hover:underline" v-tooltip="ctrans('Open the trade unit, where its name is edited')">{{ row.name || row.code }}</a>
+                                        <template v-else>{{ row.name || "—" }}</template>
+                                    </td>
                                     <td class="px-3 py-2">
                                         <InputNumber v-model="row.quantity" :min="0" :maxFractionDigits="3" class="w-full" inputClass="w-full" :invalid="!!error(`components.${index}.quantity`)" />
                                         <p v-if="error(`components.${index}.quantity`)" class="mt-1 text-xs text-red-600">{{ error(`components.${index}.quantity`) }}</p>

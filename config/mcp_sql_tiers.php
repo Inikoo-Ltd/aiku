@@ -144,7 +144,7 @@ return [
 
         'production' => [
             'productions', 'job_orders', 'job_order_*', 'manufacture_*', 'raw_materials', 'raw_material_stats', 'recipe_step_raw_materials',
-            'artisan_assignments', 'production_material_request*',
+            'artisan_assignments', 'production_material_request*', 'production_drop_points',
         ],
 
         'marketing' => [

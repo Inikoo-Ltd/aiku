@@ -101,6 +101,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $can_use_mcp_customer_service
  * @property bool $can_use_mcp_goods
  * @property bool $can_use_mcp_locations
+ * @property bool $can_use_mcp_settings
  * @property bool $mcp_sql_unrestricted
  * @property int|null $timezone_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
@@ -211,6 +212,17 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     public function chatName(): string
     {
         return $this->nickname ?: ($this->contact_name ?: $this->username);
+    }
+
+    /**
+     * Focus mode, chosen next to the search for 30 minutes to 8 hours: nothing pops up, rings,
+     * emails, pushes or messages them on Slack until it ends; the bell and task list still fill.
+     */
+    public function isFocusing(): bool
+    {
+        $until = Arr::get($this->settings, 'focus_until');
+
+        return $until && now()->lt($until);
     }
 
     /**
@@ -456,6 +468,19 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
                 ) && (!$worksOnlyForAgents || !preg_match('/\.\d+(\.|$)/', $permission->name))
             );
         });
+    }
+
+    /**
+     * Who may open a shop: its dashboard, and what anyone working in it may read there, such as
+     * the AI shopping assistant's conversations.
+     */
+    public function canSeeShop(Shop $shop): bool
+    {
+        return $this->authTo([
+            "org-admin.{$shop->organisation_id}",
+            "org-supervisor.{$shop->organisation_id}",
+            "accounting.{$shop->organisation_id}.view",
+        ]) || $this->authorisedShops()->where('shops.id', $shop->id)->exists();
     }
 
     public function authorisedShops(): MorphToMany

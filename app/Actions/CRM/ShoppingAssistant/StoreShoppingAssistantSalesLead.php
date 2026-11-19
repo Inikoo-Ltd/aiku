@@ -215,7 +215,7 @@ class StoreShoppingAssistantSalesLead
             __('Phone: :phone', ['phone' => $phone ?? __('not given, check the customer record')]),
             $bestTime ? __('Best time to call: :time', ['time' => $bestTime]) : null,
             $details ? __('What they want: :details', ['details' => $details]) : null,
-            $website ? __('Conversation on :website:', ['website' => $website->domain]).' '.route('grp.org.shops.show.web.analytics.shopping_assistant.conversations.show', [$customer->organisation->slug, $customer->shop->slug, $website->slug, $conversation->ulid]) : null,
+            $website ? __('Conversation on :website:', ['website' => $website->domain]).' '.route('grp.org.shops.show.ai_salesman.conversations.show', [$customer->organisation->slug, $customer->shop->slug, $conversation->ulid]) : null,
         ]));
     }
 

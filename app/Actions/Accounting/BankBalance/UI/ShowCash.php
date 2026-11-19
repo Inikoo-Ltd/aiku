@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithAccountingPagesAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Accounting\BankConnection\BankConnectionStateEnum;
+use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
 use App\Models\Accounting\BankBalance;
 use App\Models\Accounting\BankConnection;
 use App\Models\Helpers\Currency;
@@ -21,6 +22,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,7 +31,8 @@ use Lorisleiva\Actions\ActionRequest;
  * The cash the connected banks hold, from the balance snapshots kept at each bank sync: the total in the
  * organisation's currency (the group's when the whole group is read), what each connection holds in each currency,
  * and how the total moved. A day without a snapshot carries the last one before it; each amount is converted at
- * the last rate known on the day of its snapshot, and left out of the totals when no rate is known. A connection
+ * the last rate known on the day of its snapshot, and left out of the totals when no rate is known. A connection never
+ * read counts the lines booked on it, at today's rate, as the cash flow does, and is flagged as not current. A connection
  * whose last snapshot is older than STALE_HOURS, or whose last reading failed, is flagged, never shown as current.
  */
 class ShowCash extends OrgAction
@@ -72,7 +75,7 @@ class ShowCash extends OrgAction
         $organisations ??= $parent instanceof Organisation ? collect([$parent]) : collect();
         $target          = (int) $parent->currency_id;
         $pivot           = (int) Currency::where('code', config('app.currency_exchange.pivot'))->value('id');
-        $rate            = fn (string $currencyId) => "case when $currencyId = $pivot then 1 else (select ce.exchange from currency_exchanges ce where ce.currency_id = $currencyId and ce.date <= bank_balances.date order by ce.date desc limit 1) end";
+        $rate            = fn (string $currencyId, string $date = 'bank_balances.date') => "case when $currencyId = $pivot then 1 else (select ce.exchange from currency_exchanges ce where ce.currency_id = $currencyId and ce.date <= $date order by ce.date desc limit 1) end";
         $today           = now()->toDateString();
 
         $snapshots = BankBalance::query()
@@ -88,15 +91,27 @@ class ShowCash extends OrgAction
             ->groupBy('bank_connection_id')
             ->map(fn (Collection $rows) => $rows->groupBy('date'));
 
+        $neverRead = DB::table('bank_transactions')
+            ->whereIn('bank_transactions.organisation_id', $organisations->pluck('id'))
+            ->where('bank_transactions.status', BankTransactionStatusEnum::BOOKED)
+            ->whereNotExists(fn ($query) => $query->from('bank_balances')->whereColumn('bank_balances.bank_connection_id', 'bank_transactions.bank_connection_id'))
+            ->join('currencies', 'currencies.id', 'bank_transactions.currency_id')
+            ->groupBy('bank_transactions.bank_connection_id', 'bank_transactions.currency_id', 'currencies.code')
+            ->select(['bank_transactions.bank_connection_id', 'currencies.code'])
+            ->selectRaw('sum(bank_transactions.amount) as amount, 0 as reserved_amount')
+            ->selectRaw("case when bank_transactions.currency_id = $target then 1 else ({$rate((string) $target, "'$today'")}) / nullif(({$rate('bank_transactions.currency_id', "'$today'")}), 0) end as rate")
+            ->get()
+            ->groupBy('bank_connection_id');
+
         $converted = fn (object $row, string $field) => $row->rate === null ? null : round((float) $row->{$field} * (float) $row->rate, 2);
 
         $connections = BankConnection::whereIn('organisation_id', $organisations->pluck('id'))
             ->with('organisation:id,code,name,slug')
             ->orderBy('name')
             ->get()
-            ->map(function (BankConnection $bankConnection) use ($snapshots, $converted) {
-                $latest   = $snapshots->get($bankConnection->id)?->last() ?? collect();
-                $takenAt  = $latest->isEmpty() ? null : Carbon::parse($latest->max('taken_at'));
+            ->map(function (BankConnection $bankConnection) use ($snapshots, $neverRead, $converted) {
+                $latest   = $snapshots->get($bankConnection->id)?->last() ?? $neverRead->get($bankConnection->id) ?? collect();
+                $takenAt  = $latest->max('taken_at') ? Carbon::parse($latest->max('taken_at')) : null;
                 $failedAt = $bankConnection->state === BankConnectionStateEnum::ERROR
                     ? $bankConnection->last_error_at?->toIso8601String()
                     : ($bankConnection->sync_data['balances_error_at'] ?? null);
@@ -120,6 +135,7 @@ class ShowCash extends OrgAction
                         default                                              => 'ok',
                     },
                     'taken_at'          => $takenAt?->toIso8601String(),
+                    'from_lines'        => $takenAt === null && $latest->isNotEmpty(),
                     'failed_at'         => $failedAt,
                     'amount'            => round($balances->sum('converted'), 2),
                     'reserved'          => round($balances->sum('converted_reserved'), 2),

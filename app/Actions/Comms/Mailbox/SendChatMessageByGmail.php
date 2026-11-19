@@ -201,12 +201,12 @@ class SendChatMessageByGmail
 
     private function translateAgentReply(ChatMessage $chatMessage): void
     {
-        if ($chatMessage->sender_type !== ChatSenderTypeEnum::AGENT) {
+        if ($chatMessage->sender_type !== ChatSenderTypeEnum::AGENT || Arr::get($chatMessage->metadata, 'draft_sent_as_written')) {
             return;
         }
 
         try {
-            TranslateChatMessage::run($chatMessage->id);
+            TranslateChatMessage::run($chatMessage->id, Arr::get($chatMessage->metadata, 'reply_language_id'));
         } catch (Throwable $e) {
             Sentry::captureException($e);
         }

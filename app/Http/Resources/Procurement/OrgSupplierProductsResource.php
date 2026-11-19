@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -20,6 +21,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $cost
  * @property string $currency_code
  * @property int|null $supplier_product_id
+ * @property string|null $state
  * @property string|null $internal_code
  * @property numeric|null $cbm
  * @property int|null $lead_time_days
@@ -36,6 +38,7 @@ class OrgSupplierProductsResource extends JsonResource
             'code'              => $this->code,
             'name'              => $this->name,
             'slug'              => $this->slug,
+            'organisation_code' => $this->organisation_code ?? null,
             'supplier_name'     => $this->supplier_name,
             'org_supplier_slug' => $this->org_supplier_slug,
             'cost'              => $this->cost,
@@ -43,6 +46,7 @@ class OrgSupplierProductsResource extends JsonResource
             'group_cost'        => $this->group_cost,
             'group_currency_code' => $this->group_currency_code,
             'supplier_product_id' => $this->supplier_product_id,
+            'state'             => $this->stateData(),
             'internal_code'     => $this->internal_code,
             'group_sko_code'    => $this->group_sko_code,
             'cbm'               => $this->cbm !== null ? (float) $this->cbm : null,
@@ -51,6 +55,24 @@ class OrgSupplierProductsResource extends JsonResource
             'availability_status' => $this->availability_status,
             'completeness'      => $this->completeness !== null ? (int) $this->completeness : null,
             'completeness_checks' => $this->completeness_checks ? json_decode($this->completeness_checks, true) : null,
+        ];
+    }
+
+    /**
+     * @return array{value: string, label: string, icon: array<string, mixed>}|null
+     */
+    private function stateData(): ?array
+    {
+        $state = SupplierProductStateEnum::tryFrom((string) $this->state);
+
+        if (!$state) {
+            return null;
+        }
+
+        return [
+            'value' => $state->value,
+            'label' => SupplierProductStateEnum::labels()[$state->value],
+            'icon'  => SupplierProductStateEnum::stateIcon()[$state->value],
         ];
     }
 }

@@ -85,7 +85,7 @@ type Overview = {
         median_minutes: number | null
         routed: Record<string, number>
         people: { name: string; answered: number; median_minutes: number | null; declined: number; passed: number }[]
-        latest: { reference: string; question: string; shop: string; status: "open" | "answered" | "closed"; by: string | null; minutes: number | null; url: string }[]
+        latest: { reference: string; question: string; shop: string; status: "open" | "answered" | "closed"; by: string | null; minutes: number | null; url: string; conversation: string | null }[]
     }
 }
 
@@ -1067,7 +1067,7 @@ const conversationsTable = computed(() => props.conversations)
                             <tbody class="divide-y divide-gray-100">
                                 <tr v-for="question in gurus.latest" :key="question.reference">
                                     <td class="py-1">
-                                        <a :href="question.url" class="primaryLink">{{ question.question }}</a>
+                                        <a :href="question.conversation ? transcriptUrl(question.conversation) : question.url" class="primaryLink">{{ question.question }}</a>
                                         <span class="ml-1 whitespace-nowrap text-xs text-gray-400">{{ question.shop }}</span>
                                     </td>
                                     <td class="whitespace-nowrap py-1 pl-4 text-xs">

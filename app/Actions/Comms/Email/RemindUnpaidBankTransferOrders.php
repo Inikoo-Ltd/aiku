@@ -7,8 +7,10 @@
 
 namespace App\Actions\Comms\Email;
 
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
@@ -80,6 +82,7 @@ class RemindUnpaidBankTransferOrders
 
                 $order->update(['data' => array_merge((array) $order->data, ['last_payment_reminder_sent_on' => $today])]);
                 SendOrderPaymentReminderEmail::dispatch($order->id, $reminder);
+                SendCustomerNotificationWhatsapp::dispatch($order->customer, OutboxCodeEnum::ORDER_PAYMENT_REMINDER, $order);
                 $result[$reminder === SendOrderPaymentReminderEmail::FINAL_REMINDER ? 'warned' : 'reminded'][] = $order->id;
             }
         }

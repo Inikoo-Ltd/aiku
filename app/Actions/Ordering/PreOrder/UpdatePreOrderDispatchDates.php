@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\PreOrder;
 
 use App\Actions\Comms\Email\SendPreOrderUpdateEmail;
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Models\Ordering\PreOrder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
@@ -40,6 +41,7 @@ class UpdatePreOrderDispatchDates
         Event::dispatch(new AuditCustom($order));
 
         SendPreOrderUpdateEmail::dispatch($preOrder, SendPreOrderUpdateEmail::DISPATCH_DATE_CHANGED, ['reason' => $reason])->afterCommit();
+        SendCustomerNotificationWhatsapp::dispatchPreOrderUpdate($preOrder, SendPreOrderUpdateEmail::DISPATCH_DATE_CHANGED)->afterCommit();
 
         return $preOrder;
     }

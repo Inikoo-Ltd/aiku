@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
@@ -81,7 +82,7 @@ class EditPurchaseOrder extends OrgAction
                                 ],
                             ]
                         ],
-                        [
+                        ...(UpdatePurchaseOrder::isDeliveryAddressChangeable($purchaseOrder) ? [[
                             'label'  => __('Delivery'),
                             'title'  => __('Delivery'),
                             'icon'   => 'fal fa-truck',
@@ -94,7 +95,7 @@ class EditPurchaseOrder extends OrgAction
                                     'value'       => Arr::get($purchaseOrder->data, 'delivery_address'),
                                 ],
                             ]
-                        ],
+                        ]] : []),
                         ...$this->termsSections($purchaseOrder),
                         ...$this->cleanHandoverSections($purchaseOrder, $request),
                         [

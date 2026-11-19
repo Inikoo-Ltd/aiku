@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\Whatsapp;
 
+use App\Actions\Comms\WhatsappBulkRun\UpdateWhatsappBulkRunState;
 use App\Actions\Comms\WhatsappCampaign\Hydrators\WhatsappCampaignHydrateStats;
 use App\Enums\CRM\Livechat\ChatMessageStateEnum;
 use App\Enums\CRM\Livechat\MetaTrackingEventTypeEnum;
@@ -143,6 +144,16 @@ class UpdateWhatsappMessageStatus
      */
     protected function hydrateCampaignStats(MetaChatMessage $metaChatMessage): void
     {
+        if ($metaChatMessage->whatsapp_outbox_id) {
+            $bulkRun = WhatsappRecipient::where('meta_chat_message_id', $metaChatMessage->id)->first()?->whatsappBulkRun;
+
+            if ($bulkRun) {
+                UpdateWhatsappBulkRunState::run($bulkRun);
+            }
+
+            return;
+        }
+
         $campaignId = Arr::get($metaChatMessage->metadata ?? [], 'whatsapp_campaign_id')
             ?: WhatsappRecipient::where('meta_chat_message_id', $metaChatMessage->id)->value('whatsapp_campaign_id');
 

@@ -25,7 +25,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Writes a delivery's cost checklist from the service invoices allocated to it, in the organisation currency:
  * shipping is the sum of its freight and local transport bills on top of the freight the agent invoiced, duty of
- * its duty bills (customs, anti-dumping, other import taxes), and every other bill is an extra row of its own.
+ * its duty bills (customs duty, other import taxes), and every other bill is an extra row of its own. An anti-dumping
+ * bill is such a row too: the user picks the tariff codes it applies to, which a re-sync keeps.
  * Import VAT bills are recoverable and stay out. Rows typed by hand are left alone until a bill of their type
  * arrives, and a row the bills filled goes back to pending once no bill of its type is left.
  */

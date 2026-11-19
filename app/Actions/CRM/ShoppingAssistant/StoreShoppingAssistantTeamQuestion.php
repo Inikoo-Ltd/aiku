@@ -109,7 +109,7 @@ class StoreShoppingAssistantTeamQuestion
                 __('Question: :question', ['question' => $question]),
                 $words !== $question ? __('Their words (:language): :words', ['language' => $language, 'words' => $words]) : null,
                 __('Customer: :name (:reference)', ['name' => $customer->name, 'reference' => $customer->reference]).' '.route('grp.org.shops.show.crm.customers.show', [$organisation->slug, $customer->shop->slug, $customer->slug]),
-                $conversation->website ? __('Conversation on :website:', ['website' => $conversation->website->domain]).' '.route('grp.org.shops.show.web.analytics.shopping_assistant.conversations.show', [$organisation->slug, $customer->shop->slug, $conversation->website->slug, $conversation->ulid]) : null,
+                $conversation->website ? __('Conversation on :website:', ['website' => $conversation->website->domain]).' '.route('grp.org.shops.show.ai_salesman.conversations.show', [$organisation->slug, $customer->shop->slug, $conversation->ulid]) : null,
             ])),
             'assignee_id'      => $first->id,
             'collaborator_ids' => array_values(array_filter(array_map(fn (User $guru) => $guru->id !== $first->id ? $guru->id : null, $gurus))),
@@ -227,12 +227,12 @@ class StoreShoppingAssistantTeamQuestion
         $online = self::onlineUserIds();
 
         foreach ($gurus as $index => $guru) {
-            if ($online === null || in_array($guru->id, $online, true)) {
+            if (!$guru->isFocusing() && ($online === null || in_array($guru->id, $online, true))) {
                 return [$guru, $index === 0 ? 'guru' : 'backup'];
             }
         }
         $agent = ChatAgent::findAvailableAgent(null, $shopId)?->user;
-        if ($agent && $agent->status) {
+        if ($agent && $agent->status && !$agent->isFocusing()) {
             return [$agent, 'customer_services'];
         }
 
@@ -314,9 +314,10 @@ class StoreShoppingAssistantTeamQuestion
     }
 
     /**
-     * What the pop-up shows and where its buttons post.
+     * What the pop-up shows and where its buttons post. Only a live question (the customer is still
+     * waiting on the page) pops up; the rest wait quietly in the bell and the task list.
      *
-     * @return array<string, string>
+     * @return array<string, string|bool>
      */
     public static function popup(StaffTask $task): array
     {
@@ -325,6 +326,7 @@ class StoreShoppingAssistantTeamQuestion
             'draft_evidence' => data_get($task->data, 'draft_evidence'),
         ]) + [
             'task'           => $task->reference,
+            'live'           => self::isAwaited($task),
             'question'       => self::questionText($task),
             'customer_words' => self::questionText($task, 'customer_words'),
             'language'       => (string) data_get($task->data, 'language'),
@@ -333,8 +335,23 @@ class StoreShoppingAssistantTeamQuestion
             'answer_url'     => route('grp.tasks.assistant_answer', $task->reference),
             'decline_url'    => route('grp.tasks.assistant_decline', $task->reference),
             'pass_url'       => route('grp.tasks.assistant_pass', $task->reference),
-            'task_url'       => route('grp.tasks.show', $task->reference),
+            'task_url'       => self::detailsUrl($task),
         ];
+    }
+
+    /**
+     * The conversation, under the shop, so any guru who can open the shop reads it, also a backup
+     * who is not on the task. The task when the conversation is gone.
+     */
+    public static function detailsUrl(StaffTask $task): string
+    {
+        $shop = ShoppingAssistantConversation::with('website.shop.organisation')->find(data_get($task->data, 'conversation_id'))?->website?->shop;
+
+        if (!$shop) {
+            return route('grp.tasks.show', $task->reference);
+        }
+
+        return route('grp.org.shops.show.ai_salesman.conversations.show', [$shop->organisation->slug, $shop->slug, data_get($task->data, 'conversation_ulid')]);
     }
 
     /**

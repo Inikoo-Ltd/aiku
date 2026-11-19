@@ -44,6 +44,7 @@ import TableOrgStockMovements from "@/Components/Tables/Grp/Org/Inventory/TableO
 import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import OrgStockDiscontinuePreviewModal from "@/Components/Warehouse/Inventory/OrgStockDiscontinuePreviewModal.vue"
+import OrgStockEphemeralNote from "@/Components/Warehouse/Inventory/OrgStockEphemeralNote.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -121,6 +122,8 @@ const props = defineProps<{
     can_create_supplier_products?: boolean
     discontinue_preview_route: routeType
     discontinue_route: routeType
+    ephemeral_note: { text: string, author: string | null, set_at: string | null, expires_at: string } | null
+    ephemeral_note_route: routeType | null
 }>()
 
 const isDiscontinuePreviewOpen = ref(false)
@@ -231,6 +234,7 @@ const component = computed(() => {
             {{ ctrans("Stock location changes for this Org SKO may be overwritten during Aurora imports.") }}
         </Message>
     </div> -->
+    <OrgStockEphemeralNote :note="ephemeral_note" :updateRoute="ephemeral_note_route" />
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
     <div v-if="mini_breadcrumbs?.length" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">

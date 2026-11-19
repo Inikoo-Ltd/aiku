@@ -42,7 +42,10 @@ class CheckAgentGoodsReceiptItem extends OrgAction
 
     public const string PHOTO_SCOPE = 'reject_photo';
 
-    public function handle(AgentGoodsReceiptItem $item, array $modelData, ?User $user = null): AgentGoodsReceiptItem
+    /**
+     * @param  bool  $refreshesOrder  false when the caller checks many lines and refreshes each order once afterwards
+     */
+    public function handle(AgentGoodsReceiptItem $item, array $modelData, ?User $user = null, bool $refreshesOrder = true): AgentGoodsReceiptItem
     {
         $photos = Arr::pull($modelData, 'photos', []);
 
@@ -87,7 +90,9 @@ class CheckAgentGoodsReceiptItem extends OrgAction
 
         $this->savePhotos($item, $photos);
         $this->syncProductionDone($item->refresh());
-        RecordPurchaseOrderHandedOverWhenReady::make()->forPurchaseOrderIds([$item->purchase_order_id]);
+        if ($refreshesOrder) {
+            RecordPurchaseOrderHandedOverWhenReady::make()->forPurchaseOrderIds([$item->purchase_order_id]);
+        }
 
         return $item;
     }

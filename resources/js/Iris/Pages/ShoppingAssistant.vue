@@ -149,7 +149,14 @@ type StarterQuestion = { icon: string, title: string, subtitle?: string, questio
 
 const asStarter = (question: string, index: number): StarterQuestion => ({ icon: index % 2 ? "✧" : "✦", title: question, question })
 
-const starterQuestions = computed<StarterQuestion[]>(() => isDropshipping.value ? (connectedPlatforms.value.length ? [
+const littleBirdStarterQuestions = (): StarterQuestion[] => [
+    ctrans("What are the best-selling Agnes+Cat candles?"),
+    ctrans("Which products work well for gift bundles?"),
+    ctrans("Suggest a calming fragrance range for my shop"),
+    ctrans("What should I pair with bath and body products?"),
+].map(asStarter)
+
+const starterQuestions = computed<StarterQuestion[]>(() => isLittleBird.value ? littleBirdStarterQuestions() : isDropshipping.value ? (connectedPlatforms.value.length ? [
     ...connectedPlatforms.value.slice(0, 2).map((slug) => ctrans("Best sellers to add to my :platform store", { platform: PLATFORM_NAMES[slug] })),
     ctrans("How do I get more sales on :platform?", { platform: PLATFORM_NAMES[connectedPlatforms.value[0]] }),
     ...(nextPlatform.value ? [ctrans("Should I start selling on :platform too?", { platform: PLATFORM_NAMES[nextPlatform.value] })] : []),
@@ -2466,8 +2473,8 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .bird-mark {
-    width: 124px;
-    height: 124px;
+    width: 148px;
+    height: 148px;
     margin: 0 auto 1rem;
 }
 
@@ -2816,13 +2823,13 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .chat-shell-little-bird .assistant-avatar .little-bird-icon {
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2.125rem;
+    height: 2.125rem;
 }
 
 .chat-shell-little-bird .chat-sidebar-brand-icon {
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2.25rem;
+    height: 2.25rem;
 }
 
 .chat-shell-little-bird .assistant-bubble {

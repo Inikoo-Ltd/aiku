@@ -64,6 +64,7 @@ class EditSupplier extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'     => $supplier->code,
+                    'model'     => __('Supplier'),
                     'actions'   => [
                         [
                             'type'  => 'button',

@@ -17,6 +17,7 @@ use App\Enums\Procurement\SupplierMessage\SupplierMessageRoutedByEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
+use App\Models\SupplyChain\Supplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\SupplierMessage;
 use App\Models\SysAdmin\Organisation;
@@ -38,7 +39,7 @@ class SendSupplierWhatsappMessage extends OrgAction
      *
      * @param  array{content: string, filename: string}|null  $document
      */
-    public function handle(Organisation $organisation, ?User $user, string $phone, string $text, OrgSupplier|OrgAgent|OrgPartner|null $counterpart = null, ?array $document = null, ?PurchaseOrder $purchaseOrder = null): SupplierMessage
+    public function handle(Organisation $organisation, ?User $user, string $phone, string $text, OrgSupplier|OrgAgent|OrgPartner|Supplier|null $counterpart = null, ?array $document = null, ?PurchaseOrder $purchaseOrder = null): SupplierMessage
     {
         $credentials = $this->procurementWhatsappCredentials($organisation);
         $phone       = RouteSupplierMessage::phoneDigits($phone);
@@ -207,7 +208,7 @@ class SendSupplierWhatsappMessage extends OrgAction
         return [
             'phone'       => ['required', 'string', 'max:32'],
             'body'        => ['required', 'string', 'max:4000'],
-            'counterpart' => ['sometimes', 'nullable', 'string', 'regex:/^(supplier|agent|partner):\d+$/'],
+            'counterpart' => ['sometimes', 'nullable', 'string', 'regex:/^(supplier|agent|partner|agent_supplier):\d+$/'],
         ];
     }
 

@@ -15,6 +15,8 @@ use App\Actions\Production\Artefact\BranchArtefact;
 use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFactoryPhoto;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentComponentStatusEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentFormulationTypeEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentSampleStatusEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTargetFieldEnum;
 use App\Models\Goods\ProductDevelopmentChecklistTemplate;
@@ -199,22 +201,86 @@ class ProductDevelopmentRecipes
     }
 
     /**
-     * The approved trial run that is the SKU's final formulation: that of its last stage, once every stage has one.
+     * The approved trial run that is the SKU's final formulation: that of the stage typed as the finished product,
+     * once every stage has an approved trial run. Never picked by position: a SKU with no finished product stage
+     * has no final formulation.
      */
     public static function finalSample(ProductDevelopmentItem $item): ?ProductDevelopmentSample
     {
-        $formulations = $item->formulations()->get();
-        $approved     = $item->samples()->where('status', 'approved')->orderByDesc('number')->get();
+        return self::finalOf($item->formulations()->get(), $item->samples()->where('status', 'approved')->get());
+    }
+
+    /**
+     * @param \Illuminate\Support\Collection<int, ProductDevelopmentFormulation> $formulations
+     * @param \Illuminate\Support\Collection<int, ProductDevelopmentSample> $samples
+     */
+    public static function finalOf(\Illuminate\Support\Collection $formulations, \Illuminate\Support\Collection $samples): ?ProductDevelopmentSample
+    {
+        $approved = $samples->filter(fn (ProductDevelopmentSample $sample) => $sample->status === ProductDevelopmentSampleStatusEnum::APPROVED)->sortByDesc('number');
         if ($formulations->isEmpty()) {
             return $approved->first();
         }
 
-        $byStage = $approved->groupBy('product_development_formulation_id');
-        if ($formulations->contains(fn (ProductDevelopmentFormulation $formulation) => !$byStage->has($formulation->id))) {
+        $byStage  = $approved->groupBy('product_development_formulation_id');
+        $finished = self::finishedFormulation($formulations);
+        if (!$finished || $formulations->contains(fn (ProductDevelopmentFormulation $formulation) => !$byStage->has($formulation->id))) {
             return null;
         }
 
-        return $byStage->get($formulations->last()->id)->first();
+        return $byStage->get($finished->id)->first();
+    }
+
+    /**
+     * @param \Illuminate\Support\Collection<int, ProductDevelopmentFormulation> $formulations
+     */
+    public static function finishedFormulation(\Illuminate\Support\Collection $formulations): ?ProductDevelopmentFormulation
+    {
+        return $formulations->first(fn (ProductDevelopmentFormulation $formulation) => $formulation->type === ProductDevelopmentFormulationTypeEnum::FINISHED_PRODUCT);
+    }
+
+    /**
+     * The artefact a stage's trial runs are made on. The finished product is the SKU's own artefact; a blend or an
+     * intermediate gets its own experiment in the factory the first time it is needed, coded after the SKU and
+     * stage (ACAS-01-S1), so its recipe is kept apart and the finished product's recipe can use it as an
+     * ingredient once it is approved.
+     */
+    public static function stageArtefact(ProductDevelopmentFormulation $formulation): ?Artefact
+    {
+        $item = $formulation->item;
+        if (!$formulation->type->hasOwnArtefact()) {
+            return $item->artefact;
+        }
+        if ($formulation->artefact) {
+            return $formulation->artefact;
+        }
+
+        $production  = $formulation->productDevelopment->production;
+        $skuArtefact = $item->artefact;
+        if (!$production || !$skuArtefact) {
+            return null;
+        }
+
+        $artefact = StoreArtefact::make()->action($production, array_filter([
+            'code'               => self::stageArtefactCode($production->organisation_id, $item->tradeUnit->code, $formulation->position),
+            'name'               => mb_substr($formulation->name.' – '.$item->tradeUnit->name, 0, 255),
+            'state'              => ArtefactStateEnum::IN_PROCESS->value,
+            'artefact_family_id' => $skuArtefact->artefact_family_id,
+        ]));
+        $formulation->update(['artefact_id' => $artefact->id]);
+        $formulation->setRelation('artefact', $artefact);
+
+        return $artefact;
+    }
+
+    private static function stageArtefactCode(int $organisationId, string $skuCode, int $position): string
+    {
+        $base = $skuCode.'-S'.$position;
+        $code = $base;
+        for ($suffix = 2; Artefact::withTrashed()->where('organisation_id', $organisationId)->whereRaw('lower(code) = ?', [strtolower($code)])->exists(); $suffix++) {
+            $code = $base.'-'.$suffix;
+        }
+
+        return $code;
     }
 
     /**
@@ -277,7 +343,7 @@ class ProductDevelopmentRecipes
     }
 
     /**
-     * The SKUs whose every formulation stage has an approved trial run.
+     * The SKUs whose every formulation stage has an approved trial run, one of them being the finished product.
      */
     public static function approvedItems(ProductDevelopment $productDevelopment): \Illuminate\Database\Eloquent\Relations\HasMany
     {
@@ -285,6 +351,9 @@ class ProductDevelopmentRecipes
             ->whereExists(fn ($query) => $query->selectRaw('1')->from('product_development_samples as approved')
                 ->whereColumn('approved.product_development_item_id', 'product_development_items.id')
                 ->where('approved.status', 'approved'))
+            ->whereExists(fn ($query) => $query->selectRaw('1')->from('product_development_formulations as finished')
+                ->whereColumn('finished.product_development_item_id', 'product_development_items.id')
+                ->where('finished.type', ProductDevelopmentFormulationTypeEnum::FINISHED_PRODUCT->value))
             ->whereNotExists(fn ($query) => $query->selectRaw('1')->from('product_development_formulations as formulation')
                 ->whereColumn('formulation.product_development_item_id', 'product_development_items.id')
                 ->whereNotExists(fn ($query) => $query->selectRaw('1')->from('product_development_samples as stage_sample')

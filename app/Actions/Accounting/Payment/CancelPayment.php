@@ -113,6 +113,7 @@ class CancelPayment extends OrgAction
     /**
      * A payment recorded automatically from a bank line (HELP-4642): its absorbed bank fee goes with it, and the line
      * goes back to review so a person decides where the money belongs, instead of it being paid to the same order again.
+     * The invoices a fulfilment customer's transfer paid from their credit (HELP-4797) are unpaid with it.
      *
      * @throws \Throwable
      */
@@ -142,7 +143,7 @@ class CancelPayment extends OrgAction
             'bank_fee_payment_id' => null,
             'match_state'         => BankTransactionMatchStateEnum::REVIEW,
             'match_data'          => array_merge(
-                collect($bankTransaction->match_data)->except(['paid_by', 'credit_customer_id', 'credit_customer_name', 'credit_transaction_id'])->all(),
+                collect($bankTransaction->match_data)->except(['paid_by', 'credit_customer_id', 'credit_customer_name', 'credit_transaction_id', 'paid_invoices'])->all(),
                 ['reason' => 'the payment recorded from this line was cancelled']
             ),
         ]);
@@ -150,5 +151,11 @@ class CancelPayment extends OrgAction
         if ($bankFeePayment && $bankFeePayment->state !== PaymentStateEnum::CANCELLED) {
             $this->handle($bankFeePayment);
         }
+
+        Payment::where('data->bank_transaction_id', $bankTransaction->id)
+            ->whereNot('state', PaymentStateEnum::CANCELLED)
+            ->whereHas('paymentAccount', fn ($query) => $query->where('type', PaymentAccountTypeEnum::ACCOUNT))
+            ->get()
+            ->each(fn (Payment $creditPayment) => $this->handle($creditPayment));
     }
 }

@@ -39,6 +39,8 @@ class EvaluateStockDeliveryCosting
                 'cost_total' => DB::raw('net_amount + coalesce(cost_extra, 0) + coalesce(cost_shipping, 0) + coalesce(cost_duties, 0) + coalesce(cost_tax, 0)'),
             ]);
 
+        self::followTariffCodes($stockDelivery);
+
         $costs   = $stockDelivery->costs()->get();
         $amounts = self::splitAmounts($costs);
 
@@ -46,7 +48,7 @@ class EvaluateStockDeliveryCosting
 
         $isReopened = Arr::has($stockDelivery->data, 'costing_reopened');
         $isCosted   = $stockDelivery->parent_type === 'OrgPartner'
-            || ($this->isCosted($costs) && self::unbalancedHandSplits($stockDelivery, $amounts) === [] && (!$isReopened || $finishing));
+            || ($this->isCosted($costs) && self::unbalancedHandSplits($stockDelivery, $amounts) === [] && self::costsWithoutLines($stockDelivery, $costs)->isEmpty() && (!$isReopened || $finishing));
 
         $stockDelivery->update([
             'is_costed' => $isCosted,
@@ -79,15 +81,18 @@ class EvaluateStockDeliveryCosting
 
     /**
      * Shares shipping (by weight), duty (by customs line when the declaration is entered) and extra over the
-     * items that take part, except the costs split by hand.
+     * items that take part, except the costs split by hand. A cost that belongs to some lines (one SKO's packaging,
+     * an anti-dumping duty on some tariff codes) goes to those lines only, on top of their share of the rest.
      *
      * @param array<string, float>|null $amounts
      */
     public static function redistribute(StockDelivery $stockDelivery, ?array $amounts = null): void
     {
+        self::followTariffCodes($stockDelivery);
+
         $costs         = $stockDelivery->costs()->get();
         $amounts ??= self::splitAmounts($costs);
-        $itemExtras    = self::itemExtras($costs);
+        $ownLineAmounts = self::lineAmounts($stockDelivery, $costs);
         $handSplit     = Arr::get($stockDelivery->data, 'costing_hand_split', []);
         $keptHandSplit = [];
 
@@ -96,7 +101,7 @@ class EvaluateStockDeliveryCosting
                 $keptHandSplit[$field] = $handSplit[$field];
                 continue;
             }
-            $lineAmounts = $field === 'cost_extra' ? $itemExtras : [];
+            $lineAmounts = $ownLineAmounts[$field] ?? [];
             DistributeStockDeliveryExtraCost::distribute(
                 $stockDelivery,
                 $field,
@@ -126,28 +131,79 @@ class EvaluateStockDeliveryCosting
             $amounts[$type->itemCostField()] = $row && !$row->is_na ? $row->amountInDeliveryCurrency() : 0;
         }
 
-        $amounts['cost_extra'] = $costs
-            ->where('type', StockDeliveryCostTypeEnum::EXTRA)
-            ->filter(fn (StockDeliveryCost $cost) => !$cost->is_na)
-            ->sum(fn (StockDeliveryCost $cost) => $cost->amountInDeliveryCurrency());
+        $amounts['cost_extra'] = 0;
+
+        foreach ($costs->where('type', StockDeliveryCostTypeEnum::EXTRA)->reject(fn (StockDeliveryCost $cost) => $cost->is_na) as $cost) {
+            $amounts[$cost->lineCostField()] += $cost->amountInDeliveryCurrency();
+        }
 
         return $amounts;
     }
 
     /**
-     * Extras that belong to one line of the delivery (the packaging of one SKO), by line, in the delivery currency:
-     * that line takes them whole instead of sharing them with the others.
+     * Extras that belong to some lines of the delivery, by line field and line, in the delivery currency: the
+     * packaging of one SKO goes whole to its line, an anti-dumping duty is split by value among the lines of the
+     * tariff codes it was picked for. Those lines take them instead of sharing them with the others.
      *
-     * @return array<int, float>
+     * @return array<string, array<int, float>>
      */
-    public static function itemExtras(Collection $costs): array
+    public static function lineAmounts(StockDelivery $stockDelivery, Collection $costs): array
     {
+        $lineAmounts = [];
+
+        foreach ($costs->where('type', StockDeliveryCostTypeEnum::EXTRA)->reject(fn (StockDeliveryCost $cost) => $cost->is_na) as $cost) {
+            /** @var StockDeliveryCost $cost */
+            $shares = match (true) {
+                (bool) $cost->stock_delivery_item_id => [$cost->stock_delivery_item_id => $cost->amountInDeliveryCurrency()],
+                $cost->appliesByTariffCode()         => DistributeStockDeliveryExtraCost::sharesAmong($stockDelivery, $cost->applies_to_item_ids ?? [], $cost->amountInDeliveryCurrency()),
+                default                              => [],
+            };
+
+            foreach ($shares as $itemId => $share) {
+                $lineAmounts[$cost->lineCostField()][$itemId] = ($lineAmounts[$cost->lineCostField()][$itemId] ?? 0) + $share;
+            }
+        }
+
+        return array_map(fn (array $amounts) => array_map(fn (float $amount) => round($amount, 2), $amounts), $lineAmounts);
+    }
+
+    /**
+     * Until a delivery is costed for the first time, a row picked by tariff code follows the lines that carry those
+     * codes now: a line added at goods in, or a trade unit whose tariff code was corrected. Once costed the lines
+     * stay as they were, so a later change never moves money in a closed costing; picking the codes again on an
+     * updated costing takes the lines of that moment.
+     */
+    public static function followTariffCodes(StockDelivery $stockDelivery): void
+    {
+        if (Arr::has($stockDelivery->data ?? [], 'costed')) {
+            return;
+        }
+
+        $stockDelivery->costs()->whereNotNull('applies_to_tariff_codes')->get()
+            ->filter(fn (StockDeliveryCost $cost) => $cost->appliesByTariffCode())
+            ->each(function (StockDeliveryCost $cost) use ($stockDelivery) {
+                $itemIds = DistributeStockDeliveryExtraCost::itemIdsWithTariffCodes($stockDelivery, $cost->applies_to_tariff_codes);
+                if ($itemIds !== ($cost->applies_to_item_ids ?? [])) {
+                    $cost->update(['applies_to_item_ids' => $itemIds]);
+                }
+            });
+    }
+
+    /**
+     * Rows that must go to some lines only but have none of their lines left in the delivery: an anti-dumping duty
+     * whose tariff codes were not picked, or whose lines were all cancelled or not received. They keep the costing
+     * open, because spreading them over the whole delivery is exactly what they must not do.
+     *
+     * @return Collection<int, StockDeliveryCost>
+     */
+    public static function costsWithoutLines(StockDelivery $stockDelivery, ?Collection $costs = null): Collection
+    {
+        $costs ??= $stockDelivery->costs()->get();
+
         return $costs
-            ->where('type', StockDeliveryCostTypeEnum::EXTRA)
-            ->filter(fn (StockDeliveryCost $cost) => !$cost->is_na && $cost->stock_delivery_item_id)
-            ->groupBy('stock_delivery_item_id')
-            ->map(fn (Collection $rows) => round($rows->sum(fn (StockDeliveryCost $cost) => $cost->amountInDeliveryCurrency()), 2))
-            ->all();
+            ->filter(fn (StockDeliveryCost $cost) => $cost->appliesByTariffCode() && !$cost->is_na && (float) $cost->amount != 0)
+            ->filter(fn (StockDeliveryCost $cost) => DistributeStockDeliveryExtraCost::sharesAmong($stockDelivery, $cost->applies_to_item_ids ?? [], 1) === [])
+            ->values();
     }
 
     /**

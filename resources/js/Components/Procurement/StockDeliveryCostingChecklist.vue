@@ -8,11 +8,10 @@
 import { computed, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
-import { notify } from "@kyvg/vue3-notification"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheckCircle, faPlus, faTrashAlt, faUpload, faPaperclip, faTimes, faCheck, faSquare, faPencil, faHistory } from "@fal"
-import { faSpinnerThird } from "@fad"
 import { faCheckCircle as fasCheckCircle, faExclamationTriangle, faCheckSquare } from "@fas"
 import { routeType } from "@/types/route"
 import { useLocaleStore } from "@/Stores/locale"
@@ -21,8 +20,9 @@ import ServiceInvoiceTypeChip from "@/Components/Procurement/ServiceInvoiceTypeC
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import InputText from "primevue/inputtext"
 import Select from "primevue/select"
+import MultiSelect from "primevue/multiselect"
 
-library.add(faCheckCircle, faPlus, faTrashAlt, faUpload, faPaperclip, fasCheckCircle, faExclamationTriangle, faTimes, faCheck, faSquare, faCheckSquare, faSpinnerThird, faPencil, faHistory)
+library.add(faCheckCircle, faPlus, faTrashAlt, faUpload, faPaperclip, fasCheckCircle, faExclamationTriangle, faTimes, faCheck, faSquare, faCheckSquare, faPencil, faHistory)
 
 interface CostRow {
     id: number | null
@@ -46,6 +46,10 @@ interface CostRow {
     is_estimate: boolean
     invoice_overdue: boolean
     waiting_label: string | null
+    applies_by_tariff_code?: boolean
+    applies_to_tariff_codes?: string[]
+    applies_to_lines?: number
+    needs_lines?: boolean
 }
 
 interface AvailableDeposit {
@@ -70,6 +74,8 @@ const props = defineProps<{
         updateRoute: routeType
         checklist: CostRow[]
         extra_types: { label: string, value: string }[]
+        tariff_code_options?: { tariff_code: string, codes: string[], value: number }[]
+        skos_without_tariff_code?: string[]
         shipping_basis: { basis: string, missing_count: number, missing_codes: string[] }
         agent_invoice_missing: boolean
         agent_invoice_waiting: string | null
@@ -110,6 +116,7 @@ const selectedDepositId = ref<number | null>(null)
 const applyAmount = ref<string>("")
 
 const applyDeposit = () => {
+    errorMessage.value = null
     if (!selectedDepositId.value || !applyAmount.value) return
 
     router.post(
@@ -120,6 +127,7 @@ const applyDeposit = () => {
 }
 
 const unapplyDeposit = (application: { deleteRoute: routeType | null }) => {
+    errorMessage.value = null
     if (!application.deleteRoute) return
     if (!window.confirm(ctrans("Remove this deposit application? This is audited and visible to org staff and the agent."))) return
 
@@ -147,8 +155,11 @@ function rowKey(row: CostRow) {
     return row.id ? `id-${row.id}` : `type-${row.type}`
 }
 
+const errorMessage = ref<string | null>(null)
+const uploadedNotices = ref<{ [key: string]: string }>({})
+
 const onError = (errors?: Record<string, string>) => {
-    notify({ title: ctrans("Something went wrong"), text: String(Object.values(errors ?? {})[0] ?? ctrans("Failed to save the cost")), type: "error" })
+    errorMessage.value = String(Object.values(errors ?? {})[0] ?? ctrans("Failed to save the cost"))
 }
 
 const save = (row: CostRow, payload: { amount?: string | null, received?: boolean, is_na?: boolean, currency_id?: number, exchange?: string, is_waiting_for_invoice?: boolean, invoice_expected_in_days?: number | null, label?: string | null }) => {
@@ -179,6 +190,7 @@ const save = (row: CostRow, payload: { amount?: string | null, received?: boolea
         data.invoice_expected_in_days = payload.invoice_expected_in_days ?? null
     }
 
+    errorMessage.value = null
     const key = rowKey(row)
     optimistic.value[key] = {
         ...("is_na" in payload ? { is_na: !!payload.is_na } : {}),
@@ -213,6 +225,7 @@ const shippingBasisText = computed(() => {
 const deliveryPerOrg = computed(() => Number(props.costing.org_exchange) > 0 ? Number((1 / Number(props.costing.org_exchange)).toFixed(6)) : null)
 
 const saveOrgExchange = (value: string) => {
+    errorMessage.value = null
     if (!value || Number(value) <= 0) return
 
     router.patch(
@@ -237,6 +250,7 @@ const addExtra = () => {
     if (!canAddExtra.value || adding.value) return
 
     adding.value = true
+    errorMessage.value = null
     router.post(
         route(props.costing.storeCostRoute.name, props.costing.storeCostRoute.parameters),
         { type: "extra", category: extraCategory.value, label: extraLabel.value.trim() || null },
@@ -248,6 +262,7 @@ const uploading = ref<string | null>(null)
 const fileInputs = ref<{ [key: string]: HTMLInputElement | null }>({})
 
 const uploadInvoice = (row: CostRow, event: Event) => {
+    errorMessage.value = null
     const input = event.target as HTMLInputElement
     const files = Array.from(input.files ?? [])
     if (!row.uploadRoute || !files.length) return
@@ -262,16 +277,14 @@ const uploadInvoice = (row: CostRow, event: Event) => {
             ...quietVisit,
             onStart: () => { uploading.value = key },
             onFinish: () => { uploading.value = null; input.value = "" },
-            onError: (errors) => notify({ title: ctrans("Something went wrong"), text: String(Object.values(errors)[0] ?? ""), type: "error" }),
-            onSuccess: () => notify({
-                title: ctrans("Invoice uploaded"),
-                text: row.type === "extra"
-                    ? undefined
+            onError,
+            onSuccess: () => {
+                uploadedNotices.value[key] = row.type === "extra"
+                    ? ctrans("Invoice uploaded")
                     : row.type === "agent_invoice"
-                        ? ctrans("The AI is reading it: check and apply its costs under the invoice costing below.")
-                        : ctrans("The AI is reading it: check and apply its costs under the service invoices above."),
-                type: "success",
-            }),
+                        ? ctrans("Invoice uploaded. The AI is reading it: check and apply its costs under the invoice costing below.")
+                        : ctrans("Invoice uploaded. The AI is reading it: check and apply its costs under the service invoices above.")
+            },
         }
     )
 }
@@ -301,11 +314,34 @@ const saveNote = (row: CostRow) => {
     }
 }
 
+const tariffCodeOptions = computed(() => (props.costing.tariff_code_options ?? []).map(option => ({
+    value: option.tariff_code,
+    label: `${option.tariff_code} · ${option.codes.slice(0, 3).join(", ")}${option.codes.length > 3 ? ", …" : ""}`,
+})))
+const tariffCodeDrafts = ref<{ [key: string]: string[] }>({})
+const tariffCodeErrors = ref<{ [key: string]: string }>({})
+
+const saveTariffCodes = (row: CostRow) => {
+    const key = rowKey(row)
+    const codes = tariffCodeDrafts.value[key]
+    delete tariffCodeDrafts.value[key]
+    if (!row.updateRoute || codes === undefined || [...codes].sort().join() === [...(row.applies_to_tariff_codes ?? [])].sort().join()) return
+
+    delete tariffCodeErrors.value[key]
+    router.patch(route(row.updateRoute.name, row.updateRoute.parameters), { applies_to_tariff_codes: codes }, {
+        ...quietVisit,
+        onStart: () => { loading.value = key },
+        onFinish: () => { loading.value = null },
+        onError: (errors) => { tariffCodeErrors.value[key] = String(Object.values(errors)[0] ?? ctrans("Failed to save the cost")) },
+    })
+}
+
 const removing = ref<string | null>(null)
 const adding = ref(false)
 const isBusy = computed(() => !!loading.value || !!uploading.value || !!removing.value || adding.value)
 
 const removeExtra = (row: CostRow) => {
+    errorMessage.value = null
     if (!row.deleteRoute || removing.value) return
 
     const key = rowKey(row)
@@ -372,6 +408,13 @@ const removeExtra = (row: CostRow) => {
         </div>
 
         <template v-if="!costing.is_partner">
+            <div v-if="errorMessage" class="mb-2 flex items-center gap-1 text-sm text-red-600" role="alert">
+                <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                {{ errorMessage }}
+                <button type="button" class="ml-1 text-gray-400 hover:text-gray-600" :aria-label="ctrans('Close')" @click="errorMessage = null">
+                    <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                </button>
+            </div>
             <div class="rounded-md border border-gray-200 overflow-hidden" :class="isBusy ? 'pointer-events-none' : ''" :aria-busy="isBusy">
                 <table v-if="!hideRows" class="w-full text-sm">
                     <thead>
@@ -412,7 +455,7 @@ const removeExtra = (row: CostRow) => {
                                     </template>
                                     <ServiceInvoiceTypeChip v-else-if="row.type !== 'agent_invoice'" :type="row.type === 'extra' ? 'other' : row.type" :label="row.label" />
                                     <template v-else>{{ row.label }}</template>
-                                    <FontAwesomeIcon v-if="loading === rowKey(row)" icon="fad fa-spinner-third" class="animate-spin text-gray-400" fixed-width aria-hidden="true" />
+                                    <LoadingIcon v-if="loading === rowKey(row)" />
                                 </div>
                                 <InputText
                                     v-if="editingNote === rowKey(row)"
@@ -438,6 +481,36 @@ const removeExtra = (row: CostRow) => {
                                 <div v-else-if="row.note" class="mt-0.5 text-xs text-gray-500">{{ row.note }}</div>
                                 <div v-if="row.type === 'shipping' && !row.is_na" class="text-xs text-gray-500">{{ shippingBasisText }}</div>
                                 <div v-else-if="row.from_service_invoices" class="text-xs text-gray-500">{{ ctrans("From the service invoices") }}</div>
+                                <div v-if="row.applies_by_tariff_code && !row.is_na" class="mt-1 grid gap-1">
+                                    <MultiSelect
+                                        v-if="canEdit && row.updateRoute"
+                                        :modelValue="tariffCodeDrafts[rowKey(row)] ?? row.applies_to_tariff_codes ?? []"
+                                        :options="tariffCodeOptions"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        display="chip"
+                                        size="small"
+                                        filter
+                                        class="w-full max-w-md"
+                                        :placeholder="ctrans('Tariff codes it applies to')"
+                                        @update:modelValue="(codes: string[]) => tariffCodeDrafts[rowKey(row)] = codes"
+                                        @hide="saveTariffCodes(row)"
+                                    />
+                                    <div v-else-if="row.applies_to_tariff_codes?.length" class="text-xs text-gray-500">
+                                        {{ ctrans("Tariff codes: :codes", { codes: row.applies_to_tariff_codes.join(", ") }) }}
+                                    </div>
+                                    <div v-if="canEdit && costing.skos_without_tariff_code?.length" class="text-xs text-amber-700">
+                                        {{ ctrans("These SKOs have no tariff code and can not be picked until their trade unit has one: :codes", { codes: costing.skos_without_tariff_code.join(", ") }) }}
+                                    </div>
+                                    <div v-if="tariffCodeErrors[rowKey(row)]" class="text-xs text-red-600">{{ tariffCodeErrors[rowKey(row)] }}</div>
+                                    <div v-if="row.needs_lines" class="flex items-center gap-1 text-xs text-red-600">
+                                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                                        {{ ctrans("Pick the tariff codes it applies to: it goes only to the lines with those codes, and the costing can not be finished until then") }}
+                                    </div>
+                                    <div v-else-if="row.applies_to_lines" class="text-xs text-gray-500">
+                                        {{ ctrans("Only on the :count lines with these tariff codes, by value", { count: String(row.applies_to_lines ?? 0) }) }}
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-3 py-2 align-middle text-right">
                                 <InputText
@@ -543,6 +616,7 @@ const removeExtra = (row: CostRow) => {
                                         />
                                     </template>
                                 </div>
+                                <div v-if="uploadedNotices[rowKey(row)]" class="mt-1 text-xs text-green-700">{{ uploadedNotices[rowKey(row)] }}</div>
                             </td>
                             <td class="px-3 py-2 align-middle">
                                 <button
@@ -564,7 +638,8 @@ const removeExtra = (row: CostRow) => {
                                     class="text-gray-400 hover:text-red-500"
                                     @click="removeExtra(row)"
                                 >
-                                    <FontAwesomeIcon :icon="removing === rowKey(row) ? 'fad fa-spinner-third' : 'fal fa-trash-alt'" :class="removing === rowKey(row) ? 'animate-spin' : ''" fixed-width aria-hidden="true" />
+                                    <LoadingIcon v-if="removing === rowKey(row)" />
+                                    <FontAwesomeIcon v-else icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
                                 </button>
                             </td>
                         </tr>

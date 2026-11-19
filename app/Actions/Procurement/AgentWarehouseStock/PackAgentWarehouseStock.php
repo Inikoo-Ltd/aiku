@@ -43,12 +43,14 @@ class PackAgentWarehouseStock extends OrgAction
     }
 
     /**
-     * Packs a stock row already locked for update. Packing part of it leaves the rest as a received row of its own. A row
-     * from a goods receipt is packed whole: checking its receipt line sets the row's quantity, which a split would undo.
+     * Packs a stock row already locked for update. Packing part of it leaves the rest as a received row of its own, and
+     * the part can not be more than the agent still holds of the row (AgentWarehouseStock::heldQuantitySql). A row from
+     * a goods receipt is packed whole: checking its receipt line sets the row's quantity, which a split would undo.
      */
     public static function packLocked(AgentWarehouseStock $stock, ?float $quantity = null): AgentWarehouseStock
     {
         $available = (float) $stock->quantity;
+        $held      = round((float) DB::table('agent_warehouse_stocks')->where('id', $stock->id)->selectRaw(AgentWarehouseStock::heldQuantitySql().' as held')->first()?->held, 3);
         $quantity  = $quantity === null ? $available : round($quantity, 3);
         $code      = $stock->supplierProduct?->code;
 
@@ -56,8 +58,8 @@ class PackAgentWarehouseStock extends OrgAction
             throw ValidationException::withMessages(['pack' => __(':code is not waiting to be packed', ['code' => $code])]);
         }
 
-        if ($quantity <= 0 || $quantity > $available + self::QUANTITY_TOLERANCE) {
-            throw ValidationException::withMessages(['pack' => __(':code: pack between 1 and :units units', ['code' => $code, 'units' => $available])]);
+        if ($quantity <= 0 || $quantity > $available + self::QUANTITY_TOLERANCE || ($quantity < $available - self::QUANTITY_TOLERANCE && $quantity > $held + self::QUANTITY_TOLERANCE)) {
+            throw ValidationException::withMessages(['pack' => __(':code: pack between 1 and :units units', ['code' => $code, 'units' => $held])]);
         }
 
         if ($available - $quantity <= self::QUANTITY_TOLERANCE) {

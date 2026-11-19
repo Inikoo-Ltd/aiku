@@ -256,7 +256,8 @@ class GetAgentMoneyRequestLines
 
     /**
      * Every shipment the agent paid charges for on the client's behalf, with what is still to ask for: the charges
-     * less what was asked for the shipment in a request still standing or, when more, sent against it directly.
+     * less what was asked for the shipment in a request still standing and what was sent against it directly: the
+     * transfers of a request never carry a shipment, so the two never count the same money.
      *
      * @return list<array{stock_delivery_id: int, stock_delivery_slug: string, reference: string, state: string|null, charges: list<array{type: string, label: string, amount: float}>, total: float, requested: float, due: float}>
      */
@@ -291,6 +292,7 @@ class GetAgentMoneyRequestLines
         $requested = DB::table('deposit_request_items')
             ->join('deposit_requests', 'deposit_requests.id', 'deposit_request_items.deposit_request_id')
             ->whereNotIn('deposit_requests.state', [DepositRequestStateEnum::CANCELLED->value, DepositRequestStateEnum::REJECTED->value])
+            ->where('deposit_requests.currency_id', $currencyId)
             ->where('deposit_request_items.kind', DepositRequestItemKindEnum::SHIPMENT->value)
             ->whereIn('deposit_request_items.stock_delivery_id', $stockDeliveryIds)
             ->groupBy('deposit_request_items.stock_delivery_id')
@@ -300,6 +302,7 @@ class GetAgentMoneyRequestLines
         $sentAgainstShipment = DB::table('agent_payments')
             ->where('agent_payments.agent_id', $agent->id)
             ->where('agent_payments.organisation_id', $client->id)
+            ->where('agent_payments.currency_id', $currencyId)
             ->where('agent_payments.type', AgentPaymentTypeEnum::TRANSFER_RECEIVED->value)
             ->whereIn('agent_payments.stock_delivery_id', $stockDeliveryIds)
             ->whereNull('agent_payments.deleted_at')
@@ -313,7 +316,7 @@ class GetAgentMoneyRequestLines
             $first         = $rows->first();
             $total         = round((float) $rows->sum('amount'), 2);
             $requestedHere = round((float) ($requested[$stockDeliveryId] ?? 0), 2);
-            $covered       = max($requestedHere, round((float) ($sentAgainstShipment[$stockDeliveryId] ?? 0), 2));
+            $covered       = $requestedHere + round((float) ($sentAgainstShipment[$stockDeliveryId] ?? 0), 2);
 
             return [
                 'stock_delivery_id'   => (int) $stockDeliveryId,

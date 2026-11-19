@@ -7,6 +7,7 @@ import Popover from '@/Components/Popover.vue'
 import NotificationList from '@/Components/NotificationList/NotificationList.vue'
 const Profile = defineAsyncComponent(() => import("@/Pages/Grp/Profile.vue"))
 import WaitingWarehouseList from "@/Layouts/Grp/WaitingWarehouseList.vue"
+import FocusModeButton from "@/Layouts/Grp/FocusModeButton.vue"
 import WaitingCrmList from "@/Layouts/Grp/WaitingCrmList.vue"
 
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -84,6 +85,8 @@ const isUserMac = navigator.platform.includes('Mac')
                 </div>
                 <SearchBar v-model="showSearchDialog" />
             </button>
+
+            <FocusModeButton class="sm:pl-4" />
 
             <!-- Search: AI -->
             <!-- <button v-if="true" @click="showAskBot = !showAskBot" id="ask-bot"

@@ -37,12 +37,16 @@ class GetPurchaseOrderReferenceAvailability extends OrgAction
 
     public function handle(PurchaseOrder $purchaseOrder, string $reference): array
     {
-        $conflict = UpdatePurchaseOrderReference::conflictingPurchaseOrder($purchaseOrder, $reference);
+        $conflict    = UpdatePurchaseOrderReference::conflictingPurchaseOrder($purchaseOrder, $reference);
+        $formatError = Str::slug($reference) !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $reference) !== 1
+            ? __('Use only letters, numbers, dashes and underscores')
+            : null;
 
         return [
             'reference'    => $reference,
             'is_unchanged' => $reference === $purchaseOrder->reference,
-            'is_available' => $conflict === null && Str::slug($reference) !== '',
+            'is_available' => $conflict === null && Str::slug($reference) !== '' && $formatError === null,
+            'format_error' => $formatError,
             'conflict'     => $conflict ? $this->purchaseOrderData($conflict) : null,
             'slug'         => Str::slug($reference) === '' ? null : $this->previewSlug($purchaseOrder, $reference),
             'alternatives' => $conflict ? $this->alternatives($purchaseOrder, $reference) : [],

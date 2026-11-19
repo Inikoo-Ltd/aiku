@@ -16,6 +16,7 @@ use App\Enums\Procurement\SupplierMessage\SupplierMessageDirectionEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
+use App\Models\SupplyChain\Supplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\SupplierMessage;
 use App\Models\SysAdmin\Organisation;
@@ -47,7 +48,7 @@ class ShowSupplierMessage extends OrgAction
     /**
      * @return array{type: string, name: string, code: string, email: string|null, phone: string|null, key: string, route: array{name: string, parameters: array<int, string>}}
      */
-    public static function counterpartSummary(OrgSupplier|OrgAgent|OrgPartner $counterpart, Organisation $organisation): array
+    public static function counterpartSummary(OrgSupplier|OrgAgent|OrgPartner|Supplier $counterpart, Organisation $organisation): array
     {
         return match (true) {
             $counterpart instanceof OrgSupplier => [
@@ -58,6 +59,15 @@ class ShowSupplierMessage extends OrgAction
                 'phone' => $counterpart->supplier->phone,
                 'key'   => 'supplier:'.$counterpart->id,
                 'route' => ['name' => 'grp.org.procurement.org_suppliers.show', 'parameters' => [$organisation->slug, $counterpart->slug]],
+            ],
+            $counterpart instanceof Supplier => [
+                'type'  => 'supplier',
+                'name'  => $counterpart->name,
+                'code'  => $counterpart->code,
+                'email' => $counterpart->email,
+                'phone' => $counterpart->phone,
+                'key'   => 'agent_supplier:'.$counterpart->id,
+                'route' => ['name' => 'grp.org.procurement.org_suppliers.show', 'parameters' => ['organisation' => $organisation->slug, 'supplier' => $counterpart->slug]],
             ],
             $counterpart instanceof OrgAgent => [
                 'type'  => 'agent',

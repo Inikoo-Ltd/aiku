@@ -25,4 +25,12 @@ trait SendsMailThroughSes
 
         return $message;
     }
+
+    /**
+     * Text a supplier typed shows as typed in the email, never as a link or formatting.
+     */
+    protected function plainLine(string $text): string
+    {
+        return (string) preg_replace('/([\\\\`*_\[\]()<>#!|])/', '\\\\$1', $text);
+    }
 }

@@ -194,7 +194,7 @@ struct ModuleTabs: View {
     }
 
     var body: some View {
-        let sections = module.sections(includingFulfilment: session.hasFulfilmentAccess)
+        let sections = module.sections(for: session.visibleModules)
         PillTabs(sections.map { PillTab(id: $0.id.rawValue, title: $0.title) }, selectedID: current.rawValue) { tab in
             guard tab.id != current.rawValue, let section = sections.first(where: { $0.id.rawValue == tab.id }) else { return }
             section.show(router, true)

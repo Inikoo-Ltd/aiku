@@ -14,6 +14,7 @@ use App\Models\Goods\ProductDevelopmentFormulation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -44,7 +45,10 @@ class UpdateProductDevelopmentFormulation extends OrgAction
         if (Arr::has($modelData, 'name')) {
             $modelData['name'] = trim($modelData['name']);
         }
-        $formulation->update(Arr::only($modelData, ['name', 'artisan_id']));
+        if (Arr::has($modelData, 'brief')) {
+            $modelData['brief'] = trim((string) $modelData['brief']) ?: null;
+        }
+        $formulation->update(Arr::only($modelData, ['name', 'artisan_id', 'type', 'brief']));
 
         return $formulation;
     }
@@ -52,6 +56,11 @@ class UpdateProductDevelopmentFormulation extends OrgAction
     public function rules(): array
     {
         return $this->formulationRules($this->formulation->productDevelopment, false);
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        $this->validateFormulationType($validator, $this->formulation->item, $this->formulation, $this->get('type'));
     }
 
     public function asController(ProductDevelopmentFormulation $productDevelopmentFormulation, ActionRequest $request): ProductDevelopmentFormulation

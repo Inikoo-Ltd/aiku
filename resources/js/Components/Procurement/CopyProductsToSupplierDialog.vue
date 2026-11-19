@@ -58,7 +58,7 @@ function copySelectedProducts() {
 
 	router.post(
 		route(props.copyProducts.copy_route.name, [...Object.values(props.copyProducts.copy_route.parameters ?? {}), targetSupplierId.value]),
-		{ [props.idsParameter]: props.selectedIds, make_preferred: isMakePreferred.value },
+		{ [props.idsParameter]: props.selectedIds, make_preferred: props.copyProducts.can_make_preferred && isMakePreferred.value },
 		{
 			preserveScroll: true,
 			onStart: () => isCopying.value = true,
@@ -144,7 +144,7 @@ defineExpose({ createSupplierWithSelectedProducts })
 					</div>
 				</template>
 			</Select>
-			<label for="copy-products-make-preferred" class="mt-2 flex cursor-pointer items-start gap-2">
+			<label v-if="copyProducts.can_make_preferred" for="copy-products-make-preferred" class="mt-2 flex cursor-pointer items-start gap-2">
 				<Checkbox v-model="isMakePreferred" inputId="copy-products-make-preferred" binary class="mt-0.5" />
 				<span class="text-sm">
 					<span class="font-medium text-gray-700">{{ ctrans("Make :supplier as preferred supplier", { supplier: targetSupplier?.label ?? ctrans("this supplier") }) }}</span>

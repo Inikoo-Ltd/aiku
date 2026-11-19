@@ -2375,6 +2375,20 @@ test('two products built on the same stock get their own sku, and each is found 
     expect(StorePortfolio::make()->getSKU($secondProduct->refresh()))->toBe($sharedOrgStock->stock->slug.'-x5');
 });
 
+test('a product of many stocks whose composite sku would overflow the column gets no sku instead of failing (HELP-4801)', function () {
+    Queue::fake();
+    $channel   = shopifyProductChannel($this, 'product-sku-overflow')->customerSalesChannel;
+    $orgStocks = collect(createOrgStocks($this->shop->organisation, createStocks($this->shop->group)))->take(2);
+    $orgStocks->each(fn ($orgStock, $index) => $orgStock->stock->update(['slug' => 'overflow-'.$index.'-'.str_repeat('x', 130)]));
+    $this->product->orgStocks()->sync($orgStocks->mapWithKeys(fn ($orgStock) => [$orgStock->id => ['quantity' => 1]])->all());
+    $this->product->update(['is_bundle' => false]);
+
+    $portfolio = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+
+    expect(StorePortfolio::make()->getSKU($this->product))->toBeNull()
+        ->and($portfolio->sku)->toBeNull();
+});
+
 test('the borrowed sku repair gives an unlinked portfolio its own sku back and leaves alone one linked to a listing', function () {
     Queue::fake();
     $channel       = shopifyProductChannel($this, 'product-borrowed-sku-repair')->customerSalesChannel;

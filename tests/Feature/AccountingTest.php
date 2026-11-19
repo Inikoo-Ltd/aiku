@@ -2450,6 +2450,63 @@ test('invoice non-strict update overrides amounts', function () {
     expect((float) $invoice->net_amount)->toBe(111.0);
 });
 
+test('only accounting managers change an invoice tax number, on the invoice alone or with the customer, audited', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+    Invoice::enableAuditing();
+    Customer::enableAuditing();
+
+    $customer                = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $invoice                 = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $customerTaxNumberBefore = $customer->taxNumber?->getFormattedTaxNumber();
+
+    setPermissionsTeamId($this->group->id);
+    $guest = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    );
+    $user = $guest->getUser();
+    $user->givePermissionTo("accounting.{$this->organisation->id}.edit");
+    $user->refresh();
+    actingAs($user);
+
+    patch(route('grp.models.invoice.update.tax_number', $invoice->id), ['formatted_tax_number' => 'ESB12345678', 'update_customer' => true])->assertForbidden();
+    patch(route('grp.models.invoice.update', $invoice->id), ['formatted_tax_number' => 'ESB12345678'])->assertSessionHasErrors('formatted_tax_number');
+    $invoice->update(['tax_number' => 'ESA11111111']);
+    patch(route('grp.models.invoice.update', $invoice->id), ['formatted_tax_number' => ''])->assertSessionHasErrors('formatted_tax_number');
+    patch(route('grp.models.invoice.update', $invoice->id), ['formatted_tax_number' => null])->assertSessionHasErrors('formatted_tax_number');
+    expect($invoice->refresh()->tax_number)->toBe('ESA11111111');
+
+    $user->givePermissionTo("org-supervisor.{$this->organisation->id}.accounting");
+    $user->refresh();
+    actingAs($user);
+
+    $invoiceTaxNumberBefore = $invoice->refresh()->tax_number;
+    patch(route('grp.models.invoice.update', $invoice->id), ['formatted_tax_number' => '53098426M'])->assertSessionHasErrors('formatted_tax_number');
+    expect($invoice->refresh()->tax_number)->toBe($invoiceTaxNumberBefore);
+
+    patch(route('grp.models.invoice.update', $invoice->id), ['formatted_tax_number' => 'ES B12345678'], ['X-Inertia' => 'true'])->assertSessionHasNoErrors();
+    expect($invoice->refresh()->tax_number)->toContain('B12345678')
+        ->and($customer->refresh()->taxNumber?->getFormattedTaxNumber())->toBe($customerTaxNumberBefore);
+
+    patch(route('grp.models.invoice.update.tax_number', $invoice->id), ['formatted_tax_number' => '53098426M', 'update_customer' => true])->assertSessionHasErrors('formatted_tax_number');
+    expect($invoice->refresh()->tax_number)->toContain('B12345678');
+
+    patch(route('grp.models.invoice.update.tax_number', $invoice->id), ['formatted_tax_number' => 'ES 53098426M', 'update_customer' => true], ['X-Inertia' => 'true'])->assertSessionHasNoErrors();
+    $invoice->refresh();
+    $customer->refresh();
+    expect($invoice->tax_number)->toContain('53098426M')
+        ->and($customer->taxNumber->number)->toBe('53098426M');
+
+    $invoiceAudits = $invoice->audits()->where('event', 'invoice_tax_number_update')->orderBy('id')->get();
+    $customerAudit = $customer->audits()->where('event', 'invoice_tax_number_update')->latest('id')->first();
+    expect($invoiceAudits)->toHaveCount(2)
+        ->and($invoiceAudits->pluck('user_id')->unique()->all())->toBe([$user->id])
+        ->and($invoiceAudits->last()->old_values['tax_number'])->toContain('B12345678')
+        ->and($invoiceAudits->last()->new_values['tax_number'])->toContain('53098426M')
+        ->and($customerAudit->user_id)->toBe($user->id)
+        ->and($customerAudit->new_values['affected_invoice'])->toBe($invoice->reference);
+});
+
 /*
 |--------------------------------------------------------------------------
 | Actions: credit transactions increase / decrease

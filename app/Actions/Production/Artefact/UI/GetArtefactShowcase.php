@@ -18,6 +18,7 @@ use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Artefact;
 use App\Models\Goods\ProductDevelopment;
+use App\Models\Goods\ProductDevelopmentFormulation;
 use App\Models\Goods\ProductDevelopmentItem;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -56,11 +57,13 @@ class GetArtefactShowcase
                 'parameters' => [$artefact->production_id, $artefact->id]
             ],
             'product_developments' => ProductDevelopment::whereIn('id', ProductDevelopmentItem::where('artefact_id', $artefact->id)->select('product_development_id'))
+                ->orWhereIn('id', ProductDevelopmentFormulation::where('artefact_id', $artefact->id)->select('product_development_id'))
                 ->orderByDesc('id')
                 ->get(['id', 'slug', 'code', 'name'])
                 ->map(fn (ProductDevelopment $productDevelopment) => [
                     'code'  => $productDevelopment->code,
                     'name'  => $productDevelopment->name,
+                    'stage' => ProductDevelopmentFormulation::where('artefact_id', $artefact->id)->where('product_development_id', $productDevelopment->id)->value('name'),
                     'route' => ['name' => 'grp.product_developments.show', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'tab' => 'formulation']],
                 ])->all(),
             'trade_unit' => $artefact->tradeUnit ? [

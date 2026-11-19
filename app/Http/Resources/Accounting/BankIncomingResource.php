@@ -55,10 +55,11 @@ class BankIncomingResource extends JsonResource
             'counterparty_account' => $this->counterparty_account,
             'reference'         => $this->reference,
             'reason'            => match (true) {
+                $this->payment_id !== null && isset($this->match_data['paid_invoices']) => __('Added to the credit of :customer and paid :invoices', ['customer' => $this->match_data['credit_customer_name'] ?? '', 'invoices' => implode(', ', array_keys($this->match_data['paid_invoices']))]),
                 $this->payment_id !== null && isset($this->match_data['credit_customer_name']) => __('Added to the credit of :customer by :name', ['customer' => $this->match_data['credit_customer_name'], 'name' => $this->match_data['paid_by'] ?? '']),
                 $this->payment_id !== null && isset($this->match_data['paid_by'])     => __('Recorded on the order by :name', ['name' => $this->match_data['paid_by']]),
                 $this->payment_id !== null                                            => __('Paid automatically'),
-                $this->match_state === BankTransactionMatchStateEnum::MATCHED         => isset($this->match_data['invoice_id']) ? __('Matches the invoice, not paid automatically') : __('Matches the order, not paid automatically'),
+                $this->match_state === BankTransactionMatchStateEnum::MATCHED         => isset($this->match_data['customer_id']) || isset($this->match_data['invoice_id']) ? __('Matches the customer, not paid automatically') : __('Matches the order, not paid automatically'),
                 $this->match_state === BankTransactionMatchStateEnum::DISMISSED       => $this->match_data['dismissed_note'] ?? null,
                 $this->match_state === BankTransactionMatchStateEnum::ALREADY_PAID && isset($this->match_data['dismissed_note']) => $this->match_data['dismissed_note'],
                 $this->match_state === BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT => null,

@@ -297,6 +297,7 @@ class IndexSupplierProducts extends OrgAction
             $iconRight     = ['icon' => 'fal fa-box-usd'];
         } elseif ($this->scope instanceof Supplier) {
             $title         = $this->scope->name;
+            $model         = __('Supplier');
             $icon          = [
                 'icon'  => ['fal', 'fa-person-dolly'],
                 'title' => __('Supplier Products'),
@@ -369,6 +370,7 @@ class IndexSupplierProducts extends OrgAction
                 'title'             => $title,
                 'pageHead'          => [
                     'title'         => $title,
+                    'model'         => $model ?? null,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle ?? null,
                     'iconRight'     => $iconRight ?? null,

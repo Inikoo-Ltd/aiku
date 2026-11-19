@@ -3787,14 +3787,14 @@ test('agent repairs products filed under AWChina: moves them to the real supplie
         ?? StoreOrgSupplier::make()->action($agentOrganisation, $realSupplier);
 
     $this->withoutVite()
-        ->get(route('grp.org.agent.org_suppliers.show.repair_supplier_products.index', [$agentOrganisation->slug, $awcInAgent->slug]))
+        ->get(route('grp.org.agent.org_suppliers.show.repair_supplier_products.index', [$agentOrganisation->slug, $awcInAgent->supplier->slug]))
         ->assertInertia(fn ($page) => $page
             ->component('Procurement/RepairSupplierProducts')
             ->where('data.meta.total', 0)
             ->where('active.state', 'active')
             ->where('suppliers', fn ($suppliers) => collect($suppliers)->pluck('id')->contains($realSupplier->id)));
 
-    $this->get(route('grp.org.agent.org_suppliers.show.repair_supplier_products.index', [$agentOrganisation->slug, $realInAgent->slug]))->assertNotFound();
+    $this->get(route('grp.org.agent.org_suppliers.show.repair_supplier_products.index', [$agentOrganisation->slug, $realInAgent->supplier->slug]))->assertNotFound();
     $this->get(route('grp.org.procurement.org_suppliers.show.repair_supplier_products.index', [$awcOrgSupplier->organisation->slug, $awcOrgSupplier->slug]))
         ->assertInertia(fn ($page) => $page->component('Procurement/RepairSupplierProducts'));
 });
@@ -3996,14 +3996,387 @@ test('an agent steps through its supplier products by code, not through the same
     $openedInOtherOrganisation = $products['B']->firstWhere('organisation_id', $otherOrganisation->id);
 
     $this->withoutVite()
-        ->get(route('grp.org.agent.org_supplier_products.show', [$agent->organisation->slug, $openedInOtherOrganisation->slug]))
+        ->get(route('grp.org.agent.org_supplier_products.show', [$agent->organisation->slug, $openedInOtherOrganisation->supplierProduct->slug]).'?organisation='.$otherOrganisation->slug)
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('navigation.previous.route.parameters.orgSupplierProduct', $products['A']->first()->slug)
-            ->where('navigation.next.route.parameters.orgSupplierProduct', $products['C']->first()->slug));
+            ->where('navigation.previous.route.parameters.supplierProduct', $products['A']->first()->supplierProduct->slug)
+            ->where('navigation.next.route.parameters.supplierProduct', $products['C']->first()->supplierProduct->slug));
 
-    $this->get(route('grp.org.agent.org_supplier_products.show', [$agent->organisation->slug, $products['C']->last()->slug]))
+    $this->get(route('grp.org.agent.org_supplier_products.show', [$agent->organisation->slug, $products['C']->last()->supplierProduct->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('navigation.previous.route.parameters.orgSupplierProduct', $products['B']->first()->slug)
+            ->where('navigation.previous.route.parameters.supplierProduct', $products['B']->first()->supplierProduct->slug)
             ->where('navigation.next', null));
+});
+
+test('a ledger line a standing money request asks for keeps its type, order and container and can not be removed until the request is cancelled', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-LOCK-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+
+    $ledgerLine = fn (array $data) => \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, $data + ['organisation_id' => $client->id, 'date' => date('Y-m-d')]);
+    $expense    = $ledgerLine(['type' => 'other_expense', 'amount' => 20, 'notes' => 'Bank charge']);
+    $charge     = $ledgerLine(['type' => 'inspection', 'amount' => 30, 'stock_delivery_id' => $stockDelivery->id]);
+    $unasked    = $ledgerLine(['type' => 'other_expense', 'amount' => 5, 'notes' => 'Courier']);
+
+    $depositRequest = \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [
+        ['kind' => 'expense', 'agent_payment_id' => $expense->id, 'amount' => 20],
+        ['kind' => 'shipment', 'stock_delivery_id' => $stockDelivery->id, 'amount' => 30],
+    ]]);
+
+    expect(\App\Models\SupplyChain\AgentPayment::idsAskedForInMoneyRequest([$expense, $charge, $unasked]))->toEqualCanonicalizing([$expense->id, $charge->id]);
+
+    setPermissionsTeamId($this->group->id);
+    actingAs(agentOrganisationAdmin($agent->organisation, 'w3-lock-'.Str::lower(Str::random(6))));
+
+    $this->patch(route('grp.models.agent_payment.update', $expense->id), ['date' => date('Y-m-d'), 'type' => 'other_expense', 'stock_delivery_id' => $stockDelivery->id])->assertSessionHasErrors('type');
+    $this->patch(route('grp.models.agent_payment.update', $charge->id), ['date' => date('Y-m-d'), 'type' => 'inspection'])->assertSessionHasErrors('type');
+    $this->patch(route('grp.models.agent_payment.update', $charge->id), ['date' => date('Y-m-d'), 'type' => 'samples', 'stock_delivery_id' => $stockDelivery->id])->assertSessionHasErrors('type');
+    $this->patch(route('grp.models.agent_payment.update', $charge->id), ['date' => date('Y-m-d'), 'type' => 'inspection', 'stock_delivery_id' => $stockDelivery->id, 'notes' => 'Second visit'])->assertSessionHasNoErrors();
+    $this->delete(route('grp.models.agent_payment.delete', $expense->id))->assertForbidden();
+    $this->delete(route('grp.models.agent_payment.delete', $charge->id))->assertForbidden();
+    $this->patch(route('grp.models.agent_payment.update', $unasked->id), ['date' => date('Y-m-d'), 'type' => 'samples'])->assertSessionHasNoErrors();
+
+    $rows = collect($this->get(route('grp.org.agent.accounting.ledger.index', [$agent->organisation->slug]))->assertOk()->viewData('page')['props']['data']['data'])->keyBy('id');
+    expect($rows[$expense->id]['money_request_lock'])->not->toBeNull()
+        ->and($rows[$expense->id]['delete_route'])->toBeNull()
+        ->and($rows[$charge->id]['money_request_lock'])->not->toBeNull()
+        ->and($rows[$unasked->id]['money_request_lock'])->toBeNull()
+        ->and($rows[$unasked->id]['delete_route'])->not->toBeNull();
+
+    $depositRequest->update(['state' => \App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::CANCELLED]);
+
+    $this->patch(route('grp.models.agent_payment.update', $charge->id), ['date' => date('Y-m-d'), 'type' => 'samples'])->assertSessionHasNoErrors();
+    $this->delete(route('grp.models.agent_payment.delete', $expense->id))->assertSessionHasNoErrors();
+
+    expect($charge->refresh()->type)->toBe(\App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum::SAMPLES)
+        ->and($charge->stock_delivery_id)->toBeNull()
+        ->and(\App\Models\SupplyChain\AgentPayment::find($expense->id))->toBeNull();
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('what a shipment still owes takes off both what a money request asked for it and what the client sent against the container directly', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-DUE-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+
+    $ledgerLine = fn (array $data) => \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, $data + ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'stock_delivery_id' => $stockDelivery->id]);
+    $ledgerLine(['type' => 'inspection', 'amount' => 1000]);
+    $shipment = fn () => collect(\App\Actions\SupplyChain\DepositRequest\GetAgentMoneyRequestLines::run($agent->refresh(), $client)['shipments'])->firstWhere('stock_delivery_id', $stockDelivery->id);
+
+    $ledgerLine(['type' => 'transfer_received', 'amount' => 500]);
+    expect($shipment()['due'])->toEqual(500);
+
+    \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [
+        ['kind' => 'shipment', 'stock_delivery_id' => $stockDelivery->id, 'amount' => 500],
+    ]]);
+
+    expect($shipment())->toBeNull();
+});
+
+test('the agent reminds a client of a money request at most once an hour', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-REM-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'type' => 'other_expense', 'amount' => 40, 'notes' => 'Bank charge']);
+    $expense = \App\Models\SupplyChain\AgentPayment::where('agent_id', $agent->id)->latest('id')->firstOrFail();
+
+    $depositRequest = \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [
+        ['kind' => 'expense', 'agent_payment_id' => $expense->id, 'amount' => 40],
+    ]]);
+
+    \Illuminate\Support\Facades\Notification::fake();
+    setPermissionsTeamId($this->group->id);
+    actingAs(agentOrganisationAdmin($agent->organisation, 'w3-rem-'.Str::lower(Str::random(6))));
+
+    $this->post(route('grp.models.deposit_request.remind', $depositRequest->id))->assertSessionHasNoErrors();
+    $this->post(route('grp.models.deposit_request.remind', $depositRequest->id))->assertSessionHasErrors('request');
+    expect($depositRequest->refresh()->number_reminders)->toBe(1);
+
+    $depositRequest->update(['last_reminded_at' => now()->subMinutes(61)]);
+    $this->post(route('grp.models.deposit_request.remind', $depositRequest->id))->assertSessionHasNoErrors();
+    expect($depositRequest->refresh()->number_reminders)->toBe(2);
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('an agent order is balance paid by the ledger only with supplier payments in its own currency, and owes the balance again once a quantity change raises its total', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $order                = createConfirmedAgentOrder($this, $supplier, $product, 0, 10)->refresh();
+    $line                 = $order->purchaseOrderTransactions()->firstOrFail();
+    $agent                = $orgAgent->agent;
+    $goods                = round((float) $order->cost_items, 2);
+    $otherCurrency        = \App\Models\Helpers\Currency::where('id', '!=', $order->currency_id)->orderBy('id')->firstOrFail();
+    expect($goods)->toBeGreaterThan(0.0);
+
+    $pay = fn (string $type, float $amount) => \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $order->organisation_id, 'type' => $type, 'date' => date('Y-m-d'), 'amount' => $amount, 'purchase_order_id' => $order->id]);
+
+    $agent->organisation->update(['currency_id' => $otherCurrency->id]);
+    $pay('supplier_payment', $goods);
+    expect($order->refresh()->deposit_paid_at)->not->toBeNull()
+        ->and($order->balance_paid_at)->toBeNull();
+
+    $agent->organisation->update(['currency_id' => $order->currency_id]);
+    $pay('supplier_balance', $goods);
+    expect($order->refresh()->balance_paid_at?->toDateString())->toBe(date('Y-m-d'));
+
+    \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line, ['quantity_ordered' => 12]);
+    expect($order->refresh()->balance_paid_at)->toBeNull();
+
+    \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line->refresh(), ['quantity_ordered' => 10]);
+    expect($order->refresh()->balance_paid_at?->toDateString())->toBe(date('Y-m-d'));
+});
+
+test('only users of the client who see its procurement and are not the agent\'s staff can be set to approve and pay the agent\'s money requests', function () {
+    $orgAgent = createFreshOrgAgent($this);
+    $client   = $orgAgent->organisation;
+    setPermissionsTeamId($this->group->id);
+
+    $clientUser = agentOrganisationAdmin($client, 'w3-pay-c-'.Str::lower(Str::random(6)));
+    $agentStaff = agentOrganisationAdmin($orgAgent->agent->organisation, 'w3-pay-a-'.Str::lower(Str::random(6)));
+    $agentStaff->givePermissionTo("procurement.$client->id.view");
+    expect($agentStaff->refresh()->authTo("procurement.$client->id.view"))->toBeTrue();
+
+    $candidateIds = \App\Actions\Procurement\OrgAgent\UpdateOrgAgent::moneyRequestPayerCandidates($orgAgent)->pluck('users.id')->all();
+    expect($candidateIds)->toContain($clientUser->id)
+        ->not->toContain($agentStaff->id);
+
+    expect(fn () => \App\Actions\Procurement\OrgAgent\UpdateOrgAgent::make()->action($orgAgent, ['money_request_payer_user_ids' => [$clientUser->id, $agentStaff->id]]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect($orgAgent->refresh()->moneyRequestPayerIds())->toBe([]);
+
+    \App\Actions\Procurement\OrgAgent\UpdateOrgAgent::make()->action($orgAgent, ['money_request_payer_user_ids' => [$clientUser->id]]);
+    expect($orgAgent->refresh()->moneyRequestPayerIds())->toBe([$clientUser->id]);
+
+    $page = json_encode($this->withoutVite()->get(route('grp.org.procurement.org_agents.show.edit', [$client->slug, $orgAgent->slug]))->assertOk()->viewData('page')['props']);
+    expect(str_contains($page, '"money_request_payer_user_ids"'))->toBeTrue();
+});
+
+test('the agent money requests page lists each open request\'s payers and copied users to remind, loaded once for the page', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-RCP-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    setPermissionsTeamId($this->group->id);
+
+    $payer  = agentOrganisationAdmin($client, 'w3-rcp-p-'.Str::lower(Str::random(6)));
+    $copied = agentOrganisationAdmin($client, 'w3-rcp-c-'.Str::lower(Str::random(6)));
+    \App\Actions\Procurement\OrgAgent\UpdateOrgAgent::make()->action($orgAgent, ['money_request_payer_user_ids' => [$payer->id], 'money_request_cc_user_ids' => [$copied->id, $payer->id]]);
+
+    $requests = collect([15, 25])->map(function (int $amount) use ($agent, $client) {
+        $expense = \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'type' => 'other_expense', 'amount' => $amount, 'notes' => 'Fee '.$amount]);
+
+        return \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [['kind' => 'expense', 'agent_payment_id' => $expense->id, 'amount' => $amount]]]);
+    });
+
+    $expected = \App\Actions\SupplyChain\DepositRequest\NotifyMoneyRequestCreated::emailRecipients($requests->first());
+    expect(collect($expected['to'])->pluck('name')->all())->toBe([$payer->chatName()])
+        ->and(collect($expected['cc'])->pluck('name')->all())->toBe([$copied->chatName()]);
+
+    actingAs(agentOrganisationAdmin($agent->organisation, 'w3-rcp-a-'.Str::lower(Str::random(6))));
+    $rows = collect($this->withoutVite()->get(route('grp.org.agent.accounting.deposit_requests.index', [$agent->organisation->slug]))->assertOk()->viewData('page')['props']['data']['data'])->keyBy('id');
+
+    foreach ($requests as $depositRequest) {
+        expect($rows[$depositRequest->id]['reminder_recipients'])->toBe($expected);
+    }
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('an expense the agent adds while asking for money records who added it', function () {
+    $orgAgent = createFreshOrgAgent($this);
+    $agent    = $orgAgent->agent;
+    $client   = $orgAgent->organisation;
+    setPermissionsTeamId($this->group->id);
+    $agentUser = agentOrganisationAdmin($agent->organisation, 'w3-exp-'.Str::lower(Str::random(6)));
+    actingAs($agentUser);
+
+    $this->post(route('grp.models.agent.money_request_expense.store', $agent->id), ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'amount' => 12.5, 'notes' => 'Bank charge W3'])
+        ->assertSessionHasNoErrors();
+
+    $expense = \App\Models\SupplyChain\AgentPayment::where('agent_id', $agent->id)->where('notes', 'Bank charge W3')->sole();
+    expect($expense->created_by)->toBe($agentUser->id)
+        ->and($expense->type)->toBe(\App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum::OTHER_EXPENSE);
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('a change of an agent order\'s items only moves its ledger balance date, and cancelling it leaves the dates alone', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $order                = createConfirmedAgentOrder($this, $supplier, $product, 0, 10)->refresh();
+    $line                 = $order->purchaseOrderTransactions()->firstOrFail();
+    $agent                = $orgAgent->agent;
+    $agent->organisation->update(['currency_id' => $order->currency_id]);
+
+    \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $order->organisation_id, 'type' => 'supplier_payment', 'date' => date('Y-m-d'), 'amount' => round((float) $order->cost_items, 2), 'purchase_order_id' => $order->id]);
+    expect($order->refresh()->balance_paid_at)->not->toBeNull();
+    $order->updateQuietly(['deposit_paid_at' => null]);
+
+    \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line, ['quantity_ordered' => 12]);
+    expect($order->refresh()->balance_paid_at)->toBeNull()
+        ->and($order->deposit_paid_at)->toBeNull();
+
+    \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line->refresh(), ['quantity_ordered' => 10]);
+    $balancePaidAt = $order->refresh()->balance_paid_at?->toDateString();
+    expect($balancePaidAt)->toBe(date('Y-m-d'));
+
+    \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled::make()->action($order->refresh());
+    expect($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CANCELLED)
+        ->and($order->balance_paid_at?->toDateString())->toBe($balancePaidAt);
+});
+
+test('a payer saved before the payer rules can no longer approve once they are the agent\'s staff, and the money tab the email links to needs the client\'s procurement view', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-PAY-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    setPermissionsTeamId($this->group->id);
+
+    $expense        = \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'type' => 'other_expense', 'amount' => 9, 'notes' => 'Fee']);
+    $depositRequest = \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [['kind' => 'expense', 'agent_payment_id' => $expense->id, 'amount' => 9]]]);
+
+    $agentStaff = agentOrganisationAdmin($agent->organisation, 'w3-pay-s-'.Str::lower(Str::random(6)));
+    $orgAgent->update(['settings' => ['money_requests' => ['payer_user_ids' => [$agentStaff->id]]]]);
+    $moneyTab = route('grp.org.procurement.org_agents.show', [$client->slug, $orgAgent->slug, 'tab' => 'money']);
+
+    actingAs($agentStaff);
+    $this->withoutVite()->get($moneyTab)->assertForbidden();
+    expect(\App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::canPay($depositRequest, $agentStaff))->toBeFalse();
+    $this->patch(route('grp.models.deposit_request.approve', $depositRequest->id))->assertForbidden();
+
+    $agentStaff->givePermissionTo("procurement.$client->id.view");
+    expect(\App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::canPay($depositRequest, $agentStaff->refresh()))->toBeFalse();
+
+    $clientUser = agentOrganisationAdmin($client, 'w3-pay-u-'.Str::lower(Str::random(6)));
+    actingAs($clientUser);
+    $this->withoutVite()->get($moneyTab)->assertOk();
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('the agent ledger shows each client\'s suppliers with their own agent fee and loads the list of every supplier only for the fee dialog', function () {
+    $orgAgent              = createFreshOrgAgent($this);
+    $agent                 = $orgAgent->agent;
+    $client                = $orgAgent->organisation;
+    [$ownFee]              = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [$followsClient]       = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $ownFee->supplier->update(['agent_fee_percentage' => 7]);
+    $followsClient->supplier->update(['agent_fee_percentage' => null]);
+    $agent->organisation->update(['currency_id' => $client->currency_id]);
+    setPermissionsTeamId($this->group->id);
+    actingAs(agentOrganisationAdmin($agent->organisation, 'w3-led-'.Str::lower(Str::random(6))));
+
+    $url = route('grp.org.agent.accounting.ledger.index', [$agent->organisation->slug]);
+    $this->withoutVite()->get($url)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+        ->missing('supplier_fee_options')
+        ->where('wallets', fn ($wallets) => ($wallet = collect($wallets)->firstWhere('organisation_id', $client->id))
+            && !array_key_exists('suppliers', $wallet)
+            && $wallet['number_suppliers'] === 2
+            && collect($wallet['suppliers_with_different_fee'])->pluck('id')->all() === [$ownFee->supplier_id])
+        ->reloadOnly('supplier_fee_options', fn (AssertableInertia $reload) => $reload
+            ->where('supplier_fee_options.'.$client->id, fn ($suppliers) => collect($suppliers)->pluck('id')->sort()->values()->all() === collect([$ownFee->supplier_id, $followsClient->supplier_id])->sort()->values()->all())));
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('an agent order with a deposit the buyer recorded still follows its ledger balance date when a quantity changes', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $order                = createConfirmedAgentOrder($this, $supplier, $product, 0, 10)->refresh();
+    $line                 = $order->purchaseOrderTransactions()->firstOrFail();
+    $agent                = $orgAgent->agent;
+    $agent->organisation->update(['currency_id' => $order->currency_id]);
+
+    $order->depositPayments()->create([
+        'group_id'        => $order->group_id,
+        'organisation_id' => $order->organisation_id,
+        'currency_id'     => $order->currency_id,
+        'amount'          => 1,
+        'date'            => now()->toDateString(),
+        'method'          => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum::CASH,
+    ]);
+    \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $order->organisation_id, 'type' => 'supplier_payment', 'date' => date('Y-m-d'), 'amount' => round((float) $order->cost_items, 2), 'purchase_order_id' => $order->id]);
+    expect($order->refresh()->balance_paid_at?->toDateString())->toBe(date('Y-m-d'));
+
+    \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line, ['quantity_ordered' => 12]);
+    expect($order->refresh()->balance_paid_at)->toBeNull();
+
+    \App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($line->refresh(), ['quantity_ordered' => 10]);
+    expect($order->refresh()->balance_paid_at?->toDateString())->toBe(date('Y-m-d'));
+});
+
+test('what a shipment still owes takes off only what was asked or sent for it in the agent\'s currency', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-CUR-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    $otherCurrency = \App\Models\Helpers\Currency::where('id', '!=', $stockDelivery->currency_id)->orderBy('id')->firstOrFail();
+
+    $ledgerLine = fn (array $data) => \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, $data + ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'stock_delivery_id' => $stockDelivery->id]);
+    $ledgerLine(['type' => 'inspection', 'amount' => 1000]);
+    $shipment = fn () => collect(\App\Actions\SupplyChain\DepositRequest\GetAgentMoneyRequestLines::run($agent->refresh(), $client)['shipments'])->firstWhere('stock_delivery_id', $stockDelivery->id);
+
+    $ledgerLine(['type' => 'transfer_received', 'amount' => 300])->update(['currency_id' => $otherCurrency->id]);
+    $depositRequest = \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [
+        ['kind' => 'shipment', 'stock_delivery_id' => $stockDelivery->id, 'amount' => 200],
+    ]]);
+    $depositRequest->update(['currency_id' => $otherCurrency->id]);
+
+    expect($shipment()['due'])->toEqual(1000);
+
+    $ledgerLine(['type' => 'transfer_received', 'amount' => 400]);
+    expect($shipment()['due'])->toEqual(600);
+});
+
+test('neither the agent\'s employees nor the user who asked can approve and pay a money request, while a client editor who also edits the agent\'s procurement can and may be set to', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'W3-APR-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    setPermissionsTeamId($this->group->id);
+
+    $expense        = \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'type' => 'other_expense', 'amount' => 9, 'notes' => 'Fee']);
+    $depositRequest = \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [['kind' => 'expense', 'agent_payment_id' => $expense->id, 'amount' => 9]]]);
+
+    $clientEditor = agentOrganisationAdmin($client, 'w3-apr-c-'.Str::lower(Str::random(6)));
+    $alsoAgent    = agentOrganisationAdmin($client, 'w3-apr-x-'.Str::lower(Str::random(6)));
+    $alsoAgent->givePermissionTo("procurement.{$agent->organisation_id}.edit");
+    $canPay = fn ($user) => \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::canPay($depositRequest->refresh(), $user->refresh());
+
+    $agentEmployee = agentOrganisationAdmin($agent->organisation, 'w3-apr-e-'.Str::lower(Str::random(6)));
+    $agentEmployee->givePermissionTo("procurement.$client->id.edit");
+
+    expect($canPay($clientEditor))->toBeTrue()
+        ->and($canPay($alsoAgent))->toBeTrue()
+        ->and($canPay($agentEmployee))->toBeFalse()
+        ->and(\App\Actions\Procurement\OrgAgent\UpdateOrgAgent::moneyRequestPayerCandidates($orgAgent)->pluck('users.id')->all())->toContain($clientEditor->id)->toContain($alsoAgent->id)->not->toContain($agentEmployee->id);
+
+    $depositRequest->update(['created_by' => $clientEditor->id]);
+    expect($canPay($clientEditor))->toBeFalse();
+
+    actingAs($agentEmployee);
+    $this->patch(route('grp.models.deposit_request.approve', $depositRequest->id))->assertForbidden();
+    actingAs($alsoAgent);
+    $this->patch(route('grp.models.deposit_request.approve', $depositRequest->id))->assertSessionHasNoErrors();
+    expect($depositRequest->refresh()->approved_by)->toBe($alsoAgent->id);
+    actingAs($this->adminGuest->getUser());
 });

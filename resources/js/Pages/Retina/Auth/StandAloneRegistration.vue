@@ -38,6 +38,7 @@ const props = defineProps<{
 		email?: string
 		contact_name?: string
 	} | null
+	whatsapp_newsletter_offered?: boolean
 	registration_settings: {
 		marketing_opt_in_label: string
 		marketing_opt_in_default: boolean
@@ -68,7 +69,7 @@ const form = useForm({
 	contact_address: {},
 	poll_replies: initialPollReplies,
 	is_opt_in: props.registration_settings.marketing_opt_in_default,
-	is_whatsapp_newsletter_opt_in: props.registration_settings.whatsapp_newsletter_default ?? false,
+	is_whatsapp_newsletter_opt_in: !!props.whatsapp_newsletter_offered && (props.registration_settings.whatsapp_newsletter_default ?? false),
 	interest: [],
     tax_number: ''
 
@@ -295,7 +296,7 @@ const isUserInputPassed = (dataToCheck: {}) => {
 							</div>
 
 							<!-- Opt in WhatsApp newsletter -->
-							<div class="flex xitems-center gap-2 sm:col-span-6">
+							<div v-if="whatsapp_newsletter_offered" class="flex xitems-center gap-2 sm:col-span-6">
 								<Checkbox v-model="form.is_whatsapp_newsletter_opt_in" inputId="opt_in_whatsapp_newsletter" name="opt_in_whatsapp_newsletter" binary class="mt-0.5" />
 								<label for="opt_in_whatsapp_newsletter">
 									{{ registration_settings?.whatsapp_newsletter_label ?? ctrans("Opt in to receive our newsletter and offers via WhatsApp.") }}

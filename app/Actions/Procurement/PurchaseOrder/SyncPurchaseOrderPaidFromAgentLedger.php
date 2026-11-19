@@ -12,6 +12,7 @@ namespace App\Actions\Procurement\PurchaseOrder;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Events\BroadcastAgentIncomingPurchaseOrdersChanged;
 use App\Models\Procurement\PurchaseOrder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -28,14 +29,15 @@ class SyncPurchaseOrderPaidFromAgentLedger
 
     /**
      * @param  array{deposit_paid_at: string|null, balance_paid_at: string|null}  $ledgerDatesBefore
+     * @param  list<string>  $fields  the dates to follow; a change of the goods alone only moves the balance date
      */
-    public function handle(PurchaseOrder $purchaseOrder, array $ledgerDatesBefore): PurchaseOrder
+    public function handle(PurchaseOrder $purchaseOrder, array $ledgerDatesBefore, array $fields = ['deposit_paid_at', 'balance_paid_at']): PurchaseOrder
     {
         if (!$purchaseOrder->isAgentOrder()) {
             return $purchaseOrder;
         }
 
-        $ledgerDates = self::ledgerDates($purchaseOrder);
+        $ledgerDates = Arr::only(self::ledgerDates($purchaseOrder), $fields);
 
         $changes = [];
         foreach ($ledgerDates as $field => $ledgerDate) {
@@ -69,9 +71,13 @@ class SyncPurchaseOrderPaidFromAgentLedger
     }
 
     /**
+     * The balance is paid once the payments in the order's currency add up to its goods: a payment in another currency
+     * is a different amount of money and never counts towards it. $goods is the order's goods, or what they were
+     * before a change.
+     *
      * @return array{deposit_paid_at: string|null, balance_paid_at: string|null}
      */
-    public static function ledgerDates(PurchaseOrder $purchaseOrder): array
+    public static function ledgerDates(PurchaseOrder $purchaseOrder, ?float $goods = null): array
     {
         $payments = DB::table('agent_payments')
             ->where('purchase_order_id', $purchaseOrder->id)
@@ -80,12 +86,12 @@ class SyncPurchaseOrderPaidFromAgentLedger
             ->whereNotNull('date')
             ->orderBy('date')
             ->orderBy('id')
-            ->get(['date', 'amount']);
+            ->get(['date', 'amount', 'currency_id']);
 
-        $goods       = round((float) $purchaseOrder->cost_items, 2);
+        $goods       = round($goods ?? (float) $purchaseOrder->cost_items, 2);
         $paid        = 0.0;
         $balanceDate = null;
-        foreach ($payments as $payment) {
+        foreach ($payments->where('currency_id', $purchaseOrder->currency_id) as $payment) {
             $paid += (float) $payment->amount;
             if ($goods > 0 && round($paid, 2) >= $goods) {
                 $balanceDate = $payment->date;

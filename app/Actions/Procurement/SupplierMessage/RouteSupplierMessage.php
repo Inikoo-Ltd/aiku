@@ -12,6 +12,7 @@ use App\Enums\Procurement\SupplierMessage\SupplierMessageRoutedByEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
+use App\Models\SupplyChain\Supplier;
 use App\Models\Procurement\SupplierMessage;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Collection;
@@ -36,23 +37,24 @@ class RouteSupplierMessage
      * Who is on the other side of a message, in order of certainty: the thread it belongs to, the
      * supplier's, agent's or partner's own address, an address already seen writing for one of
      * them, then their company domain. Two of them answering to the same address or domain is no
-     * answer at all, and the mail waits in the inbox for someone to assign it.
+     * answer at all, and the mail waits in the inbox for someone to assign it. An agent organisation
+     * writes to its suppliers as the supplier itself, so a thread may name only the supplier.
      *
      * @param  array<int, string>  $counterpartAddresses
      *
-     * @return array{0: OrgSupplier|OrgAgent|OrgPartner|null, 1: SupplierMessageRoutedByEnum|null}
+     * @return array{0: OrgSupplier|OrgAgent|OrgPartner|Supplier|null, 1: SupplierMessageRoutedByEnum|null}
      */
     public function handle(Organisation $organisation, array $counterpartAddresses, ?string $threadId = null): array
     {
         if ($threadId) {
             $threadEmail = SupplierMessage::where('organisation_id', $organisation->id)
                 ->where('gmail_thread_id', $threadId)
-                ->where(fn ($query) => $query->whereNotNull('org_supplier_id')->orWhereNotNull('org_agent_id')->orWhereNotNull('org_partner_id'))
+                ->where(fn ($query) => $query->whereNotNull('org_supplier_id')->orWhereNotNull('org_agent_id')->orWhereNotNull('org_partner_id')->orWhereNotNull('supplier_id'))
                 ->latest('sent_at')
                 ->first();
 
             if ($threadEmail) {
-                return [$threadEmail->counterpart(), SupplierMessageRoutedByEnum::THREAD];
+                return [$threadEmail->counterpart() ?? $threadEmail->supplier, SupplierMessageRoutedByEnum::THREAD];
             }
         }
 
@@ -103,7 +105,7 @@ class RouteSupplierMessage
      * Numbers are stored however they were typed, so both sides are compared as digits, and a
      * number saved without its country code is matched on its last nine digits.
      *
-     * @return array{0: OrgSupplier|OrgAgent|OrgPartner|null, 1: SupplierMessageRoutedByEnum|null}
+     * @return array{0: OrgSupplier|OrgAgent|OrgPartner|Supplier|null, 1: SupplierMessageRoutedByEnum|null}
      */
     public function byPhone(Organisation $organisation, string $phone): array
     {
@@ -115,12 +117,12 @@ class RouteSupplierMessage
 
         $previous = SupplierMessage::where('organisation_id', $organisation->id)
             ->where('phone_number', $digits)
-            ->where(fn ($query) => $query->whereNotNull('org_supplier_id')->orWhereNotNull('org_agent_id')->orWhereNotNull('org_partner_id'))
+            ->where(fn ($query) => $query->whereNotNull('org_supplier_id')->orWhereNotNull('org_agent_id')->orWhereNotNull('org_partner_id')->orWhereNotNull('supplier_id'))
             ->latest('sent_at')
             ->first();
 
         if ($previous) {
-            return [$previous->counterpart(), SupplierMessageRoutedByEnum::THREAD];
+            return [$previous->counterpart() ?? $previous->supplier, SupplierMessageRoutedByEnum::THREAD];
         }
 
         $matches = $this->phoneDirectory($organisation)

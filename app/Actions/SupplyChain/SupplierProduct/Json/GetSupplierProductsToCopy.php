@@ -28,8 +28,14 @@ class GetSupplierProductsToCopy extends OrgAction
 {
     use WithAgentOrganisation;
 
+    private bool $isInGroup = false;
+
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->isInGroup) {
+            return CopySupplierProductsToSupplier::make()->canEditFreeSuppliers($request->user());
+        }
+
         return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
     }
 
@@ -66,16 +72,46 @@ class GetSupplierProductsToCopy extends OrgAction
             ->withQueryString();
     }
 
-    public function asController(Organisation $organisation, Supplier $supplier, Supplier $sourceSupplier, ActionRequest $request): LengthAwarePaginator
+    public function rules(): array
+    {
+        return [
+            'source_supplier' => ['required', 'integer'],
+        ];
+    }
+
+    /**
+     * The source supplier comes in the query string, not the route: it may belong to another agent the user edits,
+     * and EnsureOrganisationIsAuthorised answers 404 for any route record outside the organisation's agent.
+     */
+    public function asController(Organisation $organisation, Supplier $supplier, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($organisation, $request);
 
-        $agentIds = CopySupplierProductsToSupplier::make()->getAccessibleAgents($request->user())->pluck('id');
+        $agentIds       = CopySupplierProductsToSupplier::make()->getAccessibleAgents($request->user())->pluck('id');
+        $sourceSupplier = Supplier::whereIn('agent_id', $agentIds)->find($this->validatedData['source_supplier']);
 
         abort_unless(
-            $this->getOrganisationAgent($organisation)
-            && $agentIds->contains($supplier->agent_id)
-            && $agentIds->contains($sourceSupplier->agent_id),
+            $sourceSupplier
+            && $this->getOrganisationAgent($organisation)
+            && $agentIds->contains($supplier->agent_id),
+            404
+        );
+
+        return $this->handle($supplier, $sourceSupplier);
+    }
+
+    public function inGroup(Supplier $supplier, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->isInGroup = true;
+        $this->initialisationFromGroup($supplier->group, $request);
+
+        $copySupplierProducts = CopySupplierProductsToSupplier::make();
+        $sourceSupplier       = Supplier::where('group_id', $supplier->group_id)->find($this->validatedData['source_supplier']);
+
+        abort_unless(
+            $sourceSupplier
+            && $copySupplierProducts->canEditSupplier($supplier, $request->user())
+            && $copySupplierProducts->canEditSupplier($sourceSupplier, $request->user()),
             404
         );
 

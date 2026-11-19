@@ -1680,3 +1680,124 @@ test('a draft is shown translated to an agent who reads another language than th
     expect($inOther($english))->toBeFalse()
         ->and($inOther($spanish))->toBeTrue();
 });
+
+test('an agent edits an email draft in their own language: unchanged the customer gets the original, changed it is translated into the draft language', function () {
+    fakeActionJobs(
+        \App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class,
+        TranslateChatMessage::class,
+        \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class,
+        \App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::class,
+    );
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatAiDraft::class]);
+    \App\Actions\Helpers\Translations\Translate::shouldRun()->andReturnUsing(fn (string $text, Language $from, Language $to) => "[$to->code] $text");
+
+    $german  = Language::where('code', 'de')->value('id');
+    $english = Language::where('code', 'en')->value('id');
+
+    $settings = $this->shop->settings ?? [];
+    $this->shop->update(['settings' => array_replace($settings, ['gmail' => [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+    ]])]);
+
+    $session = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'channel'                 => ChatChannelEnum::EMAIL,
+        'shop_id'                 => $this->shop->id,
+        'user_language_id'        => $german,
+        'active_user_language_id' => $german,
+        'last_visitor_message_at' => now(),
+        'metadata'                => ['email_from' => 'kunde@example.com', 'email_subject' => 'Bestellung'],
+    ]);
+    ChatMessage::create([
+        'chat_session_id'      => $session->id,
+        'message_type'         => ChatMessageTypeEnum::TEXT,
+        'sender_type'          => ChatSenderTypeEnum::GUEST,
+        'message_text'         => 'Hallo, wo ist meine Bestellung?',
+        'original_language_id' => $german,
+    ]);
+    $draft = \App\Actions\Chat\ChatSession\StoreAssistantChatDraft::make()->handle($session, $this->user, 'Hallo, Ihre Bestellung ist heute unterwegs.', 'test');
+
+    actingAs($this->user);
+    $this->getJson(route('grp.api.chats.sessions.ai_draft.show', [$session->ulid]))->assertOk();
+    $agent = ChatAgent::where('user_id', $this->user->id)->firstOrFail();
+    $agent->update(['language_id' => $english, 'edit_drafts_in_my_language_for' => null]);
+
+    $this->getJson(route('grp.api.chats.sessions.ai_draft.show', [$session->ulid]))->assertOk()
+        ->assertJsonPath('data.translate_for_me', true)
+        ->assertJsonPath('data.edit_in_my_language', false)
+        ->assertJsonPath('data.my_language', 'English')
+        ->assertJsonPath('data.customer_language', 'German');
+
+    $this->postJson(route('grp.api.chats.ai_drafts.edit_in_my_language', [$draft->id]), ['on' => true])->assertOk();
+    expect($agent->refresh()->edit_drafts_in_my_language_for)->toBe([$german]);
+    $this->getJson(route('grp.api.chats.sessions.ai_draft.show', [$session->ulid]))->assertOk()->assertJsonPath('data.edit_in_my_language', true);
+
+    $translation = $this->postJson(route('grp.api.chats.ai_drafts.translate', [$draft->id]))->assertOk()
+        ->assertJsonPath('data.language_id', $english)
+        ->assertJsonPath('data.editable', true)
+        ->json('data.text');
+    expect($translation)->toBe('[en] Hallo, Ihre Bestellung ist heute unterwegs.')
+        ->and($draft->refresh()->staff_translations)->toBe([(string) $english => $translation]);
+
+    $reply = fn (string $text) => SendChatMessage::make()->handle($session->refresh(), [
+        'message_text'            => $text,
+        'message_type'            => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'             => ChatSenderTypeEnum::AGENT->value,
+        'sender_id'               => $agent->id,
+        'ai_draft_translation_of' => $draft->id,
+    ]);
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sent-'.uniqid()]),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $unchanged = $reply("  $translation\n");
+    expect($unchanged->only(['message_text', 'original_text', 'original_language_id']))->toBe([
+        'message_text'         => 'Hallo, Ihre Bestellung ist heute unterwegs.',
+        'original_text'        => $translation,
+        'original_language_id' => $english,
+    ])
+        ->and($unchanged->metadata['draft_sent_as_written'])->toBe($draft->id)
+        ->and($draft->refresh()->written_in_language_id)->toBe($english);
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($unchanged->fresh());
+    expect($unchanged->refresh()->message_text)->toBe('Hallo, Ihre Bestellung ist heute unterwegs.');
+
+    $edited  = "$translation Tracking follows by email.";
+    $changed = $reply($edited);
+    expect($changed->message_text)->toBe($edited)
+        ->and($changed->original_language_id)->toBe($english)
+        ->and($changed->metadata)->toBe(['reply_language_id' => $german]);
+
+    $session->update(['active_user_language_id' => $english]);
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($changed->fresh());
+    expect($changed->refresh()->message_text)->toBe("[de] $edited");
+
+    $rewritten = $reply('Guten Tag, das Paket kommt morgen mit DPD.');
+    expect($rewritten->original_language_id)->toBeNull()
+        ->and($rewritten->metadata)->toBe(['reply_language_id' => $german])
+        ->and($draft->refresh()->written_in_language_id)->toBe($english);
+
+    expect($reply($translation)->id)->toBe($unchanged->id);
+
+    $this->travel(2)->seconds();
+    $own = SendChatMessage::make()->handle($session->refresh(), [
+        'message_text' => $translation,
+        'message_type' => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'  => ChatSenderTypeEnum::AGENT->value,
+        'sender_id'    => $agent->id,
+    ]);
+    expect($own->message_text)->toBe($translation)->and($own->original_language_id)->toBeNull();
+
+    expect(\App\Actions\Chat\ChatSession\HandleChatAiDraft::isEditableTranslation('Hallo [[Name]], danke.', 'Hello Name, thanks.'))->toBeFalse()
+        ->and(\App\Actions\Chat\ChatSession\HandleChatAiDraft::isEditableTranslation('Hallo [[Name]], danke.', 'Hello [[Name]], thanks.'))->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\HandleChatAiDraft::isEditableTranslation('Hallo, danke.', 'Hallo, danke.'))->toBeFalse();
+
+    $this->postJson(route('grp.api.chats.ai_drafts.edit_in_my_language', [$draft->id]), ['on' => false])->assertOk();
+    expect($agent->refresh()->edit_drafts_in_my_language_for)->toBeNull();
+
+    $this->shop->update(['settings' => $settings]);
+});

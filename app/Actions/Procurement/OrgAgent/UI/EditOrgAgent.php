@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\OrgAgent\UI;
 use App\Actions\SupplyChain\Agent\UI\WithAgentEditFields;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Enums\Procurement\OrgAgent\OrgAgentOrderContainerEnum;
 use App\Models\Procurement\OrgAgent;
@@ -183,6 +184,12 @@ class EditOrgAgent extends OrgAction
             ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->chatName(), 'email' => $user->email])
             ->values()
             ->all();
+        $payers = UpdateOrgAgent::moneyRequestPayerCandidates($orgAgent)
+            ->orderBy('users.contact_name')
+            ->get(['users.id', 'users.contact_name', 'users.username', 'users.email'])
+            ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->chatName(), 'email' => $user->email])
+            ->values()
+            ->all();
 
         $updateRoute = [
             'name'       => 'grp.models.org_agent.update',
@@ -198,7 +205,7 @@ class EditOrgAgent extends OrgAction
                     'type'            => 'multiselect-tags',
                     'label'           => __('Emailed to approve and pay'),
                     'information'     => __('Emailed when this agent asks for money, and can approve and pay it. Accounting users can already approve and pay, but are not emailed.'),
-                    'options'         => $users,
+                    'options'         => $payers,
                     'labelProp'       => 'name',
                     'valueProp'       => 'id',
                     'descriptionProp' => 'email',

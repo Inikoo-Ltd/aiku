@@ -39,7 +39,7 @@ class StoreEbayProduct extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function handle(EbayUser $ebayUser, Portfolio $portfolio): Portfolio
+    public function handle(EbayUser $ebayUser, Portfolio $portfolio, bool $isRetryOnFreshOffer = false): Portfolio
     {
         $logs = StorePlatformPortfolioLog::run($portfolio, [
             'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
@@ -275,6 +275,11 @@ class StoreEbayProduct extends RetinaAction
                 return $portfolio;
             }
 
+            $reusedUnpublishedOfferId = Arr::get($offerExist, 'offers.0.status') !== 'PUBLISHED'
+                && (self::sendsOurPrice($portfolio) || blank(Arr::get($offerExist, 'offers.0.pricingSummary.price.value')))
+                ? Arr::get($offerExist, 'offers.0.offerId')
+                : null;
+
             if (Arr::get($offerExist, 'offers.0')) {
                 $offer = Arr::get($offerExist, 'offers.0');
 
@@ -301,7 +306,7 @@ class StoreEbayProduct extends RetinaAction
                 $updatedOffer = $ebayUser->updateOffer(Arr::get($offer, 'offerId'), $offerData);
 
                 if ($handleError($updatedOffer)) {
-                    return $portfolio;
+                    return $this->retryOnFreshOffer($ebayUser, $portfolio, $updatedOffer, $reusedUnpublishedOfferId, $isRetryOnFreshOffer);
                 }
             } else {
                 $offer = $ebayUser->storeOffer([
@@ -365,7 +370,7 @@ class StoreEbayProduct extends RetinaAction
             }
 
             if ($handleError($publishedOffer)) {
-                return $portfolio;
+                return $this->retryOnFreshOffer($ebayUser, $portfolio, $publishedOffer, $reusedUnpublishedOfferId, $isRetryOnFreshOffer);
             }
 
             $portfolio = UpdatePortfolio::run($portfolio, [
@@ -403,6 +408,23 @@ class StoreEbayProduct extends RetinaAction
             return $portfolio;
 
         }
+    }
+
+    /**
+     * An unpublished offer eBay broke on its side (CUS-1839: a "Database Server exception" mid upload) answers
+     * every later update and publish with a 25001 system error, and re-uploading reuses it forever. Such an
+     * offer is not live, so it is deleted and the upload runs once more on a fresh offer, unless it holds a price
+     * the seller set that our price must not replace.
+     */
+    private function retryOnFreshOffer(EbayUser $ebayUser, Portfolio $portfolio, mixed $ebayResponse, ?string $reusedUnpublishedOfferId, bool $isRetryOnFreshOffer): Portfolio
+    {
+        if ($isRetryOnFreshOffer || blank($reusedUnpublishedOfferId) || !$ebayUser->isSystemError($ebayResponse)) {
+            return $portfolio;
+        }
+
+        $ebayUser->deleteOffer($reusedUnpublishedOfferId);
+
+        return $this->handle($ebayUser, $portfolio->refresh(), true);
     }
 
     /**

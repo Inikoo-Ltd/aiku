@@ -22,6 +22,7 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePurchaseOrder extends OrgAction
@@ -238,6 +239,22 @@ class UpdatePurchaseOrder extends OrgAction
         }
 
         return $rules;
+    }
+
+    /**
+     * Where the goods go can change until they are handed over to the carrier.
+     */
+    public static function isDeliveryAddressChangeable(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->state->isLive()
+            && !in_array($purchaseOrder->state, [PurchaseOrderStateEnum::HANDED_OVER, PurchaseOrderStateEnum::ARRIVED], true);
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->strict && array_key_exists('delivery_address', $validator->getData()) && !self::isDeliveryAddressChangeable($this->purchaseOrder)) {
+            $validator->errors()->add('delivery_address', __('The delivery address can no longer change: the goods were handed over'));
+        }
     }
 
     public function action(PurchaseOrder $purchaseOrder, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): PurchaseOrder

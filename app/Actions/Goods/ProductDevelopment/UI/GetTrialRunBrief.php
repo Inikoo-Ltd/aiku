@@ -9,6 +9,7 @@
 
 namespace App\Actions\Goods\ProductDevelopment\UI;
 
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentFormulationTypeEnum;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
 use App\Actions\Goods\ProductDevelopment\Recipe\RecordTrialRunFormulation;
@@ -116,6 +117,12 @@ class GetTrialRunBrief extends OrgAction
             'brief'       => [
                 'development' => $productDevelopment->brief,
                 'sku'         => $item->brief,
+                'stage'       => $sample->formulation ? [
+                    'name'     => $sample->formulation->name,
+                    'type'     => ProductDevelopmentFormulationTypeEnum::labels()[$sample->formulation->type->value],
+                    'brief'    => $sample->formulation->brief,
+                    'artefact' => $sample->workingArtefact()?->code,
+                ] : null,
             ],
             'references'  => $this->references($productDevelopment, $item),
             'concept'     => $this->concept($productDevelopment),
@@ -132,8 +139,8 @@ class GetTrialRunBrief extends OrgAction
                 'recorded_by' => ($recordedBy = User::find($formulation['recorded_by_id'] ?? 0)) ? ($recordedBy->contact_name ?: $recordedBy->username) : null,
                 'recorded_at' => $formulation['recorded_at'] ?? null,
             ] : null,
-            'form'        => $viewer && $item->artefact && RecordTrialRunFormulation::isChangeable($sample) && RecordTrialRunFormulation::canRecord($viewer, $jobOrder) ? [
-                'steps'                => RecordTrialRunFormulation::formSteps($item->artefact),
+            'form'        => $viewer && $sample->workingArtefact() && RecordTrialRunFormulation::isChangeable($sample) && RecordTrialRunFormulation::canRecord($viewer, $jobOrder) ? [
+                'steps'                => RecordTrialRunFormulation::formSteps($sample->workingArtefact()),
                 'notes'                => $formulation['notes'] ?? null,
                 'raw_material_options' => ['name' => 'grp.json.production.raw_materials.index', 'parameters' => ['production' => $jobOrder->production_id]],
                 'save_route'           => ['name' => 'grp.models.job-order.trial_run_formulation', 'parameters' => ['jobOrder' => $jobOrder->id], 'method' => 'post'],

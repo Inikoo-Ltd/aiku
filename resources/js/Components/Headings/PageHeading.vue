@@ -5,7 +5,8 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, usePage } from "@inertiajs/vue3"
+import AgentOrganisationSelector from "@/Components/Procurement/AgentOrganisationSelector.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faMapSigns,
@@ -464,6 +465,7 @@ const setError = (e) => {
 					</template>
 				</template>
 
+				<AgentOrganisationSelector v-if="usePage().props.organisationSelector" :selector="usePage().props.organisationSelector" />
 				<slot name="other" :dataPageHead="{ ...props }" />
 				</div>
 				<ScrollFadeArrow direction="left" :visible="canScrollActionsLeft" wrapperClass="sm:hidden" @click="scrollActions(-1)" />

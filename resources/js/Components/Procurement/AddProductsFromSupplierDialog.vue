@@ -100,8 +100,8 @@ async function fetchProducts(page: number) {
 	isLoadingProducts.value = true
 	try {
 		const response = await axios.get(
-			route(props.copyProducts.source_products_route.name, [...Object.values(props.copyProducts.source_products_route.parameters ?? {}), sourceSupplierId.value]),
-			{ params: { page, ...(search.value ? { filter: { global: search.value } } : {}) } }
+			route(props.copyProducts.source_products_route.name, props.copyProducts.source_products_route.parameters),
+			{ params: { source_supplier: sourceSupplierId.value, page, ...(search.value ? { filter: { global: search.value } } : {}) } }
 		)
 		products.value = page === 1 ? response.data.data : [...products.value, ...response.data.data]
 		currentPage.value = response.data.meta.current_page

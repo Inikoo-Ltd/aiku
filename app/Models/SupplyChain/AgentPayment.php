@@ -10,6 +10,8 @@ namespace App\Models\SupplyChain;
 
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
+use App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum;
+use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Currency;
@@ -22,6 +24,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -145,6 +148,55 @@ class AgentPayment extends Model implements Auditable
     public function isRecordedByClient(): bool
     {
         return ($this->data['recorded_by'] ?? null) === self::RECORDED_BY_CLIENT;
+    }
+
+    /**
+     * Whether a money request not cancelled or rejected asks the client for this line: as an expense of its own, or,
+     * for a charge on a container, through the container's shipment line. Such a line keeps its type, order,
+     * container and existence, or the client would be asked for it again or never credited.
+     */
+    public function isAskedForInMoneyRequest(): bool
+    {
+        return in_array($this->id, self::idsAskedForInMoneyRequest([$this]), true);
+    }
+
+    /**
+     * @param  iterable<self>  $agentPayments
+     *
+     * @return list<int>
+     */
+    public static function idsAskedForInMoneyRequest(iterable $agentPayments): array
+    {
+        $agentPayments = collect($agentPayments);
+        if ($agentPayments->isEmpty()) {
+            return [];
+        }
+
+        $liveItems = fn () => DB::table('deposit_request_items')
+            ->join('deposit_requests', 'deposit_requests.id', 'deposit_request_items.deposit_request_id')
+            ->whereNotIn('deposit_requests.state', [DepositRequestStateEnum::CANCELLED->value, DepositRequestStateEnum::REJECTED->value]);
+
+        $requestedIds = $liveItems()
+            ->whereIn('deposit_request_items.agent_payment_id', $agentPayments->pluck('id')->all())
+            ->pluck('deposit_request_items.agent_payment_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $isContainerCharge   = fn (self $agentPayment): bool => $agentPayment->stock_delivery_id !== null && $agentPayment->type->isCharge();
+        $charges             = $agentPayments->filter($isContainerCharge);
+        $requestedContainers = $charges->isEmpty() ? [] : $liveItems()
+            ->where('deposit_request_items.kind', DepositRequestItemKindEnum::SHIPMENT->value)
+            ->whereIn('deposit_request_items.stock_delivery_id', $charges->pluck('stock_delivery_id')->unique()->all())
+            ->pluck('deposit_request_items.stock_delivery_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return $agentPayments
+            ->filter(fn (self $agentPayment) => in_array($agentPayment->id, $requestedIds, true)
+                || ($isContainerCharge($agentPayment) && in_array((int) $agentPayment->stock_delivery_id, $requestedContainers, true)))
+            ->pluck('id')
+            ->values()
+            ->all();
     }
 
     public function agent(): BelongsTo

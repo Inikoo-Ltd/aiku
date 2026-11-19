@@ -8,7 +8,6 @@
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {Head, Link, router} from "@inertiajs/vue3";
 import axios from "axios";
-import { notify } from "@kyvg/vue3-notification";
 import {computed, ref, watch} from "vue";
 import type {Component} from "vue";
 import {useTabChange} from "@/Composables/tab-change";
@@ -43,7 +42,7 @@ import {
     faEnvelope,
     faArrowCircleLeft,
     faTrashAlt, faExpandArrows, faTruck, faAddressCard, faReceipt, faShapes, faExclamationTriangle,
-    faIdCard
+    faIdCard, faTimes
 } from "@fal";
 import { faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck, faOmega, faExclamationCircle, faCheckCircle } from "@fas";
 import { faCheck, faIdCard as farIdCard} from "@far";
@@ -70,6 +69,7 @@ import { Icon as IconType } from "@/types/Utils/Icon"
 import PureAddress from "@/Components/Pure/PureAddress.vue";
 import { Address, AddressOptions } from "@/types/PureComponent/Address";
 import { cloneDeep, pick } from "lodash-es"
+import InputText from "primevue/inputtext"
 
 library.add(farIdCard,faShapes,faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird, faExclamationTriangle);
 
@@ -151,10 +151,12 @@ const props = defineProps<{
         delivery_note: routeType
         updateInvoiceDateRoute: routeType
         updateInvoiceAddressRoute: routeType
+        updateInvoiceTaxNumberRoute?: routeType
     }
     can: {
         editInvoiceDate: boolean
         editInvoiceAddress: boolean
+        editTaxNumber?: boolean
     }
     billing_address_form: {
         options: AddressOptions
@@ -246,9 +248,11 @@ const isModalEditDate = ref(false)
 const isModalConfirmEditDate = ref(false)
 const editingDate = ref('')
 const isSubmittingDate = ref(false)
+const dateError = ref('')
 
 const openEditDateModal = () => {
     editingDate.value = props.invoice.date ? props.invoice.date.substring(0, 10) : ''
+    dateError.value = ''
     isModalEditDate.value = true
 }
 
@@ -259,6 +263,7 @@ const confirmEditDate = () => {
 
 const submitEditDate = async () => {
     isSubmittingDate.value = true
+    dateError.value = ''
     try {
         await axios.patch(
             route(props.routes.updateInvoiceDateRoute.name, props.routes.updateInvoiceDateRoute.parameters),
@@ -266,16 +271,56 @@ const submitEditDate = async () => {
         )
         isModalEditDate.value = false
         isModalConfirmEditDate.value = false
-        notify({ type: 'success', title: ctrans('Invoice date updated'), text: ctrans('Invoice date has been successfully updated.') })
         router.reload({ only: ['invoice'] })
+    } catch (error: any) {
+        isModalConfirmEditDate.value = false
+        dateError.value = error?.response?.data?.message ?? ctrans('The invoice date could not be saved')
     } finally {
         isSubmittingDate.value = false
     }
 }
 
+// Section: Edit tax number (invoice and customer)
+const isModalEditTaxNumber = ref(false)
+const editingTaxNumber = ref('')
+const taxNumberError = ref('')
+const isSubmittingTaxNumber = ref(false)
+
+const openEditTaxNumberModal = () => {
+    editingTaxNumber.value = props.invoice.tax_number ?? ''
+    taxNumberError.value = ''
+    isModalEditTaxNumber.value = true
+}
+
+const submitEditTaxNumber = () => {
+    if (!props.routes.updateInvoiceTaxNumberRoute) return
+
+    router.patch(
+        route(props.routes.updateInvoiceTaxNumberRoute.name, props.routes.updateInvoiceTaxNumberRoute.parameters),
+        { formatted_tax_number: editingTaxNumber.value.trim() || null, update_customer: true },
+        {
+            preserveScroll: true,
+            onStart: () => {
+                isSubmittingTaxNumber.value = true
+                taxNumberError.value = ''
+            },
+            onSuccess: () => {
+                isModalEditTaxNumber.value = false
+            },
+            onError: (errors) => {
+                taxNumberError.value = errors.formatted_tax_number ?? Object.values(errors)[0] ?? ctrans('The tax number could not be saved')
+            },
+            onFinish: () => {
+                isSubmittingTaxNumber.value = false
+            }
+        }
+    )
+}
+
 // Section: Edit invoice address
 const isModalEditAddress = ref(false)
 const isSubmittingAddress = ref(false)
+const addressError = ref('')
 const getEmptyAddress = (): Address => ({
     country_id: null,
     label: null,
@@ -309,21 +354,13 @@ const submitEditAddress = async () => {
         {
             onStart: () => {
                 isSubmittingAddress.value = true
+                addressError.value = ''
             },
             onSuccess: () => {
                 isModalEditAddress.value = false
-                notify({ 
-                    type: 'success', 
-                    title: ctrans('Invoice address updated'), 
-                    text: ctrans('Invoice address has been successfully updated.') 
-                })
-            }, 
-            onError: () => {
-                notify({ 
-                    type: 'error', 
-                    title: ctrans('Failed to update invoice address'), 
-                    text: ctrans('Please review the address fields and try again.') 
-                })
+            },
+            onError: (errors) => {
+                addressError.value = Object.values(errors)[0] ?? ctrans('Please review the address fields and try again.')
             },
             onFinish: () => {
                 isSubmittingAddress.value = false
@@ -528,19 +565,30 @@ const submitEditAddress = async () => {
             </dl>
 
             <!-- Field: Tax Number -->
-            <dl v-if="invoice.tax_number" class="pl-1 flex items-center w-full flex-none gap-x-2">
+            <dl v-if="invoice.tax_number || props.can?.editTaxNumber" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <dt v-tooltip="ctrans('Tax Number')" class="flex-none">
                     <span class="sr-only">Tax Number</span>
                     <FontAwesomeIcon icon="fal fa-receipt" size="xs" class="text-gray-400" fixed-width
                                      aria-hidden="true"/>
                 </dt>
                 <dd class="text-base text-gray-500 flex items-center gap-x-2">
-                    <span>{{ invoice.tax_number }}</span>
+                    <template v-if="invoice.tax_number">
+                        <span>{{ invoice.tax_number }}</span>
+                        <FontAwesomeIcon
+                            :icon="getStatusIcon(invoice.tax_number_status, invoice.tax_number_valid)"
+                            :class="getStatusColor(invoice.tax_number_status, invoice.tax_number_valid)"
+                            size="xs"
+                            v-tooltip="taxNumberStatusText" fixed-width
+                        />
+                    </template>
+                    <span v-else class="text-gray-400 italic">{{ ctrans('No tax number') }}</span>
                     <FontAwesomeIcon
-                        :icon="getStatusIcon(invoice.tax_number_status, invoice.tax_number_valid)"
-                        :class="getStatusColor(invoice.tax_number_status, invoice.tax_number_valid)"
-                        size="xs"
-                        v-tooltip="taxNumberStatusText" fixed-width
+                        v-if="props.can?.editTaxNumber"
+                        icon="fal fa-pencil"
+                        class="text-gray-400 hover:text-gray-600 cursor-pointer text-sm"
+                        v-tooltip="ctrans('Change the tax number on this invoice and on the customer')"
+                        @click="openEditTaxNumberModal"
+                        fixed-width aria-hidden="true"
                     />
                 </dd>
             </dl>
@@ -760,6 +808,7 @@ const submitEditAddress = async () => {
                 type="date"
                 class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-400"
             />
+            <p v-if="dateError" class="text-xs text-red-600">{{ dateError }}</p>
             <div class="flex justify-end gap-2">
                 <Button type="tertiary" :label="ctrans('Cancel')" @click="isModalEditDate = false" />
                 <Button type="primary" :label="ctrans('Save')" :disabled="!editingDate" @click="confirmEditDate" />
@@ -788,6 +837,35 @@ const submitEditAddress = async () => {
         </div>
     </Modal>
 
+    <Modal :isOpen="isModalEditTaxNumber" @onClose="isModalEditTaxNumber = false" width="w-full max-w-md">
+        <div class="p-4 flex flex-col gap-3">
+            <h2 class="text-sm font-semibold text-gray-700">{{ ctrans('Tax number') }}</h2>
+            <InputText
+                v-model="editingTaxNumber"
+                class="w-full"
+                :placeholder="ctrans('Country code and number, e.g. ES B12345678')"
+                :invalid="!!taxNumberError"
+                @keydown.enter="submitEditTaxNumber"
+            />
+            <p v-if="taxNumberError" class="text-xs text-red-600">{{ taxNumberError }}</p>
+            <p class="text-xs text-gray-500">
+                {{ ctrans("Saved on this invoice and on the customer's profile, and the invoice tax is recalculated. To change it only on this invoice, use Edit.") }}
+            </p>
+            <div class="flex w-full gap-2">
+                <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isModalEditTaxNumber = false">
+                    <template #icon>
+                        <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+                <Button type="primary" full :label="ctrans('Save')" :loading="isSubmittingTaxNumber" @click="submitEditTaxNumber">
+                    <template #icon>
+                        <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+            </div>
+        </div>
+    </Modal>
+
     <Modal :isOpen="isModalEditAddress" @onClose="isModalEditAddress = false" width="w-full max-w-2xl">
         <div class="p-4 flex flex-col gap-4">
             <h2 class="text-base font-semibold text-gray-700">{{ ctrans('Edit invoice address') }}</h2>
@@ -795,6 +873,7 @@ const submitEditAddress = async () => {
                 v-model="editingAddress"
                 :options="props.billing_address_form.options"
             />
+            <p v-if="addressError" class="text-xs text-red-600">{{ addressError }}</p>
             <div class="flex justify-end gap-2">
                 <Button type="tertiary" :label="ctrans('Cancel')" @click="isModalEditAddress = false" />
                 <Button type="primary" :label="ctrans('Save')" :loading="isSubmittingAddress" @click="submitEditAddress" />

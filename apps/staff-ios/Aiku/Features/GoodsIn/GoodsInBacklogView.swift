@@ -9,25 +9,29 @@ struct GoodsInBacklogView: View {
         AppScreen(title: "Incoming hub", kicker: "Goods in · \(session.warehouseLabel)") {
             ModuleTabs(.goodsIn, current: .goodsInBacklog)
         } content: {
-            GoodsInBacklogCard(title: "Stock deliveries", counts: store.backlogCounts(for: [.supplier, .production])) {
-                store.applyFilter(GoodsInDeliveryFilter())
-                router.open(GoodsInRoute.stockDeliveries)
-            }
-            GoodsInBacklogCard(title: "Agents", counts: store.backlogCounts(for: [.agent])) {
-                store.applyFilter(GoodsInDeliveryFilter(sources: [.agent]))
-                router.open(GoodsInRoute.stockDeliveries)
-            }
-            GoodsInBacklogCard(title: "Partners", counts: store.backlogCounts(for: [.partner])) {
-                store.applyFilter(GoodsInDeliveryFilter(sources: [.partner]))
-                router.open(GoodsInRoute.stockDeliveries)
+            if session.visibleModules.goodsIn {
+                GoodsInBacklogCard(title: "Stock deliveries", counts: store.backlogCounts(for: [.supplier, .production])) {
+                    store.applyFilter(GoodsInDeliveryFilter())
+                    router.open(GoodsInRoute.stockDeliveries)
+                }
+                GoodsInBacklogCard(title: "Agents", counts: store.backlogCounts(for: [.agent])) {
+                    store.applyFilter(GoodsInDeliveryFilter(sources: [.agent]))
+                    router.open(GoodsInRoute.stockDeliveries)
+                }
+                GoodsInBacklogCard(title: "Partners", counts: store.backlogCounts(for: [.partner])) {
+                    store.applyFilter(GoodsInDeliveryFilter(sources: [.partner]))
+                    router.open(GoodsInRoute.stockDeliveries)
+                }
             }
             if session.hasFulfilmentAccess {
                 GoodsInBacklogCard(title: "Fulfilment deliveries", counts: store.fulfilmentBacklog) {
                     router.open(FulfilmentRoute.deliveries)
                 }
             }
-            GoodsInBacklogCard(title: "Returns", counts: store.returnsBacklog) {
-                router.open(GoodsInRoute.returns)
+            if session.visibleModules.returns {
+                GoodsInBacklogCard(title: "Returns", counts: store.returnsBacklog) {
+                    router.open(GoodsInRoute.returns)
+                }
             }
             HelperText("Same as the web Incoming hub: one row per source, counts by state. Arriving means dispatched by the supplier.")
                 .padding(.horizontal, 4)

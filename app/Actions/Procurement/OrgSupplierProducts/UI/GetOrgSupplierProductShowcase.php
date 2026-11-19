@@ -26,6 +26,9 @@ use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use Illuminate\Support\Facades\DB;
+use App\Support\AgentOrganisationSelection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetOrgSupplierProductShowcase
@@ -73,7 +76,7 @@ class GetOrgSupplierProductShowcase
                     $this->getOrgSupplierParty($orgSupplierProduct->orgSupplier),
                     $this->getOrgAgentParty($orgSupplierProduct->orgAgent),
                 ])),
-                'stats'        => $this->getProcurementStatsBoxes($orgSupplierProduct->stats),
+                'stats'        => $this->getProcurementStatsBoxes($this->procurementStats($orgSupplierProduct)),
                 'supplierProductInfo' => $this->supplierProductInfo($orgSupplierProduct->supplierProduct),
                 'internal_images'     => $this->getSupplierProductInternalImages(
                     $orgSupplierProduct->supplierProduct,
@@ -262,5 +265,38 @@ class GetOrgSupplierProductShowcase
                 ->get();
 
         return $orgStocks->filter(fn (OrgStock $orgStock) => $orgStock->organisation->warehouses->isNotEmpty());
+    }
+
+    /**
+     * On the agent's one page per supplier product, the figures of the selected buying organisation, or in All
+     * of every buying organisation, counted from the orders and deliveries themselves (org_supplier_product_stats
+     * is not kept up to date for these counts).
+     */
+    private function procurementStats(OrgSupplierProduct $orgSupplierProduct): ?object
+    {
+        $selection = AgentOrganisationSelection::fromRequest(parameter: 'supplierProduct');
+        if (!$selection) {
+            return $orgSupplierProduct->stats;
+        }
+
+        $organisationIds = $selection->selectedRows()->pluck('organisation_id')->all();
+        $orderLines      = DB::table('purchase_order_transactions')
+            ->join('purchase_orders', 'purchase_orders.id', 'purchase_order_transactions.purchase_order_id')
+            ->where('purchase_order_transactions.supplier_product_id', $orgSupplierProduct->supplier_product_id)
+            ->whereIn('purchase_orders.organisation_id', $organisationIds)
+            ->where('purchase_orders.state', '!=', PurchaseOrderStateEnum::IN_PROCESS->value)
+            ->whereNull('purchase_orders.deleted_at');
+        $deliveryLines   = DB::table('stock_delivery_items')
+            ->join('stock_deliveries', 'stock_deliveries.id', 'stock_delivery_items.stock_delivery_id')
+            ->where('stock_delivery_items.supplier_product_id', $orgSupplierProduct->supplier_product_id)
+            ->whereIn('stock_deliveries.organisation_id', $organisationIds);
+
+        return (object) [
+            'number_purchase_orders'             => (clone $orderLines)->distinct()->count('purchase_orders.id'),
+            'number_open_purchase_orders'        => (clone $orderLines)->whereIn('purchase_orders.state', PurchaseOrderStateEnum::openValues())->distinct()->count('purchase_orders.id'),
+            'number_purchase_order_transactions' => (clone $orderLines)->count(),
+            'number_stock_deliveries'            => (clone $deliveryLines)->distinct()->count('stock_deliveries.id'),
+            'number_stock_delivery_items'        => (clone $deliveryLines)->count(),
+        ];
     }
 }

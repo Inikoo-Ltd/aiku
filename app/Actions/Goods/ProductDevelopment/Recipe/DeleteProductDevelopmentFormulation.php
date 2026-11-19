@@ -11,7 +11,9 @@ namespace App\Actions\Goods\ProductDevelopment\Recipe;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Models\Goods\ProductDevelopmentFormulation;
+use App\Models\Goods\ProductDevelopmentItem;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -39,7 +41,15 @@ class DeleteProductDevelopmentFormulation extends OrgAction
 
     public function handle(ProductDevelopmentFormulation $formulation): void
     {
-        $formulation->delete();
+        DB::transaction(function () use ($formulation) {
+            ProductDevelopmentItem::whereKey($formulation->product_development_item_id)->lockForUpdate()->first();
+            $formulation->delete();
+            ProductDevelopmentFormulation::where('product_development_item_id', $formulation->product_development_item_id)
+                ->where('position', '>', $formulation->position)
+                ->orderBy('position')
+                ->get()
+                ->each(fn (ProductDevelopmentFormulation $later) => $later->update(['position' => $later->position - 1]));
+        });
     }
 
     public function afterValidator(Validator $validator): void

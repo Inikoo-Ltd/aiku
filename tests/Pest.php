@@ -578,12 +578,14 @@ function createOrder(Customer $customer, Product $product): Order
     $order = $customer->orders()->first();
     if (!$order) {
         $arrayData = [
-            'reference'        => '123456',
             'date'             => date('Y-m-d'),
             'customer_id'      => $customer->id,
             'delivery_address' => new Address(Address::factory()->definition()),
             'billing_address'  => new Address(Address::factory()->definition()),
         ];
+        if (!$customer->shop->orders()->where('reference', '123456')->exists()) {
+            $arrayData['reference'] = '123456';
+        }
 
         $order = StoreOrder::make()->action($customer, $arrayData);
 

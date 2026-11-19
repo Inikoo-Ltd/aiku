@@ -450,6 +450,9 @@ class GetShopNavigation
             ];
         }
 
+        $showsAiSalesman = $shop->website && in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING], true)
+            && ($user->canSeeShop($shop) || $user->hasAnyPermission(["websites-view.{$shop->organisation_id}", "web.$shop->id.view", "group-webmaster.view"]));
+
         if ($user->hasAnyPermission([
             "websites-view.{$shop->organisation_id}",
             "web.$shop->id.view",
@@ -572,17 +575,8 @@ class GetShopNavigation
                 }
             }
 
-            if ($shop->website && in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING], true) && $user->hasAnyPermission(["websites-view.{$shop->organisation_id}", "web.$shop->id.view", "group-webmaster.view"])) {
-                $navigation["ai_salesman"] = [
-                    "root"    => "grp.org.shops.show.ai_salesman.",
-                    "icon"    => ["fal", "fa-hat-wizard"],
-                    "label"   => GetShoppingAssistantSettings::name($shop->website),
-                    "route"   => [
-                        "name"       => "grp.org.shops.show.ai_salesman.show",
-                        "parameters" => [$shop->organisation->slug, $shop->slug],
-                    ],
-                    "topMenu" => [],
-                ];
+            if ($showsAiSalesman) {
+                $navigation["ai_salesman"] = $this->aiSalesmanNavigation($shop);
             }
 
             if ($shop->website && $this->canViewSeo($user, $shop)) {
@@ -650,6 +644,10 @@ class GetShopNavigation
                     ],
                 ];
             }
+        }
+
+        if ($showsAiSalesman && !isset($navigation["ai_salesman"])) {
+            $navigation["ai_salesman"] = $this->aiSalesmanNavigation($shop);
         }
 
         if ($user->hasPermissionTo("marketing.view")) {
@@ -984,5 +982,22 @@ class GetShopNavigation
         }
 
         return $navigation;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function aiSalesmanNavigation(Shop $shop): array
+    {
+        return [
+            "root"    => "grp.org.shops.show.ai_salesman.",
+            "icon"    => ["fal", "fa-hat-wizard"],
+            "label"   => GetShoppingAssistantSettings::name($shop->website),
+            "route"   => [
+                "name"       => "grp.org.shops.show.ai_salesman.show",
+                "parameters" => [$shop->organisation->slug, $shop->slug],
+            ],
+            "topMenu" => [],
+        ];
     }
 }

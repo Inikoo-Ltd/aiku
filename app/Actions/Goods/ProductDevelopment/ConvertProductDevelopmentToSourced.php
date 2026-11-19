@@ -46,6 +46,7 @@ class ConvertProductDevelopmentToSourced extends OrgAction
 
             $productDevelopment->components()->delete();
             $productDevelopment->items()->whereNotNull('artefact_id')->update(['artefact_id' => null]);
+            $productDevelopment->formulations()->whereNotNull('artefact_id')->update(['artefact_id' => null]);
 
             RecordProductDevelopmentActivity::record($productDevelopment, RecordProductDevelopmentActivity::CONVERTED_TO_SOURCED, [
                 'kind'       => ProductDevelopmentKindEnum::RECIPE->value,

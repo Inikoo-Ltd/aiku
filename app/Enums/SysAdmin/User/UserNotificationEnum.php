@@ -112,6 +112,19 @@ enum UserNotificationEnum: string
     }
 
     /**
+     * The channels to send on now: the chosen ones, without the interrupting Slack and push while
+     * the user is in focus mode (email and the bell still arrive, they wait to be read).
+     *
+     * @return array<int, string>
+     */
+    public function deliverTo(User $user): array
+    {
+        $channels = $this->channelsFor($user);
+
+        return $user->isFocusing() ? array_values(array_diff($channels, ['slack', 'browser'])) : $channels;
+    }
+
+    /**
      * @return array<int, string>
      */
     public function channelsFor(User $user): array

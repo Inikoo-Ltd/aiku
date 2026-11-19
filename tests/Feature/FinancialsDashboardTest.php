@@ -197,4 +197,47 @@ test('cash flow of an organisation: cash at the start and end of each week worke
             ->where('cashFlow.interval', 'month')
             ->where('cashFlow.currency', $pivot->code)
             ->has('cashFlow.periods', 12));
+
+    $groupRate = $group->currency_id === $pivot->id ? 1 : 2;
+    foreach (['2026-11-17', '2026-11-18'] as $date) {
+        if ($groupRate !== 1) {
+            \App\Models\Helpers\CurrencyExchange::updateOrCreate(['currency_id' => $group->currency_id, 'date' => $date], ['exchange' => $groupRate, 'source' => 'test']);
+        }
+    }
+    $groupCashFlow = \App\Actions\Accounting\BankBalance\UI\ShowCashFlow::make()->handle($group, 'week', null, collect([$organisation, $this->organisation]));
+    expect($groupCashFlow['currency'])->toBe($group->currency->code)
+        ->and($groupCashFlow['periods'])->toHaveCount(12)
+        ->and(collect($groupCashFlow['periods'])->last()['closing'])->toEqual(round(collect($groupCashFlow['organisations'])->sum('closing'), 2))
+        ->and(collect($groupCashFlow['organisations'])->firstWhere('code', $organisation->code)['closing'])->toEqual((1007 + 10) * $groupRate)
+        ->and(collect($groupCashFlow['banks'])->pluck('name')->all())->toContain('Wise cash flow ('.$organisation->code.')');
+
+    get(route('grp.financials.cash_flow.index'))->assertForbidden();
+    $user->givePermissionTo('financials');
+    actingAs($user->refresh());
+    get(route('grp.financials.cash_flow.index', ['org' => $organisation->slug, 'interval' => 'month']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Accounting/CashFlow')
+            ->where('isGroup', true)
+            ->where('organisation', $organisation->slug)
+            ->where('cashFlow.interval', 'month')
+            ->where('cashFlow.currency', $group->currency->code)
+            ->has('cashFlow.organisations', 1)
+            ->has('cashFlow.periods', 12));
+    $neverRead = \App\Models\Accounting\BankConnection::create([
+        'group_id'        => $group->id,
+        'organisation_id' => $organisation->id,
+        'provider'        => \App\Enums\Accounting\BankConnection\BankConnectionProviderEnum::WISE,
+        'name'            => 'Wise never read',
+        'external_id'     => (string) random_int(1000, 9999),
+    ]);
+    $line(25, '2026-11-17 09:00:00', ['bank_connection_id' => $neverRead->id]);
+    $cash      = \App\Actions\Accounting\BankBalance\UI\ShowCash::make()->handle($organisation);
+    $unread    = collect($cash['connections'])->firstWhere('id', $neverRead->id);
+    $closingNow = collect(\App\Actions\Accounting\BankBalance\UI\ShowCashFlow::make()->handle($organisation)['periods'])->last()['closing'];
+    expect($unread['status'])->toBe('never')
+        ->and($unread['from_lines'])->toBeTrue()
+        ->and($unread['amount'])->toEqual(25)
+        ->and($cash['total']['stale_amount'])->toEqual(25)
+        ->and($closingNow)->toEqual(1007 + 10 + 25);
 });

@@ -1067,6 +1067,84 @@ test('uploading a sku that already has an offer on eBay replaces that offer inst
     sentEbayRequest('POST', '/sell/inventory/v1/offer/offer-existing/publish');
 });
 
+test('an unpublished offer eBay answers with a system error is deleted and the product published on a fresh offer', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $portfolio->update(['customer_price' => 20]);
+
+    $broken      = ['offerId' => 'offer-broken', 'sku' => $portfolio->sku, 'status' => 'UNPUBLISHED', 'availableQuantity' => 1, 'categoryId' => '31413', 'format' => 'FIXED_PRICE'];
+    $offerRoutes = ebayOfferRoutes(createdOfferId: 'offer-fresh', offerById: ['status' => 'UNPUBLISHED']);
+    $deleted     = false;
+    $systemError = ['errors' => [['errorId' => 25001, 'domain' => 'API_INVENTORY', 'category' => 'Request', 'message' => 'A system error has occurred. Internal server error']]];
+
+    fakeEbay($this, [
+        '/offer/offer-broken/publish' => fn () => Http::response($systemError, 500),
+        '/offer/offer-broken'         => function (Request $request) use (&$deleted, $offerRoutes) {
+            if ($request->method() === 'DELETE') {
+                $deleted = true;
+
+                return Http::response('', 204);
+            }
+
+            return $offerRoutes($request);
+        },
+        '/sell/inventory/v1/offer'    => function (Request $request) use (&$deleted, $broken, $offerRoutes) {
+            if ($request->method() === 'GET' && parse_url($request->url(), PHP_URL_PATH) === '/sell/inventory/v1/offer') {
+                return $deleted
+                    ? Http::response(['errors' => [['errorId' => 25713, 'message' => 'This Offer is not available.']]], 404)
+                    : Http::response(['offers' => [$broken], 'total' => 1]);
+            }
+
+            return $offerRoutes($request);
+        },
+    ] + ebayCatalogueRoutes());
+
+    $portfolio = StoreEbayProduct::run($ebayUser, $portfolio)->refresh();
+
+    sentEbayRequest('DELETE', '/sell/inventory/v1/offer/offer-broken');
+    sentEbayRequest('POST', '/sell/inventory/v1/offer/offer-fresh/publish');
+
+    expect($portfolio->platform_product_id)->toBe('offer-fresh')
+        ->and($portfolio->upload_warning)->toBeNull();
+});
+
+test('an unpublished offer holding the seller price is not deleted on a system error when the channel does not update prices', function () {
+    $ebayUser = ebayChannel($this);
+    $ebayUser->customerSalesChannel->update(['settings' => array_merge($ebayUser->customerSalesChannel->settings ?? [], ['do_not_update_prices' => true])]);
+    $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+
+    $draft       = ['offerId' => 'offer-draft', 'sku' => $portfolio->sku, 'status' => 'UNPUBLISHED', 'availableQuantity' => 1, 'categoryId' => '31413', 'format' => 'FIXED_PRICE', 'pricingSummary' => ['price' => ['value' => '14.50', 'currency' => 'GBP']]];
+    $systemError = ['errors' => [['errorId' => 25001, 'domain' => 'API_INVENTORY', 'category' => 'Request', 'message' => 'A system error has occurred. Internal server error']]];
+
+    fakeEbay($this, [
+        '/offer/offer-draft/publish' => fn () => Http::response($systemError, 500),
+        '/sell/inventory/v1/offer'   => ebayOfferRoutes(offersForSku: [$draft], offerById: $draft),
+    ] + ebayCatalogueRoutes());
+
+    StoreEbayProduct::run($ebayUser, $portfolio->refresh());
+
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'DELETE');
+});
+
+test('a published offer eBay answers with a system error is never deleted', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+
+    $live        = ['offerId' => 'offer-live', 'sku' => $portfolio->sku, 'status' => 'PUBLISHED', 'availableQuantity' => 1, 'categoryId' => '31413', 'format' => 'FIXED_PRICE'];
+    $systemError = ['errors' => [['errorId' => 25001, 'domain' => 'API_INVENTORY', 'category' => 'Request', 'message' => 'A system error has occurred. Internal server error']]];
+
+    fakeEbay($this, [
+        '/offer/offer-live/publish' => fn () => Http::response($systemError, 500),
+        '/sell/inventory/v1/offer'  => ebayOfferRoutes(offersForSku: [$live], offerById: $live),
+    ] + ebayCatalogueRoutes());
+
+    $portfolio = StoreEbayProduct::run($ebayUser, $portfolio)->refresh();
+
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'DELETE');
+
+    expect($portfolio->upload_warning)->toBe('A system error has occurred. Internal server error');
+});
+
 test('re-uploading a live listing that does not follow our price keeps the seller price and category on eBay', function () {
     $ebayUser  = ebayChannel($this);
     $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);

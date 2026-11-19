@@ -9,6 +9,9 @@
 
 namespace App\Actions\Goods\ProductDevelopment\UI;
 
+use App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentFormulationTypeEnum;
+use App\Models\Goods\ProductDevelopmentFormulation;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
 use App\Actions\Goods\ProductDevelopment\SeedProductDevelopmentChecklistTemplates;
 use App\Actions\Goods\ProductDevelopment\SetProductDevelopmentComplianceTemplate;
@@ -133,19 +136,36 @@ class GetProductDevelopmentChecklistEditor
     }
 
     /**
-     * The approved formulation of an in-house SKU, for the compliance assessment.
+     * The approved formulations of an in-house SKU for the compliance assessment, one per stage (the blend and
+     * the finished product each on their own), and whether the SKU's final formulation is complete.
      *
-     * @return array{number: string, ingredients: array<int, array<string, mixed>>, approved_at: string|null}|null
+     * @return array{complete: bool, stages: array<int, array<string, mixed>>}|null
      */
     private function formulation(ProductDevelopmentItem $item): ?array
     {
-        $sample = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::finalSample($item);
+        $formulations = $item->formulations()->with('artefact')->get();
+        $approved     = $item->samples()->where('status', 'approved')->orderByDesc('number')->get()->groupBy('product_development_formulation_id');
+        $stages       = $formulations
+            ->filter(fn (ProductDevelopmentFormulation $formulation) => $approved->has($formulation->id))
+            ->map(function (ProductDevelopmentFormulation $formulation) use ($approved, $item) {
+                $sample = $approved->get($formulation->id)->first();
 
-        return $sample ? [
-            'number'      => $sample->reference(),
-            'ingredients' => $sample->recipe['ingredients'] ?? [],
-            'approved_at' => $sample->reviewed_at?->toIso8601String(),
-        ] : null;
+                return [
+                    'position'    => $formulation->position,
+                    'name'        => $formulation->name,
+                    'type'        => ProductDevelopmentFormulationTypeEnum::labels()[$formulation->type->value],
+                    'is_finished' => $formulation->type === ProductDevelopmentFormulationTypeEnum::FINISHED_PRODUCT,
+                    'artefact'    => $formulation->type->hasOwnArtefact() ? $formulation->artefact?->code : $item->artefact?->code,
+                    'number'      => $sample->reference(),
+                    'ingredients' => $sample->recipe['ingredients'] ?? [],
+                    'approved_at' => $sample->reviewed_at?->toIso8601String(),
+                ];
+            })->values();
+
+        return $stages->isEmpty() ? null : [
+            'complete' => (bool) ProductDevelopmentRecipes::finalOf($formulations, $item->samples()->get()),
+            'stages'   => $stages->all(),
+        ];
     }
 
     /**

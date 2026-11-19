@@ -1726,3 +1726,42 @@ test('empty sko links are removed automatically only where the warehouse switche
     $this->get(route('grp.org.warehouses.show.infrastructure.dashboard', [$warehouse->organisation->slug, $warehouse->slug, 'tab' => 'empty_locations_removed']))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('empty_locations_removed.data', fn ($rows) => collect($rows)->pluck('code')->contains($emptySko->code)));
 });
+
+test('an ephemeral note shows on the sko page with its author, hides itself after its expiry and only stock editors can set it', function () {
+    $warehouse = createWarehouse();
+    $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $showRoute = route('grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show', [$this->organisation->slug, $warehouse->slug, $orgStock->slug]);
+    $noteRoute = route('grp.org.warehouses.show.inventory.org_stocks.ephemeral_note', [$this->organisation->slug, $warehouse->slug, $orgStock->slug]);
+
+    $this->patch($noteRoute, ['note' => 'Waiting for labels', 'expires_in_days' => 60])->assertSessionHasErrors('expires_in_days');
+
+    $this->patch($noteRoute, ['note' => '  Waiting for labels  '])->assertSessionHasNoErrors();
+    $orgStock->refresh();
+    expect($orgStock->ephemeral_note)->toBe('Waiting for labels')
+        ->and($orgStock->ephemeral_note_user_id)->toBe($this->user->id)
+        ->and((int) round($orgStock->ephemeral_note_set_at->diffInDays($orgStock->ephemeral_note_expires_at)))->toBe(30);
+
+    $this->get($showRoute)->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('ephemeral_note.text', 'Waiting for labels')
+        ->where('ephemeral_note.author', $this->user->getPasskeyDisplayName())
+        ->where('ephemeral_note_route.name', 'grp.org.warehouses.show.inventory.org_stocks.ephemeral_note'));
+
+    $this->patch($noteRoute, ['note' => 'Labels due Friday', 'expires_in_days' => 7])->assertSessionHasNoErrors();
+    $orgStock->refresh();
+    expect((int) round($orgStock->ephemeral_note_set_at->diffInDays($orgStock->ephemeral_note_expires_at)))->toBe(7);
+
+    $this->travel(8)->days();
+    $this->get($showRoute)->assertInertia(fn (AssertableInertia $page) => $page->where('ephemeral_note', null));
+    $this->travelBack();
+
+    $this->patch($noteRoute, ['note' => null])->assertSessionHasNoErrors();
+    expect($orgStock->refresh()->ephemeral_note)->toBeNull()
+        ->and($orgStock->ephemeral_note_expires_at)->toBeNull();
+
+    $viewer = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($viewer, ["stocks.$warehouse->id.view"]);
+    $this->patch($noteRoute, ['note' => 'Nope'])->assertForbidden();
+    $this->get($showRoute)->assertInertia(fn (AssertableInertia $page) => $page->where('ephemeral_note_route', null));
+});

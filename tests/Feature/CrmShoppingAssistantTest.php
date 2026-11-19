@@ -21,6 +21,7 @@ use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\CRM\ShoppingAssistant\RecordShoppingAssistantBasketAdd;
 use App\Actions\CRM\WebUser\StoreWebUser;
+use App\Actions\UI\Grp\Layout\GetShopNavigation;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\Web\Website\UpdateWebsite;
@@ -847,8 +848,17 @@ test('the group AI assistant report is only for group-wide viewers, a shop webma
             ->where('routes.conversation.name', 'grp.org.shops.show.ai_salesman.conversations.show')
             ->missing('pageHead.subNavigation')
             ->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->sort()->values()->all() === collect([$ordered->ulid, $clicked->ulid])->sort()->values()->all()));
-    $this->get(route('grp.org.shops.show.ai_salesman.conversations.show', [...$shopParameters, $ordered->ulid]))->assertOk();
+    $this->get(route('grp.org.shops.show.ai_salesman.conversations.show', [...$shopParameters, $ordered->ulid]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['simple']['route']['name'] === 'grp.org.shops.show.ai_salesman.conversations.show'));
     $this->get(route('grp.org.shops.show.ai_salesman.conversations.show', [...$shopParameters, $elsewhere->ulid]))->assertNotFound();
+
+    $shopStaff = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($shopStaff, ["crm.{$this->shop->id}.view"]);
+
+    expect(GetShopNavigation::run($this->shop->refresh(), $shopStaff))->toHaveKey('ai_salesman');
+    $this->get(route('grp.org.shops.show.ai_salesman.show', [...$shopParameters, ...$query]))->assertOk();
+    $this->get(route('grp.org.shops.show.ai_salesman.conversations.show', [...$shopParameters, $ordered->ulid]))->assertOk();
 });
 
 test('the customer page has a Merlin tab with the customer conversations, only when there are some', function () {
@@ -3736,7 +3746,16 @@ test('Merlin says where the customer\'s own order is, with the order number, dat
 });
 
 test('Merlin finds the order a customer asks about without a number, says it waits for payment, and moves an order still waiting to be picked after a day to premium dispatch free', function () {
-    $customer     = shoppingAssistantCustomer($this->shop);
+    $bigSpender   = function (Customer $customer): Customer {
+        $customer->update(['last_invoiced_at' => now()->subMonth()]);
+        $customer->stats()->update(['sales_grp_currency_all' => config('services.shopping_assistant.premium_customer_sales')]);
+
+        return $customer;
+    };
+    $warehouse    = $this->shop->organisation->warehouses()->first() ?? \App\Actions\Inventory\Warehouse\StoreWarehouse::run($this->shop->organisation, \App\Models\Inventory\Warehouse::factory()->definition());
+    $overCapacity = fn (bool $over) => \Illuminate\Support\Facades\Cache::put('warehouse-over-capacity:'.$warehouse->id.':'.\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::WHOLESALE, $over, 300);
+    $overCapacity(false);
+    $customer     = $bigSpender(shoppingAssistantCustomer($this->shop));
     $tools        = GetShoppingAssistantTools::make();
     $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
     $conversation->update(['language_code' => 'en']);
@@ -3784,10 +3803,43 @@ test('Merlin finds the order a customer asks about without a number, says it wai
         ->and($young['content'])->not->toHaveKey('priority')
         ->and($recent->refresh()->is_premium_dispatch)->toBeFalse();
 
-    $more = collect(range(1, 3))->map(fn () => $newOrder(['state' => \App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID, 'submitted_at' => now()->subHours(26)]));
-    $more->each(fn ($order) => $tools->execute($conversation, 'order_status', ['reference' => $order->reference]));
+    $secondThisMonth = $newOrder(['state' => \App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID, 'submitted_at' => now()->subHours(26)]);
+    expect($tools->execute($conversation, 'order_status', ['reference' => $secondThisMonth->reference])['content'])->not->toHaveKey('priority')
+        ->and($secondThisMonth->refresh()->is_premium_dispatch)->toBeFalse();
 
-    expect($more->map(fn ($order) => $order->refresh()->is_premium_dispatch)->all())->toBe([true, true, false]);
+    $overCustomer = $bigSpender(shoppingAssistantCustomer($this->shop));
+    $overChat     = StartShoppingAssistantConversation::run($overCustomer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $overOrder    = tap(\App\Actions\Ordering\Order\StoreOrder::make()->action($overCustomer, ['reference' => 'CZ-'.Str::upper(Str::random(8)), 'date' => date('Y-m-d'), 'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()), 'billing_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition())]))->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID, 'submitted_at' => now()->subHours(26)]);
+    $overCapacity(true);
+    expect($tools->execute($overChat, 'order_status', ['reference' => $overOrder->reference])['content'])->not->toHaveKey('priority')
+        ->and($overOrder->refresh()->is_premium_dispatch)->toBeFalse();
+    $overCapacity(false);
+
+    $smallCustomer = shoppingAssistantCustomer($this->shop);
+    $smallChat     = StartShoppingAssistantConversation::run($smallCustomer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $smallOrder    = tap(\App\Actions\Ordering\Order\StoreOrder::make()->action($smallCustomer, ['reference' => 'CZ-'.Str::upper(Str::random(8)), 'date' => date('Y-m-d'), 'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()), 'billing_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition())]))->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID, 'submitted_at' => now()->subHours(26)]);
+    expect($tools->execute($smallChat, 'order_status', ['reference' => $smallOrder->reference])['content'])->not->toHaveKey('priority')
+        ->and($smallOrder->refresh()->is_premium_dispatch)->toBeFalse();
+
+    $shopType = $this->shop->type;
+    $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+    $dropshipper     = $bigSpender(shoppingAssistantCustomer($this->shop));
+    $dropshipperChat = StartShoppingAssistantConversation::run($dropshipper, ShoppingAssistantEntryPointEnum::COMMAND);
+    $dropshipOrder   = tap(\App\Actions\Ordering\Order\StoreOrder::make()->action($dropshipper, ['reference' => 'CZ-'.Str::upper(Str::random(8)), 'date' => date('Y-m-d'), 'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()), 'billing_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition())]))->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID, 'submitted_at' => now()->subHours(26)]);
+    expect($tools->execute($dropshipperChat, 'order_status', ['reference' => $dropshipOrder->reference])['content'])->not->toHaveKey('priority')
+        ->and($dropshipOrder->refresh()->is_premium_dispatch)->toBeFalse();
+    $this->shop->update(['type' => $shopType]);
+
+    $others = collect(range(1, 3))->map(function () use ($tools, $bigSpender) {
+        $other        = $bigSpender(shoppingAssistantCustomer($this->shop));
+        $otherChat    = StartShoppingAssistantConversation::run($other, ShoppingAssistantEntryPointEnum::COMMAND);
+        $order        = tap(\App\Actions\Ordering\Order\StoreOrder::make()->action($other, ['reference' => 'CZ-'.Str::upper(Str::random(8)), 'date' => date('Y-m-d'), 'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()), 'billing_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition())]))->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID, 'submitted_at' => now()->subHours(26)]);
+        $tools->execute($otherChat, 'order_status', ['reference' => $order->reference]);
+
+        return $order;
+    });
+
+    expect($others->map(fn ($order) => $order->refresh()->is_premium_dispatch)->all())->toBe([true, true, false]);
 });
 
 test('a customer nobody answered after a hand-over to the live chat or a question to our team is told once when the team is back', function () {

@@ -7,6 +7,7 @@ import { watchEffect } from "vue"
 import { useEchoGrpPersonal } from '@/Stores/echo-grp-personal.js'
 import { useEchoGrpGeneral } from '@/Stores/echo-grp-general.js'
 import { announcedUser, useLiveUsers } from '@/Stores/active-users'
+import { focusUntil, isFocusOn } from '@/Composables/useFocusMode'
 import { useChatAgentPresence } from '@/Composables/useChatAgentPresence'
 import { resetStuckOverlays } from '@/Composables/resetStuckOverlays'
 import { applyChatTheme } from '@/Composables/useChatThemes'
@@ -121,6 +122,7 @@ export const initialiseApp = () => {
                 ...announcedUser(usePage().props.auth.user),
                 last_active: new Date(),
                 action: 'navigate',
+                focus_until: isFocusOn() ? focusUntil.value : null,
                 avatar_thumbnail: usePage().props.avatar_thumbnail,
                 current_page: {
                     route_name: layout.currentRoute,

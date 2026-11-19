@@ -10,6 +10,7 @@ namespace App\Actions\Chat\Whatsapp\Concerns;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 
 trait WithWhatsappCredentials
 {
@@ -83,5 +84,22 @@ trait WithWhatsappCredentials
             config('meta.whatsapp.api_version'),
             ltrim($path, '/')
         );
+    }
+
+    /**
+     * A local copy can hold a real shop's number and token, so nothing is posted to a customer
+     * from it: the send stops here and what it would have sent goes to the log.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    protected function isWhatsappSendHeldLocally(string $what, array $context = []): bool
+    {
+        if (!app()->isLocal()) {
+            return false;
+        }
+
+        Log::info('WhatsApp '.$what.' not sent from local', $context);
+
+        return true;
     }
 }

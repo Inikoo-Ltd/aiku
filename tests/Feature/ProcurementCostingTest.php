@@ -2858,7 +2858,8 @@ test('costs typed by hand are handed to whoever adds a service invoice, with the
             ->where('service_invoices.hand_typed.1.kind', 'customs_clearance')
             ->where('service_invoices.cost_kinds.freight', 'shipping')
             ->where('service_invoices.cost_kinds.local_transport', 'shipping')
-            ->where('service_invoices.cost_kinds.anti_dumping', 'duty')
+            ->where('service_invoices.cost_kinds.anti_dumping', 'anti_dumping')
+            ->where('service_invoices.cost_kinds.import_levy', 'duty')
             ->where('service_invoices.cost_kinds.storage', 'storage')
             ->where('service_invoices.cost_kinds.tax', null));
 
@@ -3944,6 +3945,141 @@ test('duty is shared by customs line: a duty-free line takes none, items on no l
         ->and((float) $second->cost_duties)->toBe(30.0);
 });
 
+test('an anti-dumping duty goes only to the lines of the tariff codes it was picked for, to the cent, and holds the costing open until it has some (HELP-4796)', function () {
+    $antiDumpingDelivery = function (string $code): StockDelivery {
+        $stockDelivery = placedStockDeliveryWithTwoLines($this, $code);
+        $stockDelivery->update(['org_exchange' => 1]);
+        foreach ($stockDelivery->items()->with('orgStock.tradeUnits')->orderBy('id')->get()->values() as $index => $item) {
+            \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($item->orgStock->tradeUnits->first(), ['tariff_code' => $index === 0 ? '3406000000' : '6302210089']);
+        }
+        setShippingAndDuty($stockDelivery->refresh(), 0, 40);
+
+        return $stockDelivery->refresh();
+    };
+
+    $stockDelivery = $antiDumpingDelivery('ANTI-DUMPING-'.Str::random(6));
+    [$candles, $textiles] = $stockDelivery->items()->orderBy('id')->get()->all();
+
+    expect($stockDelivery->is_costed)->toBeTrue()
+        ->and((float) $candles->cost_duties)->toBe(10.0)
+        ->and((float) $textiles->cost_duties)->toBe(30.0);
+
+    expect(fn () => StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => 'extra', 'category' => 'customs_clearance', 'amount' => 5, 'received_at' => now(), 'applies_to_tariff_codes' => ['6302210089']]))->toThrow(ValidationException::class)
+        ->and(fn () => StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => 'extra', 'category' => 'anti_dumping', 'amount' => 5, 'received_at' => now(), 'applies_to_tariff_codes' => ['9999999999']]))->toThrow(ValidationException::class);
+
+    $antiDumping = StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => 'extra', 'category' => 'anti_dumping', 'amount' => 0.05, 'received_at' => now()]);
+
+    expect($stockDelivery->refresh()->is_costed)->toBeFalse()
+        ->and(EvaluateStockDeliveryCosting::costsWithoutLines($stockDelivery)->pluck('id')->all())->toBe([$antiDumping->id]);
+
+    UpdateStockDeliveryCost::make()->action($antiDumping, ['applies_to_tariff_codes' => ['3406 00 00 00', '6302.21.00.89']]);
+
+    expect($antiDumping->refresh()->applies_to_tariff_codes)->toBe(['3406000000', '6302210089'])
+        ->and($antiDumping->applies_to_item_ids)->toBe([$candles->id, $textiles->id])
+        ->and((float) $candles->fresh()->cost_duties)->toBe(10.01)
+        ->and((float) $textiles->fresh()->cost_duties)->toBe(30.04)
+        ->and((float) $candles->fresh()->cost_extra)->toBe(20.0)
+        ->and((float) $textiles->fresh()->cost_extra)->toBe(60.0);
+
+    UpdateStockDeliveryCost::make()->action($antiDumping->refresh(), ['amount' => 33.33, 'applies_to_tariff_codes' => ['6302210089']]);
+
+    expect((float) $candles->fresh()->cost_duties)->toBe(10.0)
+        ->and((float) $textiles->fresh()->cost_duties)->toBe(63.33)
+        ->and((float) $textiles->fresh()->cost_total)->toBe(300 + 60 + 63.33)
+        ->and((float) $stockDelivery->refresh()->cost_duties)->toBe(73.33)
+        ->and($stockDelivery->is_costed)->toBeTrue();
+
+    $billed = $antiDumpingDelivery('ANTI-DUMPING-BILL-'.Str::random(6));
+    [$candles, $textiles] = $billed->items()->orderBy('id')->get()->all();
+    StoreStockDeliveryServiceInvoice::make()->action($billed->organisation, [
+        'type'         => StockDeliveryServiceInvoiceTypeEnum::ANTI_DUMPING->value,
+        'issuer'       => 'Customs Broker',
+        'reference'    => 'ADD-'.Str::random(6),
+        'date'         => '2026-11-10',
+        'currency_id'  => $billed->organisation->currency_id,
+        'total_amount' => 25,
+        'allocations'  => [['stock_delivery_id' => $billed->id]],
+    ]);
+    $billRow = $billed->costs()->where('category', 'anti_dumping')->sole();
+
+    expect($billRow->from_service_invoices)->toBeTrue()
+        ->and($billed->costs()->where('type', StockDeliveryCostTypeEnum::DUTY)->sole()->amountInDeliveryCurrency())->toBe(40.0)
+        ->and($billed->refresh()->is_costed)->toBeFalse();
+
+    $this->patch(route('grp.models.stock-delivery-cost.update', $billRow->id), ['amount' => 1])->assertSessionHasErrors('type');
+    $this->patch(route('grp.models.stock-delivery-cost.update', $billRow->id), ['applies_to_tariff_codes' => ['6302210089']])->assertSessionHasNoErrors();
+
+    StoreStockDeliveryServiceInvoice::make()->action($billed->organisation, [
+        'type'         => StockDeliveryServiceInvoiceTypeEnum::FREIGHT->value,
+        'issuer'       => 'Sea Forwarder',
+        'reference'    => 'FWD-'.Str::random(6),
+        'date'         => '2026-11-11',
+        'currency_id'  => $billed->organisation->currency_id,
+        'total_amount' => 40,
+        'allocations'  => [['stock_delivery_id' => $billed->id]],
+    ]);
+
+    expect($billRow->refresh()->applies_to_tariff_codes)->toBe(['6302210089'])
+        ->and((float) $candles->fresh()->cost_duties)->toBe(10.0)
+        ->and((float) $textiles->fresh()->cost_duties)->toBe(55.0)
+        ->and($billed->refresh()->is_costed)->toBeTrue();
+
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $billed->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('costing.tariff_code_options.1.tariff_code', '6302210089')
+            ->where('costing.checklist', fn ($checklist) => collect($checklist)->contains(fn ($row) => $row['category'] === 'anti_dumping' && $row['applies_to_lines'] === 1 && $row['needs_lines'] === false))
+            ->etc());
+
+    $textiles->update(['state' => StockDeliveryItemStateEnum::NOT_RECEIVED, 'not_received_at' => now()]);
+    EvaluateStockDeliveryCosting::run($billed->refresh());
+
+    expect($billed->refresh()->is_costed)->toBeFalse()
+        ->and(EvaluateStockDeliveryCosting::costsWithoutLines($billed)->pluck('id')->all())->toBe([$billRow->id]);
+});
+
+test('an anti-dumping duty follows the tariff codes of the lines until the delivery is first costed, then keeps its lines, and stays out of the customs duty (HELP-4796)', function () {
+    $stockDelivery = placedStockDeliveryWithTwoLines($this, 'ANTI-DUMPING-FOLLOW-'.Str::random(6));
+    $stockDelivery->update(['org_exchange' => 1]);
+    [$candles, $textiles] = $stockDelivery->items()->with('orgStock.tradeUnits')->orderBy('id')->get()->all();
+    $setTariffCode = fn ($item, string $code) => \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($item->orgStock->tradeUnits->first()->refresh(), ['tariff_code' => $code]);
+    $setTariffCode($candles, '3406000000');
+    $setTariffCode($textiles, '6302210089');
+
+    $antiDumping = StoreStockDeliveryCost::make()->action($stockDelivery->refresh(), ['type' => 'extra', 'category' => 'anti_dumping', 'amount' => 20, 'received_at' => now(), 'applies_to_tariff_codes' => ['6302210089']]);
+
+    expect($stockDelivery->refresh()->is_costed)->toBeFalse()
+        ->and((float) $candles->fresh()->cost_duties)->toBe(0.0)
+        ->and((float) $textiles->fresh()->cost_duties)->toBe(20.0);
+
+    $setTariffCode($candles, '6302210089');
+    EvaluateStockDeliveryCosting::run($stockDelivery->refresh());
+
+    expect($antiDumping->refresh()->applies_to_item_ids)->toBe([$candles->id, $textiles->id])
+        ->and((float) $candles->fresh()->cost_duties)->toBe(5.0)
+        ->and((float) $textiles->fresh()->cost_duties)->toBe(15.0);
+
+    UpdateStockDeliveryCustoms::make()->action($stockDelivery->refresh(), [
+        'lines' => [['tariff_code' => '6302 21 00 89', 'duty_rate' => 10, 'customs_value' => 400, 'duty_amount' => 40]],
+    ]);
+    setShippingAndDuty($stockDelivery->refresh(), 0, 40);
+
+    $customs = \App\Actions\GoodsIn\StockDelivery\UI\GetStockDeliveryCustoms::run($stockDelivery->refresh());
+
+    expect($stockDelivery->is_costed)->toBeTrue()
+        ->and((float) $candles->fresh()->cost_duties)->toBe(15.0)
+        ->and((float) $textiles->fresh()->cost_duties)->toBe(45.0)
+        ->and($customs['duty_cost'])->toBe(40.0)
+        ->and($customs['lines'][0]['allocated'])->toBe(40.0)
+        ->and(array_column($customs['items'], 'cost_duties'))->toBe([10.0, 30.0]);
+
+    $setTariffCode($candles, '3406000000');
+    EvaluateStockDeliveryCosting::run($stockDelivery->refresh());
+
+    expect($antiDumping->refresh()->applies_to_item_ids)->toBe([$candles->id, $textiles->id])
+        ->and((float) $candles->fresh()->cost_duties)->toBe(15.0)
+        ->and($stockDelivery->refresh()->is_costed)->toBeTrue();
+});
+
 test('the tariff codes tab groups the items by tariff code and origin, described in English, Slovak and Spanish (HELP-4343)', function () {
     $stockDelivery = placedStockDeliveryWithTwoLines($this, 'TARIFF-SUMMARY-'.Str::random(6));
     $stockDelivery->update(['org_exchange' => 1]);
@@ -4777,20 +4913,20 @@ test('an agent opening a supplier sees its purchase orders and shipments for eve
 
     actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-sup-'.Str::lower(Str::random(6))));
 
-    $this->get(route('grp.org.agent.org_suppliers.show', [$agentOrganisation->slug, $orgSupplier->slug]))
+    $this->get(route('grp.org.agent.org_suppliers.show', [$agentOrganisation->slug, $orgSupplier->supplier->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('pageHead.subNavigation', fn ($items) => collect($items)->firstWhere('label', 'Purchase Orders')['number'] === 2
                 && collect($items)->firstWhere('label', 'Stock Deliveries')['number'] === 2));
 
-    $this->get(route('grp.org.agent.org_suppliers.show.purchase_orders.index', [$agentOrganisation->slug, $orgSupplier->slug]))
+    $this->get(route('grp.org.agent.org_suppliers.show.purchase_orders.index', [$agentOrganisation->slug, $orgSupplier->supplier->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->sort()->values()->all() === collect([$ownOrder->id, $otherBuyerOrder->id])->sort()->values()->all())
             ->has('filterOptions.organisation', 2)
             ->missing('filterOptions.supplier'));
 
-    $this->get(route('grp.org.agent.org_suppliers.show.stock_deliveries.index', [$agentOrganisation->slug, $orgSupplier->slug]))
+    $this->get(route('grp.org.agent.org_suppliers.show.stock_deliveries.index', [$agentOrganisation->slug, $orgSupplier->supplier->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->sort()->values()->all() === collect([$shipment->id, $directDelivery->id])->sort()->values()->all())
@@ -4804,6 +4940,170 @@ test('an agent opening a supplier sees its purchase orders and shipments for eve
     $this->get(route('grp.org.agent.purchase_orders.show', [$agentOrganisation->slug, $directOrder->slug]))->assertNotFound();
 
     expect($draft->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS);
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('an agent has one page per supplier with an organisation selector, and the old page of each buying organisation redirects to it (INI-379)', function () {
+    $orgAgent          = createFreshOrgAgent($this);
+    $agent             = $orgAgent->agent;
+    $agentOrganisation = $agent->organisation;
+    $otherBuyer        = Organisation::where('code', 'prc2')->first()
+        ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
+    StoreOrgAgent::make()->action($otherBuyer, $agent, []);
+
+    [$orgSupplier]    = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $supplier         = $orgSupplier->supplier;
+    $otherOrgSupplier = OrgSupplier::where('supplier_id', $supplier->id)->where('organisation_id', $otherBuyer->id)->firstOrFail();
+    $ownOrder         = StorePurchaseOrder::make()->action($orgSupplier, [], strict: false);
+    $otherBuyerOrder  = StorePurchaseOrder::make()->action($otherOrgSupplier, [], strict: false);
+    $ownOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED]);
+    $otherBuyerOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED]);
+    $buyers = OrgSupplier::where('supplier_id', $supplier->id)->where('status', true)->orderBy('organisation_id')->with('organisation')->get()->pluck('organisation.slug')->all();
+
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-379-'.Str::lower(Str::random(6))));
+
+    $page = route('grp.org.agent.org_suppliers.show', [$agentOrganisation->slug, $supplier->slug]);
+    $this->get(route('grp.org.agent.org_suppliers.show', [$agentOrganisation->slug, $otherOrgSupplier->slug]))
+        ->assertRedirect($page.'?organisation='.$otherBuyer->slug);
+    $this->get(route('grp.org.procurement.org_suppliers.show', [$agentOrganisation->slug, $otherOrgSupplier->slug]))
+        ->assertRedirect(route('grp.org.agent.org_suppliers.show', [$agentOrganisation->slug, $otherOrgSupplier->slug]));
+
+    $purchaseOrdersItem = fn ($items) => collect($items)->firstWhere('label', 'Purchase Orders');
+
+    $this->get($page)
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('organisationSelector.current', 'all')
+            ->where('organisationSelector.options', fn ($options) => collect($options)->pluck('value')->all() === ['all', ...$buyers])
+            ->where('pageHead.subNavigation', fn ($items) => $purchaseOrdersItem($items)['number'] === 2 && !isset($purchaseOrdersItem($items)['route']['parameters']['_query']))
+            ->where('pageHead.actions.0.type', 'buttonGroup')
+            ->where('agreement.by_organisation', fn ($rows) => collect($rows)->pluck('route.parameters._query.organisation')->all() === $buyers));
+
+    $this->get($page.'?organisation='.$otherBuyer->slug)
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('organisationSelector.current', $otherBuyer->slug)
+            ->where('pageHead.subNavigation', fn ($items) => $purchaseOrdersItem($items)['number'] === 1
+                && $purchaseOrdersItem($items)['route']['parameters'] === ['organisation' => $agentOrganisation->slug, 'supplier' => $supplier->slug, '_query' => ['organisation' => $otherBuyer->slug]])
+            ->where('pageHead.actions.0.route.parameters.orgSupplier', $otherOrgSupplier->id)
+            ->where('agreement.by_organisation', null));
+
+    $this->get(route('grp.org.agent.org_suppliers.show.purchase_orders.index', [$agentOrganisation->slug, $supplier->slug]).'?organisation='.$otherBuyer->slug)
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => collect($rows)->pluck('id')->all() === [$otherBuyerOrder->id]));
+
+    $productRows = $this->get(route('grp.org.agent.org_suppliers.show.supplier_products.index', [$agentOrganisation->slug, $supplier->slug]))
+        ->assertOk()->viewData('page')['props']['index']['data'];
+    expect(collect($productRows)->pluck('organisation_code')->unique()->sort()->values()->all())
+        ->toBe(OrgSupplierProduct::whereIn('org_supplier_id', OrgSupplier::where('supplier_id', $supplier->id)->select('id'))->with('organisation')->get()->pluck('organisation.code')->unique()->sort()->values()->all());
+
+    $editLabels = fn () => collect($this->get(route('grp.org.agent.org_suppliers.edit', [$agentOrganisation->slug, $supplier->slug]).'?organisation='.$otherBuyer->slug)
+        ->assertOk()->viewData('page')['props']['formData']['blueprint'])->pluck('fields')->collapse()->pluck('label');
+    expect($editLabels()->contains('Active ('.$otherBuyer->code.')'))->toBeFalse();
+    actingAs($this->adminGuest->getUser());
+    expect($editLabels()->contains('Active ('.$otherBuyer->code.')'))->toBeTrue();
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-379b-'.Str::lower(Str::random(6))));
+
+    $noteForAll   = App\Actions\Procurement\ProcurementNote\StoreProcurementNote::make()->action($supplier, ['title' => 'INI-379 for all', 'category' => 'currency_payment', 'visibility' => 'agent', 'organisation_id' => null], strict: false);
+    $noteForBuyer = App\Actions\Procurement\ProcurementNote\StoreProcurementNote::make()->action($supplier, ['title' => 'INI-379 for buyer', 'category' => 'currency_payment', 'visibility' => 'agent', 'organisation_id' => $otherBuyer->id], strict: false);
+    $noteRows     = fn (string $url) => collect($this->get($url)->assertOk()->viewData('page')['props']['notes']['data'])->pluck('organisation_code', 'id')->all();
+
+    expect($noteRows($page.'?tab=notes'))->toBe([$noteForBuyer->id => $otherBuyer->code, $noteForAll->id => __('All')])
+        ->and($noteRows($page.'?tab=notes&organisation='.$otherBuyer->slug))->toBe([$noteForBuyer->id => $otherBuyer->code, $noteForAll->id => __('All')])
+        ->and($noteRows($page.'?tab=notes&organisation='.$orgSupplier->organisation->slug))->toBe([$noteForAll->id => __('All')]);
+
+    $message = fn (Organisation $organisation, array $counterpart) => \App\Models\Procurement\SupplierMessage::create($counterpart + [
+        'group_id'        => $organisation->group_id,
+        'organisation_id' => $organisation->id,
+        'direction'       => \App\Enums\Procurement\SupplierMessage\SupplierMessageDirectionEnum::OUTBOUND,
+        'subject'         => 'INI-379 '.Str::random(6),
+        'gmail_thread_id' => 'ini379-'.Str::random(10),
+        'sent_at'         => now(),
+    ]);
+    $agentMessage  = $message($agentOrganisation, ['supplier_id' => $supplier->id]);
+    $clientMessage = $message($orgSupplier->organisation, ['supplier_id' => $supplier->id, 'org_supplier_id' => $orgSupplier->id]);
+
+    $this->get($page.'?tab=inbox')
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('inbox.data', fn ($rows) => collect($rows)->pluck('id')->all() === [$agentMessage->id]));
+    expect(\App\Actions\Procurement\SupplierMessage\RouteSupplierMessage::run($agentOrganisation, ['someone@example.com'], $agentMessage->gmail_thread_id)[0]?->is($supplier))->toBeTrue()
+        ->and($clientMessage->exists)->toBeTrue();
+
+    $counterpart = \App\Actions\Procurement\SupplierMessage\AssignSupplierMessage::findCounterpart($agentOrganisation, 'agent_supplier:'.$supplier->id);
+    expect($counterpart->is($supplier))->toBeTrue()
+        ->and(\App\Models\Procurement\SupplierMessage::counterpartAttributes($counterpart))->toBe(['supplier_id' => $supplier->id, 'org_supplier_id' => null, 'org_agent_id' => null, 'org_partner_id' => null]);
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('an agent has one page per supplier product with an organisation selector and a Suppliers tab where it sets the preferred supplier (INI-380)', function () {
+    $orgAgent          = createFreshOrgAgent($this);
+    $agent             = $orgAgent->agent;
+    $agentOrganisation = $agent->organisation;
+    $otherBuyer        = Organisation::where('code', 'prc2')->first()
+        ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
+    StoreOrgAgent::make()->action($otherBuyer, $agent, []);
+
+    [, $current] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [, $other]   = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $buyer       = $current->organisation;
+    $orgStock    = OrgStock::where('stock_id', $this->stocks[0]->id)->where('organisation_id', $buyer->id)->firstOrFail();
+    foreach ([$current, $other] as $index => $orgSupplierProduct) {
+        $stockLink = StockHasSupplierProduct::firstOrCreate(['stock_id' => $this->stocks[0]->id, 'supplier_product_id' => $orgSupplierProduct->supplier_product_id], ['available' => true, 'priority' => 0]);
+        OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->where('org_supplier_product_id', $orgSupplierProduct->id)->exists()
+            || App\Actions\Inventory\OrgStockHasOrgSupplierProduct\StoreOrgStockHasOrgSupplierProduct::make()->action($stockLink, $orgStock, $orgSupplierProduct, ['status' => true, 'local_priority' => $index === 0 ? 10 : 0], strict: false);
+    }
+    OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->where('org_supplier_product_id', $current->id)->update(['local_priority' => 10]);
+    $currentInOtherBuyer = StoreOrgSupplierProduct::make()->action(OrgSupplier::where('supplier_id', $current->supplierProduct->supplier_id)->where('organisation_id', $otherBuyer->id)->firstOrFail(), $current->supplierProduct);
+
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-380-'.Str::lower(Str::random(6))));
+
+    $page = route('grp.org.agent.org_supplier_products.show', [$agentOrganisation->slug, $current->supplierProduct->slug]);
+    $this->get(route('grp.org.agent.org_supplier_products.show', [$agentOrganisation->slug, $currentInOtherBuyer->slug]))
+        ->assertRedirect($page.'?organisation='.$otherBuyer->slug);
+
+    $suppliersTab = fn (string $url) => $this->get($url)->assertOk()->viewData('page')['props']['suppliers'];
+
+    $all = $suppliersTab($page.'?tab=suppliers');
+    expect(collect($all['data'])->pluck('id')->sort()->values()->all())->toBe(collect([$current->supplier_product_id, $other->supplier_product_id])->sort()->values()->all())
+        ->and(collect($all['preferred_by_organisation'])->pluck('product_code', 'organisation_code')->all())->toBe([$buyer->code => $current->supplierProduct->code, $otherBuyer->code => null])
+        ->and($all['set_preferred']['organisation_id'])->toBeNull();
+
+    $selected = $suppliersTab($page.'?tab=suppliers&organisation='.$buyer->slug);
+    expect($selected['preferred_by_organisation'])->toBeNull()
+        ->and(collect($selected['data'])->firstWhere('is_preferred', true)['id'])->toBe($current->supplier_product_id);
+
+    $this->postJson(route('grp.models.org.agent_supplier_product.set_preferred', [$agentOrganisation->id, $current->supplier_product_id]), ['supplier_product_id' => $other->supplier_product_id])
+        ->assertOk()
+        ->assertJson(['updated' => [$buyer->code], 'skipped' => [$otherBuyer->code]]);
+    expect(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->orderByDesc('local_priority')->value('org_supplier_product_id'))->toBe($other->id);
+
+    $this->postJson(route('grp.models.org.agent_supplier_product.set_preferred', [$agentOrganisation->id, $current->supplier_product_id]), ['supplier_product_id' => $current->supplier_product_id, 'organisation_id' => $otherBuyer->id])
+        ->assertOk()
+        ->assertJson(['updated' => [], 'skipped' => [$otherBuyer->code]]);
+    expect(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->orderByDesc('local_priority')->value('org_supplier_product_id'))->toBe($other->id);
+
+    $this->postJson(route('grp.models.org.agent_supplier_product.set_preferred', [$agentOrganisation->id, $current->supplier_product_id]), ['supplier_product_id' => $current->supplier_product_id, 'organisation_id' => $buyer->id])
+        ->assertOk()
+        ->assertJson(['updated' => [$buyer->code], 'skipped' => []]);
+    expect(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->orderByDesc('local_priority')->value('org_supplier_product_id'))->toBe($current->id);
+
+    $productEditLabels = fn () => collect($this->get(route('grp.org.agent.org_supplier_products.edit', [$agentOrganisation->slug, $current->supplierProduct->slug]).'?organisation='.$otherBuyer->slug)
+        ->assertOk()->viewData('page')['props']['formData']['blueprint'])->pluck('fields')->collapse()->pluck('label');
+    expect($productEditLabels()->contains('Status ('.$otherBuyer->code.')'))->toBeFalse();
+    actingAs($this->adminGuest->getUser());
+    expect($productEditLabels()->contains('Status ('.$otherBuyer->code.')'))->toBeTrue();
+
+    setPermissionsTeamId($this->group->id);
+    actingAs(StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser());
+    $this->postJson(route('grp.models.org.agent_supplier_product.set_preferred', [$agentOrganisation->id, $current->supplier_product_id]), ['supplier_product_id' => $other->supplier_product_id])
+        ->assertForbidden();
+    expect(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->orderByDesc('local_priority')->value('org_supplier_product_id'))->toBe($current->id);
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-380b-'.Str::lower(Str::random(6))));
+
+    $this->get($page.'?tab=deliveries&organisation='.$buyer->slug)->assertOk();
+    $this->get($page.'?tab=purchase_orders&organisation='.$buyer->slug)->assertOk();
 
     actingAs($this->adminGuest->getUser());
 });

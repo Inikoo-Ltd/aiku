@@ -48,6 +48,7 @@ const countriesAddressData = ref<any>({})
 const polls = ref<any[]>([])
 const requiresPhoneNumber = ref(false)
 const registrationSettings = ref<any>({})
+const whatsappNewsletterOffered = ref(false)
 const shopType = ref<string | undefined>(undefined)
 
 const form = useForm({
@@ -91,6 +92,7 @@ onMounted(async () => {
 		polls.value = response.data?.polls || []
 		requiresPhoneNumber.value = !!response.data?.requiresPhoneNumber
 		registrationSettings.value = response.data?.registration_settings || {}
+		whatsappNewsletterOffered.value = !!response.data?.whatsapp_newsletter_offered
 		shopType.value = response.data?.shop_type
 
 		form.poll_replies = polls.value.map((poll: any) => ({
@@ -98,7 +100,7 @@ onMounted(async () => {
 			answer: poll.type === "option" ? null : "",
 		}))
 		form.is_opt_in = !!registrationSettings.value?.marketing_opt_in_default
-		form.is_whatsapp_newsletter_opt_in = !!registrationSettings.value?.whatsapp_newsletter_default
+		form.is_whatsapp_newsletter_opt_in = whatsappNewsletterOffered.value && !!registrationSettings.value?.whatsapp_newsletter_default
 
 		const client = response.data?.client
 		form.contact_name = client?.contact_name || ""
@@ -317,7 +319,7 @@ const submit = async () => {
 							</label>
 						</div>
 
-						<div class="flex gap-2 sm:col-span-6">
+						<div v-if="whatsappNewsletterOffered" class="flex gap-2 sm:col-span-6">
 							<Checkbox
 								v-model="form.is_whatsapp_newsletter_opt_in"
 								inputId="opt_in_whatsapp_newsletter"

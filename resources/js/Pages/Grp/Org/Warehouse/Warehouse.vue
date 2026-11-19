@@ -5,7 +5,7 @@
   -->
 <script setup lang="ts">
 
-import { Head } from '@inertiajs/vue3'
+import { Deferred, Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faInventory, faWarehouse, faMapSigns, faChartLine, faBox, faDolly, faBoxOpen, faUnlink } from '@fal'
@@ -14,6 +14,7 @@ import { computed, defineAsyncComponent, ref } from "vue"
 import type { Component } from 'vue'
 import WarehouseShowcase from "@/Components/Warehouse/WarehouseShowcase.vue"
 import OperationsDashboard from "@/Components/DataDisplay/Dashboard/OperationsDashboard.vue"
+import DispatchCapacityPanel from "@/Components/Warehouse/DispatchCapacityPanel.vue"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableLocations from "@/Components/Tables/Grp/Org/Inventory/TableLocations.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
@@ -45,6 +46,7 @@ const props = defineProps<{
     empty_locations?: { panel: InstanceType<typeof EmptyLocationsPanel>['$props']['data'] }
     empty_locations_removed?: {}
     operations?: { route: { name: string }, warehouse: number }
+    capacity?: InstanceType<typeof DispatchCapacityPanel>["$props"]["rows"] | null
 }>()
 
 
@@ -73,7 +75,16 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <OperationsDashboard v-if="operations" v-show="currentTab === 'operations'" :fetch-route="operations.route" :warehouse-id="operations.warehouse" :active="currentTab === 'operations'" />
+    <OperationsDashboard v-if="operations" v-show="currentTab === 'operations'" :fetch-route="operations.route" :warehouse-id="operations.warehouse" :active="currentTab === 'operations'">
+        <template v-if="capacity !== null" #staffing>
+            <Deferred data="capacity">
+                <template #fallback>
+                    <div class="skeleton h-32 rounded-lg" />
+                </template>
+                <DispatchCapacityPanel v-if="capacity" :rows="capacity" />
+            </Deferred>
+        </template>
+    </OperationsDashboard>
     <EmptyLocationsPanel v-if="currentTab === 'empty_locations' && empty_locations?.panel" :key="String(empty_locations.panel.enabled)" :data="empty_locations.panel" />
     <component v-if="currentTab !== 'operations'" :is="component" :tab="currentTab" :data="props[currentTab]" :tagsList="tagsList?.data" :link="pageHead"></component>
 </template>

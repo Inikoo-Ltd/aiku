@@ -9,6 +9,7 @@
 
 namespace App\Actions\SupplyChain\DepositRequest;
 
+use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\OrgAction;
 use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
 use App\Models\SupplyChain\DepositRequest;
@@ -55,8 +56,9 @@ class ApproveAgentMoneyRequest extends OrgAction
     }
 
     /**
-     * The client's users who may approve and pay a request: its procurement or accounting editors, and the users
-     * set to approve and pay on the client's agent page.
+     * The client's users who may approve and pay a request, never the user who asked for it nor an employee of the
+     * agent's organisation: its procurement or accounting editors, and the users
+     * set to approve and pay on the client's agent page while they may still be (see UpdateOrgAgent::moneyRequestPayerCandidates).
      */
     public static function canPay(DepositRequest $depositRequest, ?User $user): bool
     {
@@ -65,8 +67,20 @@ class ApproveAgentMoneyRequest extends OrgAction
             return false;
         }
 
-        return $user->authTo(["procurement.$clientId.edit", "accounting.$clientId.edit"])
-            || (bool) NotifyMoneyRequestCreated::clientOrgAgent($depositRequest)?->isMoneyRequestPayer($user);
+        $agentOrganisationId = $depositRequest->agent?->organisation_id;
+        if ($user->id === $depositRequest->created_by || ($agentOrganisationId !== null && $user->employees()->where('employees.organisation_id', $agentOrganisationId)->exists())) {
+            return false;
+        }
+
+        if ($user->authTo(["procurement.$clientId.edit", "accounting.$clientId.edit"])) {
+            return true;
+        }
+
+        $orgAgent = NotifyMoneyRequestCreated::clientOrgAgent($depositRequest);
+
+        return $orgAgent !== null
+            && $orgAgent->isMoneyRequestPayer($user)
+            && UpdateOrgAgent::moneyRequestPayerCandidates($orgAgent)->whereKey($user->id)->exists();
     }
 
     public function authorize(ActionRequest $request): bool

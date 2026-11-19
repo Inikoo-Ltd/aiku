@@ -15,6 +15,8 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\SupplierMessage;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use App\Models\SupplyChain\Supplier;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use Lorisleiva\Actions\ActionRequest;
 
 class AssignSupplierMessage extends OrgAction
@@ -28,7 +30,7 @@ class AssignSupplierMessage extends OrgAction
      * The whole thread moves together, and the sender's address is remembered through it: the
      * router reads past assignments, so the next mail from that address finds its supplier alone.
      */
-    public function handle(SupplierMessage $supplierMessage, OrgSupplier|OrgAgent|OrgPartner $counterpart): int
+    public function handle(SupplierMessage $supplierMessage, OrgSupplier|OrgAgent|OrgPartner|Supplier $counterpart): int
     {
         return SupplierMessage::where('organisation_id', $supplierMessage->organisation_id)
             ->when(
@@ -43,9 +45,20 @@ class AssignSupplierMessage extends OrgAction
             ]);
     }
 
-    public static function findCounterpart(Organisation $organisation, string $counterpart): OrgSupplier|OrgAgent|OrgPartner
+    /**
+     * An agent organisation writes to its suppliers as the supplier itself (agent_supplier:id), not as one buying
+     * organisation's org supplier, so the message belongs to the supplier whatever organisation is selected.
+     */
+    public static function findCounterpart(Organisation $organisation, string $counterpart): OrgSupplier|OrgAgent|OrgPartner|Supplier
     {
         [$type, $id] = explode(':', $counterpart);
+
+        if ($type === 'agent_supplier') {
+            $agent = $organisation->type === OrganisationTypeEnum::AGENT ? $organisation->agent : null;
+            abort_unless($agent, 404);
+
+            return Supplier::where('agent_id', $agent->id)->findOrFail($id);
+        }
 
         $model = match ($type) {
             'supplier' => OrgSupplier::class,
@@ -59,7 +72,7 @@ class AssignSupplierMessage extends OrgAction
     public function rules(): array
     {
         return [
-            'counterpart' => ['required', 'string', 'regex:/^(supplier|agent|partner):\d+$/'],
+            'counterpart' => ['required', 'string', 'regex:/^(supplier|agent|partner|agent_supplier):\d+$/'],
         ];
     }
 

@@ -198,7 +198,11 @@ test('a guru who does not want to answer is named on the task and it moves to th
     $task         = StoreShoppingAssistantTeamQuestion::run($conversation, 'Do you sell samples?', 'Do you sell samples?')['task'];
 
     expect(StoreShoppingAssistantTeamQuestion::waitingFor($this->person)->pluck('id'))->toContain($task->id)
-        ->and(StoreShoppingAssistantTeamQuestion::waitingFor($this->backup)->pluck('id'))->not->toContain($task->id);
+        ->and(StoreShoppingAssistantTeamQuestion::waitingFor($this->backup)->pluck('id'))->not->toContain($task->id)
+        ->and(StoreShoppingAssistantTeamQuestion::popup($task)['live'])->toBe(StoreShoppingAssistantTeamQuestion::isAwaited($task));
+
+    $task->update(['data' => [...$task->data, 'wait_until' => now()->subMinute()->toIso8601String()]]);
+    expect(StoreShoppingAssistantTeamQuestion::popup($task->refresh())['live'])->toBeFalse();
 
     actingAs($this->person)->postJson(route('grp.tasks.assistant_decline', $task->reference))->assertOk()->assertJson(['result' => 'to_backup']);
     $task->refresh();
@@ -408,10 +412,12 @@ test('the Merlin report counts the guru questions: answered, in time, not answer
         ->and($gurus['closed'])->toBe($before['closed'] + 1)
         ->and($me['answered'])->toBeGreaterThanOrEqual(1)
         ->and($me['declined'])->toBeGreaterThanOrEqual(1)
-        ->and(collect($gurus['latest'])->pluck('status', 'reference')->only([$answered->reference, $declined->reference])->all())->toBe([$declined->reference => 'closed', $answered->reference => 'answered']);
+        ->and(collect($gurus['latest'])->pluck('status', 'reference')->only([$answered->reference, $declined->reference])->all())->toBe([$declined->reference => 'closed', $answered->reference => 'answered'])
+        ->and(collect($gurus['latest'])->firstWhere('reference', $answered->reference)['conversation'])->toBe(data_get($answered->data, 'conversation_ulid'));
 });
 
 test('a customer with a question waiting gets no second task: a different question from another conversation joins it, and the answer lands in the conversation they asked from last', function () {
+    createWebsite($this->shop);
     $conversation = teamQuestionConversation($this);
     $customer     = $conversation->customer;
     $first        = StoreShoppingAssistantTeamQuestion::run($conversation, 'Who is the legal manufacturer of the hemp backpack?', 'fabricant légal du sac ?');
@@ -431,6 +437,7 @@ test('a customer with a question waiting gets no second task: a different questi
         ->and(data_get($task->data, 'conversation_id'))->toBe($later->id)
         ->and($popup['question'])->toBe("1. Who is the legal manufacturer of the hemp backpack?\n2. Is there a list of products with complete compliance documents?")
         ->and($popup['customer_words'])->toBe("1. fabricant légal du sac ?\n2. liste des produits conformes ?")
+        ->and($popup['task_url'])->toBe(route('grp.org.shops.show.ai_salesman.conversations.show', [$customer->organisation->slug, $customer->shop->slug, $later->ulid]))
         ->and($task->description)->toContain('The customer also asked: Is there a list of products with complete compliance documents?')
         ->and(StoreShoppingAssistantTeamQuestion::openFor($later)?->id)->toBe($task->id);
 
@@ -802,4 +809,25 @@ test('a shop guru who refuses sends the managers to the shop settings, and neith
         && str_contains($notification->body(), $this->shop->name)
         && $notification->url() === route('grp.org.shops.show.settings.edit', [$this->organisation->slug, $this->shop->slug]));
     Notification::assertNotSentTo([$shopGuru, $assistant], ShoppingAssistantGuruRefusedNotification::class);
+});
+
+test('focus mode, chosen next to the search, skips a guru who is online, drops their Slack and push, and ends by itself', function () {
+    Illuminate\Support\Facades\Cache::put(StoreShoppingAssistantTeamQuestion::ONLINE_CACHE_KEY, [$this->person->id, $this->backup->id], 30);
+
+    actingAs($this->person)->patch(route('grp.models.profile.update'), ['focus_minutes' => 60])->assertSessionHasNoErrors();
+    $this->person->refresh();
+
+    expect($this->person->isFocusing())->toBeTrue()
+        ->and(\App\Enums\SysAdmin\User\UserNotificationEnum::ASSISTANT_QUESTION->deliverTo($this->person))->not->toContain('slack')->not->toContain('browser');
+
+    $task = StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Do you sell samples?', 'Do you sell samples?')['task'];
+    expect($task->assignee_id)->toBe($this->backup->id);
+
+    Carbon::setTestNow(now()->addMinutes(61));
+    expect($this->person->isFocusing())->toBeFalse();
+    Carbon::setTestNow();
+
+    actingAs($this->person)->patch(route('grp.models.profile.update'), ['focus_minutes' => 45])->assertSessionHasErrors('focus_minutes');
+    actingAs($this->person)->patch(route('grp.models.profile.update'), ['focus_minutes' => 0]);
+    expect($this->person->refresh()->isFocusing())->toBeFalse();
 });

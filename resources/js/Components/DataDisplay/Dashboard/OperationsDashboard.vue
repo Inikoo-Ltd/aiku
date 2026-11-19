@@ -538,6 +538,8 @@ const linkClass = (tile?: Tile): string => (hasList(tile) ? "cursor-pointer hove
 				</div>
 			</section>
 
+			<slot name="staffing" />
+
 			<section class="rounded-lg bg-white p-4 shadow ring-1 ring-gray-200">
 				<h3 class="flex items-center gap-x-1.5 text-sm font-semibold text-gray-700">
 					<FontAwesomeIcon icon="fal fa-truck-container" class="text-gray-400" fixed-width aria-hidden="true" />

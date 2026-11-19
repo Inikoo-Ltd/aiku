@@ -33,6 +33,7 @@ class ProcurementNoteResource extends JsonResource
             'created_at'               => $this->created_at,
             'author'                   => $this->user_name ?? $this->author?->contact_name ?? $this->author_name,
             'author_user_id'           => $this->author_user_id,
+            'organisation_code'        => $this->organisation_code ?? ($this->organisation_id ? null : __('All')),
             'title'                    => $this->title,
             'note'                     => $this->body,
             'category'                 => [

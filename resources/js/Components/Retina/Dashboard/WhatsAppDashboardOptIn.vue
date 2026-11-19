@@ -18,10 +18,13 @@ import { routeType } from "@/types/route"
 export interface WhatsappOptInData {
     anchor_id: string
     is_subscribed: boolean
+    is_subscribed_to_newsletter: boolean
+    is_subscribed_to_notifications: boolean
     whatsapp_phone: string | null
     suggested_phone: string | null
     default_country: string | null
     consent_text: string
+    notifications_consent_text: string
     privacy_policy_url: string
     subscribe_route: routeType
     unsubscribe_route: routeType
@@ -60,7 +63,25 @@ const utm = (() => {
 
 const form = useForm({
     phone: props.data.suggested_phone ?? "",
+    notifications: false,
     consent: false,
+})
+
+const subscribedSummary = computed(() => {
+    const phone = props.data.whatsapp_phone
+    if (props.data.is_subscribed_to_notifications && props.data.is_subscribed_to_newsletter) {
+        return phone
+            ? ctrans("You get order updates and offers on WhatsApp on :phone.", { phone })
+            : ctrans("You get order updates and offers on WhatsApp.")
+    }
+    if (props.data.is_subscribed_to_notifications) {
+        return phone
+            ? ctrans("You get order updates on WhatsApp on :phone.", { phone })
+            : ctrans("You get order updates on WhatsApp.")
+    }
+    return phone
+        ? ctrans("You get offers on WhatsApp on :phone.", { phone })
+        : ctrans("You get offers on WhatsApp.")
 })
 
 const phoneFieldOptions = { defaultCountry: props.data.default_country ?? undefined }
@@ -82,8 +103,8 @@ const submit = () => {
         phone = form.phone
     }
 
-    if (!form.consent) {
-        form.setError("consent", ctrans("Please tick the box to confirm you would like WhatsApp updates."))
+    if (!form.consent && !form.notifications) {
+        form.setError("consent", ctrans("Please tick at least one box to choose which WhatsApp messages you would like."))
         return
     }
 
@@ -127,7 +148,7 @@ const dismiss = () => {
 const unsubscribe = () => {
     router.patch(
         route(props.data.unsubscribe_route.name, props.data.unsubscribe_route.parameters),
-        { is_subscribed_to_whatsapp_newsletter: false },
+        { is_subscribed_to_whatsapp_newsletter: false, is_subscribed_to_whatsapp_notifications: false },
         {
             preserveScroll: true,
             onStart: () => {
@@ -142,10 +163,20 @@ const unsubscribe = () => {
     )
 }
 
+const prefillFromSubscription = () => {
+    form.notifications = props.data.is_subscribed_to_notifications
+    form.consent = props.data.is_subscribed_to_newsletter
+}
+
 const changeNumber = () => {
     isChangingNumber.value = true
     isEditingSubscription.value = true
-    form.consent = false
+    prefillFromSubscription()
+}
+
+const editPreferences = () => {
+    isEditingSubscription.value = true
+    prefillFromSubscription()
 }
 
 const CARD_GAP_BELOW_HEADER = 16
@@ -252,10 +283,12 @@ onMounted(() => {
                         <span class="flex size-6 items-center justify-center rounded-full bg-green-800 text-white" aria-hidden="true">
                             <FontAwesomeIcon :icon="faCheck" class="text-xs" fixed-width />
                         </span>
-                        <span v-if="data.whatsapp_phone">{{ ctrans("You are subscribed to WhatsApp updates on :phone.", { phone: data.whatsapp_phone }) }}</span>
-                        <span v-else>{{ ctrans("You are subscribed to WhatsApp updates.") }}</span>
+                        <span>{{ subscribedSummary }}</span>
                     </p>
                     <div class="mt-1 flex flex-wrap gap-x-5 text-sm">
+                        <button type="button" class="min-h-11 text-gray-700 underline hover:text-gray-900" @click="editPreferences">
+                            {{ ctrans("Change what I receive") }}
+                        </button>
                         <button type="button" class="min-h-11 text-gray-700 underline hover:text-gray-900" @click="changeNumber">
                             {{ data.whatsapp_phone ? ctrans("Use a different number") : ctrans("Add your WhatsApp number") }}
                         </button>
@@ -296,8 +329,26 @@ onMounted(() => {
                         </div>
                     </div>
 
-                    <div class="mt-3">
+                    <fieldset class="mt-3" aria-describedby="whatsapp-optin-helper">
+                        <legend class="sr-only">{{ ctrans("Choose which WhatsApp messages you would like") }}</legend>
+
                         <div class="flex items-start gap-3 text-xs text-gray-800">
+                            <Checkbox
+                                v-model="form.notifications"
+                                inputId="whatsapp-optin-notifications"
+                                name="whatsapp_optin_notifications"
+                                binary
+                                :invalid="!!form.errors.consent"
+                                :ariaLabelledby="'whatsapp-optin-notifications-label'"
+                                class="mt-0.5 shrink-0"
+                            />
+                            <label id="whatsapp-optin-notifications-label" for="whatsapp-optin-notifications" class="cursor-pointer">
+                                <span class="block font-semibold text-gray-900">{{ ctrans("Order updates") }}</span>
+                                {{ data.notifications_consent_text }}
+                            </label>
+                        </div>
+
+                        <div class="mt-3 flex items-start gap-3 text-xs text-gray-800">
                             <Checkbox
                                 v-model="form.consent"
                                 inputId="whatsapp-optin-consent"
@@ -305,12 +356,15 @@ onMounted(() => {
                                 binary
                                 :invalid="!!form.errors.consent"
                                 :ariaLabelledby="'whatsapp-optin-consent-label'"
-                                :pt="{ input: { 'aria-describedby': form.errors.consent ? 'whatsapp-optin-consent-error whatsapp-optin-helper' : 'whatsapp-optin-helper' } }"
                                 class="mt-0.5 shrink-0"
                             />
-                            <label id="whatsapp-optin-consent-label" for="whatsapp-optin-consent" class="cursor-pointer">{{ data.consent_text }}</label>
+                            <label id="whatsapp-optin-consent-label" for="whatsapp-optin-consent" class="cursor-pointer">
+                                <span class="block font-semibold text-gray-900">{{ ctrans("Offers and news") }}</span>
+                                {{ data.consent_text }}
+                            </label>
                         </div>
-                        <p v-if="form.errors.consent" id="whatsapp-optin-consent-error" class="ml-8 mt-1 text-xs text-red-600">{{ form.errors.consent }}</p>
+
+                        <p v-if="form.errors.consent" id="whatsapp-optin-consent-error" class="ml-8 mt-1 text-xs text-red-600" role="alert">{{ form.errors.consent }}</p>
                         <p id="whatsapp-optin-helper" class="ml-8 mt-1 text-xs text-gray-600">
                             {{ ctrans("Unsubscribe at any time in your dashboard or by replying STOP.") }}
                             <a
@@ -320,7 +374,7 @@ onMounted(() => {
                                 class="ml-1 underline hover:text-gray-900"
                             >{{ ctrans("Privacy policy") }}</a>
                         </p>
-                    </div>
+                    </fieldset>
 
                     <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
                         <button

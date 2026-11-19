@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use App\Actions\Accounting\Invoice\UpdateInvoiceTaxNumber;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -148,6 +149,7 @@ class EditInvoice extends OrgAction
                             'fields'  => [
                                 'formatted_tax_number'          => [
                                     'type'                      => 'input',
+                                    'hidden'                    => !UpdateInvoiceTaxNumber::canEditTaxNumber($request->user(), $invoice),
                                     'label'                     => __('Tax Number'),
                                     'information'               => __("Modifying this value would only affect the Invoice Tax Number and not the Customer's"),
                                     'additional_instructions'   => __("You are required to add the Country Code as prefix"),

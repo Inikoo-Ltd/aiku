@@ -2177,9 +2177,9 @@ test('an in-house SKU is formulated in named stages, each with its own trial run
     ]);
     $recipes = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::class;
     $blend   = $recipes::formulations($item)->first();
-    $blend->update(['name' => 'Essential oil blend']);
+    $blend->update(['name' => 'Essential oil blend', 'type' => 'base_blend']);
 
-    post(route('grp.models.product_development.item.formulation.store', ['productDevelopmentItem' => $item->id]), ['name' => 'Final product', 'artisan_id' => $artisan->id])->assertRedirect()->assertSessionHasNoErrors();
+    post(route('grp.models.product_development.item.formulation.store', ['productDevelopmentItem' => $item->id]), ['name' => 'Final product', 'artisan_id' => $artisan->id, 'type' => 'finished_product'])->assertRedirect()->assertSessionHasNoErrors();
     $final = $item->formulations()->where('position', 2)->firstOrFail();
     expect($final->name)->toBe('Final product')->and($final->artisan_id)->toBe($artisan->id)
         ->and($recipes::currentFormulation($item->fresh())->id)->toBe($blend->id);
@@ -2223,14 +2223,126 @@ test('an in-house SKU is formulated in named stages, each with its own trial run
     expect($final->fresh()->name)->toBe('Shower steamer')->and($final->fresh()->artisan_id)->toBeNull();
 
     post(route('grp.models.product_development.item.formulation.store', ['productDevelopmentItem' => $item->id]), ['name' => 'Fragrance strength'])->assertRedirect();
-    $extra = $item->formulations()->where('position', 3)->firstOrFail();
-    expect($recipes::approvedItemCount($productDevelopment->fresh()))->toBe(0);
+    $extra = $item->formulations()->where('name', 'Fragrance strength')->firstOrFail();
+    expect($extra->position)->toBe(2)
+        ->and($final->fresh()->position)->toBe(3)
+        ->and($recipes::approvedItemCount($productDevelopment->fresh()))->toBe(0);
     delete(route('grp.models.product_development.formulation.delete', ['productDevelopmentFormulation' => $extra->id]))->assertRedirect()->assertSessionHasNoErrors();
     expect($recipes::approvedItemCount($productDevelopment->fresh()))->toBe(1)
         ->and($recipes::finalSample($item->fresh())->id)->toBe($finalRun->id);
 
     $productDevelopment->updateQuietly(['current_position' => ProductDevelopmentStageEnum::specsPosition() + 1]);
     post(route('grp.models.product_development.item.formulation.store', ['productDevelopmentItem' => $item->id]), ['name' => 'Too late'])->assertSessionHasErrors('name');
+});
+
+test('a blend stage is made on its own artefact, becomes an ingredient once approved, and the finished product stage gives the production formula, HELP-4800', function () {
+    [$productDevelopment, $production] = inHouseDevelopment($this, 1);
+    $item    = $productDevelopment->items()->with(['tradeUnit', 'artefact'])->firstOrFail();
+    $recipes = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::class;
+    $first   = $recipes::formulations($item)->first();
+    expect($first->type->value)->toBe('finished_product');
+
+    post(route('grp.models.product_development.item.formulation.store', ['productDevelopmentItem' => $item->id]), ['name' => 'Shower steamer', 'type' => 'finished_product'])->assertSessionHasErrors('type');
+    patch(route('grp.models.product_development.formulation.update', ['productDevelopmentFormulation' => $first->id]), ['name' => 'EO Blend', 'type' => 'base_blend', 'brief' => 'Citrus blend with mandarin and lime'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($recipes::finalOf($item->formulations()->get(), collect()))->toBeNull();
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formulation.skus.0.has_finished_stage', false)
+            ->where('formulation.skus.0.progress.final_status.label', __('No finished product stage')));
+    post(route('grp.models.product_development.item.formulation.store', ['productDevelopmentItem' => $item->id]), ['name' => 'Shower steamer', 'type' => 'finished_product', 'brief' => 'The steamer with the blend'])->assertRedirect()->assertSessionHasNoErrors();
+    $finished = $item->formulations()->where('position', 2)->firstOrFail();
+
+    post(route('grp.models.product_development.item.formulation.store', ['productDevelopmentItem' => $item->id]), ['name' => 'Citrus accord', 'type' => 'intermediate'])->assertRedirect()->assertSessionHasNoErrors();
+    $accord = $item->formulations()->where('name', 'Citrus accord')->firstOrFail();
+    expect($accord->position)->toBe(2)->and($finished->fresh()->position)->toBe(3);
+    patch(route('grp.models.product_development.formulation.update', ['productDevelopmentFormulation' => $accord->id]), ['type' => 'finished_product'])->assertSessionHasErrors('type');
+    post(route('grp.models.product_development.formulation.artefact', ['productDevelopmentFormulation' => $accord->id]))->assertRedirect()->assertSessionHasNoErrors();
+    expect($accord->fresh()->artefact?->code)->toBe($item->tradeUnit->code.'-S2')
+        ->and(\App\Models\Production\RawMaterial::where('artefact_id', $accord->fresh()->artefact_id)->exists())->toBeFalse();
+    post(route('grp.models.product_development.formulation.artefact', ['productDevelopmentFormulation' => $accord->id]))->assertSessionHasErrors('formulation');
+    post(route('grp.models.product_development.formulation.artefact', ['productDevelopmentFormulation' => $finished->id]))->assertSessionHasErrors('formulation');
+    delete(route('grp.models.product_development.formulation.delete', ['productDevelopmentFormulation' => $accord->id]))->assertRedirect()->assertSessionHasNoErrors();
+    expect($finished->fresh()->position)->toBe(2);
+
+    $blendJob    = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, ['item_ids' => [$item->id], 'quantity' => 1])[0];
+    $blendSample = $item->samples()->where('number', 1)->firstOrFail();
+    $blendArtefact = $first->fresh()->artefact;
+    expect($blendArtefact)->not->toBeNull()
+        ->and($blendArtefact->code)->toBe($item->tradeUnit->code.'-S1')
+        ->and($blendArtefact->id)->not->toBe($item->artefact_id)
+        ->and($blendArtefact->state->value)->toBe('in_process')
+        ->and($blendJob->jobOrderItems()->first()->artefact_id)->toBe($blendArtefact->id)
+        ->and($blendSample->artefact_id)->toBe($blendArtefact->id)
+        ->and($blendSample->workingArtefact()->id)->toBe($blendArtefact->id);
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formulation.skus.0.formulations.0.type.value', 'base_blend')
+            ->where('formulation.skus.0.formulations.0.brief', 'Citrus blend with mandarin and lime')
+            ->where('formulation.skus.0.formulations.0.artefact.code', $blendArtefact->code)
+            ->where('formulation.skus.0.formulations.0.is_current', true)
+            ->where('formulation.skus.0.formulations.1.artefact.code', $item->artefact->code)
+            ->where('formulation.skus.0.samples.0.artefact', $blendArtefact->code)
+            ->where('formulation.skus.0.samples.0.waiting_days', 0)
+            ->where('formulation.skus.0.progress.stages', 2)
+            ->where('formulation.skus.0.progress.awaiting', 1)
+            ->where('formulation.skus.0.progress.artefacts', 2)
+            ->where('formulation.skus.0.has_finished_stage', true));
+    expect(\App\Actions\Production\Artefact\UI\GetArtefactShowcase::run($blendArtefact)['product_developments'][0]['stage'])->toBe('EO Blend');
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($blendSample->fresh(), $this->user);
+    \App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample::make()->action($blendSample->fresh(), $this->user, ['operation' => 'approve']);
+    $ingredient = \App\Models\Production\RawMaterial::where('artefact_id', $blendArtefact->id)->first();
+    expect($ingredient?->type->value)->toBe('intermediate');
+    patch(route('grp.models.product_development.formulation.update', ['productDevelopmentFormulation' => $first->id]), ['type' => 'intermediate'])->assertSessionHasErrors('type');
+
+    \App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep::make()->action(\App\Models\Production\ArtefactManufactureTask::where('artefact_id', $item->artefact_id)->firstOrFail(), ['raw_material_id' => $ingredient->id, 'quantity_per_unit' => 0.02]);
+    $finishedJob = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, ['item_ids' => [$item->id], 'quantity' => 1])[0];
+    $finishedSample = $item->samples()->where('number', 2)->firstOrFail();
+    expect($finishedSample->product_development_formulation_id)->toBe($finished->id)
+        ->and($finishedSample->artefact_id)->toBe($item->artefact_id)
+        ->and($finishedJob->jobOrderItems()->first()->artefact_id)->toBe($item->artefact_id);
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($finishedSample->fresh(), $this->user);
+    \App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample::make()->action($finishedSample->fresh(), $this->user, ['operation' => 'approve']);
+    expect($recipes::finalSample($item->fresh())->id)->toBe($finishedSample->id)
+        ->and($recipes::approvedItemCount($productDevelopment->fresh()))->toBe(1)
+        ->and(\App\Models\Production\RawMaterial::where('artefact_id', $item->artefact_id)->exists())->toBeFalse();
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formulation.skus.0.formulations.0.in_finished_recipe', true)
+            ->where('formulation.skus.0.final', '02')
+            ->where('formulation.skus.0.progress.final_status.label', __('Approved for production'))
+            ->where('formulation.progress.done', 1));
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'compliance']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('compliance.skus.0.formulation.complete', true)
+            ->has('compliance.skus.0.formulation.stages', 2)
+            ->where('compliance.skus.0.formulation.stages.0.artefact', $blendArtefact->code)
+            ->where('compliance.skus.0.formulation.stages.1.is_finished', true)
+            ->where('compliance.skus.0.formulation.stages.1.number', '02'));
+
+
+    [$legacy] = inHouseDevelopment($this, 1);
+    $legacyItem  = $legacy->items()->with('tradeUnit')->firstOrFail();
+    $legacyStage = $recipes::formulations($legacyItem)->first();
+    $mandarin    = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($legacyItem->artefact->production, ['type' => 'stock', 'code' => 'MAND'.$legacyItem->id, 'description' => 'Mandarin oil', 'unit' => 'kilogram']);
+    \App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep::make()->action(\App\Models\Production\ArtefactManufactureTask::where('artefact_id', $legacyItem->artefact_id)->firstOrFail(), ['raw_material_id' => $mandarin->id, 'quantity_per_unit' => 0.05]);
+    $legacyRun   = \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample::make()->action($legacyItem, $this->user, []);
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($legacyRun->fresh(), $this->user);
+    \App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample::make()->action($legacyRun->fresh(), $this->user, ['operation' => 'approve']);
+    $legacyStage->update(['type' => 'base_blend']);
+    expect($legacyRun->fresh()->artefact_id)->toBe($legacyItem->artefact_id);
+    get(route('grp.product_developments.show', [$legacy->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formulation.skus.0.formulations.0.artefact', null)
+            ->where('formulation.skus.0.formulations.0.can_create_artefact', true));
+    $legacyArtefact = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentFormulationArtefact::make()->action($legacyStage->fresh());
+    expect($legacyStage->fresh()->artefact_id)->toBe($legacyArtefact->id)
+        ->and(\App\Models\Production\RawMaterial::where('artefact_id', $legacyArtefact->id)->value('type')?->value)->toBe('intermediate')
+        ->and($legacyRun->fresh()->artefact_id)->toBe($legacyItem->artefact_id)
+        ->and(collect($recipes::recipe($legacyArtefact)['ingredients'])->pluck('quantity', 'code')->all())->toEqual(['MAND'.$legacyItem->id => 0.05]);
 });
 
 test('a trial run a development asks for shows the artisan the development, and its first step is the formulation, which the development keeps, HELP-4545', function () {
@@ -2252,7 +2364,7 @@ test('a trial run a development asks for shows the artisan the development, and 
     expect($brief['development']['code'])->toBe($productDevelopment->code)
         ->and($brief['sku']['code'])->toBe($item->tradeUnit->code)
         ->and($brief['trial_run'])->toBe('01')
-        ->and($brief['brief'])->toBe(['development' => 'A calming bath oil for the evening', 'sku' => 'Lavender, 100 ml bottle'])
+        ->and($brief['brief'])->toBe(['development' => 'A calming bath oil for the evening', 'sku' => 'Lavender, 100 ml bottle', 'stage' => ['name' => __('Formulation'), 'type' => __('Finished product'), 'brief' => null, 'artefact' => $item->artefact->code]])
         ->and($brief['formulation'])->toBeNull()
         ->and($brief['form']['steps'][0]['id'])->toBe($step->id)
         ->and(collect($brief['form']['steps'][0]['raw_materials'])->pluck('code')->all())->toBe(['FOIL'.$item->id])
@@ -2350,7 +2462,9 @@ test('in-house SKUs get packaging and components with their own approval, shown 
     actingAs($maker);
     patch(route('grp.models.product_development.component.approval', ['productDevelopmentComponent' => $replaced->id]), ['approved' => true])->assertForbidden();
     patch(route('grp.models.product_development.component.update', ['productDevelopmentComponent' => $replaced->id]), ['quantity' => 650])->assertRedirect();
-    get(route('grp.product_developments.json.search', ['scope' => 'trade_units', 'product_development' => $productDevelopment->id, 'q' => 'BTL-'.$suffix]))->assertOk();
+    get(route('grp.product_developments.json.search', ['scope' => 'trade_units', 'product_development' => $productDevelopment->id, 'q' => 'BTL-'.$suffix]))
+        ->assertOk()
+        ->assertJsonFragment(['code' => 'BTL-'.$suffix, 'url' => route('grp.trade_units.units.show', $bottle->slug)]);
 
     actingAs($this->user);
     $bottleRows = $productDevelopment->components()->where('trade_unit_id', $bottle->id)->get();
@@ -2440,6 +2554,7 @@ test('the developments list filters by kind, and an artefact made for an in-hous
     expect(\App\Actions\Production\Artefact\UI\GetArtefactShowcase::run($artefact)['product_developments'])->toBe([[
         'code'  => $productDevelopment->code,
         'name'  => $productDevelopment->name,
+        'stage' => null,
         'route' => ['name' => 'grp.product_developments.show', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'tab' => 'formulation']],
     ]]);
 });

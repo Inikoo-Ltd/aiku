@@ -39,7 +39,7 @@ class UpdateSupplierPortalProfile
                 imageData: [
                     'path'         => $photo->getPathName(),
                     'originalName' => $photo->getClientOriginalName(),
-                    'extension'    => $photo->getClientOriginalExtension(),
+                    'extension'    => $photo->guessExtension() ?? 'bin',
                 ],
                 scope: 'avatar'
             );
@@ -51,7 +51,7 @@ class UpdateSupplierPortalProfile
                 imageData: [
                     'path'         => $companyPhoto->getPathName(),
                     'originalName' => $companyPhoto->getClientOriginalName(),
-                    'extension'    => $companyPhoto->getClientOriginalExtension(),
+                    'extension'    => $companyPhoto->guessExtension() ?? 'bin',
                 ],
                 scope: 'photo'
             );

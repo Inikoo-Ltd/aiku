@@ -87,6 +87,13 @@ class UpdateAgentLedgerEntry extends OrgAction
             $validator->errors()->add('type', __('Money in can not become money out, or the other way round: remove the line and record it again.'));
         }
 
+        $movesMoney = $this->get('type') !== $this->agentPayment->type->value
+            || (int) $this->get('purchase_order_id') !== (int) $this->agentPayment->purchase_order_id
+            || (int) $this->get('stock_delivery_id') !== (int) $this->agentPayment->stock_delivery_id;
+        if ($movesMoney && $this->agentPayment->isAskedForInMoneyRequest()) {
+            $validator->errors()->add('type', __('A money request asks the client for this line: its type, order and container can not change until that request is cancelled or rejected.'));
+        }
+
         if ($purchaseOrderId = $this->get('purchase_order_id')) {
             $belongs = PurchaseOrder::whereKey($purchaseOrderId)->where('agent_id', $this->agentPayment->agent_id)->where('organisation_id', $this->agentPayment->organisation_id)->exists();
             if (!$belongs) {

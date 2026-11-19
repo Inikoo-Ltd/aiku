@@ -181,6 +181,13 @@ class MergeSuppliers
             ]);
         }
 
+        $deletedSharedCodes = $this->deletedSharedProductCodes($duplicate, $kept);
+        if ($deletedSharedCodes->isNotEmpty()) {
+            $blockers[] = __('Both suppliers have products with the codes :codes, deleted on at least one of them, rename or restore those products first', [
+                'codes' => $deletedSharedCodes->implode(', '),
+            ]);
+        }
+
         $blockedAgentOrders = $this->blockedAgentOrderReferences($duplicate, $kept);
         if ($blockedAgentOrders->isNotEmpty()) {
             $blockers[] = __('Both suppliers are on the agent orders :references, sort those orders out first', ['references' => $blockedAgentOrders->implode(', ')]);
@@ -216,6 +223,25 @@ class MergeSuppliers
         return $this->sharedAgentOrders($duplicate, $kept)
             ->join('purchase_orders', 'purchase_orders.id', '=', 'duplicate_orders.purchase_order_id')
             ->pluck('purchase_orders.reference');
+    }
+
+    /**
+     * Codes on both suppliers where one of the two products is deleted: the product merge only folds live
+     * products, so these would stop the merge inside its transaction.
+     *
+     * @return Collection<int, string>
+     */
+    public function deletedSharedProductCodes(Supplier $duplicate, Supplier $kept): Collection
+    {
+        $keptProducts = $kept->supplierProducts()->withTrashed()->get(['id', 'code', 'deleted_at'])->groupBy('code');
+
+        return $duplicate->supplierProducts()->withTrashed()
+            ->whereIn('code', $keptProducts->keys())
+            ->get(['id', 'code', 'deleted_at'])
+            ->filter(fn ($product) => $product->trashed() || $keptProducts->get($product->code)->contains(fn ($keptProduct) => $keptProduct->trashed()))
+            ->pluck('code')
+            ->unique()
+            ->values();
     }
 
     private function ensureNoSharedProductCodes(Supplier $duplicate, Supplier $kept): void

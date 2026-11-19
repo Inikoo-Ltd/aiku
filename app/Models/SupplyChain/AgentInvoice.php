@@ -8,6 +8,7 @@
 
 namespace App\Models\SupplyChain;
 
+use App\Actions\GoodsIn\StockDelivery\UI\GetStockDeliveryImportFile;
 use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Currency;
@@ -79,8 +80,9 @@ class AgentInvoice extends Model
     }
 
     /**
-     * What has been paid towards this container before its balance: the deposits applied to it and the payments made
-     * to the agent for it directly.
+     * What has been paid towards this container before its balance: the deposits applied to it, the deposits sent for
+     * its orders in the invoice's currency (PO instalments and paid money request advances, counted on each order's
+     * first delivery, HELP-4794) and the payments made to the agent for it directly.
      *
      * @return array<int, array{type: string, reference: string|null, date: string|null, amount: float}>
      */
@@ -100,6 +102,15 @@ class AgentInvoice extends Model
                 'amount'    => (float) $application->amount,
             ]);
 
+        $sent = GetStockDeliveryImportFile::sentDeposits($this->stockDelivery)
+            ->filter(fn (array $deposit) => $deposit['is_paid'] && $deposit['currency'] === $this->currency->code)
+            ->map(fn (array $deposit) => [
+                'type'      => 'deposit',
+                'reference' => $deposit['purchase_order'],
+                'date'      => $deposit['date'],
+                'amount'    => $deposit['amount'],
+            ]);
+
         $payments = $this->stockDelivery->agentPayments()
             ->orderBy('date')
             ->get()
@@ -110,7 +121,7 @@ class AgentInvoice extends Model
                 'amount'    => (float) $payment->amount,
             ]);
 
-        return $this->advancePaymentsCache = $deposits->concat($payments)->values()->all();
+        return $this->advancePaymentsCache = $deposits->concat($sent)->concat($payments)->values()->all();
     }
 
     public function paidAmount(): float

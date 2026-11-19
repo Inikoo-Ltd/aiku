@@ -40,11 +40,18 @@ class SendMetaChatGreeting
             return false;
         }
 
+        $text ??= __('Hello, thank you for your message. How can we help you?', [], $metaChatSession->shop->language?->code);
+
+        if ($this->isWhatsappSendHeldLocally('chat greeting', [
+            'meta_chat_session_id' => $metaChatSession->id,
+            'message_text'         => $text,
+        ])) {
+            return false;
+        }
+
         $metaChatSession->update([
             'metadata' => array_merge($metaChatSession->metadata ?? [], [$onceKey => now()->toISOString()]),
         ]);
-
-        $text ??= __('Hello, thank you for your message. How can we help you?', [], $metaChatSession->shop->language?->code);
 
         $response = Http::withToken($accessToken)->post($this->whatsappEndpoint($phoneNumberId.'/messages'), [
             'messaging_product' => 'whatsapp',

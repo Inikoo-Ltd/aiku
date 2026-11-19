@@ -58,12 +58,13 @@ class SearchProductDevelopmentOptions extends OrgAction
                 ->orWhereAnyWordStartWith('name', $query)))
             ->orderBy('code')
             ->limit(self::LIMIT)
-            ->get(['id', 'code', 'name'])
+            ->get($scope === 'trade_units' ? ['id', 'code', 'name', 'slug'] : ['id', 'code', 'name'])
             ->map(fn ($record) => [
                 'value' => $record->id,
                 'label' => trim($record->code.' · '.$record->name, ' ·'),
                 'code'  => $record->code,
                 'name'  => $record->name,
+                'url'   => $record instanceof TradeUnit ? route('grp.trade_units.units.show', $record->slug) : null,
             ])
             ->all();
     }

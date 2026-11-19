@@ -51,6 +51,7 @@ use App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentFormulation;
 use App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentFormulation;
 use App\Actions\Goods\ProductDevelopment\Recipe\DeleteProductDevelopmentFormulation;
+use App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentFormulationArtefact;
 use App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Design\CancelProductDevelopmentArtworkInAiku;
@@ -192,6 +193,7 @@ use App\Actions\Comms\Outbox\AbandonedCheckout\SendAbandonedCheckoutReminder;
 use App\Actions\Comms\Outbox\PublishOutbox;
 use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\Outbox\UpdateOutbox;
+use App\Actions\Comms\WhatsappOutbox\UpdateWhatsappOutbox;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
@@ -426,6 +428,7 @@ use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemPackedInside;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCustomsLine;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCustoms;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryImportFile;
+use App\Actions\GoodsIn\StockDelivery\UI\DownloadStockDeliveryImportFileDocuments;
 use App\Actions\GoodsIn\StockDeliveryClaim\UpdateStockDeliveryClaim;
 use App\Actions\GoodsIn\StockDeliveryFollowUp\CreateSupplierInstructionFromFeedback;
 use App\Actions\GoodsIn\StockDeliveryFollowUp\StoreStockDeliveryFeedback;
@@ -583,6 +586,7 @@ use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductMinimumC
 use App\Actions\Procurement\PurchaseOrder\PokeOrganisationsForMinimumOrder;
 use App\Actions\Procurement\OrgSupplierProducts\LinkOrgSupplierProductToGroupSko;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductAgentDetails;
+use App\Actions\Procurement\OrgSupplierProducts\SetAgentSupplierProductPreferred;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductCartonBarcode;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductCartonWeights;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductSupplierContacts;
@@ -1236,6 +1240,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('org-supplier/from-supplier/{supplier:id}', [StoreOrgSupplier::class, 'inOrganisation'])->name('org_supplier.store')->withoutScopedBindings();
     Route::post('stock-delivery-service-invoice', StoreStockDeliveryServiceInvoice::class)->name('stock_delivery_service_invoice.store');
     Route::patch('org-supplier-product/{orgSupplierProduct:id}/agent-details', UpdateOrgSupplierProductAgentDetails::class)->name('org_supplier_product.agent_details.update')->withoutScopedBindings();
+    Route::post('agent-supplier-product/{supplierProduct:id}/set-preferred', SetAgentSupplierProductPreferred::class)->name('agent_supplier_product.set_preferred')->withoutScopedBindings();
     Route::patch('agent-supplier/{supplier:id}/family/{stockFamily:id}', UpdateAgentSupplierStockFamily::class)->name('agent_supplier.family.update')->withoutScopedBindings();
     Route::patch('agent-supplier/{supplier:id}/contacts', UpdateAgentSupplierContacts::class)->name('agent_supplier.contacts.update')->withoutScopedBindings();
     Route::patch('org-supplier-product/{orgSupplierProduct:id}/supplier-contacts', UpdateOrgSupplierProductSupplierContacts::class)->name('org_supplier_product.supplier_contacts.update')->withoutScopedBindings();
@@ -1616,6 +1621,8 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('mailshot/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('mailshot.schedule')->withoutScopedBindings();
         Route::post('mailshot/{mailshot:id}/cancel-schedule', CancelMailshotSchedule::class)->name('mailshot.cancel-schedule')->withoutScopedBindings();
     });
+
+    Route::patch('whatsapp-outboxes/{whatsappOutbox:id}', [UpdateWhatsappOutbox::class, 'inShop'])->name('whatsapp_outboxes.update')->withoutScopedBindings();
 
     Route::name('mailshot.')->prefix('mailshot/{mailshot:id}')->group(function () {
         Route::patch('/workshop', UpdateWorkshopMailShot::class)->name('workshop.update')->withoutScopedBindings();
@@ -2005,6 +2012,7 @@ Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
     Route::post('supplier-product/import', ImportSupplierProducts::class)->name('supplier-product.import');
     Route::post('supplier-product/check-form', CheckSupplierProductForm::class)->name('supplier-product.check_form');
     Route::post('supplier-product/from-form', StoreSupplierProductFromForm::class)->name('supplier-product.store_from_form');
+    Route::post('supplier-products/copy', [CopySupplierProductsToSupplier::class, 'inGroup'])->name('supplier_products.copy');
     Route::post('purchase-orders/import/preview', PreviewSupplierPurchaseOrderImport::class)->name('purchase_orders.import.preview');
     Route::post('purchase-orders/import', ImportSupplierPurchaseOrders::class)->name('purchase_orders.import');
 });
@@ -2087,6 +2095,7 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::patch('distribute-extra-cost', DistributeStockDeliveryExtraCost::class)->name('distribute-extra-cost');
     Route::patch('customs', UpdateStockDeliveryCustoms::class)->name('customs.update');
     Route::patch('import-file', UpdateStockDeliveryImportFile::class)->name('import_file.update');
+    Route::get('import-file/documents', DownloadStockDeliveryImportFileDocuments::class)->name('import_file.documents');
     Route::post('cost', StoreStockDeliveryCost::class)->name('cost.store');
     Route::delete('unbacked-costs', RemoveStockDeliveryUnbackedCosts::class)->name('unbacked-costs.remove');
     Route::post('cost/invoice', AttachStockDeliveryCostInvoice::class)->name('cost.invoice.attach');
@@ -2359,6 +2368,7 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::post('item/{productDevelopmentItem:id}/formulation', StoreProductDevelopmentFormulation::class)->name('item.formulation.store')->withoutScopedBindings();
     Route::patch('formulation/{productDevelopmentFormulation:id}', UpdateProductDevelopmentFormulation::class)->name('formulation.update')->withoutScopedBindings();
     Route::delete('formulation/{productDevelopmentFormulation:id}', DeleteProductDevelopmentFormulation::class)->name('formulation.delete')->withoutScopedBindings();
+    Route::post('formulation/{productDevelopmentFormulation:id}/artefact', CreateProductDevelopmentFormulationArtefact::class)->name('formulation.artefact')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}', UpdateProductDevelopmentSample::class)->name('sample.update')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}/submit', SubmitProductDevelopmentSample::class)->name('sample.submit')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}/review', ReviewProductDevelopmentSample::class)->name('sample.review')->withoutScopedBindings();

@@ -425,17 +425,6 @@ const visibleActions = computed(() => canEditStock.value ? (props.actions ?? Obj
 const showAction = (action: string) => visibleActions.value.includes(action)
 const locationCount = computed(() => props.stocks_management.locations.length)
 const hasStockToConsume = computed(() => props.stocks_management.locations.some(location => Number(location.quantity) > 0))
-const actionGridClass = computed(() => {
-    const count = Object.values(MODALS).filter(action => showAction(action)).length
-    return {
-        1: 'xl:grid-cols-1',
-        2: 'xl:grid-cols-2',
-        3: '2xl:grid-cols-3',
-        4: '2xl:grid-cols-4',
-        5: '2xl:grid-cols-5',
-    }[count] ?? '2xl:grid-cols-5'
-})
-
 const isStockCheckModalOpen = ref(false)
 
 watch(isStockCheckModalOpen, (isOpen) => {
@@ -845,12 +834,12 @@ const onAddLocationShow = () => {
         </div>
 
         <!-- Action Buttons -->
-        <div v-if="visibleActions.length" class="grid grid-cols-2 border-t pt-3 gap-2" :class="actionGridClass">
-            <Button v-if="showAction(MODALS.STOCK_CHECK)" @click="openModal(MODALS.STOCK_CHECK)" :disabled="locationCount === 0 || isAuditLocked" :tooltip="locationCount === 0 ? ctrans('No location to audit') : (isAuditLocked ? ctrans('This stock is being audited somewhere else') : undefined)" iconRight="fal fa-clipboard-check" :label="ctrans('Audit Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
-            <Button v-if="showAction(MODALS.MOVE_STOCK)" @click="openModal(MODALS.MOVE_STOCK)" :disabled="locationCount < 2" :tooltip="locationCount < 2 ? ctrans('Requires at least 2 locations') : undefined" iconRight="fal fa-forklift" :label="ctrans('Move Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
-            <Button v-if="showAction(MODALS.INTERNAL_CONSUMPTION)" @click="openModal(MODALS.INTERNAL_CONSUMPTION)" :disabled="!hasStockToConsume" :tooltip="hasStockToConsume ? ctrans('Take off stock used for packing and warehouse operations') : ctrans('No stock to consume')" iconRight="fal fa-box-open" :label="ctrans('Internal Consumption')" size="sm" type="tertiary" full class="whitespace-nowrap" />
-            <Button v-if="showAction(MODALS.EDIT_LOCATION)" @click="openModal(MODALS.EDIT_LOCATION)" :disabled="locationCount === 0" :tooltip="locationCount === 0 ? ctrans('No location to edit') : undefined" iconRight="fal fa-edit" :label="ctrans('Remove Locations')" size="sm" type="tertiary" full class="whitespace-nowrap" />
-            <Button v-if="showAction(MODALS.ADD_LOCATION)" @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="ctrans('Add Location')" size="sm" type="tertiary" full class="whitespace-nowrap" />
+        <div v-if="visibleActions.length" class="flex flex-wrap border-t pt-3 gap-2">
+            <Button v-if="showAction(MODALS.STOCK_CHECK)" @click="openModal(MODALS.STOCK_CHECK)" :disabled="locationCount === 0 || isAuditLocked" :tooltip="locationCount === 0 ? ctrans('No location to audit') : (isAuditLocked ? ctrans('This stock is being audited somewhere else') : undefined)" iconRight="fal fa-clipboard-check" :label="ctrans('Audit Stock')" size="sm" type="tertiary" class="flex-auto justify-center whitespace-nowrap" />
+            <Button v-if="showAction(MODALS.MOVE_STOCK)" @click="openModal(MODALS.MOVE_STOCK)" :disabled="locationCount < 2" :tooltip="locationCount < 2 ? ctrans('Requires at least 2 locations') : undefined" iconRight="fal fa-forklift" :label="ctrans('Move Stock')" size="sm" type="tertiary" class="flex-auto justify-center whitespace-nowrap" />
+            <Button v-if="showAction(MODALS.INTERNAL_CONSUMPTION)" @click="openModal(MODALS.INTERNAL_CONSUMPTION)" :disabled="!hasStockToConsume" :tooltip="hasStockToConsume ? ctrans('Take off stock used for packing and warehouse operations') : ctrans('No stock to consume')" iconRight="fal fa-box-open" :label="ctrans('Internal Consumption')" size="sm" type="tertiary" class="flex-auto justify-center whitespace-nowrap" />
+            <Button v-if="showAction(MODALS.EDIT_LOCATION)" @click="openModal(MODALS.EDIT_LOCATION)" :disabled="locationCount === 0" :tooltip="locationCount === 0 ? ctrans('No location to edit') : undefined" iconRight="fal fa-edit" :label="ctrans('Remove Locations')" size="sm" type="tertiary" class="flex-auto justify-center whitespace-nowrap" />
+            <Button v-if="showAction(MODALS.ADD_LOCATION)" @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="ctrans('Add Location')" size="sm" type="tertiary" class="flex-auto justify-center whitespace-nowrap" />
         </div>
 
         <!-- Popover: Notes -->

@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery\UI;
 
+use App\Actions\GoodsIn\StockDelivery\EvaluateStockDeliveryCosting;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
@@ -29,7 +30,10 @@ class GetStockDeliveryCustoms
             ->get();
 
         $orgExchange = (float) ($stockDelivery->org_exchange ?: 1);
-        $dutyRow     = $stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::DUTY)->first();
+        $costs       = $stockDelivery->costs()->get();
+        $dutyRow     = $costs->firstWhere('type', StockDeliveryCostTypeEnum::DUTY);
+        $antiDumping = EvaluateStockDeliveryCosting::lineAmounts($stockDelivery, $costs)['cost_duties'] ?? [];
+        $customsDuty = fn (StockDeliveryItem $item) => (float) $item->cost_duties - ($antiDumping[$item->id] ?? 0);
 
         return [
             'customs_mrn'         => $stockDelivery->customs_mrn,
@@ -49,10 +53,10 @@ class GetStockDeliveryCustoms
                 'customs_value' => (float) $line->customs_value,
                 'duty_amount'   => (float) $line->duty_amount,
                 'import_vat'    => $line->import_vat === null ? null : (float) $line->import_vat,
-                'allocated'     => round((float) $items->where('stock_delivery_customs_line_id', $line->id)->sum('cost_duties') * $orgExchange, 2),
+                'allocated'     => round((float) $items->where('stock_delivery_customs_line_id', $line->id)->sum($customsDuty) * $orgExchange, 2),
                 'items_value'   => round((float) $items->where('stock_delivery_customs_line_id', $line->id)->sum(fn (StockDeliveryItem $item) => (float) ($item->cost_items ?? $item->net_amount)) * $orgExchange, 2),
             ])->values()->all(),
-            'items'               => $items->map(function (StockDeliveryItem $item) use ($orgExchange) {
+            'items'               => $items->map(function (StockDeliveryItem $item) use ($orgExchange, $customsDuty) {
                 return [
                     'id'                             => $item->id,
                     'code'                           => $item->orgStock?->code ?? $item->supplierProduct?->code,
@@ -60,7 +64,7 @@ class GetStockDeliveryCustoms
                     'tariff_code'                    => $item->orgStock?->getTariffCode(),
                     'stock_delivery_customs_line_id' => $item->stock_delivery_customs_line_id,
                     'value'                          => round((float) ($item->cost_items ?? $item->net_amount) * $orgExchange, 2),
-                    'cost_duties'                    => $item->cost_duties === null ? null : round((float) $item->cost_duties * $orgExchange, 2),
+                    'cost_duties'                    => $item->cost_duties === null ? null : round($customsDuty($item) * $orgExchange, 2),
                     'updateRoute'                    => [
                         'name'       => 'grp.models.stock-delivery-item.customs-line',
                         'parameters' => ['stockDeliveryItem' => $item->id],

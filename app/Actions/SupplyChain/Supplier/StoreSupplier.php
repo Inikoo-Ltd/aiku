@@ -20,7 +20,6 @@ use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
-use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
@@ -49,6 +48,8 @@ class StoreSupplier extends OrgAction
 
     /** @var array<int, int> */
     private array $copySourceAgentIds = [];
+
+    private bool $copyFromFreeSuppliers = false;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -118,7 +119,7 @@ class StoreSupplier extends OrgAction
                 );
             }
 
-            if ($parent instanceof Agent && ($copiedOrgSupplierProductIds || $copiedSupplierProductIds) && $this->copySourceAgentIds) {
+            if (($copiedOrgSupplierProductIds || $copiedSupplierProductIds) && ($this->copySourceAgentIds || $this->copyFromFreeSuppliers)) {
                 $this->copySupplierProducts($supplier, $copiedOrgSupplierProductIds, $copiedSupplierProductIds);
             }
 
@@ -148,7 +149,10 @@ class StoreSupplier extends OrgAction
         $copySupplierProducts = CopySupplierProductsToSupplier::make();
 
         $sourceProducts = $supplierProductIds
-            ? SupplierProduct::whereIn('agent_id', $this->copySourceAgentIds)->whereIn('id', $supplierProductIds)->get()
+            ? $copySupplierProducts->copyableSupplierProducts($this->copySourceAgentIds, $this->copyFromFreeSuppliers)
+                ->where('group_id', $supplier->group_id)
+                ->whereIn('id', $supplierProductIds)
+                ->get()
             : $copySupplierProducts->getAgentsSupplierProducts($this->copySourceAgentIds, $orgSupplierProductIds);
 
         try {
@@ -252,6 +256,10 @@ class StoreSupplier extends OrgAction
         $group = group();
         $this->initialisationFromGroup($group, $request);
 
+        $copySupplierProducts        = CopySupplierProductsToSupplier::make();
+        $this->copySourceAgentIds    = $copySupplierProducts->getAccessibleAgents($request->user())->pluck('id')->all();
+        $this->copyFromFreeSuppliers = $copySupplierProducts->canEditFreeSuppliers($request->user());
+
         return $this->handle($group, $this->validatedData);
     }
 
@@ -263,7 +271,9 @@ class StoreSupplier extends OrgAction
         $this->agent = $agent;
         $this->initialisationFromGroup($agent->group, $request);
 
-        $this->copySourceAgentIds = CopySupplierProductsToSupplier::make()->getAccessibleAgents($request->user())->pluck('id')->all();
+        $copySupplierProducts        = CopySupplierProductsToSupplier::make();
+        $this->copySourceAgentIds    = $copySupplierProducts->getAccessibleAgents($request->user())->pluck('id')->all();
+        $this->copyFromFreeSuppliers = $copySupplierProducts->canEditFreeSuppliers($request->user());
 
         return $this->handle($agent, $this->validatedData);
     }
@@ -297,6 +307,10 @@ class StoreSupplier extends OrgAction
 
         if ($supplier->agent_id) {
             return Redirect::route('grp.supply-chain.agents.show.suppliers.show', [$supplier->agent->slug, $supplier->slug]);
+        }
+
+        if ($this->numberCopiedSupplierProducts) {
+            return Redirect::route('grp.supply-chain.suppliers.supplier_products.index', $supplier->slug);
         }
 
         return Redirect::route('grp.supply-chain.suppliers.show', $supplier->slug);

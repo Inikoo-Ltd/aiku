@@ -2449,7 +2449,7 @@ test('agent organisation manages its own supplier identity', function () {
         ->firstOrFail();
 
     $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.org.agent.org_suppliers.edit', [$ownAgent->organisation->slug, $orgSupplier->slug]));
+    $response = $this->get(route('grp.org.agent.org_suppliers.edit', [$ownAgent->organisation->slug, $orgSupplier->supplier->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -3843,7 +3843,7 @@ test('HELP-4019 an agent sees its product by our code with what to fix, and neve
     StockHasSupplierProduct::firstOrCreate(['stock_id' => $this->stocks[0]->id, 'supplier_product_id' => $orgSupplierProduct->supplier_product_id]);
 
     $this->withoutExceptionHandling();
-    $this->get(route('grp.org.agent.org_supplier_products.show', [$agentOrganisation->slug, $orgSupplierProduct->slug]))
+    $this->get(route('grp.org.agent.org_supplier_products.show', [$agentOrganisation->slug, $orgSupplierProduct->supplierProduct->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('pageHead.title', $this->stocks[0]->code)
             ->where('showcase.agent.internal_code', $this->stocks[0]->code)
@@ -3996,7 +3996,7 @@ test('HELP-4019 an agent sets a family at its supplier, and the products and the
     ])->assertSessionHasNoErrors();
 
     $this->withoutExceptionHandling();
-    $this->get(route('grp.org.agent.org_supplier_products.show', [$agentOrganisation->slug, $orgSupplierProduct->slug]))
+    $this->get(route('grp.org.agent.org_supplier_products.show', [$agentOrganisation->slug, $orgSupplierProduct->supplierProduct->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('showcase.agent.key.moq.cartons', 6)
             ->where('showcase.agent.key.moq.source', 'family')
@@ -4268,6 +4268,132 @@ test('a file uploaded to the wrong import file step can be removed from the step
     expect(collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->firstWhere('key', 'deposit')['files'])->toBe([]);
 });
 
+test('import file deposit row shows each deposit sent as amount, % of its order and bank statement, and the balance row what is left to pay (HELP-4794)', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'IMPORT-FILE-4794', [10]);
+    $order         = fn (string $reference, float $items) => tap(
+        StorePurchaseOrder::make()->action($stockDelivery->parent, array_merge(PurchaseOrder::factory()->definition(), ['reference' => $reference]), strict: false),
+        fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->updateQuietly(['cost_items' => $items, 'currency_id' => $stockDelivery->currency_id])
+    );
+    $supplierOrder = $order('HELP-4794-A', 1000);
+    $agentOrder    = $order('HELP-4794-B', 500);
+    $stockDelivery->purchaseOrders()->sync([$supplierOrder->id, $agentOrder->id]);
+
+    $this->post(route('grp.models.stock-delivery.attachment.attach', ['stockDelivery' => $stockDelivery->id]), ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('statement.pdf', 10, 'application/pdf')], 'scope' => PurchaseOrderAttachmentScopeEnum::DEPOSIT_PAYMENT->value])->assertSuccessful();
+    $mediaId = collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->firstWhere('key', 'deposit')['files'][0]['media_id'];
+
+    $supplierOrder->depositPayments()->create([
+        'group_id'        => $supplierOrder->group_id,
+        'organisation_id' => $supplierOrder->organisation_id,
+        'currency_id'     => $supplierOrder->currency_id,
+        'amount'          => 300,
+        'date'            => '2026-11-01',
+        'method'          => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum::BANK_TRANSFER,
+        'media_id'        => $mediaId,
+    ]);
+    $moneyRequest = \App\Models\SupplyChain\DepositRequest::create([
+        'group_id'        => $stockDelivery->group_id,
+        'agent_id'        => $this->orgAgent->agent_id,
+        'organisation_id' => $stockDelivery->organisation_id,
+        'currency_id'     => $stockDelivery->currency_id,
+        'state'           => \App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED,
+        'requested_at'    => '2026-11-02',
+    ]);
+    $advance = $moneyRequest->items()->create(['organisation_id' => $stockDelivery->organisation_id, 'kind' => \App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum::ADVANCE, 'purchase_order_id' => $agentOrder->id, 'amount' => 100]);
+
+    $steps = fn () => collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->keyBy('key');
+
+    $deposit = $steps()['deposit']['money'];
+    expect($deposit['rows'])->toHaveCount(2)
+        ->and($deposit['rows'][0])->toMatchArray(['purchase_order' => 'HELP-4794-A', 'amount' => 300.0, 'percent' => 30.0, 'is_paid' => true])
+        ->and($deposit['rows'][0]['bank_statement'])->toBeString()
+        ->and($deposit['rows'][1])->toMatchArray(['purchase_order' => 'HELP-4794-B', 'amount' => 100.0, 'percent' => 20.0, 'is_paid' => false, 'bank_statement' => null])
+        ->and($deposit['total'])->toBe(300.0)
+        ->and($steps()['balance_payment']['money'])->toMatchArray(['total' => 1500.0, 'total_source' => 'orders', 'deposits' => 300.0, 'payments' => 0.0, 'left' => 1200.0]);
+
+    $advance->update(['paid_at' => now()]);
+    expect($steps()['balance_payment']['money']['left'])->toBe(1100.0);
+
+    $moneyRequest->update(['state' => \App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::CANCELLED]);
+    expect($steps()['deposit']['money']['rows'])->toHaveCount(1);
+
+    $later = StoreStockDelivery::make()->action($stockDelivery->parent, ['reference' => 'IMPORT-FILE-4794-2', 'date' => date('Y-m-d')], strict: false);
+    $later->purchaseOrders()->sync([$supplierOrder->id]);
+    expect(collect(GetStockDeliveryImportFile::run($later->refresh())['steps'])->firstWhere('key', 'deposit')['money']['rows'])->toBe([]);
+});
+
+test('on an agent container the deposits sent for its orders come off the agent invoice balance, the same figure the import file shows (HELP-4794)', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'AGENT-DEP-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    $orgAgent->update(['agent_fee_percentage' => 0]);
+    $stockDelivery->items()->sole()->updateQuietly(['net_amount' => 1000]);
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($stockDelivery->parent, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'AGENT-DEP-PO']), strict: false);
+    $purchaseOrder->updateQuietly(['cost_items' => 1000, 'currency_id' => $stockDelivery->currency_id]);
+    $stockDelivery->purchaseOrders()->sync([$purchaseOrder->id]);
+    $purchaseOrder->depositPayments()->create([
+        'group_id'        => $purchaseOrder->group_id,
+        'organisation_id' => $purchaseOrder->organisation_id,
+        'currency_id'     => $purchaseOrder->currency_id,
+        'amount'          => 400,
+        'date'            => '2026-11-01',
+        'method'          => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum::BANK_TRANSFER,
+    ]);
+
+    setPermissionsTeamId($this->group->id);
+    actingAs(agentOrganisationAdmin($agent->organisation, 'agt-dep-'.Str::lower(Str::random(6))));
+    $invoice = StoreAgentInvoice::make()->handle($agent, $stockDelivery->refresh());
+    StoreAgentPayment::make()->handle($stockDelivery, ['date' => now()->toDateString(), 'amount' => 100, 'reference' => 'TT-4794']);
+    actingAs($this->adminGuest->getUser());
+
+    $invoice = $invoice->refresh();
+    $balance = collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->firstWhere('key', 'balance_payment')['money'];
+
+    expect(collect($invoice->advancePayments())->firstWhere('reference', 'AGENT-DEP-PO'))->toMatchArray(['type' => 'deposit', 'amount' => 400.0])
+        ->and($invoice->paidAmount())->toBe(500.0)
+        ->and($invoice->balanceDue())->toBe(round((float) $invoice->total_amount - 500, 2))
+        ->and($balance)->toMatchArray(['total_source' => 'invoice', 'deposits' => 400.0, 'payments' => 100.0, 'left' => $invoice->balanceDue()]);
+});
+
+test('the import file documents download as one ZIP or one printable PDF in checklist order (HELP-4795)', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'IMPORT-FILE-4795', [10]);
+    $pdfBytes      = function (string $text): string {
+        $mpdf = new \Mpdf\Mpdf(['tempDir' => sys_get_temp_dir().'/mpdf']);
+        $mpdf->WriteHTML($text);
+
+        return $mpdf->Output('', 'S');
+    };
+    $attach        = fn (string $name, string $content, PurchaseOrderAttachmentScopeEnum $scope) => $this->post(
+        route('grp.models.stock-delivery.attachment.attach', ['stockDelivery' => $stockDelivery->id]),
+        ['attachments' => [\Illuminate\Http\UploadedFile::fake()->createWithContent($name, $content)], 'scope' => $scope->value]
+    )->assertSuccessful();
+    $attach('payment.pdf', $pdfBytes('payment'), PurchaseOrderAttachmentScopeEnum::BANK_STATEMENT);
+    $attach('packing.xlsx', 'not a pdf', PurchaseOrderAttachmentScopeEnum::PACKING_LIST);
+    $attach('invoice.pdf', $pdfBytes('invoice'), PurchaseOrderAttachmentScopeEnum::INVOICE);
+
+    $importFile = GetStockDeliveryImportFile::run($stockDelivery->refresh());
+    expect($importFile['documents_count'])->toBe(3);
+    $url = fn (string $format) => route($importFile['documents_route']['name'], [...$importFile['documents_route']['parameters'], 'format' => $format]);
+
+    $zipPath = $this->get($url('zip'))->assertOk()->baseResponse->getFile()->getPathname();
+    $zip     = new ZipArchive();
+    $zip->open($zipPath);
+    expect(collect(range(0, $zip->numFiles - 1))->map(fn (int $index) => $zip->getNameIndex($index))->all())
+        ->toBe(['01 commercial-invoice - invoice.pdf', '02 packing-list - packing.xlsx', '03 balance-payment - payment.pdf']);
+    $zip->close();
+
+    $pdfResponse = $this->get($url('pdf'))->assertOk();
+    $merged      = $pdfResponse->baseResponse->getFile()->getPathname();
+    if (\Illuminate\Support\Facades\Process::run(['which', 'gs'])->successful()) {
+        expect(file_get_contents($merged, length: 5))->toBe('%PDF-')
+            ->and((new \Smalot\PdfParser\Parser())->parseFile($merged)->getPages())->toHaveCount(3);
+    } else {
+        expect($pdfResponse->headers->get('content-disposition'))->toContain('.zip');
+    }
+});
+
 test('a container sheet PO matches a purchase order by its whole reference or its whole number, not by a digit inside it', function () {
     $isSame = fn (string $sheet, string $reference) => (new ReflectionMethod(\App\Actions\GoodsIn\StockDelivery\PreviewStockDeliveryItemsImport::class, 'isSamePurchaseOrder'))
         ->invoke(\App\Actions\GoodsIn\StockDelivery\PreviewStockDeliveryItemsImport::make(), $sheet, $reference);
@@ -4361,4 +4487,377 @@ test('booking goods into a location the SKO is not linked to links it as picking
 
     expect($linkType($firstLocation))->toBe(\App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING)
         ->and($linkType($secondLocation))->toBe(\App\Enums\Inventory\LocationStock\LocationStockTypeEnum::STORING);
+});
+
+test('Close Old PO takes only an order imported into aiku with no agent stage recorded (INI-376)', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+
+    $madeInAiku = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $imported   = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $imported->update(['source_id' => $imported->organisation_id.':w2'.$imported->id]);
+    $staged = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $staged->update(['source_id' => $staged->organisation_id.':w2'.$staged->id, 'production_started_at' => now()]);
+
+    expect(\App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::blockedReason($madeInAiku->refresh()))->not->toBeNull()
+        ->and(\App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::blockedReason($staged->refresh()))->not->toBeNull()
+        ->and(\App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::blockedReason($imported->refresh()))->toBeNull();
+
+    expect(fn () => \App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::make()->action($madeInAiku, ['reason' => 'old']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $closed = \App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::make()->action($imported, ['reason' => 'old']);
+
+    expect($closed->state)->toBe(\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SETTLED)
+        ->and($closed->chs_excluded)->toBeTrue()
+        ->and($madeInAiku->refresh()->state)->toBe(\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::CONFIRMED);
+});
+
+test('Close Old PO offers and accepts only received deliveries through the order\'s agent or from its supplier carrying its SKOs (INI-376)', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+
+    $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $purchaseOrder->update(['source_id' => $purchaseOrder->organisation_id.':w2'.$purchaseOrder->id]);
+
+    $otherSupplierDelivery = createStockDeliveryWithItems($this, 'W2-OTHER-'.Str::random(6), [5]);
+    $agentDelivery         = createStockDeliveryWithItems($this, 'W2-AGENT-'.Str::random(6), [5]);
+    $otherSupplierDelivery->update(['state' => \App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum::PLACED]);
+    $agentDelivery->update(['state' => \App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum::PLACED, 'agent_id' => $purchaseOrder->agent_id]);
+
+    $offered = \App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::linkableStockDeliveries($purchaseOrder->refresh())->pluck('id')->all();
+
+    expect($offered)->toContain($agentDelivery->id)->not->toContain($otherSupplierDelivery->id);
+
+    expect(fn () => \App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::make()->action($purchaseOrder, ['reason' => 'old', 'stock_delivery_id' => $otherSupplierDelivery->id]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    \App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::make()->action($purchaseOrder->refresh(), ['reason' => 'old', 'stock_delivery_id' => $agentDelivery->id]);
+
+    expect($purchaseOrder->refresh()->closedAsOld()['stock_delivery_id'])->toBe($agentDelivery->id);
+});
+
+test('an order with units ordered at a zero price is not empty and can not be deleted', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, createFreshOrgAgent($this));
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, \App\Models\Procurement\PurchaseOrder::factory()->definition());
+    $line          = StorePurchaseOrderTransaction::make()->action(
+        $purchaseOrder,
+        $orgSupplierProduct->supplierProduct->historicSupplierProduct,
+        $this->orgStocks[0],
+        array_merge(\App\Models\Procurement\PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 5])
+    );
+    $line->updateQuietly(['net_amount' => 0, 'unit_cost' => 0]);
+
+    expect(\App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders::blockersOf([$purchaseOrder->id])[$purchaseOrder->id])->toContain('items')
+        ->and(\App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders::deletableIds($this->group, [$purchaseOrder->id]))->toBeEmpty();
+
+    $line->updateQuietly(['quantity_ordered' => 0]);
+
+    expect(\App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders::deletableIds($this->group, [$purchaseOrder->id]))->toBe([$purchaseOrder->id]);
+});
+
+test('clean hand over is recorded on its own only on an agreed order not finished yet, never on a submitted or settled one', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $checks               = array_values(array_diff($orgAgent->agent->poJourney()['ready_checks'], ['compliance']));
+    $fields               = array_map(fn (string $key) => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum::READY_CHECK_FIELDS[$key], $checks);
+    $record               = \App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::make();
+
+    $orders = [];
+    foreach ([\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::CONFIRMED, \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED, \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SETTLED] as $state) {
+        $order = createConfirmedAgentOrder($this, $supplier, $product, 0, 4)->refresh();
+        $order->updateQuietly(['state' => $state, 'handed_over_at' => null, 'sample_approved_at' => now(), ...array_fill_keys($fields, now()->subDays(2))]);
+        $orders[$state->value] = $record->handle($order);
+    }
+
+    expect($orders['confirmed']->handed_over_at)->not->toBeNull()
+        ->and($orders['submitted']->refresh()->handed_over_at)->toBeNull()
+        ->and($orders['settled']->refresh()->handed_over_at)->toBeNull();
+});
+
+test('changing the supplier of an agent order joins only an open order of the new supplier, never a draft', function () {
+    $orgAgent                   = createFreshOrgAgent($this);
+    [$oldSupplier, $oldProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [$newSupplier, $newProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+
+    $source = createConfirmedAgentOrder($this, $oldSupplier, $oldProduct, 0, 6)->refresh();
+    $open   = createConfirmedAgentOrder($this, $newSupplier, $newProduct, 1, 4)->refresh();
+    $draft  = StorePurchaseOrder::make()->action($newSupplier, array_merge(\App\Models\Procurement\PurchaseOrder::factory()->definition(), ['currency_id' => $source->currency_id]));
+
+    $joinable = \App\Actions\Procurement\PurchaseOrder\ChangePurchaseOrderSupplier::purchaseOrdersToJoinQuery($source, [$newSupplier->id])->pluck('id')->all();
+
+    expect($joinable)->toContain($open->id)->not->toContain($draft->id);
+
+    expect(fn () => \App\Actions\Procurement\PurchaseOrder\ChangePurchaseOrderSupplier::make()->action($source, ['org_supplier_id' => $newSupplier->id, 'into_purchase_order_id' => $draft->id]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $into = \App\Actions\Procurement\PurchaseOrder\ChangePurchaseOrderSupplier::make()->action($source->refresh(), ['org_supplier_id' => $newSupplier->id, 'into_purchase_order_id' => $open->id]);
+
+    expect($into->id)->toBe($open->id)
+        ->and($into->purchaseOrderTransactions()->count())->toBe(2)
+        ->and($source->refresh()->state)->toBe(\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::CANCELLED)
+        ->and($draft->refresh()->purchaseOrderTransactions()->count())->toBe(0);
+});
+
+test('the undo move button of the items table reads why it is blocked from one batch of queries for every moved line', function () {
+    $orgAgent                     = createFreshOrgAgent($this);
+    [$fromSupplier, $fromProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [$toSupplier, $toProduct]     = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    \App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock::make()->action($this->orgStocks[0], $toProduct);
+    $order     = createConfirmedAgentOrder($this, $fromSupplier, $fromProduct, 0, 30)->refresh();
+    $openOrder = createConfirmedAgentOrder($this, $toSupplier, $toProduct, 1, 5)->refresh();
+    $line      = $order->purchaseOrderTransactions()->firstOrFail();
+
+    $moved = \App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier::make()->action($line, ['org_supplier_id' => $toSupplier->id, 'quantity' => 10, 'reference' => $openOrder->reference])['moved'];
+    $lines = fn () => $openOrder->purchaseOrderTransactions()->get();
+
+    expect(\App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction::blockedReasons($lines()))
+        ->toBe([$openOrder->purchaseOrderTransactions()->where('id', '!=', $moved->id)->value('id') => 'This item was not moved from another order', $moved->id => null]);
+
+    $order->update(['production_started_at' => now()]);
+
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+    $reasons = \App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction::blockedReasons($lines());
+    $queries = count(\Illuminate\Support\Facades\DB::getQueryLog());
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    $blocked = 'The supplier is already making '.$order->reference;
+    $moved->refresh()->setAttribute('undo_move_blocked_reason', $reasons[$moved->id]);
+    $resource = (new \App\Http\Resources\Procurement\PurchaseOrderTransactionResource($moved))->toArray(request());
+
+    expect($reasons[$moved->id])->toBe($blocked)
+        ->and(\App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction::blockedReason($moved->refresh()))->toBe($blocked)
+        ->and($resource['undoMove']['blocked_reason'])->toBe($blocked)
+        ->and($queries)->toBeLessThanOrEqual(7);
+});
+
+test('the repair of sheet rows duplicated by a goods receipt keeps packed sheet rows, keeps to the purchase order asked and refreshes the orders it changed', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $supplierProduct = $orgSupplierProduct->supplierProduct;
+    $purchaseOrder   = StorePurchaseOrder::make()->action($orgSupplier, \App\Models\Procurement\PurchaseOrder::factory()->definition());
+    $line            = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...\App\Models\Procurement\PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 40]);
+    $purchaseOrder->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now(), 'sample_approved_at' => now()]);
+    $line->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum::SUBMITTED]);
+    App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($this->agent, [
+        'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => 40]],
+    ]);
+    $sheetRow = fn (\App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum $state) => App\Models\Procurement\AgentWarehouseStock::create([
+        'group_id'            => $this->agent->group_id,
+        'agent_id'            => $this->agent->id,
+        'organisation_id'     => $purchaseOrder->organisation_id,
+        'supplier_product_id' => $supplierProduct->id,
+        'purchase_order_id'   => $purchaseOrder->id,
+        'state'               => $state,
+        'quantity'            => 20,
+    ]);
+    $receivedRow = $sheetRow(\App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::RECEIVED);
+    $packedRow   = $sheetRow(\App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::PACKED_FOR_NEXT_CONTAINER);
+    $repair      = App\Actions\Procurement\AgentWarehouseStock\RepairAgentWarehouseStocksDuplicatedByGoodsReceipts::make();
+    $backupsBefore = glob(storage_path('app/repairs/agent-warehouse-stocks-duplicated-by-goods-receipts/*.jsonl')) ?: [];
+
+    expect($repair->handle(true, purchaseOrderId: $purchaseOrder->id + 100000))->toBeEmpty();
+
+    $refreshed = [];
+    $this->mock(\App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::class)
+        ->shouldReceive('forPurchaseOrderIds')
+        ->once()
+        ->andReturnUsing(function ($ids) use (&$refreshed) {
+            $refreshed = collect($ids)->values()->all();
+        });
+
+    $results = collect($repair->handle(true, purchaseOrderId: $purchaseOrder->id));
+    array_map('unlink', array_diff(glob(storage_path('app/repairs/agent-warehouse-stocks-duplicated-by-goods-receipts/*.jsonl')) ?: [], $backupsBefore));
+
+    expect($results)->toHaveCount(1)
+        ->and($results->first()['deleted_sheet_rows'])->toBe([$receivedRow->id])
+        ->and($results->first()['kept_sheet_rows'])->toBe([$packedRow->id])
+        ->and($receivedRow->fresh())->toBeNull()
+        ->and($packedRow->fresh())->not->toBeNull()
+        ->and($refreshed)->toBe([$purchaseOrder->id]);
+});
+
+test('packing part of a warehouse row is limited to the units the agent still holds, not the row quantity', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 6)->refresh();
+    $line          = $purchaseOrder->purchaseOrderTransactions()->firstOrFail();
+    $container     = StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder);
+
+    $onContainer = (float) $container->items()->sum('unit_quantity');
+    $row         = App\Models\Procurement\AgentWarehouseStock::create([
+        'group_id'                      => $this->agent->group_id,
+        'agent_id'                      => $purchaseOrder->agent_id,
+        'organisation_id'               => $purchaseOrder->organisation_id,
+        'supplier_product_id'           => $orgSupplierProduct->supplier_product_id,
+        'purchase_order_id'             => $purchaseOrder->id,
+        'purchase_order_transaction_id' => $line->id,
+        'state'                         => App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::RECEIVED,
+        'quantity'                      => $onContainer + 5,
+    ]);
+    $held        = 5.0;
+    $pack        = App\Actions\Procurement\AgentWarehouseStock\PackAgentWarehouseStock::make();
+
+    expect($onContainer)->toBeGreaterThan(0.0)
+        ->and(fn () => $pack->handle($row, $held + 1))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and((float) $row->refresh()->quantity)->toBe($onContainer + 5);
+
+    $packed = $pack->handle($row, $held);
+
+    expect((float) $packed->quantity)->toBe($held)
+        ->and($packed->state)->toBe(App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::PACKED_FOR_NEXT_CONTAINER)
+        ->and((float) $row->refresh()->quantity)->toBe($onContainer);
+});
+
+test('the delivery address of a purchase order can change until the goods are handed over, not after', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 5)->refresh();
+
+    \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder::make()->action($purchaseOrder, ['delivery_address' => 'W2 Dock 1']);
+    expect($purchaseOrder->refresh()->data['delivery_address'])->toBe('W2 Dock 1');
+
+    $purchaseOrder->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::HANDED_OVER]);
+
+    expect(fn () => \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder::make()->action($purchaseOrder->refresh(), ['delivery_address' => 'W2 Dock 2']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and($purchaseOrder->refresh()->data['delivery_address'])->toBe('W2 Dock 1');
+});
+
+test('renaming a purchase order follows the reference format, keeps the earlier reference and is refused once the order is finished', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 5)->refresh();
+    $before        = $purchaseOrder->reference;
+    $rename        = fn (string $reference) => \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderReference::make()->action($purchaseOrder->refresh(), ['reference' => $reference], $this->adminGuest->getUser());
+
+    expect(fn () => $rename('W2 has spaces'))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $rename('W2-'.$purchaseOrder->id);
+
+    expect($purchaseOrder->refresh()->reference)->toBe('W2-'.$purchaseOrder->id)
+        ->and($purchaseOrder->data['previous_references'][0]['reference'])->toBe($before)
+        ->and($purchaseOrder->data['previous_references'][0]['by'])->toBe($this->adminGuest->getUser()->id);
+
+    foreach ([\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SETTLED, \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::CANCELLED, \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::NOT_RECEIVED] as $state) {
+        $purchaseOrder->updateQuietly(['state' => $state]);
+        expect(fn () => $rename('W2-again-'.$purchaseOrder->id))->toThrow(\Illuminate\Validation\ValidationException::class);
+    }
+
+    expect($purchaseOrder->refresh()->reference)->toBe('W2-'.$purchaseOrder->id);
+});
+
+test('lines cancelled with the whole order show who cancelled the order and when, as they have no audit of their own', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 5)->refresh();
+    $user          = $this->adminGuest->getUser();
+    actingAs($user);
+
+    \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled::make()->handle($purchaseOrder->refresh());
+    $cancelledAt = $purchaseOrder->refresh()->data['cancellation']['at'];
+
+    $this->withoutVite()
+        ->get(route('grp.org.procurement.purchase_orders.show', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]).'?tab=items')
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('items.data.0.cancellation.by', $user->contact_name ?: $user->username)
+            ->where('items.data.0.cancellation.at', $cancelledAt)
+            ->etc());
+});
+
+test('an agent\'s recent orders drill down from the exact instant the count starts, and its date range keeps orders with no submitted date by their date', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $agentOrganisation    = $orgAgent->agent->organisation;
+
+    $recent   = createConfirmedAgentOrder($this, $supplier, $product, 0, 2)->refresh();
+    $old      = createConfirmedAgentOrder($this, $supplier, $product, 0, 2)->refresh();
+    $undated  = createConfirmedAgentOrder($this, $supplier, $product, 0, 2)->refresh();
+    $recent->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()->subDays(2)]);
+    $old->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()->subDays(30), 'date' => now()->subDays(30)]);
+    $undated->updateQuietly(['submitted_at' => null, 'date' => now()->subDays(3)]);
+
+    $since    = now()->subDays(\App\Actions\Procurement\PurchaseOrder\UI\ShowAgentOrdersBacklog::RECENT_DAYS)->startOfDay();
+    $drill    = (new ReflectionMethod(\App\Actions\Procurement\PurchaseOrder\UI\ShowAgentOrdersBacklog::class, 'recentDrillDown'))
+        ->invoke(\App\Actions\Procurement\PurchaseOrder\UI\ShowAgentOrdersBacklog::make(), $agentOrganisation, null, $since);
+
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'w2-bl-'.Str::lower(Str::random(6))));
+
+    $slugs = fn (string $routeName, array $query) => collect($this->withoutVite()->get(route($routeName, [$agentOrganisation->slug, ...$query]))
+        ->assertOk()->viewData('page')['props']['data']['data'])->pluck('slug');
+
+    $drilled = $slugs($drill['name'], $drill['parameters']['_query']);
+    expect($drilled)->toContain($recent->slug)->not->toContain($old->slug);
+
+    $inRange = $slugs('grp.org.agent.purchase_orders.index', ['between' => ['submitted_at' => now()->subDays(5)->format('Ymd').'-'.now()->format('Ymd')]]);
+    expect($inRange)->toContain($recent->slug)->toContain($undated->slug)->not->toContain($old->slug);
+});
+
+test('checking many goods receipt lines refreshes the hand over of each order once, after every line is checked', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $first                = createConfirmedAgentOrder($this, $supplier, $product, 0, 4)->refresh();
+    $second               = createConfirmedAgentOrder($this, $supplier, $product, 1, 4)->refresh();
+    $first->updateQuietly(['sample_approved_at' => now(), 'production_started_at' => now()]);
+    $second->updateQuietly(['sample_approved_at' => now(), 'production_started_at' => now()]);
+
+    $receipt = App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($orgAgent->agent, [
+        'lines' => [
+            ['purchase_order_transaction_id' => $first->purchaseOrderTransactions()->value('id'), 'quantity' => 4],
+            ['purchase_order_transaction_id' => $second->purchaseOrderTransactions()->value('id'), 'quantity' => 4],
+        ],
+    ]);
+
+    $calls = [];
+    $this->mock(\App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::class)
+        ->shouldReceive('forPurchaseOrderIds')
+        ->andReturnUsing(function ($ids) use (&$calls) {
+            $calls[] = collect($ids)->unique()->sort()->values()->all();
+        });
+
+    $checked = App\Actions\Procurement\AgentGoodsReceipt\CheckAgentGoodsReceiptItems::make()->handle($orgAgent->agent->organisation, $receipt->items()->pluck('id')->all());
+
+    expect($checked)->toBe(2)
+        ->and($calls)->toBe([collect([$first->id, $second->id])->sort()->values()->all()])
+        ->and($receipt->items()->whereNull('checked_at')->exists())->toBeFalse();
+});
+
+test('Close Old PO takes an order split in aiku from an order started before agent orders were followed here (INI-376)', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+
+    $splitFromOld = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $splitFromNew = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $oldSource    = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $oldSource->updateQuietly(['created_at' => \Illuminate\Support\Carbon::parse(\App\Models\Procurement\PurchaseOrder::AGENT_TRACKING_STARTED_AT)->subMonths(8)]);
+    $splitFromOld->updateQuietly(['data' => [...($splitFromOld->data ?? []), 'split_from' => ['id' => $oldSource->id, 'reference' => $oldSource->reference]]]);
+    $splitFromNew->updateQuietly(['data' => [...($splitFromNew->data ?? []), 'split_from' => ['id' => $splitFromOld->id, 'reference' => $splitFromOld->reference]]]);
+
+    expect(\App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::blockedReason($splitFromOld->refresh()))->toBeNull()
+        ->and(\App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::blockedReason($splitFromNew->refresh()))->not->toBeNull();
+
+    expect(fn () => \App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder::make()->action($splitFromOld, ['reason' => 'old', 'stock_delivery_id' => 'abc']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+test('the rename availability check refuses a reference the rename would refuse for its format', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 5)->refresh();
+    $availability  = \App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderReferenceAvailability::make();
+
+    expect($availability->handle($purchaseOrder, 'W2 has spaces')['is_available'])->toBeFalse()
+        ->and($availability->handle($purchaseOrder, 'W2 has spaces')['format_error'])->not->toBeNull()
+        ->and($availability->handle($purchaseOrder, 'W2-ok-'.$purchaseOrder->id)['is_available'])->toBeTrue();
+});
+
+test('an order whose ready to roll checks were all done before it was agreed is handed over as soon as it is agreed', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $checks               = array_values(array_diff($orgAgent->agent->poJourney()['ready_checks'], ['compliance']));
+    $fields               = array_map(fn (string $key) => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum::READY_CHECK_FIELDS[$key], $checks);
+
+    $order = StorePurchaseOrder::make()->action($supplier, \App\Models\Procurement\PurchaseOrder::factory()->definition());
+    StorePurchaseOrderTransaction::make()->action($order, $product->supplierProduct->historicSupplierProduct, $this->orgStocks[0], array_merge(\App\Models\Procurement\PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 4]));
+    $order = UpdatePurchaseOrderStateToSubmitted::make()->action($order->refresh())->refresh();
+    $order->updateQuietly(['handed_over_at' => null, 'sample_approved_at' => now(), ...array_fill_keys($fields, now()->subDays(2))]);
+
+    expect(\App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::run($order)->handed_over_at)->toBeNull();
+
+    $order = \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed::make()->action($order->refresh());
+
+    expect($order->refresh()->handed_over_at)->not->toBeNull()
+        ->and(\App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::wasRecordedAutomatically($order))->toBeTrue();
 });

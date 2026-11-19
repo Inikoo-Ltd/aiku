@@ -15,19 +15,32 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSuppliers;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Brings an archived supplier back into use. Only the org suppliers DeactivateSupplier switched off are switched
- * back on; a supplier archived before that list was kept brings back all of its org suppliers.
+ * back on; a supplier archived before that list was kept brings back all of its org suppliers. A supplier merged
+ * into another stays archived: its products, orders and org suppliers now belong to the supplier kept.
  */
 class ReactivateSupplier
 {
     use AsAction;
 
+    public static function wasMerged(Supplier $supplier): bool
+    {
+        return Arr::get($supplier->data ?? [], 'merged_into_supplier_id') !== null;
+    }
+
     public function handle(Supplier $supplier): Supplier
     {
+        if (self::wasMerged($supplier)) {
+            throw ValidationException::withMessages([
+                'supplier' => __('This supplier was merged into another supplier and can not be unarchived'),
+            ]);
+        }
+
         $data                   = $supplier->data ?? [];
         $archivedOrgSupplierIds = Arr::get($data, 'archived_org_supplier_ids');
         Arr::forget($data, 'archived_org_supplier_ids');

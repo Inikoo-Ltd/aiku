@@ -13,6 +13,8 @@ use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\Email\SendChatNotificationToCustomer;
 use App\Actions\Comms\Email\SendChatNotificationToExternal;
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Actions\Comms\Mailbox\ImportPendingGmailAttachments;
 use App\Actions\Comms\Mailbox\SendChatMessageByGmail;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
@@ -27,6 +29,7 @@ use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Events\BroadcastChatListEvent;
 use App\Events\BroadcastRealtimeChat;
 use App\Models\Chat\ChatAgent;
+use App\Models\Chat\ChatAiDraft;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\Catalogue\Shop;
@@ -63,6 +66,8 @@ class SendChatMessage
 
     public const MAX_CUSTOMER_DAILY_BYTES = 100 * 1024 * 1024;
 
+    private const float KEPT_OWN_LANGUAGE = 0.5;
+
     /**
      * @throws \Throwable
      */
@@ -92,7 +97,7 @@ class SendChatMessage
 
         $exists = $carriesFiles ? null : ChatMessage::where('chat_session_id', $chatSession->id)
             ->where('sender_type', $modelData['sender_type'])
-            ->where('message_text', $sanitizedMessage ?? '')
+            ->where(fn ($query) => $query->where('message_text', $sanitizedMessage ?? '')->orWhere('original_text', $sanitizedMessage ?? ''))
             ->whereBetween('created_at', [now()->subSeconds(), now()])
             ->first();
 
@@ -101,21 +106,28 @@ class SendChatMessage
         }
 
 
+        $ownLanguage = $this->draftWrittenInOwnLanguage($chatSession, $modelData, $sanitizedMessage);
+
         $chatMessageData = [
             'chat_session_id' => $chatSession->id,
             'message_type'    => $modelData['message_type'] ?? ChatMessageTypeEnum::TEXT->value,
             'sender_type'     => $modelData['sender_type'],
             'sender_id'       => $modelData['sender_id'] ?? null,
-            'message_text'    => $sanitizedMessage,
+            'message_text'    => $ownLanguage['message_text'] ?? $sanitizedMessage,
             'media_id'        => $modelData['media_id'] ?? null,
             'original_text'   => $sanitizedMessage,
+            'original_language_id' => $ownLanguage['original_language_id'] ?? null,
             'is_read'         => false,
-            'metadata'        => $this->pageMetadata($chatSession, $modelData),
+            'metadata'        => $ownLanguage['metadata'] ?? $this->pageMetadata($chatSession, $modelData),
             'created_at'      => now(),
             'updated_at'      => now(),
         ];
 
         $chatMessage = ChatMessage::create($chatMessageData);
+
+        if ($ownLanguage) {
+            $ownLanguage['draft']->update(['written_in_language_id' => $ownLanguage['staff_language_id']]);
+        }
 
         if ($modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value && !empty($modelData['sender_id'])) {
             SaveChatReplyDraft::make()->forget($chatSession, (int) $modelData['sender_id']);
@@ -172,11 +184,60 @@ class SendChatMessage
         $shouldNotifyByEmail = ($modelData['is_email_notif'] ?? false)
             && $chatSession->channel !== ChatChannelEnum::EMAIL;
 
-        if ($shouldNotifyByEmail && $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
-            $this->sendExternalNotification($chatSession);
+        $isAgentReply = $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value;
+
+        $sentOfflineReplyWhatsapp = $isAgentReply && NotifyOfflineMessageReplyOnWhatsapp::run($chatSession);
+
+        if ($shouldNotifyByEmail && $isAgentReply) {
+            $this->sendExternalNotification($chatSession, notifyOnWhatsapp: !$sentOfflineReplyWhatsapp);
         }
 
         return $chatMessage;
+    }
+
+    /**
+     * HELP-4534: an email reply the agent wrote on Aiku's draft translated into their own language.
+     * Sent unchanged, the customer gets the draft as Aiku wrote and checked it, never a translation
+     * of its translation; changed, it is translated into the language the draft was written in.
+     *
+     * A reply rewritten rather than edited may be in any language, so it is left to detection
+     * like any other reply.
+     *
+     * @return array{message_text: string|null, original_language_id: int|null, metadata: array<string, int|null>, staff_language_id: int, draft: ChatAiDraft}|null
+     */
+    private function draftWrittenInOwnLanguage(ChatSession $chatSession, array $modelData, ?string $text): ?array
+    {
+        if ($chatSession->channel !== ChatChannelEnum::EMAIL
+            || $modelData['sender_type'] !== ChatSenderTypeEnum::AGENT->value
+            || empty($modelData['ai_draft_translation_of'])
+            || blank($text)) {
+            return null;
+        }
+
+        $draft = ChatAiDraft::where('id', $modelData['ai_draft_translation_of'])->where('chat_session_id', $chatSession->id)->first();
+        $agent = ChatAgent::find($modelData['sender_id'] ?? null);
+
+        $languageId  = HandleChatAiDraft::staffLanguageId($agent, $agent?->user);
+        $translation = $draft && $languageId ? ($draft->staff_translations[$languageId] ?? null) : null;
+
+        if (!$translation) {
+            return null;
+        }
+
+        $asWritten = SettleChatAiDraft::normalised($translation) === SettleChatAiDraft::normalised($text)
+            && !preg_match(DraftChatReply::GAP, $draft->text);
+
+        $stillInOwnLanguage = $asWritten || SettleChatAiDraft::draftWordsKept($translation, $text) >= self::KEPT_OWN_LANGUAGE;
+
+        return [
+            'message_text'         => $asWritten ? $draft->text : null,
+            'original_language_id' => $stillInOwnLanguage ? $languageId : null,
+            'metadata'             => $asWritten
+                ? ['draft_sent_as_written' => $draft->id]
+                : ['reply_language_id' => HandleChatAiDraft::replyLanguageId($chatSession, $draft)],
+            'staff_language_id'    => $languageId,
+            'draft'                => $draft,
+        ];
     }
 
     /**
@@ -328,16 +389,21 @@ class SendChatMessage
     /**
      * @throws \Throwable
      */
-    protected function sendExternalNotification(ChatSession $chatSession): void
+    protected function sendExternalNotification(ChatSession $chatSession, bool $notifyOnWhatsapp = true): void
     {
-        $chatLink = null;
-        if ($chatSession->shop && $chatSession->shop->website && $chatSession->ulid) {
-            $chatLink = $chatSession->shop->website->getUrl().'/?chat_session='.$chatSession->ulid;
-        }
+        $chatLink = NotifyOfflineMessageReplyOnWhatsapp::chatLink($chatSession);
         if ($chatSession->web_user_id && $chatSession->webUser && $chatSession->webUser->customer) {
             SendChatNotificationToCustomer::dispatch($chatSession->webUser->customer, ['chat_link' => $chatLink,
             'chat_message' => $chatSession->messages()?->latest()?->first()?->message_text ?? null,
             ]);
+            if ($notifyOnWhatsapp) {
+                SendCustomerNotificationWhatsapp::dispatch(
+                    $chatSession->webUser->customer,
+                    OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
+                    null,
+                    ['chat_url' => $chatLink]
+                );
+            }
 
             return;
         }
@@ -436,6 +502,11 @@ class SendChatMessage
             'email_cc_excluded'   => [
                 'sometimes',
                 'array',
+            ],
+            'ai_draft_translation_of' => [
+                'sometimes',
+                'nullable',
+                'integer',
             ],
             'page_url'       => [
                 'sometimes',

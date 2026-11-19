@@ -12,7 +12,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { compactCount } from "@/Composables/useCompactCount"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube, faCircle, faSpinner, faCheckCircle, faBan, faTasks, faEye, faEyeSlash, faLightbulbOn } from "@fal"
-import { faStar as faStarSolid, faEye as faEyeSolid } from "@fas"
+import { faStar as faStarSolid, faEye as faEyeSolid, faMoon as faMoonSolid } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from "@inertiajs/vue3"
 import Image from "@/Common/Components/Image.vue"
@@ -21,12 +21,13 @@ import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 const ManageTeamModal = defineAsyncComponent(() => import("@/Components/Messaging/ManageTeamModal.vue"))
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useLiveUsers } from "@/Stores/active-users"
+import { isFocusingUntil } from "@/Composables/useFocusMode"
 import { useStaffMessaging, isAlerting, isWorkThread, isHiddenChat, canArchiveConversation, type StaffCoworker } from "@/Stores/staff-messaging"
 import CustomersWaiting from "@/Layouts/Grp/CustomersWaiting.vue"
 import WhatsappCallAlert from "@/Layouts/Grp/WhatsappCallAlert.vue"
 import { useTruncate } from "@/Composables/useTruncate"
 
-library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube, faCircle, faSpinner, faCheckCircle, faBan, faTasks, faEye, faEyeSlash, faEyeSolid, faLightbulbOn)
+library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube, faCircle, faSpinner, faCheckCircle, faBan, faTasks, faEye, faEyeSlash, faEyeSolid, faLightbulbOn, faMoonSolid)
 
 const openFullMessaging = () => router.visit(route("grp.chat.staff.index"))
 
@@ -255,6 +256,7 @@ onUnmounted(() => {
     document.removeEventListener("rail-click", recordRailClickEvent)
 })
 const isOnline = (id: number) => useLiveUsers().liveUsers[id]?.action === 'navigate'
+const isFocusing = (c: StaffCoworker) => (nowTick.value, isFocusingUntil(useLiveUsers().liveUsers[c.id]?.focus_until))
 
 const getCurrentPage = (coworkerId: number) => useLiveUsers().liveUsers[coworkerId]?.current_page
 
@@ -690,7 +692,8 @@ onUnmounted(() => {
                             <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
                             <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
                         </div>
-                        <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? ctrans('Idle') : ''" />
+                        <FontAwesomeIcon v-if="presence(coworker) !== 'offline' && isFocusing(coworker)" icon="fas fa-moon" class="absolute -bottom-0.5 -right-0.5 rounded-full bg-[var(--chat-bg)] p-px text-[0.55rem] text-violet-300" fixed-width :title="ctrans('Focus mode, please do not disturb')" />
+                        <span v-else class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? ctrans('Idle') : ''" />
                     </div>
                     <div class="flex-1 flex flex-col min-w-0">
                         <span class="text-xs text-[var(--chat-text)] flex items-center gap-x-1">
@@ -802,7 +805,8 @@ onUnmounted(() => {
                         <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
                         <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
                     </div>
-                    <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? ctrans('Idle') : ''" />
+                    <FontAwesomeIcon v-if="presence(coworker) !== 'offline' && isFocusing(coworker)" icon="fas fa-moon" class="absolute -bottom-0.5 -right-0.5 rounded-full bg-[var(--chat-bg)] p-px text-[0.55rem] text-violet-300" fixed-width :title="ctrans('Focus mode, please do not disturb')" />
+                        <span v-else class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? ctrans('Idle') : ''" />
                 </div>
                 <div class="flex-1 flex flex-col min-w-0">
                     <span class="text-xs text-[var(--chat-text)] flex items-center gap-x-1">

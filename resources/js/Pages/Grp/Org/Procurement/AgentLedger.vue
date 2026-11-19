@@ -18,12 +18,13 @@ import Textarea from "primevue/textarea"
 import { useConfirm } from "primevue/useconfirm"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBook, faCheck, faCheckCircle, faCircle, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt } from "@fal"
+import { faBook, faCheck, faCheckCircle, faCircle, faExclamationTriangle, faLock, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt } from "@fal"
 import { faCheckCircle as fasCheckCircle } from "@fas"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
 import AgentFeeCalculationInfo from "@/Components/Procurement/AgentFeeCalculationInfo.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
@@ -31,7 +32,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faBook, faCheck, faCheckCircle, fasCheckCircle, faCircle, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt)
+library.add(faBook, faCheck, faCheckCircle, fasCheckCircle, faCircle, faExclamationTriangle, faLock, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt)
 
 interface Wallet {
 	organisation_id: number
@@ -44,7 +45,7 @@ interface Wallet {
 	org_agent_id: number | null
 	agent_fee_percentage: number | null
 	cho_penalty_percentage: number
-	suppliers: SupplierFee[]
+	number_suppliers: number
 	suppliers_with_different_fee: SupplierFee[]
 }
 
@@ -91,12 +92,14 @@ interface EntryRow {
 	review_reason: string | null
 	delete_route: routeType | null
 	update_route: routeType | null
+	money_request_lock: string | null
 }
 
 const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	wallets: Wallet[]
+	supplier_fee_options?: Record<number, SupplierFee[]> | null
 	agent_fee_explained: string[]
 	form: {
 		store_route: routeType
@@ -145,8 +148,15 @@ const supplierFeeError = ref<string | null>(null)
 const supplierFeeSaving = ref(false)
 const isSupplierFeeOpen = computed({ get: () => supplierFeeWallet.value !== null, set: (open: boolean) => !open && (supplierFeeWallet.value = null) })
 const clientFee = (wallet: Wallet | null) => wallet?.agent_fee_percentage ?? 2
+const walletSuppliers = computed<SupplierFee[]>(() => (supplierFeeWallet.value ? props.supplier_fee_options?.[supplierFeeWallet.value.organisation_id] ?? [] : []))
+const loadingSupplierOptions = ref(false)
+const loadSupplierOptions = () => {
+	if (!props.form) return
+	loadingSupplierOptions.value = true
+	router.reload({ only: ["supplier_fee_options"], onFinish: () => (loadingSupplierOptions.value = false) })
+}
 const supplierOptions = computed(() =>
-	(supplierFeeWallet.value?.suppliers ?? []).map((supplier) => ({
+	walletSuppliers.value.map((supplier) => ({
 		value: supplier.id,
 		label: [supplier.code, supplier.name].filter(Boolean).join(" · ") + (supplier.agent_fee_percentage !== null ? ` (${supplier.agent_fee_percentage}%)` : ""),
 	})),
@@ -156,6 +166,7 @@ const openSupplierFees = (wallet: Wallet) => {
 	supplierFeeSupplierId.value = null
 	supplierFeePercentage.value = null
 	supplierFeeError.value = null
+	if (!props.supplier_fee_options) loadSupplierOptions()
 }
 const pickSupplierFee = (supplier: SupplierFee) => {
 	supplierFeeSupplierId.value = supplier.id
@@ -163,7 +174,7 @@ const pickSupplierFee = (supplier: SupplierFee) => {
 	supplierFeeError.value = null
 }
 watch(supplierFeeSupplierId, (supplierId) => {
-	const supplier = supplierFeeWallet.value?.suppliers.find((option) => option.id === supplierId)
+	const supplier = walletSuppliers.value.find((option) => option.id === supplierId)
 	supplierFeePercentage.value = supplier?.agent_fee_percentage ?? null
 })
 const removingSupplierFeeId = ref<number | null>(null)
@@ -187,6 +198,7 @@ const patchSupplierFee = (supplierId: number, percentage: number | null, onFinis
 			supplierFeeSupplierId.value = null
 			supplierFeePercentage.value = null
 			supplierFeeError.value = null
+			if (supplierFeeWallet.value) loadSupplierOptions()
 		},
 		onError: (errors) => (supplierFeeError.value = firstError(errors)),
 		onFinish,
@@ -404,7 +416,7 @@ const confirmRemove = (row: EntryRow) =>
 				</button>
 			</div>
 			<button
-				v-if="wallet.org_agent_id && (wallet.suppliers_with_different_fee.length || (form && wallet.suppliers.length))"
+				v-if="wallet.org_agent_id && (wallet.suppliers_with_different_fee.length || (form && wallet.number_suppliers))"
 				type="button"
 				class="mt-1 text-left text-xs text-[var(--app-accent)] hover:underline"
 				@click="openSupplierFees(wallet)">
@@ -495,6 +507,9 @@ const confirmRemove = (row: EntryRow) =>
 			<button v-if="item.delete_route" type="button" class="text-gray-400 hover:text-red-600" :title="ctrans('Remove')" :aria-label="ctrans('Remove')" @click="confirmRemove(item)">
 				<FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
 			</button>
+			<span v-else-if="item.money_request_lock" class="text-gray-300" v-tooltip="item.money_request_lock" :aria-label="item.money_request_lock">
+				<FontAwesomeIcon icon="fal fa-lock" fixed-width aria-hidden="true" />
+			</span>
 		</template>
 	</Table>
 
@@ -506,7 +521,7 @@ const confirmRemove = (row: EntryRow) =>
 			</label>
 			<label class="block text-sm">
 				<span class="text-gray-600">{{ ctrans("Type") }} <span class="text-red-500">*</span></span>
-				<Select v-model="entry.type" :options="typeOptions" optionLabel="label" optionValue="value" class="mt-1 w-full" :class="fieldFocusClass">
+				<Select v-model="entry.type" :options="typeOptions" optionLabel="label" optionValue="value" :disabled="!!editing?.money_request_lock" class="mt-1 w-full" :class="fieldFocusClass">
 					<template #option="{ option }">
 						<span>{{ option.label }}</span>
 						<span class="ml-2 text-xs" :class="option.money_in ? 'text-green-600' : 'text-gray-400'">{{ option.money_in ? ctrans("In") : ctrans("Out") }}</span>
@@ -530,15 +545,16 @@ const confirmRemove = (row: EntryRow) =>
 			</label>
 			<label class="block text-sm">
 				<span class="text-gray-600">{{ selectedType?.needs_order ? ctrans("Supplier order") : ctrans("Supplier order (optional)") }} <span v-if="selectedType?.needs_order" class="text-red-500">*</span></span>
-				<Select v-model="entry.purchase_order_id" :options="clientOrders" optionLabel="label" optionValue="id" filter showClear :disabled="!entry.organisation_id" class="mt-1 w-full" :class="fieldFocusClass" />
+				<Select v-model="entry.purchase_order_id" :options="clientOrders" optionLabel="label" optionValue="id" filter showClear :disabled="!entry.organisation_id || !!editing?.money_request_lock" class="mt-1 w-full" :class="fieldFocusClass" />
 				<span v-if="selectedType?.needs_order && entry.organisation_id && !clientOrders.length" class="mt-1 block text-xs text-amber-700">
 					{{ ctrans("This client has no open order through you: record it as another type, or choose another client.") }}
 				</span>
 			</label>
 			<label class="block text-sm">
 				<span class="text-gray-600">{{ ctrans("Container (optional)") }}</span>
-				<Select v-model="entry.stock_delivery_id" :options="clientContainers" optionLabel="label" optionValue="id" filter showClear :disabled="!entry.organisation_id" class="mt-1 w-full" :class="fieldFocusClass" />
+				<Select v-model="entry.stock_delivery_id" :options="clientContainers" optionLabel="label" optionValue="id" filter showClear :disabled="!entry.organisation_id || !!editing?.money_request_lock" class="mt-1 w-full" :class="fieldFocusClass" />
 			</label>
+			<p v-if="editing?.money_request_lock" class="text-xs text-amber-700">{{ editing.money_request_lock }}</p>
 			<label v-if="entry.type === 'packaging' && containerSkos.length" class="block text-sm">
 				<span class="text-gray-600">{{ ctrans("SKO it is for (optional)") }}</span>
 				<Select v-model="entry.org_stock_id" :options="containerSkos" optionLabel="label" optionValue="id" filter showClear class="mt-1 w-full" :class="fieldFocusClass" />
@@ -637,7 +653,7 @@ const confirmRemove = (row: EntryRow) =>
 		<AgentFeeCalculationInfo :items="agent_fee_explained" class="mt-3" />
 
 		<div v-if="form" class="mt-5 border-t border-gray-100 pt-4">
-			<div class="text-sm font-medium text-gray-700">{{ ctrans("Set a supplier's agent fee") }}</div>
+			<div class="flex items-center gap-2 text-sm font-medium text-gray-700">{{ ctrans("Set a supplier's agent fee") }} <LoadingIcon v-if="loadingSupplierOptions" /></div>
 			<div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_8rem]">
 				<Select
 					v-model="supplierFeeSupplierId"

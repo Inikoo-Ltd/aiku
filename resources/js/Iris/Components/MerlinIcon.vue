@@ -60,7 +60,7 @@ const smallSparkle = sparkle(40.6, 39.7, 4.4)
     </svg>
 </template>
 
-<style scoped>
+<style>
 .merlin-icon {
     display: inline-block;
     width: 1.75em;
@@ -70,6 +70,9 @@ const smallSparkle = sparkle(40.6, 39.7, 4.4)
     overflow: visible;
     user-select: none;
 }
+</style>
+
+<style scoped>
 
 .merlin-icon-themed .merlin-gradient-start {
     stop-color: color-mix(in srgb, var(--theme-color-4, #ef7d22) 85%, #000);

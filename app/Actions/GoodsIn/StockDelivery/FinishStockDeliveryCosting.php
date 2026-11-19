@@ -55,6 +55,12 @@ class FinishStockDeliveryCosting extends OrgAction
             ]);
         }
 
+        if (EvaluateStockDeliveryCosting::costsWithoutLines($stockDelivery)->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'costing' => __('Pick the tariff codes the anti-dumping duty applies to: it goes only to the lines with those codes'),
+            ]);
+        }
+
         throw ValidationException::withMessages([
             'costing' => __('Every cost in the checklist must be received or marked N/A before the costing can be finished'),
         ]);

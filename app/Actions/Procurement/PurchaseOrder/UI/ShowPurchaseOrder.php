@@ -66,6 +66,8 @@ use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Models\GoodsIn\StockDelivery;
 use App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderReference;
 use App\Models\SysAdmin\User;
 use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgAgent;
@@ -315,7 +317,7 @@ class ShowPurchaseOrder extends OrgAction
                         },
                     ]),
                 ],
-                'rename_reference'         => $this->canEdit || $this->agentCanEdit ? [
+                'rename_reference'         => ($this->canEdit || $this->agentCanEdit) && UpdatePurchaseOrderReference::isRenameable($purchaseOrder) ? [
                     'availability_route' => [
                         'name'       => 'grp.json.purchase_order.reference_availability',
                         'parameters' => [
@@ -542,8 +544,7 @@ class ShowPurchaseOrder extends OrgAction
      */
     private function canChangeDeliveryAddress(PurchaseOrder $purchaseOrder, ActionRequest $request): bool
     {
-        return $purchaseOrder->state->isLive()
-            && !in_array($purchaseOrder->state, [PurchaseOrderStateEnum::HANDED_OVER, PurchaseOrderStateEnum::ARRIVED], true)
+        return UpdatePurchaseOrder::isDeliveryAddressChangeable($purchaseOrder)
             && $request->user()->authTo("procurement.$purchaseOrder->organisation_id.edit");
     }
 

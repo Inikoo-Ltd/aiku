@@ -202,7 +202,7 @@ class IndexOrgSuppliers extends OrgAction
                 'supplier_stats.number_current_supplier_products as number_org_supplier_products',
                 'supplier_stats.number_purchase_orders',
                 'supplier_stats.number_stock_deliveries',
-                'org_suppliers.slug as org_supplier_slug',
+                'suppliers.slug as org_supplier_slug',
             ])
             ->selectRaw(PurchaseOrderStateEnum::countFromStatsSql('supplier_stats', PurchaseOrderStateEnum::open()).' as number_open_purchase_orders')
             ->tap(fn ($query) => GetSupplierAgreementStatus::make()->selectStatus($query, $agent->group_id));

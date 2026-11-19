@@ -7,7 +7,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockHasSupplierProduct;
 use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
@@ -17,6 +17,7 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -28,7 +29,23 @@ use Lorisleiva\Actions\ActionRequest;
 class CopySupplierProductsToSupplier extends OrgAction
 {
     use WithAgentOrganisation;
-    use WithProcurementEditAuthorisation;
+
+    public const FREE_SUPPLIERS_KEY = 0;
+
+    private bool $isInGroup = false;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($this->isInGroup) {
+            return $this->canEditFreeSuppliers($request->user());
+        }
+
+        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+    }
 
     private const COPIED_FIELDS = [
         'code',
@@ -122,6 +139,10 @@ class CopySupplierProductsToSupplier extends OrgAction
 
     private function makePreferred(SupplierProduct $source, SupplierProduct $target): void
     {
+        if (!$this->canBecomePreferred($target)) {
+            return;
+        }
+
         $sharedStockIds = StockHasSupplierProduct::where('supplier_product_id', $target->id)
             ->whereIn('stock_id', StockHasSupplierProduct::where('supplier_product_id', $source->id)->select('stock_id'))
             ->pluck('stock_id');
@@ -129,6 +150,31 @@ class CopySupplierProductsToSupplier extends OrgAction
         Stock::whereIn('id', $sharedStockIds)
             ->get()
             ->each(fn (Stock $stock) => SetStockPreferredSupplierProduct::make()->handle($stock, $target));
+    }
+
+    public static function canBecomePreferred(SupplierProduct $target): bool
+    {
+        return $target->is_available
+            && !in_array($target->state, [SupplierProductStateEnum::DISCONTINUING, SupplierProductStateEnum::DISCONTINUED], true)
+            && $target->supplier?->status;
+    }
+
+    /**
+     * Making the target the preferred supplier re-points the SKOs in every buying organisation, which is the
+     * goods.edit permission SetStockPreferredSupplierProduct asks for, not only the agent's procurement.
+     */
+    public function canMakePreferred(?User $user): bool
+    {
+        return (bool) $user?->authTo('goods.edit');
+    }
+
+    private function assertCanMakePreferred(bool $makePreferred, ?User $user): void
+    {
+        if ($makePreferred && !$this->canMakePreferred($user)) {
+            throw ValidationException::withMessages([
+                'make_preferred' => __('You are not allowed to change the preferred supplier of the SKOs.'),
+            ]);
+        }
     }
 
     /**
@@ -233,16 +279,99 @@ class CopySupplierProductsToSupplier extends OrgAction
             ->values();
     }
 
+    public function canEditFreeSuppliers(?User $user): bool
+    {
+        return (bool) $user?->authTo('supply-chain.edit');
+    }
+
+    public function canEditSupplier(Supplier $supplier, ?User $user): bool
+    {
+        if (!$supplier->agent_id) {
+            return $this->canEditFreeSuppliers($user);
+        }
+
+        return $this->getAccessibleAgents($user)->contains('id', $supplier->agent_id);
+    }
+
     /**
-     * What the Supplier Products page of an agent supplier needs to push products to another supplier, pull
-     * products from one, or start a new supplier with them; null when the user may not edit that agent.
+     * Supplier products of the agents in $agentIds and, with $includeFreeSuppliers, of every free supplier.
      *
-     * @return array{agent_id: int, agents: array<int, array{id: int, label: string, create_route: array{name: string, parameters: array<int, string>}}>, copy_route: array{name: string, parameters: array<int, int>}, supplier_id: int, source_products_route: array{name: string, parameters: array<int, int>}}|null
+     * @param  Collection<int, int>|array<int, int>  $agentIds
+     * @return Builder<SupplierProduct>
+     */
+    public function copyableSupplierProducts(Collection|array $agentIds, bool $includeFreeSuppliers): Builder
+    {
+        return SupplierProduct::query()->where(function (Builder $query) use ($agentIds, $includeFreeSuppliers) {
+            $query->whereIn('agent_id', $agentIds);
+
+            if ($includeFreeSuppliers) {
+                $query->orWhereNull('agent_id');
+            }
+        });
+    }
+
+    /**
+     * @return array<int, array{id: int, label: string, create_route: array{name: string, parameters: array<int, string>}}>
+     */
+    private function getAgentOptions(Collection $accessibleAgents): array
+    {
+        return $accessibleAgents
+            ->map(fn (Agent $accessibleAgent) => [
+                'id'           => $accessibleAgent->id,
+                'label'        => $accessibleAgent->organisation->name,
+                'create_route' => [
+                    'name'       => 'grp.org.procurement.org_suppliers.create_new',
+                    'parameters' => [$accessibleAgent->organisation->slug],
+                ],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * What the Supplier Products page of a supplier needs to push products to another supplier, pull
+     * products from one, or start a new supplier with them; null when the user may not edit that supplier.
+     * A free supplier shares with the other free suppliers (listed as agent FREE_SUPPLIERS_KEY) and with
+     * the suppliers of the agents the user may edit.
+     *
+     * @return array{agent_id: int, agents: array<int, array{id: int, label: string, create_route: array{name: string, parameters: array<int, string>}}>, copy_route: array{name: string, parameters: array<int, int>}, supplier_id: int, source_products_route: array{name: string, parameters: array<int, int>}, can_make_preferred: bool}|null
      */
     public function getCopyProductsProps(Supplier $supplier, ?User $user): ?array
     {
         $accessibleAgents = $this->getAccessibleAgents($user);
-        $agent            = $accessibleAgents->firstWhere('id', $supplier->agent_id);
+
+        if (!$supplier->agent_id) {
+            if (!$this->canEditFreeSuppliers($user)) {
+                return null;
+            }
+
+            return [
+                'agent_id'   => self::FREE_SUPPLIERS_KEY,
+                'agents'     => [
+                    [
+                        'id'           => self::FREE_SUPPLIERS_KEY,
+                        'label'        => __('Free suppliers'),
+                        'create_route' => [
+                            'name'       => 'grp.supply-chain.suppliers.create',
+                            'parameters' => [],
+                        ],
+                    ],
+                    ...$this->getAgentOptions($accessibleAgents),
+                ],
+                'copy_route' => [
+                    'name'       => 'grp.models.supplier.supplier_products.copy',
+                    'parameters' => [],
+                ],
+                'supplier_id'           => $supplier->id,
+                'source_products_route' => [
+                    'name'       => 'grp.json.supplier.supplier_products_to_copy_in_group',
+                    'parameters' => [$supplier->id],
+                ],
+                'can_make_preferred' => $this->canMakePreferred($user),
+            ];
+        }
+
+        $agent = $accessibleAgents->firstWhere('id', $supplier->agent_id);
 
         if (!$agent) {
             return null;
@@ -250,16 +379,7 @@ class CopySupplierProductsToSupplier extends OrgAction
 
         return [
             'agent_id'   => $agent->id,
-            'agents'     => $accessibleAgents
-                ->map(fn (Agent $accessibleAgent) => [
-                    'id'           => $accessibleAgent->id,
-                    'label'        => $accessibleAgent->organisation->name,
-                    'create_route' => [
-                        'name'       => 'grp.org.procurement.org_suppliers.create_new',
-                        'parameters' => [$accessibleAgent->organisation->slug],
-                    ],
-                ])
-                ->all(),
+            'agents'     => $this->getAgentOptions($accessibleAgents),
             'copy_route' => [
                 'name'       => 'grp.models.org.supplier.supplier_products.copy',
                 'parameters' => [$agent->organisation_id],
@@ -269,6 +389,7 @@ class CopySupplierProductsToSupplier extends OrgAction
                 'name'       => 'grp.json.supplier.supplier_products_to_copy',
                 'parameters' => [$agent->organisation_id, $supplier->id],
             ],
+            'can_make_preferred' => $this->canMakePreferred($user),
         ];
     }
 
@@ -277,7 +398,17 @@ class CopySupplierProductsToSupplier extends OrgAction
      */
     public function getCopyTargetsProps(Supplier $supplier, ?User $user): array
     {
-        return Supplier::whereIn('agent_id', $this->getAccessibleAgents($user)->pluck('id'))
+        $agentIds             = $this->getAccessibleAgents($user)->pluck('id');
+        $includeFreeSuppliers = !$supplier->agent_id && $this->canEditFreeSuppliers($user);
+
+        return Supplier::where('group_id', $supplier->group_id)
+            ->where(function ($query) use ($agentIds, $includeFreeSuppliers) {
+                $query->whereIn('agent_id', $agentIds);
+
+                if ($includeFreeSuppliers) {
+                    $query->orWhereNull('agent_id');
+                }
+            })
             ->where('status', true)
             ->where('id', '!=', $supplier->id)
             ->withCount('supplierProducts')
@@ -285,7 +416,7 @@ class CopySupplierProductsToSupplier extends OrgAction
             ->get(['id', 'agent_id', 'code', 'name', 'company_name', 'contact_name'])
             ->map(fn (Supplier $target) => [
                 'id'              => $target->id,
-                'agent_id'        => $target->agent_id,
+                'agent_id'        => $target->agent_id ?? self::FREE_SUPPLIERS_KEY,
                 'number_products' => $target->supplier_products_count,
                 'label'           => $target->name && $target->name !== $target->code ? $target->code.' — '.$target->name : $target->code,
                 'company_name'    => $target->company_name,
@@ -316,12 +447,6 @@ class CopySupplierProductsToSupplier extends OrgAction
                 'org_supplier_products' => __('Select at least one product.'),
             ]);
         }
-
-        if (!$supplier->agent_id) {
-            throw ValidationException::withMessages([
-                'org_supplier_products' => __('Products can only be shared with the supplier of an agent.'),
-            ]);
-        }
     }
 
     public function rules(): array
@@ -347,6 +472,7 @@ class CopySupplierProductsToSupplier extends OrgAction
         abort_unless($agent && $accessibleAgents->contains('id', $supplier->agent_id), 404);
 
         $makePreferred = (bool) ($this->validatedData['make_preferred'] ?? false);
+        $this->assertCanMakePreferred($makePreferred, $request->user());
 
         if (isset($this->validatedData['supplier_products'])) {
             return $this->handle(
@@ -360,6 +486,33 @@ class CopySupplierProductsToSupplier extends OrgAction
         }
 
         return $this->handle($supplier, $this->getAgentsSupplierProducts([$agent->id], $this->validatedData['org_supplier_products']), $makePreferred);
+    }
+
+    /**
+     * The group Supplier Products page of a free supplier posts supplier products of free suppliers
+     * and of the agents the user may edit, to or from any of those suppliers.
+     *
+     * @throws \Throwable
+     */
+    public function inGroup(Supplier $supplier, ActionRequest $request): int
+    {
+        $this->isInGroup = true;
+        $this->initialisationFromGroup($supplier->group, $request);
+
+        abort_unless($this->canEditSupplier($supplier, $request->user()), 404);
+
+        $makePreferred = (bool) ($this->validatedData['make_preferred'] ?? false);
+        $this->assertCanMakePreferred($makePreferred, $request->user());
+
+        return $this->handle(
+            $supplier,
+            $this->copyableSupplierProducts($this->getAccessibleAgents($request->user())->pluck('id'), true)
+                ->where('group_id', $supplier->group_id)
+                ->where('supplier_id', '!=', $supplier->id)
+                ->whereIn('id', $this->validatedData['supplier_products'] ?? [])
+                ->get(),
+            $makePreferred
+        );
     }
 
     /**

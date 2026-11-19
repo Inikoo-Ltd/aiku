@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\Warehouse\UI;
 
 use App\Actions\Dashboard\ShowOrganisationDashboard;
+use App\Actions\Dispatching\Capacity\GetWarehouseCapacity;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\LocationOrgStock\UI\IndexAutoDisassociatedLocationOrgStocks;
 use App\Actions\Inventory\LocationOrgStock\UI\IndexEmptyLocationOrgStocks;
@@ -101,6 +102,10 @@ class ShowWarehouse extends OrgAction
                     'route'     => ['name' => 'grp.dashboard.operations'],
                     'warehouse' => $warehouse->id,
                 ] : null,
+
+                'capacity' => $this->canSeeOperations && $request->user()->authTo(["supervisor-dispatching.$warehouse->id", "org-admin.$warehouse->organisation_id", 'group-overview'])
+                    ? Inertia::defer(fn () => GetWarehouseCapacity::make()->forWarehouse($warehouse), 'capacity')
+                    : null,
 
                 WarehouseTabsEnum::SHOWCASE->value => $this->tab == WarehouseTabsEnum::SHOWCASE->value ?
                     fn () => GetWarehouseShowcase::run($warehouse, $routeParameters)

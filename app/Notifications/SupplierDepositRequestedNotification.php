@@ -11,17 +11,22 @@ namespace App\Notifications;
 
 use App\Models\Procurement\PurchaseOrder;
 use App\Notifications\Concerns\SendsMailThroughSes;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class SupplierDepositRequestedNotification extends Notification
+class SupplierDepositRequestedNotification extends Notification implements ShouldQueue
 {
+    use Queueable;
     use SendsMailThroughSes;
 
     public bool $byEmail = true;
 
     public function __construct(public PurchaseOrder $purchaseOrder, public string $title, public string $body, public string $whyLine, public array $route)
     {
+        $this->locale = app()->getLocale();
+        $this->afterCommit();
     }
 
     public function via($notifiable): array
@@ -44,8 +49,8 @@ class SupplierDepositRequestedNotification extends Notification
     {
         return $this->newMailMessage()
             ->subject($this->title)
-            ->line($this->body)
+            ->line($this->plainLine($this->body))
             ->action(__('Open the order'), route($this->route['name'], $this->route['parameters']))
-            ->line($this->whyLine);
+            ->line($this->plainLine($this->whyLine));
     }
 }

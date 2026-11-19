@@ -50,6 +50,8 @@ class FinaliseAndDispatchDeliveryNote extends OrgAction
      */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): ?RedirectResponse
     {
+        $this->initialisationFromShop($deliveryNote->shop, $request);
+
         if ($deliveryNote->state === DeliveryNoteStateEnum::DISPATCHED) {
             return null;
         }
@@ -57,8 +59,6 @@ class FinaliseAndDispatchDeliveryNote extends OrgAction
         if ($notification = $this->unprintedLeafletsNotification($deliveryNote, __('Every insert must be printed before finalising and dispatching.'))) {
             return $notification;
         }
-
-        $this->initialisationFromShop($deliveryNote->shop, $request);
 
         $this->handle($deliveryNote);
 

@@ -18,12 +18,17 @@ use Illuminate\Support\Str;
 
 trait WithPortfolioSKU
 {
+    public const int MAX_SKU_LENGTH = 255;
+
     /**
      * A product made of one stock is known by its own code: the slug of the stock is shared by every
      * product built on that stock and survives a recode, so it can be the code of another product.
      * A product made of several stocks keeps the composite of their slugs, and so does a bundle,
      * whose sku is already on the listings and is the inventory key on eBay. A bundle holding several
      * of one stock adds the quantity to its slug, or a two pack would carry the sku of the single.
+     * A composite longer than the portfolios.sku column is no sku at all: writing it would abort
+     * whatever was saving the product (HELP-4801, a 25 stock gift set), so the portfolio is left
+     * without one and the customer is told why on upload, as for a product with no SKO.
      */
     public function getSKU(Product|StoredItem $item): ?string
     {
@@ -42,7 +47,9 @@ trait WithPortfolioSKU
             $skuArray[] = $item->is_bundle ? $this->bundleSkuPart($slug, $orgStock->pivot->quantity) : $slug;
         }
 
-        return empty($skuArray) ? null : implode('-', $skuArray);
+        $sku = implode('-', $skuArray);
+
+        return $sku === '' || strlen($sku) > self::MAX_SKU_LENGTH ? null : $sku;
     }
 
     private function bundleSkuPart(string $slug, mixed $quantity): string

@@ -61,6 +61,11 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['hide_logo'] = $hideLogo;
         }
 
+        if (Arr::exists($modelData, 'focus_minutes')) {
+            $focusMinutes                         = (int) Arr::pull($modelData, 'focus_minutes');
+            $modelData['settings']['focus_until'] = $focusMinutes ? now()->addMinutes($focusMinutes)->toIso8601String() : null;
+        }
+
         if (Arr::exists($modelData, 'notifications')) {
             $modelData['settings']['notifications'] = collect(UserNotificationEnum::cases())
                 ->mapWithKeys(fn (UserNotificationEnum $event) => [
@@ -280,6 +285,7 @@ class UpdateProfile extends OrgAction
             'org_themes.themes.*.colour'          => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'chat_signature'    => ['sometimes', 'nullable', 'string', 'max:2000'],
             'hide_logo'         => ['sometimes', 'boolean'],
+            'focus_minutes'     => ['sometimes', 'integer', Rule::in([0, 30, 60, 240, 480])],
             'alert_sounds'      => ['sometimes', 'array'],
             'alert_events'      => ['sometimes', 'array'],
             'alert_events.*'    => ['array'],

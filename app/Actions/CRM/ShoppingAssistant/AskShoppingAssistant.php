@@ -513,7 +513,7 @@ class AskShoppingAssistant
         return match (true) {
             $choice === 'off_topic' && (bool) $light                           => $light,
             $choice === 'closing' && $longEnough                               => $premium,
-            $choice === 'hard' && $longEnough && ($this->isBigSpender($customer) || $this->isReturning($customer)) => $premium,
+            $choice === 'hard' && $longEnough && (self::isBigSpender($customer) || $this->isReturning($customer)) => $premium,
             default                                                            => $mainModel,
         };
     }
@@ -523,7 +523,7 @@ class AskShoppingAssistant
      * premium_member_customer_sales for a Gold Reward member, and invoiced in the last 12 months,
      * so an account that stopped buying years ago does not count.
      */
-    private function isBigSpender(Customer $customer): bool
+    public static function isBigSpender(Customer $customer): bool
     {
         if (!$customer->last_invoiced_at || $customer->last_invoiced_at->lt(now()->subYear())) {
             return false;

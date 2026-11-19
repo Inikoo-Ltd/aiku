@@ -66,7 +66,7 @@ class GetProductDevelopmentStageGate
             if ($productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE
                 && $productDevelopment->current_position === ProductDevelopmentStageEnum::FORMULATION->position()
                 && !ProductDevelopmentRecipes::isEverySampleApproved($productDevelopment)) {
-                return ['can_move' => false, 'reason' => __('Approve a trial run of every formulation stage of every SKU first (:done of :total SKUs)', ['done' => ProductDevelopmentRecipes::approvedItemCount($productDevelopment), 'total' => $productDevelopment->items()->count()]), 'missing' => []];
+                return ['can_move' => false, 'reason' => __('Approve a trial run of every formulation stage of every SKU, one of them its finished product, first (:done of :total SKUs)', ['done' => ProductDevelopmentRecipes::approvedItemCount($productDevelopment), 'total' => $productDevelopment->items()->count()]), 'missing' => []];
             }
 
             return ['can_move' => true, 'reason' => null, 'missing' => []];

@@ -15,6 +15,7 @@ use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -318,10 +319,13 @@ class MatchBankTransactions
     }
 
     /**
-     * Fulfilment customers pay invoices, not orders. They name the invoice (EUFi221181, often upper-cased or written
-     * twice) or only send it: then the payer's name is a fulfilment customer and an invoice of theirs from the last
-     * 180 days is exactly this amount. matched means auto-pay can record the payment on the invoice; a line explained
-     * by bank payments staff recorded on the invoice by hand is already paid; anything else goes to review.
+     * Fulfilment customers pay their account, not one invoice (HELP-4797): they name an invoice (EUFi221181, often
+     * upper-cased or written twice), an old one, or none. The line is matched to the customer, from the invoices named
+     * or from the payer's name; auto-pay then adds the money to their credit and pays their open invoices, the ones
+     * named first and then the oldest. A line explained by bank payments staff recorded by hand is already paid; other
+     * hand payments around its date send it to review. A
+     * customer whose invoices do not reflect what they paid (a bank payment on no invoice, an invoice paid twice) goes
+     * to review, so the money is not spent on an invoice already paid.
      *
      * @param list<string> $tokens
      *
@@ -336,112 +340,176 @@ class MatchBankTransactions
             ->where('type', InvoiceTypeEnum::INVOICE)
             ->whereIn(DB::raw('upper(reference)'), $tokens)
             ->get() : collect();
-        if ($invoices->isNotEmpty()) {
-            return $this->decideNamedInvoices($bankTransaction, $invoices);
-        }
+        $invoiceIds  = $invoices->pluck('id')->all();
+        $customerIds = $invoices->isNotEmpty()
+            ? $invoices->pluck('customer_id')->unique()->values()->all()
+            : $this->fulfilmentCustomerIds($bankTransaction->organisation_id)[$this->payerKey($bankTransaction->counterparty_name)] ?? [];
 
-        $notFound = [BankTransactionMatchStateEnum::UNMATCHED, null, $tokens ? ['reason' => 'order number not found', 'tokens' => $tokens] : ['reason' => 'no order number in the reference']];
-
-        $customerIds = $this->fulfilmentCustomerIds($bankTransaction->organisation_id)[$this->payerKey($bankTransaction->counterparty_name)] ?? [];
         if (!$customerIds) {
-            return $notFound;
+            return [BankTransactionMatchStateEnum::UNMATCHED, null, $tokens ? ['reason' => 'order number not found', 'tokens' => $tokens] : ['reason' => 'no order number in the reference']];
+        }
+        if (count($customerIds) > 1) {
+            return [BankTransactionMatchStateEnum::REVIEW, null, ['reason' => 'several fulfilment customers', 'customer_ids' => $customerIds, 'invoice_ids' => $invoiceIds]];
+        }
+        if (!$invoiceIds && $this->payerIsCustomerOfAnotherShop($bankTransaction, $fulfilmentShops)) {
+            return [BankTransactionMatchStateEnum::REVIEW, null, ['reason' => 'the payer is also a customer of another shop', 'customer_id' => $customerIds[0], 'invoice_ids' => []]];
         }
 
-        $received   = round((float)$bankTransaction->amount, 2);
-        $candidates = Invoice::whereIn('customer_id', $customerIds)
-            ->whereIn('shop_id', $fulfilmentShops)
-            ->where('type', InvoiceTypeEnum::INVOICE)
-            ->where('currency_id', $bankTransaction->currency_id)
-            ->whereBetween('date', [$bankTransaction->booked_at->copy()->subDays(180), $bankTransaction->booked_at])
-            ->whereBetween('total_amount', [$received - 0.01, $received + 0.01])
-            ->orderBy('date')
-            ->get();
-        if ($candidates->isEmpty()) {
-            return [BankTransactionMatchStateEnum::UNMATCHED, null, ['reason' => 'fulfilment customer, no invoice of this amount', 'customer_ids' => $customerIds]];
-        }
-        $candidateIds = $candidates->pluck('id')->all();
-
-        if ($this->releasedFromLine($bankTransaction, $candidateIds)) {
-            return [BankTransactionMatchStateEnum::REVIEW, null, ['reason' => 'a payment from this line on this invoice was cancelled', 'invoice_ids' => $candidateIds]];
-        }
-
-        $recordedByHand = $candidates->first(fn (Invoice $invoice) => $this->explainedByHandBankPayments(collect([$invoice]), $bankTransaction, 'Invoice', $bankTransaction->booked_at->copy()->subDays(3)));
-        if ($recordedByHand) {
-            return [BankTransactionMatchStateEnum::ALREADY_PAID, null, ['reason' => 'an invoice of this amount from this payer carries a bank payment recorded by hand', 'invoice_ids' => [$recordedByHand->id], 'matched_by' => 'payer and amount']];
-        }
-
-        $owing = $candidates->first(fn (Invoice $invoice) => round((float)$invoice->total_amount - (float)$invoice->payment_amount, 2) > 0.01 && !$this->otherLineMatchedTo($bankTransaction, $invoice));
-        if (!$owing) {
-            return [BankTransactionMatchStateEnum::REVIEW, null, ['reason' => 'the invoices of this amount from this payer are settled or matched to other lines', 'invoice_ids' => $candidateIds, 'matched_by' => 'payer and amount']];
-        }
-
-        return $this->decideOneInvoice($bankTransaction, $owing, ['invoice_ids' => [$owing->id], 'matched_by' => 'payer and amount']);
-    }
-
-    /**
-     * @param Collection<int, Invoice> $invoices
-     *
-     * @return array{0: BankTransactionMatchStateEnum, 1: null, 2: array<string, mixed>}
-     */
-    private function decideNamedInvoices(BankTransaction $bankTransaction, Collection $invoices): array
-    {
-        $invoiceIds = $invoices->pluck('id')->all();
-
-        if ($this->releasedFromLine($bankTransaction, $invoiceIds)) {
-            return [BankTransactionMatchStateEnum::REVIEW, null, ['reason' => 'a payment from this line on this invoice was cancelled', 'invoice_ids' => $invoiceIds]];
-        }
-        if ($this->explainedByHandBankPayments($invoices, $bankTransaction, 'Invoice')) {
-            return [BankTransactionMatchStateEnum::ALREADY_PAID, null, ['reason' => 'the invoices named carry bank payments of this amount', 'invoice_ids' => $invoiceIds]];
-        }
-        if ($invoices->count() > 1) {
-            return [BankTransactionMatchStateEnum::REVIEW, null, ['reason' => 'several invoices named', 'invoice_ids' => $invoiceIds]];
-        }
-
-        return $this->decideOneInvoice($bankTransaction, $invoices->first(), ['invoice_ids' => $invoiceIds]);
-    }
-
-    /**
-     * @param array<string, mixed> $extraMatchData
-     *
-     * @return array{0: BankTransactionMatchStateEnum, 1: null, 2: array<string, mixed>}
-     */
-    private function decideOneInvoice(BankTransaction $bankTransaction, Invoice $invoice, array $extraMatchData): array
-    {
+        $customer  = Customer::findOrFail($customerIds[0]);
         $received  = round((float)$bankTransaction->amount, 2);
-        $owed      = round((float)$invoice->total_amount - (float)$invoice->payment_amount, 2);
-        $matchData = array_merge($extraMatchData, ['invoice_id' => $invoice->id, 'owed' => $owed, 'received' => $received, 'difference' => round($received - $owed, 2)]);
+        $matchData = ['customer_id' => $customer->id, 'invoice_ids' => $invoiceIds, 'matched_by' => $invoiceIds ? 'invoice named' : 'payer', 'received' => $received];
 
-        $reason = match (true) {
-            $invoice->currency_id !== $bankTransaction->currency_id => 'currency differs from the invoice',
-            $owed <= 0.01 => 'invoice already settled',
-            $this->otherLineMatchedTo($bankTransaction, $invoice) => 'another bank line is already matched to this invoice',
-            abs($received - $owed) > 0.01 => $received > $owed ? 'pays more than the invoice owes' : 'pays less than the invoice owes',
-            default => null,
-        };
+        if ($this->releasedFromLine($bankTransaction, $customer)) {
+            return [BankTransactionMatchStateEnum::REVIEW, null, array_merge($matchData, ['reason' => 'a payment from this line was cancelled'])];
+        }
+        if ($invoices->isNotEmpty() && $this->explainedByHandBankPayments($invoices, $bankTransaction, 'Invoice')) {
+            $handPaymentIds = Payment::whereIn('id', DB::table('model_has_payments')->where('model_type', 'Invoice')->whereIn('model_id', $invoiceIds)->select('payment_id'))
+                ->whereNot('state', PaymentStateEnum::CANCELLED)
+                ->whereHas('paymentAccount', fn ($query) => $query->where('type', PaymentAccountTypeEnum::BANK))
+                ->pluck('id')
+                ->all();
 
-        return $reason
-            ? [BankTransactionMatchStateEnum::REVIEW, null, array_merge($matchData, ['reason' => $reason])]
-            : [BankTransactionMatchStateEnum::MATCHED, null, $matchData];
+            return [BankTransactionMatchStateEnum::ALREADY_PAID, null, array_merge($matchData, ['reason' => 'the invoices named carry bank payments of this amount', 'hand_payment_ids' => $handPaymentIds])];
+        }
+        $handPayments = $this->unclaimedHandPayments($bankTransaction, $customer);
+        if ($handPayments->isNotEmpty()) {
+            $tolerance = max(0.01, $this->feeTolerance($received, $bankTransaction));
+            $single    = $handPayments->first(fn (Payment $payment) => abs((float)$payment->amount - $received) <= $tolerance);
+            $explained = $single ? collect([$single]) : (abs((float)$handPayments->sum('amount') - $received) <= $tolerance ? $handPayments : null);
+
+            return $explained
+                ? [BankTransactionMatchStateEnum::ALREADY_PAID, null, array_merge($matchData, ['reason' => 'bank payments of this amount were recorded by hand for this customer', 'hand_payment_ids' => $explained->pluck('id')->all()])]
+                : [BankTransactionMatchStateEnum::REVIEW, null, array_merge($matchData, ['reason' => 'staff recorded other bank payments for this customer around this date', 'unexplained_hand_payment_ids' => $handPayments->pluck('id')->all()])];
+        }
+        if ($customer->shop->currency_id !== $bankTransaction->currency_id) {
+            return [BankTransactionMatchStateEnum::REVIEW, null, array_merge($matchData, ['reason' => 'currency differs from the customer'])];
+        }
+
+        $problem = $this->fulfilmentAccountProblem($customer);
+        if ($problem) {
+            return [BankTransactionMatchStateEnum::REVIEW, null, array_merge($matchData, $problem)];
+        }
+
+        $owed = round(array_sum(array_column($this->fulfilmentOpenInvoices($customer), 'owed')), 2);
+        if ($owed <= 0.01) {
+            return [BankTransactionMatchStateEnum::REVIEW, null, array_merge($matchData, ['reason' => 'the customer owes nothing', 'owed' => 0])];
+        }
+
+        return [BankTransactionMatchStateEnum::MATCHED, null, array_merge($matchData, ['owed' => $owed, 'difference' => round($received - $owed, 2)])];
     }
 
-    private function otherLineMatchedTo(BankTransaction $bankTransaction, Invoice $invoice): bool
+    /**
+     * What each open invoice of a fulfilment customer still owes, net of credit notes issued against it and not yet
+     * settled, the invoices in $firstIds first and then the oldest.
+     *
+     * @param list<int> $firstIds
+     *
+     * @return list<array{invoice: Invoice, owed: float}>
+     */
+    public function fulfilmentOpenInvoices(Customer $customer, array $firstIds = []): array
     {
-        return BankTransaction::where('match_state', BankTransactionMatchStateEnum::MATCHED)
-            ->where('id', '!=', $bankTransaction->id)
-            ->whereNull('payment_id')
-            ->where('match_data->invoice_id', (string)$invoice->id)
+        $unsettledCredit = DB::table('invoices as credit_notes')
+            ->where('credit_notes.type', InvoiceTypeEnum::REFUND->value)
+            ->where('credit_notes.in_process', false)
+            ->whereNull('credit_notes.deleted_at')
+            ->whereColumn('credit_notes.original_invoice_id', 'invoices.id')
+            ->selectRaw('coalesce(sum(credit_notes.total_amount - credit_notes.payment_amount), 0)');
+
+        return Invoice::where('customer_id', $customer->id)
+            ->where('type', InvoiceTypeEnum::INVOICE)
+            ->where('in_process', false)
+            ->where(fn ($query) => $query->whereNull('pay_status')->orWhereNot('pay_status', InvoicePayStatusEnum::UNKNOWN))
+            ->where('currency_id', $customer->shop->currency_id)
+            ->select('invoices.*')
+            ->selectSub($unsettledCredit, 'unsettled_credit')
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Invoice $invoice) => ['invoice' => $invoice, 'owed' => round((float)$invoice->total_amount - (float)$invoice->payment_amount + (float)$invoice->unsettled_credit, 2)])
+            ->filter(fn (array $open) => $open['owed'] > 0.01)
+            ->sortBy(fn (array $open) => in_array($open['invoice']->id, $firstIds, true) ? 0 : 1)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Signs that the customer's invoices do not show what they paid, so paying the oldest one could pay it twice: a
+     * bank payment of theirs on no invoice and not added to their credit, or an invoice paid more than its total.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function fulfilmentAccountProblem(Customer $customer): ?array
+    {
+        $paymentsOnNoInvoice = Payment::where('customer_id', $customer->id)
+            ->where('status', PaymentStatusEnum::SUCCESS)
+            ->where('state', PaymentStateEnum::COMPLETED)
+            ->where('amount', '>', 0)
+            ->whereHas('paymentAccount', fn ($query) => $query->whereNot('type', PaymentAccountTypeEnum::ACCOUNT))
+            ->whereDoesntHave('invoices')
+            ->whereDoesntHave('orders')
+            ->whereDoesntHave('creditTransaction')
+            ->pluck('id')
+            ->all();
+        if ($paymentsOnNoInvoice) {
+            return ['reason' => 'payments of this customer are on no invoice: put them on their invoices first', 'payment_ids' => $paymentsOnNoInvoice];
+        }
+
+        $overpaidInvoices = Invoice::where('customer_id', $customer->id)
+            ->where('type', InvoiceTypeEnum::INVOICE)
+            ->whereRaw('payment_amount > total_amount + 0.01')
+            ->pluck('id')
+            ->all();
+
+        return $overpaidInvoices
+            ? ['reason' => 'invoices of this customer are paid more than their total: correct them first', 'overpaid_invoice_ids' => $overpaidInvoices]
+            : null;
+    }
+
+    /**
+     * Bank payments staff recorded by hand for this customer from three days before the line arrived to thirty days
+     * after, that no other bank line already accounts for. Staff record one payment per invoice, so a transfer that
+     * paid several invoices shows up as several of them.
+     *
+     * @return Collection<int, Payment>
+     */
+    private function unclaimedHandPayments(BankTransaction $bankTransaction, Customer $customer): Collection
+    {
+        return Payment::where('customer_id', $customer->id)
+            ->where('currency_id', $bankTransaction->currency_id)
+            ->where('status', PaymentStatusEnum::SUCCESS)
+            ->whereNot('state', PaymentStateEnum::CANCELLED)
+            ->where('amount', '>', 0)
+            ->whereHas('paymentAccount', fn ($query) => $query->where('type', PaymentAccountTypeEnum::BANK))
+            ->whereBetween('date', [$bankTransaction->booked_at->copy()->subDays(3), $bankTransaction->booked_at->copy()->addDays(30)])
+            ->whereNull('data->bank_transaction_id')
+            ->whereNotIn('id', BankTransaction::whereNotNull('payment_id')->select('payment_id'))
+            ->whereNotIn('id', BankTransaction::where('id', '!=', $bankTransaction->id)
+                ->where('match_state', BankTransactionMatchStateEnum::ALREADY_PAID)
+                ->whereNotNull('match_data->hand_payment_ids')
+                ->selectRaw("jsonb_array_elements_text(match_data->'hand_payment_ids')::bigint"))
+            ->orderBy('date')
+            ->get(['id', 'amount']);
+    }
+
+    /**
+     * A payer named like a fulfilment customer who also buys in another shop may be paying an order there.
+     */
+    private function payerIsCustomerOfAnotherShop(BankTransaction $bankTransaction, \Illuminate\Database\Eloquent\Builder $fulfilmentShops): bool
+    {
+        $normalised = fn (string $column) => "lower(regexp_replace($column collate \"C\", '[^a-zA-Z0-9]', '', 'g')) = ?";
+        $payerKey   = $this->payerKey($bankTransaction->counterparty_name);
+
+        return Customer::where('organisation_id', $bankTransaction->organisation_id)
+            ->whereNotIn('shop_id', $fulfilmentShops)
+            ->where(fn ($query) => $query->whereRaw($normalised('company_name'), [$payerKey])->orWhereRaw($normalised('name'), [$payerKey]))
             ->exists();
     }
 
-    /**
-     * @param array<int, int> $invoiceIds
-     */
-    private function releasedFromLine(BankTransaction $bankTransaction, array $invoiceIds): bool
+    private function releasedFromLine(BankTransaction $bankTransaction, Customer $customer): bool
     {
-        return Payment::query()
-            ->whereIn('payments.id', DB::table('model_has_payments')->where('model_type', 'Invoice')->whereIn('model_id', $invoiceIds)->select('payment_id'))
-            ->where('payments.state', PaymentStateEnum::CANCELLED)
-            ->where('payments.data->bank_transaction_id', $bankTransaction->id)
+        return Payment::where('customer_id', $customer->id)
+            ->where('state', PaymentStateEnum::CANCELLED)
+            ->where('data->bank_transaction_id', $bankTransaction->id)
             ->exists();
     }
 

@@ -60,7 +60,7 @@ class ShowSupplierPortalAccess extends OrgAction
         if ($organisation instanceof Organisation && $orgSupplier instanceof OrgSupplier) {
             return [
                 'name'       => "grp.org.agent.org_suppliers.show.supplier_portal.$page.show",
-                'parameters' => [$organisation->slug, $orgSupplier->slug, $id],
+                'parameters' => [$organisation->slug, request()->route()->originalParameter('supplier') ?? $orgSupplier->slug, $id],
             ];
         }
 

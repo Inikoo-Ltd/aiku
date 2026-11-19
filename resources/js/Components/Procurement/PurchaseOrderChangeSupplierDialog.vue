@@ -196,16 +196,13 @@ watch(visible, async (isVisible) => {
 	}
 }, { immediate: true })
 
-const supplierUrlFor = (slug: string) => {
-	const scope = route().current()?.startsWith("grp.org.agent.") ? "agent" : "procurement"
-	return route(`grp.org.${scope}.org_suppliers.show`, { organisation: route().params.organisation, orgSupplier: slug })
-}
+const supplierUrlFor = (slug: string) => route("grp.org.procurement.org_suppliers.show", { organisation: route().params.organisation, orgSupplier: slug })
 
 const purchaseOrderUrlFor = (slug: string) => {
 	const currentRoute = route().current()
 	const params = route().params
 
-	if (!currentRoute || params.orgSupplier) {
+	if (!currentRoute || params.orgSupplier || params.supplier) {
 		return route("grp.org.procurement.purchase_orders.show", { organisation: params.organisation, purchaseOrder: slug })
 	}
 

@@ -10,6 +10,8 @@ namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers;
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Actions\Dropshipping\Allegro\Order\FulfilOrderToAllegro;
 use App\Actions\Dropshipping\Wix\Order\FulfilOrderToWix;
 use App\Actions\Dropshipping\Ankorstore\ShipAnkorstoreOrder;
@@ -127,6 +129,7 @@ class DispatchOrder extends OrgAction
         if (!$repair) {
             SendDispatchedOrderEmailToSubscribers::dispatch($order);
             SendDispatchedOrderEmailToCustomer::dispatch($order);
+            SendCustomerNotificationWhatsapp::dispatch($order->customer, OutboxCodeEnum::ORDER_DISPATCHED, $order);
         }
 
         return $order;

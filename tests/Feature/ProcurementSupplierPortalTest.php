@@ -767,3 +767,172 @@ test('HELP-4731 a supplier uploads shipping documents to its own order from its 
     actingAs($this->adminGuest->getUser());
     $this->post(route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'path' => "purchase-orders/$purchaseOrder->id/documents"]))->assertSessionHasErrors('preview');
 });
+
+/**
+ * @param  list<list<mixed>>  $rows
+ */
+function w4ProposalSheet(array $rows, string $name = 'products.xlsx', ?array $secondSheetRows = null): UploadedFile
+{
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $spreadsheet->getActiveSheet()->fromArray($rows, null, 'A1', true);
+    if ($secondSheetRows) {
+        $spreadsheet->createSheet()->fromArray($secondSheetRows, null, 'A1', true);
+    }
+    $path = tempnam(sys_get_temp_dir(), 'w4').'.xlsx';
+    (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
+
+    return new UploadedFile($path, $name, null, null, true);
+}
+
+function w4ProposalHeadings(): array
+{
+    return (new \App\Exports\SupplyChain\SupplierProductProposalTemplateExport('USD'))->headings();
+}
+
+test('W4 the product upload reads only the template: wrong headings and more than 200 rows are refused, formulas are calculated and formula starts are stripped', function () {
+    [, , $token] = portalSupplier($this);
+    Auth::logout();
+    $route = route('grp.supplier_share.product_proposals.preview', $token);
+
+    $this->postJson($route, ['file' => w4ProposalSheet([['Foo', 'Bar'], ['Bowl', 'Nice']])])->assertJsonValidationErrors('file');
+
+    $tooMany = [w4ProposalHeadings()];
+    for ($i = 1; $i <= \App\Actions\SupplyChain\SupplierSubmission\ImportSupplierPortalProductProposals::MAX_ROWS + 1; $i++) {
+        $tooMany[] = ['Bowl '.$i, 'Hand carved bowl '.$i, 4.5, 'USD', 'piece'];
+    }
+    $this->postJson($route, ['file' => w4ProposalSheet($tooMany)])->assertJsonValidationErrors('file');
+
+    $headings    = array_map(fn (string $heading) => strtoupper(str_replace(' *', '', $heading)), w4ProposalHeadings());
+    $rows        = $this->postJson($route, ['file' => w4ProposalSheet(
+        [$headings, ['=HYPERLINK("http://x.test","Bowl")', '@Hand carved bowl', '=2+2.5', 'usd', 'piece', '100 pieces', 45, '20 cm', '+cmd', 'Paper bag']],
+        secondSheetRows: array_fill(0, 3, ['ignored'])
+    )])->assertOk()->json('rows');
+
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0]['row'])->toBe(2)
+        ->and($rows[0]['values']['name'])->toBe('Bowl')
+        ->and($rows[0]['values']['description'])->toBe('Hand carved bowl')
+        ->and($rows[0]['values']['materials'])->toBe('cmd')
+        ->and((float) $rows[0]['values']['proposed_price'])->toBe(4.5)
+        ->and($rows[0]['values']['currency'])->toBe('USD')
+        ->and($rows[0]['errors'])->toBe([]);
+});
+
+test('W4 a portal contact sets the company photo and the avatar, both taking their type from the file content', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    Auth::logout();
+    $imageBefore = $supplier->fresh()->image_id;
+
+    $this->get(route('grp.supplier_share.show', $token))->assertOk();
+    $this->post(route('grp.supplier_share.profile.update', $token), ['company_photo' => UploadedFile::fake()->image('logo.jpg', 200, 200)])->assertSessionHasNoErrors();
+    $this->post(route('grp.supplier_share.profile.update', $token), ['company_photo' => UploadedFile::fake()->create('x.jpg', 10, 'text/plain')])->assertSessionHasErrors('company_photo');
+    $this->post(route('grp.supplier_share.profile.update', $token), ['photo' => UploadedFile::fake()->image('me.png', 200, 200)])->assertSessionHasNoErrors();
+
+    $profile = \App\Models\SupplyChain\SupplierPortalProfile::where('supplier_id', $supplier->id)->sole();
+    expect($supplier->fresh()->image_id)->not->toBeNull()->not->toBe($imageBefore)
+        ->and($profile->image_id)->not->toBeNull();
+});
+
+test('W4 supplier planning and deposit notifications are queued and show supplier text as plain text in the email', function () {
+    expect(\App\Notifications\SupplierPlanningNoteNotification::class)->toImplement(\Illuminate\Contracts\Queue\ShouldQueue::class)
+        ->and(\App\Notifications\SupplierDepositRequestedNotification::class)->toImplement(\Illuminate\Contracts\Queue\ShouldQueue::class);
+
+    [$supplier, $supplierProduct, $token] = portalSupplier($this);
+    $submission                           = SupplierSubmission::create([
+        'group_id'               => $supplier->group_id,
+        'supplier_id'            => $supplier->id,
+        'supplier_share_link_id' => \App\Models\SupplyChain\SupplierShareLink::where('supplier_id', $supplier->id)->value('id'),
+        'type'                   => SupplierSubmissionTypeEnum::MATERIAL_PLANNING,
+        'state'                  => SupplierSubmissionStateEnum::RECEIVED,
+        'data'                   => [],
+        'submitted_at'           => now(),
+    ]);
+
+    $notification = new \App\Notifications\SupplierPlanningNoteNotification($submission, 'Title', 'Click [here](https://evil.test) <b>now</b>.', 'Why');
+    $mail         = $notification->toMail($this->adminGuest->getUser());
+
+    expect($mail->introLines[0])->toBe('Click \[here\]\(https://evil.test\) \<b\>now\</b\>.')
+        ->and($notification->afterCommit)->toBeTrue();
+});
+
+test('W4 a second identical deposit request from the portal sends no second email and keeps the rest of the order data', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $orgSupplier          = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+    $purchaseOrder        = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $buyer                = $this->adminGuest->getUser();
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now(), 'buyer_id' => $buyer->id, 'data' => ['keep_me' => 'yes']]);
+    Auth::logout();
+    if ($published = \App\Models\SupplyChain\SupplierAgreementVersion::where('group_id', $this->group->id)->where('state', 'published')->first()) {
+        acceptSupplierAgreement($this, $token, $published)->assertSessionHasNoErrors();
+    }
+    Notification::fake();
+
+    $route = route('grp.supplier_share.purchase_order.deposit', ['token' => $token, 'purchaseOrder' => $purchaseOrder->id]);
+    $this->postJson($route, ['choice' => 'request'])->assertOk();
+    $this->postJson($route, ['choice' => 'request'])->assertOk();
+
+    Notification::assertSentToTimes($buyer, \App\Notifications\SupplierDepositRequestedNotification::class, 1);
+    expect($purchaseOrder->fresh()->data)->toHaveKeys(['keep_me', 'supplier_deposit_request']);
+
+    $this->postJson($route, ['choice' => 'not_needed'])->assertJsonValidationErrors('deposit');
+});
+
+test('W4 the supplier records production only from the day the order was agreed, never in the future, and clears only a date it set itself', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $orgSupplier          = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+    $purchaseOrder        = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $purchaseOrder->updateQuietly([
+        'state'                 => PurchaseOrderStateEnum::CONFIRMED,
+        'submitted_at'          => now()->subDays(12),
+        'confirmed_at'          => now()->subDays(10),
+        'deposit_amount'        => 0,
+        'production_started_at' => now()->subDays(3),
+    ]);
+    Auth::logout();
+
+    $route = route('grp.supplier_share.purchase_order.production', ['token' => $token, 'purchaseOrder' => $purchaseOrder->id]);
+    $send  = fn (?string $startedAt) => $this->postJson($route, ['production_started_at' => $startedAt, 'estimated_production_date' => null]);
+
+    $send(null)->assertJsonValidationErrors('production_started_at');
+    $send(now()->subDays(2)->toDateString())->assertJsonValidationErrors('production_started_at');
+    expect($purchaseOrder->fresh()->production_started_at->toDateString())->toBe(now()->subDays(3)->toDateString());
+
+    $purchaseOrder->updateQuietly(['production_started_at' => null]);
+    $send(now()->subDays(11)->toDateString())->assertJsonValidationErrors('production_started_at');
+    $send(now()->addDays(3)->toDateString())->assertJsonValidationErrors('production_started_at');
+
+    $send(now()->subDays(4)->toDateString())->assertOk();
+    expect($purchaseOrder->fresh()->production_started_at->toDateString())->toBe(now()->subDays(4)->toDateString());
+
+    $send(null)->assertOk();
+    expect($purchaseOrder->fresh()->production_started_at)->toBeNull();
+});
+
+test('W4 the product upload preview has its own rate limit, apart from the submit one', function () {
+    $request = \Illuminate\Http\Request::create('/x');
+    $request->setRouteResolver(fn () => (new \Illuminate\Routing\Route('POST', '/x/{token}', []))->bind($request));
+
+    $preview = \Illuminate\Support\Facades\RateLimiter::limiter('supplier-portal-preview')($request);
+    $submit  = \Illuminate\Support\Facades\RateLimiter::limiter('supplier-portal-submit')($request);
+
+    expect($preview[0]->maxAttempts)->toBe(60)
+        ->and($preview[0]->key)->not->toBe($submit[0]->key);
+});
+
+test('W4 products sent from the upload are saved with their pictures attached once the products are stored', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    Auth::logout();
+
+    $this->postJson(route('grp.supplier_share.product_proposals.import', $token), ['products' => [[
+        'row'            => 2,
+        'name'           => 'Mango wood bowl',
+        'description'    => 'Hand carved bowl',
+        'proposed_price' => 4.5,
+        'currency'       => 'USD',
+        'unit_basis'     => 'piece',
+        'files'          => [UploadedFile::fake()->image('bowl.jpg', 100, 100)],
+    ]]])->assertOk()->assertJson(['sent' => [2]]);
+
+    $submission = SupplierSubmission::where('supplier_id', $supplier->id)->where('type', SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL)->sole();
+    expect($submission->attachments()->count())->toBe(1);
+});

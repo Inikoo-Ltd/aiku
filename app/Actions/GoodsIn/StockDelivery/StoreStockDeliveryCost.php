@@ -15,6 +15,7 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryServiceInvoiceTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryCost;
+use App\Models\GoodsIn\StockDeliveryCustomsLine;
 use App\Models\Helpers\Currency;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
@@ -40,7 +41,71 @@ class StoreStockDeliveryCost extends OrgAction
             'currency_id' => ['sometimes', 'nullable', 'exists:currencies,id'],
             'exchange'    => ['sometimes', 'nullable', 'numeric', 'gt:0'],
             'stock_delivery_item_id' => ['sometimes', 'nullable', 'integer', Rule::exists('stock_delivery_items', 'id')->where('stock_delivery_id', $this->stockDelivery->id)],
-        ], self::waitingRules());
+        ], self::waitingRules(), self::tariffCodeRules());
+    }
+
+    public static function tariffCodeRules(): array
+    {
+        return [
+            'applies_to_tariff_codes'   => ['sometimes', 'nullable', 'array'],
+            'applies_to_tariff_codes.*' => ['required', 'string', 'max:32'],
+        ];
+    }
+
+    /**
+     * Tariff codes are picked only for a kind charged on some codes (anti-dumping), and only codes of the delivery's
+     * own lines can be picked.
+     */
+    public static function validateTariffCodes(Validator $validator, StockDelivery $stockDelivery, ?StockDeliveryServiceInvoiceTypeEnum $category): void
+    {
+        $data = $validator->getData();
+        if (!array_key_exists('applies_to_tariff_codes', $data) || empty($data['applies_to_tariff_codes'])) {
+            return;
+        }
+
+        if (!$category?->appliesByTariffCode()) {
+            $validator->errors()->add('applies_to_tariff_codes', __('Only an anti-dumping duty is limited to some tariff codes'));
+
+            return;
+        }
+
+        $known   = array_column(DistributeStockDeliveryExtraCost::tariffCodeOptions($stockDelivery), 'tariff_code');
+        $unknown = array_diff(array_map(StockDeliveryCustomsLine::normaliseTariffCode(...), (array) $data['applies_to_tariff_codes']), $known);
+        if ($unknown) {
+            $validator->errors()->add('applies_to_tariff_codes', __('No line of this delivery has the tariff code :codes', ['codes' => implode(', ', $unknown)]));
+        }
+    }
+
+    /**
+     * Keeps the picked tariff codes together with the delivery lines that carry them now: the row goes to those
+     * lines, so a later change of a trade unit's tariff code never moves money in a costing. A row of a kind not
+     * charged by tariff code keeps none.
+     */
+    public static function withTariffCodes(StockDelivery $stockDelivery, array $modelData, ?StockDeliveryCost $cost = null): array
+    {
+        $category = array_key_exists('category', $modelData) ? $modelData['category'] : $cost?->category;
+        $category = $category instanceof StockDeliveryServiceInvoiceTypeEnum ? $category : StockDeliveryServiceInvoiceTypeEnum::tryFrom((string) $category);
+
+        if (!$category?->appliesByTariffCode()) {
+            if ($cost?->applies_to_tariff_codes !== null || array_key_exists('applies_to_tariff_codes', $modelData)) {
+                $modelData['applies_to_tariff_codes'] = null;
+                $modelData['applies_to_item_ids']     = null;
+            }
+
+            return $modelData;
+        }
+
+        if (!array_key_exists('applies_to_tariff_codes', $modelData)) {
+            return $modelData;
+        }
+
+        $codes = array_values(array_unique(array_filter(array_map(StockDeliveryCustomsLine::normaliseTariffCode(...), (array) $modelData['applies_to_tariff_codes']))));
+        sort($codes);
+
+        $modelData['applies_to_tariff_codes'] = $codes ?: null;
+        $modelData['applies_to_item_ids']     = $codes ? DistributeStockDeliveryExtraCost::itemIdsWithTariffCodes($stockDelivery, $codes) : null;
+
+        return $modelData;
     }
 
     public static function waitingRules(): array
@@ -137,6 +202,8 @@ class StoreStockDeliveryCost extends OrgAction
             $validator->errors()->add('category', __('Choose what kind of expense this is'));
         }
 
+        self::validateTariffCodes($validator, $this->stockDelivery, $type === StockDeliveryCostTypeEnum::EXTRA ? StockDeliveryServiceInvoiceTypeEnum::tryFrom((string) $this->get('category')) : null);
+
         if ($type && $type !== StockDeliveryCostTypeEnum::EXTRA && $this->stockDelivery->costs()->where('type', $type)->exists()) {
             $validator->errors()->add('type', __('This cost is already recorded in this stock delivery'));
         }
@@ -145,7 +212,7 @@ class StoreStockDeliveryCost extends OrgAction
     public function handle(StockDelivery $stockDelivery, array $modelData): StockDeliveryCost
     {
         $cost = $stockDelivery->costs()->create(
-            array_merge(self::withExchange($stockDelivery, self::withWaiting($modelData)), [
+            array_merge(self::withTariffCodes($stockDelivery, self::withExchange($stockDelivery, self::withWaiting($modelData))), [
                 'group_id'        => $stockDelivery->group_id,
                 'organisation_id' => $stockDelivery->organisation_id,
             ])

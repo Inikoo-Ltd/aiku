@@ -26,6 +26,7 @@ use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\PurchaseOrder;
@@ -188,7 +189,11 @@ class IndexPurchaseOrderTransactions extends OrgAction
         $partnerLeadTimeDays = $parent->parent instanceof OrgPartner ? GetPartnerLeadTime::run($parent->parent)['days'] : null;
         $partnerStocks       = $parent->parent instanceof OrgPartner ? $this->partnerStocks($parent->parent, $orgStockIds) : collect();
         $cancellations       = $this->cancellations($paginator->getCollection()->where('state', PurchaseOrderTransactionStateEnum::CANCELLED)->pluck('id'));
+        $orderCancellation   = $this->orderCancellation($parent);
         $moveTrail           = $this->moveTrail($paginator->getCollection());
+        $undoMoveBlocked     = UndoMovePurchaseOrderTransaction::blockedReasons($paginator->getCollection()->filter(
+            fn (PurchaseOrderTransaction $transaction) => Arr::get($transaction->data, 'moved_from') && !Arr::get($transaction->data, 'moved_from.undone_at') && $transaction->state !== PurchaseOrderTransactionStateEnum::CANCELLED
+        )->values());
         $paginator->getCollection()->each(
             fn (PurchaseOrderTransaction $transaction) => $transaction
                 ->setAttribute('quarterly_usage', $quarterlyUsage->get($transaction->org_stock_id) ?? collect())
@@ -197,16 +202,44 @@ class IndexPurchaseOrderTransactions extends OrgAction
                 ->setAttribute('buying_signals', GetOrgStockBuyingSignals::run($transaction->orgStock, $transaction->supplierProduct, $partnerLeadTimeDays))
                 ->setAttribute('partner_stock', $partnerStocks->get($transaction->org_stock_id))
                 ->setAttribute('cancellation', $transaction->state === PurchaseOrderTransactionStateEnum::CANCELLED ? [
-                    'by'        => $cancellations->get($transaction->id)?->user_name,
-                    'at'        => $cancellations->get($transaction->id)?->created_at,
-                    'in_aurora' => !$cancellations->has($transaction->id) && $transaction->source_id !== null,
+                    'by'        => in_array($transaction->id, $orderCancellation['transaction_ids'], true) ? $orderCancellation['by'] : $cancellations->get($transaction->id)?->user_name,
+                    'at'        => in_array($transaction->id, $orderCancellation['transaction_ids'], true) ? $orderCancellation['at'] : $cancellations->get($transaction->id)?->created_at,
+                    'in_aurora' => !$cancellations->has($transaction->id) && !in_array($transaction->id, $orderCancellation['transaction_ids'], true) && $transaction->source_id !== null,
                     'reason'    => Arr::get($transaction->data, 'cancellation_reason'),
                 ] : null)
                 ->setAttribute('move_trail', $moveTrail($transaction))
         );
+        foreach ($paginator->getCollection() as $transaction) {
+            if (array_key_exists($transaction->id, $undoMoveBlocked)) {
+                $transaction->setAttribute('undo_move_blocked_reason', $undoMoveBlocked[$transaction->id]);
+            }
+        }
         IndexPurchaseOrderOrgSupplierProducts::make()->attachOtherOpenPurchaseOrders($paginator, $parent->organisation_id, $parent->id);
 
         return $paginator;
+    }
+
+    /**
+     * The lines cancelled together with the whole order, with who cancelled it and when (data.cancellation). Cancelling
+     * the order updates its lines without an audit of their own, and it is their latest cancel.
+     *
+     * @return array{transaction_ids: list<int>, by: ?string, at: ?string}
+     */
+    private function orderCancellation(PurchaseOrder $purchaseOrder): array
+    {
+        $cancellation = Arr::get($purchaseOrder->data, 'cancellation');
+
+        if ($purchaseOrder->state !== PurchaseOrderStateEnum::CANCELLED || !$cancellation) {
+            return ['transaction_ids' => [], 'by' => null, 'at' => null];
+        }
+
+        $userId = Arr::get($cancellation, 'by');
+
+        return [
+            'transaction_ids' => collect(Arr::get($cancellation, 'transactions', []))->pluck('id')->map(fn ($id) => (int) $id)->all(),
+            'by'              => $userId ? DB::table('users')->where('id', $userId)->selectRaw('coalesce(contact_name, username) as name')->value('name') : null,
+            'at'              => Arr::get($cancellation, 'at'),
+        ];
     }
 
     /**

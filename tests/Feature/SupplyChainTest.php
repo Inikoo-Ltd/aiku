@@ -2449,3 +2449,191 @@ test('an organisation buying from a supplier through an agent can rename it from
     $this->patch(route('grp.models.supplier.update', $supplier->id), ['name' => 'Renamed by buyer'])->assertSessionHasNoErrors();
     expect($supplier->refresh()->name)->toBe('Renamed by buyer');
 });
+
+require_once __DIR__.'/../Support/ProcurementHelpers.php';
+
+function supplyChainFixAgentSuppliers(object $test): array
+{
+    $agent    = StoreAgent::make()->action(group: $test->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($test->organisation, $agent, []);
+
+    [, $sourceOrgSupplierProduct] = createAgentOrgSupplierWithProduct($test, $orgAgent);
+    [$targetOrgSupplier]          = createAgentOrgSupplierWithProduct($test, $orgAgent);
+
+    $orgStock = createOrgStocks($test->organisation, [$test->stocks[0]])[0];
+    \App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock::make()->action($orgStock, $sourceOrgSupplierProduct);
+
+    return [$agent, $sourceOrgSupplierProduct->supplierProduct, $targetOrgSupplier->supplier, $targetOrgSupplier, $orgStock];
+}
+
+function supplyChainFixSameCodeProduct(Supplier $supplier, SupplierProduct $source, \App\Models\Procurement\OrgSupplier $orgSupplier, \App\Models\Inventory\OrgStock $orgStock): SupplierProduct
+{
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => $source->code,
+        'name'             => 'Same product at another supplier',
+        'cost'             => 90,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+
+    $orgSupplierProduct = $supplierProduct->orgSupplierProducts()->where('org_supplier_id', $orgSupplier->id)->first()
+        ?? \App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+    \App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock::make()->action($orgStock, $orgSupplierProduct);
+
+    return $supplierProduct->refresh();
+}
+
+test('make preferred on Add to another supplier needs goods edit and skips discontinued or unavailable targets', function () {
+    [$agent, $source, $target, $targetOrgSupplier, $orgStock] = supplyChainFixAgentSuppliers($this);
+    $targetProduct = supplyChainFixSameCodeProduct($target, $source, $targetOrgSupplier, $orgStock);
+    $priority                  = fn (SupplierProduct $supplierProduct) => \App\Models\Goods\StockHasSupplierProduct::where('stock_id', $this->stocks[0]->id)->where('supplier_product_id', $supplierProduct->id)->value('priority');
+
+    UpdateSupplierProduct::make()->action($targetProduct, ['state' => SupplierProductStateEnum::DISCONTINUED]);
+    \App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier::make()->action($target, collect([$source]), makePreferred: true);
+    expect($priority($targetProduct))->not->toBe(10);
+
+    UpdateSupplierProduct::make()->action($targetProduct, ['state' => SupplierProductStateEnum::ACTIVE, 'is_available' => false]);
+    \App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier::make()->action($target, collect([$source]), makePreferred: true);
+    expect($priority($targetProduct))->not->toBe(10);
+
+    UpdateSupplierProduct::make()->action($targetProduct, ['is_available' => true]);
+    $target->update(['status' => false]);
+    \App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier::make()->action($target, collect([$source]), makePreferred: true);
+    expect($priority($targetProduct))->not->toBe(10);
+
+    $target->update(['status' => true]);
+    \App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier::make()->action($target, collect([$source]), makePreferred: true);
+    expect($priority($targetProduct))->toBe(10);
+
+    \App\Models\Goods\StockHasSupplierProduct::where('stock_id', $this->stocks[0]->id)->update(['priority' => 0]);
+
+    setPermissionsTeamId($this->group->id);
+    $agentClerk = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $agentClerk->stats()->create();
+    $agentClerk->assignRole(RolesEnum::getRoleName(RolesEnum::AGENT_CLERK->value, $agent->organisation));
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+    expect($agentClerk->refresh()->authTo("procurement.{$agent->organisation_id}.edit"))->toBeTrue()
+        ->and($agentClerk->authTo('goods.edit'))->toBeFalse()
+        ->and(\App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier::make()->getCopyProductsProps($target, $agentClerk)['can_make_preferred'])->toBeFalse();
+    actingAs($agentClerk);
+
+    $url = route('grp.models.org.supplier.supplier_products.copy', [$agent->organisation_id, $target->id]);
+    $this->post($url, ['supplier_products' => [$source->id], 'make_preferred' => true])->assertSessionHasErrors('make_preferred');
+    expect($priority($targetProduct))->not->toBe(10);
+
+    [, $otherSource] = supplyChainFixAgentSuppliers($this);
+    $otherSource->update(['agent_id' => $agent->id]);
+    $this->post($url, ['supplier_products' => [$otherSource->id]])->assertSessionHasNoErrors();
+    expect($target->supplierProducts()->where('code', $otherSource->code)->exists())->toBeTrue();
+});
+
+test('merge preview reports codes shared with a deleted product of either supplier, which the merge would refuse', function () {
+    [, $duplicateProduct, $kept, $keptOrgSupplier, $orgStock] = supplyChainFixAgentSuppliers($this);
+    $duplicate = $duplicateProduct->supplier;
+    $duplicate->update(['currency_id' => $kept->currency_id]);
+    $keptProduct = supplyChainFixSameCodeProduct($kept, $duplicateProduct, $keptOrgSupplier, $orgStock);
+
+    expect(\App\Actions\SupplyChain\Supplier\MergeSuppliers::make()->blockers($duplicate, $kept))->toBe([]);
+
+    $keptProduct->delete();
+    $blockers = \App\Actions\SupplyChain\Supplier\MergeSuppliers::make()->blockers($duplicate, $kept);
+    expect(implode(' ', $blockers))->toContain($keptProduct->code)
+        ->and(fn () => \App\Actions\SupplyChain\Supplier\MergeSuppliers::run($duplicate, $kept))->toThrow(ValidationException::class)
+        ->and($duplicate->refresh()->status)->toBeTrue();
+
+    $keptProduct->restore();
+    $duplicateProduct->delete();
+    expect(implode(' ', \App\Actions\SupplyChain\Supplier\MergeSuppliers::make()->blockers($duplicate, $kept)))->toContain($keptProduct->code);
+});
+
+test('a supplier suggestion can not be decided while its approval runs, and the queued approval checks the suppliers again', function () {
+    [, $duplicateProduct, $kept] = supplyChainFixAgentSuppliers($this);
+    $duplicate                   = $duplicateProduct->supplier;
+    $duplicate->update(['currency_id' => $kept->currency_id]);
+    $decide = \App\Actions\SupplyChain\SupplierChangeRequest\DecideSupplierChangeRequest::class;
+
+    $deactivation = \App\Actions\SupplyChain\SupplierChangeRequest\StoreSupplierChangeRequest::make()->action($kept, ['type' => 'deactivate', 'reason' => 'Closed down']);
+    $decide::putProgress($deactivation, 'moving');
+    expect(fn () => $decide::make()->action($deactivation, ['approve' => false, 'decision_note' => 'Still trading']))->toThrow(ValidationException::class)
+        ->and(fn () => $decide::make()->action($deactivation, ['approve' => true]))->toThrow(ValidationException::class);
+
+    Cache::forget($decide::progressKey($deactivation));
+    $lock = Cache::lock($decide::decisionLockKey($deactivation), 60);
+    $lock->get();
+    $this->patch(route('grp.models.supplier_change_request.decide', $deactivation->id), ['approve' => false, 'decision_note' => 'Still trading'])
+        ->assertSessionHasErrors('approve');
+    $lock->release();
+    expect($deactivation->refresh()->state)->toBe(\App\Enums\SupplyChain\SupplierChangeRequest\SupplierChangeRequestStateEnum::PENDING);
+
+    $merge = \App\Actions\SupplyChain\SupplierChangeRequest\StoreSupplierChangeRequest::make()->action($duplicate, ['type' => 'merge', 'target_supplier_id' => $kept->id, 'reason' => 'Same factory']);
+    $kept->update(['status' => false]);
+    $decide::putProgress($merge, 'queued');
+    $decide::make()->asJob($merge, ['approve' => true, 'decided_by_user_id' => null]);
+
+    expect($decide::getProgress($merge)['step'])->toBe('failed')
+        ->and($decide::getProgress($merge)['message'])->toContain($kept->code)
+        ->and($merge->refresh()->state)->toBe(\App\Enums\SupplyChain\SupplierChangeRequest\SupplierChangeRequestStateEnum::PENDING)
+        ->and($duplicateProduct->refresh()->supplier_id)->toBe($duplicate->id)
+        ->and($duplicate->refresh()->status)->toBeTrue();
+});
+
+test('a supplier merged into another can not be unarchived and its page offers no unarchive button', function () {
+    [, $duplicateProduct, $kept] = supplyChainFixAgentSuppliers($this);
+    $duplicate                   = $duplicateProduct->supplier;
+    $duplicate->update(['currency_id' => $kept->currency_id]);
+    \App\Actions\SupplyChain\Supplier\MergeSuppliers::run($duplicate, $kept);
+    $duplicateOrgSupplierIds = $duplicate->orgSuppliers()->pluck('id');
+
+    $this->patch(route('grp.models.supplier.unarchive', $duplicate->id))->assertSessionHasErrors('supplier');
+    expect($duplicate->refresh()->status)->toBeFalse()
+        ->and(\App\Models\Procurement\OrgSupplier::whereIn('id', $duplicateOrgSupplierIds)->where('status', true)->exists())->toBeFalse();
+
+    $this->get(route('grp.supply-chain.suppliers.show', [$duplicate->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('archive.is_archived', true)->where('archive.can_archive', false));
+
+    $archived = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
+    \App\Actions\SupplyChain\Supplier\DeactivateSupplier::run($archived);
+    $this->patch(route('grp.models.supplier.unarchive', $archived->id))->assertSessionHasNoErrors();
+    expect($archived->refresh()->status)->toBeTrue();
+});
+
+test('bulk state change keeps each product discontinued reason when no reason is given, and takes at most 200 products', function () {
+    [, $supplierProduct] = supplyChainFixAgentSuppliers($this);
+    UpdateSupplierProduct::make()->action($supplierProduct, ['state' => SupplierProductStateEnum::DISCONTINUING, 'discontinued_reason' => 'Factory closed']);
+
+    \App\Actions\SupplyChain\SupplierProduct\BulkUpdateSupplierProductsState::make()->handle($this->group, [
+        'supplier_products'   => [$supplierProduct->id],
+        'state'               => SupplierProductStateEnum::DISCONTINUED->value,
+        'discontinued_reason' => null,
+    ]);
+    expect($supplierProduct->refresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUED)
+        ->and($supplierProduct->data['discontinued_reason'])->toBe('Factory closed');
+
+    \App\Actions\SupplyChain\SupplierProduct\BulkUpdateSupplierProductsState::make()->handle($this->group, [
+        'supplier_products'   => [$supplierProduct->id],
+        'state'               => SupplierProductStateEnum::DISCONTINUING->value,
+        'discontinued_reason' => 'Mould broken',
+    ]);
+    expect($supplierProduct->refresh()->data['discontinued_reason'])->toBe('Mould broken');
+
+    $this->patchJson(route('grp.models.supplier-products.state.update'), [
+        'supplier_products' => array_fill(0, 201, $supplierProduct->id),
+        'state'             => SupplierProductStateEnum::ACTIVE->value,
+    ])->assertJsonValidationErrors('supplier_products');
+    expect($supplierProduct->refresh()->state)->toBe(SupplierProductStateEnum::DISCONTINUING);
+});
+
+test('skipping possible duplicate suppliers keeps the groups skipped from a stale copy of the agent', function () {
+    [$agent, $supplierProduct, $other] = supplyChainFixAgentSuppliers($this);
+    $third                             = StoreSupplier::make()->action($agent, Supplier::factory()->definition());
+    $staleAgent                        = Agent::find($agent->id);
+    $skip                              = \App\Actions\SupplyChain\Agent\SkipAgentPossibleDuplicateSuppliers::class;
+
+    $skip::make()->action($agent, ['supplier_ids' => [$supplierProduct->supplier_id, $other->id]]);
+    $skip::make()->action($staleAgent, ['supplier_ids' => [$other->id, $third->id]]);
+
+    expect($agent->refresh()->data[$skip::DATA_KEY])->toContain(
+        $skip::groupKey([$supplierProduct->supplier_id, $other->id]),
+        $skip::groupKey([$other->id, $third->id])
+    );
+});

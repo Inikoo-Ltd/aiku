@@ -56,9 +56,11 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilderForSubquery;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Support\AgentOrganisationSelection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
@@ -218,7 +220,8 @@ class IndexPurchaseOrders extends OrgAction
         if (class_basename($parent) == 'OrgAgent') {
             $query->where('purchase_orders.agent_id', $parent->agent_id)->where('purchase_orders.organisation_id', $parent->organisation_id);
         } elseif (class_basename($parent) == 'OrgSupplier' && $this->viewingAgent) {
-            $query->where('purchase_orders.supplier_id', $parent->supplier_id);
+            $query->where('purchase_orders.supplier_id', $parent->supplier_id)
+                ->when(AgentOrganisationSelection::fromRequest()?->selected, fn ($query, $selected) => $query->where('purchase_orders.organisation_id', $selected->id));
         } elseif (class_basename($parent) == 'OrgSupplier') {
             $query->where('purchase_orders.parent_type', 'OrgSupplier')->where('purchase_orders.parent_id', $parent->id);
         } elseif (class_basename($parent) == 'OrgPartner') {
@@ -255,6 +258,9 @@ class IndexPurchaseOrders extends OrgAction
             $query->joinSub($productTransactions, 'product_transactions', function ($join) {
                 $join->on('purchase_orders.id', '=', 'product_transactions.purchase_order_id');
             });
+            if ($parent instanceof OrgSupplierProduct && $this->viewingAgent && $selected = AgentOrganisationSelection::fromRequest()?->selected) {
+                $query->where('purchase_orders.organisation_id', $selected->id);
+            }
         } else {
             $query->where('purchase_orders.organisation_id', $parent->id);
         }
@@ -343,12 +349,34 @@ class IndexPurchaseOrders extends OrgAction
                 ] : []),
                 ...($organisationAgent || $this->viewingAgent ? [
                     AllowedFilter::callback('organisation', fn ($query, $value) => $this->whereOrganisation($query, $value)),
+                    AllowedFilter::callback('submitted_since', fn ($query, $value) => $query->where('purchase_orders.submitted_at', '>=', Carbon::parse((string) $value))),
                     AllowedFilter::callback('supplier', fn ($query, $value) => $this->whereSupplier($query, $value)),
                 ] : []),
             ])
-            ->withBetweenDates([$isAgentView ? 'submitted_at' : 'date'])
+            ->withBetweenDates($isAgentView ? [] : ['date'])
+            ->when($isAgentView, fn ($query) => $this->whereSubmittedBetween($query, $prefix))
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    /**
+     * The date range of an agent's list filters on the date it sorts by: when the order was submitted, or its date for
+     * one that came in before submitted_at was recorded. Read as withBetweenDates reads its ranges.
+     */
+    private function whereSubmittedBetween(Builder $query, ?string $prefix): void
+    {
+        $range = Arr::get(request()->input(($prefix ? $prefix.'_' : '').'between', []), 'submitted_at');
+        $parts = $range ? explode('-', (string) $range) : [];
+
+        if (count($parts) !== 2) {
+            return;
+        }
+
+        $timezone = resolveTimezoneHeader();
+        $start    = Carbon::createFromFormat('Ymd', trim($parts[0]), $timezone)->setTimezone('UTC')->startOfDay()->toDateTimeString();
+        $end      = Carbon::createFromFormat('Ymd', trim($parts[1]), $timezone)->setTimezone('UTC')->endOfDay()->toDateTimeString();
+
+        $query->whereBetween(DB::raw('coalesce(purchase_orders.submitted_at, purchase_orders.date)'), [$start, $end]);
     }
 
     /**
@@ -589,6 +617,7 @@ class IndexPurchaseOrders extends OrgAction
         ];
         $afterTitle    = null;
         $iconRight     = null;
+        $model         = null;
         $subNavigation = null;
         $actions       = [];
         $purchaseOrdersImport = null;
@@ -635,6 +664,7 @@ class IndexPurchaseOrders extends OrgAction
             ];
         } elseif ($this->parent instanceof OrgSupplier) {
             $title         = $this->parent->supplier->name;
+            $model         = __('Supplier');
             $icon          = [
                 'icon'  => ['fal', 'fa-person-dolly'],
                 'title' => __('Purchase orders'),
@@ -645,6 +675,7 @@ class IndexPurchaseOrders extends OrgAction
             $actions       = [$this->getOrgSupplierPurchaseOrderAction($this->parent)];
         } elseif ($this->parent instanceof Supplier) {
             $title         = $this->parent->name;
+            $model         = __('Supplier');
             $icon          = [
                 'icon'  => ['fal', 'fa-person-dolly'],
                 'title' => __('Purchase orders'),
@@ -683,6 +714,7 @@ class IndexPurchaseOrders extends OrgAction
                 'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'pageHead'    => [
                     'title'         => $title,
+                    'model'         => $model,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,

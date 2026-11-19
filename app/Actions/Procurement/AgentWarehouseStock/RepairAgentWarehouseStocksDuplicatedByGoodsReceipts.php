@@ -10,6 +10,7 @@
 namespace App\Actions\Procurement\AgentWarehouseStock;
 
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady;
 use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
 use App\Models\Procurement\AgentWarehouseStock;
 use Illuminate\Console\Command;
@@ -21,10 +22,12 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * The same goods were recorded twice in the agent warehouse: once from the agent's stock sheet and once from a goods
  * receipt against the same purchase order. The goods receipt is the record that holds: its rows are never touched, and
- * every sheet row of the same agent, organisation, product and purchase order is deleted, whatever its units or state.
- * What the sheet said that the receipt does not (packed units, units above the receipt, a container holding the line)
- * is reported so the agent can redo it in aiku. With --fix every deleted row is saved first, whole, under
- * storage/app/repairs, and --agent and --organisation keep a run to one agent or one organisation.
+ * the received sheet rows of the same agent, organisation, product and purchase order are deleted. Packed sheet rows,
+ * and every sheet row of a line that is in a container, are kept and reported instead, as deleting them would undo
+ * packing or a shipment, as is what else the sheet said that the receipt does not (units above the receipt), so the
+ * agent can redo it in aiku. With --fix every deleted row is saved first, whole, under storage/app/repairs, and the
+ * orders it changed have their hand over and state refreshed. --agent, --organisation and --purchase-order keep a run
+ * to one agent, one organisation or one purchase order.
  */
 class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
 {
@@ -35,23 +38,32 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
     public string $commandSignature = 'repair:agent_warehouse_stocks_duplicated_by_goods_receipts
         {--fix : Apply the repair, otherwise dry run}
         {--agent= : Only this agent, by code}
-        {--organisation= : Only this organisation, by slug}';
+        {--organisation= : Only this organisation, by slug}
+        {--purchase-order= : Only this purchase order, by id}';
 
     private ?string $backupFile = null;
 
     /**
-     * @return list<array{agent: string, organisation: string, code: string, purchase_order: ?string, ordered: float, receipt_units: float, sheet_units: float, deleted_sheet_rows: list<int>, notes: ?string}>
+     * @return list<array{agent: string, organisation: string, code: string, purchase_order: ?string, ordered: float, receipt_units: float, sheet_units: float, deleted_sheet_rows: list<int>, kept_sheet_rows: list<int>, notes: ?string}>
      */
-    public function handle(bool $fix = false, ?string $agentCode = null, ?string $organisationSlug = null): array
+    public function handle(bool $fix = false, ?string $agentCode = null, ?string $organisationSlug = null, ?int $purchaseOrderId = null): array
     {
         $this->backupFile = $fix ? storage_path('app/repairs/agent-warehouse-stocks-duplicated-by-goods-receipts/'.now()->format('Ymd-His').'.jsonl') : null;
 
-        return $this->duplicatedGroups($agentCode, $organisationSlug)->map(fn (object $group) => $fix
+        $results = $this->duplicatedGroups($agentCode, $organisationSlug, $purchaseOrderId)->map(fn (object $group) => $fix
             ? DB::transaction(fn () => $this->repairGroup($group, true))
             : $this->repairGroup($group, false))->all();
+
+        if ($fix) {
+            RecordPurchaseOrderHandedOverWhenReady::make()->forPurchaseOrderIds(
+                collect($results)->filter(fn (array $result) => $result['deleted_sheet_rows'] !== [])->pluck('purchase_order_id')
+            );
+        }
+
+        return $results;
     }
 
-    private function duplicatedGroups(?string $agentCode, ?string $organisationSlug): Collection
+    private function duplicatedGroups(?string $agentCode, ?string $organisationSlug, ?int $purchaseOrderId): Collection
     {
         return DB::table('agent_warehouse_stocks as sheet')
             ->join('agent_warehouse_stocks as receipt', fn ($join) => $join
@@ -69,6 +81,7 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
             ->where('sheet.quantity', '>', 0)
             ->when($agentCode, fn ($query) => $query->where('agents.code', $agentCode))
             ->when($organisationSlug, fn ($query) => $query->where('organisations.slug', $organisationSlug))
+            ->when($purchaseOrderId, fn ($query) => $query->where('sheet.purchase_order_id', $purchaseOrderId))
             ->select([
                 'sheet.agent_id',
                 'sheet.organisation_id',
@@ -88,7 +101,7 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
     }
 
     /**
-     * @return array{agent: string, organisation: string, code: string, purchase_order: ?string, ordered: float, receipt_units: float, sheet_units: float, deleted_sheet_rows: list<int>, notes: ?string}
+     * @return array{agent: string, organisation: string, code: string, purchase_order: ?string, purchase_order_id: int, ordered: float, receipt_units: float, sheet_units: float, deleted_sheet_rows: list<int>, kept_sheet_rows: list<int>, notes: ?string}
      */
     private function repairGroup(object $group, bool $fix): array
     {
@@ -108,26 +121,33 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
         $sheetUnits   = round((float) $sheetRows->sum('quantity'), 3);
         $packedUnits  = round((float) $sheetRows->filter(fn (AgentWarehouseStock $row) => $row->state !== AgentWarehouseStockStateEnum::RECEIVED)->sum('quantity'), 3);
 
-        if ($fix && $receiptRows->isNotEmpty() && $sheetRows->isNotEmpty()) {
-            $this->backUp($sheetRows);
-            AgentWarehouseStock::whereIn('id', $sheetRows->pluck('id'))->whereNull('agent_goods_receipt_id')->delete();
-        }
+        $containers    = $this->containersOfGroup($group);
+        $deletableRows = $receiptRows->isNotEmpty() && $containers->isEmpty()
+            ? $sheetRows->filter(fn (AgentWarehouseStock $row) => $row->state === AgentWarehouseStockStateEnum::RECEIVED)
+            : collect();
+        $keptRows      = $receiptRows->isNotEmpty() ? $sheetRows->whereNotIn('id', $deletableRows->pluck('id')) : collect();
 
-        $containers = $this->containersOfGroup($group);
+        if ($fix && $deletableRows->isNotEmpty()) {
+            $this->backUp($deletableRows);
+            AgentWarehouseStock::whereIn('id', $deletableRows->pluck('id'))->whereNull('agent_goods_receipt_id')->delete();
+        }
 
         return [
             'agent'              => $group->agent_code,
             'organisation'       => $group->organisation_slug,
             'code'               => $group->code,
             'purchase_order'     => $group->purchase_order_reference,
+            'purchase_order_id'  => (int) $group->purchase_order_id,
             'ordered'            => $this->orderedUnits($group),
             'receipt_units'      => $receiptUnits,
             'sheet_units'        => $sheetUnits,
-            'deleted_sheet_rows' => $receiptRows->isNotEmpty() ? $sheetRows->pluck('id')->values()->all() : [],
+            'deleted_sheet_rows' => $deletableRows->pluck('id')->values()->all(),
+            'kept_sheet_rows'    => $keptRows->pluck('id')->values()->all(),
             'notes'              => collect([
                 $packedUnits > self::QUANTITY_TOLERANCE ? "sheet had $packedUnits packed" : null,
                 $sheetUnits > $receiptUnits + self::QUANTITY_TOLERANCE ? 'sheet had '.round($sheetUnits - $receiptUnits, 3).' more than the receipt' : null,
                 $containers->isNotEmpty() ? 'in container '.$containers->implode(', ') : null,
+                $keptRows->isNotEmpty() ? 'sheet rows kept, packed or in a container: redo by hand' : null,
             ])->filter()->implode('; ') ?: null,
         ];
     }
@@ -167,10 +187,10 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
     public function asCommand(Command $command): int
     {
         $fix     = (bool) $command->option('fix');
-        $results = $this->handle($fix, $command->option('agent'), $command->option('organisation'));
+        $results = $this->handle($fix, $command->option('agent'), $command->option('organisation'), $command->option('purchase-order') ? (int) $command->option('purchase-order') : null);
 
         $command->table(
-            ['Agent', 'Org', 'Code', 'PO', 'Ordered', 'Receipt', 'Sheet', 'Deleted sheet rows', 'Notes'],
+            ['Agent', 'Org', 'Code', 'PO', 'Ordered', 'Receipt', 'Sheet', 'Deleted sheet rows', 'Kept sheet rows', 'Notes'],
             array_map(fn (array $row) => [
                 $row['agent'],
                 $row['organisation'],
@@ -180,6 +200,7 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
                 $row['receipt_units'],
                 $row['sheet_units'],
                 implode(',', $row['deleted_sheet_rows']),
+                implode(',', $row['kept_sheet_rows']),
                 $row['notes'],
             ], $results)
         );

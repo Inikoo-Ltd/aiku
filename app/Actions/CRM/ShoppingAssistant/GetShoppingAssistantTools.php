@@ -32,6 +32,8 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Actions\Dispatching\Capacity\GetWarehouseCapacity;
+use App\Actions\Dispatching\Capacity\IsWarehouseOverCapacity;
 use App\Actions\Ordering\Order\UpdateOrderPremiumDispatch;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -322,7 +324,7 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'order_status',
-                'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, why it has not been dispatched yet, whether it was sent, or for its tracking. Pass the order or invoice number they wrote as reference (ours or their own); without one you get their oldest order not dispatched yet, else their latest, so never ask for the number first. It also says when an order waits for payment, and an order still waiting to be picked a day after it was placed is moved to premium dispatch free of charge. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
+                'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, why it has not been dispatched yet, whether it was sent, or for its tracking. Pass the order or invoice number they wrote as reference (ours or their own); without one you get their oldest order not dispatched yet, else their latest, so never ask for the number first. It also says when an order waits for payment, and an order still waiting to be picked a day after it was placed may be moved to premium dispatch free of charge: only when the result gives priority. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
                 ['reference' => ['type' => 'string', 'description' => 'The order or invoice number the customer wrote, exactly as written. Leave it out when they gave none.']]
             ),
             $this->tool(
@@ -1282,9 +1284,9 @@ class GetShoppingAssistantTools
      * A customer asking about an order still waiting to be picked a day after it was placed gets
      * premium dispatch free, which puts it at the front of the picking queue: earns their heart.
      *
-     * At most PRIORITY_PER_DAY orders a day in each organisation.
+     * At most PRIORITY_PER_DAY orders a day in each organisation, and one a calendar month per customer, only on B2B shops, only for big spenders (AskShoppingAssistant::isBigSpender) and never while the warehouse is over capacity for wholesale (IsWarehouseOverCapacity).
      *
-     * ponytail: counted in the cache, so a cache flush resets the day's count; count audits if that ever matters.
+     * ponytail: counted in the cache, so a cache flush resets the counts; count audits if that ever matters.
      */
     private function priorityFor(Order $order): ?string
     {
@@ -1295,16 +1297,19 @@ class GetShoppingAssistantTools
         $waiting = $order->state === OrderStateEnum::IN_WAREHOUSE
             || ($order->state === OrderStateEnum::SUBMITTED && in_array($order->pay_status, Order::PAY_SETTLED_STATUSES, true));
 
-        if (!$waiting || !$order->submitted_at || $order->submitted_at->gt(now()->subHours(self::PRIORITY_AFTER_HOURS))) {
+        if (!$waiting || !$order->submitted_at || $order->submitted_at->gt(now()->subHours(self::PRIORITY_AFTER_HOURS)) || $order->shop->type !== ShopTypeEnum::B2B || !AskShoppingAssistant::isBigSpender($order->customer)) {
             return null;
         }
 
-        $given = 'shopping_assistant:priority_given:'.$order->organisation_id.':'.now()->toDateString();
-        if ((int) Cache::get($given, 0) >= self::PRIORITY_PER_DAY) {
+        $givenToCustomer = 'shopping_assistant:priority_given_customer:'.$order->customer_id.':'.now()->format('Y-m');
+        $given           = 'shopping_assistant:priority_given:'.$order->organisation_id.':'.now()->toDateString();
+        $warehouse       = $order->organisation->warehouses()->first();
+        if (Cache::has($givenToCustomer) || (int) Cache::get($given, 0) >= self::PRIORITY_PER_DAY || !$warehouse || IsWarehouseOverCapacity::run($warehouse, GetWarehouseCapacity::WHOLESALE)) {
             return null;
         }
 
         UpdateOrderPremiumDispatch::make()->action($order, ['is_premium_dispatch' => true], charged: false);
+        Cache::put($givenToCustomer, true, now()->endOfMonth());
         Cache::add($given, 0, now()->endOfDay());
         Cache::increment($given);
 

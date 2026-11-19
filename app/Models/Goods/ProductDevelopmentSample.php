@@ -11,6 +11,7 @@ namespace App\Models\Goods;
 
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentSampleStatusEnum;
 use App\Models\SysAdmin\User;
+use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $batch_unit
  * @property string|null $notes
  * @property int|null $job_order_id the trial run it is made in
+ * @property int|null $artefact_id the artefact it is made on: its stage's own one for a blend, else the SKU's
  * @property int|null $made_by_id
  * @property Carbon|null $ready_at
  * @property string|null $review_comment
@@ -43,6 +45,7 @@ use Illuminate\Support\Carbon;
  * @property-read ProductDevelopmentItem|null $item
  * @property-read ProductDevelopmentFormulation|null $formulation
  * @property-read JobOrder|null $jobOrder
+ * @property-read Artefact|null $artefact
  * @property-read User|null $madeBy
  * @property-read User|null $reviewedBy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFile> $photos
@@ -73,6 +76,19 @@ class ProductDevelopmentSample extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(ProductDevelopmentItem::class, 'product_development_item_id');
+    }
+
+    public function artefact(): BelongsTo
+    {
+        return $this->belongsTo(Artefact::class);
+    }
+
+    /**
+     * The artefact whose recipe this trial run is made from.
+     */
+    public function workingArtefact(): ?Artefact
+    {
+        return $this->artefact ?? $this->item?->artefact;
     }
 
     public function formulation(): BelongsTo

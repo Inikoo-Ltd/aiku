@@ -4,6 +4,7 @@ namespace App\Exports\Accounting;
 
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
+use App\Models\Accounting\InvoiceTransaction;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
@@ -15,6 +16,11 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSize, WithColumnFormatting
 {
+    private const int ES_STANDARD = 30;
+    private const int ES_STANDARD_SURCHARGE = 51;
+    private const int ES_REDUCED = 52;
+    private const int ES_REDUCED_SURCHARGE = 53;
+
     public function __construct(
         protected Organisation $parent,
         protected ?string $startDate = null,
@@ -25,6 +31,12 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
     public function query(): Builder
     {
         $query = Invoice::query()
+            ->select('invoices.*')
+            ->addSelect([
+                'line_tax_category_ids' => InvoiceTransaction::query()
+                    ->selectRaw("string_agg(DISTINCT tax_category_id::text, ',')")
+                    ->whereColumn('invoice_id', 'invoices.id'),
+            ])
             ->with([
                 'customer',
                 'address',
@@ -69,6 +81,7 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
             'Tax code: ES-RR+RE',
             'País envío',
             'Factura original',
+            'Tax code: ES-RR',
         ];
     }
 
@@ -119,7 +132,9 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
 
         $taxPercentage = $netAmount != 0 ? abs(($taxAmount / $netAmount) * 100) : 0;
 
-        $taxType = $this->determineTaxType($customer, $countryCode, $taxPercentage);
+        $taxType = $this->determineTaxType($customer, $countryCode, $taxPercentage, $invoice->tax_category_id);
+
+        $taxPerCategory = $this->taxPerCategory($invoice);
 
         return [
             $isRefund ? 'Refund' : 'Invoice',
@@ -153,15 +168,63 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
             number_format($taxAmount, 2, '.', ''),
             number_format($taxPercentage, 2, '.', ''),
             number_format($totalAmount, 2, '.', ''),
-            $invoice->tax_category_id === 30 ? number_format($taxAmount, 2, '.', '') : '',
-            $invoice->tax_category_id === 51 ? number_format($taxAmount, 2, '.', '') : '',
-            $invoice->tax_category_id === 53 ? number_format($taxAmount, 2, '.', '') : '',
+            $this->formatCategoryTax($taxPerCategory, self::ES_STANDARD),
+            $this->formatCategoryTax($taxPerCategory, self::ES_STANDARD_SURCHARGE),
+            $this->formatCategoryTax($taxPerCategory, self::ES_REDUCED_SURCHARGE),
             $deliveryCountryCode,
             $invoice->originalInvoice->reference ?? '',
+            $this->formatCategoryTax($taxPerCategory, self::ES_REDUCED),
         ];
     }
 
-    protected function determineTaxType($customer, string $countryCode, float $taxPercentage): string
+    /**
+     * @return array<int, float>
+     */
+    protected function taxPerCategory(Invoice $invoice): array
+    {
+        $headerOnly = [$invoice->tax_category_id => (float)$invoice->tax_amount];
+
+        $lineTaxCategoryIds = array_filter(explode(',', (string)$invoice->getAttribute('line_tax_category_ids')));
+
+        if (!$lineTaxCategoryIds || $lineTaxCategoryIds === [(string)$invoice->tax_category_id]) {
+            return $headerOnly;
+        }
+
+        $breakdown = $this->taxBreakdown($invoice);
+
+        if (!$breakdown) {
+            return $headerOnly;
+        }
+
+        $taxPerCategory = array_filter(
+            array_column($breakdown, 'tax_amount', 'tax_category_id'),
+            fn (float $taxAmount) => round($taxAmount, 2) != 0
+        );
+
+        return $taxPerCategory ?: $headerOnly;
+    }
+
+    /**
+     * @return array<int, array{tax_category_id: int, name: string, rate: float, net_amount: float, tax_amount: float}>
+     */
+    protected function taxBreakdown(Invoice $invoice): array
+    {
+        return $invoice->taxBreakdown();
+    }
+
+    /**
+     * @param  array<int, float>  $taxPerCategory
+     */
+    protected function formatCategoryTax(array $taxPerCategory, int $taxCategoryId): string
+    {
+        if (!array_key_exists($taxCategoryId, $taxPerCategory)) {
+            return '';
+        }
+
+        return number_format($taxPerCategory[$taxCategoryId], 2, '.', '');
+    }
+
+    protected function determineTaxType($customer, string $countryCode, float $taxPercentage, ?int $taxCategoryId = null): string
     {
         $euCountries = [
             'AT',
@@ -194,7 +257,7 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
         ];
 
         if ($countryCode === 'ES') {
-            if ($taxPercentage > 24) {
+            if ($taxPercentage > 24 || ($taxPercentage > 0 && $taxCategoryId === self::ES_STANDARD_SURCHARGE)) {
                 return 'T4';
             }
             if ($taxPercentage > 0) {

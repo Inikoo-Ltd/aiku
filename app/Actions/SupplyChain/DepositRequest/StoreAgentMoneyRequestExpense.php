@@ -42,7 +42,7 @@ class StoreAgentMoneyRequestExpense extends OrgAction
             'notes'           => $modelData['notes'],
             'reference'       => Arr::get($modelData, 'reference'),
             'receipt'         => Arr::get($modelData, 'receipt'),
-        ]);
+        ], $this->asAction ? null : request()->user()?->id);
     }
 
     public function rules(): array

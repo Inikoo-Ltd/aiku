@@ -7,6 +7,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import LayeredIcon from "@/Components/Utils/LayeredIcon.vue";
+import { asProcurementRouteName } from "@/Composables/useAgentRoutes";
 import { faAtomAlt, faDotCircle, faUserFriends, faChessBoard,faStopwatch,faClipboardListCheck, faMedal, faBoxOpen, faShip, faWarehouseAlt, faShareAlt, faPersonDolly, faBoxUsd, faClipboard, faTruckContainer, faChartLine } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
@@ -35,12 +36,18 @@ const props = defineProps<{
 const isLoading = ref<string | boolean | number>(false)
 const locale = inject("locale", aikuLocaleStructure)
 
+const isCurrentRoute = (routeName?: string) =>
+    !!routeName && (layout.currentRoute === routeName || asProcurementRouteName(layout.currentRoute) === routeName)
+
+const isRouteUnderRoot = (subNav: SubNav) =>
+    !!subNav.root && (layout.currentRoute.includes(subNav.root) || !!asProcurementRouteName(layout.currentRoute)?.includes(subNav.root))
+
 const isSubNavActive = (subNav: SubNav) => {
     if (typeof subNav.active === 'boolean') {
         return subNav.active
     }
-    const isRouteIncludeRoot = layout.currentRoute.includes(subNav.root || 'xxxxxxxxxxxxxxxxxxxxxxxxxxx')
-    const isRouteSameAsRoot = layout.currentRoute === subNav.route?.name
+    const isRouteIncludeRoot = isRouteUnderRoot(subNav)
+    const isRouteSameAsRoot = isCurrentRoute(subNav.route?.name)
     const isLayoutRootActiveExist = subNav.route?.name?.includes(layout.root_active || 'xxxxxxxxxxxxxxxxxxxxxxxxxxx')
 
     return  isRouteIncludeRoot || isRouteSameAsRoot || isLayoutRootActiveExist
@@ -121,7 +128,7 @@ const isSubNavActive = (subNav: SubNav) => {
                             <span class="leading-none text-sm xl:text-base">{{ subNav.label }}</span>
                             <div v-if="typeof subNav.number == 'number'"
                                 class="inline-flex items-center w-fit rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-                                :class="layout.currentRoute.includes(subNav.root || 'xxxxxxxxxxxxxxxxxxxxxxxxxxx') || layout.currentRoute === subNav.route?.name ? 'bg-indigo-100 ' : 'bg-gray-200 '">
+                                :class="isRouteUnderRoot(subNav) || isCurrentRoute(subNav.route?.name) ? 'bg-[var(--app-accent-soft)]' : 'bg-gray-200'">
                                 {{ locale.number(subNav.number || 0) }}
                             </div>
                         </div>
@@ -138,7 +145,7 @@ const isSubNavActive = (subNav: SubNav) => {
                         :href="subNav.route?.name ? route(subNav.route.name, subNav.route.parameters) : '#'"
                         @start="() => isLoading = itemIdx" @finish="() => isLoading = false"
                         class="group py-1.5 px-3 flex items-center gap-x-2 transition-all" :class="[
-                            layout.currentRoute.includes(subNav.root || 'xxxxxxxxxxxxxxxxxxxxxxxxxxx') || layout.currentRoute === subNav.route?.name ? 'tabSubNavActive' : 'tabSubNav',
+                            isRouteUnderRoot(subNav) || isCurrentRoute(subNav.route?.name) ? 'tabSubNavActive' : 'tabSubNav',
                         ]">
 
                         <div class="flex items-center">
@@ -156,7 +163,7 @@ const isSubNavActive = (subNav: SubNav) => {
                             <span v-if="subNav.label" class="leading-none text-sm xl:text-base">{{ subNav.label }}</span>
                             <div v-if="typeof subNav.number == 'number'"
                                 class="inline-flex items-center w-fit rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-                                :class="layout.currentRoute.includes(subNav.root || 'xxxxxxxxxxxxxxxxxxxxxxxxxxx') || layout.currentRoute === subNav.route?.name ? 'bg-indigo-100 ' : 'bg-gray-200 '">
+                                :class="isRouteUnderRoot(subNav) || isCurrentRoute(subNav.route?.name) ? 'bg-[var(--app-accent-soft)]' : 'bg-gray-200'">
                                 {{ locale.number(subNav.number || 0) }}
                             </div>
                         </div>

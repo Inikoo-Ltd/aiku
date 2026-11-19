@@ -19,12 +19,13 @@ import {
     faHourglassStart,
     faAllergies,
     faChartLine,
+    faShippingFast,
 } from "@fal"
 import { faExclamationSquare} from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ctrans } from '@/Composables/useTrans'
 
-library.add(faClock, faList, faExclamationSquare, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine)
+library.add(faClock, faList, faExclamationSquare, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine, faShippingFast)
 
 interface RouteTarget {
     name: string
@@ -55,6 +56,8 @@ interface Metric {
     type: string
     icon?: string[]
     caption?: string
+    highlight?: boolean
+    sublabel?: string
     items?: MetricItem[]
 }
 
@@ -158,15 +161,21 @@ const isWeakValue = (value: number | null | undefined) => {
 
                 <!-- SINGLE METRIC -->
                 <div v-if="metric.type !== 'group'"
-                    class="basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-[140px] flex flex-col rounded-lg md:rounded-xl border border-gray-200"
-                    :style="{ flexGrow: 1 }">
+                    :class="[
+                        'basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-[140px] flex flex-col rounded-lg md:rounded-xl border',
+                        metric.highlight ? 'border-green-200 bg-green-50/40' : 'border-gray-200'
+                    ]"
+                    :style="{ flexGrow: 1, order: metric.highlight ? 1 : 0 }">
 
                     <div
-                        class="h-14 md:h-20 flex flex-col items-center justify-center md:gap-1 border-b border-gray-200 px-1 md:px-4">
-                        <span class="hidden md:inline text-lg font-semibold">
+                        :class="['h-14 md:h-20 flex flex-col items-center justify-center md:gap-1 border-b border-gray-200 px-1 md:px-4', metric.highlight ? 'text-green-700' : '']">
+                        <span class="hidden md:inline text-lg font-semibold whitespace-nowrap">
                             {{ metric.label }}
                         </span>
-                        <Icon v-if="metric.icon" :data="metric" class='text-xs md:text-xl' />
+                        <span class="flex items-center gap-1.5">
+                            <Icon v-if="metric.icon" :data="metric" class='text-xs md:text-xl' />
+                            <span v-if="metric.sublabel" class="hidden md:inline text-xs font-normal">{{ metric.sublabel }}</span>
+                        </span>
                     </div>
 
                     <template v-for="row in rows" :key="row.key">
