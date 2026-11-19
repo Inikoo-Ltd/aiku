@@ -333,7 +333,7 @@ private struct PalletDeliveryScreen: View {
                 FieldError(fieldError)
             }
             if canBookIn, let target = live.pickedLocation {
-                AikuButton("Book in at \(target.code)", icon: .locations) {
+                AikuButton("Book in at \(target.code)", look: FulfilmentInboundActionLooks.look(for: "book_in")) {
                     Task { await live.bookIn(pallet.id, location: target) }
                 }
                 .disabled(live.isWorking)
@@ -341,7 +341,7 @@ private struct PalletDeliveryScreen: View {
             }
             HStack(spacing: 8) {
                 if let notReceived {
-                    AikuButton(notReceived.label.isEmpty ? "Not received" : notReceived.label, kind: .tertiary) {
+                    AikuButton(notReceived.label.isEmpty ? "Not received" : notReceived.label, look: FulfilmentInboundActionLooks.look(for: notReceived.key)) {
                         confirm = .notReceived(id: pallet.id, reference: pallet.reference)
                     }
                     .disabled(live.isWorking)
@@ -386,7 +386,7 @@ private struct PalletDeliveryScreen: View {
         AikuButton("View stored pallets", kind: .tertiary) {
             router.open(FulfilmentRoute.pallets)
         }
-        AikuButton("Next delivery") {
+        AikuButton("Next delivery", icon: .next) {
             router.back()
         }
         .accessibilityIdentifier("fulfilment.delivery.next")
@@ -417,14 +417,14 @@ private struct PalletDeliveryScreen: View {
             }
         } footer: {
             if let undo {
-                AikuButton(undo.label.isEmpty ? "Undo not received" : undo.label, icon: .undo, kind: .secondary) {
+                AikuButton(undo.label.isEmpty ? "Undo not received" : undo.label, look: FulfilmentInboundActionLooks.look(for: undo.key)) {
                     sheetPallet = nil
                     confirm = .undoNotReceived(id: pallet.id, reference: pallet.reference)
                 }
                 .accessibilityIdentifier("fulfilment.pallet.undoNotReceived")
             }
             if let notReceived {
-                AikuButton(notReceived.label.isEmpty ? "Not received" : notReceived.label, kind: .danger) {
+                AikuButton(notReceived.label.isEmpty ? "Not received" : notReceived.label, look: FulfilmentInboundActionLooks.look(for: notReceived.key)) {
                     sheetPallet = nil
                     confirm = .notReceived(id: pallet.id, reference: pallet.reference)
                 }
@@ -465,19 +465,19 @@ private struct PalletDeliveryScreen: View {
     private func footerView(_ kind: FooterKind, delivery: MobilePalletDeliveryDetail) -> some View {
         switch kind {
         case .receive(let action):
-            AikuButton(action.label.isEmpty ? "Mark as received" : action.label, icon: .check) {
+            AikuButton(action.label.isEmpty ? "Mark as received" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key)) {
                 confirm = .receive
             }
             .disabled(live.isWorking)
             .accessibilityIdentifier("fulfilment.delivery.receive")
         case .startBooking(let action):
-            AikuButton(action.label.isEmpty ? "Start booking in" : action.label, icon: .pallet) {
+            AikuButton(action.label.isEmpty ? "Start booking in" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key)) {
                 Task { await live.startBooking() }
             }
             .disabled(live.isWorking)
             .accessibilityIdentifier("fulfilment.delivery.startBookingIn")
         case .finish(let action):
-            AikuButton(action.label.isEmpty ? "Set as booked in" : action.label, icon: .check) {
+            AikuButton(action.label.isEmpty ? "Set as booked in" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key)) {
                 confirm = .finish
             }
             .disabled(live.isWorking)

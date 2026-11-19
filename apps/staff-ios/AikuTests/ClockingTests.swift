@@ -157,6 +157,50 @@ struct ClockingTests {
         #expect(store.weeks.first?.days.first?.isToday == true)
     }
 
+    @Test("Home and Menu show the live clocking status, and sign out forgets it")
+    func homeAndMenuShowTheLiveStatus() async {
+        let store = ClockingStore(service: service(), clock: { nowAt1415 })
+        #expect(ShellHomeContent.clockStatus(store) == nil)
+        #expect(ShellMenuClocking(store) == nil)
+        #expect(ShellHomeContent.weekTotal(store) == nil)
+
+        await store.load()
+
+        #expect(ShellHomeContent.clockStatus(store) == ShellClockStatus(title: "Clocked in · 5h 41m", detail: "Since 13:01 · AW UK", isClockedIn: true))
+        #expect(ShellMenuClocking(store)?.subtitle == "Clocked in since 13:01")
+        #expect(ShellMenuClocking(store)?.isClockedIn == true)
+        #expect(ShellHomeContent.weekTotal(store) == "5h 41m")
+        let item = ShellMenuCatalog.groups(for: .everything, clocking: ShellMenuClocking(store)).flatMap(\.items).first { $0.id == "clocking.clocking" }
+        #expect(item?.subtitleTone == .success)
+        #expect(item?.iconTone == .success)
+
+        store.reset()
+
+        #expect(ShellHomeContent.clockStatus(store) == nil)
+        #expect(store.employeeName == nil)
+        #expect(store.pin == nil)
+        #expect(store.isClockedIn == false)
+    }
+
+    @Test("Clocked out shows the last clock out, none today, or that the status is unavailable")
+    func clockedOutSummary() async {
+        let out = ClockingStore(service: service(status: .success(status(sessions: [todaySessions[0]]))), clock: { nowAt1415 })
+        await out.load()
+        #expect(ShellHomeContent.clockStatus(out) == ShellClockStatus(title: "Clocked out", detail: "Last clock out 12:30", isClockedIn: false))
+        #expect(ShellMenuClocking(out)?.subtitle == "Clocked out")
+        let item = ShellMenuCatalog.groups(for: .everything, clocking: ShellMenuClocking(out)).flatMap(\.items).first { $0.id == "clocking.clocking" }
+        #expect(item?.subtitleTone == nil)
+
+        let none = ClockingStore(service: service(status: .success(status(sessions: []))), clock: { nowAt1415 })
+        await none.load()
+        #expect(ShellHomeContent.clockStatus(none)?.detail == "No clocking today")
+
+        let failed = ClockingStore(service: service(status: .failure(.offline)), clock: { nowAt1415 })
+        await failed.load()
+        #expect(ShellHomeContent.clockStatus(failed) == ShellClockStatus(title: "Clocking", detail: "Clocking status unavailable", isClockedIn: false))
+        #expect(ShellMenuClocking(failed) == nil)
+    }
+
     @Test("A failed load keeps the screen and shows the error")
     func failedLoadShowsTheError() async {
         let store = ClockingStore(service: service(status: .failure(.offline)), clock: { nowAt1415 })

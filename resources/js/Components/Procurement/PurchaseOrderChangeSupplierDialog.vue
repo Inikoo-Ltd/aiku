@@ -44,6 +44,10 @@ type Supplier = {
 	org_supplier_id: number
 	code: string
 	name: string
+	company_name: string | null
+	contact_name: string | null
+	nickname: string | null
+	slug: string
 	reference: string
 	products: Record<number, TheirProduct | null>
 	products_count: number
@@ -96,7 +100,10 @@ const isFetching = ref(false)
 const isSaving = ref(false)
 const errors = ref<Record<string, string>>({})
 
-const supplierOptions = computed(() => (options.value?.suppliers ?? []).map((supplier) => ({ ...supplier, label: `${supplier.code} ${supplier.name}` })))
+const supplierOptions = computed(() => (options.value?.suppliers ?? []).map((supplier) => ({
+	...supplier,
+	label: [supplier.code, supplier.company_name, supplier.contact_name, supplier.nickname].filter(Boolean).join(" "),
+})))
 const targetSupplier = computed(() => options.value?.suppliers.find((supplier) => supplier.org_supplier_id === orgSupplierId.value) ?? null)
 const lines = computed(() => options.value?.lines ?? [])
 const intoOrder = computed(() => targetSupplier.value?.purchase_orders.find((order) => order.id === intoPurchaseOrderId.value) ?? null)
@@ -189,6 +196,11 @@ watch(visible, async (isVisible) => {
 	}
 }, { immediate: true })
 
+const supplierUrlFor = (slug: string) => {
+	const scope = route().current()?.startsWith("grp.org.agent.") ? "agent" : "procurement"
+	return route(`grp.org.${scope}.org_suppliers.show`, { organisation: route().params.organisation, orgSupplier: slug })
+}
+
 const purchaseOrderUrlFor = (slug: string) => {
 	const currentRoute = route().current()
 	const params = route().params
@@ -267,6 +279,7 @@ async function submit() {
 						optionLabel="label"
 						optionValue="org_supplier_id"
 						filter
+						autoFilterFocus
 						:placeholder="ctrans('Choose a supplier of the agent')"
 						:emptyMessage="ctrans('The agent has no other supplier in :currency', { currency: options.currency ?? '' })"
 						:class="fieldFocusClass"
@@ -275,7 +288,8 @@ async function submit() {
 						<template #option="{ option }">
 							<div class="flex w-full min-w-0 items-center gap-2">
 								<span class="whitespace-nowrap font-medium">{{ option.code }}</span>
-								<span class="truncate text-gray-500">{{ option.name }}</span>
+								<span class="min-w-0 truncate text-gray-500">{{ [option.company_name, option.contact_name].filter(Boolean).join(" · ") || option.name }}</span>
+								<span v-if="option.nickname" class="shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{{ option.nickname }}</span>
 								<span
 									class="ml-auto shrink-0 whitespace-nowrap text-xs"
 									:class="option.products_count === lines.length ? 'text-gray-500' : 'text-amber-700'"
@@ -285,6 +299,16 @@ async function submit() {
 							</div>
 						</template>
 					</Select>
+					<a
+						v-if="targetSupplier"
+						:href="supplierUrlFor(targetSupplier.slug)"
+						target="_blank"
+						rel="noopener"
+						class="inline-flex items-center gap-1 whitespace-nowrap text-xs text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline"
+					>
+						{{ ctrans("Open supplier :code", { code: targetSupplier.code }) }}
+						<FontAwesomeIcon :icon="faExternalLink" fixed-width aria-hidden="true" />
+					</a>
 					<p v-if="errors.org_supplier_id" class="text-xs text-red-600">{{ errors.org_supplier_id }}</p>
 				</div>
 

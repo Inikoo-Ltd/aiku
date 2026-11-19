@@ -13,6 +13,19 @@ struct ThemeSlots: Equatable, Sendable {
     let linkDark: RGBA
 }
 
+struct ThemeShades: Equatable, Sendable {
+    let finish: RGBA
+    let cautionInk: RGBA
+    let cautionSoft: RGBA
+    let cautionBorder: RGBA
+    let danger: RGBA
+    let dangerBorder: RGBA
+    let dangerStrong: RGBA
+    var softInk: RGBA?
+    var softInkDark: RGBA?
+    var cautionInkDark: RGBA?
+}
+
 enum ThemeID: String, CaseIterable, Identifiable, Sendable {
     case deepSea = "deep-sea"
     case rosewater
@@ -58,6 +71,34 @@ enum ThemeID: String, CaseIterable, Identifiable, Sendable {
         case .esOlive: Self.make(0x909B44, 0xFFFFFF, 0x4B5058, 0xFFFFFF, 0x909B44, 0xFFFFFF, 0xCCCCCC, 0x957A65, 0x66702A, 0xC4CE7A)
         case .pureBw: Self.make(0x000000, 0xFFFFFF, 0x000000, 0xFFFFFF, 0x000000, 0xFFFFFF, 0x000000, 0xFFFFFF, 0x000000, 0xE5E7EB)
         }
+    }
+
+    var shades: ThemeShades {
+        switch self {
+        case .deepSea: Self.shades(0x15803D, 0x92400E, 0xFFFBEB, 0xF5C451, 0xDC2626, 0xF19A9A, 0xB91C1C)
+        case .rosewater: Self.shades(0x2F7D5B, 0x8A5A12, 0xFDF6E7, 0xEBC97E, 0xBE123C, 0xF4A3B4, 0x9F1239, softInk: 0x5B4570, softInkDark: 0xC9B3DA)
+        case .amoled: Self.shades(0x1E8449, 0x9A5B0B, 0xFEF5E7, 0xF2C38B, 0xC0392B, 0xE6A39C, 0x922B21)
+        case .blackWhite: Self.shades(0x166534, 0x854D0E, 0xFEFCE8, 0xE5D38A, 0xB91C1C, 0xEBA3A3, 0x7F1D1D, cautionInkDark: 0xC0A282)
+        case .ukAw: Self.shades(0x4D7C0F, 0x7C4A03, 0xFBF3E4, 0xE2C18A, 0xB42318, 0xEFA49B, 0x8F1D14, softInk: 0xAB5413, cautionInkDark: 0xBEA481)
+        case .esPurple: Self.shades(0x4E7D5B, 0x8A6A1F, 0xFAF5E8, 0xE3CB8F, 0xB4464B, 0xE8AEB0, 0x943236)
+        case .esBlue: Self.shades(0x3E7D6A, 0x8A6A1F, 0xFAF5E8, 0xE3CB8F, 0xB4464B, 0xE8AEB0, 0x943236, softInk: 0x3B749A)
+        case .esGold: Self.shades(0x4E7D3A, 0x8B5E34, 0xF8F1EA, 0xDDBF9F, 0xB4464B, 0xE8AEB0, 0x943236)
+        case .esRose: Self.shades(0x4E7D5B, 0x8A6A1F, 0xFAF5E8, 0xE3CB8F, 0xA8323E, 0xE3A7AE, 0x85222D)
+        case .esOlive: Self.shades(0x2C7A6E, 0x8A6A1F, 0xFAF5E8, 0xE3CB8F, 0xB4464B, 0xE8AEB0, 0x943236)
+        case .pureBw: Self.shades(0x166534, 0x713F12, 0xFFFFFF, 0x713F12, 0xB91C1C, 0xB91C1C, 0x991B1B, cautionInkDark: 0xBBA38D)
+        }
+    }
+
+    private static func shades(
+        _ finish: UInt32, _ cautionInk: UInt32, _ cautionSoft: UInt32, _ cautionBorder: UInt32,
+        _ danger: UInt32, _ dangerBorder: UInt32, _ dangerStrong: UInt32,
+        softInk: UInt32? = nil, softInkDark: UInt32? = nil, cautionInkDark: UInt32? = nil
+    ) -> ThemeShades {
+        ThemeShades(
+            finish: RGBA(finish), cautionInk: RGBA(cautionInk), cautionSoft: RGBA(cautionSoft), cautionBorder: RGBA(cautionBorder),
+            danger: RGBA(danger), dangerBorder: RGBA(dangerBorder), dangerStrong: RGBA(dangerStrong),
+            softInk: softInk.map { RGBA($0) }, softInkDark: softInkDark.map { RGBA($0) }, cautionInkDark: cautionInkDark.map { RGBA($0) }
+        )
     }
 
     private static func make(

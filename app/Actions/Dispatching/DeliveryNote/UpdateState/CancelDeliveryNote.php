@@ -31,6 +31,7 @@ use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
@@ -105,11 +106,9 @@ class CancelDeliveryNote extends OrgAction
                 DeletePacking::make()->action($packing);
             }
 
-            foreach ($deliveryNote->pickings as $picking) {
-                $deliveryNoteItem = $picking->deliveryNoteItem;
+            $pickings = $deliveryNote->pickings;
 
-                $toPick = $deliveryNoteItem->quantity_required - $deliveryNoteItem->picked_quantity;
-
+            foreach ($pickings as $picking) {
                 /**
                  * With a return the picked stock stays off the shelf in the ledger. Deleting the
                  * picking here is what credited it back the instant the note was cancelled, while
@@ -127,15 +126,24 @@ class CancelDeliveryNote extends OrgAction
                         DeletePicking::make()->action($picking, $user);
                     }
                 }
+            }
 
-                if ($toPick > 0) {
-                    StoreNotPickPicking::make()->action(
+            foreach ($pickings->pluck('delivery_note_item_id')->unique() as $deliveryNoteItemId) {
+                $deliveryNoteItem = DeliveryNoteItem::find($deliveryNoteItemId);
+                if (!$deliveryNoteItem) {
+                    continue;
+                }
+
+                $quantityNotPicked = StoreNotPickPicking::make()->outstandingQuantity($deliveryNoteItem);
+
+                if ($quantityNotPicked > 0) {
+                    StoreNotPickPicking::run(
                         $deliveryNoteItem,
                         $user,
                         [
                             'not_picked_reason' => PickingNotPickedReasonEnum::CANCELLED_BY_CUSTOMER,
                             'not_picked_note'   => "Delivery Note $deliveryNote->reference cancelled.",
-                            'quantity'          => $toPick,
+                            'quantity'          => $quantityNotPicked,
                         ],
                     );
                 }

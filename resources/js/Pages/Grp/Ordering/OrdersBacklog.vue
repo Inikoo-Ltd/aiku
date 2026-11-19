@@ -19,6 +19,8 @@ import TableDeliveryNotes from '@/Components/Tables/Grp/Org/Dispatching/TableDel
 import { computed } from 'vue'
 import { routeType } from '@/types/route'
 import OrdersBacklogAttention from '@/Components/Ordering/OrdersBacklogAttention.vue'
+import UnmatchedBankPaymentsNotice from '@/Components/Accounting/UnmatchedBankPaymentsNotice.vue'
+import OrdersBlockedByProductionNotice from '@/Components/Production/OrdersBlockedByProductionNotice.vue'
 
 library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faBoxOpen, faAppleCrate)
 
@@ -59,6 +61,8 @@ const props = defineProps<{
         }
     }
     attention?: InstanceType<typeof OrdersBacklogAttention>['$props']['attention']
+    bankPaymentsNotice?: InstanceType<typeof UnmatchedBankPaymentsNotice>['$props']['notice'] | null
+    productionBlockedNotice?: InstanceType<typeof OrdersBlockedByProductionNotice>['$props']['notice'] | null
     production_review_bulk_route?: routeType | null
 }>()
 
@@ -174,6 +178,8 @@ const hasDateFilter = computed(() => /between(%5B|\[)/.test(usePage().url))
     <div v-if="hasDateFilter" class="px-4 pt-2 text-xs text-gray-500">
         {{ ctrans("Current backlog") }}
     </div>
+    <UnmatchedBankPaymentsNotice v-if="bankPaymentsNotice" :notice="bankPaymentsNotice" />
+    <OrdersBlockedByProductionNotice v-if="productionBlockedNotice" :notice="productionBlockedNotice" />
     <OrdersBacklogAttention v-if="attention" :attention="attention" :labels="stageLabels" />
     <KeepAlive>
       <TabsBox :tabs_box="tabs.navigation" :current="currentTab" @update:tab="handleTabUpdate" />

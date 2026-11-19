@@ -23,15 +23,15 @@ enum StoredItemAuditScopeEnum: string
     public static function labels(): array
     {
         return [
-            'fulfilment'   => __('Fulfilment'),
-            'pallet'    => __('Pallet'),
+            'Fulfilment' => __('Fulfilment'),
+            'Pallet'     => __('Pallet'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'fulfilment' => [
+            'Fulfilment' => [
                 'tooltip' => __('Fulfilment'),
                 'icon'    => 'fal fa-hand-holding-box',
                 'class'   => 'text-yellow-500',  // Color for normal icon (Aiku)
@@ -41,7 +41,7 @@ enum StoredItemAuditScopeEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'pallet' => [
+            'Pallet' => [
                 'tooltip' => __('Pallet'),
                 'icon'    => 'fal fa-pallet',
                 'class'   => 'text-lime-500',

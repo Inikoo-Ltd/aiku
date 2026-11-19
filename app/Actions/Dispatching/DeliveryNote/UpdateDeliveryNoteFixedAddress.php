@@ -14,6 +14,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Models\Dispatching\DeliveryNote;
+use App\Notifications\Work\WorkNotifier;
 use App\Rules\ValidAddress;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -47,6 +48,8 @@ class UpdateDeliveryNoteFixedAddress extends OrgAction
         if ($oldAddress) {
             FixedAddressGarbageCollection::dispatch($oldAddress->id)->delay($this->hydratorsDelay);
         }
+
+        WorkNotifier::modified($deliveryNote, 'address');
 
 
         return $deliveryNote;

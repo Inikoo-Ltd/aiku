@@ -11,6 +11,7 @@ namespace App\Actions\Production\JobOrderItemTask;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\ManufactureTaskSessionShare;
@@ -51,24 +52,56 @@ class ShareMixPool
             return $task->recipeStep->loadMissing('rawMaterials')->mixPoolKey();
         }
 
-        $label = mb_strtolower(trim((string) $task->label));
+        return self::makingKey($task->recipeStep, $task->manufacture_task_id, $task->label, self::recipeStepsOf($task));
+    }
+
+    /**
+     * Whether the extra pieces made from this mix are kept for the next jobs: only when the Making after it
+     * is shared (a labelled strand). Otherwise mix no line needs is not recorded anywhere.
+     */
+    public static function keepsExtraPieces(JobOrderItemTask $mix): bool
+    {
+        $mixKey = self::poolKey($mix);
+        if (!$mixKey || self::isMakingKey($mixKey)) {
+            return false;
+        }
+
+        $recipeSteps = self::recipeStepsOf($mix);
+
+        return $recipeSteps->contains(fn (ArtefactManufactureTask $step) => ($makingKey = self::makingKey($step, $step->manufacture_task_id, $step->label, $recipeSteps)) && self::mixKeyOf($makingKey) === $mixKey);
+    }
+
+    /**
+     * @return Collection<int, ArtefactManufactureTask>
+     */
+    private static function recipeStepsOf(JobOrderItemTask $task): Collection
+    {
+        return $task->recipeStep->loadMissing('artefact.recipeSteps.manufactureTask', 'artefact.recipeSteps.rawMaterials')->artefact->recipeSteps;
+    }
+
+    /**
+     * @param  Collection<int, ArtefactManufactureTask>  $recipeSteps  every step of the step's recipe
+     */
+    private static function makingKey(ArtefactManufactureTask $recipeStep, int $manufactureTaskId, ?string $label, Collection $recipeSteps): ?string
+    {
+        $label = mb_strtolower(trim((string) $label));
         if ($label === '') {
             return null;
         }
 
-        $strand = $task->recipeStep->loadMissing('artefact.recipeSteps.manufactureTask', 'artefact.recipeSteps.rawMaterials')->artefact->recipeSteps
+        $strand = $recipeSteps
             ->filter(fn ($step) => mb_strtolower(trim((string) $step->label)) === $label)
             ->sortBy([['position', 'asc'], ['id', 'asc']])
             ->values();
-        $mixAt = $strand->search(fn ($step) => $step->manufactureTask?->is_recorded_in_kg && $step->position <= $task->recipeStep->position);
-        if ($mixAt === false || $strand->get($mixAt + 1)?->id != $task->recipeStep->id) {
+        $mixAt = $strand->search(fn ($step) => $step->manufactureTask?->is_recorded_in_kg && $step->position <= $recipeStep->position);
+        if ($mixAt === false || $strand->get($mixAt + 1)?->id != $recipeStep->id) {
             return null;
         }
 
-        $mixStep      = $strand->get($mixAt);
-        $kgPerPiece   = round((float) $mixStep->units_per_artefact / ((float) $task->recipeStep->units_per_artefact ?: 1), 6);
+        $mixStep    = $strand->get($mixAt);
+        $kgPerPiece = round((float) $mixStep->units_per_artefact / ((float) $recipeStep->units_per_artefact ?: 1), 6);
 
-        return self::MAKING.$task->manufacture_task_id.'|'.$label.'|'.$kgPerPiece.self::OF_MIX.$mixStep->mixPoolKey();
+        return self::MAKING.$manufactureTaskId.'|'.$label.'|'.$kgPerPiece.self::OF_MIX.$mixStep->mixPoolKey();
     }
 
     public static function isMakingKey(string $poolKey): bool

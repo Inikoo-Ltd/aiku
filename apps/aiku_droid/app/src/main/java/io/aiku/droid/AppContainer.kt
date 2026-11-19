@@ -10,27 +10,44 @@ import io.aiku.droid.data.api.FulfilmentOutboundApi
 import io.aiku.droid.data.api.GoodsInApi
 import io.aiku.droid.data.api.GoodsOutApi
 import io.aiku.droid.data.api.HrApi
+import io.aiku.droid.data.api.InboxApi
 import io.aiku.droid.data.api.InventoryApi
 import io.aiku.droid.data.api.MyWorkApi
 import io.aiku.droid.data.api.OkHttpFulfilmentInboundApi
 import io.aiku.droid.data.api.OkHttpFulfilmentOutboundApi
+import io.aiku.droid.data.api.OkHttpInboxApi
 import io.aiku.droid.data.api.OkHttpMobileApi
 import io.aiku.droid.data.api.OkHttpMyWorkApi
+import io.aiku.droid.data.api.OkHttpPushTokenApi
+import io.aiku.droid.data.api.OkHttpSearchApi
+import io.aiku.droid.data.api.OkHttpWarehouseDashboardApi
 import io.aiku.droid.data.api.PickingSessionApi
+import io.aiku.droid.data.api.SearchApi
 import io.aiku.droid.data.api.StaffChatApi
 import io.aiku.droid.data.api.WarehouseApi
+import io.aiku.droid.data.api.WarehouseDashboardApi
 import io.aiku.droid.data.images.ImageSource
 import io.aiku.droid.data.images.RemoteImages
+import io.aiku.droid.data.session.DeviceRecentSearches
 import io.aiku.droid.data.session.DeviceSessionRepository
 import io.aiku.droid.data.session.DeviceWarehouseCache
 import io.aiku.droid.data.session.KeystoreCipher
+import io.aiku.droid.data.session.RecentSearches
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.data.session.WarehouseCache
 import io.aiku.droid.data.settings.DeviceSettings
+import io.aiku.droid.push.FirebasePushTokenSource
+import io.aiku.droid.push.NotificationPrompt
+import io.aiku.droid.push.PushInbox
+import io.aiku.droid.push.PushRegistration
+import io.aiku.droid.push.WorkNotifications
 import io.aiku.droid.ui.goodsin.StockDeliveryHandoff
 import io.aiku.droid.ui.goodsout.DeliveryNoteHandoff
 import io.aiku.droid.ui.goodsout.extra.PickingSessionHandoff
 import io.aiku.droid.ui.scan.ScanController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 class AppContainer(context: Context) {
 
@@ -67,6 +84,11 @@ class AppContainer(context: Context) {
 
     val myWorkApi: MyWorkApi = OkHttpMyWorkApi(mobileApi)
 
+    val inboxApi: InboxApi = OkHttpInboxApi(mobileApi)
+    val searchApi: SearchApi = OkHttpSearchApi(mobileApi, httpClient)
+
+    val warehouseDashboardApi: WarehouseDashboardApi = OkHttpWarehouseDashboardApi(mobileApi)
+
     val images: ImageSource = RemoteImages(httpClient, BuildConfig.AIKU_API_BASE_URL)
 
     val scans = ScanController()
@@ -89,6 +111,11 @@ class AppContainer(context: Context) {
         cipher = sessionCipher,
     )
 
+    val recentSearches: RecentSearches = DeviceRecentSearches(
+        preferences = context.getSharedPreferences(RECENT_SEARCHES_PREFERENCES, Context.MODE_PRIVATE),
+        cipher = sessionCipher,
+    )
+
     val settings = DeviceSettings(context.getSharedPreferences(SETTINGS_PREFERENCES, Context.MODE_PRIVATE))
 
     val deviceName: String = listOf(Build.MANUFACTURER, Build.MODEL)
@@ -96,16 +123,46 @@ class AppContainer(context: Context) {
         .joinToString(" ")
         .take(MAX_DEVICE_NAME_LENGTH)
 
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    private val pushTokens = FirebasePushTokenSource(context.applicationContext)
+
+    val workNotifications = WorkNotifications(context.applicationContext)
+
+    val pushRegistration = PushRegistration(
+        api = OkHttpPushTokenApi(mobileApi),
+        tokens = pushTokens,
+        sessions = sessions,
+        shown = workNotifications,
+        appVersion = BuildConfig.VERSION_NAME,
+        scope = applicationScope,
+    )
+
+    val pushInbox = PushInbox(inboxApi, sessions, applicationScope)
+
+    val notificationPrompt = NotificationPrompt(context.getSharedPreferences(PUSH_PREFERENCES, Context.MODE_PRIVATE), pushTokens)
+
     init {
         if (sessions.session.value == null) {
             warehouseCache.clear()
+            recentSearches.clear()
         }
+    }
+
+    fun startPush() {
+        if (!pushTokens.isAvailable) {
+            return
+        }
+        workNotifications.createChannel()
+        pushRegistration.start()
     }
 
     private companion object {
         const val SESSION_PREFERENCES = "aiku_session"
         const val SETTINGS_PREFERENCES = "aiku_settings"
         const val PERMISSIONS_PREFERENCES = "aiku_permissions"
+        const val PUSH_PREFERENCES = "aiku_push"
+        const val RECENT_SEARCHES_PREFERENCES = "aiku_recent_searches"
         const val SESSION_KEY_ALIAS = "aiku_session_key"
         const val MAX_DEVICE_NAME_LENGTH = 100
     }

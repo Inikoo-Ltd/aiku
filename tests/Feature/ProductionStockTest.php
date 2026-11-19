@@ -425,6 +425,47 @@ test('completed job order into stock converts units and deducts raw materials', 
     expect((float) $inputLocationOrgStock->quantity)->toBe(99.0);
 });
 
+test('receiving a job whose recipe lists its own stock keeps what was made in stock', function () {
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE])
+    ));
+
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
+        'code'         => 'SELFOIL1',
+        'name'         => 'Bulk oil listing itself',
+        'org_stock_id' => $orgStock->id,
+    ]);
+    $artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1]]);
+    $recipeStep = ArtefactManufactureTask::where('artefact_id', $artefact->id)->first();
+
+    $rawMaterial = StoreRawMaterial::make()->action($this->production, [
+        'type'        => RawMaterialTypeEnum::CONSUMABLE->value,
+        'state'       => RawMaterialStateEnum::ORPHAN->value,
+        'code'        => 'RM-SELFOIL1',
+        'description' => 'the oil itself',
+        'unit'        => RawMaterialUnitEnum::KILOGRAM->value,
+    ]);
+    UpdateRawMaterial::make()->action($rawMaterial, ['org_stock_id' => $orgStock->id]);
+    AttachRawMaterialToRecipeStep::make()->action($recipeStep, ['raw_material_id' => $rawMaterial->id, 'quantity_per_unit' => 1]);
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-SELF', 'name' => 'Warehouse self']);
+    $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-SELF', 'name' => 'Area self']);
+    $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-SELF', 'name' => 'Loc self'] + \App\Models\Inventory\Location::factory()->definition());
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 5]);
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $jobOrderItem->tasks()->first());
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 5]);
+
+    \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder, ['location_id' => $location->id]);
+
+    expect(\App\Models\Inventory\OrgStockMovement::where('org_stock_id', $orgStock->id)->where('quantity', '<', 0)->exists())->toBeFalse()
+        ->and((float) \App\Models\Inventory\LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->value('quantity'))->toBe(5.0);
+});
+
 test('raw material with no stock location is deducted at the factory location instead of blocking the receive', function () {
     $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, \App\Actions\Goods\Stock\StoreStock::make()->action(
         $this->group,
@@ -1431,7 +1472,8 @@ test('the ai assistant puts SKOs on locations and sets up the factory location a
     expect(\App\Models\Inventory\LocationOrgStock::where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->exists())->toBeFalse();
 
     $locations(['pairs' => $pairs, 'confirm' => true, 'request_text' => 'yes put it there'])->assertOk()->assertSee($orgStock->code.' @ MCPL'.$suffix);
-    expect(\App\Models\Inventory\LocationOrgStock::where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->value('quantity'))->toEqual(0);
+    expect(\App\Models\Inventory\LocationOrgStock::where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->value('quantity'))->toEqual(0)
+        ->and(\App\Models\Inventory\OrgStockMovement::where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->value('user_id'))->toBe($user->id);
     $locations(['pairs' => $pairs])->assertOk()->assertSee('already_there');
     $locations(['skos' => [$orgStock->code]])->assertOk()->assertSee('MCPL'.$suffix);
 

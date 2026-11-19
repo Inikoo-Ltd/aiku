@@ -11,12 +11,16 @@ namespace App\Actions\SupplyChain\Supplier;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydrateOrgSupplierProducts;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydratePurchaseOrders;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydrateStockDeliveries;
+use App\Actions\Procurement\OrgSupplierProducts\RepairOrgSupplierProductsSupplierDrift;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSupplierProducts;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSuppliers;
+use App\Actions\SupplyChain\SupplierProduct\MergeSupplierProducts;
 use App\Models\Procurement\OrgSupplier;
+use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -25,8 +29,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * Folds a duplicate supplier record into the one kept: its products, purchase orders, containers, messages,
  * invoices and attachments move over, per organisation onto the kept supplier's org supplier, and the duplicate
  * is archived, never deleted. Where both are on one agent order, the duplicate's supplier order hands its lines and
- * stage dates to the kept one and is removed, unless it carries costing, deliveries, deposits or notes. Refused when the two price in different currencies or share a product code,
- * since that would change what a cost means or need the products merged first.
+ * stage dates to the kept one and is removed, unless it carries costing, deliveries, deposits or notes. Products with the same code on both are
+ * merged first through MergeSupplierProducts. Refused when the two price in different currencies or a shared product
+ * cannot be merged (different pack, trade units or SKOs), since that would change what a cost means.
  */
 class MergeSuppliers
 {
@@ -53,11 +58,22 @@ class MergeSuppliers
         'compliance_complete_at',
     ];
 
-    public function handle(Supplier $duplicate, Supplier $kept): Supplier
+    /**
+     * @param  callable(string $step, int $done, int $total): void|null  $onProgress
+     */
+    public function handle(Supplier $duplicate, Supplier $kept, ?callable $onProgress = null): Supplier
     {
+        $report = fn (string $step, int $done = 0, int $total = 0) => $onProgress ? $onProgress($step, $done, $total) : null;
+
+        $report('checking');
         $this->ensureCanMerge($duplicate, $kept);
 
-        $touchedOrgSuppliers = DB::transaction(function () use ($duplicate, $kept) {
+        $touchedOrgSuppliers = DB::transaction(function () use ($duplicate, $kept, $report) {
+            MergeSupplierProducts::make()->mergeSupplier($duplicate, $kept, fix: true, onProduct: fn (int $done, int $total) => $report('products', $done, $total));
+            $this->ensureNoSharedProductCodes($duplicate, $kept);
+
+            $report('moving');
+
             $productIds = $duplicate->supplierProducts()->pluck('id');
             DB::table('supplier_products')->whereIn('id', $productIds)->update(['supplier_id' => $kept->id, 'agent_id' => $kept->agent_id]);
 
@@ -73,7 +89,7 @@ class MergeSuppliers
                     continue;
                 }
 
-                DB::table('org_supplier_products')->where('org_supplier_id', $from->id)->update(['org_supplier_id' => $to->id]);
+                $this->moveOrgSupplierProducts($from, $to);
                 DB::table('supplier_messages')->where('org_supplier_id', $from->id)->update(['org_supplier_id' => $to->id]);
                 foreach (['purchase_orders', 'stock_deliveries'] as $table) {
                     DB::table($table)->where('parent_type', 'OrgSupplier')->where('parent_id', $from->id)
@@ -109,32 +125,76 @@ class MergeSuppliers
             return $touched;
         });
 
+        $report('refreshing');
         $this->hydrate($duplicate, $kept, $touchedOrgSuppliers);
 
         return $kept->refresh();
     }
 
+    /**
+     * A product the kept org supplier already buys is folded into its row, as old data can leave the duplicate's org
+     * supplier holding the kept supplier's products. A folded row with order history stays discontinued on the
+     * archived org supplier; every other row moves over.
+     */
+    private function moveOrgSupplierProducts(OrgSupplier $from, OrgSupplier $to): void
+    {
+        $twins = OrgSupplierProduct::where('org_supplier_id', $to->id)->get()->keyBy('supplier_product_id');
+
+        foreach (OrgSupplierProduct::where('org_supplier_id', $from->id)->whereIn('supplier_product_id', $twins->keys())->get() as $orgSupplierProduct) {
+            RepairOrgSupplierProductsSupplierDrift::make()->mergeIntoTwin($orgSupplierProduct, $twins->get($orgSupplierProduct->supplier_product_id));
+        }
+
+        DB::table('org_supplier_products')
+            ->where('org_supplier_id', $from->id)
+            ->whereNotIn('supplier_product_id', $twins->keys())
+            ->update(['org_supplier_id' => $to->id]);
+    }
+
     private function ensureCanMerge(Supplier $duplicate, Supplier $kept): void
     {
-        if ($duplicate->id === $kept->id) {
-            throw ValidationException::withMessages(['target_supplier_id' => __('A supplier cannot be merged into itself')]);
+        $blockers = $this->blockers($duplicate, $kept);
+
+        if ($blockers) {
+            throw ValidationException::withMessages(['target_supplier_id' => implode(' ', $blockers)]);
         }
+    }
+
+    /**
+     * @return array<int, string> why the merge cannot go ahead, empty when it can
+     */
+    public function blockers(Supplier $duplicate, Supplier $kept): array
+    {
+        if ($duplicate->id === $kept->id) {
+            return [__('A supplier cannot be merged into itself')];
+        }
+
+        $blockers = [];
 
         if ($duplicate->currency_id !== $kept->currency_id) {
-            throw ValidationException::withMessages(['target_supplier_id' => __('The two suppliers price in different currencies')]);
+            $blockers[] = __('The two suppliers price in different currencies');
         }
 
-        $sharedCodes = $duplicate->supplierProducts()->withTrashed()
-            ->whereIn('code', $kept->supplierProducts()->withTrashed()->select('code'))
-            ->pluck('code');
-
-        if ($sharedCodes->isNotEmpty()) {
-            throw ValidationException::withMessages([
-                'target_supplier_id' => __('Both suppliers have products with the codes :codes, merge those products first', ['codes' => $sharedCodes->implode(', ')]),
+        $refusedProducts = MergeSupplierProducts::make()->mergeSupplier($duplicate, $kept)['refused'];
+        if ($refusedProducts) {
+            $blockers[] = __('Both suppliers have products with the codes :codes that cannot be merged automatically, merge those products first', [
+                'codes' => collect($refusedProducts)->map(fn (string $reason, int|string $code) => "$code ($reason)")->implode(', '),
             ]);
         }
 
-        $sharedAgentOrders = $this->sharedAgentOrders($duplicate, $kept)
+        $blockedAgentOrders = $this->blockedAgentOrderReferences($duplicate, $kept);
+        if ($blockedAgentOrders->isNotEmpty()) {
+            $blockers[] = __('Both suppliers are on the agent orders :references, sort those orders out first', ['references' => $blockedAgentOrders->implode(', ')]);
+        }
+
+        return $blockers;
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    public function blockedAgentOrderReferences(Supplier $duplicate, Supplier $kept): Collection
+    {
+        return $this->sharedAgentOrders($duplicate, $kept)
             ->join('purchase_orders', 'purchase_orders.id', '=', 'duplicate_orders.purchase_order_id')
             ->where(function ($query) {
                 $query->where('duplicate_orders.is_costed', true)
@@ -146,10 +206,27 @@ class MergeSuppliers
                     ->orWhereExists(fn ($deposits) => $deposits->from('aspo_deposits')->whereColumn('aspo_deposits.agent_supplier_purchase_order_id', 'duplicate_orders.id'));
             })
             ->pluck('purchase_orders.reference');
+    }
 
-        if ($sharedAgentOrders->isNotEmpty()) {
+    /**
+     * @return Collection<int, string>
+     */
+    public function sharedAgentOrderReferences(Supplier $duplicate, Supplier $kept): Collection
+    {
+        return $this->sharedAgentOrders($duplicate, $kept)
+            ->join('purchase_orders', 'purchase_orders.id', '=', 'duplicate_orders.purchase_order_id')
+            ->pluck('purchase_orders.reference');
+    }
+
+    private function ensureNoSharedProductCodes(Supplier $duplicate, Supplier $kept): void
+    {
+        $sharedCodes = $duplicate->supplierProducts()->withTrashed()
+            ->whereIn('code', $kept->supplierProducts()->withTrashed()->select('code'))
+            ->pluck('code');
+
+        if ($sharedCodes->isNotEmpty()) {
             throw ValidationException::withMessages([
-                'target_supplier_id' => __('Both suppliers are on the agent orders :references, sort those orders out first', ['references' => $sharedAgentOrders->implode(', ')]),
+                'target_supplier_id' => __('Both suppliers have products with the codes :codes, merge those products first', ['codes' => $sharedCodes->implode(', ')]),
             ]);
         }
     }

@@ -10,11 +10,12 @@ import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
 import Textarea from "primevue/textarea"
+import Select from "primevue/select"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faExclamationCircle, faLock, faForward } from "@fal"
-library.add(faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faExclamationCircle, faLock, faForward)
+import { faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faExclamationCircle, faLock, faForward, faArchive } from "@fal"
+library.add(faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faExclamationCircle, faLock, faForward, faArchive)
 
 interface Step {
     key: string
@@ -87,6 +88,26 @@ interface Stage {
     skips?: Skip[]
 }
 
+interface CloseOldStockDelivery {
+    id: number
+    reference: string
+    state: string
+    dispatched_at: string | null
+    matching: number
+}
+
+interface CloseOld {
+    close: {
+        reason: string
+        at: string
+        by: string | null
+        stock_delivery: string | null
+    } | null
+    route?: routeType
+    undo_route?: routeType | null
+    stock_deliveries?: CloseOldStockDelivery[]
+}
+
 const props = defineProps<{
     stages: Stage[]
     route: routeType
@@ -95,6 +116,7 @@ const props = defineProps<{
     deposit?: { not_needed: boolean, agrees?: boolean, route: routeType } | null
     sample?: { required: boolean, approved: boolean, override_reason: string | null, skipped?: boolean, route: routeType | null } | null
     cho?: { passed: boolean, misses: string[], penalty_percentage: number } | null
+    closeOld?: CloseOld | null
 }>()
 
 const slots = useSlots()
@@ -397,6 +419,66 @@ function saveSkip() {
     })
 }
 
+const closeOldDialog = ref(false)
+const closeOldUndoDialog = ref(false)
+const closeOldForm = ref<{ stock_delivery_id: number | null, reason: string }>({ stock_delivery_id: null, reason: "" })
+const closeOldUndoReason = ref("")
+const savingCloseOld = ref(false)
+const closeOldErrors = ref<Record<string, string>>({})
+
+const stockDeliveryOptions = computed(() => (props.closeOld?.stock_deliveries ?? []).map((stockDelivery) => ({
+    value: stockDelivery.id,
+    label: [
+        stockDelivery.reference,
+        stockDelivery.state,
+        stockDelivery.dispatched_at ? formatDate(stockDelivery.dispatched_at) : null,
+        ctrans(":count matching items", { count: stockDelivery.matching }),
+    ].filter(Boolean).join(" · "),
+})))
+
+function openCloseOld() {
+    closeOldForm.value = { stock_delivery_id: null, reason: "" }
+    closeOldErrors.value = {}
+    closeOldDialog.value = true
+}
+
+function openCloseOldUndo() {
+    closeOldUndoReason.value = ""
+    closeOldErrors.value = {}
+    closeOldUndoDialog.value = true
+}
+
+function saveCloseOld() {
+    if (!props.closeOld?.route) {
+        return
+    }
+    router.patch(route(props.closeOld.route.name, props.closeOld.route.parameters), {
+        stock_delivery_id: closeOldForm.value.stock_delivery_id,
+        reason: closeOldForm.value.reason.trim(),
+    }, {
+        preserveScroll: true,
+        onStart: () => savingCloseOld.value = true,
+        onFinish: () => savingCloseOld.value = false,
+        onError: (error) => closeOldErrors.value = error,
+        onSuccess: () => closeOldDialog.value = false,
+    })
+}
+
+function undoCloseOld() {
+    if (!props.closeOld?.undo_route) {
+        return
+    }
+    router.patch(route(props.closeOld.undo_route.name, props.closeOld.undo_route.parameters), {
+        reason: closeOldUndoReason.value.trim(),
+    }, {
+        preserveScroll: true,
+        onStart: () => savingCloseOld.value = true,
+        onFinish: () => savingCloseOld.value = false,
+        onError: (error) => closeOldErrors.value = error,
+        onSuccess: () => closeOldUndoDialog.value = false,
+    })
+}
+
 function save() {
     if (!editing.value) {
         return
@@ -670,6 +752,38 @@ function save() {
                 </template>
             </div>
 
+            <div v-if="stage.key === 'received' && closeOld" class="mt-2">
+                <div v-if="closeOld.close" class="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-medium text-amber-800">{{ ctrans("Closed as an old PO") }}</span>
+                        <button v-if="closeOld.undo_route" type="button" class="text-gray-500 hover:text-gray-800" v-tooltip="ctrans('Reopen this PO')" @click="openCloseOldUndo">
+                            <FontAwesomeIcon icon="fal fa-undo" fixed-width aria-hidden="true" />
+                        </button>
+                    </div>
+                    <div v-if="closeOld.close.stock_delivery" class="flex items-center gap-1 whitespace-nowrap text-gray-600">
+                        <FontAwesomeIcon icon="fal fa-truck" fixed-width aria-hidden="true" />
+                        {{ closeOld.close.stock_delivery }}
+                    </div>
+                    <div class="text-gray-600">
+                        {{ formatDate(closeOld.close.at) }}<template v-if="closeOld.close.by"> · {{ closeOld.close.by }}</template>
+                    </div>
+                    <div class="text-gray-700">{{ closeOld.close.reason }}</div>
+                </div>
+                <Button
+                    v-else-if="closeOld.route"
+                    type="tertiary"
+                    size="xs"
+                    full
+                    :label="ctrans('Close Old PO')"
+                    :tooltip="ctrans('The goods of this PO were delivered before it was in aiku: close it so it leaves your open lists and the CHS score')"
+                    @click="openCloseOld"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-archive" class="text-amber-600" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+            </div>
+
             <slot :name="`stage-${stage.key}`" :stage="stage" />
             </div>
         </div>
@@ -903,6 +1017,79 @@ function save() {
                 </Button>
                 <Button type="primary" full :label="skipping?.skipped ? ctrans('Skip') : ctrans('Undo')" :loading="savingSkip" :disabled="!skipReason.trim()" @click="saveSkip">
                     <template #icon><FontAwesomeIcon :icon="skipping?.skipped ? 'fal fa-forward' : 'fal fa-undo'" fixed-width aria-hidden="true" /></template>
+                </Button>
+            </div>
+        </template>
+    </Dialog>
+    <Dialog
+        :visible="closeOldDialog"
+        modal
+        :header="ctrans('Close Old PO')"
+        :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }"
+        :draggable="false"
+        @update:visible="(visible: boolean) => !visible && (closeOldDialog = false)"
+    >
+        <div class="space-y-3 text-sm">
+            <p class="text-gray-600">{{ ctrans("For a PO whose goods were delivered before it was in aiku. It is closed as Counted & Costed, leaves the open PO lists, the stages before it stay not recorded and it is left out of the CHS score.") }}</p>
+
+            <label class="block space-y-1">
+                <span class="block text-xs text-gray-500">{{ ctrans("Stock delivery (optional)") }}</span>
+                <Select
+                    v-model="closeOldForm.stock_delivery_id"
+                    :options="stockDeliveryOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    :placeholder="stockDeliveryOptions.length ? ctrans('No stock delivery') : ctrans('No received stock delivery carries these SKOs')"
+                    :disabled="!stockDeliveryOptions.length"
+                    showClear
+                    filter
+                    class="w-full"
+                />
+                <span class="block text-xs text-gray-400">{{ ctrans("The received delivery that brought these goods, if there is one.") }}</span>
+                <span v-if="closeOldErrors.stock_delivery_id" class="block text-xs text-red-600">{{ closeOldErrors.stock_delivery_id }}</span>
+            </label>
+
+            <label class="block space-y-1">
+                <span class="block text-xs text-gray-500">{{ ctrans("Reason (kept in the order's history)") }} <span class="text-red-500">*</span></span>
+                <Textarea v-model="closeOldForm.reason" rows="3" autoResize class="w-full" />
+                <span v-if="closeOldErrors.reason" class="block text-xs text-red-600">{{ closeOldErrors.reason }}</span>
+            </label>
+        </div>
+        <template #footer>
+            <div class="flex w-full gap-2">
+                <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="closeOldDialog = false">
+                    <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button type="primary" full :label="ctrans('Close Old PO')" :loading="savingCloseOld" :disabled="!closeOldForm.reason.trim()" @click="saveCloseOld">
+                    <template #icon><FontAwesomeIcon icon="fal fa-archive" fixed-width aria-hidden="true" /></template>
+                </Button>
+            </div>
+        </template>
+    </Dialog>
+
+    <Dialog
+        :visible="closeOldUndoDialog"
+        modal
+        :header="ctrans('Reopen this PO')"
+        :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }"
+        :draggable="false"
+        @update:visible="(visible: boolean) => !visible && (closeOldUndoDialog = false)"
+    >
+        <div class="space-y-3 text-sm">
+            <p class="text-gray-600">{{ ctrans("The PO goes back to the state it had before it was closed, the linked stock delivery is unlinked and the CHS score counts it again as before.") }}</p>
+            <label class="block space-y-1">
+                <span class="block text-xs text-gray-500">{{ ctrans("Reason (kept in the order's history)") }} <span class="text-red-500">*</span></span>
+                <Textarea v-model="closeOldUndoReason" rows="3" autoResize class="w-full" />
+                <span v-if="closeOldErrors.reason" class="block text-xs text-red-600">{{ closeOldErrors.reason }}</span>
+            </label>
+        </div>
+        <template #footer>
+            <div class="flex w-full gap-2">
+                <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="closeOldUndoDialog = false">
+                    <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button type="tertiary" full :label="ctrans('Reopen')" :loading="savingCloseOld" :disabled="!closeOldUndoReason.trim()" @click="undoCloseOld">
+                    <template #icon><FontAwesomeIcon icon="fal fa-undo" class="text-amber-600" fixed-width aria-hidden="true" /></template>
                 </Button>
             </div>
         </template>

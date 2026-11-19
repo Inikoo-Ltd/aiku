@@ -23,7 +23,7 @@ enum ProductionMaterialRequestItemStateEnum: string
         return [
             'pending'   => __('To bring'),
             'delivered' => __('Delivered'),
-            'short'     => __('Warehouse short'),
+            'short'     => __("Can't bring"),
         ];
     }
 }

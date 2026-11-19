@@ -598,10 +598,11 @@ class AskShoppingAssistant
         );
 
         $rewroteNumbers = false;
+        $hasSisterShop  = GetShoppingAssistantTools::sisterWebsite($conversation->website) !== null;
 
         for ($call = 0; $call < (int) config('services.shopping_assistant.max_model_calls'); $call++) {
             $callStartedAt = hrtime(true);
-            $response      = $this->callModel($model, $messages, $tools->definitions($customer && GetShoppingAssistantTools::isDropshipping($customer)), $call + 1 === (int) config('services.shopping_assistant.max_model_calls'));
+            $response      = $this->callModel($model, $messages, $tools->definitions($customer && GetShoppingAssistantTools::isDropshipping($customer), $hasSisterShop), $call + 1 === (int) config('services.shopping_assistant.max_model_calls'));
 
             if ($response === null) {
                 $turn['flags'][] = 'model_unavailable';

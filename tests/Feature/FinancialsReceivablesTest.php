@@ -220,6 +220,61 @@ test('the organisation sees its receivables in accounting: dashboard, unpaid inv
         ->and($rows('balances', ['side' => 'debt'])->pluck('id')->all())->not->toContain($customer->id);
 });
 
+test('cash on delivery not paid lists unpaid cash on delivery invoices with their order, courier and tracking, oldest dispatch first, filtered by courier', function () {
+    $customer  = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $warehouse = createWarehouse();
+    $shipper   = fn (string $name) => \App\Actions\Dispatching\Shipper\StoreShipper::make()->action($this->organisation, ['code' => $name.random_int(1000, 9999), 'name' => $name.' test', 'trade_as' => strtolower($name)]);
+    $dpd       = $shipper('DPD');
+    $gls       = $shipper('GLS');
+    $codInvoice = function (int $dispatchedDaysAgo, float $total, float $paid, $courier, string $tracking, bool $cod = true) use ($customer, $warehouse) {
+        $order = StoreOrder::make()->action($customer, [
+            'date'             => date('Y-m-d'),
+            'delivery_address' => new Address(Address::factory()->definition()),
+            'billing_address'  => new Address(Address::factory()->definition()),
+        ]);
+        DB::table('orders')->where('id', $order->id)->update(['dispatched_at' => now()->subDays($dispatchedDaysAgo)]);
+        $deliveryNote = \App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote::make()->action($order, [
+            'reference'        => 'DN'.random_int(100000, 999999),
+            'state'            => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::UNASSIGNED,
+            'email'            => 'test@email.com',
+            'date'             => date('Y-m-d'),
+            'delivery_address' => new Address(Address::factory()->definition()),
+            'warehouse_id'     => $warehouse->id,
+        ]);
+        \App\Actions\Dispatching\Shipment\StoreShipment::make()->action($deliveryNote, $courier, ['tracking' => $tracking]);
+
+        return receivableInvoice($customer, $dispatchedDaysAgo, $total, $paid, ['order_id' => $order->id, 'is_cash_on_delivery' => $cod]);
+    };
+    $recent   = $codInvoice(3, 80, 0, $dpd, 'TRK-RECENT');
+    $oldest   = $codInvoice(40, 120, 20, $gls, 'TRK-OLDEST');
+    $notCod   = $codInvoice(50, 90, 0, $dpd, 'TRK-BANK', false);
+    $paid     = $codInvoice(60, 70, 70, $dpd, 'TRK-PAID');
+    $notSent  = $codInvoice(70, 40, 0, $dpd, 'TRK-NOT-SENT');
+    DB::table('orders')->where('id', $notSent->order_id)->update(['dispatched_at' => null]);
+    DB::table('invoices')->where('id', $paid->id)->update(['pay_status' => 'paid']);
+
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+
+    $page = fn (array $query = []) => get(route('grp.org.accounting.receivables.cash_on_delivery', [$this->organisation->slug, 'filter' => ['global' => $customer->reference], ...$query]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Accounting/Receivables')->where('section', 'cash_on_delivery'))
+        ->viewData('page')['props'];
+
+    $props = $page();
+    $rows  = collect($props['data']['data']);
+    expect($rows->pluck('id')->all())->toBe([$oldest->id, $recent->id])
+        ->and($rows->pluck('id')->all())->not->toContain($notCod->id)
+        ->and($rows->pluck('id')->all())->not->toContain($notSent->id)
+        ->and($rows->first()['native'])->toEqual(100)
+        ->and($rows->first()['days_outstanding'])->toBe(40)
+        ->and($rows->first()['couriers'])->toBe('GLS test')
+        ->and($rows->first()['tracking'])->toBe('TRK-OLDEST')
+        ->and($rows->first()['order_route']['name'])->toBe('grp.org.shops.show.ordering.orders.show')
+        ->and(collect($props['couriers'])->pluck('value')->all())->toContain($dpd->name, $gls->name)
+        ->and(collect($props['pageHead']['subNavigation'])->pluck('route.name')->all())->toContain('grp.org.accounting.receivables.cash_on_delivery')
+        ->and(collect($page(['courier' => $dpd->name])['data']['data'])->pluck('id')->all())->toBe([$recent->id]);
+});
+
 test('group financials shows receivables of the organisations the user may see, in the group currency, only to holders of the financials permission', function () {
     $group                 = $this->organisation->group;
     $otherOrganisationData = Organisation::factory()->definition();
@@ -478,7 +533,7 @@ test('profit and loss shows in the organisation accounting and in group financia
             ->where('isGroup', true)
             ->where('profitAndLoss.currency', $group->currency->code)
             ->where('profitAndLoss.months', fn ($months) => collect($months)->count() === 12 && collect($months)->last()["month"] === now()->format("Y-m"))
-            ->where('notConnected', fn ($banks) => collect($banks)->contains('Tatra banka')));
+            ->where('notConnected', \App\Actions\Accounting\BankBalance\UI\ShowCash::notConnected(collect([$this->organisation]))));
     get(route('grp.org.accounting.profit_and_loss.index', [$this->organisation->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->where('isGroup', false)->where('profitAndLoss.currency', $this->organisation->currency->code));

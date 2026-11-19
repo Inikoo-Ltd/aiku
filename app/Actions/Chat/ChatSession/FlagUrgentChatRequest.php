@@ -42,7 +42,7 @@ class FlagUrgentChatRequest
 
     public const string AT_KEY = 'urgent_request_at';
 
-    public const array REQUESTS = ['cancel_order', 'change_address', 'delivery_instruction'];
+    public const array REQUESTS = ['cancel_order', 'hold_order', 'change_address', 'delivery_instruction'];
 
     public const string KIND_KEY = 'ds_kind';
 
@@ -241,9 +241,11 @@ class FlagUrgentChatRequest
 
         "request" is:
         - "cancel_order" if the customer asks us to cancel an order that is already placed, or
-          to take items they chose off it, or asks us not to send it or to stop or hold it.
+          to take items they chose off it, or asks us not to send it at all.
           Accepting that items we said are out of stock are left out and refunded is "none":
           the order still ships.
+        - "hold_order" if the customer asks us to stop, hold or delay an order already placed
+          before it ships, or to deliver it only on or after a later date.
         - "change_address" if the customer asks us to change, correct or confirm the delivery
           address of an order already placed, to send it somewhere else, or to send it with a
           different courier.
@@ -291,7 +293,7 @@ class FlagUrgentChatRequest
         $text
         $kind
         Output JSON only, no code fence:
-        {"request": "cancel_order/change_address/delivery_instruction/none", "only_thanks": true or false$kindField}
+        {"request": "cancel_order/hold_order/change_address/delivery_instruction/none", "only_thanks": true or false$kindField}
         EOT;
     }
 }

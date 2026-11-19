@@ -11,11 +11,14 @@ namespace App\Actions\Production\Restock\UI;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateTopCustomerShare;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Actions\Production\PartnerShippingList\UI\IndexPartnerShippingList;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Actions\Production\Restock\GetProductionLeadTime;
 use App\Actions\Production\Restock\GetProductionStockCoverBuckets;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
@@ -49,8 +52,8 @@ class ShowToRestock extends OrgAction
 
     private const QUANTUM_UNITS = 'case when coalesce(a.recommended_batch_size, 0) > 0 then lcm(a.recommended_batch_size::bigint, greatest(1, coalesce(os.packed_in, 1))::bigint) else greatest(1, coalesce(os.packed_in, 1)) end';
 
-    private const SUGGESTED_UNITS = "greatest(case when coalesce(a.recommended_batch_size, 0) > 0 then lcm(a.recommended_batch_size::bigint, greatest(1, coalesce(os.packed_in, 1))::bigint) else greatest(1, coalesce(os.packed_in, 1)) end,
-        ceil(greatest(ceil(round((coalesce(s.recommended_order_quantity, 0) * greatest(1, coalesce(os.packed_in, 1)))::numeric, 6)) - coalesce(prod.skos, 0) * greatest(1, coalesce(os.packed_in, 1)), 0)
+    private const SUGGESTED_UNITS = "greatest(case when coalesce(inc.timely, 0) > 0 then 0 else case when coalesce(a.recommended_batch_size, 0) > 0 then lcm(a.recommended_batch_size::bigint, greatest(1, coalesce(os.packed_in, 1))::bigint) else greatest(1, coalesce(os.packed_in, 1)) end end,
+        ceil(greatest(ceil(round((coalesce(s.recommended_order_quantity, 0) * greatest(1, coalesce(os.packed_in, 1)))::numeric, 6)) - coalesce(prod.skos, 0) * greatest(1, coalesce(os.packed_in, 1)) - coalesce(inc.timely, 0), 0)
             / (case when coalesce(a.recommended_batch_size, 0) > 0 then lcm(a.recommended_batch_size::bigint, greatest(1, coalesce(os.packed_in, 1))::bigint) else greatest(1, coalesce(os.packed_in, 1)) end))
         * (case when coalesce(a.recommended_batch_size, 0) > 0 then lcm(a.recommended_batch_size::bigint, greatest(1, coalesce(os.packed_in, 1))::bigint) else greatest(1, coalesce(os.packed_in, 1)) end))";
 
@@ -122,6 +125,25 @@ class ShowToRestock extends OrgAction
                 max(extract(day from now() - sli.created_at)) as age_max");
     }
 
+    /**
+     * Units on their way from suppliers per org stock. Only what is expected within the production
+     * lead time (or already in the warehouse) is timely: making it would take longer than waiting,
+     * so it lowers the suggestion. Later, overdue or undated stock is shown, not counted.
+     */
+    private function incomingQuery(): object
+    {
+        $byDate = DB::query()
+            ->fromSub(GetOrganisationStockCoverBuckets::comingUnitsQuery($this->organisation->id), 'coming')
+            ->groupBy('org_stock_id', 'eta')
+            ->selectRaw('org_stock_id, eta, sum(units) as units');
+
+        return DB::query()
+            ->fromSub($byDate, 'dated')
+            ->groupBy('org_stock_id')
+            ->selectRaw("org_stock_id, sum(units) as units,
+                sum(units) filter (where eta between current_date and current_date + {$this->leadDays()}) as timely");
+    }
+
     private function candidatesQuery(): Builder
     {
         $query = GetProductionStockCoverBuckets::make()->scopedQuery(
@@ -132,6 +154,7 @@ class ShowToRestock extends OrgAction
         return $this->withoutPrivateCustomerStocks($query)
             ->leftJoin('artefact_departments as ad', 'ad.id', 'a.artefact_department_id')
             ->leftJoinSub($this->boardQuery(), 'prod', 'prod.stock_id', 'os.stock_id')
+            ->leftJoinSub($this->incomingQuery(), 'inc', 'inc.org_stock_id', 'os.id')
             ->whereNotNull('os.id')
             ->whereRaw('(coalesce(prod.skos, 0) = 0 or not '.self::COVERED.')');
     }
@@ -170,6 +193,8 @@ class ShowToRestock extends OrgAction
                 DB::raw(self::SELLS_RANK.' as sells_rank'),
                 DB::raw('('.self::SELLS_RANK.") * 1000000 + least(coalesce(s.days_of_cover, 0), 999999) as sells"),
                 DB::raw(self::IN_PRODUCTION_UNITS.' as in_production'),
+                DB::raw('round(coalesce(inc.units, 0))::bigint as incoming'),
+                DB::raw('round(coalesce(inc.timely, 0))::bigint as incoming_timely'),
                 DB::raw('coalesce(s.days_of_cover, 0) as lasts'),
                 DB::raw(self::SUGGESTED_UNITS.' as job_units'),
                 DB::raw(self::QUANTUM_UNITS.' as quantum_units'),
@@ -177,7 +202,7 @@ class ShowToRestock extends OrgAction
             ])
             ->defaultSort('sells')
             ->allowedFilters([$globalSearch])
-            ->allowedSorts(['stock_code', 'sells', 'stock_available', 'lasts', 'job_units', 'in_production'])
+            ->allowedSorts(['stock_code', 'sells', 'stock_available', 'lasts', 'job_units', 'in_production', 'incoming'])
             ->withPaginator(null, $perPage, tableName: request()->route()->getName())
             ->withQueryString();
 
@@ -204,15 +229,38 @@ class ShowToRestock extends OrgAction
             ->get()
             ->keyBy('org_stock_id') : collect();
 
+        $incoming = $orgStockIds ? DB::query()
+            ->fromSub(GetOrganisationStockCoverBuckets::comingUnitsQuery($this->organisation->id), 'coming')
+            ->whereIn('org_stock_id', $orgStockIds)
+            ->groupBy('org_stock_id', 'kind', 'slug', 'reference', 'supplier', 'state', 'eta')
+            ->selectRaw('org_stock_id, kind, slug, reference, supplier, state, eta, round(sum(units))::bigint as units')
+            ->orderByRaw('eta nulls last')
+            ->get()
+            ->groupBy('org_stock_id') : collect();
+
+        $stateLabels = [
+            'delivery' => StockDeliveryStateEnum::labels(),
+            'order'    => PurchaseOrderStateEnum::labels(),
+        ];
+
         $orgStocks = OrgStock::with('tradeUnits')->whereIn('id', $orgStockIds)->get()->keyBy('id');
 
-        $items->getCollection()->transform(function ($row) use ($sales, $orgStocks) {
+        $items->getCollection()->transform(function ($row) use ($sales, $orgStocks, $incoming, $stateLabels) {
             $figures = $sales->get($row->org_stock_id);
 
             $row->sales         = $figures ? (float) $figures->sales : null;
             $row->customers     = $figures ? (int) $figures->customers : null;
             $row->sales_ly      = $figures ? (float) $figures->sales_ly : null;
             $row->currency_code = $this->organisation->currency->code;
+            $row->incoming_lines = $incoming->get($row->org_stock_id, collect())->map(fn ($line) => [
+                'kind'        => $line->kind,
+                'slug'        => $line->slug,
+                'reference'   => $line->reference,
+                'supplier'    => $line->supplier,
+                'state_label' => $stateLabels[$line->kind][$line->state] ?? $line->state,
+                'eta'         => $line->eta,
+                'units'       => (int) $line->units,
+            ])->values()->all();
             $row->image         = $orgStocks->get($row->org_stock_id)?->tradeUnits
                 ->first(fn ($tradeUnit) => $tradeUnit->image_id !== null)?->imageSources(160, 160);
 
@@ -373,6 +421,7 @@ class ShowToRestock extends OrgAction
                 ->column(key: 'stock_available', label: __('In stock'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'lasts', label: __('Lasts'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'in_production', label: __('In production'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'incoming', label: __('Incoming'), tooltip: __('Units ordered from suppliers and not put away yet. What arrives within the production lead time lowers the suggestion'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'job_units', label: __('Suggested'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'make', label: __('Make (units)'), canBeHidden: false, align: 'right')
                 ->defaultSort('sells');

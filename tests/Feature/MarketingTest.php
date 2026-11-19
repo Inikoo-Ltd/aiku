@@ -5370,6 +5370,7 @@ describe('mailshot ready-made links', function () {
         resetMarketingFixtures();
 
         list($this->organisation, $this->user, $this->shop) = createOwnShop('mailshot ready-made links');
+        $this->shop->update(['settings' => array_replace_recursive($this->shop->settings ?? [], ['whatsapp' => ['phone_number_id' => '1000000004']])]);
         $this->outbox   = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
         $this->website  = createWebsite($this->shop);
         $this->mailshot = StoreMailshot::make()->action($this->outbox, Mailshot::factory()->definition());

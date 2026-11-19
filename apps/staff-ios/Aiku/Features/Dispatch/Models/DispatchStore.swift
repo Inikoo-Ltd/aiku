@@ -6,7 +6,6 @@ import Observation
 final class DispatchStore {
     static let shared = DispatchStore(service: .live(.shared))
 
-    let shippers: [DispatchShipper]
     private(set) var reports: [DispatchProblemReport] = []
     private(set) var trolleys: [MobileSessionTrolley] = []
     private(set) var bays: [MobileSessionPickedBay] = []
@@ -15,9 +14,8 @@ final class DispatchStore {
 
     @ObservationIgnored private let service: PickingSessionService
 
-    init(service: PickingSessionService, shippers: [DispatchShipper] = DispatchSampleData.shippers) {
+    init(service: PickingSessionService) {
         self.service = service
-        self.shippers = shippers
     }
 
     func loadTrolleys(warehouseID: Int) async {

@@ -1,11 +1,13 @@
 import SwiftUI
 
 struct GoodsOutDeliveryNotesView: View {
+    var initialTab: GoodsOutDeliveryNoteState?
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
     @Environment(ToastCenter.self) private var toasts
     @Bindable private var store = GoodsOutStore.shared
     @State private var isFiltering = false
+    @State private var hasAppliedInitialTab = false
 
     var body: some View {
         Group {
@@ -25,6 +27,7 @@ struct GoodsOutDeliveryNotesView: View {
                 }
             }
         }
+        .onAppear { applyInitialTab() }
         .loadsGoodsOut()
         .task(id: GoodsOutListLoadKey(query: store.listQuery, warehouseID: store.warehouseID, isRemote: store.isRemote)) {
             guard store.isRemote else { return }
@@ -53,6 +56,13 @@ struct GoodsOutDeliveryNotesView: View {
     }
 
     private var kicker: String { "Goods out · \(session.warehouseLabel)" }
+
+    private func applyInitialTab() {
+        guard !hasAppliedInitialTab else { return }
+        hasAppliedInitialTab = true
+        guard let initialTab else { return }
+        store.listQuery = GoodsOutListQuery(tab: initialTab)
+    }
 
     private var actions: [HeaderAction] {
         let active = store.listQuery.filter.activeCount

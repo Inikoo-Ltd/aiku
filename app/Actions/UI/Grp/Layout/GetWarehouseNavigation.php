@@ -197,6 +197,18 @@ class GetWarehouseNavigation
                                 ],
                             ]
                         ] : null,
+                        $canViewIncoming && $warehouse->organisation->productions()->exists() ? [
+                            'label' => __('From production'),
+                            'icon'  => ['fal', 'fa-industry'],
+                            'root'  => 'grp.org.warehouses.show.incoming.production_output.',
+                            'route' => [
+                                "name"       => "grp.org.warehouses.show.incoming.production_output.index",
+                                "parameters" => [
+                                    $warehouse->organisation->slug,
+                                    $warehouse->slug
+                                ],
+                            ]
+                        ] : null,
                         $user->hasPermissionTo("fulfilment.$warehouse->id.view") ?
                         [
                             'label' => __('Fulfilment deliveries'),

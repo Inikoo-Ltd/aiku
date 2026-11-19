@@ -21,6 +21,7 @@ use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\Agent\WithAgentSubNavigation;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
+use App\Actions\UI\Incoming\ShowIncomingHub;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Http\Resources\Procurement\StockDeliveriesResource;
 use App\Http\Resources\Procurement\StockDeliveryResource;
@@ -71,7 +72,7 @@ class IndexStockDeliveries extends OrgAction
         $routeName = $request->route()->getName();
 
         if (str_starts_with($routeName, 'grp.org.warehouses.')) {
-            return $request->user()->authTo("incoming.{$this->warehouse->id}.view");
+            return ShowIncomingHub::canViewGoodsIn($request->user(), $this->warehouse);
         }
 
         if (str_starts_with($routeName, 'grp.org.')) {

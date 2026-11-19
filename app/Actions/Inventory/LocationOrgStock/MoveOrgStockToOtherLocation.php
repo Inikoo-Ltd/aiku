@@ -24,7 +24,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class MoveOrgStockToOtherLocation extends OrgAction
@@ -46,22 +46,19 @@ class MoveOrgStockToOtherLocation extends OrgAction
     {
         DB::transaction(function () use ($currentLocationStock, $targetLocation, $modelData) {
             $quantity = Arr::pull($modelData, 'quantity');
+            $reason   = Arr::get($modelData, 'reason');
+            $note     = Arr::get($modelData, 'note');
 
-            // Removed reason and note on move due to Tomas Request
-            // $reason = Arr::pull($modelData, 'reason', null);
-            // $note   = Arr::pull($modelData, 'note', null);
-            // Source
             $sourceMovement = $this->processStockMovement($currentLocationStock, [
-                'quantity'              => $currentLocationStock->quantity - $quantity,
-                // 'reason'                => $reason,
-                // 'note'                  => $note,
+                'quantity' => $currentLocationStock->quantity - $quantity,
+                'reason'   => $reason,
+                'note'     => $note,
             ]);
-            // Destination
             $this->processStockMovement($targetLocation, [
-                'quantity'  => $targetLocation->quantity + $quantity,
-                'batches'   => AllocateOrgStockMovementBatches::make()->movedBatches($sourceMovement),
-                // 'reason'                => $reason,
-                // 'note'                  => $note,
+                'quantity' => $targetLocation->quantity + $quantity,
+                'batches'  => AllocateOrgStockMovementBatches::make()->movedBatches($sourceMovement),
+                'reason'   => $reason,
+                'note'     => $note,
             ]);
 
             SetOrgStockPickingLocation::dispatch($currentLocationStock->org_stock_id)->delay(2);
@@ -96,16 +93,13 @@ class MoveOrgStockToOtherLocation extends OrgAction
             'batches'          => Arr::get($modelData, 'batches', []),
         ];
 
-        // $reason = Arr::pull($modelData, 'reason', null);
-        // $note   = Arr::pull($modelData, 'note', null);
+        if ($reason = Arr::get($modelData, 'reason')) {
+            data_set($storedData, 'reason', $reason);
+        }
 
-        // if ($reason) {
-        //     data_set($storedData, 'reason', $reason);
-        // }
-
-        // if ($note) {
-        //     data_set($storedData, 'note', $note);
-        // }
+        if ($note = Arr::get($modelData, 'note')) {
+            data_set($storedData, 'note', $note);
+        }
 
         return StoreOrgStockMovement::make()->action(
             $locationOrgStock->orgStock,
@@ -120,8 +114,8 @@ class MoveOrgStockToOtherLocation extends OrgAction
     {
         return [
             'quantity'  => ['required','numeric','gt:0', $this->quantityFitsInSourceLocation(...)],
-            'reason'    => ['sometimes', 'nullable', new Enum(OrgStockMovementReasonEnum::class)],
-            'note'                  => ['sometimes', 'nullable', 'string'],
+            'reason'    => ['sometimes', 'nullable', Rule::in(OrgStockMovementReasonEnum::transferReason())],
+            'note'      => ['sometimes', 'nullable', 'string', 'max:1024'],
         ];
     }
 

@@ -412,16 +412,15 @@ class EditFulfilment extends OrgAction
     }
 
     /**
-     * The sender name is saved by the shop's own settings, not by this form, so it stays there.
+     * Only the connection: the other mailbox settings are saved by the shop's own settings, not by this form, so they stay there.
      *
      * @return array{label: string, icon: string, fields: array<string, mixed>}
      */
     private function fulfilmentMailboxBlueprint(Shop $shop, ActionRequest $request): array
     {
         $blueprint = $this->customerMailboxBlueprint($shop, $request);
-        unset($blueprint['fields']['mailbox_sender_name']);
+        $blueprint['fields'] = Arr::only($blueprint['fields'], ['mailbox']);
 
-        $blueprint['label'] = __('Gmail inbox');
         data_set($blueprint, 'fields.mailbox.value.texts', [
             'not_connected_title' => __('No Gmail inbox connected'),
             'not_connected'       => __('Sign in with the address customers send their emails and pick notices to, for example info@, not with your own account. Emails arrive in the chat inbox; pick notices from customers set up for it become returns.'),

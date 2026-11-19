@@ -85,7 +85,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Fulfilment\FulfilmentCustomer|null $fulfilmentCustomer
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Location|null $location
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\MovementPallet> $movements
  * @property-read Organisation $organisation
  * @property-read \App\Models\Fulfilment\PalletDelivery|null $palletDelivery
  * @property-read \App\Models\Fulfilment\PalletReturn|null $palletReturn
@@ -197,11 +196,6 @@ class Pallet extends Model implements Auditable
     public function rental(): BelongsTo
     {
         return $this->belongsTo(Rental::class);
-    }
-
-    public function movements(): HasMany
-    {
-        return $this->hasMany(MovementPallet::class);
     }
 
     public function palletStoredItems(): HasMany

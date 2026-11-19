@@ -8,11 +8,13 @@
 
 namespace App\Actions\Ordering\UI;
 
+use App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Actions\Production\PartnerShippingList\GetOrdersBlockedByProduction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
@@ -72,6 +74,8 @@ class ShowOrdersBacklog extends OrgAction
                 ],
                 'backlog_filters' => $this->tab == OrdersBacklogTabsEnum::RETURNED->value ? null : $this->getBacklogFilters($parent, $request),
                 'attention'       => IndexOrders::make()->backlogAttention($parent) + ['waiting_items_route' => $waitingItemsData['route']],
+                'bankPaymentsNotice' => $parent instanceof Shop ? IndexBankIncoming::shopNotice($parent, $request->user()) : null,
+                'productionBlockedNotice' => $parent instanceof Group ? null : GetOrdersBlockedByProduction::make()->notice($parent),
                 'production_review_bulk_route' => !$parent instanceof Group && IndexOrders::make()->usesProductionReview($parent) ? [
                     'method'     => 'patch',
                     'name'       => 'grp.models.organisation.orders.production_review',

@@ -382,6 +382,7 @@ struct PickingSessionTests {
         #expect(trolleys.map(\.holderTitle) == ["In use", "In use", "Free"])
         #expect(bays.map(\.subtitle) == [nil, "2 delivery notes · 1 waiting"])
         #expect(bays[0].chip == Chip("Free", .success))
+        #expect(bays[1].deliveryNotes.map(\.chip) == [Chip("Waiting", .warn), Chip("Picked", .info)])
     }
 
     @Test("Endpoints use the mobile picking session paths and bodies")
@@ -411,12 +412,5 @@ struct PickingSessionTests {
         let create = client.makeRequest(for: .createPickingSession(warehouseID: 5, deliveryNoteIDs: [100]))
         #expect(create.httpMethod == "POST")
         #expect(create.url?.path == "/app/api/mobile/warehouses/5/picking-sessions")
-    }
-
-    @Test("Shippers keep describing today's shipments")
-    func shippers() {
-        let store = DispatchStore(service: service())
-
-        #expect(store.shippers.map(\.subtitle) == ["48 shipments today", "21 shipments today", "No shipments today"])
     }
 }

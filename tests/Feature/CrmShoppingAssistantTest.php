@@ -35,6 +35,7 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Helpers\Country;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatKnowledgeEntry;
 use App\Models\CRM\Customer;
@@ -2298,7 +2299,7 @@ test('a general question is answered from the knowledge text the assistant cites
         ->and($message->hand_over_offer)->toBeNull()
         ->and($message->sources)->toEqual([['id' => $entry->id, 'kind' => 'policy', 'source_type' => 'webpage', 'source_id' => '1', 'title' => 'Delivery · Free delivery', 'url' => 'https://www.example.test/delivery']])
         ->and($message->tool_calls[0]['name'])->toBe('shop_information')
-        ->and($message->tool_calls[0]['source_ids'])->toBe([$entry->id])
+        ->and($message->tool_calls[0]['source_ids'])->toBe([0, $entry->id])
         ->and($message->tool_calls[0]['error'])->toBeNull();
 
     Http::assertSent(fn (Request $request) => str_contains($request->url(), 'chat/completions') && collect($request['messages'])->contains(fn ($sent) => ($sent['role'] ?? null) === 'tool' && str_contains($sent['content'], 'Orders over 150 pounds') && str_contains($sent['content'], '"id":'.$entry->id)));
@@ -2387,7 +2388,7 @@ test('an offer of a person always gets its fixed sentence by reason, and a websi
         ->and($order['message']->flags)->toBe(['reply_replaced_number']);
 });
 
-test('shop information with nothing written tells the model to offer a person, and a failed embedding call returns the tool error', function () {
+test('shop information with nothing written gives only the delivery countries, and a failed embedding call returns the tool error', function () {
     shoppingAssistantClearKnowledge($this->shop);
     $customer     = shoppingAssistantCustomer($this->shop);
     $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
@@ -2410,9 +2411,9 @@ test('shop information with nothing written tells the model to offer a person, a
     $empty       = $tools->execute($conversation, 'shop_information', ['question' => '  ']);
 
     expect($none['error'])->toBeNull()
-        ->and($none['content']['texts'])->toBe([])
-        ->and($none['content']['note'])->toBe('We have nothing written about this. Do not answer from your own knowledge: answer with answer_kind offer_person and offer_reason not_sure.')
-        ->and($none['sources'])->toBe([])
+        ->and($none['content']['texts'])->toBe([['id' => 0, 'title' => 'Countries we deliver to', 'text' => 'We deliver to every country: the checkout accepts a delivery address in any country.', 'checked_by_staff' => true]])
+        ->and($none['content']['note'])->toContain('offer_person')
+        ->and(array_column($none['sources'], 'id'))->toBe([0])
         ->and($none['products'])->toBe([])
         ->and($unavailable['error'])->not->toBeNull()
         ->and($unavailable['content']['error'])->toContain('offer_person')
@@ -2423,9 +2424,26 @@ test('shop information with nothing written tells the model to offer a person, a
     $turn  = AskShoppingAssistant::run($conversation->fresh(), 'Do you take PayPal?');
 
     expect($turn['message']->refresh()->tool_calls[0]['error'])->toBeNull()
-        ->and($turn['message']->tool_calls[0]['source_ids'])->toBe([])
+        ->and($turn['message']->tool_calls[0]['source_ids'])->toBe([0])
         ->and($turn['message']->answer_kind->value)->toBe('offer_person')
         ->and($turn['message']->hand_over_offer->value)->toBe('not_sure');
+});
+
+test('shop information names the countries the checkout bans for delivery, or the few it allows', function () {
+    $active = Country::where('status', true)->where('show_in_address', true)->orderBy('name')->get();
+    [$first, $second] = [$active[0], $active[1]];
+
+    $this->shop->update(['banned_country_regions' => [
+        $first->code  => ['billing' => false, 'delivery' => true, 'ip_block' => false, 'postcode' => null],
+        $second->code => ['billing' => false, 'delivery' => true, 'ip_block' => false, 'postcode' => '/^9\\d{4}$/'],
+    ]]);
+    $except = GetShoppingAssistantTools::deliveryCountriesSource($this->shop->refresh())['body'];
+
+    $this->shop->update(['banned_country_regions' => $active->slice(1)->mapWithKeys(fn (Country $country) => [$country->code => ['billing' => false, 'delivery' => true, 'ip_block' => false, 'postcode' => null]])->all()]);
+    $only = GetShoppingAssistantTools::deliveryCountriesSource($this->shop->refresh())['body'];
+
+    expect($except)->toBe("We deliver to every country except: $first->name. Some areas of $second->name are excluded.")
+        ->and($only)->toBe("We deliver only to these countries: $first->name.");
 });
 
 test('the answer kind of a turn is what it really used: a family description, a tool sentence or products', function () {
@@ -4132,7 +4150,7 @@ test('a second plain search in a row goes to the model, which can explain what t
         ->and($again['reply'])->toStartWith('We have no niaouli');
 });
 
-test('products of a family kept off the website that holds products made for customers are shown only to a customer with one of their own there, and a search without the model keeps only the close matches', function () {
+test('a product made for a customer is shown only to that customer, its family siblings with no customer stay public, and a search without the model keeps only the close matches', function () {
     $suffix     = Str::lower(Str::random(5));
     $word       = 'brelm'.$suffix;
     $department = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::DEPARTMENT)->first();
@@ -4163,7 +4181,36 @@ test('products of a family kept off the website that holds products made for cus
     $toOwner    = $shown($owner, ['query' => $word.' soap']);
     $closeOnly  = $shown($prospect, ['query' => $word.' soap', 'close_only' => true]);
 
-    expect($toProspect)->toContain($public->id)->not->toContain($sibling->id)->not->toContain($theirs->id)
+    expect($toProspect)->toContain($public->id)->toContain($sibling->id)->not->toContain($theirs->id)
         ->and($toOwner)->toContain($public->id)->toContain($sibling->id)->toContain($theirs->id)
-        ->and($closeOnly)->toContain($public->id)->not->toContain($far->id)->not->toContain($sibling->id);
+        ->and($closeOnly)->toContain($public->id)->not->toContain($far->id);
+});
+
+test('a shop with a sister shop points the customer to it, with a link built by code, only for products the model says match', function () {
+    $website = shoppingAssistantStorefront($this);
+    $sister  = $website;
+    $sister->update(['state' => \App\Enums\Web\Website\WebsiteStateEnum::LIVE]);
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['website_id' => $website->id]);
+    $tools = GetShoppingAssistantTools::make();
+
+    $withoutSister = $tools->execute($conversation->fresh(), 'sister_shop_products', ['query' => 'oil burners']);
+    $names         = fn (bool $hasSister) => array_map(fn (array $tool) => $tool['function']['name'], $tools->definitions(false, $hasSister));
+
+    $website->update(['settings' => array_merge($website->settings ?? [], ['shopping_assistant' => array_merge(data_get($website->settings, 'shopping_assistant', []), ['sister_website_id' => $sister->id])])]);
+    \App\Actions\Catalogue\Search\SearchCatalogueByMeaning::mock()->shouldReceive('handle')->andReturn(collect([$this->product->fresh()]));
+
+    $looked  = $tools->execute($conversation->fresh(), 'sister_shop_products', ['query' => 'oil burners']);
+    $matched = $tools->execute($conversation->fresh(), 'sister_shop_products', ['query' => 'oil burners', 'matching' => true]);
+
+    $sister->update(['state' => \App\Enums\Web\Website\WebsiteStateEnum::CLOSED]);
+
+    expect($withoutSister['error'])->toBe('This shop has no sister shop.')
+        ->and($names(false))->not->toContain('sister_shop_products')
+        ->and($names(true))->toContain('sister_shop_products')
+        ->and($looked)->not->toHaveKey('fact')
+        ->and($looked['content']['names'])->toBe([$this->product->name])
+        ->and($matched['fact'])->toBe(__('Our sister shop :website sells these: :link', ['website' => $sister->domain, 'link' => $sister->getUrl().'/search?q=oil%20burners'], $conversation->language_code))
+        ->and(GetShoppingAssistantTools::sisterWebsite($website->fresh()))->toBeNull();
 });

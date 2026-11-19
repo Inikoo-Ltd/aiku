@@ -13,6 +13,7 @@ use App\Actions\Inventory\OrgStock\GetOrgStocksOpenPurchaseOrders;
 use App\Actions\Inventory\OrgStock\GetOrgStocksStockDeliveries;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateOrgStocksBelowMinimumStock;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
@@ -36,6 +37,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
@@ -235,6 +237,8 @@ class IndexOrgStocks extends OrgAction
             $this->bucket = $bucket;
         }
 
+        $onlyWarehouse ??= isset($this->warehouse) ? $this->warehouse : null;
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('org_stocks.code', $value)
@@ -277,9 +281,13 @@ class IndexOrgStocks extends OrgAction
             $queryBuilder->where('org_stocks.state', OrgStockStateEnum::DISCONTINUED);
         } elseif ($this->bucket == 'abnormality') {
             $queryBuilder->where('org_stocks.state', OrgStockStateEnum::ABNORMALITY);
+        } elseif ($this->bucket == 'below_minimum') {
+            WarehouseHydrateOrgStocksBelowMinimumStock::belowMinimumStock($queryBuilder->getEloquentBuilder(), $organisationId);
+        } elseif ($this->bucket == 'negative') {
+            self::whereNegativeStock($queryBuilder->getEloquentBuilder(), $onlyWarehouse);
         }
 
-        $elementGroups = in_array($this->bucket, ['current', 'active', 'discontinuing', 'discontinued', 'abnormality']) ? $this->getArtefactElementGroup($parent) : $this->getElementGroups($parent);
+        $elementGroups = in_array($this->bucket, ['current', 'active', 'discontinuing', 'discontinued', 'abnormality', 'below_minimum', 'negative']) ? $this->getArtefactElementGroup($parent) : $this->getElementGroups($parent);
         if (!($parent instanceof Group)) {
             foreach ($elementGroups as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
@@ -381,6 +389,8 @@ class IndexOrgStocks extends OrgAction
                 $join->on('warehouses.organisation_id', 'organisations.id');
                 if ($onlyWarehouse) {
                     $join->where('warehouses.id', $onlyWarehouse->id);
+                } else {
+                    $join->whereRaw('warehouses.id = (select min(id) from warehouses as first_warehouse where first_warehouse.organisation_id = organisations.id and first_warehouse.deleted_at is null)');
                 }
             })
             ->leftJoin('org_stock_stats', 'org_stock_stats.org_stock_id', 'org_stocks.id')
@@ -397,6 +407,15 @@ class IndexOrgStocks extends OrgAction
         }
 
         return $paginator;
+    }
+
+    public static function whereNegativeStock(Builder $query, ?Warehouse $warehouse): Builder
+    {
+        return $query->whereExists(fn ($negativeLocations) => $negativeLocations->select(DB::raw(1))
+            ->from('location_org_stocks')
+            ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')
+            ->where('location_org_stocks.quantity', '<', 0)
+            ->when($warehouse, fn ($negativeLocations) => $negativeLocations->where('location_org_stocks.warehouse_id', $warehouse->id)));
     }
 
     protected function attachLocations(LengthAwarePaginator $paginator): void

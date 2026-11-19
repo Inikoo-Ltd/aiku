@@ -79,7 +79,7 @@ struct SystemTransferFailedSheet: View {
                 error: isOverLimit ? "Max \(available) — lower the quantity or choose “Move all”." : nil,
                 keyboard: .numberPad
             )
-            AikuButton(isOverLimit ? "Move \(available) units" : "Move \(moveQuantity) units") {
+            AikuButton(isOverLimit ? "Move \(available) units" : "Move \(moveQuantity) units", icon: .retry) {
                 onMove(moveQuantity)
             }
             .disabled(moveQuantity == 0)

@@ -35,14 +35,18 @@ class IndexStockDeliveryAttachmentsJson extends OrgAction
             ->orderBy('model_has_attachments.id')
             ->get([
                 'model_has_attachments.id',
+                'model_has_attachments.media_id',
                 'model_has_attachments.caption',
                 'model_has_attachments.scope',
                 'media.ulid as media_ulid',
                 'media.file_name',
                 'media.size',
+                DB::raw("model_has_attachments.data->'invoice_reading'->>'applied_at' as applied_at"),
             ])
             ->map(fn (object $attachment) => [
                 'id'          => $attachment->id,
+                'media_id'    => $attachment->media_id,
+                'is_applied'  => $attachment->applied_at !== null,
                 'caption'     => $attachment->caption,
                 'scope'       => $attachment->scope,
                 'scope_label' => $scopeLabels[$attachment->scope] ?? $attachment->scope,

@@ -16,6 +16,9 @@ use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Http\Resources\Fulfilment\PalletResource;
 use App\Models\Fulfilment\Pallet;
 use Illuminate\Validation\Rule;
+use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
+use App\Enums\Inventory\Location\LocationStatusEnum;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class BookInPallet extends OrgAction
@@ -24,6 +27,7 @@ class BookInPallet extends OrgAction
 
     public function handle(Pallet $pallet, array $modelData): Pallet
     {
+        $oldLocation = $pallet->location;
         data_set($modelData, 'state', PalletStateEnum::BOOKED_IN);
         data_set($modelData, 'booked_in_at', now());
         data_set($modelData, 'set_as_not_received_at', null);
@@ -33,6 +37,9 @@ class BookInPallet extends OrgAction
 
         PalletDeliveryHydratePallets::dispatch($pallet->palletDelivery);
         LocationHydratePallets::dispatch($pallet->location);
+        if ($oldLocation && $oldLocation->id !== $pallet->location_id) {
+            LocationHydratePallets::dispatch($oldLocation);
+        }
 
         return $pallet;
     }
@@ -43,7 +50,10 @@ class BookInPallet extends OrgAction
             'location_id' => [
                 'sometimes',
                 Rule::exists('locations', 'id')
-                    ->where('warehouse_id', $this->warehouse->id),
+                    ->where('warehouse_id', $this->warehouse->id)
+                    ->where('allow_fulfilment', true)
+                    ->where('status', LocationStatusEnum::OPERATIONAL->value)
+                    ->whereNull('deleted_at'),
             ],
         ];
     }
@@ -61,6 +71,11 @@ class BookInPallet extends OrgAction
     public function asController(Pallet $pallet, ActionRequest $request): Pallet
     {
         $this->initialisationFromWarehouse($pallet->warehouse, $request);
+
+        if (!in_array($pallet->palletDelivery?->state, [PalletDeliveryStateEnum::RECEIVED, PalletDeliveryStateEnum::BOOKING_IN], true)
+            || !in_array($pallet->state, [PalletStateEnum::RECEIVED, PalletStateEnum::BOOKING_IN, PalletStateEnum::BOOKED_IN], true)) {
+            throw ValidationException::withMessages(['pallet' => __('This pallet can not be booked in now.')]);
+        }
         return $this->handle($pallet, $this->validatedData);
     }
 

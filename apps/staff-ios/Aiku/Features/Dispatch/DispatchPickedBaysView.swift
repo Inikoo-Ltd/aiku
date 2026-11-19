@@ -5,6 +5,8 @@ struct DispatchPickedBaysView: View {
     @Environment(Session.self) private var session
     @State private var warehouseStore = WarehouseStore.shared
     private let store = DispatchStore.shared
+    @State private var appearance = 0
+    @State private var openBay: MobileSessionPickedBay?
 
     var body: some View {
         AppScreen(title: "Picked bays", kicker: "Goods out · \(session.warehouseLabel)") {
@@ -24,19 +26,9 @@ struct DispatchPickedBaysView: View {
                             icon: .warehouse,
                             iconTone: bay.isFree ? .success : .info,
                             chips: [bay.chip],
-                            action: bay.deliveryNotes.count == 1 ? { router.open(GoodsOutRoute.deliveryNoteID(id: bay.deliveryNotes[0].id)) } : nil
+                            action: bay.deliveryNotes.isEmpty ? nil : { openBay = bay }
                         )
-                        if bay.deliveryNotes.count > 1 {
-                            ForEach(bay.deliveryNotes) { note in
-                                RowDivider()
-                                ListRow(
-                                    note.reference,
-                                    chips: [Chip(note.stateLabel ?? note.state ?? "", note.state == "handling_blocked" ? .warn : .info)],
-                                    showsChevron: true,
-                                    action: { router.open(GoodsOutRoute.deliveryNoteID(id: note.id)) }
-                                )
-                            }
-                        }
+                        .accessibilityIdentifier("dispatch.pickedBay.\(bay.code)")
                     }
                 } else if store.baysState.hasLoaded {
                     EmptyState(icon: .warehouse, title: "No picked bays in this warehouse")
@@ -47,7 +39,28 @@ struct DispatchPickedBaysView: View {
             DispatchNote("Picked goods wait here for packing, or until missing products arrive.")
         }
         .screenRefreshable { await reload() }
-        .task(id: warehouseStore.selectedID) { await reload() }
+        .onAppear { appearance += 1 }
+        .task(id: ListLoadKey(request: warehouseStore.selectedID, appearance: appearance)) { await reload() }
+        .aikuSheet(item: $openBay) { bay in
+            SheetScaffold(title: bay.code, subtitle: bay.subtitle) {
+                CardList(bay.deliveryNotes) { note in
+                    ListRow(
+                        note.reference,
+                        icon: .deliveryNote,
+                        iconTone: .info,
+                        chips: [note.chip],
+                        showsChevron: true,
+                        action: {
+                            openBay = nil
+                            router.open(GoodsOutRoute.deliveryNoteID(id: note.id))
+                        }
+                    )
+                    .accessibilityIdentifier("dispatch.pickedBay.note.\(note.reference)")
+                }
+            } footer: {
+                AikuButton("Close", kind: .tertiary) { openBay = nil }
+            }
+        }
     }
 
     private func reload() async {

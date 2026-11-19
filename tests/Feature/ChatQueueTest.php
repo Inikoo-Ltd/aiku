@@ -838,7 +838,7 @@ test('a shop may set its own unclaimed time, and the rest follow the group defau
 
     expect($queue())->toContain($patient->id);
 
-    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['chat_unclaimed_email_seconds' => 86400]);
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['chat_unclaimed_email_hours' => 24]);
 
     \Illuminate\Support\Facades\Cache::forget('chat:unclaimed:overrides:email');
 
@@ -847,7 +847,7 @@ test('a shop may set its own unclaimed time, and the rest follow the group defau
 
     // Nought is not a time, it is "no opinion": stored as one it would drag every conversation
     // on the shop into the queue the moment it arrived.
-    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['chat_unclaimed_email_seconds' => 0]);
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['chat_unclaimed_email_hours' => 0]);
 
     \Illuminate\Support\Facades\Cache::forget('chat:unclaimed:overrides:email');
 

@@ -67,6 +67,7 @@ interface MixPool {
     mixes: number | null
     batch_kg: number | null
     left_after_kg: number | null
+    keeps_extra_pieces: boolean
 }
 
 interface FloorTask {
@@ -83,6 +84,7 @@ interface FloorTask {
     artefact_image: object | null
     job_order_reference: string
     order_reference: string | null
+    order_waiting_days?: number | null
     packing_slips_url: string | null
     continued_from: string | null
     continued_in: string | null
@@ -473,6 +475,7 @@ function startTask(task: FloorTask) {
                         <span>{{ task.task_name }} · {{ task.job_order_reference }}<template v-if="task.order_reference"> · {{ ctrans('Order :reference', { reference: task.order_reference }) }}</template></span>
                         <span class="tabular-nums">{{ progressLabel(task.quantity_made, task.quantity_required, task) }}<template v-if="mixBatches(task)"> · {{ mixBatches(task) }}</template></span>
                     </div>
+                    <div v-if="(task.order_waiting_days ?? 0) >= 2" class="mt-1 inline-flex rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-700">{{ ctransChoice("Customer order waiting :count day|Customer order waiting :count days", task.order_waiting_days, { count: task.order_waiting_days }) }}</div>
                     <div v-if="task.in_development?.length" class="text-xs font-medium text-violet-700 truncate">{{ ctrans('In development') }}</div>
                     <div v-if="task.continued_from || task.continued_in" class="text-xs text-gray-500 truncate">
                         <span v-if="task.continued_from">{{ ctrans('Continued from :reference', { reference: task.continued_from }) }}</span>
@@ -634,7 +637,7 @@ function startTask(task: FloorTask) {
                         </tbody>
                     </table>
                     <div v-if="selectedTask.mix_pool.in_stock" class="mt-2 text-sm text-gray-700">{{ ctrans('Extra pieces in stock, used first by the next jobs: :count', { count: selectedTask.mix_pool.in_stock }) }}</div>
-                    <div v-if="selectedTask.mix_pool.left_after_kg" class="mt-1 text-sm text-gray-700">{{ ctrans(':kg kg more than these lines need: make all of it, the extra pieces are kept for the next jobs', { kg: selectedTask.mix_pool.left_after_kg }) }}</div>
+                    <div v-if="selectedTask.mix_pool.left_after_kg" class="mt-1 text-sm text-gray-700">{{ selectedTask.mix_pool.keeps_extra_pieces ? ctrans(':kg kg more than these lines need: make all of it, the extra pieces are kept for the next jobs', { kg: selectedTask.mix_pool.left_after_kg }) : ctrans(':kg kg more than these lines need: Aiku does not keep the extra for the next jobs', { kg: selectedTask.mix_pool.left_after_kg }) }}</div>
                 </div>
                 <div v-if="selectedTask.artisan && !selectedTask.is_mine" class="text-gray-500 mb-2">{{ ctrans('For') }} {{ selectedTask.artisan }}</div>
                 <div v-else-if="selectedTask.only_for.length && !selectedTask.artisan" class="text-gray-500 mb-2">{{ ctrans('Only for') }} {{ selectedTask.only_for.join(', ') }}</div>

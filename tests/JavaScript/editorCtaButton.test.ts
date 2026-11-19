@@ -27,7 +27,7 @@ const renderButton = (attributes: Record<string, unknown>) =>
 test("only the blog editor offers the button", () => {
 	assert.ok(BLOG_EDITOR_TOOLS.includes("ctaButton"))
 	assert.ok(!DEFAULT_EDITOR_TOOLS.includes("ctaButton"))
-	assert.deepEqual(BLOG_EDITOR_TOOLS.filter((tool) => tool !== "ctaButton"), DEFAULT_EDITOR_TOOLS)
+	assert.deepEqual(BLOG_EDITOR_TOOLS.filter((tool) => !["ctaButton", "scriptBlock"].includes(tool)), DEFAULT_EDITOR_TOOLS)
 })
 
 test("page paths, web, email and phone links are kept", () => {

@@ -44,17 +44,19 @@ class PickedPalletReturn extends OrgAction
      */
     public function handle(PalletReturn $palletReturn, array $modelData = [], ?User $user = null): PalletReturn
     {
-        $modelData[PalletReturnStateEnum::PICKED->value.'_at']   = now();
-        $modelData['state']                                      = PalletReturnStateEnum::PICKED;
         if ($user) {
             $modelData['packer_user_id'] = $user->id;
         }
 
+        if ($palletReturn->type != PalletReturnTypeEnum::PALLET) {
+            return SetPalletReturnAsPicked::run($palletReturn, $modelData);
+        }
+
+        $modelData[PalletReturnStateEnum::PICKED->value.'_at']   = now();
+        $modelData['state']                                      = PalletReturnStateEnum::PICKED;
+
         $palletReturn = $this->update($palletReturn, $modelData);
 
-        if ($palletReturn->type != PalletReturnTypeEnum::PALLET) {
-            abort(419);
-        }
         $pendingPallets = $palletReturn->pallets->filter(
             fn ($pallet) => $pallet->pivot->state === PalletReturnItemStateEnum::PICKING->value
         );
@@ -62,7 +64,6 @@ class PickedPalletReturn extends OrgAction
             $palletReturnItem = PalletReturnItem::find($pallet->pivot->id);
             PickWholePalletInPalletReturn::make()->action($palletReturnItem, []);
         }
-        // AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturn);
 
         $pickingSessions = $palletReturn->pickingSessions()->get();
         foreach ($pickingSessions as $pickingSession) {
@@ -121,11 +122,11 @@ class PickedPalletReturn extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(PalletReturn $palletReturn): PalletReturn
+    public function action(PalletReturn $palletReturn, ?User $user = null): PalletReturn
     {
         $this->asAction = true;
         $this->initialisationFromFulfilment($palletReturn->fulfilment, []);
 
-        return $this->handle($palletReturn, $this->validatedData);
+        return $this->handle($palletReturn, $this->validatedData, $user);
     }
 }

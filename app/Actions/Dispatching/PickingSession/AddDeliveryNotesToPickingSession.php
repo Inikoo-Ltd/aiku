@@ -34,6 +34,9 @@ class AddDeliveryNotesToPickingSession extends OrgAction
     public function handle(PickingSession $pickingSession, array $deliveryNoteIds, bool $queued = false): PickingSession
     {
         return DB::transaction(function () use ($pickingSession, $deliveryNoteIds, $queued) {
+            $pickingSession = PickingSession::lockForUpdate()->findOrFail($pickingSession->id);
+            EnsurePickingSessionInProcess::run($pickingSession);
+
             $user = request()->user();
 
             $validDeliveryNoteIds = DeliveryNote::whereIn('id', $deliveryNoteIds)

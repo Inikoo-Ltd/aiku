@@ -51,9 +51,13 @@ use App\Models\Comms\MailshotRecipient;
 use Illuminate\Support\Str;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
+use App\Enums\Web\Website\WebsiteStateEnum;
+use App\Models\Web\Website;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
+use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Country;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -203,9 +207,12 @@ class GetShoppingAssistantTools
     /**
      * @return array<int, array{type: string, function: array{name: string, description: string, parameters: array<string, mixed>}}>
      */
-    public function definitions(bool $dropshipping = false): array
+    public function definitions(bool $dropshipping = false, bool $hasSisterShop = false): array
     {
         $excluded = $dropshipping ? self::NOT_FOR_DROPSHIPPING : self::ONLY_FOR_DROPSHIPPING;
+        if (!$hasSisterShop) {
+            $excluded[] = 'sister_shop_products';
+        }
 
         return array_values(array_filter($this->everyDefinition(), fn (array $tool) => !in_array($tool['function']['name'], $excluded, true)));
     }
@@ -332,6 +339,12 @@ class GetShoppingAssistantTools
                 'shipping_cost',
                 'What shipping costs for the customer\'s current basket. Use it when the customer asks about shipping, postage, carriage or delivery cost. The sentence with the amount is added under your reply by the system; you get no figure. Returns no products.',
                 []
+            ),
+            $this->tool(
+                'sister_shop_products',
+                'Our sister shop\'s products of a kind this shop does not sell. Use it only after search_products found nothing that is what the customer asked for. Returns the names of the closest products there; they cannot be shown or added to the basket here. When they are what the customer asked for, call it again with matching true and the system adds a sentence with a link to them under your reply.',
+                ['query' => ['type' => 'string', 'description' => 'What the customer is looking for, in a few words.'], 'matching' => ['type' => 'boolean', 'description' => 'True only on the second call, once the names you got are what the customer asked for.']],
+                ['query']
             ),
             $this->tool(
                 'products_on_offer',
@@ -493,6 +506,7 @@ class GetShoppingAssistantTools
                 'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
                 'report_to_engineers'            => $this->reportToEngineers($conversation, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
+                'sister_shop_products'           => $this->sisterShopProducts($conversation, $arguments),
                 'shop_information'               => $this->shopInformation($customer, $arguments),
                 'recent_emails_to_customer'      => $this->recentEmailsToCustomer($customer),
                 default                          => $this->error("Unknown tool $name."),
@@ -1016,32 +1030,56 @@ class GetShoppingAssistantTools
             return $this->error('The shop information is not available right now. Do not answer from your own knowledge: answer with answer_kind offer_person and offer_reason not_sure.');
         }
 
-        if ($entries->isEmpty()) {
-            return [
-                'content'  => ['texts' => [], 'note' => 'We have nothing written about this. Do not answer from your own knowledge: answer with answer_kind offer_person and offer_reason not_sure.'],
-                'products' => [],
-                'error'    => null,
-                'sources'  => [],
-            ];
-        }
+        $sources = $entries->map(fn (ChatKnowledgeEntry $entry) => [
+            'id'          => $entry->id,
+            'kind'        => $entry->kind,
+            'source_type' => $entry->source_type,
+            'source_id'   => $entry->source_id,
+            'title'       => $entry->title,
+            'url'         => $entry->url,
+            'body'        => $entry->body,
+            'checked'     => $entry->is_manual || $entry->source_type === 'verified',
+        ])->prepend(self::deliveryCountriesSource($customer->shop))->values();
 
         return [
             'content'  => [
-                'texts' => $entries->map(fn (ChatKnowledgeEntry $entry) => ['id' => $entry->id, 'title' => $entry->title, 'text' => $entry->body, 'checked_by_staff' => $entry->is_manual || $entry->source_type === 'verified'])->values()->all(),
-                'note'  => 'Answer only if these texts clearly answer the question, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. You may repeat a figure only exactly as a text states it. A text marked checked_by_staff is newer than our pages: when it disagrees with a page, follow it and cite it. Some texts are notes written for our staff: tell the customer only what answers their question, in plain words, and never repeat internal codes, ids, system or file names, what staff can do, or that a page of ours is wrong or out of date. If the texts do not answer the question, do not guess: answer with answer_kind offer_person and offer_reason not_sure.',
+                'texts' => $sources->map(fn (array $source) => ['id' => $source['id'], 'title' => $source['title'], 'text' => $source['body'], 'checked_by_staff' => $source['checked']])->all(),
+                'note'  => 'Answer only if these texts clearly answer the question, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. You may repeat a figure only exactly as a text states it. A text marked checked_by_staff is newer than our pages: when it disagrees with a page, follow it and cite it. The text with id 0 comes from the shop\'s delivery settings, which the checkout enforces: it is the answer to whether we deliver to a country. Some texts are notes written for our staff: tell the customer only what answers their question, in plain words, and never repeat internal codes, ids, system or file names, what staff can do, or that a page of ours is wrong or out of date. If the texts do not answer the question, do not guess: answer with answer_kind offer_person and offer_reason not_sure.',
             ],
             'products' => [],
             'error'    => null,
-            'sources'  => $entries->map(fn (ChatKnowledgeEntry $entry) => [
-                'id'          => $entry->id,
-                'kind'        => $entry->kind,
-                'source_type' => $entry->source_type,
-                'source_id'   => $entry->source_id,
-                'title'       => $entry->title,
-                'url'         => $entry->url,
-                'body'        => $entry->body,
-            ])->values()->all(),
+            'sources'  => $sources->map(fn (array $source) => Arr::except($source, 'checked'))->all(),
         ];
+    }
+
+    /**
+     * The countries the checkout accepts a delivery address in, from the same banned list
+     * GetAddressDataForShop applies (the shop's, or the organisation's when the shop follows it).
+     * Whichever of the two lists is shorter is named: a shop that delivers to one country bans
+     * two hundred. A ban with a postcode pattern covers only part of the country.
+     *
+     * @return array{id: int, kind: string, source_type: string, source_id: string, title: string, url: null, body: string, checked: bool}
+     */
+    public static function deliveryCountriesSource(Shop $shop): array
+    {
+        $target   = data_get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false) ? $shop->organisation : $shop;
+        $banned   = collect($target->bannedDeliveryCountries());
+        $whole    = $banned->filter(fn (array $ban) => empty($ban['postcode']))->keys();
+        $partial  = $banned->reject(fn (array $ban) => empty($ban['postcode']))->keys();
+        $names    = fn ($codes) => Country::whereIn('code', $codes)->orderBy('name')->pluck('name')->implode(', ');
+        $allowed  = Country::where('status', true)->where('show_in_address', true)->whereNotIn('code', $whole)->pluck('code');
+
+        $body = match (true) {
+            $whole->isEmpty()                   => 'We deliver to every country: the checkout accepts a delivery address in any country.',
+            $allowed->count() < $whole->count() => 'We deliver only to these countries: '.$names($allowed).'.',
+            default                             => 'We deliver to every country except: '.$names($whole).'.',
+        };
+
+        if ($partial->isNotEmpty()) {
+            $body .= ' Some areas of '.$names($partial).' are excluded.';
+        }
+
+        return ['id' => 0, 'kind' => 'shop_setting', 'source_type' => 'shop_setting', 'source_id' => 'delivery_countries', 'title' => 'Countries we deliver to', 'url' => null, 'body' => $body, 'checked' => true];
     }
 
     /**
@@ -1370,6 +1408,58 @@ class GetShoppingAssistantTools
             'products' => [],
             'error'    => null,
             'fact'     => $fact,
+        ];
+    }
+
+    /**
+     * The live website of the shop customers are sent to for what this one does not sell, set per
+     * website in settings.shopping_assistant.sister_website_id (Raul, 18 Nov 2026: aw-aromatics.com
+     * to ancientwisdom.biz, both in the UK).
+     */
+    public static function sisterWebsite(?Website $website): ?Website
+    {
+        $sisterId = data_get($website?->settings, 'shopping_assistant.sister_website_id');
+
+        return $sisterId ? Website::where('id', $sisterId)->where('state', WebsiteStateEnum::LIVE)->first() : null;
+    }
+
+    /**
+     * ponytail: the model judges from the names whether the sister shop has what was asked, and the
+     * link is added on its word (matching); add a distance bar if links to unrelated searches show up.
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string, names?: array<int, string>}
+     */
+    private function sisterShopProducts(ShoppingAssistantConversation $conversation, array $arguments): array
+    {
+        $query  = is_string($arguments['query'] ?? null) ? trim($arguments['query']) : '';
+        $sister = self::sisterWebsite($conversation->website);
+
+        if (!$sister || $query === '') {
+            return $this->error($sister ? 'query must be a non-empty string.' : 'This shop has no sister shop.');
+        }
+
+        $names = SearchCatalogueByMeaning::run($sister->shop, $query, null, self::DEFAULT_LIMIT)->pluck('name')->filter()->values()->all();
+
+        if (!$names) {
+            return ['content' => ['found' => false, 'note' => 'Our sister shop has nothing like it either. Say we do not have it.'], 'products' => [], 'error' => null];
+        }
+
+        if (!($arguments['matching'] ?? false)) {
+            return [
+                'content'  => ['found' => true, 'sister_shop' => $sister->domain, 'names' => $names, 'note' => 'Products of our sister shop, not of this one. When some are what the customer asked for, call sister_shop_products again with the same query and matching true, and say in one short sentence that our sister shop sells them, without naming or counting them: a link is added under your reply. When none is, say we do not have it and do not mention the sister shop.'],
+                'products' => [],
+                'error'    => null,
+                'names'    => $names,
+            ];
+        }
+
+        return [
+            'content'  => ['found' => true, 'note' => 'A sentence with a link to them in our sister shop is added under your reply.'],
+            'products' => [],
+            'error'    => null,
+            'fact'     => __('Our sister shop :website sells these: :link', ['website' => $sister->domain, 'link' => $sister->getUrl().'/search?q='.rawurlencode($query)], $conversation->language_code),
         ];
     }
 

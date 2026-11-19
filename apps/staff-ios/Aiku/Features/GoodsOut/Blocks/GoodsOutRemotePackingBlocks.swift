@@ -49,8 +49,7 @@ struct GoodsOutRemotePackingFooter: View {
                     case .button(let action, let isPrimary):
                         AikuButton(
                             action.label,
-                            icon: icon(for: action.key),
-                            kind: isPrimary ? .primary : .tertiary,
+                            look: GoodsOutActionKey.look(for: action.key).inFooter(isFirst: isPrimary),
                             isLoading: isPrimary && store.isWorking(on: note.reference)
                         ) {
                             handle(action)
@@ -70,17 +69,6 @@ struct GoodsOutRemotePackingFooter: View {
                 confirming = nil
                 run(action)
             }
-        }
-    }
-
-    private func icon(for key: String) -> AppIcon? {
-        switch GoodsOutActionKey(rawValue: key) {
-        case .startPacking: .sko
-        case .setAsPacked: .packed
-        case .addShipment, .getExternalShipment, .finaliseAndDispatch, .dispatch: .deliveryNote
-        case .finalise: .check
-        case .takeOver: .lock
-        default: nil
         }
     }
 

@@ -19,6 +19,9 @@ use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentComponent;
 use App\Models\Goods\ProductDevelopmentFile;
+use App\Models\Goods\ProductDevelopmentFormulation;
+use App\Actions\Goods\ProductDevelopment\Recipe\WithProductDevelopmentFormulationRules;
+use App\Models\Production\JobOrder;
 use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\Goods\ProductDevelopmentSample;
 use App\Models\SysAdmin\User;
@@ -49,7 +52,7 @@ class GetProductDevelopmentFormulation
         $canManage = $access->canManageSamples($viewer, $productDevelopment);
         $canReview = $access->canReviewSamples($viewer, $productDevelopment);
         $items     = $productDevelopment->items()
-            ->with(['tradeUnit', 'artefact.production.organisation', 'artefact.branchedFrom', 'samples.madeBy', 'samples.reviewedBy', 'samples.photos.media', 'samples.jobOrder.employee', 'samples.jobOrder.jobOrderItems', 'components.tradeUnit', 'components.approvedBy'])
+            ->with(['tradeUnit', 'artefact.production.organisation', 'artefact.branchedFrom', 'samples.madeBy', 'samples.reviewedBy', 'samples.photos.media', 'samples.jobOrder.employee', 'samples.jobOrder.jobOrderItems.tasks', 'formulations.artisan', 'components.tradeUnit', 'components.approvedBy'])
             ->orderBy('position')->orderBy('id')
             ->get();
 
@@ -68,7 +71,8 @@ class GetProductDevelopmentFormulation
             "productions_operations.{$production->id}.view",
             "productions_rd.{$production->id}.edit",
         ]);
-        $skus     = $items->map(fn (ProductDevelopmentItem $item) => $this->sku($productDevelopment, $item, $canManage, $canReview, $canApproveComponents))->values();
+        $canEdit  = $access->canEdit($viewer, $productDevelopment);
+        $skus     = $items->map(fn (ProductDevelopmentItem $item) => $this->sku($productDevelopment, $item, $canManage, $canReview, $canApproveComponents, $canEdit))->values();
         $approved = $skus->filter(fn (array $sku) => $sku['final'] !== null)->count();
 
         return [
@@ -80,7 +84,8 @@ class GetProductDevelopmentFormulation
             'progress'   => ['done' => $approved, 'total' => $skus->count()],
             'can_manage' => $canManage,
             'can_review' => $canReview,
-            'can_create_job' => $access->canEdit($viewer, $productDevelopment),
+            'can_create_job' => $canEdit,
+            'artisan_options' => $canEdit ? WithProductDevelopmentFormulationRules::artisanOptions($productDevelopment) : [],
             'can_approve_components' => $canApproveComponents,
             'component_search' => ['name' => 'grp.product_developments.json.search', 'parameters' => ['scope' => 'trade_units', 'product_development' => $productDevelopment->id]],
             'routes'     => [
@@ -93,13 +98,18 @@ class GetProductDevelopmentFormulation
     /**
      * @return array<string, mixed>
      */
-    private function sku(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item, bool $canManage, bool $canReview, bool $canApproveComponents): array
+    private function sku(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item, bool $canManage, bool $canReview, bool $canApproveComponents, bool $canEdit): array
     {
-        $tradeUnit = $item->tradeUnit;
-        $artefact  = $item->artefact;
-        $recipe    = $artefact ? ProductDevelopmentRecipes::recipe($artefact) : null;
-        $samples   = $item->samples->sortByDesc('number')->values();
-        $final     = $samples->first(fn (ProductDevelopmentSample $sample) => $sample->status === ProductDevelopmentSampleStatusEnum::APPROVED);
+        $tradeUnit    = $item->tradeUnit;
+        $artefact     = $item->artefact;
+        $recipe       = $artefact ? ProductDevelopmentRecipes::recipe($artefact) : null;
+        $samples      = $item->samples->sortByDesc('number')->values();
+        $formulations = $item->formulations;
+        $approvedOf   = fn (ProductDevelopmentFormulation $formulation) => $samples->first(fn (ProductDevelopmentSample $sample) => $sample->product_development_formulation_id === $formulation->id && $sample->status === ProductDevelopmentSampleStatusEnum::APPROVED);
+        $final        = $formulations->isEmpty()
+            ? $samples->first(fn (ProductDevelopmentSample $sample) => $sample->status === ProductDevelopmentSampleStatusEnum::APPROVED)
+            : ($formulations->every(fn (ProductDevelopmentFormulation $formulation) => (bool) $approvedOf($formulation)) ? $approvedOf($formulations->last()) : null);
+        $canChangeStages = $canEdit && ProductDevelopmentRecipes::canChangeFormulations($productDevelopment);
         $open      = $samples->first(fn (ProductDevelopmentSample $sample) => $sample->status->isOpen());
         $latest    = $samples->first();
 
@@ -122,6 +132,8 @@ class GetProductDevelopmentFormulation
             'recipe_changed' => $final && $recipe && !self::sameIngredients($final->recipe['ingredients'] ?? [], $recipe['ingredients']),
             'can_start_sample' => $canManage && $artefact && !$open,
             'no_artefact_reason' => !$artefact ? $this->noArtefactReason($productDevelopment, $item) : null,
+            'formulations' => $formulations->map(fn (ProductDevelopmentFormulation $formulation) => $this->formulation($formulation, $samples, $approvedOf($formulation), $canEdit, $canChangeStages && $formulations->count() > 1))->values()->all(),
+            'can_add_formulation' => $canChangeStages,
             'samples'  => $samples->map(fn (ProductDevelopmentSample $sample) => $this->sample($productDevelopment, $sample, $canManage, $canReview))->all(),
             'components' => $item->components->map(fn (ProductDevelopmentComponent $component) => [
                 'id'            => $component->id,
@@ -151,6 +163,7 @@ class GetProductDevelopmentFormulation
             'routes'   => [
                 'sample_store'    => ['name' => 'grp.models.product_development.item.sample.store', 'parameters' => ['productDevelopmentItem' => $item->id]],
                 'component_store' => ['name' => 'grp.models.product_development.item.component.store', 'parameters' => ['productDevelopmentItem' => $item->id]],
+                'formulation_store' => ['name' => 'grp.models.product_development.item.formulation.store', 'parameters' => ['productDevelopmentItem' => $item->id]],
             ],
         ];
     }
@@ -164,6 +177,7 @@ class GetProductDevelopmentFormulation
 
         return [
             'id'             => $sample->id,
+            'formulation_id' => $sample->product_development_formulation_id,
             'number'         => $sample->reference(),
             'status'         => $this->status($sample->status),
             'recipe'         => $sample->recipe,
@@ -200,6 +214,53 @@ class GetProductDevelopmentFormulation
                 'comments' => ['name' => 'grp.product_developments.json.sample_comments', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'sample' => $sample->id]],
             ],
         ];
+    }
+
+    /**
+     * @param \Illuminate\Support\Collection<int, ProductDevelopmentSample> $samples the SKU's samples, newest first
+     *
+     * @return array<string, mixed>
+     */
+    private function formulation(ProductDevelopmentFormulation $formulation, $samples, ?ProductDevelopmentSample $approved, bool $canEdit, bool $canRemove): array
+    {
+        $latest = $samples->first(fn (ProductDevelopmentSample $sample) => $sample->product_development_formulation_id === $formulation->id);
+
+        return [
+            'id'          => $formulation->id,
+            'position'    => $formulation->position,
+            'name'        => $formulation->name,
+            'artisan_id'  => $formulation->artisan_id,
+            'artisan'     => $formulation->artisan?->contact_name,
+            'approved'    => $approved?->reference(),
+            'status'      => $latest ? $this->status($latest->status) : null,
+            'assignment'  => $latest?->jobOrder ? self::assignment($latest->jobOrder) : null,
+            'can_edit'    => $canEdit,
+            'can_delete'  => $canRemove && !$latest,
+            'routes'      => [
+                'update' => ['name' => 'grp.models.product_development.formulation.update', 'parameters' => ['productDevelopmentFormulation' => $formulation->id]],
+                'delete' => ['name' => 'grp.models.product_development.formulation.delete', 'parameters' => ['productDevelopmentFormulation' => $formulation->id]],
+            ],
+        ];
+    }
+
+    /**
+     * Where the trial run of a stage is with the factory: waiting for the production manager to approve and
+     * release it, released and waiting for the artisan, being made, or made.
+     *
+     * @return array{value: string, label: string, color: string}
+     */
+    public static function assignment(JobOrder $jobOrder): array
+    {
+        $made = $jobOrder->jobOrderItems->sum(fn ($item) => $item->tasks->sum('quantity_made')) > 0;
+
+        [$value, $label, $color] = match (true) {
+            isset($jobOrder->data['cancellation'])             => ['cancelled', __('Cancelled'), 'gray'],
+            $jobOrder->state === JobOrderStateEnum::IN_PROCESS => ['pending_approval', __('Pending approval'), 'amber'],
+            $jobOrder->state === JobOrderStateEnum::CONFIRMED  => $made ? ['in_progress', __('In progress'), 'blue'] : ['scheduled', __('Approved & scheduled'), 'sky'],
+            default                                           => ['completed', __('Completed'), 'green'],
+        };
+
+        return ['value' => $value, 'label' => $label, 'color' => $color];
     }
 
     /**

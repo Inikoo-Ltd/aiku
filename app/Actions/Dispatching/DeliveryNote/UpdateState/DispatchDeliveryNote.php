@@ -32,21 +32,32 @@ class DispatchDeliveryNote extends OrgAction
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
     use WithUnprintedLeafletsGuard;
+    use WithAlreadyDispatchedGuard;
 
     /**
      * @throws \Throwable
      */
     public function handle(DeliveryNote $deliveryNote, ?string $dispatchedAt = null, bool $repair = false): DeliveryNote
     {
+        if (!$repair && $deliveryNote->state === DeliveryNoteStateEnum::DISPATCHED) {
+            return $deliveryNote;
+        }
+
         $oldState     = $deliveryNote->state;
         $dispatchedAt = $dispatchedAt ?? now();
-
+        $alreadyDispatched = false;
 
         if (!$repair && $deliveryNote->hasUnprintedLeaflets()) {
             abort(422, __('Cannot dispatch: every insert must be printed first'));
         }
 
-        $deliveryNote = DB::transaction(function () use ($deliveryNote, $dispatchedAt, $repair) {
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $dispatchedAt, $repair, &$alreadyDispatched) {
+            if (!$repair && $this->isDispatchedUnderLock($deliveryNote)) {
+                $alreadyDispatched = true;
+
+                return $deliveryNote->refresh();
+            }
+
             data_set($modelData, 'dispatched_at', $dispatchedAt);
             data_set($modelData, 'state', DeliveryNoteStateEnum::DISPATCHED->value);
 
@@ -76,6 +87,10 @@ class DispatchDeliveryNote extends OrgAction
             return $deliveryNote;
         });
 
+        if ($alreadyDispatched) {
+            return $deliveryNote;
+        }
+
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::DISPATCHED);
         $this->intrastatHydrators($deliveryNote);
@@ -92,6 +107,10 @@ class DispatchDeliveryNote extends OrgAction
      */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote|RedirectResponse
     {
+        if ($deliveryNote->state === DeliveryNoteStateEnum::DISPATCHED) {
+            return $deliveryNote;
+        }
+
         if ($notification = $this->unprintedLeafletsNotification($deliveryNote, __('Every insert must be printed before dispatching.'))) {
             return $notification;
         }

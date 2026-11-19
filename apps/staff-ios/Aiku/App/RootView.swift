@@ -37,14 +37,14 @@ struct RootView: View {
                 session.apply(profile)
             }
         }
+        .onChange(of: authStore.userID, initial: true) { _, userID in
+            CrashReporting.identify(userID: userID)
+        }
         .task(id: authStore.userID) {
             guard let userID = authStore.userID, userID > 0 else { return }
             LocationsStore.shared.beginRemoteLoad()
             await warehouseStore.load(for: userID, apiClient: apiClient)
             applySelectedWarehouse()
-        }
-        .task(id: warehouseStore.selectedID) {
-            await refreshMyWorkCount()
         }
         .onChange(of: resolvedModules, initial: true) { _, modules in
             if let modules {
@@ -57,7 +57,10 @@ struct RootView: View {
                 await authStore.refreshProfile()
                 await refreshPermissionsIfSignedIn()
                 await refreshWarehousesIfSignedIn()
-                await refreshMyWorkCount()
+                await WorkBadgesStore.shared.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
+                if warehouseStore.selectedID == nil {
+                    await ShellInboxStore.shared.refreshUnread()
+                }
             }
         }
     }
@@ -77,14 +80,6 @@ struct RootView: View {
         applySelectedWarehouse()
     }
 
-    private func refreshMyWorkCount() async {
-        guard authStore.isSignedIn, let warehouseID = warehouseStore.selectedID else { return }
-        await MyWorkStore.shared.load(warehouseID: warehouseID, service: .live(apiClient))
-        if MyWorkStore.shared.hasLoaded {
-            session.assignedCount = MyWorkStore.shared.counts.total
-        }
-    }
-
     private func applySelectedWarehouse() {
         guard let warehouse = warehouseStore.selected else { return }
         session.apply(warehouse: warehouse.name, code: warehouse.code, organisation: warehouse.organisation.name)
@@ -93,12 +88,15 @@ struct RootView: View {
     private func signOut() {
         permissionStore.clear()
         warehouseStore.reset()
+        ClockingStore.shared.reset()
         session.modules = .everything
         LocationsStore.shared.resetToSample()
         InventoryFamiliesFeed.shared.reset()
         GoodsInStore.shared.resetToSample()
         PalletDeliveriesFeed.shared.reset()
-        MyWorkStore.shared.reset()
+        WorkBadgesStore.shared.reset()
+        ShellInboxStore.shared.reset()
+        RecentSearches().clear()
         Task { await authStore.signOut() }
     }
 }

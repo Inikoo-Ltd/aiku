@@ -43,7 +43,7 @@ struct GoodsOutPickedBaySheet: View {
             }
         } footer: {
             if store.isRemote {
-                AikuButton(primaryTitle, isLoading: store.isWorking(on: note.reference)) {
+                AikuButton(primaryTitle, look: setsPicked ? GoodsOutActionKey.setAsPicked.look : AikuButtonLook(.primary), isLoading: store.isWorking(on: note.reference)) {
                     sendRemote()
                 }
                 .accessibilityIdentifier("goodsOut.confirmPickedBay")

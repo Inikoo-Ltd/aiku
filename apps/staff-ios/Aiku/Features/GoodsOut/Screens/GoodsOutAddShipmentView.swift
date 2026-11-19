@@ -38,12 +38,6 @@ struct GoodsOutAddShipmentView: View {
                 }
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel("Shipping options")
-                GoodsOutSectionTitle(title: "Other shippers")
-                Card {
-                    ListRow("Choose other shipper", subtitle: "Every shipper of this warehouse · tracking number typed by hand", icon: .search, iconTone: .neutral, showsChevron: true) {
-                        router.open(GoodsOutRoute.manualShipment(reference: note.reference))
-                    }
-                }
                 if !note.parcels.isEmpty {
                     GoodsOutSectionTitle(title: "Parcels")
                     GoodsOutParcelsCard(parcels: note.parcels)

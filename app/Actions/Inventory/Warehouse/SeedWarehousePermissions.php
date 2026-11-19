@@ -45,6 +45,7 @@ class SeedWarehousePermissions
                         'name'       => $permissionName,
                         'scope_type' => 'Warehouse',
                         'scope_id'   => $warehouse->id,
+                        'guard_name' => 'web',
                     ]
                 );
             } catch (Exception) {
@@ -76,7 +77,10 @@ class SeedWarehousePermissions
         if ($case == RolesEnum::FULFILMENT_SHOP_SUPERVISOR) {
             foreach ($warehouse->fulfilments as $fulfilment) {
                 /** @var Role $role */
-                $role = new Role()->where('name', RolesEnum::getRoleName($case->value, $warehouse))->first();
+                $role = new Role()->where('name', RolesEnum::getRoleName($case->value, $fulfilment))->first();
+                if (!$role) {
+                    continue;
+                }
                 foreach ($case->getPermissions() as $permissionName) {
                     if (class_basename($permissionName) == 'FulfilmentPermissionsEnum' && $permission = new Permission()->where('name', FulfilmentPermissionsEnum::getPermissionName($permissionName->value, $fulfilment))->first()) {
                         $role->givePermissionTo($permission);
@@ -95,6 +99,7 @@ class SeedWarehousePermissions
                     'scope_type' => 'Warehouse',
                     'scope_id'   => $warehouse->id,
                     'group_id'   => $warehouse->group_id,
+                    'guard_name' => 'web',
                 ]
             );
         }

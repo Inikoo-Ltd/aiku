@@ -5,7 +5,8 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3"
+import { Head, Link, router, usePage } from "@inertiajs/vue3"
+import OrdersBlockedByProductionNotice from "@/Components/Production/OrdersBlockedByProductionNotice.vue"
 import { computed, reactive, ref, watch } from "vue"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
@@ -23,11 +24,12 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import ArtisanPicker from "@/Components/Production/ArtisanPicker.vue"
 import ModalCreateManualJobOrder from "@/Components/Production/ModalCreateManualJobOrder.vue"
+import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
 import DatePicker from "primevue/datepicker"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faCalendarDay, faMagic } from "@fal"
+import { faCalendarDay, faMagic, faHourglassHalf } from "@fal"
 
-library.add(faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag, faBars, faBuilding, faBells, faCalendarDay, faMagic)
+library.add(faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag, faBars, faBuilding, faBells, faCalendarDay, faMagic, faHourglassHalf)
 
 type PublishedLabel = { id: number, name: string, run_sources: string[], pdf_url: string }
 
@@ -117,6 +119,7 @@ const props = defineProps<{
     pipeline?: { count: number, ignoring: boolean }
     canCreateJobOrder?: boolean
     simpleBoard?: boolean
+    productionBlockedNotice?: InstanceType<typeof OrdersBlockedByProductionNotice>['$props']['notice'] | null
     manualJobOrder?: { reasons: string[], artefacts: { id: number, code: string, name: string, packed_in: number | null, stock_available: number | null, gross_weight: number | null, on_board: number }[] } | null
     groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, shop_name?: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null, published_labels?: PublishedLabel[] }[] }[] | null
 }>()
@@ -156,7 +159,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, unit_name?: string | null, is_fill?: boolean, shop_name?: string | null, customer_name?: string | null, order_reference?: string | null, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, loose_pieces?: number, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
+type BoardItem = { id: number, unit_name?: string | null, is_fill?: boolean, order_waiting_days?: number | null, shop_name?: string | null, customer_name?: string | null, order_reference?: string | null, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, loose_pieces?: number, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, stock_cover?: object | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
 
 function artisansOf(item: BoardItem): string[] {
     if (item.current_steps?.length) return [...new Set(item.current_steps.flatMap(step => step.artisans.map(artisan => artisan ?? "")))]
@@ -525,16 +528,22 @@ function toggleBoardFilter(key: BoardFilterKey, value: string) {
     index === -1 ? boardFilters[key].push(value) : boardFilters[key].splice(index, 1)
 }
 
+const STALE_ORDER_DAYS = 2
+const onlyBlockingOrders = ref(new URLSearchParams(usePage().url.split("?")[1] ?? "").get("blocking") === "1")
+const isBlockingOrder = (item: BoardItem) => (item.order_waiting_days ?? 0) >= STALE_ORDER_DAYS
+const blockingOrdersCount = computed(() => (props.groups ?? []).flatMap(group => group.items).filter(isBlockingOrder).length)
+
 const filteredGroups = computed(() =>
     (props.groups ?? []).map((lane, laneIndex) => ({
         ...lane,
         items: lane.items.filter(item =>
+            (!onlyBlockingOrders.value || isBlockingOrder(item)) &&
             (!boardFilters.source.length || boardFilters.source.includes(sourceOf(item)))
             && (!boardFilters.family.length || boardFilters.family.includes(item.family ?? ""))
             && (!boardFilters.requester.length || boardFilters.requester.includes(requesterOf(item)))
             && (!boardFilters.priority.length || boardFilters.priority.includes(item.priority))
             && (laneIndex < LANE_ASSIGNED || !boardFilters.artisan.length || artisansOf(item).some(artisan => boardFilters.artisan.includes(artisan)))
-        ),
+        ).sort((a, b) => onlyBlockingOrders.value ? (b.order_waiting_days ?? 0) - (a.order_waiting_days ?? 0) : 0),
     }))
 )
 
@@ -807,7 +816,9 @@ function jobOrderHref(item: { job_order_slug: string }) {
         </div>
     </Teleport>
 
-    <div v-if="groupBy === 'board' && canCreateJobOrder" class="mx-4 mt-4 flex justify-end gap-3">
+    <div v-if="groupBy === 'board' && (canCreateJobOrder || (productionBlockedNotice && !onlyBlockingOrders))" class="mx-4 mt-4 flex flex-wrap items-center justify-end gap-3">
+        <OrdersBlockedByProductionNotice v-if="productionBlockedNotice && !onlyBlockingOrders" :notice="productionBlockedNotice" inline class="mr-auto" />
+        <template v-if="canCreateJobOrder">
         <Link :href="route('grp.org.productions.show.operations.day_plan', [route().params['organisation'], route().params['production']])" class="flex items-center gap-1.5 text-sm text-gray-700 hover:underline">
             <FontAwesomeIcon icon="fal fa-calendar-day" class="text-gray-500" fixed-width aria-hidden="true" />
             {{ ctrans("Day plan") }}
@@ -815,6 +826,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
         <button type="button" class="rounded bg-[var(--app-accent)] px-3 py-1.5 text-sm font-medium text-[var(--app-accent-text)] hover:bg-[var(--app-accent-strong)]" @click="isCreatingJobOrder = true">
             + {{ ctrans("Create job order") }}
         </button>
+        </template>
     </div>
     <ModalCreateManualJobOrder
         :isOpen="isCreatingJobOrder"
@@ -839,6 +851,17 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     <span class="rounded-full px-1.5 text-xs tabular-nums" :class="boardFilters[key].includes(option.value) ? 'bg-white/20' : 'bg-white text-gray-500'">{{ option.count }}</span>
                 </button>
             </div>
+        <button
+            v-if="blockingOrdersCount || onlyBlockingOrders"
+            type="button"
+            v-tooltip="ctrans('Bottles a customer order has waited :days days or more for, longest wait first', { days: STALE_ORDER_DAYS })"
+            class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+            :class="onlyBlockingOrders ? 'border-[var(--app-accent)] bg-[var(--app-accent)] text-[var(--app-accent-text)] shadow-sm' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'"
+            @click="onlyBlockingOrders = !onlyBlockingOrders">
+            <FontAwesomeIcon icon="fal fa-hourglass-half" fixed-width />
+            <span>{{ ctrans("Blocking orders") }}</span>
+            <span class="rounded-full px-1.5 text-xs tabular-nums" :class="onlyBlockingOrders ? 'bg-white/20' : 'bg-white text-red-600'">{{ blockingOrdersCount }}</span>
+        </button>
         <div v-if="boardFilterOptions.artisan.length" class="relative flex items-center gap-1.5">
             <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Artisan") }}</span>
             <button
@@ -968,13 +991,23 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     <div class="flex items-center gap-1 text-gray-400">
                         <span>{{ item.buyer_code ?? requesterWithOrder(item) ?? item.notes }}</span>
                         <span v-if="item.family">· {{ item.family }}</span>
+                        <span
+                            v-if="item.order_waiting_days != null"
+                            v-tooltip="ctrans('The customer order waits for these bottles before it can go to the warehouse')"
+                            class="whitespace-nowrap rounded px-1 text-[10px] font-semibold"
+                            :class="item.order_waiting_days >= 2 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'">
+                            {{ ctransChoice("Order waiting :count day|Order waiting :count days", item.order_waiting_days, { count: item.order_waiting_days }) }}
+                        </span>
                         <span v-if="laneIndex === queuedLane && isReassignable(item)" class="ml-auto rounded bg-emerald-50 px-1 text-[10px] font-semibold uppercase text-emerald-700">{{ ctrans("Queued") }}</span>
                         <span v-if="item.job_order_hold_reason" v-tooltip="item.job_order_hold_reason" class="rounded bg-yellow-100 px-1 text-[10px] font-semibold uppercase text-yellow-800" :class="laneIndex === queuedLane && isReassignable(item) ? '' : 'ml-auto'">{{ ctrans("On hold") }}</span>
                         <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink" :class="(laneIndex === queuedLane && isReassignable(item)) || item.job_order_hold_reason ? '' : 'ml-auto'">{{ item.job_order_reference }}</Link>
                     </div>
-                    <div v-if="laneIndex <= LANE_PREPARING" class="text-gray-400">
-                        <span :class="freeStock(item) >= Number(item.quantity) ? 'text-emerald-600' : ''">{{ ctrans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
-                        <span v-if="Number(item.stock_promised) > 0"> · {{ ctrans("promised to pre-picks") }}: {{ useLocaleStore().number(Number(item.stock_promised)) }} · {{ ctrans("not promised") }}: {{ useLocaleStore().number(freeStock(item)) }}</span>
+                    <div v-if="laneIndex <= LANE_PREPARING && item.stock_cover" @click.stop @mousedown.stop>
+                        <PurchaseOrderItemStockInfo :item="item" isOrderClosed hideComing />
+                    </div>
+                    <div v-if="laneIndex <= LANE_PREPARING && (!item.stock_cover || Number(item.stock_promised) > 0)" class="text-gray-400">
+                        <span v-if="!item.stock_cover" :class="freeStock(item) >= Number(item.quantity) ? 'text-emerald-600' : ''">{{ ctrans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
+                        <span v-if="Number(item.stock_promised) > 0"><template v-if="!item.stock_cover"> · </template>{{ ctrans("promised to pre-picks") }}: {{ useLocaleStore().number(Number(item.stock_promised)) }} · {{ ctrans("not promised") }}: {{ useLocaleStore().number(freeStock(item)) }}</span>
                     </div>
                     <div
                         v-if="laneIndex === LANE_PREPARING && item.batch_code"

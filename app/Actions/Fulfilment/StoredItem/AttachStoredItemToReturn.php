@@ -17,6 +17,7 @@ use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\Fulfilment\PalletStoredItem;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -77,6 +78,7 @@ class AttachStoredItemToReturn extends OrgAction
                 );
             }
         }
+        WorkNotifier::modified($palletReturn, 'lines');
         $palletReturn = SetStoredItemReturnAutoServices::run($palletReturn);
     }
 

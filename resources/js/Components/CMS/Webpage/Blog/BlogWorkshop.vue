@@ -9,7 +9,7 @@ import Image from "@common/Components/Image.vue"
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { getStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
-import { useHtmlWithScripts } from "@/Composables/useHtmlWithScripts"
+import { scriptBlockHtml } from "@/Components/Forms/Fields/BubleTextEditor/ScriptBlock/ScriptBlockExtension"
 
 library.add(faCube, faLink, faImage)
 
@@ -27,8 +27,18 @@ const emits = defineEmits<{
 }>()
 
 const titleTextarea = ref<HTMLTextAreaElement | null>(null)
-const scriptContainer = ref<HTMLElement | null>(null)
-const { htmlWithoutScripts: scriptHtml } = useHtmlWithScripts(computed(() => props.modelValue?.script), scriptContainer)
+const moveScriptFieldIntoContent = () => {
+  const script = props.modelValue?.script
+  if (!script || !String(script).trim()) {
+    return false
+  }
+  props.modelValue.content = `${props.modelValue.content ?? ""}${scriptBlockHtml(String(script))}`
+  props.modelValue.script = null
+
+  return true
+}
+
+const movedScriptField = moveScriptFieldIntoContent()
 
 const autoResize = (event: Event) => {
   const target = event.target as HTMLTextAreaElement
@@ -37,6 +47,9 @@ const autoResize = (event: Event) => {
 }
 
 onMounted(() => {
+  if (movedScriptField) {
+    emits('autoSave')
+  }
   if (titleTextarea.value) {
     titleTextarea.value.style.height = 'auto'
     titleTextarea.value.style.height = titleTextarea.value.scrollHeight + 'px'
@@ -107,7 +120,6 @@ const displayDate = computed(() => {
 
     </div>
 
-    <div v-if="modelValue?.script" ref="scriptContainer" class="w-full" v-html="scriptHtml" />
   </article>
 </template>
 

@@ -12,6 +12,7 @@ use App\Actions\Accounting\BankTransaction\MatchBankTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithAccountingPagesAuthorisation;
 use App\Models\Accounting\BankTransaction;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Builder;
@@ -29,7 +30,7 @@ class GetBankTransactionCustomerCandidates extends OrgAction
     /**
      * @return list<array{id: int, reference: string|null, name: string|null, shop: string, balance: float}>
      */
-    public function handle(BankTransaction $bankTransaction, string $search): array
+    public function handle(BankTransaction $bankTransaction, string $search, ?Shop $shop = null, bool $anyCurrency = false): array
     {
         $search = trim($search) !== '' ? trim($search) : (MatchBankTransactions::make()->nameWords($bankTransaction->counterparty_name)[0] ?? '');
         if (mb_strlen($search) < 2) {
@@ -39,7 +40,8 @@ class GetBankTransactionCustomerCandidates extends OrgAction
         return Customer::query()
             ->where('customers.organisation_id', $bankTransaction->organisation_id)
             ->join('shops', 'shops.id', 'customers.shop_id')
-            ->where('shops.currency_id', $bankTransaction->currency_id)
+            ->when($shop, fn (Builder $query) => $query->where('customers.shop_id', $shop->id))
+            ->when(!$anyCurrency, fn (Builder $query) => $query->where('shops.currency_id', $bankTransaction->currency_id))
             ->where(function (Builder $query) use ($search) {
                 $query->whereStartWith('customers.reference', $search)
                     ->orWhere(fn (Builder $query) => $query->whereAnyWordStartWith('customers.name', $search));
@@ -66,5 +68,19 @@ class GetBankTransactionCustomerCandidates extends OrgAction
         abort_unless($bankTransaction->organisation_id === $organisation->id, 404);
 
         return $this->handle($bankTransaction, (string)$request->query('search', ''));
+    }
+
+    /**
+     * Customers of one shop, for its Bank payments page; with any_currency, also when the payment came in another
+     * currency, to say whose it is.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function inShop(Organisation $organisation, Shop $shop, BankTransaction $bankTransaction, ActionRequest $request): array
+    {
+        $this->initialisationFromShop($shop, $request);
+        abort_unless($shop->organisation_id === $organisation->id && $bankTransaction->organisation_id === $organisation->id, 404);
+
+        return $this->handle($bankTransaction, (string)$request->query('search', ''), $shop, $request->boolean('any_currency'));
     }
 }

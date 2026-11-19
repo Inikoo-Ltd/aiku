@@ -60,11 +60,25 @@ class UpdateSupplierProduct extends OrgAction
         'deleted_at',
     ];
 
+    public const string FOLLOWS_DISCONTINUING_SKOS_KEY = 'discontinuing_from_skos_at';
+    public const string KEPT_ACTIVE_BY_HAND_KEY = 'kept_active_by_hand_at';
+    public const string DISCONTINUED_REASON_KEY = 'discontinued_reason';
+
+    public const array DISCONTINUED_STATES = [
+        SupplierProductStateEnum::DISCONTINUING,
+        SupplierProductStateEnum::DISCONTINUED,
+    ];
+
     public bool $skipHistoric = false;
+    public bool $followsSkoStates = false;
+    private bool $stateTakenOverByHand = false;
     private SupplierProduct $supplierProduct;
 
     public function handle(SupplierProduct $supplierProduct, array $modelData, bool $skipHistoric = false): SupplierProduct
     {
+        $modelData = $this->markStateFollowingSkos($supplierProduct, $modelData);
+        $modelData = $this->recordDiscontinuedReason($supplierProduct, $modelData);
+
         if (Arr::exists($modelData, 'state')) {
             if ($this->parseState($modelData['state']) === SupplierProductStateEnum::DISCONTINUED && $supplierProduct->state !== SupplierProductStateEnum::DISCONTINUED) {
                 $modelData['discontinued_at'] = now();
@@ -103,7 +117,7 @@ class UpdateSupplierProduct extends OrgAction
             ]);
         }
 
-        if ($wasChanged(['state'])) {
+        if (($wasChanged(['state']) || $this->stateTakenOverByHand) && !$this->followsSkoStates) {
             foreach ($supplierProduct->orgSupplierProducts as $orgSupplierProduct) {
                 UpdateOrgSupplierProduct::run($orgSupplierProduct, ['state' => $supplierProduct->state]);
             }
@@ -127,6 +141,72 @@ class UpdateSupplierProduct extends OrgAction
         }
 
         return $supplierProduct;
+    }
+
+    /**
+     * A supplier product turned discontinuing because its SKOs are, carries the time in data, so that only those go back to active
+     * when a SKO does. Any state given by someone else, even the same discontinuing, takes it over: the mark goes and the state reaches
+     * the organisation rows as usual. Put back to active by hand while its SKOs still retire, it is marked as kept active, so the
+     * automation does not turn it discontinuing again until someone changes its state once more.
+     */
+    private function markStateFollowingSkos(SupplierProduct $supplierProduct, array $modelData): array
+    {
+        $this->stateTakenOverByHand = false;
+
+        if (!Arr::exists($modelData, 'state')) {
+            return $modelData;
+        }
+
+        $newState = $this->parseState($modelData['state']);
+        $isMarked = (bool) data_get($supplierProduct->data, self::FOLLOWS_DISCONTINUING_SKOS_KEY);
+
+        if ($this->followsSkoStates) {
+            if ($newState === $supplierProduct->state) {
+                return $modelData;
+            }
+
+            if ($newState === SupplierProductStateEnum::DISCONTINUING) {
+                $modelData['data'][self::FOLLOWS_DISCONTINUING_SKOS_KEY] = now()->toIso8601String();
+            } elseif ($isMarked) {
+                $modelData['data'][self::FOLLOWS_DISCONTINUING_SKOS_KEY] = null;
+            }
+
+            return $modelData;
+        }
+
+        if ($isMarked) {
+            $modelData['data'][self::FOLLOWS_DISCONTINUING_SKOS_KEY] = null;
+            $this->stateTakenOverByHand = $newState === $supplierProduct->state;
+
+            if ($newState === SupplierProductStateEnum::ACTIVE) {
+                $modelData['data'][self::KEPT_ACTIVE_BY_HAND_KEY] = now()->toIso8601String();
+            }
+        } elseif ($newState !== $supplierProduct->state && data_get($supplierProduct->data, self::KEPT_ACTIVE_BY_HAND_KEY)) {
+            $modelData['data'][self::KEPT_ACTIVE_BY_HAND_KEY] = null;
+        }
+
+        return $modelData;
+    }
+
+    /**
+     * The reason is kept only while the product is discontinuing or discontinued, and only replaced when a reason (even an empty one)
+     * is given, so automation moving discontinuing to discontinued keeps the buyer's reason. The supplier portal shows it.
+     */
+    private function recordDiscontinuedReason(SupplierProduct $supplierProduct, array $modelData): array
+    {
+        $hasReason = Arr::exists($modelData, self::DISCONTINUED_REASON_KEY);
+        $reason    = Arr::pull($modelData, self::DISCONTINUED_REASON_KEY);
+        $state     = Arr::exists($modelData, 'state') ? $this->parseState($modelData['state']) : $supplierProduct->state;
+
+        if (in_array($state, self::DISCONTINUED_STATES, true)) {
+            if ($hasReason) {
+                $modelData['data'][self::DISCONTINUED_REASON_KEY] = trim((string) $reason) ?: null;
+            }
+        } elseif (data_get($supplierProduct->data, self::DISCONTINUED_REASON_KEY) !== null) {
+            $modelData['data'][self::DISCONTINUED_REASON_KEY] = null;
+        }
+
+        return $modelData;
     }
 
     /**
@@ -229,6 +309,7 @@ class UpdateSupplierProduct extends OrgAction
             ],
             'name'             => ['sometimes', 'required', 'string', 'max:255'],
             'state'            => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
+            'discontinued_reason' => ['sometimes', 'nullable', 'string', 'max:500'],
             'is_available'     => ['sometimes', 'required', 'boolean'],
             'cost'                     => ['sometimes', 'required', 'numeric', 'min:0'],
             'units_per_pack'           => ['sometimes', 'nullable', 'integer', 'min:1'],
@@ -286,17 +367,18 @@ class UpdateSupplierProduct extends OrgAction
         return $this->handle($supplierProduct, $this->validatedData);
     }
 
-    public function action(SupplierProduct $supplierProduct, array $modelData, bool $skipHistoric = false, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): SupplierProduct
+    public function action(SupplierProduct $supplierProduct, array $modelData, bool $skipHistoric = false, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true, bool $followsSkoStates = false): SupplierProduct
     {
         if (!$audit) {
             SupplierProduct::disableAuditing();
         }
 
-        $this->supplierProduct = $supplierProduct;
-        $this->asAction        = true;
-        $this->hydratorsDelay  = $hydratorsDelay;
-        $this->skipHistoric    = $skipHistoric;
-        $this->strict          = $strict;
+        $this->supplierProduct  = $supplierProduct;
+        $this->asAction         = true;
+        $this->hydratorsDelay   = $hydratorsDelay;
+        $this->skipHistoric     = $skipHistoric;
+        $this->strict           = $strict;
+        $this->followsSkoStates = $followsSkoStates;
 
         $this->initialisationFromGroup($supplierProduct->group, $modelData);
 

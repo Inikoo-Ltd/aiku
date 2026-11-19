@@ -96,9 +96,9 @@ class StockLocationsTool extends Tool
                 McpChangeTypeEnum::STOCK_LOCATIONS,
                 $organisation->code.': '.count($plan['to_add']).' SKOs put on locations',
                 $target,
-                fn () => DB::transaction(function () use ($plan) {
+                fn () => DB::transaction(function () use ($plan, $user) {
                     foreach ($plan['to_add'] as $pair) {
-                        StoreLocationOrgStock::make()->action(OrgStock::findOrFail($pair['org_stock_id']), Location::findOrFail($pair['location_id']), []);
+                        StoreLocationOrgStock::make()->action(OrgStock::findOrFail($pair['org_stock_id']), Location::findOrFail($pair['location_id']), [], user: $user);
                     }
                 })
             );

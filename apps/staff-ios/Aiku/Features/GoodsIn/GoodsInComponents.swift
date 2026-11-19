@@ -269,7 +269,7 @@ struct GoodsInTypeCodeSheet: View {
             AikuTextField(label, text: $code, placeholder: placeholder)
                 .onSubmit(submit)
         } footer: {
-            AikuButton(actionTitle) { submit() }
+            AikuButton(actionTitle, icon: .search) { submit() }
                 .disabled(trimmed.isEmpty)
                 .accessibilityIdentifier("goodsIn.typeCode.submit")
             AikuButton("Cancel", kind: .tertiary, action: onCancel)

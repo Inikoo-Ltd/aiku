@@ -83,6 +83,7 @@ class IndexJobOrders extends OrgAction
             ->defaultSort('-date')
             ->allowedSorts(['reference', 'date', 'state', 'artisan'])
             ->allowedFilters([$globalSearch, AllowedFilter::exact('employee_id', 'job_orders.employee_id'), AllowedFilter::exact('state', 'job_orders.state')])
+            ->withBetweenDates(['date', 'received_at'], $prefix)
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -123,6 +124,7 @@ class IndexJobOrders extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->betweenDates(['date', 'received_at'])
                 ->withEmptyState(
                     [
                         'title'       => __('No job orders yet'),

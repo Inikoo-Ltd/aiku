@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
+use App\Actions\SupplyChain\SupplierSubmission\ImportSupplierPortalProductProposals;
 use App\Actions\Traits\Authorisations\SupplierPortalPermissions;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\SupplyChain\Supplier;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -62,7 +64,11 @@ class ShowSupplierPortalPreview extends OrgAction
             ],
             'forms'    => ShowSupplierShare::make()->forms(
                 collect(SupplierSubmissionTypeEnum::cases())->mapWithKeys(fn (SupplierSubmissionTypeEnum $type) => [$type->value => $blocked('submissions/'.$type->value)])->all(),
-                $blocked('submissions/0/update')
+                $blocked('submissions/0/update'),
+                route('grp.supply-chain.suppliers.portal_preview.product_proposals.template', $supplier),
+                route('grp.supply-chain.suppliers.portal_preview.product_proposals.preview', $supplier),
+                $blocked('product-proposals/import'),
+                $supplier->currency?->code
             ),
         ])->table(IndexSupplierPortalPurchaseOrders::make()->tableStructure('purchase_orders'))
             ->table(IndexSupplierPortalPriceChanges::make()->tableStructure($supplier, 'price_changes'))
@@ -94,6 +100,18 @@ class ShowSupplierPortalPreview extends OrgAction
     public function purchaseOrder(Supplier $supplier, int $purchaseOrderId, ActionRequest $request): JsonResponse
     {
         return response()->json(ShowSupplierPortalPurchaseOrder::make()->handle($supplier, $purchaseOrderId));
+    }
+
+    public function productProposalTemplate(Supplier $supplier, ActionRequest $request): BinaryFileResponse
+    {
+        return DownloadSupplierPortalProductProposalTemplate::make()->handle($supplier);
+    }
+
+    public function productProposalPreview(Supplier $supplier, ActionRequest $request): JsonResponse
+    {
+        $validated = Validator::make($request->allFiles(), ImportSupplierPortalProductProposals::fileRules())->validate();
+
+        return response()->json(['rows' => ImportSupplierPortalProductProposals::make()->previewRows($supplier, $validated['file'])]);
     }
 
     public function blocked(): never

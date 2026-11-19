@@ -16,21 +16,28 @@ struct LocationsDetailView: View {
     @State private var store = LocationsStore.shared
     @Environment(\.apiClient) private var apiClient
     @State private var sheet: LocationsDetailSheet?
+    @State private var lookedUpCode: String?
 
     var body: some View {
         locationContent
             .task(id: code) {
                 await store.loadLocation(code: code, apiClient: apiClient)
+                lookedUpCode = code
             }
     }
 
     @ViewBuilder
     private var locationContent: some View {
-        if let location = store.warehouse.locationOrFallback(code: code) {
+        if let location = store.location(code: code) {
             content(location)
+        } else if lookedUpCode != code {
+            AppScreen(title: code, kicker: "Location") {
+                SkeletonRow()
+                SkeletonRow()
+            }
         } else {
-            AppScreen(title: "Location") {
-                EmptyState(icon: .locations, title: "Location not found")
+            AppScreen(title: code, kicker: "Location") {
+                EmptyState(icon: .locations, title: "Location \(code) not found", message: "It isn’t in this warehouse, or it was deleted.")
             }
         }
     }
@@ -141,7 +148,7 @@ struct LocationsDetailView: View {
                 LocationsActionButton(title: "Move some", icon: .locations) { sheet = .moveSome }
                     .disabled(!canMove)
                     .accessibilityIdentifier("locations.action.moveSome")
-                LocationsActionButton(title: "Remove SKOs", kind: .danger) { sheet = .remove }
+                LocationsActionButton(title: "Remove SKOs", icon: .trash, kind: .danger) { sheet = .remove }
                     .disabled(!canMove)
                     .accessibilityIdentifier("locations.action.remove")
             }

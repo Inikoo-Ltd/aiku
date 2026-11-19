@@ -20,6 +20,7 @@ use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
@@ -75,6 +76,7 @@ class StoreSupplier extends OrgAction
         Arr::forget($modelData, 'address');
 
         $copiedOrgSupplierProductIds = Arr::pull($modelData, 'org_supplier_products', []);
+        $copiedSupplierProductIds    = Arr::pull($modelData, 'supplier_products', []);
 
         if (Arr::get($modelData, 'delivery_type') !== 'container') {
             Arr::forget($modelData, self::CONTAINER_ONLY_FIELDS);
@@ -86,7 +88,7 @@ class StoreSupplier extends OrgAction
             data_set($modelData, 'group_id', $parent->group_id);
         }
 
-        $supplier = DB::transaction(function () use ($parent, $modelData, $addressData, $copiedOrgSupplierProductIds) {
+        $supplier = DB::transaction(function () use ($parent, $modelData, $addressData, $copiedOrgSupplierProductIds, $copiedSupplierProductIds) {
             /** @var Supplier $supplier */
             $supplier = $parent->suppliers()->create($modelData);
             $supplier->stats()->create();
@@ -116,8 +118,8 @@ class StoreSupplier extends OrgAction
                 );
             }
 
-            if ($parent instanceof Agent && $copiedOrgSupplierProductIds && $this->copySourceAgentIds) {
-                $this->copySupplierProducts($supplier, $copiedOrgSupplierProductIds);
+            if ($parent instanceof Agent && ($copiedOrgSupplierProductIds || $copiedSupplierProductIds) && $this->copySourceAgentIds) {
+                $this->copySupplierProducts($supplier, $copiedOrgSupplierProductIds, $copiedSupplierProductIds);
             }
 
             return $supplier;
@@ -137,17 +139,22 @@ class StoreSupplier extends OrgAction
      * The new supplier form has no field for the products it takes over, so a refused copy is reported on the code.
      *
      * @param  array<int, int>  $orgSupplierProductIds
+     * @param  array<int, int>  $supplierProductIds
      *
      * @throws \Throwable
      */
-    private function copySupplierProducts(Supplier $supplier, array $orgSupplierProductIds): void
+    private function copySupplierProducts(Supplier $supplier, array $orgSupplierProductIds, array $supplierProductIds): void
     {
         $copySupplierProducts = CopySupplierProductsToSupplier::make();
+
+        $sourceProducts = $supplierProductIds
+            ? SupplierProduct::whereIn('agent_id', $this->copySourceAgentIds)->whereIn('id', $supplierProductIds)->get()
+            : $copySupplierProducts->getAgentsSupplierProducts($this->copySourceAgentIds, $orgSupplierProductIds);
 
         try {
             $this->numberCopiedSupplierProducts = $copySupplierProducts->action(
                 $supplier,
-                $copySupplierProducts->getAgentsSupplierProducts($this->copySourceAgentIds, $orgSupplierProductIds),
+                $sourceProducts,
                 $this->hydratorsDelay
             );
         } catch (ValidationException $exception) {
@@ -185,6 +192,8 @@ class StoreSupplier extends OrgAction
             'scope_id'        => ['integer'],
             'org_supplier_products'   => ['sometimes', 'array'],
             'org_supplier_products.*' => ['integer'],
+            'supplier_products'       => ['sometimes', 'array'],
+            'supplier_products.*'     => ['integer'],
         ];
 
         $rules = array_merge($rules, $this->supplierJsonFieldRules());

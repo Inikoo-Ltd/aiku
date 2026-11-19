@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_failed">Couldn’t load the dashboard</string>
+    <string name="dashboard_in_warehouse">Dispatching backlog · %1$s in the warehouse</string>
+    <string name="dashboard_to_pack">To pack</string>
+    <string name="dashboard_dispatched">Dispatched</string>
+    <string name="dashboard_dispatched_count">%1$s today</string>
+    <string name="dashboard_dispatched_compared">%1$s today · %2$s yesterday by now</string>
+    <string name="dashboard_returns_to_process">Returns to process</string>
+    <plurals name="dashboard_current_skos">
+        <item quantity="one">%1$s current SKO</item>
+        <item quantity="other">%1$s current SKOs</item>
+    </plurals>
+    <string name="dashboard_below_minimum">Below minimum</string>
+    <string name="dashboard_negative_stock">Negative stock</string>
+    <string name="dashboard_abnormal">Abnormal</string>
+</resources>

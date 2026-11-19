@@ -165,7 +165,9 @@ class ReconcileCheckoutPayouts
     }
 
     /**
-     * Payment accounts of one Checkout merchant share its keys, so each pair is asked once.
+     * Payment accounts of one Checkout merchant share its keys, so each pair is asked once. The payments key cannot read
+     * reports, so when any account of the organisation has credentials.reports_public_key / reports_secret_key (a key with
+     * the Reports scope) only those are asked.
      *
      * @return list<array{0: string, 1: string}>
      */
@@ -175,14 +177,15 @@ class ReconcileCheckoutPayouts
             return [[(string)config('app.sandbox.checkout_com.public_key'), (string)config('app.sandbox.checkout_com.secret_key')]];
         }
 
-        return PaymentAccount::where('organisation_id', $organisationId)
-            ->where('type', PaymentAccountTypeEnum::CHECKOUT)
-            ->get()
-            ->map(fn (PaymentAccount $paymentAccount) => [(string)Arr::get($paymentAccount->data, 'credentials.public_key'), (string)Arr::get($paymentAccount->data, 'credentials.secret_key')])
+        $paymentAccounts = PaymentAccount::where('organisation_id', $organisationId)->where('type', PaymentAccountTypeEnum::CHECKOUT)->get();
+        $keyPairs        = fn (string $prefix) => $paymentAccounts
+            ->map(fn (PaymentAccount $paymentAccount) => [(string)Arr::get($paymentAccount->data, "credentials.{$prefix}public_key"), (string)Arr::get($paymentAccount->data, "credentials.{$prefix}secret_key")])
             ->filter(fn (array $keys) => $keys[0] !== '' && $keys[1] !== '')
             ->unique(fn (array $keys) => $keys[1])
-            ->values()
-            ->all();
+            ->values();
+        $reportsKeys = $keyPairs('reports_');
+
+        return ($reportsKeys->isNotEmpty() ? $reportsKeys : $keyPairs(''))->all();
     }
 
     /**
@@ -200,10 +203,10 @@ class ReconcileCheckoutPayouts
         do {
             $response = $reportsClient->getAllReports($query);
             foreach ($response['data'] ?? [] as $report) {
-                foreach ($report['files'] ?? [] as $file) {
-                    if (preg_match('/^financial-actions_[^_]+_\d{8}_([0-9A-Z]{12})_/i', (string)($file['filename'] ?? ''), $matches)) {
-                        $files[strtoupper($matches[1])] = ['report_id' => $report['id'], 'file_id' => $file['id']];
-                    }
+                $payoutId = $this->payoutIdTag($report);
+                $csvFile  = collect($report['files'] ?? [])->first(fn ($file) => strcasecmp((string)($file['format'] ?? ''), 'CSV') === 0);
+                if (($report['type'] ?? null) === 'FinancialActionsByPayout' && $payoutId && $csvFile) {
+                    $files[$payoutId] = ['report_id' => $report['id'], 'file_id' => $csvFile['id']];
                 }
             }
             parse_str((string)parse_url((string)($response['_links']['next']['href'] ?? ''), PHP_URL_QUERY), $next);
@@ -211,6 +214,20 @@ class ReconcileCheckoutPayouts
         } while ($query->pagination_token);
 
         return $files;
+    }
+
+    /**
+     * @param array<string, mixed> $report
+     */
+    public function payoutIdTag(array $report): ?string
+    {
+        foreach ($report['tags'] ?? [] as $tag) {
+            if (preg_match('/^payout_id:([0-9a-z]{12})$/i', (string)$tag, $matches)) {
+                return strtoupper($matches[1]);
+            }
+        }
+
+        return null;
     }
 
     public function payoutReportCsv(string $publicKey, string $secretKey, string $reportId, string $fileId): string
@@ -233,7 +250,7 @@ class ReconcileCheckoutPayouts
      */
     public function parsePayoutReport(string $csv): array
     {
-        $rows   = array_map('str_getcsv', preg_split('/\r\n|\n|\r/', trim($csv)));
+        $rows   = array_map(fn (string $row) => str_getcsv($row, ',', '"', ''), preg_split('/\r\n|\n|\r/', trim($csv)));
         $header = array_map('trim', array_shift($rows) ?? []);
         if (!in_array('Holding Currency Amount', $header, true)) {
             throw new \RuntimeException('Not a financial actions by payout id report');
@@ -254,10 +271,11 @@ class ReconcileCheckoutPayouts
             $report['by_type'][$type]    = ($report['by_type'][$type] ?? 0) + $amount;
 
             $paymentId = trim($line['Payment ID'] ?? '');
-            if ($paymentId && preg_match('/gross/i', $line['Breakdown Type'] ?? '')) {
-                if (strcasecmp($action, 'Capture') === 0) {
+            $breakdown = trim($line['Breakdown Type'] ?? '');
+            if ($paymentId) {
+                if (preg_match('/^(partial )?capture$/i', $action) && strcasecmp($breakdown, 'Capture') === 0) {
                     $report['captured'][$paymentId] = ($report['captured'][$paymentId] ?? 0) + (float)($line['Processing Currency Amount'] ?? $amount);
-                } elseif (strcasecmp($action, 'Refund') === 0) {
+                } elseif (in_array(strtolower($action), ['refund', 'partial refund'], true) && strcasecmp($breakdown, 'Refund') === 0) {
                     $report['refunded'][$paymentId] = ($report['refunded'][$paymentId] ?? 0) + (float)($line['Processing Currency Amount'] ?? $amount);
                 }
             }
@@ -280,7 +298,8 @@ class ReconcileCheckoutPayouts
             ->whereHas('paymentAccount', fn ($query) => $query->where('type', PaymentAccountTypeEnum::CHECKOUT))
             ->get(['id', 'reference', 'amount', 'payment_account_id']);
 
-        $gross      = round(array_sum(array_filter($report['by_type'], fn ($amount, $type) => preg_match('/gross/i', $type), ARRAY_FILTER_USE_BOTH)), 2);
+        $gross      = round(array_sum(array_filter($report['by_type'], fn ($amount, $type) => !preg_match('/fee$/i', $type), ARRAY_FILTER_USE_BOTH)), 2);
+        $fees       = round($gross - $report['total'], 2);
         $received   = round((float)$bankTransaction->amount, 2);
         $missing    = array_values(array_diff(array_keys($report['captured']), $payments->pluck('reference')->all()));
 
@@ -289,7 +308,7 @@ class ReconcileCheckoutPayouts
             'reconciled_at'      => now()->toIso8601String(),
             'payout_total'       => $report['total'],
             'gross'              => $gross,
-            'processor_fees'     => round($gross - $report['total'], 2),
+            'processor_fees'     => $fees,
             'bank_fee'           => round($report['total'] - $received, 2),
             'by_type'            => $report['by_type'],
             'payment_ids'        => $payments->pluck('id')->all(),

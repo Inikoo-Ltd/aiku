@@ -11,8 +11,13 @@ import io.aiku.droid.ui.navigation.DeliveryNoteDispatchedRoute
 import io.aiku.droid.ui.navigation.DeliveryNotePackingRoute
 import io.aiku.droid.ui.navigation.DeliveryNotePickingRoute
 import io.aiku.droid.ui.navigation.DeliveryNoteToDoRoute
+import io.aiku.droid.ui.navigation.GoodsInReturnRoute
 import io.aiku.droid.ui.navigation.LocationRoute
+import io.aiku.droid.ui.navigation.ReturnPickItemsRoute
+import io.aiku.droid.ui.navigation.ReturnPickPalletsRoute
+import io.aiku.droid.ui.navigation.ReturnPickedRoute
 import io.aiku.droid.ui.navigation.ScanResultRoute
+import io.aiku.droid.ui.navigation.SkuFamilyRoute
 import io.aiku.droid.ui.navigation.SkuRoute
 import io.aiku.droid.ui.navigation.StockDeliveryRoute
 import org.junit.Assert.assertEquals
@@ -46,5 +51,14 @@ class ScanDestinationTest {
         assertEquals(DeliveryNotePackingRoute(id = 1, reference = "AR1"), routeFor("packed"))
         assertEquals(DeliveryNoteDispatchedRoute(id = 1, reference = "AR1"), routeFor("dispatched"))
         assertEquals(DeliveryNoteCancelledRoute(id = 1, reference = "AR1"), routeFor("cancelled"))
+    }
+
+    @Test
+    fun `a family, a customer return and a pallet return open their own screens`() {
+        assertEquals(SkuFamilyRoute(id = 7, code = "LV"), ScanDestination.SkoFamily(id = 7, code = "LV").route())
+        assertEquals(GoodsInReturnRoute(id = 31, reference = "RET-31"), ScanDestination.CustomerReturn(id = 31, reference = "RET-31").route())
+        assertEquals(ReturnPickItemsRoute(id = 8, reference = "acme-r1"), ScanDestination.PalletReturn(id = 8, reference = "acme-r1", state = "picking", typeGroup = "items").route())
+        assertEquals(ReturnPickPalletsRoute(id = 8, reference = "acme-r1"), ScanDestination.PalletReturn(id = 8, reference = "acme-r1", state = "confirmed", typeGroup = null).route())
+        assertEquals(ReturnPickedRoute(id = 8, reference = "acme-r1"), ScanDestination.PalletReturn(id = 8, reference = "acme-r1", state = "picked", typeGroup = "pallets").route())
     }
 }

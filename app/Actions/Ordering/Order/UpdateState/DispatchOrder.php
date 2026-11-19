@@ -12,6 +12,7 @@ use App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers;
 use App\Actions\Dropshipping\Allegro\Order\FulfilOrderToAllegro;
 use App\Actions\Dropshipping\Wix\Order\FulfilOrderToWix;
+use App\Actions\Dropshipping\Ankorstore\ShipAnkorstoreOrder;
 use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
 use App\Actions\Dropshipping\Magento\Orders\FulfillOrderToMagento;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
@@ -106,6 +107,13 @@ class DispatchOrder extends OrgAction
                     UpdateOrder::run($order, [
                         'shipping_notes' => __('We\'re unable update shipping to customer\'s sales channel due to their sales channel are not found or already deleted.')
                     ]);
+                }
+            }
+
+            if ($order->isFromAnkorstore() && !$repair) {
+                $shippedNote = $deliveryNote ?? $order->deliveryNotes()->orderByDesc('id')->first();
+                if ($shippedNote) {
+                    ShipAnkorstoreOrder::dispatch($shippedNote);
                 }
             }
 

@@ -15,6 +15,7 @@ use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\User;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -75,6 +76,8 @@ class CancelReplacementDeliveryNoteItem extends OrgAction
                     'message' => __('The item could not be cancelled, try again.'),
                 ]);
             }
+
+            WorkNotifier::modified($deliveryNote, 'lines');
         });
 
         return $deliveryNoteItem->refresh();

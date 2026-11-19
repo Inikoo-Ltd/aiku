@@ -5,6 +5,10 @@ struct MenuView: View {
     @Environment(Session.self) private var session
     @Environment(\.signOut) private var signOut
     @State private var isChoosingWarehouse = false
+    @Environment(\.apiClient) private var apiClient
+    @State private var warehouseStore = WarehouseStore.shared
+    private let workBadges = WorkBadgesStore.shared
+    private let clocking = ClockingStore.shared
 
     var body: some View {
         ScreenScaffold(spacing: 18) {
@@ -38,7 +42,7 @@ struct MenuView: View {
                     }
                 }
             }
-            ForEach(ShellMenuCatalog.groups(for: session.visibleModules)) { group in
+            ForEach(ShellMenuCatalog.groups(for: session.visibleModules, goodsOutUnassigned: workBadges.goodsOutUnassignedCount, clocking: ShellMenuClocking(clocking))) { group in
                 VStack(alignment: .leading, spacing: 8) {
                     ShellGroupHeading(title: group.title, icon: group.icon, note: group.note)
                     CardList(group.items) { item in
@@ -69,6 +73,12 @@ struct MenuView: View {
             EmptyView()
         }
         .shellWarehouseSheet(isPresented: $isChoosingWarehouse)
+        .task(id: warehouseStore.selectedID) {
+            await workBadges.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
+        }
+        .task {
+            await clocking.load()
+        }
     }
 
     private var searchButton: some View {

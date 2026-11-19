@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="inbox_failed">Couldn’t load your inbox</string>
+    <string name="inbox_empty_title">No notifications</string>
+    <string name="inbox_empty_body">When work assigned to you is changed, taken over, cancelled or can go ahead again, you’ll see it here.</string>
+    <string name="inbox_mark_all_failed">Couldn’t mark everything as read. Try again.</string>
+    <string name="inbox_switched_warehouse">Switched to %1$s</string>
+
+    <string name="push_channel_work_name">Work</string>
+    <string name="push_channel_work_description">Delivery notes, picking sessions and returns assigned to you: when they are changed, taken over, cancelled or can go ahead again.</string>
+</resources>

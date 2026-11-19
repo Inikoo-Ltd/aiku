@@ -15,6 +15,15 @@ class MyWorkResponsesTest {
     }
 
     @Test
+    fun `badges read the inbox unread count`() {
+        val badges = (MyWorkResponses.parseBadges(200, """{"data":{"my_work":4,"goods_out_unassigned":null,"inbox_unread":"100"}}""") as GoodsOutResult.Loaded).value
+        val withoutInbox = (MyWorkResponses.parseBadges(200, """{"data":{"my_work":4,"inbox_unread":null}}""") as GoodsOutResult.Loaded).value
+
+        assertEquals(WorkBadges(myWork = 4, goodsOutUnassigned = null, inboxUnread = 100), badges)
+        assertNull(withoutInbox.inboxUnread)
+    }
+
+    @Test
     fun `badges keep a null or missing count as null`() {
         val withoutRight = (MyWorkResponses.parseBadges(200, """{"data":{"my_work":0,"goods_out_unassigned":null}}""") as GoodsOutResult.Loaded).value
         val missing = (MyWorkResponses.parseBadges(200, """{"data":{}}""") as GoodsOutResult.Loaded).value

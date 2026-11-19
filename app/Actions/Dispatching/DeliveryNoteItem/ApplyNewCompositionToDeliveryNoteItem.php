@@ -10,6 +10,7 @@ use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateCompositio
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseManagementEditAuthorisation;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Notifications\Work\WorkNotifier;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -38,6 +39,7 @@ class ApplyNewCompositionToDeliveryNoteItem extends OrgAction
                 'original_quantity_required' => $quantityRequired,
                 'estimated_required_weight'  => (int)($quantityRequired * ($orgStock->stock?->gross_weight ?? 0)),
             ], strict: false);
+            WorkNotifier::modified($deliveryNoteItem->deliveryNote, 'lines');
         }
 
         $deliveryNoteItem->update([

@@ -22,7 +22,7 @@ struct ShellLanguageView: View {
                 }
             }
         } footer: {
-            AikuButton("Use \(chosen.nativeName)") {
+            AikuButton("Use \(chosen.nativeName)", icon: .check) {
                 save(chosen)
             }
             .accessibilityIdentifier("shell.language.save")

@@ -99,6 +99,8 @@ struct InventoryFamilyDetailScreen: View {
     let code: String
     @State private var warehouseStore = WarehouseStore.shared
     @State private var feed = InventoryFamiliesFeed.shared
+    @State private var isLooking = true
+    @Environment(\.apiClient) private var apiClient
 
     var body: some View {
         if let warehouse = warehouseStore.selected {
@@ -106,12 +108,28 @@ struct InventoryFamilyDetailScreen: View {
                 InventoryRemoteFamilyDetail(family: family, feed: InventoryFamilySkosFeed(warehouseID: warehouse.id, familyID: familyID))
             } else {
                 AppScreen(title: code, kicker: "Stock family") {
-                    EmptyState(icon: .skoFamilies, title: "Family not loaded", message: "Open it again from SKO families.")
+                    if isLooking {
+                        SkeletonRow()
+                    } else {
+                        EmptyState(icon: .skoFamilies, title: "Family not found", message: "Open it again from SKO families.")
+                    }
+                }
+                .task(id: code) {
+                    await lookUp(warehouseID: warehouse.id)
                 }
             }
         } else {
             InventorySampleFamilyDetail(code: code)
         }
+    }
+
+    private func lookUp(warehouseID: Int) async {
+        guard feed.family(code: code) == nil else { return }
+        isLooking = true
+        for state in InventoryFamilyState.allCases where feed.family(code: code) == nil {
+            await feed.reload(InventoryFamiliesRequest(warehouseID: warehouseID, state: state, search: code), apiClient: apiClient)
+        }
+        isLooking = false
     }
 }
 

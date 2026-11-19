@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onBeforeUnmount, ref, watch } from "vue"
 import InputText from "primevue/inputtext"
 import Dialog from "primevue/dialog"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -16,15 +16,17 @@ import InputIcon from "primevue/inputicon"
 import Image from "@common/Components/Image.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import SupplierPortalStatCard from "@/Components/Procurement/SupplierPortalStatCard.vue"
+import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
+import { useScrollArrows } from "@/Composables/useScrollArrows"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
 import type { Image as ImageProxy } from "@/types/Image"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCalendarAlt, faInfoCircle, faSearch, faBoxes, faCoins, faCube, faExclamationTriangle, faClipboard, faTree, faPen, faPaperclip } from "@fal"
+import { faCalendarAlt, faInfoCircle, faSearch, faBoxes, faCoins, faCube, faExclamationTriangle, faClipboard, faTree, faPen, faPaperclip, faArrowsH } from "@fal"
 
-library.add(faCalendarAlt, faInfoCircle, faSearch, faBoxes, faCoins, faCube, faExclamationTriangle, faClipboard, faTree, faPen, faPaperclip)
+library.add(faCalendarAlt, faInfoCircle, faSearch, faBoxes, faCoins, faCube, faExclamationTriangle, faClipboard, faTree, faPen, faPaperclip, faArrowsH)
 
 type PlanStatus = "estimate" | "no_order"
 type NoOrderReason = "covered" | "out_of_season" | "no_sales" | "no_forecast"
@@ -101,6 +103,72 @@ const planMaterials = (product: OrderPlanProduct, note: PlanningNote | null = nu
 const emit = defineEmits<{ open: [purchaseOrderId: number] }>()
 
 const locale = useLocaleStore()
+
+const tableScroller = ref<HTMLElement | null>(null)
+const { canScrollLeft, canScrollRight } = useScrollArrows(tableScroller)
+const isTableScrollable = computed(() => canScrollLeft.value || canScrollRight.value)
+
+const topScroller = ref<HTMLElement | null>(null)
+const tableScrollWidth = ref(0)
+
+const measureTableScrollWidth = () => {
+	tableScrollWidth.value = tableScroller.value?.scrollWidth ?? 0
+}
+
+const tableResizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measureTableScrollWidth)
+
+watch(
+	tableScroller,
+	(element) => {
+		tableResizeObserver?.disconnect()
+		if (element) {
+			tableResizeObserver?.observe(element)
+			Array.from(element.children).forEach((child) => tableResizeObserver?.observe(child))
+			measureTableScrollWidth()
+		}
+	},
+	{ flush: "post" },
+)
+
+onBeforeUnmount(() => tableResizeObserver?.disconnect())
+
+const syncScroll = (source: HTMLElement | null, target: HTMLElement | null) => {
+	if (source && target && target.scrollLeft !== source.scrollLeft) {
+		target.scrollLeft = source.scrollLeft
+	}
+}
+
+const onTableScroll = () => syncScroll(tableScroller.value, topScroller.value)
+const onTopScroll = () => syncScroll(topScroller.value, tableScroller.value)
+
+watch(topScroller, onTableScroll, { flush: "post" })
+
+const tableScrollDurationInMs = 400
+let tableScrollFrame: number | null = null
+
+const easeOutCubic = (progress: number) => 1 - Math.pow(1 - progress, 3)
+
+const glideTable = (direction: 1 | -1) => {
+	const element = tableScroller.value
+	if (!element) {
+		return
+	}
+	if (tableScrollFrame !== null) {
+		cancelAnimationFrame(tableScrollFrame)
+	}
+
+	const start = element.scrollLeft
+	const target = Math.min(Math.max(start + direction * element.clientWidth * 0.7, 0), element.scrollWidth - element.clientWidth)
+	const startedAt = performance.now()
+
+	const step = (now: number) => {
+		const progress = Math.min((now - startedAt) / tableScrollDurationInMs, 1)
+		element.scrollLeft = start + (target - start) * easeOutCubic(progress)
+		tableScrollFrame = progress < 1 ? requestAnimationFrame(step) : null
+	}
+
+	tableScrollFrame = requestAnimationFrame(step)
+}
 
 const LATER = "later"
 const ALL = "all"
@@ -215,10 +283,15 @@ const organisationLine = (organisation: OrderPlanProduct["organisations"][number
 
 		<div class="flex items-start gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 shadow-sm">
 			<FontAwesomeIcon icon="fal fa-info-circle" class="mt-0.5 shrink-0" :style="{ color: accent.colour }" fixed-width aria-hidden="true" />
-			<div class="space-y-1">
-				<p>{{ ctrans("What we may order from you in the next :days days, so you can plan raw materials and production capacity.", { days: horizon }) }}</p>
+			<div class="space-y-2">
+				<p class="font-medium text-gray-800">{{ ctrans("What AW Group may order from you in the next :days days, so you can plan raw materials and production capacity.", { days: horizon }) }}</p>
+				<ol class="list-decimal space-y-0.5 pl-4">
+					<li>{{ ctrans("Check which products AW Group may order, when, and roughly how many.") }}</li>
+					<li>{{ ctrans("If a product needs raw material that takes time to get, click Plan materials to tell AW Group buyers what you will buy or reserve, and until when you can hold it.") }}</li>
+					<li>{{ ctrans("AW Group buyers reply in the Material planning column. Only a purchase order is a commitment to buy.") }}</li>
+				</ol>
 				<p class="text-xs text-gray-500">
-					{{ ctrans("System estimate from our sales forecast for each of our companies, not yet reviewed by AW. Each range covers about 8 in 10 likely outcomes; the order window is when we may place the order, the delivery window when the goods would reach us.") }}
+					{{ ctrans("System estimate from the sales forecast of each AW Group company, not yet reviewed by AW Group. Each range covers about 8 in 10 likely outcomes; the order window is when AW Group may place the order, the delivery window when the goods would reach AW Group.") }}
 					<template v-if="plan?.as_of">{{ ctrans("Calculated :date.", { date: useFormatTime(plan.as_of) }) }}</template>
 				</p>
 			</div>
@@ -257,7 +330,7 @@ const organisationLine = (organisation: OrderPlanProduct["organisations"][number
 		</div>
 		<div v-else class="skeleton h-28 rounded-lg" />
 
-		<div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+		<div class="overflow-clip rounded-lg border border-gray-200 bg-white shadow-sm">
 			<div class="flex flex-col gap-3 border-b border-gray-100 p-4 lg:flex-row lg:items-center lg:justify-between">
 				<div class="overflow-x-auto">
 					<SegmentedToggle v-model="filter" :options="filterOptions" :aria-label="ctrans('Order window')" />
@@ -277,7 +350,15 @@ const organisationLine = (organisation: OrderPlanProduct["organisations"][number
 			</p>
 
 			<template v-else>
-				<div class="hidden overflow-x-auto md:block">
+				<div v-if="isTableScrollable" class="hidden items-center gap-2 border-b border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-4 py-2 text-xs font-medium text-[var(--app-accent-deep)] md:flex">
+					<FontAwesomeIcon icon="fal fa-arrows-h" class="scroll-nudge text-sm text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+					{{ ctrans("Scroll sideways or click the arrows to see more columns") }}
+				</div>
+				<div v-if="isTableScrollable" ref="topScroller" class="hidden overflow-x-auto md:block" aria-hidden="true" @scroll.passive="onTopScroll">
+					<div class="h-px" :style="{ width: `${tableScrollWidth}px` }" />
+				</div>
+				<div class="order-plan-table relative isolate hidden md:block">
+				<div ref="tableScroller" class="overflow-x-auto" @scroll.passive="onTableScroll">
 					<table class="min-w-full divide-y divide-gray-100 text-sm">
 						<thead class="whitespace-nowrap bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
 							<tr>
@@ -366,6 +447,9 @@ const organisationLine = (organisation: OrderPlanProduct["organisations"][number
 							</tr>
 						</tbody>
 					</table>
+				</div>
+				<ScrollFadeArrow direction="left" :visible="canScrollLeft" icon-class="sticky top-[calc(50vh-0.5rem)] bottom-[calc(50vh-0.5rem)] my-12 h-4 w-4 rounded-full bg-[var(--app-accent)] p-1.5 text-[var(--app-accent-text)] shadow-md scroll-chevron" @click="glideTable(-1)" />
+				<ScrollFadeArrow direction="right" :visible="canScrollRight" icon-class="sticky top-[calc(50vh-0.5rem)] bottom-[calc(50vh-0.5rem)] my-12 h-4 w-4 rounded-full bg-[var(--app-accent)] p-1.5 text-[var(--app-accent-text)] shadow-md scroll-chevron scroll-nudge" @click="glideTable(1)" />
 				</div>
 
 				<ul class="divide-y divide-gray-100 md:hidden">
@@ -458,3 +542,52 @@ const organisationLine = (organisation: OrderPlanProduct["organisations"][number
 		</Dialog>
 	</div>
 </template>
+
+<style scoped>
+.scroll-nudge,
+.order-plan-table :deep(.scroll-nudge) {
+	animation: scroll-nudge 1.6s ease-in-out infinite;
+}
+
+.order-plan-table :deep(.scroll-chevron) {
+	transition:
+		background-color 150ms ease,
+		box-shadow 150ms ease;
+}
+
+.order-plan-table :deep(button:has(.scroll-chevron)) {
+	transition: background-color 150ms ease;
+}
+
+.order-plan-table :deep(button:has(.scroll-chevron):hover) {
+	background-color: var(--app-accent-soft);
+}
+
+.order-plan-table :deep(button:hover .scroll-chevron) {
+	background-color: var(--app-accent-strong);
+	box-shadow:
+		0 0 0 4px var(--app-accent-muted),
+		0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.order-plan-table :deep(button:active .scroll-chevron) {
+	background-color: var(--app-accent-deep);
+}
+
+@keyframes scroll-nudge {
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	50% {
+		transform: translateX(4px);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.scroll-nudge,
+	.order-plan-table :deep(.scroll-nudge) {
+		animation: none;
+	}
+}
+</style>

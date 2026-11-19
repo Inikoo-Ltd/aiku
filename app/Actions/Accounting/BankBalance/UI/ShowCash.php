@@ -42,7 +42,21 @@ class ShowCash extends OrgAction
 
     public const int TREND_DAYS = 365;
 
-    public const array NOT_CONNECTED = ['Tatra banka', 'Fio', 'HSBC UK', 'Santander', 'Sabadell'];
+    /** The banks each organisation uses that are not connected to aiku yet, by organisation slug. */
+    public const array NOT_CONNECTED = [
+        'sk' => ['Tatra banka'],
+        'es' => ['Santander', 'Sabadell'],
+        'aw' => ['HSBC UK'],
+    ];
+
+    /**
+     * @param Collection<int, Organisation> $organisations
+     * @return array<int, string>
+     */
+    public static function notConnected(Collection $organisations): array
+    {
+        return $organisations->flatMap(fn (Organisation $organisation) => self::NOT_CONNECTED[$organisation->slug] ?? [])->unique()->values()->all();
+    }
 
     /** @var Collection<int, Organisation>|null */
     private ?Collection $groupOrganisations = null;
@@ -156,7 +170,7 @@ class ShowCash extends OrgAction
                 ->map(fn (Collection $group, string $code) => ['currency' => $code, 'amount' => round($group->sum('amount'), 2)])
                 ->values()->all(),
             'trend'         => ['dates' => array_keys($trend), 'totals' => array_values($trend)],
-            'not_connected' => self::NOT_CONNECTED,
+            'not_connected' => self::notConnected($organisations),
             'stale_hours'   => self::STALE_HOURS,
         ];
     }

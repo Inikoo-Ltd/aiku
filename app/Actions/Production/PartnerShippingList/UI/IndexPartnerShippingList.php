@@ -8,6 +8,10 @@
 
 namespace App\Actions\Production\PartnerShippingList\UI;
 
+use App\Actions\Production\PartnerShippingList\GetOrdersBlockedByProduction;
+use App\Models\Inventory\OrgStock;
+use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
+use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\Production\Artisan\PickDepartmentArtisans;
 use App\Actions\OrgAction;
 use App\Actions\Production\Artisan\GetArtisanDepartments;
@@ -217,6 +221,7 @@ class IndexPartnerShippingList extends OrgAction
                 'customers.name as customer_name',
                 'shops.name as shop_name',
                 'orders.reference as order_reference',
+                DB::raw('case when fill_artefacts.id is not null then current_date - orders.submitted_at::date end as order_waiting_days'),
                 ...$this->jobOrderColumns(),
             ])
             ->defaultSort('-created_at')
@@ -534,6 +539,7 @@ class IndexPartnerShippingList extends OrgAction
         );
 
         $this->markSurplusInPipeline($backlogItems);
+        $this->attachStockCover($preparingItems->concat($backlogItems));
 
         $preparingItems->concat($backlogItems)->each(function ($item) use ($publishedLabels) {
             $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
@@ -546,6 +552,33 @@ class IndexPartnerShippingList extends OrgAction
             ->map(fn ($label, $key) => ['label' => $label, 'items' => $byLane->get($key, collect())->values()->all()])
             ->values()
             ->all();
+    }
+
+    /**
+     * Stock, how long it lasts at the sales forecast and the sales per quarter, read the same way
+     * as on the procurement Ordering page so the card can show PurchaseOrderItemStockInfo.
+     */
+    private function attachStockCover(Collection $items): void
+    {
+        $items       = $items->filter(fn ($item) => $item->org_stock_id && !$item->is_fill);
+        $orgStockIds = $items->pluck('org_stock_id')->unique()->values();
+        if ($orgStockIds->isEmpty()) {
+            return;
+        }
+
+        $orgStocks      = OrgStock::with(['stats', 'stock.stockFamily'])->whereIn('id', $orgStockIds)->get()->keyBy('id');
+        $quarterlyUsage = GetOrgStocksQuarterlyUsage::run($orgStockIds);
+
+        $items->each(function ($item) use ($orgStocks, $quarterlyUsage) {
+            $orgStock = $orgStocks->get($item->org_stock_id);
+            if (!$orgStock) {
+                return;
+            }
+            $item->stock_in_locations = trimDecimalZeros($orgStock->quantity_in_locations ?? 0);
+            $item->units_per_pack     = (float) ($item->packed_in ?: 1);
+            $item->quarterly_usage    = $quarterlyUsage->get($orgStock->id) ?? [];
+            $item->stock_cover        = GetOrgStockBuyingSignals::run($orgStock);
+        });
     }
 
     private function boardLaneOf(object $item): string
@@ -831,6 +864,7 @@ class IndexPartnerShippingList extends OrgAction
                 ],
                 'groupBy'      => $this->groupBy,
                 'simpleBoard'  => $this->production->hasSimpleBoard(),
+                'productionBlockedNotice' => $this->groupBy === 'board' ? GetOrdersBlockedByProduction::make()->notice($this->organisation) : null,
                 'artisanWorkload' => in_array($this->groupBy, ['maker', 'board', 'mixes']) ? $this->getArtisanWorkload() : null,
                 'groups'       => $this->groupBy && $this->groupBy !== 'mixes' ? $this->getGroups($items) : null,
                 'hitchhikers'  => ['count' => $this->hitchhikerCount, 'showing' => $this->showHitchhikers],

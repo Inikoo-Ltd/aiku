@@ -31,6 +31,7 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rules\Exists;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNote extends OrgAction
@@ -154,10 +155,10 @@ class UpdateDeliveryNote extends OrgAction
             'company_name'            => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_name'            => ['sometimes', 'nullable', 'string', 'max:255'],
             'date'                    => ['sometimes', 'date'],
-            'picker_id'               => ['sometimes'],
-            'packer_id'               => ['sometimes'],
-            'picker_user_id'          => ['sometimes'],
-            'packer_user_id'          => ['sometimes'],
+            'picker_id'               => ['sometimes', 'nullable', 'integer', Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id)],
+            'packer_id'               => ['sometimes', 'nullable', 'integer', Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id)],
+            'picker_user_id'          => ['sometimes', 'nullable', 'integer', $this->staffUserRule()],
+            'packer_user_id'          => ['sometimes', 'nullable', 'integer', $this->staffUserRule()],
             'collection_address_id'   => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
             'parcels'                 => [
                 'sometimes',
@@ -190,6 +191,17 @@ class UpdateDeliveryNote extends OrgAction
         }
 
         return $rules;
+    }
+
+    /**
+     * A picker or packer chosen by a person must be an active user of the group; an internal caller
+     * may still record who did the work after that user was deactivated.
+     */
+    private function staffUserRule(): Exists
+    {
+        $rule = Rule::exists('users', 'id')->where('group_id', $this->group->id);
+
+        return $this->asAction ? $rule : $rule->where('status', true);
     }
 
     public function action(DeliveryNote $deliveryNote, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): DeliveryNote

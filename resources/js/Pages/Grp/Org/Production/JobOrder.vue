@@ -135,6 +135,7 @@ const props = defineProps<{
         public_notes: string | null
         employee_id: number | null
         artisan: string | null
+        proposed_artisan: { id: number, name: string } | null
         overproductions: { step: string, artefact_code: string, quantity: number, pack_size?: number | null, made_by: string, manager: string, method: 'qr' | 'pin', at: string }[]
         corrections: { step: string, artefact_code: string, pack_size: number | null, from: number, to: number, by: string | null, at: string, from_step?: string, from_artefact_code?: string, from_job?: string, to_job?: string, line_from?: number, line_to?: number, reason?: string | null }[]
         non_productive: { activity: string, hours: number, pay: string | null }[]
@@ -479,6 +480,10 @@ function receiveIntoStock() {
                     <Select v-if="update_route" :modelValue="job_order.employee_id ?? null" :options="artisanChoices" optionLabel="name" optionValue="id" filter size="small" class="w-52" :placeholder="ctrans('Anyone')" @update:modelValue="(value) => setArtisan(value === null ? '' : String(value))" />
                     <span v-else class="font-medium">{{ job_order.artisan ?? ctrans('Anyone') }}</span>
                 </label>
+                <span v-if="job_order.proposed_artisan && job_order.employee_id !== job_order.proposed_artisan.id" class="flex items-center gap-2 whitespace-nowrap rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                    {{ ctrans('The development team proposes :name', { name: job_order.proposed_artisan.name }) }}
+                    <Button v-if="update_route" type="tertiary" size="xs" :label="ctrans('Assign')" @click="setArtisan(String(job_order.proposed_artisan.id))" />
+                </span>
                 <span v-if="job_order.public_notes" class="min-w-0 truncate">{{ job_order.public_notes }}</span>
             </div>
             <div class="flex flex-wrap items-center gap-2">

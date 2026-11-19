@@ -6,7 +6,6 @@ struct DispatchPickView: View {
     @Environment(ToastCenter.self) private var toasts
     @State private var store: PickingSessionStore
     @State private var isScanning = false
-    @State private var isReporting = false
     @State private var cameraFeedback: (text: String, tone: Tone)?
 
     init(sessionID: Int) {
@@ -49,9 +48,7 @@ struct DispatchPickView: View {
         let target = canScan ? store.scanTarget : nil
         return AppScreen(
             title: "Pick by location",
-            kicker: [item.reference, item.stateTitle, "\(PickingSessionFormat.percent(item.pickingPercentage))% picked"].joined(separator: PickingSessionFormat.separator),
-            actions: [HeaderAction(.warning, label: "Report a problem") { isReporting = true }]
-        ) {
+            kicker: [item.reference, item.stateTitle, "\(PickingSessionFormat.percent(item.pickingPercentage))% picked"].joined(separator: PickingSessionFormat.separator)) {
             if let problem = store.loadError {
                 DispatchLoadProblem(title: "Couldn’t refresh this picking session", message: problem) { await store.load() }
             }
@@ -107,9 +104,6 @@ struct DispatchPickView: View {
             }
         }
         .screenRefreshable { await store.load() }
-        .aikuSheet(isPresented: $isReporting) {
-            DispatchReportProblemSheet(onClose: { isReporting = false })
-        }
         .fullScreenCover(isPresented: $isScanning) {
             DispatchCameraScan(
                 kicker: item.reference,

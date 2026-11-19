@@ -72,6 +72,22 @@ Kamēr nav nospiesta viena no abām, darbs katru dienu paliek tavā redzeslokā.
 
 Kad strādnieks aizver darbu pie mazāka daudzuma un atlikumu pārceļ uz jaunu darbu (skaties [Darbs ar ražotnes ekrānu](/docs/working-the-floor-screen-lv)), jaunais darbs saglabā ieplānoto dienu, vietu secībā un katra soļa strādnieku.
 
+## Materiālu pieprasīšana noliktavai
+
+Kad ražotnei kaut kas vajadzīgs no noliktavas, ikviens, kas strādā ražošanā, to pieprasa **Factory → Operations → Materials check** (Ražotne → Darbības → Materiālu pārbaude) augšdaļā, sadaļā **Ask the warehouse** (Pieprasīt noliktavai). Katra rinda ir:
+
+| Lauks | Ko ievadīt |
+| --- | --- |
+| SKO | ieraksti kodu vai nosaukumu; saraksts rāda, cik SKO ir noliktavā un ražotnē |
+| Quantity and unit | kā to teiktu noliktavai: *3 Boxes*, *1 Pallet*, *80 Bags*, *2 SKOs* vai *All there is* |
+| Drop point | kur ražotnē to atstāt (*Storage room*, *Clean room*, *Bath bomb area*...) |
+| Urgent | noliktava steidzamās rindas redz pirmās |
+| Note | viss, kas noliktavai jāzina (*250ml*, *lūdzu, ārā uz paletēm*) |
+
+**Add line** (Pievienot rindu) pieprasa vairākas lietas uzreiz, un **Send to warehouse** (Nosūtīt noliktavai) tās nosūta. **Asked this week** (Pieprasīts šonedēļ) zemāk rāda katru pieprasījumu ar to, kas to pieprasīja un kad, un katrai rindai, vai tā ir *To bring* (Jāatved), *Delivered* (Piegādāts; cik SKO, kas, kad) vai *Can't bring* (Nevar atvest) ar noliktavas norādīto iemeslu.
+
+Piegādes vietu sarakstu ar pogu **Drop points** (Piegādes vietas) uztur vadītājs un uzraugs: pievienot, pārdēvēt, pārvietot uz augšu un uz leju vai dzēst. Izdzēsta piegādes vieta saglabā savu nosaukumu jau nosūtītajos pieprasījumos.
+
 ## Rīta materiālu pārbaude
 
 Noliktava materiālus uz ražotni atved veselās kastēs, nevis precīzos dienas daudzumos. **Factory → Operations → Materials check** (Ražotne → Darbības → Materiālu pārbaude) uzskaita to, kas dienas plānam vēl vajadzīgs, lai ražotne pārbauda, kas ir uz vietas, un pārējo noliktavai pasūta vienā skaidrā sarakstā.
@@ -88,13 +104,15 @@ Katra rinda ir viens materiāls, saskaitīts pa visiem dienas darbiem, ar darbie
 
 Kad ierakstīts trūkstošais skaits, rindā redzams, ko noliktava atvedīs, noapaļojot uz augšu līdz tās kastēm: trūkst 1 200, kastē 500 - *bring 3 boxes (1,500)* (atvest 3 kastes (1 500)). Sarkans *Warehouse short* (Noliktavā nepietiek) nozīmē, ka noliktavā tik daudz nav, un to uzzini uzreiz.
 
-Nospied **Send to warehouse** (Nosūtīt noliktavai). Trūkstošās rindas aiziet noliktavai kā viens pieprasījums, un pieprasījums parādās virs saraksta, katrs materiāls ar atzīmi *To bring* (Jāatved), *Delivered* (Piegādāts) vai *Warehouse short*. Ja visu atzīmē kā pietiekošu un nosūta, tiek reģistrēts, ka pārbaude ir veikta. Otra pārbaude vēlāk dienā pievieno tikai to, kas vēl trūkst.
+Nospied **Send to warehouse** (Nosūtīt noliktavai). Trūkstošās rindas aiziet noliktavai kā viens pieprasījums, un pieprasījums parādās zem **Asked this week**, katrs materiāls ar atzīmi *To bring* (Jāatved), *Delivered* (Piegādāts) vai *Can't bring*. Ja visu atzīmē kā pietiekošu un nosūta, tiek reģistrēts, ka pārbaude ir veikta. Otra pārbaude vēlāk dienā pievieno tikai to, kas vēl trūkst.
 
 Pārbaudi veic vadītājs vai maiņas vadītājs, vai arī nodod to strādniekam ar **Checked by** (Pārbaudīja) augšā. Šis strādnieks tad ražotnes ekrānā redz atgādinājumu, kas atver pārbaudi.
 
 ## Noliktava atved materiālus
 
-Noliktavā **Goods out → For production** (Preču izsniegšana → Ražošanai) uzskaita katru materiālu, ko ražotne pieprasījusi, plauktu apiešanas secībā, ar krājuma kodu, atvedamajām kastēm un ražotnes atrašanās vietu, uz kurieni tās dodas. Komplektētājs izvēlas plauktu, pārbauda daudzumu un nospiež **Delivered**. Ja noliktava to nevar atvest, **Warehouse short** paziņo ražotnei.
+Noliktavā karte **For production** (Ražošanai) zem **Action needed** (Nepieciešama rīcība) sadaļā **Inventory** (Krājumi) rāda, cik rindu gaida ražotne, steidzamās uz mazā nozīmītes. Tā atver **Inventory → For production**: katra rinda, ko vēl jāatved, vispirms steidzamās, tad vecākās, ar to, kas pieprasīts, piegādes vietu, kas pieprasīja un kad, piezīmi un plauktu, no kura ņemt. Komplektētājs izvēlas plauktu, ieraksta atvesto SKO skaitu un nospiež **Delivered**. Ja noliktava to nevar atvest, **Can't bring** jautā iemeslu (*out of stock*, *ordered from supplier*) un paziņo ražotnei. **Done** (Pabeigts) uzskaita, kas atvests vai atteikts, un cik ilgi tas aizņēma.
+
+Ja Aiku plauktā rāda mazāk SKO, nekā atvests, piegāde tāpat notiek: tas, kas bija Aiku, pārceļas uz ražotni, bet pārējais tiek atzīmēts kā *not in Aiku, count it* (nav Aiku, saskaiti), lai SKO tiktu saskaitīts.
 
 Piegādātais krājums no plaukta pāriet uz ražotnes atrašanās vietu. Tas paliek krājums: to skaita un redz kā agrāk, un klienta pasūtījums to tur joprojām var komplektēt, ja noliktavas plaukti ir tukši, vienmēr vispirms ņemot no plauktiem. Neizmantotos materiālus var pārvietot atpakaļ uz plauktu no ražotnes atrašanās vietas lapas, tāpat kā jebkuru citu pārvietošanu starp atrašanās vietām.
 
@@ -107,9 +125,11 @@ Kad pabeigts darbs tiek pieņemts krājumā, tā materiāli vispirms tiek noraks
 <li><b>Mainīt dienas secību:</b> ieraksti skaitli laukā <b>Order</b>.</li>
 <li><b>Vakardienas nepabeigtais darbs:</b> <b>Confirm for</b> dienu vai <b>Take off the plan</b>.</li>
 <li><b>No dēļa uz plānu:</b> saite <b>Day plan</b> virs dēļa.</li>
+<li><b>Pieprasīt kaut ko noliktavai:</b> <b>Factory</b> → <b>Operations</b> → <b>Materials check</b> → <b>Ask the warehouse</b> → <b>Send to warehouse</b>.</li>
+<li><b>Mainīt piegādes vietas:</b> <b>Materials check</b> → <b>Drop points</b>.</li>
 <li><b>Pārbaudīt dienas materiālus:</b> <b>Factory</b> → <b>Operations</b> → <b>Materials check</b> → <b>Have enough</b> vai trūkstošais skaits → <b>Send to warehouse</b>.</li>
 <li><b>Nodot pārbaudi strādniekam:</b> <b>Materials check</b> → <b>Checked by</b>.</li>
-<li><b>Atvest materiālus (noliktava):</b> <b>Goods out</b> → <b>For production</b> → <b>Delivered</b> vai <b>Warehouse short</b>.</li>
+<li><b>Atvest materiālus (noliktava):</b> <b>Inventory</b> → <b>For production</b> → <b>Delivered</b> vai <b>Can't bring</b>.</li>
 </ul>
 </aside>
 
@@ -119,7 +139,8 @@ Kad pabeigts darbs tiek pieņemts krājumā, tā materiāli vispirms tiek noraks
 <li>Dienas plānošana, soļu izdalīšana, secības maiņa: <b>Floor supervisor</b> šai ražotnei.</li>
 <li>Dienas plāna skatīšana bez izmaiņām: <b>Foreman</b>.</li>
 <li>Savam vārdam nodota soļa izpilde: <b>Operative</b>, ražotnes ekrānā.</li>
-<li>Materiālu pārbaude: <b>Floor supervisor</b> vai strādnieks, kuram tā nodota.</li>
-<li>Materiālu atvešana uz ražotni: noliktavas amats, kas strādā ar preču izsniegšanu.</li>
+<li>Materiālu pieprasīšana noliktavai: ikviens, kas redz ražotnes Operations.</li>
+<li>Materiālu pārbaude un piegādes vietas: <b>Floor supervisor</b>; pārbaudi arī strādnieks, kuram tā nodota.</li>
+<li>Materiālu atvešana uz ražotni: noliktavas amats, kas strādā noliktavā.</li>
 </ul>
 </aside>

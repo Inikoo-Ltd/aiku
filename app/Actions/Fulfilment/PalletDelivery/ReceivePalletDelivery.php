@@ -36,6 +36,8 @@ use App\Models\Billables\Rental;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class ReceivePalletDelivery extends OrgAction
@@ -46,6 +48,47 @@ class ReceivePalletDelivery extends OrgAction
     protected ?int $userId = null;
 
     public function handle(PalletDelivery $palletDelivery, array $modelData = []): PalletDelivery
+    {
+        $this->ensureEveryPalletHasRental($palletDelivery);
+
+        $palletDelivery = DB::transaction(fn () => $this->receive($palletDelivery, $modelData));
+
+        GroupHydratePalletDeliveries::dispatch($palletDelivery->group);
+        OrganisationHydratePalletDeliveries::dispatch($palletDelivery->organisation);
+        WarehouseHydratePalletDeliveries::dispatch($palletDelivery->warehouse);
+        FulfilmentCustomerHydratePalletDeliveries::dispatch($palletDelivery->fulfilmentCustomer);
+        FulfilmentHydratePalletDeliveries::dispatch($palletDelivery->fulfilment);
+
+        FulfilmentCustomerHydratePallets::dispatch($palletDelivery->fulfilmentCustomer);
+        FulfilmentCustomerHydrateStoredItems::dispatch($palletDelivery->fulfilmentCustomer);
+        FulfilmentCustomerHydrateStoredItemAudits::dispatch($palletDelivery->fulfilmentCustomer);
+
+        SendPalletDeliveryNotification::dispatch($palletDelivery);
+
+        return $palletDelivery;
+    }
+
+    private function ensureEveryPalletHasRental(PalletDelivery $palletDelivery): void
+    {
+        $autoAssignedTypes = $this->organisation->rentals()
+            ->where('auto_assign_asset', class_basename(Pallet::class))
+            ->pluck('auto_assign_asset_type')
+            ->all();
+
+        $palletsWithoutRental = $palletDelivery->pallets()->get()
+            ->filter(fn (Pallet $pallet) => !$pallet->rental_id && !in_array($pallet->type->value, $autoAssignedTypes))
+            ->map(fn (Pallet $pallet) => $pallet->reference ?? $pallet->customer_reference ?? '#'.$pallet->id);
+
+        if ($palletsWithoutRental->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'pallets' => __('These pallets have no rental and there is no automatic rental for their type: :pallets. Set a rental on each pallet before receiving the delivery.', [
+                    'pallets' => $palletsWithoutRental->implode(', ')
+                ])
+            ]);
+        }
+    }
+
+    private function receive(PalletDelivery $palletDelivery, array $modelData): PalletDelivery
     {
         $modelData['received_at'] = now();
         $modelData['state']       = PalletDeliveryStateEnum::RECEIVED;
@@ -143,18 +186,6 @@ class ReceivePalletDelivery extends OrgAction
         $palletDelivery = SetPalletDeliveryDate::run($palletDelivery);
         CalculateRecurringBillTotals::run($currentRecurringBill);
         RecurringBillHydrateTransactions::run($currentRecurringBill);
-
-        GroupHydratePalletDeliveries::dispatch($palletDelivery->group);
-        OrganisationHydratePalletDeliveries::dispatch($palletDelivery->organisation);
-        WarehouseHydratePalletDeliveries::dispatch($palletDelivery->warehouse);
-        FulfilmentCustomerHydratePalletDeliveries::dispatch($palletDelivery->fulfilmentCustomer);
-        FulfilmentHydratePalletDeliveries::dispatch($palletDelivery->fulfilment);
-
-        FulfilmentCustomerHydratePallets::dispatch($palletDelivery->fulfilmentCustomer);
-        FulfilmentCustomerHydrateStoredItems::dispatch($palletDelivery->fulfilmentCustomer);
-        FulfilmentCustomerHydrateStoredItemAudits::dispatch($palletDelivery->fulfilmentCustomer);
-
-        SendPalletDeliveryNotification::dispatch($palletDelivery);
 
         return $palletDelivery;
     }

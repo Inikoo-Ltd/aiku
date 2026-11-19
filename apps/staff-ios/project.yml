@@ -8,6 +8,10 @@ options:
 configs:
   Debug: debug
   Release: release
+packages:
+  Sentry:
+    url: https://github.com/getsentry/sentry-cocoa
+    from: 9.35.0
 configFiles:
   Debug: Config/Debug.xcconfig
   Release: Config/Release.xcconfig
@@ -23,12 +27,15 @@ targets:
     platform: iOS
     sources:
       - Aiku
+    dependencies:
+      - package: Sentry
     info:
       path: Aiku/Resources/Info.plist
       properties:
         CFBundleDisplayName: Aiku
         AikuAPIBaseURL: $(API_BASE_URL)
         AikuMobileAppKey: $(AIKU_MOBILE_APP_KEY)
+        AikuSentryDSN: $(AIKU_SENTRY_DSN)
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSCameraUsageDescription: Aiku uses the camera to scan clocking QR codes and barcodes.

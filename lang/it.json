@@ -13082,5 +13082,21 @@
     ":name is gazing into his crystal ball…": ":name sta guardando nella sua sfera di cristallo…",
     "This one needs a little more thought. Nearly there…": "Questa richiede un po' più di riflessione. Quasi fatto…",
     "Usually takes about :seconds seconds": "Di solito ci vogliono circa :seconds secondi",
-    "Use my own shipping rates": "Usa le mie tariffe di spedizione"
+    "Use my own shipping rates": "Usa le mie tariffe di spedizione",
+    "Our sister shop :website sells these: :link": "Il nostro negozio gemello :website vende questi prodotti: :link",
+    ":reference assigned to you": ":reference assegnato a te",
+    ":actor assigned :reference to you.": ":actor ti ha assegnato :reference.",
+    ":reference taken over": ":reference preso in carico da altri",
+    ":actor has taken over :reference, which was assigned to you.": ":actor ha preso in carico :reference, che era assegnato a te.",
+    "Removed from :reference": "Rimosso da :reference",
+    ":actor removed you from :reference.": ":actor ti ha rimosso da :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor ha annullato :reference, che è assegnato a te.",
+    ":reference can go ahead": ":reference può procedere",
+    ":reference is no longer waiting and can be done again.": ":reference non è più in attesa e può essere ripreso.",
+    ":reference was changed": ":reference è stato modificato",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Attenzione: :reference, assegnato a te, è stato modificato da :actor.",
+    ":actor has updated :reference, which is assigned to you.": ":actor ha aggiornato :reference, che è assegnato a te.",
+    "Operational": "Operativo",
+    ":reference cancelled": ":reference annullato",
+    "The customer": "Il cliente"
 }

@@ -11,6 +11,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Api\Group\Inventory\IndexMobileOrgStocks;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Inventory\Location\StoreLocation;
@@ -18,6 +19,7 @@ use App\Actions\Inventory\LocationOrgStock\ConsumeLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily;
+use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Enums\Inventory\Location\LocationStatusEnum;
@@ -205,10 +207,12 @@ test('mobile SKO list follows the web buckets, family, search, sort and counts w
     $list()
         ->assertJsonPath('currency_code', $organisation->currency->code)
         ->assertJsonPath('counts', [
-            'current'      => (int) $inventoryStats->number_current_org_stocks,
-            'discontinued' => (int) $inventoryStats->number_org_stocks_state_discontinued,
-            'abnormality'  => (int) $inventoryStats->number_org_stocks_state_abnormality,
-            'all'          => (int) $inventoryStats->number_org_stocks,
+            'current'       => (int) $inventoryStats->number_current_org_stocks,
+            'discontinued'  => (int) $inventoryStats->number_org_stocks_state_discontinued,
+            'abnormality'   => (int) $inventoryStats->number_org_stocks_state_abnormality,
+            'below_minimum' => IndexMobileOrgStocks::numberBelowMinimumStock($warehouse),
+            'negative'      => IndexMobileOrgStocks::numberNegativeStocks($warehouse),
+            'all'           => (int) $inventoryStats->number_org_stocks,
         ])
         ->assertJsonPath('data.0.id', $active->id)
         ->assertJsonPath('data.0.slug', $active->slug)
@@ -232,6 +236,66 @@ test('mobile SKO list follows the web buckets, family, search, sort and counts w
     $list(['bucket' => 'nope', 'family_id' => 999999999, 'sort' => 'sku_value'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['bucket', 'family_id', 'sort']);
+});
+
+test('mobile negative SKO list gives one row per negative location of this warehouse, most negative first, counted as the web counts them', function () {
+    $otherWarehouse = mobileInventoryOtherWarehouse();
+    [, $warehouse]  = mobileInventoryViewer($this->group);
+    $prefix         = 'MNG'.Str::upper(Str::random(5));
+    $stockFamily    = StoreStockFamily::make()->action($warehouse->group, StockFamily::factory()->definition());
+    $family         = StoreOrgStockFamily::make()->action($warehouse->organisation, $stockFamily, []);
+    $list           = fn (array $query = []) => getJson(route('grp.api.mobile.warehouses.org_stocks', array_merge(['warehouse' => $warehouse->id, 'bucket' => 'negative'], $query)), mobileInventoryHeaders())->assertOk();
+    $before         = $list()->json('meta.total');
+
+    [$twice, $twicePicking, $twiceStoring] = mobileInventorySko($warehouse, $prefix.'A');
+    [$once, $oncePicking]                  = mobileInventorySko($warehouse, $prefix.'B');
+    [$positive]                            = mobileInventorySko($warehouse, $prefix.'C');
+    $twice->update(['org_stock_family_id' => $family->id]);
+    $twicePicking->update(['quantity' => -2]);
+    $twiceStoring->update(['quantity' => -5]);
+    $oncePicking->update(['quantity' => -5]);
+    mobileInventoryLink($once, mobileInventoryLocation($otherWarehouse, $once->code.'-X'), 0, LocationStockTypeEnum::STORING)->update(['quantity' => -7]);
+
+    $response = $list(['q' => $prefix])->assertJsonPath('meta.total', 3);
+
+    expect(collect($response->json('data'))->map(fn (array $row) => [$row['code'], $row['location']['code'], $row['location_quantity']])->all())
+        ->toBe([
+            [$twice->code, $twice->code.'-S', -5],
+            [$once->code, $once->code.'-P', -5],
+            [$twice->code, $twice->code.'-P', -2],
+        ])
+        ->and(array_keys($response->json('data.0')))->toBe([
+            'id', 'slug', 'code', 'name', 'state', 'state_label', 'family', 'image_url',
+            'quantity_available', 'quantity_available_label', 'quantity_in_locations', 'quantity_in_locations_label',
+            'stock_value', 'number_locations', 'last_seen_at', 'location_org_stock_id', 'location', 'location_quantity',
+        ]);
+
+    $response
+        ->assertJsonPath('data.0.id', $twice->id)
+        ->assertJsonPath('data.0.slug', $twice->slug)
+        ->assertJsonPath('data.0.state', $twice->refresh()->state->value)
+        ->assertJsonPath('data.0.family', ['id' => $family->id, 'code' => $family->code])
+        ->assertJsonPath('data.0.quantity_in_locations', mobileInventoryNumber($twice->quantity_in_locations))
+        ->assertJsonPath('data.0.number_locations', 2)
+        ->assertJsonPath('data.0.location_org_stock_id', $twiceStoring->id)
+        ->assertJsonPath('data.0.location', ['id' => $twiceStoring->location_id, 'code' => $twice->code.'-S']);
+
+    $all = $list();
+    expect($all->json('meta.total'))->toBe($before + 3)
+        ->and($all->json('counts.negative'))->toBe($all->json('meta.total'))
+        ->and(ShowInventoryDashboard::numberNegativeStocks($warehouse))->toBe($all->json('meta.total'));
+
+    $list(['family_id' => $family->id])
+        ->assertJsonPath('meta.total', 2)
+        ->assertJsonPath('counts.negative', 2)
+        ->assertJsonPath('data.*.location_org_stock_id', [$twiceStoring->id, $twicePicking->id]);
+
+    $list(['q' => $once->code.'-P'])->assertJsonPath('data.*.location_org_stock_id', [$oncePicking->id]);
+
+    $everySko = getJson(route('grp.api.mobile.warehouses.org_stocks', ['warehouse' => $warehouse->id, 'bucket' => 'all', 'q' => $prefix]), mobileInventoryHeaders())->assertOk();
+    expect($everySko->json('data.*.code'))->toBe([$twice->code, $once->code, $positive->code])
+        ->and(collect($everySko->json('data'))->map(fn (array $row) => [$row['location_org_stock_id'], $row['location'], $row['location_quantity']])->unique()->values()->all())
+        ->toBe([[null, null, null]]);
 });
 
 test('mobile SKO detail lists the locations of this warehouse only, picking first', function () {

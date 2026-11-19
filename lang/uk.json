@@ -7204,5 +7204,21 @@
     ":name is casting a spell…": ":name чаклує…",
     ":name is gazing into his crystal ball…": ":name вдивляється у свою кришталеву кулю…",
     "This one needs a little more thought. Nearly there…": "Це потребує трохи більше роздумів. Майже готово…",
-    "Usually takes about :seconds seconds": "Зазвичай займає близько :seconds секунд"
+    "Usually takes about :seconds seconds": "Зазвичай займає близько :seconds секунд",
+    "Our sister shop :website sells these: :link": "Наш партнерський магазин :website продає ці товари: :link",
+    ":reference assigned to you": ":reference призначено вам",
+    ":actor assigned :reference to you.": ":actor призначив(-ла) вам :reference.",
+    ":reference taken over": ":reference перейнято",
+    ":actor has taken over :reference, which was assigned to you.": ":actor перейняв(-ла) :reference, що було призначено вам.",
+    "Removed from :reference": "Вас знято з :reference",
+    ":actor removed you from :reference.": ":actor зняв(-ла) вас з :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor скасував(-ла) :reference, що призначено вам.",
+    ":reference can go ahead": ":reference можна продовжувати",
+    ":reference is no longer waiting and can be done again.": ":reference більше не очікує, роботу можна продовжити.",
+    ":reference was changed": ":reference змінено",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Увага: :reference, призначене вам, змінив(-ла) :actor.",
+    ":actor has updated :reference, which is assigned to you.": ":actor оновив(-ла) :reference, що призначено вам.",
+    "Operational": "Працює",
+    ":reference cancelled": ":reference скасовано",
+    "The customer": "Клієнт"
 }

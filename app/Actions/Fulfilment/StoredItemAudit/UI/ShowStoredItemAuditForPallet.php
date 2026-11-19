@@ -258,6 +258,8 @@ class ShowStoredItemAuditForPallet extends OrgAction
 
     public function inWarehouse(Organisation $organisation, Warehouse $warehouse, Pallet $pallet, StoredItemAudit $storedItemAudit, ActionRequest $request): StoredItemAudit
     {
+        abort_if($pallet->warehouse_id !== $warehouse->id, 404);
+        abort_if($storedItemAudit->scope_type !== 'Pallet' || $storedItemAudit->scope_id !== $pallet->id, 404);
         $this->parent = $warehouse;
         $this->pallet = $pallet;
         $this->initialisationFromWarehouse($warehouse, $request);

@@ -128,6 +128,46 @@ struct LocationsAPITests {
         #expect(store.warehouse.location(code: "A-03-02")?.slots.count == 1)
     }
 
+    @Test func locationOutsideTheLoadedPageIsLookedUpByCode() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        #expect(store.location(code: "10A2") == nil)
+
+        let other = Self.locationJSON
+            .replacingOccurrences(of: #""id":7"#, with: #""id":8"#)
+            .replacingOccurrences(of: "a-03-02", with: "10a2")
+            .replacingOccurrences(of: "A-03-02", with: "10A2")
+        var responses = Self.responses
+        responses["mobile/warehouses/1/locations"] = #"{"data":["# + other + #"}],"meta":{"current_page":1,"last_page":1,"per_page":10,"total":1}}"#
+        responses["mobile/locations/8"] = Self.responses["mobile/locations/7"]!.replacingOccurrences(of: Self.locationJSON, with: other)
+
+        await store.loadLocation(code: "10A2", apiClient: client(responses))
+
+        #expect(store.location(code: "10A2")?.code == "10A2")
+        #expect(store.location(code: "10A2")?.slots.count == 1)
+        #expect(store.location(code: "A-03-02")?.code == "A-03-02")
+    }
+
+    @Test func locationOpensFromAnotherScreenBeforeTheLocationsListLoaded() async {
+        let store = LocationsStore()
+        store.selectedWarehouseID = { 1 }
+        store.beginRemoteLoad()
+
+        await store.loadLocation(code: "A-03-02", apiClient: client())
+
+        #expect(store.location(code: "A-03-02")?.code == "A-03-02")
+        #expect(store.location(code: "A-03-02")?.slots.count == 1)
+    }
+
+    @Test func unknownCodeStaysUnknownInsteadOfShowingAnotherLocation() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+
+        await store.loadLocation(code: "Z-99-99", apiClient: client())
+
+        #expect(store.location(code: "Z-99-99") == nil)
+    }
+
     @Test func storeRefusesAWarehouseWithoutLocationAccess() async {
         let store = LocationsStore()
 

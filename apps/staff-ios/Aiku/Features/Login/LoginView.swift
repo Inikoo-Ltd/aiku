@@ -7,9 +7,7 @@ struct LoginView: View {
 
     @Environment(AuthStore.self) private var authStore
 
-    @State private var form = LoginForm()
-    @State private var state = LoginState.idle
-    @State private var hasSubmitted = false
+    @State private var flow = SignInFlow()
     @State private var isPasswordVisible = false
     @AppStorage("auth.rememberMe") private var rememberMe = true
     @FocusState private var focusedField: Field?
@@ -21,41 +19,56 @@ struct LoginView: View {
 
     var body: some View {
         AuthLayout {
-            if let notice, state.failure == nil {
-                InlineAlert(tone: .success, title: notice)
-                    .accessibilityIdentifier("login.notice")
-            }
-            if let failure = state.failure {
-                InlineAlert(tone: .danger, title: failure.title, message: failure.message)
-                    .accessibilityIdentifier("login.error")
-            }
-            usernameField
-            passwordField
-            rememberRow
-            VStack(spacing: 10) {
-                signInButton
-                passkeyButton
+            switch flow.step {
+            case .credentials:
+                credentialsStep
+            case .oneTimeCode:
+                TwoFactorCodeStep(flow: flow) { verifyCode() }
+            case .twoFactorSetup(let setup):
+                TwoFactorSetupStep(flow: flow, setup: setup) { verifyCode() }
             }
         }
         .accessibilityIdentifier("login.root")
         .onAppear {
-            if form.username.isEmpty, !initialUsername.isEmpty {
-                form.username = initialUsername
+            if flow.form.username.isEmpty, !initialUsername.isEmpty {
+                flow.form.username = initialUsername
                 focusedField = .password
             }
         }
+        .onDisappear {
+            flow.clearSecrets()
+        }
     }
 
-    private var isLocked: Bool { state.isSigningIn }
+    @ViewBuilder
+    private var credentialsStep: some View {
+        if let notice, flow.state.failure == nil {
+            InlineAlert(tone: .success, title: notice)
+                .accessibilityIdentifier("login.notice")
+        }
+        if let failure = flow.state.failure {
+            InlineAlert(tone: .danger, title: failure.title, message: failure.message)
+                .accessibilityIdentifier("login.error")
+        }
+        usernameField
+        passwordField
+        rememberRow
+        VStack(spacing: 10) {
+            signInButton
+            passkeyButton
+        }
+    }
+
+    private var isLocked: Bool { flow.isSigningIn }
 
     private var usernameField: some View {
         AuthField(
             "Username",
-            error: hasSubmitted ? form.usernameError : nil,
+            error: flow.showsFieldErrors ? flow.form.usernameError : nil,
             isFocused: focusedField == .username,
             isLocked: isLocked
         ) {
-            TextField("Username", text: $form.username)
+            TextField("Username", text: $flow.form.username)
                 .textContentType(.username)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
@@ -71,15 +84,15 @@ struct LoginView: View {
         VStack(alignment: .leading, spacing: 6) {
             AuthField(
                 "Password",
-                error: hasSubmitted ? form.passwordError : nil,
+                error: flow.showsFieldErrors ? flow.form.passwordError : nil,
                 isFocused: focusedField == .password,
                 isLocked: isLocked
             ) {
                 Group {
                     if isPasswordVisible {
-                        TextField("••••••••", text: $form.password)
+                        TextField("••••••••", text: $flow.form.password)
                     } else {
-                        SecureField("••••••••", text: $form.password)
+                        SecureField("••••••••", text: $flow.form.password)
                     }
                 }
                 .textContentType(.password)
@@ -138,13 +151,13 @@ struct LoginView: View {
 
     private var buttonTitle: String {
         if isLocked { return "Signing in…" }
-        return state.failure == nil ? "Sign in" : "Try again"
+        return flow.state.failure == nil ? "Sign in" : "Try again"
     }
 
     private var passkeyButton: some View {
         Button {
             focusedField = nil
-            state = .failed(.server(message: "Passkey sign in isn’t available in the app yet. Use your username and password."))
+            flow.show(.server(message: "Passkey sign in isn’t available in the app yet. Use your username and password."))
         } label: {
             HStack(spacing: 8) {
                 AppIcon.passkey.image.font(.system(size: 16))
@@ -163,19 +176,19 @@ struct LoginView: View {
     }
 
     private func submit() {
-        hasSubmitted = true
-        guard form.canSubmit, !isLocked else { return }
-        focusedField = nil
-        state = .signingIn
+        guard !isLocked else { return }
+        if flow.form.canSubmit {
+            focusedField = nil
+        }
         Task {
-            do throws(LoginFailure) {
-                try await authStore.signIn(username: form.trimmedUsername, password: form.password, remember: rememberMe)
-                state = .idle
-            } catch {
-                form.password = ""
-                hasSubmitted = false
-                state = .failed(error)
-            }
+            await flow.signIn(with: authStore, remember: rememberMe)
+        }
+    }
+
+    private func verifyCode() {
+        guard !isLocked else { return }
+        Task {
+            await flow.verifyCode(with: authStore, remember: rememberMe)
         }
     }
 }

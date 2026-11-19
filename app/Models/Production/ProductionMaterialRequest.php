@@ -8,6 +8,7 @@
 
 namespace App\Models\Production;
 
+use App\Enums\Production\ProductionMaterialRequest\ProductionMaterialRequestSourceEnum;
 use App\Enums\Production\ProductionMaterialRequest\ProductionMaterialRequestStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\Warehouse;
@@ -27,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $warehouse_id
  * @property \Illuminate\Support\Carbon $plan_date
  * @property ProductionMaterialRequestStateEnum $state
+ * @property ProductionMaterialRequestSourceEnum $source
  * @property int|null $checker_employee_id
  * @property int|null $submitted_by_user_id
  * @property \Illuminate\Support\Carbon|null $submitted_at
@@ -50,6 +52,7 @@ class ProductionMaterialRequest extends Model
     {
         return [
             'state'        => ProductionMaterialRequestStateEnum::class,
+            'source'       => ProductionMaterialRequestSourceEnum::class,
             'plan_date'    => 'date',
             'submitted_at' => 'datetime',
             'delivered_at' => 'datetime',

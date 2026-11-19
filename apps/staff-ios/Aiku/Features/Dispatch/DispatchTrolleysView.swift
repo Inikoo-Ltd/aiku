@@ -5,6 +5,7 @@ struct DispatchTrolleysView: View {
     @Environment(Session.self) private var session
     @State private var warehouseStore = WarehouseStore.shared
     private let store = DispatchStore.shared
+    @State private var appearance = 0
 
     var body: some View {
         AppScreen(title: "Trolleys", kicker: "Goods out · \(session.warehouseLabel)") {
@@ -37,7 +38,8 @@ struct DispatchTrolleysView: View {
             DispatchNote("Trolleys are created in the web app.")
         }
         .screenRefreshable { await reload() }
-        .task(id: warehouseStore.selectedID) { await reload() }
+        .onAppear { appearance += 1 }
+        .task(id: ListLoadKey(request: warehouseStore.selectedID, appearance: appearance)) { await reload() }
     }
 
     private func action(for trolley: MobileSessionTrolley) -> (() -> Void)? {

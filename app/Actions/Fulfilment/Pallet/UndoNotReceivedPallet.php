@@ -31,7 +31,7 @@ class UndoNotReceivedPallet extends OrgAction
 {
     use WithActionUpdate;
 
-
+    private Pallet $pallet;
 
     public function handle(Pallet $pallet): Pallet
     {
@@ -48,8 +48,7 @@ class UndoNotReceivedPallet extends OrgAction
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        $pallet = $request->route()->parameter('pallet');
-        if ($pallet->palletDelivery->state != PalletDeliveryStateEnum::RECEIVED) {
+        if ($this->pallet->palletDelivery->state != PalletDeliveryStateEnum::RECEIVED) {
             $validator->errors()->add('state', 'This action requires state of the delivery to be received');
         }
 
@@ -66,6 +65,7 @@ class UndoNotReceivedPallet extends OrgAction
 
     public function asController(Pallet $pallet, ActionRequest $request): Pallet
     {
+        $this->pallet = $pallet;
         $this->initialisationFromWarehouse($pallet->warehouse, $request);
 
         return $this->handle($pallet);
@@ -76,6 +76,7 @@ class UndoNotReceivedPallet extends OrgAction
     {
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
+        $this->pallet         = $pallet;
         $this->initialisationFromWarehouse($pallet->warehouse, []);
 
         return $this->handle($pallet);

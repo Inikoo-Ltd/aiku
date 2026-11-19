@@ -19,6 +19,7 @@ use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturn;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -46,6 +47,7 @@ class AttachPalletToReturn extends OrgAction
                 'state'                   => PalletStateEnum::REQUEST_RETURN_IN_PROCESS,
                 'requested_for_return_at' => now()
             ]);
+            WorkNotifier::modified($palletReturn, 'lines');
         });
 
         $palletReturn->refresh();

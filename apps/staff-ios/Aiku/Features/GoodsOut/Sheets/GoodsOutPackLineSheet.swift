@@ -140,7 +140,7 @@ struct GoodsOutRemotePackLineSheet: View {
             }
         } footer: {
             if packing.quantityPacked > 0, note.canPackLines {
-                AikuButton("Unpack", icon: .undo, kind: .tertiary) {
+                AikuButton("Unpack", look: GoodsOutActionKey.unpack.look) {
                     confirmsUnpack = true
                 }
                 .accessibilityIdentifier("goodsOut.unpackLine")

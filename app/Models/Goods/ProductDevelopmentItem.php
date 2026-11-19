@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $position
  * @property-read ProductDevelopment|null $productDevelopment
  * @property-read TradeUnit|null $tradeUnit
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFormulation> $formulations
  * @property-read SupplierProduct|null $supplierProduct
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentChecklistItem> $checklistItems
  * @mixin \Eloquent
@@ -75,6 +76,16 @@ class ProductDevelopmentItem extends Model
     public function samples(): HasMany
     {
         return $this->hasMany(ProductDevelopmentSample::class)->orderBy('number');
+    }
+
+    protected static function booted(): void
+    {
+        static::created(fn (ProductDevelopmentItem $item) => \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::createFirstFormulation($item));
+    }
+
+    public function formulations(): HasMany
+    {
+        return $this->hasMany(ProductDevelopmentFormulation::class)->orderBy('position');
     }
 
     public function components(): HasMany

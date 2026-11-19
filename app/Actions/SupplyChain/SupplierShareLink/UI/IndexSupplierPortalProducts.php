@@ -12,6 +12,7 @@ namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 use App\Actions\Procurement\OrgAgent\UI\GetAgentSalesProducts;
 use App\Actions\Procurement\OrgAgent\UI\ShowAgentSales;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Models\Helpers\Media;
 use App\Models\SupplyChain\Supplier;
@@ -78,6 +79,7 @@ class IndexSupplierPortalProducts
                     'image'          => $imageOwner?->imageSources(80, 80),
                     'image_full'     => $imageOwner?->image ? $this->fullResolutionUrls($imageOwner->image, $token) : null,
                     'status'         => $status,
+                    'status_reason'  => $status === 'discontinued' ? data_get($product->data, UpdateSupplierProduct::DISCONTINUED_REASON_KEY) : null,
                     'status_label'   => ['active' => __('Active'), 'on_hold' => __('On hold'), 'discontinued' => $stateLabels[$product->state->value] ?? __('Discontinued')][$status],
                     'price'          => (float) $product->cost,
                     'units_per_pack' => $product->units_per_pack ?: 1,

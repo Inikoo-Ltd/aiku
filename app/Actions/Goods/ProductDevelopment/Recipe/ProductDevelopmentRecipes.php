@@ -22,6 +22,7 @@ use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\SysAdmin\User\UserNotificationEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Goods\ProductDevelopment;
+use App\Models\Goods\ProductDevelopmentFormulation;
 use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\Goods\ProductDevelopmentSample;
 use App\Models\SysAdmin\User;
@@ -159,7 +160,76 @@ class ProductDevelopmentRecipes
      */
     public static function label(ProductDevelopmentSample $sample): string
     {
+        $formulation = $sample->formulation;
+        if ($formulation && $formulation->position > 1) {
+            return __(':sku :formulation trial run :number', ['sku' => $sample->item->tradeUnit->code, 'formulation' => $formulation->name, 'number' => $sample->reference()]);
+        }
+
         return __(':sku trial run :number', ['sku' => $sample->item->tradeUnit->code, 'number' => $sample->reference()]);
+    }
+
+    /**
+     * The SKU's formulation stages in order; a SKU always has at least one.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFormulation>
+     */
+    public static function formulations(ProductDevelopmentItem $item): \Illuminate\Database\Eloquent\Collection
+    {
+        return $item->formulations()->get();
+    }
+
+    /**
+     * Every SKU starts with one stage; made when the SKU is created.
+     */
+    public static function createFirstFormulation(ProductDevelopmentItem $item): void
+    {
+        $item->formulations()->firstOrCreate(['position' => 1], [
+            'product_development_id' => $item->product_development_id,
+            'name'                   => __('Formulation'),
+        ]);
+    }
+
+    /**
+     * Stages are added or removed only while the development is formulating, never after it moved past it.
+     */
+    public static function canChangeFormulations(ProductDevelopment $productDevelopment): bool
+    {
+        return $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE
+            && $productDevelopment->current_position <= \App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageEnum::specsPosition();
+    }
+
+    /**
+     * The approved trial run that is the SKU's final formulation: that of its last stage, once every stage has one.
+     */
+    public static function finalSample(ProductDevelopmentItem $item): ?ProductDevelopmentSample
+    {
+        $formulations = $item->formulations()->get();
+        $approved     = $item->samples()->where('status', 'approved')->orderByDesc('number')->get();
+        if ($formulations->isEmpty()) {
+            return $approved->first();
+        }
+
+        $byStage = $approved->groupBy('product_development_formulation_id');
+        if ($formulations->contains(fn (ProductDevelopmentFormulation $formulation) => !$byStage->has($formulation->id))) {
+            return null;
+        }
+
+        return $byStage->get($formulations->last()->id)->first();
+    }
+
+    /**
+     * The stage being worked on: the first without an approved trial run, or the last one when all are done.
+     */
+    public static function currentFormulation(ProductDevelopmentItem $item): ProductDevelopmentFormulation
+    {
+        $formulations = self::formulations($item);
+        if ($formulations->isEmpty()) {
+            self::createFirstFormulation($item);
+            $formulations = self::formulations($item);
+        }
+        $approved     = $item->samples()->where('status', 'approved')->pluck('product_development_formulation_id')->all();
+
+        return $formulations->first(fn (ProductDevelopmentFormulation $formulation) => !in_array($formulation->id, $approved)) ?? $formulations->last();
     }
 
     public static function notifyReviewers(ProductDevelopmentSample $sample, User $actor): void
@@ -203,7 +273,23 @@ class ProductDevelopmentRecipes
 
     public static function approvedItemCount(ProductDevelopment $productDevelopment): int
     {
-        return $productDevelopment->samples()->where('status', 'approved')->distinct()->count('product_development_item_id');
+        return self::approvedItems($productDevelopment)->count();
+    }
+
+    /**
+     * The SKUs whose every formulation stage has an approved trial run.
+     */
+    public static function approvedItems(ProductDevelopment $productDevelopment): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $productDevelopment->items()
+            ->whereExists(fn ($query) => $query->selectRaw('1')->from('product_development_samples as approved')
+                ->whereColumn('approved.product_development_item_id', 'product_development_items.id')
+                ->where('approved.status', 'approved'))
+            ->whereNotExists(fn ($query) => $query->selectRaw('1')->from('product_development_formulations as formulation')
+                ->whereColumn('formulation.product_development_item_id', 'product_development_items.id')
+                ->whereNotExists(fn ($query) => $query->selectRaw('1')->from('product_development_samples as stage_sample')
+                    ->whereColumn('stage_sample.product_development_formulation_id', 'formulation.id')
+                    ->where('stage_sample.status', 'approved')));
     }
 
     public static function isEverySampleApproved(ProductDevelopment $productDevelopment): bool

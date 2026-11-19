@@ -18,6 +18,7 @@ use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturn;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
@@ -36,6 +37,7 @@ class AttachPalletsToReturn extends OrgAction
     {
         return DB::transaction(function () use ($palletReturn, $modelData, $onlyWhileInProcess) {
             $this->lockPalletReturnForPalletChanges($palletReturn, $onlyWhileInProcess);
+            WorkNotifier::modified($palletReturn, 'lines');
 
             return $this->selectPallets($palletReturn, $modelData);
         });

@@ -70,6 +70,7 @@ Route::prefix('bank-outgoing')->as('bank_outgoing.')->group(function () {
     }
 });
 Route::get('/cash', App\Actions\Accounting\BankBalance\UI\ShowCash::class)->name('cash.index');
+Route::get('/cash-flow', App\Actions\Accounting\BankBalance\UI\ShowCashFlow::class)->name('cash_flow.index');
 Route::get('/payouts', App\Actions\Accounting\BankTransaction\UI\ShowPayouts::class)->name('payouts.index');
 Route::get('/profit-and-loss', App\Actions\Accounting\ProfitAndLoss\UI\ShowProfitAndLoss::class)->name('profit_and_loss.index');
 Route::prefix('payables')->as('payables.')->group(function () {
@@ -81,7 +82,7 @@ Route::prefix('payables')->as('payables.')->group(function () {
 Route::prefix('receivables')->as('receivables.')->group(function () {
     Route::get('/', App\Actions\Accounting\Receivables\UI\ShowReceivablesDashboard::class)->name('index');
     foreach (App\Actions\Accounting\Receivables\UI\IndexReceivables::SECTIONS as $section) {
-        Route::get("/$section", App\Actions\Accounting\Receivables\UI\IndexReceivables::class)->name($section);
+        Route::get('/'.str_replace('_', '-', $section), App\Actions\Accounting\Receivables\UI\IndexReceivables::class)->name($section);
     }
 });
 Route::redirect('/bank-review', '/org/{organisation}/accounting/bank-incoming');

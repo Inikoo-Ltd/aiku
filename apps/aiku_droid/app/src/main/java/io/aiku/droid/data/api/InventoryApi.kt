@@ -315,6 +315,8 @@ enum class SkoBucket(val key: String) {
     Discontinued("discontinued"),
     Abnormality("abnormality"),
     All("all"),
+    BelowMinimum("below_minimum"),
+    Negative("negative"),
     ;
 
     companion object {
@@ -361,6 +363,9 @@ data class OrgStockRow(
     @Serializable(with = LenientDouble::class) @SerialName("stock_value") val stockValue: Double = 0.0,
     @Serializable(with = LenientInt::class) @SerialName("number_locations") val numberLocations: Int = 0,
     @SerialName("last_seen_at") val lastSeenAt: String? = null,
+    @SerialName("location_org_stock_id") val locationOrgStockId: Long? = null,
+    val location: PlaceRef? = null,
+    @Serializable(with = LenientDoubleOrNull::class) @SerialName("location_quantity") val locationQuantity: Double? = null,
 )
 
 @Serializable
@@ -369,12 +374,16 @@ data class SkoCounts(
     @Serializable(with = LenientInt::class) val discontinued: Int = 0,
     @Serializable(with = LenientInt::class) val abnormality: Int = 0,
     @Serializable(with = LenientInt::class) val all: Int = 0,
+    @Serializable(with = LenientIntOrNull::class) @SerialName("below_minimum") val belowMinimum: Int? = null,
+    @Serializable(with = LenientIntOrNull::class) val negative: Int? = null,
 ) {
-    fun count(bucket: SkoBucket): Int = when (bucket) {
+    fun count(bucket: SkoBucket): Int? = when (bucket) {
         SkoBucket.Current -> current
         SkoBucket.Discontinued -> discontinued
         SkoBucket.Abnormality -> abnormality
         SkoBucket.All -> all
+        SkoBucket.BelowMinimum -> belowMinimum
+        SkoBucket.Negative -> negative
     }
 }
 

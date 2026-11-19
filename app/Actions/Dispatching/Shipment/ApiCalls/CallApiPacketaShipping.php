@@ -12,6 +12,7 @@ namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData;
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use App\Models\Dispatching\DeliveryNote;
@@ -145,6 +146,11 @@ class CallApiPacketaShipping extends OrgAction
             $modelData['tracking_urls']  = [];
 
             $modelData['tracking'] = $apiResponse->id;
+
+            if ($lockerCode) {
+                $modelData['delivery_type']     = ShipmentDeliveryTypeEnum::PICKUP_POINT;
+                $modelData['pickup_point_code'] = $lockerCode;
+            }
         } catch (SoapFault $e) {
             $status = 'fail';
 

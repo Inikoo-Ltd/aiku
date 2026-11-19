@@ -2983,3 +2983,46 @@ test('an agent marked as not active leaves the organisation switcher', function 
 
     expect($agentSlugs())->not->toContain($agent->organisation->slug);
 })->depends('create guest');
+
+test('help desk clerks and QA never read accounting or financials, not even through borrowed permissions', function (Guest $guest) {
+    $group        = $guest->group;
+    $organisation = $guest->getUser()->authorisedOrganisations()->first();
+    app()->instance('group', $group);
+    setPermissionsTeamId($group->id);
+
+    $makeUser = function (string $username) use ($group): User {
+        $guestData = Guest::factory()->definition();
+        data_set($guestData, 'user.username', $username);
+
+        return StoreGuest::make()->action($group, $guestData)->getUser();
+    };
+
+    $engineer   = $makeUser('engineer-kept-out-of-accounting');
+    $accountant = $makeUser('accountant-lending-to-engineer');
+    $accountant->assignRole(Role::where('name', RolesEnum::ACCOUNTING_VIEWER->value.'-'.$organisation->id)->firstOrFail());
+    $engineer->assignRole(Role::where('name', RolesEnum::ORG_ADMIN->value.'-'.$organisation->id)->firstOrFail());
+    $engineer->givePermissionTo('financials');
+
+    $accountingView = "accounting.$organisation->id.view";
+    $orgAdmin       = "org-admin.$organisation->id";
+    expect($engineer->refresh()->authTo($accountingView))->toBeTrue()
+        ->and($engineer->authTo('financials'))->toBeTrue();
+
+    $engineer->assignRole(RolesEnum::QA->value);
+    $engineer->refresh();
+
+    expect($engineer->authTo($accountingView))->toBeFalse()
+        ->and($engineer->hasPermissionTo($accountingView))->toBeFalse()
+        ->and($engineer->authTo('financials'))->toBeFalse()
+        ->and($engineer->authTo([$accountingView, $orgAdmin]))->toBeTrue()
+        ->and($engineer->hasAnyPermission([$accountingView, $orgAdmin]))->toBeTrue();
+
+    $engineer->borrowPermissionsFrom($accountant);
+    expect($engineer->authTo($accountingView))->toBeFalse()
+        ->and($engineer->hasPermissionTo($accountingView))->toBeFalse()
+        ->and($accountant->authTo($accountingView))->toBeTrue();
+    $engineer->borrowPermissionsFrom(null);
+
+    actingAs($engineer);
+    get(route('grp.org.accounting.dashboard', $organisation->slug))->assertForbidden();
+})->depends('create guest');

@@ -87,7 +87,7 @@ struct LocationsMoveSheet: View {
                 InlineAlert(tone: .warn, title: warning)
             }
         } footer: {
-            AikuButton(primaryTitle) {
+            AikuButton(primaryTitle, icon: .next) {
                 if let targetCode {
                     onMove(targetCode, plannedQuantities, removeFromSource, !isSome)
                 }

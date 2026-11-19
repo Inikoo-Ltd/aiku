@@ -179,7 +179,7 @@ Route::middleware(
             Route::prefix('receivables')->name('receivables.')->group(function () {
                 Route::get('/', [App\Actions\Accounting\Receivables\UI\ShowReceivablesDashboard::class, 'inGroup'])->name('index');
                 foreach (App\Actions\Accounting\Receivables\UI\IndexReceivables::SECTIONS as $section) {
-                    Route::get("/$section", [App\Actions\Accounting\Receivables\UI\IndexReceivables::class, 'inGroup'])->name($section);
+                    Route::get('/'.str_replace('_', '-', $section), [App\Actions\Accounting\Receivables\UI\IndexReceivables::class, 'inGroup'])->name($section);
                 }
             });
         });

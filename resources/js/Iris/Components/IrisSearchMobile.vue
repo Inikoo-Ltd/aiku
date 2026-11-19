@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
+import AssistantIcon from "@/Iris/Components/AssistantIcon.vue"
 import { ref, computed, inject, watch, onBeforeMount, onMounted, onBeforeUnmount, defineAsyncComponent, nextTick } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { router, usePage } from "@inertiajs/vue3"
@@ -348,7 +348,7 @@ const askAssistant = () => {
                 </div>
                 <Button v-if="assistant" :label="buttonLabel" :title="askLabel" :aria-label="askLabel" size="xs" class="iris-search-ask-mobile shrink-0 rounded-full" @click="askAssistant">
                     <template #icon>
-                        <MerlinIcon mono />
+                        <AssistantIcon mono />
                     </template>
                 </Button>
                 <button
@@ -367,7 +367,7 @@ const askAssistant = () => {
                 class="shrink-0 flex items-center gap-3 border-b border-gray-200 px-4 py-3 text-left text-sm"
                 @click="askAssistant"
             >
-                <MerlinIcon themed />
+                <AssistantIcon themed />
                 <span class="min-w-0 flex-1">
                     <span class="font-semibold">{{ offerLabel }}</span>
                     <span class="line-clamp-2 text-gray-500">&ldquo;{{ inputValue.trim() }}&rdquo;</span>

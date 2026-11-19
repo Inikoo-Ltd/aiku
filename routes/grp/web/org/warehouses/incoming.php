@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder;
 use App\Actions\Fulfilment\UI\GoodsIn\UI\IndexWarehousePalletDeliveries;
 use App\Actions\Fulfilment\UI\GoodsIn\UI\ShowWarehousePalletDelivery;
 use App\Actions\GoodsIn\Return\UI\IndexReturns;
@@ -14,10 +15,13 @@ use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\ShowReturnDeliveryNote;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
+use App\Actions\UI\Incoming\IndexIncomingProductionOutput;
 use App\Actions\UI\Incoming\ShowIncomingHub;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowIncomingHub::class)->name('backlog');
+Route::get('/production-output', IndexIncomingProductionOutput::class)->name('production_output.index');
+Route::post('/production-output/put-away', PutAwayFinishedJobOrder::class)->name('production_output.put_away')->withoutScopedBindings();
 
 Route::get('stock-deliveries', [IndexStockDeliveries::class, 'inWarehouse'])->name('stock_deliveries.index');
 Route::get('stock-deliveries/{stockDelivery}', [ShowStockDelivery::class, 'inWarehouse'])->name('stock_deliveries.show');

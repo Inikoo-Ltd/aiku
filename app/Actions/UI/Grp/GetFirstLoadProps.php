@@ -28,6 +28,7 @@ use App\Models\DevOps\AppDeployment;
 use App\Models\Helpers\Language;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Notifications\WorkNotification;
 use Closure;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
@@ -118,7 +119,7 @@ class GetFirstLoadProps
     public function badges(User $user): array
     {
         return [
-            'notifications'              => NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection,
+            'notifications'              => NotificationsResource::collection($user->notifications()->whereNot('type', WorkNotification::class)->orderBy('created_at', 'desc')->limit(10)->get())->collection,
             'ticket_badges'              => GetTicketBadgeData::run($user),
             'task_badges'                => GetStaffTaskBadgeData::run($user),
             'development_badges'         => ProductDevelopmentWaitingOn::railBadge($user),

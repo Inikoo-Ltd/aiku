@@ -12,7 +12,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @property int $asset_id
- * @property mixed $asset_type*@property mixed $id
+ * @property mixed $asset_type
  * @property mixed $asset_slug
  * @property mixed $asset_code
  * @property mixed $asset_name

@@ -116,7 +116,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\Organisation|null $employedInOrganisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Employee> $employees
- * @property-read \App\Models\Notifications\FcmToken|null $fcmToken
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Notifications\FcmToken> $fcmTokens
  * @property-read string $timezone_name
  * @property-read \App\Models\SysAdmin\Group|null $group

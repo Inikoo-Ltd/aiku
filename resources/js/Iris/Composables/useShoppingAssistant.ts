@@ -13,6 +13,8 @@ export const shoppingAssistantQuestionKey = "shopping_assistant_question"
 export const shoppingAssistantConversationKey = "shopping_assistant_conversation"
 
 // ponytail: naive rule (product codes and product names are 1-3 words), replace with data from the search logs
+export const isLittleBirdName = (name?: string | null): boolean => (name ?? "").trim().toLowerCase() === "little bird"
+
 export const looksLikeANeed = (query: string): boolean => query.trim().split(/\s+/).length >= 4 || query.includes("?")
 
 export const useShoppingAssistant = () => {
@@ -58,5 +60,7 @@ export const useShoppingAssistant = () => {
 
     const buttonLabel = computed(() => assistant.value?.name || ctrans("Ask"))
 
-    return { assistant, isOfferedNow, askLabel, buttonLabel, offerLabel, looksLikeANeed, openAssistant }
+    const isLittleBird = computed(() => isLittleBirdName(assistant.value?.name))
+
+    return { assistant, isOfferedNow, askLabel, buttonLabel, offerLabel, looksLikeANeed, openAssistant, isLittleBird }
 }

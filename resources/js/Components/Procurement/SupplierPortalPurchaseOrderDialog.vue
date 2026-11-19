@@ -59,7 +59,7 @@ interface PurchaseOrderDetail {
 		labels: Record<"carton" | "sko" | "unit", string> | null
 	}
 	journey: {
-		stages: { key: string; label: string; description: string }[]
+		stages: { key: string; label: string; description: string; note: string | null }[]
 		ribbon: {
 			current_stage: string | null
 			current_label: string | null
@@ -86,6 +86,7 @@ interface PurchaseOrderDetail {
 		request_percentage: number
 		request_amount: number
 		recipients: { name: string; organisation: string }[]
+		agreement_missing: boolean
 	}
 	production: {
 		started_at: string | null
@@ -123,6 +124,13 @@ const props = defineProps<{
 }>()
 
 const purchaseOrderId = defineModel<number | null>({ required: true })
+
+const emit = defineEmits<{ agreement: [] }>()
+
+const openAgreement = () => {
+	purchaseOrderId.value = null
+	emit("agreement")
+}
 
 const locale = useLocaleStore()
 
@@ -392,6 +400,7 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 							<span class="truncate">{{ stage.label }}</span>
 						</div>
 						<div class="text-xs italic text-gray-400">{{ stage.description }}</div>
+						<p v-if="stage.note" class="mt-1 rounded border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-2 py-1 text-xs text-[var(--app-accent-deep)]">{{ stage.note }}</p>
 
 						<div v-if="segmentsByKey[stage.key]" class="mt-1 tabular-nums">
 							<template v-if="segmentsByKey[stage.key].state === 'done'">
@@ -454,9 +463,16 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 								<Button type="tertiary" size="xs" full :label="ctrans('No deposit needed')" @click="chooseDeposit('not_needed')">
 									<template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
 								</Button>
-								<Button type="tertiary" size="xs" full :label="ctrans('Request deposit :percentage%', { percentage: String(detail.deposit.request_percentage) })" @click="chooseDeposit('request')">
+								<Button type="tertiary" size="xs" full :label="ctrans('Request deposit :percentage%', { percentage: String(detail.deposit.request_percentage) })" :disabled="detail.deposit.agreement_missing" @click="chooseDeposit('request')">
 									<template #icon><FontAwesomeIcon icon="fal fa-hand-holding-usd" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
 								</Button>
+								<p v-if="detail.deposit.agreement_missing" class="flex items-start gap-1 text-amber-700">
+									<FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+									<span>
+										{{ ctrans("Please accept Supplier Agreement before submitting deposit request.") }}
+										<button type="button" class="font-medium text-[var(--app-accent)] underline hover:text-[var(--app-accent-strong)]" @click="openAgreement">{{ ctrans("Open Supplier Agreement") }}</button>
+									</span>
+								</p>
 							</div>
 						</div>
 

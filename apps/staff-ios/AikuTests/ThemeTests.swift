@@ -29,7 +29,7 @@ struct ThemeTests {
         #expect(palette.nav.hex == RGBA(0x4F46E5).mixed(0.30, with: RGBA(0x1F1F1F)).hex)
         #expect(palette.onNav.hex == "#FFFFFF")
         #expect(palette.link.hex == "#A5B4FC")
-        #expect(palette.dangerSoft.alpha == 0.14)
+        #expect(palette.dangerSoft.alpha == Double(0x24) / 255)
     }
 
     @Test func darkMonochromeThemesUseLightButtons() {

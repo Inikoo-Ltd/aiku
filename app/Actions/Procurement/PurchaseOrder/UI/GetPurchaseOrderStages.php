@@ -752,7 +752,7 @@ class GetPurchaseOrderStages
     {
         if ($deliveries->isEmpty()) {
             $state   = StockDeliveryStateEnum::tryFrom((string) $purchaseOrder->delivery_state?->value);
-            $reached = $state && in_array($state, self::RECEIVED_STATES);
+            $reached = ($state && in_array($state, self::RECEIVED_STATES)) || $purchaseOrder->closedAsOld() !== null;
 
             return [
                 'recorded'   => $reached,

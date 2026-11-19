@@ -10,6 +10,7 @@ import { computed, reactive, ref } from "vue"
 import axios from "axios"
 import Select from "primevue/select"
 import Dialog from "primevue/dialog"
+import Textarea from "primevue/textarea"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh, faCheck, faTimes, faArrowRight } from "@fal"
@@ -18,6 +19,8 @@ import Table from '@/Components/Table/Table.vue';
 import Icon from "@/Components/Icon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SupplierProductLabelsDialog from "@/Components/SupplyChain/SupplierProductLabelsDialog.vue"
+import SupplierProductsCopyActions from "@/Components/Procurement/SupplierProductsCopyActions.vue"
+import { CopyProducts, CopyTarget } from "@/types/supplier-products-copy"
 import { ctrans } from "@/Composables/useTrans"
 import {SupplierProduct} from "@/types/supplier-product";
 import { routeType } from "@/types/route"
@@ -54,7 +57,11 @@ const props = defineProps<{
         pdf_route: routeType
     }
     stateOptions?: { value: string, label: string }[] | null
+    copyProducts?: CopyProducts | null
+    copyTargets?: CopyTarget[]
 }>()
+
+const _table = ref<InstanceType<typeof Table> | null>(null)
 
 const selectedRows = ref<Record<string, boolean>>({})
 const selectedSupplierProductIds = computed(() => Object.keys(selectedRows.value).filter((id) => selectedRows.value[id]).map(Number))
@@ -64,8 +71,15 @@ const newStates = reactive<Record<number, string>>({})
 const savingStateIds = ref<number[]>([])
 const stateErrors = reactive<Record<number, string>>({})
 
+const DISCONTINUED_STATES = ["discontinuing", "discontinued"]
+const isDiscontinuedState = (state: string | null | undefined) => DISCONTINUED_STATES.includes(state ?? "")
+
+const reasonDialogProduct = ref<SupplierProductRow | null>(null)
+const discontinuedReason = ref("")
+
 const isBulkStateDialogOpen = ref(false)
 const bulkState = ref<string | null>(null)
+const bulkDiscontinuedReason = ref("")
 const isSavingBulkState = ref(false)
 const bulkStateError = ref<string | null>(null)
 const bulkStateSuccess = ref<string | null>(null)
@@ -96,6 +110,7 @@ const bulkStateEffects = computed<string[]>(() => {
 
 function openBulkStateDialog() {
     bulkState.value = null
+    bulkDiscontinuedReason.value = ""
     bulkStateError.value = null
     bulkStateSuccess.value = null
     isBulkStateDialogOpen.value = true
@@ -112,7 +127,25 @@ function rowStateOptions(supplierProduct: SupplierProductRow) {
     return (props.stateOptions ?? []).map((option) => ({ ...option, disabled: option.value === supplierProduct.state?.value }))
 }
 
-async function saveState(supplierProduct: SupplierProductRow) {
+function requestState(supplierProduct: SupplierProductRow) {
+    if (isDiscontinuedState(newStates[supplierProduct.id])) {
+        discontinuedReason.value = ""
+        reasonDialogProduct.value = supplierProduct
+        return
+    }
+
+    saveState(supplierProduct)
+}
+
+function confirmDiscontinuedReason() {
+    const supplierProduct = reasonDialogProduct.value
+    reasonDialogProduct.value = null
+    if (supplierProduct) {
+        saveState(supplierProduct, discontinuedReason.value)
+    }
+}
+
+async function saveState(supplierProduct: SupplierProductRow, reason?: string) {
     const state = newStates[supplierProduct.id]
     if (!state || state === supplierProduct.state?.value) {
         return
@@ -121,7 +154,10 @@ async function saveState(supplierProduct: SupplierProductRow) {
     savingStateIds.value.push(supplierProduct.id)
     delete stateErrors[supplierProduct.id]
     try {
-        await axios.patch(route("grp.models.supplier-product.update", [supplierProduct.id]), { state })
+        await axios.patch(route("grp.models.supplier-product.update", [supplierProduct.id]), {
+            state,
+            ...(isDiscontinuedState(state) ? { discontinued_reason: reason?.trim() || null } : {}),
+        })
         delete newStates[supplierProduct.id]
         router.reload({ only: ["data"] })
     } catch (error: any) {
@@ -143,6 +179,7 @@ async function saveBulkState() {
         const response = await axios.patch(route("grp.models.supplier-products.state.update"), {
             supplier_products: selectedSupplierProductIds.value,
             state: bulkState.value,
+            ...(isDiscontinuedState(bulkState.value) ? { discontinued_reason: bulkDiscontinuedReason.value.trim() || null } : {}),
         })
         bulkStateSuccess.value = ctrans(":count products set to :state", {
             count: response.data.updated,
@@ -204,9 +241,18 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
 
 <template>
     <div>
-        <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="Boolean(labelsPrint)" @onSelectRow="(rows) => selectedRows = { ...rows }">
-            <template v-if="labelsPrint" #add-on-button>
+        <Table ref="_table" :resource="data" :name="tab" class="mt-5" :isCheckBox="Boolean(labelsPrint || copyProducts)" @onSelectRow="(rows) => selectedRows = { ...rows }">
+            <template v-if="labelsPrint || copyProducts" #add-on-button>
+                <SupplierProductsCopyActions
+                    v-if="copyProducts"
+                    :copyProducts="copyProducts"
+                    :copyTargets="copyTargets"
+                    :selectedIds="selectedSupplierProductIds"
+                    idsParameter="supplier_products"
+                    @copied="_table?.clearSelection()"
+                />
                 <Button
+                    v-if="labelsPrint"
                     type="tertiary"
                     :label="ctrans('Print barcodes (:count)', { count: selectedSupplierProductIds.length })"
                     :disabled="!selectedSupplierProductIds.length"
@@ -272,7 +318,7 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
                             :label="ctrans('Set')"
                             :disabled="!newStates[supplier_product.id] || newStates[supplier_product.id] === supplier_product.state?.value"
                             :loading="savingStateIds.includes(supplier_product.id)"
-                            @click="saveState(supplier_product)"
+                            @click="requestState(supplier_product)"
                         />
                         <span v-if="stateErrors[supplier_product.id]" class="text-xs text-red-500">{{ stateErrors[supplier_product.id] }}</span>
                     </div>
@@ -315,6 +361,19 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
                         :placeholder="ctrans('Choose the new state')"
                         :disabled="isSavingBulkState"
                         @change="bulkStateError = null"
+                    />
+                </label>
+
+                <label v-if="isDiscontinuedState(bulkState)" class="block space-y-1">
+                    <span class="text-xs font-semibold text-gray-600">{{ ctrans("Reason") }}</span>
+                    <Textarea
+                        v-model="bulkDiscontinuedReason"
+                        rows="2"
+                        maxlength="500"
+                        autoResize
+                        class="w-full text-xs"
+                        :placeholder="ctrans('Optional, shown to the supplier on their portal')"
+                        :disabled="isSavingBulkState"
                     />
                 </label>
 
@@ -389,6 +448,42 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
                         :disabled="!bulkState || (bulkStateChangingCount === 0 && bulkStateHiddenCount <= 0)"
                         @click="saveBulkState"
                     >
+                        <template #icon>
+                            <FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                </div>
+            </template>
+        </Dialog>
+        <Dialog
+            :visible="Boolean(reasonDialogProduct)"
+            modal
+            :header="ctrans('Set :code to :state', { code: reasonDialogProduct?.code ?? '', state: stateOptions?.find((option) => option.value === newStates[reasonDialogProduct?.id ?? 0])?.label ?? '' })"
+            :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }"
+            :draggable="false"
+            @update:visible="(visible) => { if (!visible) reasonDialogProduct = null }"
+        >
+            <label class="block space-y-1 text-sm">
+                <span class="text-xs font-semibold text-gray-600">{{ ctrans("Reason") }}</span>
+                <Textarea
+                    v-model="discontinuedReason"
+                    rows="3"
+                    maxlength="500"
+                    autoResize
+                    autofocus
+                    class="w-full text-xs"
+                    :placeholder="ctrans('Optional, shown to the supplier on their portal')"
+                />
+            </label>
+
+            <template #footer>
+                <div class="flex w-full gap-2">
+                    <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="reasonDialogProduct = null">
+                        <template #icon>
+                            <FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                    <Button type="primary" full :label="ctrans('Set state')" @click="confirmDiscontinuedReason">
                         <template #icon>
                             <FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
                         </template>

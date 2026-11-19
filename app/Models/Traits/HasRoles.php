@@ -8,6 +8,8 @@
 
 namespace App\Models\Traits;
 
+use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\User;
@@ -52,6 +54,10 @@ trait HasRoles
 
     public function hasPermissionTo($permission, $guardName = null): bool
     {
+        if ($this->withoutAccountingWhenKeptOut([$permission]) === []) {
+            return false;
+        }
+
         return $this->permissionsLender
             ? $this->permissionsLender->hasPermissionTo($permission, $guardName)
             : $this->spatieHasPermissionTo($permission, $guardName);
@@ -87,6 +93,12 @@ trait HasRoles
      */
     public function authTo(string|array $permission): bool
     {
+        $permissions = $this->withoutAccountingWhenKeptOut((array) $permission);
+        if ($permissions === []) {
+            return false;
+        }
+        $permission = is_array($permission) ? $permissions : $permissions[0];
+
         if ($this->permissionsLender) {
             return $this->permissionsLender->authTo($permission);
         }
@@ -137,6 +149,29 @@ trait HasRoles
         }
 
         return false;
+    }
+
+    /**
+     * Help desk clerks and QA never read accounting or financials, whoever they borrow permissions from.
+     *
+     * @param  array<int, mixed>  $permissions
+     * @return array<int, mixed>
+     */
+    private function withoutAccountingWhenKeptOut(array $permissions): array
+    {
+        $isAccounting = fn (mixed $permission): bool => is_string($permission)
+            && ($permission === GroupPermissionsEnum::FINANCIALS->value || str_starts_with($permission, 'accounting.'));
+
+        if (!$this instanceof User || !collect($permissions)->contains($isAccounting)) {
+            return $permissions;
+        }
+
+        $this->bindPermissionsTeam();
+        if ($this->roles->whereIn('name', [RolesEnum::HELP_DESK_CLERK->value, RolesEnum::QA->value])->isEmpty()) {
+            return $permissions;
+        }
+
+        return array_values(array_filter($permissions, fn (mixed $permission): bool => !$isAccounting($permission)));
     }
 
     /**

@@ -15,12 +15,16 @@ struct GoodsInDestination: View {
             GoodsInBacklogView()
         case .stockDeliveries:
             GoodsInDeliveriesView()
+        case .stockDeliveriesIn(let state):
+            GoodsInDeliveriesView(initialScope: .state(state))
         case .stockDelivery(let reference), .scannedStockDelivery(_, let reference):
             GoodsInRemoteGate(isWaiting: GoodsInStore.shared.isWaitingForDelivery(reference), title: reference) {
                 GoodsInDeliveryView(reference: reference)
             }
         case .returns:
             GoodsInReturnsView()
+        case .returnsToProcess:
+            GoodsInReturnsView(scope: .toProcess)
         case .returnDetail(let reference), .returnID(_, let reference):
             GoodsInRemoteGate(isWaiting: GoodsInStore.shared.isWaitingForReturn(reference), title: reference) {
                 GoodsInReturnDetailView(reference: reference)
@@ -79,7 +83,7 @@ private struct GoodsInRemoteLoading: ViewModifier {
             switch route {
             case .backlog:
                 await store.loadHub(apiClient: apiClient)
-            case .stockDeliveries:
+            case .stockDeliveries, .stockDeliveriesIn:
                 break
             case .stockDelivery(let reference), .placeItem(let reference, _), .placeNewItem(let reference, _):
                 await store.loadDelivery(reference, apiClient: apiClient)
@@ -87,6 +91,8 @@ private struct GoodsInRemoteLoading: ViewModifier {
                 await store.loadDelivery(id: id, apiClient: apiClient)
             case .returns:
                 await store.reloadReturns(apiClient: apiClient)
+            case .returnsToProcess:
+                await store.reloadReturns(scope: .toProcess, apiClient: apiClient)
             case .returnDetail(let reference):
                 await store.loadReturn(reference, apiClient: apiClient)
             case .returnID(let id, _):

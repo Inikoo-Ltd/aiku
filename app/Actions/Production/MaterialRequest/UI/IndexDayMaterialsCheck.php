@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\MaterialRequest\UI;
 
+use App\Actions\Dispatching\ProductionMaterials\IndexProductionMaterialRequestItems;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrder\UI\IndexJobOrderPlan;
 use App\Actions\Production\MaterialRequest\GetDayMaterialsChecklist;
@@ -15,6 +16,7 @@ use App\Actions\Production\MaterialRequest\MaterialsCheckAuthorisation;
 use App\Actions\Production\Production\UI\ShowOperationsDashboard;
 use App\Enums\Production\ProductionMaterialRequest\ProductionMaterialRequestStateEnum;
 use App\Enums\Production\ProductionMaterialRequestItem\ProductionMaterialRequestItemStateEnum;
+use App\Enums\Production\ProductionMaterialRequestItem\ProductionMaterialRequestUnitEnum;
 use App\Http\Resources\Production\DayMaterialsChecklistResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Production\Production;
@@ -81,31 +83,44 @@ class IndexDayMaterialsCheck extends OrgAction
     }
 
     /**
+     * The requests sent in the last week, and any older one still waiting, newest first, so the
+     * factory sees what the warehouse brought, what it could not, and what is still to come.
+     *
      * @return array<int, array<string, mixed>>
      */
-    private function requestsOfTheDay(Production $production): array
+    private function recentRequests(Production $production): array
     {
         return ProductionMaterialRequest::where('production_id', $production->id)
-            ->whereDate('plan_date', $this->date)
             ->whereIn('state', [ProductionMaterialRequestStateEnum::SUBMITTED, ProductionMaterialRequestStateEnum::DELIVERED])
-            ->with(['items.rawMaterial', 'submittedBy'])
-            ->orderBy('submitted_at')
+            ->where(fn ($query) => $query
+                ->where('submitted_at', '>=', now()->subDays(7))
+                ->orWhere('state', ProductionMaterialRequestStateEnum::SUBMITTED))
+            ->with(['items.orgStock', 'items.dropPoint', 'items.deliveredBy', 'submittedBy'])
+            ->orderByDesc('submitted_at')
+            ->limit(40)
             ->get()
             ->map(fn (ProductionMaterialRequest $request) => [
                 'id'           => $request->id,
+                'source'       => $request->source->value,
+                'plan_date'    => $request->plan_date,
                 'state'        => $request->state->value,
                 'state_label'  => $request->state->labels()[$request->state->value],
                 'submitted_at' => $request->submitted_at,
-                'submitted_by' => $request->submittedBy?->contact_name,
+                'submitted_by' => $request->submittedBy?->contact_name ?? $request->submittedBy?->username,
                 'items'        => $request->items->map(fn (ProductionMaterialRequestItem $item) => [
                     'id'             => $item->id,
-                    'code'           => $item->rawMaterial->code,
-                    'boxes'          => $item->boxes,
-                    'box_units'      => (float) $item->box_units,
-                    'skos_to_bring'  => (float) $item->skos_to_bring,
+                    'code'           => $item->orgStock->code,
+                    'name'           => $item->orgStock->name,
+                    'bring'          => IndexProductionMaterialRequestItems::bringLabel($item),
+                    'drop_point'     => $item->dropPoint?->name,
+                    'is_urgent'      => $item->is_urgent,
+                    'note'           => $item->note,
                     'delivered_skos' => (float) $item->delivered_skos,
                     'state'          => $item->state->value,
                     'state_label'    => ProductionMaterialRequestItemStateEnum::labels()[$item->state->value],
+                    'short_reason'   => $item->short_reason,
+                    'done_by'        => $item->deliveredBy?->contact_name ?? $item->deliveredBy?->username,
+                    'done_at'        => $item->delivered_at ?? $item->short_at,
                 ])->all(),
             ])
             ->all();
@@ -139,7 +154,15 @@ class IndexDayMaterialsCheck extends OrgAction
                 'checker'                => $checking?->checker?->contact_name,
                 'operators'              => $canManage ? IndexJobOrderPlan::make()->getOperators($production) : [],
                 'jobs_without_materials' => GetDayMaterialsChecklist::make()->jobsWithoutMaterials($production, $this->date),
-                'requests'               => $this->requestsOfTheDay($production),
+                'requests'               => $this->recentRequests($production),
+                'can_request'            => (bool) $production->factory_location_id && MaterialsCheckAuthorisation::canRequestMaterials($request->user(), $production),
+                'can_manage_drop_points' => $canManage,
+                'drop_points'            => $production->dropPoints()->get(['id', 'name', 'position'])->map(fn ($dropPoint) => [
+                    'id'       => $dropPoint->id,
+                    'name'     => $dropPoint->name,
+                    'position' => $dropPoint->position,
+                ])->all(),
+                'units'                  => collect(ProductionMaterialRequestUnitEnum::labels())->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all(),
                 'data'                   => DayMaterialsChecklistResource::collection($lines),
             ]
         )->table($this->tableStructure());

@@ -20,12 +20,17 @@ import {
     faHandPaper,
     faCheckDouble,
     faChartLine,
+    faSeedling,
+    faShare,
+    faSpellCheck,
+    faIndustry,
 } from "@fal"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(
     faCog, faCheck, faBox, faTruck, faTruckLoading, faClipboardCheck,
     faClipboardList, faPalletAlt, faPaperPlane, faTruckContainer,
-    faTruckCouch, faExchange, faChair, faHandPaper, faCheckDouble, faChartLine
+    faTruckCouch, faExchange, faChair, faHandPaper, faCheckDouble, faChartLine, faSeedling, faShare, faSpellCheck, faIndustry
 )
 
 interface RouteTarget {
@@ -39,8 +44,19 @@ interface Affix {
     route_target?: RouteTarget
 }
 
+interface SeriesEntry {
+    value: number
+    icon: string
+    class?: string
+    tooltip?: string
+    route_target?: RouteTarget
+}
+
 interface MetricData {
     value: number | null
+    tooltip?: string
+    series?: SeriesEntry[]
+    total?: Affix
     route_target?: RouteTarget
     prefix?: Affix
     suffix?: Affix
@@ -65,7 +81,7 @@ interface DashboardData {
     dimension?: {
         key: string
         label: string
-        items: { key: string; label: string; short?: string }[]
+        items: { key: string; label: string; short?: string; highlight?: boolean; icon?: string }[]
     }
     metrics: Metric[]
     data: {
@@ -130,8 +146,10 @@ const isWeakValue = (value: number | null | undefined) => {
                 </div>
 
                 <div v-for="row in rows" :key="row.key"
-                    class="h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0 px-1 md:px-2">
+                    class="h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0 px-1 md:px-2"
+                    :class="row.highlight ? 'text-[var(--app-accent-strong)] font-semibold' : ''">
                     <span class="md:hidden">{{ row.short ?? row.label?.charAt(0).toUpperCase() }}</span>
+                    <FontAwesomeIcon v-if="row.icon" :icon="row.icon" class="mr-1.5 text-sm md:text-base" fixed-width aria-hidden="true" />
                     <span class="hidden md:inline text-center leading-tight">{{ row.label }}</span>
                 </div>
 
@@ -153,7 +171,18 @@ const isWeakValue = (value: number | null | undefined) => {
 
                 <template v-for="row in rows" :key="row.key">
                     <div
-                        class="h-9 md:h-11 flex items-center justify-center gap-2 text-xs md:text-lg border-b border-gray-100 last:border-b-0">
+                        class="h-9 md:h-11 flex items-center justify-center gap-2 text-xs md:text-lg border-b border-gray-100 last:border-b-0"
+                        :class="row.highlight ? 'text-[var(--app-accent-strong)] font-semibold' : ''">
+                        <template v-if="data.data[row.key]?.[metric.key]?.series">
+                            <component v-for="(entry, index) in data.data[row.key]?.[metric.key]?.series" :key="index" v-tooltip="entry.tooltip"
+                                :is="getSafeRoute(entry.route_target) ? Link : 'span'"
+                                :href="getSafeRoute(entry.route_target) ?? undefined"
+                                class="inline-flex items-center gap-1 tabular-nums"
+                                :class="[isWeakValue(entry.value) ? 'opacity-40' : '', getSafeRoute(entry.route_target) ? 'hover:underline cursor-pointer' : '']">
+                                <FontAwesomeIcon :icon="entry.icon" :class="entry.class" class="text-sm" fixed-width aria-hidden="true" />{{ entry.value }}
+                            </component>
+                        </template>
+                        <template v-else>
                         <template v-if="data.data[row.key]?.[metric.key]?.prefix">
                             <component
                                 :is="getSafeRoute(data.data[row.key]?.[metric.key]?.prefix?.route_target) ? Link : 'span'"
@@ -170,6 +199,7 @@ const isWeakValue = (value: number | null | undefined) => {
                         <component
                             :is="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ? Link : 'span'"
                             :href="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ?? undefined"
+                            v-tooltip="data.data[row.key]?.[metric.key]?.tooltip"
                             :class="[
                                 isWeakValue(data.data[row.key]?.[metric.key]?.value) ? 'opacity-40' : '',
                                 getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
@@ -187,6 +217,16 @@ const isWeakValue = (value: number | null | undefined) => {
                                     getSafeRoute(data.data[row.key]?.[metric.key]?.suffix?.route_target) ? 'hover:opacity-100 hover:underline cursor-pointer' : ''
                                 ]"
                             >{{ data.data[row.key]?.[metric.key]?.suffix?.value }}</component>
+                        </template>
+                        <template v-if="data.data[row.key]?.[metric.key]?.total">
+                            <span class="opacity-60">=</span>
+                            <component
+                                :is="getSafeRoute(data.data[row.key]?.[metric.key]?.total?.route_target) ? Link : 'span'"
+                                :href="getSafeRoute(data.data[row.key]?.[metric.key]?.total?.route_target) ?? undefined"
+                                v-tooltip="data.data[row.key]?.[metric.key]?.total?.tooltip"
+                                :class="['tabular-nums', getSafeRoute(data.data[row.key]?.[metric.key]?.total?.route_target) ? 'hover:underline cursor-pointer' : '']"
+                            >{{ data.data[row.key]?.[metric.key]?.total?.value }}</component>
+                        </template>
                         </template>
                     </div>
                 </template>
@@ -240,6 +280,7 @@ const isWeakValue = (value: number | null | undefined) => {
                     :href="getSafeRoute(data.row_totals[row.key]?.route_target) ?? undefined"
                     :class="[
                         'h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0',
+                        row.highlight ? 'text-[var(--app-accent-strong)] font-semibold' : '',
                         isWeakValue(data.row_totals[row.key]?.value) ? 'opacity-40' : '',
                         getSafeRoute(data.row_totals[row.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
                     ]">

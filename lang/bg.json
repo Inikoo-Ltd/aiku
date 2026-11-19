@@ -9529,5 +9529,21 @@
     ":name is casting a spell…": ":name прави заклинание…",
     ":name is gazing into his crystal ball…": ":name се взира в кристалната си топка…",
     "This one needs a little more thought. Nearly there…": "Това изисква малко повече мисъл. Почти готово…",
-    "Usually takes about :seconds seconds": "Обикновено отнема около :seconds секунди"
+    "Usually takes about :seconds seconds": "Обикновено отнема около :seconds секунди",
+    "Our sister shop :website sells these: :link": "Нашият партньорски магазин :website предлага тези продукти: :link",
+    ":reference assigned to you": ":reference ви е възложен",
+    ":actor assigned :reference to you.": ":actor ви възложи :reference.",
+    ":reference taken over": ":reference е поет от друг",
+    ":actor has taken over :reference, which was assigned to you.": ":actor пое :reference, който ви беше възложен.",
+    "Removed from :reference": "Премахнати сте от :reference",
+    ":actor removed you from :reference.": ":actor ви премахна от :reference.",
+    ":actor cancelled :reference, which is assigned to you.": ":actor отмени :reference, който ви е възложен.",
+    ":reference can go ahead": ":reference може да продължи",
+    ":reference is no longer waiting and can be done again.": ":reference вече не чака и може да продължи.",
+    ":reference was changed": ":reference е променен",
+    "Heads up: :reference, assigned to you, was changed by :actor.": "Внимание: :reference, възложен на вас, е променен от :actor.",
+    ":actor has updated :reference, which is assigned to you.": ":actor актуализира :reference, който ви е възложен.",
+    "Operational": "В експлоатация",
+    ":reference cancelled": ":reference е отменен",
+    "The customer": "Клиентът"
 }

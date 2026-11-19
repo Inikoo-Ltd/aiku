@@ -11,10 +11,12 @@ import io.aiku.droid.data.api.WarehouseAbilities
 import io.aiku.droid.data.api.WarehouseAccess
 import io.aiku.droid.data.api.WarehouseApi
 import io.aiku.droid.data.api.WarehousesResult
+import io.aiku.droid.data.session.RecentSearches
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.data.session.StaffSession
 import io.aiku.droid.data.session.WarehouseCache
 import io.aiku.droid.data.settings.WarehouseSelection
+import io.aiku.droid.push.PushSignOut
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,6 +30,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -39,6 +42,9 @@ class WarehousesViewModelTest {
     private val sessions = InMemorySessions(StaffSession(token = "7|abc", userId = 42, username = "picker", displayName = "Ana"))
     private val selection = InMemorySelection()
     private val cache = InMemoryCache()
+    private val signOutCalls = mutableListOf<String>()
+    private val push = RecordingPushSignOut(signOutCalls)
+    private val recentSearches = InMemoryRecentSearches()
 
     @Before
     fun useTestMainDispatcher() {
@@ -93,7 +99,7 @@ class WarehousesViewModelTest {
     @Test
     fun `signing in again after an expired session loads the warehouses of the new login`() {
         val api = FakeWarehouseApi(WarehousesResult.SessionExpired)
-        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache, push, recentSearches)
 
         viewModel.signInAgain()
         assertEquals(WarehousesUiState.Loading, viewModel.state.value)
@@ -148,6 +154,25 @@ class WarehousesViewModelTest {
     }
 
     @Test
+    fun `signing out deletes this device's push token before the session token is revoked`() {
+        val viewModel = WarehousesViewModel(FakeWarehouseApi(WarehousesResult.Loaded(listOf(main))), FakeAuthApi(signOutCalls), sessions, selection, cache, push, recentSearches)
+
+        viewModel.signOut()
+
+        assertEquals(listOf("unregister 7|abc", "logout 7|abc"), signOutCalls)
+    }
+
+    @Test
+    fun `signing out clears the recent searches`() {
+        val viewModel = viewModelReturning(WarehousesResult.Loaded(listOf(main)))
+        recentSearches.remember(42, 1, "AR24811")
+
+        viewModel.signOut()
+
+        assertTrue(recentSearches.read(42, 1).isEmpty())
+    }
+
+    @Test
     fun `an expired session clears the cache`() {
         cache.save(42, listOf(main))
 
@@ -159,7 +184,7 @@ class WarehousesViewModelTest {
     @Test
     fun `returning to the foreground refreshes quietly, dropping a lost warehouse and adding a new one`() {
         val api = FakeWarehouseApi(WarehousesResult.Loaded(listOf(main, second)))
-        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache, push, recentSearches)
         val third = warehouse(3, "Third Warehouse")
         val gate = CompletableDeferred<Unit>()
         api.gate = gate
@@ -182,7 +207,7 @@ class WarehousesViewModelTest {
     fun `losing the chosen warehouse on a refresh falls back to the first one left`() {
         selection.selectedWarehouseId = 2
         val api = FakeWarehouseApi(WarehousesResult.Loaded(listOf(main, second)))
-        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache, push, recentSearches)
 
         api.result = WarehousesResult.Loaded(listOf(main))
         viewModel.refresh()
@@ -194,7 +219,7 @@ class WarehousesViewModelTest {
     @Test
     fun `a refresh that fails keeps showing the current warehouses`() {
         val api = FakeWarehouseApi(WarehousesResult.Loaded(listOf(main, second)))
-        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache, push, recentSearches)
 
         api.result = WarehousesResult.Unreachable
         viewModel.refresh()
@@ -208,7 +233,7 @@ class WarehousesViewModelTest {
     @Test
     fun `a refresh that finds the session expired asks to sign in again and clears the cache`() {
         val api = FakeWarehouseApi(WarehousesResult.Loaded(listOf(main)))
-        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache, push, recentSearches)
 
         api.result = WarehousesResult.SessionExpired
         viewModel.refresh()
@@ -220,7 +245,7 @@ class WarehousesViewModelTest {
     @Test
     fun `returning to the foreground from the offline screen loads again`() {
         val api = FakeWarehouseApi(WarehousesResult.Unreachable)
-        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache, push, recentSearches)
         assertEquals(WarehousesUiState.Offline, viewModel.state.value)
 
         api.result = WarehousesResult.Loaded(listOf(main))
@@ -232,7 +257,7 @@ class WarehousesViewModelTest {
     @Test
     fun `a user who gains a warehouse on a refresh leaves the no access state`() {
         val api = FakeWarehouseApi(WarehousesResult.Loaded(emptyList()))
-        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache, push, recentSearches)
 
         api.result = WarehousesResult.Loaded(listOf(second))
         viewModel.refresh()
@@ -241,7 +266,7 @@ class WarehousesViewModelTest {
     }
 
     private fun viewModelReturning(result: WarehousesResult) =
-        WarehousesViewModel(FakeWarehouseApi(result), FakeAuthApi(), sessions, selection, cache)
+        WarehousesViewModel(FakeWarehouseApi(result), FakeAuthApi(), sessions, selection, cache, push, recentSearches)
 
     private fun warehouse(id: Long, name: String) = WarehouseAccess(
         id = id,
@@ -264,9 +289,17 @@ class WarehousesViewModelTest {
         }
     }
 
-    private class FakeAuthApi : AuthApi {
+    private class RecordingPushSignOut(private val calls: MutableList<String>) : PushSignOut {
+        override suspend fun unregister(sessionToken: String) {
+            calls += "unregister $sessionToken"
+        }
+    }
+
+    private class FakeAuthApi(private val calls: MutableList<String> = mutableListOf()) : AuthApi {
         override suspend fun login(credentials: LoginCredentials): LoginResult = LoginResult.Unreachable
-        override suspend fun logout(token: String) = Unit
+        override suspend fun logout(token: String) {
+            calls += "logout $token"
+        }
         override suspend fun requestPasswordResetCode(login: String): PasswordResult = PasswordResult.Unreachable
         override suspend fun resetPassword(reset: PasswordReset): PasswordResult = PasswordResult.Unreachable
         override suspend fun changePassword(token: String, change: PasswordChange): PasswordResult = PasswordResult.Unreachable
@@ -285,6 +318,22 @@ class WarehousesViewModelTest {
 
     private class InMemorySelection : WarehouseSelection {
         override var selectedWarehouseId: Long? = null
+    }
+
+    private class InMemoryRecentSearches : RecentSearches {
+        private val stored = mutableMapOf<Pair<Long, Long>, List<String>>()
+
+        override fun read(userId: Long, warehouseId: Long): List<String> = stored[userId to warehouseId].orEmpty()
+
+        override fun remember(userId: Long, warehouseId: Long, query: String): List<String> {
+            val recent = listOf(query) + read(userId, warehouseId)
+            stored[userId to warehouseId] = recent
+            return recent
+        }
+
+        override fun clear() {
+            stored.clear()
+        }
     }
 
     private class InMemoryCache : WarehouseCache {

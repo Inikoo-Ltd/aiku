@@ -245,11 +245,23 @@
         </td>
         <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;text-align: right">
             @php($isRefund = $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::REFUND)
+            @php($incoterms ??= null)
+            @php($netWeight ??= null)
             @if(!$isRefund && $deliveryNote && $deliveryNote->getNumberParcels())
                 <div style="text-align: right">{{__('Boxes')}}: <b>{{ $deliveryNote->getNumberParcels() }}</b></div>
             @endif
-            @if(!$isRefund && $deliveryNote)
-                <div style="text-align: right">{{__('Weight')}}: <b>{{ $deliveryNote->getBestWeight() }}</b></div>
+            @if(!$isRefund && $incoterms)
+                <div style="text-align: right">{{__('Incoterms')}}: <b>{{ $incoterms }}</b></div>
+            @endif
+            @if(!$isRefund && ($netWeight || $deliveryNote))
+                <div style="text-align: right">
+                    @if($netWeight)
+                        {{__('Net Weight')}}: <b>{{ $netWeight }}</b>
+                    @endif
+                    @if($deliveryNote)
+                        {{ $netWeight ? __('Gross Weight') : __('Weight') }}: <b>{{ $deliveryNote->getBestWeight() }}</b>
+                    @endif
+                </div>
             @endif
             @if(!$isRefund && $show_dispatch_totals && $dispatch_total_skos !== null)
                 <div style="text-align: right">{{__('Total SKO')}}: <b>{{ number_format($dispatch_total_skos, 0) }}</b></div>

@@ -6,7 +6,6 @@ struct DispatchPackView: View {
     @Environment(ToastCenter.self) private var toasts
     @State private var store: PickingSessionStore
     @State private var isScanning = false
-    @State private var isReporting = false
     @State private var cameraFeedback: (text: String, tone: Tone)?
 
     init(sessionID: Int) {
@@ -50,9 +49,7 @@ struct DispatchPackView: View {
         let nextNote = item.nextNoteToPack
         return AppScreen(
             title: "Pack by scan",
-            kicker: [item.reference, item.stateTitle, "packing \(PickingSessionFormat.percent(item.packingPercentage))%"].joined(separator: PickingSessionFormat.separator),
-            actions: [HeaderAction(.warning, label: "Report a problem") { isReporting = true }]
-        ) {
+            kicker: [item.reference, item.stateTitle, "packing \(PickingSessionFormat.percent(item.packingPercentage))%"].joined(separator: PickingSessionFormat.separator)) {
             if let problem = store.loadError {
                 DispatchLoadProblem(title: "Couldn’t refresh this picking session", message: problem) { await store.load() }
             }
@@ -102,9 +99,6 @@ struct DispatchPackView: View {
             DispatchNote("The session finishes packing by itself when every delivery note is packed, and the trolleys are freed.")
         }
         .screenRefreshable { await store.load() }
-        .aikuSheet(isPresented: $isReporting) {
-            DispatchReportProblemSheet(onClose: { isReporting = false })
-        }
         .fullScreenCover(isPresented: $isScanning) {
             DispatchCameraScan(
                 kicker: item.reference,

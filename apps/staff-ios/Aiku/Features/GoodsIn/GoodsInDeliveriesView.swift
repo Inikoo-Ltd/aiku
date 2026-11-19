@@ -1,9 +1,11 @@
 import SwiftUI
 
 struct GoodsInDeliveriesView: View {
+    var initialScope: GoodsInListScope?
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
     @State private var isFiltering = false
+    @State private var hasAppliedInitialScope = false
     @Environment(\.apiClient) private var apiClient
     @Environment(ToastCenter.self) private var toasts
     private let store = GoodsInStore.shared
@@ -60,6 +62,7 @@ struct GoodsInDeliveriesView: View {
             HelperText("References follow the organisation format (SD + organisation + number). Suppliers and agents can have their own.")
                 .padding(.horizontal, 4)
         }
+        .onAppear { applyInitialScope() }
         .task(id: GoodsInListTaskKey(request: store.currentListRequest, isRemote: store.isRemote, warehouseID: store.warehouseID)) {
             guard store.isRemote else { return }
             await store.reloadList(apiClient: apiClient)
@@ -75,6 +78,13 @@ struct GoodsInDeliveriesView: View {
                 isFiltering = false
             }
         }
+    }
+
+    private func applyInitialScope() {
+        guard !hasAppliedInitialScope else { return }
+        hasAppliedInitialScope = true
+        guard let initialScope else { return }
+        store.showScope(initialScope)
     }
 
     private func openScanned(_ code: String) async {

@@ -43,6 +43,7 @@ class SeedShopPermissions
                         'name'       => $permissionName,
                         'scope_type' => 'Shop',
                         'scope_id'   => $shop->id,
+                        'guard_name' => 'web',
                     ]
                 );
             } catch (Exception) {
@@ -69,6 +70,7 @@ class SeedShopPermissions
                             'scope_type' => 'Shop',
                             'scope_id'   => $shop->id,
                             'group_id'   => $shop->group_id,
+                            'guard_name' => 'web',
                         ]
                     );
                 }

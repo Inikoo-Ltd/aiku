@@ -7,8 +7,6 @@ struct FulfilmentDestination: View {
         switch route {
         case .deliveries:
             FulfilmentDeliveriesView()
-        case .delivery(let reference):
-            FulfilmentDeliveryView(reference: reference)
         case .palletDelivery(let id, let reference):
             FulfilmentPalletDeliveryView(deliveryID: id, reference: reference)
         case .pallets:
@@ -23,10 +21,10 @@ struct FulfilmentDestination: View {
             FulfilmentAuditView(auditID: id, reference: reference)
         case .returns:
             FulfilmentReturnsView()
-        case .returnDetail(let reference):
-            FulfilmentReturnView(reference: reference)
-        case .returnShipment(let reference):
-            FulfilmentReturnShipmentView(reference: reference)
+        case .palletReturn(let id, let reference):
+            FulfilmentReturnView(returnID: id, reference: reference)
+        case .palletReturnShipment(let id, let reference):
+            FulfilmentReturnShipmentView(returnID: id, reference: reference)
         }
     }
 }

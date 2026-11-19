@@ -67,6 +67,7 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
         $pickingLocations = DB::table('location_org_stocks')
             ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
             ->where('org_stock_id', $this->org_stock_id)
+            ->whereRaw('location_org_stocks.warehouse_id = (SELECT delivery_notes.warehouse_id FROM delivery_notes JOIN delivery_note_items ON delivery_note_items.delivery_note_id = delivery_notes.id WHERE delivery_note_items.id = ?)', [$this->id])
             ->select([
                 'location_org_stocks.id',
                 'location_org_stocks.quantity',
@@ -78,7 +79,7 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
             ->selectRaw('\''.$packedIn.'\' as org_stock_packed_in')
             ->selectRaw(
                 '(
-        SELECT concat(sum(quantity),\';\',string_agg(id::char,\',\')) FROM pickings
+        SELECT concat(sum(quantity),\';\') FROM pickings
         WHERE pickings.location_id = location_org_stocks.location_id
         AND pickings.org_stock_id = location_org_stocks.org_stock_id
         AND pickings.type = ? AND pickings.delivery_note_item_id = ?

@@ -1,10 +1,12 @@
 package io.aiku.droid.ui.inventory
 
+import io.aiku.droid.R
 import io.aiku.droid.data.api.FamilyPage
 import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.OrgStockFamily
 import io.aiku.droid.data.api.OrgStockPage
 import io.aiku.droid.data.api.OrgStockRow
+import io.aiku.droid.data.api.PlaceRef
 import io.aiku.droid.data.api.ScanLookup
 import io.aiku.droid.data.api.ScanMatch
 import io.aiku.droid.data.api.ScannedLocation
@@ -80,10 +82,62 @@ class SkosViewModelTest {
     }
 
     @Test
+    fun `two locations of one negative SKO stay two rows across pages`() {
+        fun negativeRow(locationOrgStockId: Long, locationId: Long) =
+            OrgStockRow(id = 77, code = "AWO-12", locationOrgStockId = locationOrgStockId, location = PlaceRef(id = locationId, code = "A-$locationId"), locationQuantity = -4.0)
+        api.skoPages = { query ->
+            val row = if (query.page == 1) negativeRow(5501, 220) else negativeRow(5502, 221)
+            GoodsOutResult.Loaded(OrgStockPage(listOf(row), meta(query.page, 2, 2), counts.copy(negative = 2)))
+        }
+        val skos = viewModel(bucket = SkoBucket.Negative)
+        skos.onStart()
+
+        skos.loadMore()
+
+        val rows = skos.state.value.list.rows
+        assertEquals(listOf(77L, 77L), rows.map { it.id })
+        assertEquals(listOf(5501L, 5502L), rows.map { it.locationOrgStockId })
+        assertEquals(2, skos.state.value.list.total)
+        assertEquals(2, skos.state.value.counts?.count(SkoBucket.Negative))
+    }
+
+    @Test
+    fun `an SKO without a location that comes back on the next page is shown once`() {
+        api.skoPages = { query ->
+            val ids = if (query.page == 1) 1L..2L else 2L..3L
+            GoodsOutResult.Loaded(OrgStockPage(rows(ids), meta(query.page, 2, 3), counts))
+        }
+        val skos = viewModel()
+        skos.onStart()
+
+        skos.loadMore()
+
+        assertEquals(listOf(1L, 2L, 3L), skos.state.value.list.rows.map { it.id })
+    }
+
+    @Test
     fun `the abnormalities tile opens the list on that bucket`() {
         viewModel(bucket = SkoBucket.Abnormality).onStart()
 
         assertEquals(SkoBucket.Abnormality, api.skoQueries.single().bucket)
+    }
+
+    @Test
+    fun `the dashboard's below minimum and negative tiles open the list on those buckets`() {
+        viewModel(bucket = SkoBucket.BelowMinimum).onStart()
+        viewModel(bucket = SkoBucket.Negative).onStart()
+
+        assertEquals(listOf(SkoBucket.BelowMinimum, SkoBucket.Negative), api.skoQueries.map { it.bucket })
+    }
+
+    @Test
+    fun `the list title names the dashboard bucket, which has no chip of its own`() {
+        assertEquals(R.string.inventory_title_below_minimum, skoListTitle(SkoBucket.BelowMinimum))
+        assertEquals(R.string.inventory_title_negative, skoListTitle(SkoBucket.Negative))
+        assertEquals(R.string.section_skos, skoListTitle(SkoBucket.Current))
+        assertEquals(R.string.section_skos, skoListTitle(SkoBucket.Abnormality))
+        assertEquals(listOf(SkoBucket.Current, SkoBucket.Discontinued, SkoBucket.Abnormality, SkoBucket.All), skoChipBuckets)
+        assertEquals(-1, skoChipBuckets.indexOf(SkoBucket.Negative))
     }
 
     @Test

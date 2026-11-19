@@ -6,12 +6,12 @@ import Checkbox from "primevue/checkbox"
 import Select from "primevue/select"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faPaperPlane, faHeadSideBrain, faCheck, faShare, faMinus, faWindowMaximize, faGripVertical } from "@fal"
+import { faTimes, faPaperPlane, faHeadSideBrain, faCheck, faShare, faGripVertical } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { assistantQuestionColleagues, forgetAssistantQuestion, assistantQuestionsOffset, moveAssistantQuestions, keepAssistantQuestionsPlace } from "@/Composables/useAssistantQuestions"
 
-library.add(faTimes, faPaperPlane, faHeadSideBrain, faCheck, faShare, faMinus, faWindowMaximize, faGripVertical)
+library.add(faTimes, faPaperPlane, faHeadSideBrain, faCheck, faShare, faGripVertical)
 
 export type AssistantQuestion = {
     task: string
@@ -43,8 +43,6 @@ const errorMessage = ref("")
 const isPassing = ref(false)
 const colleagues = ref<{ id: number, name: string }[]>([])
 const colleagueId = ref<number | null>(null)
-
-const isMinimised = ref(false)
 
 const startMoving = (event: PointerEvent) => {
     if ((event.target as HTMLElement).closest("button")) {
@@ -110,22 +108,14 @@ const pass = () => {
 
 <template>
     <div class="px-2 pt-1 pb-2">
-        <div role="dialog" :aria-label="ctrans('Question from a customer')" class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-[0_2px_6px_-1px_rgba(15,23,42,0.12)]">
+        <div role="dialog" :aria-label="ctrans('Question from a customer')" class="flex max-h-[min(34rem,70vh)] flex-col rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-[0_2px_6px_-1px_rgba(15,23,42,0.12)]">
             <div class="-mx-1 -mt-1 flex cursor-move touch-none select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-gray-50" :title="ctrans('Drag to move')" @pointerdown="startMoving">
                 <FontAwesomeIcon icon="fal fa-grip-vertical" class="text-xs text-gray-400" fixed-width aria-hidden="true" />
                 <div class="min-w-0 flex-1 truncate text-xs text-gray-500">{{ ctrans("Merlin needs a guru for :customer (:shop)", { customer: question.customer, shop: question.shop }) }}</div>
-                <button type="button" class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700" :title="isMinimised ? ctrans('Show the question') : ctrans('Minimise')" :aria-label="isMinimised ? ctrans('Show the question') : ctrans('Minimise')" @click="isMinimised = !isMinimised">
-                    <FontAwesomeIcon :icon="isMinimised ? 'fal fa-window-maximize' : 'fal fa-minus'" class="text-xs" fixed-width aria-hidden="true" />
-                </button>
-                <button type="button" class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700" :title="ctrans('Close for now: the question stays in your tasks and comes back when you reload aiku')" :aria-label="ctrans('Close for now')" @click="done">
-                    <FontAwesomeIcon icon="fal fa-times" class="text-xs" fixed-width aria-hidden="true" />
-                </button>
             </div>
 
-            <div v-if="isMinimised" class="mt-0.5 truncate text-sm font-semibold text-gray-900">{{ question.question }}</div>
-
-            <template v-else>
-                <div class="mt-1 flex items-start gap-x-3">
+            <div class="mt-1 min-h-0 flex-1 overflow-y-auto">
+                <div class="flex items-start gap-x-3">
                     <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm text-violet-600">
                         <FontAwesomeIcon icon="fal fa-head-side-brain" fixed-width aria-hidden="true" />
                     </div>
@@ -157,7 +147,9 @@ const pass = () => {
                     </Checkbox>
                     {{ ctrans("Merlin may give this answer to every customer of the shop") }}
                 </label>
+            </div>
 
+            <div class="shrink-0">
                 <div v-if="isPassing" class="mt-2 flex items-center gap-2">
                     <Select
                         v-model="colleagueId"
@@ -198,7 +190,7 @@ const pass = () => {
                         </template>
                     </Button>
                 </div>
-            </template>
+            </div>
         </div>
     </div>
 </template>

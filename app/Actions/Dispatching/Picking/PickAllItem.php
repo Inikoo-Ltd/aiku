@@ -38,11 +38,7 @@ class PickAllItem extends OrgAction
         $deliveryNoteItem->update(['locked_at' => now()]);
 
         try {
-            $toPickQuantity = $deliveryNoteItem->quantity_required
-                - $deliveryNoteItem->quantity_picked
-                - $deliveryNoteItem->quantity_waiting_warehouse
-                - $deliveryNoteItem->quantity_waiting_crm;
-
+            $toPickQuantity = StoreNotPickPicking::make()->outstandingQuantity($deliveryNoteItem);
 
             $locationOrgStock = LocationOrgStock::find($modelData['location_org_stock_id']);
 

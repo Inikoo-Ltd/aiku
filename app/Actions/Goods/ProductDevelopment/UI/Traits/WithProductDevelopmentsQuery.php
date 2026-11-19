@@ -37,7 +37,13 @@ trait WithProductDevelopmentsQuery
 
     public function productDevelopmentsQuery(Group $group, User $user): QueryBuilder
     {
-        return QueryBuilder::for($this->baseProductDevelopmentsQuery($group, $user))
+        $query = $this->baseProductDevelopmentsQuery($group, $user);
+
+        if (blank(request()->input('filter.status'))) {
+            $query->where('product_developments.status', '!=', ProductDevelopmentStatusEnum::CANCELLED->value);
+        }
+
+        return QueryBuilder::for($query)
             ->select([
                 'product_developments.id',
                 'product_developments.slug',
@@ -87,9 +93,9 @@ trait WithProductDevelopmentsQuery
             ->all();
 
         return [
-            'all'     => $base->clone()->count(),
+            'all'     => $base->clone()->where('product_developments.status', '!=', ProductDevelopmentStatusEnum::CANCELLED->value)->count(),
             'status'  => collect(ProductDevelopmentStatusEnum::values())->mapWithKeys(fn (string $status) => [$status => (int) ($statusCounts[$status] ?? 0)])->all(),
-            'missing' => $base->clone()->where('product_development_stats.number_required_missing', '>', 0)->count(),
+            'missing' => $base->clone()->where('product_developments.status', '!=', ProductDevelopmentStatusEnum::CANCELLED->value)->where('product_development_stats.number_required_missing', '>', 0)->count(),
             'overdue' => $base->clone()->whereRaw('('.$this->isOverdueSql().')')->count(),
         ];
     }

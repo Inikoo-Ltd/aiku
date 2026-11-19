@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStockHasOrgSupplierProduct;
 
 use App\Actions\OrgAction;
+use App\Actions\SupplyChain\SupplierProduct\SyncSupplierProductsDiscontinuingFromSkos;
 use App\Actions\SupplyChain\SupplierProduct\SyncSupplierProductUnitsPerPackFromSko;
 use App\Models\Goods\StockHasSupplierProduct;
 use App\Models\Inventory\OrgStock;
@@ -43,6 +44,7 @@ class AttachOrgSupplierProductToOrgStock extends OrgAction
         );
         if ($stockHasSupplierProduct->wasRecentlyCreated) {
             SyncSupplierProductUnitsPerPackFromSko::run($orgSupplierProduct->supplierProduct);
+            SyncSupplierProductsDiscontinuingFromSkos::dispatch($orgStock->stock_id);
         }
 
         $isFirstSupplier = !OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->exists();

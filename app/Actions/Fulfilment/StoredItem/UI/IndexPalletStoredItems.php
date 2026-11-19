@@ -80,6 +80,10 @@ class IndexPalletStoredItems extends OrgAction
             $queryBuilder->where('pallet_stored_items.pallet_id', $parent->id);
         }
 
+        if ($parent instanceof Warehouse) {
+            $queryBuilder->where('pallets.warehouse_id', $parent->id);
+        }
+
         $queryBuilder
             ->select([
                 'pallet_stored_items.id',

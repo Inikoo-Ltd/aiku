@@ -161,12 +161,13 @@ test('mobile returns list filters by state and reference, newest first, with the
         ->assertJsonPath('data.0.number_handled', 0)
         ->assertJsonPath('data.0.handler', ['id' => $this->user->id, 'name' => $this->user->contact_name ?: $this->user->username])
         ->assertJsonPath('counts', [
-            'received'  => (int) $stats->number_return_delivery_notes_state_received,
-            'returning' => (int) $stats->number_return_delivery_notes_state_returning,
-            'returned'  => (int) $stats->number_return_delivery_notes_state_returned,
-            'done'      => (int) $stats->number_return_delivery_notes_state_done,
-            'cancelled' => (int) $stats->number_return_delivery_notes_state_cancelled,
-            'all'       => (int) $stats->number_return_delivery_notes,
+            'received'   => (int) $stats->number_return_delivery_notes_state_received,
+            'returning'  => (int) $stats->number_return_delivery_notes_state_returning,
+            'returned'   => (int) $stats->number_return_delivery_notes_state_returned,
+            'done'       => (int) $stats->number_return_delivery_notes_state_done,
+            'cancelled'  => (int) $stats->number_return_delivery_notes_state_cancelled,
+            'to_process' => (int) $stats->number_return_delivery_notes_state_received + (int) $stats->number_return_delivery_notes_state_returning,
+            'all'        => (int) $stats->number_return_delivery_notes,
         ]);
 
     getGoodsOut('grp.api.mobile.warehouses.returns', $this->warehouse->id, ['state' => 'processed', 'sort' => 'reference'])

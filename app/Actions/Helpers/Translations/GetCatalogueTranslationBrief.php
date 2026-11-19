@@ -42,6 +42,7 @@ You translate catalogue texts (product names, descriptions, offers, tags) for th
 Write as a native $language e-commerce copywriter would for shoppers in that market: natural wording and the product terms local customers really use and search for, never word for word.
 Keep HTML tags and attributes exactly as they are and translate only the visible text. Keep product codes, numbers and measurements as written.
 These brand and range names are never translated, adapted or transliterated, keep them exactly as written: {$this->keptNames()}.
+Any other capitalised name is a judgement call, not automatically a brand: a name that only describes the product, its look or its shape (like "Elemental Mosaic" or "The Pillar") usually reads better translated, unless the webmaster corrections below show such names kept in English.
 EOT;
 
         $familyNames = $family ? $this->familyNames($family) : [];

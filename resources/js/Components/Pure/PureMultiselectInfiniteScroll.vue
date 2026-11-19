@@ -243,6 +243,10 @@ defineExpose({
             <div></div>
         </template>
 
+        <template #beforelist>
+            <slot name="beforelist" />
+        </template>
+
         <template #afterlist>
             <div v-if="isComponentLoading === 'fetchProduct'" class="py-2 flex justify-center text-xl">
                 <LoadingIcon />

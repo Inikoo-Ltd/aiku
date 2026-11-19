@@ -14,7 +14,7 @@ import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ctrans } from "@/Composables/useTrans"
 import { getStyles } from "@/Composables/styles"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
+import AssistantIcon from "@/Iris/Components/AssistantIcon.vue"
 import RangeAdvisorProductCard from "@/Iris/Components/RangeAdvisorProductCard.vue"
 import { ProductResource } from "@/types/Iris/Products"
 library.add(faShoppingBasket, faCheck, faTimes)
@@ -28,6 +28,7 @@ type Panel = { shop_type: string | null, country: string | null, has_orders: boo
 const props = defineProps<{
     assistantName: string
     fieldValue?: Record<string, any>
+    littleBird?: boolean
     screenType: "mobile" | "tablet" | "desktop"
 }>()
 
@@ -193,7 +194,8 @@ onMounted(async () => {
 </script>
 
 <template>
-    <section v-if="isLoading || panel?.lists.length || panel?.remembered || (panel && !panel.shop_type)" class="range-panel">
+    <section v-if="isLoading || panel?.lists.length || panel?.remembered || (panel && !panel.shop_type)" class="range-panel" :class="{ 'range-panel-little-bird': littleBird }">
+        <div class="range-wrap">
         <div v-if="isLoading" class="flex flex-col gap-3" aria-hidden="true">
             <div class="skeleton h-24 rounded-xl" />
             <div class="skeleton h-10 w-2/3 rounded-full" />
@@ -202,10 +204,10 @@ onMounted(async () => {
             </div>
         </div>
 
-        <template v-else-if="panel">
+        <div v-else-if="panel" class="range-shell">
             <header class="range-header">
                 <span class="range-header-badge" aria-hidden="true">
-                    <MerlinIcon themed class="range-header-icon" />
+                    <AssistantIcon :littleBird class="range-header-icon" />
                 </span>
                 <div class="range-header-text">
                     <h2 v-if="panel.lists.length" class="range-title">{{ ctrans(":name noticed", { name: assistantName }) }}</h2>
@@ -233,7 +235,7 @@ onMounted(async () => {
                     @click="emit('tellShop')"
                 >
                     <template #icon>
-                        <MerlinIcon themed />
+                        <AssistantIcon :littleBird class="range-tell-icon" />
                     </template>
                 </Button>
             </header>
@@ -251,6 +253,7 @@ onMounted(async () => {
                             <Button
                                 type="tertiary"
                                 size="s"
+                                class="range-pill-button"
                                 :label="notInBasket(activeListItems).length ? ctrans('Add all to basket') : ctrans('All in your basket')"
                                 :disabled="!notInBasket(activeListItems).length || adding !== null"
                                 :loading="adding === activeList"
@@ -277,7 +280,7 @@ onMounted(async () => {
                                             <Button
                                                 type="tertiary"
                                                 size="xs"
-                                                class="shrink-0"
+                                                class="range-pill-button shrink-0"
                                                 :label="notInBasket(pack.items).length ? ctrans('Add pack to basket') : ctrans('All in your basket')"
                                                 :disabled="!notInBasket(pack.items).length || adding !== null"
                                                 :loading="adding === `pack-${pack.family.id}`"
@@ -291,7 +294,7 @@ onMounted(async () => {
                                         <p v-if="addErrors[`pack-${pack.family.id}`]" class="mb-2 text-xs text-red-500">{{ addErrors[`pack-${pack.family.id}`] }}</p>
                                         <div class="range-grid">
                                             <div v-for="card in pack.items" :key="`${card.id}-${cardsVersion}`" @click.capture="(event) => recordClick(event, list.key, card)">
-                                    <RangeAdvisorProductCard :product="card"
+                                    <RangeAdvisorProductCard :product="card" :dark="!littleBird"
                                         :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', card.id])"
                                         :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
                                         :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false) ?? undefined" />
@@ -303,7 +306,7 @@ onMounted(async () => {
 
                             <div v-else class="range-grid">
                                 <div v-for="card in list.items" :key="`${card.id}-${cardsVersion}`" @click.capture="(event) => recordClick(event, list.key, card)">
-                                    <RangeAdvisorProductCard :product="card"
+                                    <RangeAdvisorProductCard :product="card" :dark="!littleBird"
                                         :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', card.id])"
                                         :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
                                         :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false) ?? undefined" />
@@ -313,15 +316,30 @@ onMounted(async () => {
                     </TabPanels>
                 </Tabs>
             </div>
-        </template>
+        </div>
+        </div>
     </section>
 </template>
 
 <style scoped>
 .range-panel {
+    --range-bg: #1d252e;
+    --range-card: #293541;
+    --range-card-hover: #34414e;
+    --range-edge: #46535f;
+    --range-muted: #c8d2db;
+    background-color: var(--range-bg);
+    color: #ffffff;
+    padding: 0 1rem 3rem;
+}
+
+.range-wrap {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 2rem 1rem 1.5rem;
+}
+
+.range-panel .skeleton {
+    background-color: var(--range-card);
 }
 
 .range-header {
@@ -330,11 +348,9 @@ onMounted(async () => {
     align-items: center;
     gap: 1rem;
     padding: 1.25rem;
-    border: 1px solid color-mix(in srgb, var(--theme-color-4) 18%, #e5e7eb);
-    border-radius: 1rem;
-    background:
-        radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--theme-color-4) 12%, transparent) 0%, transparent 60%),
-        color-mix(in srgb, var(--theme-color-4) 4%, #ffffff);
+    border: 1px solid var(--range-edge);
+    border-radius: 0.9375rem;
+    background-color: var(--range-card);
 }
 
 .range-header-badge {
@@ -345,9 +361,7 @@ onMounted(async () => {
     height: 3.25rem;
     flex-shrink: 0;
     border-radius: 9999px;
-    background-color: #ffffff;
-    box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--theme-color-4) 60%, transparent);
-    border: 1px solid color-mix(in srgb, var(--theme-color-4) 20%, #e5e7eb);
+    background-color: color-mix(in srgb, var(--theme-color-4) 17%, transparent);
 }
 
 .range-header-icon {
@@ -356,7 +370,7 @@ onMounted(async () => {
 }
 
 .range-header-text {
-    flex: 1 1 16rem;
+    flex: 1 1 12rem;
     min-width: 0;
 }
 
@@ -364,13 +378,13 @@ onMounted(async () => {
     font-size: 1.25rem;
     font-weight: 700;
     line-height: 1.3;
-    color: #111827;
+    color: #ffffff;
 }
 
 .range-subtitle {
     margin-top: 0.125rem;
     font-size: 0.875rem;
-    color: #4b5563;
+    color: var(--range-muted);
 }
 
 .range-remembered {
@@ -380,17 +394,43 @@ onMounted(async () => {
     gap: 0.375rem 0.5rem;
     margin-top: 0.625rem;
     font-size: 0.8125rem;
-    color: #374151;
+    color: var(--range-muted);
 }
 
 .range-remembered-label {
     font-weight: 600;
-    color: color-mix(in srgb, var(--theme-color-4) 75%, #111827);
+    color: color-mix(in srgb, var(--theme-color-4) 50%, #ffffff);
 }
 
-.range-tell {
+.range-panel .range-tell,
+.range-panel .range-pill-button {
     flex-shrink: 0;
+    border-color: var(--range-edge);
     border-radius: 9999px;
+    color: #ffffff;
+    background-color: var(--range-bg);
+}
+
+.range-panel .range-tell {
+    flex-shrink: 1;
+    max-width: 100%;
+    text-align: left;
+}
+
+.range-panel .range-tell :deep(span) {
+    line-height: 1.3;
+}
+
+.range-panel .range-tell:hover,
+.range-panel .range-pill-button:not(:disabled):hover {
+    border-color: var(--theme-color-4);
+    background-color: var(--range-card-hover);
+}
+
+.range-panel .range-pill-button:disabled {
+    color: var(--range-muted);
+    background-color: var(--range-bg);
+    opacity: 0.7;
 }
 
 .range-body {
@@ -416,6 +456,13 @@ onMounted(async () => {
 .range-tabs {
     min-width: 0;
     flex: 1 1 auto;
+    background: transparent;
+}
+
+.range-tabs :deep(.p-tablist-nav-button) {
+    color: #ffffff;
+    background: var(--range-bg);
+    box-shadow: none;
 }
 
 .range-tabs :deep(.p-tablist-content),
@@ -427,9 +474,53 @@ onMounted(async () => {
 .range-tabs :deep(.p-tablist-tab-list) {
     gap: 0.375rem;
     padding: 0.25rem;
+    border: 1px solid var(--range-edge);
     border-radius: 9999px;
-    background-color: #f3f4f6;
+    background-color: var(--range-card);
     width: max-content;
+}
+
+@media (max-width: 639px) {
+    .range-panel {
+        padding-top: 1.5rem;
+    }
+
+    .range-body {
+        margin-top: 1.5rem;
+    }
+
+    .range-toolbar {
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .range-panel .range-grid {
+        gap: 0.75rem;
+    }
+
+    .range-panel .range-tell {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .range-tabs {
+        flex-basis: 100%;
+    }
+
+    .range-tabs :deep(.p-tablist-nav-button) {
+        display: none;
+    }
+
+    .range-tabs :deep(.p-tablist-tab-list) {
+        flex-wrap: wrap;
+        width: 100%;
+        border-radius: 1.25rem;
+    }
+
+    .range-tabs :deep(.p-tab) {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
 }
 
 .range-tabs :deep(.p-tablist-active-bar) {
@@ -445,15 +536,15 @@ onMounted(async () => {
     border-radius: 9999px;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #4b5563;
+    color: var(--range-muted);
     background: transparent;
     white-space: nowrap;
     transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .range-tabs :deep(.p-tab:not(.p-tab-active):hover) {
-    color: #111827;
-    background-color: #e5e7eb;
+    color: #ffffff;
+    background-color: var(--range-card-hover);
 }
 
 .range-tabs :deep(.p-tab-active) {
@@ -479,8 +570,8 @@ onMounted(async () => {
     font-weight: 600;
     line-height: 1.25rem;
     text-align: center;
-    color: #4b5563;
-    background-color: #ffffff;
+    color: var(--range-muted);
+    background-color: var(--range-bg);
 }
 
 .range-tabs :deep(.p-tab-active) .range-count {
@@ -521,9 +612,9 @@ onMounted(async () => {
 
 .range-pack {
     padding: 0.75rem;
-    border: 1px solid #eceef1;
-    border-radius: 1rem;
-    background-color: color-mix(in srgb, var(--theme-color-4) 3%, #fafafa);
+    border: 1px solid var(--range-edge);
+    border-radius: 0.9375rem;
+    background-color: var(--range-card);
 }
 
 .range-pack-header {
@@ -540,7 +631,7 @@ onMounted(async () => {
 .range-pack-name {
     font-size: 1rem;
     font-weight: 600;
-    color: #111827;
+    color: #ffffff;
 }
 
 a.range-pack-name:hover {
@@ -552,6 +643,133 @@ a.range-pack-name:hover {
 .range-pack-meta {
     margin-top: 0.125rem;
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--range-muted);
+}
+.range-panel-little-bird {
+    --range-bg: #ffffff;
+    --range-card: #fafafa;
+    --range-card-hover: #f4f4f4;
+    --range-edge: #dedede;
+    --range-muted: #666666;
+    padding: 1.5rem;
+    border: 1px solid #dfdfdf;
+    border-radius: 1.5rem;
+    color: #151515;
+    box-shadow: 0 7px 30px rgba(0, 0, 0, 0.04);
+}
+
+.range-panel-little-bird .range-header {
+    padding: 0;
+    border: 0;
+    background-color: transparent;
+}
+
+.range-panel-little-bird .range-header-badge {
+    background-color: transparent;
+}
+
+.range-panel-little-bird .range-header-icon {
+    width: 3.25rem;
+    height: 3.25rem;
+}
+
+.range-tell-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.range-panel-little-bird .range-title,
+.range-panel-little-bird .range-pack-name,
+.range-panel-little-bird .range-remembered-label {
+    color: #151515;
+}
+
+.range-panel-little-bird .range-tell,
+.range-panel-little-bird .range-pill-button {
+    border-color: #d5d5d5;
+    color: #333333;
+}
+
+.range-panel-little-bird .range-tell:hover,
+.range-panel-little-bird .range-pill-button:not(:disabled):hover {
+    border-color: #999999;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tablist-nav-button) {
+    color: #151515;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tab:not(.p-tab-active):hover) {
+    color: #151515;
+}
+
+@media (max-width: 639px) {
+    .range-panel-little-bird .range-tabs :deep(.p-tablist-tab-list) {
+        border-radius: 0;
+    }
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tablist-tab-list) {
+    gap: 1.375rem;
+    padding: 0 0.25rem;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tab) {
+    padding: 0.25rem 0 0.5rem;
+    border-radius: 0;
+    font-weight: 700;
+    color: #777777;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tab:not(.p-tab-active):hover) {
+    background-color: transparent;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tab-active) {
+    color: #151515;
+    background-color: transparent;
+    box-shadow: inset 0 -2px 0 #151515;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tab-active) .range-count {
+    color: #ffffff;
+    background-color: #151515;
+}
+
+.range-panel-little-bird .range-count {
+    background-color: #f2f2f2;
+}
+
+.range-panel-little-bird .range-tabs :deep(.p-tab:focus-visible) {
+    outline-color: #151515;
+}
+
+.range-panel-little-bird .range-pack-header {
+    border-left-color: #151515;
+}
+
+.range-panel-little-bird a.range-pack-name:hover {
+    color: #151515;
+}
+
+@media (min-width: 640px) {
+    .range-panel-little-bird .range-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1280px) {
+    .range-panel-little-bird .range-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 639px) {
+    .range-panel-little-bird {
+        padding: 1rem;
+    }
 }
 </style>

@@ -10,7 +10,6 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
-use App\Actions\Ordering\Order\AssignDefaultPackagingToOrderWithoutPackaging;
 use App\Actions\Dispatching\DeliveryNote\CustomsExport\GetDeliveryNoteCustomsItems;
 use App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList;
 use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
@@ -113,10 +112,6 @@ class ShowDeliveryNote extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-        if (AssignDefaultPackagingToOrderWithoutPackaging::make()->forDeliveryNote($deliveryNote)) {
-            $deliveryNote->refresh();
-        }
-
         return $deliveryNote;
     }
 
@@ -653,7 +648,7 @@ class ShowDeliveryNote extends OrgAction
                     ],
 
                 ],
-                $deliveryNote->pickerUser->id == $request->user()->id
+                $deliveryNote->pickerUser?->id == $request->user()->id
                     ? [
                     'type'    => 'button',
                     'style'   => 'save',
@@ -1137,12 +1132,6 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
 
-                'delete_route' => [
-                    'name'       => 'grp.models.delivery_note.shipment.detach',
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
-                    ]
-                ],
             ],
             'shipper_directive'            => [
                 ...$this->getShipperDirective($deliveryNote),
@@ -1580,12 +1569,6 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
 
-                'delete_route' => [
-                    'name'       => 'grp.models.delivery_note.shipment.detach',
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
-                    ]
-                ],
             ],
             'warehouse'           => [
                 'slug' => $deliveryNote->warehouse->slug,

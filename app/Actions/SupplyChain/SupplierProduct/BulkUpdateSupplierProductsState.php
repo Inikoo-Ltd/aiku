@@ -21,7 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 class BulkUpdateSupplierProductsState extends OrgAction
 {
     /**
-     * @param  array{supplier_products: array<int, int>, state: string}  $modelData
+     * @param  array{supplier_products: array<int, int>, state: string, discontinued_reason?: string|null}  $modelData
      */
     public function handle(Group $group, array $modelData): int
     {
@@ -29,11 +29,16 @@ class BulkUpdateSupplierProductsState extends OrgAction
 
         $supplierProducts = SupplierProduct::where('group_id', $group->id)
             ->whereIn('id', $modelData['supplier_products'])
-            ->where('state', '!=', $state->value)
+            ->where(fn ($query) => $query
+                ->where('state', '!=', $state->value)
+                ->orWhereRaw("data->>'".UpdateSupplierProduct::FOLLOWS_DISCONTINUING_SKOS_KEY."' is not null"))
             ->get();
 
         foreach ($supplierProducts as $supplierProduct) {
-            UpdateSupplierProduct::make()->action($supplierProduct, ['state' => $state]);
+            UpdateSupplierProduct::make()->action($supplierProduct, [
+                'state'               => $state,
+                'discontinued_reason' => $modelData['discontinued_reason'] ?? null,
+            ]);
         }
 
         return $supplierProducts->count();
@@ -45,6 +50,7 @@ class BulkUpdateSupplierProductsState extends OrgAction
             'supplier_products'   => ['required', 'array', 'min:1', 'max:500'],
             'supplier_products.*' => ['integer', Rule::exists('supplier_products', 'id')->where('group_id', $this->group->id)],
             'state'               => ['required', Rule::enum(SupplierProductStateEnum::class)],
+            'discontinued_reason' => ['sometimes', 'nullable', 'string', 'max:500'],
         ];
     }
 

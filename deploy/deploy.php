@@ -121,14 +121,15 @@ task('deploy:build', function () {
         run(
             'for dir in retina iris grp pupil aiku-public; do '
             .'if [ -d {{previous_release}}/public/$dir/assets ]; then '
-            .'rsync -a --ignore-existing {{previous_release}}/public/$dir/assets/ {{release_path}}/public/$dir/assets/; '
+            .'rsync -a --ignore-existing --exclude=\'*.map\' --link-dest={{previous_release}}/public/$dir/assets/ {{previous_release}}/public/$dir/assets/ {{release_path}}/public/$dir/assets/; '
             .'fi; done'
         );
     } else {
         // No FE changes: reuse built assets from the previous release
         writeln('No front-end changes detected. Reusing built assets from previous release if available.');
         run(
-            'cd {{release_path}}/public && rsync -a {{previous_release}}/public/retina . && rsync -a {{previous_release}}/public/iris . && rsync -a {{previous_release}}/public/grp . && rsync -a {{previous_release}}/public/pupil . && rsync -a {{previous_release}}/public/aiku-public .'
+            'cd {{release_path}}/public && for dir in retina iris grp pupil aiku-public; do '
+            .'rsync -a --link-dest={{previous_release}}/public/$dir/ {{previous_release}}/public/$dir/ $dir/ || exit 1; done'
         );
 
         run(

@@ -18,6 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property \Illuminate\Support\Carbon $booked_at
  * @property string $amount
  * @property string|null $counterparty_name
+ * @property string|null $counterparty_account
  * @property string|null $reference
  * @property BankTransactionMatchStateEnum $match_state
  * @property array<string, mixed> $match_data
@@ -34,6 +35,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $organisation_code
  * @property string|null $provider_type
  * @property list<array<string, mixed>>|null $suggested_orders
+ * @property array<string, mixed>|null $staff_hint
  */
 class BankIncomingResource extends JsonResource
 {
@@ -50,6 +52,7 @@ class BankIncomingResource extends JsonResource
             'org_amount'        => $this->currency_code === $this->org_currency_code || $this->org_amount === null ? null : (float)$this->org_amount,
             'org_currency_code' => $this->org_currency_code,
             'counterparty_name' => $this->counterparty_name,
+            'counterparty_account' => $this->counterparty_account,
             'reference'         => $this->reference,
             'reason'            => match (true) {
                 $this->payment_id !== null && isset($this->match_data['credit_customer_name']) => __('Added to the credit of :customer by :name', ['customer' => $this->match_data['credit_customer_name'], 'name' => $this->match_data['paid_by'] ?? '']),
@@ -59,6 +62,7 @@ class BankIncomingResource extends JsonResource
                 $this->match_state === BankTransactionMatchStateEnum::DISMISSED       => $this->match_data['dismissed_note'] ?? null,
                 $this->match_state === BankTransactionMatchStateEnum::ALREADY_PAID && isset($this->match_data['dismissed_note']) => $this->match_data['dismissed_note'],
                 $this->match_state === BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT => null,
+                $this->match_state === BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE && isset($this->match_data['settlement']) => __('Orderchamp settlement :settlement of :orders', ['settlement' => $this->match_data['settlement'], 'orders' => implode(', ', $this->match_data['order_references'] ?? [])]),
                 $this->match_state === BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE => __('Faire payout of this order'),
                 $this->match_state === null => in_array($this->provider_type, MatchBankTransactions::CUSTOMER_TRANSFER_TYPES, true)
                     ? __('Not matched yet')
@@ -85,6 +89,7 @@ class BankIncomingResource extends JsonResource
             ] : null,
             'owed'              => $this->match_data['owed'] ?? null,
             'suggested_orders'  => $this->suggested_orders ?? [],
+            'staff_hint'        => $this->staff_hint ? collect($this->staff_hint)->only(['customer_reference', 'customer_name', 'shop_code', 'note', 'by', 'at'])->all() : null,
             'order_reference'   => $this->order_reference,
             'order_slug'        => $this->order_slug,
             'shop_slug'         => $this->shop_slug,

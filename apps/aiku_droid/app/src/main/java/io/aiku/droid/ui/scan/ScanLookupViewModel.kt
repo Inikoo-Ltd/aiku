@@ -5,14 +5,19 @@ import androidx.lifecycle.viewModelScope
 import io.aiku.droid.data.api.DeliveryNoteRow
 import io.aiku.droid.data.api.GoodsOutApi
 import io.aiku.droid.data.api.GoodsOutResult
+import io.aiku.droid.data.api.PalletReturnTypeGroup
 import io.aiku.droid.data.api.ScanLookup
 import io.aiku.droid.data.api.ScanMatch
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.ui.fulfilment.inbound.palletDeliveryRoute
+import io.aiku.droid.ui.fulfilment.outbound.returnRoute
+import io.aiku.droid.ui.fulfilment.outbound.returnScreenFor
 import io.aiku.droid.ui.goodsout.deliveryNoteRoute
+import io.aiku.droid.ui.navigation.GoodsInReturnRoute
 import io.aiku.droid.ui.navigation.LocationRoute
 import io.aiku.droid.ui.navigation.PalletRoute
 import io.aiku.droid.ui.navigation.ScanResultRoute
+import io.aiku.droid.ui.navigation.SkuFamilyRoute
 import io.aiku.droid.ui.navigation.SkuRoute
 import io.aiku.droid.ui.navigation.StockDeliveryRoute
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +32,9 @@ sealed interface ScanDestination {
     data class StockDelivery(val id: Long, val reference: String) : ScanDestination
     data class Pallet(val id: Long, val reference: String) : ScanDestination
     data class PalletDelivery(val id: Long, val reference: String, val state: String) : ScanDestination
+    data class SkoFamily(val id: Long, val code: String) : ScanDestination
+    data class CustomerReturn(val id: Long, val reference: String) : ScanDestination
+    data class PalletReturn(val id: Long, val reference: String, val state: String, val typeGroup: String?) : ScanDestination
     data class Unknown(val code: String) : ScanDestination
 }
 
@@ -56,6 +64,9 @@ fun ScanDestination.route(): Any = when (this) {
     is ScanDestination.StockDelivery -> StockDeliveryRoute(id = id, reference = reference)
     is ScanDestination.Pallet -> PalletRoute(id = id, reference = reference)
     is ScanDestination.PalletDelivery -> palletDeliveryRoute(id = id, reference = reference, state = state)
+    is ScanDestination.SkoFamily -> SkuFamilyRoute(id = id, code = code)
+    is ScanDestination.CustomerReturn -> GoodsInReturnRoute(id = id, reference = reference)
+    is ScanDestination.PalletReturn -> returnRoute(returnScreenFor(state, typeGroup ?: PalletReturnTypeGroup.PALLETS), id, reference)
     is ScanDestination.Unknown -> ScanResultRoute(code = code)
 }
 

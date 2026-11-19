@@ -41,6 +41,7 @@ enum AikuColor {
     static var ink: Color { palette.ink.color }
     static var soft: Color { palette.soft.color }
     static var softBd: Color { palette.softBd.color }
+    static var softInk: Color { palette.softInk.color }
     static var bg: Color { palette.bg.color }
     static var surface: Color { palette.surface.color }
     static var surface2: Color { palette.surface2.color }
@@ -57,12 +58,20 @@ enum AikuColor {
     static var dangerBd: Color { palette.dangerBd.color }
     static var dangerInk: Color { palette.dangerInk.color }
     static var dangerDot: Color { palette.dangerDot.color }
+    static var dangerButtonBd: Color { palette.dangerButtonBd.color }
+    static var dangerStrong: Color { palette.dangerStrong.color }
+    static var onDangerStrong: Color { palette.onDangerStrong.color }
     static var success: Color { palette.success.color }
     static var successSoft: Color { palette.successSoft.color }
+    static var finish: Color { palette.finish.color }
+    static var onFinish: Color { palette.onFinish.color }
     static var warn: Color { palette.warn.color }
     static var warnSoft: Color { palette.warnSoft.color }
     static var warnBd: Color { palette.warnBd.color }
     static var warnInk: Color { palette.warnInk.color }
+    static var cautionInk: Color { palette.cautionInk.color }
+    static var cautionSoft: Color { palette.cautionSoft.color }
+    static var cautionBd: Color { palette.cautionBd.color }
     static var orange: Color { palette.orange.color }
     static var orangeSoft: Color { palette.orangeSoft.color }
     static var lime: Color { palette.lime.color }

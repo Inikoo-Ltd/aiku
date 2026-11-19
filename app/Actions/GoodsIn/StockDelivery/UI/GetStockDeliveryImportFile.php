@@ -28,7 +28,9 @@ use Lorisleiva\Actions\Concerns\AsObject;
  * The import file of a shipment, the paper checklist procurement keeps per container (HELP-4543): each step is
  * ticked from what aiku already records (purchase orders, files by type, payments, the costing checklist, the
  * forwarder and customs bills) and a person can mark it done, pending or N/A by hand, which wins over aiku.
- * Reading documents and booking their amounts stays with the costing checklist: this tab only shows the result.
+ * Since HELP-4761 this tab is the one place to book costs: the invoice, shipping and customs steps open the costing
+ * dialogs, which read every document uploaded there: the invoice and shipping steps lose their plain upload wherever
+ * the costing is open to the user, the customs declaration keeps it (it is not a bill the costing reads).
  */
 class GetStockDeliveryImportFile
 {
@@ -40,6 +42,7 @@ class GetStockDeliveryImportFile
         'deposit',
         'shipping_quotes',
         'commercial_invoice',
+        'packing_list',
         'bill_of_lading',
         'balance_payment',
         'original_documents',
@@ -50,6 +53,14 @@ class GetStockDeliveryImportFile
     ];
 
     public const array STATUSES = ['done', 'pending', 'na'];
+
+    public const array COSTING_SECTIONS = [
+        'commercial_invoice' => 'invoice',
+        'shipping_invoice'   => 'landed',
+        'duty_invoice'       => 'landed',
+    ];
+
+    public const array UPLOADED_IN_COSTING = ['commercial_invoice', 'shipping_invoice'];
 
     private const array DUTY_BILL_TYPES = [
         StockDeliveryServiceInvoiceTypeEnum::DUTY,
@@ -65,13 +76,14 @@ class GetStockDeliveryImportFile
             'proforma'           => __('Pro-forma invoice'),
             'deposit'            => __('Deposit payment'),
             'shipping_quotes'    => __('Shipping quotes'),
-            'commercial_invoice' => __('Commercial invoice / Packing list'),
+            'commercial_invoice' => __('Commercial invoice'),
+            'packing_list'       => __('Packing list'),
             'bill_of_lading'     => __('Bill of lading / CMR / T1'),
             'balance_payment'    => __('Balance payment'),
             'original_documents' => __('Original documents received / sent'),
             'shipping_invoice'   => __('Shipping invoice'),
-            'duty_invoice'       => __('VAT / Duty invoice'),
-            'duty_paid'          => __('Import VAT / Duty paid'),
+            'duty_invoice'       => __('Customs declaration: duty classification and tariff codes'),
+            'duty_paid'          => __('Duty payment'),
             'duty_rates'         => __('Duty rates verified'),
         ];
     }
@@ -87,7 +99,7 @@ class GetStockDeliveryImportFile
 
         $steps = [];
         foreach (self::labels() as $key => $label) {
-            $mark    = Arr::get($marks, $key);
+            $mark    = Arr::get($marks, $key) ?? ($key === 'packing_list' ? Arr::get($marks, 'commercial_invoice') : null);
             $default = $auto[$key]['status'] ?? null;
             if (!$default && $mode === 'road' && in_array($key, ['bill_of_lading', 'original_documents'], true)) {
                 $default = 'na';
@@ -105,11 +117,9 @@ class GetStockDeliveryImportFile
                     'at' => $mark['at'] ?? null,
                 ] : null,
                 'scope'    => $this->scope($key)?->value,
-                'files'    => match (true) {
-                    $key === 'commercial_invoice' => $files->whereIn('scope', [PurchaseOrderAttachmentScopeEnum::INVOICE->value, PurchaseOrderAttachmentScopeEnum::PACKING_LIST->value])->values()->all(),
-                    $this->scope($key) !== null   => $files->where('scope', $this->scope($key)->value)->values()->all(),
-                    default                       => [],
-                },
+                'costing'  => self::COSTING_SECTIONS[$key] ?? null,
+                'upload_in_costing' => in_array($key, self::UPLOADED_IN_COSTING, true),
+                'files'    => $this->scope($key) !== null ? $files->where('scope', $this->scope($key)->value)->values()->all() : [],
             ];
         }
 
@@ -155,6 +165,11 @@ class GetStockDeliveryImportFile
                 'name'       => 'grp.models.stock-delivery.import_file.update',
                 'parameters' => ['stockDelivery' => $stockDelivery->id],
             ],
+            'detach_route'  => [
+                'method'     => 'delete',
+                'name'       => 'grp.models.stock-delivery.attachment.detach',
+                'parameters' => ['stockDelivery' => $stockDelivery->id],
+            ],
             'attach_route'  => [
                 'method'     => 'post',
                 'name'       => 'grp.models.stock-delivery.attachment.attach',
@@ -185,6 +200,7 @@ class GetStockDeliveryImportFile
             'duty_paid'          => PurchaseOrderAttachmentScopeEnum::DUTY_PAYMENT,
             'shipping_quotes'    => PurchaseOrderAttachmentScopeEnum::SHIPPING_QUOTE,
             'commercial_invoice' => PurchaseOrderAttachmentScopeEnum::INVOICE,
+            'packing_list'       => PurchaseOrderAttachmentScopeEnum::PACKING_LIST,
             'bill_of_lading'     => PurchaseOrderAttachmentScopeEnum::BILL_OF_LADING,
             'original_documents' => PurchaseOrderAttachmentScopeEnum::OTHER,
             'shipping_invoice'   => PurchaseOrderAttachmentScopeEnum::SERVICE_INVOICE,
@@ -225,10 +241,12 @@ class GetStockDeliveryImportFile
             $auto['shipping_quotes'] = $done(null, __('Shipping quote attached'));
         }
 
-        $hasInvoice     = $stockDelivery->agentInvoice()->exists() || $stockDelivery->supplierInvoice()->exists() || $files->where('scope', PurchaseOrderAttachmentScopeEnum::INVOICE->value)->isNotEmpty();
-        $hasPackingList = $files->where('scope', PurchaseOrderAttachmentScopeEnum::PACKING_LIST->value)->isNotEmpty();
-        if ($hasInvoice && $hasPackingList) {
-            $auto['commercial_invoice'] = $done(Arr::get($stockDelivery->data, 'invoice_date'), __('Invoice and packing list on file'));
+        if ($stockDelivery->agentInvoice()->exists() || $stockDelivery->supplierInvoice()->exists() || $files->where('scope', PurchaseOrderAttachmentScopeEnum::INVOICE->value)->isNotEmpty()) {
+            $auto['commercial_invoice'] = $done(Arr::get($stockDelivery->data, 'invoice_date'), __('Invoice on file'));
+        }
+
+        if ($files->where('scope', PurchaseOrderAttachmentScopeEnum::PACKING_LIST->value)->isNotEmpty()) {
+            $auto['packing_list'] = $done(null, __('Packing list attached'));
         }
 
         if ($files->where('scope', PurchaseOrderAttachmentScopeEnum::BILL_OF_LADING->value)->isNotEmpty()) {

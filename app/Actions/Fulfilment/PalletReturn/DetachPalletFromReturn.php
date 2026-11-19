@@ -17,6 +17,7 @@ use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturn;
+use App\Notifications\Work\WorkNotifier;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -40,6 +41,7 @@ class DetachPalletFromReturn extends OrgAction
             ]);
 
             $palletReturn->pallets()->detach([$pallet->id]);
+            WorkNotifier::modified($palletReturn, 'lines');
         });
 
         $palletReturn = SetPalletReturnAutoServices::run($palletReturn);

@@ -9,6 +9,8 @@
 namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\Production\JobOrder\FillToOrder;
+use App\Actions\Production\PartnerShippingList\AssignToProduceLinesAutomatically;
+use App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
@@ -17,6 +19,7 @@ use App\Actions\Dispatching\DeliveryNote\ReusePicksFromCancelledDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\FulfilmentGate\GetGateCoverage;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Ordering\Order\AssignDefaultPackagingToOrderWithoutPackaging;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
@@ -123,6 +126,10 @@ class SendOrderToWarehouse extends OrgAction
     /** Bottles filled to order hold the whole order until the artisan has filled them; FillToOrder::release sends it (HELP-4556) */
     private function waitingForFilling(Order $order): bool
     {
+        if (StoreToProduceItemsFromOrder::make()->handle($order, fillsOnly: true)) {
+            DB::afterCommit(fn () => rescue(fn () => AssignToProduceLinesAutomatically::run($order)));
+        }
+
         $lines = FillToOrder::make()->pendingLines($order);
         if ($lines->isEmpty()) {
             return false;
@@ -138,6 +145,16 @@ class SendOrderToWarehouse extends OrgAction
         }
 
         return true;
+    }
+
+    /** Why the order is held, read from its warehouse note: "waiting for filling: FOKG-160-10ml" */
+    public static function heldReason(?string $note): ?string
+    {
+        if (!preg_match('/'.preg_quote(self::HELD_MARKER, '/').'\s*(.*?)(?=\s—\s|\R|$)/u', (string)$note, $match)) {
+            return null;
+        }
+
+        return trim($match[1]) ?: null;
     }
 
     /** The note without the held warning, keeping whatever staff wrote around it */
@@ -295,7 +312,8 @@ class SendOrderToWarehouse extends OrgAction
 
         ReusePicksFromCancelledDeliveryNote::make()->action($order, $deliveryNote);
 
-        if ($order->customer) {
+        /** An Orderchamp order is billed to Orderchamp and delivered to the retailer named on the order */
+        if ($order->customer && !$order->isFromOrderchamp()) {
             $modelData['email']        = $order->customer->email;
             $modelData['phone']        = $order->customer->phone;
             $modelData['contact_name'] = $order->customer->contact_name;
@@ -303,6 +321,9 @@ class SendOrderToWarehouse extends OrgAction
         }
         UpdateOrder::make()->action($order, $modelData);
 
+        if (AssignDefaultPackagingToOrderWithoutPackaging::run($order)) {
+            $deliveryNote->refresh();
+        }
 
         if (in_array($order->salesChannel?->type, [
             SalesChannelTypeEnum::PHONE,
@@ -339,7 +360,7 @@ class SendOrderToWarehouse extends OrgAction
                 $phone = $order->customerClient->phone;
             }
         } else {
-            $phone = $order->customer->phone;
+            $phone = $order->isFromOrderchamp() && $order->phone ? $order->phone : $order->customer->phone;
         }
 
         return $phone;

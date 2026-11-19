@@ -17,6 +17,7 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -32,9 +33,7 @@ class DeactivateSupplier
 
     public function handle(Supplier $supplier): Supplier
     {
-        $openOrders = $supplier->purchaseOrders()
-            ->whereIn('state', PurchaseOrderStateEnum::live())
-            ->pluck('reference');
+        $openOrders = $this->openPurchaseOrderReferences($supplier);
 
         if ($openOrders->isNotEmpty()) {
             throw ValidationException::withMessages([
@@ -59,6 +58,16 @@ class DeactivateSupplier
         GroupHydrateSuppliers::dispatch($supplier->group);
 
         return $supplier;
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    public function openPurchaseOrderReferences(Supplier $supplier): Collection
+    {
+        return $supplier->purchaseOrders()
+            ->whereIn('state', PurchaseOrderStateEnum::live())
+            ->pluck('reference');
     }
 
     /**
