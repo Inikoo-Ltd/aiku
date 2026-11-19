@@ -23,6 +23,8 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
+use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Models\Inventory\OrgStockDiscontinueSuggestion;
 use App\Models\Helpers\Currency;
@@ -87,7 +89,7 @@ class ShowGoodsDashboard extends OrgAction
 
     public const string DEFAULT_PERIOD = '90d';
 
-    public const array CONDITIONS = ['oos', 'oos_no_po', 'ns', 'low', 'low_no_po', 'over', 'dead', 'off', 'sell', 'hold', 'ret', 'ok', 'suggested', 'price_request'];
+    public const array CONDITIONS = ['oos', 'oos_no_po', 'ns', 'low', 'low_no_po', 'over', 'dead', 'off', 'sell', 'hold', 'ret', 'ok', 'suggested', 'price_request', 'supplier_price_change'];
 
     public const array SORTS = ['code', 'sales', 'trend', 'cover', 'suggestions', 'complaints', 'feedback'];
 
@@ -252,8 +254,10 @@ class ShowGoodsDashboard extends OrgAction
 
         $suggestions   = OrgStockDiscontinueSuggestion::tallyByStock($this->group->id);
         $priceRequests = ShowGoodsStockPriceRequests::tallyByStock($this->group->id);
+        $supplierPriceChanges = $this->pendingSupplierPriceChangesByStock();
         foreach ($rows as &$row) {
             $row['price_requests']    = $priceRequests[$row['id']] ?? 0;
+            $row['supplier_price_changes'] = $supplierPriceChanges[$row['id']] ?? 0;
             $row['suggestions']       = $suggestions[$row['id']]['times'] ?? 0;
             $row['suggestion_people'] = $suggestions[$row['id']]['people'] ?? 0;
             $row['complaint_rate']    = $row['orders'] > 0 ? round($row['complaint_customers'] / $row['orders'] * 100, 1) : null;
@@ -1022,6 +1026,25 @@ class ShowGoodsDashboard extends OrgAction
         };
     }
 
+    /**
+     * Price and MOQ changes suppliers proposed from their portal that still wait for our decision.
+     *
+     * @return array<int, int> open proposals by group stock id
+     */
+    private function pendingSupplierPriceChangesByStock(): array
+    {
+        return DB::table('supplier_submissions')
+            ->join('stock_has_supplier_products', 'stock_has_supplier_products.supplier_product_id', 'supplier_submissions.supplier_product_id')
+            ->where('supplier_submissions.group_id', $this->group->id)
+            ->where('supplier_submissions.type', SupplierSubmissionTypeEnum::PRICE_CHANGE->value)
+            ->whereIn('supplier_submissions.state', [SupplierSubmissionStateEnum::RECEIVED->value, SupplierSubmissionStateEnum::UNDER_REVIEW->value])
+            ->groupBy('stock_has_supplier_products.stock_id')
+            ->selectRaw('stock_has_supplier_products.stock_id, count(distinct supplier_submissions.id) as pending')
+            ->pluck('pending', 'stock_id')
+            ->map(fn ($count) => (int) $count)
+            ->all();
+    }
+
     private function scopedCells(array $row, ?string $organisation): array
     {
         return $organisation ? Arr::only($row['organisations'], [$organisation]) : $row['organisations'];
@@ -1096,6 +1119,10 @@ class ShowGoodsDashboard extends OrgAction
             return $row['price_requests'] > 0;
         }
 
+        if ($condition === 'supplier_price_change') {
+            return $row['supplier_price_changes'] > 0;
+        }
+
         foreach ($this->scopedCells($row, $organisation) as $cell) {
             $matches = match ($condition) {
                 'oos_no_po' => $cell['condition'] === 'oos' && !$cell['has_po'],
@@ -1143,6 +1170,7 @@ class ShowGoodsDashboard extends OrgAction
             'suggestions'             => 0,
             'price_requested'         => 0,
             'price_requests'          => 0,
+            'supplier_price_changed'  => 0,
             'feedback_levels'         => array_fill_keys(array_keys(self::FEEDBACK_LEVELS), 0),
         ];
 
@@ -1151,6 +1179,7 @@ class ShowGoodsDashboard extends OrgAction
             $kpis['suggestions'] += $row['suggestions'];
             $kpis['price_requested'] += (int) ($row['price_requests'] > 0);
             $kpis['price_requests']  += $row['price_requests'];
+            $kpis['supplier_price_changed'] += (int) ($row['supplier_price_changes'] > 0);
             if ($row['feedback_level']) {
                 $kpis['feedback_levels'][$row['feedback_level']]++;
             }

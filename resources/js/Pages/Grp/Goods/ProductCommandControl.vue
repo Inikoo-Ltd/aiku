@@ -62,6 +62,7 @@ interface Row {
     suggestions: number
     suggestion_people: number
     price_requests: number
+    supplier_price_changes: number
     feedback: number
     feedback_level: FeedbackLevel | null
     orders: number
@@ -134,6 +135,7 @@ const props = defineProps<{
         suggestions: number
         price_requested: number
         price_requests: number
+        supplier_price_changed: number
         feedback_levels: Record<FeedbackLevel, number>
     }
     rows?: { data: Row[]; total: number }
@@ -193,6 +195,7 @@ const conditionFilters = computed(() => [
     { value: "ok", label: ctrans("OK") },
     { value: "suggested", label: ctrans("Suggested to discontinue") },
     { value: "price_request", label: props.kpis?.price_requested ? ctrans("Price request from agent (:count)", { count: props.kpis.price_requested }) : ctrans("Price request from agent") },
+    { value: "supplier_price_change", label: props.kpis?.supplier_price_changed ? ctrans("Price or MOQ request pending approval (:count)", { count: props.kpis.supplier_price_changed }) : ctrans("Price or MOQ request pending approval") },
 ])
 
 const filterState = reactive({ ...props.filters })
