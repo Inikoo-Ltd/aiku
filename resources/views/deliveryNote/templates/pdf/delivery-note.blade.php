@@ -101,6 +101,7 @@
         <tr>
             <td>{{ $item->orgStock->code }}</td>
             <td>{{ $item->orgStock->name }} [Pack of {{$item->orgStock->packed_in}}]
+                @if($freeLineNote = \App\Actions\Dispatching\DeliveryNote\PdfPackingList::freeLineNote($item->transaction))<br><strong>{{ $freeLineNote }}</strong>@endif
                 @foreach ($item->pickings->whereNotNull('batch_code_id')->groupBy('batch_code_id') as $batchPickings)
                     <br><small>{{ __('Batch') }} {{ $batchPickings->first()->batchCode->code }}@if($batchPickings->first()->batchCode->expiry_date) · {{ __('Best before') }} {{ $batchPickings->first()->batchCode->expiry_date->format('d/m/Y') }}@endif × {{ number_format($batchPickings->sum('quantity'), 0) }}</small>
                 @endforeach

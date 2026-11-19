@@ -85,7 +85,7 @@
                         <tr>
                             <td>{{ $row['sko_code'] }}</td>
                             <td>{{ $row['product_code'] }}</td>
-                            <td>{{ $row['description'] }}</td>
+                            <td>{{ $row['description'] }}@if($row['note'])<br><span class="set-note">{{ $row['note'] }}</span>@endif</td>
                             <td class="text-center">{{ $row['quantity'] }}</td>
                         </tr>
                     @endforeach
@@ -116,6 +116,7 @@
                         <td>{{ $line['product_code'] }}</td>
                         <td>
                             {{ $line['description'] }}
+                            @if($line['note'])<br><span class="set-note">{{ $line['note'] }}</span>@endif
                             <br><span class="set-note">{{ __("Set of :count items, packed together", ['count' => count($line['components'])]) }}</span>
                         </td>
                         <td class="text-center set-right">{{ $line['quantity'] }}</td>
@@ -132,7 +133,7 @@
                     <tr>
                         <td>{{ $line['sko_code'] }}</td>
                         <td>{{ $line['product_code'] }}</td>
-                        <td>{{ $line['description'] }}</td>
+                        <td>{{ $line['description'] }}@if($line['note'])<br><span class="set-note">{{ $line['note'] }}</span>@endif</td>
                         <td class="text-center">{{ $line['quantity'] }}</td>
                     </tr>
                 @endif

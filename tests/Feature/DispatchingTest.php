@@ -2073,6 +2073,7 @@ test('packing list counts the products the customer ordered, not SKOs, and has n
             'sko_code'     => $item->orgStock->code,
             'product_code' => $transaction->historicAsset->code,
             'description'  => $transaction->historicAsset->name,
+            'note'         => null,
             'quantity'     => (float) round((float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus),
             'components'   => [],
         ]);
@@ -2121,6 +2122,7 @@ test('packing list shows a product made of several SKOs once, with its SKOs list
         'sko_code'     => '',
         'product_code' => 'SET-01',
         'description'  => 'Gift set',
+        'note'         => null,
         'quantity'     => 1.0,
         'components'   => [
             ['sko_code' => 'SOAP', 'description' => 'SOAP name', 'quantity' => 4.0],
@@ -2128,6 +2130,37 @@ test('packing list shows a product made of several SKOs once, with its SKOs list
             ['sko_code' => 'BOX', 'description' => 'BOX name', 'quantity' => 1.0],
         ],
     ]]);
+});
+
+test('packing list and delivery note tell a replacement from a free gift', function () {
+    $line = function (array $flags) {
+        $transaction = new \App\Models\Ordering\Transaction(['quantity_ordered' => 0, 'quantity_bonus' => 1, ...$flags]);
+        $transaction->setRelation('historicAsset', new \App\Models\Catalogue\HistoricAsset(['code' => 'P-1', 'name' => 'Candle']));
+        $item = new \App\Models\Dispatching\DeliveryNoteItem(['quantity_required' => 1, 'quantity_packed' => 1]);
+        $item->setRelation('transaction', $transaction);
+        $item->setRelation('orgStock', new \App\Models\Inventory\OrgStock(['code' => 'SKO-1', 'name' => 'Candle']));
+
+        return \App\Actions\Dispatching\DeliveryNote\PdfPackingList::make()->line($item, 1);
+    };
+
+    expect($line(['is_gift' => true, 'is_follow_on' => true])['note'])->toBe('Replacement')
+        ->and($line(['is_gift' => true, 'is_follow_on' => false])['note'])->toBe('Free gift')
+        ->and($line(['is_gift' => false, 'is_follow_on' => false])['note'])->toBeNull();
+
+    [$deliveryNote, $item] = finalisedDeliveryNote($this);
+    $item->transaction->update(['is_gift' => true, 'is_follow_on' => true]);
+
+    $packingList = view('deliveryNote.templates.pdf.packing-list', [
+        'deliveryNote'    => $deliveryNote,
+        'order'           => $deliveryNote->orders()->first(),
+        'lines'           => \App\Actions\Dispatching\DeliveryNote\PdfPackingList::make()->lines($deliveryNote->refresh()),
+        'boxes'           => collect(),
+        'numberBoxes'     => 0,
+        'deliveryAddress' => null,
+    ])->render();
+
+    expect($packingList)->toContain('Replacement')
+        ->and(\App\Actions\Dispatching\DeliveryNote\PdfDeliveryNote::make()->handle($deliveryNote)->getStatusCode())->toBe(200);
 });
 
 test('tax only and in process refund lines do not block repacking a finalised delivery note', function () {

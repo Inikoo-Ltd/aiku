@@ -7,6 +7,7 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Models\Dispatching\DeliveryNote;
 use App\Actions\Traits\WithExportData;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Ordering\Transaction;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
@@ -63,7 +64,7 @@ class PdfPackingList extends OrgAction
     /**
      * One line per product the customer ordered; a product made of several SKOs lists them as its components.
      *
-     * @return Collection<int, array{sko_code: string, product_code: string, description: string, quantity: float, components: array<int, array{sko_code: string, description: string, quantity: float}>}>
+     * @return Collection<int, array{sko_code: string, product_code: string, description: string, note: ?string, quantity: float, components: array<int, array{sko_code: string, description: string, quantity: float}>}>
      */
     public function lines(DeliveryNote $deliveryNote): Collection
     {
@@ -80,6 +81,7 @@ class PdfPackingList extends OrgAction
                     'sko_code'     => '',
                     'product_code' => $parts->first()['product_code'],
                     'description'  => $items->first()->transaction?->historicAsset?->name ?? '',
+                    'note'         => $parts->first()['note'],
                     'quantity'     => $parts->min('quantity'),
                     'components'   => $parts->map(fn (array $part) => [
                         'sko_code'    => $part['sko_code'],
@@ -95,7 +97,7 @@ class PdfPackingList extends OrgAction
     /**
      * Delivery note items count SKOs (a slice of soap is 0.1 of its SKO); the customer counts the products they ordered.
      *
-     * @return array{sko_code: string, sko_name: string, sko_quantity: float, product_code: string, description: string, quantity: float}
+     * @return array{sko_code: string, sko_name: string, sko_quantity: float, product_code: string, description: string, note: ?string, quantity: float}
      */
     public function line(DeliveryNoteItem $item, float $skoQuantity): array
     {
@@ -115,8 +117,21 @@ class PdfPackingList extends OrgAction
             'sko_quantity' => round($skoQuantity, 3),
             'product_code' => $transaction?->historicAsset?->code ?? '',
             'description'  => $transaction?->historicAsset?->name ?? $item->orgStock?->name ?? '',
+            'note'         => self::freeLineNote($transaction),
             'quantity'     => (float)$quantity,
         ];
+    }
+
+    /**
+     * A replacement and a free gift both ship at no charge; the customer is told which one it is (HELP-4827).
+     */
+    public static function freeLineNote(?Transaction $transaction): ?string
+    {
+        return match (true) {
+            (bool)$transaction?->is_follow_on => __('Replacement'),
+            (bool)$transaction?->is_gift => __('Free gift'),
+            default => null,
+        };
     }
 
     private function isWholeNumber(float $quantity): bool

@@ -40,7 +40,7 @@ class PdfDeliveryNote extends OrgAction
             'customer'        => $deliveryNote->customer,
             'shopAddress'     => $shop->address->formatted_address,
             'deliveryAddress' => $deliveryNote->deliveryAddress->formatted_address,
-            'items'           => $deliveryNote->deliveryNoteItems()->with(['orgStock', 'pickings.batchCode'])->get(),
+            'items'           => $deliveryNote->deliveryNoteItems()->with(['orgStock', 'pickings.batchCode', 'transaction'])->get(),
         ]);
 
         return response($pdf->output(), 200)
