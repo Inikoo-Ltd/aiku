@@ -53,7 +53,16 @@ class ShowDevelopmentRoom extends OrgAction
         $this->canEdit          = $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
         $this->canDecideTargets = $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "accounting.{$this->organisation->id}.edit"]);
 
-        return $this->canDecideTargets || $request->user()->authTo("productions_rd.{$this->production->id}.view");
+        return self::canSeeDevelopmentRoom($request->user(), $this->production);
+    }
+
+    public static function canSeeDevelopmentRoom(User $user, Production $production): bool
+    {
+        return $user->authTo([
+            "org-supervisor.$production->organisation_id",
+            "accounting.$production->organisation_id.edit",
+            "productions_rd.$production->id.view",
+        ]);
     }
 
     /**

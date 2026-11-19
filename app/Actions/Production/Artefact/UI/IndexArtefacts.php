@@ -21,6 +21,7 @@ use App\Models\Production\ArtefactFamily;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -53,7 +54,19 @@ class IndexArtefacts extends OrgAction
 
         $this->canEdit = $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
 
-        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.view"]);
+        return self::canSeeProductionArtefacts($request->user(), $this->production);
+    }
+
+    /**
+     * Production manager, R&D and floor supervisors (HELP-4818: floor supervisors read the artefacts they produce; editing stays with R&D).
+     */
+    public static function canSeeProductionArtefacts(User $user, Production $production): bool
+    {
+        return $user->authTo([
+            "org-supervisor.$production->organisation_id",
+            "productions_rd.$production->id.view",
+            "productions_operations.$production->id.orchestrate",
+        ]);
     }
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
@@ -535,7 +548,7 @@ class IndexArtefacts extends OrgAction
                         ] : null,
                     ]
                 ],
-                'upload_artefacts' => $this->parent instanceof Production ? [
+                'upload_artefacts' => $this->canEdit && $this->parent instanceof Production ? [
                     'title' => [
                         'label'       => __('Upload Artefacts'),
                         'information' => __('The list of column file: code, name, state'),

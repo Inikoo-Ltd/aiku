@@ -32,7 +32,7 @@ class IndexArtefactLabels extends OrgAction
     {
         $this->canEdit = $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
 
-        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.view"]);
+        return IndexArtefacts::canSeeProductionArtefacts($request->user(), $this->production);
     }
 
     public function asController(Organisation $organisation, Production $production, ActionRequest $request): LengthAwarePaginator

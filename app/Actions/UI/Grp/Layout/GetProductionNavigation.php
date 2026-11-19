@@ -8,7 +8,10 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\Production\Artefact\UI\IndexArtefacts;
+use App\Actions\Production\Artefact\UI\ShowDevelopmentRoom;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
+use App\Actions\Production\RawMaterial\UI\IndexRawMaterials;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -74,7 +77,7 @@ class GetProductionNavigation
                             ],
                         ],
 
-                        [
+                        ...(IndexRawMaterials::canSeeProductionRawMaterials($user, $production) ? [[
                             'label'   => __('Raw materials'),
                             'tooltip' => __('artefacts raw materials'),
                             'icon'    => ['fal', 'fa-drone'],
@@ -83,9 +86,9 @@ class GetProductionNavigation
                                 'name'       => 'grp.org.productions.show.crafts.raw_materials.index',
                                 'parameters' => [$production->organisation->slug, $production->slug]
                             ],
-                        ],
+                        ]] : []),
 
-                        ...($canSeeAllCrafts ? [[
+                        ...(IndexArtefacts::canSeeProductionArtefacts($user, $production) ? [[
                             'label'   => __('Artefacts'),
                             'tooltip' => __('manufactured products'),
                             'icon'    => ['fal', 'fa-hamsa'],
@@ -94,9 +97,9 @@ class GetProductionNavigation
                                 'name'       => 'grp.org.productions.show.crafts.artefacts.index',
                                 'parameters' => [$production->organisation->slug, $production->slug]
                             ],
-                        ],
+                        ]] : []),
 
-                        [
+                        ...(ShowDevelopmentRoom::canSeeDevelopmentRoom($user, $production) ? [[
                             'label'   => __('Development'),
                             'tooltip' => __('The development team\'s room: experiments, trial runs and launches'),
                             'icon'    => ['fal', 'fa-vial'],

@@ -11,6 +11,9 @@ namespace App\Actions\Production\Production\UI;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
+use App\Actions\Production\Artefact\UI\IndexArtefacts;
+use App\Actions\Production\Artefact\UI\ShowDevelopmentRoom;
+use App\Actions\Production\RawMaterial\UI\IndexRawMaterials;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
@@ -20,6 +23,7 @@ use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ProductionResource;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -89,9 +93,9 @@ class ShowCraftsDashboard extends OrgAction
 
 
                 ],
-                'stats' => $this->getStats($production, $request->route()->originalParameters()),
+                'stats' => $this->withoutUnreachableLinks($this->getStats($production, $request->route()->originalParameters()), $request->user(), $production),
                 'statsBoxNegativeTitle' => __('Artefact problems'),
-                'statsBoxNegative' => [
+                'statsBoxNegative' => $this->withoutUnreachableLinks([
                     [
                         'label' => __('Without recipe'),
                         'icon'  => 'fal fa-exclamation-triangle',
@@ -135,7 +139,7 @@ class ShowCraftsDashboard extends OrgAction
                             'parameters' => $request->route()->originalParameters()
                         ],
                     ],
-                ],
+                ], $request->user(), $production),
                 'tabs'                             => [
 
                     'current'    => $this->tab,
@@ -158,6 +162,38 @@ class ShowCraftsDashboard extends OrgAction
         )->table(IndexHistory::make()->tableStructure(prefix: ProductionTabsEnum::HISTORY->value));
     }
 
+
+    /**
+     * HELP-4818: a card links only to a page its viewer can open; the rest show their count without a link.
+     */
+    private function withoutUnreachableLinks(array $boxes, User $user, Production $production): array
+    {
+        $canSeeArtefacts = IndexArtefacts::canSeeProductionArtefacts($user, $production);
+        $reachable       = [
+            'grp.org.productions.show.crafts.artefacts.index'            => $canSeeArtefacts,
+            'grp.org.productions.show.crafts.artefact_families.index'    => $canSeeArtefacts,
+            'grp.org.productions.show.crafts.artefact_departments.index' => $canSeeArtefacts,
+            'grp.org.productions.show.crafts.labels.index'               => $canSeeArtefacts,
+            'grp.org.productions.show.crafts.development'                => ShowDevelopmentRoom::canSeeDevelopmentRoom($user, $production),
+            'grp.org.productions.show.crafts.raw_materials.index'        => IndexRawMaterials::canSeeProductionRawMaterials($user, $production),
+        ];
+        $unlinkUnreachable = function (array $box) use ($reachable): array {
+            if (isset($box['route']['name']) && !($reachable[$box['route']['name']] ?? true)) {
+                $box['route'] = null;
+            }
+
+            return $box;
+        };
+
+        return array_map(function (array $box) use ($unlinkUnreachable) {
+            $box = $unlinkUnreachable($box);
+            if (isset($box['metas'])) {
+                $box['metas'] = array_map($unlinkUnreachable, $box['metas']);
+            }
+
+            return $box;
+        }, $boxes);
+    }
 
     private function getStats(Production $production, array $routeParameters): array
     {

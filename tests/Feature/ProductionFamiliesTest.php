@@ -372,6 +372,66 @@ test('UI crafts artefacts as org admin', function () {
     }
 });
 
+test('HELP-4818 a floor supervisor reads artefacts, families, departments and labels but cannot create or edit them', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'FLOORDEP', 'name' => 'Floor department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'FLOORFAM', 'name' => 'Floor family']);
+    $artefact   = StoreArtefact::make()->action($this->production, ['state' => ArtefactStateEnum::ACTIVE->value, 'code' => 'FLOOR-01', 'name' => 'Floor artefact', 'artefact_family_id' => $family->id]);
+
+    $floorSupervisor = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+    $floorSupervisor->assignRole('production-orchestrator-'.$this->production->id);
+    $parameters = [$this->organisation->slug, $this->production->slug];
+
+    actingAs($floorSupervisor);
+    foreach (['artefacts.index', 'artefact_families.index', 'artefact_departments.index', 'labels.index'] as $page) {
+        get(route('grp.org.productions.show.crafts.'.$page, $parameters))->assertOk();
+    }
+    get(route('grp.org.productions.show.crafts.artefacts.show', [...$parameters, $artefact->slug]))->assertOk();
+    get(route('grp.org.productions.show.crafts.artefact_families.show', [...$parameters, $family->slug]))->assertOk();
+    get(route('grp.org.productions.show.crafts.artefact_departments.show', [...$parameters, $department->slug]))->assertOk();
+    get(route('grp.org.productions.show.crafts.artefacts.index', $parameters))->assertInertia(fn ($page) => $page->where('upload_artefacts', null));
+    get(route('grp.org.productions.show.crafts.artefacts.create', $parameters))->assertForbidden();
+    get(route('grp.org.productions.show.crafts.artefact_families.create', $parameters))->assertForbidden();
+    get(route('grp.org.productions.show.crafts.artefact_families.edit', [...$parameters, $family->slug]))->assertForbidden();
+
+    actingAs($this->guest->getUser());
+});
+
+test('HELP-4818 the crafts menu and dashboard link only to the pages each production role can open', function () {
+    $parameters = [$this->organisation->slug, $this->production->slug];
+    $userWithRole = function (string $role) {
+        $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+        $user->assignRole($role.'-'.$this->production->id);
+
+        return $user;
+    };
+    $craftsMenu = fn ($user) => collect(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $user)['crafts']['topMenu']['subSections'])->pluck('route.name')->all();
+    $linkedFromDashboard = function ($user) use ($parameters) {
+        $routes = [];
+        actingAs($user);
+        get(route('grp.org.productions.show.crafts.dashboard', $parameters))->assertOk()->assertInertia(function ($page) use (&$routes) {
+            $routes = collect([...$page->toArray()['props']['stats'], ...$page->toArray()['props']['statsBoxNegative']])
+                ->flatMap(fn ($box) => [data_get($box, 'route.name'), ...collect($box['metas'] ?? [])->pluck('route.name')])
+                ->filter()->unique()->values()->all();
+        });
+
+        return $routes;
+    };
+
+    $floorSupervisor = $userWithRole('production-orchestrator');
+    expect($craftsMenu($floorSupervisor))->toBe(['grp.org.productions.show.crafts.dashboard', 'grp.org.productions.show.crafts.raw_materials.index', 'grp.org.productions.show.crafts.artefacts.index'])
+        ->and($linkedFromDashboard($floorSupervisor))->not->toContain('grp.org.productions.show.crafts.development')
+        ->and($linkedFromDashboard($floorSupervisor))->toContain('grp.org.productions.show.crafts.artefacts.index');
+
+    foreach (['production-line-manager', 'production-preparer'] as $role) {
+        $user = $userWithRole($role);
+        expect($craftsMenu($user))->toBe(['grp.org.productions.show.crafts.dashboard'])
+            ->and($linkedFromDashboard($user))->toBe([]);
+        get(route('grp.org.productions.show.crafts.artefacts.index', $parameters))->assertForbidden();
+    }
+
+    actingAs($this->guest->getUser());
+});
+
 test('artefact family state follows the liveliest of its artefacts', function () {
     $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'STATEDEP', 'name' => 'State department']);
     $family     = StoreArtefactFamily::make()->action($department, ['code' => 'STATEFAM', 'name' => 'State family']);
