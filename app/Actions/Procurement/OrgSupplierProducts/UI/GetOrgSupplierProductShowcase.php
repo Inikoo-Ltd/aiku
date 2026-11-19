@@ -41,9 +41,14 @@ class GetOrgSupplierProductShowcase
     {
         $viewingOrganisation = request()->route('organisation');
         if ($viewingOrganisation instanceof Organisation && $viewingOrganisation->type === OrganisationTypeEnum::AGENT) {
+            $selection = AgentOrganisationSelection::fromRequest(parameter: 'supplierProduct');
+
             return $this->withoutLandedCosts(array_merge(
                 $this->showcase($orgSupplierProduct),
-                ['agent' => GetOrgSupplierProductAgentPanel::run($orgSupplierProduct, $viewingOrganisation, $this->canEditCarton($orgSupplierProduct))]
+                [
+                    'agent'           => GetOrgSupplierProductAgentPanel::run($orgSupplierProduct, $viewingOrganisation, $this->canEditCarton($orgSupplierProduct)),
+                    'other_suppliers' => $selection ? IndexAgentSupplierProductSuppliers::otherSuppliers($orgSupplierProduct->supplierProduct, $selection, $viewingOrganisation) : [],
+                ]
             ));
         }
 

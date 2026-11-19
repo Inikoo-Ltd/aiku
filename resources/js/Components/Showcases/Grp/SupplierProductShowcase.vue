@@ -176,6 +176,13 @@ const props = defineProps<{
             image: object | null
             route: routeType
         }[]
+        other_suppliers?: {
+            supplier_code: string
+            supplier_name: string
+            code: string
+            is_available: boolean
+            route: routeType | null
+        }[]
         organisation?: {
             name: string
             code: string
@@ -828,6 +835,27 @@ const availabilityBadge = (isAvailable: boolean) =>
                         <span class="ml-auto text-xs tabular-nums text-gray-400">{{ party.code }}</span>
                     </component>
                 </div>
+
+                <template v-if="data.other_suppliers?.length">
+                    <div class="mb-2 mt-4 text-xs text-gray-500">
+                        {{ ctrans("Also supplied by :count other suppliers", { count: data.other_suppliers.length }) }}
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <component :is="other.route ? Link : 'div'" v-for="other in data.other_suppliers" :key="other.supplier_code + other.code"
+                            :href="other.route ? route(other.route.name, other.route.parameters) : undefined"
+                            class="flex items-center gap-3 rounded-lg border border-dashed border-gray-200 px-3 py-2 transition hover:border-gray-300 hover:bg-gray-50">
+                            <Icon :data="{ icon: 'fal fa-person-dolly' }" class="w-8 shrink-0 text-center text-gray-400" />
+                            <div class="min-w-0">
+                                <div class="truncate text-sm font-medium text-gray-700">{{ other.supplier_name }}</div>
+                                <div class="whitespace-nowrap text-xs text-gray-400">
+                                    {{ other.code }}
+                                    <span v-if="!other.is_available" class="ml-1 text-red-500">· {{ ctrans("Unavailable") }}</span>
+                                </div>
+                            </div>
+                            <span class="ml-auto whitespace-nowrap text-xs tabular-nums text-gray-400">{{ other.supplier_code }}</span>
+                        </component>
+                    </div>
+                </template>
             </template>
         </section>
 

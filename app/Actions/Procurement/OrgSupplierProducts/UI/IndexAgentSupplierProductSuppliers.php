@@ -72,6 +72,51 @@ class IndexAgentSupplierProductSuppliers extends OrgAction
     }
 
     /**
+     * The other suppliers of the agent that supply the same SKU, for the Provided by box of the showcase,
+     * each linked to its own page when the agent has one.
+     *
+     * @return array<int, array{supplier_code: string, supplier_name: string, code: string, is_available: bool, route: array<string, mixed>|null}>
+     */
+    public static function otherSuppliers(SupplierProduct $supplierProduct, AgentOrganisationSelection $selection, Organisation $agentOrganisation): array
+    {
+        $agent = $agentOrganisation->agent;
+        if (!$agent) {
+            return [];
+        }
+
+        $others = SupplierProduct::query()
+            ->join('suppliers', 'suppliers.id', 'supplier_products.supplier_id')
+            ->where('suppliers.agent_id', $agent->id)
+            ->where('supplier_products.id', '!=', $supplierProduct->id)
+            ->whereIn('supplier_products.id', StockHasSupplierProduct::whereIn('stock_id', self::stockIds($supplierProduct))->select('supplier_product_id'))
+            ->orderBy('suppliers.code')
+            ->get([
+                'supplier_products.id',
+                'supplier_products.slug',
+                'supplier_products.code',
+                'supplier_products.is_available',
+                'suppliers.code as supplier_code',
+                'suppliers.name as supplier_name',
+            ]);
+
+        $withPage = OrgSupplierProduct::whereIn('supplier_product_id', $others->pluck('id'))
+            ->whereIn('org_agent_id', OrgAgent::where('agent_id', $agent->id)->select('id'))
+            ->distinct()
+            ->pluck('supplier_product_id')
+            ->all();
+
+        return $others->map(fn (SupplierProduct $other) => [
+            'supplier_code' => $other->supplier_code,
+            'supplier_name' => $other->supplier_name,
+            'code'          => $other->code,
+            'is_available'  => (bool) $other->is_available,
+            'route'         => in_array($other->id, $withPage, true)
+                ? $selection->route('grp.org.procurement.org_supplier_products.show', ['organisation' => $agentOrganisation->slug, 'supplierProduct' => $other->slug])
+                : null,
+        ])->values()->all();
+    }
+
+    /**
      * The supplier product each buying organisation prefers for these SKUs, by organisation id (null when none).
      *
      * @return array<int, int|null>
