@@ -2507,6 +2507,63 @@ test('only accounting managers change an invoice tax number, on the invoice alon
         ->and($customerAudit->new_values['affected_invoice'])->toBe($invoice->reference);
 });
 
+test('customer tax number change left unticked keeps current orders as they are', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+    \App\Actions\Helpers\TaxNumber\ValidateEuropeanTaxNumber::shouldRun()->andReturnUsing(fn ($taxNumber) => $taxNumber);
+    $spainId = \App\Models\Helpers\Country::where('code', 'ES')->value('id');
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    [, $product] = createProduct($this->shop);
+    createOrder($customer, $product);
+    \App\Actions\Helpers\TaxNumber\StoreTaxNumber::run(owner: $customer, modelData: ['number' => 'B11111111', 'country_id' => $spainId], strict: false);
+    DB::table('tax_numbers')->where('id', $customer->refresh()->taxNumber->id)->update(['valid' => true]);
+
+    \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::mock()->shouldReceive('handle')->never();
+    \App\Actions\Ordering\Order\ResetOrderTaxCategory::mock()->shouldReceive('handle')->never();
+
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->refresh(), ['tax_number' => ['number' => 'B22222222', 'country_id' => $spainId], 'update_current_orders' => false]);
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->refresh(), ['tax_number' => ['number' => null], 'update_current_orders' => false]);
+
+    expect($customer->refresh()->taxNumber)->toBeNull()
+        ->and(\Illuminate\Support\Facades\Context::getHidden(\App\Models\Helpers\TaxNumber::KEEP_CURRENT_ORDERS))->toBeNull();
+});
+
+test('customer tax number change updates current orders by default', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+    \App\Actions\Helpers\TaxNumber\ValidateEuropeanTaxNumber::shouldRun()->andReturnUsing(fn ($taxNumber) => $taxNumber);
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    [, $product] = createProduct($this->shop);
+    createOrder($customer, $product);
+
+    \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::mock()->shouldReceive('handle')->atLeast()->once();
+
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer, [
+        'tax_number' => ['number' => 'B22222222', 'country_id' => \App\Models\Helpers\Country::where('code', 'ES')->value('id')],
+    ]);
+
+    expect($customer->refresh()->taxNumber->number)->toBe('B22222222');
+});
+
+test('an invoiced order shows the tax number it was billed with, not the customer profile one', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+    \App\Actions\Helpers\TaxNumber\ValidateEuropeanTaxNumber::shouldRun()->andReturnUsing(fn ($taxNumber) => $taxNumber);
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    [, $product] = createProduct($this->shop);
+    $order   = createOrder($customer, $product);
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    DB::table('invoices')->where('id', $invoice->id)->update(['order_id' => $order->id, 'tax_number' => 'ESB22222222', 'in_process' => false]);
+
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->refresh(), [
+        'tax_number' => ['number' => 'B33333333', 'country_id' => \App\Models\Helpers\Country::where('code', 'ES')->value('id')],
+    ]);
+
+    get(route('grp.org.shops.show.ordering.orders.show', [$this->organisation->slug, $this->shop->slug, $order->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('box_stats.customer.tax_number.number', 'ESB22222222'));
+});
+
 /*
 |--------------------------------------------------------------------------
 | Actions: credit transactions increase / decrease

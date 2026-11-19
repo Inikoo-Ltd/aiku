@@ -1,4 +1,6 @@
 {
+    "Update current orders": "Laufende Bestellungen aktualisieren",
+    "Orders not invoiced yet get the new tax. Untick to apply it only to new orders. Invoices already issued never change.": "Noch nicht fakturierte Bestellungen erhalten die neue Steuer. Deaktivieren, um sie nur auf neue Bestellungen anzuwenden. Bereits ausgestellte Rechnungen ändern sich nie.",
     "The invoice date could not be saved": "Das Rechnungsdatum konnte nicht gespeichert werden",
     "No tax number": "Keine Steuernummer",
     "Change the tax number on this invoice and on the customer": "Steuernummer auf dieser Rechnung und beim Kunden ändern",

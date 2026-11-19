@@ -1,4 +1,6 @@
 {
+    "Update current orders": "Mettre à jour les commandes en cours",
+    "Orders not invoiced yet get the new tax. Untick to apply it only to new orders. Invoices already issued never change.": "Les commandes pas encore facturées reçoivent la nouvelle taxe. Décochez pour l'appliquer uniquement aux nouvelles commandes. Les factures déjà émises ne changent jamais.",
     "The invoice date could not be saved": "La date de la facture n'a pas pu être enregistrée",
     "No tax number": "Pas de numéro de TVA",
     "Change the tax number on this invoice and on the customer": "Modifier le numéro de TVA sur cette facture et chez le client",

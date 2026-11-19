@@ -1,4 +1,6 @@
 {
+    "Update current orders": "Aktualizovať rozpracované objednávky",
+    "Orders not invoiced yet get the new tax. Untick to apply it only to new orders. Invoices already issued never change.": "Objednávky, ktoré ešte neboli fakturované, dostanú novú daň. Zrušte začiarknutie, ak ju chcete použiť len na nové objednávky. Už vystavené faktúry sa nikdy nemenia.",
     "Within 3 months of the sale we need proof the goods left the UK:": "Do 3 mesiacov od predaja potrebujeme doklad, že tovar opustil Spojené kráľovstvo:",
     "The customs export declaration with its exit confirmation (MRN), or a CMR, bill of lading or air waybill": "Colné vývozné vyhlásenie s potvrdením o výstupe (MRN), alebo CMR, konosament či letecký nákladný list",
     "Backed by the customer's order and proof of payment": "Spolu s objednávkou zákazníka a dokladom o platbe",

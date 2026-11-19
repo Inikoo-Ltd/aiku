@@ -1,4 +1,6 @@
 {
+    "Update current orders": "Actualizează comenzile în curs",
+    "Orders not invoiced yet get the new tax. Untick to apply it only to new orders. Invoices already issued never change.": "Comenzile încă nefacturate primesc noua taxă. Debifează pentru a o aplica doar comenzilor noi. Facturile deja emise nu se schimbă niciodată.",
     "The invoice date could not be saved": "Data facturii nu a putut fi salvată",
     "No tax number": "Fără cod fiscal",
     "Change the tax number on this invoice and on the customer": "Schimbă codul fiscal pe această factură și la client",

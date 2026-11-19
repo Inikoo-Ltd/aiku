@@ -147,6 +147,10 @@ class EditCustomer extends OrgAction
                         'show'      => true,
                         'cus_id'    => $customer->id,
                     ],
+                    'hasOther'              => [
+                        'name'  => 'update_current_orders',
+                        'value' => true,
+                    ],
                     'country'               => $customer->address->country_code,
                     'options'               => [
                     ],

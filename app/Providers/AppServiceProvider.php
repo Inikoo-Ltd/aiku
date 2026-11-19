@@ -18,7 +18,10 @@ use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Log\Context\Repository as ContextRepository;
+use App\Models\Helpers\TaxNumber;
 use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -104,6 +107,8 @@ class AppServiceProvider extends ServiceProvider
     {
         ini_set('pcre.backtrack_limit', '10000000');
         ini_set('pcre.recursion_limit', '10000000');
+
+        Context::dehydrating(fn (ContextRepository $context) => $context->forgetHidden(TaxNumber::KEEP_CURRENT_ORDERS));
 
         ResetPassword::toMailUsing(function (User $user, string $token): MailMessage {
             $message = (new MailMessage())

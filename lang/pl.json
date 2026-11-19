@@ -1,4 +1,6 @@
 {
+    "Update current orders": "Zaktualizuj bieżące zamówienia",
+    "Orders not invoiced yet get the new tax. Untick to apply it only to new orders. Invoices already issued never change.": "Zamówienia jeszcze niezafakturowane otrzymają nowy podatek. Odznacz, aby zastosować go tylko do nowych zamówień. Wystawione już faktury nigdy się nie zmieniają.",
     "The invoice date could not be saved": "Nie udało się zapisać daty faktury",
     "No tax number": "Brak numeru NIP",
     "Change the tax number on this invoice and on the customer": "Zmień NIP na tej fakturze i u klienta",

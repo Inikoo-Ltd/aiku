@@ -191,6 +191,28 @@ trait IsOrder
         return (string) Number::currency($amount, $currencyCode, app()->getLocale());
     }
 
+    /**
+     * Once invoiced, the order shows the tax number it was billed with, not whatever the customer profile says today.
+     *
+     * @return array{tax_number?: array{number: string|null, valid: bool|null}}
+     */
+    protected function getInvoicedTaxNumber(Order $order): array
+    {
+        $invoice = $order->invoices
+            ->where('type', InvoiceTypeEnum::INVOICE)
+            ->where('in_process', false)
+            ->sortByDesc('id')
+            ->first();
+
+        if (!$invoice) {
+            return [];
+        }
+
+        $hasNumber = (bool) preg_match('/\d/', (string) $invoice->tax_number);
+
+        return ['tax_number' => ['number' => $hasNumber ? $invoice->tax_number : null, 'valid' => $invoice->tax_number_valid]];
+    }
+
     public function getOrderBoxStats(Order $order): array
     {
         $taxCategory = $order->taxCategory;
@@ -520,6 +542,7 @@ trait IsOrder
             ],
             'customer'         => $order->customer ? array_merge(
                 CustomerResource::make($order->customer)->getArray(),
+                $this->getInvoicedTaxNumber($order),
                 [
                     'addresses' => [
                         'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),

@@ -19,6 +19,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { router } from "@inertiajs/vue3"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
+import Checkbox from "primevue/checkbox"
 
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 defineOptions({ inheritAttrs: false })
@@ -257,7 +258,8 @@ const markAsValid = () => {
     router.patch(route('grp.models.customer.update', {
             customer: props.fieldData.mark_as_valid_button.cus_id
         }), {
-            mark_tax_number_valid: true
+            mark_tax_number_valid: true,
+            update_current_orders: props.form.update_current_orders ?? true
         }, 
         {
             onStart: () => (
@@ -301,6 +303,11 @@ const markAsValid = () => {
             <p v-if="isCountryMissing" class="mt-1 text-sm text-red-600">
                 {{ ctrans('Tax number needs its country') }}
             </p>
+            <label v-if="'update_current_orders' in form" class="mt-2 flex items-center gap-x-2 text-sm text-gray-600 cursor-pointer">
+                <Checkbox v-model="form.update_current_orders" binary inputId="update_current_orders" />
+                {{ ctrans('Update current orders') }}
+                <FontAwesomeIcon v-tooltip="ctrans('Orders not invoiced yet get the new tax. Untick to apply it only to new orders. Invoices already issued never change.')" icon="fal fa-info-circle" class="opacity-60 hover:opacity-100" fixed-width aria-hidden="true" />
+            </label>
             <span class="italic text-xs" v-if="fieldData?.europeanUnion">
                 <span style="color: red">*</span> {{ ctrans("This will affect your VAT Rate") }}
                 <FontAwesomeIcon v-on:click="isModalOpen = true" v-tooltip="ctrans('Click to view detailed explanation')" icon='fal fa-info-circle' class="opacity-60 hover:opacity-100 cursor-pointer" fixed-width aria-hidden='true' />

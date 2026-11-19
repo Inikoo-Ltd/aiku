@@ -1,4 +1,6 @@
 {
+    "Update current orders": "Actualizar pedidos en curso",
+    "Orders not invoiced yet get the new tax. Untick to apply it only to new orders. Invoices already issued never change.": "Los pedidos aún no facturados reciben el nuevo impuesto. Desmárcalo para aplicarlo solo a los pedidos nuevos. Las facturas ya emitidas nunca cambian.",
     "Within 3 months of the sale we need proof the goods left the UK:": "En los 3 meses siguientes a la venta necesitamos la prueba de que la mercancía salió del Reino Unido:",
     "The customs export declaration with its exit confirmation (MRN), or a CMR, bill of lading or air waybill": "La declaración de exportación de aduanas con su confirmación de salida (MRN), o un CMR, conocimiento de embarque o guía aérea",
     "Backed by the customer's order and proof of payment": "Junto con el pedido del cliente y el justificante de pago",

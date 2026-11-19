@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Context;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -83,6 +84,9 @@ class TaxNumber extends Model implements Auditable
         'tax_validation',
     ];
 
+    /** Hidden Context key: staff unticked "Update current orders", so the change only reaches new orders */
+    public const string KEEP_CURRENT_ORDERS = 'tax_number_keeps_current_orders';
+
     protected $guarded = [];
 
     protected array $auditInclude = [
@@ -103,12 +107,14 @@ class TaxNumber extends Model implements Auditable
     protected static function booted(): void
     {
         static::saved(function (TaxNumber $taxNumber) {
-            if ($taxNumber->wasChanged('valid')) {
+            if ($taxNumber->wasChanged('valid') && !Context::getHidden(self::KEEP_CURRENT_ORDERS)) {
                 ResetCustomerOrdersTaxCategory::run($taxNumber);
             }
         });
         static::deleted(function (TaxNumber $taxNumber) {
-            ResetCustomerOrdersTaxCategory::run($taxNumber);
+            if (!Context::getHidden(self::KEEP_CURRENT_ORDERS)) {
+                ResetCustomerOrdersTaxCategory::run($taxNumber);
+            }
         });
     }
 

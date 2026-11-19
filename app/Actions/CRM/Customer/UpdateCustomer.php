@@ -52,6 +52,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
+use App\Models\Helpers\TaxNumber;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
 use App\Rules\IUnique;
@@ -59,6 +60,7 @@ use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -85,6 +87,8 @@ class UpdateCustomer extends OrgAction
     {
         $staleData = clone $customer;
         $staleData = $staleData->toArray();
+
+        $updateCurrentOrders = (bool) Arr::pull($modelData, 'update_current_orders', true);
 
         if (Arr::has($modelData, 'contact_address')) {
             $contactAddressData = Arr::get($modelData, 'contact_address');
@@ -183,27 +187,29 @@ class UpdateCustomer extends OrgAction
                     $taxNumberData = Arr::pull($modelData, 'tax_number');
                 }
 
-                if (Arr::get($taxNumberData, 'number')) {
-                    if (!$customer->taxNumber) {
-                        if (!Arr::get($taxNumberData, 'data.name')) {
-                            Arr::forget($taxNumberData, 'data.name');
-                        }
+                Context::scope(function () use ($customer, $taxNumberData) {
+                    if (Arr::get($taxNumberData, 'number')) {
+                        if (!$customer->taxNumber) {
+                            if (!Arr::get($taxNumberData, 'data.name')) {
+                                Arr::forget($taxNumberData, 'data.name');
+                            }
 
-                        if (!Arr::get($taxNumberData, 'data.address')) {
-                            Arr::forget($taxNumberData, 'data.address');
-                        }
+                            if (!Arr::get($taxNumberData, 'data.address')) {
+                                Arr::forget($taxNumberData, 'data.address');
+                            }
 
-                        StoreTaxNumber::run(
-                            owner: $customer,
-                            modelData: $taxNumberData,
-                            strict: $this->strict
-                        );
-                    } else {
-                        UpdateTaxNumber::run($customer->taxNumber, $taxNumberData, $this->strict);
+                            StoreTaxNumber::run(
+                                owner: $customer,
+                                modelData: $taxNumberData,
+                                strict: $this->strict
+                            );
+                        } else {
+                            UpdateTaxNumber::run($customer->taxNumber, $taxNumberData, $this->strict);
+                        }
+                    } elseif ($customer->taxNumber) {
+                        DeleteTaxNumber::run($customer->taxNumber);
                     }
-                } elseif ($customer->taxNumber) {
-                    DeleteTaxNumber::run($customer->taxNumber);
-                }
+                }, hidden: [TaxNumber::KEEP_CURRENT_ORDERS => !$updateCurrentOrders]);
             }
 
             $markAsValid = Arr::pull($modelData, 'mark_tax_number_valid', false);
@@ -221,7 +227,7 @@ class UpdateCustomer extends OrgAction
                     data_set($updatedData, 'manual_validation_user_id', $this->user?->id);
                 }
 
-                $taxNumber->update($updatedData);
+                Context::scope(fn () => $taxNumber->update($updatedData), hidden: [TaxNumber::KEEP_CURRENT_ORDERS => !$updateCurrentOrders]);
 
                 $this->deployTaxValidationCustomAudit($oldTaxNumber, $taxNumber, TaxNumberValidationTypeEnum::MANUAL);
             }
@@ -231,30 +237,32 @@ class UpdateCustomer extends OrgAction
 
             $customer->refresh();
 
-            $customer->orders()
-                ->where(function ($q) {
-                    $q->where('state', OrderStateEnum::CREATING)
-                        ->orWhereHas('deliveryNotes', function ($q) {
-                            $q->where('is_cash_on_delivery', true)
-                                ->whereNotIn('state', [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::FINALISED]);
-                        });
-                })
-                ->with(['organisation', 'billingAddress', 'deliveryAddress', 'shop.collectionAddress'])
-                ->each(function ($order) use ($customer) {
-                    if (!$order->canChangeTaxCategory()) {
-                        return;
-                    }
-                    $order->update([
-                        'tax_category_id' => GetTaxCategory::run(
-                            country: $order->organisation->country,
-                            taxNumber: $customer->taxNumber,
-                            billingAddress: $order->billingAddress,
-                            deliveryAddress: $order->taxableDeliveryAddress(),
-                            isRe: $customer->is_re,
-                        )->id,
-                    ]);
-                    CalculateOrderTotalAmounts::run($order, false, false);
-                });
+            if ($updateCurrentOrders) {
+                $customer->orders()
+                    ->where(function ($q) {
+                        $q->where('state', OrderStateEnum::CREATING)
+                            ->orWhereHas('deliveryNotes', function ($q) {
+                                $q->where('is_cash_on_delivery', true)
+                                    ->whereNotIn('state', [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::FINALISED]);
+                            });
+                    })
+                    ->with(['organisation', 'billingAddress', 'deliveryAddress', 'shop.collectionAddress'])
+                    ->each(function ($order) use ($customer) {
+                        if (!$order->canChangeTaxCategory()) {
+                            return;
+                        }
+                        $order->update([
+                            'tax_category_id' => GetTaxCategory::run(
+                                country: $order->organisation->country,
+                                taxNumber: $customer->taxNumber,
+                                billingAddress: $order->billingAddress,
+                                deliveryAddress: $order->taxableDeliveryAddress(),
+                                isRe: $customer->is_re,
+                            )->id,
+                        ]);
+                        CalculateOrderTotalAmounts::run($order, false, false);
+                    });
+            }
         }
 
         if (Arr::hasAny($modelData, ['contact_name', 'company_name'])) {
@@ -451,6 +459,7 @@ class UpdateCustomer extends OrgAction
                 Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id),
             ],
             'mark_tax_number_valid'                                 => ['sometimes', 'boolean', Rule::prohibitedIf(fn () => empty($this->customer?->taxNumber))],
+            'update_current_orders'                                 => ['sometimes', 'boolean'],
         ];
 
         if ($this?->asAction) {
@@ -545,7 +554,7 @@ class UpdateCustomer extends OrgAction
         $this->initialisationFromShop($customer->shop, $request);
 
         $modelData = $customer->shop->type === ShopTypeEnum::EXTERNAL
-            ? Arr::only($this->validatedData, ['tax_number'])
+            ? Arr::only($this->validatedData, ['tax_number', 'update_current_orders'])
             : $this->validatedData;
 
         return $this->handle($customer, $modelData);

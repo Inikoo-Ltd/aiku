@@ -1,4 +1,6 @@
 {
+    "Update current orders": "Aktualizovat rozpracované objednávky",
+    "Orders not invoiced yet get the new tax. Untick to apply it only to new orders. Invoices already issued never change.": "Objednávky, které ještě nebyly fakturovány, dostanou novou daň. Zrušte zaškrtnutí, chcete-li ji použít jen pro nové objednávky. Již vystavené faktury se nikdy nemění.",
     "The invoice date could not be saved": "Datum faktury se nepodařilo uložit",
     "No tax number": "Bez DIČ",
     "Change the tax number on this invoice and on the customer": "Změnit DIČ na této faktuře i u zákazníka",
