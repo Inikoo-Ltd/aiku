@@ -11,6 +11,10 @@ namespace App\Actions\CRM\ShoppingAssistant;
 use App\Actions\Helpers\AI\AskJev;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
+use App\Actions\Tasks\GetAikuAssistant;
+use App\Actions\Tasks\StoreStaffTask;
+use App\Actions\Tasks\UpdateStaffTask;
+use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
@@ -21,6 +25,7 @@ use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Ticket;
+use App\Models\Tasks\StaffTask;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -41,6 +46,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * an independent check is at least FAULT_CONFIDENCE sure of it (fromQuestion()): a guru cannot
  * explain an integration fault, only engineers can (Raul, 14 Nov 2026, the Allegro photo of INI-260).
  * There the customer has not been offered a fix yet, so tried_fix is not asked for.
+ *
+ * A confirmed report that is only missing catalogue content of ours (a weight, dimensions, photos,
+ * a description) is work for the products department, not a code fault: it becomes a staff task for
+ * them instead of a MER ticket (Raul, 18 Nov 2026, MER-06: hoodies with no weight). One open task per
+ * customer; a repeat becomes a note on it.
  */
 class StoreShoppingAssistantEngineerTicket
 {
@@ -50,8 +60,14 @@ class StoreShoppingAssistantEngineerTicket
 
     public const float FAULT_CONFIDENCE = 0.8;
 
+    public const float CATALOGUE_CONFIDENCE = 0.8;
+
+    public const string CATALOGUE_TASK_KIND = 'shopping_assistant_catalogue_gap';
+
+    public const string CATALOGUE_DEPARTMENT = 'products';
+
     /**
-     * @return array{status: 'created'|'already_reported'|'not_for_engineers', ticket: ?Ticket, confidence: ?float}
+     * @return array{status: 'created'|'already_reported'|'not_for_engineers'|'to_products', ticket: ?Ticket, confidence: ?float, task?: StaffTask}
      */
     public function handle(ShoppingAssistantConversation $conversation, string $summary, string $details, TicketKindEnum $kind, string $whyOnlyUs, bool $triedFix): array
     {
@@ -69,6 +85,10 @@ class StoreShoppingAssistantEngineerTicket
 
         if ($confidence === null || $confidence < self::MER_CONFIDENCE) {
             return ['status' => 'not_for_engineers', 'ticket' => null, 'confidence' => $confidence];
+        }
+
+        if (($this->confidenceCatalogueGap($summary, $details, $words, $whyOnlyUs) ?? 0) >= self::CATALOGUE_CONFIDENCE) {
+            return ['status' => 'to_products', 'ticket' => null, 'confidence' => $confidence, 'task' => $this->storeCatalogueTask($conversation, $summary, $details, $words)];
         }
 
         $ticket = $this->store($conversation, $summary, $this->description($conversation, $details, $words, $channels, $whyOnlyUs), $kind, $webUser, ['why_only_us' => $whyOnlyUs, 'confidence' => $confidence]);
@@ -203,6 +223,54 @@ class StoreShoppingAssistantEngineerTicket
             'A defect in our own system, integration code or data that the customer and customer services cannot fix',
             'User error, a question, a setting the customer can change, a problem on their own store or marketplace, something customer services can sort out, or not enough evidence'
         );
+    }
+
+    private function confidenceCatalogueGap(string $summary, string $details, string $words, string $whyOnlyUs): ?float
+    {
+        return AskJev::make()->noul(
+            array_filter(['summary' => $summary, 'details' => $details, 'customer_words' => $words, 'why_only_engineers' => $whyOnlyUs]),
+            'A confirmed problem a customer of a wholesale and dropshipping supplier reported. Is it only that content is missing or wrong on the supplier\'s own product records, which the product team fills in by hand?',
+            'Only product record content is missing or wrong (a weight, dimensions, photos, a description, a barcode, ingredients, materials or similar), so the product team can fix it by editing the products.',
+            'Something does not work: a sync, an upload, an order, stock, prices, the connection, an error, or anything else that needs a change in code.'
+        );
+    }
+
+    private function storeCatalogueTask(ShoppingAssistantConversation $conversation, string $summary, string $details, string $words): StaffTask
+    {
+        $customer  = $conversation->customer;
+        $assistant = GetAikuAssistant::run($customer->group_id);
+        $open      = StaffTask::open()
+            ->where('data->kind', self::CATALOGUE_TASK_KIND)
+            ->where('data->customer_id', $customer->id)
+            ->latest('id')
+            ->first();
+
+        if ($open) {
+            return UpdateStaffTask::run($open, $assistant, ['note' => mb_substr("The customer reported again: $details", 0, 1000)]);
+        }
+
+        return StoreStaffTask::run($assistant, [
+            'subject'     => mb_substr($summary, 0, 255),
+            'description' => implode("\n\n", [
+                'Merlin, the AI shopping assistant, found product records of ours missing content a customer needs. Please fill it in on the products.',
+                "What the customer reports:\n$details",
+                "The customer's words:\n> ".str_replace("\n", "\n> ", trim($words)),
+                'Customer: '.$customer->name.' ('.$customer->reference.')',
+                'Conversation: '.route('grp.org.shops.show.ai_salesman.conversations.show', [$customer->organisation->slug, $customer->shop->slug, $conversation->ulid]),
+            ]),
+            'department'  => self::CATALOGUE_DEPARTMENT,
+            'priority'    => ChatPriorityEnum::NORMAL->value,
+            'model_type'  => 'Customer',
+            'model_id'    => $customer->id,
+            'data'        => [
+                'kind'              => self::CATALOGUE_TASK_KIND,
+                'organisation_id'   => $customer->organisation_id,
+                'shop_id'           => $customer->shop_id,
+                'customer_id'       => $customer->id,
+                'conversation_id'   => $conversation->id,
+                'conversation_ulid' => $conversation->ulid,
+            ],
+        ]);
     }
 
     /**

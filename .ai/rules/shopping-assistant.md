@@ -50,3 +50,6 @@ Raul, 16 Nov 2026 ("fix them, do the amaze stuff"). A customer whose question al
 
 ## Sister shop: Aroma points to ancientwisdom.biz only
 Raul, 18 Nov 2026: when Aroma (aw-aromatics.com) has nothing that matches, Merlin points the customer to ancientwisdom.biz, because both are in the UK. Never point a shop to one in another organisation's country (no awgifts.eu for an EU customer), and never point AW to Aroma. The pair is set per website in settings.shopping_assistant.sister_website_id. The sister_shop_products tool is listed only where a live sister exists. It first returns names. The code adds the link line (sister search ?q=) only on a second call with matching true, so the model never writes the link or counts the products.
+
+## Missing product content goes to the products department, not MER
+Raul, 18 Nov 2026 (MER-06: hoodies with no weight). A report_to_engineers report that passes MER_CONFIDENCE but that AskJev reads as only missing or wrong product record content (weight, dimensions, photos, description, barcode), at CATALOGUE_CONFIDENCE or above, becomes a products-department staff task (data.kind shopping_assistant_catalogue_gap). It does not become a MER ticket. There is one open task per customer, and a repeat becomes a note on it. The customer gets no reference: the model says the product team will add it. fromQuestion is not covered yet.
