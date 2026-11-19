@@ -978,7 +978,42 @@ function showGoodsToCheck() {
 	]
 }
 
-onUnmounted(() => goodsReceiptsHighlightTimers.forEach(clearTimeout))
+const receiveGoodsButton = ref<HTMLElement | HTMLElement[] | null>(null)
+const isReceiveGoodsHighlighted = ref(false)
+const isReceiveGoodsShaking = ref(false)
+let receiveGoodsHighlightTimers: ReturnType<typeof setTimeout>[] = []
+
+const blockedChecks = computed<Record<string, string>>(() => {
+	const hasReceivedGoods = (props.agent_receiving?.lines ?? []).some((line) => line.items.length)
+	if (!props.agent_receiving?.receive || hasReceivedGoods) {
+		return {}
+	}
+
+	return { qc: ctrans("QC can not be done yet: the goods are not in the warehouse. Receive them first with Receive goods.") }
+})
+
+function showReceiveGoods() {
+	const button = Array.isArray(receiveGoodsButton.value) ? receiveGoodsButton.value[0] : receiveGoodsButton.value
+	if (!button) {
+		return
+	}
+	receiveGoodsHighlightTimers.forEach(clearTimeout)
+	button.scrollIntoView({ behavior: "smooth", block: "center" })
+	isReceiveGoodsHighlighted.value = true
+	isReceiveGoodsShaking.value = false
+	receiveGoodsHighlightTimers = [
+		setTimeout(() => (isReceiveGoodsShaking.value = true), 400),
+		setTimeout(() => (isReceiveGoodsShaking.value = false), 700),
+		setTimeout(() => (isReceiveGoodsShaking.value = true), 800),
+		setTimeout(() => (isReceiveGoodsShaking.value = false), 1100),
+		setTimeout(() => (isReceiveGoodsHighlighted.value = false), 2500),
+	]
+}
+
+onUnmounted(() => {
+	goodsReceiptsHighlightTimers.forEach(clearTimeout)
+	receiveGoodsHighlightTimers.forEach(clearTimeout)
+})
 
 const expectedProposedReadyAt = computed(() => (props.stages?.stages ?? []).flatMap((stage) => stage.steps).find((step) => step.key === "approved_ready_at")?.expected ?? null)
 
@@ -1303,7 +1338,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	</PageHeading>
 	<p v-if="actionError" class="mx-4 mt-2 text-xs text-red-600">{{ actionError }}</p>
 
-	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :skipRoute="stages.skip_route" :deposit="stages.deposit" :sample="stages.sample" :cho="stages.cho" :closeOld="stages.close_old">
+	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :skipRoute="stages.skip_route" :deposit="stages.deposit" :sample="stages.sample" :cho="stages.cho" :closeOld="stages.close_old" :blockedChecks="blockedChecks" @blockedCheck="showReceiveGoods">
 		<template v-if="agent_money && !stageActions.deposit_paid" #stage-deposit_paid>
 			<AgentPurchaseOrderMoney :money="agent_money" />
 		</template>
@@ -1327,14 +1362,20 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</template>
 		<template v-for="(actions, stageKey) in stageActions" :key="stageKey" #[`stage-${stageKey}`]>
 			<div class="mt-2 flex flex-col gap-1">
-				<AgentReceiveGoodsButton
+				<span
 					v-if="stageKey === 'in_warehouse' && agent_receiving?.receive"
-					:scopes="agent_receiving.receive.scopes"
-					:purchaseOrderId="agent_receiving.receive.purchase_order_id"
-					:isNextStep="isReceiveGoodsNextStep"
-					size="xs"
-					full
-				/>
+					ref="receiveGoodsButton"
+					class="block rounded transition-shadow"
+					:class="[isReceiveGoodsHighlighted ? 'ring-2 ring-orange-500 ring-offset-1' : '', isReceiveGoodsShaking ? 'animate-error_shake' : '']"
+				>
+					<AgentReceiveGoodsButton
+						:scopes="agent_receiving.receive.scopes"
+						:purchaseOrderId="agent_receiving.receive.purchase_order_id"
+						:isNextStep="isReceiveGoodsNextStep"
+						size="xs"
+						full
+					/>
+				</span>
 				<span v-if="stageKey === 'in_warehouse' && uncheckedReceiptItems.length" class="relative block">
 					<Button
 						type="tertiary"

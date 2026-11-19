@@ -117,6 +117,11 @@ const props = defineProps<{
     sample?: { required: boolean, approved: boolean, override_reason: string | null, skipped?: boolean, route: routeType | null } | null
     cho?: { passed: boolean, misses: string[], penalty_percentage: number } | null
     closeOld?: CloseOld | null
+    blockedChecks?: Record<string, string>
+}>()
+
+const emit = defineEmits<{
+    (event: "blockedCheck", key: string): void
 }>()
 
 const slots = useSlots()
@@ -159,6 +164,18 @@ const isComplete = (stage: Stage): boolean => stage.reached || !!stage.not_requi
 const stageMarks = (stage: Stage) => stage.marks.filter((mark) => !(mark.field === "compliance_complete_at" && stage.checks?.some((check) => check.key === "compliance")))
 const isRequiredSkip = (check: Check) => check.skipped && check.required !== false
 const checkMark = (stage: Stage, check: Check) => check.key === "compliance" ? stage.marks.find((mark) => mark.field === "compliance_complete_at") ?? null : null
+const blockedReason = (check: Check): string | null => (!check.done && props.blockedChecks?.[check.key]) || null
+const checkTooltip = (check: Check): string => blockedReason(check) ?? (check.skipped && check.date ? ctrans("Skipped :date", { date: formatDate(check.date) as string }) : check.skipped ? ctrans("Skipped") : check.date ? formatDate(check.date) as string : ctrans("Not done yet"))
+const isCheckClickable = (check: Check, stage: Stage): boolean => !!blockedReason(check) || hasCheckDetail(check, stage)
+const clickCheck = (stage: Stage, check: Check) => {
+    if (blockedReason(check)) {
+        emit("blockedCheck", check.key)
+        return
+    }
+    if (hasCheckDetail(check, stage)) {
+        openCheck(stage, check)
+    }
+}
 const hasCheckDetail = (check: Check, stage?: Stage) => !!slots[`check-${check.key}`] || (!!stage && (!!checkMark(stage, check) || (!!props.skipRoute && !!stage.skips?.some((skip) => skip.key === check.key && skip.skipped))))
 
 const openedCheck = ref<Check | null>(null)
@@ -598,19 +615,19 @@ function save() {
 
             <div v-if="stage.checks?.length" class="mt-2 flex flex-wrap gap-1">
                 <component
-                    :is="hasCheckDetail(check, stage) ? 'button' : 'span'"
+                    :is="isCheckClickable(check, stage) ? 'button' : 'span'"
                     v-for="check in stage.checks"
                     :key="check.key"
-                    :type="hasCheckDetail(check, stage) ? 'button' : undefined"
+                    :type="isCheckClickable(check, stage) ? 'button' : undefined"
                     class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
                     :class="[
                         isRequiredSkip(check) ? 'border-amber-200 bg-amber-50 text-amber-700' : check.done ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-50 text-gray-500',
-                        hasCheckDetail(check, stage) ? 'cursor-pointer hover:border-[var(--app-accent-muted)] hover:bg-[var(--app-accent-soft)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--app-accent)]' : '',
+                        isCheckClickable(check, stage) ? 'cursor-pointer hover:border-[var(--app-accent-muted)] hover:bg-[var(--app-accent-soft)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--app-accent)]' : '',
                     ]"
-                    v-tooltip="check.skipped && check.date ? ctrans('Skipped :date', { date: formatDate(check.date) as string }) : check.skipped ? ctrans('Skipped') : check.date ? formatDate(check.date) : ctrans('Not done yet')"
-                    @click="hasCheckDetail(check, stage) && openCheck(stage, check)"
+                    v-tooltip="checkTooltip(check)"
+                    @click="clickCheck(stage, check)"
                 >
-                    <FontAwesomeIcon :icon="check.skipped ? 'fal fa-forward' : check.done ? 'fal fa-check' : 'fal fa-circle'" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon :icon="blockedReason(check) ? 'fal fa-lock' : check.skipped ? 'fal fa-forward' : check.done ? 'fal fa-check' : 'fal fa-circle'" fixed-width aria-hidden="true" />
                     {{ check.label }}
                 </component>
             </div>
