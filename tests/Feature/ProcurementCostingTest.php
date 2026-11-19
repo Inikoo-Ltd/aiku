@@ -5013,6 +5013,36 @@ test('an agent has one page per supplier with an organisation selector, and the 
         ->and($noteRows($page.'?tab=notes&organisation='.$otherBuyer->slug))->toBe([$noteForBuyer->id => $otherBuyer->code, $noteForAll->id => __('All')])
         ->and($noteRows($page.'?tab=notes&organisation='.$orgSupplier->organisation->slug))->toBe([$noteForAll->id => __('All')]);
 
+    $agreement = fn (string $url) => $this->get($url)->assertOk()->viewData('page')['props']['agreement'];
+    $storeNote = route('grp.models.supplier.procurement_note.store', ['supplier' => $supplier->id]);
+    $addNote   = function (string $url, string $title) use ($agreement, $supplier) {
+        $form = $agreement($url);
+        expect($form['can_write'])->toBeFalse()
+            ->and($form['can_write_notes'])->toBeTrue()
+            ->and(collect($form['note_options']['visibilities'])->pluck('value')->all())->toBe(['agent']);
+        $this->post(route($form['note_route']['name'], $form['note_route']['parameters']), ['title' => $title, 'visibility' => 'agent', 'organisation_id' => $form['note_options']['organisation_id']])->assertSuccessful();
+
+        return App\Models\Procurement\ProcurementNote::where('subject_type', 'Supplier')->where('subject_id', $supplier->id)->where('title', $title)->firstOrFail();
+    };
+
+    $agentInAll   = $addNote($page.'?tab=notes', 'INI-379 agent in All');
+    $agentInBuyer = $addNote($page.'?tab=notes&organisation='.$otherBuyer->slug, 'INI-379 agent for buyer');
+    $this->post($storeNote, ['title' => 'INI-379 agent internal', 'visibility' => 'internal'])->assertForbidden();
+    $this->post($storeNote, ['title' => 'INI-379 agent for itself', 'visibility' => 'agent', 'organisation_id' => $agentOrganisation->id])->assertForbidden();
+
+    actingAs($this->adminGuest->getUser());
+    $buyerInAll   = $addNote($page.'?tab=notes', 'INI-379 buyer in All');
+    $buyerInBuyer = $addNote($page.'?tab=notes&organisation='.$otherBuyer->slug, 'INI-379 buyer for buyer');
+    expect([$agentInAll->organisation_id, $buyerInAll->organisation_id])->toBe([null, null])
+        ->and([$agentInBuyer->organisation_id, $buyerInBuyer->organisation_id])->toBe([$otherBuyer->id, $otherBuyer->id])
+        ->and($noteRows($page.'?tab=notes&organisation='.$otherBuyer->slug))->toHaveKeys([$agentInAll->id, $agentInBuyer->id, $buyerInAll->id, $buyerInBuyer->id])
+        ->and($noteRows($page.'?tab=notes&organisation='.$orgSupplier->organisation->slug))->toHaveKeys([$agentInAll->id, $buyerInAll->id])->not->toHaveKey($agentInBuyer->id)
+        ->and($agreement(route('grp.org.procurement.org_suppliers.show', [$orgSupplier->organisation->slug, $orgSupplier->slug]).'?tab=notes'))->not->toHaveKey('note_route');
+
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-379h-'.Str::lower(Str::random(6)), 'hr-m'));
+    $this->post($storeNote, ['title' => 'INI-379 not procurement', 'visibility' => 'agent'])->assertForbidden();
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-379c-'.Str::lower(Str::random(6))));
+
     $message = fn (Organisation $organisation, array $counterpart) => \App\Models\Procurement\SupplierMessage::create($counterpart + [
         'group_id'        => $organisation->group_id,
         'organisation_id' => $organisation->id,

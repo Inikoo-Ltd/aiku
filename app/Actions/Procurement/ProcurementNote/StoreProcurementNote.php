@@ -33,6 +33,8 @@ class StoreProcurementNote extends OrgAction
 
     private ?int $documentOrganisationId = null;
 
+    private ?Supplier $supplier = null;
+
     public function handle(Supplier|SupplierProduct|Agent|PurchaseOrder|StockDelivery $subject, array $modelData): ProcurementNote
     {
         $attachments = Arr::pull($modelData, 'attachments', []);
@@ -86,7 +88,9 @@ class StoreProcurementNote extends OrgAction
         }
 
         return $this->canWriteProcurementNotes($request->user(), $this->group, $this->documentOrganisationId ?? ($request->integer('organisation_id') ?: null))
-            || ($request->input('category') === ProcurementNoteCategoryEnum::INCIDENT->value && $this->canReportIncidents($request->user(), $this->documentOrganisationId));
+            || ($request->input('category') === ProcurementNoteCategoryEnum::INCIDENT->value && $this->canReportIncidents($request->user(), $this->documentOrganisationId))
+            || ($this->supplier && $request->input('visibility') === ProcurementNoteVisibilityEnum::AGENT->value
+                && $this->canWriteAgentSupplierNotes($request->user(), $this->supplier, $request->integer('organisation_id') ?: null));
     }
 
     public function rules(): array
@@ -144,6 +148,7 @@ class StoreProcurementNote extends OrgAction
 
     public function inSupplier(Supplier $supplier, ActionRequest $request): void
     {
+        $this->supplier = $supplier;
         $this->storeFromRequest($supplier, $request);
     }
 

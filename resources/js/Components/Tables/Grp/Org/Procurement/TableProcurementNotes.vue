@@ -6,7 +6,6 @@ import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import ToggleSwitch from 'primevue/toggleswitch'
 import InputNumber from 'primevue/inputnumber'
-import { notify } from '@kyvg/vue3-notification'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Table from '@/Components/Table/Table.vue'
@@ -46,28 +45,39 @@ const props = defineProps<{
             currencies?: Option[]
             organisation_id: number | null
         } | null
+        can_write_notes?: boolean
+        note_route?: routeType | null
+        note_options?: {
+            categories: Option[]
+            severities: Option[]
+            visibilities: Option[]
+            currencies?: Option[]
+            organisation_id: number | null
+            organisation_is_fixed: boolean
+            organisation_label: string
+        } | null
     }
 }>()
 
 const popover = ref()
 const isSaving = ref(false)
-const options = computed(() => props.agreement?.options ?? null)
-const emptyNote = () => ({ title: '', body: '', category: options.value?.categories?.length === 1 ? options.value.categories[0].value : 'general', severity: 'info', visibility: 'internal', is_pinned: false, only_this_organisation: false, incident_amount: null as number | null, incident_currency_id: null as number | null, incident_type: null as string | null, incident_quantity: null as number | null })
+const options = computed(() => props.agreement?.note_options ?? props.agreement?.options ?? null)
+const saveError = ref<string | null>(null)
+const updateErrors = ref<Record<number, string>>({})
+const emptyNote = () => ({ title: '', body: '', category: options.value?.categories?.length === 1 ? options.value.categories[0].value : 'general', severity: 'info', visibility: options.value?.visibilities?.length === 1 ? options.value.visibilities[0].value : 'internal', is_pinned: false, only_this_organisation: false, incident_amount: null as number | null, incident_currency_id: null as number | null, incident_type: null as string | null, incident_quantity: null as number | null })
 const note = ref(emptyNote())
 
-const noteStoreRoute = computed(() => props.storeRoute ?? (props.agreement?.can_write ? props.agreement.routes?.store_note : undefined))
+const noteStoreRoute = computed(() => props.storeRoute
+    ?? (props.agreement?.can_write ? props.agreement.routes?.store_note : undefined)
+    ?? (props.agreement?.can_write_notes ? props.agreement.note_route ?? undefined : undefined))
 const canSave = computed(() => (note.value.body.trim() || note.value.title.trim()) && !isSaving.value)
 
 function reload() {
     router.reload({ only: [props.tab ?? 'notes', 'agreement'] })
 }
 
-function showError(errors: Record<string, string>) {
-    notify({
-        title: ctrans('Something went wrong'),
-        text: Object.values(errors)[0] ?? ctrans('Failed to save the note'),
-        type: 'error',
-    })
+function firstError(errors: Record<string, string>) {
+    return Object.values(errors)[0] ?? ctrans('Failed to save the note')
 }
 
 function addNote() {
@@ -79,20 +89,24 @@ function addNote() {
     const incident = fields.category === 'incident'
         ? { incident_type, incident_quantity, ...(incident_amount !== null ? { incident_amount, incident_currency_id } : {}) }
         : {}
+    const organisationId = options.value?.organisation_is_fixed || only_this_organisation ? options.value?.organisation_id ?? null : null
     const payload = options.value
-        ? { ...fields, ...incident, organisation_id: only_this_organisation ? options.value.organisation_id : null }
+        ? { ...fields, ...incident, organisation_id: organisationId }
         : { body: fields.body }
 
     router.post(route(noteStoreRoute.value.name, noteStoreRoute.value.parameters), payload, {
         preserveScroll: true,
-        onStart: () => { isSaving.value = true },
+        onStart: () => {
+            isSaving.value = true
+            saveError.value = null
+        },
         onFinish: () => { isSaving.value = false },
         onSuccess: () => {
             note.value = emptyNote()
             popover.value?.hide()
             reload()
         },
-        onError: showError,
+        onError: (errors) => { saveError.value = firstError(errors) },
     })
 }
 
@@ -101,10 +115,11 @@ function canManage(item: Note) {
 }
 
 function update(item: Note, payload: Record<string, unknown>) {
+    delete updateErrors.value[item.id]
     router.patch(route('grp.models.procurement_note.update', { procurementNote: item.id }), payload, {
         preserveScroll: true,
         onSuccess: reload,
-        onError: showError,
+        onError: (errors) => { updateErrors.value[item.id] = firstError(errors) },
     })
 }
 </script>
@@ -139,11 +154,13 @@ function update(item: Note, payload: Record<string, unknown>) {
                             <ToggleSwitch v-model="note.is_pinned" />
                             <span>{{ ctrans('Pin: show on purchase orders') }}</span>
                         </label>
-                        <label v-if="options.organisation_id" class="flex items-center gap-2">
+                        <label v-if="options.organisation_id && !options.organisation_is_fixed" class="flex items-center gap-2">
                             <ToggleSwitch v-model="note.only_this_organisation" />
                             <span>{{ ctrans('Only for this organisation') }}</span>
                         </label>
                     </div>
+                    <div v-if="options?.organisation_is_fixed" class="text-xs text-gray-500">{{ ctrans('For: :organisation', { organisation: options.organisation_label }) }}</div>
+                    <div v-if="saveError" class="text-xs text-red-600">{{ saveError }}</div>
                     <div class="flex justify-end">
                         <Button :label="ctrans('Save')" type="tertiary" size="xs" :loading="isSaving" :disabled="!canSave" @click="addNote">
                             <template #icon>
@@ -204,6 +221,7 @@ function update(item: Note, payload: Record<string, unknown>) {
                     </template>
                 </Button>
             </div>
+            <div v-if="updateErrors[item.id]" class="mt-1 text-right text-xs text-red-600">{{ updateErrors[item.id] }}</div>
         </template>
     </Table>
 </template>
