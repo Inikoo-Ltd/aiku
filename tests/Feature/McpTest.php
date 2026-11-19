@@ -3053,6 +3053,12 @@ describe('customer service tools', function () {
         expect($outlook())->toMatchArray(['kind' => 'estimate', 'from' => '2026-11-23', 'to' => '2026-11-25'])
             ->and($outlook())->toMatchArray(['kind' => 'waiting_decision', 'items' => ['Candle holder']])->not->toHaveKey('delivery_note_id');
 
+        $facts = json_decode((string) app(App\Mcp\Tools\CustomerServiceChatTool::class)->handle(new Laravel\Mcp\Request(['chat_id' => $this->chat->ulid, 'order' => $order->reference]))->content(), true)['order'];
+        expect($facts)->toHaveKeys(['dispatched_at', 'tracking', 'payment'])
+            ->and($facts['tracking'])->toBe([])
+            ->and($facts['payment'])->toHaveKeys(['status', 'has_refused_payment'])
+            ->and($facts['payment']['has_refused_payment'])->toBeFalse();
+
         AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\CustomerServiceChatTool::class, ['chat_id' => '01NOTACHATID0000000000000'])
             ->assertHasErrors(['No chat with that ID']);
 
