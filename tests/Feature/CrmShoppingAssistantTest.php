@@ -4446,3 +4446,54 @@ test('when the last model call fails after the searches found products, the cust
         ->and($turn['reply'])->toBe(__('Here are some ideas for your shop.', [], 'en'))
         ->and($turn['groups']['must_haves']->pluck('id')->all())->toBe([$product->id]);
 });
+
+test('an order waiting in the warehouse gets an estimated dispatch day range without the queue or pace figures, and a stuck one is told plainly with one customer services task', function () {
+    Carbon::setTestNow(CarbonImmutable::parse('2026-11-18 10:00:00'));
+    $warehouse = createWarehouse();
+    $customer  = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'en']);
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, ['reference' => 'DO-'.Str::upper(Str::random(8)), 'date' => now()->toDateString(), 'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()), 'billing_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition())]);
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE, 'submitted_at' => now()->subHours(20)]);
+    $note = \App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote::make()->action($order, [
+        'reference'        => 'DN'.Str::upper(Str::random(8)),
+        'email'            => 'buyer@example-shop.test',
+        'phone'            => '+44000000000',
+        'date'             => now()->subHours(20)->toDateTimeString(),
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'warehouse_id'     => $warehouse->id,
+    ]);
+    $note->update(['state' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::UNASSIGNED]);
+    foreach (\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::STREAMS as $stream) {
+        \Illuminate\Support\Facades\Cache::put('dispatch-outlook-capacity:'.$warehouse->id.':'.$stream, ['out_per_day' => 987654, 'median_hours' => 40], 900);
+    }
+    $tools = GetShoppingAssistantTools::make();
+
+    $estimate = $tools->execute($conversation, 'order_status', ['reference' => $order->reference]);
+    $today    = now()->locale('en')->isoFormat('dddd D MMMM');
+    $tomorrow = now()->addDay()->locale('en')->isoFormat('dddd D MMMM');
+
+    expect($estimate['fact'])->toContain(__('Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.', ['from' => $today, 'to' => $tomorrow], 'en'))
+        ->and(DB::table('shopping_assistant_dispatch_outlooks')->where('order_id', $order->id)->where('kind', 'estimate')->value('estimated_to'))->toBe('2026-11-19')
+        ->and($estimate['content']['dispatch'])->toContain('estimated dispatch day range')
+        ->and(json_encode($estimate['content']))->not->toContain('987654')
+        ->and(DB::table('shopping_assistant_dispatch_outlooks')->where('order_id', $order->id)->where('kind', 'estimate')->value('estimated_from'))->toBe('2026-11-18');
+
+    $note->update(['state' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+    $held  = $tools->execute($conversation, 'order_status', ['reference' => $order->reference]);
+    $again = $tools->execute($conversation, 'order_status', ['reference' => $order->reference]);
+    $tasks = \App\Models\Tasks\StaffTask::where('data->kind', GetShoppingAssistantTools::STUCK_ORDER_TASK_KIND)->where('data->order_id', $order->id)->count();
+    $hasDepartment = in_array(GetShoppingAssistantTools::STUCK_ORDER_DEPARTMENT, array_column(\App\Models\Tasks\StaffTask::departments($order->group_id), 'value'), true);
+
+    expect($held['fact'])->toContain(__('Your order is on hold in our warehouse while we sort something out. Our team has been told and will look into it.', [], 'en'))
+        ->and($held['fact'])->not->toContain('estimate')
+        ->and($held['content']['dispatch'])->toContain('offer_reason order_question')
+        ->and($again['fact'])->toBe($held['fact'])
+        ->and($tasks)->toBe($hasDepartment ? 1 : 0);
+
+    $note->update(['state' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::UNASSIGNED, 'date' => now()->subDays(10)]);
+    $late = $tools->execute($conversation, 'order_status', ['reference' => $order->reference]);
+
+    expect($late['fact'])->toContain(__('Your order has been waiting longer than it should. Our team has been told and will look into it.', [], 'en'));
+    Carbon::setTestNow();
+});

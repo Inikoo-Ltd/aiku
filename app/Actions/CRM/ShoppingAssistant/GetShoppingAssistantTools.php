@@ -20,6 +20,9 @@ use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Actions\Iris\Basket\StoreEcomBasketTransactions;
 use App\Actions\Tasks\GetAikuAssistant;
+use App\Actions\Tasks\StoreStaffTask;
+use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Models\Tasks\StaffTask;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Helpers\NaturalLanguage;
@@ -159,6 +162,10 @@ class GetShoppingAssistantTools
     public const int PRIORITY_PER_DAY = 3;
 
     public const int MAX_BASKET_LINES = 30;
+
+    public const string STUCK_ORDER_TASK_KIND = 'shopping_assistant_stuck_order';
+
+    public const string STUCK_ORDER_DEPARTMENT = 'customer-services';
 
     private const array ORDER_OPEN_STATES = [
         OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::HANDLING, OrderStateEnum::HANDLING_BLOCKED,
@@ -520,7 +527,7 @@ class GetShoppingAssistantTools
                 'account_details'                => $this->accountDetails($customer, $conversation->language_code),
                 'products_not_in_store'          => $this->productsNotInStore($customer, $conversation->language_code),
                 'ebay_listing_problems'          => GetEbayListingProblems::make()->handle($customer, $conversation->language_code, $conversation),
-                'order_status'                   => $this->orderStatus($customer, $arguments, $conversation->language_code),
+                'order_status'                   => $this->orderStatus($customer, $arguments, $conversation->language_code, $conversation),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'product_documents'              => $this->productDocuments($customer, $arguments, $conversation->language_code),
                 'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
@@ -1222,7 +1229,7 @@ class GetShoppingAssistantTools
      *
      * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
      */
-    private function orderStatus(Customer $customer, array $arguments, string $locale): array
+    private function orderStatus(Customer $customer, array $arguments, string $locale, ?ShoppingAssistantConversation $conversation = null): array
     {
         $reference = is_string($arguments['reference'] ?? null) ? trim($arguments['reference'], " \t\n\r#") : '';
         $comparable = str_replace([' ', '-'], '', mb_strtoupper($reference));
@@ -1275,10 +1282,18 @@ class GetShoppingAssistantTools
             $line .= "\n".__('In your basket (packs ordered × units in each pack = units):', [], $locale)."\n".implode("\n", $basketLines);
         }
 
+        $outlook = !$priority && in_array($order->state, self::ORDER_OPEN_STATES, true) && !$this->unpaidOrderPayment($customer, $order)
+            ? $this->dispatchOutlook($order, $locale, $conversation)
+            : null;
+        if ($outlook) {
+            $line .= "\n".$outlook['sentence'];
+        }
+
         return [
             'content'  => array_filter([
                 'found'        => true,
                 'state'        => $state,
+                'dispatch'     => $outlook['note'] ?? null,
                 'basket'       => $basketLines
                     ? 'Under your reply the system lists each product in this basket with the packs ordered × the units in each pack = the units they get. Answer questions about pack sizes or how many units they get by pointing to those lines, without writing the figures yourself.'
                     : null,
@@ -1302,6 +1317,103 @@ class GetShoppingAssistantTools
             'error'    => null,
             'fact'     => $line,
         ];
+    }
+
+    /**
+     * INI-392: the estimated dispatch day range, or why the order is stuck, as a sentence written by
+     * code under the reply. Each one is recorded so estimates can be checked against the real
+     * dispatch date; a stuck order also gets one customer services task, whatever the customer
+     * does next. The queue size and the pace never leave GetOrderDispatchOutlook.
+     *
+     * @return array{sentence: string, note: string}|null
+     */
+    private function dispatchOutlook(Order $order, string $locale, ?ShoppingAssistantConversation $conversation): ?array
+    {
+        $outlook = GetOrderDispatchOutlook::run($order);
+        if (!$outlook) {
+            return null;
+        }
+
+        $day      = fn (Carbon $date) => $date->copy()->locale($locale)->isoFormat('dddd D MMMM');
+        $sentence = match ($outlook['kind']) {
+            'estimate' => $outlook['from']->isSameDay($outlook['to'])
+                ? __('Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.', ['day' => $day($outlook['from'])], $locale)
+                : __('Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.', ['from' => $day($outlook['from']), 'to' => $day($outlook['to'])], $locale),
+            'waiting_decision' => __('These items of your order could not be picked: :items. Our team needs to know whether to send the order without them or with a replacement.', ['items' => implode(', ', $outlook['items'])], $locale),
+            'warehouse_hold'   => __('Your order is on hold in our warehouse while we sort something out. Our team has been told and will look into it.', [], $locale),
+            default            => __('Your order has been waiting longer than it should. Our team has been told and will look into it.', [], $locale),
+        };
+
+        $stuck  = $outlook['kind'] !== 'estimate';
+        $taskId = $stuck ? $this->stuckOrderTask($order, $outlook, $conversation)?->id : null;
+
+        DB::table('shopping_assistant_dispatch_outlooks')->insert([
+            'organisation_id'                     => $order->organisation_id,
+            'order_id'                            => $order->id,
+            'delivery_note_id'                    => $outlook['delivery_note_id'],
+            'shopping_assistant_conversation_id'  => $conversation?->id,
+            'kind'                                => $outlook['kind'],
+            'estimated_from'                      => isset($outlook['from']) ? $outlook['from']->toDateString() : null,
+            'estimated_to'                        => isset($outlook['to']) ? $outlook['to']->toDateString() : null,
+            'staff_task_id'                       => $taskId,
+            'created_at'                          => now(),
+        ]);
+
+        return [
+            'sentence' => $sentence,
+            'note'     => $stuck
+                ? 'The order is stuck and the line under your reply says why, written by the system. Say it plainly and kindly in one or two sentences without repeating item names, and that our team has been told; then offer our team: answer_kind offer_person, offer_reason order_question. Never give a dispatch date.'
+                : 'The line under your reply gives an estimated dispatch day range, worked out from how our warehouse is running this week. Mention that an estimate is below, never write a date or a number of days yourself, and never call it a promise or a guarantee.',
+        ];
+    }
+
+    /**
+     * One open customer services task per stuck order: Merlin found it held, waiting on a decision or
+     * far past this week's pace while the customer was asking about it.
+     *
+     * @param  array<string, mixed>  $outlook
+     */
+    private function stuckOrderTask(Order $order, array $outlook, ?ShoppingAssistantConversation $conversation): ?StaffTask
+    {
+        $open = StaffTask::open()->where('data->kind', self::STUCK_ORDER_TASK_KIND)->where('data->order_id', $order->id)->latest('id')->first();
+        if ($open) {
+            return $open;
+        }
+
+        if (!in_array(self::STUCK_ORDER_DEPARTMENT, array_column(StaffTask::departments($order->group_id), 'value'), true)) {
+            Log::warning('Stuck order task not raised: no '.self::STUCK_ORDER_DEPARTMENT.' department in group '.$order->group_id);
+
+            return null;
+        }
+
+        $why = match ($outlook['kind']) {
+            'waiting_decision' => 'Items a picker could not find are waiting for customer services: '.implode(', ', $outlook['items'] ?? []).'. The customer is told our team needs to decide with them whether to send it without them or with a replacement.',
+            'warehouse_hold'   => 'The delivery note is on hold in the warehouse.',
+            default            => 'It has been waiting in the warehouse far longer than this week\'s pace.',
+        };
+
+        return StoreStaffTask::run(GetAikuAssistant::run($order->group_id), [
+            'subject'     => mb_substr('Stuck order '.$order->reference.' the customer asked Merlin about', 0, 255),
+            'description' => implode("\n\n", array_filter([
+                'Merlin, the AI shopping assistant, was asked about this order and found it stuck, and told the customer our team has been told.',
+                $why,
+                'Customer: '.$order->customer?->name.' ('.$order->customer?->reference.')',
+                $conversation ? 'Conversation: '.route('grp.org.shops.show.ai_salesman.conversations.show', [$order->organisation->slug, $order->shop->slug, $conversation->ulid]) : null,
+            ])),
+            'department'  => self::STUCK_ORDER_DEPARTMENT,
+            'priority'    => ChatPriorityEnum::HIGH->value,
+            'model_type'  => 'Order',
+            'model_id'    => $order->id,
+            'data'        => [
+                'kind'            => self::STUCK_ORDER_TASK_KIND,
+                'organisation_id' => $order->organisation_id,
+                'shop_id'         => $order->shop_id,
+                'customer_id'     => $order->customer_id,
+                'order_id'        => $order->id,
+                'outlook'         => $outlook['kind'],
+                'conversation_id' => $conversation?->id,
+            ],
+        ]);
     }
 
     /**
