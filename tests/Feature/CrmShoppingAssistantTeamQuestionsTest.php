@@ -892,3 +892,20 @@ test('the shop notes kept from a customer\'s questions are deleted when the cust
 
     expect(ChatKnowledgeEntry::whereKey($noteId)->exists())->toBeFalse();
 });
+
+test('the Merlin report estimates staff time pessimistically: half the answered conversations with no contact after at four minutes each, minus six minutes per question passed to the team', function () {
+    Carbon::setTestNow(CarbonImmutable::parse('2025-02-03 10:00:00'));
+    $answered = collect(range(1, 6))->map(function () {
+        $conversation = teamQuestionConversation($this);
+        $conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'Orders over 150 get 10% off.', 'answer_kind' => 'shop_answer']);
+
+        return $conversation;
+    });
+    StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Do you sell samples?', 'samples?');
+    Carbon::setTestNow();
+
+    $filters = ['website_ids' => [$answered->first()->website_id], 'search_website_ids' => [$answered->first()->website_id], 'language' => null, 'entry_point' => null, 'shop_type' => null, 'country' => null];
+    $time    = App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport::make()->staffTime($filters, CarbonImmutable::parse('2025-02-03')->startOfDay(), CarbonImmutable::parse('2025-02-03')->endOfDay());
+
+    expect($time)->toBe(['saved_hours' => 0.2, 'added_hours' => 0.1, 'net_hours' => 0.1]);
+});
