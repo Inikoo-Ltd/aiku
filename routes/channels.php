@@ -91,6 +91,12 @@ Broadcast::channel('grp.production.{productionId}.floor', function (User $user, 
     ]);
 });
 
+Broadcast::channel('grp.org.{organisationId}.dispatching-backlog', function (User $user, int $organisationId) {
+    return \App\Models\Inventory\Warehouse::where('organisation_id', $organisationId)
+        ->get()
+        ->contains(fn (\App\Models\Inventory\Warehouse $warehouse) => \App\Actions\UI\Dispatch\ShowDispatchHub::canViewDispatching($user, $warehouse));
+});
+
 Broadcast::channel('grp.org.{organisationId}.partner-production', function (User $user, int $organisationId) {
     return $user->authTo("procurement.$organisationId.view");
 });

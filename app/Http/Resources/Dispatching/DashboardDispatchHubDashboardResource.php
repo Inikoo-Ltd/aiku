@@ -80,7 +80,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
             ],
             [
                 'key'       => 'dispatched_today',
-                'label'     => __('Dispatched'),
+                'label'     => __('Done'),
                 'sublabel'  => __('today'),
                 'type'      => 'stat',
                 'icon'      => ['fal', 'fa-shipping-fast'],

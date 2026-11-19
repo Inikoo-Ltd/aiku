@@ -53,7 +53,7 @@ class UpdateOrderDeliveryAddress extends OrgAction
                 country: $order->organisation->country,
                 taxNumber: $customer->taxNumber,
                 billingAddress: $order->billingAddress,
-                deliveryAddress: $order->taxableDeliveryAddress($customer->taxNumber),
+                deliveryAddress: $order->taxableDeliveryAddress(),
                 isRe: $order->is_re,
             );
 

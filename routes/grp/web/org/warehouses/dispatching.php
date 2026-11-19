@@ -95,6 +95,9 @@ Route::get('/delivery-notes/in-warehouse/shop/{shopType}', [IndexDeliveryNotes::
 Route::get('/delivery-notes/dispatched', [IndexDeliveryNotes::class, 'dispatched'])->name('dispatched.delivery-notes');
 Route::get('/delivery-notes/dispatched/shop/{shopType}', [IndexDeliveryNotes::class, 'dispatchedShopTypes'])->name('dispatched.delivery-notes.shop');
 
+Route::get('/delivery-notes/dispatched-today', [IndexDeliveryNotes::class, 'dispatchedToday'])->name('dispatched_today.delivery-notes');
+Route::get('/delivery-notes/dispatched-today/shop/{shopType}', [IndexDeliveryNotes::class, 'dispatchedTodayShopTypes'])->name('dispatched_today.delivery-notes.shop');
+
 Route::get('/delivery-notes/{deliveryNote}', [ShowDeliveryNote::class, 'inWarehouse'])->name('delivery_notes.show');
 
 Route::get('returns', IndexWarehousePalletReturns::class)->name('pallet-returns.index');

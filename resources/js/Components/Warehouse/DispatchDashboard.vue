@@ -20,12 +20,13 @@ import {
     faAllergies,
     faChartLine,
     faShippingFast,
+    faArrowLeft,
 } from "@fal"
 import { faExclamationSquare} from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ctrans } from '@/Composables/useTrans'
 
-library.add(faClock, faList, faExclamationSquare, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine, faShippingFast)
+library.add(faClock, faList, faExclamationSquare, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine, faShippingFast, faArrowLeft)
 
 interface RouteTarget {
     name: string
@@ -111,6 +112,8 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
 }
 
 const hasExtras = (cell?: { breakdown?: unknown[]; lines?: number; shared?: number }) => !!cell?.breakdown?.length || cell?.lines !== undefined || cell?.shared !== undefined
+
+const needsRoom = (cell?: { breakdown?: unknown[]; lines?: number; shared?: number; queued_prefix?: unknown; warning?: unknown; crm_warning?: unknown }) => hasExtras(cell) || !!cell?.queued_prefix || !!cell?.warning || !!cell?.crm_warning
 
 const isWeakValue = (value: number | null | undefined) => {
     return value === null || value === 0
@@ -213,7 +216,7 @@ const isWeakValue = (value: number | null | undefined) => {
                     </span>
                     <div v-for="(item, itemIndex) in metric.items" :key="item.key"
                         class="flex-1 min-w-[20px] sm:min-w-[40px] md:min-w-[140px] flex flex-col"
-                        :class="[itemIndex < (metric.items?.length ?? 0) - 1 ? 'border-r border-gray-200' : '', hasExtras(data.totals[item.key]) ? 'md:min-w-max' : '']">
+                        :class="[itemIndex < (metric.items?.length ?? 0) - 1 ? 'border-r border-gray-200' : '', needsRoom(data.totals[item.key]) ? 'md:min-w-max' : '']">
                         <div
                             class="h-14 md:h-20 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-1 md:px-4">
                             <span class="hidden md:inline text-lg font-semibold">
@@ -276,7 +279,7 @@ const isWeakValue = (value: number | null | undefined) => {
                                 <!-- Section: Warning -->
                                 <Link v-if="data.data[row.key]?.[item.key]?.warning"
                                     :href="data.data[row.key]?.[item.key]?.warning?.route_target?.name ? route(data.data[row.key]?.[item.key]?.warning?.route_target?.name, data.data[row.key]?.[item.key]?.warning?.route_target.parameters) : '#'"
-                                    class="relative bg-amber-300 text-amber-700 rounded px-2.5  ml-2 opacity-70 hover:opacity-100"
+                                    class="relative bg-amber-300 text-amber-700 rounded px-1.5 ml-1 opacity-70 hover:opacity-100"
                                     v-tooltip="data.data[row.key]?.[item.key]?.warning?.tooltip"
                                 >
                                     {{ data.data[row.key]?.[item.key]?.warning?.value }}
@@ -290,7 +293,7 @@ const isWeakValue = (value: number | null | undefined) => {
                                     v-if="data.data[row.key]?.[item.key]?.crm_warning"
                                     :is="getSafeRoute(data.data[row.key]?.[item.key]?.crm_warning?.route_target) ? Link : 'span'"
                                     :href="getSafeRoute(data.data[row.key]?.[item.key]?.crm_warning?.route_target) ?? undefined"
-                                    class="relative bg-purple-300 text-purple-700 rounded px-2.5 ml-2 opacity-70 hover:opacity-100"
+                                    class="relative bg-purple-300 text-purple-700 rounded px-1.5 ml-1 opacity-70 hover:opacity-100"
                                     v-tooltip="data.data[row.key]?.[item.key]?.crm_warning?.tooltip"
                                 >
                                     {{ data.data[row.key]?.[item.key]?.crm_warning?.value }}
@@ -355,7 +358,7 @@ const isWeakValue = (value: number | null | undefined) => {
                             <!-- Section: Warning -->
                             <Link v-if="data.totals[item.key]?.warning"
                                 :href="data.totals[item.key]?.warning?.route_target?.name ? route(data.totals[item.key]?.warning?.route_target?.name, data.totals[item.key]?.warning?.route_target.parameters) : '#'"
-                                class="relative bg-amber-300 text-amber-700 rounded px-2.5  ml-2 opacity-70 hover:opacity-100"
+                                class="relative bg-amber-300 text-amber-700 rounded px-1.5 ml-1 opacity-70 hover:opacity-100"
                                 v-tooltip="data.totals[item.key]?.warning?.tooltip"
                             >
                                 {{ data.totals[item.key]?.warning?.value }}
@@ -369,7 +372,7 @@ const isWeakValue = (value: number | null | undefined) => {
                                 v-if="data.totals[item.key]?.crm_warning"
                                 :is="getSafeRoute(data.totals[item.key]?.crm_warning?.route_target) ? Link : 'span'"
                                 :href="getSafeRoute(data.totals[item.key]?.crm_warning?.route_target) ?? undefined"
-                                class="relative bg-purple-300 text-purple-700 rounded px-2.5 ml-2 opacity-70 hover:opacity-100"
+                                class="relative bg-purple-300 text-purple-700 rounded px-1.5 ml-1 opacity-70 hover:opacity-100"
                                 v-tooltip="data.totals[item.key]?.crm_warning?.tooltip"
                             >
                                 {{ data.totals[item.key]?.crm_warning?.value }}
@@ -406,7 +409,10 @@ const isWeakValue = (value: number | null | undefined) => {
                 <div
                     class="h-14 md:h-20 flex flex-col items-center justify-center font-semibold text-xs md:text-lg gap-1 border-b border-gray-200">
                     <span class="hidden md:inline">{{ ctrans("Total") }}</span>
-                    <Icon v-if="data?.grand_total?.icon" :data="data.grand_total" class='text-xs md:text-lg' />
+                    <span class="flex items-center gap-1.5">
+                        <FontAwesomeIcon :icon="faArrowLeft" class="hidden md:inline text-xs text-gray-400" fixed-width aria-hidden="true" />
+                        <Icon v-if="data?.grand_total?.icon" :data="data.grand_total" class='text-xs md:text-lg' />
+                    </span>
                 </div>
 
                 <component v-for="row in rows" :key="row.key"

@@ -17,6 +17,7 @@ use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Events\BroadcastDispatchingBacklogChanged;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DispatchHubTabsEnum;
 use App\Actions\Dispatching\PartnerStaging\GetPartnerStagingTasks;
@@ -110,10 +111,11 @@ class ShowDispatchHub extends OrgAction
                     'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
                     'currency_type'     => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
                 ],
-                'delivery_note'   => DashboardDispatchHubDashboardResource::make(GetDispatchHubShowcase::make()->handle($warehouse)),
-                'picking_session' => $this->getPickingSessionStats($warehouse),
-                'pickers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'pickers', 'pickers_current')),
-                'packers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'packers', 'packers_current')),
+                'delivery_note'   => fn () => DashboardDispatchHubDashboardResource::make(GetDispatchHubShowcase::make()->handle($warehouse)),
+                'live_channel'    => BroadcastDispatchingBacklogChanged::channelName($warehouse->organisation_id),
+                'picking_session' => fn () => $this->getPickingSessionStats($warehouse),
+                'pickers_current' => fn () => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'pickers', 'pickers_current')),
+                'packers_current' => fn () => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'packers', 'packers_current')),
                 'partner_staging' => $partnerStaging,
                 'can_edit'          => $request->user()->authTo("dispatching.{$this->warehouse->id}.edit"),
                 'stage_route'     => $suppliesPartners ? [
