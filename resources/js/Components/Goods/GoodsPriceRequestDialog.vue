@@ -339,7 +339,7 @@ function saveMaster(masterProduct: MasterProduct): void {
                         <div v-if="adjustingId === request.id" class="flex flex-wrap items-end gap-2">
                             <label class="space-y-1">
                                 <span class="block text-xs text-gray-500">{{ ctrans("Your price per unit") }} <span class="text-red-500">*</span></span>
-                                <InputNumber v-model="adjustedCosts[request.id]" :min="0" v-bind="locale.unitCostInputOptions(request.currency)" :class="fieldFocusClass" size="small" />
+                                <InputNumber v-model="adjustedCosts[request.id]" @input="(event) => (adjustedCosts[request.id] = event.value as number)" :min="0" v-bind="locale.unitCostInputOptions(request.currency)" :class="fieldFocusClass" size="small" />
                             </label>
                             <Button type="tertiary" size="xs" :label="ctrans('Cancel')" @click="adjustingId = null">
                                 <template #icon>
@@ -420,6 +420,7 @@ function saveMaster(masterProduct: MasterProduct): void {
                                     <InputNumber
                                         v-if="data.can_edit_master_prices"
                                         v-model="masterForms[masterProduct.id].prices[currency]"
+                                        @input="(event) => (masterForms[masterProduct.id].prices[currency] = event.value as number | null)"
                                         :min="0"
                                         v-bind="locale.currencyInputOptions(currency)"
                                         :class="fieldFocusClass"
@@ -432,6 +433,7 @@ function saveMaster(masterProduct: MasterProduct): void {
                                     <InputNumber
                                         v-if="data.can_edit_master_prices"
                                         v-model="masterForms[masterProduct.id].rrps[currency]"
+                                        @input="(event) => (masterForms[masterProduct.id].rrps[currency] = event.value as number | null)"
                                         :min="0"
                                         v-bind="locale.currencyInputOptions(currency)"
                                         :class="fieldFocusClass"
