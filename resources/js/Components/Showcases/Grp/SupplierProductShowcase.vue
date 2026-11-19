@@ -6,6 +6,7 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onMounted, ref, watch } from "vue"
 import { Link, router } from "@inertiajs/vue3"
+import { createReusableTemplate } from "@vueuse/core"
 import { ctrans } from "@/Composables/useTrans"
 import { barcodePackContents } from "@/Composables/barcodePackContents"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -666,50 +667,39 @@ const availabilityBadge = (isAvailable: boolean) =>
     isAvailable
         ? { label: ctrans("Available"), class: "bg-green-50 text-green-700 ring-green-600/20" }
         : { label: ctrans("Not available"), class: "bg-red-50 text-red-700 ring-red-600/20" }
+
+const [DefineProductImage, ReuseProductImage] = createReusableTemplate()
+const [DefineProductBadges, ReuseProductBadges] = createReusableTemplate()
+const [DefineProductExtras, ReuseProductExtras] = createReusableTemplate()
 </script>
 
 <template>
     <div class="grid gap-6 p-6 md:grid-cols-3">
-        <section v-if="!data.agent && (data.parties.length || data.other_suppliers?.length)" class="md:col-span-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <SupplierProductProvidedBy :parties="data.parties" :otherSuppliers="data.other_suppliers ?? []" />
-        </section>
+        <DefineProductImage>
+            <button v-if="data.product.image" type="button"
+                class="h-28 w-28 shrink-0 cursor-zoom-in overflow-hidden rounded border border-gray-200 bg-white p-2"
+                v-tooltip="ctrans('View image')" @click="openMainImageViewer">
+                <Image :src="data.product.image" class="flex h-full w-full items-center justify-center"
+                    :style="{ height: 'auto', maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }" />
+            </button>
+        </DefineProductImage>
 
-        <AgentSupplierProductPanel v-if="data.agent" :panel="data.agent">
-            <template v-if="data.parties.length || data.other_suppliers?.length" #aside>
-                <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <SupplierProductProvidedBy :parties="data.parties" :otherSuppliers="data.other_suppliers ?? []" compact />
-                </section>
-            </template>
-        </AgentSupplierProductPanel>
-
-        <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div class="flex gap-4">
-                <button v-if="data.product.image" type="button"
-                    class="h-28 w-28 shrink-0 cursor-zoom-in overflow-hidden rounded border border-gray-200 bg-white p-2"
-                    v-tooltip="ctrans('View image')" @click="openMainImageViewer">
-                    <Image :src="data.product.image" class="flex h-full w-full items-center justify-center"
-                        :style="{ height: 'auto', maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }" />
-                </button>
-                <div class="min-w-0">
-                    <div class="flex items-center gap-2">
-                        <Icon :data="data.product.state.icon" v-tooltip="data.product.state.label" />
-                        <span class="truncate text-lg font-semibold text-gray-800">{{ data.product.code }}</span>
-                    </div>
-                    <div class="mt-1 text-sm text-gray-600">{{ data.product.name }}</div>
-                    <div class="mt-2 flex flex-wrap gap-1.5">
-                        <span
-                            class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset"
-                            :class="availabilityBadge(data.product.is_available).class">
-                            {{ availabilityBadge(data.product.is_available).label }}
-                        </span>
-                        <span v-if="data.product.composition"
-                            class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-600">
-                            {{ data.product.composition.replace("_", " ") }}
-                        </span>
-                    </div>
-                </div>
+        <DefineProductBadges>
+            <div class="mt-1 text-sm text-gray-600">{{ data.product.name }}</div>
+            <div class="mt-2 flex flex-wrap gap-1.5">
+                <span
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset"
+                    :class="availabilityBadge(data.product.is_available).class">
+                    {{ availabilityBadge(data.product.is_available).label }}
+                </span>
+                <span v-if="data.product.composition"
+                    class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-600">
+                    {{ data.product.composition.replace("_", " ") }}
+                </span>
             </div>
+        </DefineProductBadges>
 
+        <DefineProductExtras>
             <p v-if="data.product.description" class="mt-4 whitespace-pre-wrap text-sm text-gray-500">
                 {{ data.product.description }}
             </p>
@@ -770,6 +760,41 @@ const availabilityBadge = (isAvailable: boolean) =>
                 <Icon :data="{ icon: 'fal fa-external-link' }" />
                 {{ ctrans("Supplier product in supply chain") }}
             </Link>
+        </DefineProductExtras>
+
+        <section v-if="!data.agent && (data.parties.length || data.other_suppliers?.length)" class="md:col-span-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <SupplierProductProvidedBy :parties="data.parties" :otherSuppliers="data.other_suppliers ?? []" />
+        </section>
+
+        <AgentSupplierProductPanel v-if="data.agent" :panel="data.agent">
+            <template #header-image>
+                <ReuseProductImage />
+            </template>
+            <template #header-footer>
+                <div class="mt-4 border-t border-gray-100 pt-3">
+                    <ReuseProductBadges />
+                </div>
+                <ReuseProductExtras />
+            </template>
+            <template v-if="data.parties.length || data.other_suppliers?.length" #aside>
+                <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <SupplierProductProvidedBy :parties="data.parties" :otherSuppliers="data.other_suppliers ?? []" compact />
+                </section>
+            </template>
+        </AgentSupplierProductPanel>
+
+        <section v-if="!data.agent" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div class="flex gap-4">
+                <ReuseProductImage />
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <Icon :data="data.product.state.icon" v-tooltip="data.product.state.label" />
+                        <span class="truncate text-lg font-semibold text-gray-800">{{ data.product.code }}</span>
+                    </div>
+                    <ReuseProductBadges />
+                </div>
+            </div>
+            <ReuseProductExtras />
         </section>
 
         <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">

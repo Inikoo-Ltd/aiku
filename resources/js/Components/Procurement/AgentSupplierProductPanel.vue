@@ -305,43 +305,46 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
         <div class="flex min-w-0 flex-col gap-6 md:col-span-2">
             <section :class="card">
                 <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div class="min-w-0">
-                        <div class="text-xs text-gray-500">
-                            {{ panel.breadcrumb.supplier.code }}
-                            <template v-if="panel.breadcrumb.family"> › {{ panel.breadcrumb.family.code }}</template>
-                            › {{ panel.internal_code }}
-                        </div>
-                        <div class="mt-1 flex items-center gap-2">
-                            <span class="text-2xl font-semibold tracking-tight text-gray-900">{{ panel.internal_code }}</span>
-                            <CopyButton :text="panel.internal_code" />
-                        </div>
-                        <div class="mt-0.5 text-sm text-gray-500">{{ ctrans("Supplier code") }}: {{ panel.supplier_code }}</div>
-                        <div class="group relative mt-0.5 inline-block text-sm text-gray-500">
-                            {{ ctrans("Supplier") }}: <span class="cursor-help font-medium text-gray-800 underline decoration-dotted underline-offset-2">{{ panel.breadcrumb.supplier.name }}</span>
-                            <span class="text-gray-400">({{ panel.breadcrumb.supplier.code }})</span>
-                            <section id="agent-contacts" :class="[card, 'invisible absolute left-0 top-full z-20 w-96 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100']">
-                                <h3 :class="sectionTitle">
-                                    <FontAwesomeIcon icon="fal fa-address-card" fixed-width aria-hidden="true" />
-                                    {{ ctrans("Supplier contacts") }}
-                                    <span class="ml-auto font-normal normal-case tracking-normal text-gray-400">{{ ctrans("From supplier record") }}</span>
-                                </h3>
-                                <div class="space-y-2">
-                                    <label v-for="field in contactFields" :key="field.key" class="flex items-center gap-2 text-sm">
-                                        <span class="w-28 shrink-0 text-gray-500">{{ field.label }}</span>
-                                        <InputText v-if="panel.contacts.update_route" v-model="contactsForm[field.key]" class="!w-full !py-1 !text-sm" :class="fieldFocusClass"
-                                            :placeholder="ctrans('Missing')" />
-                                        <span v-else class="truncate" :class="panel.contacts.values[field.key] ? 'text-gray-800' : 'italic text-gray-400'">
-                                            {{ panel.contacts.values[field.key] ?? ctrans("Missing") }}
-                                        </span>
-                                    </label>
-                                </div>
-                                <div v-if="panel.contacts.update_route" class="mt-3 flex items-center justify-between gap-2">
-                                    <span class="text-xs text-gray-400">{{ ctrans("Saved on the supplier") }}</span>
-                                    <Button type="tertiary" :label="ctrans('Save')" :loading="savingSection === 'contacts'" :disabled="!contactsChanged" @click="saveContacts">
-                                        <template #icon><FontAwesomeIcon icon="fal fa-save" class="text-green-600" fixed-width aria-hidden="true" /></template>
-                                    </Button>
-                                </div>
-                            </section>
+                    <div class="flex min-w-0 gap-4">
+                        <slot name="header-image" />
+                        <div class="min-w-0">
+                            <div class="text-xs text-gray-500">
+                                {{ panel.breadcrumb.supplier.code }}
+                                <template v-if="panel.breadcrumb.family"> › {{ panel.breadcrumb.family.code }}</template>
+                                › {{ panel.internal_code }}
+                            </div>
+                            <div class="mt-1 flex items-center gap-2">
+                                <span class="text-2xl font-semibold tracking-tight text-gray-900">{{ panel.internal_code }}</span>
+                                <CopyButton :text="panel.internal_code" />
+                            </div>
+                            <div class="mt-0.5 text-sm text-gray-500">{{ ctrans("Supplier code") }}: {{ panel.supplier_code }}</div>
+                            <div class="group relative mt-0.5 inline-block text-sm text-gray-500">
+                                {{ ctrans("Supplier") }}: <span class="cursor-help font-medium text-gray-800 underline decoration-dotted underline-offset-2">{{ panel.breadcrumb.supplier.name }}</span>
+                                <span class="text-gray-400">({{ panel.breadcrumb.supplier.code }})</span>
+                                <section id="agent-contacts" :class="[card, 'invisible absolute left-0 top-full z-20 w-96 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100']">
+                                    <h3 :class="sectionTitle">
+                                        <FontAwesomeIcon icon="fal fa-address-card" fixed-width aria-hidden="true" />
+                                        {{ ctrans("Supplier contacts") }}
+                                        <span class="ml-auto font-normal normal-case tracking-normal text-gray-400">{{ ctrans("From supplier record") }}</span>
+                                    </h3>
+                                    <div class="space-y-2">
+                                        <label v-for="field in contactFields" :key="field.key" class="flex items-center gap-2 text-sm">
+                                            <span class="w-28 shrink-0 text-gray-500">{{ field.label }}</span>
+                                            <InputText v-if="panel.contacts.update_route" v-model="contactsForm[field.key]" class="!w-full !py-1 !text-sm" :class="fieldFocusClass"
+                                                :placeholder="ctrans('Missing')" />
+                                            <span v-else class="truncate" :class="panel.contacts.values[field.key] ? 'text-gray-800' : 'italic text-gray-400'">
+                                                {{ panel.contacts.values[field.key] ?? ctrans("Missing") }}
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <div v-if="panel.contacts.update_route" class="mt-3 flex items-center justify-between gap-2">
+                                        <span class="text-xs text-gray-400">{{ ctrans("Saved on the supplier") }}</span>
+                                        <Button type="tertiary" :label="ctrans('Save')" :loading="savingSection === 'contacts'" :disabled="!contactsChanged" @click="saveContacts">
+                                            <template #icon><FontAwesomeIcon icon="fal fa-save" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                                        </Button>
+                                    </div>
+                                </section>
+                            </div>
                         </div>
                     </div>
 
@@ -364,6 +367,7 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
                         </div>
                     </div>
                 </div>
+                <slot name="header-footer" />
             </section>
 
             <section id="agent-key-figures" :class="card">
