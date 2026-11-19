@@ -1926,7 +1926,7 @@ test('INI-220 the floor runs the same number of queries however many tasks are o
             \App\Actions\Production\Artefact\SetArtefactsRecipe::make()->action($this->production, ['artefacts' => [$artefact->id], 'steps' => [
                 ['manufacture_task_id' => $mixing->id, 'label' => 'Q'.$suffix, 'position' => 1, 'units_per_artefact' => 0.1, 'waits_for' => [], 'raw_materials' => [['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 0.05]]],
                 ['manufacture_task_id' => $making->id, 'label' => 'Q'.$suffix, 'position' => 2, 'units_per_artefact' => 1, 'waits_for' => [0]],
-                ['manufacture_task_id' => $packing->id, 'position' => 3, 'units_per_artefact' => 1, 'waits_for' => [1]],
+                ['manufacture_task_id' => $packing->id, 'position' => 3, 'units_per_artefact' => 1, 'waits_for' => []],
             ]]);
             $jobOrder = StoreJobOrder::make()->action($this->production, []);
             $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 20]);

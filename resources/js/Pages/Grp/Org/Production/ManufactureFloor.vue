@@ -341,10 +341,11 @@ const combining = ref(false)
 const combineWith = ref<number[]>([])
 const combineCandidates = computed(() => {
     const task = selectedTask.value
-    if (!task || task.combined) return []
+    if (!task || task.combined || task.blocked_by_step) return []
     return props.tasks.filter(other => other.id != task.id
         && other.manufacture_task_id == task.manufacture_task_id
         && !other.combined
+        && !other.blocked_by_step
         && !other.working_on_by.length
         && props.open_session?.task.id != other.id)
 })

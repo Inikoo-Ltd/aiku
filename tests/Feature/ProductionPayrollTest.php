@@ -1247,6 +1247,19 @@ describe('production reward pay bands', function () {
 
         expect(CloseManufactureTaskSession::apportion(201, collect([$taskA->id => 0.5, $taskB->id => 0.5])))->toBe([$taskA->id => 101.0, $taskB->id => 100.0])
             ->and(CloseManufactureTaskSession::apportion(10.5, collect([$taskA->id => 0.5, $taskB->id => 0.5])))->toBe([$taskA->id => 5.25, $taskB->id => 5.25]);
+
+        $packing  = StoreManufactureTask::make()->action($this->production, ['code' => 'CMBP'.$suffix, 'name' => 'Packing', 'is_piece_rate' => true]);
+        $packSteps = $artefacts->map(function (Artefact $artefact) use ($packing) {
+            AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => $packing->id, 'position' => 2, 'units_per_artefact' => 1]);
+            $jobOrder = StoreJobOrder::make()->action($this->production, []);
+            $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 10]);
+            ConfirmJobOrder::make()->action($jobOrder);
+
+            return $item->tasks()->where('manufacture_task_id', $packing->id)->first();
+        });
+        \Pest\Laravel\post($combineUrl, ['job_order_item_task_ids' => $packSteps->pluck('id')->all()])
+            ->assertSessionHasErrors(['job_order_item_task_ids' => $packSteps->first()->jobOrder->reference.' is still waiting for '.$this->manufactureTask->name.', combine it once that is done.']);
+        expect($packSteps->first()->refresh()->combined_task_id)->toBeNull();
     });
 
     test('changing a recipe step position keeps its target', function () {

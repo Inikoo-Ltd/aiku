@@ -54,7 +54,7 @@ class CombineJobOrderItemTasks extends OrgAction
     private function tasks(array $taskIds): Collection
     {
         return JobOrderItemTask::whereIn('id', $taskIds)
-            ->with(['jobOrder', 'jobOrderItem'])
+            ->with(['jobOrder', 'recipeStep', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.tasks.manufactureTask'])
             ->orderBy('id')
             ->lockForUpdate()
             ->get();
@@ -108,6 +108,16 @@ class CombineJobOrderItemTasks extends OrgAction
 
         if ($tasks->contains(fn (JobOrderItemTask $task) => $task->state == JobOrderItemTaskStateEnum::DONE)) {
             $validator->errors()->add('job_order_item_task_ids', __('A finished step cannot be combined.'));
+
+            return;
+        }
+
+        $heldUp = $tasks->first(fn (JobOrderItemTask $task) => $task->blockingStep($task->jobOrderItem->tasks));
+        if ($heldUp) {
+            $validator->errors()->add('job_order_item_task_ids', __(':job is still waiting for :step, combine it once that is done.', [
+                'job'  => $heldUp->jobOrder->reference,
+                'step' => $heldUp->blockingStep($heldUp->jobOrderItem->tasks)->stepName(),
+            ]));
 
             return;
         }
