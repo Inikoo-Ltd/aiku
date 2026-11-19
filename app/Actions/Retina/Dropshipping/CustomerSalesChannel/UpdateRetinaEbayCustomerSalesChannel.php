@@ -71,7 +71,7 @@ class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
             'status'       => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'name' => ['sometimes', 'string', 'max:255'],
             'shipping_service'              => ['sometimes', 'nullable', 'string'],
-            'shipping_price'              => ['sometimes', 'nullable', 'integer'],
+            'shipping_price'              => ['sometimes', 'nullable', 'numeric', 'min:0', 'decimal:0,2'],
             'shipping_max_dispatch_time'              => ['sometimes', 'nullable', 'integer'],
 
             'return_policy_id' => ['sometimes', 'required', 'string'],

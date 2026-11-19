@@ -16,6 +16,7 @@ use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateEbayCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannelSettings;
 use App\Actions\Dropshipping\Ebay\CallbackRetinaEbayUser;
 use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
 use App\Actions\Dropshipping\Ebay\CheckEbayUserAuthorized;
@@ -38,6 +39,7 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInEbayPortfolio;
 use App\Actions\Maintenance\Dropshipping\SyncEbayChannelPoliciesFromEbay;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaEbayCustomerSalesChannel;
 use App\Actions\Retina\Ebay\PublishRetinaEbayPortfolio;
 use App\Actions\Retina\Ebay\StoreRetinaNewProductToCurrentEbay;
 use App\Events\UploadProductToSalesChannelProgressEvent;
@@ -85,6 +87,7 @@ use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Outbox;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Validator;
 use Lorisleiva\Actions\Decorators\JobDecorator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -2244,6 +2247,23 @@ test('saving postage and return settings from the channel page updates both eBay
         ->and(Arr::get($channel->settings, 'shipping.carrier_code'))->toBe('RoyalMail')
         ->and(Arr::get($channel->settings, 'return.within'))->toBe(30);
 });
+
+test('the channel Shipping tab accepts a postage price with pence on the retina and grp routes, and refuses a negative one or one past the penny', function (string $actionClass) {
+    $ebayUser = ebayChannel($this);
+    $action   = $actionClass::make();
+    (new ReflectionProperty($action, 'customerSalesChannel'))->setValue($action, $ebayUser->customerSalesChannel);
+    $rules = ['shipping_price' => $action->rules()['shipping_price']];
+
+    foreach (['2.99', '3.5', '0.0', '4', 2.99] as $price) {
+        expect(Validator::make(['shipping_price' => $price], $rules)->passes())->toBeTrue();
+    }
+    foreach (['-1', '2.999', 'abc'] as $price) {
+        expect(Validator::make(['shipping_price' => $price], $rules)->fails())->toBeTrue();
+    }
+})->with([
+    UpdateRetinaEbayCustomerSalesChannel::class,
+    UpdateCustomerSalesChannelSettings::class,
+]);
 
 test('choosing the customer\'s own eBay postage and return policies links them without sending anything to eBay and shows what they hold, even with fields filled', function () {
     $ebayUser = ebayChannel($this, ['fulfillment_policy_id' => null, 'return_policy_id' => null]);

@@ -64,7 +64,7 @@ class UpdateCustomerSalesChannelSettings extends OrgAction
             'pricing_reset_all'          => ['sometimes', 'boolean'],
             'upload_as_draft'            => ['sometimes', 'boolean'],
             'shipping_service'           => ['sometimes', 'nullable', 'string'],
-            'shipping_price'             => ['sometimes', 'nullable', 'integer'],
+            'shipping_price'             => ['sometimes', 'nullable', 'numeric', 'min:0', 'decimal:0,2'],
             'shipping_max_dispatch_time' => ['sometimes', 'nullable', 'integer'],
             'return_accepted'            => ['sometimes', 'required', 'boolean'],
             'return_payer'               => ['sometimes', 'required_if:return_accepted,true'],
