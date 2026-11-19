@@ -282,30 +282,23 @@ class ShowOrgSupplierProduct extends OrgAction
     }
 
     /**
-     * An agent lists each of its products once, however many organisations buy it, and links the row
-     * to the one with the lowest slug; stepping walks those rows, never the same code in another organisation.
+     * Stepping moves to the next code, never to the same code from another supplier or organisation, and
+     * lands on the product of that code with the lowest slug, as the list links it.
      */
     private function getSibling(OrgSupplierProduct $orgSupplierProduct, ActionRequest $request, string $direction): ?OrgSupplierProduct
     {
-        $order              = $direction === '<' ? 'desc' : 'asc';
-        $walksAgentProducts = $this->getListedAgent($request) !== null;
-        $tieColumn          = $walksAgentProducts ? 'supplier_products.id' : 'org_supplier_products.id';
+        $siblingCode = $this->siblings($request)
+            ->where('supplier_products.code', $direction, $orgSupplierProduct->supplierProduct->code)
+            ->orderBy('supplier_products.code', $direction === '<' ? 'desc' : 'asc')
+            ->value('supplier_products.code');
 
-        $sibling = $this->siblings($request)
-            ->whereRaw("(supplier_products.code, $tieColumn) $direction (?, ?)", [
-                $orgSupplierProduct->supplierProduct->code,
-                $walksAgentProducts ? $orgSupplierProduct->supplier_product_id : $orgSupplierProduct->id,
-            ])
-            ->orderBy('supplier_products.code', $order)
-            ->orderBy($tieColumn, $order)
-            ->first();
-
-        if (!$sibling || !$walksAgentProducts) {
-            return $sibling;
+        if ($siblingCode === null) {
+            return null;
         }
 
         return $this->siblings($request)
-            ->where('org_supplier_products.supplier_product_id', $sibling->supplier_product_id)
+            ->where('supplier_products.code', $siblingCode)
+            ->orderBy('supplier_products.slug')
             ->orderBy('org_supplier_products.slug')
             ->first();
     }
