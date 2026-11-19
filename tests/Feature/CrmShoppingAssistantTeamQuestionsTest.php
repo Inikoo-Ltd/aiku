@@ -615,6 +615,13 @@ test('a guru\'s kept answer is used at once, with no second guru, and the mornin
 
     expect(ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count())->toBe($notesBefore);
 
+    $greeted = StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Are the fragrance oils diluted?', 'diluted?')['task'];
+    AnswerShoppingAssistantTeamQuestion::run($greeted, $this->person, "Hi Liva, thanks for your question! Our 10ml oils are diluted in DPG.");
+    expect(ChatKnowledgeEntry::find(data_get($greeted->refresh()->data, 'kept_note_id'))?->body)->toBe('thanks for your question! Our 10ml oils are diluted in DPG.')
+        ->and(AnswerShoppingAssistantTeamQuestion::withoutGreeting("Kedves Ádám!\n\nA számla letölthető a profilból."))->toBe('A számla letölthető a profilból.')
+        ->and(AnswerShoppingAssistantTeamQuestion::withoutGreeting('Hello,'."\n\n".'We do not sell samples.'))->toBe('We do not sell samples.')
+        ->and(AnswerShoppingAssistantTeamQuestion::withoutGreeting('Cherry scented candles come in packs of six.'))->toBe('Cherry scented candles come in packs of six.');
+
     $tz = $this->organisation->timezone?->name ?? 'UTC';
     Carbon::setTestNow(CarbonImmutable::parse('next thursday 09:05', $tz));
     SendShoppingAssistantMorningRound::run();

@@ -123,8 +123,9 @@ class AnswerShoppingAssistantTeamQuestion
         }
 
         $shop = Shop::find(data_get($task->data, 'shop_id'));
-        if ($keepForEveryone && $shop && !IsAboutOneCustomer::run($question, $answer) && IsGeneralAnswer::run($question, $answer)) {
-            $note = UpdateShopChatKnowledgeNote::make()->handle($shop, null, ['title' => self::noteTitle($question), 'body' => mb_substr($answer, 0, 2000)], $user);
+        $kept = self::withoutGreeting($answer);
+        if ($keepForEveryone && $shop && $kept !== '' && !IsAboutOneCustomer::run($question, $kept) && IsGeneralAnswer::run($question, $kept)) {
+            $note = UpdateShopChatKnowledgeNote::make()->handle($shop, null, ['title' => self::noteTitle($question), 'body' => mb_substr($kept, 0, 2000)], $user);
             $task->update(['data' => [...$task->data, 'kept_note_id' => $note->id]]);
             dispatch(fn () => HydrateChatKnowledge::make()->embedMissing($shop));
         } elseif ($keepForEveryone) {
@@ -136,6 +137,21 @@ class AnswerShoppingAssistantTeamQuestion
         }
 
         return 'answered';
+    }
+
+    /**
+     * A guru writes to one customer, usually opening with their name ("Hi Liva, thanks for your
+     * question!"); the note kept for every customer drops that opening so the answer is not refused
+     * as being about one customer, and Merlin never shows that name to anyone else (INI-402: 56 of
+     * 116 kept answers were refused for their greeting alone).
+     */
+    public static function withoutGreeting(string $answer): string
+    {
+        $greeting = '(hi|hello|hey|dear|good (morning|afternoon|evening)|hola|buenos días|buenas( tardes)?|estimad[oa]s?|querid[oa]|olá|bom dia|caro|cara|gentile|ciao|salve|buongiorno|hoi|hallo|beste|goedemiddag|goedemorgen|guten tag|sehr geehrte[rs]?|liebe[rs]?|bonjour|cher|chère|madame|monsieur|szia|sziasztok|kedves|tisztelt|ahoj|dobrý deň|dobrý den|vážen[áý]|dzień dobry|witam|szanown[ay]|hej|bună( ziua)?|stimate|zdravo|poštovani)';
+
+        $text = preg_replace('/\A\s*'.$greeting.'\b[^\n,!.]{0,40}[,!.]?[ \t]*(\n\s*)?/iu', '', trim($answer)) ?? $answer;
+
+        return trim($text);
     }
 
     public static function noteTitle(string $question): string
