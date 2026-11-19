@@ -472,6 +472,25 @@ test('a fulfilment shop staffs chat from its own positions', function () {
     expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull();
 });
 
+test('a fulfilment supervisor keeps the chat clerk position so they work the fulfilment inbox, HELP-4817', function () {
+    $fulfilment = createFulfilment($this->organisation);
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions::run($this->organisation);
+    $codes = ['ful-m', 'ful-c', 'ful-wc', 'ful-v'];
+    $positions  = \App\Models\HumanResources\JobPosition::where('organisation_id', $fulfilment->organisation_id)
+        ->whereIn('code', $codes)
+        ->pluck('id', 'code');
+
+    expect($positions->keys()->sort()->values()->all())->toBe(collect($codes)->sort()->values()->all());
+
+    $kept = \App\Actions\HumanResources\JobPosition\DropLowerGradeJobPositionScopes::run(
+        $positions->mapWithKeys(fn (int $id) => [$id => ['Fulfilment' => [$fulfilment->id]]])->all()
+    );
+
+    expect(array_keys($kept))->toContain($positions['ful-m'], $positions['ful-c'])
+        ->not->toContain($positions['ful-wc'])
+        ->not->toContain($positions['ful-v']);
+});
+
 test('an external shop has no chat permissions at all', function () {
     $external = \App\Models\Catalogue\Shop::factory()->make()->toArray();
     $external['type'] = \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL->value;
