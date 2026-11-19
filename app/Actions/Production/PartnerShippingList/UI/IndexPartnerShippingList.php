@@ -22,6 +22,7 @@ use App\Actions\Production\PartnerShippingList\GetProductionSurplusInPipeline;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
@@ -191,6 +192,7 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.quantity_to_produce',
                 'partner_shopping_list_items.batch_code as run_batch_code',
                 'partner_shopping_list_items.expiry_date as run_expiry_date',
+                'partner_shopping_list_items.period_after_opening as run_period_after_opening',
                 'partner_shopping_list_items.quantity',
                 'partner_shopping_list_items.priority',
                 'partner_shopping_list_items.state',
@@ -533,19 +535,23 @@ class IndexPartnerShippingList extends OrgAction
 
         $preparingItems = $byLane->get('preparing', collect());
         $backlogItems   = $byLane->get('backlog', collect());
+        $assignedItems  = $byLane->get('assigned', collect())->filter(fn ($item) => property_exists($item, 'run_batch_code'));
 
         $publishedLabels = $this->getPublishedLabelsByArtefact(
-            $preparingItems->concat($backlogItems)->pluck('artefact_id')->filter()->unique()->values()->all()
+            $preparingItems->concat($backlogItems)->concat($assignedItems)->pluck('artefact_id')->filter()->unique()->values()->all()
         );
+        $shelfLives = $this->getShelfLivesByArtefact($preparingItems->concat($backlogItems)->pluck('artefact_id')->filter()->unique()->values()->all());
 
         $this->markSurplusInPipeline($backlogItems);
         $this->attachStockCover($preparingItems->concat($backlogItems));
 
-        $preparingItems->concat($backlogItems)->each(function ($item) use ($publishedLabels) {
+        $preparingItems->concat($backlogItems)->concat($assignedItems)->each(function ($item) use ($publishedLabels, $shelfLives) {
             $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
             $item->batch_code         = $item->run_batch_code;
             $item->label_expiry_date  = $this->getLabelExpiryDate($item);
             $item->run_expiry         = $this->getRunExpiryDate($item);
+            $item->run_period_after_opening = $item->run_period_after_opening ?? null;
+            $item->shelf_life         = $shelfLives[$item->artefact_id] ?? null;
         });
 
         return collect($lanes)
@@ -698,6 +704,19 @@ class IndexPartnerShippingList extends OrgAction
             ->groupBy('artefact_id');
     }
 
+    /**
+     * @param  array<int, int>  $artefactIds
+     * @return array<int, array{expiry_months: int|null, period_after_opening: string|null}>
+     */
+    private function getShelfLivesByArtefact(array $artefactIds): array
+    {
+        return Artefact::whereIn('id', $artefactIds)
+            ->with(['artefactFamily:id,data', 'tradeUnit:id,label_info'])
+            ->get(['id', 'settings', 'artefact_family_id', 'trade_unit_id'])
+            ->mapWithKeys(fn (Artefact $artefact) => [$artefact->id => $artefact->runShelfLife()])
+            ->all();
+    }
+
     private function getPrintedText(ArtefactLabel $label, string $source): ?string
     {
         foreach (Arr::get($label->layout, 'fields', []) ?? [] as $field) {
@@ -742,7 +761,7 @@ class IndexPartnerShippingList extends OrgAction
      * planner should see before adding it (stock on hand, lines already on the board). Only
      * loaded when the form opens, the list runs to thousands.
      *
-     * @return array{reasons: array<int, string>, artefacts: array<int, array<string, mixed>>}
+     * @return array{reasons: array<int, string>, periods_after_opening: array<int, array{value: string, label: string}>, artefacts: array<int, array<string, mixed>>}
      */
     public function getManualJobOrderOptions(): array
     {
@@ -757,10 +776,21 @@ class IndexPartnerShippingList extends OrgAction
             ->groupBy('stock_id')
             ->select('stock_id', DB::raw('count(*) as lines'));
 
+        $runSources = $this->getPublishedLabelsByArtefact(
+            ArtefactLabel::where('state', ArtefactLabelStateEnum::PUBLISHED)
+                ->whereIn('artefact_id', Artefact::where('production_id', $this->production->id)->select('id'))
+                ->distinct()
+                ->pluck('artefact_id')
+                ->all()
+        )->map(fn (Collection $labels) => $labels->pluck('run_sources')->flatten()->unique()->values()->all());
+
         return [
-            'reasons'   => StoreManualJobOrder::REASONS,
+            'reasons'                 => StoreManualJobOrder::REASONS,
+            'periods_after_opening'   => TradeUnitBestBeforeEnum::periodAfterOpeningOptions(),
             'artefacts' => DB::table('artefacts')
                 ->join('org_stocks', 'org_stocks.id', 'artefacts.org_stock_id')
+                ->leftJoin('artefact_families', 'artefact_families.id', 'artefacts.artefact_family_id')
+                ->leftJoin('trade_units', 'trade_units.id', 'artefacts.trade_unit_id')
                 ->join('stocks', 'stocks.id', 'org_stocks.stock_id')
                 ->leftJoinSub($onBoard, 'on_board', 'on_board.stock_id', 'org_stocks.stock_id')
                 ->where('artefacts.production_id', $this->production->id)
@@ -775,6 +805,9 @@ class IndexPartnerShippingList extends OrgAction
                     'org_stocks.quantity_available as stock_available',
                     'stocks.gross_weight',
                     DB::raw('coalesce(on_board.lines, 0) as on_board'),
+                    'artefacts.settings',
+                    'artefact_families.data as family_data',
+                    'trade_units.label_info as trade_unit_label_info',
                 ])
                 ->map(fn ($artefact) => [
                     'id'              => $artefact->id,
@@ -785,6 +818,12 @@ class IndexPartnerShippingList extends OrgAction
                     'stock_available' => $artefact->stock_available !== null ? (float) $artefact->stock_available : null,
                     'gross_weight'    => $artefact->gross_weight ? (int) $artefact->gross_weight : null,
                     'on_board'        => (int) $artefact->on_board,
+                    'run_sources'     => $runSources->get($artefact->id, []),
+                    'shelf_life'      => Artefact::resolveShelfLife(
+                        json_decode($artefact->settings ?? 'null', true),
+                        json_decode($artefact->family_data ?? 'null', true),
+                        json_decode($artefact->trade_unit_label_info ?? 'null', true)
+                    ),
                 ])
                 ->all(),
         ];
@@ -864,6 +903,7 @@ class IndexPartnerShippingList extends OrgAction
                 ],
                 'groupBy'      => $this->groupBy,
                 'simpleBoard'  => $this->production->hasSimpleBoard(),
+                'periodsAfterOpening' => TradeUnitBestBeforeEnum::periodAfterOpeningOptions(),
                 'productionBlockedNotice' => $this->groupBy === 'board' ? GetOrdersBlockedByProduction::make()->notice($this->organisation) : null,
                 'artisanWorkload' => in_array($this->groupBy, ['maker', 'board', 'mixes']) ? $this->getArtisanWorkload() : null,
                 'groups'       => $this->groupBy && $this->groupBy !== 'mixes' ? $this->getGroups($items) : null,

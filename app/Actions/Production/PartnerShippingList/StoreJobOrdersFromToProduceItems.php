@@ -22,6 +22,8 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use Illuminate\Support\Facades\Redirect;
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -32,7 +34,7 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
      * @return array{job_orders: array<int, JobOrder>, skipped: array<int, array{id: int, reason: string}>}
      */
     /**
-     * @param  array<int, array<int, array{quantity: float|int, batch_code?: string|null, expiry_date?: string|null}>>  $runs  per line id, one job line per batch of raw material, each with its own batch code and expiry date
+     * @param  array<int, array<int, array{quantity: float|int, batch_code?: string|null, expiry_date?: string|null, period_after_opening?: string|null}>>  $runs  per line id, one job line per batch of raw material, each with its own batch code and expiry date
      */
     public function handle(Production $production, array $ids, ?int $employeeId = null, float|int|null $quantity = null, ?string $plannedFor = null, array $runs = []): array
     {
@@ -66,6 +68,7 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
                 'quantity'    => $quantity && count($ids) === 1 ? $quantity : ($item->quantity_to_produce ?? $item->quantity),
                 'batch_code'  => $item->batch_code,
                 'expiry_date' => $item->expiry_date?->format('Y-m-d'),
+                'period_after_opening' => $item->period_after_opening,
                 'after'       => fn (JobOrder $jobOrder) => $item->update(['job_order_id' => $jobOrder->id]),
                 'order'       => $item->transaction?->order?->reference,
                 'fill'        => $artefact->org_stock_id ? null : [
@@ -92,6 +95,7 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
                     'quantity'    => $run['quantity'],
                     'batch_code'  => ($run['batch_code'] ?? null) ?: null,
                     'expiry_date' => ($run['expiry_date'] ?? null) ?: null,
+                    'period_after_opening' => ($run['period_after_opening'] ?? null) ?: null,
                     'after'       => $index === 0 ? $line['after'] : null,
                 ];
             }
@@ -169,6 +173,7 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
             'runs.*.*.quantity'    => ['required', 'numeric', 'min:1'],
             'runs.*.*.batch_code'  => ['sometimes', 'nullable', 'string', 'max:64'],
             'runs.*.*.expiry_date' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
+            'runs.*.*.period_after_opening' => ['sometimes', 'nullable', Rule::in(TradeUnitBestBeforeEnum::periodsAfterOpening())],
         ];
     }
 

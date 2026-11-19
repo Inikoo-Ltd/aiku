@@ -772,6 +772,14 @@ test('a labelled run is prepared only with its batch code, and keeping the expir
         ->and($line->batch_code)->toBe('B-0309')
         ->and($label->refresh()->layout['fields'][1]['text'])->toBe('09/03/2027')
         ->and($label->layout['fields'][0]['text'])->toBe('Kept');
+
+    \Pest\Laravel\post(route('grp.org.productions.show.to_produce.items.preparing', [$this->organisation->slug, $this->production->slug]), [
+        'preparing' => true,
+        'lines'     => [['id' => $line->id, 'batch_code' => 'B-0310', 'expiry_date' => '2027-03-10', 'period_after_opening' => 'pao_12m']],
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    expect($line->refresh()->period_after_opening)->toBe('pao_12m')
+        ->and($line->expiry_date)->toBeNull();
 });
 
 test('an own customer line leaves the to produce board once its order is dispatched', function () {
@@ -1669,6 +1677,73 @@ test('a job order planned by hand is one job with its lines on the board, even f
         'reason' => 'stock',
         'lines'  => [],
     ]))->toThrow(ValidationException::class);
+});
+
+test('a job order planned by hand carries each line\'s batch code and expiry date or period after opening, and a label waits for them', function () {
+    $newArtefact = function (string $code) {
+        $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+            $this->group,
+            array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE])
+        );
+        $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+
+        return StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code, 'name' => $code.' name', 'org_stock_id' => $orgStock->id]);
+    };
+
+    $dated  = $newArtefact('RUNTEXT1');
+    $opened = $newArtefact('RUNTEXT2');
+
+    \App\Models\Production\ArtefactLabel::create([
+        'group_id'        => $opened->group_id,
+        'organisation_id' => $opened->organisation_id,
+        'artefact_id'     => $opened->id,
+        'org_stock_id'    => $opened->org_stock_id,
+        'name'            => 'Jar',
+        'state'           => \App\Enums\Production\Artefact\ArtefactLabelStateEnum::PUBLISHED,
+        'layout'          => ['fields' => [['source' => 'expiry_date', 'text' => ''], ['source' => 'batch_code', 'text' => 'EXAMPLE-1']]],
+    ]);
+
+    expect(fn () => \App\Actions\Production\JobOrder\StoreManualJobOrder::make()->action($this->production, [
+        'reason' => 'stock',
+        'lines'  => [['artefact_id' => $opened->id, 'quantity' => 1]],
+    ]))->toThrow(ValidationException::class);
+
+    $jobOrder = \App\Actions\Production\JobOrder\StoreManualJobOrder::make()->action($this->production, [
+        'reason' => 'stock',
+        'lines'  => [
+            ['artefact_id' => $dated->id, 'quantity' => 1, 'batch_code' => 'MB-1', 'expiry_date' => '2027-05-01'],
+            ['artefact_id' => $opened->id, 'quantity' => 1, 'batch_code' => 'MB-2', 'expiry_date' => '2027-05-01', 'period_after_opening' => 'pao_12m'],
+        ],
+    ]);
+
+    $items      = $jobOrder->jobOrderItems()->get()->keyBy('artefact_id');
+    $boardLines = \App\Models\Procurement\PartnerShoppingListItem::where('job_order_id', $jobOrder->id)->get()->keyBy('org_stock_id');
+
+    expect($items[$dated->id]->data['batch_code'])->toBe('MB-1')
+        ->and($items[$dated->id]->data['expiry_date'])->toBe('2027-05-01')
+        ->and($items[$dated->id]->data)->not->toHaveKey('period_after_opening')
+        ->and($items[$opened->id]->data['batch_code'])->toBe('MB-2')
+        ->and($items[$opened->id]->data['expiry_date'])->toBeNull()
+        ->and($items[$opened->id]->data['period_after_opening'])->toBe('pao_12m')
+        ->and($boardLines[$dated->org_stock_id]->batch_code)->toBe('MB-1')
+        ->and($boardLines[$dated->org_stock_id]->expiry_date->format('Y-m-d'))->toBe('2027-05-01')
+        ->and($boardLines[$opened->org_stock_id]->period_after_opening)->toBe('pao_12m');
+
+    $printed = \App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf::make()->applyRunTexts(
+        ['fields' => [['source' => 'expiry_date', 'text' => '01/01/2026'], ['source' => 'batch_code', 'text' => 'EXAMPLE-1']]],
+        ['batch_code' => 'MB-2', 'period_after_opening' => 'pao_12m']
+    );
+    expect($printed['fields'][0])->toMatchArray(['source' => 'period_after_opening', 'text' => 'pao_12m'])
+        ->and($printed['fields'][1]['text'])->toBe('MB-2');
+
+    $family = ['expiry_months' => 24];
+    expect(\App\Models\Production\Artefact::resolveShelfLife([], $family, null))->toBe(['expiry_months' => 24, 'period_after_opening' => null])
+        ->and(\App\Models\Production\Artefact::resolveShelfLife(['expiry_months' => 6], $family, null))->toBe(['expiry_months' => 6, 'period_after_opening' => null])
+        ->and(\App\Models\Production\Artefact::resolveShelfLife([], $family, ['best_before' => 'pao_6m']))->toBe(['expiry_months' => null, 'period_after_opening' => 'pao_6m'])
+        ->and(\App\Models\Production\Artefact::resolveShelfLife([], $family, ['best_before' => 'custom']))->toBe(['expiry_months' => 24, 'period_after_opening' => null]);
+
+    \App\Actions\Production\Artefact\UpdateArtefact::make()->action($dated, ['expiry_months' => 18, 'period_after_opening' => null]);
+    expect($dated->refresh()->runShelfLife())->toBe(['expiry_months' => 18, 'period_after_opening' => null]);
 });
 
 test('creating job orders from a click event payload is a validation error, not a database error', function () {

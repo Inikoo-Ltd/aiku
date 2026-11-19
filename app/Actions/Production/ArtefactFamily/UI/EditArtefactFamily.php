@@ -15,6 +15,7 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 
 class EditArtefactFamily extends OrgAction
 {
@@ -90,6 +91,23 @@ class EditArtefactFamily extends OrgAction
                                     'information' => __('What one artefact of this family is called on the manufacture floor, shown after every quantity (e.g. bags, bars, bottles). An artefact can set its own.'),
                                     'placeholder' => __('e.g. bags'),
                                     'value'       => data_get($artefactFamily->data, 'unit_name'),
+                                    'required'    => false
+                                ],
+                                'expiry_months' => [
+                                    'type'        => 'input_number',
+                                    'label'       => __('Expiry (months)'),
+                                    'information' => __('Fills in the expiry date of a new run, this many months from the day it is planned. It can still be changed on the run. An artefact can set its own.'),
+                                    'bind'        => ['min' => 1, 'max' => 240, 'placeholder' => __('e.g. 24')],
+                                    'value'       => data_get($artefactFamily->data, 'expiry_months'),
+                                    'required'    => false
+                                ],
+                                'period_after_opening' => [
+                                    'type'        => 'select',
+                                    'label'       => __('Period after opening'),
+                                    'information' => __('Runs are dated by how long they keep once opened instead of an expiry date; the label prints the open jar where the date would be.'),
+                                    'placeholder' => __('Dated with an expiry date'),
+                                    'options'     => TradeUnitBestBeforeEnum::periodAfterOpeningOptions(),
+                                    'value'       => data_get($artefactFamily->data, 'period_after_opening'),
                                     'required'    => false
                                 ],
                                 'pack_name' => [

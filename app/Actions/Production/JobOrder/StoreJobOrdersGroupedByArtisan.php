@@ -20,7 +20,7 @@ class StoreJobOrdersGroupedByArtisan
     use AsObject;
 
     /**
-     * @param  array<int, array{artefact: Artefact, quantity: float|int, batch_code?: string|null, expiry_date?: string|null, after?: callable(JobOrder): void, fill?: array<string, mixed>|null, order?: string|null}>  $lines  quantity in SKOs, as the boards ask for it
+     * @param  array<int, array{artefact: Artefact, quantity: float|int, batch_code?: string|null, expiry_date?: string|null, period_after_opening?: string|null, after?: callable(JobOrder): void, fill?: array<string, mixed>|null, order?: string|null}>  $lines  quantity in SKOs, as the boards ask for it
      * @param  string|null  $plannedFor  Y-m-d: each line becomes its own job order on that day's plan, with no operator named
      * @return array<int, JobOrder>
      */
@@ -69,7 +69,7 @@ class StoreJobOrdersGroupedByArtisan
      * run was prepared wins; otherwise the job order's own reference names the batch, which is the
      * only name guaranteed to be unique. Both travel with the item to the shelf when it is received.
      *
-     * @param  array{artefact: Artefact, quantity: float|int, batch_code?: string|null, expiry_date?: string|null}  $line
+     * @param  array{artefact: Artefact, quantity: float|int, batch_code?: string|null, expiry_date?: string|null, period_after_opening?: string|null}  $line
      * @return array<string, string|float|null>
      */
     private function getRunData(JobOrder $jobOrder, array $line): array
@@ -80,6 +80,7 @@ class StoreJobOrdersGroupedByArtisan
             'demand_skos' => (float) $line['quantity'],
             'batch_code'  => ($line['batch_code'] ?? null) ?: $jobOrder->reference.'-'.$line['artefact']->code,
             'expiry_date' => ($line['expiry_date'] ?? null) ?: null,
-        ], fn ($value, $key) => !in_array($key, ['fill', 'order']) || $value !== null, ARRAY_FILTER_USE_BOTH);
+            'period_after_opening' => ($line['period_after_opening'] ?? null) ?: null,
+        ], fn ($value, $key) => !in_array($key, ['fill', 'order', 'period_after_opening']) || $value !== null, ARRAY_FILTER_USE_BOTH);
     }
 }

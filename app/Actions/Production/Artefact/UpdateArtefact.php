@@ -22,6 +22,7 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 
 class UpdateArtefact extends OrgAction
 {
@@ -51,6 +52,12 @@ class UpdateArtefact extends OrgAction
 
         if (Arr::has($modelData, 'unit_name')) {
             data_set($modelData, 'settings.unit_name', trim((string) Arr::pull($modelData, 'unit_name')) ?: null);
+        }
+
+        foreach (['expiry_months', 'period_after_opening'] as $key) {
+            if (Arr::has($modelData, $key)) {
+                data_set($modelData, "settings.$key", Arr::pull($modelData, $key) ?: null);
+            }
         }
 
         $artefact = $this->update($artefact, $modelData, ['data', 'settings']);
@@ -126,6 +133,8 @@ class UpdateArtefact extends OrgAction
             'is_in_development'      => ['sometimes', 'boolean'],
             'needs_machine_maintenance' => ['sometimes', 'boolean'],
             'unit_name'                 => ['sometimes', 'nullable', 'string', 'max:32'],
+            'expiry_months'             => ['sometimes', 'nullable', 'integer', 'min:1', 'max:240'],
+            'period_after_opening'      => ['sometimes', 'nullable', Rule::in(TradeUnitBestBeforeEnum::periodsAfterOpening())],
             'artefact_department_id'     => ['sometimes', 'nullable', Rule::exists('artefact_departments', 'id')->where('organisation_id', $this->organisation->id)],
             'artefact_family_id'         => ['sometimes', 'nullable', Rule::exists('artefact_families', 'id')->where('production_id', $this->production->id)],
             'tags'                   => ['sometimes', 'array'],

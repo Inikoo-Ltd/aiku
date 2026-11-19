@@ -8,6 +8,7 @@
 
 namespace App\Models\Production;
 
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
@@ -209,6 +210,34 @@ class Artefact extends Model implements Auditable, HasMedia
     public function unitName(): ?string
     {
         return data_get($this->settings, 'unit_name') ?: data_get($this->artefactFamily?->data, 'unit_name') ?: null;
+    }
+
+    /**
+     * How a run is dated when the planner types nothing (HELP-4830): months until it expires, or the
+     * period after opening (a pao_* key the label prints as an open jar). The artefact's own, else its
+     * family's; the period after opening falls back to the trade unit's best before. A period after
+     * opening wins over months, as a run carries one or the other.
+     *
+     * @return array{expiry_months: int|null, period_after_opening: string|null}
+     */
+    public function runShelfLife(): array
+    {
+        return self::resolveShelfLife($this->settings, $this->artefactFamily?->data, $this->tradeUnit?->label_info);
+    }
+
+    /**
+     * @return array{expiry_months: int|null, period_after_opening: string|null}
+     */
+    public static function resolveShelfLife(mixed $settings, mixed $familyData, mixed $tradeUnitLabelInfo): array
+    {
+        $periodAfterOpening = data_get($settings, 'period_after_opening')
+            ?: data_get($familyData, 'period_after_opening')
+            ?: TradeUnitBestBeforeEnum::periodAfterOpening(data_get($tradeUnitLabelInfo, 'best_before'));
+
+        return [
+            'expiry_months'        => $periodAfterOpening ? null : ((int) (data_get($settings, 'expiry_months') ?: data_get($familyData, 'expiry_months')) ?: null),
+            'period_after_opening' => $periodAfterOpening ?: null,
+        ];
     }
 
     public function packedIn(): int

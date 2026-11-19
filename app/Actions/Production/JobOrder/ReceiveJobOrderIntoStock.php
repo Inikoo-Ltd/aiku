@@ -241,7 +241,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
     /**
      * One batch per job order line, however many times it is received. Its best-before is the
      * one typed for the run, else the date it was first received plus the artefact's shelf life,
-     * else left blank: a best-before is never guessed.
+     * else left blank: a best-before is never guessed. A run dated by its period after opening has none.
      */
     private function batchCode(JobOrder $jobOrder, JobOrderItem $item, OrgStock $orgStock, Location $location): BatchCode
     {
@@ -254,7 +254,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
                 return $received;
             }
 
-            $shelfLifeDays = $item->artefact->shelf_life_days;
+            $shelfLifeDays = Arr::get($item->data, 'period_after_opening') ? null : $item->artefact->shelf_life_days;
             $bestBefore    = $shelfLifeDays ? now()->addDays($shelfLifeDays)->toDateString() : null;
         }
 

@@ -10,6 +10,9 @@ namespace App\Actions\Production\JobOrder;
 
 use App\Actions\Production\Artisan\PickDepartmentArtisans;
 use App\Actions\OrgAction;
+use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
+use App\Actions\Production\PartnerShippingList\SetToProduceItemPreparing;
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -36,7 +39,7 @@ class StoreManualJobOrder extends OrgAction
     public const array REASONS = ['stock', 'partner', 'sample', 'rework', 'other'];
 
     /**
-     * @param array{reason: string, notes?: string|null, needed_by?: string|null, employee_id?: int|null, lines: array<int, array{artefact_id: int, quantity: int}>} $modelData quantities in whole SKOs
+     * @param array{reason: string, notes?: string|null, needed_by?: string|null, employee_id?: int|null, lines: array<int, array{artefact_id: int, quantity: int, batch_code?: string|null, expiry_date?: string|null, period_after_opening?: string|null}>} $modelData quantities in whole SKOs
      */
     public function handle(Production $production, array $modelData): JobOrder
     {
@@ -54,6 +57,19 @@ class StoreManualJobOrder extends OrgAction
             ]);
         }
 
+        $missing = [];
+        foreach ($modelData['lines'] as $index => $line) {
+            $missing += SetToProduceItemPreparing::missingRunTexts(
+                DownloadArtefactLabelPdf::getRunSourcesOfArtefact($line['artefact_id']),
+                $line,
+                "lines.$index",
+                $artefacts->get($line['artefact_id'])->code
+            );
+        }
+        if ($missing) {
+            throw ValidationException::withMessages($missing);
+        }
+
         $employeeId      = Arr::get($modelData, 'employee_id');
         $departmentPicks = $employeeId ? [] : PickDepartmentArtisans::run($production);
         foreach ($modelData['lines'] as $line) {
@@ -68,7 +84,10 @@ class StoreManualJobOrder extends OrgAction
             $lines  = [];
 
             foreach ($modelData['lines'] as $line) {
-                $artefact = $artefacts->get($line['artefact_id']);
+                $artefact           = $artefacts->get($line['artefact_id']);
+                $batchCode          = trim((string) Arr::get($line, 'batch_code')) ?: null;
+                $periodAfterOpening = Arr::get($line, 'period_after_opening') ?: null;
+                $expiryDate         = $periodAfterOpening ? null : (Arr::get($line, 'expiry_date') ?: null);
 
                 $boardLine = PartnerShoppingListItem::create([
                     'group_id'         => $seller->group_id,
@@ -81,11 +100,17 @@ class StoreManualJobOrder extends OrgAction
                     'needed_by'        => Arr::get($modelData, 'needed_by'),
                     'notes'            => $label,
                     'added_by_user_id' => request()->user()?->id,
+                    'batch_code'           => $batchCode,
+                    'expiry_date'          => $expiryDate,
+                    'period_after_opening' => $periodAfterOpening,
                 ]);
 
                 $lines[] = [
-                    'artefact' => $artefact,
-                    'quantity' => (float) $line['quantity'],
+                    'artefact'             => $artefact,
+                    'quantity'             => (float) $line['quantity'],
+                    'batch_code'           => $batchCode,
+                    'expiry_date'          => $expiryDate,
+                    'period_after_opening' => $periodAfterOpening,
                     'after'    => fn (JobOrder $jobOrder) => $boardLine->update(['job_order_id' => $jobOrder->id]),
                 ];
             }
@@ -117,6 +142,9 @@ class StoreManualJobOrder extends OrgAction
             'lines'               => ['required', 'array', 'min:1'],
             'lines.*.artefact_id' => ['required', 'integer', 'distinct'],
             'lines.*.quantity'    => ['required', 'integer', 'min:1'],
+            'lines.*.batch_code'  => ['sometimes', 'nullable', 'string', 'max:64'],
+            'lines.*.expiry_date' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
+            'lines.*.period_after_opening' => ['sometimes', 'nullable', Rule::in(TradeUnitBestBeforeEnum::periodsAfterOpening())],
         ];
     }
 

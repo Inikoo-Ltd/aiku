@@ -49,6 +49,32 @@ enum TradeUnitBestBeforeEnum: string
         );
     }
 
+    /**
+     * The pao_* key when the value is a period after opening, the only ones a label can print as an open jar.
+     */
+    public static function periodAfterOpening(mixed $value): ?string
+    {
+        $bestBefore = is_string($value) ? self::tryFrom($value) : null;
+
+        return $bestBefore && str_starts_with($bestBefore->value, 'pao_') ? $bestBefore->value : null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function periodsAfterOpening(): array
+    {
+        return array_values(array_filter(self::values(), fn (string $value) => str_starts_with($value, 'pao_')));
+    }
+
+    /**
+     * @return array<int, array{value: string, label: string}>
+     */
+    public static function periodAfterOpeningOptions(): array
+    {
+        return array_map(fn (string $value) => ['value' => $value, 'label' => self::labels()[$value]], self::periodsAfterOpening());
+    }
+
     public static function bestBeforeFromLabelInfo(?array $labelInfo): array
     {
         $bestBefore = self::tryFrom((string) data_get($labelInfo, 'best_before'));

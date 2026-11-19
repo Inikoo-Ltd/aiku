@@ -120,6 +120,7 @@ class StoreJobOrderItem extends OrgAction
             'data.demand_skos'   => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'data.batch_code'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'data.expiry_date'   => ['sometimes', 'nullable', 'date'],
+            'data.period_after_opening' => ['sometimes', 'nullable', 'string', 'max:16'],
             'data.fill'          => ['sometimes', 'array'],
         ];
     }

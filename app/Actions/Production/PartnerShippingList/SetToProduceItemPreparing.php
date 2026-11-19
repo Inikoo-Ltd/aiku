@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\PartnerShippingList;
 
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
@@ -22,13 +23,14 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetToProduceItemPreparing extends OrgAction
 {
     /**
-     * @param  array{quantity?: float|int|null, batch_code?: string|null, expiry_date?: string|null, expiry_applies_to_label?: bool}  $runTexts
+     * @param  array{quantity?: float|int|null, batch_code?: string|null, expiry_date?: string|null, period_after_opening?: string|null, expiry_applies_to_label?: bool}  $runTexts
      */
     public function handle(PartnerShoppingListItem $item, bool $preparing, float|int|null $quantityToProduce = null, array $runTexts = []): PartnerShoppingListItem
     {
@@ -39,13 +41,15 @@ class SetToProduceItemPreparing extends OrgAction
             throw ValidationException::withMessages(['item' => __('Already covered from stock, nothing to make')]);
         }
 
-        $expiryDate = $preparing ? (Arr::get($runTexts, 'expiry_date') ?: null) : null;
+        $periodAfterOpening = $preparing ? (Arr::get($runTexts, 'period_after_opening') ?: null) : null;
+        $expiryDate         = $preparing && !$periodAfterOpening ? (Arr::get($runTexts, 'expiry_date') ?: null) : null;
 
         $item->update([
-            'preparing_at'        => $preparing ? now() : null,
-            'quantity_to_produce' => $preparing ? ($quantityToProduce ?? ceil((float) $item->quantity)) : null,
-            'batch_code'          => $preparing ? (Arr::get($runTexts, 'batch_code') ?: null) : null,
-            'expiry_date'         => $expiryDate,
+            'preparing_at'         => $preparing ? now() : null,
+            'quantity_to_produce'  => $preparing ? ($quantityToProduce ?? ceil((float) $item->quantity)) : null,
+            'batch_code'           => $preparing ? (Arr::get($runTexts, 'batch_code') ?: null) : null,
+            'expiry_date'          => $expiryDate,
+            'period_after_opening' => $periodAfterOpening,
         ]);
 
         if ($expiryDate && Arr::get($runTexts, 'expiry_applies_to_label')) {
@@ -78,13 +82,12 @@ class SetToProduceItemPreparing extends OrgAction
                 continue;
             }
 
-            foreach ($this->getRunSources($item) as $source) {
-                if (!filled(Arr::get($line, $source))) {
-                    $missing["lines.$index.$source"] = $source === 'batch_code'
-                        ? __('Type the batch code of :code, its label prints it', ['code' => $item->orgStock?->code ?? $item->id])
-                        : __('Choose the expiry date of :code, its label prints it', ['code' => $item->orgStock?->code ?? $item->id]);
-                }
-            }
+            $missing += self::missingRunTexts(
+                DownloadArtefactLabelPdf::getRunSourcesOfArtefact($this->getArtefactId($item)),
+                $line,
+                "lines.$index",
+                $item->orgStock?->code ?? (string) $item->id
+            );
         }
 
         if ($missing) {
@@ -93,23 +96,29 @@ class SetToProduceItemPreparing extends OrgAction
     }
 
     /**
-     * @return array<int, string>
+     * What a run still has to say before its labels can print. A period after opening stands in for
+     * the expiry date, the label prints the open jar where the date would be.
+     *
+     * @param  array<int, string>  $runSources
+     * @param  array<string, mixed>  $run
+     * @return array<string, string>
      */
-    private function getRunSources(PartnerShoppingListItem $item): array
+    public static function missingRunTexts(array $runSources, array $run, string $key, string $code): array
     {
-        $artefactId = $this->getArtefactId($item);
+        $missing = [];
 
-        if (!$artefactId) {
-            return [];
+        foreach ($runSources as $source) {
+            $given = filled(Arr::get($run, $source))
+                || ($source === 'expiry_date' && filled(Arr::get($run, 'period_after_opening')));
+
+            if (!$given) {
+                $missing["$key.$source"] = $source === 'batch_code'
+                    ? __('Type the batch code of :code, its label prints it', ['code' => $code])
+                    : __('Choose the expiry date of :code, its label prints it', ['code' => $code]);
+            }
         }
 
-        return ArtefactLabel::where('artefact_id', $artefactId)
-            ->where('state', ArtefactLabelStateEnum::PUBLISHED)
-            ->get(['id', 'layout'])
-            ->flatMap(fn (ArtefactLabel $label) => DownloadArtefactLabelPdf::getRunSources($label))
-            ->unique()
-            ->values()
-            ->all();
+        return $missing;
     }
 
     private function getArtefactId(PartnerShoppingListItem $item): ?int
@@ -151,7 +160,7 @@ class SetToProduceItemPreparing extends OrgAction
     }
 
     /**
-     * @param  array<int, array{id: int, quantity?: float|int|null, batch_code?: string|null, expiry_date?: string|null, expiry_applies_to_label?: bool}>  $lines
+     * @param  array<int, array{id: int, quantity?: float|int|null, batch_code?: string|null, expiry_date?: string|null, period_after_opening?: string|null, expiry_applies_to_label?: bool}>  $lines
      * @return array<int, PartnerShoppingListItem>
      */
     public function handleMany(array $lines, bool $preparing): array
@@ -178,6 +187,7 @@ class SetToProduceItemPreparing extends OrgAction
             'lines.*.quantity' => ['sometimes', 'nullable', 'numeric', 'min:1'],
             'lines.*.batch_code'              => ['sometimes', 'nullable', 'string', 'max:64'],
             'lines.*.expiry_date'             => ['sometimes', 'nullable', 'date'],
+            'lines.*.period_after_opening'    => ['sometimes', 'nullable', Rule::in(TradeUnitBestBeforeEnum::periodsAfterOpening())],
             'lines.*.expiry_applies_to_label' => ['sometimes', 'boolean'],
         ];
     }

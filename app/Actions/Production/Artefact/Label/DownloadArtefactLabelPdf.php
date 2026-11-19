@@ -9,6 +9,7 @@
 namespace App\Actions\Production\Artefact\Label;
 
 use App\Actions\OrgAction;
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
@@ -106,6 +107,7 @@ class DownloadArtefactLabelPdf extends OrgAction
         return array_filter([
             'batch_code'  => trim((string) $request->query('batch_code')),
             'expiry_date' => $this->getRunExpiryDate($request->query('expiry_date')),
+            'period_after_opening' => (string) TradeUnitBestBeforeEnum::periodAfterOpening($request->query('period_after_opening')),
         ], fn (string $text) => $text !== '');
     }
 
@@ -120,6 +122,26 @@ class DownloadArtefactLabelPdf extends OrgAction
         $placed = array_map(fn (array $field) => $field['source'] ?? 'batch_code', Arr::get($artefactLabel->layout, 'fields', []) ?? []);
 
         return array_values(array_intersect(self::RUN_SOURCES, $placed));
+    }
+
+    /**
+     * What the published labels of an artefact wait for from each run before they can print.
+     *
+     * @return array<int, string>
+     */
+    public static function getRunSourcesOfArtefact(?int $artefactId): array
+    {
+        if (!$artefactId) {
+            return [];
+        }
+
+        return ArtefactLabel::where('artefact_id', $artefactId)
+            ->where('state', ArtefactLabelStateEnum::PUBLISHED)
+            ->get(['id', 'layout'])
+            ->flatMap(fn (ArtefactLabel $label) => self::getRunSources($label))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**
@@ -151,20 +173,28 @@ class DownloadArtefactLabelPdf extends OrgAction
     }
 
     /**
+     * A run kept for a period after opening has no expiry date: its expiry line prints the open jar
+     * instead (HELP-4830), placed where the date would have been.
+     *
      * @param  array<string, mixed>  $layout
      * @param  array<string, string>  $runTexts
      * @return array<string, mixed>
      */
-    private function applyRunTexts(array $layout, array $runTexts): array
+    public function applyRunTexts(array $layout, array $runTexts): array
     {
         if (!$runTexts) {
             return $layout;
         }
 
+        $periodAfterOpening = $runTexts['period_after_opening'] ?? null;
+
         foreach (Arr::get($layout, 'fields', []) ?? [] as $index => $field) {
             $source = Arr::get($field, 'source');
 
-            if (isset($runTexts[$source])) {
+            if ($periodAfterOpening && $source === 'expiry_date') {
+                $layout['fields'][$index]['source'] = 'period_after_opening';
+                $layout['fields'][$index]['text']   = $periodAfterOpening;
+            } elseif (isset($runTexts[$source])) {
                 $layout['fields'][$index]['text'] = $runTexts[$source];
             }
         }

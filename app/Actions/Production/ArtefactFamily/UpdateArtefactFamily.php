@@ -19,6 +19,7 @@ use Closure;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 
 class UpdateArtefactFamily extends OrgAction
 {
@@ -37,6 +38,12 @@ class UpdateArtefactFamily extends OrgAction
         foreach (['unit_name', 'pack_name'] as $name) {
             if (Arr::has($modelData, $name)) {
                 data_set($modelData, "data.$name", trim((string) Arr::pull($modelData, $name)) ?: null);
+            }
+        }
+
+        foreach (['expiry_months', 'period_after_opening'] as $key) {
+            if (Arr::has($modelData, $key)) {
+                data_set($modelData, "data.$key", Arr::pull($modelData, $key) ?: null);
             }
         }
 
@@ -88,6 +95,8 @@ class UpdateArtefactFamily extends OrgAction
             'needs_machine_maintenance' => ['sometimes', 'boolean'],
             'unit_name'                 => ['sometimes', 'nullable', 'string', 'max:32'],
             'pack_name'                 => ['sometimes', 'nullable', 'string', 'max:32'],
+            'expiry_months'             => ['sometimes', 'nullable', 'integer', 'min:1', 'max:240'],
+            'period_after_opening'      => ['sometimes', 'nullable', Rule::in(TradeUnitBestBeforeEnum::periodsAfterOpening())],
             'artefact_department_id' => [
                 'sometimes',
                 'required',

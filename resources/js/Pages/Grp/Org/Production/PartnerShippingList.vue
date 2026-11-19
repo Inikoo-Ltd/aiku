@@ -24,6 +24,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import ArtisanPicker from "@/Components/Production/ArtisanPicker.vue"
 import ModalCreateManualJobOrder from "@/Components/Production/ModalCreateManualJobOrder.vue"
+import RunExpiryInput, { expiryFromMonths, type PeriodAfterOpeningOption, type RunShelfLife } from "@/Components/Production/RunExpiryInput.vue"
 import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
 import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
@@ -49,7 +50,8 @@ function labelUrl(label: PublishedLabel, item: BoardItem) {
     const expiry = formatExpiryForLabel(item.run_expiry)
 
     if (item.run_batch_code) runTexts.set("batch_code", item.run_batch_code)
-    if (expiry) runTexts.set("expiry_date", expiry)
+    if (item.run_period_after_opening) runTexts.set("period_after_opening", item.run_period_after_opening)
+    else if (expiry) runTexts.set("expiry_date", expiry)
 
     return runTexts.size ? `${label.pdf_url}?${runTexts}` : label.pdf_url
 }
@@ -60,7 +62,7 @@ function labelUrl(label: PublishedLabel, item: BoardItem) {
  */
 function canPrintLabel(label: PublishedLabel, item: BoardItem) {
     return (!label.run_sources.includes("batch_code") || Boolean(item.run_batch_code))
-        && (!label.run_sources.includes("expiry_date") || Boolean(item.run_expiry))
+        && (!label.run_sources.includes("expiry_date") || Boolean(item.run_expiry || item.run_period_after_opening))
 }
 
 function labelsNeed(item: BoardItem, source: string) {
@@ -122,8 +124,9 @@ const props = defineProps<{
     pipeline?: { count: number, ignoring: boolean }
     canCreateJobOrder?: boolean
     simpleBoard?: boolean
+    periodsAfterOpening?: PeriodAfterOpeningOption[]
     productionBlockedNotice?: InstanceType<typeof OrdersBlockedByProductionNotice>['$props']['notice'] | null
-    manualJobOrder?: { reasons: string[], artefacts: { id: number, code: string, name: string, packed_in: number | null, stock_available: number | null, gross_weight: number | null, on_board: number }[] } | null
+    manualJobOrder?: InstanceType<typeof ModalCreateManualJobOrder>["$props"]["options"]
     groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, shop_name?: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null, published_labels?: PublishedLabel[] }[] }[] | null
 }>()
 
@@ -162,7 +165,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, unit_name?: string | null, is_fill?: boolean, order_waiting_days?: number | null, shop_name?: string | null, customer_name?: string | null, order_reference?: string | null, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, loose_pieces?: number, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, stock_cover?: object | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
+type BoardItem = { id: number, unit_name?: string | null, is_fill?: boolean, order_waiting_days?: number | null, shop_name?: string | null, customer_name?: string | null, order_reference?: string | null, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, loose_pieces?: number, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, stock_cover?: object | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, run_period_after_opening?: string | null, shelf_life?: RunShelfLife | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
 
 function artisansOf(item: BoardItem): string[] {
     if (item.current_steps?.length) return [...new Set(item.current_steps.flatMap(step => step.artisans.map(artisan => artisan ?? "")))]
@@ -261,15 +264,8 @@ function unassign(items: BoardItem[]) {
 
 const assignError = ref<string | null>(null)
 
-type Run = { quantity: number, batch_code: string, expiry_date: string }
+type Run = { quantity: number, batch_code: string, expiry_date: string, period_after_opening: string | null }
 
-const isoToDate = (iso?: string | null): Date | null => {
-    if (!iso) return null
-    const [year, month, day] = iso.split("-").map(Number)
-    return new Date(year, month - 1, day)
-}
-const dateToIso = (date: Date | null | undefined): string => date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : ""
-const expiryPickerPt = { root: { class: "w-full min-w-0" }, pcInputText: { root: { class: "!w-full !min-w-0 !py-0.5 !text-xs" } } }
 
 const extraRuns = reactive<Record<number, Run[]>>({})
 
@@ -282,7 +278,7 @@ function assignToMe(items: BoardItem[], runs: Record<number, Run[]> = {}) {
     )
 }
 
-type PreparingLine = { id: number, quantity?: number | null, batch_code?: string | null, expiry_date?: string | null, expiry_applies_to_label?: boolean }
+type PreparingLine = { id: number, quantity?: number | null, batch_code?: string | null, expiry_date?: string | null, period_after_opening?: string | null, expiry_applies_to_label?: boolean }
 
 function setPreparing(lines: PreparingLine[], preparing: boolean, onPrepared?: () => void) {
     router.post(
@@ -362,11 +358,12 @@ const pendingItems = ref<BoardItem[]>([])
 const pendingQuantities = reactive<Record<number, number>>({})
 const pendingBatchCodes = reactive<Record<number, string>>({})
 const pendingExpiryDates = reactive<Record<number, string>>({})
+const pendingPeriods = reactive<Record<number, string | null>>({})
 const originalExpiryDates = reactive<Record<number, string>>({})
 const expiryAppliesToLabel = ref(false)
 
 const changedExpiryItems = computed(() =>
-    pendingItems.value.filter(item => (pendingExpiryDates[item.id] ?? "") !== (originalExpiryDates[item.id] ?? ""))
+    pendingItems.value.filter(item => !pendingPeriods[item.id] && (pendingExpiryDates[item.id] ?? "") !== (originalExpiryDates[item.id] ?? ""))
 )
 const pickerMode = ref<"prepare" | "assign" | "assign-mix" | "reassign">("prepare")
 const pickerPosition = ref({ x: 0, y: 0 })
@@ -393,12 +390,18 @@ function openPicker(mode: "prepare" | "assign" | "assign-mix", event: DragEvent)
     for (const key in pendingQuantities) delete pendingQuantities[key]
     for (const key in pendingBatchCodes) delete pendingBatchCodes[key]
     for (const key in pendingExpiryDates) delete pendingExpiryDates[key]
+    for (const key in pendingPeriods) delete pendingPeriods[key]
     for (const key in originalExpiryDates) delete originalExpiryDates[key]
     for (const key in extraRuns) delete extraRuns[key]
     dragging.value.forEach(item => {
         pendingQuantities[item.id] = Math.ceil(Number(item.quantity_to_produce ?? item.quantity))
         pendingBatchCodes[item.id] = item.run_batch_code ?? ""
         pendingExpiryDates[item.id] = item.run_expiry ?? item.label_expiry_date ?? ""
+        pendingPeriods[item.id] = item.run_period_after_opening ?? null
+        if (!pendingExpiryDates[item.id] && !pendingPeriods[item.id] && item.shelf_life) {
+            pendingPeriods[item.id] = item.shelf_life.period_after_opening
+            pendingExpiryDates[item.id] = expiryFromMonths(item.shelf_life.expiry_months)
+        }
         originalExpiryDates[item.id] = pendingExpiryDates[item.id]
     })
     expiryAppliesToLabel.value = false
@@ -413,7 +416,7 @@ function openPicker(mode: "prepare" | "assign" | "assign-mix", event: DragEvent)
 function updatePreparingQuantity(item: BoardItem, event: Event) {
     const quantity = Number((event.target as HTMLInputElement).value)
     if (quantity >= 1 && quantity !== Math.ceil(Number(item.quantity_to_produce ?? item.quantity))) {
-        setPreparing([{ id: item.id, quantity, batch_code: item.run_batch_code ?? null, expiry_date: item.run_expiry ?? null }], true)
+        setPreparing([{ id: item.id, quantity, batch_code: item.run_batch_code ?? null, expiry_date: item.run_expiry ?? null, period_after_opening: item.run_period_after_opening ?? null }], true)
     }
 }
 
@@ -424,7 +427,7 @@ function confirmPrepare() {
     const runs: Record<number, Run[]> = {}
     prepared.filter(item => extraRuns[item.id]?.length).forEach(item => {
         runs[item.id] = [
-            { quantity: pendingQuantities[item.id], batch_code: pendingBatchCodes[item.id]?.trim() ?? "", expiry_date: pendingExpiryDates[item.id] ?? "" },
+            { quantity: pendingQuantities[item.id], batch_code: pendingBatchCodes[item.id]?.trim() ?? "", expiry_date: pendingExpiryDates[item.id] ?? "", period_after_opening: pendingPeriods[item.id] ?? null },
             ...extraRuns[item.id].map(run => ({ ...run, batch_code: run.batch_code.trim() })),
         ]
     })
@@ -433,6 +436,7 @@ function confirmPrepare() {
         quantity: runTotal(item),
         batch_code: pendingBatchCodes[item.id]?.trim() || null,
         expiry_date: pendingExpiryDates[item.id] || null,
+        period_after_opening: pendingPeriods[item.id] || null,
         expiry_applies_to_label: expiryAppliesToLabel.value
             && (pendingExpiryDates[item.id] ?? "") !== (originalExpiryDates[item.id] ?? ""),
     })), true, props.simpleBoard ? () => assignToMe(prepared, runs) : undefined)
@@ -481,7 +485,7 @@ function runUnits(item: BoardItem): number {
 
 function addRun(item: BoardItem) {
     const missing = Math.ceil(Number(item.quantity)) - runTotal(item)
-    ;(extraRuns[item.id] ??= []).push({ quantity: Math.max(1, missing), batch_code: "", expiry_date: "" })
+    ;(extraRuns[item.id] ??= []).push({ quantity: Math.max(1, missing), batch_code: "", expiry_date: "", period_after_opening: pendingPeriods[item.id] ?? null })
 }
 
 const autoMakerTooltip = ctrans("Picked for you: the least busy artisan in the area where this product is made, clocked in today first")
@@ -751,21 +755,18 @@ function jobOrderHref(item: { job_order_slug: string }) {
                                             : ctrans('Leave empty and the job order reference names the batch')"
                                         class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
                                 </label>
-                                <label class="flex min-w-0 flex-col gap-0.5">
-                                    <span class="text-gray-500">{{ ctrans("Expiry date") }}</span>
-                                    <DatePicker
-                                        :modelValue="isoToDate(pendingExpiryDates[item.id])"
-                                        dateFormat="dd/mm/yy"
-                                        :required="labelsNeed(item, 'expiry_date')"
-                                        :pt="expiryPickerPt"
-                                        @update:modelValue="date => pendingExpiryDates[item.id] = dateToIso(date as Date | null)" />
-                                </label>
+                                <RunExpiryInput
+                                    v-model:expiryDate="pendingExpiryDates[item.id]"
+                                    v-model:periodAfterOpening="pendingPeriods[item.id]"
+                                    :periods="periodsAfterOpening ?? []"
+                                    :months="item.shelf_life?.expiry_months"
+                                    :required="labelsNeed(item, 'expiry_date')" />
                             </div>
                             <template v-if="simpleBoard">
-                                <div v-for="(run, runIndex) in extraRuns[item.id] ?? []" :key="runIndex" class="grid grid-cols-[4rem_1fr_1fr_auto] items-center gap-1.5">
+                                <div v-for="(run, runIndex) in extraRuns[item.id] ?? []" :key="runIndex" class="grid grid-cols-[4rem_1fr_1fr_auto] items-end gap-1.5">
                                     <input v-model.number="run.quantity" type="number" min="1" step="1" required :aria-label="ctrans('SKOs')" class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
                                     <input v-model="run.batch_code" type="text" maxlength="64" :required="labelsNeed(item, 'batch_code')" :aria-label="ctrans('Batch code')" :placeholder="labelsNeed(item, 'batch_code') ? ctrans('Printed on the label') : ctrans('From job order')" class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
-                                    <DatePicker :modelValue="isoToDate(run.expiry_date)" dateFormat="dd/mm/yy" :required="labelsNeed(item, 'expiry_date')" :aria-label="ctrans('Expiry date')" :pt="expiryPickerPt" @update:modelValue="date => run.expiry_date = dateToIso(date as Date | null)" />
+                                    <RunExpiryInput v-model:expiryDate="run.expiry_date" v-model:periodAfterOpening="run.period_after_opening" :periods="periodsAfterOpening ?? []" :months="item.shelf_life?.expiry_months" :required="labelsNeed(item, 'expiry_date')" />
                                     <button type="button" class="px-1 text-gray-400 hover:text-red-600" :title="ctrans('Remove this batch')" @click="extraRuns[item.id].splice(runIndex, 1)">×</button>
                                 </div>
                                 <div class="flex items-center gap-2">
@@ -1060,7 +1061,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         <span class="truncate font-medium tabular-nums">{{ item.batch_code }}</span>
                         <CopyButton :text="item.batch_code" />
                     </div>
-                    <div v-if="laneIndex <= LANE_PREPARING && item.published_labels?.length" class="mt-1 flex flex-col gap-1">
+                    <div v-if="laneIndex <= LANE_ASSIGNED && item.published_labels?.length" class="mt-1 flex flex-col gap-1">
                         <div v-for="label in item.published_labels" :key="label.id" class="flex max-w-full items-center gap-1">
                             <span
                                 v-if="!canPrintLabel(label, item)"

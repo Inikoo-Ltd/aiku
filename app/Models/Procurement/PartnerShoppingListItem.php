@@ -294,7 +294,7 @@ class PartnerShoppingListItem extends Model
         $wantedSkos = $this->claimedSkos();
 
         if ($coveredSkos <= 0) {
-            $this->update(['job_order_id' => $jobOrderId] + ($jobOrderId ? [] : ['preparing_at' => null, 'quantity_to_produce' => null, 'batch_code' => null, 'expiry_date' => null]));
+            $this->update(['job_order_id' => $jobOrderId] + ($jobOrderId ? [] : ['preparing_at' => null, 'quantity_to_produce' => null, 'batch_code' => null, 'expiry_date' => null, 'period_after_opening' => null]));
 
             return;
         }
