@@ -303,6 +303,7 @@ test('UI show procurement dashboard', function () {
             )
             ->where('dashboardCards', fn ($cards) => collect($cards)->pluck('label')->intersect(['Agents', 'Suppliers', 'Supplier Products'])->isEmpty()
                 && collect($cards)->pluck('label')->contains('Open purchase orders'))
+            ->where('quickLinks', fn ($links) => collect($links)->pluck('route.name')->contains('grp.org.procurement.stock_deliveries.index'))
             ->missing('search_demand')
             ->missing('counterparties')
             ->loadDeferredProps(fn (AssertableInertia $page) => $page
@@ -327,7 +328,7 @@ test('procurement navigation keeps agents, free suppliers and purchase orders an
     $navigation = GetOrganisationNavigation::run($this->adminGuest->getUser(), $this->organisation);
 
     expect(collect(data_get($navigation, 'procurement.topMenu.subSections'))->pluck('route.name'))
-        ->toContain('grp.org.procurement.org_agents.index', 'grp.org.procurement.org_suppliers.index', 'grp.org.procurement.purchase_orders.index')
+        ->toContain('grp.org.procurement.org_agents.index', 'grp.org.procurement.org_suppliers.index', 'grp.org.procurement.purchase_orders.index', 'grp.org.procurement.stock_deliveries.index')
         ->not->toContain(
             'grp.org.procurement.shopping_list.index',
             'grp.org.procurement.org_agent_suppliers.index',

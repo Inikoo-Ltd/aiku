@@ -17,6 +17,7 @@ use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Actions\Procurement\GetStockOutsHistory;
 use App\Actions\Procurement\GetStockOutsPipeline;
 use App\Actions\Procurement\GetUncostedStockDeliveriesCard;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\UI\IndexBuyerDeliveryDiscrepancies;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
@@ -172,12 +173,7 @@ class ShowProcurementDashboard extends OrgAction
                 __('Supplier incidents'),
                 __('Open incidents per supplier, with what was disputed and recovered'),
                 'fal fa-exclamation-triangle',
-                ProcurementNote::where('group_id', $organisation->group_id)
-                    ->forOrganisation($organisation)
-                    ->where('category', ProcurementNoteCategoryEnum::INCIDENT)
-                    ->where('incident_outcome', ProcurementNoteIncidentOutcomeEnum::OPEN)
-                    ->active()
-                    ->count(),
+                $this->openSupplierIncidents(),
                 'amber',
                 'grp.org.procurement.supplier_incidents.index'
             ),
@@ -357,6 +353,7 @@ class ShowProcurementDashboard extends OrgAction
                     'title' => __('Procurement'),
                 ],
 
+                'quickLinks' => $this->getQuickLinks(),
                 'shippers' => Shipper::query()->get(),
                 'dashboardCards' => array_values(array_filter([$this->getMoneyRequestsToPayCard(), $this->getAgentRequestsToAnswerCard(), $this->getDeliveriesToCostCard(),GetUncostedStockDeliveriesCard::run($this->organisation), ...$this->getDashboardCards($numbers)])),
                 'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP
@@ -372,6 +369,40 @@ class ShowProcurementDashboard extends OrgAction
 
             ]
         );
+    }
+
+    private function openSupplierIncidents(): int
+    {
+        return ProcurementNote::where('group_id', $this->organisation->group_id)
+            ->forOrganisation($this->organisation)
+            ->where('category', ProcurementNoteCategoryEnum::INCIDENT)
+            ->where('incident_outcome', ProcurementNoteIncidentOutcomeEnum::OPEN)
+            ->active()
+            ->count();
+    }
+
+    private function getQuickLinks(): array
+    {
+        if ($this->organisation->type === OrganisationTypeEnum::AGENT) {
+            return [];
+        }
+
+        $stats = $this->organisation->procurementStats;
+
+        return collect([
+            ['label' => __('Purchase orders'), 'icon' => 'fal fa-clipboard-list', 'route' => 'grp.org.procurement.purchase_orders.index', 'number' => $stats?->number_purchase_orders],
+            ['label' => __('Stock deliveries'), 'icon' => 'fal fa-truck-container', 'route' => 'grp.org.procurement.stock_deliveries.index', 'number' => $stats?->number_stock_deliveries],
+            ['label' => __('Delivery discrepancies'), 'icon' => 'fal fa-clipboard-check', 'route' => 'grp.org.procurement.delivery_discrepancies.index', 'number' => array_sum(Arr::except(IndexBuyerDeliveryDiscrepancies::summary($this->organisation, 'all', null)['counts'], 'closed'))],
+            ['label' => __('Supplier products'), 'icon' => 'fal fa-box-usd', 'route' => 'grp.org.procurement.org_supplier_products.index', 'number' => $stats?->number_current_org_supplier_products],
+            ['label' => __('Pre-orders'), 'icon' => 'fal fa-hourglass-half', 'route' => 'grp.org.procurement.pre_orders.index', 'number' => PreOrder::where('organisation_id', $this->organisation->id)->where('state', PreOrderStateEnum::WAITING_FOR_GOODS)->count()],
+            ['label' => __('Service invoices'), 'icon' => 'fal fa-file-invoice-dollar', 'route' => 'grp.org.procurement.service_invoices.index', 'number' => StockDeliveryServiceInvoice::where('organisation_id', $this->organisation->id)->count()],
+            ['label' => __('Supplier incidents'), 'icon' => 'fal fa-exclamation-triangle', 'route' => 'grp.org.procurement.supplier_incidents.index', 'number' => $this->openSupplierIncidents()],
+        ])->map(fn (array $link) => [
+            'label'  => $link['label'],
+            'icon'   => $link['icon'],
+            'number' => $link['number'] ?? null,
+            'route'  => ['name' => $link['route'], 'parameters' => [$this->organisation->slug]],
+        ])->all();
     }
 
     public function getBreadcrumbs(array $routeParameters): array

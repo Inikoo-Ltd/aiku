@@ -188,22 +188,12 @@ class GetOrganisationNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'label' => __('Dashboard'),
-                            'icon'  => ['fal', 'fa-chart-network'],
-                            'root'  => 'grp.org.procurement.dashboard',
+                            'tooltip' => __('Dashboard'),
+                            'icon'    => ['fal', 'fa-chart-network'],
+                            'root'    => 'grp.org.procurement.dashboard',
                             'route' => [
                                 'name'       => 'grp.org.procurement.dashboard',
                                 'parameters' => [$organisation->slug],
-                            ]
-                        ],
-                        [
-                            'label' => __('Agents'),
-                            'icon'  => ['fal', 'fa-people-arrows'],
-                            'root'  => 'grp.org.procurement.org_agents.',
-                            'route' => [
-                                'name'       => 'grp.org.procurement.org_agents.index',
-                                'parameters' => [$organisation->slug],
-
                             ]
                         ],
                         [
@@ -218,6 +208,16 @@ class GetOrganisationNavigation
                                         'sort' => 'code',
                                     ],
                                 ],
+                            ]
+                        ],
+                        [
+                            'label' => __('Agents'),
+                            'icon'  => ['fal', 'fa-people-arrows'],
+                            'root'  => 'grp.org.procurement.org_agents.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.org_agents.index',
+                                'parameters' => [$organisation->slug],
+
                             ]
                         ],
                         [
@@ -239,7 +239,17 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
-                            'label' => __('Delivery discrepancies'),
+                            'label' => __('Deliveries'),
+                            'icon'  => ['fal', 'fa-truck-container'],
+                            'root'  => 'grp.org.procurement.stock_deliveries.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.stock_deliveries.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
+                            'label'   => __('Discrepancies'),
+                            'tooltip' => __('Delivery discrepancies'),
                             'icon'  => ['fal', 'fa-clipboard-check'],
                             'root'  => 'grp.org.procurement.delivery_discrepancies.',
                             'route' => [
@@ -279,9 +289,9 @@ class GetOrganisationNavigation
 
         if ($user->authTo(['org-admin.'.$organisation->id, 'org-supervisor.'.$organisation->id.'.procurement']) && isset($navigation['procurement'])) {
             $navigation['procurement']['topMenu']['subSections'][] = [
-                'label' => __('Settings'),
-                'icon'  => ['fal', 'fa-cog'],
-                'root'  => 'grp.org.procurement.settings.',
+                'tooltip' => __('Settings'),
+                'icon'    => ['fal', 'fa-cog'],
+                'root'    => 'grp.org.procurement.settings.',
                 'route' => [
                     'name'       => 'grp.org.procurement.settings.edit',
                     'parameters' => [$organisation->slug],

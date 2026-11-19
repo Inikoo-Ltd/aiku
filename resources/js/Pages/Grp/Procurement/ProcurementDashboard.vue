@@ -13,15 +13,18 @@ import ProcurementOverviewCard from "@/Components/DataDisplay/Dashboard/Widget/P
 import StockOutsWidget from "@/Components/Procurement/StockOutsWidget.vue"
 import ProcurementCounterpartyCards from "@/Components/Procurement/ProcurementCounterpartyCards.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
+import { useLocaleStore } from "@/Stores/locale"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faExclamationTriangle, faHourglassHalf, faComments, faMoneyCheckAlt } from "@fal"
+import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faExclamationTriangle, faHourglassHalf, faComments, faMoneyCheckAlt, faClipboardCheck, faFileInvoiceDollar } from "@fal"
 import { faChartNetwork } from "@fal"
 
-library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faExclamationTriangle, faHourglassHalf, faComments, faMoneyCheckAlt, faChartNetwork)
+library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faExclamationTriangle, faHourglassHalf, faComments, faMoneyCheckAlt, faChartNetwork, faClipboardCheck, faFileInvoiceDollar)
 
-const props = defineProps(["title", "pageHead", "dashboardCards", "stockLevels", "stockOuts", "counterparties"])
+const props = defineProps(["title", "pageHead", "dashboardCards", "stockLevels", "stockOuts", "counterparties", "quickLinks"])
+
+const locale = useLocaleStore()
 
 const needsAttention = (card) => card.attention && Number(card.value) > 0
 
@@ -33,6 +36,13 @@ const costingAlerts = computed(() => (props.dashboardCards ?? []).filter(needsAt
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead"></PageHeading>
+	<nav v-if="quickLinks?.length" class="mx-4 mt-3 flex flex-wrap gap-2">
+		<Link v-for="link in quickLinks" :key="link.route.name" :href="route(link.route.name, link.route.parameters)" class="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+			<FontAwesomeIcon :icon="link.icon" class="text-gray-400" fixed-width aria-hidden="true" />
+			{{ link.label }}
+			<span v-if="link.number !== null" class="font-semibold tabular-nums text-gray-800">{{ locale.number(link.number) }}</span>
+		</Link>
+	</nav>
 	<div v-if="stockOuts && costingAlerts.length" class="mx-4 mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm text-amber-900">
 		<FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-amber-600" fixed-width aria-hidden="true" />
 		<component
