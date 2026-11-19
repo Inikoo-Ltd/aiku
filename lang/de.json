@@ -26845,5 +26845,8 @@
     "The language of this customer is not known yet": "Die Sprache dieses Kunden ist noch nicht bekannt",
     "What the customer gets if you send it unchanged": "Was der Kunde bekommt, wenn Sie ihn unverändert senden",
     "Draft by Aiku in :mine: change what you need, it is sent in :theirs": "Entwurf von Aiku auf :mine: Ändern Sie, was nötig ist, gesendet wird er auf :theirs",
-    "the customer's language": "die Sprache des Kunden"
+    "the customer's language": "die Sprache des Kunden",
+    "Your account with us was opened on :date.": "Ihr Konto bei uns wurde am :date eröffnet.",
+    "Credit on your account: :amount.": "Guthaben auf Ihrem Konto: :amount.",
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "An der Kasse wird zuerst Ihr Guthaben verwendet, der Rest wird mit der von Ihnen gewählten Zahlungsart bezahlt."
 }

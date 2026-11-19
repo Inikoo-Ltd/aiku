@@ -3230,7 +3230,7 @@ describe('stock delivery service invoices', function () {
         $freight  = StoreStockDeliveryServiceInvoice::make()->action($organisation, $billData(StockDeliveryServiceInvoiceTypeEnum::FREIGHT, 120));
         $haulage  = StoreStockDeliveryServiceInvoice::make()->action($organisation, $billData(StockDeliveryServiceInvoiceTypeEnum::LOCAL_TRANSPORT, 20));
         $handling = StoreStockDeliveryServiceInvoice::make()->action($organisation, $billData(StockDeliveryServiceInvoiceTypeEnum::PORT_CHARGES, 30));
-        $levy     = StoreStockDeliveryServiceInvoice::make()->action($organisation, $billData(StockDeliveryServiceInvoiceTypeEnum::ANTI_DUMPING, 15));
+        $levy     = StoreStockDeliveryServiceInvoice::make()->action($organisation, $billData(StockDeliveryServiceInvoiceTypeEnum::IMPORT_LEVY, 15));
 
         $shipping = $stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::SHIPPING)->sole();
         $extra    = $stockDelivery->costs()->where('stock_delivery_service_invoice_id', $handling->id)->sole();

@@ -13098,5 +13098,8 @@
     ":actor has updated :reference, which is assigned to you.": ":actor ha aggiornato :reference, che è assegnato a te.",
     "Operational": "Operativo",
     ":reference cancelled": ":reference annullato",
-    "The customer": "Il cliente"
+    "The customer": "Il cliente",
+    "Your account with us was opened on :date.": "Il suo account presso di noi è stato aperto il :date.",
+    "Credit on your account: :amount.": "Credito sul suo account: :amount.",
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Al pagamento viene usato prima il suo credito e il resto si paga con il metodo di pagamento che sceglie."
 }

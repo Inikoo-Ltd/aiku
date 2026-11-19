@@ -127,7 +127,11 @@ use Throwable;
  * is a source the answer cites like a shop_information text, so its figures pass the number rule;
  * its id is the mailshot id negated, which never collides with a knowledge entry id.
  *
- * dispatch_times and shipping_cost never give the model a figure: each returns a `fact`, a sentence
+ * account_details gives the date the customer's account was opened and the credit on it, and on a
+ * B2B shop that checkout uses that credit first (ShowRetinaEcomCheckout pays by balance before any
+ * other method): INI-386, customers asked a guru when they registered and how to spend their credit.
+ *
+ * dispatch_times, shipping_cost and account_details never give the model a figure: each returns a `fact`, a sentence
  * written here from our data in the shop's language, which AskShoppingAssistant puts under the
  * model's reply. Shipping is read from the customer's own basket, where the system has already
  * worked it out; nothing is estimated.
@@ -338,6 +342,11 @@ class GetShoppingAssistantTools
                 []
             ),
             $this->tool(
+                'account_details',
+                'The customer\'s own account with us: the date it was opened and the credit on it, if any. Use it when the customer asks when they registered or opened their account, how much credit or balance they have with us, or how to use that credit. The sentences with the date and the amount are added under your reply by the system; you get no figure. Returns no products.',
+                []
+            ),
+            $this->tool(
                 'shipping_cost',
                 'What shipping costs for the customer\'s current basket. Use it when the customer asks about shipping, postage, carriage or delivery cost. The sentence with the amount is added under your reply by the system; you get no figure. Returns no products.',
                 []
@@ -501,6 +510,7 @@ class GetShoppingAssistantTools
                 'notify_when_back_in_stock'      => $this->notifyWhenBackInStock($customer, $arguments),
                 'product_details'                => $this->productDetails($conversation, $customer, $arguments, $foundProductIds),
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
+                'account_details'                => $this->accountDetails($customer, $conversation->language_code),
                 'products_not_in_store'          => $this->productsNotInStore($customer, $conversation->language_code),
                 'order_status'                   => $this->orderStatus($customer, $arguments, $conversation->language_code),
                 'family_information'             => $this->familyInformation($customer, $arguments),
@@ -1162,6 +1172,30 @@ class GetShoppingAssistantTools
             'products' => [],
             'error'    => null,
             'fact'     => __('Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.', ['days' => $days], $locale),
+        ];
+    }
+
+    /**
+     * @return array{content: array<string, mixed>, products: array{}, error: null, fact: string}
+     */
+    private function accountDetails(Customer $customer, string $locale): array
+    {
+        $opened  = Carbon::parse($customer->registered_at ?? $customer->created_at);
+        $balance = round((float) $customer->balance, 2);
+        $fact    = __('Your account with us was opened on :date.', ['date' => $opened->locale($locale)->isoFormat('LL') ?: $opened->locale('en')->isoFormat('LL')], $locale);
+
+        if ($balance > 0) {
+            $fact .= ' '.__('Credit on your account: :amount.', ['amount' => Number::currency($balance, $customer->shop->currency?->code ?? 'GBP', $locale)], $locale);
+            if (!self::isDropshipping($customer)) {
+                $fact .= ' '.__('At checkout your credit is used first, and the rest is paid with the payment method you choose.', [], $locale);
+            }
+        }
+
+        return [
+            'content'  => ['has_credit' => $balance > 0, 'note' => 'Sentences with the date the account was opened'.($balance > 0 ? ' and the credit on it' : '').' are added under your reply. Write one short lead-in without any figure or date.'.($balance > 0 ? '' : ' They have no credit on their account: say so if they asked about it.')],
+            'products' => [],
+            'error'    => null,
+            'fact'     => $fact,
         ];
     }
 

@@ -25776,5 +25776,8 @@
     "Warehouse :warehouse · Factory :factory": "Armazém :warehouse · Fábrica :factory",
     "Wrong Weights": "Pesos errados",
     "material": "material",
-    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO por :name, :time|:count SKOs por :name, :time"
+    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO por :name, :time|:count SKOs por :name, :time",
+    "Your account with us was opened on :date.": "A sua conta connosco foi aberta em :date.",
+    "Credit on your account: :amount.": "Crédito na sua conta: :amount.",
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "No pagamento, o seu crédito é usado primeiro e o restante é pago com o método de pagamento que escolher."
 }

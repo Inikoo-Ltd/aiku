@@ -9545,5 +9545,8 @@
     ":actor has updated :reference, which is assigned to you.": ":actor актуализира :reference, който ви е възложен.",
     "Operational": "В експлоатация",
     ":reference cancelled": ":reference е отменен",
-    "The customer": "Клиентът"
+    "The customer": "Клиентът",
+    "Your account with us was opened on :date.": "Вашият акаунт при нас е открит на :date.",
+    "Credit on your account: :amount.": "Кредит във вашия акаунт: :amount.",
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "При плащане първо се използва вашият кредит, а остатъкът се плаща с избрания от вас начин на плащане."
 }

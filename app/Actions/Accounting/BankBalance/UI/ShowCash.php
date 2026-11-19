@@ -156,6 +156,9 @@ class ShowCash extends OrgAction
                 $trend[$day->toDateString()] = round(array_sum($held), 2);
             }
         }
+        if ($neverRead->isNotEmpty()) {
+            $trend[$today] = round(($trend[$today] ?? 0) + $neverRead->flatten(1)->sum(fn (object $row) => $converted($row, 'amount') ?? 0), 2);
+        }
 
         $balances = $connections->flatMap(fn (array $connection) => $connection['balances']);
         $ranked   = fn (Collection $rows, string $key) => $rows->groupBy($key)

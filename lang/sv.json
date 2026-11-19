@@ -9988,5 +9988,8 @@
     ":actor has updated :reference, which is assigned to you.": ":actor har uppdaterat :reference, som är tilldelad dig.",
     "Operational": "I drift",
     ":reference cancelled": ":reference avbruten",
-    "The customer": "Kunden"
+    "The customer": "Kunden",
+    "Your account with us was opened on :date.": "Ditt konto hos oss öppnades den :date.",
+    "Credit on your account: :amount.": "Tillgodohavande på ditt konto: :amount.",
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "I kassan används ditt tillgodohavande först, och resten betalar du med det betalsätt du väljer."
 }

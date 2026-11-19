@@ -27049,5 +27049,8 @@
     "The language of this customer is not known yet": "Jazyk tohoto zákazníka zatím není znám",
     "What the customer gets if you send it unchanged": "Co zákazník dostane, pokud ho odešlete beze změn",
     "Draft by Aiku in :mine: change what you need, it is sent in :theirs": "Návrh od Aiku v jazyce :mine: změňte, co potřebujete, odešle se v jazyce :theirs",
-    "the customer's language": "jazyk zákazníka"
+    "the customer's language": "jazyk zákazníka",
+    "Your account with us was opened on :date.": "Váš účet u nás byl založen :date.",
+    "Credit on your account: :amount.": "Kredit na vašem účtu: :amount.",
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Při placení se nejprve použije váš kredit a zbytek zaplatíte zvoleným způsobem platby."
 }
