@@ -65,6 +65,7 @@ const channelIcon = (channel: string) => (channel === "whatsapp" ? faWhatsapp : 
             <div v-if="item.outcome_label" class="space-y-1">
                 <span class="whitespace-nowrap rounded-full px-2 py-0.5 text-xs ring-1 ring-inset" :class="OUTCOME_CLASS[item.outcome] ?? 'bg-gray-50 text-gray-600 ring-gray-200'">{{ item.outcome_label }}</span>
                 <div v-if="item.decided_by" class="whitespace-nowrap text-xs text-gray-400">{{ item.decided_by }}</div>
+                <span v-if="item.time_lost" class="inline-block whitespace-nowrap rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700 ring-1 ring-inset ring-red-200" v-tooltip="ctrans('Jev judged the reply staff typed to say the same as this draft: a right draft written again by hand')">{{ ctrans("Time lost") }}<template v-if="item.time_lost_seconds"> · {{ ctrans(":seconds s", { seconds: item.time_lost_seconds }) }}</template></span>
             </div>
         </template>
 

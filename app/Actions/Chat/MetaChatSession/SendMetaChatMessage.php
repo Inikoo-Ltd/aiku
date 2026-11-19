@@ -34,6 +34,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
+use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -100,6 +101,8 @@ class SendMetaChatMessage
             'template_parameters'   => ['sometimes', 'array'],
             'template_parameters.*' => ['string', 'max:1024'],
             'replied_to_id'         => ['sometimes', 'nullable', 'integer'],
+            'writing_seconds'       => ['sometimes', 'nullable'],
+            'typing_seconds'        => ['sometimes', 'nullable'],
         ];
     }
 
@@ -314,6 +317,7 @@ class SendMetaChatMessage
         $metaMessageId = Arr::get($response->json(), 'messages.0.id');
 
         $metadata['wa_status'] = 'sent';
+        $metadata = [...$metadata, ...AnswerShoppingAssistantTeamQuestion::measuredTime(Arr::only($modelData, ['writing_seconds', 'typing_seconds']))];
 
         $metaChatMessage = StoreMetaChatMessage::run($metaChatSession, [
             'meta_message_id' => $metaMessageId,

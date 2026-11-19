@@ -173,6 +173,10 @@ const shareOfDrafts = (decided: number) => (props.summary.decided ? Math.round((
         </div>
 
         <Table :resource="users" name="users" class="mt-3">
+            <template #cell(time_lost)="{ item }">
+                <Link v-if="item.time_lost" :href="item.urls.time_lost" class="whitespace-nowrap tabular-nums text-red-700 hover:underline">{{ item.time_lost }}<span v-if="item.time_lost_minutes" class="text-xs"> · {{ ctrans(":minutes min", { minutes: item.time_lost_minutes }) }}</span></Link>
+                <span v-else class="tabular-nums text-gray-400">0</span>
+            </template>
             <template v-for="column in ['rewritten', 'ignored', 'discarded']" :key="column" #[`cell(${column})`]="{ item }">
                 <Link v-if="item[column]" :href="item.urls[column]" class="tabular-nums text-gray-700 hover:underline">{{ item[column] }}</Link>
                 <span v-else class="tabular-nums text-gray-400">0</span>

@@ -40,6 +40,7 @@ import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
 import PolishMessageButton from "@/Components/Chat/PolishMessageButton.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
+import { useActiveTime } from "@/Composables/useActiveTime"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import ChatBackToNewest from "@/Components/Chat/ChatBackToNewest.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -159,6 +160,9 @@ const onTaskCreated = (task: any) => {
 }
 
 const chatSession = computed(() => props.session)
+const areaRef = ref<HTMLElement | null>(null)
+const replyActiveTime = useActiveTime(areaRef)
+watch(() => chatSession.value?.ulid, () => replyActiveTime.reset())
 
 const { waitingIn, setWaiting, onCustomerMessage: onCustomerWaitMessage } = useChatWaitingForCustomer(chatSession, () =>
     chatSession.value?.ulid ? route("grp.org.chat.agents.whatsapp.sessions.wait_for_customer", [props.organisationSlug, chatSession.value.ulid]) : null
@@ -682,6 +686,10 @@ const deliver = async (formData: FormData, tempId: string) => {
 }
 
 const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessage) => {
+    const activeTime = replyActiveTime.read()
+    formData.append("writing_seconds", String(activeTime.writing_seconds))
+    formData.append("typing_seconds", String(activeTime.typing_seconds))
+    replyActiveTime.reset()
     optimisticMessage._form = formData
     messagesLocal.value.push(optimisticMessage)
     scrollBottom()
@@ -776,6 +784,11 @@ const sendMessage = async () => {
         if (index === 0 && quoted?.id) {
             formData.append("replied_to_id", String(quoted.id))
         }
+        if (index === 0) {
+            const activeTime = replyActiveTime.read()
+            formData.append("writing_seconds", String(activeTime.writing_seconds))
+            formData.append("typing_seconds", String(activeTime.typing_seconds))
+        }
 
         message._form = formData
 
@@ -785,6 +798,7 @@ const sendMessage = async () => {
     newMessage.value = ""
     clearFiles(false)
     cancelReply()
+    replyActiveTime.reset()
 
     messagesLocal.value.push(...outgoing.map((entry) => entry.message))
     scrollBottom()
@@ -1108,7 +1122,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="relative flex flex-col h-full bg-white overflow-hidden"
+    <div ref="areaRef" class="relative flex flex-col h-full bg-white overflow-hidden"
         @dragenter="onDragEnterAttachment" @dragover="onDragOverAttachment"
         @dragleave="onDragLeaveAttachment" @drop="onDropAttachment">
         <!-- Header -->

@@ -88,7 +88,7 @@ class IndexChatAiAcceptance extends OrgAction
 
         return QueryBuilder::for(ChatAiDraft::withoutGlobalScopes()->fromSub(GetChatAiAcceptance::make()->byUser($this->group, $shopIds), 'acceptance'))
             ->defaultSort('rate')
-            ->allowedSorts(['user_name', 'decided', 'rate', 'ignored', 'discarded', 'rewritten'])
+            ->allowedSorts(['user_name', 'decided', 'rate', 'ignored', 'discarded', 'rewritten', 'time_lost'])
             ->allowedFilters([AllowedFilter::callback('global', fn ($query, $value) => $query->where(fn ($where) => $where->where('acceptance.user_name', 'ilike', '%'.$value.'%')->orWhere('acceptance.shops', 'ilike', '%'.$value.'%')))])
             ->withPaginator(self::USERS, tableName: request()->route()->getName())
             ->withQueryString();
@@ -128,6 +128,7 @@ class IndexChatAiAcceptance extends OrgAction
                 ->column(key: 'user_name', label: __('Person'), canBeHidden: false, sortable: true)
                 ->column(key: 'shops', label: __('Shops'));
             $this->columns($table);
+            $table->column(key: 'time_lost', label: __('Time lost'), tooltip: __('Drafts this person ignored or discarded and then retyped, in the last :days days: Jev judged their own reply to say the same as the draft. Minutes: active time they spent writing those replies, measured in the inbox since 19 Nov 2026', ['days' => GetChatAiAcceptance::RATE_DAYS]), sortable: true, align: 'right');
             $table->defaultSort('rate');
         };
     }
@@ -163,8 +164,18 @@ class IndexChatAiAcceptance extends OrgAction
                 'rewritten' => route('grp.chat.ai.aiku_drafts', ['filter' => $link + ['outcome' => 'rewritten']]),
                 'ignored'   => route('grp.chat.ai.aiku_drafts', ['filter' => $link + ['outcome' => 'own_reply']]),
                 'discarded' => route('grp.chat.ai.aiku_drafts', ['filter' => $link + ['outcome' => 'discarded']]),
+                'time_lost' => route('grp.chat.ai.aiku_drafts', ['filter' => $link + ['flag' => 'time_lost']]),
             ],
         ];
+    }
+
+    /**
+     * Only the page: the raw rows carry who decided each draft and the time lost, which the page shows
+     * on supervised shops only.
+     */
+    public function jsonResponse(): never
+    {
+        abort(404);
     }
 
     public function htmlResponse(LengthAwarePaginator $shops, ActionRequest $request): Response
@@ -189,6 +200,8 @@ class IndexChatAiAcceptance extends OrgAction
                 return [
                     'user_name' => $row->user_name,
                     'shops'     => $row->shops,
+                    'time_lost' => (int) $row->time_lost,
+                    'time_lost_minutes' => (int) round($row->time_lost_seconds / 60),
                 ] + $this->row($row, ['staff' => (string) $row->user_id]);
             });
         }

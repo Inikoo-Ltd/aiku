@@ -50,6 +50,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property ChatAiRiskEnum|null $risk
  * @property bool|null $answers_all
  * @property bool|null $would_send
+ * @property bool|null $time_lost
+ * @property int|null $time_lost_seconds
  * @property ChatAiDraftChangeEnum|null $change_class
  * @property string|null $words_kept
  * @property int|null $open_to_reply_seconds
@@ -82,6 +84,7 @@ class ChatAiDraft extends Model
         'intent'       => ChatIntentEnum::class,
         'risk'         => ChatAiRiskEnum::class,
         'answers_all'  => 'boolean',
+        'time_lost'    => 'boolean',
         'would_send'   => 'boolean',
         'change_class' => ChatAiDraftChangeEnum::class,
         'words_kept'   => 'decimal:3',

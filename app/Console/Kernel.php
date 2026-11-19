@@ -1818,7 +1818,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('chat:score-suggestions')->dailyAt('04:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                $schedule->command('chat:score-suggestions')->dailyAt('04:55')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'ScoreChatSuggestions',
                 ),
                 name: 'ScoreChatSuggestions',

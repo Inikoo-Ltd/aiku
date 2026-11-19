@@ -1091,8 +1091,32 @@ test('suggestions staff answered after are scored against the real reply once, p
 
     expect(\App\Actions\Chat\ChatSession\ScoreChatSuggestions::run($day))->toBe([$this->shop->slug.' (shadow)' => ['scored' => 1, 'close' => 1]])
         ->and(data_get($draft->refresh()->facts, 'near_match.score'))->toBe(3)
+        ->and($draft->time_lost)->toBeNull()
         ->and(\App\Actions\Chat\ChatSession\ScoreChatSuggestions::run($day))->toBe([]);
 
+    $again   = ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'And to Spain on Saturdays?']);
+    $retyped = ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::AGENT, 'message_text' => 'Yes, we send to Spain every day.', 'metadata' => ['writing_seconds' => 95, 'typing_seconds' => 40]]);
+    $assistant = fn (string $changeClass, array $more) => \App\Models\Chat\ChatAiDraft::create($more + [
+        'group_id'        => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id,
+        'chat_session_id' => $session->id, 'trigger_message_id' => $again->id, 'topic' => \App\Enums\CRM\Livechat\ChatTopicEnum::OTHER,
+        'facts'           => ['mode' => \App\Actions\Chat\ChatSession\DraftChatReply::ASSISTANT], 'text' => 'Yes, we ship to Spain daily.',
+        'change_class'    => $changeClass, 'decided_at' => $day->copy()->addHours(11),
+    ]);
+    $discarded = $assistant('discarded', ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
+    $ignored   = $assistant('own_reply', ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED, 'reply_message_id' => $retyped->id, 'text' => 'We do not ship to Spain.']);
+    $withGap   = $assistant('own_reply', ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED, 'reply_message_id' => $retyped->id, 'text' => 'Yes, we ship to Spain on [[which days?]].']);
+
+    \App\Actions\Chat\ChatSession\JudgeChatSuggestion::mock()->shouldReceive('nearMatch')
+        ->andReturnUsing(fn (string $customerWrote, string $staffSent, string $draftText) => $draftText === 'We do not ship to Spain.' ? ['score' => 0, 'label' => 'different'] : ['score' => 2, 'label' => 'close']);
+
+    \App\Actions\Chat\ChatSession\ScoreChatSuggestions::run($day);
+    expect($discarded->refresh()->time_lost)->toBeTrue()
+        ->and($discarded->time_lost_seconds)->toBe(95)
+        ->and($withGap->refresh()->time_lost)->toBeFalse()
+        ->and($ignored->refresh()->time_lost)->toBeFalse()
+        ->and($ignored->time_lost_seconds)->toBeNull();
+
+    \App\Models\Chat\ChatAiDraft::where('chat_session_id', $session->id)->delete();
     $session->forceDelete();
 });
 
@@ -1916,7 +1940,7 @@ test('suggestions taken counts only drafts with an outcome, per shop for everyon
         $draft('gaps_filled'),
         $draft('big', ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::EDITED]),
         $draft('rewritten', ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::EDITED]),
-        $draft('discarded', ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]),
+        $draft('discarded', ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED, 'time_lost' => true, 'time_lost_seconds' => 120]),
         $draft(null, ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::PENDING, 'decided_by_user_id' => null]),
         $draft(null, ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED, 'decided_by_user_id' => null]),
     ]);
@@ -1956,23 +1980,30 @@ test('suggestions taken counts only drafts with an outcome, per shop for everyon
         ->and($list(['outcome' => 'own_reply', 'shop' => $this->shop->slug])->first()['decided_by'])->toBe('Acceptance Clerk')
         ->and($list(['band' => \App\Actions\Chat\Reports\GetChatAiAcceptance::band((int) $after->adopted, (int) $after->decided) ?? 'few', 'shop' => $this->shop->slug]))->toHaveCount(8)
         ->and($list(['band' => 'nonsense', 'shop' => $this->shop->slug]))->toBeEmpty()
+        ->and($list(['flag' => 'time_lost', 'shop' => $this->shop->slug])->pluck('time_lost_seconds')->all())->toBe([120])
         ->and($list(['staff' => (string) $clerk->id])->first())->toMatchArray(['decided_by' => 'Acceptance Clerk', 'question' => 'Can I have my invoice?'])
         ->and($list(['shop' => $this->shop->slug, 'week' => now()->subWeeks(3)->toDateString()]))->toBeEmpty();
 
     $filterKeys = fn (array $props) => collect($props['queryBuilderProps']['default']['filters'] ?? [])->pluck('key');
-    expect($filterKeys(get(route('grp.chat.ai.aiku_drafts'))->viewData('page')['props']))->toContain('staff', 'band', 'shop');
+    expect($filterKeys(get(route('grp.chat.ai.aiku_drafts'))->viewData('page')['props']))->toContain('staff', 'band', 'shop', 'flag');
+
+    $this->getJson(route('grp.chat.ai.acceptance'))->assertNotFound();
+    $this->getJson(route('grp.chat.ai.aiku_drafts'))->assertNotFound();
 
     actingAs($clerk);
+    $this->getJson(route('grp.chat.ai.aiku_drafts', ['filter' => ['shop' => $this->shop->slug]]))->assertNotFound();
+    $this->get(route('grp.chat.ai.acceptance'))->assertForbidden();
     $clerkPage = get(route('grp.chat.ai.aiku_drafts', ['filter' => ['shop' => $this->shop->slug], 'perPage' => 100]))->assertOk()->viewData('page')['props'];
     expect(collect($clerkPage['data']['data'])->filter(fn ($item) => $item['text'] === 'Here is your invoice, acceptance test.')->pluck('decided_by')->filter())->toBeEmpty()
-        ->and($filterKeys($clerkPage))->not->toContain('staff')->toContain('shop')
+        ->and($filterKeys($clerkPage))->not->toContain('staff')->not->toContain('flag')->toContain('shop')
+        ->and(collect($clerkPage['data']['data'])->where('time_lost', true))->toBeEmpty()
         ->and(collect(get(route('grp.chat.ai.aiku_drafts', ['filter' => ['staff' => (string) $clerk->id], 'perPage' => 100]))->assertOk()->viewData('page')['props']['data']['data']))->toBeEmpty();
 
     actingAs($this->user);
     get(route('grp.chat.ai.acceptance'))->assertOk()
         ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->component('Chat/ChatAiAcceptance')
             ->where('shops.data', fn ($rows) => collect($rows)->contains(fn ($shop) => $shop['shop_code'] === $this->shop->code && count($shop['weeks']) === 8))
-            ->where('users.data', fn ($rows) => collect($rows)->contains(fn ($user) => $user['user_name'] === 'Acceptance Clerk' && $user['decided'] === 6 && $user['rate'] === 50)));
+            ->where('users.data', fn ($rows) => collect($rows)->contains(fn ($user) => $user['user_name'] === 'Acceptance Clerk' && $user['decided'] === 6 && $user['rate'] === 50 && $user['time_lost'] === 1 && $user['time_lost_minutes'] === 2)));
 
     \App\Models\Chat\ChatAiDraft::whereIn('id', $made->pluck('id'))->delete();
     $session->messages()->withTrashed()->forceDelete();

@@ -3026,6 +3026,23 @@ describe('customer service tools', function () {
             ->assertSee($order->reference)
             ->assertSee($this->product->code);
 
+        $this->actingAs($this->user);
+        $this->product->update(['available_quantity' => 0]);
+        $document = createAttachedMedia('Product', $this->product->id, App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum::publicScopes()[0]);
+        $website      = App\Models\Catalogue\Shop::find($this->shop->id)->website ?? createWebsite($this->shop);
+        $websiteState = $website->state;
+        $website->update(['state' => App\Enums\Web\Website\WebsiteStateEnum::LIVE]);
+        $this->shop->unsetRelation('website');
+        $asked = json_decode((string) app(App\Mcp\Tools\CustomerServiceChatTool::class)->handle(new Laravel\Mcp\Request(['chat_id' => $this->chat->ulid, 'order' => $order->reference, 'products' => [mb_strtolower($this->product->code), 'NOPE-404']]))->content(), true);
+        expect($asked['order']['state_for_customer'])->toBe(App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantTools::orderStateWording($order))
+            ->and($asked['products'][0])->toMatchArray(['code' => $this->product->code, 'available_quantity' => 0, 'units_per_pack' => (float) $this->product->units])
+            ->and($asked['products'][0]['restock'])->toHaveKey('no_reliable_date')
+            ->and($asked['products'][0]['documents'][0]['link'])->toStartWith('https://')->toEndWith('/attachment/'.$document->ulid.'/download')
+            ->and($asked['products'][0]['documents'][0]['link'])->not->toContain('https://https://')
+            ->and($asked['products'][1]['not_found'])->toBe(['NOPE-404']);
+        Illuminate\Support\Facades\DB::table('model_has_attachments')->where('media_id', $document->id)->delete();
+        $website->update(['state' => $websiteState]);
+
         App\Models\Chat\ChatMessage::create([
             'chat_session_id' => $this->chat->id,
             'message_type'    => App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT,

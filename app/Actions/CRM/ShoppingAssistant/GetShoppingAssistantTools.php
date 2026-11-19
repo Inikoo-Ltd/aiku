@@ -1225,6 +1225,27 @@ class GetShoppingAssistantTools
     }
 
     /**
+     * Where an order is, in the words Merlin tells the customer, so customer service drafts say the same.
+     */
+    public static function orderStateWording(Order $order): string
+    {
+        return match ($order->state) {
+            OrderStateEnum::CREATING                          => 'still a basket: it has not been placed yet',
+            OrderStateEnum::SUBMITTED                         => in_array($order->pay_status, Order::PAY_SETTLED_STATUSES, true)
+                ? 'placed and paid, on its way to the warehouse queue'
+                : 'placed but not paid yet: it goes to the warehouse queue once the payment is in',
+            OrderStateEnum::IN_WAREHOUSE                      => 'in our warehouse, in the queue waiting to be picked',
+            OrderStateEnum::HANDLING                          => 'being picked in our warehouse',
+            OrderStateEnum::HANDLING_BLOCKED                  => 'in our warehouse but on hold, waiting on something on our side: our team can say what',
+            OrderStateEnum::PICKED                            => 'picked, waiting to be packed',
+            OrderStateEnum::PACKING                           => 'being packed',
+            OrderStateEnum::PACKED, OrderStateEnum::FINALISED => 'packed and ready, waiting for the courier to collect it',
+            OrderStateEnum::DISPATCHED                        => 'dispatched',
+            OrderStateEnum::CANCELLED                         => 'cancelled',
+        };
+    }
+
+    /**
      * Where one of the customer's own orders is, never anybody else's: the order whose number they
      * wrote (ours, their own reference, their store's or one of its invoices', ignoring case, spaces and hyphens), else the last one they placed. The model
      * gets the state in words and words it in the customer's language; the order number, its date
@@ -1252,20 +1273,7 @@ class GetShoppingAssistantTools
                 : 'They have not placed an order yet. Say so; a basket is not an order until it is placed.'], 'products' => [], 'error' => null];
         }
 
-        $state = match ($order->state) {
-            OrderStateEnum::CREATING                          => 'still a basket: it has not been placed yet',
-            OrderStateEnum::SUBMITTED                         => in_array($order->pay_status, Order::PAY_SETTLED_STATUSES, true)
-                ? 'placed and paid, on its way to the warehouse queue'
-                : 'placed but not paid yet: it goes to the warehouse queue once the payment is in',
-            OrderStateEnum::IN_WAREHOUSE                      => 'in our warehouse, in the queue waiting to be picked',
-            OrderStateEnum::HANDLING                          => 'being picked in our warehouse',
-            OrderStateEnum::HANDLING_BLOCKED                  => 'in our warehouse but on hold, waiting on something on our side: our team can say what',
-            OrderStateEnum::PICKED                            => 'picked, waiting to be packed',
-            OrderStateEnum::PACKING                           => 'being packed',
-            OrderStateEnum::PACKED, OrderStateEnum::FINALISED => 'packed and ready, waiting for the courier to collect it',
-            OrderStateEnum::DISPATCHED                        => 'dispatched',
-            OrderStateEnum::CANCELLED                         => 'cancelled',
-        };
+        $state = self::orderStateWording($order);
 
         $date     = match ($order->state) {
             OrderStateEnum::DISPATCHED => $order->dispatched_at,

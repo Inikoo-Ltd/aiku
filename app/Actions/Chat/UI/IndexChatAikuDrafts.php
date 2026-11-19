@@ -115,6 +115,7 @@ class IndexChatAikuDrafts extends OrgAction
                     $query->where('aiku.at', '>=', $start)->where('aiku.at', '<', $start->copy()->addWeek());
                 }),
                 AllowedFilter::callback('band', fn ($query, $value) => $query->whereIn('aiku.shop_id', GetChatAiAcceptance::make()->shopIdsInBand($this->group, (string) $value))),
+                AllowedFilter::callback('flag', fn ($query, $value) => $value === 'time_lost' ? $query->whereIn('aiku.shop_id', $supervisedShopIds)->where('aiku.time_lost', true) : $query->whereRaw('false')),
                 AllowedFilter::callback('staff', fn ($query, $value) => $query->whereIn('aiku.shop_id', $supervisedShopIds)->where('aiku.decided_by', (int) $value)),
             ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -161,6 +162,8 @@ class IndexChatAikuDrafts extends OrgAction
                 'chat_ai_drafts.intent as intent',
                 'chat_ai_drafts.change_class as change_class',
                 DB::raw('coalesce(chat_ai_drafts.decided_by_user_id, reply_agent.user_id) as decided_by'),
+                'chat_ai_drafts.time_lost as time_lost',
+                'chat_ai_drafts.time_lost_seconds as time_lost_seconds',
                 'chat_ai_drafts.chat_session_id as chat_session_id',
                 'chat_ai_drafts.trigger_message_id as trigger_message_id',
                 DB::raw('coalesce(question.original_text, question.message_text, wa_question.original_text, wa_question.message_text) as question'),
@@ -189,6 +192,8 @@ class IndexChatAikuDrafts extends OrgAction
                 DB::raw('null::varchar as intent'),
                 DB::raw('null::varchar as change_class'),
                 DB::raw('null::smallint as decided_by'),
+                DB::raw('null::boolean as time_lost'),
+                DB::raw('null::integer as time_lost_seconds'),
                 DB::raw('null::integer as chat_session_id'),
                 DB::raw('null::integer as trigger_message_id'),
                 DB::raw('null::text as question'),
@@ -240,6 +245,7 @@ class IndexChatAikuDrafts extends OrgAction
             'band'    => ['high' => __('High'), 'medium' => __('Medium'), 'low' => __('Low'), 'few' => __('Too few')],
             'week'    => $weeks,
             'staff'   => $staff,
+            'flag'    => $supervisedShopIds->isEmpty() ? [] : ['time_lost' => __('Time lost')],
         ];
     }
 
@@ -259,6 +265,7 @@ class IndexChatAikuDrafts extends OrgAction
                 'week'    => __('Week'),
                 'band'    => __('Band'),
                 'staff'   => __('Decided by'),
+                'flag'    => __('Tag'),
             ];
             foreach ($this->filterOptions($this->shopIds, $this->supervisedShopIds) as $key => $options) {
                 if ($options) {
@@ -305,6 +312,15 @@ class IndexChatAikuDrafts extends OrgAction
         return $replies;
     }
 
+    /**
+     * Only the page: the raw rows carry who decided each draft and the time lost, which the page shows
+     * on supervised shops only.
+     */
+    public function jsonResponse(): never
+    {
+        abort(404);
+    }
+
     public function htmlResponse(LengthAwarePaginator $items, ActionRequest $request): Response
     {
         $askers   = User::whereIn('id', $items->getCollection()->pluck('asked_by')->filter()->unique())->pluck('contact_name', 'id');
@@ -343,6 +359,8 @@ class IndexChatAikuDrafts extends OrgAction
                 'outcome_label' => $change?->label() ?? ($row->kind === 'draft' && $status === ChatAiDraftStatusEnum::PENDING ? __('Waiting') : null),
                 'taken'        => $change ? in_array($change->value, GetChatAiAcceptance::ADOPTED, true) : null,
                 'decided_by'   => $deciders[$row->decided_by] ?? null,
+                'time_lost'    => $this->supervisedShopIds->contains($row->shop_id) && $row->time_lost,
+                'time_lost_seconds' => $this->supervisedShopIds->contains($row->shop_id) && $row->time_lost ? $row->time_lost_seconds : null,
                 'url'          => $row->channel === 'whatsapp'
                     ? route('grp.org.chat.inbox', [$row->organisation_slug, 'channel' => 'whatsapp', 'session' => trim((string) $row->session_ulid)])
                     : route('grp.org.chat.inbox.conversation', [$row->organisation_slug, trim((string) $row->session_ulid)]),

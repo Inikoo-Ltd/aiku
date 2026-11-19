@@ -86,6 +86,8 @@ class GetChatAiAcceptance
             ->selectRaw("count(*) filter (where chat_ai_drafts.created_at >= ? and chat_ai_drafts.change_class = 'rewritten') as rewritten", [$recent])
             ->selectRaw("count(*) filter (where chat_ai_drafts.created_at >= ? and chat_ai_drafts.change_class = 'own_reply') as ignored", [$recent])
             ->selectRaw("count(*) filter (where chat_ai_drafts.created_at >= ? and chat_ai_drafts.change_class = 'discarded') as discarded", [$recent])
+            ->selectRaw('count(*) filter (where chat_ai_drafts.created_at >= ? and chat_ai_drafts.time_lost) as time_lost', [$recent])
+            ->selectRaw('coalesce(sum(chat_ai_drafts.time_lost_seconds) filter (where chat_ai_drafts.created_at >= ? and chat_ai_drafts.time_lost), 0) as time_lost_seconds', [$recent])
             ->selectRaw("round(100.0 * count(*) filter (where chat_ai_drafts.created_at >= ? and $adopted) / nullif(count(*) filter (where chat_ai_drafts.created_at >= ?), 0)) as rate", [$recent, $recent]);
 
         foreach (self::weekStarts() as $weeksAgo => $start) {

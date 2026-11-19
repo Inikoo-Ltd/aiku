@@ -179,10 +179,13 @@ test('an agent replying to a waiting whatsapp chat picks it up, but cannot write
     $waiting = $makeWaitingSession('+628777000111');
 
     $this->postJson(route('grp.org.chat.agents.whatsapp.messages.send', [$this->organisation->slug, $waiting->ulid]), [
-        'message_text' => 'Yes, it left this morning',
+        'message_text'    => 'Yes, it left this morning',
+        'writing_seconds' => 48,
+        'typing_seconds'  => 21,
     ])->assertSuccessful();
 
-    expect($waiting->refresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE)
+    expect($waiting->messages()->where('sender_type', ChatSenderTypeEnum::AGENT->value)->latest('id')->first()->metadata)->toMatchArray(['writing_seconds' => 48, 'typing_seconds' => 21])
+        ->and($waiting->refresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE)
         ->and($waiting->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->pluck('chat_agent_id')->all())->toBe([$mine->id]);
 
     $heldByOther = $makeWaitingSession('+628777000222');

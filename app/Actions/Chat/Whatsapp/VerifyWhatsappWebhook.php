@@ -30,7 +30,7 @@ class VerifyWhatsappWebhook
         abort(403);
     }
 
-  
+
     private function hubParameter(ActionRequest $request, string $name): string
     {
         return (string) ($request->query->get('hub.'.$name) ?? $request->query->get('hub_'.$name, ''));
