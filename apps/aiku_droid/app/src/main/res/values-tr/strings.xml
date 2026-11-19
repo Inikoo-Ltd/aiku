@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Bu hafta %1$s</string>
     <string name="profile_kicker">Hesap</string>
     <string name="profile_language">Dil</string>
-    <string name="profile_language_intro">Uygulama dilini yalnızca bu telefonda değiştirir. Aiku hesap diliniz, bildirimler, ürün adları, müşteri adları ve notlar olduğu gibi kalır.</string>
+    <string name="profile_language_intro">Aiku hesabınızın dilini web\'de ve uygulamada değiştirir. Bildirimler de bu dili kullanır. Ürün adları, müşteri adları ve notlar olduğu gibi kalır.</string>
     <string name="profile_mode">Mod</string>
     <string name="profile_mode_caption">Karanlık mod, loş koridorlarda ve gece vardiyalarında gözü daha az yorar.</string>
     <string name="profile_mode_dark">Koyu</string>

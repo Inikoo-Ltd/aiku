@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Ovaj tjedan: %1$s</string>
     <string name="profile_kicker">Račun</string>
     <string name="profile_language">Jezik</string>
-    <string name="profile_language_intro">Mijenja jezik aplikacije samo na ovom telefonu. Jezik vašeg Aiku računa, obavijesti, nazivi proizvoda, imena kupaca i bilješke ostaju kakvi jesu.</string>
+    <string name="profile_language_intro">Mijenja jezik vašeg Aiku računa, na webu i u aplikaciji. Obavijesti ga također slijede. Nazivi proizvoda, imena kupaca i bilješke ostaju kakvi jesu.</string>
     <string name="profile_mode">Način rada</string>
     <string name="profile_mode_caption">Tamni način ugodniji je za oči u slabo osvijetljenim prolazima i u noćnim smjenama.</string>
     <string name="profile_mode_dark">Tamno</string>

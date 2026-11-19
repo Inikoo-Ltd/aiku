@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">今週 %1$s</string>
     <string name="profile_kicker">アカウント</string>
     <string name="profile_language">言語</string>
-    <string name="profile_language_intro">このスマートフォンのアプリの言語のみを変更します。Aikuアカウントの言語、通知、商品名、顧客名、メモはそのままです。</string>
+    <string name="profile_language_intro">Aikuアカウントの言語を変更します（Webとアプリの両方）。通知もこの言語に従います。商品名、顧客名、メモはそのままです。</string>
     <string name="profile_mode">モード</string>
     <string name="profile_mode_caption">薄暗い通路や夜勤では、ダークモードのほうが目に優しくなります。</string>
     <string name="profile_mode_dark">ダーク</string>

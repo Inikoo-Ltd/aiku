@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Tento týden %1$s</string>
     <string name="profile_kicker">Účet</string>
     <string name="profile_language">Jazyk</string>
-    <string name="profile_language_intro">Změní jazyk aplikace pouze v tomto telefonu. Jazyk vašeho účtu Aiku, oznámení, názvy produktů, jména zákazníků a poznámky zůstanou beze změny.</string>
+    <string name="profile_language_intro">Změní jazyk vašeho účtu Aiku na webu i v aplikaci. Řídí se jím i oznámení. Názvy produktů, jména zákazníků a poznámky zůstanou beze změny.</string>
     <string name="profile_mode">Režim</string>
     <string name="profile_mode_caption">Tmavý režim šetří oči v šeru uliček a na nočních směnách.</string>
     <string name="profile_mode_dark">Tmavý</string>

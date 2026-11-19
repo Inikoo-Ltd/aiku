@@ -12,6 +12,11 @@ struct MobileProfileResponse: Decodable, Equatable, Sendable {
         let name: String
     }
 
+    struct Language: Decodable, Equatable, Sendable {
+        let code: String
+        let name: String?
+    }
+
     let id: Int
     let username: String
     let name: String?
@@ -19,6 +24,7 @@ struct MobileProfileResponse: Decodable, Equatable, Sendable {
     let jobTitle: String?
     let jobPositions: [JobPosition]
     let organisation: Organisation?
+    var language: Language? = nil
 
     var displayedJobPositions: [String] {
         let codes = Set(jobPositions.compactMap(\.code))
@@ -46,6 +52,10 @@ struct PasswordChangeBody: Encodable, Sendable {
     let passwordConfirmation: String
 }
 
+struct ProfileLanguageBody: Encodable, Sendable {
+    let language: String
+}
+
 struct PasswordResetCodeBody: Encodable, Sendable {
     let login: String
 }
@@ -64,6 +74,13 @@ extension Endpoint {
 extension APIClient {
     func fetchMobileProfile() async throws -> MobileProfileResponse {
         try await send(.mobileProfile, as: DataEnvelope<MobileProfileResponse>.self).value
+    }
+
+    func updateProfileLanguage(_ code: String) async throws -> MobileProfileResponse {
+        let data = try await sendForm(.jsonBody("mobile/profile/language", method: .patch, ProfileLanguageBody(language: code)))
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(DataEnvelope<MobileProfileResponse>.self, from: data).value
     }
 
     func changePassword(_ body: PasswordChangeBody) async throws {

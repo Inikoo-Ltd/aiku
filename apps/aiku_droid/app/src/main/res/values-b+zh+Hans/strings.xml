@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">本周 %1$s</string>
     <string name="profile_kicker">账户</string>
     <string name="profile_language">语言</string>
-    <string name="profile_language_intro">仅更改此手机上的应用语言。您的 Aiku 账户语言、通知、产品名称、客户名称和备注保持不变。</string>
+    <string name="profile_language_intro">更改您的 Aiku 账户语言，网页和应用均适用。通知也会使用该语言。产品名称、客户名称和备注保持不变。</string>
     <string name="profile_mode">模式</string>
     <string name="profile_mode_caption">在昏暗的通道和夜班时，深色模式更护眼。</string>
     <string name="profile_mode_dark">深色</string>

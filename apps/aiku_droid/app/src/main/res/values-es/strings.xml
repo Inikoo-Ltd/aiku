@@ -205,7 +205,7 @@
     <string name="clocking_open_camera_helper">Escanee el código QR de la máquina de fichar. La máquina decide dónde ha fichado.</string>
     <string name="clocking_overtime_date_worked">Fecha trabajada</string>
     <string name="clocking_overtime_duration">Duración</string>
-    <string name="clocking_overtime_edit_title">Editar solicitud de horas extras</string>
+    <string name="clocking_overtime_edit_title">Editar solicitud de horas extra</string>
     <string name="clocking_overtime_empty_body">Aquí aparecen las horas extras que solicite.</string>
     <string name="clocking_overtime_empty_title">No hay solicitudes de horas extras</string>
     <string name="clocking_overtime_from">De</string>
@@ -214,12 +214,12 @@
     <string name="clocking_overtime_minutes">Minutos</string>
     <string name="clocking_overtime_no_types">No hay tipos de horas extras configurados para su organización.</string>
     <string name="clocking_overtime_reason">Motivo</string>
-    <string name="clocking_overtime_reason_placeholder">¿Por qué trabajó horas extras?</string>
+    <string name="clocking_overtime_reason_placeholder">¿Por qué trabajó horas extra?</string>
     <string name="clocking_overtime_recorded">Registrado</string>
     <string name="clocking_overtime_request">Solicitar horas extras</string>
     <string name="clocking_overtime_requested">Horas extras solicitadas</string>
     <string name="clocking_overtime_start_time">Hora de inicio</string>
-    <string name="clocking_overtime_type">Tipo de horas extras</string>
+    <string name="clocking_overtime_type">Tipo de horas extra</string>
     <string name="clocking_overtime_updated">Solicitud de horas extras actualizada</string>
     <string name="clocking_pin_helper">Introduzca este PIN en la máquina de fichar para fichar entrada o salida</string>
     <string name="clocking_rejection_reason">Rechazado: %1$s</string>
@@ -267,7 +267,7 @@
     <string name="clocking_tab_calendar">Calendario</string>
     <string name="clocking_tab_clock_in_out">Entradas / salidas</string>
     <string name="clocking_tab_leave">Ausencias</string>
-    <string name="clocking_tab_overtime">Horas extras</string>
+    <string name="clocking_tab_overtime">Horas extra</string>
     <string name="clocking_tab_timesheets">Registros horarios</string>
     <string name="clocking_timesheets_chart">Horas por día</string>
     <string name="clocking_timesheets_day_error">Error · sin salida</string>
@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Esta semana %1$s</string>
     <string name="profile_kicker">Cuenta</string>
     <string name="profile_language">Idioma</string>
-    <string name="profile_language_intro">Cambia el idioma de la aplicación solo en este teléfono. El idioma de su cuenta de Aiku, las notificaciones, los nombres de productos, los nombres de clientes y las notas se quedan como están.</string>
+    <string name="profile_language_intro">Cambia el idioma de su cuenta de Aiku, en la web y en la aplicación. Las notificaciones también lo siguen. Los nombres de productos, los nombres de clientes y las notas se quedan como están.</string>
     <string name="profile_mode">Modo</string>
     <string name="profile_mode_caption">El modo oscuro cansa menos la vista en pasillos con poca luz y en turnos de noche.</string>
     <string name="profile_mode_dark">Oscuro</string>

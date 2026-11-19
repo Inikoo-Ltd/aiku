@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Minggu ini %1$s</string>
     <string name="profile_kicker">Akun</string>
     <string name="profile_language">Bahasa</string>
-    <string name="profile_language_intro">Mengubah bahasa aplikasi hanya di ponsel ini. Bahasa akun Aiku, pemberitahuan, nama produk, nama pelanggan, dan catatan Anda tetap seperti semula.</string>
+    <string name="profile_language_intro">Mengubah bahasa akun Aiku Anda, di web dan di aplikasi. Pemberitahuan juga mengikutinya. Nama produk, nama pelanggan, dan catatan tetap seperti semula.</string>
     <string name="profile_mode">Mode</string>
     <string name="profile_mode_caption">Mode gelap lebih nyaman di mata di lorong yang redup dan saat shift malam.</string>
     <string name="profile_mode_dark">Gelap</string>

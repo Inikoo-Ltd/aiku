@@ -80,7 +80,10 @@ Release builds use `https://app.aiku.io` and none of the development settings.
 
 ## Release
 
-Pilot builds reach testers through Firebase App Distribution (Firebase project aiku-demo). There is no Play Console yet.
+Pilot builds reach testers through Firebase App Distribution. There is no Play Console yet.
+
+- **Two Firebase projects, one per build type (Louis, 2026-11-19):** debug builds use `aiku-demo` (local backends), release builds use `aiku-production` (the production backend pushes through it). Put each project's `google-services.json` at `app/src/debug/google-services.json` and `app/src/release/google-services.json`; both are gitignored. A phone only receives pushes from the project its build was made with, so never ship a release build with the demo config. Without a release config the release build still succeeds, with push disabled (Gradle warns).
+- App Distribution for pilot builds is in `aiku-production`.
 
 - **The release keystore, its passwords and the App Distribution service account file never go in git.** Louis or Raul create and keep the keystore. Keep all three outside the checkout and point to them from `local.properties`. `*.jks` and `*.keystore` are ignored as a second line of defence only.
 - `local.properties` keys for release:
@@ -91,7 +94,7 @@ Pilot builds reach testers through Firebase App Distribution (Firebase project a
 - Without all four signing keys, or when the store file does not exist, the release build still succeeds but is unsigned (`app-release-unsigned.apk`). `assembleRelease` ends with a warning that says which key is missing, and `appDistributionUploadRelease` stops before uploading.
 - Versions are `aiku.versionCode` and `aiku.versionName` in `gradle.properties`, which is committed. For every build that leaves a developer's machine, raise `aiku.versionCode` by 1 and set `aiku.versionName` to match (0.1.0 → 0.1.1). The minimum-version check compares `versionCode`, and Android will not install a lower code over a higher one. The same keys in `local.properties` override them, for a one-off local build only.
 - R8 (minify) is off. It has not been checked on a device, and kotlinx-serialization, OkHttp and Firebase need keep rules. Turn it on only together with a check that the release build starts and signs in.
-- Upload to App Distribution (the plugin is applied only when `app/google-services.json` exists):
+- Upload to App Distribution (needs `app/src/release/google-services.json`):
   1. Raise the version in `gradle.properties`.
   2. Optionally put the testers' notes in `app/release-notes.txt`; the upload uses it when present.
   3. Run `./gradlew :app:assembleRelease :app:appDistributionUploadRelease`. The upload task does not build the APK by itself.

@@ -64,17 +64,32 @@ sealed interface PasswordResult {
 data class ProfileOrganisation(val id: Long, val code: String, val name: String)
 
 @Serializable
+data class ProfileLanguage(val code: String? = null, val name: String? = null)
+
+@Serializable
 data class StaffProfile(
     val id: Long,
     val username: String,
     val name: String? = null,
     val position: String? = null,
     val organisation: ProfileOrganisation? = null,
+    val language: ProfileLanguage? = null,
 )
 
 sealed interface ProfileResult {
     data class Loaded(val profile: StaffProfile) : ProfileResult
     data object Unavailable : ProfileResult
+}
+
+fun interface ProfileSource {
+    suspend fun profile(token: String): ProfileResult
+}
+
+sealed interface LanguageUpdateResult {
+    data object Saved : LanguageUpdateResult
+    data object Rejected : LanguageUpdateResult
+    data object Unreachable : LanguageUpdateResult
+    data class ServerError(val statusCode: Int) : LanguageUpdateResult
 }
 
 interface AuthApi {
@@ -89,4 +104,6 @@ interface AuthApi {
     suspend fun changePassword(token: String, change: PasswordChange): PasswordResult
 
     suspend fun profile(token: String): ProfileResult = ProfileResult.Unavailable
+
+    suspend fun updateLanguage(token: String, code: String): LanguageUpdateResult = LanguageUpdateResult.Unreachable
 }

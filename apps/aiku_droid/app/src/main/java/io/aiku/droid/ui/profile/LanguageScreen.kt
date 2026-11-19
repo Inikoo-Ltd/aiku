@@ -1,6 +1,5 @@
 package io.aiku.droid.ui.profile
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -41,18 +40,10 @@ import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 @Composable
-fun LanguageScreen(settings: AppLanguageSettings) {
+fun LanguageScreen(settings: AppLanguageSettings, onChoose: (AppLanguage) -> Unit) {
     val current by settings.current.collectAsStateWithLifecycle()
-    val activity = LocalActivity.current
 
-    LanguageList(
-        current = current,
-        onChoose = { language ->
-            if (settings.choose(language)) {
-                activity?.recreate()
-            }
-        },
-    )
+    LanguageList(current = current, onChoose = onChoose)
 }
 
 @Composable

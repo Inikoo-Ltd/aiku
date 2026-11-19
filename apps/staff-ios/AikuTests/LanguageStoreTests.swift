@@ -80,4 +80,77 @@ struct LanguageStoreTests {
         #expect(store.languageID == "en")
         #expect(store.current.nativeName == "English")
     }
+
+    @Test func theAccountLanguageAppliesWhenNothingIsPending() throws {
+        let defaults = isolatedDefaults()
+        let store = LanguageStore(defaults: defaults, bundle: try bundle(with: [:]), preferredLanguages: ["en"])
+
+        store.applyAccountLanguage("de")
+        store.applyAccountLanguage(nil)
+        store.applyAccountLanguage("xx")
+
+        #expect(store.languageID == "de")
+        #expect(store.pendingID == nil)
+        #expect(LanguageStore.savedLanguageID(in: defaults) == "de")
+    }
+
+    @Test func aChoiceStaysPendingAndTheAccountCannotOverwriteIt() throws {
+        let defaults = isolatedDefaults()
+        let store = LanguageStore(defaults: defaults, bundle: try bundle(with: [:]), preferredLanguages: ["en"])
+
+        store.select("fr")
+        store.applyAccountLanguage("de")
+
+        #expect(store.languageID == "fr")
+        #expect(store.pendingID == "fr")
+        #expect(LanguageStore(defaults: defaults, bundle: try bundle(with: [:]), preferredLanguages: ["en"]).pendingID == "fr")
+    }
+
+    @Test func aSentChoiceTakesTheAccountAnswer() async throws {
+        let store = LanguageStore(defaults: isolatedDefaults(), bundle: try bundle(with: [:]), preferredLanguages: ["en"])
+        store.select("fr")
+        var sent: [String] = []
+
+        await store.sendPending { code in
+            sent.append(code)
+            return code
+        }
+
+        #expect(sent == ["fr"])
+        #expect(store.pendingID == nil)
+        #expect(store.languageID == "fr")
+    }
+
+    @Test func offlineKeepsTheChoicePending() async throws {
+        let store = LanguageStore(defaults: isolatedDefaults(), bundle: try bundle(with: [:]), preferredLanguages: ["en"])
+        store.select("fr")
+
+        await store.sendPending { _ in throw APIError.offline }
+
+        #expect(store.pendingID == "fr")
+        #expect(store.languageID == "fr")
+    }
+
+    @Test func aRejectedChoiceReturnsToTheAccountLanguage() async throws {
+        let store = LanguageStore(defaults: isolatedDefaults(), bundle: try bundle(with: [:]), preferredLanguages: ["en"])
+        store.applyAccountLanguage("de")
+        store.select("fr")
+
+        await store.sendPending { _ in throw FormValidationError(message: "The selected language is invalid.", fields: ["language": "The selected language is invalid."]) }
+
+        #expect(store.pendingID == nil)
+        #expect(store.languageID == "de")
+    }
+
+    @Test func signingOutForgetsThePendingChoice() throws {
+        let defaults = isolatedDefaults()
+        let store = LanguageStore(defaults: defaults, bundle: try bundle(with: [:]), preferredLanguages: ["en"])
+        store.select("fr")
+
+        store.forgetAccount()
+
+        #expect(store.pendingID == nil)
+        #expect(store.languageID == "fr")
+        #expect(defaults.string(forKey: LanguageStore.pendingKey) == nil)
+    }
 }

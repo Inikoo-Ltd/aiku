@@ -36,6 +36,9 @@ data class PasswordResetRequest(
 )
 
 @Serializable
+data class LanguageUpdateRequest(val language: String)
+
+@Serializable
 data class PasswordChangeRequest(
     @SerialName("current_password") val currentPassword: String,
     val password: String,
@@ -117,6 +120,12 @@ object AuthResponses {
 
     fun parseProfile(statusCode: Int, body: String): ProfileResult =
         decode<ProfileResponse>(body)?.takeIf { statusCode == HTTP_OK }?.let { ProfileResult.Loaded(it.data) } ?: ProfileResult.Unavailable
+
+    fun parseLanguageUpdate(statusCode: Int): LanguageUpdateResult = when (statusCode) {
+        HTTP_OK -> LanguageUpdateResult.Saved
+        HTTP_UNPROCESSABLE -> LanguageUpdateResult.Rejected
+        else -> LanguageUpdateResult.ServerError(statusCode)
+    }
 
     fun parsePassword(statusCode: Int, body: String): PasswordResult = when (statusCode) {
         HTTP_OK -> if (decode<PasswordResponse>(body) != null) PasswordResult.Done else PasswordResult.ServerError(statusCode)

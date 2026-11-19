@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Šonedēļ %1$s</string>
     <string name="profile_kicker">Konts</string>
     <string name="profile_language">Valoda</string>
-    <string name="profile_language_intro">Maina lietotnes valodu tikai šajā tālrunī. Jūsu Aiku konta valoda, paziņojumi, produktu nosaukumi, klientu vārdi un piezīmes paliek nemainīti.</string>
+    <string name="profile_language_intro">Maina jūsu Aiku konta valodu tīmeklī un lietotnē. Arī paziņojumi seko šai valodai. Produktu nosaukumi, klientu vārdi un piezīmes paliek nemainīti.</string>
     <string name="profile_mode">Režīms</string>
     <string name="profile_mode_caption">Tumšais režīms ir saudzīgāks acīm blāvās ejās un nakts maiņās.</string>
     <string name="profile_mode_dark">Tumšs</string>

@@ -11,3 +11,4 @@ captures/
 *.keystore
 app/google-services.json
 app/release-notes.txt
+app/src/*/google-services.json

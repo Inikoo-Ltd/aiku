@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Ezen a héten: %1$s</string>
     <string name="profile_kicker">Fiók</string>
     <string name="profile_language">Nyelv</string>
-    <string name="profile_language_intro">Csak ezen a telefonon módosítja az alkalmazás nyelvét. Az Aiku-fiókja nyelve, az értesítések, a terméknevek, az ügyfélnevek és a megjegyzések változatlanok maradnak.</string>
+    <string name="profile_language_intro">Az Aiku-fiókja nyelvét módosítja, a weben és az alkalmazásban is. Az értesítések is ezt a nyelvet követik. A terméknevek, az ügyfélnevek és a megjegyzések változatlanok maradnak.</string>
     <string name="profile_mode">Mód</string>
     <string name="profile_mode_caption">A sötét mód kíméli a szemet a félhomályos sorok között és éjszakai műszakban.</string>
     <string name="profile_mode_dark">Sötét</string>

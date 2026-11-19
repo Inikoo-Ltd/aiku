@@ -140,7 +140,7 @@ struct AccountTests {
 
     @Test("The mobile profile decodes")
     func mobileProfileDecodes() throws {
-        let json = #"{"data":{"id":214,"username":"artha","name":"Artha","position":"Developer","job_title":"Developer","job_positions":[{"code":"gp-hd-m","name":"Lead engineer"}],"organisation":{"id":2,"code":"aw","name":"AW Advantage"}}}"#
+        let json = #"{"data":{"id":214,"username":"artha","name":"Artha","position":"Developer","job_title":"Developer","job_positions":[{"code":"gp-hd-m","name":"Lead engineer"}],"organisation":{"id":2,"code":"aw","name":"AW Advantage"},"language":{"code":"de","name":"Deutsch"}}}"#
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
 
@@ -148,6 +148,29 @@ struct AccountTests {
 
         #expect(profile.jobPositions.first?.name == "Lead engineer")
         #expect(profile.organisation?.name == "AW Advantage")
+        #expect(profile.language == MobileProfileResponse.Language(code: "de", name: "Deutsch"))
+    }
+
+    @Test("A profile without a language decodes")
+    func mobileProfileWithoutLanguageDecodes() throws {
+        let json = #"{"data":{"id":1,"username":"sam","name":null,"position":null,"job_title":null,"job_positions":[],"organisation":null,"language":null}}"#
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+        let profile = try decoder.decode(DataEnvelope<MobileProfileResponse>.self, from: Data(json.utf8)).value
+
+        #expect(profile.language == nil)
+    }
+
+    @Test("Changing the language patches the mobile profile language route")
+    func profileLanguageRoute() throws {
+        let client = APIClient(configuration: AppConfiguration(apiBaseURL: URL(string: "http://localhost/app/api")!))
+        let request = client.makeRequest(for: .jsonBody("mobile/profile/language", method: .patch, ProfileLanguageBody(language: "zh-Hans")))
+        let body = try JSONSerialization.jsonObject(with: try #require(request.httpBody)) as? [String: String]
+
+        #expect(request.url?.absoluteString == "http://localhost/app/api/mobile/profile/language")
+        #expect(request.httpMethod == "PATCH")
+        #expect(body == ["language": "zh-Hans"])
     }
 
     @Test("Password forms post to the mobile password routes")
