@@ -158,6 +158,8 @@ class GetShoppingAssistantTools
 
     public const int PRIORITY_PER_DAY = 3;
 
+    public const int MAX_BASKET_LINES = 30;
+
     private const array ORDER_OPEN_STATES = [
         OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::HANDLING, OrderStateEnum::HANDLING_BLOCKED,
         OrderStateEnum::PICKED, OrderStateEnum::PACKING, OrderStateEnum::PACKED, OrderStateEnum::FINALISED,
@@ -329,7 +331,7 @@ class GetShoppingAssistantTools
             $this->tool(
                 'order_status',
                 'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, why it has not been dispatched yet, whether it was sent, or for its tracking. Pass the order or invoice number they wrote as reference (ours or their own); without one you get their oldest order not dispatched yet, else their latest, so never ask for the number first. It also says when an order waits for payment, and an order still waiting to be picked a day after it was placed may be moved to premium dispatch free of charge: only when the result gives priority. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
-                ['reference' => ['type' => 'string', 'description' => 'The order or invoice number the customer wrote, exactly as written. Leave it out when they gave none.']]
+                ['reference' => ['type' => 'string', 'description' => 'The order, basket or invoice number the customer wrote, exactly as written, also when they call it a product. Leave it out when they gave none.']]
             ),
             $this->tool(
                 'products_not_in_store',
@@ -563,6 +565,10 @@ class GetShoppingAssistantTools
 
         if ($query === '' && !$sort) {
             return $this->error('query must be a non-empty string.');
+        }
+
+        if ($query !== '' && ($ownOrder = self::ownOrderNamedIn($customer, $query))) {
+            return ['content' => ['products' => [], 'own_order' => $ownOrder->reference, 'note' => 'That number is the customer\'s own '.($ownOrder->state === OrderStateEnum::CREATING ? 'basket' : 'order').', not a product: call order_status with it as reference and answer from that.'], 'products' => [], 'error' => null];
         }
 
         $limit        = $this->limit($arguments);
@@ -1257,12 +1263,19 @@ class GetShoppingAssistantTools
             ...$tracking->all(),
         ]));
 
-        $priority = $this->priorityFor($order);
+        $priority    = $this->priorityFor($order);
+        $basketLines = $order->state === OrderStateEnum::CREATING ? $this->basketLines($order, $locale) : [];
+        if ($basketLines) {
+            $line .= "\n".__('In your basket (packs ordered × units in each pack = units):', [], $locale)."\n".implode("\n", $basketLines);
+        }
 
         return [
             'content'  => array_filter([
                 'found'        => true,
                 'state'        => $state,
+                'basket'       => $basketLines
+                    ? 'Under your reply the system lists each product in this basket with the packs ordered × the units in each pack = the units they get. Answer questions about pack sizes or how many units they get by pointing to those lines, without writing the figures yourself.'
+                    : null,
                 'priority'     => $priority,
                 'payment'      => $this->unpaidOrderPayment($customer, $order),
                 'busy_season'  => in_array(now()->month, [11, 12], true) && in_array($order->state, self::ORDER_OPEN_STATES, true)
@@ -1283,6 +1296,40 @@ class GetShoppingAssistantTools
             'error'    => null,
             'fact'     => $line,
         ];
+    }
+
+    /**
+     * One line per product in a basket, its lines added together: code, name, packs × units in a
+     * pack = units, so "if I order 20, do I get 60?" is answered by code, not by the model.
+     *
+     * @return array<int, string>
+     */
+    private function basketLines(Order $order, string $locale): array
+    {
+        $quantities = Transaction::where('order_id', $order->id)
+            ->where('model_type', 'Product')
+            ->where('is_gift', false)
+            ->groupBy('model_id')
+            ->selectRaw('model_id, sum(quantity_ordered) as quantity')
+            ->pluck('quantity', 'model_id');
+
+        if ($quantities->isEmpty()) {
+            return [];
+        }
+
+        $number = fn (float $value) => Number::format($value, maxPrecision: 3, locale: $locale) ?: (string) $value;
+
+        return Product::whereIn('id', $quantities->keys())
+            ->orderBy('code')
+            ->limit(self::MAX_BASKET_LINES)
+            ->get(['id', 'code', 'name', 'units'])
+            ->map(function (Product $product) use ($quantities, $number) {
+                $packs = (float) $quantities[$product->id];
+                $units = (float) $product->units ?: 1.0;
+
+                return implode(' · ', [$product->code, $product->name, $number($packs).' × '.$number($units).' = '.$number($packs * $units)]);
+            })
+            ->all();
     }
 
     /**
@@ -2084,6 +2131,33 @@ class GetShoppingAssistantTools
         }
 
         return ['type' => 'function', 'function' => ['name' => $name, 'description' => $description, 'parameters' => $parameters]];
+    }
+
+    /**
+     * One of the customer's own orders or baskets whose number appears in the text (ours, their
+     * own reference, their store's or one of its invoices', ignoring case, spaces and hyphens), so
+     * a number like "AWD202765" or "#RO008374" is never searched as a product.
+     */
+    public static function ownOrderNamedIn(Customer $customer, string $text): ?Order
+    {
+        $tokens = collect(preg_split('/[\s,;#]+/u', mb_strtoupper($text), -1, PREG_SPLIT_NO_EMPTY) ?: [])
+            ->map(fn (string $token) => str_replace('-', '', trim($token, '.:()!?"\'')))
+            ->filter(fn (string $token) => mb_strlen($token) >= 5 && preg_match('/\d/', $token))
+            ->unique()
+            ->values()
+            ->all();
+
+        if (!$tokens) {
+            return null;
+        }
+
+        return Order::where('customer_id', $customer->id)
+            ->where(fn ($query) => $query->whereIn(DB::raw("translate(upper(reference), ' -', '')"), $tokens)
+                ->orWhereIn(DB::raw("translate(upper(customer_reference), ' -', '')"), $tokens)
+                ->orWhereIn(DB::raw("translate(upper(platform_order_id), ' -', '')"), $tokens)
+                ->orWhereHas('invoices', fn ($invoices) => $invoices->whereIn(DB::raw("translate(upper(reference), ' -', '')"), $tokens)))
+            ->latest('id')
+            ->first();
     }
 
     public static function isDropshipping(Customer $customer): bool

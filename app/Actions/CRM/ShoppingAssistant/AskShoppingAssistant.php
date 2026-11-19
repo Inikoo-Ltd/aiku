@@ -274,6 +274,18 @@ class AskShoppingAssistant
             $turn['flags'][] = 'premium_retry';
         }
 
+        if ($turn['answer'] === null && $turn['found'] && !$this->hasActed($turn)) {
+            $foundIds        = array_keys($turn['found']);
+            $turn['answer']  = [
+                'reply'       => __('Here are some ideas for your shop.', [], $conversation->language_code),
+                'answer_kind' => ShoppingAssistantAnswerKindEnum::PRODUCTS->value,
+                'must_haves'  => array_slice($foundIds, 0, GetShoppingAssistantTools::USUAL_PER_GROUP),
+                'add_ons'     => array_slice($foundIds, GetShoppingAssistantTools::USUAL_PER_GROUP, GetShoppingAssistantTools::MAX_PER_GROUP - GetShoppingAssistantTools::USUAL_PER_GROUP),
+                'follow_ups'  => [],
+            ];
+            $turn['flags'][] = 'answered_from_found';
+        }
+
         $this->followReplyLanguage($conversation, $turn['answer']['language'] ?? null);
 
         $flags          = $turn['flags'];
@@ -355,7 +367,9 @@ class AskShoppingAssistant
             } elseif ($team && in_array($team['status'], ['created', 'already_asked'], true)) {
                 $offerReason = null;
                 $flags[]     = 'asked_team';
-                $reply       = $this->teamSentence($conversation, $team['live']);
+                $reply       = !$askedTeam && $team['status'] === 'already_asked'
+                    ? __('I have added this to your question that is already with our team. Their answer will appear here in this chat, and if you have left by then, we will send it to you.', [], $conversation->language_code)
+                    : $this->teamSentence($conversation, $team['live']);
                 $isFixed     = true;
                 $groups      = ['must_haves' => collect(), 'add_ons' => collect()];
             }
@@ -1114,8 +1128,9 @@ class AskShoppingAssistant
             return null;
         }
 
-        $previous = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->latest('id')->first(['body', 'flags']);
-        if (preg_match('/[?？؟]/u', (string) $previous?->body) || in_array('plain_search', Arr::wrap($previous?->flags), true)) {
+        $previous       = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->latest('id')->first(['body', 'flags', 'tool_calls']);
+        $lookedAtOrders = collect(Arr::wrap($previous?->tool_calls))->contains(fn ($toolCall) => is_array($toolCall) && ($toolCall['name'] ?? null) === 'order_status');
+        if (preg_match('/[?？؟]/u', (string) $previous?->body) || in_array('plain_search', Arr::wrap($previous?->flags), true) || $lookedAtOrders || GetShoppingAssistantTools::ownOrderNamedIn($customer, $query)) {
             return null;
         }
 

@@ -4310,3 +4310,66 @@ test('account details give the date the account was opened and its credit as sen
         ->and(json_encode($credit['content']))->not->toMatch('/\d/')
         ->and(collect(GetShoppingAssistantTools::make()->definitions())->pluck('function.name'))->toContain('account_details');
 });
+
+test('a customer\'s own order or basket number is never searched as a product, and their basket shows packs × units in a pack = units, its lines added together', function () {
+    config(['services.shopping_assistant.plain_search' => true]);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $product  = shoppingAssistantProduct($this->product);
+    $product->update(['units' => 3]);
+    $newOrder = fn () => \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, ['reference' => 'RO'.random_int(100000, 999999), 'date' => date('Y-m-d'), 'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()), 'billing_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition())]);
+    $placed   = $newOrder();
+    $placed->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE, 'submitted_at' => now()->subHours(2)]);
+    $basket   = $newOrder();
+    foreach ([20, 31] as $quantity) {
+        DB::table('transactions')->insert([
+            'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id, 'customer_id' => $customer->id,
+            'order_id' => $basket->id, 'tax_category_id' => TaxCategory::firstOrFail()->id, 'data' => '{}', 'date' => now(), 'model_type' => 'Product', 'model_id' => $product->id,
+            'family_id' => $product->family_id, 'state' => 'creating', 'net_amount' => 10, 'grp_net_amount' => 10, 'is_gift' => false, 'quantity_ordered' => $quantity,
+        ]);
+    }
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH);
+    $conversation->update(['language_code' => 'en']);
+    $tools = GetShoppingAssistantTools::make();
+
+    $searched    = $tools->execute($conversation, 'search_products', ['query' => '#'.$basket->reference]);
+    $basketState = $tools->execute($conversation, 'order_status', ['reference' => $basket->reference]);
+
+    expect(GetShoppingAssistantTools::ownOrderNamedIn($customer, Str::lower($placed->reference).' and '.$basket->reference)?->id)->toBe($basket->id)
+        ->and(GetShoppingAssistantTools::ownOrderNamedIn($customer, 'lavender oil 10ml'))->toBeNull()
+        ->and($searched['products'])->toBe([])
+        ->and($searched['content']['own_order'])->toBe($basket->reference)
+        ->and($searched['content']['note'])->toContain('call order_status')
+        ->and($basketState['content']['basket'])->toContain('packs ordered')
+        ->and($basketState['fact'])->toContain(__('In your basket (packs ordered × units in each pack = units):', [], 'en'))
+        ->and($basketState['fact'])->toContain($product->code.' · '.$product->name.' · 51 × 3 = 153')
+        ->and(json_encode($basketState['content']))->not->toContain('153');
+
+    $jev = \App\Actions\Helpers\AI\AskJev::mock();
+    $jev->shouldNotReceive('choice');
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('order_status', ['reference' => $placed->reference])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'It is in our warehouse, waiting to be picked.', 'answer_kind' => 'shop_answer', 'language' => 'en']))]);
+
+    $turn = AskShoppingAssistant::run($conversation, $placed->reference);
+
+    expect($turn['message']->flags ?? [])->not->toContain('plain_search')
+        ->and($turn['reply'])->toStartWith('It is in our warehouse');
+});
+
+test('when the last model call fails after the searches found products, the customer sees those products instead of being asked to try again', function () {
+    $customer     = shoppingAssistantCustomer($this->shop);
+    createWebsite($this->shop);
+    $product      = shoppingAssistantLiveProduct($this->product);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'en']);
+    \App\Actions\Catalogue\Search\SearchCatalogueByMeaning::mock()->shouldReceive('handle')->andReturn(collect([$product]));
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('search_products', ['query' => 'candles'])]], 'tool_calls'))
+        ->push(['error' => ['message' => 'upstream error']], 502)]);
+
+    $turn = AskShoppingAssistant::run($conversation, 'Which candles sell best online?');
+
+    expect($turn['message']->flags)->toContain('answered_from_found')
+        ->and($turn['reply'])->toBe(__('Here are some ideas for your shop.', [], 'en'))
+        ->and($turn['groups']['must_haves']->pluck('id')->all())->toBe([$product->id]);
+});

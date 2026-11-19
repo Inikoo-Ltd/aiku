@@ -831,3 +831,17 @@ test('focus mode, chosen next to the search, skips a guru who is online, drops t
     actingAs($this->person)->patch(route('grp.models.profile.update'), ['focus_minutes' => 0]);
     expect($this->person->refresh()->isFocusing())->toBeFalse();
 });
+
+test('a follow-up Merlin is not sure of, while the customer\'s question already waits with our team, is added to it and says where the answer will come, not that it was just passed on', function () {
+    $conversation = teamQuestionConversation($this);
+    StoreShoppingAssistantTeamQuestion::run($conversation, 'Is there a declaration of conformity for the selenite lamp?', 'declaration of conformity?');
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(['choices' => [['finish_reason' => 'tool_calls', 'message' => ['role' => 'assistant', 'content' => null, 'tool_calls' => [[
+            'id' => 'call_present', 'type' => 'function', 'function' => ['name' => 'present_products', 'arguments' => json_encode(['reply' => 'I cannot say how long.', 'answer_kind' => 'offer_person', 'offer_reason' => 'not_sure'])],
+        ]]]]], 'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 20, 'cost' => 0.01]])]);
+
+    $turn = AskShoppingAssistant::run($conversation->fresh(), 'will they get back to me on here?');
+
+    expect($turn['message']->flags)->toBe(['asked_team'])
+        ->and($turn['reply'])->toBe(__('I have added this to your question that is already with our team. Their answer will appear here in this chat, and if you have left by then, we will send it to you.', [], $conversation->language_code));
+});
