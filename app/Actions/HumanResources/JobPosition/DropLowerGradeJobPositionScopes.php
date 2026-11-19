@@ -17,6 +17,8 @@ class DropLowerGradeJobPositionScopes
 
     /**
      * Positions of one department, highest grade first. Positions sharing a grade can be held together.
+     * ful-c is left out on purpose: the fulfilment supervisor manages chat without working it, so the
+     * chat clerk position is what puts a supervisor in the chat inbox and must stack on ful-m (HELP-4817).
      */
     private const array GRADES = [
         [['agt-m'], ['agt-c']],
@@ -30,7 +32,7 @@ class DropLowerGradeJobPositionScopes
         [['gi-m'], ['gi-c'], ['gi-v']],
         [['dist-m'], ['dist-pik', 'dist-excp-pick', 'dist-pak'], ['dist-v']],
         [['prod-m'], ['prod-p', 'prod-d', 'prod-c'], ['prod-v']],
-        [['ful-m'], ['ful-wc', 'ful-c'], ['ful-v']],
+        [['ful-m'], ['ful-wc'], ['ful-v']],
     ];
 
     /**

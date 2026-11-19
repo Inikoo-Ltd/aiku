@@ -391,7 +391,8 @@ const kpiCards = computed(() => {
             better: "up" as const,
             href: null,
             lines: [
-                ctrans(":hours h saved · :guru h guru work · :hand_over h live chats", { hours: hours(kpi("staff_hours_saved").value), guru: hours(kpi("staff_hours_guru").value), hand_over: hours(kpi("staff_hours_hand_over").value) }),
+                ctrans(":hours h saved", { hours: hours(kpi("staff_hours_saved").value) }),
+                ctrans(":guru h guru · :hand_over h chats", { guru: hours(kpi("staff_hours_guru").value), hand_over: hours(kpi("staff_hours_hand_over").value) }),
             ],
         },
         {

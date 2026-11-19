@@ -2808,12 +2808,14 @@ test('a service invoice reading that fails a check is refused and never reaches 
     [$media, $review] = readServiceInvoiceDocument($this, $stockDelivery, $document($number, $shipment), $reading($number));
     expect($review['can_apply'])->toBeTrue();
 
-    $stockDelivery->update(['parent_type' => 'OrgPartner']);
-    $this->post(route('grp.models.stock-delivery.service-invoice.apply', [$stockDelivery->id, $media->id]), ['types' => ['freight'], 'read_at' => $review['read_at']])
-        ->assertSessionHasErrors('invoice');
-
     expect($stockDelivery->serviceInvoices()->count())->toBe(0)
         ->and($stockDelivery->costs()->count())->toBe(0);
+
+    $stockDelivery->update(['parent_type' => 'OrgPartner']);
+    $this->post(route('grp.models.stock-delivery.service-invoice.apply', [$stockDelivery->id, $media->id]), ['types' => ['freight'], 'read_at' => $review['read_at']])
+        ->assertSessionHasNoErrors();
+
+    expect($stockDelivery->serviceInvoices()->count())->toBe(1);
 });
 
 test('a scanned service invoice has no text to check, so it needs a person to confirm every amount', function () {

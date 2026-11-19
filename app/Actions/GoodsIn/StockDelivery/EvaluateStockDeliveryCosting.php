@@ -10,6 +10,7 @@ namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Actions\Inventory\OrgStock\Stock\RebuildOrgStockHistoriesSince;
@@ -47,8 +48,10 @@ class EvaluateStockDeliveryCosting
         self::redistribute($stockDelivery, $amounts);
 
         $isReopened = Arr::has($stockDelivery->data, 'costing_reopened');
-        $isCosted   = $stockDelivery->parent_type === 'OrgPartner'
-            || ($this->isCosted($costs) && self::unbalancedHandSplits($stockDelivery, $amounts) === [] && self::costsWithoutLines($stockDelivery, $costs)->isEmpty() && (!$isReopened || $finishing));
+        $isCosted   = ($stockDelivery->parent_type === 'OrgPartner' ? $this->isPartnerCosted($stockDelivery, $costs, $finishing) : $this->isCosted($costs))
+            && self::unbalancedHandSplits($stockDelivery, $amounts) === []
+            && self::costsWithoutLines($stockDelivery, $costs)->isEmpty()
+            && (!$isReopened || $finishing);
 
         $stockDelivery->update([
             'is_costed' => $isCosted,
@@ -254,6 +257,20 @@ class EvaluateStockDeliveryCosting
         $stockDelivery->auditCustomOld = $stockDelivery->auditCustomNew = [];
 
         $stockDelivery->update(['data' => Arr::except($stockDelivery->data, 'costing_reopened')]);
+    }
+
+    /**
+     * A partner delivery costs its goods from the partner order, so it needs no invoice, shipping or duty row. The
+     * receiving organisation's own landed costs (import duty, freight, extras) go on top (INI-399): the costing closes
+     * by itself when the delivery is placed, with every local row it has received or N/A, and is open until then so
+     * the duty paid at customs can be added.
+     */
+    private function isPartnerCosted(StockDelivery $stockDelivery, Collection $costs, bool $finishing): bool
+    {
+        return ($finishing || $stockDelivery->state === StockDeliveryStateEnum::PLACED)
+            && $costs
+                ->where('type', '!=', StockDeliveryCostTypeEnum::AGENT_INVOICE)
+                ->every(fn (StockDeliveryCost $cost) => $cost->received_at || $cost->is_na);
     }
 
     private function isCosted($costs): bool
