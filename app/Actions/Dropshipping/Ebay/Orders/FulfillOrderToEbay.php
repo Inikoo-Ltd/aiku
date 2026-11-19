@@ -80,7 +80,7 @@ class FulfillOrderToEbay extends OrgAction
 
         $result = $ebayUser->fulfillOrder($fulfillOrderId, [
             'line_items'      => $lineItems,
-            'tracking_number' => $shipment?->tracking,
+            'tracking_number' => $this->trackingNumber($shipment),
             'carrier_code'    => $this->carrierCode($ebayUser, $shipment)
         ]);
 
@@ -93,6 +93,15 @@ class FulfillOrderToEbay extends OrgAction
         }
 
         return $result;
+    }
+
+    /**
+     * eBay takes one tracking number per fulfilment and rejects a multi-parcel shipment's space-joined numbers with
+     * 32300 "Invalid delivery tracking number or carrier.", so the first parcel's number is sent.
+     */
+    public function trackingNumber(?Shipment $shipment): ?string
+    {
+        return Arr::first(array_filter((array) $shipment?->trackings)) ?? Arr::first(preg_split('/\s+/', trim((string) $shipment?->tracking))) ?: null;
     }
 
     /**

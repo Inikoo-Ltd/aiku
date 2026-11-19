@@ -664,6 +664,29 @@ test('the eBay carrier code comes from the carrier the parcel travels with, not 
     'carrier eBay has no code for' => ['Paketa', 'Packeta', 'Packeta'],
 ]);
 
+test('a multi-parcel eBay order is fulfilled with the first parcel tracking, as eBay rejects space-joined numbers', function (array $trackings) {
+    $ebayUser = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser);
+    $order = dispatchedEbayOrder($this, $ebayUser, shipperName: 'APC (API)', tradeAs: 'APC overnight');
+
+    $order->currentDeliveryNote()->shipments()->first()->update([
+        'tracking'  => 'APC001 APC002',
+        'trackings' => $trackings,
+    ]);
+
+    fakeEbay($this, [
+        '/shipping_fulfillment' => fn () => Http::response('', 201),
+    ]);
+
+    FulfillOrderToEbay::run($order->refresh());
+
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), '/shipping_fulfillment')
+        && $request->data()['trackingNumber'] === 'APC001');
+})->with([
+    'trackings filled' => [['APC001', 'APC002']],
+    'tracking only'    => [[]],
+]);
+
 test('an eBay order dispatched without a shipment is fulfilled without tracking instead of crashing the dispatch', function () {
     $ebayUser = ebayChannel($this);
     listedEbayPortfolio($this, $ebayUser);
