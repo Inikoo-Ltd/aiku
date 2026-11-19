@@ -14,6 +14,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\DeliveryNoteLeaflet\DeliveryNoteLeafletStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Helpers\NaturalLanguage;
 use App\Models\Billables\Packaging;
 use App\Models\Catalogue\Shop;
@@ -723,6 +724,14 @@ class DeliveryNote extends Model implements Auditable
             "returns.$this->warehouse_id",
             "org-admin.$this->organisation_id",
         ]);
+    }
+
+    public function canBeReturnedBy(User $user): bool
+    {
+        return $this->state == DeliveryNoteStateEnum::DISPATCHED
+            && $this->canBeWorkedOnBy($user)
+            && !$this->returnedDeliveryNote()->whereIn('state', [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::RETURNING])->exists()
+            && $this->deliveryNoteItems()->whereRaw('quantity_dispatched > coalesce(quantity_returned, 0)')->exists();
     }
 
     public function canBeShippedBy(User $user): bool

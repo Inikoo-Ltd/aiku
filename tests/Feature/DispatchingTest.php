@@ -6273,6 +6273,39 @@ test('a box with no findable delivery note is logged to identify and later ident
     ])->assertSessionHasErrors(['unidentified_return_id']);
 });
 
+test('a dispatched delivery note offers create return until a return is in progress', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['state' => DeliveryNoteItemStateEnum::DISPATCHED, 'quantity_dispatched' => $item->quantity_picked]);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'is_returned' => false]);
+
+    $returnKeys = fn () => collect(get(route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
+        $deliveryNote->organisation->slug,
+        $deliveryNote->warehouse->slug,
+        $deliveryNote->slug,
+    ]))->assertOk()->viewData('page')['props']['pageHead']['wrapped_actions'])->pluck('key');
+
+    $order          = $deliveryNote->orders()->first();
+    $orderReturnRoutes = fn () => collect(get(route('grp.org.shops.show.ordering.orders.show', [
+        $order->organisation->slug,
+        $order->shop->slug,
+        $order->slug,
+    ]))->assertOk()->viewData('page')['props']['pageHead']['wrapped_actions'])->where('key', 'return')->pluck('route.parameters.deliveryNote');
+
+    expect($returnKeys())->toContain('return')
+        ->and($orderReturnRoutes()->all())->toBe([$deliveryNote->id]);
+
+    patch(route('grp.models.delivery_note.return.process', [$deliveryNote->id]))->assertSessionHasNoErrors()->assertRedirect();
+
+    expect($returnKeys())->not->toContain('return')
+        ->and($orderReturnRoutes())->toBeEmpty();
+
+    $deliveryNote->returnedDeliveryNote()->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::DONE]);
+    $item->update(['quantity_returned' => $item->quantity_dispatched]);
+
+    expect($returnKeys())->not->toContain('return')
+        ->and($orderReturnRoutes())->toBeEmpty();
+});
+
 test('a bonus line submitted at zero is not priced at list when it is picked', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 

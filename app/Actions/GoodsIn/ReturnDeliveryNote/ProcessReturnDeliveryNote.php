@@ -111,6 +111,14 @@ class ProcessReturnDeliveryNote extends OrgAction
 
     public function htmlResponse(ReturnDeliveryNote $returnDeliveryNote, ActionRequest $request): RedirectResponse
     {
+        if (!$request->user()->authTo(["incoming.$returnDeliveryNote->warehouse_id.view", "returns.$returnDeliveryNote->warehouse_id"])) {
+            return Redirect::back()->with('notification', [
+                'status'      => 'success',
+                'title'       => __('Success!'),
+                'description' => __('Return Delivery Note created successfully.'),
+            ]);
+        }
+
         return Redirect::route('grp.org.warehouses.show.incoming.return_delivery_notes.show', [
                 'organisation' => $this->organisation,
                 'warehouse' => $returnDeliveryNote->warehouse->slug,

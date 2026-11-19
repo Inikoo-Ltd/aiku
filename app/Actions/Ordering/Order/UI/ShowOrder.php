@@ -371,6 +371,25 @@ class ShowOrder extends OrgAction
             'key'  => 'staff-chat'
         ];
 
+        $returnableDeliveryNote = $lockedInAurora ? null : $order->deliveryNotes()
+            ->where('state', DeliveryNoteStateEnum::DISPATCHED)
+            ->get()
+            ->first(fn (DeliveryNote $deliveryNote) => $deliveryNote->canBeReturnedBy($request->user()));
+
+        if ($returnableDeliveryNote) {
+            $wrapped_actions[] = [
+                'type'  => 'button',
+                'key'   => 'return',
+                'route' => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.return.process',
+                    'parameters' => [
+                        'deliveryNote' => $returnableDeliveryNote->id,
+                    ],
+                ],
+            ];
+        }
+
         $deliveryNoteRoute    = null;
         $deliveryNoteResource = null;
 

@@ -956,37 +956,6 @@ const onCreateReplacement = (action: any) => {
     )
 }
 
-const returnLoading = ref<boolean>(false)
-const onCreateReturn = (action: any) => {
-    router[action.route.method](
-        route(action.route.name, action.route.parameters),
-        {}, {
-        preserveScroll: true,
-        onStart: () => {
-            returnLoading.value = true
-        },
-        onFinish: () => {
-            returnLoading.value = false
-        },
-        onSuccess: () => {
-            notify({
-                title: ctrans("Success"),
-                text: ctrans("Return created successfully"),
-                type: "success",
-            })
-        },
-        onError: () => {
-            notify({
-                title: ctrans("Something went wrong"),
-                text: ctrans("Failed to create return"),
-                type: "error",
-            })
-        },
-    }
-    )
-}
-
-
 // Section: Proforma Invoice
 const isOpenModalProforma = ref(false)
 const selectedCheck = ref<string[]>([])
@@ -1828,6 +1797,18 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     </div>
                 </template>
             </ButtonWithLink>
+        </template>
+
+        <template #wrapped-return="{ action }">
+            <ButtonWithLink
+                type="tertiary"
+                full
+                icon="fal fa-exchange"
+                :label="ctrans('Create return')"
+                v-tooltip="ctrans('Process the return if the product is sent back to the warehouse due to failed delivery or other reasons')"
+                :routeTarget="action.route"
+                @error="(e) => notify({ title: ctrans('Failed to create return'), text: e?.delivery_note || ctrans('Please try again later or contact administrator'), type: 'error' })"
+            />
         </template>
 
         <template #wrapped-staff-chat>

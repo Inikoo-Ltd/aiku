@@ -919,7 +919,7 @@ const stopSocketListener = () => {
 
 		<template #wrapped-return="{ action }">
 			<ButtonWithLink
-				type="red"
+				type="tertiary"
 				v-tooltip="ctrans('Process the return if the product is sent back to the warehouse due to failed delivery or other reasons')"
 				icon="fal fa-exchange"
 				:routeTarget="{
@@ -932,7 +932,7 @@ const stopSocketListener = () => {
 				@error="(e) => {
 					notify({
 						title: ctrans('Failed to set return'),
-						text: e.message || ctrans('Please try again later or contact administrator'),
+						text: e?.delivery_note || e?.message || ctrans('Please try again later or contact administrator'),
 						type: 'error',
 					})
 				}"
@@ -945,7 +945,7 @@ const stopSocketListener = () => {
 				}"
 			>
 				<template #label>
-					<span class="whitespace-nowrap">{{ ctrans('Set return') }}</span>
+					<span class="whitespace-nowrap">{{ ctrans('Create return') }}</span>
 				</template>
 			</ButtonWithLink>
 		</template>

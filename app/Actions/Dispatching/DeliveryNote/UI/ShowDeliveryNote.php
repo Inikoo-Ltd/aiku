@@ -470,6 +470,13 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
+        if ($deliveryNote->canBeReturnedBy(request()->user())) {
+            $actions[] = [
+                'type' => 'button',
+                'key'  => 'return',
+            ];
+        }
+
         $isEditable = $isEditable && $deliveryNote->canBeWorkedOnBy(request()->user());
 
         if ($isEditable && $deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
