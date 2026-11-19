@@ -3,10 +3,6 @@ import Testing
 @testable import Aiku
 
 struct ModuleAccessTests {
-    private func permissions(_ names: [String]) -> UserPermissions {
-        UserPermissions(userID: 7, permissions: Set(names), roles: [], fetchedAt: .now)
-    }
-
     private func warehouse(_ json: String) throws -> MobileWarehouse {
         let body = #"{"id":3,"code":"WH1","name":"Main","organisation":{"id":1,"name":"AW UK"},"can":\#(json)}"#
         let decoder = JSONDecoder()
@@ -17,31 +13,63 @@ struct ModuleAccessTests {
     @Test func selectedWarehouseAbilitiesDecideTheModules() throws {
         let picker = try warehouse(#"{"view_locations":true,"edit_locations":false,"view_goods_out":true,"pick_and_pack":true,"view_inventory":false,"view_goods_in":false,"view_fulfilment":false}"#)
 
-        let modules = try #require(ModuleAccess.resolve(warehouse: picker, permissions: permissions(["incoming.3.view"])))
+        let modules = try #require(ModuleAccess.resolve(warehouse: picker, isSignedIn: true))
 
-        #expect(modules == ModuleAccess(inventory: false, locations: true, goodsIn: false, goodsOut: true, fulfilment: false))
+        #expect(modules == ModuleAccess(inventory: false, locations: true, goodsIn: false, returns: false, goodsOut: true, fulfilment: false))
     }
 
-    @Test func cachedPermissionsDecideTheModulesBeforeWarehousesLoad() throws {
-        let modules = try #require(ModuleAccess.resolve(warehouse: nil, permissions: permissions(["incoming.3.view", "supervisor-stocks.3", "locations.3.view"])))
+    @Test func everyAbilityTheServerSendsIsRead() throws {
+        let full = try warehouse(#"{"view_locations":true,"edit_locations":true,"view_goods_in":true,"book_in":true,"supervise_goods_in":true,"edit_procurement":true,"place_stock_deliveries":true,"view_returns":true,"handle_returns":true}"#)
+        let older = try warehouse(#"{"view_locations":false,"edit_locations":false}"#)
 
-        #expect(modules.goodsIn)
-        #expect(modules.inventory)
-        #expect(modules.locations)
-        #expect(!modules.goodsOut)
-        #expect(!modules.fulfilment)
+        #expect(full.can.superviseGoodsIn)
+        #expect(full.can.editProcurement)
+        #expect(full.can.placeStockDeliveries)
+        #expect(full.can.viewReturns)
+        #expect(full.can.handleReturns)
+        #expect(!older.can.viewReturns)
+        #expect(!older.can.handleReturns)
+        #expect(!older.can.superviseGoodsIn)
     }
 
-    @Test func fulfilmentViewersSeeGoodsOutLikeTheWeb() throws {
-        let modules = ModuleAccess(permissions: permissions(["fulfilment.3.view"]))
-
-        #expect(modules.goodsOut)
-        #expect(modules.fulfilment)
-        #expect(modules.canScan)
+    @Test func signedInWithoutAWarehouseShowsNoModulesUntilTheServerAnswers() {
+        #expect(ModuleAccess.resolve(warehouse: nil, isSignedIn: true) == .nothing)
+        #expect(ModuleAccess.resolve(warehouse: nil, isSignedIn: false) == nil)
     }
 
-    @Test func nothingKnownKeepsTheCurrentModules() {
-        #expect(ModuleAccess.resolve(warehouse: nil, permissions: nil) == nil)
+    @MainActor
+    @Test func aReturnsClerkSeesGoodsInWithOnlyReturns() throws {
+        let clerk = try warehouse(#"{"view_locations":false,"edit_locations":false,"view_goods_in":false,"view_returns":true,"handle_returns":true}"#)
+        let modules = try #require(ModuleAccess.resolve(warehouse: clerk, isSignedIn: true))
+
+        #expect(modules.hasGoodsInModule)
+        #expect(modules.hasWarehouseModules)
+        let goodsIn = ShellMenuCatalog.groups(for: modules).first { $0.id == "goodsIn" }
+        #expect(goodsIn?.items.map(\.id) == ["goodsIn.returns"])
+        #expect(ShellHomeContent.shortcuts(for: modules).first { $0.id == "goodsIn" }?.link == .goodsIn(.returns))
+        #expect(ShellDashboardContent.tiles(for: modules).first { $0.id == "goodsIn" }?.link == .goodsIn(.returns))
+        #expect(AppModule.goodsIn.sections(for: modules).map(\.id) == [.goodsInReturns])
+    }
+
+    @MainActor
+    @Test func goodsInStaffWithoutTheReturnsRightDoNotSeeReturns() throws {
+        let staff = try warehouse(#"{"view_locations":false,"edit_locations":false,"view_goods_in":true,"view_returns":false}"#)
+        let modules = try #require(ModuleAccess.resolve(warehouse: staff, isSignedIn: true))
+
+        let goodsIn = ShellMenuCatalog.groups(for: modules).first { $0.id == "goodsIn" }
+        #expect(goodsIn?.items.map(\.id) == ["goodsIn.backlog", "goodsIn.stockDeliveries"])
+        #expect(ShellHomeContent.shortcuts(for: modules).first { $0.id == "goodsIn" }?.link == .goodsIn(.stockDeliveries))
+        #expect(AppModule.goodsIn.sections(for: modules).map(\.id) == [.goodsInBacklog, .stockDeliveries])
+    }
+
+    @MainActor
+    @Test func fulfilmentSectionsFollowTheFulfilmentRight() {
+        let withFulfilment = ModuleAccess(inventory: true, locations: false, goodsIn: true, returns: true, goodsOut: false, fulfilment: true)
+        let without = ModuleAccess(inventory: true, locations: false, goodsIn: true, returns: true, goodsOut: false, fulfilment: false)
+
+        #expect(AppModule.goodsIn.sections(for: withFulfilment).map(\.id).contains(.fulfilmentDeliveries))
+        #expect(!AppModule.goodsIn.sections(for: without).map(\.id).contains(.fulfilmentDeliveries))
+        #expect(!AppModule.inventory.sections(for: without).map(\.id).contains(.storedPallets))
     }
 
     @Test func menuOnlyListsModulesTheUserCanOpen() {
@@ -57,7 +85,7 @@ struct ModuleAccessTests {
     @MainActor
     @Test func staffWithoutWarehouseModulesCannotScanOrSearch() {
         let session = Session()
-        session.modules = ModuleAccess(permissions: permissions(["hr.view"]))
+        session.modules = .nothing
 
         #expect(!session.hasWarehouseAccess)
         #expect(!session.canScan)

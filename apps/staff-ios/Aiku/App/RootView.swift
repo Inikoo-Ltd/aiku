@@ -66,7 +66,7 @@ struct RootView: View {
     }
 
     private var resolvedModules: ModuleAccess? {
-        ModuleAccess.resolve(warehouse: warehouseStore.selected, permissions: permissionStore.current)
+        ModuleAccess.resolve(warehouse: warehouseStore.selected, isSignedIn: (authStore.userID ?? 0) > 0)
     }
 
     private func refreshPermissionsIfSignedIn() async {

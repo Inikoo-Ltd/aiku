@@ -16,8 +16,13 @@ struct MobileWarehouse: Codable, Sendable, Equatable {
         var moveStock = false
         var viewGoodsIn = false
         var bookIn = false
+        var superviseGoodsIn = false
+        var editProcurement = false
+        var placeStockDeliveries = false
         var viewFulfilment = false
         var editFulfilment = false
+        var viewReturns = false
+        var handleReturns = false
     }
 
     let id: Int
@@ -29,7 +34,8 @@ struct MobileWarehouse: Codable, Sendable, Equatable {
 
 extension MobileWarehouse.Abilities {
     private enum CodingKeys: String, CodingKey {
-        case viewLocations, editLocations, viewGoodsOut, pickAndPack, superviseGoodsOut, viewInventory, moveStock, viewGoodsIn, bookIn, viewFulfilment, editFulfilment
+        case viewLocations, editLocations, viewGoodsOut, pickAndPack, superviseGoodsOut, viewInventory, moveStock, viewGoodsIn, bookIn
+        case superviseGoodsIn, editProcurement, placeStockDeliveries, viewFulfilment, editFulfilment, viewReturns, handleReturns
     }
 
     init(from decoder: Decoder) throws {
@@ -43,8 +49,13 @@ extension MobileWarehouse.Abilities {
         moveStock = try container.decodeIfPresent(Bool.self, forKey: .moveStock) ?? false
         viewGoodsIn = try container.decodeIfPresent(Bool.self, forKey: .viewGoodsIn) ?? false
         bookIn = try container.decodeIfPresent(Bool.self, forKey: .bookIn) ?? false
+        superviseGoodsIn = try container.decodeIfPresent(Bool.self, forKey: .superviseGoodsIn) ?? false
+        editProcurement = try container.decodeIfPresent(Bool.self, forKey: .editProcurement) ?? false
+        placeStockDeliveries = try container.decodeIfPresent(Bool.self, forKey: .placeStockDeliveries) ?? false
         viewFulfilment = try container.decodeIfPresent(Bool.self, forKey: .viewFulfilment) ?? false
         editFulfilment = try container.decodeIfPresent(Bool.self, forKey: .editFulfilment) ?? false
+        viewReturns = try container.decodeIfPresent(Bool.self, forKey: .viewReturns) ?? false
+        handleReturns = try container.decodeIfPresent(Bool.self, forKey: .handleReturns) ?? false
     }
 }
 
