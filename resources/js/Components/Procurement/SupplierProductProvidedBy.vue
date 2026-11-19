@@ -6,15 +6,20 @@
 -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { ref } from "vue"
+import { Link, router } from "@inertiajs/vue3"
+import axios from "axios"
+import Menu from "primevue/menu"
+import type { MenuItem } from "primevue/menuitem"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import Image from "@common/Components/Image.vue"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faStar } from "@fal"
+import { faStar, faCheck } from "@fal"
 
-library.add(faStar)
+library.add(faStar, faCheck)
 
 const props = defineProps<{
     parties: {
@@ -30,14 +35,22 @@ const props = defineProps<{
         supplier_code: string
         supplier_name: string
         image: object | null
+        id: number
         code: string
         is_available: boolean
+        can_be_preferred?: boolean
         preferred_in?: string[]
         supplier_route: routeType
         route: routeType | null
     }[]
     preferredIn?: string[]
     productCode?: string
+    setPreferred?: {
+        route: routeType
+        supplier_product_id: number
+        can_be_preferred: boolean
+        organisations: { id: number; code: string }[]
+    } | null
     compact?: boolean
 }>()
 
@@ -51,6 +64,52 @@ const preferredTooltip = (productCode: string | null | undefined, organisationCo
     })
 
 const preferredBadgeClass = "mt-1 inline-flex items-center gap-1 rounded-full bg-[var(--app-accent-soft)] px-2 py-0.5 text-xs font-medium text-[var(--app-accent-strong)]"
+
+const preferredMenu = ref<InstanceType<typeof Menu> | null>(null)
+const preferredMenuItems = ref<MenuItem[]>([])
+const savingId = ref<number | null>(null)
+const result = ref<{ id: number; message: string; tone: "done" | "skipped" | "error" } | null>(null)
+
+const makePreferred = async (supplierProductId: number, organisationId: number | null) => {
+    if (!props.setPreferred) {
+        return
+    }
+
+    savingId.value = supplierProductId
+    result.value = null
+    try {
+        const response = await axios.post(route(props.setPreferred.route.name, props.setPreferred.route.parameters), {
+            supplier_product_id: supplierProductId,
+            organisation_id: organisationId,
+        })
+        result.value = { id: supplierProductId, message: response.data.message, tone: response.data.updated?.length ? "done" : "skipped" }
+        router.reload({ only: ["showcase"] })
+    } catch (error: any) {
+        const errors = error?.response?.data?.errors
+        result.value = { id: supplierProductId, message: errors ? Object.values(errors).flat().join(" ") : ctrans("The preferred supplier could not be changed."), tone: "error" }
+    } finally {
+        savingId.value = null
+    }
+}
+
+const openPreferredMenu = (event: Event, supplierProductId: number, preferredOrganisations: string[]) => {
+    const organisations = props.setPreferred?.organisations ?? []
+
+    preferredMenuItems.value = [
+        {
+            label: ctrans("All organisations"),
+            disabled: organisations.every((organisation) => preferredOrganisations.includes(organisation.code)),
+            command: () => makePreferred(supplierProductId, null),
+        },
+        { separator: true },
+        ...organisations.map((organisation) => ({
+            label: preferredOrganisations.includes(organisation.code) ? ctrans(":organisation (preferred)", { organisation: organisation.code }) : organisation.code,
+            disabled: preferredOrganisations.includes(organisation.code),
+            command: () => makePreferred(supplierProductId, organisation.id),
+        })),
+    ]
+    preferredMenu.value?.toggle(event)
+}
 
 const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
 </script>
@@ -74,6 +133,18 @@ const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:g
                         <Icon :data="{ icon: 'fal fa-star' }" />
                         {{ preferredLabel(preferredIn) }}
                     </span>
+                    <template v-if="party.type === 'supplier' && setPreferred?.can_be_preferred && setPreferred.organisations.length">
+                        <div class="mt-1">
+                            <Button type="tertiary" size="xxs" :label="ctrans('Set as preferred')" :loading="savingId === setPreferred.supplier_product_id"
+                                aria-haspopup="true" aria-controls="provided-by-preferred-menu"
+                                @click.prevent.stop="(event: Event) => openPreferredMenu(event, setPreferred!.supplier_product_id, preferredIn ?? [])">
+                                <template #icon>
+                                    <Icon :data="{ icon: 'fal fa-check' }" class="text-green-600" />
+                                </template>
+                            </Button>
+                        </div>
+                        <div v-if="result?.id === setPreferred.supplier_product_id" class="mt-1 text-xs" :class="{ 'text-red-600': result.tone === 'error', 'text-amber-600': result.tone === 'skipped', 'text-green-700': result.tone === 'done' }">{{ result.message }}</div>
+                    </template>
                 </div>
                 <span class="ml-auto whitespace-nowrap text-xs tabular-nums text-gray-400">{{ party.code }}</span>
             </component>
@@ -108,10 +179,24 @@ const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:g
                             <Icon :data="{ icon: 'fal fa-star' }" />
                             {{ preferredLabel(other.preferred_in) }}
                         </span>
+                        <template v-if="setPreferred?.organisations.length && other.can_be_preferred">
+                            <div class="mt-1">
+                                <Button type="tertiary" size="xxs" :label="ctrans('Set as preferred')" :loading="savingId === other.id"
+                                    aria-haspopup="true" aria-controls="provided-by-preferred-menu"
+                                    @click="(event: Event) => openPreferredMenu(event, other.id, other.preferred_in ?? [])">
+                                    <template #icon>
+                                        <Icon :data="{ icon: 'fal fa-check' }" class="text-green-600" />
+                                    </template>
+                                </Button>
+                            </div>
+                            <div v-if="result?.id === other.id" class="mt-1 text-xs" :class="{ 'text-red-600': result.tone === 'error', 'text-amber-600': result.tone === 'skipped', 'text-green-700': result.tone === 'done' }">{{ result.message }}</div>
+                        </template>
                     </div>
                     <span class="ml-auto whitespace-nowrap text-xs tabular-nums text-gray-400">{{ other.supplier_code }}</span>
                 </div>
             </div>
         </template>
+
+        <Menu id="provided-by-preferred-menu" ref="preferredMenu" :model="preferredMenuItems" popup class="text-sm" />
     </div>
 </template>

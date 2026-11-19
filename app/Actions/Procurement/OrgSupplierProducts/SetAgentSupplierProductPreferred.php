@@ -17,8 +17,10 @@ use App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier;
 use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplierProduct;
+use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -48,13 +50,7 @@ class SetAgentSupplierProductPreferred extends OrgAction
             throw ValidationException::withMessages(['supplier_product_id' => __('A discontinued or unavailable product, or one of an inactive supplier, can not be made preferred.')]);
         }
 
-        $organisations = OrgSupplierProduct::where('supplier_product_id', $supplierProduct->id)
-            ->whereIn('org_agent_id', OrgAgent::where('agent_id', $agent->id)->select('id'))
-            ->with('organisation')
-            ->orderBy('organisation_id')
-            ->get()
-            ->pluck('organisation')
-            ->unique('id')
+        $organisations = self::buyingOrganisations($supplierProduct, $agent)
             ->when($only, fn ($organisations) => $organisations->where('id', $only->id));
 
         $result = ['updated' => [], 'skipped' => []];
@@ -81,6 +77,21 @@ class SetAgentSupplierProductPreferred extends OrgAction
         }
 
         return $result;
+    }
+
+    /**
+     * @return Collection<int, Organisation>
+     */
+    public static function buyingOrganisations(SupplierProduct $supplierProduct, Agent $agent): Collection
+    {
+        return OrgSupplierProduct::where('supplier_product_id', $supplierProduct->id)
+            ->whereIn('org_agent_id', OrgAgent::where('agent_id', $agent->id)->select('id'))
+            ->with('organisation')
+            ->orderBy('organisation_id')
+            ->get()
+            ->pluck('organisation')
+            ->unique('id')
+            ->values();
     }
 
     public function rules(): array

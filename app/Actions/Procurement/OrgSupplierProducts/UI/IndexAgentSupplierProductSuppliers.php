@@ -9,6 +9,8 @@
 namespace App\Actions\Procurement\OrgSupplierProducts\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgSupplierProducts\SetAgentSupplierProductPreferred;
+use App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\StockHasSupplierProduct;
 use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
@@ -75,7 +77,7 @@ class IndexAgentSupplierProductSuppliers extends OrgAction
      * The other suppliers of the agent that supply the same SKU, for the Provided by box of the showcase,
      * each linked to its own page when the agent has one.
      *
-     * @return array<int, array{supplier_code: string, supplier_name: string, image: array<string, mixed>|null, code: string, is_available: bool, preferred_in: array<int, string>, supplier_route: array<string, mixed>, route: array<string, mixed>|null}>
+     * @return array<int, array{id: int, supplier_code: string, supplier_name: string, image: array<string, mixed>|null, code: string, is_available: bool, can_be_preferred: bool, preferred_in: array<int, string>, supplier_route: array<string, mixed>, route: array<string, mixed>|null}>
      */
     public static function otherSuppliers(SupplierProduct $supplierProduct, AgentOrganisationSelection $selection, Organisation $agentOrganisation): array
     {
@@ -96,6 +98,7 @@ class IndexAgentSupplierProductSuppliers extends OrgAction
                 'supplier_products.slug',
                 'supplier_products.code',
                 'supplier_products.is_available',
+                'supplier_products.state',
                 'supplier_products.supplier_id',
                 'suppliers.code as supplier_code',
                 'suppliers.name as supplier_name',
@@ -111,11 +114,13 @@ class IndexAgentSupplierProductSuppliers extends OrgAction
             ->all();
 
         return $others->map(fn (SupplierProduct $other) => [
+            'id'            => $other->id,
             'supplier_code' => $other->supplier_code,
             'supplier_name' => $other->supplier_name,
             'image'         => $other->supplier?->imageSources(),
             'code'          => $other->code,
             'is_available'  => (bool) $other->is_available,
+            'can_be_preferred' => CopySupplierProductsToSupplier::canBecomePreferred($other),
             'preferred_in'  => $preferredIn[$other->id] ?? [],
             'supplier_route' => $selection->route('grp.org.procurement.org_suppliers.show', ['organisation' => $agentOrganisation->slug, 'supplier' => $other->supplier_slug]),
             'route'         => in_array($other->id, $withPage, true)
@@ -149,6 +154,29 @@ class IndexAgentSupplierProductSuppliers extends OrgAction
         return $preferredLinks->groupBy('supplier_product_id')
             ->map(fn ($links) => $links->pluck('organisation_code')->unique()->sort()->values()->all())
             ->all();
+    }
+
+    /**
+     * For the Provided by box of the showcase: where any supplier of the same SKU can be made preferred, for who
+     * may edit the agent's procurement.
+     *
+     * @return array{route: array<string, mixed>, supplier_product_id: int, can_be_preferred: bool, organisations: array<int, array{id: int, code: string}>}|null
+     */
+    public static function setPreferredForShowcase(SupplierProduct $supplierProduct, Organisation $agentOrganisation, ?User $user): ?array
+    {
+        $agent = $agentOrganisation->agent;
+        if (!$agent || !$user?->authTo("procurement.$agentOrganisation->id.edit")) {
+            return null;
+        }
+
+        return [
+            'route'               => ['name' => 'grp.models.org.agent_supplier_product.set_preferred', 'parameters' => ['organisation' => $agentOrganisation->id, 'supplierProduct' => $supplierProduct->id]],
+            'supplier_product_id' => $supplierProduct->id,
+            'can_be_preferred'    => CopySupplierProductsToSupplier::canBecomePreferred($supplierProduct),
+            'organisations'       => SetAgentSupplierProductPreferred::buyingOrganisations($supplierProduct, $agent)
+                ->map(fn (Organisation $organisation) => ['id' => $organisation->id, 'code' => $organisation->code])
+                ->all(),
+        ];
     }
 
     /**
