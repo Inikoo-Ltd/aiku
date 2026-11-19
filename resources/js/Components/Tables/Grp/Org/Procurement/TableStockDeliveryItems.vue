@@ -22,7 +22,7 @@ import { routeType } from '@/types/route'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInventory, faBox, faSpellCheck, faBoxCheck, faTrashAlt, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faSave, faUndoAlt, faHandHoldingBox, faBoxOpen, faTimes, faExclamationCircle as falExclamationCircle } from '@fal'
+import { faInventory, faBox, faSpellCheck, faBoxCheck, faTrashAlt, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faSave, faUndoAlt, faHandHoldingBox, faBoxOpen, faTimes, faPencil, faExclamationCircle as falExclamationCircle } from '@fal'
 import { faExclamationCircle, faSpinner } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import InputNumber from 'primevue/inputnumber'
@@ -32,12 +32,12 @@ import { useConfirm } from 'primevue/useconfirm'
 import { ctrans, ctransChoice } from '@/Composables/useTrans'
 import { skoAndCartonPackingLabel } from '@/Composables/packs'
 
-library.add(faInventory, faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faSave, faUndoAlt, faHandHoldingBox, faBoxOpen, faTimes, falExclamationCircle)
+library.add(faInventory, faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faSave, faUndoAlt, faHandHoldingBox, faBoxOpen, faTimes, faPencil, falExclamationCircle)
 
 import DiscontinueSuggestion from "@/Components/Procurement/DiscontinueSuggestion.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 const props = defineProps<{
-    data: { data?: any[], container_lines?: { id: number, code: string | null, packed_inside_stock_delivery_item_id: number | null }[] },
+    data: { data?: any[], container_lines?: { id: number, code: string | null, packed_inside_stock_delivery_item_id: number | null }[], addable_unit_quantities?: Record<number, number> },
     tab?: string,
     costing?: {
         is_costed: boolean
@@ -233,6 +233,53 @@ function confirmRemoveFromContainer(event: MouseEvent, items: any[]) {
         acceptProps: { label: ctrans('Remove'), severity: 'danger' },
         rejectProps: { label: ctrans('Cancel') },
         accept: () => removeFromContainer(items),
+    })
+}
+
+const itemToChangeQuantity = ref<any | null>(null)
+const newUnitQuantity = ref<number | null>(null)
+const isChangingQuantity = ref(false)
+const changeQuantityError = ref<string | null>(null)
+
+function addableUnitQuantity(item: any) {
+    return Number(props.data?.addable_unit_quantities?.[item.id] ?? 0)
+}
+
+function maxUnitQuantity(item: any) {
+    return Number(item.unit_quantity) + addableUnitQuantity(item)
+}
+
+function openChangeQuantity(item: any) {
+    itemToChangeQuantity.value = item
+    newUnitQuantity.value = Number(item.unit_quantity)
+    changeQuantityError.value = null
+}
+
+const isNewQuantityValid = computed(() => {
+    const item = itemToChangeQuantity.value
+    const quantity = newUnitQuantity.value
+    return item !== null && quantity !== null && quantity > 0 && quantity <= maxUnitQuantity(item) && quantity !== Number(item.unit_quantity)
+})
+
+function saveNewQuantity() {
+    const item = itemToChangeQuantity.value
+    if (!item?.changeQuantityRoute || !isNewQuantityValid.value) {
+        return
+    }
+
+    router.patch(route(item.changeQuantityRoute.name, item.changeQuantityRoute.parameters), { unit_quantity: newUnitQuantity.value }, {
+        preserveScroll: true,
+        onStart: () => (isChangingQuantity.value = true),
+        onFinish: () => (isChangingQuantity.value = false),
+        onSuccess: () => {
+            notify({
+                title: ctrans('Success'),
+                text: ctrans(':code now has :units units in the container', { code: item.code, units: formatQuantity(Number(newUnitQuantity.value)) }),
+                type: 'success',
+            })
+            itemToChangeQuantity.value = null
+        },
+        onError: (errors: Record<string, string>) => (changeQuantityError.value = Object.values(errors ?? {})[0] ?? ctrans('Something went wrong')),
     })
 }
 
@@ -780,7 +827,18 @@ async function savePackedInside(item: any, outerItemId: number | null) {
         </template>
 
         <template #cell(quantity)="{ item }">
-            <span class="text-gray-500">{{ quantityBreakdown(item) }}</span>
+            <div class="flex items-center gap-1">
+                <span class="text-gray-500">{{ quantityBreakdown(item) }}</span>
+                <Button
+                    v-if="item.changeQuantityRoute"
+                    :tooltip="ctrans('Change how many units of this item go in the container')"
+                    :aria-label="ctrans('Change the quantity of :code', { code: item.code })"
+                    type="tertiary"
+                    size="xs"
+                    icon="fal fa-pencil"
+                    @click="openChangeQuantity(item)"
+                />
+            </div>
         </template>
 
         <template #cell(purchase_orders)="{ item }">
@@ -1292,4 +1350,44 @@ async function savePackedInside(item: any, outerItemId: number | null) {
             </div>
         </template>
     </ConfirmPopup>
+
+    <Dialog
+        :visible="itemToChangeQuantity !== null"
+        modal
+        :draggable="false"
+        :style="{ width: '28rem' }"
+        :breakpoints="{ '576px': '95vw' }"
+        :header="ctrans('Change the quantity of :code', { code: itemToChangeQuantity?.code ?? '' })"
+        @update:visible="(visible: boolean) => { if (!visible) itemToChangeQuantity = null }"
+    >
+        <div v-if="itemToChangeQuantity" class="space-y-3">
+            <p class="text-sm text-gray-600">
+                {{ ctrans(':units units are in the container now. Units you take off go back to awaiting delivery on the purchase order.', { units: formatQuantity(Number(itemToChangeQuantity.unit_quantity)) }) }}
+            </p>
+            <p class="text-sm text-gray-600">
+                {{ addableUnitQuantity(itemToChangeQuantity) > 0
+                    ? ctrans('The purchase order line has :units more units awaiting delivery, so up to :max units can go in.', { units: formatQuantity(addableUnitQuantity(itemToChangeQuantity)), max: formatQuantity(maxUnitQuantity(itemToChangeQuantity)) })
+                    : ctrans('The purchase order line has no more units awaiting delivery, so the quantity can only go down.') }}
+            </p>
+            <label class="block text-sm font-medium text-gray-700" for="new-unit-quantity">{{ ctrans('Units in the container') }}</label>
+            <InputNumber
+                v-model="newUnitQuantity"
+                inputId="new-unit-quantity"
+                :min="0"
+                :max="maxUnitQuantity(itemToChangeQuantity)"
+                :maxFractionDigits="3"
+                suffix=" u."
+                class="w-full"
+                inputClass="w-full text-right"
+                autofocus
+                @keydown.enter="saveNewQuantity"
+            />
+            <p v-if="newUnitQuantity" class="text-xs text-gray-500">{{ quantityBreakdown({ ...itemToChangeQuantity, unit_quantity: newUnitQuantity }) }}</p>
+            <p v-if="changeQuantityError" class="text-sm text-red-600">{{ changeQuantityError }}</p>
+        </div>
+        <template #footer>
+            <Button type="tertiary" :label="ctrans('Cancel')" @click="itemToChangeQuantity = null" />
+            <Button type="primary" icon="fal fa-save" :label="ctrans('Save')" :disabled="!isNewQuantityValid" :loading="isChangingQuantity" @click="saveNewQuantity" />
+        </template>
+    </Dialog>
 </template>

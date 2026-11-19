@@ -423,6 +423,7 @@ use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItemCost;
 use App\Actions\GoodsIn\StockDeliveryItem\ResolveStockDeliveryItemDiscrepancy;
+use App\Actions\GoodsIn\StockDeliveryItem\ChangeStockDeliveryItemQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCbmInContainer;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemPackedInside;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCustomsLine;
@@ -2141,6 +2142,7 @@ Route::name('stock-delivery-item.')->prefix('stock-delivery-item/{stockDeliveryI
     Route::post('resolve-discrepancy', ResolveStockDeliveryItemDiscrepancy::class)->name('resolve-discrepancy')->withoutScopedBindings();
     Route::patch('customs-line', SetStockDeliveryItemCustomsLine::class)->name('customs-line')->withoutScopedBindings();
     Route::patch('cbm-in-container', SetStockDeliveryItemCbmInContainer::class)->name('cbm-in-container')->withoutScopedBindings();
+    Route::patch('change-quantity', ChangeStockDeliveryItemQuantity::class)->name('change-quantity')->withoutScopedBindings();
     Route::patch('packed-inside', SetStockDeliveryItemPackedInside::class)->name('packed-inside')->withoutScopedBindings();
 });
 

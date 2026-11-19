@@ -37,6 +37,7 @@ use App\Actions\GoodsIn\StockDelivery\PdfStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\RemoveStockDeliveryUnbackedCosts;
 use App\Actions\GoodsIn\StockDelivery\GetStockDeliveryServiceInvoiceReadings;
 use App\Actions\GoodsIn\StockDelivery\Traits\WithStockDeliveryWeightAndVolume;
+use App\Actions\GoodsIn\StockDeliveryItem\ChangeStockDeliveryItemQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemPackedInside;
 use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryItems;
 use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryUnderOverDeliveredItems;
@@ -1201,7 +1202,10 @@ class ShowStockDelivery extends OrgAction
         }
 
         return StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value, groupByProduct: true))
-            ->additional(['container_lines' => SetStockDeliveryItemPackedInside::containerLines($stockDelivery)]);
+            ->additional([
+                'container_lines'         => SetStockDeliveryItemPackedInside::containerLines($stockDelivery),
+                'addable_unit_quantities' => ChangeStockDeliveryItemQuantity::addableUnitQuantities($stockDelivery),
+            ]);
     }
 
     /**

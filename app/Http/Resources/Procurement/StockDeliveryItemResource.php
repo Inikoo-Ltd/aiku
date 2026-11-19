@@ -10,6 +10,7 @@ namespace App\Http\Resources\Procurement;
 
 use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\RemovePurchaseOrderFromStockDelivery;
+use App\Actions\GoodsIn\StockDeliveryItem\ChangeStockDeliveryItemQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCbmInContainer;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
@@ -67,6 +68,7 @@ class StockDeliveryItemResource extends JsonResource
         $row['is_cbm_in_container_set'] = $rows->contains('is_cbm_in_container_set', true);
         $row['cbmInContainerRoute']     = null;
         $row['packedInsideRoute']       = null;
+        $row['changeQuantityRoute']     = null;
         $row['confirmRoute']            = $rows->pluck('confirmRoute')->filter()->first();
         $row['readyToShipRoute']        = $row['confirmRoute'] ? null : $rows->pluck('readyToShipRoute')->filter()->first();
         $row['removeRoute']             = $rows->pluck('removeRoute')->filter()->first();
@@ -215,6 +217,11 @@ class StockDeliveryItemResource extends JsonResource
                 'name'       => 'grp.models.stock-delivery.items.remove',
                 'parameters' => ['stockDelivery' => $item->stock_delivery_id],
                 'method'     => 'delete',
+            ] : null,
+            'changeQuantityRoute'   => $canRemoveFromContainer && ChangeStockDeliveryItemQuantity::canBeChanged($item) ? [
+                'name'       => 'grp.models.stock-delivery-item.change-quantity',
+                'parameters' => ['stockDeliveryItem' => $item->id],
+                'method'     => 'patch',
             ] : null,
             'checkedRoute'          => $canCheck ? [
                 'name'       => 'grp.models.stock-delivery-item.set-checked',
