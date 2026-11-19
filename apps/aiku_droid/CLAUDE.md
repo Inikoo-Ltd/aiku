@@ -62,7 +62,7 @@ Most screens are still skeletons built on sample data, so developers can see how
   - `Cards.kt`, `Controls.kt` (buttons, chips, bottom sheet C15), `Feedback.kt` (alerts, toasts via `LocalToasts`, dialog, empty states, skeletons), `Inputs.kt` (stepper, checkbox/radio/toggle rows), `FakeData.kt`, `States.kt` (`RequireAbility`).
 - `ui/navigation`: type-safe routes (`AppRoutes.kt`, one per screen board), composition locals, `AppNavigator` (`open`, `switchSection`, `openTab`, `back`, `showWarehouseSwitcher`, `showReportProblem`, `signOut`).
 - `ui/app`: the signed-in shell. Warehouse loading and switching, the route-to-screen map, sign out.
-- Shell packages: `home`, `mywork`, `inbox`, `menu`, `search`, `scan` (scan result), `dashboard` (warehouse dashboard), `profile`, `sync` (offline queue and conflicts), `states` (full-screen and in-context states, the not-designed placeholder, and the outlined skeleton previews reached from Profile).
+- Shell packages: `home`, `mywork`, `inbox`, `menu`, `search`, `scan` (scan result), `dashboard` (warehouse dashboard), `profile`, `sync` (offline queue and conflicts), `states` (full-screen and in-context states, the not-designed placeholder, and the outlined skeleton previews reached from Profile), `splash` (the start-up splash).
 - Area packages: `inventory`, `locations`, `goodsin`, `goodsout`, `goodsout/extra` (waiting, sessions, trolleys, bays, More actions), `fulfilment`, `clocking`, `login`. Each area keeps its sample data in `<Area>Samples.kt` and its text in `strings_<area>.xml`.
 - Icons used by the canvas are converted once as `ic_ui_<name>`; reuse them before adding `ic_<area>_<name>`.
 
@@ -105,6 +105,7 @@ Pilot builds reach testers through Firebase App Distribution. There is no Play C
 - Theme tokens for all 11 themes, light and dark, are computed in `ui/theme/Color.kt` the way the canvas mixes them. Appearance (theme and mode) is saved on the device.
 - Type is Inter, with a Bitter wordmark and a Caveat tagline. The fonts are OFL, and their licences ship in `assets/licenses`.
 - The sign-in watercolour backgrounds are rendered from the canvas's own SVG (`login_background`, `login_background_dark`).
+- The start-up splash (Louis, 2026-11-19) is that watercolour with the invader at 42% of the screen's shorter side, exactly centred. It covers a fresh launch until the app knows whether to show sign-in, Home or the update screen (at least 400 ms, a small progress ring after 1.5 s), then fades out over 250 ms. It never shows on a return from the background, a rotation or a language restart. The system splash (Android 12+) and the window background use `splash_background` (`values/splash.xml`, `values-night/splash.xml`), the watercolour's base colour, with the invader as `aiku_invader_splash`.
 - Icons are the canvas's own SVGs converted to vector drawables, named `ic_<area>_<name>` for area icons. The shared icon set (C23) is `ic_fa_<font-awesome name>`, and the feedback icons are `ic_feedback_*`.
 
 ## Scanning

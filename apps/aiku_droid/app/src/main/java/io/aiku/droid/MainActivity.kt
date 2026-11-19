@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -19,10 +20,16 @@ import io.aiku.droid.data.settings.AppLanguage
 import io.aiku.droid.data.settings.DeviceAppLocales
 import io.aiku.droid.push.PushData
 import io.aiku.droid.ui.app.SignedInApp
+import io.aiku.droid.ui.app.WarehousesViewModel
+import io.aiku.droid.ui.app.warehousesViewModelFactory
 import io.aiku.droid.ui.login.LoginScreen
 import io.aiku.droid.ui.login.LoginViewModel
 import io.aiku.droid.ui.scan.HardwareScanKeys
 import io.aiku.droid.ui.scan.HardwareScanWindowCallback
+import io.aiku.droid.ui.splash.StartupDestination
+import io.aiku.droid.ui.splash.StartupSplash
+import io.aiku.droid.ui.splash.StartupSplashViewModel
+import io.aiku.droid.ui.splash.startupDestination
 import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.update.UpdateRequiredScreen
 import io.aiku.droid.update.AppUpdate
@@ -52,13 +59,26 @@ class MainActivity : ComponentActivity() {
             keys = HardwareScanKeys(container.scans),
             isTextFieldFocused = { currentFocus?.onCheckIsTextEditor() == true },
         )
+        val isFreshLaunch = savedInstanceState == null
         setContent {
             val appearance by container.settings.appearance.collectAsStateWithLifecycle()
             val update by container.appVersions.update.collectAsStateWithLifecycle()
+            val splash: StartupSplashViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer { StartupSplashViewModel(isFreshLaunch) }
+                },
+            )
+            val splashState by splash.state.collectAsStateWithLifecycle()
+            if (splashState.isVisible) {
+                val destination = currentStartupDestination(container, update)
+                LaunchedEffect(destination) { splash.onDestination(destination) }
+            }
             AikuDroidTheme(appearance = appearance) {
-                when (val current = update) {
-                    is AppUpdate.Required -> UpdateRequiredScreen(update = current)
-                    else -> AikuDroidApp(container)
+                StartupSplash(state = splashState) {
+                    when (val current = update) {
+                        is AppUpdate.Required -> UpdateRequiredScreen(update = current)
+                        else -> AikuDroidApp(container)
+                    }
                 }
             }
         }
@@ -97,6 +117,19 @@ class MainActivity : ComponentActivity() {
         container.pushInbox.receive(pushOpen)
         intent.replaceExtras(Bundle())
     }
+}
+
+@Composable
+private fun currentStartupDestination(container: AppContainer, update: AppUpdate): StartupDestination {
+    val session by container.sessions.session.collectAsStateWithLifecycle()
+    val signedInSession = session
+    val warehouses = if (signedInSession == null || update is AppUpdate.Required) {
+        null
+    } else {
+        val warehousesViewModel: WarehousesViewModel = viewModel(factory = warehousesViewModelFactory(container))
+        warehousesViewModel.state.collectAsStateWithLifecycle().value
+    }
+    return startupDestination(update = update, session = signedInSession, warehouses = warehouses)
 }
 
 @Composable
