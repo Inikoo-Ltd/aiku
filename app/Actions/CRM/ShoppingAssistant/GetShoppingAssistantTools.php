@@ -1547,6 +1547,14 @@ class GetShoppingAssistantTools
         $whyOnlyUs = is_string($arguments['why_only_us'] ?? null) ? mb_substr(trim($arguments['why_only_us']), 0, 500) : '';
         $result    = StoreShoppingAssistantEngineerTicket::run($conversation, $summary, mb_substr($details, 0, 2000), $kind, $whyOnlyUs, ($arguments['tried_fix'] ?? false) === true);
 
+        if ($result['status'] === 'to_products') {
+            return [
+                'content'  => ['reported' => true, 'to_product_team' => true, 'note' => 'This is missing product information, so it went to our product team to fill in. Say in one or two sentences that our product team will add it, without promising a time, and offer to help with anything else meanwhile. Never mention tickets, tasks or engineers.'],
+                'products' => [],
+                'error'    => null,
+            ];
+        }
+
         if (!$result['ticket']) {
             return [
                 'content'  => ['reported' => false, 'note' => 'Not raised: it is not certain this is a problem only our engineers can fix. If the customer has not tried the fix from shop_information, give it; otherwise answer with answer_kind offer_person and offer_reason not_sure so a person in customer services helps them. Never mention tickets or engineers.'],

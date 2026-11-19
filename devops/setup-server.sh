@@ -187,8 +187,9 @@ else
   echo "  skipped (INSTALL_IMGPROXY=0 — imgproxy runs on the edge host only)"
 fi
 
-# Realtime websockets (soketi.aiku.io). Needs node 18 in /opt/node-v18.20.8-linux-x64 and
-# soketi 1.6.0 in /opt/soketi (npm install -g --prefix /opt/soketi @soketi/soketi@1.6.0);
+# Realtime websockets (soketi.aiku.io). Needs node 24 LTS in /opt/node-v24.22.3-linux-x64 and
+# soketi 1.6.1 in /opt/soketi-1.6.1, installed with `npm ci` from devops/soketi/package.json,
+# which overrides soketi's uWebSockets.js (Node <= 18 only) with v20.71.0;
 # its app keys must match PUSHER_APP_KEY/SECRET in every host's .env.
 echo "soketi:"
 if [[ ${INSTALL_SOKETI:-0} == 1 ]]; then
@@ -202,6 +203,12 @@ if [[ ${INSTALL_SOKETI:-0} == 1 ]]; then
   fi
 else
   echo "  skipped (INSTALL_SOKETI=0 — soketi runs on the edge host only)"
+fi
+
+echo "apparmor:"
+place "$DEVOPS/apparmor/chrome-headless-shell" /etc/apparmor.d/chrome-headless-shell
+if [[ $DRY_RUN != 1 ]]; then
+  apparmor_parser -r /etc/apparmor.d/chrome-headless-shell
 fi
 
 echo "sysctl:"

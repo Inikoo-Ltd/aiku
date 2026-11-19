@@ -16,3 +16,9 @@ The Cloudflare edge adds Last-Modified to the logged-out HTML it stores (origin 
 
 ## MySQL runs only on litio, without binary logs
 Aurora's MySQL lives only on litio (10.0.0.1). boro's stale replica, which had not changed since Feb 2025, was removed with its data on 14 Nov 2026 (INI-258), and litio runs with disable_log_bin because nothing replicates from it. Don't reinstall MySQL on boro or turn binlog back on without a replica that needs it. mysql.service in supervisor.conf's After= is a no-op on boro and is kept for litio. On litio the default `php` CLI is 7.4 (for Aurora): run aiku artisan there with `php8.4`.
+
+## soketi runs on Node 24 only through the uWebSockets.js override
+soketi is unmaintained (last release 1.6.1, Mar 2024) and pins uWebSockets.js v20.10.0, which ships binaries for Node 14/16/18 only. devops/soketi/package.json overrides it with the v20.71.0 tarball (binaries for ABI 127/137/147 = Node 22/24/26); install with `npm ci --omit=dev --ignore-scripts` in /opt/soketi-1.6.1, never `npm install -g` (global installs ignore overrides). Bumping Node: first check that the uWS tag has a uws_linux_x64_<process.versions.modules>.node. Replacing soketi with a maintained Pusher-protocol server is the long-term fix.
+
+## Browsershot's Chrome needs its libraries and the AppArmor profile on Ubuntu 24.04
+puppeteer's chrome-headless-shell (Browsershot: DPD GB labels, pallet-return labels, PDFs) needs libnspr4, libnss3, ATK/AT-SPI, the X11 libs, libgbm1 and libasound2t64, plus devops/apparmor/chrome-headless-shell. Without the profile, Ubuntu 24.04's apparmor_restrict_unprivileged_userns=1 kills it with "No usable sandbox!". Never work around that with --no-sandbox. setup-server.sh places the profile, build-image.sh installs both, and the profile covers /home/aiku and /home/staging. helio staging had neither until 19 Nov 2026 (INI-384). Test: as the app user, run tinker with Browsershot::html("<h1>ok</h1>")->pdf().

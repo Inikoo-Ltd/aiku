@@ -13,9 +13,9 @@ set -euo pipefail
 [[ $EUID -eq 0 ]] || { echo "run as root"; exit 1; }
 export DEBIAN_FRONTEND=noninteractive
 
-NODE_VERSION=v23.11.0         # /usr/local/bin/node on boro (build + SSR tooling)
-NODE_SOKETI_VERSION=v18.20.8  # soketi 1.6.0 needs node 18 (devops/supervisor/soketi.conf)
-BUN_VERSION=bun-v1.2.23       # Inertia SSR runs on bun (devops/supervisor/aiku-inertia-ssr.conf)
+NODE_VERSION=v24.22.3         # /usr/local/bin/node on boro (build tooling, Browsershot)
+NODE_SOKETI_VERSION=v24.22.3  # soketi 1.6.1 + uWebSockets.js override (devops/soketi/package.json)
+BUN_VERSION=bun-v1.4.4        # Inertia SSR runs on bun (devops/supervisor/aiku-inertia-ssr.conf)
 TYPESENSE_VERSION=30.1
 IMGPROXY_IMAGE=darthsim/imgproxy@sha256:c1250eeb8efb8b3946e9393f4b1e2871cf15e74e3a546e4110568c147b1a8628
 
@@ -41,7 +41,9 @@ apt-get install -y \
   php8.4-mysql php8.4-opcache php8.4-pgsql php8.4-readline php8.4-redis php8.4-soap \
   php8.4-sqlite3 php8.4-xml php8.4-zip composer \
   nginx haproxy varnish redis-server supervisor ghostscript rclone \
-  docker-ce docker-ce-cli docker-compose-plugin
+  docker-ce docker-ce-cli docker-compose-plugin \
+  libnspr4 libnss3 libatk1.0-0t64 libatk-bridge2.0-0t64 libatspi2.0-0t64 libxcomposite1 libxdamage1 \
+  libxext6 libxfixes3 libxrandr2 libgbm1 libasound2t64
 
 curl -fsSL "https://dl.typesense.org/releases/$TYPESENSE_VERSION/typesense-server-$TYPESENSE_VERSION-amd64.deb" -o /tmp/typesense.deb
 apt-get install -y /tmp/typesense.deb
@@ -50,7 +52,9 @@ rm /tmp/typesense.deb
 curl -fsSL "https://nodejs.org/dist/$NODE_VERSION/node-$NODE_VERSION-linux-x64.tar.xz" | tar -xJ -C /opt
 for bin in node npm npx; do ln -sfn "/opt/node-$NODE_VERSION-linux-x64/bin/$bin" "/usr/local/bin/$bin"; done
 curl -fsSL "https://nodejs.org/dist/$NODE_SOKETI_VERSION/node-$NODE_SOKETI_VERSION-linux-x64.tar.xz" | tar -xJ -C /opt
-PATH="/opt/node-$NODE_SOKETI_VERSION-linux-x64/bin:$PATH" npm install -g --prefix /opt/soketi @soketi/soketi@1.6.0
+install -d /opt/soketi-1.6.1
+cp "$(dirname "$0")/../soketi/package.json" "$(dirname "$0")/../soketi/package-lock.json" /opt/soketi-1.6.1/
+(cd /opt/soketi-1.6.1 && PATH="/opt/node-$NODE_SOKETI_VERSION-linux-x64/bin:$PATH" npm ci --omit=dev --ignore-scripts --no-audit --no-fund)
 curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s "$BUN_VERSION"
 
 docker pull "$IMGPROXY_IMAGE"
@@ -58,6 +62,9 @@ docker pull "$IMGPROXY_IMAGE"
 # default.vcl imports querystring, which no package ships: boro's copy, built by hand in Oct 2025
 # for Varnish 8.0, is kept in the repo
 install -m 755 "$(dirname "${BASH_SOURCE[0]}")/../varnish/vmods/libvmod_querystring.so" /usr/lib/varnish/vmods/
+# Browsershot's Chrome needs the libraries above and this profile, or it cannot start on 24.04
+install -m 644 "$(dirname "${BASH_SOURCE[0]}")/../apparmor/chrome-headless-shell" /etc/apparmor.d/
+apparmor_parser -r /etc/apparmor.d/chrome-headless-shell
 # HAProxy owns port 80
 rm -f /etc/nginx/sites-enabled/default
 
