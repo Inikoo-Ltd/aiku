@@ -1708,8 +1708,10 @@ test('clean handover score', function () {
         $purchaseOrder,
         [
             'approved_ready_at'      => now()->subDays(10),
-            'handed_over_at'         => now()->subDays(5),
-            'qc_passed_at'           => now()->subDays(6),
+            'handed_over_at'         => now()->subDays(10),
+            'balance_paid_at'        => now()->subDays(11),
+            'produced_at'            => now()->subDays(11),
+            'qc_passed_at'           => now()->subDays(11),
             'compliance_complete_at' => now()->subDays(6),
         ]
     );

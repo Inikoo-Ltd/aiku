@@ -1983,11 +1983,14 @@ test('agent receiving goods in its own warehouse ships only what its goods recei
     $addable = App\Actions\GoodsIn\StockDelivery\AddPurchaseOrderItemsToStockDelivery::addableItems($stockDelivery)->where('purchase_order_transactions.id', $line->id)->sole();
     expect((float) $addable->quantity_awaiting_delivery)->toBe(40.0);
 
-    $purchaseOrder->refresh()->updateQuietly(['approved_ready_at' => now()->subDay(), 'compliance_complete_at' => now()]);
+    $purchaseOrder->refresh()->updateQuietly(['approved_ready_at' => now()->addDay(), 'compliance_complete_at' => now()]);
     $handover = App\Actions\SupplyChain\Agent\UI\GetAgentCleanHandoverScore::make();
     expect($handover->isCleanHandover($purchaseOrder->refresh()))->toBeFalse();
 
     $receive(5);
+    expect($handover->isCleanHandover($purchaseOrder->refresh()))->toBeFalse();
+
+    $ship();
     expect($handover->isCleanHandover($purchaseOrder->refresh()))->toBeTrue()
         ->and($handover->handle($agent)['quarters'][0]['chs'])->toEqual(100);
 });

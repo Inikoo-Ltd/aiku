@@ -329,7 +329,7 @@ function createWarehouse(): Warehouse
     $organisation = createOrganisation();
 
 
-    $warehouse = Warehouse::first();
+    $warehouse = Warehouse::orderBy('id')->first();
     if (!$warehouse) {
         $warehouse = StoreWarehouse::run(
             $organisation,
