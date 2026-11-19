@@ -26747,5 +26747,13 @@
     "Warehouse :warehouse · Factory :factory": "Warehouse :warehouse · Factory :factory",
     "Wrong Weights": "Wrong Weights",
     "material": "material",
-    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO by :name, :time|:count SKOs by :name, :time"
+    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO by :name, :time|:count SKOs by :name, :time",
+    ":made in :minutes min is :rate per hour against a target of :target, :confirm": ":made in :minutes min is :rate per hour against a target of :target, :confirm",
+    ":made on :step, a step with no target, by someone paid by the hour: :confirm": ":made on :step, a step with no target, by someone paid by the hour: :confirm",
+    "a manager must confirm it": "a manager must confirm it",
+    "check it and confirm": "check it and confirm",
+    "Back, correct the quantity": "Back, correct the quantity",
+    "Yes, the quantity is right": "Yes, the quantity is right",
+    "Too fast": "Too fast",
+    "More than ten times the target: check the quantity and the times": "More than ten times the target: check the quantity and the times"
 }

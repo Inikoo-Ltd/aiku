@@ -26145,5 +26145,13 @@
     "the customer's language": "język klienta",
     "Your account with us was opened on :date.": "Twoje konto u nas zostało założone :date.",
     "Credit on your account: :amount.": "Środki na Twoim koncie: :amount.",
-    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Przy płatności najpierw wykorzystywane są środki na Twoim koncie, a resztę płacisz wybraną metodą płatności."
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Przy płatności najpierw wykorzystywane są środki na Twoim koncie, a resztę płacisz wybraną metodą płatności.",
+    ":made in :minutes min is :rate per hour against a target of :target, :confirm": ":made w :minutes min to :rate na godzinę przy celu :target, :confirm",
+    ":made on :step, a step with no target, by someone paid by the hour: :confirm": ":made na kroku :step, bez celu, przez osobę opłacaną godzinowo: :confirm",
+    "a manager must confirm it": "kierownik musi to potwierdzić",
+    "check it and confirm": "sprawdź i potwierdź",
+    "Back, correct the quantity": "Wróć, popraw ilość",
+    "Yes, the quantity is right": "Tak, ilość jest prawidłowa",
+    "Too fast": "Za szybko",
+    "More than ten times the target: check the quantity and the times": "Ponad dziesięć razy więcej niż cel: sprawdź ilość i czasy"
 }

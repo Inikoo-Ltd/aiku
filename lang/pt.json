@@ -25804,5 +25804,13 @@
     ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO por :name, :time|:count SKOs por :name, :time",
     "Your account with us was opened on :date.": "A sua conta connosco foi aberta em :date.",
     "Credit on your account: :amount.": "Crédito na sua conta: :amount.",
-    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "No pagamento, o seu crédito é usado primeiro e o restante é pago com o método de pagamento que escolher."
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "No pagamento, o seu crédito é usado primeiro e o restante é pago com o método de pagamento que escolher.",
+    ":made in :minutes min is :rate per hour against a target of :target, :confirm": ":made em :minutes min dá :rate por hora face a um objetivo de :target, :confirm",
+    ":made on :step, a step with no target, by someone paid by the hour: :confirm": ":made em :step, uma etapa sem objetivo, por alguém pago à hora: :confirm",
+    "a manager must confirm it": "um responsável tem de confirmar",
+    "check it and confirm": "verifique e confirme",
+    "Back, correct the quantity": "Voltar, corrigir a quantidade",
+    "Yes, the quantity is right": "Sim, a quantidade está certa",
+    "Too fast": "Demasiado rápido",
+    "More than ten times the target: check the quantity and the times": "Mais de dez vezes o objetivo: verifique a quantidade e os tempos"
 }

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\ManufactureTaskSession\UI;
 
+use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
 use App\Actions\OrgAction;
 use App\Actions\Production\Artisan\GetArtisanWorkAreas;
 use App\Actions\Production\Artisan\SetArtisanPayType;
@@ -197,6 +198,7 @@ class IndexArtisans extends OrgAction
             'standard_rate'       => $session->standard_rate === null ? null : (float)$session->standard_rate,
             'edited_tiers'        => $session->tier_thresholds,
             'is_under_target'     => $session->is_under_target && $session->state == ManufactureTaskSessionStateEnum::CLOSED,
+            'is_impossible_rate'  => $session->state == ManufactureTaskSessionStateEnum::CLOSED && $session->paidHours() > 0 && CloseManufactureTaskSession::make()->isImpossibleRate($session),
             'is_hourly'           => $session->artisan_pay_type == ArtisanPayTypeEnum::HOURLY,
             'under_target_review' => $session->under_target_reviewed_at ? [
                 'reason'      => ManufactureTaskSessionUnderTargetReasonEnum::labels()[$session->under_target_reason?->value] ?? null,

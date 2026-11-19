@@ -2118,5 +2118,13 @@
     "Warehouse :warehouse · Factory :factory": "Noliktava :warehouse · Rūpnīca :factory",
     "Wrong Weights": "Nepareizi svari",
     "material": "materiāls",
-    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO — :name, :time|:count SKO — :name, :time|:count SKO — :name, :time"
+    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO — :name, :time|:count SKO — :name, :time|:count SKO — :name, :time",
+    ":made in :minutes min is :rate per hour against a target of :target, :confirm": ":made :minutes min ir :rate stundā pret mērķi :target, :confirm",
+    ":made on :step, a step with no target, by someone paid by the hour: :confirm": ":made solī :step, kuram nav mērķa, ko veicis darbinieks ar stundas samaksu: :confirm",
+    "a manager must confirm it": "tas jāapstiprina vadītājam",
+    "check it and confirm": "pārbaudiet un apstipriniet",
+    "Back, correct the quantity": "Atpakaļ, labot daudzumu",
+    "Yes, the quantity is right": "Jā, daudzums ir pareizs",
+    "Too fast": "Pārāk ātri",
+    "More than ten times the target: check the quantity and the times": "Vairāk nekā desmitkārt pārsniegts mērķis: pārbaudiet daudzumu un laikus"
 }

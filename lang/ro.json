@@ -26098,5 +26098,13 @@
     "the customer's language": "limba clientului",
     "Your account with us was opened on :date.": "Contul dumneavoastră la noi a fost deschis pe :date.",
     "Credit on your account: :amount.": "Credit în contul dumneavoastră: :amount.",
-    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "La finalizarea comenzii se folosește mai întâi creditul dumneavoastră, iar restul se plătește cu metoda de plată aleasă."
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "La finalizarea comenzii se folosește mai întâi creditul dumneavoastră, iar restul se plătește cu metoda de plată aleasă.",
+    ":made in :minutes min is :rate per hour against a target of :target, :confirm": ":made în :minutes min înseamnă :rate pe oră față de un obiectiv de :target, :confirm",
+    ":made on :step, a step with no target, by someone paid by the hour: :confirm": ":made la :step, un pas fără obiectiv, de cineva plătit cu ora: :confirm",
+    "a manager must confirm it": "un manager trebuie să confirme",
+    "check it and confirm": "verificați și confirmați",
+    "Back, correct the quantity": "Înapoi, corectați cantitatea",
+    "Yes, the quantity is right": "Da, cantitatea este corectă",
+    "Too fast": "Prea rapid",
+    "More than ten times the target: check the quantity and the times": "De peste zece ori obiectivul: verificați cantitatea și orele"
 }

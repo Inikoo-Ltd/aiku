@@ -85,6 +85,7 @@ interface ArtisanSession extends TimeEditFields {
     standard_rate: number | null
     edited_tiers: null | { source: 'artefact' | 'family', thresholds: Record<string, number> }
     is_under_target: boolean
+    is_impossible_rate?: boolean
     is_hourly: boolean
     under_target_review: null | { reason: string, note: string | null, reviewed_by: string | null, reviewed_at: string }
     review_route: null | { name: string, parameters: object }
@@ -1161,6 +1162,10 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                                     </td>
                                     <td></td>
                                     <td class="py-1.5 px-3 text-right">
+                                        <span v-if="session.is_impossible_rate" v-tooltip="ctrans('More than ten times the target: check the quantity and the times')"
+                                            class="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium whitespace-nowrap text-amber-800">
+                                            {{ ctrans('Too fast') }}
+                                        </span>
                                         <span v-if="session.is_under_target"
                                             class="rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap"
                                             :class="session.under_target_review ? 'bg-gray-100 text-gray-600' : 'bg-amber-100 text-amber-800'">

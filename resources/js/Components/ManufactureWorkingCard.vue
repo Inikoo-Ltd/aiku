@@ -177,9 +177,13 @@ const confirmingMove = ref(false)
 const closedAt = computed(() => props.session.carry ? Math.floor((props.session.task.quantity_made + (quantityMade.value ?? 0)) / props.session.carry.units_per_artefact + 1e-6) : 0)
 const looseWarning = ref<string | null>(null)
 const looseConfirmed = ref(false)
+const rateCheck = ref<string | null>(null)
+const rateConfirmed = ref(false)
 watch(quantityMade, () => {
     looseConfirmed.value = false
     looseWarning.value = null
+    rateConfirmed.value = false
+    rateCheck.value = null
 })
 const movedOn = computed(() => props.session.carry ? Math.max(0, props.session.carry.quantity - closedAt.value) : 0)
 const canMove = computed(() => !props.session.carry || (closedAt.value >= 1 && movedOn.value > 0))
@@ -267,6 +271,7 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
             quantity_rejected: quantityRejected.value || 0,
             outcome,
             ...(looseConfirmed.value ? { loose_confirmed: true } : {}),
+            ...(rateConfirmed.value ? { rate_confirmed: true } : {}),
             ...(rawMaterialBatches.value.length ? { raw_material_batches: rawMaterialBatches.value.map((batch) => ({ raw_material_id: batch.raw_material_id, batch_code: batch.batch_code?.trim() || null, expiry_date: batch.expiry_date })) } : {}),
             ...(finishedBeforeShiftEnd.value ? { finished_before_shift_end: true } : {}),
             ...(manager ?? {}),
@@ -278,6 +283,8 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
                 rateWarning.value = null
                 looseWarning.value = null
                 looseConfirmed.value = false
+                rateCheck.value = null
+                rateConfirmed.value = false
                 pendingOutcome.value = null
                 quantityMade.value = null
                 quantityRejected.value = 0
@@ -287,6 +294,9 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
                 managerPin.value = ''
                 if (errors.loose) {
                     looseWarning.value = errors.loose
+                    askManager.value = false
+                } else if (errors.rate_check) {
+                    rateCheck.value = errors.rate_check
                     askManager.value = false
                 } else if (errors.rate) {
                     rateWarning.value = errors.rate
@@ -554,6 +564,22 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
                     :disabled="processing" @click="looseConfirmed = true; looseWarning = null; closeSession(pendingOutcome)">
                     <FontAwesomeIcon :icon="['fal', 'exclamation-triangle']" fixed-width class="text-amber-500" aria-hidden="true" />
                     {{ ctrans('Yes, close with loose pieces') }}
+                </button>
+            </div>
+        </div>
+
+        <div v-if="rateCheck && !askOutcome" class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
+            <div class="text-2xl font-semibold text-amber-800">{{ rateCheck }}</div>
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                <button type="button" class="rounded-lg border border-gray-300 bg-white text-gray-700 text-xl font-semibold py-4 px-3"
+                    @click="rateCheck = null">
+                    <FontAwesomeIcon :icon="['fal', 'times']" fixed-width class="text-red-500" aria-hidden="true" />
+                    {{ ctrans('Back, correct the quantity') }}
+                </button>
+                <button type="button" class="rounded-lg border border-gray-300 bg-white text-gray-700 text-xl font-semibold py-4 px-3 disabled:opacity-40"
+                    :disabled="processing" @click="rateConfirmed = true; rateCheck = null; closeSession(pendingOutcome)">
+                    <FontAwesomeIcon :icon="['fal', 'exclamation-triangle']" fixed-width class="text-amber-500" aria-hidden="true" />
+                    {{ ctrans('Yes, the quantity is right') }}
                 </button>
             </div>
         </div>

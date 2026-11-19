@@ -2288,7 +2288,12 @@ test('a simple board finishes a producing card dropped on Done and receives it i
     $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
     $orgStock->update(['quantity_in_locations' => 0]);
     $artefact = StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'SMPD-'.rand(1000, 9999), 'name' => 'Simple board done tea', 'org_stock_id' => $orgStock->id]);
-    \App\Actions\Production\Artefact\AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => stepTestManufactureTask($production, 'TEA', 'Tea pouches')->id]);
+    $teaPouches = stepTestManufactureTask($production, 'TEA', 'Tea pouches');
+    \App\Actions\Production\Artefact\AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => $teaPouches->id]);
+    foreach (\App\Models\Production\ArtefactManufactureTask::where('artefact_id', $artefact->id)->get() as $step) {
+        $step->manufactureTask->update(['is_piece_rate' => true]);
+        \App\Actions\Production\Artefact\SetArtefactStepTarget::run($artefact, $step, 60);
+    }
 
     $line = \App\Models\Procurement\PartnerShoppingListItem::create([
         'group_id'        => $this->group->id,
@@ -2337,6 +2342,8 @@ test('a simple board finishes a producing card dropped on Done and receives it i
             ->and($jobLine->isFinished())->toBeTrue()
             ->and((float) $jobLine->quantity_received)->toBe((float) $jobLine->quantity)
             ->and(ManufactureTaskSession::where('job_order_item_task_id', $jobLine->tasks->first()->id)->sole()->user_id)->toBe($user->id)
+            ->and((float) ManufactureTaskSession::where('job_order_item_task_id', $jobLine->tasks->first()->id)->sole()->standard_rate)->toBe(60.0)
+            ->and(ManufactureTaskSession::where('job_order_item_task_id', $jobLine->tasks->first()->id)->sole()->paidHours())->toEqual(0)
             ->and(\App\Models\Inventory\LocationOrgStock::where('location_id', $factoryLocation->id)->where('org_stock_id', $orgStock->id)->exists())->toBeTrue()
             ->and($lanes()['Done'])->not->toBeEmpty()
             ->and($lanes()['Producing'])->toBe([]);

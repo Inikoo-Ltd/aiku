@@ -610,6 +610,7 @@ test('making more than the job asked for needs a manager badge or pin and grows 
 });
 
 test('closing a step at ten times its target rate needs a manager badge or pin', function () {
+    ensurePayBandZero($this->production);
     $forming = stepTestManufactureTask($this->production, 'FORM', 'Forming');
     $forming->update(['is_piece_rate' => true, 'standard_rate' => 92]);
     $this->artefact->manufactureTasks()->sync([$forming->id => ['position' => 1, 'units_per_artefact' => 1]]);
@@ -692,6 +693,49 @@ test('closing a step at ten times its target rate needs a manager badge or pin',
     $session->update(['employee_id' => null, 'started_at' => now()->subMinutes(40)]);
     CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 180]);
     expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+});
+
+test('without pay bands the artisan confirms an impossible rate on the tablet, and a simple board drop is never checked', function () {
+    $production = StoreProduction::make()->action($this->organisation, ['code' => 'NOBND'.rand(100, 999), 'name' => 'No pay bands']);
+    $forming    = stepTestManufactureTask($production, 'NBF'.rand(1000, 9999), 'Forming');
+    $forming->update(['is_piece_rate' => true, 'standard_rate' => 60]);
+    $artefact = StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'NB-'.rand(1000, 9999), 'name' => 'No bands tea']);
+    $artefact->manufactureTasks()->sync([$forming->id => ['position' => 1, 'units_per_artefact' => 1]]);
+    $user = $this->guest->getUser();
+
+    $jobOrder = StoreJobOrder::make()->action($production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 620]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $item->tasks()->first();
+
+    expect($production->paysBySpeed())->toBeFalse();
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    $session->update(['started_at' => now()->subSeconds(6)]);
+    try {
+        CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 300]);
+        $this->fail('an impossible rate closed without being confirmed');
+    } catch (ValidationException $e) {
+        expect($e->errors())->toHaveKey('rate_check')->not->toHaveKey('rate')
+            ->and($e->errors()['rate_check'][0])->toContain('against a target of 60, check it and confirm');
+    }
+    expect($session->refresh()->state)->toBe(ManufactureTaskSessionStateEnum::OPEN);
+
+    CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 300, 'rate_confirmed' => true]);
+    expect((float) $task->refresh()->quantity_made)->toBe(300.0);
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    CloseManufactureTaskSession::make()->fromBoard()->action($session->refresh(), ['quantity_made' => 320]);
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+
+    ensurePayBandZero($production);
+    $jobOrder = StoreJobOrder::make()->action($production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 300]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $session = StartManufactureTaskSession::make()->action($user, $item->tasks()->first());
+    $session->update(['started_at' => now()->subSeconds(6)]);
+    expect(fn () => CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 300, 'rate_confirmed' => true]))
+        ->toThrow(ValidationException::class, 'against a target of 60, a manager must confirm it');
 });
 
 test('a quantity only step records who made it and when with no hours and no rate prompt, an hourly step without target never asks a manager', function () {

@@ -25905,5 +25905,13 @@
     "Warehouse :warehouse · Factory :factory": "仓库 :warehouse · 工厂 :factory",
     "Wrong Weights": "重量错误",
     "material": "物料",
-    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count 个 SKO，:name，:time|:count 个 SKO，:name，:time"
+    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count 个 SKO，:name，:time|:count 个 SKO，:name，:time",
+    ":made in :minutes min is :rate per hour against a target of :target, :confirm": ":minutes 分钟内完成 :made，即每小时 :rate，目标为 :target，:confirm",
+    ":made on :step, a step with no target, by someone paid by the hour: :confirm": ":made 在 :step（无目标的步骤）由按小时计薪的人员完成：:confirm",
+    "a manager must confirm it": "需要经理确认",
+    "check it and confirm": "请检查并确认",
+    "Back, correct the quantity": "返回，更正数量",
+    "Yes, the quantity is right": "是的，数量正确",
+    "Too fast": "过快",
+    "More than ten times the target: check the quantity and the times": "超过目标的十倍：请检查数量和时间"
 }

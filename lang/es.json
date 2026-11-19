@@ -26948,5 +26948,13 @@
     ":count over target": ":count por encima del objetivo",
     ":count under target": ":count por debajo del objetivo",
     "Matches the target": "Coincide con el objetivo",
-    "target": "objetivo"
+    "target": "objetivo",
+    ":made in :minutes min is :rate per hour against a target of :target, :confirm": ":made en :minutes min son :rate por hora frente a un objetivo de :target, :confirm",
+    ":made on :step, a step with no target, by someone paid by the hour: :confirm": ":made en :step, un paso sin objetivo, por alguien que cobra por horas: :confirm",
+    "a manager must confirm it": "un responsable debe confirmarlo",
+    "check it and confirm": "revísalo y confírmalo",
+    "Back, correct the quantity": "Volver, corregir la cantidad",
+    "Yes, the quantity is right": "Sí, la cantidad es correcta",
+    "Too fast": "Demasiado rápido",
+    "More than ten times the target: check the quantity and the times": "Más de diez veces el objetivo: revisa la cantidad y los tiempos"
 }

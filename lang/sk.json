@@ -26969,5 +26969,13 @@
     ":count over target": ":count nad cieľom",
     ":count under target": ":count pod cieľom",
     "Matches the target": "Zodpovedá cieľu",
-    "target": "cieľ"
+    "target": "cieľ",
+    ":made in :minutes min is :rate per hour against a target of :target, :confirm": ":made za :minutes min je :rate za hodinu pri cieli :target, :confirm",
+    ":made on :step, a step with no target, by someone paid by the hour: :confirm": ":made pri kroku :step, ktorý nemá cieľ, od niekoho plateného hodinovo: :confirm",
+    "a manager must confirm it": "musí to potvrdiť manažér",
+    "check it and confirm": "skontrolujte to a potvrďte",
+    "Back, correct the quantity": "Späť, opraviť množstvo",
+    "Yes, the quantity is right": "Áno, množstvo je správne",
+    "Too fast": "Príliš rýchlo",
+    "More than ten times the target: check the quantity and the times": "Viac ako desaťnásobok cieľa: skontrolujte množstvo a časy"
 }

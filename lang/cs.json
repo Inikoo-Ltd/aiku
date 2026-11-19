@@ -27077,5 +27077,13 @@
     "the customer's language": "jazyk zákazníka",
     "Your account with us was opened on :date.": "Váš účet u nás byl založen :date.",
     "Credit on your account: :amount.": "Kredit na vašem účtu: :amount.",
-    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Při placení se nejprve použije váš kredit a zbytek zaplatíte zvoleným způsobem platby."
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Při placení se nejprve použije váš kredit a zbytek zaplatíte zvoleným způsobem platby.",
+    ":made in :minutes min is :rate per hour against a target of :target, :confirm": ":made za :minutes min je :rate za hodinu při cíli :target, :confirm",
+    ":made on :step, a step with no target, by someone paid by the hour: :confirm": ":made u kroku :step, který nemá cíl, od někoho placeného hodinově: :confirm",
+    "a manager must confirm it": "musí to potvrdit manažer",
+    "check it and confirm": "zkontrolujte to a potvrďte",
+    "Back, correct the quantity": "Zpět, opravit množství",
+    "Yes, the quantity is right": "Ano, množství je správné",
+    "Too fast": "Příliš rychle",
+    "More than ten times the target: check the quantity and the times": "Více než desetinásobek cíle: zkontrolujte množství a časy"
 }

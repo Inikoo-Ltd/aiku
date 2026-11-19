@@ -107,7 +107,7 @@ class FinishJobOrderFromBoard extends OrgAction
             ->first() ?? StartManufactureTaskSession::make()->action($user, $task);
 
         $task->refresh();
-        CloseManufactureTaskSession::make()->action($session, [
+        CloseManufactureTaskSession::make()->fromBoard()->action($session, [
             'quantity_made' => max(0, round((float) $task->quantity_required - (float) $task->quantity_made, 3)),
         ]);
     }

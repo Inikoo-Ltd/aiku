@@ -50,6 +50,19 @@ class CloseManufactureTaskSession extends OrgAction
     use ResolvesEmployeeByCode;
     use WithSessionJobOrderLocks;
 
+    private bool $recordedFromBoard = false;
+
+    /**
+     * A simple board records what is left of a card when it is dropped on Done, with no timer: the session
+     * has no hours, so no time is paid and there is no speed to check (HELP-4822).
+     */
+    public function fromBoard(): static
+    {
+        $this->recordedFromBoard = true;
+
+        return $this;
+    }
+
     public function handle(ManufactureTaskSession $session, array $modelData): ManufactureTaskSession
     {
         return $this->withSessionLocked($session->id, fn (ManufactureTaskSession $session) => $this->jobOrderIdsTouched($session), function (ManufactureTaskSession $session) use ($modelData) {
@@ -70,7 +83,7 @@ class CloseManufactureTaskSession extends OrgAction
                 $session->fill(['shift_end_answer' => 'finished', 'shift_end_resolved_at' => now()]);
             }
             $isQuantityOnly = !$session->isNonProductive() && $session->manufactureTask?->is_quantity_only;
-            if ($isQuantityOnly) {
+            if ($isQuantityOnly || $this->recordedFromBoard) {
                 $session->started_at = $endedAt;
             }
             CalculateManufactureTaskSessionBreakMinutes::run($session, $endedAt);
@@ -154,28 +167,8 @@ class CloseManufactureTaskSession extends OrgAction
                 $session->activity_type = ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT;
             }
             $payType = $session->employee?->artisan_pay_type ?? ArtisanPayTypeEnum::PIECE_RATE;
-            if (!$isQuantityOnly && $this->isImpossibleRate($session)) {
-                if (empty($modelData['manager_code'])) {
-                    throw ValidationException::withMessages([
-                        'rate' => __(':made in :minutes min is :rate per hour against a target of :target, a manager must confirm it', [
-                            'made'    => (float) $session->quantity_made,
-                            'minutes' => round($session->paidHours() * 60, 1),
-                            'rate'    => number_format((float) $session->quantity_made / max($session->paidHours(), 1 / 3600)),
-                            'target'  => (float) $session->standard_rate,
-                        ]),
-                    ]);
-                }
-                $this->overproductionManager($session, $modelData['manager_code']);
-            } elseif (!$isQuantityOnly && $this->isUncheckedHourlyPieceWork($session, $payType)) {
-                if (empty($modelData['manager_code'])) {
-                    throw ValidationException::withMessages([
-                        'rate' => __(':made on :step, a step with no target, by someone paid by the hour: a manager must confirm it', [
-                            'made' => (float) $session->quantity_made,
-                            'step' => $session->stepName(),
-                        ]),
-                    ]);
-                }
-                $this->overproductionManager($session, $modelData['manager_code']);
+            if (!$isQuantityOnly && !$this->recordedFromBoard) {
+                $this->checkRate($session, $payType, $modelData, $authorisedBy);
             }
             $this->applyPayTerms($session, $payType);
             $session->save();
@@ -631,6 +624,48 @@ class CloseManufactureTaskSession extends OrgAction
     }
 
     /**
+     * A speed the floor never reaches, or piece work by an hourly artisan on a step with no target, is
+     * confirmed by a manager where artisans are paid through pay bands, and by the artisan, or the manager who
+     * authorised the overproduction, elsewhere (HELP-4822).
+     */
+    private function checkRate(ManufactureTaskSession $session, ArtisanPayTypeEnum $payType, array $modelData, ?Employee $authorisedBy): void
+    {
+        $byManager = $session->production->paysBySpeed();
+        $confirm   = $byManager ? __('a manager must confirm it') : __('check it and confirm');
+
+        if ($this->isImpossibleRate($session)) {
+            $warning = __(':made in :minutes min is :rate per hour against a target of :target, :confirm', [
+                'made'    => (float) $session->quantity_made,
+                'minutes' => round($session->paidHours() * 60, 1),
+                'rate'    => number_format((float) $session->quantity_made / max($session->paidHours(), 1 / 3600)),
+                'target'  => (float) $session->standard_rate,
+                'confirm' => $confirm,
+            ]);
+        } elseif ($this->isUncheckedHourlyPieceWork($session, $payType)) {
+            $warning = __(':made on :step, a step with no target, by someone paid by the hour: :confirm', [
+                'made'    => (float) $session->quantity_made,
+                'step'    => $session->stepName(),
+                'confirm' => $confirm,
+            ]);
+        } else {
+            return;
+        }
+
+        if (!$byManager) {
+            if (empty($modelData['rate_confirmed']) && !$authorisedBy) {
+                throw ValidationException::withMessages(['rate_check' => $warning]);
+            }
+
+            return;
+        }
+
+        if (empty($modelData['manager_code'])) {
+            throw ValidationException::withMessages(['rate' => $warning]);
+        }
+        $this->overproductionManager($session, $modelData['manager_code']);
+    }
+
+    /**
      * Ten times the step's target never happens on the floor (real sessions top out near six), so it is
      * a quantity tapped in for work not done in this session, like a step closed seconds after it opened.
      */
@@ -727,6 +762,7 @@ class CloseManufactureTaskSession extends OrgAction
             'quantity_rejected'      => ['sometimes', 'numeric', 'min:0'],
             'outcome'                => ['sometimes', 'nullable', Rule::in(['complete', 'carry_over'])],
             'loose_confirmed'        => ['sometimes', 'boolean'],
+            'rate_confirmed'         => ['sometimes', 'boolean'],
             'raw_material_batches'                   => ['sometimes', 'nullable', 'array', 'max:50'],
             'raw_material_batches.*.raw_material_id' => ['required', 'integer'],
             'raw_material_batches.*.batch_code'      => ['nullable', 'string', 'max:64'],
