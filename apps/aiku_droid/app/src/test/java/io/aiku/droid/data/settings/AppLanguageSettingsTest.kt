@@ -84,6 +84,21 @@ class AppLanguageSettingsTest {
     }
 
     @Test
+    fun `the screen is rebuilt by the app only when the language changed and the system does not apply it`() {
+        val deviceSettings = AppLanguageSettings(deviceStore())
+        val systemStore = SystemStore(phone = listOf("en-GB"))
+        val systemSettings = AppLanguageSettings(systemStore)
+
+        assertFalse(deviceSettings.mustRecreate(shown = AppLanguage.German))
+        deviceSettings.choose(AppLanguage.French)
+        systemSettings.choose(AppLanguage.French)
+
+        assertTrue(deviceSettings.mustRecreate(shown = AppLanguage.German))
+        assertFalse(deviceSettings.mustRecreate(shown = AppLanguage.French))
+        assertFalse(systemSettings.mustRecreate(shown = AppLanguage.English))
+    }
+
+    @Test
     fun `a language changed in the system settings is picked up on refresh`() {
         val store = SystemStore(phone = listOf("en-GB"))
         val settings = AppLanguageSettings(store)

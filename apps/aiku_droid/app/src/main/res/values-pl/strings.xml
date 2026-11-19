@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Ten tydzień %1$s</string>
     <string name="profile_kicker">Konto</string>
     <string name="profile_language">Język</string>
-    <string name="profile_language_intro">Zmienia język aplikacji tylko na tym telefonie. Język konta Aiku, powiadomienia, nazwy produktów, nazwy klientów i notatki pozostają bez zmian.</string>
+    <string name="profile_language_intro">Zmienia język konta Aiku w wersji internetowej i w aplikacji. Powiadomienia też są wysyłane w tym języku. Nazwy produktów, nazwy klientów i notatki pozostają bez zmian.</string>
     <string name="profile_mode">Tryb</string>
     <string name="profile_mode_caption">Tryb ciemny jest łagodniejszy dla oczu w słabo oświetlonych alejkach i na nocnych zmianach.</string>
     <string name="profile_mode_dark">Ciemny</string>

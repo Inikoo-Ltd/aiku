@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Den här veckan %1$s</string>
     <string name="profile_kicker">Konto</string>
     <string name="profile_language">Språk</string>
-    <string name="profile_language_intro">Ändrar appens språk endast på den här telefonen. Språket för ditt Aiku-konto, aviseringar, produktnamn, kundnamn och anteckningar förblir oförändrade.</string>
+    <string name="profile_language_intro">Ändrar språket för ditt Aiku-konto, på webben och i appen. Aviseringar följer det också. Produktnamn, kundnamn och anteckningar förblir oförändrade.</string>
     <string name="profile_mode">Läge</string>
     <string name="profile_mode_caption">Mörkt läge är skonsammare för ögonen i dunkla gångar och på nattskift.</string>
     <string name="profile_mode_dark">Mörkt</string>

@@ -55,6 +55,18 @@ class AppLanguageTest {
     }
 
     @Test
+    fun `an account language matches only one of the 23 codes exactly`() {
+        assertEquals(AppLanguage.German, AppLanguage.ofAccountCode("de"))
+        assertEquals(AppLanguage.ChineseSimplified, AppLanguage.ofAccountCode("zh-Hans"))
+        assertEquals(AppLanguage.Indonesian, AppLanguage.ofAccountCode("id"))
+        assertNull(AppLanguage.ofAccountCode("de-AT"))
+        assertNull(AppLanguage.ofAccountCode("zh"))
+        assertNull(AppLanguage.ofAccountCode("th"))
+        assertNull(AppLanguage.ofAccountCode(""))
+        assertNull(AppLanguage.ofAccountCode(null))
+    }
+
+    @Test
     fun `each language is listed by its own name`() {
         assertEquals(R.string.app_language_sk_native, AppLanguage.Slovak.nativeName)
         assertEquals(R.string.app_language_es_native, AppLanguage.Spanish.nativeName)

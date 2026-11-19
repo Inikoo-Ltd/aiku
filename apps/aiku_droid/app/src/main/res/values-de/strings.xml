@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Diese Woche %1$s</string>
     <string name="profile_kicker">Konto</string>
     <string name="profile_language">Sprache</string>
-    <string name="profile_language_intro">Ändert die App-Sprache nur auf diesem Telefon. Die Sprache Ihres Aiku-Kontos, Benachrichtigungen, Produktnamen, Kundennamen und Notizen bleiben unverändert.</string>
+    <string name="profile_language_intro">Ändert die Sprache Ihres Aiku-Kontos im Web und in der App. Auch Benachrichtigungen folgen ihr. Produktnamen, Kundennamen und Notizen bleiben unverändert.</string>
     <string name="profile_mode">Modus</string>
     <string name="profile_mode_caption">Dunkel schont die Augen in schwach beleuchteten Gängen und in Nachtschichten.</string>
     <string name="profile_mode_dark">Dunkel</string>

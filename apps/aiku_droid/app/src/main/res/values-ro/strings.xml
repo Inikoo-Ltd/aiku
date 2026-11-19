@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Săptămâna aceasta %1$s</string>
     <string name="profile_kicker">Cont</string>
     <string name="profile_language">Limbă</string>
-    <string name="profile_language_intro">Schimbă limba aplicației doar pe acest telefon. Limba contului Aiku, notificările, numele produselor, numele clienților și notele rămân neschimbate.</string>
+    <string name="profile_language_intro">Schimbă limba contului Aiku, pe web și în aplicație. Și notificările o urmează. Numele produselor, numele clienților și notele rămân neschimbate.</string>
     <string name="profile_mode">Mod</string>
     <string name="profile_mode_caption">Modul întunecat este mai blând cu ochii pe culoarele slab luminate și în turele de noapte.</string>
     <string name="profile_mode_dark">Întunecat</string>

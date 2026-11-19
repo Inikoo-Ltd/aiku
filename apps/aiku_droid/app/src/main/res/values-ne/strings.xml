@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">यो हप्ता %1$s</string>
     <string name="profile_kicker">खाता</string>
     <string name="profile_language">भाषा</string>
-    <string name="profile_language_intro">यो फोनमा मात्र एपको भाषा परिवर्तन गर्छ। तपाईंको Aiku खाताको भाषा, सूचनाहरू, उत्पादनका नाम, ग्राहकका नाम र नोटहरू जस्ताको तस्तै रहन्छन्।</string>
+    <string name="profile_language_intro">तपाईंको Aiku खाताको भाषा वेब र एप दुवैमा परिवर्तन गर्छ। सूचनाहरू पनि यही भाषामा आउँछन्। उत्पादनका नाम, ग्राहकका नाम र नोटहरू जस्ताको तस्तै रहन्छन्।</string>
     <string name="profile_mode">मोड</string>
     <string name="profile_mode_caption">मधुरो उज्यालो भएका गल्ली र रातको सिफ्टमा डार्क मोड आँखाका लागि सजिलो हुन्छ।</string>
     <string name="profile_mode_dark">डार्क</string>

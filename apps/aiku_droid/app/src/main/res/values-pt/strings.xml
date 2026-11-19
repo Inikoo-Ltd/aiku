@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Esta semana %1$s</string>
     <string name="profile_kicker">Conta</string>
     <string name="profile_language">Idioma</string>
-    <string name="profile_language_intro">Altera o idioma da aplicação apenas neste telemóvel. O idioma da sua conta Aiku, as notificações, os nomes de produtos, os nomes de clientes e as notas ficam como estão.</string>
+    <string name="profile_language_intro">Altera o idioma da sua conta Aiku, na web e na aplicação. As notificações também o seguem. Os nomes de produtos, os nomes de clientes e as notas ficam como estão.</string>
     <string name="profile_mode">Modo</string>
     <string name="profile_mode_caption">O modo escuro cansa menos a vista em corredores com pouca luz e nos turnos da noite.</string>
     <string name="profile_mode_dark">Escuro</string>

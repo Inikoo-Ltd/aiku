@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Цього тижня %1$s</string>
     <string name="profile_kicker">Обліковий запис</string>
     <string name="profile_language">Мова</string>
-    <string name="profile_language_intro">Змінює мову застосунку лише на цьому телефоні. Мова вашого облікового запису Aiku, сповіщення, назви продуктів, імена клієнтів і примітки залишаються без змін.</string>
+    <string name="profile_language_intro">Змінює мову вашого облікового запису Aiku — у вебверсії та в застосунку. Сповіщення теж надходять цією мовою. Назви продуктів, імена клієнтів і примітки залишаються без змін.</string>
     <string name="profile_mode">Режим</string>
     <string name="profile_mode_caption">Темний режим легше для очей у темних проходах і на нічних змінах.</string>
     <string name="profile_mode_dark">Темний</string>

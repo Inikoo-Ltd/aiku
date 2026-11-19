@@ -8,10 +8,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import io.aiku.droid.data.settings.AppLanguage
 import io.aiku.droid.data.settings.DeviceAppLocales
 import io.aiku.droid.push.PushData
 import io.aiku.droid.ui.app.SignedInApp
@@ -22,10 +26,13 @@ import io.aiku.droid.ui.scan.HardwareScanWindowCallback
 import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.update.UpdateRequiredScreen
 import io.aiku.droid.update.AppUpdate
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     private val container: AppContainer get() = (application as AikuDroidApplication).container
+
+    private lateinit var shownLanguage: AppLanguage
 
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(DeviceAppLocales.localised(newBase))
@@ -34,6 +41,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         container.language.refresh()
+        shownLanguage = container.language.current.value
+        recreateWhenLanguageChanges()
         enableEdgeToEdge()
         if (savedInstanceState == null) {
             receivePushTap(intent)
@@ -58,12 +67,25 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         container.appVersions.check()
+        container.accountLanguage.onForeground()
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         receivePushTap(intent)
+    }
+
+    private fun recreateWhenLanguageChanges() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                container.language.current.collect {
+                    if (container.language.mustRecreate(shown = shownLanguage)) {
+                        recreate()
+                    }
+                }
+            }
+        }
     }
 
     private fun receivePushTap(intent: Intent?) {

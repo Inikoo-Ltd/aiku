@@ -38,9 +38,11 @@ import io.aiku.droid.data.session.KeystoreCipher
 import io.aiku.droid.data.session.RecentSearches
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.data.session.WarehouseCache
+import io.aiku.droid.data.settings.AccountLanguageSync
 import io.aiku.droid.data.settings.AppLanguageSettings
 import io.aiku.droid.data.settings.DeviceAppLocales
 import io.aiku.droid.data.settings.DeviceSettings
+import io.aiku.droid.data.settings.PreferencesPendingLanguage
 import io.aiku.droid.push.FirebasePushTokenSource
 import io.aiku.droid.push.NotificationPrompt
 import io.aiku.droid.push.PushInbox
@@ -162,11 +164,20 @@ class AppContainer(context: Context) {
         clock = SystemClock::elapsedRealtime,
     )
 
+    val accountLanguage = AccountLanguageSync(
+        settings = language,
+        api = authApi,
+        sessions = sessions,
+        pending = PreferencesPendingLanguage(context.getSharedPreferences(ACCOUNT_LANGUAGE_PREFERENCES, Context.MODE_PRIVATE)),
+        scope = applicationScope,
+    )
+
     init {
         if (sessions.session.value == null) {
             warehouseCache.clear()
             recentSearches.clear()
         }
+        accountLanguage.start()
     }
 
     fun startPush() {
@@ -184,6 +195,7 @@ class AppContainer(context: Context) {
         const val PUSH_PREFERENCES = "aiku_push"
         const val RECENT_SEARCHES_PREFERENCES = "aiku_recent_searches"
         const val UPDATE_PREFERENCES = "aiku_updates"
+        const val ACCOUNT_LANGUAGE_PREFERENCES = "aiku_account_language"
         const val SESSION_KEY_ALIAS = "aiku_session_key"
         const val MAX_DEVICE_NAME_LENGTH = 100
     }

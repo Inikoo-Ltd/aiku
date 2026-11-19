@@ -239,4 +239,37 @@ class AuthResponsesTest {
         assertEquals(ProfileResult.Unavailable, AuthResponses.parseProfile(401, """{"message":"Unauthenticated."}"""))
         assertEquals(ProfileResult.Unavailable, AuthResponses.parseProfile(500, "oops"))
     }
+
+    @Test
+    fun `a profile carries the Aiku account language`() {
+        val body = """{"data":{"id":7,"username":"jane","language":{"code":"de","name":"Deutsch"},"organisation":null}}"""
+
+        val profile = (AuthResponses.parseProfile(200, body) as ProfileResult.Loaded).profile
+
+        assertEquals(ProfileLanguage(code = "de", name = "Deutsch"), profile.language)
+    }
+
+    @Test
+    fun `a profile without a language, or from an older server, has none`() {
+        val withNull = """{"data":{"id":7,"username":"jane","language":null}}"""
+        val withoutKey = """{"data":{"id":7,"username":"jane"}}"""
+        val withoutName = """{"data":{"id":7,"username":"jane","language":{"code":"zh-Hans","name":null}}}"""
+
+        assertEquals(null, (AuthResponses.parseProfile(200, withNull) as ProfileResult.Loaded).profile.language)
+        assertEquals(null, (AuthResponses.parseProfile(200, withoutKey) as ProfileResult.Loaded).profile.language)
+        assertEquals(ProfileLanguage(code = "zh-Hans"), (AuthResponses.parseProfile(200, withoutName) as ProfileResult.Loaded).profile.language)
+    }
+
+    @Test
+    fun `the language change sends the account language code`() {
+        assertEquals("""{"language":"zh-Hans"}""", AuthResponses.json.encodeToString(LanguageUpdateRequest("zh-Hans")))
+    }
+
+    @Test
+    fun `a language change is saved, refused by the web or failed`() {
+        assertEquals(LanguageUpdateResult.Saved, AuthResponses.parseLanguageUpdate(200))
+        assertEquals(LanguageUpdateResult.Rejected, AuthResponses.parseLanguageUpdate(422))
+        assertEquals(LanguageUpdateResult.ServerError(500), AuthResponses.parseLanguageUpdate(500))
+        assertEquals(LanguageUpdateResult.ServerError(401), AuthResponses.parseLanguageUpdate(401))
+    }
 }

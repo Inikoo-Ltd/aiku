@@ -530,7 +530,7 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
         composable<ProfileRoute> {
             val profileDetailsViewModel: ProfileDetailsViewModel = viewModel(
                 factory = viewModelFactory {
-                    initializer { ProfileDetailsViewModel(container.authApi, container.sessions) }
+                    initializer { ProfileDetailsViewModel(container.accountLanguage, container.sessions) }
                 },
             )
             val profileDetails by profileDetailsViewModel.profile.collectAsStateWithLifecycle()
@@ -547,7 +547,7 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
             )
         }
         composable<AppearanceRoute> { AppearanceScreen() }
-        composable<LanguageRoute> { LanguageScreen(settings = container.language) }
+        composable<LanguageRoute> { LanguageScreen(settings = container.language, onChoose = container.accountLanguage::choose) }
         composable<ChangePasswordRoute> {
             val changePasswordViewModel: ChangePasswordViewModel = viewModel(
                 factory = viewModelFactory {

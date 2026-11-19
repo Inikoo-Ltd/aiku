@@ -1756,7 +1756,7 @@
     <string name="profile_clocking_this_week">Deze week %1$s</string>
     <string name="profile_kicker">Account</string>
     <string name="profile_language">Taal</string>
-    <string name="profile_language_intro">Wijzigt de taal van de app alleen op deze telefoon. De taal van je Aiku-account, meldingen, productnamen, klantnamen en notities blijven zoals ze zijn.</string>
+    <string name="profile_language_intro">Wijzigt de taal van je Aiku-account, op het web en in de app. Meldingen volgen die taal ook. Productnamen, klantnamen en notities blijven zoals ze zijn.</string>
     <string name="profile_mode">Modus</string>
     <string name="profile_mode_caption">Donker is prettiger voor de ogen in schemerige gangpaden en tijdens nachtdiensten.</string>
     <string name="profile_mode_dark">Donker</string>

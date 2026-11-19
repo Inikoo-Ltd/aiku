@@ -7,6 +7,7 @@ import io.aiku.droid.data.api.PasswordChange
 import io.aiku.droid.data.api.PasswordReset
 import io.aiku.droid.data.api.PasswordResult
 import io.aiku.droid.data.api.ProfileResult
+import io.aiku.droid.data.api.ProfileSource
 import io.aiku.droid.data.api.StaffProfile
 import io.aiku.droid.ui.inventory.FakeSessions
 import kotlinx.coroutines.CompletableDeferred
@@ -40,7 +41,7 @@ class ProfileDetailsViewModelTest {
     @Test
     fun `pulling to refresh loads the profile again and keeps the old one until it arrives`() {
         api.profile = StaffProfile(id = 42, username = "stock", position = "Picker")
-        val details = ProfileDetailsViewModel(api, FakeSessions())
+        val details = ProfileDetailsViewModel(ProfileSource { token -> api.profile(token) }, FakeSessions())
         assertFalse(details.isRefreshing.value)
         val gate = CompletableDeferred<Unit>()
         api.gate = gate

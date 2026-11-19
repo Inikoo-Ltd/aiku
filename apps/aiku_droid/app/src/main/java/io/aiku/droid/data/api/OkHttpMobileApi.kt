@@ -91,6 +91,11 @@ class OkHttpMobileApi(
             ?.let { (statusCode, responseBody) -> AuthResponses.parseProfile(statusCode, responseBody) }
             ?: ProfileResult.Unavailable
 
+    override suspend fun updateLanguage(token: String, code: String): LanguageUpdateResult =
+        execute(patch("$mobileApiUrl/profile/language", AuthResponses.json.encodeToString(LanguageUpdateRequest(code)), token))
+            ?.let { (statusCode, _) -> AuthResponses.parseLanguageUpdate(statusCode) }
+            ?: LanguageUpdateResult.Unreachable
+
     override suspend fun warehouses(token: String): WarehousesResult =
         execute(Request.Builder().url("$mobileApiUrl/warehouses").get().header("Authorization", "Bearer $token").build())
             ?.let { (statusCode, responseBody) -> WarehouseResponses.parse(statusCode, responseBody) }

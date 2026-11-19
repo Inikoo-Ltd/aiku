@@ -50,6 +50,8 @@ enum class AppLanguage(val tag: String, @StringRes val nativeName: Int, @StringR
         }
 
         fun defaultFor(phoneTags: List<String>): AppLanguage = phoneTags.firstNotNullOfOrNull(::ofTag) ?: English
+
+        fun ofAccountCode(code: String?): AppLanguage? = entries.firstOrNull { it.tag == code }
     }
 }
 
@@ -81,6 +83,8 @@ class AppLanguageSettings(private val store: AppLocaleStore) {
     fun refresh() {
         mutableCurrent.value = resolve()
     }
+
+    fun mustRecreate(shown: AppLanguage): Boolean = !store.isAppliedBySystem && mutableCurrent.value != shown
 
     private fun resolve(): AppLanguage = AppLanguage.ofTag(store.chosenTag) ?: AppLanguage.defaultFor(store.phoneTags)
 }

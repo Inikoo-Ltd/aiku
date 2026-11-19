@@ -67,5 +67,5 @@
     <string name="profile_switcher_keep">Keep %1$s</string>
     <string name="profile_switcher_switch_to">Switch to %1$s</string>
 
-    <string name="profile_language_intro">Changes the app language on this phone only. Your Aiku account language, notifications, product names, customer names and notes stay as they are.</string>
+    <string name="profile_language_intro">Changes the language of your Aiku account, on the web and in the app. Notifications follow it too. Product names, customer names and notes stay as they are.</string>
 </resources>

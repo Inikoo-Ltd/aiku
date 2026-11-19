@@ -7,11 +7,15 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val firebaseConfigured: Boolean = file("google-services.json").exists()
+val firebaseConfigured: Boolean = listOf("google-services.json", "src/debug/google-services.json", "src/release/google-services.json")
+    .any { file(it).exists() }
 
 if (firebaseConfigured) {
     apply(plugin = libs.plugins.google.services.get().pluginId)
     apply(plugin = libs.plugins.firebase.appdistribution.get().pluginId)
+    extensions.configure<com.google.gms.googleservices.GoogleServicesPlugin.GoogleServicesPluginConfig> {
+        missingGoogleServicesStrategy = com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy.WARN
+    }
 }
 
 val localProperties = Properties().apply {
