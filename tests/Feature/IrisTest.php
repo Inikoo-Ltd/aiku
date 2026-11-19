@@ -26,6 +26,8 @@ use App\Models\DevOps\AppDeployment;
 use App\Http\Middleware\DetectWebsite;
 use App\Models\Web\Website;
 use Illuminate\Http\Request;
+use App\Actions\Web\Webpage\Iris\ShowIrisFavicon;
+use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -1414,4 +1416,27 @@ test('iris website data links its live terms page, the licence Google Images rea
     $termsWebpage->update(['state' => WebpageStateEnum::LIVE]);
     expect(WebsiteIrisResource::make($this->website)->getArray()['terms_url'])->toBe($termsWebpage->fresh()->getCanonicalUrl())
         ->and($termsWebpage->fresh()->getCanonicalUrl())->toEndWith('terms-and-conditions');
+});
+
+test('favicon and apple touch icons redirect to the website icon and allow an hour of caching', function () {
+    $favicons = ['48' => 'https://media.test/icon-48.png', '180' => 'https://media.test/icon-180.png'];
+
+    foreach ([
+        'favicon.ico'                           => ['iris.iris_favicon', '48'],
+        'apple-touch-icon.png'                  => ['iris.iris_apple_touch_icon', '180'],
+        'apple-touch-icon-precomposed.png'      => ['iris.iris_apple_touch_icon', '180'],
+        'apple-touch-icon-120x120-precomposed.png' => ['iris.iris_apple_touch_icon', '180'],
+    ] as $path => [$routeName, $size]) {
+        $request = ActionRequest::create("https://www.shop.test/$path");
+        $request->merge(['favicons' => $favicons]);
+
+        $response = ShowIrisFavicon::make()->asController($request);
+
+        expect(app('router')->getRoutes()->match($request)->getName())->toBe($routeName)
+            ->and($response->getTargetUrl())->toBe($favicons[$size])
+            ->and($response->headers->get('Cache-Control'))->toBe('max-age=3600, public');
+    }
+
+    expect(app('router')->getRoutes()->match(Request::create('https://www.shop.test/apple-touch-icon-foo.png'))->getName())->toBe('iris.')
+        ->and(app('router')->getRoutes()->match(Request::create('https://www.shop.test/logo.png'))->getName())->toBe('iris.');
 });

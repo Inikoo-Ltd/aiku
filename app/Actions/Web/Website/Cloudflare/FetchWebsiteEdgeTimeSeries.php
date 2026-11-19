@@ -147,13 +147,16 @@ class FetchWebsiteEdgeTimeSeries
                     $windowTo = $windowFrom->copy()->addDays(self::DAYS_PER_QUERY - 1)->min($to);
 
                     foreach ($this->fetchZones($token, $batch, $windowFrom, $windowTo, $errors) as [$website, $zone]) {
-                        $dailyRows = $this->dailyRows($zone);
-                        $days += $this->storeDailyRows($website, $dailyRows);
+                        $dailyRows     = $this->dailyRows($zone);
+                        $refusedDates  = $this->miscountedDates($website, $dailyRows, $errors);
+                        $dailyRows     = array_diff_key($dailyRows, array_flip($refusedDates));
+                        $keptDateRows  = fn (array $rows) => array_filter($rows, fn (array $row) => !in_array($row['date'], $refusedDates, true));
+                        $days         += $this->storeDailyRows($website, $dailyRows);
                         if (array_key_exists('colo', $zone)) {
-                            $this->storeKeyedDayRows(WebsiteEdgeDatacenterDay::class, 'colo', $website, array_keys($dailyRows), $this->datacenterRows($zone));
+                            $this->storeKeyedDayRows(WebsiteEdgeDatacenterDay::class, 'colo', $website, array_keys($dailyRows), $keptDateRows($this->datacenterRows($zone)));
                         }
                         if (array_key_exists('country', $zone)) {
-                            $this->storeKeyedDayRows(WebsiteEdgeCountryDay::class, 'country', $website, array_keys($dailyRows), $this->countryRows($zone));
+                            $this->storeKeyedDayRows(WebsiteEdgeCountryDay::class, 'country', $website, array_keys($dailyRows), $keptDateRows($this->countryRows($zone)));
                         }
                         $fetchedWebsites[$website->id] = $website;
                     }
@@ -387,6 +390,33 @@ class FetchWebsiteEdgeTimeSeries
             (bool) preg_match('/bot|spider|crawl|headless|curl|wget|python|scrapy|http|java|okhttp|axios|libwww|perl|ruby|php/i', $userAgentBrowser) => 'requests_other_bots',
             default => 'requests_browsers',
         };
+    }
+
+    /**
+     * The cache and status groups count the same requests, so a day whose two totals disagree is an
+     * answer Cloudflare got wrong (on 19 Nov awgifts.eu came back with exactly 2,000,000 bypass
+     * requests for a day of about 50,000, and other zones with no cache rows at all). Such a day is
+     * not stored, so the last good copy stays until a later run gets a sound answer. Sampling makes
+     * the totals differ by a request or two, hence the margin.
+     *
+     * @param array<string, array<string, int>> $rowsByDate
+     * @param array<int, string> $errors
+     *
+     * @return array<int, string>
+     */
+    protected function miscountedDates(Website $website, array $rowsByDate, array &$errors): array
+    {
+        $refused = [];
+        foreach ($rowsByDate as $date => $metrics) {
+            $byCache  = $metrics['requests'];
+            $byStatus = $metrics['requests_2xx'] + $metrics['requests_3xx'] + $metrics['requests_4xx'] + $metrics['requests_5xx'];
+            if (abs($byCache - $byStatus) > max(100, 0.1 * max($byCache, $byStatus))) {
+                $refused[] = (string) $date;
+                $errors[]  = "$website->slug $date: Cloudflare's cache statuses add up to $byCache requests but its response statuses to $byStatus, not stored";
+            }
+        }
+
+        return $refused;
     }
 
     /**

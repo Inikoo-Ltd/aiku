@@ -42,6 +42,7 @@ use Laravel\Nightwatch\Http\Middleware\Sample;
 Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
 
 Route::get('favicon.ico', ShowIrisFavicon::class)->name('iris_favicon');
+Route::get('{icon}', ShowIrisFavicon::class)->where('icon', 'apple-touch-icon(-\d+x\d+)?(-precomposed)?\.png')->name('iris_apple_touch_icon');
 
 Route::get('{path}', function () {
     return redirect('/image_not_found.png');

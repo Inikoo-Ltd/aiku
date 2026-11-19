@@ -139,8 +139,8 @@
         "enabled": true
       },
       {
-        "description": "aiku iris: store a redirect only once Varnish serves it from its own cache: redirects Varnish passes (self-redirects, one-off answers) are never kept at the edge",
-        "expression": "(http.host eq \"__HOST__\" and http.response.code in {301 302 303 307 308} and not any(lower(http.response.headers[\"x-cache\"][*])[*] eq \"hit\"))",
+        "description": "aiku iris: store a redirect only once Varnish serves it from its own cache: redirects Varnish passes (self-redirects, one-off answers) are never kept at the edge, except /favicon.ico and /apple-touch-icon*.png, which always go to the website icon on media.aiku.io and keep their own hour",
+        "expression": "(http.host eq \"__HOST__\" and http.response.code in {301 302 303 307 308} and not any(lower(http.response.headers[\"x-cache\"][*])[*] eq \"hit\") and not (http.request.uri.path eq \"/favicon.ico\" or (starts_with(http.request.uri.path, \"/apple-touch-icon\") and ends_with(http.request.uri.path, \".png\"))))",
         "action": "set_cache_control",
         "action_parameters": {
           "no-store": {

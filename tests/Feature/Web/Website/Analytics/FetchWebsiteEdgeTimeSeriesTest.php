@@ -518,3 +518,29 @@ it('flags an edge redirect that differs from what our servers answer, or that lo
         ->and($monitor->check('https://shop.test/favicon.ico'))->toBeNull()
         ->and($monitor->check('https://shop.test/sku-31'))->toBe('ends on HTTP 404 at https://shop.test/family/sku-31');
 });
+
+it('keeps the stored day when cloudflare answers cache and response statuses that do not add up', function () {
+    $answer = fn (int $bypass, array $cacheDay29) => (['data' => ['viewer' => ['zones' => [[
+        'zoneTag' => $this->zone,
+        'cache'   => [...$cacheDay29, edgeGroup('2026-10-30', ['cacheStatus' => 'bypass', 'edgeResponseStatus' => 200], $bypass, 100)],
+        'status'  => [edgeGroup('2026-10-29', ['edgeResponseStatus' => 200], 5000), edgeGroup('2026-10-30', ['edgeResponseStatus' => 200], 4999)],
+        'agent'   => [],
+        'far'     => [],
+        'colo'    => [edgeGroup('2026-10-30', ['coloCode' => 'FRA'], $bypass)],
+    ]]]]]);
+
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::sequence()
+        ->push($answer(5000, [edgeGroup('2026-10-29', ['cacheStatus' => 'hit'], 5000, 0)]))
+        ->push($answer(2000000, []))]);
+    expect(FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-10-29'), Carbon::parse('2026-10-30'), $this->website->slug)['errors'])->toBe([]);
+
+    $result = FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-10-29'), Carbon::parse('2026-10-30'), $this->website->slug);
+
+    $records = WebsiteEdgeTimeSeries::where('website_id', $this->website->id)->where('frequency', 'daily')->firstOrFail()->records()->pluck('requests', 'period');
+
+    expect($result['errors'])->toBe([
+        $this->website->slug." 2026-10-30: Cloudflare's cache statuses add up to 2000000 requests but its response statuses to 4999, not stored",
+        $this->website->slug." 2026-10-29: Cloudflare's cache statuses add up to 0 requests but its response statuses to 5000, not stored",
+    ])->and($records->all())->toBe(['2026-10-29' => 5000, '2026-10-30' => 5000])
+        ->and(WebsiteEdgeDatacenterDay::where('website_id', $this->website->id)->where('date', '2026-10-30')->value('requests'))->toBe(5000);
+});
