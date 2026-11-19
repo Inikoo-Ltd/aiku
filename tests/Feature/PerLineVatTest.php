@@ -618,8 +618,8 @@ test('the tracking sent to faire carries the order shipping on its first trackin
         ->and($sent([$shipment('')]))->toBe([]);
 });
 
-/** HELP-3906: the shipping Faire reimburses when we ship an order ourselves is read from Faire, also after invoicing. */
-test('the shipping faire reimburses is copied onto an order with none and never rewrites one already there', function () {
+/** HELP-3906, HELP-4826: the shipping Faire reimburses when we ship an order ourselves is read from Faire, also after invoicing and when staff correct it on Faire. */
+test('the shipping faire reimburses fills an order with none, and once we shipped it ourselves follows faire also when corrected', function () {
     $order = StoreOrder::make()->action($this->customer, []);
     StoreTransaction::make()->action($order->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 1]);
 
@@ -659,6 +659,27 @@ test('the shipping faire reimburses is copied onto an order with none and never 
     $action->syncFaireShipping($order, $faireShipment(2000));
     expect((float)$order->refresh()->shipping_amount)->toBe(12.34)
         ->and($invoice->invoiceTransactions()->where('model_type', 'ShippingZone')->count())->toBe(1);
+
+    $shippedByUs = fn (int $amountMinor) => ['shipments' => [
+        ['shipping_type' => 'SHIP_WITH_FAIRE', 'maker_cost' => ['amount_minor' => 0]],
+        ['shipping_type' => 'SHIP_ON_YOUR_OWN', 'maker_cost' => ['amount_minor' => $amountMinor]],
+    ]];
+    $invoiceShipping = fn () => (float)$invoice->invoiceTransactions()->where('model_type', 'ShippingZone')->sum('net_amount');
+
+    $action->syncFaireShipping($order, $shippedByUs(2000));
+    expect((float)$order->refresh()->shipping_amount)->toBe(20.0)
+        ->and($invoiceShipping())->toBe(20.0)
+        ->and(round((float)$invoice->refresh()->net_amount - $invoiceNet, 2))->toBe(20.0)
+        ->and((float)$invoice->tax_amount)->toBe($invoiceTax)
+        ->and($invoice->invoiceTransactions()->where('model_type', 'ShippingZone')->count())->toBe(1);
+
+    $action->syncFaireShipping($order, $shippedByUs(0));
+    expect((float)$order->refresh()->shipping_amount)->toBe(0.0)
+        ->and(round((float)$order->net_amount, 2))->toBe(round($orderNet, 2))
+        ->and((float)$order->tax_amount)->toBe($orderTax)
+        ->and($invoiceShipping())->toBe(0.0)
+        ->and(round((float)$invoice->refresh()->net_amount, 2))->toBe(round($invoiceNet, 2))
+        ->and((float)$invoice->tax_amount)->toBe($invoiceTax);
 
     $invoice->delete();
 });

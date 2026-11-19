@@ -428,13 +428,17 @@ class UpdateFaireOrder extends OrgAction
     /**
      * Faire pays shipping only on orders we ship ourselves: staff enter the cost on Faire, which
      * reimburses it in the payout as shipments.maker_cost. Nobody types it in Aiku (HELP-3906).
-     * It is copied only onto an order that has no shipping yet: an amount already on an order or
-     * an issued invoice is never rewritten, and the tax stays whatever Faire stated.
+     * Once Faire has a shipment we sent on our own, its cost is mirrored onto the order and the
+     * issued invoice, also when staff correct or clear it on Faire later (HELP-4826). Without one,
+     * as on a Faire label where the shipping is the retailer's, it only fills an order that has none.
+     * The tax stays whatever Faire stated.
      */
     public function syncFaireShipping(Order $order, array $orderFaireData): void
     {
-        $faireShipping = $this->getFaireShippingAmount($orderFaireData, $order->shop);
-        if ($faireShipping < 0.01 || (float)$order->shipping_amount >= 0.01) {
+        $faireShipping  = $this->getFaireShippingAmount($orderFaireData, $order->shop);
+        $orderShipping  = (float)$order->shipping_amount;
+        $isShippedByUs  = collect(Arr::get($orderFaireData, 'shipments', []))->contains('shipping_type', 'SHIP_ON_YOUR_OWN');
+        if (abs($faireShipping - $orderShipping) < 0.01 || (!$isShippedByUs && ($faireShipping < 0.01 || $orderShipping >= 0.01))) {
             return;
         }
 
@@ -457,20 +461,22 @@ class UpdateFaireOrder extends OrgAction
         }
 
         $shippingLines = $invoice->invoiceTransactions()->where('model_type', 'ShippingZone')->get();
-        if ($shippingLines->contains(fn (InvoiceTransaction $line) => abs((float)$line->net_amount) >= 0.01)) {
+        if (abs((float)$shippingLines->sum('net_amount') - $faireShipping) < 0.01 && $shippingLines->count() <= 1) {
             return;
         }
 
         $invoiceTax = (float)$invoice->tax_amount;
-        foreach ($shippingLines as $emptyShippingLine) {
-            DeleteInvoiceTransaction::run($emptyShippingLine);
+        foreach ($shippingLines as $shippingLine) {
+            DeleteInvoiceTransaction::run($shippingLine);
         }
-        StoreInvoiceTransactionFromShipping::make()->action($invoice, null, [
-            'tax_category_id' => $order->tax_category_id,
-            'quantity'        => 1,
-            'gross_amount'    => $faireShipping,
-            'net_amount'      => $faireShipping,
-        ]);
+        if ($faireShipping >= 0.01) {
+            StoreInvoiceTransactionFromShipping::make()->action($invoice, null, [
+                'tax_category_id' => $order->tax_category_id,
+                'quantity'        => 1,
+                'gross_amount'    => $faireShipping,
+                'net_amount'      => $faireShipping,
+            ]);
+        }
 
         CalculateInvoiceTotals::run($invoice);
         $invoice->refresh();
