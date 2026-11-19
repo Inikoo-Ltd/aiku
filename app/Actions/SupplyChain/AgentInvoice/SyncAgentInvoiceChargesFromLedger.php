@@ -15,6 +15,7 @@ use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\AgentInvoice;
 use App\Models\SupplyChain\AgentPayment;
 use Illuminate\Support\Arr;
@@ -153,6 +154,35 @@ class SyncAgentInvoiceChargesFromLedger
     }
 
     /**
+     * An invoice already issued follows the clean hand over of the orders whose goods it carries: when one passes or
+     * misses CHO, its agent fee is worked out again, until the container's costing takes the charges.
+     *
+     * @param  iterable<int|null>  $purchaseOrderIds
+     */
+    public static function refreshAgentFeeOfPurchaseOrders(iterable $purchaseOrderIds): void
+    {
+        $ids = collect($purchaseOrderIds)->filter()->unique()->values();
+        if ($ids->isEmpty()) {
+            return;
+        }
+
+        $stockDeliveryIds = DB::table('stock_delivery_items')
+            ->whereNull('deleted_at')
+            ->whereIn(DB::raw("(data->>'purchase_order_transaction_id')::bigint"), PurchaseOrderTransaction::whereIn('purchase_order_id', $ids)->select('id'))
+            ->distinct()
+            ->pluck('stock_delivery_id');
+
+        AgentInvoice::with(['stockDelivery', 'agent.organisation'])
+            ->whereIn('stock_delivery_id', $stockDeliveryIds)
+            ->get()
+            ->filter(fn (AgentInvoice $agentInvoice) => $agentInvoice->stockDelivery && self::followsLedger($agentInvoice) && self::chargesOpen($agentInvoice->stockDelivery))
+            ->each(function (AgentInvoice $agentInvoice) {
+                self::recordAgentFee($agentInvoice);
+                self::run($agentInvoice->stockDelivery->refresh());
+            });
+    }
+
+    /**
      * @return list<string>
      */
     public static function feeCalculationExplained(): array
@@ -162,6 +192,7 @@ class SyncAgentInvoiceChargesFromLedger
             __("Uses the supplier's agent fee. If it is empty, the client's agent fee is used, or :percentage% if that is empty too.", ['percentage' => self::DEFAULT_AGENT_FEE_PERCENTAGE]),
             __("The goods of an order that missed clean hand over (CHO) are charged the fee less the client's CHO penalty, never below 0%."),
             __('A change applies to invoices issued after it. Reissue an existing invoice before dispatch to apply it.'),
+            __('When an order passes or misses CHO after its invoice was issued, the fee is worked out again until the container is costed.'),
             __('A fee recorded by hand replaces it.'),
         ];
     }

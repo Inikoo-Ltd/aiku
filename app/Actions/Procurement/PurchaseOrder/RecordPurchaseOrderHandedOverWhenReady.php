@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateState;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
+use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,10 @@ class RecordPurchaseOrderHandedOverWhenReady
     {
         $purchaseOrder = $this->recordWhenReady($purchaseOrder);
         PurchaseOrderHydrateState::run($purchaseOrder);
+
+        if ($purchaseOrder->isAgentOrder() && $purchaseOrder->handed_over_at === null) {
+            SyncAgentInvoiceChargesFromLedger::refreshAgentFeeOfPurchaseOrders([$purchaseOrder->id]);
+        }
 
         return $purchaseOrder;
     }

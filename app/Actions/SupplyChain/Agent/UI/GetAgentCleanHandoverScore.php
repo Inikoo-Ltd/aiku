@@ -21,10 +21,8 @@ class GetAgentCleanHandoverScore
 {
     use AsObject;
 
-    public const int HANDOVER_TOLERANCE_DAYS = 7;
-
     /**
-     * @return array{quarters: array<int, array<string, mixed>>, hygiene: array<string, mixed>, handover_tolerance_days: int}
+     * @return array{quarters: array<int, array<string, mixed>>, hygiene: array<string, mixed>}
      */
     public function handle(Agent $agent): array
     {
@@ -90,24 +88,24 @@ class GetAgentCleanHandoverScore
         }, array_values($quarters));
 
         return [
-            'quarters'                => $quarters,
-            'hygiene'                 => $this->hygiene($purchaseOrders),
-            'handover_tolerance_days' => self::HANDOVER_TOLERANCE_DAYS,
+            'quarters' => $quarters,
+            'hygiene'  => $this->hygiene($purchaseOrders),
         ];
     }
 
+    /**
+     * The same clean hand over as the PO page and the agent fee: handed over on or before the expected CHO date.
+     * Compliance is optional and the ready checks only count while the goods are not handed over yet.
+     */
     public function isCleanHandover(PurchaseOrder $purchaseOrder): bool
     {
-        $handedOverAt = $this->handedOverAt($purchaseOrder);
-        if (!$handedOverAt || !$purchaseOrder->approved_ready_at) {
+        if ($purchaseOrder->chs_excluded) {
             return false;
         }
 
-        // ponytail: quantity test proxied by not_received_at flag; upgrade to per-line ordered-vs-received when receipts are reconciled to purchase orders
-        return $handedOverAt->lte($purchaseOrder->approved_ready_at->copy()->addDays(self::HANDOVER_TOLERANCE_DAYS))
-            && $purchaseOrder->qc_passed_at !== null
-            && $purchaseOrder->compliance_complete_at !== null
-            && $purchaseOrder->not_received_at === null;
+        $timing = GetPurchaseOrderStages::make()->handOverTiming($purchaseOrder);
+
+        return $timing !== null && $timing['days_late'] === 0;
     }
 
     /**
@@ -164,6 +162,12 @@ class GetAgentCleanHandoverScore
         return $receivedAt ? Carbon::parse($receivedAt) : null;
     }
 
+    private function hasRequiredCheckNotDone(PurchaseOrder $purchaseOrder): bool
+    {
+        return collect(GetPurchaseOrderStages::make()->readyChecks($purchaseOrder) ?? [])
+            ->contains(fn (array $check) => $check['required'] && !$check['done']);
+    }
+
     private function hygiene($purchaseOrders): array
     {
         $totalValue    = 0.0;
@@ -178,8 +182,7 @@ class GetAgentCleanHandoverScore
                 $excludedValue += $value;
             }
 
-            if ($this->handedOverAt($purchaseOrder)
-                && (!$purchaseOrder->qc_passed_at || !$purchaseOrder->compliance_complete_at)) {
+            if ($this->handedOverAt($purchaseOrder) && $this->hasRequiredCheckNotDone($purchaseOrder)) {
                 $incomplete++;
             }
         }

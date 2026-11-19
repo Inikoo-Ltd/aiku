@@ -12,6 +12,7 @@ use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
+use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
@@ -47,6 +48,16 @@ class UpdatePurchaseOrder extends OrgAction
         'compliance_complete_at',
         'chs_excluded',
         'chs_exclusion_reason',
+    ];
+
+    /**
+     * What decides whether the order passed clean hand over, and so the agent fee on its goods.
+     */
+    private const array CLEAN_HANDOVER_FIELDS = [
+        'handed_over_at',
+        'approved_ready_at',
+        'proposed_ready_at',
+        'chs_excluded',
     ];
 
     public const array AGENT_FIELDS = [
@@ -106,6 +117,10 @@ class UpdatePurchaseOrder extends OrgAction
                 : null;
         }
 
+        }
+
+        if ($purchaseOrder->isAgentOrder() && $purchaseOrder->wasChanged(self::CLEAN_HANDOVER_FIELDS)) {
+            SyncAgentInvoiceChargesFromLedger::refreshAgentFeeOfPurchaseOrders([$purchaseOrder->id]);
         }
 
         return $purchaseOrder;

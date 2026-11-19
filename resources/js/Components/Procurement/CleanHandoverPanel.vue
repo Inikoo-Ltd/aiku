@@ -31,7 +31,6 @@ export interface CleanHandoverData {
         exclusion_rate: number | null
         handed_over_missing_checks: number
     }
-    handover_tolerance_days: number
 }
 
 defineProps<{
@@ -69,12 +68,9 @@ const isCalculationShown = ref(false)
             <div class="space-y-3 text-sm text-gray-700">
                 <p>{{ ctrans('Each purchase order through the agent counts in the calendar quarter of its proposed ready date. The last four quarters are shown; cancelled orders are left out.') }}</p>
                 <div>
-                    <p class="font-medium text-gray-900">{{ ctrans('An order is clean when all of these are true:') }}</p>
+                    <p class="font-medium text-gray-900">{{ ctrans('An order is clean when:') }}</p>
                     <ul class="mt-1 list-disc space-y-0.5 pl-5">
-                        <li>{{ ctrans('Handed over no later than :days days after the proposed ready date (for an agent receiving goods in its own warehouse, the goods receipt that completed the order)', { days: data.handover_tolerance_days }) }}</li>
-                        <li>{{ ctrans('QC passed') }}</li>
-                        <li>{{ ctrans('Compliance complete') }}</li>
-                        <li>{{ ctrans('Not marked as not received') }}</li>
+                        <li>{{ ctrans('Handed over on or before the expected CHO date, the approved ready date (for an agent receiving goods in its own warehouse, once every line is received in full and packed)') }}</li>
                     </ul>
                 </div>
                 <p>
@@ -94,7 +90,7 @@ const isCalculationShown = ref(false)
                     <p class="font-medium text-gray-900">{{ ctrans('Hygiene') }}</p>
                     <ul class="mt-1 list-disc space-y-0.5 pl-5">
                         <li>{{ ctrans('Excluded from score: share of the order value left out of the score. Above 10% shows in red.') }}</li>
-                        <li>{{ ctrans('Handed over w/o QC or compliance: orders handed over before QC passed or compliance was complete.') }}</li>
+                        <li>{{ ctrans('Handed over w/o checks: orders handed over before Balance, QC or Packing was done. Compliance is optional.') }}</li>
                     </ul>
                 </div>
             </div>
@@ -142,7 +138,7 @@ const isCalculationShown = ref(false)
                 </div>
             </div>
             <div>
-                <div class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans('Handed over w/o QC or compliance') }}</div>
+                <div class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans('Handed over w/o checks') }}</div>
                 <div class="font-semibold" :class="data.hygiene.handed_over_missing_checks > 0 ? 'text-red-600' : 'text-gray-900'">
                     {{ data.hygiene.handed_over_missing_checks }}
                 </div>
