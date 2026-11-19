@@ -46,6 +46,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
 
@@ -893,21 +894,46 @@ test('the shop notes kept from a customer\'s questions are deleted when the cust
     expect(ChatKnowledgeEntry::whereKey($noteId)->exists())->toBeFalse();
 });
 
-test('the Merlin report estimates staff time pessimistically: half the answered conversations with no contact after at four minutes each, minus six minutes per question passed to the team', function () {
+test('the Merlin report counts staff time from what people actually did: measured active time where the pop-up or inbox sent it, else five seconds plus typing, nothing for unanswered questions or AI messages, and saved conversations at the average reply', function () {
+    $website = $this->shop->website ?? createWebsite($this->shop);
+    $this->shop->refresh();
     Carbon::setTestNow(CarbonImmutable::parse('2025-02-03 10:00:00'));
-    $answered = collect(range(1, 6))->map(function () {
-        $conversation = teamQuestionConversation($this);
-        $conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'Orders over 150 get 10% off.', 'answer_kind' => 'shop_answer']);
-
-        return $conversation;
+    collect(range(1, 6))->each(function () {
+        teamQuestionConversation($this)->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'Orders over 150 get 10% off.', 'answer_kind' => 'shop_answer']);
     });
     StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Do you sell samples?', 'samples?');
+    $answeredTask = StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Do you sell gift wrapping?', 'gift wrap?')['task'];
+    $handedOver   = teamQuestionConversation($this);
     Carbon::setTestNow();
 
-    $filters = ['website_ids' => [$answered->first()->website_id], 'search_website_ids' => [$answered->first()->website_id], 'language' => null, 'entry_point' => null, 'shop_type' => null, 'country' => null];
+    AnswerShoppingAssistantTeamQuestion::run($answeredTask, $this->user, 'We do not offer gift wrapping.', true, ['writing_seconds' => 5000, 'typing_seconds' => 'x']);
+
+    $chat = \App\Models\Chat\ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE, 'language_id' => 68, 'priority' => \App\Enums\CRM\Livechat\ChatPriorityEnum::NORMAL, 'shop_id' => $this->shop->id]);
+    \App\Models\CRM\ShoppingAssistant\ShoppingAssistantHandOver::create(['shopping_assistant_conversation_id' => $handedOver->id, 'chat_session_id' => $chat->id, 'reason' => 'asked_for_person', 'route' => 'web_chat', 'in_hours' => true, 'agent_available' => true, 'created_at' => now()]);
+    $message = fn (array $data) => \App\Models\Chat\ChatMessage::create([...['chat_session_id' => $chat->id, 'message_type' => 'text', 'sender_type' => 'agent', 'is_read' => false], ...$data]);
+    $message(['message_text' => 'Measured reply', 'metadata' => ['writing_seconds' => 900]]);
+    $message(['message_text' => str_repeat('a', 2000)]);
+    $message(['message_text' => str_repeat('b', 2000), 'is_ai_generated' => true]);
+    $message(['message_text' => str_repeat('c', 2000), 'sender_type' => 'guest']);
+
+    $filters = ['website_ids' => [$website->id], 'search_website_ids' => [$website->id], 'language' => null, 'entry_point' => null, 'shop_type' => null, 'country' => null];
     $time    = App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport::make()->staffTime($filters, CarbonImmutable::parse('2025-02-03')->startOfDay(), CarbonImmutable::parse('2025-02-03')->endOfDay());
 
-    expect($time)->toBe(['saved_hours' => 0.2, 'added_hours' => 0.1, 'net_hours' => 0.1]);
+    expect(data_get($answeredTask->refresh()->data, 'answer_seconds'))->toBe(AnswerShoppingAssistantTeamQuestion::MAX_MEASURED_SECONDS)
+        ->and(data_get($answeredTask->data, 'answer_typing_seconds'))->toBe(0)
+        ->and($time)->toBe(['saved_hours' => 0.9, 'guru_hours' => 0.5, 'hand_over_hours' => 0.4, 'net_hours' => 0.0]);
+});
+
+test('a staff reply sent from the inbox keeps the active time measured while it was written, and a customer message never does', function () {
+    Queue::fake();
+    $chat = \App\Models\Chat\ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE, 'language_id' => 68, 'priority' => \App\Enums\CRM\Livechat\ChatPriorityEnum::NORMAL, 'shop_id' => $this->shop->id]);
+
+    $staff    = \App\Actions\Chat\ChatSession\SendChatMessage::make()->handle($chat, ['message_text' => 'We ship tomorrow.', 'message_type' => 'text', 'sender_type' => 'agent', 'active_time' => ['writing_seconds' => '42', 'typing_seconds' => 30]]);
+    $customer = \App\Actions\Chat\ChatSession\SendChatMessage::make()->handle($chat, ['message_text' => 'Thanks', 'message_type' => 'text', 'sender_type' => 'guest', 'sender_id' => null, 'active_time' => ['writing_seconds' => 42]]);
+
+    expect(data_get($staff->refresh()->metadata, 'writing_seconds'))->toBe(42)
+        ->and(data_get($staff->metadata, 'typing_seconds'))->toBe(30)
+        ->and(data_get($customer->refresh()->metadata, 'writing_seconds'))->toBeNull();
 });
 
 test('when Merlin is not sure, what it did find is shown before the team sentence only when Jev finds it follows from its tool results', function () {

@@ -34,6 +34,7 @@ import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { useChatPhoneCall } from "@/Composables/useChatPhoneCall"
 import { useInboxTimings } from "@/Composables/useInboxTimings"
+import { useActiveTime } from "@/Composables/useActiveTime"
 import { listKey, rememberFirstList, takePrefetchedList } from "@/Composables/inboxListPrefetch"
 
 import {
@@ -405,6 +406,8 @@ const sidePanelVisible = ref(false)
 const sidePanelPreferred = useLocalStorage(`chat-inbox-side-panel:${layout.user?.id ?? "anonymous"}`, true)
 const stackedPanelHeight = useLocalStorage(`chat-pane-details-height:${layout.user?.id ?? "anonymous"}`, 50)
 const conversationColumn = ref<HTMLElement | null>(null)
+const replyActiveTime = useActiveTime(conversationColumn)
+watch(() => selectedSession.value?.ulid, () => replyActiveTime.reset())
 
 const startStackedPanelResize = (event: PointerEvent) => {
     const column = conversationColumn.value?.getBoundingClientRect()
@@ -2912,6 +2915,9 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, em
         formData.append("message_type", message_type)
         formData.append("sender_type", "agent")
         formData.append("is_email_notif", String(is_email_notif ?? false))
+        const activeTime = replyActiveTime.read()
+        formData.append("writing_seconds", String(activeTime.writing_seconds))
+        formData.append("typing_seconds", String(activeTime.typing_seconds))
         email_cc_excluded?.forEach((address) => formData.append("email_cc_excluded[]", address))
         if (ai_draft_translation_of) formData.append("ai_draft_translation_of", String(ai_draft_translation_of))
 
@@ -2928,6 +2934,7 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, em
             { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
         )
         replyAccepted()
+        replyActiveTime.reset()
 
         if (claimsChat && selectedSession.value?.ulid === sessionUlid) {
             await onAssignSelfSuccess()
