@@ -104,6 +104,7 @@ use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Inventory\Warehouse;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
@@ -2358,6 +2359,53 @@ describe('partner shopping list', function () {
                 ->assertStatus(422);
         } finally {
             $sellerPartner->update(['goods_out_location_id' => $originalBay]);
+        }
+    });
+
+    test('the buyer can withdraw a made line once the partner no longer holds its stock', function () {
+        $seller     = $this->orgPartner->partner;
+        $production = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+
+        $sellerOrgStock = OrgStock::where('organisation_id', $seller->id)->where('stock_id', $this->buyerOrgStock->stock_id)->first();
+        $originalStock  = $sellerOrgStock?->quantity_in_locations;
+
+        $madeLine = function (JobOrderStateEnum $state) use ($production) {
+            $jobOrder = \App\Actions\Production\JobOrder\StoreJobOrder::make()->action($production, []);
+            $jobOrder->update(['state' => $state]);
+            $item = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 20]);
+            $item->update(['job_order_id' => $jobOrder->id, 'preparing_at' => now()]);
+
+            return $item->refresh();
+        };
+        $destroy = fn (PartnerShoppingListItem $item) => $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy', [$this->organisation->slug, $this->orgPartner->id, $item->id]));
+
+        actingAs($this->adminGuest->getUser());
+
+        try {
+            $sellerOrgStock?->update(['quantity_in_locations' => 0]);
+
+            $beingMade = $madeLine(JobOrderStateEnum::IN_PROCESS);
+            expect($beingMade->canBeWithdrawn())->toBeFalse();
+            $destroy($beingMade)->assertStatus(422);
+
+            $stockGone = $madeLine(JobOrderStateEnum::RECEIVED);
+            $row       = collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+                ->assertOk()->viewData('page')['props']['data']['data'])->firstWhere('id', $stockGone->id);
+            expect($row['is_withdrawable'])->toBeTrue()
+                ->and($row['is_made_stock_gone'])->toBeTrue();
+            $destroy($stockGone)->assertRedirect();
+            expect(PartnerShoppingListItem::find($stockGone->id))->toBeNull();
+
+            if ($sellerOrgStock) {
+                $sellerOrgStock->update(['quantity_in_locations' => 20]);
+                $stockThere = $madeLine(JobOrderStateEnum::RECEIVED);
+                expect($stockThere->canBeWithdrawn())->toBeFalse();
+                $destroy($stockThere)->assertStatus(422);
+            }
+        } finally {
+            $sellerOrgStock?->update(['quantity_in_locations' => $originalStock]);
+            PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('org_stock_id', $this->buyerOrgStock->id)->where('state', ShoppingListItemStateEnum::OPEN)->delete();
         }
     });
 

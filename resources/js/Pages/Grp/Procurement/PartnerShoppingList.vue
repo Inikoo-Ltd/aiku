@@ -444,7 +444,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 			<Button
 				v-if="isWithdrawable(item)"
 				icon="fal fa-trash-alt"
-				:tooltip="isSentView ? ctrans('Withdraw from the partner, they have not started it yet') : ctrans('Remove from the ongoing PO')"
+				:tooltip="item.is_made_stock_gone ? ctrans('Made, but the partner no longer has this stock, so it will never be sent: remove it') : isSentView ? ctrans('Withdraw from the partner, they have not started it yet') : ctrans('Remove from the ongoing PO')"
 				type="negative"
 				size="xs"
 				@click="deleteItem(item)" />

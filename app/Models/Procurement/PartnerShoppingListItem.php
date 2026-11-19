@@ -17,6 +17,7 @@ use App\Events\BroadcastPartnerProductionChanged;
 use App\Events\BroadcastProductionQueuesChanged;
 use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
+use App\Models\Production\JobOrder;
 use App\Models\Ordering\Transaction;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Models\SysAdmin\Organisation;
@@ -267,9 +268,34 @@ class PartnerShoppingListItem extends Model
     public function canBeWithdrawn(): bool
     {
         return $this->state === ShoppingListItemStateEnum::OPEN
-            && !$this->job_order_id
             && !$this->transaction_id
-            && !$this->preparing_at;
+            && ((!$this->job_order_id && !$this->preparing_at) || $this->madeStockIsGone());
+    }
+
+    /**
+     * Made and received into the partner's stock, which no longer holds enough to ship it (written off
+     * by an audit, or sent outside a partner order), so nothing will ever close the line.
+     * Reads job_order_state and partner_quantity_in_locations when the list query selected them.
+     * ponytail: compares with this line only, not with every open line of the SKO sharing that stock.
+     */
+    public function madeStockIsGone(): bool
+    {
+        if ($this->state !== ShoppingListItemStateEnum::OPEN || $this->transaction_id || $this->pre_picked_at || !$this->job_order_id) {
+            return false;
+        }
+
+        $jobOrderState = $this->getAttribute('job_order_state') ?? JobOrder::whereKey($this->job_order_id)->value('state');
+        $jobOrderState = $jobOrderState instanceof JobOrderStateEnum ? $jobOrderState : JobOrderStateEnum::tryFrom((string) $jobOrderState);
+
+        if (!$jobOrderState || in_array($jobOrderState, [...JobOrderStateEnum::open(), JobOrderStateEnum::NOT_RECEIVED], true)) {
+            return false;
+        }
+
+        $partnerStock = array_key_exists('partner_quantity_in_locations', $this->getAttributes())
+            ? $this->getAttribute('partner_quantity_in_locations')
+            : OrgStock::where('organisation_id', $this->partner_organisation_id)->where('stock_id', $this->stock_id)->value('quantity_in_locations');
+
+        return round((float) $partnerStock, 3) < round((float) $this->quantity, 3);
     }
 
     /** Sent and not yet delivered: the buyer can still hurry the partner along. */

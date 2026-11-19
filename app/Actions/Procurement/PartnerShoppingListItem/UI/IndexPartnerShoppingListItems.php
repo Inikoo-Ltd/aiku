@@ -391,6 +391,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'users.contact_name as added_by_name',
                 'org_stock_stats.days_of_cover',
                 'partner_org_stocks.quantity_available as their_available',
+                'partner_org_stocks.quantity_in_locations as partner_quantity_in_locations',
                 DB::raw('(select stocks.units_per_carton::numeric / greatest(coalesce(partner_org_stocks.packed_in, 1), 1) from stocks where stocks.id = partner_shopping_list_items.stock_id) as skos_per_carton'),
                 DB::raw(RoundPartnerQuantityToBatches::quantumSql('partner_org_stocks').' as order_quantum'),
                 'job_orders.reference as job_order_reference',
@@ -457,6 +458,7 @@ class IndexPartnerShoppingListItems extends OrgAction
             $row->progress                 = $this->progressOf($row);
             $row->is_editable              = $row->state === ShoppingListItemStateEnum::DRAFT || (empty($row->folded_ids) && $row->isWaitingForPartner());
             $row->is_withdrawable          = $row->is_editable || (empty($row->folded_ids) && $row->canBeWithdrawn());
+            $row->is_made_stock_gone       = empty($row->folded_ids) && $row->madeStockIsGone();
             $row->can_be_poked             = $this->isSentView && $row->canBePoked();
             $row->is_recently_poked        = $row->poked_at?->gt(now()->subHour()) ?? false;
             $row->stock_in_locations       = $orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($orgStock->quantity_in_locations);
