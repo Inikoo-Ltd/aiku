@@ -3,8 +3,8 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faFileExcel } from "@fal"
-library.add(faFileExcel)
+import { faFileExcel, faFilePdf } from "@fal"
+library.add(faFileExcel, faFilePdf)
 
 defineProps<{
 	data: object
@@ -31,17 +31,20 @@ defineProps<{
 		</template>
 		<template #cell(customs_invoices)="{ item }">
 			<div class="flex flex-wrap gap-x-3 gap-y-1">
-				<a
+				<span
 					v-for="customsInvoice in item.customs_invoices"
 					:key="customsInvoice.reference"
-					:href="customsInvoice.download_url"
-					download
 					:title="customsInvoice.label"
-					class="inline-flex items-center gap-1 whitespace-nowrap hover:text-[var(--app-accent)] hover:underline"
+					class="inline-flex items-center gap-1 whitespace-nowrap"
 					:class="item.is_void ? 'text-gray-400 line-through' : 'text-gray-700'">
-					<FontAwesomeIcon :icon="faFileExcel" fixed-width aria-hidden="true" />
-					{{ customsInvoice.reference }}
-				</a>
+					<a :href="customsInvoice.download_url + '?format=pdf'" target="_blank" class="inline-flex items-center gap-1 hover:text-[var(--app-accent)] hover:underline">
+						<FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
+						{{ customsInvoice.reference }}
+					</a>
+					<a :href="customsInvoice.download_url" download class="hover:text-[var(--app-accent)]" title="XLSX">
+						<FontAwesomeIcon :icon="faFileExcel" fixed-width aria-hidden="true" />
+					</a>
+				</span>
 			</div>
 		</template>
 	</Table>

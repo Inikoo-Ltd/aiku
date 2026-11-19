@@ -8691,8 +8691,18 @@ test('a consolidated delivery note to a partner takes packed and finalised notes
         ->assertOk()
         ->assertDownload($prefix.'-C0001.xlsx');
     $packingList = (new \App\Exports\Dispatching\PartnerShipmentPackingListExport($truck))->array();
+    $sections    = collect($packingList)->filter(fn (array $row) => count($row) === 1)->pluck(0)->values()->all();
     expect(collect($packingList)->pluck(0)->all())->toContain(...$references)
-        ->and(collect($packingList)->firstWhere(0, $references[1])[1])->toBe($secondInvoice->reference);
+        ->and(collect($packingList)->firstWhere(0, $references[1])[1])->toBe($secondInvoice->reference)
+        ->and($sections)->toBe(['NON COSMETICS', 'COSMETICS'])
+        ->and(collect($packingList)->first(fn (array $row) => ($row[1] ?? null) === $notes->last()->deliveryNoteItems()->first()->orgStock->code && count($row) === 5)[3])->toBe(7.0);
+    foreach ([
+        route('grp.org.warehouses.show.dispatching.partner_shipments.packing_list', [...$truckRoute, 'format' => 'pdf']),
+        route('grp.org.warehouses.show.dispatching.customs_invoices.export', [...$warehouseRoute, $cosmeticInvoice->id, 'format' => 'pdf']),
+    ] as $pdfUrl) {
+        $pdfResponse = $this->get($pdfUrl)->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        expect(substr($pdfResponse->getContent(), 0, 4))->toBe('%PDF');
+    }
 
     $rows     = (new \App\Exports\Dispatching\PartnerShipmentCustomsInvoiceExport($cosmeticInvoice))->array();
     $headings = collect($rows)->first(fn (array $row) => ($row[0] ?? null) === 'Product references');

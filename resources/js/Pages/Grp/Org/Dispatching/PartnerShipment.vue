@@ -8,11 +8,11 @@ import Dialog from "primevue/dialog"
 import Textarea from "primevue/textarea"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faLayerGroup, faFileExcel, faFileInvoice, faShippingFast, faBan } from "@fal"
+import { faLayerGroup, faFileExcel, faFilePdf, faFileInvoice, faShippingFast, faBan } from "@fal"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
-library.add(faLayerGroup, faFileExcel, faFileInvoice, faShippingFast, faBan)
+library.add(faLayerGroup, faFileExcel, faFilePdf, faFileInvoice, faShippingFast, faBan)
 
 type RouteTarget = { name: string; parameters: (string | number)[] }
 
@@ -107,8 +107,15 @@ function submitVoid() {
 	<p v-if="truck.void_note" class="mx-4 mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{ truck.void_note }}</p>
 
 	<div v-if="truck.state !== 'void'" class="flex flex-wrap items-center gap-2 px-4 pb-3">
-		<a :href="packingListUrl" download>
+		<a :href="packingListUrl + '?format=pdf'" target="_blank">
 			<Button type="tertiary" :label="ctrans('Consolidated delivery note')">
+				<template #icon>
+					<FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
+				</template>
+			</Button>
+		</a>
+		<a :href="packingListUrl" download>
+			<Button type="tertiary" label="XLSX">
 				<template #icon>
 					<FontAwesomeIcon :icon="faFileExcel" fixed-width aria-hidden="true" />
 				</template>
@@ -143,22 +150,24 @@ function submitVoid() {
 	<p v-if="error" class="mx-4 mb-3 text-sm text-red-600">{{ error }}</p>
 
 	<div v-if="customsInvoices.length" class="grid gap-3 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3">
-		<a
-			v-for="customsInvoice in customsInvoices"
-			:key="customsInvoice.reference"
-			:href="customsInvoice.download_url"
-			download
-			class="rounded border border-gray-200 px-3 py-2 hover:border-[var(--app-accent)]">
+		<div v-for="customsInvoice in customsInvoices" :key="customsInvoice.reference" class="rounded border border-gray-200 px-3 py-2">
 			<div class="flex items-center gap-2 font-medium" :class="truck.state === 'void' ? 'text-gray-400 line-through' : 'text-gray-800'">
-				<FontAwesomeIcon :icon="faFileExcel" fixed-width aria-hidden="true" />
 				{{ customsInvoice.reference }}
 				<span class="text-xs font-normal text-gray-500">{{ customsInvoice.label }}</span>
+				<span class="ml-auto flex gap-2 text-gray-500">
+					<a :href="customsInvoice.download_url + '?format=pdf'" target="_blank" class="hover:text-[var(--app-accent)]" v-tooltip="'PDF'">
+						<FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
+					</a>
+					<a :href="customsInvoice.download_url" download class="hover:text-[var(--app-accent)]" v-tooltip="'XLSX'">
+						<FontAwesomeIcon :icon="faFileExcel" fixed-width aria-hidden="true" />
+					</a>
+				</span>
 			</div>
 			<div class="mt-1 text-xs text-gray-500">
 				{{ customsInvoice.lines }} {{ ctrans("lines") }} · {{ formatNumber(customsInvoice.units) }} {{ ctrans("units") }} · {{ customsInvoice.currency }}
 				{{ formatNumber(customsInvoice.amount, 2) }} · {{ formatNumber(customsInvoice.gross_weight, 1) }} kg
 			</div>
-		</a>
+		</div>
 	</div>
 
 	<Table v-if="truck.state !== 'void'" :resource="data">

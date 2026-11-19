@@ -16,7 +16,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class ExportPartnerShipmentCustomsInvoice extends OrgAction
 {
@@ -25,16 +25,21 @@ class ExportPartnerShipmentCustomsInvoice extends OrgAction
         return PartnerShipment::canBeSeenBy($request->user(), $this->organisation);
     }
 
-    public function handle(PartnerCustomsInvoice $customsInvoice): BinaryFileResponse
+    public function handle(PartnerCustomsInvoice $customsInvoice, bool $pdf = false): Response
     {
-        return Excel::download(new PartnerShipmentCustomsInvoiceExport($customsInvoice), $customsInvoice->reference.'.xlsx');
+        $export = new PartnerShipmentCustomsInvoiceExport($customsInvoice);
+        if ($pdf) {
+            return PartnerShipmentDocumentPdf::response($export->array(), $customsInvoice->reference);
+        }
+
+        return Excel::download($export, $customsInvoice->reference.'.xlsx');
     }
 
-    public function asController(Organisation $organisation, Warehouse $warehouse, PartnerCustomsInvoice $partnerCustomsInvoice, ActionRequest $request): BinaryFileResponse
+    public function asController(Organisation $organisation, Warehouse $warehouse, PartnerCustomsInvoice $partnerCustomsInvoice, ActionRequest $request): Response
     {
         abort_unless($partnerCustomsInvoice->organisation_id === $organisation->id && $warehouse->organisation_id === $organisation->id && $partnerCustomsInvoice->partnerShipment->warehouse_id === $warehouse->id, 404);
         $this->initialisation($organisation, $request);
 
-        return $this->handle($partnerCustomsInvoice);
+        return $this->handle($partnerCustomsInvoice, $request->query('format') === 'pdf');
     }
 }

@@ -15,7 +15,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class ExportPartnerShipmentPackingList extends OrgAction
 {
@@ -24,11 +24,16 @@ class ExportPartnerShipmentPackingList extends OrgAction
         return PartnerShipment::canBeSeenBy($request->user(), $this->organisation);
     }
 
-    public function asController(Organisation $organisation, Warehouse $warehouse, PartnerShipment $partnerShipment, ActionRequest $request): BinaryFileResponse
+    public function asController(Organisation $organisation, Warehouse $warehouse, PartnerShipment $partnerShipment, ActionRequest $request): Response
     {
         abort_unless($partnerShipment->organisation_id === $organisation->id && $warehouse->organisation_id === $organisation->id && $partnerShipment->warehouse_id === $warehouse->id, 404);
         $this->initialisation($organisation, $request);
 
-        return Excel::download(new PartnerShipmentPackingListExport($partnerShipment), $partnerShipment->reference.'.xlsx');
+        $export = new PartnerShipmentPackingListExport($partnerShipment);
+        if ($request->query('format') === 'pdf') {
+            return PartnerShipmentDocumentPdf::response($export->array(), $partnerShipment->reference);
+        }
+
+        return Excel::download($export, $partnerShipment->reference.'.xlsx');
     }
 }
