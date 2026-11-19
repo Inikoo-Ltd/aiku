@@ -668,6 +668,7 @@ const availabilityBadge = (isAvailable: boolean) =>
         ? { label: ctrans("Available"), class: "bg-green-50 text-green-700 ring-green-600/20" }
         : { label: ctrans("Not available"), class: "bg-red-50 text-red-700 ring-red-600/20" }
 
+const [DefineCompositionOrgStocks, ReuseCompositionOrgStocks] = createReusableTemplate()
 const [DefineProductImage, ReuseProductImage] = createReusableTemplate()
 const [DefineProductBadges, ReuseProductBadges] = createReusableTemplate()
 const [DefineProductExtras, ReuseProductExtras] = createReusableTemplate()
@@ -675,6 +676,26 @@ const [DefineProductExtras, ReuseProductExtras] = createReusableTemplate()
 
 <template>
     <div class="grid gap-6 p-6 md:grid-cols-3">
+        <DefineCompositionOrgStocks v-slot="{ compact }">
+            <div class="flex flex-col gap-4">
+                <div v-for="tradeUnit in data.composition" :key="tradeUnit.slug">
+                    <component :is="tradeUnit.route ? Link : 'div'" :href="tradeUnit.route ? route(tradeUnit.route.name, tradeUnit.route.parameters) : undefined"
+                        class="text-sm font-medium text-gray-700 hover:text-gray-900 hover:underline">
+                        {{ tradeUnit.code }} <span class="text-gray-400 font-normal">{{ tradeUnit.name }}</span>
+                    </component>
+                    <div v-if="tradeUnit.org_stocks.length" class="mt-2 grid gap-2" :class="compact ? 'grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'">
+                        <component :is="orgStock.route ? Link : 'div'" v-for="orgStock in tradeUnit.org_stocks" :key="orgStock.slug"
+                            :href="orgStock.route ? route(orgStock.route.name, orgStock.route.parameters) : undefined"
+                            class="flex items-baseline justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-xs transition hover:border-gray-300 hover:bg-gray-50">
+                            <span class="truncate text-gray-700">{{ orgStock.code }}</span>
+                            <span class="shrink-0 text-gray-400">{{ orgStock.organisation.code }}</span>
+                        </component>
+                    </div>
+                    <p v-else class="mt-1 text-xs text-gray-400">{{ ctrans("No org stock linked") }}</p>
+                </div>
+            </div>
+        </DefineCompositionOrgStocks>
+
         <DefineProductImage>
             <button v-if="data.product.image" type="button"
                 class="h-28 w-28 shrink-0 cursor-zoom-in overflow-hidden rounded border border-gray-200 bg-white p-2"
@@ -885,6 +906,10 @@ const [DefineProductExtras, ReuseProductExtras] = createReusableTemplate()
                     </dd>
                 </div>
             </dl>
+            <div v-if="data.composition.length" class="mt-3 border-t border-gray-100 pt-3">
+                <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{{ ctrans("SKOs by organisation") }}</div>
+                <ReuseCompositionOrgStocks compact />
+            </div>
             <Link v-if="data.triangle.composition_route"
                 :href="route(data.triangle.composition_route.name, data.triangle.composition_route.parameters)"
                 class="mt-3 block">
@@ -1037,29 +1062,12 @@ const [DefineProductExtras, ReuseProductExtras] = createReusableTemplate()
             </div>
         </section>
 
-        <!-- Same triangle as the master product composition page, read-only here -->
-        <section v-if="data.composition.length" class="md:col-span-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <section v-if="!data.triangle && data.composition.length" class="md:col-span-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                 <Icon :data="{ icon: 'fal fa-cubes' }" />
                 {{ ctrans("Composition") }}
             </h3>
-            <div class="flex flex-col gap-4">
-                <div v-for="tradeUnit in data.composition" :key="tradeUnit.slug">
-                    <component :is="tradeUnit.route ? Link : 'div'" :href="tradeUnit.route ? route(tradeUnit.route.name, tradeUnit.route.parameters) : undefined"
-                        class="text-sm font-medium text-gray-700 hover:text-gray-900 hover:underline">
-                        {{ tradeUnit.code }} <span class="text-gray-400 font-normal">{{ tradeUnit.name }}</span>
-                    </component>
-                    <div v-if="tradeUnit.org_stocks.length" class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        <component :is="orgStock.route ? Link : 'div'" v-for="orgStock in tradeUnit.org_stocks" :key="orgStock.slug"
-                            :href="orgStock.route ? route(orgStock.route.name, orgStock.route.parameters) : undefined"
-                            class="flex items-baseline justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-xs transition hover:border-gray-300 hover:bg-gray-50">
-                            <span class="truncate text-gray-700">{{ orgStock.code }}</span>
-                            <span class="shrink-0 text-gray-400">{{ orgStock.organisation.code }}</span>
-                        </component>
-                    </div>
-                    <p v-else class="mt-1 text-xs text-gray-400">{{ ctrans("No org stock linked") }}</p>
-                </div>
-            </div>
+            <ReuseCompositionOrgStocks />
         </section>
 
         <section v-if="data.stocks.length" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
