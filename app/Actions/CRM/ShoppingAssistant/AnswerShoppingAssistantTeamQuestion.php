@@ -113,7 +113,7 @@ class AnswerShoppingAssistantTeamQuestion
         }
 
         $shop = Shop::find(data_get($task->data, 'shop_id'));
-        if ($keepForEveryone && $shop) {
+        if ($keepForEveryone && $shop && !IsAboutOneCustomer::run($question, $answer)) {
             UpdateShopChatKnowledgeNote::make()->handle($shop, null, ['title' => mb_substr(str_replace("\n", ' ', $question), 0, 200), 'body' => mb_substr($answer, 0, 2000)], $user, $this->needsSecondYes($task, $user) ? 'proposed' : 'active');
             dispatch(fn () => HydrateChatKnowledge::make()->embedMissing($shop));
         }

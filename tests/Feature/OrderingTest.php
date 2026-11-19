@@ -5950,7 +5950,7 @@ test('weekly product suggestions give the AI half AI picks with reasons and fall
         ->and(collect($insights['recommendations'])->pluck('suggestion_reason')->filter()->all())->toBe([]);
 });
 
-test('range advisor segments need five buyers and the gap analysis lists what similar shops buy', function () {
+test('range advisor segments need five buyers, an area twenty, and the gap analysis lists what similar shops buy', function () {
     [, $sharedProduct] = createProduct($this->shop);
     $newProduct = function () use ($sharedProduct) {
         $product = StoreProduct::make()->action($sharedProduct->family, array_merge(
@@ -6003,7 +6003,8 @@ test('range advisor segments need five buyers and the gap analysis lists what si
         ->and($bestSellers['items']->pluck('id')->duplicates()->all())->toBe([])
         ->and(\App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, 'gift_shop', 'NO')['segment'])->toMatchArray(['level' => 'type_group', 'region' => 'nordics', 'customers' => 6])
         ->and(\App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales::regionOf('US'))->toBe('na')
-        ->and(\App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, 'gift_shop', $country, ['area' => '28'])['segment'])->toMatchArray(['level' => 'type_area', 'area' => '28', 'customers' => 6])
+        ->and(\App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, 'gift_shop', $country, ['area' => '28'])['segment']['level'])->toBe('type_country')
+        ->and(DB::table('segment_product_sales')->where('shop_id', $this->shop->id)->whereIn('level', ['type_area', 'area'])->count())->toBe(0)
         ->and(\App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, 'gift_shop', $country, ['area' => '99'])['segment']['level'])->toBe('type_country')
         ->and($bestSellers['items']->pluck('id')->all())->not->toContain($rare->id)
         ->and($bestSellers['items']->pluck('id')->all())->not->toContain($own->id)
@@ -6017,7 +6018,7 @@ test('range advisor segments need five buyers and the gap analysis lists what si
 
     $gaps = \App\Actions\CRM\RangeAdvisor\GetCustomerRangeGaps::run($customer->fresh());
 
-    expect($gaps['segment']['level'])->toBe('type_area')
+    expect($gaps['segment']['level'])->toBe('type_country')
         ->and($gaps['missing']->pluck('id')->all())->toContain($popular->id)
         ->and($gaps['missing']->pluck('id')->all())->not->toContain($own->id)
         ->and($gaps['forgotten']->pluck('id')->all())->toBe([$forgotten->id])

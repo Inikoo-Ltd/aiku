@@ -27,7 +27,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
  *
  * Privacy: a segment row is kept only when the segment has at least MIN_GROUP_SIZE buyers and the
  * product or family itself was bought by at least MIN_GROUP_SIZE of them, so no row reveals one
- * customer's spend.
+ * customer's spend. An area is small enough that a few nearby shops could be told apart, so an
+ * area row needs MIN_AREA_SEGMENT_SIZE buyers in the area and MIN_AREA_BUYERS of them buying the
+ * product or family (INI-389); smaller areas fall back to the country.
  *
  * Segment levels, from GROUPING(shop_type, country_code, area, region), where a set bit means the
  * column is NOT grouped (shop_type 8, country_code 4, area 2, region 1):
@@ -53,6 +55,10 @@ class RebuildRangeAdvisorSales
     public const int WINDOW_MONTHS = 12;
 
     public const int MIN_GROUP_SIZE = 5;
+
+    public const int MIN_AREA_SEGMENT_SIZE = 20;
+
+    public const int MIN_AREA_BUYERS = 10;
 
     public const string LEVEL_TYPE_AREA = 'type_area';
 
@@ -267,8 +273,8 @@ class RebuildRangeAdvisorSales
                     and segments.country_code is not distinct from segment_rows.country_code
                     and segments.area is not distinct from segment_rows.area
                     and segments.region is not distinct from segment_rows.region
-                where segments.segment_customers >= ?
-                    and segment_rows.customers >= ?
+                where segments.segment_customers >= case when segment_rows.grouping_id & 2 = 0 then ?::integer else ?::integer end
+                    and segment_rows.customers >= case when segment_rows.grouping_id & 2 = 0 then ?::integer else ?::integer end
                     and (segment_rows.grouping_id & 8 = 8 or segment_rows.shop_type is not null)
                     and (segment_rows.grouping_id & 4 = 4 or segment_rows.country_code is not null)
                     and (segment_rows.grouping_id & 2 = 2 or segment_rows.area is not null)
@@ -290,7 +296,9 @@ class RebuildRangeAdvisorSales
                     self::LEVEL_COUNTRY,
                     self::LEVEL_GROUP,
                     self::LEVEL_SHOP,
+                    self::MIN_AREA_SEGMENT_SIZE,
                     self::MIN_GROUP_SIZE,
+                    self::MIN_AREA_BUYERS,
                     self::MIN_GROUP_SIZE,
                 ]
             );

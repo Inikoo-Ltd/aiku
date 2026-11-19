@@ -316,6 +316,19 @@ test('the shopping assistant reply may repeat the customer\'s own figures and si
         ->and($assistant->onlyGivenNumbers('Save 10% on the 190g size.', $customer, $names))->toBeFalse();
 });
 
+test('the shopping assistant reply may name a set by the word and number in its name, but not reuse that number', function () {
+    $assistant = AskShoppingAssistant::make();
+    $names     = "Aromatherapy Gift Set - Top 12\nZodiac Candle Leo\nTea Light Set of 3\nSavon Lot de 6";
+
+    expect($assistant->onlyGivenNumbers('Le Coffret Aromathérapie Top 12 est une bonne base.', '', $names))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('Our top 12 set sells well.', '', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('There is a choice of 3 fragrances.', '', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Il y a un total de 6 parfums.', '', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('It is only £12.', '', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Over 12 shops buy it.', '', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('The Top 120 set is new.', '', $names))->toBeFalse();
+});
+
 function shoppingAssistantStorefront(object $test, bool $enabled = true): Website
 {
     $website = createWebsite($test->shop);
@@ -1900,7 +1913,9 @@ test('better price options say from our data whether the customer is a Gold Rewa
         ->and($asNotMember['content']['gold_reward'])->toBe('not_member')
         ->and($asNotMember['fact'])->toContain('for 30 days')
         ->and($asMember['fact'])->toContain('wherever a range has them')
+        ->and($asMember['content']['keeping_membership'])->toContain('no minimum amount to spend')
         ->and($withoutMemberPrices['content']['gold_reward'])->toBe('not_offered')
+        ->and($withoutMemberPrices['content']['keeping_membership'])->toBeNull()
         ->and($withoutMemberPrices['fact'])->not->toContain('Gold Reward')
         ->and($withoutMemberPrices['fact'])->toContain('can call you');
 });

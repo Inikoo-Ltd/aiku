@@ -60,7 +60,9 @@ beforeEach(function () {
     $this->notAnAnswerProbability = null;
     $this->followsFromEvidence    = null;
     $this->isFault                = null;
+    $this->aboutOneCustomer       = 0.05;
     Http::fake(['*alpha/decisions' => fn ($request) => Http::response(['answers' => ['answer' => ['noul' => match (true) {
+        str_contains($request->body(), 'specific customer')          => $this->aboutOneCustomer,
         str_contains($request->body(), 'follow from the evidence')   => $this->followsFromEvidence,
         str_contains($request->body(), 'engineers must look at it') => $this->isFault,
         default                                                      => $this->notAnAnswerProbability,
@@ -844,4 +846,28 @@ test('a follow-up Merlin is not sure of, while the customer\'s question already 
 
     expect($turn['message']->flags)->toBe(['asked_team'])
         ->and($turn['reply'])->toBe(__('I have added this to your question that is already with our team. Their answer will appear here in this chat, and if you have left by then, we will send it to you.', [], $conversation->language_code));
+});
+
+test('a staff answer about one customer is never kept as knowledge for every customer, and an answer given by marking the task done is never kept', function () {
+    $conversation = teamQuestionConversation($this);
+    $first        = StoreShoppingAssistantTeamQuestion::run($conversation, 'Can I get a discount on my order?', 'discount please');
+    $notesBefore  = ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count();
+    $this->aboutOneCustomer = 0.9;
+
+    AnswerShoppingAssistantTeamQuestion::run($first['task'], $this->user, 'Jane, we have refunded 12.40 on your last order and you get 10% off the next one.');
+
+    $other  = teamQuestionConversation($this);
+    $second = StoreShoppingAssistantTeamQuestion::run($other, 'Do you sell samples?', 'samples?');
+    $this->aboutOneCustomer = 0.05;
+    UpdateStaffTask::run($second['task'], $this->user, ['status' => StaffTaskStatusEnum::DONE->value, 'note' => 'We do not sell samples; single units can be ordered.']);
+
+    expect(ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count())->toBe($notesBefore)
+        ->and(\App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer::run('Contact', 'Write to jane.smith@gmail.com'))->toBeTrue()
+    ;
+
+    $this->aboutOneCustomer = null;
+    expect(\App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer::run('Samples', 'We do not sell samples.'))->toBeTrue();
+
+    $this->aboutOneCustomer = 0.05;
+    expect(\App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer::run('Samples', 'We do not sell samples. Ask care@ancientwisdom.biz.'))->toBeFalse();
 });

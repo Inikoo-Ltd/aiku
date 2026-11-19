@@ -17,6 +17,7 @@ use App\Models\Chat\MetaChatSession;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
+use App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -59,7 +60,7 @@ class RememberVerifiedChatFact
         $attributes = [
             'title'        => $title,
             'body'         => $fact,
-            'status'       => count(array_unique(array_column($verifications, 'chat'))) >= self::CHATS_TO_TRUST ? 'active' : 'candidate',
+            'status'       => count(array_unique(array_column($verifications, 'chat'))) >= self::CHATS_TO_TRUST && (($entry?->status === 'active' && $entry->body === $fact) || !IsAboutOneCustomer::run($title, $fact)) ? 'active' : 'candidate',
             'is_active'    => true,
             'hydrated_at'  => now(),
             'last_seen_at' => now(),

@@ -1259,7 +1259,7 @@ class AskShoppingAssistant
     }
 
     /**
-     * A size or percentage written as in a product or family name ("190g", "50mm", "10 ml", "41x31cm", "1.5-2kg", "100%") is taken out of the text first;
+     * A size or percentage written as in a product or family name ("190g", "50mm", "10 ml", "41x31cm", "1.5-2kg", "100%") is taken out of the text first, and so is a capitalised word followed by its number exactly as in a name ("Top 12", INI-389; never "of 3" or "de 6");
      * so is how many products the answer shows ($shownCounts), but only right before a word that starts
      * like a word of a product or family name ("16 soaps", "10 Kerzen"): "6 left", "6 shops", "6 zł" or
      * "6 euros" never pass as a count. Every number left must be one the customer wrote, so "£10" or
@@ -1272,6 +1272,11 @@ class AskShoppingAssistant
         preg_match_all('/\d+(?:[.,]\d+)?(?:\s?[x\-–]\s?\d+(?:[.,]\d+)?)*\s?(?:\p{L}+|%)/iu', $productNames, $sizes);
         foreach (array_unique($sizes[0]) as $size) {
             $text = preg_replace('/(?<![\d.,£€$])'.preg_quote($size, '/').'(?![\p{L}\d])/iu', ' ', $text);
+        }
+
+        preg_match_all('/(?<![\p{L}\d])\p{Lu}\p{L}{2,}\h+\d+(?![\d.,]?\d|\h?(?:\p{L}|%))/u', $productNames, $labels);
+        foreach (array_unique($labels[0]) as $label) {
+            $text = preg_replace('/(?<![\p{L}\d])'.preg_quote($label, '/').'(?![\d.,]?\d)/u', ' ', $text);
         }
 
         preg_match_all(self::SIZE_PATTERN, $productNames, $nameSizes, PREG_SET_ORDER);
@@ -1467,7 +1472,7 @@ class AskShoppingAssistant
             : '- When the customer asks how quickly orders are dispatched, call dispatch_times; when they ask what shipping costs, call shipping_cost. The system adds the sentence with the real figure under your reply: write one short lead-in with no figure, and never promise a delivery date.';
         $leadRule     = $dropshipping
             ? ''
-            : "\n- Whenever the customer says how much they plan or would order, call big_order_lead with that amount; the system decides whether it is big enough for a call. If it is, ask whether they want a call from our team, on the phone number in their account or another one, and when suits them, and call big_order_lead again with their answer. Never say who will call or promise a discount or a time we did not agree.";
+            : "\n- Whenever the customer says how much they plan or would order, call big_order_lead with that amount; the system decides whether it is big enough for a call. When they give a number of pieces rather than a value, never ask them to work out what it comes to: ask in plain words roughly what budget they have in mind for the order. If it is big enough, ask whether they want a call from our team, on the phone number in their account or another one, and when suits them, and call big_order_lead again with their answer. Never say who will call or promise a discount or a time we did not agree.";
         $notBetterPrice   = $dropshipping ? '' : ' or better_price_options';
         $neverBetterPrice = $dropshipping ? '' : ', never better_price_options';
         $priceRule        = $dropshipping
