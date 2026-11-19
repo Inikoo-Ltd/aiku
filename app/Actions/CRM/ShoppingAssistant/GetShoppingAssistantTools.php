@@ -2009,7 +2009,7 @@ class GetShoppingAssistantTools
         $locale   = $conversation->language_code;
         $currency = $customer->shop->currency->code;
         $money    = fn ($amount) => Number::currency((float) $amount, $currency, $locale);
-        $products = Product::where('shop_id', $customer->shop_id)->whereIn('id', $ids)->get()->sortBy(fn (Product $product) => $ids->search($product->id))->values();
+        $products = Product::where('shop_id', $customer->shop_id)->visibleToCustomer($customer->id)->whereIn('id', $ids)->get()->sortBy(fn (Product $product) => $ids->search($product->id))->values();
 
         $lines = $products->map(fn (Product $product) => implode(' · ', array_filter([
             $product->code,

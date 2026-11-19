@@ -862,12 +862,33 @@ test('a staff answer about one customer is never kept as knowledge for every cus
     UpdateStaffTask::run($second['task'], $this->user, ['status' => StaffTaskStatusEnum::DONE->value, 'note' => 'We do not sell samples; single units can be ordered.']);
 
     expect(ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count())->toBe($notesBefore)
-        ->and(\App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer::run('Contact', 'Write to jane.smith@gmail.com'))->toBeTrue()
-    ;
+        ->and(\App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer::run('Contact', 'Write to buyer@example-shop.test'))->toBeTrue();
 
     $this->aboutOneCustomer = null;
     expect(\App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer::run('Samples', 'We do not sell samples.'))->toBeTrue();
 
     $this->aboutOneCustomer = 0.05;
     expect(\App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer::run('Samples', 'We do not sell samples. Ask care@ancientwisdom.biz.'))->toBeFalse();
+});
+
+test('the shop notes kept from a customer\'s questions are deleted when the customer is anonymised, and a refused keep is recorded as not kept', function () {
+    $conversation = teamQuestionConversation($this);
+    $customer     = $conversation->customer;
+    $kept         = StoreShoppingAssistantTeamQuestion::run($conversation, 'Do you sell gift wrapping?', 'gift wrap?')['task'];
+    AnswerShoppingAssistantTeamQuestion::run($kept, $this->user, 'We do not offer gift wrapping.');
+    $noteId = data_get($kept->refresh()->data, 'kept_note_id');
+
+    $other   = teamQuestionConversation($this);
+    $refused = StoreShoppingAssistantTeamQuestion::run($other, 'Can I get a discount?', 'discount?')['task'];
+    $this->aboutOneCustomer = 0.9;
+    AnswerShoppingAssistantTeamQuestion::run($refused, $this->user, 'You personally get 10% off your next order.');
+
+    expect($noteId)->not->toBeNull()
+        ->and(ChatKnowledgeEntry::whereKey($noteId)->exists())->toBeTrue()
+        ->and(data_get($refused->refresh()->data, 'kept_for_everyone'))->toBeFalse()
+        ->and(data_get($refused->data, 'kept_note_id'))->toBeNull();
+
+    \App\Actions\CRM\Customer\AnonymiseCustomer::make()->action($customer->refresh(), 'Erasure request', false);
+
+    expect(ChatKnowledgeEntry::whereKey($noteId)->exists())->toBeFalse();
 });

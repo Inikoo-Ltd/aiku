@@ -4214,6 +4214,13 @@ test('Merlin lists codes, barcodes, prices, RRP and stock of shown products as l
         ->and(json_encode($result['content']))->not->toContain('5056368302749')
         ->and($result['fact'])->not->toContain($hidden->code)
         ->and($nothing['error'])->toContain('No product shown');
+
+    $someoneElse = shoppingAssistantCustomer($this->shop);
+    DB::table('product_has_exclusive_customers')->insert(['product_id' => $empty->id, 'customer_id' => $someoneElse->id, 'created_at' => now(), 'updated_at' => now()]);
+    $exclusive = GetShoppingAssistantTools::make()->execute($conversation, 'product_details', ['product_ids' => [$listed->id, $empty->id]]);
+
+    expect($exclusive['fact'])->toContain($listed->code)
+        ->and($exclusive['fact'])->not->toContain($empty->code);
 });
 
 test('a product a customer bought before is marked in the search and goes back in the basket at the quantity of their last order when they reorder', function () {
