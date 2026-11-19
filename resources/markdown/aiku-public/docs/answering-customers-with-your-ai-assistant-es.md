@@ -36,7 +36,7 @@ Funciona con cualquier asistente que pueda conectarse a aiku. Háblale en tu idi
 3. **Dile qué debe decir la respuesta.** El asistente la redacta con los datos que le dio aiku.
 4. **Guarda el borrador en el chat.** Abre el chat en aiku: el borrador está en el cuadro de IA encima del campo de mensaje, marcado con tu nombre y el asistente que usaste. Pulsa <b>Use</b> (Usar) para ponerlo en el campo de mensaje, cambia lo que quieras y envíalo. O pulsa <b>Discard</b> (Descartar).
 
-Si el asistente no está seguro de algo que solo puedes decidir tú, deja un hueco marcado así: `[[¿reembolso o reposición?]]`. aiku no enviará un mensaje que todavía tenga uno, así que rellénalo o bórralo antes.
+El asistente siempre escribe una respuesta completa. Donde decidirías tú, por ejemplo un abono o una reposición, escribe lo que suele decidir el equipo de tu tienda, y la lista bajo el borrador marca esa pregunta como "nuestra decisión habitual, revísala". Cámbiala si este caso es distinto. Aprende las respuestas habituales de tu tienda de las que tu equipo ya ha enviado.
 
 <aside class="tip">
 Pídele que te explique antes de escribir: <i>"¿Qué sabemos de este pedido?"</i> Leer nunca cambia nada.

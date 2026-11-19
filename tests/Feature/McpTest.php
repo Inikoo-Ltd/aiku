@@ -3033,6 +3033,9 @@ describe('customer service tools', function () {
             'message_text'    => str_repeat('a', 100),
         ]);
         App\Actions\Chat\ChatSession\GetChatShopFacts::mock()->shouldReceive('shopFacts')->andReturn([['title' => 'Currency', 'body' => 'Prices are in GBP']]);
+        App\Actions\Chat\ChatSession\FindChatReplyExamples::mock()->shouldReceive('handle')
+            ->withArgs(fn (App\Models\Catalogue\Shop $shop, string $customerWrote) => $shop->is($this->shop) && str_contains($customerWrote, 'candle holders arrived broken'))
+            ->andReturn([['customer' => 'A glass arrived broken', 'staff_replied' => 'Sorry, we have credited it to your account.', 'at' => '2026-11-02']]);
         Illuminate\Support\Facades\Cache::flush();
         $shopType = $this->shop->type;
         $this->shop->update(['type' => App\Enums\Catalogue\Shop\ShopTypeEnum::B2B]);
@@ -3040,7 +3043,9 @@ describe('customer service tools', function () {
         $this->shop->update(['type' => $shopType]);
         expect($opened['house_rules']['typical_staff_reply_chars'])->toBe(100)
             ->and($opened['house_rules']['shop_facts'])->toBe([['title' => 'Currency', 'body' => 'Prices are in GBP']])
-            ->and($opened['how_to_answer'])->toContain('at most 300 characters');
+            ->and($opened['how_to_answer'])->toContain('at most 300 characters')
+            ->and($opened['how_to_answer'])->toContain('no [[gaps]]')->not->toContain('leave a gap')
+            ->and($opened['how_staff_answered'])->toBe([['customer' => 'A glass arrived broken', 'staff_replied' => 'Sorry, we have credited it to your account.', 'at' => '2026-11-02']]);
 
         $this->mock(App\Actions\CRM\ShoppingAssistant\GetOrderDispatchOutlook::class)->shouldReceive('handle')
             ->andReturn(['kind' => 'estimate', 'from' => Carbon\Carbon::parse('2026-11-23'), 'to' => Carbon\Carbon::parse('2026-11-25'), 'delivery_note_id' => 1], ['kind' => 'waiting_decision', 'items' => ['Candle holder'], 'delivery_note_id' => 1]);
@@ -3794,13 +3799,13 @@ describe('customer service tools', function () {
             ->and($shown()['questions'])->toBe([])
             ->and($shown()['other_chats'])->toBe([]);
 
-        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Thanks for the photo, we are sending a new one. Your order ships [[when?]].', 'questions' => [
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Thanks for the photo, we are sending a new one with your next order.', 'questions' => [
             ['text' => ' Photo of the broken holder ', 'status' => 'answered'],
-            ['text' => 'When the next order ships', 'status' => 'gap'],
+            ['text' => 'When the next order ships', 'status' => 'usual_decision'],
         ]])->assertOk();
 
         $facts = App\Actions\Chat\ChatSession\DraftChatReply::pendingDraft($this->chat)->facts;
-        expect($facts['questions'])->toBe([['text' => 'Photo of the broken holder', 'status' => 'answered'], ['text' => 'When the next order ships', 'status' => 'gap']])
+        expect($facts['questions'])->toBe([['text' => 'Photo of the broken holder', 'status' => 'answered'], ['text' => 'When the next order ships', 'status' => 'usual_decision']])
             ->and($facts['since_last_reply']['count'])->toBe(2)
             ->and($facts['since_last_reply']['after_reply'])->toBeTrue()
             ->and($facts['since_last_reply']['first_at'])->not->toBeEmpty();

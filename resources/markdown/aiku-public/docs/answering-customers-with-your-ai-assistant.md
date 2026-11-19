@@ -35,7 +35,7 @@ It works with any assistant that can connect to aiku. Talk to it in your own lan
 3. **Say what the answer should say.** The assistant drafts it from the facts aiku gave it.
 4. **It saves the draft on the chat.** Open the chat in aiku: the draft is in the AI box above the message field, marked with your name and the assistant you used. Press <b>Use</b> to put it in the message field, change what you want and send it. Or press <b>Discard</b>.
 
-If the assistant is not sure of something only you can decide, it leaves a gap marked like `[[refund or replacement?]]`. aiku will not send a message that still has one, so fill it in or delete it first.
+The assistant always writes a full reply. Where you would decide something, such as a credit or a replacement, it writes what your shop's staff usually decide, and the checklist under the draft marks that question "our usual decision, check". Change it if this case is different. It learns your shop's usual answers from the replies your team has sent before.
 
 <aside class="tip">
 Ask it to explain before it writes: <i>"What do we know about this order?"</i> Reading never changes anything.

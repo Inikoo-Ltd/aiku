@@ -662,7 +662,7 @@ test('an email out of hours gets the closed-now reply at once and never an AI an
     outOfHoursTestCleanUp($schedule, [$answered]);
 });
 
-test('what agents keep telling different customers is learned and put to staff once enough customers heard it, and only a person turns it on', function () {
+test('what agents keep telling different customers is learned and put to staff once enough customers heard it, and a strong rule turns itself on once it passes the checks', function () {
     $shop = $this->shop;
     \App\Actions\Helpers\AI\EmbedTexts::mock()->shouldReceive('handle')->andReturnUsing(fn (array $texts) => array_map(fn (string $text) => array_pad(str_contains($text, 'VAT') ? [1.0, 0.0] : [0.0, 1.0], 1024, 0.0), $texts));
     \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
@@ -749,6 +749,23 @@ test('what agents keep telling different customers is learned and put to staff o
     expect(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['replies'])->toBe(1)
         ->and(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop, 0)['replies'])->toBe(1)
         ->and(\App\Models\Comms\EmailArchiveMessage::where('gmail_message_id', 'r-years-ago')->value('learned_at'))->not->toBeNull();
+
+    $contradicts = 0.1;
+    \App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer::shouldRun()->andReturn(false);
+    \App\Actions\CRM\ShoppingAssistant\IsGeneralAnswer::shouldRun()->andReturn(true, false);
+    $learned = fn (string $title, int $customers) => \App\Models\Chat\ChatKnowledgeEntry::create(['group_id' => $shop->group_id, 'organisation_id' => $shop->organisation_id, 'shop_id' => $shop->id, 'kind' => 'learned', 'source_type' => 'learned', 'status' => 'proposed', 'title' => $title, 'body' => "$title: as staff keep telling customers.", 'customers_count' => $customers, 'last_seen_at' => now()]);
+    $strong  = $learned('Samples', 9);
+    $vague   = $learned('Ask us', 6);
+    $weak    = $learned('Gift wrap', 4);
+    expect(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['activated'])->toBe(1)
+        ->and($strong->refresh()->status)->toBe('active')
+        ->and($strong->expires_at?->toDateString())->toBe(now()->addDays(\App\Actions\Chat\ChatSession\LearnChatKnowledge::STALE_DAYS)->toDateString())
+        ->and($vague->refresh()->status)->toBe('proposed')
+        ->and($vague->evidence['auto_refused_at_customers'])->toBe(6)
+        ->and($weak->refresh()->status)->toBe('proposed');
+
+    \App\Actions\CRM\ShoppingAssistant\IsGeneralAnswer::shouldRun()->never();
+    expect(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['activated'])->toBe(0);
 
     \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
     \App\Models\Comms\EmailArchiveMessage::where('gmail_thread_id', 'like', 'th-learn-%')->delete();

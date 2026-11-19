@@ -36,7 +36,7 @@ Funguje s akýmkoľvek asistentom, ktorý sa vie pripojiť k aiku. S asistentom 
 3. **Povedzte, čo má odpoveď obsahovať.** Asistent ju napíše z faktov, ktoré mu aiku dalo.
 4. **Návrh uloží na chat.** Otvorte chat v aiku: návrh je v AI poli nad poľom na správu, označený vaším menom a asistentom, ktorého ste použili. Stlačením <b>Use</b> (použiť) ho vložíte do poľa na správu, upravíte, čo chcete, a odošlete. Alebo stlačte <b>Discard</b> (zahodiť).
 
-Ak si asistent nie je istý niečím, o čom môžete rozhodnúť len vy, nechá medzeru označenú napríklad `[[refund alebo výmena?]]`. aiku neodošle správu, ktorá ju ešte obsahuje, takže ju najprv doplňte alebo vymažte.
+Asistent vždy napíše celú odpoveď. Tam, kde by ste rozhodli vy, napríklad dobropis alebo výmena, napíše to, čo zvyčajne rozhodujú kolegovia vášho obchodu, a zoznam pod návrhom označí túto otázku ako „naše obvyklé rozhodnutie, skontrolujte". Ak je tento prípad iný, zmeňte to. Obvyklé odpovede vášho obchodu sa učí z odpovedí, ktoré váš tím už poslal.
 
 <aside class="tip">
 Požiadajte ho, aby najprv vysvetlil, a až potom písal: <i>"Čo vieme o tejto objednávke?"</i> Čítanie nikdy nič nemení.

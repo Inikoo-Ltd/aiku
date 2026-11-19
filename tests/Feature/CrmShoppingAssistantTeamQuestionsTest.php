@@ -62,8 +62,10 @@ beforeEach(function () {
     $this->followsFromEvidence    = null;
     $this->isFault                = null;
     $this->aboutOneCustomer       = 0.05;
+    $this->generalAnswer          = 0.95;
     Http::fake(['*alpha/decisions' => fn ($request) => Http::response(['answers' => ['answer' => ['noul' => match (true) {
         str_contains($request->body(), 'specific customer')          => $this->aboutOneCustomer,
+        str_contains($request->body(), 'useful to every customer')   => $this->generalAnswer,
         str_contains($request->body(), 'follow from the evidence')   => $this->followsFromEvidence,
         str_contains($request->body(), 'engineers must look at it') => $this->isFault,
         default                                                      => $this->notAnAnswerProbability,
@@ -589,7 +591,7 @@ test('the researcher answers only when an independent check is very sure the evi
         ->and(ResearchShoppingAssistantTeamQuestion::toConfirm($this->organisation->id)->pluck('id'))->not->toContain($task->id);
 });
 
-test('a kept answer waits for a second person before Merlin uses it, and the morning round asks the other gurus, with a few of the agents\' answers waiting for a yes', function () {
+test('a guru\'s kept answer is used at once, with no second guru, and the morning round still asks about the agents\' answers waiting for a yes', function () {
     Notification::fake();
     $conversation = teamQuestionConversation($this);
     $task         = StoreShoppingAssistantTeamQuestion::run($conversation, 'Do you sell testers?', 'testers?')['task'];
@@ -598,20 +600,27 @@ test('a kept answer waits for a second person before Merlin uses it, and the mor
     $note = ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->where('created_by_user_id', $this->person->id)->latest('id')->first();
     $learned = ChatKnowledgeEntry::create(['group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id, 'kind' => 'learned', 'source_type' => 'learned', 'status' => 'proposed', 'title' => 'Samples', 'body' => 'We do not send free samples.', 'customers_count' => 4]);
 
-    expect($note->status)->toBe('proposed')
-        ->and(ChatKnowledgeEntry::forShop($this->shop)->whereKey($note->id)->exists())->toBeFalse()
-        ->and(UpdateShopChatKnowledgeNote::awaitsDecisionBy($note, $this->person))->toBeFalse()
-        ->and(UpdateShopChatKnowledgeNote::awaitsDecisionBy($note, $this->backup))->toBeTrue();
+    expect($note->status)->toBe('active')
+        ->and(ChatKnowledgeEntry::forShop($this->shop)->whereKey($note->id)->exists())->toBeTrue()
+        ->and(UpdateShopChatKnowledgeNote::awaitsDecisionBy($note, $this->backup))->toBeFalse();
+
+    $notesBefore         = ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count();
+    $this->generalAnswer = 0.1;
+    $mismatched          = StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Does the salt diffuser have CE marking?', 'CE?')['task'];
+    AnswerShoppingAssistantTeamQuestion::run($mismatched, $this->person, 'Essential oils do not need a CPNP registration.');
+    $this->generalAnswer = null;
+    $unread              = StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Do you sell gift bags?', 'gift bags?')['task'];
+    AnswerShoppingAssistantTeamQuestion::run($unread, $this->person, 'Yes, in packs of ten.');
+    $this->generalAnswer = 0.95;
+
+    expect(ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count())->toBe($notesBefore);
 
     $tz = $this->organisation->timezone?->name ?? 'UTC';
     Carbon::setTestNow(CarbonImmutable::parse('next thursday 09:05', $tz));
     SendShoppingAssistantMorningRound::run();
 
-    Notification::assertSentTo($this->backup, ShoppingAssistantMorningRoundNotification::class, fn (ShoppingAssistantMorningRoundNotification $notification) => $notification->facts?->contains('id', $note->id) && $notification->facts->contains('id', $learned->id) && str_contains($notification->summary(), 'Still true?'));
-    Notification::assertSentTo($this->person, ShoppingAssistantMorningRoundNotification::class, fn (ShoppingAssistantMorningRoundNotification $notification) => !$notification->facts?->contains('id', $note->id) && $notification->facts->contains('id', $learned->id));
+    Notification::assertSentTo($this->backup, ShoppingAssistantMorningRoundNotification::class, fn (ShoppingAssistantMorningRoundNotification $notification) => !$notification->facts?->contains('id', $note->id) && $notification->facts->contains('id', $learned->id) && str_contains($notification->summary(), 'Still true?'));
 
-    $note->update(['status' => 'active']);
-    expect(ChatKnowledgeEntry::forShop($this->shop)->whereKey($note->id)->exists())->toBeTrue();
     $learned->delete();
 });
 

@@ -1136,3 +1136,38 @@ test('UpdateChatSession returns empty array and logs nothing when no fields chan
         'chat_session_id' => $chatSession->id,
     ]);
 });
+
+test('staff replies are collected as reply examples, campaign mails sent long after the customer wrote are not, and a CS draft is shown the shop\'s nearest ones', function () {
+    config(['services.openrouter.api_key' => 'test']);
+    \Illuminate\Support\Facades\Http::fake(['*embeddings' => fn ($request) => \Illuminate\Support\Facades\Http::response(['data' => collect($request['input'])->values()->map(fn ($text, $index) => ['index' => $index, 'embedding' => array_fill(0, 1024, str_contains($text, 'invoice') ? 0.1 : 0.9)])->all()])]);
+
+    $chatSession = ChatSession::create([
+        'ulid'             => Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'guest_identifier' => 'reply_examples_'.Str::random(6),
+        'language_id'      => 68,
+        'shop_id'          => $this->shop->id,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'ai_model_version' => 'default',
+    ]);
+    $message = fn (ChatSenderTypeEnum $from, string $text, int $daysAgo) => ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => $from,
+        'message_text'    => $text,
+        'created_at'      => now()->subDays($daysAgo),
+    ]);
+    $message(ChatSenderTypeEnum::USER, 'Where can I find my invoice?', 40);
+    $answer   = $message(ChatSenderTypeEnum::AGENT, 'You can download it from your profile.', 40);
+    $message(ChatSenderTypeEnum::USER, 'Thanks a lot', 39);
+    $campaign = $message(ChatSenderTypeEnum::AGENT, 'Your last order was a while ago, here is a voucher.', 2);
+
+    \App\Actions\Chat\ChatSession\HydrateChatReplyExamples::run();
+
+    expect(\App\Models\Chat\ChatReplyExample::where('source', 'chat')->where('source_id', $answer->id)->value('reply'))->toBe('You can download it from your profile.')
+        ->and(\App\Models\Chat\ChatReplyExample::where('source', 'chat')->where('source_id', $campaign->id)->exists())->toBeFalse()
+        ->and(\App\Actions\Chat\ChatSession\FindChatReplyExamples::run($this->shop, 'I need a copy of my invoice', 1))->toBe([['customer' => 'Where can I find my invoice?', 'staff_replied' => 'You can download it from your profile.', 'at' => now()->subDays(40)->toDateString()]])
+        ->and(\App\Actions\Chat\ChatSession\FindChatReplyExamples::run($this->shop, '  '))->toBeNull()
+        ->and(\App\Actions\Chat\ChatSession\FindChatReplyExamples::withoutCustomerDetails("Kedves Ádám,\n\nThe credit for HU13181 is on your profile, write to anna.k@gmail.com if not.\nRegards"))
+        ->toBe("The credit for [ref] is on your profile, write to [email] if not.\nRegards");
+});

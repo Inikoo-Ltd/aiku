@@ -8,6 +8,8 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\CRM\ShoppingAssistant\IsAboutOneCustomer;
+use App\Actions\CRM\ShoppingAssistant\IsGeneralAnswer;
 use App\Actions\Helpers\AI\AskJev;
 use App\Actions\Helpers\AI\AskToAi;
 use App\Actions\Helpers\AI\EmbedTexts;
@@ -17,6 +19,7 @@ use App\Models\Chat\ChatTurnReading;
 use App\Models\Comms\EmailArchiveMessage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -38,6 +41,14 @@ class LearnChatKnowledge
 
     public const int MIN_CUSTOMERS = 3;
 
+    public const int STRONG_CUSTOMERS = 5;
+
+    public const int STRONG_SEEN_DAYS = 90;
+
+    public const int STALE_DAYS = 180;
+
+    private const string UNCHECKED = '(not checked)';
+
     private const int RECENT_DAYS = 365;
 
     private const int CLOSEST_RULES = 15;
@@ -49,11 +60,11 @@ class LearnChatKnowledge
     private const float CONTRADICTS = 0.5;
 
     /**
-     * @return array{replies: int, rules: int, promoted: int, conflicts: int}
+     * @return array{replies: int, rules: int, promoted: int, conflicts: int, activated: int}
      */
     public function handle(Shop $shop, int $days = 365, ?int $limit = null): array
     {
-        $result = ['replies' => 0, 'rules' => 0, 'promoted' => 0, 'conflicts' => 0];
+        $result = ['replies' => 0, 'rules' => 0, 'promoted' => 0, 'conflicts' => 0, 'activated' => 0];
 
         $this->embedRulesMissingIt($shop);
 
@@ -75,6 +86,17 @@ class LearnChatKnowledge
 
         foreach (ChatKnowledgeEntry::where('shop_id', $shop->id)->where('source_type', 'learned')->where('status', 'candidate')->where('customers_count', '>=', self::MIN_CUSTOMERS)->where('last_seen_at', '>=', now()->subDays(self::RECENT_DAYS))->get() as $candidate) {
             $this->propose($shop, $candidate) ? $result['promoted']++ : $result['conflicts']++;
+        }
+
+        ChatKnowledgeEntry::where('shop_id', $shop->id)->where('source_type', 'learned')->where('status', 'active')->whereNotNull('last_seen_at')
+            ->where('evidence->auto_activated', true)
+            ->update(['expires_at' => DB::raw("last_seen_at + interval '".self::STALE_DAYS." days'")]);
+
+        foreach (ChatKnowledgeEntry::where('shop_id', $shop->id)->where('source_type', 'learned')->where('status', 'proposed')->where('customers_count', '>=', self::STRONG_CUSTOMERS)->where('last_seen_at', '>=', now()->subDays(self::STRONG_SEEN_DAYS))->orderByDesc('customers_count')->orderBy('id')->get() as $rule) {
+            if ((int) Arr::get($rule->evidence, 'auto_refused_at_customers', 0) >= $rule->customers_count) {
+                continue;
+            }
+            $result['activated'] += $this->activateStrong($shop, $rule) ? 1 : 0;
         }
 
         return $result;
@@ -288,16 +310,8 @@ class LearnChatKnowledge
      */
     private function propose(Shop $shop, ChatKnowledgeEntry $candidate): bool
     {
-        $related = collect(PickChatKnowledge::run($shop, $candidate->body, '(nothing yet)'))->reject(fn (array $entry) => $entry['id'] === $candidate->id)->values();
-        $answer  = $related->isEmpty() ? null : AskJev::make()->noul(
-            ['note' => $candidate->body, 'what_we_hold' => $related->map(fn (array $entry) => $entry['title'].': '.$entry['text'])->all()],
-            'Customer service of a wholesale giftware supplier. Does the note contradict anything in what we hold?',
-            'The note says something different from what we hold on the same point',
-            'The note agrees with what we hold, or it is about something else'
-        );
-
-        if ($answer !== null && $answer >= self::CONTRADICTS) {
-            $candidate->update(['status' => 'conflict', 'conflict' => $related->pluck('title')->join(' | ')]);
+        if ($conflict = $this->contradicts($shop, $candidate)) {
+            $candidate->update(['status' => 'conflict', 'conflict' => $conflict]);
 
             return false;
         }
@@ -306,6 +320,62 @@ class LearnChatKnowledge
             'status'     => 'proposed',
             'expires_at' => Arr::get($candidate->evidence, 'temporary') ? now()->addDays(self::TEMPORARY_DAYS) : null,
         ]);
+
+        return true;
+    }
+
+    /**
+     * The titles of what we hold that the rule contradicts, or null. With $failClosed a reading Jev
+     * could not give counts as a contradiction (self::UNCHECKED), so nothing goes live unchecked.
+     */
+    private function contradicts(Shop $shop, ChatKnowledgeEntry $rule, bool $failClosed = false): ?string
+    {
+        $related = collect(PickChatKnowledge::run($shop, $rule->body, '(nothing yet)'))->reject(fn (array $entry) => $entry['id'] === $rule->id)->values();
+        $answer  = $related->isEmpty() ? null : AskJev::make()->noul(
+            ['note' => $rule->body, 'what_we_hold' => $related->map(fn (array $entry) => $entry['title'].': '.$entry['text'])->all()],
+            'Customer service of a wholesale giftware supplier. Does the note contradict anything in what we hold?',
+            'The note says something different from what we hold on the same point',
+            'The note agrees with what we hold, or it is about something else'
+        );
+
+        if ($answer === null && $failClosed && $related->isNotEmpty()) {
+            return self::UNCHECKED;
+        }
+
+        return $answer !== null && $answer >= self::CONTRADICTS ? $related->pluck('title')->join(' | ') : null;
+    }
+
+    /**
+     * Staff do not review proposed rules (INI-402: 1,302 waited, most shops never opened them), so a
+     * strong rule goes live by itself: told to STRONG_CUSTOMERS customers, seen lately, nothing about
+     * one customer, a general answer anyone could use, and contradicting nothing active, checked
+     * again now because a stronger rule activated earlier in the same run may say otherwise.
+     * Strongest first, so the most repeated wording wins. A refused rule is asked again only once
+     * more customers have been told it, so a borderline one is not re-scored nightly until a lucky
+     * reading lets it through; an unchecked one (no reading) is simply tried the next night. An
+     * active learned rule expires STALE_DAYS after staff last said it, so a changed policy is not
+     * blocked for ever by the old one.
+     */
+    private function activateStrong(Shop $shop, ChatKnowledgeEntry $rule): bool
+    {
+        if (IsAboutOneCustomer::run($rule->title, $rule->body) || !IsGeneralAnswer::run($rule->title, $rule->body)) {
+            $rule->update(['evidence' => [...(array) $rule->evidence, 'auto_refused_at_customers' => $rule->customers_count]]);
+
+            return false;
+        }
+
+        $conflict = $this->contradicts($shop, $rule, failClosed: true);
+        if ($conflict === self::UNCHECKED) {
+            return false;
+        }
+
+        if ($conflict) {
+            $rule->update(['status' => 'conflict', 'conflict' => $conflict]);
+
+            return false;
+        }
+
+        $rule->update(['status' => 'active', 'evidence' => [...(array) $rule->evidence, 'auto_activated' => true], 'expires_at' => $rule->last_seen_at?->copy()->addDays(self::STALE_DAYS)]);
 
         return true;
     }
@@ -320,7 +390,7 @@ class LearnChatKnowledge
 
         foreach ($shops as $shop) {
             $result = $this->handle($shop, (int) $command->option('days'), $command->option('limit') ? (int) $command->option('limit') : null);
-            $command->info("{$shop->slug}: {$result['replies']} replies read, {$result['rules']} rules seen, {$result['promoted']} proposed to staff, {$result['conflicts']} proposed as contradicting");
+            $command->info("{$shop->slug}: {$result['replies']} replies read, {$result['rules']} rules seen, {$result['promoted']} proposed to staff, {$result['conflicts']} proposed as contradicting, {$result['activated']} strong rules activated");
         }
 
         return 0;

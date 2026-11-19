@@ -57,7 +57,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
 {
     use WithMcpChangeLog;
 
-    public const array QUESTION_STATUSES = ['answered', 'gap'];
+    public const array QUESTION_STATUSES = ['answered', 'usual_decision', 'gap'];
 
     private const array ACTIONS = ['save_draft', 'reply', 'assign_to_me', 'close', 'wait_for_reply', 'stop_waiting', 'link_customer', 'unlink_customer', 'mark_spam', 'close_thanks', 'add_note', 'record_outcome', 'start_run', 'claim_chats', 'finish_run', 'remember_fact', 'dispute_fact'];
 
@@ -346,7 +346,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'saved'     => 'draft',
             'chat'      => $chatSession->ulid,
             'draft_id'  => $draft->id,
-            'next_step' => 'Nothing was sent. The draft is waiting on the chat in Aiku, where the user can send it, edit it or discard it. Any [[gap]] left in it must be filled there before it can be sent.',
+            'next_step' => 'Nothing was sent. The draft is waiting on the chat in Aiku, where the user can send it, edit it or discard it.',
         ]);
     }
 
@@ -714,12 +714,12 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
         return [
             'chat_id'      => $schema->string()->description('Chat ID copied from the Overview panel of the chat; not needed for start_run, claim_chats and finish_run'),
             'action'       => $schema->string()->enum(self::ACTIONS)->description('What to do on the chat')->required(),
-            'message'      => $schema->string()->description('For add_note: the note for staff. For save_draft (may be left out with a spam or close action) and reply: the full text for the customer, plain text, in the language reply_in names, signed as the user would sign it. In a draft, [[what to check]] marks something only the user can decide'),
+            'message'      => $schema->string()->description('For add_note: the note for staff. For save_draft (may be left out with a spam or close action) and reply: the full text for the customer, plain text, in the language reply_in names, signed as the user would sign it. Never [[gaps]]: write the shop\'s usual decision, or ask the customer for what is missing'),
             'staff_note'   => $schema->string()->description('For save_draft only: a short note for staff shown on the draft itself, never sent to the customer, in the user\'s language. Start it with "Before sending:" when staff must do something first (refund, credit, replacement); otherwise what was checked and anything uncertain'),
             'checked'      => $schema->array()->items($schema->string())->description('For save_draft only: up to 12 short lines of what was checked in Aiku for this answer, each a fact with its reference (e.g. "AWD196419 dispatched 13 Oct, Royal Mail XQ573801258GB"), shown to staff on the draft'),
             'questions'    => $schema->array()->items($schema->object([
                 'text'   => $schema->string()->description('one short line, in the user\'s language')->required(),
-                'status' => $schema->string()->enum(self::QUESTION_STATUSES)->description('answered when the draft answers it, gap when the draft leaves it to staff as a [[...]]')->required(),
+                'status' => $schema->string()->enum(self::QUESTION_STATUSES)->description('answered when the draft answers it from the data; usual_decision when the draft writes what this shop\'s staff usually decide (credit, replacement, refund) and staff should check it; gap only for drafts written before gaps were dropped, never in a new draft')->required(),
             ]))->description('For save_draft only: every distinct question or request the customer sent since our last reply, up to 20, in the order they came, shown to staff as a checklist with how many times the customer wrote and their other open chats, so nothing is missed'),
             'premonitions' => $schema->array()->items($schema->string())->description('For save_draft only: PRE ticket references raised or found for a problem in this chat, shown to staff on the draft with their live status'),
             'actions'      => $schema->array()->items($schema->object([
@@ -752,7 +752,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'account'      => $schema->string()->description('For start_run: the label of the claude.ai account running the sweep, as given in its routine prompt, so runs can be told apart by account'),
             'intent'       => $schema->string()->enum(ChatIntentEnum::values())->description('For save_draft only: the one thing the customer\'s latest message asks for: '.collect(ChatIntentEnum::definitions())->map(fn (string $meaning, string $intent) => "$intent = $meaning")->implode('; ')),
             'risk'         => $schema->string()->enum(ChatAiRiskEnum::values())->description('For save_draft only: what the draft does, the highest that applies: '.collect(ChatAiRiskEnum::definitions())->map(fn (string $meaning, string $risk) => "$risk = $meaning")->implode('; ')),
-            'answers_all'  => $schema->boolean()->description('For save_draft only: true when the draft answers every question the customer asked, with no [[gap]] left'),
+            'answers_all'  => $schema->boolean()->description('For save_draft only: true when the draft answers every question the customer asked'),
             'would_send'   => $schema->boolean()->description('For save_draft only: true when you would send this draft to the customer exactly as it is, without a person reading it first. Nothing is sent either way; it is counted against what staff then do'),
             'facts_used'   => $schema->array()->items($schema->integer())->description('For save_draft only: the fact_id of every verified fact (house_rules.verified_facts or remember_fact) the draft relies on. If staff discard the draft or rate it a wrong fact, those facts stop being trusted until checked again'),
             'fact_title'   => $schema->string()->description('For remember_fact: a short stable title, e.g. "awd small order charge"; the same title replaces the older version of the fact'),

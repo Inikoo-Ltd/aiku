@@ -123,8 +123,8 @@ class AnswerShoppingAssistantTeamQuestion
         }
 
         $shop = Shop::find(data_get($task->data, 'shop_id'));
-        if ($keepForEveryone && $shop && !IsAboutOneCustomer::run($question, $answer)) {
-            $note = UpdateShopChatKnowledgeNote::make()->handle($shop, null, ['title' => self::noteTitle($question), 'body' => mb_substr($answer, 0, 2000)], $user, $this->needsSecondYes($task, $user) ? 'proposed' : 'active');
+        if ($keepForEveryone && $shop && !IsAboutOneCustomer::run($question, $answer) && IsGeneralAnswer::run($question, $answer)) {
+            $note = UpdateShopChatKnowledgeNote::make()->handle($shop, null, ['title' => self::noteTitle($question), 'body' => mb_substr($answer, 0, 2000)], $user);
             $task->update(['data' => [...$task->data, 'kept_note_id' => $note->id]]);
             dispatch(fn () => HydrateChatKnowledge::make()->embedMissing($shop));
         } elseif ($keepForEveryone) {
@@ -166,16 +166,6 @@ class AnswerShoppingAssistantTeamQuestion
                         ->delete();
                 }
             });
-    }
-
-    /**
-     * While new answers are reviewed, a kept answer waits for another guru of the shop; with no
-     * other guru to say yes, it is used at once rather than never.
-     */
-    private function needsSecondYes(StaffTask $task, User $user): bool
-    {
-        return config('services.shopping_assistant.review_new_answers')
-            && collect(StoreShoppingAssistantTeamQuestion::gurusOfTask($task))->contains(fn (User $guru) => $guru->id !== $user->id);
     }
 
     public function authorize(ActionRequest $request): bool

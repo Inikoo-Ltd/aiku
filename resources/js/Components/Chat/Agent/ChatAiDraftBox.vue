@@ -44,7 +44,7 @@ interface Draft {
     checked?: string[]
     premonitions?: { reference: string, subject: string, fixed: boolean, url: string }[]
     actions?: DraftAction[]
-    questions?: { text: string, status: "answered" | "gap" }[]
+    questions?: { text: string, status: "answered" | "usual_decision" | "gap" }[]
     since_last_reply?: { count: number, first_at: string, last_at: string, after_reply: boolean } | null
     other_chats?: { ulid: string, shop: string | null, channel: string | null, url: string }[]
     rating: number | null
@@ -433,7 +433,7 @@ onBeforeUnmount(stopListening)
                             <FontAwesomeIcon :icon="question.status === 'answered' ? faCheck : faExclamationTriangle" :class="question.status === 'answered' ? 'text-green-600' : 'text-amber-500'" class="mt-0.5" fixed-width aria-hidden="true" />
                             <span class="min-w-0 flex-1">{{ questionText(position) }}</span>
                             <span class="whitespace-nowrap" :class="question.status === 'answered' ? 'text-green-700' : 'font-medium text-amber-700'">
-                                {{ question.status === "answered" ? ctrans("answered") : ctrans("gap for staff") }}
+                                {{ question.status === "answered" ? ctrans("answered") : question.status === "usual_decision" ? ctrans("our usual decision, check") : ctrans("gap for staff") }}
                             </span>
                         </li>
                     </ol>
