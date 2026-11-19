@@ -51,6 +51,7 @@ import { notify } from "@kyvg/vue3-notification"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import ProductImageViewerDialog from "@/Components/Product/ProductImageViewerDialog.vue"
 import AgentSupplierProductPanel from "@/Components/Procurement/AgentSupplierProductPanel.vue"
+import SupplierProductProvidedBy from "@/Components/Procurement/SupplierProductProvidedBy.vue"
 import CompositionTriangle from "@/Components/Goods/CompositionTriangle.vue"
 
 library.add(
@@ -179,8 +180,10 @@ const props = defineProps<{
         other_suppliers?: {
             supplier_code: string
             supplier_name: string
+            image: object | null
             code: string
             is_available: boolean
+            supplier_route: routeType
             route: routeType | null
         }[]
         organisation?: {
@@ -667,7 +670,17 @@ const availabilityBadge = (isAvailable: boolean) =>
 
 <template>
     <div class="grid gap-6 p-6 md:grid-cols-3">
-        <AgentSupplierProductPanel v-if="data.agent" :panel="data.agent" />
+        <section v-if="!data.agent && (data.parties.length || data.other_suppliers?.length)" class="md:col-span-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <SupplierProductProvidedBy :parties="data.parties" :otherSuppliers="data.other_suppliers ?? []" />
+        </section>
+
+        <AgentSupplierProductPanel v-if="data.agent" :panel="data.agent">
+            <template v-if="data.parties.length || data.other_suppliers?.length" #aside>
+                <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <SupplierProductProvidedBy :parties="data.parties" :otherSuppliers="data.other_suppliers ?? []" compact />
+                </section>
+            </template>
+        </AgentSupplierProductPanel>
 
         <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <div class="flex gap-4">
@@ -815,47 +828,6 @@ const availabilityBadge = (isAvailable: boolean) =>
                         <dd class="text-sm tabular-nums text-gray-700">{{ row.value }}</dd>
                     </div>
                 </dl>
-            </template>
-
-            <template v-if="data.parties.length">
-                <h3 class="mb-3 mt-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    <Icon :data="{ icon: 'fal fa-person-dolly' }" />
-                    {{ ctrans("Provided by") }}
-                </h3>
-                <div class="flex flex-col gap-2">
-                    <component :is="party.route ? Link : 'div'" v-for="party in data.parties" :key="party.label"
-                        :href="party.route ? route(party.route.name, party.route.parameters) : undefined"
-                        class="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 transition hover:border-gray-300 hover:bg-gray-50">
-                        <Image v-if="party.image" :src="party.image" class="h-8 w-8 shrink-0" />
-                        <Icon v-else :data="{ icon: party.icon }" class="w-8 shrink-0 text-center text-gray-400" />
-                        <div class="min-w-0">
-                            <div class="text-xs uppercase tracking-wide text-gray-400">{{ party.label }}</div>
-                            <div class="truncate text-sm font-medium text-gray-700">{{ party.name }}</div>
-                        </div>
-                        <span class="ml-auto text-xs tabular-nums text-gray-400">{{ party.code }}</span>
-                    </component>
-                </div>
-
-                <template v-if="data.other_suppliers?.length">
-                    <div class="mb-2 mt-4 text-xs text-gray-500">
-                        {{ ctrans("Also supplied by :count other suppliers", { count: data.other_suppliers.length }) }}
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <component :is="other.route ? Link : 'div'" v-for="other in data.other_suppliers" :key="other.supplier_code + other.code"
-                            :href="other.route ? route(other.route.name, other.route.parameters) : undefined"
-                            class="flex items-center gap-3 rounded-lg border border-dashed border-gray-200 px-3 py-2 transition hover:border-gray-300 hover:bg-gray-50">
-                            <Icon :data="{ icon: 'fal fa-person-dolly' }" class="w-8 shrink-0 text-center text-gray-400" />
-                            <div class="min-w-0">
-                                <div class="truncate text-sm font-medium text-gray-700">{{ other.supplier_name }}</div>
-                                <div class="whitespace-nowrap text-xs text-gray-400">
-                                    {{ other.code }}
-                                    <span v-if="!other.is_available" class="ml-1 text-red-500">· {{ ctrans("Unavailable") }}</span>
-                                </div>
-                            </div>
-                            <span class="ml-auto whitespace-nowrap text-xs tabular-nums text-gray-400">{{ other.supplier_code }}</span>
-                        </component>
-                    </div>
-                </template>
             </template>
         </section>
 

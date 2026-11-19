@@ -526,6 +526,7 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
         </div>
 
         <div class="flex min-w-0 flex-col gap-6">
+            <slot name="aside" />
             <section :class="card">
                 <h3 :class="sectionTitle">
                     <FontAwesomeIcon icon="fal fa-shipping-fast" fixed-width aria-hidden="true" />

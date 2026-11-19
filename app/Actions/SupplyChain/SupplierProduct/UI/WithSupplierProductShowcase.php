@@ -33,6 +33,23 @@ trait WithSupplierProductShowcase
         return request()->route('organisation')?->type === OrganisationTypeEnum::AGENT ? null : $route;
     }
 
+    /**
+     * Trade units are group pages, so an agent page links them only for users allowed to open them.
+     */
+    private function tradeUnitRoute(TradeUnit $tradeUnit): ?array
+    {
+        $route = [
+            'name'       => 'grp.trade_units.units.show',
+            'parameters' => ['tradeUnit' => $tradeUnit->slug],
+        ];
+
+        if (request()->route('organisation')?->type !== OrganisationTypeEnum::AGENT) {
+            return $route;
+        }
+
+        return request()->user()?->authTo(['goods.view', 'compliance.view']) ? $route : null;
+    }
+
     protected function getSupplierProductShowcase(SupplierProduct $supplierProduct, bool $withSupplyChainLink = false, ?int $organisationId = null): array
     {
         $supplierProduct->loadMissing(['currency', 'supplier', 'agent', 'tradeUnits', 'stocks', 'image', 'images']);
@@ -93,10 +110,7 @@ trait WithSupplierProductShowcase
             'warning'           => $warning,
             'trade_unit'        => [
                 'code'  => $tradeUnit->code,
-                'route' => $this->groupRoute([
-                    'name'       => 'grp.trade_units.units.show',
-                    'parameters' => ['tradeUnit' => $tradeUnit->slug],
-                ]),
+                'route' => $this->tradeUnitRoute($tradeUnit),
             ],
             'stock'             => [
                 'code'  => $stock->code,
@@ -251,10 +265,7 @@ trait WithSupplierProductShowcase
                 'unit'  => $tradeUnit->type,
                 'units' => trimDecimalZeros($tradeUnit->pivot->quantity),
                 'image' => $tradeUnit->imageSources(),
-                'route' => $this->groupRoute([
-                    'name'       => 'grp.trade_units.units.show',
-                    'parameters' => ['tradeUnit' => $tradeUnit->slug],
-                ]),
+                'route' => $this->tradeUnitRoute($tradeUnit),
             ];
         })->all();
     }
