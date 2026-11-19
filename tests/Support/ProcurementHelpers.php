@@ -341,9 +341,9 @@ function placedStockDeliveryWithTwoLines($test, string $code): StockDelivery
     return $stockDelivery->fresh();
 }
 
-function agentOrganisationAdmin(Organisation $agentOrganisation, string $username): User
+function agentOrganisationAdmin(Organisation $agentOrganisation, string $username, string $jobPositionCode = 'org-admin'): User
 {
-    $orgAdmin = JobPosition::where('organisation_id', $agentOrganisation->id)->where('code', 'org-admin')->firstOrFail();
+    $orgAdmin = JobPosition::where('organisation_id', $agentOrganisation->id)->where('code', $jobPositionCode)->firstOrFail();
     $employee = StoreEmployee::make()->action($agentOrganisation, [
         'worker_number'   => $username,
         'alias'           => $username,

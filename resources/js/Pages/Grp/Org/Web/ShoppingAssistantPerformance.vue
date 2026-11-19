@@ -21,9 +21,9 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { Navigation } from "@/types/Tabs"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faComments, faShoppingCart, faMoneyBillWave, faPercentage, faCoins, faUndo, faTimes, faRobot, faUserHeadset, faExclamationTriangle, faHeadSideBrain } from "@fal"
+import { faComments, faShoppingCart, faMoneyBillWave, faPercentage, faCoins, faUndo, faTimes, faRobot, faUserHeadset, faExclamationTriangle, faHeadSideBrain, faUserClock } from "@fal"
 
-library.add(faComments, faShoppingCart, faMoneyBillWave, faPercentage, faCoins, faUndo, faTimes, faRobot, faUserHeadset, faExclamationTriangle, faHeadSideBrain)
+library.add(faComments, faShoppingCart, faMoneyBillWave, faPercentage, faCoins, faUndo, faTimes, faRobot, faUserHeadset, faExclamationTriangle, faHeadSideBrain, faUserClock)
 
 type Metric = { value: number; previous: number | null }
 type Option = { value: string | number; label: string }
@@ -307,6 +307,12 @@ const kpi = (key: string): Metric => kpis.value[key] ?? { value: 0, previous: nu
 const costCurrency = computed(() => props.overview?.cost_currency ?? props.cost_currency ?? props.currency)
 const money = (amount: number | null | undefined, code = props.currency) => locale.currencyFormat(code, amount ?? 0)
 const percent = (fraction: number | null | undefined) => (fraction === null || fraction === undefined ? "—" : (fraction * 100).toFixed(1) + "%")
+const hours = (value: number | null | undefined) => locale.number(Math.round((value ?? 0) * 10) / 10)
+const hoursChange = (metric: Metric | null | undefined) => {
+    if (!metric || metric.previous === null || metric.previous === undefined || (!metric.previous && !metric.value)) return null
+    const delta = Math.round((metric.value - metric.previous) * 10) / 10
+    return { text: (delta >= 0 ? "+" : "") + hours(delta) + " h", cls: delta === 0 ? "text-gray-500" : delta > 0 ? "text-[#006300]" : "text-[#d03b3b]" }
+}
 
 const change = (metric: Metric | null | undefined, better: "up" | "down" | "none" = "up", points = false) => {
     if (!metric || metric.previous === null || metric.previous === undefined) return null
@@ -371,6 +377,22 @@ const kpiCards = computed(() => {
             better: "up" as const,
             href: conversationsUrl("ordered"),
             lines: [ctrans("strict: :amount", { amount: money(kpi("strict_revenue").value) })],
+        },
+        {
+            key: "staff_time",
+            label: ctrans("Staff time"),
+            title: ctrans(
+                "A pessimistic estimate. Saved: conversations where the assistant answered a question itself and the customer did not write to us in the next 24 hours, halved, at :saved min each. Added: :question min for each question passed to our team and :hand_over min for each hand-over to a person.",
+                { saved: 4, question: 6, hand_over: 10 }
+            ),
+            icon: faUserClock,
+            metric: kpi("staff_hours"),
+            kind: "hours" as const,
+            better: "up" as const,
+            href: null,
+            lines: [
+                ctrans(":hours h saved · :added h added", { hours: hours(kpi("staff_hours_saved").value), added: hours(kpi("staff_hours_added").value) }),
+            ],
         },
         {
             key: "conversion",
@@ -702,14 +724,20 @@ const conversationsTable = computed(() => props.conversations)
 
         <template v-else>
             <section>
-                <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
-                    <div v-for="card in kpiCards" :key="card.key" class="min-w-0 rounded-lg border border-gray-200 bg-white px-4 py-3 max-lg:last:col-span-2">
-                        <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                <div class="grid grid-cols-2 gap-3 lg:grid-cols-6">
+                    <div v-for="card in kpiCards" :key="card.key" class="min-w-0 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                        <div class="flex items-center gap-1.5 text-xs text-gray-500" :title="'title' in card ? card.title : undefined">
                             <FontAwesomeIcon :icon="card.icon" class="text-gray-400" fixed-width aria-hidden="true" />
                             <span class="truncate">{{ card.label }}</span>
                         </div>
                         <component :is="card.href ? Link : 'div'" :href="card.href ?? undefined" class="mt-1 block text-2xl font-semibold" :class="card.href ? 'hover:underline decoration-gray-300 underline-offset-4' : ''">
-                            <template v-if="card.kind === 'rate'">
+                            <template v-if="card.kind === 'hours'">
+                                <div class="tabular-nums text-gray-900">{{ hours(card.metric.value) }} h</div>
+                                <div v-if="hoursChange(card.metric)" class="text-xs font-normal tabular-nums" :class="hoursChange(card.metric)?.cls">
+                                    {{ hoursChange(card.metric)?.text }}
+                                </div>
+                            </template>
+                            <template v-else-if="card.kind === 'rate'">
                                 <div class="tabular-nums text-gray-900">{{ percent(card.metric.value) }}</div>
                                 <div v-if="change(card.metric, 'up', true)" class="text-xs font-normal tabular-nums" :class="change(card.metric, 'up', true)?.cls">
                                     {{ change(card.metric, "up", true)?.text }}

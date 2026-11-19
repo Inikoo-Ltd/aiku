@@ -7,6 +7,8 @@ import io.aiku.droid.data.api.ClockingNoteResult
 import io.aiku.droid.data.api.ClockingResult
 import io.aiku.droid.data.api.QrClockingRequest
 import io.aiku.droid.data.api.QrClockingResult
+import io.aiku.droid.data.cache.CachedScreens
+import io.aiku.droid.data.cache.ScreenCache
 import io.aiku.droid.data.session.SessionRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +23,7 @@ import java.time.LocalDate
 class ClockingViewModel(
     private val clockingApi: ClockingApi,
     private val sessions: SessionRepository,
+    private val cache: ScreenCache,
 ) : ViewModel(), ClockingController {
 
     private val mutableState = MutableStateFlow(ClockingUiState())
@@ -53,12 +56,17 @@ class ClockingViewModel(
     override fun refresh(isPull: Boolean) {
         val token = currentToken() ?: return
         statusJob?.cancel()
-        mutableState.update { it.copy(isLoadingStatus = true, isRefreshing = isPull) }
+        mutableState.update { it.copy(isLoadingStatus = true, isRefreshing = isPull || it.isStatusCached) }
 
         statusJob = viewModelScope.launch {
+            if (mutableState.value.status == null) {
+                showCachedCopy()
+            }
             launch {
                 when (val result = clockingApi.clocking(token)) {
-                    is ClockingResult.Loaded -> mutableState.update { it.copy(status = result.value, isLoadingStatus = false, isRefreshing = false, statusProblem = null) }
+                    is ClockingResult.Loaded -> mutableState.update {
+                        it.copy(status = result.value, isLoadingStatus = false, isRefreshing = false, statusProblem = null, statusCachedAt = null)
+                    }
                     ClockingResult.SessionExpired -> expireSession()
                     else -> mutableState.update { it.copy(isLoadingStatus = false, isRefreshing = false, statusProblem = problemOf(result)) }
                 }
@@ -192,6 +200,20 @@ class ClockingViewModel(
             if (noteState == ClockingNoteState.Saved) {
                 refresh()
             }
+        }
+    }
+
+    private suspend fun showCachedCopy() {
+        val status = cache.read(CachedScreens.USER_SCOPED, CachedScreens.clockingStatus)
+        val thisWeek = cache.read(CachedScreens.USER_SCOPED, CachedScreens.clockingThisWeek)
+        mutableState.update { current ->
+            val cachedStatus = status?.takeIf { current.status == null }
+            current.copy(
+                status = current.status ?: cachedStatus?.value,
+                statusCachedAt = cachedStatus?.fetchedAt ?: current.statusCachedAt,
+                thisWeek = current.thisWeek ?: thisWeek?.value,
+                isRefreshing = current.isRefreshing || cachedStatus != null,
+            )
         }
     }
 

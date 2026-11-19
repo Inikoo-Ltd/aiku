@@ -26,6 +26,9 @@ import ArtisanPicker from "@/Components/Production/ArtisanPicker.vue"
 import ModalCreateManualJobOrder from "@/Components/Production/ModalCreateManualJobOrder.vue"
 import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
 import DatePicker from "primevue/datepicker"
+import Dialog from "primevue/dialog"
+import InputText from "primevue/inputtext"
+import Checkbox from "primevue/checkbox"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faCalendarDay, faMagic, faHourglassHalf } from "@fal"
 
@@ -517,11 +520,25 @@ const boardFilterOptions = computed(() => {
     return {
         source: counted(items.map(sourceOf)),
         family: counted(items.map(item => item.family ?? "")),
-        requester: counted(items.map(requesterOf)),
+        requester: counted(items.map(item => item.buyer_code ?? "")),
+        customer: counted(items.filter(item => !item.buyer_code).map(item => item.customer_name ?? "")),
         priority: counted(items.map(item => item.priority)),
         artisan: counted(items.flatMap(artisansOf)),
     }
 })
+
+const customerDialogOpen = ref(false)
+const customerSearch = ref("")
+const customerOptionsShown = computed(() => {
+    const search = customerSearch.value.trim().toLowerCase()
+    return search ? boardFilterOptions.value.customer.filter(option => option.value.toLowerCase().includes(search)) : boardFilterOptions.value.customer
+})
+const selectedCustomers = computed(() => boardFilters.requester.filter(value => boardFilterOptions.value.customer.some(option => option.value === value)))
+const customerItemsCount = computed(() => boardFilterOptions.value.customer.reduce((total, option) => total + option.count, 0))
+
+function clearSelectedCustomers() {
+    boardFilters.requester = boardFilters.requester.filter(value => !selectedCustomers.value.includes(value))
+}
 
 function toggleBoardFilter(key: BoardFilterKey, value: string) {
     const index = boardFilters[key].indexOf(value)
@@ -850,6 +867,15 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     <span class="capitalize">{{ key === "source" ? sourceLabels[option.value] : option.value }}</span>
                     <span class="rounded-full px-1.5 text-xs tabular-nums" :class="boardFilters[key].includes(option.value) ? 'bg-white/20' : 'bg-white text-gray-500'">{{ option.count }}</span>
                 </button>
+                <button
+                    v-if="key === 'requester' && boardFilterOptions.customer.length"
+                    type="button"
+                    class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+                    :class="selectedCustomers.length ? 'border-[var(--app-accent)] bg-[var(--app-accent)] text-[var(--app-accent-text)] shadow-sm' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
+                    @click="customerSearch = ''; customerDialogOpen = true">
+                    <span class="max-w-48 truncate">{{ selectedCustomers.length ? selectedCustomers.join(", ") : ctrans("Customers") }}</span>
+                    <span class="rounded-full px-1.5 text-xs tabular-nums" :class="selectedCustomers.length ? 'bg-white/20' : 'bg-white text-gray-500'">{{ selectedCustomers.length ? `${selectedCustomers.length}/${boardFilterOptions.customer.length}` : customerItemsCount }}</span>
+                </button>
             </div>
         <button
             v-if="blockingOrdersCount || onlyBlockingOrders"
@@ -887,6 +913,21 @@ function jobOrderHref(item: { job_order_slug: string }) {
             <button v-if="boardFilters.source.length || boardFilters.family.length || boardFilters.requester.length || boardFilters.priority.length" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="boardFilters.source = []; boardFilters.family = []; boardFilters.requester = []; boardFilters.priority = []">× {{ ctrans("Clear") }}</button>
         </div>
     </div>
+
+    <Dialog v-model:visible="customerDialogOpen" modal dismissableMask :header="ctrans('Customers')" :style="{ width: '28rem' }" :pt="{ header: { class: '!py-2 !px-4' }, content: { class: '!px-4 !pb-3' } }">
+        <InputText v-model="customerSearch" :placeholder="ctrans('Search')" class="mb-2 w-full" size="small" autofocus />
+        <div class="max-h-96 overflow-y-auto">
+            <label v-for="option in customerOptionsShown" :key="option.value" class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+                <Checkbox :modelValue="boardFilters.requester.includes(option.value)" binary @update:modelValue="toggleBoardFilter('requester', option.value)" />
+                <span class="truncate">{{ option.value }}</span>
+                <span class="ml-auto text-xs tabular-nums text-gray-400">{{ option.count }}</span>
+            </label>
+            <div v-if="!customerOptionsShown.length" class="px-2 py-3 text-sm text-gray-400">{{ ctrans("No customers found") }}</div>
+        </div>
+        <div v-if="selectedCustomers.length" class="mt-2 flex justify-end">
+            <button type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="clearSelectedCustomers">× {{ ctrans("Clear") }}</button>
+        </div>
+    </Dialog>
 
     <div v-if="groupBy === 'board' && hitchhikers && (hitchhikers.count || hitchhikers.showing)" class="mx-4 mt-3 text-xs text-gray-500">
         <Link

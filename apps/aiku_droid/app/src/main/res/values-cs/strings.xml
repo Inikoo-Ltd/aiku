@@ -44,6 +44,7 @@
     <string name="app_update_required_title">Vyžaduje se aktualizace</string>
     <string name="app_version_value">%1$s (%2$d)</string>
     <string name="back_to_sign_in">Zpět na přihlášení</string>
+    <string name="cache_last_updated">Naposledy aktualizováno %1$s</string>
     <string name="clocking_adjustment_both">Obě</string>
     <string name="clocking_adjustment_date">Datum</string>
     <string name="clocking_adjustment_missing">Chybějící záznam docházky</string>

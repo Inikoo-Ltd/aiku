@@ -44,6 +44,7 @@
     <string name="app_update_required_title">अपडेट आवश्यक</string>
     <string name="app_version_value">%1$s (%2$d)</string>
     <string name="back_to_sign_in">साइन इन पर वापस जाएँ</string>
+    <string name="cache_last_updated">अंतिम अपडेट %1$s</string>
     <string name="clocking_adjustment_both">दोनों</string>
     <string name="clocking_adjustment_date">तारीख</string>
     <string name="clocking_adjustment_missing">छूटी हुई हाज़िरी</string>

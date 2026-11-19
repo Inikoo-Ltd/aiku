@@ -44,6 +44,7 @@
     <string name="app_update_required_title">Actualización obligatoria</string>
     <string name="app_version_value">%1$s (%2$d)</string>
     <string name="back_to_sign_in">Volver a iniciar sesión</string>
+    <string name="cache_last_updated">Última actualización %1$s</string>
     <string name="clocking_adjustment_both">Ambos</string>
     <string name="clocking_adjustment_date">Fecha</string>
     <string name="clocking_adjustment_missing">Fichaje que falta</string>

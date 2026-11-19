@@ -24,6 +24,7 @@ import io.aiku.droid.data.api.ShiftSchedule
 import io.aiku.droid.data.api.Timesheet
 import io.aiku.droid.data.api.TimesheetPeriod
 import io.aiku.droid.data.api.UploadFile
+import io.aiku.droid.data.cache.testScreenCache
 import io.aiku.droid.ui.inventory.FakeSessions
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -127,7 +128,7 @@ class ClockingRefreshTest {
 
     @Test
     fun `pulling the clocking screens reloads the status, the week and the day`() {
-        val clocking = ClockingViewModel(clockingApi, FakeSessions())
+        val clocking = ClockingViewModel(clockingApi, FakeSessions(), testScreenCache())
         val day = LocalDate.of(2026, 11, 17)
         clocking.loadWeek(null)
         clocking.loadDay(day)

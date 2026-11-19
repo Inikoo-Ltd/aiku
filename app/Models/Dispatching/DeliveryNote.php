@@ -113,6 +113,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $estimated_weight grams
  * @property int $effective_weight Used for UI tables (e.g. sorting), effective_weight=estimated_weight if weight is null, grams
  * @property array<array-key, mixed>|null $parcels
+ * @property int|null $estimated_boxes
+ * @property array<array-key, mixed>|null $boxes_estimate
  * @property int|null $platform_id
  * @property int|null $customer_sales_channel_id
  * @property int|null $picker_user_id
@@ -226,6 +228,7 @@ class DeliveryNote extends Model implements Auditable
         'handled_in_aurora'       => 'boolean',
         'data'                    => 'array',
         'parcels'                 => 'array',
+        'boxes_estimate'          => 'array',
         'state'                   => DeliveryNoteStateEnum::class,
         'type'                    => DeliveryNoteTypeEnum::class,
         'shop_type'               => ShopTypeEnum::class,
@@ -247,8 +250,9 @@ class DeliveryNote extends Model implements Auditable
 
     protected $attributes = [
         'data'          => '{}',
-        'parcels'       => '{}',
-        'shipping_data' => '{}',
+        'parcels'        => '{}',
+        'shipping_data'  => '{}',
+        'boxes_estimate' => '{}',
     ];
 
     protected $guarded = [];

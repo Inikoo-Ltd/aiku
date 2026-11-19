@@ -29,6 +29,9 @@ import io.aiku.droid.data.api.SearchApi
 import io.aiku.droid.data.api.StaffChatApi
 import io.aiku.droid.data.api.WarehouseApi
 import io.aiku.droid.data.api.WarehouseDashboardApi
+import io.aiku.droid.data.cache.ScreenCache
+import io.aiku.droid.data.cache.ScreenCacheInterceptor
+import io.aiku.droid.data.cache.SqliteScreenCacheStore
 import io.aiku.droid.data.images.ImageSource
 import io.aiku.droid.data.images.RemoteImages
 import io.aiku.droid.data.session.DeviceRecentSearches
@@ -69,6 +72,9 @@ class AppContainer(context: Context) {
         developmentCaCertificate = BuildConfig.DEVELOPMENT_CA_CERTIFICATE,
         acceptLanguage = { language.acceptLanguage },
     )
+        .newBuilder()
+        .addInterceptor(ScreenCacheInterceptor(cache = { screenCache }))
+        .build()
 
     private val mobileApi = OkHttpMobileApi(httpClient, BuildConfig.AIKU_API_BASE_URL)
 
@@ -126,6 +132,12 @@ class AppContainer(context: Context) {
         cipher = sessionCipher,
     )
 
+    val screenCache = ScreenCache(
+        store = SqliteScreenCacheStore(context.applicationContext),
+        cipher = sessionCipher,
+        sessions = sessions,
+    )
+
     val settings = DeviceSettings(context.getSharedPreferences(SETTINGS_PREFERENCES, Context.MODE_PRIVATE))
 
     val scans = ScanController(preferences = settings.scanPreferences, signals = DeviceScanSignals(context.applicationContext))
@@ -178,6 +190,7 @@ class AppContainer(context: Context) {
             recentSearches.clear()
         }
         accountLanguage.start()
+        screenCache.start(applicationScope)
     }
 
     fun startPush() {

@@ -344,7 +344,7 @@ private fun WarehouseApp(
 ) {
     val clockingViewModel: ClockingViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { ClockingViewModel(container.clockingApi, container.sessions) }
+            initializer { ClockingViewModel(container.clockingApi, container.sessions, container.screenCache) }
         },
     )
     val leaveViewModel: LeaveViewModel = viewModel(
@@ -369,7 +369,7 @@ private fun WarehouseApp(
     )
     val badgesViewModel: WorkBadgesViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { WorkBadgesViewModel(container.myWorkApi, container.sessions, container.inboxApi) }
+            initializer { WorkBadgesViewModel(container.myWorkApi, container.sessions, container.inboxApi, container.screenCache) }
         },
     )
     LaunchedEffect(selected?.id) { badgesViewModel.showWarehouse(selected?.id) }
@@ -495,7 +495,7 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
         composable<MyWorkRoute> {
             val work: MyWorkViewModel = viewModel(
                 key = "my-work-$currentWarehouseId",
-                factory = viewModelFactory { initializer { MyWorkViewModel(container.myWorkApi, container.sessions, warehouseId) } },
+                factory = viewModelFactory { initializer { MyWorkViewModel(container.myWorkApi, container.sessions, warehouseId, container.screenCache) } },
             )
             MyWorkScreen(work = work)
         }
@@ -509,7 +509,7 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
         composable<ScanResultRoute> { entry -> entry.toRoute<ScanResultRoute>().let { route -> ScanResultScreen(route.code) } }
         composable<InboxRoute> {
             val inbox: InboxViewModel = viewModel(
-                factory = viewModelFactory { initializer { InboxViewModel(container.inboxApi, container.sessions, container.pushInbox.arrivals) } },
+                factory = viewModelFactory { initializer { InboxViewModel(container.inboxApi, container.sessions, container.pushInbox.arrivals, container.screenCache) } },
             )
             InboxScreen(inbox = inbox)
         }
@@ -524,7 +524,7 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
         composable<WarehouseDashboardRoute> {
             val dashboard: WarehouseDashboardViewModel = viewModel(
                 key = "warehouse-dashboard-$currentWarehouseId",
-                factory = viewModelFactory { initializer { WarehouseDashboardViewModel(container.warehouseDashboardApi, container.sessions, warehouseId) } },
+                factory = viewModelFactory { initializer { WarehouseDashboardViewModel(container.warehouseDashboardApi, container.sessions, warehouseId, container.screenCache) } },
             )
             WarehouseDashboardScreen(dashboard = dashboard)
         }

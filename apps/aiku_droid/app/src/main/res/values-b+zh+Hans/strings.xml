@@ -44,6 +44,7 @@
     <string name="app_update_required_title">需要更新</string>
     <string name="app_version_value">%1$s (%2$d)</string>
     <string name="back_to_sign_in">返回登录</string>
+    <string name="cache_last_updated">最后更新 %1$s</string>
     <string name="clocking_adjustment_both">两者</string>
     <string name="clocking_adjustment_date">日期</string>
     <string name="clocking_adjustment_missing">缺失的打卡</string>

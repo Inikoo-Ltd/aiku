@@ -122,7 +122,7 @@ fun ClockScanQrScreen() {
             result = scan.result,
             zone = state.zone,
             noteState = state.note,
-            canEditNotes = state.status?.canEditNotes == true,
+            canEditNotes = state.actionableStatus?.canEditNotes == true,
         )
         else -> ClockScanCamera(isSending = scan is ClockingScanState.Sending, onScanned = clocking::clockInWithQr)
     }

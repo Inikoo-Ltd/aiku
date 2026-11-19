@@ -44,6 +44,7 @@
     <string name="app_update_required_title">Aggiornamento obbligatorio</string>
     <string name="app_version_value">%1$s (%2$d)</string>
     <string name="back_to_sign_in">Torna all\'accesso</string>
+    <string name="cache_last_updated">Ultimo aggiornamento %1$s</string>
     <string name="clocking_adjustment_both">Entrambi</string>
     <string name="clocking_adjustment_date">Data</string>
     <string name="clocking_adjustment_missing">Timbratura mancante</string>

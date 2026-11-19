@@ -2,6 +2,7 @@ package io.aiku.droid.ui.mywork
 
 import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.WorkBadges
+import io.aiku.droid.data.cache.testScreenCache
 import io.aiku.droid.data.session.StaffSession
 import io.aiku.droid.ui.inbox.FakeInboxApi
 import io.aiku.droid.ui.inventory.FakeSessions
@@ -36,7 +37,7 @@ class WorkBadgesViewModelTest {
 
     @Test
     fun `nothing is asked before a warehouse is chosen`() {
-        val badges = WorkBadgesViewModel(api, sessions, inbox)
+        val badges = WorkBadgesViewModel(api, sessions, inbox, testScreenCache(sessions))
 
         badges.refresh()
 
@@ -48,7 +49,7 @@ class WorkBadgesViewModelTest {
     @Test
     fun `an account without a warehouse gets the inbox count on its own`() {
         inbox.unread = GoodsOutResult.Loaded(5)
-        val badges = WorkBadgesViewModel(api, sessions, inbox)
+        val badges = WorkBadgesViewModel(api, sessions, inbox, testScreenCache(sessions))
 
         badges.showWarehouse(null)
         badges.refresh()
@@ -61,7 +62,7 @@ class WorkBadgesViewModelTest {
     @Test
     fun `the inbox count without a warehouse survives a lost connection`() {
         inbox.unread = GoodsOutResult.Loaded(5)
-        val badges = WorkBadgesViewModel(api, sessions, inbox)
+        val badges = WorkBadgesViewModel(api, sessions, inbox, testScreenCache(sessions))
         badges.showWarehouse(null)
 
         inbox.unread = GoodsOutResult.Unreachable
@@ -73,7 +74,7 @@ class WorkBadgesViewModelTest {
     @Test
     fun `a warehouse's badges carry the inbox count and the inbox can correct it`() {
         api.badgeResults = { GoodsOutResult.Loaded(WorkBadges(myWork = 4, inboxUnread = 7)) }
-        val badges = WorkBadgesViewModel(api, sessions, inbox)
+        val badges = WorkBadgesViewModel(api, sessions, inbox, testScreenCache(sessions))
         badges.showWarehouse(1)
 
         assertEquals(7, badges.badges.value.inboxBadge)
@@ -88,7 +89,7 @@ class WorkBadgesViewModelTest {
     @Test
     fun `choosing a warehouse loads its badges and each refresh asks again`() {
         api.badgeResults = { GoodsOutResult.Loaded(WorkBadges(myWork = 4, goodsOutUnassigned = 12)) }
-        val badges = WorkBadgesViewModel(api, sessions, inbox)
+        val badges = WorkBadgesViewModel(api, sessions, inbox, testScreenCache(sessions))
 
         badges.showWarehouse(1)
         badges.refresh()
@@ -100,7 +101,7 @@ class WorkBadgesViewModelTest {
     @Test
     fun `switching warehouse clears and reloads for the new one`() {
         api.badgeResults = { id -> if (id == 1L) GoodsOutResult.Loaded(WorkBadges(myWork = 4)) else GoodsOutResult.Unreachable }
-        val badges = WorkBadgesViewModel(api, sessions, inbox)
+        val badges = WorkBadgesViewModel(api, sessions, inbox, testScreenCache(sessions))
         badges.showWarehouse(1)
 
         badges.showWarehouse(2)
@@ -111,7 +112,7 @@ class WorkBadgesViewModelTest {
 
     @Test
     fun `showing the same warehouse again does not ask twice`() {
-        val badges = WorkBadgesViewModel(api, sessions, inbox)
+        val badges = WorkBadgesViewModel(api, sessions, inbox, testScreenCache(sessions))
 
         badges.showWarehouse(1)
         badges.showWarehouse(1)
@@ -122,7 +123,7 @@ class WorkBadgesViewModelTest {
     @Test
     fun `losing the connection keeps the last counts`() {
         api.badgeResults = { GoodsOutResult.Loaded(WorkBadges(myWork = 4, goodsOutUnassigned = 12)) }
-        val badges = WorkBadgesViewModel(api, sessions, inbox)
+        val badges = WorkBadgesViewModel(api, sessions, inbox, testScreenCache(sessions))
         badges.showWarehouse(1)
 
         api.badgeResults = { GoodsOutResult.Unreachable }
@@ -134,7 +135,7 @@ class WorkBadgesViewModelTest {
     @Test
     fun `a warehouse the user may no longer open clears the badges`() {
         api.badgeResults = { GoodsOutResult.Loaded(WorkBadges(myWork = 4, goodsOutUnassigned = 12)) }
-        val badges = WorkBadgesViewModel(api, sessions, inbox)
+        val badges = WorkBadgesViewModel(api, sessions, inbox, testScreenCache(sessions))
         badges.showWarehouse(1)
 
         api.badgeResults = { GoodsOutResult.NotFound("") }
@@ -146,7 +147,7 @@ class WorkBadgesViewModelTest {
     @Test
     fun `a new sign in clears the badges and reloads them with the new token`() {
         api.badgeResults = { GoodsOutResult.Loaded(WorkBadges(myWork = 4)) }
-        val badges = WorkBadgesViewModel(api, sessions, inbox)
+        val badges = WorkBadgesViewModel(api, sessions, inbox, testScreenCache(sessions))
         badges.showWarehouse(1)
 
         sessions.end()

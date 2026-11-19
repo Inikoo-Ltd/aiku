@@ -5,10 +5,12 @@ import io.aiku.droid.data.api.InboxApi
 import io.aiku.droid.data.api.InboxNotification
 import io.aiku.droid.data.api.InboxPage
 import io.aiku.droid.data.api.ListMeta
+import kotlinx.coroutines.CompletableDeferred
 
 class FakeInboxApi : InboxApi {
     val pageRequests = mutableListOf<Int>()
     var pages: (Int) -> GoodsOutResult<InboxPage> = { GoodsOutResult.Loaded(InboxPage(emptyList(), ListMeta(currentPage = it, lastPage = 1), unread = 0)) }
+    var pageGate: CompletableDeferred<Unit>? = null
     val unreadRequests = mutableListOf<String>()
     var unread: GoodsOutResult<Int> = GoodsOutResult.Loaded(0)
     val readRequests = mutableListOf<String>()
@@ -18,6 +20,7 @@ class FakeInboxApi : InboxApi {
 
     override suspend fun notifications(token: String, page: Int): GoodsOutResult<InboxPage> {
         pageRequests += page
+        pageGate?.await()
         return pages(page)
     }
 

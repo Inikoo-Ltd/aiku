@@ -50,6 +50,7 @@ import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.EmptyState
 import io.aiku.droid.ui.components.EmptyTone
 import io.aiku.droid.ui.components.HeaderIconButton
+import io.aiku.droid.ui.components.LastUpdatedNote
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.Tone
@@ -118,6 +119,7 @@ private fun MyWorkContent(state: MyWorkUiState, onRefresh: () -> Unit, onRetry: 
             state.problem?.let { problem ->
                 GoodsOutLoadProblem(problem = problem, title = stringResource(R.string.mywork_failed), onRetry = onRetry)
             }
+            state.lastUpdated?.let { updatedAt -> LastUpdatedNote(updatedAt = updatedAt) }
             when {
                 state.rows.isNotEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     state.rows.forEach { row ->

@@ -122,7 +122,8 @@ class ShowOrgSupplier extends OrgAction
 
                 'agreement' => GetAgreement::run($supplier, $agreementOrganisation, $request->user(), $forAgent)
                     + ['print_route' => $forAgent ? null : ['name' => 'grp.org.procurement.org_suppliers.show.agreement.pdf', 'parameters' => [$this->organisation->slug, $orgSupplier->slug]]]
-                    + ['by_organisation' => $selection && !$selection->selected ? $this->agreementsByOrganisation($selection, $supplier, $request) : null],
+                    + ['by_organisation' => $selection && !$selection->selected ? $this->agreementsByOrganisation($selection, $supplier, $request) : null]
+                    + ($selection ? GetAgreement::make()->agentSupplierNoteForm($supplier, $selection->selected, $request->user()) : []),
 
                 SupplierTabsEnum::AGREED_TERMS->value => $this->tab == SupplierTabsEnum::AGREED_TERMS->value ?
                     fn () => SupplierAgreedTermResource::collection(IndexSupplierAgreedTerms::run($supplier, SupplierTabsEnum::AGREED_TERMS->value, $agreementOrganisation, $forAgent))

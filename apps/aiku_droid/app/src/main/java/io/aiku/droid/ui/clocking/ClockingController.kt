@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
@@ -70,7 +71,14 @@ data class ClockingUiState(
     val scanSetup: ClockingScanSetup = ClockingScanSetup(),
     val scan: ClockingScanState = ClockingScanState.Waiting,
     val note: ClockingNoteState = ClockingNoteState.Idle,
+    val statusCachedAt: Instant? = null,
 ) {
+    val isStatusCached: Boolean get() = statusCachedAt != null
+
+    val actionableStatus: ClockingStatus? get() = status.takeUnless { isStatusCached }
+
+    val lastUpdated: Instant? get() = statusCachedAt?.takeIf { statusProblem != null }
+
     val zone: ZoneId
         get() = listOfNotNull(status?.timezone, thisWeek?.timezone)
             .firstNotNullOfOrNull { runCatching { ZoneId.of(it) }.getOrNull() }

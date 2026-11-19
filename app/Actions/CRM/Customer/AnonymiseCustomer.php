@@ -23,6 +23,7 @@ use App\Models\Comms\WhatsappSubscriber;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
+use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\WipeShoppingAssistantConversations;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Address;
@@ -299,14 +300,16 @@ class AnonymiseCustomer extends OrgAction
     }
 
     /**
-     * Wipes what the customer wrote and was told by the shopping assistant, and the questions it
-     * refused. Counters, tokens, cost and the product ids of the events stay for reporting.
+     * Wipes what the customer wrote and was told by the shopping assistant, the questions it
+     * refused, and the shop notes kept from their questions. Counters, tokens, cost and the
+     * product ids of the events stay for reporting.
      */
     private function anonymiseShoppingAssistantConversations(Customer $customer): void
     {
         DB::table('shopping_assistant_refusals')->where('customer_id', $customer->id)->update(['question' => null]);
 
         WipeShoppingAssistantConversations::run(ShoppingAssistantConversation::where('customer_id', $customer->id)->pluck('id')->all());
+        AnswerShoppingAssistantTeamQuestion::deleteKeptNotesOf($customer->id);
     }
 
     private function anonymiseDispatchedEmailRecipients(Customer $customer, array $webUserIds): void

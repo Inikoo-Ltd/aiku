@@ -10,13 +10,16 @@ namespace App\Actions\Procurement;
 
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Inventory\Warehouse;
+use App\Models\Procurement\OrgSupplier;
+use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 
 /**
  * Agreed terms and procurement notes hang from group records (supplier, supplier product, agent)
  * that every organisation shares, so the right to write them comes from any buying organisation
- * of the group. Agent organisations never write them: they only read what is marked for agents.
+ * of the group. Agent organisations write none of them except notes on their own suppliers, visible to the
+ * agent, so buyers and agent staff can tell each other about the supplier (GetAgreement::agentSupplierNoteForm).
  */
 trait WithAgreedTermsAuthorisation
 {
@@ -27,6 +30,21 @@ trait WithAgreedTermsAuthorisation
         }
 
         return $this->hasProcurementPermission($user, $group, $organisationId, fn (int $id) => "procurement.$id.edit");
+    }
+
+    /**
+     * Staff of the supplier's agent who may edit its procurement write notes on the supplier, for the agent
+     * itself (no organisation) or for an organisation that buys from the supplier.
+     */
+    protected function canWriteAgentSupplierNotes(User $user, Supplier $supplier, ?int $organisationId = null): bool
+    {
+        $agentOrganisationId = $supplier->agent?->organisation_id;
+        if (!$agentOrganisationId || !$user->authTo("procurement.$agentOrganisationId.edit")) {
+            return false;
+        }
+
+        return $organisationId === null
+            || OrgSupplier::where('supplier_id', $supplier->id)->where('organisation_id', $organisationId)->where('status', true)->exists();
     }
 
     /**

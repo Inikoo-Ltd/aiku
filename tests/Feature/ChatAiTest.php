@@ -1247,6 +1247,30 @@ test('a dropshipping shop tells the assistant its bundle discount, the default 1
     expect(collect(\App\Actions\Chat\ChatSession\GetChatShopFacts::make()->shopFacts($shop))->firstWhere('title', 'Bundle discount'))->toBeNull();
 });
 
+test('a shop with member prices tells the assistant how Gold Reward membership is kept, with no minimum spend', function () {
+    $facts = new class () extends \App\Actions\Chat\ChatSession\GetChatShopFacts {
+        public bool $hasMemberPrices = true;
+
+        protected function shopHasMemberPrices(\App\Models\Catalogue\Shop $shop): bool
+        {
+            return $this->hasMemberPrices;
+        }
+    };
+    $shop              = $this->shop->replicate();
+    $shop->offers_data = ['gr' => ['active' => true, 'interval' => 45, 'label' => 'Gold Reward']];
+    $gr                = fn () => collect($facts->shopFacts($shop))->firstWhere('title', 'How to keep Gold Reward membership');
+
+    expect($gr()['body'])->toContain('stays a member for 45 days after their last invoiced order')
+        ->toContain('There is no minimum amount to spend to keep it');
+
+    $facts->hasMemberPrices = false;
+    expect($gr())->toBeNull();
+
+    $facts->hasMemberPrices = true;
+    $shop->offers_data      = ['gr' => ['active' => false]];
+    expect($gr())->toBeNull();
+});
+
 test('each active charge is described with its amount and when the checkout adds it', function () {
     $facts  = \App\Actions\Chat\ChatSession\GetChatShopFacts::make();
     $money  = fn (float $amount) => \Illuminate\Support\Number::currency($amount, $this->shop->currency?->code ?? 'GBP');
@@ -1800,4 +1824,50 @@ test('an agent edits an email draft in their own language: unchanged the custome
     expect($agent->refresh()->edit_drafts_in_my_language_for)->toBeNull();
 
     $this->shop->update(['settings' => $settings]);
+});
+
+test('the shop facts name the couriers per destination country by share of shipments, one carrier for its several shipper records', function () {
+    $facts = \App\Actions\Chat\ChatSession\GetChatShopFacts::class;
+    $row   = fn (string $country, string $name, ?string $tradeAs, int $shipments) => (object) ['country_code' => $country, 'name' => $name, 'trade_as' => $tradeAs, 'shipments' => $shipments];
+
+    expect($facts::carrierBrand('APC (API)', 'APC overnight'))->toBe('APC')
+        ->and($facts::carrierBrand('APC - manual tracking', 'APC'))->toBe('APC')
+        ->and($facts::carrierBrand('ITD (api)', 'Royal Mail'))->toBe('Royal Mail')
+        ->and($facts::carrierBrand('dpduk (Faire)', 'dpduk'))->toBe('DPD')
+        ->and($facts::carrierBrand('dhl_express (Faire)', 'dhl_express'))->toBe('DHL')
+        ->and($facts::carrierBrand('Courier Logistics', 'CL'))->toBe('Courier Logistics')
+        ->and($facts::carrierBrand('Hallam Express (Manual)', null))->toBe('Hallam Express')
+        ->and($facts::couriersText([$row('JE', 'Royal Mail', 'Royal Mail', 9)]))->toBeNull();
+
+    $text = $facts::couriersText([
+        $row('GB', 'APC (API)', 'APC overnight', 1775),
+        $row('GB', 'APC - manual tracking', 'APC', 37),
+        $row('GB', 'DPD (Api)', 'DPD', 81),
+        $row('GB', 'DPD', 'DPD', 42),
+        $row('GB', 'Courier Logistics', 'CL', 20),
+        $row('GB', 'ITD (api)', 'Royal Mail', 4),
+        $row('GB', 'Royal Mail', 'Royal Mail', 5),
+        $row('JE', 'Royal Mail', 'Royal Mail', 12),
+        $row('FI', 'Fedex', 'Fedex', 3),
+        $row('NL', 'ups (Faire)', 'ups', 30),
+        $row('GB', 'EVRi (TikTok)', 'EVRi', 300),
+    ]);
+
+    expect($text)->toBe('The delivery companies (couriers) that carried our shipments in the last 30 days, by destination country, with their share of the shipments: United Kingdom: APC 92%, DPD 6%, other couriers 2%; Jersey: Royal Mail 100%.');
+});
+
+test('the shop facts say which currency the shop sells in and that it cannot be changed', function () {
+    $currency = collect(\App\Actions\Chat\ChatSession\GetChatShopFacts::make()->shopFacts($this->shop))->firstWhere('title', 'Currency');
+
+    expect($currency['body'])->toStartWith('Prices on this website are in '.$this->shop->currency->name.' ('.$this->shop->currency->code.')')
+        ->toContain('cannot be changed');
+});
+
+test('the shop facts say how long products are usually out of stock, only from enough stock outs', function () {
+    $facts = \App\Actions\Chat\ChatSession\GetChatShopFacts::class;
+
+    expect($facts::restockText(null))->toBeNull()
+        ->and($facts::restockText((object) ['spells' => 29, 'half' => 10, 'three_quarters' => 20]))->toBeNull()
+        ->and($facts::restockText((object) ['spells' => 960, 'half' => 42.5, 'three_quarters' => 110]))
+        ->toBe('When a product runs out of stock we restock it, unless it is being discontinued. Over the last 12 months, half of the products that ran out were back in stock within 43 days, and 3 in 4 within 110 days. For one product, the expected date depends on what is on order.');
 });

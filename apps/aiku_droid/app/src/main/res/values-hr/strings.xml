@@ -44,6 +44,7 @@
     <string name="app_update_required_title">Potrebno ažuriranje</string>
     <string name="app_version_value">%1$s (%2$d)</string>
     <string name="back_to_sign_in">Natrag na prijavu</string>
+    <string name="cache_last_updated">Posljednje ažuriranje %1$s</string>
     <string name="clocking_adjustment_both">Oboje</string>
     <string name="clocking_adjustment_date">Datum</string>
     <string name="clocking_adjustment_missing">Nedostaje evidencija</string>

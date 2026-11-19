@@ -973,7 +973,9 @@ test('UI Edit warehouse', function () {
     $this->withoutExceptionHandling();
     get(route('grp.org.warehouses.show.infrastructure.edit', [$this->organisation->slug, $warehouse->slug]))
         ->assertInertia(function (AssertableInertia $page) {
-            $page->component('EditModel')->has('formData');
+            $page->component('EditModel')->has('formData')
+                ->has('formData.blueprint.packing.fields.packing_box_length')
+                ->where('formData.blueprint.packing.fields.packing_box_max_weight.value', fn ($value) => $value > 0);
         });
 })->depends('create warehouse');
 

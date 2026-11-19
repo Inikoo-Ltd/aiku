@@ -898,7 +898,7 @@ test('W4 the supplier records production only from the day the order was agreed,
     expect($purchaseOrder->fresh()->production_started_at->toDateString())->toBe(now()->subDays(3)->toDateString());
 
     $purchaseOrder->updateQuietly(['production_started_at' => null]);
-    $send(now()->subDays(11)->toDateString())->assertJsonValidationErrors('production_started_at');
+    $send(now()->subDays(13)->toDateString())->assertJsonValidationErrors('production_started_at');
     $send(now()->addDays(3)->toDateString())->assertJsonValidationErrors('production_started_at');
 
     $send(now()->subDays(4)->toDateString())->assertOk();

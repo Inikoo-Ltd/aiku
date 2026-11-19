@@ -88,6 +88,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $has_wrong_weight
  * @property int|null $measured_weight
  * @property int $measured_weight_parcels
+ * @property string|null $packed_volume
+ * @property int $packed_volume_samples
  * @property bool $has_been_in_warehouse
  * @property HealthRankEnum|null $health_rank
  * @property bool $movements_fixed

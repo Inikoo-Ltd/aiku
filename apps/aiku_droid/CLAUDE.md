@@ -28,6 +28,22 @@ Most screens are still skeletons built on sample data, so developers can see how
   - `view_goods_out`, `pick_and_pack`, `supervise_goods_out`
   - `view_fulfilment`, `edit_fulfilment`
 
+## Screen cache
+
+The first screens open from a saved copy on the phone, so they show at once (Louis, 2026-11-19). The fresh answer from aiku then replaces it.
+
+- **What is saved:** the API answers behind My work, the work badges (`/warehouses/{id}/badges`: bottom bar, Home, Menu), the warehouse dashboard, the Inbox's first page per filter, and Home's clocking card (`GET /clocking` and this week's `GET /clocking/timesheets`). Nothing else.
+- **Storage:** SQLite `aiku_screen_cache.db`, table `screen_cache` (`data/cache`). One row per user, warehouse (0 for user-wide screens) and screen. The row holds the raw JSON answer, encrypted with the session cipher (`KeystoreCipher`, the key that also protects the session and the warehouse cache). The screen reads it back through the same parser as the live answer (`CachedScreens`).
+- **Reading:** on opening, the screen shows the saved copy with its refreshing indicator, then asks aiku. If that fails, the saved copy stays, with the screen's usual error and "Last updated HH:mm" (`LastUpdatedNote`; the date is added when the copy is not from today). A copy that cannot be decrypted or parsed is deleted and treated as missing.
+- **Replacing:** `ScreenCacheInterceptor` keeps the rows in step with every answer, whichever screen asked. A successful answer replaces its row wholesale, never merged, so anything aiku no longer returns disappears from the phone too. A 403 or 404 deletes the row.
+- **Writes:** a confirmed write updates or removes the rows it affects, so a cold start never shows something the user already changed. Inbox read and read all update the saved Inbox and drop the saved badges. A clocking write drops the saved clocking. Any other warehouse write (picking, packing, returns, stock and so on) drops the saved My work, badges and dashboards. Profile, password, push and chat requests leave the rows alone.
+- **Clocking:** the saved status is for display only. Clock in and out, the methods, the personal code and the shift choice use `ClockingUiState.actionableStatus`, which stays empty until the fresh status has arrived.
+- **Clean-up:**
+  - On app start, and at most once a day, rows not opened for 7 days are deleted. This also covers an Inbox filter or a warehouse that has not been opened for 7 days.
+  - Rows of any user other than the one signed in are deleted.
+  - When the warehouse list no longer has a warehouse, its rows are deleted.
+  - Signing out, or any 401 (expired session), deletes everything, because handhelds are shared.
+
 ## Permissions
 
 - The chosen warehouse (`LocalWarehouse.current`) scopes every screen. Its `can` (`WarehouseAbilities`) decides what the user sees.

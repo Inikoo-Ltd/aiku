@@ -91,7 +91,7 @@ fun ClockingScreen() {
     var showWorkingHours by remember { mutableStateOf(false) }
     var cameraCoordinates by remember { mutableStateOf<ClockingCoordinates?>(null) }
     var selectedMethod by rememberSaveable { mutableStateOf<ClockingMethod?>(null) }
-    val status = state.status
+    val status = state.actionableStatus
     val methods = ClockingMethod.fromKeys(status?.methods.orEmpty())
     val method = selectedMethod?.takeIf { it in methods } ?: methods.firstOrNull()
     val now = rememberClockingNow()

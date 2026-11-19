@@ -42,7 +42,7 @@ class GetAgreement
      * What a page needs to show and edit the agreement with a supplier, supplier product or agent:
      * the terms in force, the notes to see first (pinned or critical), the open incidents, and for
      * who may write, the routes and the options of the forms. An agent organisation gets only what
-     * was marked as visible to the agent, and nothing to write with.
+     * was marked as visible to the agent, and nothing to write with, except notes on its supplier page (agentSupplierNoteForm).
      *
      * @return array<string, mixed>
      */
@@ -99,6 +99,33 @@ class GetAgreement
                 'organisations' => $subject->group->organisations()->where('type', '!=', OrganisationTypeEnum::AGENT)->orderBy('code')->get(['id', 'code', 'name'])
                     ->map(fn (Organisation $organisation) => ['value' => $organisation->id, 'label' => $organisation->name])->all(),
                 'organisation_id' => $organisation?->id,
+            ] : null,
+        ];
+    }
+
+    /**
+     * The agent's one page per supplier lets buyers and the agent's own staff add notes to each other: the note
+     * belongs to the organisation picked in the selector, or to none in All, and is always visible to the agent
+     * so it stays on the page. Agreed terms stay read only there.
+     *
+     * @return array{can_write_notes: bool, note_route: array<string, mixed>|null, note_options: array<string, mixed>|null}
+     */
+    public function agentSupplierNoteForm(Supplier $supplier, ?Organisation $selected, User $user): array
+    {
+        $canWrite = $this->canWriteProcurementNotes($user, $supplier->group, $selected?->id) || $this->canWriteAgentSupplierNotes($user, $supplier, $selected?->id);
+
+        return [
+            'can_write_notes' => $canWrite,
+            'note_route'      => $canWrite ? ['name' => 'grp.models.supplier.procurement_note.store', 'parameters' => ['supplier' => $supplier->id]] : null,
+            'note_options'    => $canWrite ? [
+                'categories'            => collect(ProcurementNoteCategoryEnum::cases())->map(fn ($case) => ['value' => $case->value, 'label' => $case->label(), 'colour' => $case->colour()])->all(),
+                'incident_types'        => ProcurementNoteIncidentTypeEnum::valuesWithLabels(),
+                'severities'            => ProcurementNoteSeverityEnum::valuesWithLabels(),
+                'visibilities'          => [['value' => ProcurementNoteVisibilityEnum::AGENT->value, 'label' => ProcurementNoteVisibilityEnum::AGENT->label()]],
+                'currencies'            => Currency::orderBy('code')->get(['id', 'code'])->map(fn (Currency $currency) => ['value' => $currency->id, 'label' => $currency->code])->all(),
+                'organisation_id'       => $selected?->id,
+                'organisation_is_fixed' => true,
+                'organisation_label'    => $selected?->name ?? __('All organisations'),
             ] : null,
         ];
     }

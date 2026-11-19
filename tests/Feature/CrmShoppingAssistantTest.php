@@ -316,6 +316,19 @@ test('the shopping assistant reply may repeat the customer\'s own figures and si
         ->and($assistant->onlyGivenNumbers('Save 10% on the 190g size.', $customer, $names))->toBeFalse();
 });
 
+test('the shopping assistant reply may name a set by the word and number in its name, but not reuse that number', function () {
+    $assistant = AskShoppingAssistant::make();
+    $names     = "Aromatherapy Gift Set - Top 12\nZodiac Candle Leo\nTea Light Set of 3\nSavon Lot de 6";
+
+    expect($assistant->onlyGivenNumbers('Le Coffret Aromathérapie Top 12 est une bonne base.', '', $names))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('Our top 12 set sells well.', '', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('There is a choice of 3 fragrances.', '', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Il y a un total de 6 parfums.', '', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('It is only £12.', '', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Over 12 shops buy it.', '', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('The Top 120 set is new.', '', $names))->toBeFalse();
+});
+
 function shoppingAssistantStorefront(object $test, bool $enabled = true): Website
 {
     $website = createWebsite($test->shop);
@@ -1900,7 +1913,9 @@ test('better price options say from our data whether the customer is a Gold Rewa
         ->and($asNotMember['content']['gold_reward'])->toBe('not_member')
         ->and($asNotMember['fact'])->toContain('for 30 days')
         ->and($asMember['fact'])->toContain('wherever a range has them')
+        ->and($asMember['content']['keeping_membership'])->toContain('no minimum amount to spend')
         ->and($withoutMemberPrices['content']['gold_reward'])->toBe('not_offered')
+        ->and($withoutMemberPrices['content']['keeping_membership'])->toBeNull()
         ->and($withoutMemberPrices['fact'])->not->toContain('Gold Reward')
         ->and($withoutMemberPrices['fact'])->toContain('can call you');
 });
@@ -1962,7 +1977,7 @@ test('a planned big order becomes one high priority customer services task for t
         ->and($task->description)->toContain('asked for a call to discuss terms')
         ->and($task->description)->toContain('mornings')
         ->and($task->description)->toContain('Christmas stock for two shops')
-        ->and($task->description)->toContain('/analytics/ai-assistant/conversations/'.$conversation->ulid)
+        ->and($task->description)->toContain('/ai-salesman/conversations/'.$conversation->ulid)
         ->and($task->collaborators()->pluck('users.id')->all())->toContain($manager->id);
     Illuminate\Support\Facades\Notification::assertSentTo($manager, App\Notifications\ShoppingAssistantSalesLeadNotification::class, fn ($notification) => !$notification->isReminder);
 
@@ -3699,6 +3714,71 @@ test('on a dropshipping shop Merlin can list the products added to a store chann
     }
 });
 
+test('on a dropshipping shop Merlin reads why products do not list on the customer\'s own eBay channels, with each cause and fix written by code, never another customer\'s', function () {
+    $originalType = $this->shop->type;
+
+    try {
+        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+        shoppingAssistantStorefront($this);
+        $customer     = shoppingAssistantCustomer($this->shop->refresh());
+        $stranger     = shoppingAssistantCustomer($this->shop);
+        $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+        $conversation->update(['language_code' => 'en']);
+        $tools        = GetShoppingAssistantTools::make();
+        $ebay         = \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::EBAY)->firstOrFail();
+
+        expect($tools->execute($conversation, 'ebay_listing_problems', [])['content']['has_ebay'])->toBeFalse();
+
+        $channel = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, $ebay, ['reference' => 'ebay-'.Str::random(6)]);
+        $channel->update(['name' => 'Moon eBay', 'connection_status' => \App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum::CONNECTED, 'settings' => array_merge($channel->settings ?? [], ['upload_as_draft' => true])]);
+        $theirs  = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($stranger, $ebay, ['reference' => 'ebay-'.Str::random(6)]);
+        $portfolio = fn ($owner, $onChannel, string $code, bool $listed, ?string $warning = null, mixed $errors = null, array $data = []) => DB::table('portfolios')->insert([
+            'group_id' => $owner->group_id, 'organisation_id' => $owner->organisation_id, 'shop_id' => $owner->shop_id, 'customer_id' => $owner->id,
+            'customer_sales_channel_id' => $onChannel->id, 'platform_id' => $ebay->id, 'item_type' => 'Product', 'item_id' => shoppingAssistantProduct($this->product)->id, 'item_code' => $code, 'item_name' => 'Bath Bomb '.$code,
+            'status' => true, 'platform_status' => $listed, 'upload_warning' => $warning, 'errors_response' => $errors === null ? null : json_encode($errors),
+            'data' => json_encode($data), 'settings' => '{}', 'platform_product_id' => $listed || $data ? 'offer-'.$code : null,
+        ]);
+
+        $portfolio($customer, $channel, 'EB-01', true);
+        $portfolio($customer, $channel, 'EB-02', false, null, null, ['is_platform_draft' => true]);
+        $portfolio($customer, $channel, 'EB-03', false, 'A user error has occurred. This listing would cause you to exceed the number of items you can list. You can list up to 6 more items this month.');
+        $portfolio($customer, $channel, 'EB-04', false, null, ['message' => 'A user error has occurred. The item specific Brand is missing. Add Brand to this listing, enter a valid value, and then try again.']);
+        $portfolio($customer, $channel, 'EB-05', false, null, [['domain' => 'API_INVENTORY', 'errorId' => 25002, 'message' => 'A user error has occurred. You are not allowed to revise an ended item "960079898083".']]);
+        $portfolio($customer, $channel, 'EB-06', false);
+        $portfolio($stranger, $theirs, 'XX-99', false, 'A user error has occurred. Before you can list this item we need some additional information to create a seller account.');
+
+        $result = $tools->execute($conversation, 'ebay_listing_problems', []);
+        $fact   = $result['fact'];
+
+        expect($result['error'])->toBeNull()
+            ->and($result['content']['causes'])->toContain('drafts', 'selling_limit', 'needs_our_data', 'listing_ended')
+            ->and($result['content'])->not->toHaveKey('ours_to_fix')
+            ->and($result['content']['product_data'])->toContain('products team has been asked')
+            ->and(\App\Models\Tasks\StaffTask::where('data->kind', \App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantEngineerTicket::CATALOGUE_TASK_KIND)->where('data->customer_id', $customer->id)->first()?->description)->toContain('EB-04')
+            ->and(json_encode($result['content']))->not->toMatch('/\d/')
+            ->and($fact)->toContain(__('eBay ":channel": :listed listed, :drafts drafts not published, :failed refused by eBay, :waiting not sent yet.', ['channel' => 'Moon eBay', 'listed' => 1, 'drafts' => 1, 'failed' => 3, 'waiting' => 1], 'en'))
+            ->and($fact)->toContain(__('Upload as draft is on in Manage Sales Channel, so new uploads stay drafts.', [], 'en'))
+            ->and($fact)->toContain('EB-03 · Bath Bomb EB-03 · '.__('Your eBay selling limit for this month is reached: upload fewer or cheaper products, ask eBay to raise your limits, or wait for next month.', [], 'en'))
+            ->and($fact)->toContain('EB-04 · Bath Bomb EB-04 · '.__('eBay needs information about this product that only we can add: we are looking at it.', [], 'en'))
+            ->and($fact)->toContain('EB-05 · Bath Bomb EB-05 · '.__('The listing no longer exists on eBay: press Create new product to list it again.', [], 'en'))
+            ->and($fact)->toContain(__('Tip: turn on "Out-of-stock control" in your eBay selling preferences, so eBay keeps your listings when a product runs out instead of ending them.', [], 'en'))
+            ->and($fact)->not->toContain('XX-99')
+            ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::causeOf('Se ha producido un error en el sistema. Para poder poner en venta este artículo, necesitamos información adicional que permita crear una cuenta de vendedor.'))->toBe('seller_account')
+            ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::causeOf('The eBay listing associated with the inventory item, or the unpublished offer, has invalid data in the associated fulfilment policy.'))->toBe('business_policy')
+            ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::causeOf('Too many requests.'))->toBe('ebay_temporary')
+            ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::refusalOf('Ein Nutzerfehler ist aufgetreten. Das Feld EAN fehlt. The product aspects for this category no longer support custom values for Size.', ['message' => 'Your product is not in the listing yet, please publish it first in your ebay shop. Or you can use option: create new product'])[0])->toBe('needs_our_data')
+            ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::refusalOf('A user error has occurred. This listing would cause you to exceed the number of items you can list.', ['message' => 'Su producto aún no está en el listado'])[0])->toBe('selling_limit')
+            ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::refusalOf('A user error has occurred. This listing would cause you to exceed the number of items you can list.', [['errorId' => 25002, 'message' => 'A user error has occurred. You are not allowed to revise an ended item "960079898083".']])[0])->toBe('listing_ended')
+            ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::refusalOf('{"errorId":2004,"domain":"ACCESS","category":"REQUEST","message":"Invalid request"}', ['message' => 'Your product is not in the listing yet, please publish it first in your ebay shop. Or you can use option: create new product'])[0])->not->toBe('needs_our_data')
+            ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::refusalOf('[{"errorId":25002,"domain":"API_INVENTORY","category":"REQUEST","message":"A user error has occurred. You are not allowed to revise an ended item \"1\"."}]', ['message' => 'Su producto aún no está en el listado'])[0])->toBe('listing_ended')
+            ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::refusalOf(null, ['message' => 'Your product is not in the listing yet, please publish it first in your ebay shop. Or you can use option: create new product'])[0])->toBe('listing_ended')
+            ->and(collect($tools->definitions(true))->pluck('function.name'))->toContain('ebay_listing_problems')
+            ->and(collect($tools->definitions())->pluck('function.name'))->not->toContain('ebay_listing_problems');
+    } finally {
+        $this->shop->update(['type' => $originalType]);
+    }
+});
+
 test('Merlin says where the customer\'s own order is, with the order number, date and tracking written by the system, and an offer of a person after it keeps that line', function () {
     $website  = createWebsite($this->shop);
     $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => true])]);
@@ -4141,6 +4221,13 @@ test('Merlin lists codes, barcodes, prices, RRP and stock of shown products as l
         ->and(json_encode($result['content']))->not->toContain('5056368302749')
         ->and($result['fact'])->not->toContain($hidden->code)
         ->and($nothing['error'])->toContain('No product shown');
+
+    $someoneElse = shoppingAssistantCustomer($this->shop);
+    DB::table('product_has_exclusive_customers')->insert(['product_id' => $empty->id, 'customer_id' => $someoneElse->id, 'created_at' => now(), 'updated_at' => now()]);
+    $exclusive = GetShoppingAssistantTools::make()->execute($conversation, 'product_details', ['product_ids' => [$listed->id, $empty->id]]);
+
+    expect($exclusive['fact'])->toContain($listed->code)
+        ->and($exclusive['fact'])->not->toContain($empty->code);
 });
 
 test('a product a customer bought before is marked in the search and goes back in the basket at the quantity of their last order when they reorder', function () {
@@ -4287,4 +4374,175 @@ test('a shop with a sister shop points the customer to it, with a link built by 
         ->and($looked['content']['names'])->toBe([$this->product->name])
         ->and($matched['fact'])->toBe(__('Our sister shop :website sells these: :link', ['website' => $sister->domain, 'link' => $sister->getUrl().'/search?q=oil%20burners'], $conversation->language_code))
         ->and(GetShoppingAssistantTools::sisterWebsite($website->fresh()))->toBeNull();
+});
+
+test('account details give the date the account was opened and its credit as sentences under the reply, never a figure written by the AI', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $customer->update(['registered_at' => '2024-03-03 10:00:00', 'balance' => 0]);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $locale       = $conversation->language_code;
+    $date         = \Carbon\Carbon::parse('2024-03-03');
+    $opened       = __('Your account with us was opened on :date.', ['date' => $date->locale($locale)->isoFormat('LL') ?: $date->locale('en')->isoFormat('LL')], $locale);
+
+    $noCredit = $tools->execute($conversation, 'account_details', []);
+    $customer->update(['balance' => 12.5]);
+    $credit = $tools->execute($conversation->setRelation('customer', $customer->refresh()), 'account_details', []);
+
+    expect($noCredit['fact'])->toBe($opened)
+        ->and($noCredit['content']['has_credit'])->toBeFalse()
+        ->and($credit['fact'])->toStartWith($opened)
+        ->and($credit['fact'])->toContain(Illuminate\Support\Number::currency(12.5, $this->shop->currency->code, $locale))
+        ->and($credit['fact'])->toEndWith(__('At checkout your credit is used first, and the rest is paid with the payment method you choose.', [], $locale))
+        ->and(json_encode($credit['content']))->not->toMatch('/\d/')
+        ->and(collect(GetShoppingAssistantTools::make()->definitions())->pluck('function.name'))->toContain('account_details');
+});
+
+test('a customer\'s own order or basket number is never searched as a product, and their basket shows packs × units in a pack = units, its lines added together', function () {
+    config(['services.shopping_assistant.plain_search' => true]);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $product  = shoppingAssistantProduct($this->product);
+    $product->update(['units' => 3]);
+    $newOrder = fn () => \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, ['reference' => 'RO'.random_int(100000, 999999), 'date' => date('Y-m-d'), 'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()), 'billing_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition())]);
+    $placed   = $newOrder();
+    $placed->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE, 'submitted_at' => now()->subHours(2)]);
+    $basket   = $newOrder();
+    foreach ([20, 31] as $quantity) {
+        DB::table('transactions')->insert([
+            'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id, 'customer_id' => $customer->id,
+            'order_id' => $basket->id, 'tax_category_id' => TaxCategory::firstOrFail()->id, 'data' => '{}', 'date' => now(), 'model_type' => 'Product', 'model_id' => $product->id,
+            'family_id' => $product->family_id, 'state' => 'creating', 'net_amount' => 10, 'grp_net_amount' => 10, 'is_gift' => false, 'quantity_ordered' => $quantity,
+        ]);
+    }
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH);
+    $conversation->update(['language_code' => 'en']);
+    $tools = GetShoppingAssistantTools::make();
+
+    $searched    = $tools->execute($conversation, 'search_products', ['query' => '#'.$basket->reference]);
+    $basketState = $tools->execute($conversation, 'order_status', ['reference' => $basket->reference]);
+
+    expect(GetShoppingAssistantTools::ownOrderNamedIn($customer, Str::lower($placed->reference).' and '.$basket->reference)?->id)->toBe($basket->id)
+        ->and(GetShoppingAssistantTools::ownOrderNamedIn($customer, 'lavender oil 10ml'))->toBeNull()
+        ->and($searched['products'])->toBe([])
+        ->and($searched['content']['own_order'])->toBe($basket->reference)
+        ->and($searched['content']['note'])->toContain('call order_status')
+        ->and($basketState['content']['basket'])->toContain('packs ordered')
+        ->and($basketState['fact'])->toContain(__('In your basket (packs ordered × units in each pack = units):', [], 'en'))
+        ->and($basketState['fact'])->toContain($product->code.' · '.$product->name.' · 51 × 3 = 153')
+        ->and(json_encode($basketState['content']))->not->toContain('153');
+
+    $jev = \App\Actions\Helpers\AI\AskJev::mock();
+    $jev->shouldNotReceive('choice');
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('order_status', ['reference' => $placed->reference])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'It is in our warehouse, waiting to be picked.', 'answer_kind' => 'shop_answer', 'language' => 'en']))]);
+
+    $turn = AskShoppingAssistant::run($conversation, $placed->reference);
+
+    expect($turn['message']->flags ?? [])->not->toContain('plain_search')
+        ->and($turn['reply'])->toStartWith('It is in our warehouse');
+});
+
+test('when the last model call fails after the searches found products, the customer sees those products instead of being asked to try again', function () {
+    $customer     = shoppingAssistantCustomer($this->shop);
+    createWebsite($this->shop);
+    $product      = shoppingAssistantLiveProduct($this->product);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'en']);
+    \App\Actions\Catalogue\Search\SearchCatalogueByMeaning::mock()->shouldReceive('handle')->andReturn(collect([$product]));
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('search_products', ['query' => 'candles'])]], 'tool_calls'))
+        ->push(['error' => ['message' => 'upstream error']], 502)]);
+
+    $turn = AskShoppingAssistant::run($conversation, 'Which candles sell best online?');
+
+    expect($turn['message']->flags)->toContain('answered_from_found')
+        ->and($turn['reply'])->toBe(__('Here are some ideas for your shop.', [], 'en'))
+        ->and($turn['groups']['must_haves']->pluck('id')->all())->toBe([$product->id]);
+});
+
+test('an order waiting in the warehouse gets an estimated dispatch day range without the queue or pace figures, and a stuck one is told plainly with one customer services task', function () {
+    Carbon::setTestNow(CarbonImmutable::parse('2026-11-18 10:00:00'));
+    $warehouse = createWarehouse();
+    $customer  = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'en']);
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, ['reference' => 'DO-'.Str::upper(Str::random(8)), 'date' => now()->toDateString(), 'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()), 'billing_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition())]);
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE, 'submitted_at' => now()->subHours(20)]);
+    $note = \App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote::make()->action($order, [
+        'reference'        => 'DN'.Str::upper(Str::random(8)),
+        'email'            => 'buyer@example-shop.test',
+        'phone'            => '+44000000000',
+        'date'             => now()->subHours(20)->toDateTimeString(),
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'warehouse_id'     => $warehouse->id,
+    ]);
+    $note->update(['state' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::UNASSIGNED]);
+    foreach (\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::STREAMS as $stream) {
+        \Illuminate\Support\Facades\Cache::put('dispatch-outlook-capacity:'.$warehouse->id.':'.$stream, ['out_per_day' => 987654, 'median_hours' => 40], 900);
+    }
+    $tools = GetShoppingAssistantTools::make();
+
+    $estimate = $tools->execute($conversation, 'order_status', ['reference' => $order->reference]);
+    $today    = now()->locale('en')->isoFormat('dddd D MMMM');
+    $tomorrow = now()->addDay()->locale('en')->isoFormat('dddd D MMMM');
+
+    expect($estimate['fact'])->toContain(__('Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.', ['from' => $today, 'to' => $tomorrow], 'en'))
+        ->and(DB::table('shopping_assistant_dispatch_outlooks')->where('order_id', $order->id)->where('kind', 'estimate')->value('estimated_to'))->toBe('2026-11-19')
+        ->and($estimate['content']['dispatch'])->toContain('estimated dispatch day range')
+        ->and(json_encode($estimate['content']))->not->toContain('987654')
+        ->and(DB::table('shopping_assistant_dispatch_outlooks')->where('order_id', $order->id)->where('kind', 'estimate')->value('estimated_from'))->toBe('2026-11-18');
+
+    $note->update(['state' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+    $held  = $tools->execute($conversation, 'order_status', ['reference' => $order->reference]);
+    $again = $tools->execute($conversation, 'order_status', ['reference' => $order->reference]);
+    $tasks = \App\Models\Tasks\StaffTask::where('data->kind', GetShoppingAssistantTools::STUCK_ORDER_TASK_KIND)->where('data->order_id', $order->id)->count();
+    $hasDepartment = in_array(GetShoppingAssistantTools::STUCK_ORDER_DEPARTMENT, array_column(\App\Models\Tasks\StaffTask::departments($order->group_id), 'value'), true);
+
+    expect($held['fact'])->toContain(__('Your order is on hold in our warehouse while we sort something out. Our team has been told and will look into it.', [], 'en'))
+        ->and($held['fact'])->not->toContain('estimate')
+        ->and($held['content']['dispatch'])->toContain('offer_reason order_question')
+        ->and($again['fact'])->toBe($held['fact'])
+        ->and($tasks)->toBe($hasDepartment ? 1 : 0);
+
+    $note->update(['state' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::UNASSIGNED, 'date' => now()->subDays(10)]);
+    $late = $tools->execute($conversation, 'order_status', ['reference' => $order->reference]);
+
+    expect($late['fact'])->toContain(__('Your order has been waiting longer than it should. Our team has been told and will look into it.', [], 'en'));
+    Carbon::setTestNow();
+});
+
+test('coming soon lists, by family name only, the new ranges whose stock is on an agreed order, never one made for a customer or one with nothing on its way', function () {
+    $department = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $family     = fn (string $name) => \App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($department, array_merge(\App\Models\Catalogue\ProductCategory::factory()->definition(), ['type' => \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY->value, 'name' => $name]));
+    $suffix     = fake()->lexify('?????');
+    $ranges     = ['onItsWay' => $family('Lotus Lanterns '.$suffix), 'exclusive' => $family('Private Label Soaps '.$suffix), 'stale' => $family('Old Promise Candles '.$suffix)];
+    $customer   = shoppingAssistantCustomer($this->shop);
+    $comingSoon = function (string $key, bool $onOrder) use ($ranges): Product {
+        $orgStock = shoppingAssistantOrgStock($this);
+        $product  = shoppingAssistantProductOn($this, [$orgStock->id]);
+        $product->update(['family_id' => $ranges[$key]->id, 'status' => ProductStatusEnum::COMING_SOON, 'state' => ProductStateEnum::ACTIVE]);
+        if ($onOrder) {
+            shoppingAssistantPurchaseOrderLine($this, $orgStock->id, now()->subDays(5)->toDateTimeString(), null, 'confirmed');
+        }
+
+        return $product;
+    };
+    $comingSoon('onItsWay', true);
+    $exclusive = $comingSoon('exclusive', true);
+    $comingSoon('stale', false);
+    DB::table('product_has_exclusive_customers')->insert(['product_id' => $exclusive->id, 'customer_id' => $customer->id, 'created_at' => now(), 'updated_at' => now()]);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'es']);
+    $result = GetShoppingAssistantTools::make()->execute($conversation->fresh(), 'coming_soon', []);
+
+    expect($result['error'])->toBeNull()
+        ->and($result['content']['ranges'])->toContain('Lotus Lanterns '.$suffix)
+        ->and($result['content']['ranges'])->not->toContain('Private Label Soaps '.$suffix)
+        ->and($result['content']['ranges'])->not->toContain('Old Promise Candles '.$suffix)
+        ->and(json_encode($result['content']))->not->toMatch('/\d/')
+        ->and($result['fact'])->toStartWith(Str::before(__('On its way to us: :families.', [], 'es'), ':families'))
+        ->and($result['fact'])->toContain('Lotus Lanterns '.$suffix)
+        ->and(collect(GetShoppingAssistantTools::make()->definitions())->pluck('function.name'))->toContain('coming_soon');
 });

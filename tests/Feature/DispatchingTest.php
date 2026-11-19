@@ -125,6 +125,10 @@ use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Actions\Inventory\OrgStock\FlagOrgStocksWithWrongWeight;
+use App\Models\Inventory\OrgStock;
+use App\Actions\Inventory\Warehouse\UpdateWarehouse;
+use App\Actions\Inventory\OrgStock\LearnOrgStocksPackedVolume;
+use App\Actions\Dispatching\DeliveryNote\EstimateDeliveryNoteBoxes;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
@@ -8630,6 +8634,116 @@ test('flags a SKO whose weighed parcels disagree with its weight, ignoring share
 
     expect($orgStock->refresh()->has_wrong_weight)->toBeFalse()
         ->and($orgStock->measured_weight)->toBe(3000);
+});
+
+test('learns the packed litres of a SKO from recorded parcels and sets the packing target of wholesale delivery notes, HELP-4810', function () {
+    $bulkySko = makeOrgStock($this);
+    $heavySko = makeOrgStock($this);
+    DB::table('stocks')->where('id', $bulkySko->stock_id)->update(['gross_weight' => 1000]);
+    DB::table('stocks')->where('id', $heavySko->stock_id)->update(['gross_weight' => 9000]);
+    $transaction = $this->order->transactions()->first();
+
+    $addLine = function (DeliveryNote $deliveryNote, OrgStock $orgStock, float $quantity) use ($transaction) {
+        StoreDeliveryNoteItem::make()->action($deliveryNote, [
+            'delivery_note_id'  => $deliveryNote->id,
+            'org_stock_id'      => $orgStock->id,
+            'transaction_id'    => $transaction->id,
+            'quantity_required' => $quantity,
+        ]);
+    };
+
+    $packedNote = function (array $parcels, int $estimatedWeight, string $shopType = 'b2b') use ($bulkySko, $addLine) {
+        $deliveryNote = makeDeliveryNote($this);
+        $addLine($deliveryNote, $bulkySko, 2);
+        DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 2, 'estimated_picked_weight' => 2000]);
+        DB::table('delivery_notes')->where('id', $deliveryNote->id)->update([
+            'state'            => DeliveryNoteStateEnum::DISPATCHED->value,
+            'shop_type'        => $shopType,
+            'dispatched_at'    => now()->subDay(),
+            'estimated_weight' => $estimatedWeight,
+            'parcels'          => json_encode($parcels),
+        ]);
+    };
+
+    $packedNote([['weight' => 2.3, 'dimensions' => [40, 30, 20]]], 2000);
+    $packedNote([['weight' => 2.2, 'dimensions' => [40, 30, 20]]], 2000);
+    $packedNote([['weight' => 2.1, 'dimensions' => [40, 30, 20]]], 2000);
+    $packedNote([['weight' => 2.0, 'dimensions' => [90, 90, 90]]], 2000);
+    $packedNote([['weight' => 2.4, 'dimensions' => [10, 10, 10]]], 2000, 'dropshipping');
+    $packedNote([['weight' => 'x', 'dimensions' => [90, 90, 90]]], 2000);
+
+    LearnOrgStocksPackedVolume::run($this->organisation);
+    $bulkySko->refresh();
+
+    expect((float) $bulkySko->packed_volume)->toBe(12.0)
+        ->and($bulkySko->packed_volume_samples)->toBe(3)
+        ->and($heavySko->refresh()->packed_volume)->toBeNull();
+
+    DB::table('org_stocks')->where('id', $heavySko->id)->update(['packed_volume' => 2]);
+
+    $deliveryNote = makeDeliveryNote($this);
+    DB::table('delivery_notes')->where('id', $deliveryNote->id)->update(['shop_type' => 'b2b']);
+    $deliveryNote->refresh();
+    $addLine($deliveryNote, $bulkySko, 10);
+    $deliveryNote->refresh();
+
+    expect($deliveryNote->estimated_boxes)->toBe(3)
+        ->and($deliveryNote->boxes_estimate['not_learnt_share'])->toEqual(0)
+        ->and($deliveryNote->boxes_estimate['first']['boxes'])->toBe(3)
+        ->and($deliveryNote->boxes_estimate['box'])->toEqual(['length' => 38, 'width' => 38, 'height' => 38, 'max_weight' => 20]);
+
+    $addLine($deliveryNote, $heavySko, 5);
+    $deliveryNote->refresh();
+
+    expect($deliveryNote->estimated_boxes)->toBe(4)
+        ->and($deliveryNote->boxes_estimate['first']['boxes'])->toBe(4);
+
+    DB::table('delivery_notes')->where('id', $deliveryNote->id)->update(['state' => DeliveryNoteStateEnum::HANDLING->value]);
+    $deliveryNote->refresh();
+    UpdateWarehouse::make()->action($this->warehouse, ['packing_box_length' => 60, 'packing_box_width' => 40, 'packing_box_height' => 40, 'packing_box_max_weight' => 30]);
+    $deliveryNote->load('warehouse');
+    EstimateDeliveryNoteBoxes::run($deliveryNote);
+    $deliveryNote->refresh();
+
+    expect($this->warehouse->refresh()->settings['packing_box'])->toEqual(['length' => 60, 'width' => 40, 'height' => 40, 'max_weight' => 30])
+        ->and($deliveryNote->estimated_boxes)->toBe(3)
+        ->and($deliveryNote->boxes_estimate['first']['boxes'])->toBe(4)
+        ->and(app(ShowDeliveryNote::class)->getPackingTarget($deliveryNote))->toMatchArray([
+            'boxes'        => 3,
+            'max_weight'   => 30,
+            'box_size'     => '60×40×40',
+            'first_boxes'  => 4,
+        ]);
+
+    $notLearntSko = makeOrgStock($this);
+    DB::table('stocks')->where('id', $notLearntSko->stock_id)->update(['gross_weight' => 500]);
+    $notLearntNote = makeDeliveryNote($this);
+    DB::table('delivery_notes')->where('id', $notLearntNote->id)->update(['shop_type' => 'b2b']);
+    $addLine($notLearntNote->refresh(), $notLearntSko, 4);
+
+    expect($notLearntNote->refresh()->estimated_boxes)->toBe(1)
+        ->and($notLearntNote->boxes_estimate['not_learnt_share'])->toEqual(1);
+
+    $weightlessSko = makeOrgStock($this);
+    DB::table('stocks')->where('id', $weightlessSko->stock_id)->update(['gross_weight' => 0]);
+    $addLine($notLearntNote, $weightlessSko, 1);
+    $notLearntNote->refresh();
+    $estimatedAt = $notLearntNote->boxes_estimate['estimated_at'];
+
+    $this->travel(5)->minutes();
+    EstimateDeliveryNoteBoxes::run($notLearntNote);
+
+    expect($notLearntNote->refresh()->boxes_estimate['unknown_items'])->toBe([$weightlessSko->code])
+        ->and($notLearntNote->boxes_estimate['estimated_at'])->toBe($estimatedAt);
+    $this->travelBack();
+
+    $dropshippingNote = makeDeliveryNote($this);
+    DB::table('delivery_notes')->where('id', $dropshippingNote->id)->update(['shop_type' => 'dropshipping']);
+    $addLine($dropshippingNote->refresh(), $bulkySko, 10);
+
+    expect($dropshippingNote->refresh()->estimated_boxes)->toBeNull();
+
+    UpdateWarehouse::make()->action($this->warehouse, ['packing_box_length' => 38, 'packing_box_width' => 38, 'packing_box_height' => 38, 'packing_box_max_weight' => 20]);
 });
 
 test('dispatch hub dropshipping and marketplace rows count picked and packing delivery notes', function () {

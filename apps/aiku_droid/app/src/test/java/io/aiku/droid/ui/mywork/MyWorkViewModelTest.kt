@@ -5,6 +5,7 @@ import io.aiku.droid.data.api.MyWorkCounts
 import io.aiku.droid.data.api.MyWorkKind
 import io.aiku.droid.data.api.MyWorkPage
 import io.aiku.droid.data.api.MyWorkRow
+import io.aiku.droid.data.cache.testScreenCache
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.inventory.FakeSessions
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +42,7 @@ class MyWorkViewModelTest {
     @Test
     fun `opening loads this warehouse's work in the order received`() {
         api.work = GoodsOutResult.Loaded(MyWorkPage(rows = listOf(session, note), counts = MyWorkCounts(total = 2, deliveryNotes = 1, pickingSessions = 1)))
-        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 4)
+        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 4, cache = testScreenCache())
 
         assertFalse(work.state.value.hasLoaded)
 
@@ -57,7 +58,7 @@ class MyWorkViewModelTest {
     @Test
     fun `pull to refresh reloads and replaces the list`() {
         api.work = GoodsOutResult.Loaded(MyWorkPage(rows = listOf(note, session)))
-        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 4)
+        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 4, cache = testScreenCache())
         work.onStart()
 
         api.work = GoodsOutResult.Loaded(MyWorkPage(rows = listOf(session)))
@@ -70,7 +71,7 @@ class MyWorkViewModelTest {
 
     @Test
     fun `nothing assigned shows the empty state`() {
-        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 4)
+        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 4, cache = testScreenCache())
 
         work.onStart()
 
@@ -79,7 +80,7 @@ class MyWorkViewModelTest {
 
     @Test
     fun `without a warehouse the list is empty and nothing is asked`() {
-        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = null)
+        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = null, cache = testScreenCache())
 
         work.onStart()
 
@@ -90,7 +91,7 @@ class MyWorkViewModelTest {
     @Test
     fun `a failed load shows the problem and retry clears it`() {
         api.work = GoodsOutResult.Unreachable
-        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 4)
+        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 4, cache = testScreenCache())
 
         work.onStart()
 
@@ -107,7 +108,7 @@ class MyWorkViewModelTest {
     @Test
     fun `a failed refresh keeps the rows already shown`() {
         api.work = GoodsOutResult.Loaded(MyWorkPage(rows = listOf(note)))
-        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 4)
+        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 4, cache = testScreenCache())
         work.onStart()
 
         api.work = GoodsOutResult.ServerError(500)
@@ -121,7 +122,7 @@ class MyWorkViewModelTest {
     @Test
     fun `another warehouse answers not found`() {
         api.work = GoodsOutResult.NotFound("")
-        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 99)
+        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 99, cache = testScreenCache())
 
         work.onStart()
 
@@ -131,7 +132,7 @@ class MyWorkViewModelTest {
     @Test
     fun `an expired session asks to sign in again`() {
         api.work = GoodsOutResult.SessionExpired
-        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 4)
+        val work = MyWorkViewModel(api, FakeSessions(), warehouseId = 4, cache = testScreenCache())
 
         work.onStart()
 
