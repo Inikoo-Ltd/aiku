@@ -514,7 +514,7 @@ test('agent manager only sees their own agent organisation', function () {
 
     auth()->logout();
     $this->post(route('grp.login.store'), ['username' => 'agent-manager', 'password' => $agentPassword])
-        ->assertRedirect(route('grp.org.agent.orders.index', $organisation->slug));
+        ->assertRedirect(route('grp.org.agent.purchase_orders.overview', $organisation->slug));
 
     actingAs($agentUser);
 

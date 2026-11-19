@@ -147,7 +147,7 @@ test('agent org admin can log in with aurora legacy password', function (Agent $
         'password' => 'aurora-password',
     ]);
 
-    $response->assertRedirect(route('grp.org.agent.orders.index', [$organisation->slug]));
+    $response->assertRedirect(route('grp.org.agent.purchase_orders.overview', [$organisation->slug]));
     $this->assertAuthenticatedAs($user);
 
     $user->refresh();

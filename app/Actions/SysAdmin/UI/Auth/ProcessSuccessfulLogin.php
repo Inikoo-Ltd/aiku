@@ -62,7 +62,7 @@ class ProcessSuccessfulLogin implements PasskeyLoginResponse
             $organisation = $user->authorisedOrganisations()->first();
 
             if ($organisation->type === OrganisationTypeEnum::AGENT && $user->authTo("procurement.$organisation->id.view")) {
-                return redirect()->intended(route('grp.org.agent.orders.index', $organisation->slug));
+                return redirect()->intended(route('grp.org.agent.purchase_orders.overview', $organisation->slug));
             }
 
             return redirect()->intended(route('grp.org.dashboard.show', $organisation->slug));

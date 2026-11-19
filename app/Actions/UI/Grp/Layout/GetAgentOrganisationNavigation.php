@@ -28,13 +28,9 @@ class GetAgentOrganisationNavigation
         if ($user->authTo("procurement.$organisation->id.view")) {
             $topMenus = [
                 'agent_orders'                   => [
-                    $this->procurementSubSection(__('Backlog'), 'fa-tasks', 'grp.org.agent.orders.', 'grp.org.agent.orders.index', $organisation),
                     $this->procurementSubSection(__('PO Overview'), 'fa-route', 'grp.org.agent.purchase_orders.overview', 'grp.org.agent.purchase_orders.overview', $organisation),
                     $this->procurementSubSection(__('Purchase orders'), 'fa-clipboard-list', 'grp.org.agent.purchase_orders.index', 'grp.org.agent.purchase_orders.index', $organisation),
-                    $this->procurementSubSection(__('PO board'), 'fa-columns', 'grp.org.agent.purchase_orders.board', 'grp.org.agent.purchase_orders.board', $organisation),
-                    $this->procurementSubSection(__('Shared suppliers'), 'fa-people-carry', 'grp.org.agent.purchase_orders.shared_suppliers', 'grp.org.agent.purchase_orders.shared_suppliers', $organisation),
                     $this->procurementSubSection(__('Deliveries'), 'fa-truck-container', 'grp.org.agent.stock_deliveries.index', 'grp.org.agent.stock_deliveries.index', $organisation),
-                    $this->procurementSubSection(__('Delivery board'), 'fa-columns', 'grp.org.agent.stock_deliveries.board', 'grp.org.agent.stock_deliveries.board', $organisation),
                 ],
                 'agent_suppliers' => [
                     $this->procurementSubSection(__('Suppliers'), 'fa-person-dolly', 'grp.org.agent.org_suppliers.', 'grp.org.agent.org_suppliers.index', $organisation),
@@ -101,6 +97,7 @@ class GetAgentOrganisationNavigation
                         'name'       => match ($key) {
                             'agent_accounting' => $root.'.dashboard',
                             'agent_reports'    => 'grp.org.agent.sales.dashboard',
+                            'agent_orders'     => 'grp.org.agent.purchase_orders.overview',
                             default                 => $root.'.index',
                         },
                         'parameters' => [$organisation->slug],
