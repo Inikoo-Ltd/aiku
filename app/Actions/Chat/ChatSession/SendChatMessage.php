@@ -12,6 +12,7 @@ use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\Email\SendChatNotificationToCustomer;
+use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
 use App\Actions\Comms\Email\SendChatNotificationToExternal;
 use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -118,7 +119,7 @@ class SendChatMessage
             'original_text'   => $sanitizedMessage,
             'original_language_id' => $ownLanguage['original_language_id'] ?? null,
             'is_read'         => false,
-            'metadata'        => $ownLanguage['metadata'] ?? $this->pageMetadata($chatSession, $modelData),
+            'metadata'        => $this->withActiveTime($ownLanguage['metadata'] ?? $this->pageMetadata($chatSession, $modelData), $modelData),
             'created_at'      => now(),
             'updated_at'      => now(),
         ];
@@ -245,6 +246,21 @@ class SendChatMessage
      * this?" without asking for the product code first (HELP-3982). A product or category page
      * also gives its code and title; any other page keeps only its address.
      */
+    /**
+     * What the inbox measured while staff worked on this reply (useActiveTime.ts), for the staff time
+     * of the AI Assistant report. Only a staff reply carries it.
+     */
+    private function withActiveTime(?array $metadata, array $modelData): ?array
+    {
+        if (($modelData['sender_type'] ?? null) !== ChatSenderTypeEnum::AGENT->value || empty($modelData['active_time'])) {
+            return $metadata;
+        }
+
+        $measured = AnswerShoppingAssistantTeamQuestion::measuredTime($modelData['active_time']);
+
+        return $measured ? [...($metadata ?? []), ...$measured] : $metadata;
+    }
+
     private function pageMetadata(ChatSession $chatSession, array $modelData): ?array
     {
         $pageUrl = $modelData['page_url'] ?? null;
@@ -570,6 +586,7 @@ class SendChatMessage
         if ($request->routeIs('grp.org.chat.agents.messages.send')) {
             abort_unless(Arr::get($validated, 'sender_type') === ChatSenderTypeEnum::AGENT->value, 403);
             abort_unless($chatSession->shop instanceof Shop && $this->userCanActOnChatOnShop($request->user(), $chatSession->shop), 403);
+            $validated['active_time'] = ['writing_seconds' => $request->input('writing_seconds'), 'typing_seconds' => $request->input('typing_seconds')];
         }
 
         $senderResult = $this->determineSenderData($validated, $chatSession);

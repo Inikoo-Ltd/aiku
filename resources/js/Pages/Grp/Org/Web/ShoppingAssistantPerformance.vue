@@ -382,8 +382,8 @@ const kpiCards = computed(() => {
             key: "staff_time",
             label: ctrans("Staff time"),
             title: ctrans(
-                "A pessimistic estimate. Saved: conversations where the assistant answered a question itself and the customer did not write to us in the next 24 hours, halved, at :saved min each. Added: :question min for each question passed to our team and :hand_over min for each hand-over to a person.",
-                { saved: 4, question: 6, hand_over: 10 }
+                "Time our people spend replying: the active time measured while they write, or where it was not measured, :thinking seconds plus typing at :typing characters a minute (none for a draft sent unchanged). Guru work: answers gurus sent; unanswered questions cost nothing. Live chats: messages our staff wrote in chats handed over. Saved: conversations the assistant answered where the customer did not write to us in the next 24 hours, halved, each at the cost of an average reply.",
+                { thinking: 5, typing: 200 }
             ),
             icon: faUserClock,
             metric: kpi("staff_hours"),
@@ -391,7 +391,7 @@ const kpiCards = computed(() => {
             better: "up" as const,
             href: null,
             lines: [
-                ctrans(":hours h saved · :added h added", { hours: hours(kpi("staff_hours_saved").value), added: hours(kpi("staff_hours_added").value) }),
+                ctrans(":hours h saved · :guru h guru work · :hand_over h live chats", { hours: hours(kpi("staff_hours_saved").value), guru: hours(kpi("staff_hours_guru").value), hand_over: hours(kpi("staff_hours_hand_over").value) }),
             ],
         },
         {

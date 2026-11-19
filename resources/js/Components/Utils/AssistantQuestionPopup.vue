@@ -9,6 +9,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTimes, faPaperPlane, faHeadSideBrain, faCheck, faShare, faGripVertical } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { useActiveTime } from "@/Composables/useActiveTime"
 import { assistantQuestionColleagues, forgetAssistantQuestion, putAssistantQuestionAside, assistantQuestionsOffset, moveAssistantQuestions, keepAssistantQuestionsPlace } from "@/Composables/useAssistantQuestions"
 
 library.add(faTimes, faPaperPlane, faHeadSideBrain, faCheck, faShare, faGripVertical)
@@ -44,6 +45,8 @@ const errorMessage = ref("")
 const isPassing = ref(false)
 const colleagues = ref<{ id: number, name: string }[]>([])
 const colleagueId = ref<number | null>(null)
+const popup = ref<HTMLElement | null>(null)
+const activeTime = useActiveTime(popup)
 
 const startMoving = (event: PointerEvent) => {
     if ((event.target as HTMLElement).closest("button")) {
@@ -95,7 +98,7 @@ const send = () => {
         errorMessage.value = ctrans("Write the answer first.")
         return
     }
-    post("send", props.question.answer_url, { answer: answer.value, keep_for_everyone: keepForEveryone.value })
+    post("send", props.question.answer_url, { answer: answer.value, keep_for_everyone: keepForEveryone.value, ...activeTime.read() })
 }
 
 const startPassing = async () => {
@@ -113,7 +116,7 @@ const pass = () => {
 </script>
 
 <template>
-    <div class="px-2 pt-1 pb-2">
+    <div ref="popup" class="px-2 pt-1 pb-2">
         <div role="dialog" :aria-label="ctrans('Question from a customer')" class="flex max-h-[min(34rem,70vh)] flex-col rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-[0_2px_6px_-1px_rgba(15,23,42,0.12)]">
             <div class="-mx-1 -mt-1 flex cursor-move touch-none select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-gray-50" :title="ctrans('Drag to move')" @pointerdown="startMoving">
                 <FontAwesomeIcon icon="fal fa-grip-vertical" class="text-xs text-gray-400" fixed-width aria-hidden="true" />

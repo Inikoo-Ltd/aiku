@@ -10,6 +10,9 @@ namespace App\Actions\CRM\ShoppingAssistant;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Search\RecordWebsiteSearchClick;
+use App\Enums\CRM\Livechat\ChatAiDraftChangeEnum;
+use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantAnswerKindEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantChallengeTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
@@ -59,11 +62,11 @@ class GetShoppingAssistantReport
 
     public const float STAFF_TIME_SAVED_SHARE = 0.5;
 
-    public const int SAVED_MINUTES = 4;
+    public const int THINKING_SECONDS = 5;
 
-    public const int TEAM_QUESTION_MINUTES = 6;
+    public const int TYPED_CHARACTERS_PER_MINUTE = 200;
 
-    public const int HAND_OVER_MINUTES = 10;
+    public const int TYPICAL_REPLY_CHARACTERS = 250;
 
     /**
      * @param  Filters  $filters
@@ -120,7 +123,8 @@ class GetShoppingAssistantReport
                 'new_families'             => $metric('new_families'),
                 'staff_hours'              => ['value' => $staff['net_hours'], 'previous' => $staffBefore['net_hours']],
                 'staff_hours_saved'        => ['value' => $staff['saved_hours'], 'previous' => $staffBefore['saved_hours']],
-                'staff_hours_added'        => ['value' => $staff['added_hours'], 'previous' => $staffBefore['added_hours']],
+                'staff_hours_guru'         => ['value' => $staff['guru_hours'], 'previous' => $staffBefore['guru_hours']],
+                'staff_hours_hand_over'    => ['value' => $staff['hand_over_hours'], 'previous' => $staffBefore['hand_over_hours']],
             ],
             'cost_currency' => $costCurrency,
             'funnel'        => array_map(
@@ -926,21 +930,28 @@ class GetShoppingAssistantReport
     }
 
     /**
-     * INI-395, Raul 19 Nov 2026: staff time, in hours only, worked out pessimistically. Saved: the
+     * INI-395, Raul 19 Nov 2026: staff time, in hours, from what our people actually do. A reply a
+     * person sends costs the active seconds measured while they worked on it (useActiveTime.ts: the
+     * guru pop-up and the chat inbox) or, where nothing was measured, THINKING_SECONDS plus typing its
+     * length at TYPED_CHARACTERS_PER_MINUTE, with no typing for a draft sent unchanged. Guru: each
+     * answer a guru sent; answers the researcher sent itself, and questions closed unanswered,
+     * cancelled or still open, cost nothing. Hand-over: each message our staff wrote in a live chat
+     * the assistant handed over, leaving out AI messages and AI drafts sent as they were. Saved: the
      * conversations of real customers in which Merlin answered a question itself and that customer
      * opened no chat or email in the next 24 hours (Merlin's own hand-over chats left out), halved
-     * because some would never have written, at SAVED_MINUTES each. Conversations whose last answer
-     * is under a day old are not counted yet. Added: every question passed to the team (the questions
-     * joined to a task count too) at TEAM_QUESTION_MINUTES and every hand-over at HAND_OVER_MINUTES.
+     * because some would never have written, each at the cost of an average reply above (one of
+     * TYPICAL_REPLY_CHARACTERS when there were none). Conversations whose last answer is under a day
+     * old are not counted yet.
      *
      * @param  Filters  $filters
      *
-     * @return array{saved_hours: float, added_hours: float, net_hours: float}
+     * @return array{saved_hours: float, guru_hours: float, hand_over_hours: float, net_hours: float}
      */
     public function staffTime(array $filters, CarbonImmutable $from, CarbonImmutable $to): array
     {
         $conversations = $this->conversationsQuery($filters, $from, $to);
         $kinds         = $this->quoted(self::STAFF_TIME_ANSWER_KINDS);
+        $draftsAsSent  = $this->quoted([ChatAiDraftChangeEnum::AS_IS->value, ChatAiDraftChangeEnum::COSMETIC->value]);
 
         $row = DB::selectOne(
             <<<SQL
@@ -953,6 +964,29 @@ class GetShoppingAssistantReport
                 where msgs.role = 'assistant' and msgs.answer_kind in ({$kinds})
                     and coalesce(msgs.flags::text, '') not like '%asked_team%'
                 group by convs.id, convs.customer_id
+            ),
+            guru as (
+                select count(*) as replies, coalesce(sum(case
+                    when staff_tasks.data->>'answer_seconds' is not null then (staff_tasks.data->>'answer_seconds')::numeric
+                    else ? + case when staff_tasks.data->>'answer' is distinct from staff_tasks.data->>'draft_answer'
+                        then length(staff_tasks.data->>'answer') else 0 end * 60.0 / ?
+                end), 0) as seconds
+                from staff_tasks
+                join convs on convs.id = (staff_tasks.data->>'conversation_id')::bigint
+                where staff_tasks.data->>'kind' = ? and staff_tasks.data->>'answer' is not null
+                    and coalesce(staff_tasks.data->>'answered_by_researcher', 'false') <> 'true'
+            ),
+            live_chat as (
+                select count(*) as replies, coalesce(sum(case
+                    when chat_messages.metadata->>'writing_seconds' is not null then (chat_messages.metadata->>'writing_seconds')::numeric
+                    else ? + case when chat_messages.message_type = ? and not exists (
+                            select 1 from chat_ai_drafts where chat_ai_drafts.reply_message_id = chat_messages.id and chat_ai_drafts.change_class in ({$draftsAsSent})
+                        ) then length(coalesce(chat_messages.original_text, chat_messages.message_text, '')) else 0 end * 60.0 / ?
+                end), 0) as seconds
+                from shopping_assistant_hand_overs
+                join convs on convs.id = shopping_assistant_hand_overs.shopping_assistant_conversation_id
+                join chat_messages on chat_messages.chat_session_id = shopping_assistant_hand_overs.chat_session_id
+                    and chat_messages.sender_type = ? and chat_messages.deleted_at is null and coalesce(chat_messages.is_ai_generated, false) = false
             )
             select
                 (select count(*) from answered
@@ -965,18 +999,32 @@ class GetShoppingAssistantReport
                             and chat_sessions.created_at between answered.answered_at and answered.answered_at + interval '24 hours'
                             and not exists (select 1 from shopping_assistant_hand_overs where shopping_assistant_hand_overs.chat_session_id = chat_sessions.id)
                     )) as saved,
-                (select coalesce(sum(1 + coalesce(jsonb_array_length(staff_tasks.data->'more_questions'), 0)), 0) from staff_tasks
-                    join convs on convs.id = (staff_tasks.data->>'conversation_id')::bigint
-                    where staff_tasks.data->>'kind' = ?) as team_questions,
-                (select count(*) from shopping_assistant_hand_overs join convs on convs.id = shopping_assistant_hand_overs.shopping_assistant_conversation_id) as hand_overs
+                guru.replies as guru_replies, guru.seconds as guru_seconds,
+                live_chat.replies as chat_replies, live_chat.seconds as chat_seconds
+            from guru, live_chat
             SQL,
-            [...$conversations->getBindings(), StoreShoppingAssistantTeamQuestion::TASK_KIND]
+            [
+                ...$conversations->getBindings(),
+                self::THINKING_SECONDS,
+                self::TYPED_CHARACTERS_PER_MINUTE,
+                StoreShoppingAssistantTeamQuestion::TASK_KIND,
+                self::THINKING_SECONDS,
+                ChatMessageTypeEnum::TEXT->value,
+                self::TYPED_CHARACTERS_PER_MINUTE,
+                ChatSenderTypeEnum::AGENT->value,
+            ]
         );
 
-        $saved = round(((int) $row->saved) * self::STAFF_TIME_SAVED_SHARE * self::SAVED_MINUTES / 60, 1);
-        $added = round((((int) $row->team_questions) * self::TEAM_QUESTION_MINUTES + ((int) $row->hand_overs) * self::HAND_OVER_MINUTES) / 60, 1);
+        $replies      = (int) $row->guru_replies + (int) $row->chat_replies;
+        $replySeconds = $replies > 0
+            ? ((float) $row->guru_seconds + (float) $row->chat_seconds) / $replies
+            : self::THINKING_SECONDS + self::TYPICAL_REPLY_CHARACTERS * 60 / self::TYPED_CHARACTERS_PER_MINUTE;
 
-        return ['saved_hours' => $saved, 'added_hours' => $added, 'net_hours' => round($saved - $added, 1)];
+        $saved    = round(((int) $row->saved) * self::STAFF_TIME_SAVED_SHARE * $replySeconds / 3600, 1);
+        $guru     = round((float) $row->guru_seconds / 3600, 1);
+        $handOver = round((float) $row->chat_seconds / 3600, 1);
+
+        return ['saved_hours' => $saved, 'guru_hours' => $guru, 'hand_over_hours' => $handOver, 'net_hours' => round($saved - $guru - $handOver, 1)];
     }
 
     /**

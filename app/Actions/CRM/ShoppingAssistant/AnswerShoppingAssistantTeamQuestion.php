@@ -53,10 +53,17 @@ class AnswerShoppingAssistantTeamQuestion
 
     public const float NOT_AN_ANSWER_CONFIDENCE = 0.8;
 
+    public const int MAX_MEASURED_SECONDS = 1800;
+
     /**
+     * $activeTime is what the answer pop-up measured (useActiveTime.ts): seconds the guru was working
+     * on it and seconds typing, kept on the task for the staff time of the AI Assistant report.
+     *
+     * @param  array{writing_seconds?: mixed, typing_seconds?: mixed}  $activeTime
+     *
      * @return 'answered'|'already_answered'|'not_a_question'|'not_an_answer'|'has_gap'
      */
-    public function handle(StaffTask $task, User $user, string $answer, bool $keepForEveryone = true): string
+    public function handle(StaffTask $task, User $user, string $answer, bool $keepForEveryone = true, array $activeTime = []): string
     {
         $answer = trim($answer);
         if (data_get($task->data, 'kind') !== StoreShoppingAssistantTeamQuestion::TASK_KIND || $answer === '') {
@@ -73,13 +80,15 @@ class AnswerShoppingAssistantTeamQuestion
         }
 
         $answeredLate = null;
-        $won          = DB::transaction(function () use ($task, $user, $answer, $keepForEveryone, &$answeredLate) {
+        $measured     = self::measuredTime($activeTime);
+        $timing       = $measured ? ['answer_seconds' => $measured['writing_seconds'], 'answer_typing_seconds' => $measured['typing_seconds']] : [];
+        $won          = DB::transaction(function () use ($task, $user, $answer, $keepForEveryone, $timing, &$answeredLate) {
             $locked = StaffTask::whereKey($task->id)->lockForUpdate()->first();
             if (data_get($locked->data, 'answered_at')) {
                 return false;
             }
             $answeredLate = !StoreShoppingAssistantTeamQuestion::isAwaited($locked);
-            $locked->update(['data' => [...$locked->data, 'answer' => $answer, 'answered_at' => now()->toIso8601String(), 'answered_by' => $user->id, 'kept_for_everyone' => $keepForEveryone]]);
+            $locked->update(['data' => [...$locked->data, 'answer' => $answer, 'answered_at' => now()->toIso8601String(), 'answered_by' => $user->id, 'kept_for_everyone' => $keepForEveryone, ...$timing]]);
 
             return true;
         });
@@ -179,12 +188,43 @@ class AnswerShoppingAssistantTeamQuestion
         return [
             'answer'             => ['required', 'string', 'max:2000'],
             'keep_for_everyone'  => ['sometimes', 'boolean'],
+            'writing_seconds'    => ['sometimes', 'nullable'],
+            'typing_seconds'     => ['sometimes', 'nullable'],
+        ];
+    }
+
+    /**
+     * Measured seconds are kept only when they are numbers, clamped to MAX_MEASURED_SECONDS: a bad
+     * figure from the pop-up never costs the customer their answer.
+     *
+     * @param  array{writing_seconds?: mixed, typing_seconds?: mixed}  $activeTime
+     *
+     * @return array{writing_seconds?: int, typing_seconds?: int}
+     */
+    public static function measuredTime(array $activeTime): array
+    {
+        $writing = $activeTime['writing_seconds'] ?? null;
+        if (!is_numeric($writing)) {
+            return [];
+        }
+
+        $typing = $activeTime['typing_seconds'] ?? null;
+
+        return [
+            'writing_seconds' => (int) min(max((float) $writing, 0), self::MAX_MEASURED_SECONDS),
+            'typing_seconds'  => (int) min(max(is_numeric($typing) ? (float) $typing : 0, 0), self::MAX_MEASURED_SECONDS),
         ];
     }
 
     public function asController(StaffTask $staffTask, ActionRequest $request): JsonResponse
     {
-        $result = $this->handle($staffTask, $request->user(), $request->validated('answer'), (bool) $request->validated('keep_for_everyone', true));
+        $result = $this->handle(
+            $staffTask,
+            $request->user(),
+            $request->validated('answer'),
+            (bool) $request->validated('keep_for_everyone', true),
+            ['writing_seconds' => $request->validated('writing_seconds'), 'typing_seconds' => $request->validated('typing_seconds')]
+        );
 
         if ($result === 'not_an_answer' || $result === 'has_gap') {
             return response()->json(['result' => $result, 'message' => self::refusalMessage($result)], 422);
