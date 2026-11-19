@@ -371,7 +371,11 @@ test('an org stock can not be linked to another organisation\'s supplier product
 });
 
 test('every organisation and group top menu subsection carries a label', function () {
-    $iconOnlyByDesign = ['accounting: grp.org.accounting.dashboard'];
+    $iconOnlyByDesign = [
+        'accounting: grp.org.accounting.dashboard',
+        'procurement: grp.org.procurement.dashboard',
+        'procurement: grp.org.procurement.settings.edit',
+    ];
     $unlabelled       = function (array $navigation) use ($iconOnlyByDesign) {
         return collect($navigation)
             ->flatMap(fn ($section, $key) => collect(data_get($section, 'topMenu.subSections', []))

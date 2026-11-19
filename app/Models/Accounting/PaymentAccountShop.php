@@ -89,7 +89,7 @@ class PaymentAccountShop extends Model implements Auditable
 
     public function paymentAccount(): BelongsTo
     {
-        return $this->belongsTo(PaymentAccount::class);
+        return $this->belongsTo(PaymentAccount::class)->withTrashed();
     }
 
     public function shop(): BelongsTo

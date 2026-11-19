@@ -2475,7 +2475,7 @@ test('a simple board finishes a producing card dropped on Done and receives it i
 });
 
 test('a backlog card carries the sales forecast of its SKO', function () {
-    $stocks    = createStocks($this->group);
+    $stocks    = [\App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]))];
     $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
     \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
     StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FCST-01', 'name' => 'Forecast line'])->update(['org_stock_id' => $orgStocks[0]->id]);
