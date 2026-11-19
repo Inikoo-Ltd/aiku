@@ -594,6 +594,7 @@ use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductSupplier
 use App\Actions\Procurement\OrgSupplierProducts\UpdateAgentSupplierContacts;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateAgentSupplierStockFamily;
 use App\Actions\Procurement\PurchaseOrder\ConfirmPurchaseOrderPayment;
+use App\Actions\Procurement\PurchaseOrder\RemindPurchaseOrderBalancePayment;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
@@ -2177,6 +2178,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::post('deposit', StoreAspoDeposit::class)->name('deposit.store');
     Route::post('payment', ConfirmPurchaseOrderPayment::class)->name('payment.confirm');
     Route::delete('payment/{depositPayment:id}', UndoPurchaseOrderPayment::class)->name('payment.undo');
+    Route::post('balance-reminder', RemindPurchaseOrderBalancePayment::class)->name('balance_reminder.store');
     Route::delete('', DeletePurchaseOrder::class)->name('delete');
     Route::patch('submit', UpdatePurchaseOrderStateToSubmitted::class)->name('submit');
     Route::patch('ready-to-send', SetPurchaseOrderReadyToSend::class)->name('ready_to_send');

@@ -19,7 +19,7 @@ class PurchaseOrderBalanceDueNotification extends Notification
 
     public bool $byEmail = true;
 
-    public function __construct(public PurchaseOrder $purchaseOrder, public string $balance)
+    public function __construct(public PurchaseOrder $purchaseOrder, public string $balance, public ?string $remindedBy = null)
     {
     }
 
@@ -30,14 +30,25 @@ class PurchaseOrderBalanceDueNotification extends Notification
 
     public function title(): string
     {
+        if ($this->remindedBy !== null) {
+            return __(':name reminds you about the balance of :amount on :reference', ['name' => $this->remindedBy, 'amount' => $this->balance, 'reference' => $this->purchaseOrder->reference]);
+        }
+
         return __(':reference passed its QC: the balance of :amount can be paid', ['reference' => $this->purchaseOrder->reference, 'amount' => $this->balance]);
+    }
+
+    public function body(): string
+    {
+        return $this->remindedBy !== null
+            ? __('Not paid yet? Pay the supplier, then record the payment on the order. Already paid? Upload the bank statement on the order so :name can see it.', ['name' => $this->remindedBy])
+            : __('Record the payment on the order with its bank statement.');
     }
 
     public function toArray($notifiable): array
     {
         return [
             'title' => $this->title(),
-            'body'  => __('Record the payment on the order with its bank statement.'),
+            'body'  => $this->body(),
             'type'  => 'purchase_order_balance_due',
             'slug'  => (string) $this->purchaseOrder->id,
             'route' => $this->route(),
@@ -49,7 +60,7 @@ class PurchaseOrderBalanceDueNotification extends Notification
         return $this->newMailMessage()
             ->subject($this->title())
             ->line($this->title())
-            ->line(__('Record the payment on the order with its bank statement.'))
+            ->line($this->body())
             ->action(__('Open the order'), route($this->route()['name'], $this->route()['parameters']));
     }
 

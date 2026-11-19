@@ -85,7 +85,7 @@ enum UserNotificationEnum: string
             self::PURCHASE_ORDER_PRICE_ANSWERED => __('An organisation answers a new price or quantity I asked about'),
             self::PURCHASE_ORDERS_STUCK         => __('The weekly list of purchase orders past their expected date'),
             self::PURCHASE_ORDER_COMPLIANCE_DUE => __('Compliance documents of my purchase order are due'),
-            self::PURCHASE_ORDER_BALANCE_DUE    => __('A purchase order passed its QC and its balance can be paid'),
+            self::PURCHASE_ORDER_BALANCE_DUE    => __('A purchase order passed its QC and its balance can be paid, or its agent reminds me to pay it'),
             self::PURCHASE_ORDER_DEPOSIT_REQUESTED => __('A supplier asks for a deposit on a purchase order I buy or my organisation buys or handles as agent'),
             self::MONEY_REQUEST_CREATED         => __('An agent asks for money on a money request I approve, pay or am copied on'),
             self::MONEY_REQUEST_APPROVED        => __('The client approves a money request I asked for or am copied on'),

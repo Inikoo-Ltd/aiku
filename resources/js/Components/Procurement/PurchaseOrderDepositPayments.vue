@@ -11,13 +11,13 @@ import Textarea from "primevue/textarea"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faCheckCircle, faInfoCircle, faPaperclip, faPlus, faTimes, faUndo } from "@fal"
+import { faArrowLeft, faBell, faCheck, faCheckCircle, faInfoCircle, faPaperclip, faPlus, faTimes, faUndo } from "@fal"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
-library.add(faCheck, faCheckCircle, faInfoCircle, faPaperclip, faPlus, faTimes, faUndo)
+library.add(faArrowLeft, faBell, faCheck, faCheckCircle, faInfoCircle, faPaperclip, faPlus, faTimes, faUndo)
 
 export interface DepositPayment {
 	id: number
@@ -45,12 +45,31 @@ export interface PurchaseOrderPaymentsData {
 	paid_at: string | null
 	deposits: DepositPayment[]
 	confirm_route: routeType
+	balance_reminder?: BalanceReminder | null
+}
+
+export interface BalanceReminder {
+	organisation: string
+	last_reminded_at: string | null
+	last_reminded_by: string | null
+	number_reminders: number
+	next_reminder_at: string | null
+	recipients?: { to: BalanceReminderRecipient[]; cc: BalanceReminderRecipient[] }
+	route: routeType
+}
+
+export interface BalanceReminderRecipient {
+	name: string
+	email: string | null
+	by_email: boolean
+	is_buyer: boolean
 }
 
 const props = defineProps<{
 	payments: PurchaseOrderPaymentsData
 	orgCurrencyCode?: string | null
 	orgRate?: number | null
+	showsBalanceReminder?: boolean
 }>()
 
 const locale = useLocaleStore()
@@ -80,6 +99,39 @@ const payButtonLabel = computed(() => (isNextPaymentBalance.value ? ctrans("Pay 
 const paymentLabel = (index: number) => (index === 0 ? ctrans("Deposit") : ctrans("Balance payment"))
 
 const firstError = (errors: Record<string, string>) => Object.values(errors)[0] ?? ctrans("Something went wrong")
+
+const balanceReminder = computed(() => (props.showsBalanceReminder ? props.payments.balance_reminder ?? null : null))
+const isReminding = ref(false)
+const reminderError = ref<string | null>(null)
+const reminderSent = ref(false)
+
+const isReminderDialogOpen = ref(false)
+const reminderGroups = computed(() => [
+	{ label: ctrans("To"), recipients: balanceReminder.value?.recipients?.to ?? [] },
+	{ label: ctrans("Cc"), recipients: balanceReminder.value?.recipients?.cc ?? [] },
+])
+const hasReminderRecipients = computed(() => reminderGroups.value.some((group) => group.recipients.length > 0))
+
+const openReminderDialog = () => {
+	reminderError.value = null
+	reminderSent.value = false
+	isReminderDialogOpen.value = true
+}
+
+const remindBalance = () => {
+	if (!balanceReminder.value) return
+	reminderError.value = null
+	router.post(route(balanceReminder.value.route.name, balanceReminder.value.route.parameters), {}, {
+		preserveScroll: true,
+		onStart: () => (isReminding.value = true),
+		onFinish: () => (isReminding.value = false),
+		onSuccess: () => {
+			reminderSent.value = true
+			isReminderDialogOpen.value = false
+		},
+		onError: (errors) => (reminderError.value = firstError(errors)),
+	})
+}
 
 const isLoading = ref(false)
 
@@ -266,6 +318,81 @@ const undoPayment = () => {
 				<FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
 			</template>
 		</Button>
+
+		<div v-if="balanceReminder" class="space-y-1">
+			<Button
+				type="tertiary"
+				size="xs"
+				full
+				:label="ctrans('Remind :organisation about the balance', { organisation: balanceReminder.organisation })"
+				:tooltip="ctrans('Email and notify the payers of :organisation and the buyer: pay the balance if not paid yet, or upload the bank statement if already paid', { organisation: balanceReminder.organisation })"
+				:disabled="!!balanceReminder.next_reminder_at"
+				:loading="isReminding"
+				@click="openReminderDialog">
+				<template #icon>
+					<FontAwesomeIcon icon="fal fa-bell" class="text-amber-500" fixed-width aria-hidden="true" />
+				</template>
+			</Button>
+			<p v-if="reminderSent" class="text-green-600">{{ ctrans("Reminder sent") }}</p>
+			<p v-if="balanceReminder.last_reminded_at" class="text-gray-400">
+				{{
+					balanceReminder.last_reminded_by
+						? ctrans("Reminded :count times, last :time by :name", { count: balanceReminder.number_reminders, time: formatDateTime(balanceReminder.last_reminded_at), name: balanceReminder.last_reminded_by })
+						: ctrans("Reminded :count times, last :time", { count: balanceReminder.number_reminders, time: formatDateTime(balanceReminder.last_reminded_at) })
+				}}
+				<template v-if="balanceReminder.next_reminder_at"> · {{ ctrans("next from :time", { time: formatDateTime(balanceReminder.next_reminder_at) }) }}</template>
+			</p>
+		</div>
+
+		<Dialog v-if="balanceReminder" v-model:visible="isReminderDialogOpen" modal dismissableMask :closable="false" :pt="dialogPt" class="w-full max-w-md">
+			<template #header>
+				<div class="flex w-full items-center justify-between gap-3">
+					<span class="text-sm font-semibold text-gray-900">{{ ctrans("Remind :organisation about the balance", { organisation: balanceReminder.organisation }) }}</span>
+					<button type="button" class="text-gray-400 hover:text-gray-700" :aria-label="ctrans('Close')" @click="isReminderDialogOpen = false">
+						<FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+					</button>
+				</div>
+			</template>
+			<div class="space-y-3 text-sm">
+				<p class="text-gray-600">
+					{{ ctrans("The payers of :organisation and the order's buyer get an email and an aiku notification: pay the balance of :amount, or upload its bank statement if it is already paid.", { organisation: balanceReminder.organisation, amount: money(payments.left) }) }}
+				</p>
+				<dl class="space-y-2">
+					<div v-for="group in reminderGroups" :key="group.label" class="flex gap-3">
+						<dt class="w-8 shrink-0 font-medium text-gray-500">{{ group.label }}</dt>
+						<dd class="min-w-0 flex-1">
+							<span v-if="!group.recipients.length" class="text-gray-400">{{ ctrans("Nobody") }}</span>
+							<ul v-else class="space-y-1">
+								<li v-for="recipient in group.recipients" :key="`${recipient.name}-${recipient.email}`" :class="recipient.by_email ? 'text-gray-900' : 'text-gray-400'">
+									<span class="font-medium">{{ recipient.name }}</span>
+									<span v-if="recipient.is_buyer" class="ml-1 text-xs text-gray-500">· {{ ctrans("Buyer") }}</span>
+									<span class="ml-1 break-all text-xs" :class="recipient.by_email ? 'text-gray-500' : ''">{{ recipient.email ?? ctrans("no email") }}</span>
+									<span v-if="!recipient.by_email" class="block text-xs">{{ recipient.email ? ctrans("Email off: only notified in aiku") : ctrans("Only notified in aiku") }}</span>
+								</li>
+							</ul>
+						</dd>
+					</div>
+				</dl>
+				<p v-if="!hasReminderRecipients" class="text-xs text-red-600">
+					{{ ctrans("Nobody in :organisation can be reminded: set the payers of its money requests on its agent page, or a buyer on the order.", { organisation: balanceReminder.organisation }) }}
+				</p>
+				<p v-if="reminderError" class="text-xs text-red-600">{{ reminderError }}</p>
+			</div>
+			<template #footer>
+				<div class="flex w-full gap-2">
+					<Button type="tertiary" class="shrink-0" :label="ctrans('Back')" @click="isReminderDialogOpen = false">
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-arrow-left" class="text-gray-500" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+					<Button type="primary" full :label="ctrans('Send reminder')" :disabled="!hasReminderRecipients" :loading="isReminding" @click="remindBalance">
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-bell" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+				</div>
+			</template>
+		</Dialog>
 
 		<Dialog v-model:visible="isPayDialogOpen" modal dismissableMask :closable="false" :pt="dialogPt" class="w-full max-w-md">
 			<template #header>

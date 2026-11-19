@@ -37,6 +37,8 @@ use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\PurchaseOrder\ConfirmPurchaseOrderPayment;
+use App\Actions\Procurement\PurchaseOrder\NotifyPurchaseOrderBalanceDue;
+use App\Actions\Procurement\PurchaseOrder\RemindPurchaseOrderBalancePayment;
 use App\Actions\Procurement\PurchaseOrder\ResolvePurchaseOrderDeliveryAddress;
 use App\Actions\Procurement\PurchaseOrder\Traits\WithPurchaseOrderWeightAndVolume;
 use App\Actions\Procurement\PurchaseOrder\ChangePurchaseOrderSupplier;
@@ -1412,6 +1414,33 @@ class ShowPurchaseOrder extends OrgAction
                 ->values(),
             'confirm_route' => [
                 'name'       => 'grp.models.purchase-order.payment.confirm',
+                'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+            ],
+            'balance_reminder' => $this->getBalanceReminder($purchaseOrder),
+        ];
+    }
+
+    /**
+     * The agent reminds the organisation to pay the balance and record it, when the organisation pays the supplier itself.
+     */
+    private function getBalanceReminder(PurchaseOrder $purchaseOrder): ?array
+    {
+        if (!$this->agentCanEdit || !RemindPurchaseOrderBalancePayment::canRemind($purchaseOrder)) {
+            return null;
+        }
+
+        $reminder   = RemindPurchaseOrderBalancePayment::reminder($purchaseOrder);
+        $remindedBy = $reminder['last_by'] ? User::find($reminder['last_by'], ['id', 'contact_name', 'username']) : null;
+
+        return [
+            'organisation'     => $purchaseOrder->organisation->name,
+            'last_reminded_at' => $reminder['last_at'],
+            'last_reminded_by' => $remindedBy?->contact_name ?: $remindedBy?->username,
+            'number_reminders' => $reminder['count'],
+            'next_reminder_at' => RemindPurchaseOrderBalancePayment::nextReminderAt($purchaseOrder)?->toIso8601String(),
+            'recipients'       => NotifyPurchaseOrderBalanceDue::reminderEmailRecipients($purchaseOrder, request()->user()),
+            'route'            => [
+                'name'       => 'grp.models.purchase-order.balance_reminder.store',
                 'parameters' => ['purchaseOrder' => $purchaseOrder->id],
             ],
         ];

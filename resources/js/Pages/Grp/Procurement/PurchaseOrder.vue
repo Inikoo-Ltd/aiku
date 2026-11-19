@@ -1349,7 +1349,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			<AgentPurchaseOrderMoney :money="agent_money" />
 		</template>
 		<template v-else-if="payments" #check-balance>
-			<PurchaseOrderDepositPayments :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
+			<PurchaseOrderDepositPayments :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" shows-balance-reminder />
 		</template>
 		<template v-if="ready_checks" #check-packing="{ close }">
 			<PurchaseOrderReadyCheckItems check="packing" :data="ready_checks.packing" @done="close" />
