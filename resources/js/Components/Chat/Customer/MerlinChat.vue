@@ -10,12 +10,15 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { isLittleBirdName, shoppingAssistantConversationKey } from "@/Iris/Composables/useShoppingAssistant"
 import MerlinThinking from "@/Iris/Components/MerlinThinking.vue"
+import MerlinImagePicker from "@/Components/Chat/Customer/MerlinImagePicker.vue"
+import { askPayload } from "@/Iris/Composables/useShoppingAssistant"
 
 type Card = { id: number, name: string, url?: string | null, web_images?: any }
 type Message = {
     id: number
     role: "customer" | "assistant"
     body: string
+    images?: { name: string, url: string }[]
     follow_ups?: string[]
     links?: { label: string, url: string }[]
     hand_over_offer?: string | null
@@ -36,6 +39,8 @@ const POLL_LIMIT_MS = 150_000
 const conversation = ref<string | null>(null)
 const messages = ref<Message[]>([])
 const draft = ref("")
+const images = ref<File[]>([])
+const picker = ref<InstanceType<typeof MerlinImagePicker>>()
 const isPending = ref(false)
 const errorMessage = ref("")
 const handOverAvailable = ref(false)
@@ -107,13 +112,14 @@ const startPolling = () => {
 
 const send = async (text: string) => {
     const message = text.trim().slice(0, 1000)
-    if (!message || isPending.value) {
+    const sending = [...images.value]
+    if ((!message && !sending.length) || isPending.value) {
         return
     }
     errorMessage.value = ""
     isPending.value = true
     try {
-        const { data } = await axios.post(askUrl(), { message, conversation: conversation.value, entry_point: "chat", can_hand_over: true })
+        const { data } = await axios.post(askUrl(), askPayload({ message, conversation: conversation.value, entry_point: "chat", can_hand_over: true }, sending))
         if (data.accept_offer) {
             isPending.value = false
             draft.value = ""
@@ -123,9 +129,10 @@ const send = async (text: string) => {
         conversation.value = data.conversation
         sessionStorage.setItem(shoppingAssistantConversationKey, data.conversation)
         if (!messages.value.some((held) => held.id === data.message_id)) {
-            messages.value.push({ id: data.message_id, role: "customer", body: message })
+            messages.value.push({ id: data.message_id, role: "customer", body: message, images: sending.map((file) => ({ name: file.name, url: URL.createObjectURL(file) })) })
         }
         draft.value = ""
+        images.value = []
         startPolling()
     } catch (error: any) {
         const status = error?.response?.status
@@ -208,8 +215,13 @@ onBeforeUnmount(stopPolling)
             </div>
 
             <template v-for="message in messages" :key="message.id">
-                <div v-if="message.role === 'customer'" class="flex justify-end">
-                    <p class="max-w-[85%] whitespace-pre-line rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-800">{{ message.body }}</p>
+                <div v-if="message.role === 'customer'" class="flex flex-col items-end gap-1">
+                    <div v-if="message.images?.length" class="flex max-w-[85%] flex-wrap justify-end gap-1">
+                        <a v-for="image in message.images" :key="image.url" :href="image.url" target="_blank" rel="noopener" class="block h-20 w-20 overflow-hidden rounded border bg-gray-50">
+                            <img :src="image.url" :alt="image.name" class="h-full w-full object-cover" />
+                        </a>
+                    </div>
+                    <p v-if="message.body" class="max-w-[85%] whitespace-pre-line rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-800">{{ message.body }}</p>
                 </div>
 
                 <div v-else class="flex gap-2">
@@ -270,10 +282,11 @@ onBeforeUnmount(stopPolling)
         <div class="shrink-0 border-t p-3">
             <div class="flex items-end gap-2">
                 <Textarea v-model="draft" rows="2" autoResize class="flex-1 text-sm" :placeholder="ctrans('Ask :name anything', { name: assistantName })"
-                    :disabled="isPending" @keydown.enter="onEnter" />
-                <Button type="primary" :icon="faPaperPlane" :disabled="isPending || !draft.trim()" :aria-label="ctrans('Send')"
+                    :disabled="isPending" @keydown.enter="onEnter" @paste="picker?.onPaste($event)" @dragover.prevent @drop="picker?.onDrop($event)" />
+                <Button type="primary" :icon="faPaperPlane" :disabled="isPending || (!draft.trim() && !images.length)" :aria-label="ctrans('Send')"
                     @click="send(draft)" />
             </div>
+            <MerlinImagePicker ref="picker" v-model="images" :disabled="isPending" class="mt-2" />
             <button type="button" class="mt-2 text-xs text-gray-500 underline hover:text-gray-700" @click="emit('leave-message')">
                 {{ ctrans("Prefer a person? Leave a message for our team") }}
             </button>

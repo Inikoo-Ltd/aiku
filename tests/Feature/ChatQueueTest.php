@@ -2304,3 +2304,25 @@ test('outside chat hours the website chat is in Merlin mode until an agent of th
     $agent->delete();
     outOfHoursTestCleanUp($schedule);
 });
+
+test('a photo the customer showed Merlin before the question goes into the team chat with it on hand-over', function () {
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+    [$website, $customer, $webUser, $shop] = handOverTestStorefront(true, false);
+    $schedule = outOfHoursTestSchedule($shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 11:00', 'Europe/London'));
+    handOverTestAvailableAgent($shop);
+    $conversation = \App\Actions\CRM\ShoppingAssistant\StartShoppingAssistantConversation::run($customer, \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum::CHAT, ['web_user_id' => $webUser->id]);
+    \App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant::make()->storeCustomerMessage($conversation, '', [\Illuminate\Http\UploadedFile::fake()->image('broken-mug.jpg', 400, 300)]);
+    $offer = handOverTestOffer($customer, $website, $webUser, 'This arrived broken, can I get a refund?', $conversation);
+
+    $response = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['conversation' => $conversation->ulid, 'offer_message_id' => $offer->id])->assertOk();
+
+    $session = ChatSession::where('ulid', $response->json('chat_session'))->firstOrFail();
+    $sent    = $session->messages()->sole();
+    expect($sent->message_text)->toBe('This arrived broken, can I get a refund?')
+        ->and($sent->message_type)->toBe(\App\Enums\CRM\Livechat\ChatMessageTypeEnum::IMAGE)
+        ->and($sent->attachedFiles()->pluck('collection_name')->all())->toBe(['chat_images'])
+        ->and($sent->attachedFiles()->first()->name)->toBe('broken-mug.jpg');
+
+    outOfHoursTestCleanUp($schedule, [$session]);
+});

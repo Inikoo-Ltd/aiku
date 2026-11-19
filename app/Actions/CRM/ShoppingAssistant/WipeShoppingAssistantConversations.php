@@ -11,6 +11,7 @@ namespace App\Actions\CRM\ShoppingAssistant;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantEvent;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
+use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -19,7 +20,7 @@ use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Wipes what customers wrote and were told by the AI shopping assistant: message texts, tool
+ * Wipes what customers wrote, showed and were told by the AI shopping assistant: message texts, images, tool
  * arguments, follow-ups, reason lines, hand-over questions, challenge quotes and topics (a topic is
  * AI text drawn from the customer's words). Counters, tokens, cost, product ids and challenge types
  * stay, so the report keeps its figures. A conversation that got text after its wipe (an answer or
@@ -52,6 +53,9 @@ class WipeShoppingAssistantConversations
                 DB::table('shopping_assistant_challenges')->whereIn('shopping_assistant_conversation_id', $chunk)->update(['quote' => null, 'topic' => '']);
                 ShoppingAssistantConversation::whereIn('id', $chunk)->whereNull('wiped_at')->update(['wiped_at' => now()]);
             });
+            Media::where('model_type', 'ShoppingAssistantMessage')
+                ->whereIn('model_id', ShoppingAssistantMessage::whereIn('shopping_assistant_conversation_id', $chunk)->select('id'))
+                ->each(fn (Media $image) => $image->delete());
         }
     }
 
@@ -78,6 +82,10 @@ class WipeShoppingAssistantConversations
                     ->orWhereExists(fn ($messages) => $messages->selectRaw('1')->from('shopping_assistant_messages')
                         ->whereColumn('shopping_assistant_messages.shopping_assistant_conversation_id', 'shopping_assistant_conversations.id')
                         ->where(fn ($text) => $text->whereNotNull('body')->orWhereNotNull('tool_calls')->orWhereNotNull('follow_ups')))
+                    ->orWhereExists(fn ($images) => $images->selectRaw('1')->from('media')
+                        ->join('shopping_assistant_messages', 'shopping_assistant_messages.id', '=', 'media.model_id')
+                        ->where('media.model_type', 'ShoppingAssistantMessage')
+                        ->whereColumn('shopping_assistant_messages.shopping_assistant_conversation_id', 'shopping_assistant_conversations.id'))
                     ->orWhereExists(fn ($challenges) => $challenges->selectRaw('1')->from('shopping_assistant_challenges')
                         ->whereColumn('shopping_assistant_challenges.shopping_assistant_conversation_id', 'shopping_assistant_conversations.id')
                         ->where(fn ($text) => $text->whereNotNull('quote')->orWhere('topic', '!=', ''))));

@@ -37,6 +37,7 @@ type Message = {
     role: "customer" | "assistant"
     body: string
     created_at: string
+    images?: { name: string; url: string }[]
     follow_ups?: string[]
     answer_kind_label?: string | null
     sources?: { title: string; url: string | null }[]
@@ -161,7 +162,12 @@ const detailLine = (message: Message) =>
 
         <div v-for="message in messages" :key="message.id" class="flex" :class="message.role === 'customer' ? 'justify-end' : 'justify-start'">
             <div v-if="message.role === 'customer'" class="max-w-[80%]">
-                <div class="whitespace-pre-line rounded-lg bg-[var(--app-accent-soft)] px-3 py-2 text-sm text-gray-900">{{ message.body }}<div v-if="translations?.[message.id]" class="mt-1.5 border-t border-[var(--app-accent-muted)] pt-1.5 text-gray-600">{{ translations[message.id] }}</div></div>
+                <div v-if="message.images?.length" class="mb-1 flex flex-wrap justify-end gap-1">
+                    <a v-for="image in message.images" :key="image.url" :href="image.url" target="_blank" rel="noopener" class="block h-28 w-28 overflow-hidden rounded border border-gray-200 bg-gray-50">
+                        <img :src="image.url" :alt="image.name" class="h-full w-full object-cover" />
+                    </a>
+                </div>
+                <div v-if="message.body || translations?.[message.id]" class="whitespace-pre-line rounded-lg bg-[var(--app-accent-soft)] px-3 py-2 text-sm text-gray-900">{{ message.body }}<div v-if="translations?.[message.id]" class="mt-1.5 border-t border-[var(--app-accent-muted)] pt-1.5 text-gray-600">{{ translations[message.id] }}</div></div>
                 <div class="mt-0.5 text-right text-xs text-gray-400">{{ formatTime(message.created_at) }}</div>
             </div>
 

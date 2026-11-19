@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AssistantIcon from "@/Iris/Components/AssistantIcon.vue"
 import MerlinThinking from "@/Iris/Components/MerlinThinking.vue"
+import MerlinImagePicker from "@/Components/Chat/Customer/MerlinImagePicker.vue"
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import axios from "axios"
 import { router, usePage } from "@inertiajs/vue3"
@@ -31,6 +32,7 @@ import {
     shoppingAssistantConversationKey,
     shoppingAssistantQuestionKey,
     useShoppingAssistant,
+    askPayload,
 } from "@/Iris/Composables/useShoppingAssistant"
 library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset, faArrowRight, faThumbsUp, faThumbsDown, fasThumbsUp, fasThumbsDown)
 
@@ -41,7 +43,7 @@ type Card = ProductResource & {
 }
 
 type Message =
-    | { id: number, role: "customer", body: string, created_at: string }
+    | { id: number, role: "customer", body: string, created_at: string, images?: { name: string, url: string }[] }
     | {
         id: number
         role: "assistant"
@@ -91,6 +93,8 @@ const isPending = ref(false)
 const isRestoring = ref(false)
 const errorMessage = ref("")
 const draft = ref("")
+const images = ref<File[]>([])
+const picker = ref<InstanceType<typeof MerlinImagePicker>>()
 const notice = ref("")
 const cardsVersion = ref(0)
 const addingTo = ref<number | null>(null)
@@ -134,6 +138,10 @@ const knowsTheRange = computed(() => isDropshipping.value
         : ctrans(":name knows every product in our range and what shops like yours buy most.", { name: assistantName.value })))
 
 
+
+const landingIntro = computed(() => isDropshipping.value
+    ? ctrans(":name is your dropshipping coach. Ask in your own words and your own language: how to start, how to connect your Shopify, eBay, WooCommerce, TikTok Shop or Wix store, which products to list, how to price them, and how orders and delivery to your buyers work. When :name is not sure, one of our experts answers.", { name: assistantName.value })
+    : ctrans(":name is a new way to work with us. Ask in your own words and your own language: what sells for shops like yours, a product, offers, delivery, samples or product documents. When :name is not sure, one of our experts answers.", { name: assistantName.value }))
 
 const PLATFORM_NAMES: Record<string, string> = { shopify: "Shopify", ebay: "eBay", woocommerce: "WooCommerce", tiktok: "TikTok Shop", wix: "Wix", amazon: "Amazon", magento: "Magento", allegro: "Allegro" }
 const NEXT_PLATFORMS = ["shopify", "tiktok", "ebay", "woocommerce"]
@@ -494,7 +502,8 @@ watch(() => messages.value.length + (isPending.value ? 1 : 0), async (count, pre
 
 const send = async (text: string) => {
     const message = text.trim().slice(0, 1000)
-    if (!message || isPending.value) {
+    const sending = [...images.value]
+    if ((!message && !sending.length) || isPending.value) {
         return
     }
     errorMessage.value = ""
@@ -502,7 +511,7 @@ const send = async (text: string) => {
     isPending.value = true
     const requestGeneration = generation
     try {
-        const { data } = await axios.post(askUrl(), { message, conversation: conversation.value, can_hand_over: true })
+        const { data } = await axios.post(askUrl(), askPayload({ message, conversation: conversation.value, can_hand_over: true }, sending))
         if (requestGeneration !== generation) {
             return
         }
@@ -519,9 +528,10 @@ const send = async (text: string) => {
             loadHistory()
         }
         if (!messages.value.some((held) => held.id === data.message_id)) {
-            messages.value.push({ id: data.message_id, role: "customer", body: message, created_at: "" })
+            messages.value.push({ id: data.message_id, role: "customer", body: message, created_at: "", images: sending.map((file) => ({ name: file.name, url: URL.createObjectURL(file) })) })
         }
         draft.value = ""
+        images.value = []
         startPolling()
     } catch (error: any) {
         if (requestGeneration !== generation) {
@@ -864,61 +874,14 @@ const sendOnEnter = (event: KeyboardEvent) => {
             </section>
 
             <template v-else>
-            <section class="merlin-landing">
+            <section class="merlin-landing antialiased" :style="{ fontFamily: layout?.app?.webpage_layout?.container?.properties?.text?.fontFamily }">
                 <div class="merlin-wrap">
-                    <header class="merlin-top">
-                        <div class="merlin-brand">
-                            <AssistantIcon :littleBird="isLittleBird" class="merlin-brand-icon" />
-                            <div class="min-w-0">
-                                <p class="merlin-brand-name">
-                                    {{ assistantName }} <span class="merlin-accent-text" aria-hidden="true">✦</span>
-                                </p>
-                                <p class="merlin-brand-tagline">{{ isDropshipping ? ctrans("Your dropshipping assistant") : ctrans("Your AI shopping assistant") }}</p>
-                            </div>
-                        </div>
-                        <div class="merlin-top-meta">
-                            <span class="beta-tag" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
-                            <span class="merlin-status"><i class="merlin-status-dot" aria-hidden="true" />{{ ctrans("Here to help") }}</span>
-                        </div>
-                    </header>
-
-                    <div class="merlin-hero">
-                        <AssistantIcon :littleBird="isLittleBird" class="merlin-hero-icon" />
-                        <p class="merlin-eyebrow">✦ {{ ctrans("A little magic. A lot of knowledge.") }}</p>
-                        <h1 class="merlin-title">
-                            {{ ctrans("Hello, I'm") }} <em>{{ assistantName }}.</em><br>
-                            {{ ctrans("How can I help?") }}
-                        </h1>
-                        <p class="merlin-intro">{{ knowsTheRange }}</p>
-                        <p v-if="isMerlin" class="merlin-legend">
-                            {{ ctrans("Named after the wise wizard of British legend – a fitting guide for a British company that has travelled the world for good finds since 1995.") }}
-                        </p>
-                    </div>
-
-                    <div class="merlin-suggest">
-                        <p class="merlin-caption">{{ ctrans("Not sure where to start? Try asking me...") }}</p>
-                        <div class="merlin-cards">
-                            <button
-                                v-for="starter in starterQuestions"
-                                :key="starter.question"
-                                type="button"
-                                class="merlin-card"
-                                @click="askFromLanding(starter.question)"
-                            >
-                                <span class="merlin-card-icon" aria-hidden="true">{{ starter.icon }}</span>
-                                <span class="merlin-card-body">
-                                    <span class="merlin-card-text">{{ starter.title }}</span>
-                                    <span v-if="starter.subtitle" class="merlin-card-subtitle">{{ starter.subtitle }}</span>
-                                </span>
-                                <span class="merlin-card-arrow" aria-hidden="true">↗</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="merlin-form">
+                    <div class="merlin-columns">
+                    <div class="merlin-main">
+                    <div class="merlin-form" @dragover.prevent @drop="picker?.onDrop($event)">
                         <Textarea
                             v-model="draft"
-                            rows="2"
+                            rows="5"
                             auto-resize
                             maxlength="1000"
                             class="landing-textarea merlin-textarea"
@@ -929,13 +892,15 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                 ? ctrans('e.g. I’m starting a Shopify store for crystals. What should I list first, and how do I connect my store?')
                                 : ctrans('Ask :name anything...', { name: assistantName })"
                             @keydown.enter="sendOnEnter"
+                            @paste="picker?.onPaste($event)"
                         />
                         <div class="merlin-form-actions">
-                            <span class="merlin-helper">✦ {{ ctrans("Your next great idea starts here") }}</span>
+                            <MerlinImagePicker v-if="assistant" ref="picker" v-model="images" :disabled="isPending" class="min-w-0 pl-1" />
+                            <span v-else class="merlin-helper">✦ {{ ctrans("Your next great idea starts here") }}</span>
                             <button
                                 type="button"
                                 class="merlin-send"
-                                :disabled="!draft.trim()"
+                                :disabled="!draft.trim() && !images.length"
                                 :title="ctrans('Ask :name', { name: assistantName })"
                                 :aria-label="ctrans('Ask :name', { name: assistantName })"
                                 @click="askFromLanding(draft)"
@@ -946,6 +911,22 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     </div>
                     <p v-if="errorMessage" class="merlin-error">{{ errorMessage }}</p>
                     <p v-if="notice" class="merlin-notice">{{ notice }}</p>
+                    <p class="merlin-note">{{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}</p>
+
+                    <div class="merlin-suggest">
+                        <p class="merlin-caption">{{ ctrans("Not sure where to start? Try asking me...") }}</p>
+                        <div class="merlin-chips">
+                            <button
+                                v-for="starter in starterQuestions"
+                                :key="starter.question"
+                                type="button"
+                                class="merlin-chip"
+                                @click="askFromLanding(starter.question)"
+                            >
+                                {{ starter.title }}
+                            </button>
+                        </div>
+                    </div>
 
                     <aside v-if="canTalkToAPerson" class="merlin-human" :aria-label="ctrans('Talk to a person')">
                         <div class="merlin-human-row">
@@ -1017,8 +998,27 @@ const sendOnEnter = (event: KeyboardEvent) => {
                             </button>
                         </nav>
                     </div>
+                    </div>
 
-                    <p class="merlin-note">{{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}</p>
+                    <aside class="merlin-hero">
+                        <div class="merlin-hero-head">
+                        <AssistantIcon :littleBird="isLittleBird" class="merlin-hero-icon" />
+                            <div class="min-w-0">
+                        <p class="merlin-eyebrow">{{ ctrans("A little magic. A lot of knowledge.") }}</p>
+                        <h1 class="merlin-title">
+                            {{ ctrans("Hello, I'm") }} <em>{{ assistantName }}.</em><br>
+                            <span class="merlin-title-sub">{{ ctrans("How can I help?") }}</span>
+                            <span class="beta-tag" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
+                        </h1>
+                            </div>
+                        </div>
+                        <p class="merlin-intro">{{ landingIntro }}</p>
+                        <p class="merlin-intro merlin-intro-more">{{ knowsTheRange }}</p>
+                        <p v-if="isMerlin" class="merlin-legend">
+                            {{ ctrans("Named after the wise wizard of British legend – a fitting guide for a British company that has travelled the world for good finds since 1995.") }}
+                        </p>
+                    </aside>
+                    </div>
                 </div>
             </section>
 
@@ -1033,7 +1033,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
             </template>
         </div>
 
-        <div v-else-if="isChatVisible" class="chat-shell" :class="{ 'chat-shell-collapsed': isSidebarCollapsed, 'chat-shell-little-bird': isLittleBird }">
+        <div v-else-if="isChatVisible" class="chat-shell antialiased" :style="{ fontFamily: layout?.app?.webpage_layout?.container?.properties?.text?.fontFamily }" :class="{ 'chat-shell-collapsed': isSidebarCollapsed, 'chat-shell-little-bird': isLittleBird }">
             <aside class="chat-sidebar" :class="{ 'chat-sidebar-open': isHistoryOpen }">
                 <div class="chat-sidebar-top">
                     <span class="chat-sidebar-brand">
@@ -1097,7 +1097,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                             {{ assistantName }}
                             <span class="beta-tag" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
                         </p>
-                        <p class="chat-header-role">{{ isDropshipping ? ctrans("Your dropshipping coach") : ctrans("Your range advisor") }}</p>
+                        <p class="chat-header-role">{{ isDropshipping ? ctrans("Your dropshipping coach") : ctrans("AI shopping assistant") }}</p>
                     </div>
                     <button
                         v-if="canTalkToAPerson"
@@ -1119,8 +1119,13 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     <div v-if="isRestoring && !messages.length" class="skeleton assistant-skeleton rounded" />
 
                     <template v-for="message in messages" :key="message.id">
-                        <div v-if="message.role === 'customer'" class="flex justify-end">
-                            <div class="assistant-bubble chat-text whitespace-pre-line">{{ message.body }}</div>
+                        <div v-if="message.role === 'customer'" class="flex flex-col items-end gap-1">
+                            <div v-if="message.images?.length" class="flex flex-wrap justify-end gap-1">
+                                <a v-for="image in message.images" :key="image.url" :href="image.url" target="_blank" rel="noopener" class="block h-24 w-24 overflow-hidden rounded border bg-gray-50">
+                                    <img :src="image.url" :alt="image.name" class="h-full w-full object-cover" />
+                                </a>
+                            </div>
+                            <div v-if="message.body" class="assistant-bubble chat-text whitespace-pre-line">{{ message.body }}</div>
                         </div>
 
                         <div v-else class="flex gap-3">
@@ -1287,7 +1292,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                         </div>
                     </div>
 
-                    <div class="chat-composer-box">
+                    <div class="chat-composer-box" @dragover.prevent @drop="picker?.onDrop($event)">
                         <Textarea
                             v-model="draft"
                             rows="1"
@@ -1299,17 +1304,19 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                 ? ctrans('Ask :name a follow-up or tell it about your store', { name: assistantName })
                                 : ctrans('Ask :name a follow-up or describe what your shop needs', { name: assistantName })"
                             @keydown.enter="sendChatOnEnter"
+                            @paste="picker?.onPaste($event)"
                         />
                         <button
                             type="button"
                             class="chat-send"
                             :aria-label="ctrans('Send')"
-                            :disabled="isPending || !draft.trim()"
+                            :disabled="isPending || (!draft.trim() && !images.length)"
                             @click="send(draft)"
                         >
                             <FontAwesomeIcon :icon="isLittleBird ? 'far fa-arrow-right' : 'far fa-paper-plane'" fixed-width aria-hidden="true" />
                         </button>
                     </div>
+                    <MerlinImagePicker ref="picker" v-model="images" :disabled="isPending" class="mt-2" />
                     <p v-if="errorMessage" class="mt-1 text-xs text-red-500">{{ errorMessage }}</p>
                     <p class="chat-composer-hint">
                         <span v-if="!errorMessage">{{ ctrans("Enter to send, Shift + Enter for a new line.") }}</span>
@@ -1462,6 +1469,35 @@ const sendOnEnter = (event: KeyboardEvent) => {
     transform: none;
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.chat-shell:not(.chat-shell-little-bird) .chat-follow-ups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chat-shell:not(.chat-shell-little-bird) .chat-follow-ups .merlin-card {
+    width: auto;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    background-color: transparent;
+    color: #c8d2db;
+}
+
+.chat-shell:not(.chat-shell-little-bird) .chat-follow-ups .merlin-card:not(:disabled):hover {
+    transform: none;
+    color: #fff;
+}
+
+.chat-shell:not(.chat-shell-little-bird) .chat-follow-ups .merlin-card-text {
+    font-size: 0.8125rem;
+    font-weight: 400;
+}
+
+.chat-shell:not(.chat-shell-little-bird) .chat-follow-ups .merlin-card-icon,
+.chat-shell:not(.chat-shell-little-bird) .chat-follow-ups .merlin-card-arrow {
+    display: none;
 }
 
 .chat-shell .landing-textarea {
@@ -1971,101 +2007,65 @@ const sendOnEnter = (event: KeyboardEvent) => {
     margin: 0 auto;
 }
 
-.merlin-accent-text {
-    color: var(--merlin-accent);
+.merlin-hero {
+    text-align: left;
 }
 
-.merlin-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1.25rem 0;
-    border-bottom: 1px solid var(--merlin-edge);
+.merlin-columns {
+    display: grid;
+    gap: 2rem;
+    align-items: start;
+    padding-top: 2rem;
 }
 
-.merlin-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+.merlin-main {
     min-width: 0;
 }
 
-.merlin-brand-icon {
-    width: 3rem;
-    height: 3rem;
-}
-
-.merlin-brand-name {
-    font-size: 1.375rem;
-    font-weight: 800;
-    line-height: 1.2;
-    color: #fff;
-}
-
-.merlin-brand-tagline {
-    font-size: 0.75rem;
-    color: var(--merlin-muted);
-}
-
-.merlin-top-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-}
-
-.merlin-status {
-    display: inline-flex;
-    align-items: center;
-    white-space: nowrap;
-    padding: 0.375rem 0.75rem;
-    border: 1px solid #46634e;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    color: #fff;
-}
-
-.merlin-status-dot {
-    width: 0.5rem;
-    height: 0.5rem;
-    margin-right: 0.375rem;
-    border-radius: 9999px;
-    background-color: #70dfa0;
-    box-shadow: 0 0 12px #70dfa0;
-}
-
-.merlin-hero {
-    text-align: center;
-    padding: 3.25rem 0 2rem;
+@media (min-width: 1024px) {
+    .merlin-columns {
+        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+        gap: 3rem;
+    }
 }
 
 .merlin-hero-icon {
     display: block;
-    width: 10rem;
-    height: 10rem;
-    margin: 0 auto 1.5rem;
+    width: 5rem;
+    height: 5rem;
+    flex: none;
     --merlin-stroke-weight: 0.8;
-    filter: drop-shadow(0 12px 28px color-mix(in srgb, var(--merlin-accent) 30%, transparent));
+}
+
+.merlin-hero-head {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
 }
 
 .merlin-eyebrow {
-    display: inline-block;
-    padding: 0.4375rem 0.9375rem;
-    border: 1px solid color-mix(in srgb, var(--merlin-accent) 50%, transparent);
-    border-radius: 9999px;
-    background-color: color-mix(in srgb, var(--merlin-accent) 11%, transparent);
     font-size: 0.75rem;
-    font-weight: 700;
-    color: color-mix(in srgb, var(--merlin-accent) 55%, #fff);
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--merlin-accent) 70%, #fff);
 }
 
 .merlin-title {
-    margin: 1.3rem 0 0.8rem;
-    font-size: clamp(2.125rem, 5vw, 3.625rem);
-    font-weight: 800;
-    line-height: 1.13;
-    letter-spacing: -0.06rem;
+    margin: 0.375rem 0 0;
+    font-size: 2.25rem;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
     color: #fff;
+}
+
+.merlin-title-sub {
+    font-size: 1.375rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: #dfe6ec;
 }
 
 .merlin-title em {
@@ -2074,18 +2074,23 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .merlin-intro {
-    max-width: 34.5rem;
-    margin: 0 auto;
+    max-width: 28rem;
     font-size: 1rem;
-    color: #fff;
-    opacity: 0.88;
+    line-height: 1.6;
+    color: #dfe6ec;
+}
+
+.merlin-intro-more {
+    margin-top: 0.75rem;
 }
 
 .merlin-legend {
-    max-width: 34.5rem;
-    margin: 0.75rem auto 0;
-    font-size: 0.75rem;
-    font-style: italic;
+    max-width: 28rem;
+    margin-top: 1.25rem;
+    padding-left: 0.875rem;
+    border-left: 2px solid var(--merlin-edge);
+    font-size: 0.8125rem;
+    line-height: 1.6;
     color: var(--merlin-muted);
 }
 
@@ -2101,7 +2106,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .merlin-suggest {
-    margin-top: 0.75rem;
+    margin-top: 1.5rem;
     margin-bottom: 1.75rem;
 }
 
@@ -2181,31 +2186,57 @@ const sendOnEnter = (event: KeyboardEvent) => {
     color: color-mix(in srgb, var(--merlin-accent) 75%, #fff);
 }
 
+.merlin-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.merlin-chip {
+    padding: 0.25rem 0.75rem;
+    border: 1px solid var(--merlin-edge);
+    border-radius: 9999px;
+    color: var(--merlin-muted);
+    font-size: 0.8125rem;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.merlin-chip:hover {
+    border-color: var(--merlin-accent);
+    color: #fff;
+}
+
+.merlin-chip:focus-visible {
+    outline: 2px solid var(--merlin-accent);
+    outline-offset: 2px;
+}
+
 .merlin-form {
     padding: 0.8rem;
-    border: 1px solid #64717b;
+    border: 2px solid var(--merlin-accent);
     border-radius: 1.0625rem;
-    background-color: var(--merlin-card);
+    background-color: #fff;
 }
 
 .merlin-form:focus-within {
-    border-color: var(--merlin-accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--merlin-accent) 35%, transparent);
 }
 
 .merlin-form .merlin-textarea {
     display: block;
     width: 100%;
-    min-height: 3.4rem;
+    min-height: 8.5rem;
     padding: 0.625rem;
     border: 0;
     box-shadow: none;
     background: transparent;
-    font-size: 0.9375rem;
-    color: #fff;
+    font-size: 1.0625rem;
+    color: #1f2937;
 }
 
 .merlin-form .merlin-textarea::placeholder {
-    color: #d2d9e0;
+    color: #6b7280;
     opacity: 1;
 }
 
@@ -2218,7 +2249,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
 .merlin-helper {
     font-size: 0.75rem;
-    color: #d2d9e0;
+    color: #6b7280;
 }
 
 .merlin-send {
@@ -2262,10 +2293,9 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
 .merlin-human {
     margin-top: 1.5rem;
-    padding: 1.25rem 1.4375rem;
+    padding: 0.625rem 0.875rem;
     border: 1px solid var(--merlin-edge);
-    border-radius: 1rem;
-    background-color: var(--merlin-card);
+    border-radius: 0.75rem;
 }
 
 .merlin-human-row {
@@ -2276,35 +2306,34 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .merlin-human-title {
-    margin: 0 0 0.3rem;
-    font-size: 1.0625rem;
-    font-weight: 800;
+    font-size: 0.875rem;
+    font-weight: 600;
     color: #fff;
 }
 
 .merlin-human-text {
-    font-size: 0.8125rem;
-    color: #dce5eb;
+    font-size: 0.75rem;
+    color: var(--merlin-muted);
 }
 
 .merlin-human-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.375rem;
     white-space: nowrap;
-    padding: 0.8rem 1.125rem;
-    border-radius: 0.6875rem;
-    background-color: var(--merlin-accent);
-    color: var(--merlin-accent-text);
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--merlin-accent);
+    border-radius: 9999px;
+    color: color-mix(in srgb, var(--merlin-accent) 70%, #fff);
     font-size: 0.8125rem;
-    font-weight: 700;
-    transition: transform 0.2s, background-color 0.2s;
+    font-weight: 600;
+    transition: background-color 0.2s, color 0.2s;
 }
 
 .merlin-human-link:hover {
-    transform: translateY(-2px);
-    background-color: color-mix(in srgb, var(--merlin-accent) 85%, #fff);
+    background-color: var(--merlin-accent);
+    color: var(--merlin-accent-text);
 }
 
 .merlin-human-link:focus-visible {
@@ -2373,10 +2402,10 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .merlin-note {
-    margin-top: 1rem;
-    text-align: center;
+    margin-top: 0.5rem;
     font-size: 0.6875rem;
-    color: #d6dce2;
+    color: var(--merlin-muted);
+    opacity: 0.8;
 }
 
 @media (max-width: 620px) {
@@ -2384,25 +2413,6 @@ const sendOnEnter = (event: KeyboardEvent) => {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .merlin-hero {
-        padding: 2rem 0 1.5rem;
-    }
-
-    .merlin-hero-icon {
-        width: 7.8rem;
-        height: 7.8rem;
-    }
-
-    .merlin-title {
-        font-size: 2.25rem;
-    }
-
-    .merlin-intro {
-        font-size: 0.875rem;
-    }
-
-    .merlin-brand-tagline,
-    .merlin-status,
     .merlin-helper {
         font-size: 0.625rem;
     }

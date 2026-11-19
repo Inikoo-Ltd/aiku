@@ -23,6 +23,7 @@ use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
+use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Ticket;
 use App\Models\Tasks\StaffTask;
@@ -162,6 +163,9 @@ class StoreShoppingAssistantEngineerTicket
         if ($open && $webUser) {
             StoreTicketComment::make()->handle($open, $webUser, ['body' => trim("Merlin: $details\n\n$words")]);
         }
+        if ($open) {
+            $this->attachImages($open, $conversation);
+        }
 
         return $open;
     }
@@ -173,7 +177,7 @@ class StoreShoppingAssistantEngineerTicket
     {
         $customer = $conversation->customer;
 
-        return StoreTicket::make()->action($conversation->group, array_filter([
+        $ticket = StoreTicket::make()->action($conversation->group, array_filter([
             'type'            => TicketTypeEnum::MERLIN->value,
             'subject'         => mb_substr($summary, 0, 255),
             'description'     => $description,
@@ -190,6 +194,33 @@ class StoreShoppingAssistantEngineerTicket
             'tags'            => ['merlin'],
             'data'            => ['merlin_triage' => $triage],
         ], fn ($value) => $value !== null));
+        $this->attachImages($ticket, $conversation);
+
+        return $ticket;
+    }
+
+    /**
+     * What the customer showed in the conversation goes on the ticket, once: an image already on it
+     * is not attached again when the customer reports more to an open MER.
+     */
+    private function attachImages(Ticket $ticket, ShoppingAssistantConversation $conversation): void
+    {
+        $onTicket = $ticket->media()->get()->map(fn ($media) => $media->getCustomProperty('source.merlin_media_id'))->filter()->flip();
+
+        $conversation->messages()
+            ->where('role', 'customer')
+            ->whereHas('media')
+            ->with('media')
+            ->orderBy('id')
+            ->get()
+            ->flatMap(fn (ShoppingAssistantMessage $message) => $message->images())
+            ->reject(fn ($image) => $onTicket->has($image->id))
+            ->take(10)
+            ->each(function ($image) use ($ticket) {
+                $path = ShoppingAssistantMessage::localCopyOf($image);
+                $ticket->attachTicketFile($path, $image->name, $image->mime_type, ['merlin_media_id' => $image->id]);
+                @unlink($path);
+            });
     }
 
     private function description(ShoppingAssistantConversation $conversation, string $details, string $words, ?string $channels, string $whyOnlyUs): string

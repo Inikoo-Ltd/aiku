@@ -52,6 +52,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
         $messages = $conversation->messages()
             ->when($after, fn ($query) => $query->where('id', '>', $after))
             ->orderBy('id')
+            ->with('media')
             ->get(['id', 'role', 'body', 'follow_ups', 'tool_calls', 'hand_over_offer', 'sources', 'feedback', 'created_at']);
 
         $handedOverOfferIds = $conversation->handOvers()
@@ -102,6 +103,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
                     'id'         => $message->id,
                     'role'       => $message->role->value,
                     'body'       => $message->body,
+                    ...($message->role === ShoppingAssistantMessageRoleEnum::CUSTOMER ? ['images' => $message->imageLinks()] : []),
                     'created_at' => $message->created_at?->toIso8601String(),
                 ];
 

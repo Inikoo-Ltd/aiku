@@ -235,6 +235,7 @@ class AppServiceProvider extends ServiceProvider
                 'Prospect'                         => 'App\Models\CRM\Prospect',
                 'WebUser'                          => 'App\Models\CRM\WebUser',
                 'ShoppingAssistantConversation'    => 'App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation',
+                'ShoppingAssistantMessage'         => 'App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage',
 
                 // Dispatching
                 'Box'                              => 'App\Models\Dispatching\Box',

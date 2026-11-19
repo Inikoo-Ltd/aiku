@@ -27,6 +27,7 @@ use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
 use App\Models\Web\Website;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -126,7 +127,7 @@ class HandOverShoppingAssistantConversation
             return $existing;
         }
 
-        $this->sendQuestion($result['chat_session'], (string) $result['hand_over']->question);
+        $this->sendQuestion($result['chat_session'], (string) $result['hand_over']->question, $this->imagesFor($conversation, $result['hand_over']));
 
         return $result;
     }
@@ -183,9 +184,10 @@ class HandOverShoppingAssistantConversation
             return null;
         }
 
-        $text = trim((string) $customerMessage->body);
-        if ($text !== '' && $text !== trim((string) $handOver->question)) {
-            $this->sendQuestion($session, $text);
+        $text   = trim((string) $customerMessage->body);
+        $images = $customerMessage->imagesAsUploads();
+        if ($images || ($text !== '' && $text !== trim((string) $handOver->question))) {
+            $this->sendQuestion($session, $text, $images);
         }
 
         $added = __('I have added this to your question for our team.', [], $conversation->language_code);
@@ -195,14 +197,48 @@ class HandOverShoppingAssistantConversation
             : $added.' '.$this->whenTheyReply($conversation, $handOver->route, GetShoppingAssistantHandOverRoute::run($website, $customer)['in_hours']);
     }
 
-    private function sendQuestion(ChatSession $session, string $text): void
+    /**
+     * @param  array<int, UploadedFile>  $images
+     */
+    private function sendQuestion(ChatSession $session, string $text, array $images = []): void
     {
-        SendChatMessage::run($session, [
-            'message_text' => $text,
-            'message_type' => ChatMessageTypeEnum::TEXT->value,
-            'sender_type'  => $session->web_user_id ? ChatSenderTypeEnum::USER->value : ChatSenderTypeEnum::GUEST->value,
-            'sender_id'    => $session->web_user_id,
-        ]);
+        try {
+            SendChatMessage::run($session, array_filter([
+                'message_text' => $text,
+                'message_type' => ChatMessageTypeEnum::TEXT->value,
+                'sender_type'  => $session->web_user_id ? ChatSenderTypeEnum::USER->value : ChatSenderTypeEnum::GUEST->value,
+                'sender_id'    => $session->web_user_id,
+                'attachments'  => $images,
+            ], fn ($value) => $value !== []));
+        } finally {
+            foreach ($images as $image) {
+                @unlink($image->getPathname());
+            }
+        }
+    }
+
+    /**
+     * What the customer showed in this conversation since its previous hand-over, up to the
+     * question: a photo sent before the question (a damaged item, then "can I get a refund?")
+     * goes to the team with it.
+     *
+     * @return array<int, UploadedFile>
+     */
+    private function imagesFor(ShoppingAssistantConversation $conversation, ShoppingAssistantHandOver $handOver): array
+    {
+        $previous = $conversation->handOvers()->where('id', '<', $handOver->id)->max('customer_message_id');
+
+        return $conversation->messages()
+            ->where('role', ShoppingAssistantMessageRoleEnum::CUSTOMER)
+            ->where('id', '<=', $handOver->customer_message_id)
+            ->when($previous, fn ($query) => $query->where('id', '>', $previous))
+            ->whereHas('media')
+            ->with('media')
+            ->orderBy('id')
+            ->get()
+            ->flatMap(fn (ShoppingAssistantMessage $message) => $message->imagesAsUploads())
+            ->take(10)
+            ->all();
     }
 
     /**

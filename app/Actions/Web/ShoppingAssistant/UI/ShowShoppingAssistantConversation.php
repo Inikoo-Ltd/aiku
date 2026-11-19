@@ -126,7 +126,7 @@ class ShowShoppingAssistantConversation extends OrgAction
             fn (ShoppingAssistantEvent $event) => $event->type === $type && $event->product_id === $shown->product_id && $event->shopping_assistant_message_id === $shown->shopping_assistant_message_id
         );
 
-        $storedMessages = $conversation->messages()->orderBy('id')->get();
+        $storedMessages = $conversation->messages()->orderBy('id')->with('media')->get();
         $addedCodes     = Product::whereIn('id', $storedMessages->flatMap(fn (ShoppingAssistantMessage $message) => collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['added_product_ids'] ?? []))->unique()->all())->pluck('code', 'id');
 
         $handOvers = $conversation->handOvers()->orderBy('created_at')->orderBy('id')->get()->values();
@@ -170,7 +170,7 @@ class ShowShoppingAssistantConversation extends OrgAction
             ];
 
             if ($message->role === ShoppingAssistantMessageRoleEnum::CUSTOMER) {
-                return $base;
+                return [...$base, 'images' => $message->imageLinks()];
             }
 
             return array_merge($base, [

@@ -24,6 +24,7 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -45,23 +46,26 @@ class AskIrisShoppingAssistant extends IrisAction
 
     public const float ACCEPTANCE_CONFIDENCE = 0.8;
 
-    public function handle(Customer $customer, ?ShoppingAssistantConversation $conversation, string $message, int $webUserId, ShoppingAssistantEntryPointEnum $entryPoint = ShoppingAssistantEntryPointEnum::SEARCH, bool $canHandOver = false): JsonResponse
+    /**
+     * @param  array<int, UploadedFile>  $images
+     */
+    public function handle(Customer $customer, ?ShoppingAssistantConversation $conversation, string $message, int $webUserId, ShoppingAssistantEntryPointEnum $entryPoint = ShoppingAssistantEntryPointEnum::SEARCH, bool $canHandOver = false, array $images = []): JsonResponse
     {
         if ($conversation?->isPending()) {
             return response()->json(['pending' => true], 409);
         }
 
-        if ($repeated = $this->justAnswered($customer, $conversation, $message, $entryPoint)) {
+        if (!$images && ($repeated = $this->justAnswered($customer, $conversation, $message, $entryPoint))) {
             return response()->json(['conversation' => $repeated->conversation->ulid, 'message_id' => $repeated->id, 'pending' => false, 'repeated' => true]);
         }
 
-        if ($canHandOver && $conversation && ($offer = $this->acceptedOffer($customer, $conversation, $message))) {
+        if (!$images && $canHandOver && $conversation && ($offer = $this->acceptedOffer($customer, $conversation, $message))) {
             return response()->json(['conversation' => $conversation->ulid, 'message_id' => $offer['question']->id, 'pending' => false, 'accept_offer' => $offer['offer']->id]);
         }
 
         $conversation ??= StartShoppingAssistantConversation::run($customer, $entryPoint, ['web_user_id' => $webUserId]);
 
-        $customerMessage = AskShoppingAssistant::make()->storeCustomerMessage($conversation, $message);
+        $customerMessage = AskShoppingAssistant::make()->storeCustomerMessage($conversation, $message, $images);
         AnswerShoppingAssistantMessage::dispatch($customerMessage);
 
         return response()->json([
@@ -129,7 +133,9 @@ class AskIrisShoppingAssistant extends IrisAction
     public function rules(): array
     {
         return [
-            'message'      => ['required', 'string', 'max:1000'],
+            'message'      => ['required_without:images', 'nullable', 'string', 'max:1000'],
+            'images'       => ['sometimes', 'array', 'max:'.ShoppingAssistantMessage::MAX_IMAGES],
+            'images.*'     => ['image', 'mimes:jpg,jpeg,png,webp,gif', 'max:10240'],
             'can_hand_over' => ['sometimes', 'boolean'],
             'conversation' => ['sometimes', 'nullable', 'string', 'ulid'],
             'entry_point'  => ['sometimes', 'nullable', Rule::in([ShoppingAssistantEntryPointEnum::SEARCH->value, ShoppingAssistantEntryPointEnum::CHAT->value])],
@@ -162,6 +168,6 @@ class AskIrisShoppingAssistant extends IrisAction
             abort_unless($conversation, 404);
         }
 
-        return $this->handle($customer, $conversation, $this->validatedData['message'], $request->user()->id, ShoppingAssistantEntryPointEnum::tryFrom((string) Arr::get($this->validatedData, 'entry_point')) ?? ShoppingAssistantEntryPointEnum::SEARCH, (bool) Arr::get($this->validatedData, 'can_hand_over', false));
+        return $this->handle($customer, $conversation, (string) Arr::get($this->validatedData, 'message'), $request->user()->id, ShoppingAssistantEntryPointEnum::tryFrom((string) Arr::get($this->validatedData, 'entry_point')) ?? ShoppingAssistantEntryPointEnum::SEARCH, (bool) Arr::get($this->validatedData, 'can_hand_over', false), Arr::get($this->validatedData, 'images', []));
     }
 }
