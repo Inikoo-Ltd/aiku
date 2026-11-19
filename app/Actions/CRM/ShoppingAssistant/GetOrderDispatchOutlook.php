@@ -39,6 +39,14 @@ class GetOrderDispatchOutlook
 
     public const float SLOW = 0.8;
 
+    /**
+     * INI-394 backtest (8 weeks of prod history, 19 Nov 2026): wholesale queues swing more, so their
+     * range is wider. UK wholesale hits rose from 82% to 90% at the same median width of 3 days.
+     */
+    public const float WHOLESALE_FAST = 1.5;
+
+    public const float WHOLESALE_SLOW = 0.6;
+
     public const int OVERDUE_MIN_HOURS = 120;
 
     public const int OVERDUE_MEDIANS = 3;
@@ -86,9 +94,10 @@ class GetOrderDispatchOutlook
             return null;
         }
 
-        $ahead = $this->ordersAhead($note, $stream);
-        $fast  = (int) floor($ahead / ($pace * self::FAST));
-        $slow  = (int) ceil(($ahead + 1) / ($pace * self::SLOW));
+        $wholesale = $stream === GetWarehouseCapacity::WHOLESALE;
+        $ahead     = $this->ordersAhead($note, $stream);
+        $fast      = (int) floor($ahead / ($pace * ($wholesale ? self::WHOLESALE_FAST : self::FAST)));
+        $slow      = (int) ceil(($ahead + 1) / ($pace * ($wholesale ? self::WHOLESALE_SLOW : self::SLOW)));
 
         if ($slow > self::MAX_DAYS) {
             return null;
