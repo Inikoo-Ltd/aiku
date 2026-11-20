@@ -133,7 +133,7 @@ class AskShoppingAssistant
 
     public const int MAX_MESSAGE = 2000;
 
-    public const int EVIDENCE_CHARS = 3000;
+    public const int EVIDENCE_CHARS = 20000;
 
     public const float PARTIAL_ANSWER_CONFIDENCE = 0.9;
 
@@ -1259,7 +1259,7 @@ class AskShoppingAssistant
      */
     private function knownPart(string $question, string $draft, array $turn, array &$flags): ?string
     {
-        $draft    = trim($draft);
+        $draft    = $this->withoutHandOverClaims(trim($draft));
         $evidence = $turn['evidence'] ?? [];
 
         if (mb_strlen($draft) < 20 || !$evidence) {
@@ -1268,9 +1268,9 @@ class AskShoppingAssistant
 
         $confidence = AskJev::make()->noul(
             ['customer_question' => $question, 'answer' => $draft, 'evidence' => implode("\n\n", $evidence)],
-            'A shop assistant could not fully answer a customer and wants to tell them what it did find before saying the rest is with our team. Does every statement in this partial answer follow from the evidence its tools returned?',
+            'A shop assistant could not fully answer a customer and wants to tell them what it did find before saying the rest is with our team. Does every statement in this partial answer follow from the evidence its tools returned? A greeting is not a statement. A statement that our texts or tools do not say or show something is proven when the evidence really lacks it.',
             'Yes: every statement is proven by the evidence, not only likely, and the answer makes no promise, exception or policy decision and states no figure that is not in the evidence.',
-            'No: some statement is not in the evidence, is only likely, is a promise, an exception, a policy decision or a figure not in the evidence, or it says it is not sure, that it passed the question on or that a person will help.'
+            'No: some statement is not in the evidence, is only likely, is a promise, an exception, a policy decision or a figure not in the evidence.'
         );
 
         if ($confidence !== null && $confidence >= self::PARTIAL_ANSWER_CONFIDENCE) {
@@ -1284,6 +1284,34 @@ class AskShoppingAssistant
         }
 
         return null;
+    }
+
+    private function withoutHandOverClaims(string $draft): string
+    {
+        $sentences = preg_split('/(?<=[.!?。])\s+/u', $draft, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        if (count($sentences) < 2 || count($sentences) > 8) {
+            return $draft;
+        }
+
+        $questions = [];
+        foreach ($sentences as $index => $sentence) {
+            $questions['s'.$index] = [
+                'type'         => 'noul',
+                'instructions' => 'Does this sentence of a shop assistant say that it is not sure or does not know, that it asked or passed the question to an expert or our team, or that a person will answer or get back to the customer? Sentence: '.$sentence,
+                'criteria'     => ['true' => 'Yes: it says one of those things.', 'false' => 'No: it states something else, such as what the shop texts say or do not say, or an offer to look something up.'],
+            ];
+        }
+
+        $answers = AskJev::make()->handle($draft, $questions);
+
+        if (!$answers) {
+            return $draft;
+        }
+
+        return trim(collect($sentences)
+            ->reject(fn (string $sentence, int $index) => (float) ($answers['s'.$index]['noul'] ?? 0) >= 0.5)
+            ->implode(' '));
     }
 
     private function teamSentence(ShoppingAssistantConversation $conversation, bool $live): string
