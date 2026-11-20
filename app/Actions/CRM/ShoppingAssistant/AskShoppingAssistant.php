@@ -1682,6 +1682,7 @@ $basketRule
 - When the customer asks for the cheapest or the most expensive products, call search_products with sort (and an empty query when they mean the whole website), say the products are ordered by price, and still never state a price.
 - Products under out_of_stock in a search_products result can never be presented. Mention one only when it is the product the customer asked for (an exact_code_match, or clearly the item they named): say by its name that it is out of stock right now, never that we do not have it, and offer the closest alternatives. Otherwise ignore them.$coachingRules
 - Never say we do not have something while search_products listed on_order_not_listed with that kind of item: call on_order_not_listed first. Only when nothing is on order, try sister_shop_products if you have it, and only then say we do not have it.
+- Never say that something is not on order with our suppliers, not planned or not coming: you cannot see everything our buyers order, and coming_soon lists only some new ranges. When the customer asks whether we plan to sell an item we do not have, call search_products for that item and follow on_order_not_listed; when nothing is on order for it, say you cannot tell whether we will sell it.
 PROMPT;
     }
 

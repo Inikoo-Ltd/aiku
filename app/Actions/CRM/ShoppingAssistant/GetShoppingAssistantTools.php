@@ -344,7 +344,7 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'coming_soon',
-                'The new ranges coming to our website that are not in stock yet: families whose new products are on order with our supplier or on a delivery not yet in our warehouse. Use it when the customer asks in general what is new, coming soon or arriving. The system lists the range names under your reply; it gives no dates, prices or quantities. Returns no products.',
+                'The new ranges coming to our website that are not in stock yet: families whose new products are on order with our supplier or on a delivery not yet in our warehouse. Use it when the customer asks in general what is new, coming soon or arriving. The system lists the range names under your reply; it gives no dates, prices or quantities. It is never everything we have on order: an item missing from it may still be on order, so for a particular item use search_products. Returns no products.',
                 []
             ),
             $this->tool(
@@ -1690,7 +1690,7 @@ class GetShoppingAssistantTools
         }
 
         if (!$this->onOrderMatches($customer, $query, SearchCatalogueByMeaning::run($customer->shop, $query, $customer, self::DEFAULT_LIMIT + self::MAX_OUT_OF_STOCK, false))) {
-            return ['content' => ['found' => false, 'note' => 'Nothing on order matches that. Do not say we have it on order.'], 'products' => [], 'error' => null];
+            return ['content' => ['found' => false, 'note' => 'Nothing on order matches that. Do not say we have it on order, and do not say it is not on order or not planned either: you cannot see everything our buyers order. Say you cannot tell whether we will sell it.'], 'products' => [], 'error' => null];
         }
 
         return [

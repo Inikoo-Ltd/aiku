@@ -32,6 +32,8 @@ class GetComingSoon
 
     public const int MAX_FAMILIES = 8;
 
+    public const string NOT_EVERYTHING_ON_ORDER = 'This is never everything we have on order: never say from it that something is not on order, not planned or not coming.';
+
     public const array ON_THE_WAY_DELIVERY_STATES = [
         StockDeliveryStateEnum::CONFIRMED,
         StockDeliveryStateEnum::READY_TO_SHIP,
@@ -51,7 +53,7 @@ class GetComingSoon
 
         if (!$families) {
             return [
-                'content'  => ['found' => false, 'note' => 'Nothing new is on its way to us that we can tell them about right now. Say so honestly in one sentence, without guessing, and offer to show what is new in the range or to look for something they have in mind.'],
+                'content'  => ['found' => false, 'note' => 'Nothing new is on its way to us that we can tell them about right now. Say so honestly in one sentence, without guessing, and offer to show what is new in the range or to look for something they have in mind. '.self::NOT_EVERYTHING_ON_ORDER],
                 'products' => [],
                 'error'    => null,
             ];
@@ -61,7 +63,7 @@ class GetComingSoon
             'content'  => [
                 'found'  => true,
                 'ranges' => $families,
-                'note'   => 'The line under your reply, written by the system, lists new ranges coming to our website: on order with our supplier or on their way to us. In one or two sentences say that these are coming soon and point to the line. Never say when they arrive and never give a date, price, quantity or number of products. '
+                'note'   => 'The line under your reply, written by the system, lists new ranges coming to our website: on order with our supplier or on their way to us. In one or two sentences say that these are coming soon and point to the line. Never say when they arrive and never give a date, price, quantity or number of products. '.self::NOT_EVERYTHING_ON_ORDER.' '
                     .($remindersOn
                         ? 'Offer an email the moment one lands; if they say yes, call notify_when_back_in_stock with that range name as query and customer_agreed true.'
                         : 'Say they will find it on the website as soon as it lands.'),

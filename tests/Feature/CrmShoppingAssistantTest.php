@@ -4576,6 +4576,7 @@ test('coming soon lists, by family name only, the new ranges whose stock is on a
         ->and($result['content']['ranges'])->toContain('Lotus Lanterns '.$suffix)
         ->and($result['content']['ranges'])->not->toContain('Private Label Soaps '.$suffix)
         ->and($result['content']['ranges'])->not->toContain('Old Promise Candles '.$suffix)
+        ->and($result['content']['note'])->toContain('never say from it that something is not on order')
         ->and(json_encode($result['content']))->not->toMatch('/\d/')
         ->and($result['fact'])->toStartWith(Str::before(__('Coming soon to our website: :families.', [], 'es'), ':families'))
         ->and($result['fact'])->toContain('Lotus Lanterns '.$suffix)
@@ -4624,6 +4625,7 @@ test('stock on order with no product yet is found by meaning and teased with a f
         ->and($tease['fact'])->toBe(__('We have this on order with our supplier. It is not on our website yet.', [], 'en'))
         ->and(json_encode($tease['content']))->not->toContain(ucfirst($word))
         ->and($none['content']['found'])->toBeFalse()
+        ->and($none['content']['note'])->toContain('do not say it is not on order')
         ->and($none)->not->toHaveKey('fact')
         ->and(collect($tools->definitions())->pluck('function.name'))->toContain('on_order_not_listed');
 
