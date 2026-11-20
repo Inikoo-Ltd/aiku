@@ -353,6 +353,21 @@ class JobOrderItemTask extends Model
         return $firstUnfinished && $firstUnfinished->id != $this->id ? $firstUnfinished : null;
     }
 
+    /**
+     * Whether this step can only be worked once the earlier sibling step is: the steps it names in waits_for,
+     * or, when it names none, every earlier step that holds up later ones.
+     */
+    public function awaits(JobOrderItemTask $earlier): bool
+    {
+        if ([$earlier->position, $earlier->id] >= [$this->position, $this->id]) {
+            return false;
+        }
+
+        $waitsFor = $this->recipeStep?->waits_for;
+
+        return $waitsFor !== null ? in_array($earlier->artefact_manufacture_task_id, $waitsFor) : ($earlier->recipeStep !== null && ($earlier->recipeStep->blocks_later_steps ?? true));
+    }
+
     public function sessions(): HasMany
     {
         return $this->hasMany(ManufactureTaskSession::class);

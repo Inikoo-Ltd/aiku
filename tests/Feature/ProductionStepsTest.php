@@ -211,6 +211,40 @@ test('a carried job gets the kg already mixed for the whole job as a done mix st
         ->and($carriedMix->state)->toBe(JobOrderItemTaskStateEnum::DONE);
 });
 
+test('a job carried after its pieces are made does not ask for the mix again, even when less mix went into them than the recipe says (HELP-4847)', function () {
+    $user = auth()->user();
+    ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)
+        ->update(['state' => ManufactureTaskSessionStateEnum::CLOSED, 'ended_at' => now()]);
+
+    $suffix     = rand(10000, 99999);
+    $mixTask    = StoreManufactureTask::make()->action($this->production, ['code' => 'MXM'.$suffix, 'name' => 'Mixing '.$suffix, 'is_piece_rate' => false, 'is_recorded_in_kg' => true]);
+    $makingTask = StoreManufactureTask::make()->action($this->production, ['code' => 'MKM'.$suffix, 'name' => 'Making '.$suffix, 'is_piece_rate' => true]);
+    $shrinkTask = StoreManufactureTask::make()->action($this->production, ['code' => 'SHM'.$suffix, 'name' => 'Shrinking '.$suffix, 'is_piece_rate' => true]);
+    $artefact   = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'ZSM'.$suffix, 'name' => 'Steamer '.$suffix]);
+    $artefact->manufactureTasks()->sync([
+        $mixTask->id    => ['position' => 1, 'units_per_artefact' => 0.073],
+        $makingTask->id => ['position' => 2, 'units_per_artefact' => 1],
+        $shrinkTask->id => ['position' => 3, 'units_per_artefact' => 1],
+    ]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 100]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    [$mix, $making, $shrink] = $item->tasks()->orderBy('position')->get();
+
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $mix), ['quantity_made' => 5]);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $making), ['quantity_made' => 100]);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $shrink), ['quantity_made' => 60, 'outcome' => 'carry_over']);
+
+    [$carriedMix, $carriedMaking, $carriedShrink] = JobOrder::where('data->carried_from', $jobOrder->id)->firstOrFail()
+        ->jobOrderItems()->first()->tasks()->orderBy('position')->get();
+
+    expect((float) $carriedMix->quantity_required)->toBe(0.0)
+        ->and($carriedMix->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((float) $carriedMaking->quantity_required)->toBe(0.0)
+        ->and((float) $carriedShrink->quantity_required)->toBe(40.0);
+});
+
 test('breaks belong to the artisan, last until they are finished and only their overlap is deducted from a session', function () {
     $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
@@ -1324,6 +1358,7 @@ test('a mix entered on Making by mistake is moved to the mix step and Making goe
 
 test('a supervisor moves an entry recorded on the wrong line to the line really made, growing it back when it was closed short (HELP-4526)', function () {
     $user = auth()->user();
+    \App\Models\Production\ManufactureBreak::where('user_id', $user->id)->delete();
     ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)
         ->update(['state' => ManufactureTaskSessionStateEnum::CLOSED, 'ended_at' => now()]);
     ensurePayBandZero($this->production);

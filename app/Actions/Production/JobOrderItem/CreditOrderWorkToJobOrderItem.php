@@ -11,6 +11,7 @@ namespace App\Actions\Production\JobOrderItem;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Actions\Production\JobOrderItemTask\ShareMixPool;
 use App\Models\Production\JobOrderItem;
+use App\Models\Production\JobOrderItemTask;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -24,7 +25,9 @@ class CreditOrderWorkToJobOrderItem
      * asked for, and does not lock the later steps, again. The surplus is what the order made on the
      * step less what every other part takes from it: all its recipe needs, less what it will still
      * make itself. A line carried on or no longer open makes nothing more, so it takes all its needs.
-     * A line on its own simply follows the recipe.
+     * A line on its own simply follows the recipe. Pieces the order already has past a step are made,
+     * so the steps that step waits for are not asked for them either, even when the mix recorded in kg
+     * came out under the recipe (HELP-4847).
      */
     public function handle(JobOrderItem $jobOrderItem): JobOrderItem
     {
@@ -38,10 +41,19 @@ class CreditOrderWorkToJobOrderItem
             }
         }
 
+        $steps            = $jobOrderItem->tasks->sortByDesc(fn (JobOrderItemTask $task) => [$task->position, $task->id])->values();
+        $coveredArtefacts = [];
+        foreach ($steps as $task) {
+            $coveredArtefacts[$task->id] = $steps
+                ->filter(fn (JobOrderItemTask $later) => isset($coveredArtefacts[$later->id]) && $later->awaits($task))
+                ->reduce(fn (float $covered, JobOrderItemTask $later) => max($covered, $coveredArtefacts[$later->id]), $task->isRecordedInKg() ? 0.0 : $task->artefactsIn(max(0, $surplusByStep[$task->stepKey()] ?? 0)));
+        }
+
         foreach ($jobOrderItem->tasks as $task) {
-            $surplus = max(0, $surplusByStep[$task->stepKey()] ?? 0);
-            $floor   = $task->isRecordedInKg() || ShareMixPool::poolKey($task) ? 0 : (float) $task->quantity_made;
-            $task->setRequiredQuantity(max($floor, round($task->requiredFor($jobOrderItem->quantity) - $surplus, 3)));
+            $surplus  = max(0, $surplusByStep[$task->stepKey()] ?? 0);
+            $floor    = $task->isRecordedInKg() || ShareMixPool::poolKey($task) ? 0 : (float) $task->quantity_made;
+            $required = min(round($task->requiredFor($jobOrderItem->quantity) - $surplus, 3), $task->requiredFor(max(0, $jobOrderItem->quantity - $coveredArtefacts[$task->id])));
+            $task->setRequiredQuantity(max($floor, $required));
         }
 
         return $jobOrderItem;
