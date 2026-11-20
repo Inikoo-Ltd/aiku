@@ -36,12 +36,23 @@ class PickMobileDeliveryNoteItem
         $data = Validator::make($request->all(), [
             'location_org_stock_id' => ['required', 'integer'],
             'quantity'              => ['required', 'numeric', 'min:0'],
+            'client_request_id'     => ['sometimes', 'nullable', 'uuid'],
         ])->validate();
 
         $lineLocations    = app(GetMobileDeliveryNote::class)->pickingLocations($deliveryNoteItem);
         $locationOrgStock = $this->pickableLocation($deliveryNote, $deliveryNoteItem, (int) $data['location_org_stock_id'], $lineLocations);
-        $pickingId        = $deliveryNoteItem->pickings()->where('location_id', $locationOrgStock->location_id)->orderBy('id')->value('id');
-        $quantity         = (float) $data['quantity'];
+
+        return MobileClientRequest::once(
+            $user,
+            $data['client_request_id'] ?? null,
+            fn () => $this->pick($deliveryNote, $deliveryNoteItem, $locationOrgStock, $user, (float) $data['quantity']),
+            fn () => $this->respondWith($deliveryNote, $user, 'nothing_changed', __('Already done.'))
+        );
+    }
+
+    private function pick(DeliveryNote $deliveryNote, DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, User $user, float $quantity): JsonResponse
+    {
+        $pickingId = $deliveryNoteItem->pickings()->where('location_id', $locationOrgStock->location_id)->orderBy('id')->value('id');
 
         $before         = $this->lineSnapshot($deliveryNoteItem);
         $leftBeforePick = PickDeliveryNoteItemByScan::quantityLeftToPick($deliveryNoteItem->refresh());

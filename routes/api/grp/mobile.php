@@ -152,6 +152,11 @@ use App\Actions\Api\Group\Locations\ShowMobileLocation;
 use App\Actions\Api\Group\Locations\UpdateMobileEmptyLocationsRemoval;
 use App\Actions\Api\Group\MyWork\GetMobileWarehouseBadges;
 use App\Actions\Api\Group\MyWork\IndexMobileMyWork;
+use App\Actions\Api\Group\Offline\IndexMobileOfflineOperations;
+use App\Actions\Api\Group\Offline\ResolveMobileOfflineOperation;
+use App\Actions\Api\Group\Offline\RollbackMobileOfflineOperation;
+use App\Actions\Api\Group\Offline\StoreMobileOfflineWaitingNotice;
+use App\Actions\Api\Group\Offline\SyncMobileOfflineActions;
 use App\Actions\Api\Group\Search\GetMobileSearch;
 use App\Actions\Api\Group\Dashboard\GetMobileWarehouseDashboard;
 use App\Actions\SysAdmin\User\PasswordResetLink;
@@ -183,6 +188,14 @@ Route::middleware([VerifyMobileAppKey::class, SetMobileApiLocale::class])->group
         Route::patch('/profile/language', UpdateMobileProfileLanguage::class)->name('profile.language');
         Route::put('/push-token', UpdateMobilePushToken::class)->name('push_token.update');
         Route::delete('/push-token', DeleteMobilePushToken::class)->name('push_token.delete');
+
+        Route::post('/warehouses/{warehouse:id}/offline/sync', SyncMobileOfflineActions::class)->name('warehouses.offline.sync');
+        Route::prefix('offline')->name('offline.')->group(function () {
+            Route::get('/operations', IndexMobileOfflineOperations::class)->name('operations.index');
+            Route::post('/operations/{operation:id}/resolve', ResolveMobileOfflineOperation::class)->name('operations.resolve');
+            Route::post('/operations/{operation:id}/rollback', RollbackMobileOfflineOperation::class)->name('operations.rollback');
+            Route::post('/waiting-notice', StoreMobileOfflineWaitingNotice::class)->name('waiting_notice');
+        });
 
         Route::prefix('inbox')->name('inbox.')->group(function () {
             Route::get('/', IndexMobileInbox::class)->name('index');

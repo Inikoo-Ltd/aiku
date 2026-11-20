@@ -59,9 +59,10 @@ class StoreNotPickPickingFromWaitingWarehouse extends OrgAction
 
             $newQuantityWaitingWarehouse = round($quantityStillWaitingForWarehouse - $quantityToNotPick, 6);
 
-            $deliveryNoteItem->update([
-                'quantity_waiting_warehouse' => $newQuantityWaitingWarehouse,
-            ]);
+            $deliveryNoteItem->update(array_filter([
+                'quantity_waiting_warehouse'   => $newQuantityWaitingWarehouse,
+                'waiting_warehouse_cleared_at' => $newQuantityWaitingWarehouse <= 0 ? now() : null,
+            ], fn ($value) => $value !== null));
             DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
             data_set($modelData, 'quantity', $quantityToNotPick);

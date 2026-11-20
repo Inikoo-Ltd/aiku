@@ -201,6 +201,7 @@ class Kernel extends ConsoleKernel
         })->name('prune-product-image-zips')->hourly()->onOneServer();
         $schedule->call(fn () => \Illuminate\Support\Facades\DB::table('fetch_stacks')->where('state', 'success')->where('created_at', '<', now()->subDays(7))->delete())
             ->name('prune-fetch-stacks')->dailyAt('04:15')->timezone('UTC')->onOneServer();
+        $schedule->command('mobile-offline:purge')->dailyAt('04:20')->timezone('UTC')->onOneServer()->withoutOverlapping(60);
 
         if (config('app.master')) {
             $this->logSchedule(

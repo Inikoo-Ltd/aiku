@@ -81,9 +81,10 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
                 $waitingWarehouseQuantity = 0;
             }
 
-            $deliveryNoteItem->update([
-                'quantity_waiting_warehouse' => $waitingWarehouseQuantity,
-            ]);
+            $deliveryNoteItem->update(array_filter([
+                'quantity_waiting_warehouse'   => $waitingWarehouseQuantity,
+                'waiting_warehouse_cleared_at' => $waitingWarehouseQuantity == 0 && (float) $deliveryNoteItem->quantity_waiting_warehouse > 0 ? now() : null,
+            ], fn ($value) => $value !== null));
             DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
 

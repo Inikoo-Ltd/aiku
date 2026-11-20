@@ -366,6 +366,7 @@ test('mobile stock delivery detail sends no money, this warehouse locations, ite
             'quantity_label'          => '14',
             'is_default_wholesale'    => true,
             'is_default_dropshipping' => true,
+            'version'                 => (int) $picking->refresh()->version,
         ]])
         ->assertJsonPath('data.items.1.placements.0.quantity', 10)
         ->assertJsonPath('data.items.1.placements.0.location.id', $picking->location_id)

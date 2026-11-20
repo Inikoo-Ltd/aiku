@@ -8,6 +8,7 @@
 
 namespace App\Actions\Api\Group\Locations;
 
+use App\Actions\Api\Group\Inventory\WithMobileStockWriteRequests;
 use App\Actions\Inventory\Location\PartialMoveLocationOrgStocks;
 use App\Models\Inventory\Location;
 use App\Models\SysAdmin\User;
@@ -19,6 +20,7 @@ class MoveSomeMobileLocationOrgStocks
 {
     use AsController;
     use WithMobileLocationsAccess;
+    use WithMobileStockWriteRequests;
 
     /**
      * The web partial move of the Location page (PartialMoveLocationOrgStocks), with its own
@@ -33,8 +35,15 @@ class MoveSomeMobileLocationOrgStocks
         $user = $request->user();
         $this->ensureCanViewLocations($user, $location->warehouse);
 
-        PartialMoveLocationOrgStocks::make()->asController($location, $request);
+        return $this->oncePerClientRequest(
+            $user,
+            $this->optionalClientRequestId($request->all()),
+            function () use ($location, $request, $user) {
+                PartialMoveLocationOrgStocks::make()->asController($location, $request);
 
-        return response()->json(['data' => (new ShowMobileLocation())->forUser($location->refresh(), $user)]);
+                return response()->json(['data' => (new ShowMobileLocation())->forUser($location->refresh(), $user)]);
+            },
+            fn () => response()->json(['data' => (new ShowMobileLocation())->forUser($location->refresh(), $user)])
+        );
     }
 }
