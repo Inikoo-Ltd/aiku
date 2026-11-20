@@ -15,7 +15,6 @@ use App\Models\Chat\SlackMessage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Sleep;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -45,7 +44,8 @@ class CopySlackMessageFiles
     public function handle(?SlackChannel $channel = null, ?int $limit = null, float $pause = 3, bool $retryFailed = false): array
     {
         $totals = ['queued' => 0, 'recorded' => 0];
-        $seen   = [];
+        $seen    = [];
+        $waiting = [];
 
         $messages = SlackMessage::query()
             ->select(['id', 'slack_channel_id', 'data'])
@@ -81,15 +81,32 @@ class CopySlackMessageFiles
                 if ($totals['queued'] > 0) {
                     Sleep::for($pause)->seconds();
                 }
-                while (Queue::size(CopySlackMessageFile::make()->jobQueue) >= self::MAX_WAITING_JOBS) {
+                while (count($waiting = $this->stillWaiting($waiting)) >= self::MAX_WAITING_JOBS) {
                     Sleep::for($pause)->seconds();
                 }
                 CopySlackMessageFile::dispatch($message, $file);
+                $waiting[] = $file['id'];
                 $totals['queued']++;
             }
         }
 
         return $totals;
+    }
+
+    /**
+     * The downloads this run queued that have not finished; the queue is shared with other work, so its own length says nothing.
+     *
+     * @param  list<string>  $slackIds
+     * @return list<string>
+     */
+    private function stillWaiting(array $slackIds): array
+    {
+        if (!$slackIds) {
+            return [];
+        }
+        $finished = SlackFile::whereIn('slack_id', $slackIds)->whereNotIn('state', SlackFileStateEnum::toCopy())->pluck('slack_id')->all();
+
+        return array_values(array_diff($slackIds, $finished));
     }
 
     /**
