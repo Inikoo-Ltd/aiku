@@ -16452,5 +16452,7 @@
     "Heads up: :reference, assigned to you, was changed by :actor.": "Dikkat: size atanmış olan :reference, :actor tarafından değiştirildi.",
     ":actor has updated :reference, which is assigned to you.": ":actor size atanmış olan :reference işini güncelledi.",
     "Operational": "Çalışır durumda",
-    ":reference cancelled": ":reference iptal edildi"
+    ":reference cancelled": ":reference iptal edildi",
+    "Yes, I would like :brand to send me WhatsApp updates about my orders, deliveries, restocks and membership.": "Evet, siparişlerim, teslimatlarım, yeniden stoğa giren ürünler ve üyeliğimle ilgili :brand tarafından WhatsApp üzerinden bilgilendirilmek istiyorum.",
+    "Yes, I would like to receive occasional offers and news from :brand on WhatsApp.": "Evet, :brand tarafından WhatsApp üzerinden ara sıra gönderilen kampanya ve haberleri almak istiyorum."
 }

@@ -4611,3 +4611,49 @@ test('stock on order with no product yet is found by meaning and teased with a f
     expect($narrow)->toBeFalse()
         ->and(App\Actions\CRM\ShoppingAssistant\GetOnOrderNotListed::teasesIn($this->shop->fresh()))->toBeBool();
 });
+
+function shoppingAssistantNotSureTurn(object $test, string $reply, float $partialConfidence, array $handOverSentences = []): array
+{
+    $jev = \App\Actions\Helpers\AI\AskJev::mock();
+    $jev->shouldReceive('noul')->andReturnUsing(fn (mixed $state, string $instructions) => str_contains($instructions, 'partial answer') ? $partialConfidence : 0.1);
+    $jev->shouldReceive('handle')->andReturnUsing(function (mixed $state, array $questions) use ($handOverSentences) {
+        return collect($questions)->map(fn (array $question) => ['noul' => collect($handOverSentences)->contains(fn (string $sentence) => str_contains($question['instructions'], $sentence)) ? 0.95 : 0.05])->all();
+    });
+    $jev->shouldReceive('choice')->andReturn(null);
+
+    $customer     = shoppingAssistantCustomer($test->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+
+    Http::fake([
+        '*embeddings'       => shoppingAssistantEmbeddingsFake(),
+        '*chat/completions' => Http::sequence()
+            ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('shop_information', ['question' => 'Last order date for Christmas?'])]], 'tool_calls'))
+            ->push(shoppingAssistantPresent(['reply' => $reply, 'answer_kind' => 'offer_person', 'offer_reason' => 'not_sure'])),
+    ]);
+
+    return AskShoppingAssistant::run($conversation, 'Last order date for Christmas?');
+}
+
+test('a not sure answer shows what the tools found when it is grounded, with the fixed sentence after it', function () {
+    $turn = shoppingAssistantNotSureTurn($this, 'Our delivery texts do not give a last order date for Christmas. Dispatch takes a few working days.', 0.95);
+
+    expect($turn['message']->flags)->toContain('partial_answer')
+        ->and($turn['message']->flags)->not->toContain('partial_answer_refused')
+        ->and($turn['message']->body)->toStartWith('Our delivery texts do not give a last order date for Christmas. Dispatch takes a few working days.');
+});
+
+test('a not sure answer that also says it passed the question on is shown without that sentence', function () {
+    $handOver = 'I have asked one of our experts, who will get back to you.';
+    $turn     = shoppingAssistantNotSureTurn($this, 'Our delivery texts do not give a last order date for Christmas. '.$handOver, 0.95, [$handOver]);
+
+    expect($turn['message']->flags)->toContain('partial_answer')
+        ->and($turn['message']->body)->toStartWith('Our delivery texts do not give a last order date for Christmas.')
+        ->and($turn['message']->body)->not->toContain($handOver);
+});
+
+test('a not sure answer Jev doubts stays the fixed sentence alone', function () {
+    $turn = shoppingAssistantNotSureTurn($this, 'Orders placed by mid December always arrive before Christmas. Dispatch takes a few working days.', 0.4);
+
+    expect($turn['message']->flags)->toContain('partial_answer_refused')
+        ->and($turn['message']->body)->not->toContain('mid December');
+});

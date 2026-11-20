@@ -2691,6 +2691,79 @@ test('packeta sends a Polish parcel locker delivery to the InPost locker the cus
     'bare code as customer note'  => ['Elzanowo 10B', null, ' byd21n '],
 ]);
 
+function cyprusPacketaDeliveryNote(object $testCase, array $address, array $noteAttributes = []): DeliveryNote
+{
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($testCase);
+    $cyprus         = \App\Models\Helpers\Country::where('code', 'CY')->firstOrFail();
+    \App\Actions\Dispatching\DeliveryNote\StoreDeliveryNoteAddress::make()->action($deliveryNote, ['address' => new Address(array_merge(Address::factory()->definition(), [
+        'address_line_1' => '27 Iracleous street',
+        'address_line_2' => null,
+        'locality'       => 'Strovolos',
+        'postal_code'    => '2040',
+        'country_id'     => $cyprus->id,
+        'country_code'   => 'CY',
+    ], $address))]);
+    $deliveryNote->update(array_merge([
+        'is_cash_on_delivery' => false,
+        'phone'               => '+35799123456',
+        'parcels'             => [['weight' => 1.5, 'dimensions' => [30, 20, 10]]],
+        'shipping_notes'      => null,
+        'customer_notes'      => null,
+    ], $noteAttributes));
+
+    \Illuminate\Support\Facades\Cache::flush();
+    \Illuminate\Support\Facades\Http::fake(['*/point.json*' => \Illuminate\Support\Facades\Http::response(['carriers' => [['id' => 35369, 'points' => [
+        ['code' => 6007, 'coordinates' => ['latitude' => '34.934765', 'longitude' => '33.639125'], 'zip' => '6059', 'displayFrontend' => 1],
+        ['code' => '1101', 'coordinates' => ['latitude' => '35.140000', 'longitude' => '33.340000'], 'zip' => '2040', 'displayFrontend' => 1],
+        ['code' => '1102', 'coordinates' => ['latitude' => '35.140100', 'longitude' => '33.340100'], 'zip' => '2041', 'displayFrontend' => 0],
+    ]]]])]);
+    config(['app.sandbox.shipper_packeta_access_token' => json_encode(['api_password' => 'test', 'api_key' => 'key'])]);
+
+    return $deliveryNote->refresh();
+}
+
+test('packeta sends a Cyprus delivery to the BoxNow locker nearest the address', function (?array $coordinates, array $address, array $noteAttributes, string $expectedLocker) {
+    $deliveryNote = cyprusPacketaDeliveryNote($this, $address, $noteAttributes);
+    $client       = fakePacketaSoapClient(true);
+    $action       = \Mockery::mock(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::class)->makePartial();
+    $action->shouldReceive('soapClient')->andReturn($client);
+    $action->shouldReceive('geocodeAddress')->andReturn($coordinates);
+
+    $response = $action->handle($deliveryNote, new \App\Models\Dispatching\Shipper());
+
+    expect($response['status'])->toBe('success')
+        ->and($client->packetAttributes['addressId'])->toBe(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::CY_BOX_NOW_BOX)
+        ->and($client->packetAttributes['carrierPickupPoint'])->toBe($expectedLocker)
+        ->and($client->packetAttributes)->not->toHaveKey('size')
+        ->and($response['modelData']['delivery_type'])->toBe(\App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum::PICKUP_POINT)
+        ->and($response['modelData']['pickup_point_code'])->toBe($expectedLocker);
+})->with([
+    'geocoded, closed locker skipped'   => [['latitude' => 35.1401, 'longitude' => 33.3401], [], [], '1101'],
+    'geocoded in Larnaca'               => [['latitude' => 34.93, 'longitude' => 33.63], [], [], '6007'],
+    'not geocoded, same postcode'       => [null, [], [], '1101'],
+    'locker written in shipping notes'  => [['latitude' => 35.14, 'longitude' => 33.34], [], ['shipping_notes' => 'please send to BoxNow 6007'], '6007'],
+]);
+
+test('packeta refuses a Cyprus BoxNow delivery it cannot book', function (?array $coordinates, array $address, array $noteAttributes, string $expectedMessage) {
+    $deliveryNote = cyprusPacketaDeliveryNote($this, $address, $noteAttributes);
+    $client       = fakePacketaSoapClient(true);
+    $action       = \Mockery::mock(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::class)->makePartial();
+    $action->shouldReceive('soapClient')->andReturn($client);
+    $action->shouldReceive('geocodeAddress')->andReturn($coordinates);
+
+    $response = $action->handle($deliveryNote, new \App\Models\Dispatching\Shipper());
+
+    expect($response['status'])->toBe('fail')
+        ->and($response['errorData']['message'])->toContain($expectedMessage)
+        ->and($client->packetAttributes)->toBe([]);
+})->with([
+    'over 7 kg'                   => [['latitude' => 35.14, 'longitude' => 33.34], [], ['parcels' => [['weight' => 7.5, 'dimensions' => [30, 20, 10]]]], 'No address ID found for country code CY'],
+    'no phone'                    => [['latitude' => 35.14, 'longitude' => 33.34], [], ['phone' => null], 'recipient phone number'],
+    'too far from any locker'     => [['latitude' => 51.5, 'longitude' => -0.1], [], [], 'No BoxNow locker found'],
+    'not geocoded, no postcode'   => [null, ['postal_code' => 'BF1 2AT'], [], 'No BoxNow locker found'],
+    'only the country centre'     => [['latitude' => 35.14, 'longitude' => 33.34, 'matched_layer' => 'country_level'], ['postal_code' => '8310'], [], 'No BoxNow locker found'],
+]);
+
 test('packeta refuses a pick-up point it cannot book instead of booking home delivery', function () {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
     $poland = \App\Models\Helpers\Country::where('code', 'PL')->firstOrFail();

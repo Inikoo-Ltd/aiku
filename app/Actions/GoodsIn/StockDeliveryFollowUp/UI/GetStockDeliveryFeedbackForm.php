@@ -51,7 +51,7 @@ class GetStockDeliveryFeedbackForm
             'sent'                => (bool) $round?->isSent(),
             'recipient'           => StockDeliveryFeedbackResource::recipient($round ?? new StockDeliveryFeedback([
                 'stock_delivery_id' => $stockDelivery->id,
-                'supplier_id'       => ($suppliers = StoreStockDeliveryFeedback::suppliersOn($stockDelivery))->count() === 1 ? $suppliers->first()->id : null,
+                'supplier_id'       => StoreStockDeliveryFeedback::addressedSupplierId($stockDelivery),
                 'agent_id'          => $stockDelivery->agent_id,
             ])),
             'purchase_orders'     => StockDeliveryFeedbackResource::purchaseOrders($round ?? new StockDeliveryFeedback(['stock_delivery_id' => $stockDelivery->id])),
