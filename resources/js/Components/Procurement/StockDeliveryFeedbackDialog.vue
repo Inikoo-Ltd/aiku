@@ -110,7 +110,7 @@ const submit = () => {
 				<span class="ml-1">{{ options.recipient.name }}</span>
 				<div v-if="options.purchase_orders?.length" class="mt-0.5">
 					{{ ctrans("Purchase orders") }}:
-					<span v-for="(reference, index) in options.purchase_orders" :key="reference" class="whitespace-nowrap">{{ reference }}<template v-if="index < options.purchase_orders.length - 1">, </template></span>
+					<template v-for="(reference, index) in options.purchase_orders" :key="reference"><span class="whitespace-nowrap">{{ reference }}</span><template v-if="index < options.purchase_orders.length - 1">, </template></template>
 				</div>
 				<div class="mt-1">
 					{{ options.items_noted

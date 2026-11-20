@@ -221,6 +221,28 @@ test('a five-star feedback is stored and reaches the buyer notification and the 
             ->etc()));
 });
 
+test('a direct delivery with a line from another supplier still sends its feedback to its own supplier', function () {
+    Notification::fake();
+    $author = $this->adminGuest->getUser();
+    [$orgSupplierA, $productA] = followUpSupplier($this, $this->group);
+    [, $productB] = followUpSupplier($this, $this->group);
+
+    $stockDelivery = followUpCheck(followUpDelivery($this, $orgSupplierA, [[$productA, 0, 10], [$productB, 1, 10]]), [10, 10]);
+
+    $props = $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]))->viewData('page')['props'];
+    expect($props['give_feedback']['recipient'])->toBe(['code' => $productA->supplier->code, 'name' => $productA->supplier->name, 'is_agent' => false]);
+
+    $feedback = followUpFeedback($stockDelivery, $author, ['rating' => 3, 'comment' => 'Two cartons crushed']);
+    expect($feedback->supplier_id)->toBe($productA->supplier_id);
+
+    Auth::logout();
+    $this->get(route('grp.supplier_share.show', portalToken($productA->supplier)))
+        ->assertInertia(fn ($page) => $page->loadDeferredProps('delivery_feedback', fn ($reload) => $reload
+            ->where('delivery_feedback.0.id', $feedback->id)
+            ->where('delivery_feedback.0.comment', 'Two cartons crushed')
+            ->etc()));
+});
+
 test('a consolidated container gets one round for the agent, and each item note reaches only its own supplier', function () {
     Notification::fake();
     $agent  = followUpAgent($this);
