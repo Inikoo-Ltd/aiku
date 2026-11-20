@@ -108,7 +108,7 @@ class GetAgentSalesFeedback
             $reviews = $reviews->map(function ($review) use ($models, $language, $english) {
                 $model           = $models->get($review->id);
                 $review->message = ($model ? TranslateReviewMessage::run($model, $language) : null)
-                    ?? ($model && $english ? data_get($model->translations, 'message.'.$english->id) : null)
+                    ?? ($model && $english ? $model->messageTranslations()[$english->id] ?? null : null)
                     ?? $review->message;
 
                 return $review;

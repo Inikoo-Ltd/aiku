@@ -219,4 +219,28 @@ class Review extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(\App\Models\Helpers\Language::class);
     }
+
+    /**
+     * The message in each language it was translated into, keyed by language id. translations.message is a JSON
+     * object keyed by language id, but older rows hold an empty list, or a list of single-language objects the
+     * supplier portal appended to (INI-283); those are read entry by entry, keeping the first text of each language.
+     *
+     * @return array<int, string>
+     */
+    public function messageTranslations(): array
+    {
+        $stored  = $this->translations['message'] ?? [];
+        $entries = is_array($stored) && array_is_list($stored) ? $stored : [$stored];
+
+        $translations = [];
+        foreach ($entries as $entry) {
+            $translations += array_filter(
+                is_array($entry) ? $entry : [],
+                fn ($text, $languageId) => is_int($languageId) && is_string($text) && trim($text) !== '',
+                ARRAY_FILTER_USE_BOTH
+            );
+        }
+
+        return $translations;
+    }
 }
