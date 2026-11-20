@@ -50,20 +50,29 @@ class CreateAgentMoneyRequest extends OrgAction
         abort_unless($client, 404);
         $purchaseOrder = PurchaseOrder::where('organisation_id', $client->id)->where('agent_id', $agent->id)->find($request->integer('purchase_order'));
         $due           = GetAgentMoneyRequestLines::run($agent, $client, $purchaseOrder?->id);
-        $due['orders'] = array_map(fn (array $order) => [
+        $withOrderRoutes = fn (array $order) => [
             ...$order,
             'route'          => ['name' => 'grp.org.agent.purchase_orders.show', 'parameters' => ['organisation' => $organisation->slug, 'purchaseOrder' => $order['purchase_order_slug']]],
             'supplier_route' => $order['supplier_slug'] ? ['name' => 'grp.org.agent.sales.suppliers.show', 'parameters' => ['organisation' => $organisation->slug, 'supplier' => $order['supplier_slug']]] : null,
-        ], $due['orders']);
-        $due['shipments'] = array_map(fn (array $shipment) => [
+        ];
+        $withShipmentRoutes = fn (array $shipment) => [
             ...$shipment,
             'state_icon' => $shipment['state'] ? StockDeliveryStateEnum::stateIcon()[$shipment['state']] ?? null : null,
             'route'      => ['name' => 'grp.org.agent.stock_deliveries.show', 'parameters' => ['organisation' => $organisation->slug, 'stockDelivery' => $shipment['stock_delivery_slug']]],
-        ], $due['shipments']);
-        $due['expenses'] = array_map(fn (array $expense) => [
+        ];
+        $withExpenseRoutes = fn (array $expense) => [
             ...$expense,
             'purchase_order_route' => $expense['purchase_order_slug'] ? ['name' => 'grp.org.agent.purchase_orders.show', 'parameters' => ['organisation' => $organisation->slug, 'purchaseOrder' => $expense['purchase_order_slug']]] : null,
-        ], $due['expenses']);
+        ];
+        $due['orders']    = array_map($withOrderRoutes, $due['orders']);
+        $due['shipments'] = array_map($withShipmentRoutes, $due['shipments']);
+        $due['expenses']  = array_map($withExpenseRoutes, $due['expenses']);
+        $due['skipped']   = array_map(fn (array $line) => [
+            ...$line,
+            'order'    => $line['order'] ? $withOrderRoutes($line['order']) : null,
+            'shipment' => $line['shipment'] ? $withShipmentRoutes($line['shipment']) : null,
+            'expense'  => $line['expense'] ? $withExpenseRoutes($line['expense']) : null,
+        ], $due['skipped']);
 
         return Inertia::render(
             'Org/Procurement/AgentMoneyRequestBuilder',
@@ -82,6 +91,7 @@ class CreateAgentMoneyRequest extends OrgAction
                 'store_route' => ['name' => 'grp.models.agent.money_request.store', 'parameters' => ['agent' => $agent->id]],
                 'expense_store_route' => ['name' => 'grp.models.agent.money_request_expense.store', 'parameters' => ['agent' => $agent->id]],
                 'advance_route_name' => 'grp.models.supplier.advance_percentage.update',
+                'skip_route'  => ['name' => 'grp.models.agent.money_request_line.skip', 'parameters' => ['agent' => $agent->id]],
             ]
         );
     }

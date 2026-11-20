@@ -17,20 +17,21 @@ import Select from "primevue/select"
 import Textarea from "primevue/textarea"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd, faCheckDouble, faSearch } from "@fal"
+import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd, faCheckDouble, faSearch, faForward, faUndo } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Icon from "@/Components/Icon.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import AgentMoneyRequestExpenseDialog from "@/Components/Procurement/AgentMoneyRequestExpenseDialog.vue"
+import AgentMoneyRequestSkipDialog, { type SkipTarget } from "@/Components/Procurement/AgentMoneyRequestSkipDialog.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd, faCheckDouble, faSearch)
+library.add(faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd, faCheckDouble, faSearch, faForward, faUndo)
 
 interface DueOrder {
 	purchase_order_id: number
@@ -85,6 +86,20 @@ interface DueExpense {
 	receipt: string | null
 }
 
+interface LineSkip {
+	at: string | null
+	by: string | null
+	reason: string | null
+}
+
+interface SkippedLine extends LineSkip {
+	kind: "advance" | "balance" | "shipment" | "expense"
+	due: number
+	order: DueOrder | null
+	shipment: DueShipment | null
+	expense: DueExpense | null
+}
+
 const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
@@ -98,10 +113,12 @@ const props = defineProps<{
 		shipments: DueShipment[]
 		expenses: DueExpense[]
 		orders: DueOrder[]
+		skipped: SkippedLine[]
 	}
 	store_route: routeType
 	expense_store_route: routeType
 	advance_route_name: string
+	skip_route: routeType
 }>()
 
 const locale = useLocaleStore()
@@ -121,6 +138,7 @@ interface Line {
 	shipment: DueShipment | null
 	expense: DueExpense | null
 	due: number
+	skip?: LineSkip
 }
 
 const emptyLine = { purchase_order_id: null, stock_delivery_id: null, agent_payment_id: null, order: null, shipment: null, expense: null }
@@ -157,6 +175,24 @@ const lines = computed<Line[]>(() => [
 	]),
 ])
 
+const skippedLines = computed<Line[]>(() =>
+	(props.due.skipped ?? []).map((skipped) => {
+		const id = skipped.order?.purchase_order_id ?? skipped.shipment?.stock_delivery_id ?? skipped.expense?.agent_payment_id ?? null
+		return {
+			key: `skipped:${skipped.kind}:${id}`,
+			kind: skipped.kind,
+			purchase_order_id: skipped.order?.purchase_order_id ?? null,
+			stock_delivery_id: skipped.shipment?.stock_delivery_id ?? null,
+			agent_payment_id: skipped.expense?.agent_payment_id ?? null,
+			order: skipped.order,
+			shipment: skipped.shipment,
+			expense: skipped.expense,
+			due: skipped.due,
+			skip: { at: skipped.at, by: skipped.by, reason: skipped.reason },
+		}
+	})
+)
+
 const ticked = reactive<Record<string, boolean>>({})
 const amounts = reactive<Record<string, number | null>>({})
 const offeredDue: Record<string, number> = {}
@@ -184,7 +220,7 @@ watch(
 
 const orderOf = (purchaseOrderId: number | null) => props.due.orders.find((order) => order.purchase_order_id === purchaseOrderId)
 
-type LineFilter = "all" | "purchase_orders" | "deposits" | "balances" | "deposit_paid" | "shipments" | "expenses" | "selected"
+type LineFilter = "all" | "purchase_orders" | "deposits" | "balances" | "deposit_paid" | "shipments" | "expenses" | "selected" | "skipped"
 
 const lineFilter = ref<LineFilter>("all")
 const search = ref("")
@@ -218,6 +254,8 @@ const lineSearchTexts = (line: Line): string[] => {
 		expense?.supplier_name,
 		expense?.purchase_order_reference,
 		expense?.date,
+		line.skip?.reason,
+		line.skip?.by,
 	].filter((text): text is string => !!text)
 }
 
@@ -233,7 +271,7 @@ const lineAmounts = (line: Line): number[] =>
 
 const lineIndex = computed(() =>
 	Object.fromEntries(
-		lines.value.map((line) => {
+		[...lines.value, ...skippedLines.value].map((line) => {
 			const amountsOfLine = lineAmounts(line)
 			return [
 				line.key,
@@ -259,6 +297,7 @@ const matchesSearch = (line: Line) => {
 }
 
 const searchedLines = computed(() => lines.value.filter(matchesSearch))
+const searchedSkippedLines = computed(() => skippedLines.value.filter(matchesSearch))
 const lineFilterMatches: Record<LineFilter, (line: Line) => boolean> = {
 	all: () => true,
 	purchase_orders: (line) => line.kind === "advance" || line.kind === "balance",
@@ -268,9 +307,10 @@ const lineFilterMatches: Record<LineFilter, (line: Line) => boolean> = {
 	shipments: (line) => line.kind === "shipment",
 	expenses: (line) => line.kind === "expense",
 	selected: (line) => !!ticked[line.key],
+	skipped: () => true,
 }
 
-const linesFor = (filter: LineFilter) => searchedLines.value.filter(lineFilterMatches[filter])
+const linesFor = (filter: LineFilter) => (filter === "skipped" ? searchedSkippedLines.value : searchedLines.value.filter(lineFilterMatches[filter]))
 
 const lineFilterOptions = computed<{ label: string; value: LineFilter; count: number; help?: string }[]>(() =>
 	(
@@ -283,6 +323,7 @@ const lineFilterOptions = computed<{ label: string; value: LineFilter; count: nu
 			{ label: ctrans("Stock delivery"), value: "shipments" },
 			{ label: ctrans("Expenses"), value: "expenses" },
 			{ label: ctrans("Selected"), value: "selected" },
+			{ label: ctrans("Skipped"), value: "skipped", help: ctrans("Lines the client already paid outside a money request: they are not offered in new requests") },
 		] as { label: string; value: LineFilter; help?: string }[]
 	)
 		.map((option) => ({ ...option, count: linesFor(option.value).length }))
@@ -308,6 +349,52 @@ const isExpenseDialogOpen = ref(false)
 const lineTotal = (line: Line) => line.expense?.amount ?? (line.order ?? line.shipment)?.total ?? 0
 const lineRequested = (line: Line) => (line.order ?? line.shipment ?? line.expense)?.requested ?? 0
 const onExpenseSaved = () => (lineFilter.value = "expenses")
+
+const isSkipDialogOpen = ref(false)
+const skipTarget = ref<SkipTarget | null>(null)
+const restoreErrors = reactive<Record<string, string>>({})
+const restoring = ref<string | null>(null)
+
+const lineTitle = (line: Line) =>
+	[line.order?.reference ?? line.shipment?.reference ?? line.expense?.notes ?? line.expense?.reference, line.order?.supplier_company ?? line.expense?.supplier_name].filter(Boolean).join(" · ")
+
+const openSkipDialog = (line: Line) => {
+	skipTarget.value = {
+		kind: line.kind,
+		purchase_order_id: line.purchase_order_id,
+		stock_delivery_id: line.stock_delivery_id,
+		agent_payment_id: line.agent_payment_id,
+		title: lineTitle(line),
+		amount: money(line.due),
+	}
+	isSkipDialogOpen.value = true
+}
+
+const restoreLine = (line: Line) =>
+	router.patch(
+		route(props.skip_route.name, props.skip_route.parameters),
+		{
+			organisation_id: props.client.id,
+			kind: line.kind,
+			purchase_order_id: line.purchase_order_id,
+			stock_delivery_id: line.stock_delivery_id,
+			agent_payment_id: line.agent_payment_id,
+			skipped: false,
+		},
+		{
+			preserveScroll: true,
+			preserveState: true,
+			onStart: () => {
+				restoring.value = line.key
+				delete restoreErrors[line.key]
+			},
+			onFinish: () => (restoring.value = null),
+			onError: (errors) => (restoreErrors[line.key] = (Object.values(errors ?? {})[0] as string) ?? ctrans("Something went wrong")),
+		}
+	)
+
+const skippedAtLabel = (skip: LineSkip) =>
+	[skip.by, skip.at ? new Date(skip.at).toLocaleDateString() : null].filter(Boolean).join(" · ")
 
 const reference = ref(props.purchase_order ?? "")
 const notes = ref("")
@@ -426,7 +513,7 @@ const send = () => {
 		</div>
 	</div>
 
-	<div v-if="lines.length" class="sticky top-10 z-[5] mx-4 mt-4 bg-white pt-2">
+	<div v-if="lines.length || skippedLines.length" class="sticky top-10 z-[5] mx-4 mt-4 bg-white pt-2">
 		<IconField class="mb-2 w-96 max-w-full">
 			<InputIcon>
 				<FontAwesomeIcon icon="fal fa-search" fixed-width aria-hidden="true" />
@@ -460,7 +547,7 @@ const send = () => {
 				<tr>
 					<th class="w-10 px-3 py-2">
 						<Checkbox
-							v-if="visibleLines.length"
+							v-if="visibleLines.length && lineFilter !== 'skipped'"
 							v-tooltip="allTicked ? ctrans('Unselect all') : ctrans('Select all')"
 							:modelValue="allTicked"
 							:indeterminate="someTicked"
@@ -476,14 +563,14 @@ const send = () => {
 				</tr>
 			</thead>
 			<tbody class="divide-y divide-gray-100">
-				<tr v-if="!lines.length">
+				<tr v-if="!lines.length && lineFilter !== 'skipped'">
 					<td colspan="6" class="px-3 py-6 text-center text-gray-400">{{ ctrans("Nothing is due from :client", { client: client.code }) }}</td>
 				</tr>
 				<tr v-else-if="!visibleLines.length">
 					<td colspan="6" class="px-3 py-6 text-center text-gray-400">{{ ctrans("No results") }}</td>
 				</tr>
 				<tr v-for="line in visibleLines" :key="line.key" :class="ticked[line.key] ? '' : 'text-gray-400'">
-					<td class="px-3 py-2"><Checkbox v-model="ticked[line.key]" binary /></td>
+					<td class="px-3 py-2"><Checkbox v-if="!line.skip" v-model="ticked[line.key]" binary /></td>
 					<td class="min-w-[18rem] px-3 py-2">
 						<div v-if="line.expense" class="space-y-1 text-xs text-gray-600">
 							<div class="flex items-start gap-2">
@@ -565,12 +652,20 @@ const send = () => {
 								<Link :href="route(line.order.route.name, line.order.route.parameters)" class="min-w-0 truncate whitespace-nowrap text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline" :title="line.order.reference">{{ line.order.reference }}</Link>
 							</div>
 						</div>
+						<div v-if="line.skip" class="mt-1 flex flex-wrap items-center gap-1 text-xs">
+							<span class="inline-flex items-center gap-1 whitespace-nowrap rounded border border-gray-300 bg-gray-100 px-1.5 font-medium text-gray-700">
+								<FontAwesomeIcon icon="fal fa-forward" fixed-width aria-hidden="true" />
+								{{ ctrans("Skipped") }}
+							</span>
+							<span v-if="skippedAtLabel(line.skip)" class="text-gray-500">{{ skippedAtLabel(line.skip) }}</span>
+							<span v-if="line.skip.reason" class="text-gray-700">· {{ line.skip.reason }}</span>
+						</div>
 					</td>
 					<td class="whitespace-nowrap px-3 py-2 text-right">{{ money(lineTotal(line)) }}</td>
 					<td class="whitespace-nowrap px-3 py-2 text-right">{{ lineRequested(line) ? money(lineRequested(line)) : "-" }}</td>
 					<td class="px-3 py-2 text-right">
 						<InputNumber
-							v-if="line.kind === 'advance'"
+							v-if="line.kind === 'advance' && !line.skip"
 							v-model="percentages[line.purchase_order_id!]"
 							:min="0"
 							:max="100"
@@ -584,7 +679,25 @@ const send = () => {
 						</div>
 					</td>
 					<td class="px-3 py-2 text-right">
-						<InputNumber v-model="amounts[line.key]" v-bind="amountInputOptions" :min="0" :max="line.due" :disabled="!ticked[line.key]" inputClass="w-36 text-right" :class="fieldFocusClass" />
+						<template v-if="line.skip">
+							<div class="whitespace-nowrap text-gray-500 line-through">{{ money(line.due) }}</div>
+							<Button type="tertiary" size="xs" class="mt-1" :label="ctrans('Put back')" :loading="restoring === line.key" @click="restoreLine(line)">
+								<template #icon>
+									<FontAwesomeIcon icon="fal fa-undo" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+								</template>
+							</Button>
+							<div v-if="restoreErrors[line.key]" class="mt-1 text-xs text-red-600">{{ restoreErrors[line.key] }}</div>
+						</template>
+						<template v-else>
+							<InputNumber v-model="amounts[line.key]" v-bind="amountInputOptions" :min="0" :max="line.due" :disabled="!ticked[line.key]" inputClass="w-36 text-right" :class="fieldFocusClass" />
+							<div class="mt-1">
+								<Button v-tooltip="ctrans('The client already gave this money outside a money request')" type="tertiary" size="xs" :label="ctrans('Skip')" @click="openSkipDialog(line)">
+									<template #icon>
+										<FontAwesomeIcon icon="fal fa-forward" class="text-gray-500" fixed-width aria-hidden="true" />
+									</template>
+								</Button>
+							</div>
+						</template>
 					</td>
 				</tr>
 			</tbody>
@@ -656,4 +769,6 @@ const send = () => {
 		:currency="due.currency_code"
 		@saved="onExpenseSaved"
 	/>
+
+	<AgentMoneyRequestSkipDialog v-model:visible="isSkipDialogOpen" :skipRoute="skip_route" :organisationId="client.id" :clientCode="client.code" :target="skipTarget" />
 </template>

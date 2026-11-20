@@ -771,6 +771,7 @@ use App\Actions\SupplyChain\DepositRequest\StoreDepositRequest;
 use App\Actions\SupplyChain\DepositRequest\MarkDepositRequestItemPaid;
 use App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest;
 use App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequestExpense;
+use App\Actions\SupplyChain\DepositRequest\SkipAgentMoneyRequestLine;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgentFeePercentage;
 use App\Actions\SupplyChain\DepositRequest\CancelAgentMoneyRequest;
 use App\Actions\SupplyChain\DepositRequest\RemindAgentMoneyRequest;
@@ -2052,6 +2053,7 @@ Route::post('agent/{agent:id}/procurement-note', [StoreProcurementNote::class, '
 Route::post('agent/{agent:id}/ledger-entry', StoreAgentLedgerEntry::class)->name('agent.ledger_entry.store');
 Route::post('agent/{agent:id}/money-request', StoreAgentMoneyRequest::class)->name('agent.money_request.store');
 Route::post('agent/{agent:id}/money-request-expense', StoreAgentMoneyRequestExpense::class)->name('agent.money_request_expense.store');
+Route::patch('agent/{agent:id}/money-request-skip', SkipAgentMoneyRequestLine::class)->name('agent.money_request_line.skip');
 Route::patch('org-agent/{orgAgent:id}/agent-fee', UpdateOrgAgentFeePercentage::class)->name('org_agent.agent_fee.update');
 Route::patch('deposit-request/{depositRequest:id}/cancel', CancelAgentMoneyRequest::class)->name('deposit_request.cancel');
 Route::patch('deposit-request/{depositRequest:id}/approve', ApproveAgentMoneyRequest::class)->name('deposit_request.approve');

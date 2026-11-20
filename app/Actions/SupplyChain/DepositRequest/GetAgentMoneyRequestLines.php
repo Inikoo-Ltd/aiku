@@ -36,7 +36,7 @@ class GetAgentMoneyRequestLines
     public const float DEFAULT_ADVANCE_PERCENTAGE = 30;
 
     /**
-     * @return array{currency_code: string, wallet: array{received: float, paid: float, balance: float}, credit_available: float, shipments: list<array{stock_delivery_id: int, stock_delivery_slug: string, reference: string, state: string|null, charges: list<array{type: string, label: string, amount: float}>, total: float, requested: float, due: float}>, expenses: list<array{agent_payment_id: int, type: string, type_label: string, date: string, amount: float, requested: float, due: float, reference: string|null, notes: string|null, supplier_code: string|null, supplier_name: string|null, purchase_order_reference: string|null, purchase_order_slug: string|null, receipt: string|null}>, orders: list<array{purchase_order_id: int, purchase_order_slug: string, reference: string, is_open: bool, submitted_at: string|null, deposit_paid_at: string|null, deposit_paid_amount: float, placed_by: string|null, supplier_id: int|null, supplier_slug: string|null, supplier_code: string|null, supplier_name: string|null, supplier_company: string|null, supplier_nickname: string|null, total: float, requested: float, paid_to_supplier: float, advance_percentage: float, advance_due: float, balance_due: float, products: string}>}
+     * @return array{currency_code: string, wallet: array{received: float, paid: float, balance: float}, credit_available: float, shipments: list<array{stock_delivery_id: int, stock_delivery_slug: string, reference: string, state: string|null, charges: list<array{type: string, label: string, amount: float}>, total: float, requested: float, due: float}>, expenses: list<array{agent_payment_id: int, type: string, type_label: string, date: string, amount: float, requested: float, due: float, reference: string|null, notes: string|null, supplier_code: string|null, supplier_name: string|null, purchase_order_reference: string|null, purchase_order_slug: string|null, receipt: string|null}>, orders: list<array{purchase_order_id: int, purchase_order_slug: string, reference: string, is_open: bool, submitted_at: string|null, deposit_paid_at: string|null, deposit_paid_amount: float, placed_by: string|null, supplier_id: int|null, supplier_slug: string|null, supplier_code: string|null, supplier_name: string|null, supplier_company: string|null, supplier_nickname: string|null, total: float, requested: float, paid_to_supplier: float, advance_percentage: float, advance_due: float, balance_due: float, products: string}>, skipped: list<array{kind: string, due: float, at: string|null, by: string|null, reason: string|null, order: array<string, mixed>|null, shipment: array<string, mixed>|null, expense: array<string, mixed>|null}>}
      */
     public function handle(Agent $agent, Organisation $client, ?int $purchaseOrderId = null): array
     {
@@ -45,15 +45,84 @@ class GetAgentMoneyRequestLines
             ->first(fn (array $wallet) => $wallet['organisation_id'] === $client->id && $wallet['currency_code'] === $currency->code)
             ?? ['received' => 0.0, 'paid' => 0.0, 'balance' => 0.0];
 
-        $shipments = $purchaseOrderId ? [] : $this->shipments($agent, $client, $currency->id);
+        $shipments = $purchaseOrderId ? [] : array_values(array_filter($this->shipments($agent, $client, $currency->id), fn (array $shipment) => $shipment['due'] > 0));
+        $expenses  = $purchaseOrderId ? [] : $this->expenses($agent, $client, $currency->id);
+        $orders    = $this->orders($agent, $client, $currency->id, $purchaseOrderId);
+        $skipped   = [];
+
+        $orderSkips = $this->skipsOf('purchase_orders', array_column($orders, 'purchase_order_id'));
+        foreach ($orders as $index => $order) {
+            foreach ([DepositRequestItemKindEnum::ADVANCE->value => 'advance_due', DepositRequestItemKindEnum::BALANCE->value => 'balance_due'] as $kind => $dueKey) {
+                if ($order[$dueKey] > 0 && ($skip = $orderSkips[$order['purchase_order_id']][$kind] ?? null)) {
+                    $skipped[]               = $this->skippedLine($kind, $order[$dueKey], $skip, order: $order);
+                    $orders[$index][$dueKey] = 0.0;
+                }
+            }
+        }
+
+        $shipmentSkips = $this->skipsOf('stock_deliveries', array_column($shipments, 'stock_delivery_id'));
+        foreach ($shipments as $shipment) {
+            if ($skip = $shipmentSkips[$shipment['stock_delivery_id']][DepositRequestItemKindEnum::SHIPMENT->value] ?? null) {
+                $skipped[] = $this->skippedLine(DepositRequestItemKindEnum::SHIPMENT->value, $shipment['due'], $skip, shipment: $shipment);
+            }
+        }
+
+        $expenseSkips = $this->skipsOf('agent_payments', array_column($expenses, 'agent_payment_id'));
+        foreach ($expenses as $expense) {
+            if ($skip = $expenseSkips[$expense['agent_payment_id']][DepositRequestItemKindEnum::EXPENSE->value] ?? null) {
+                $skipped[] = $this->skippedLine(DepositRequestItemKindEnum::EXPENSE->value, $expense['due'], $skip, expense: $expense);
+            }
+        }
 
         return [
             'currency_code'    => $currency->code,
             'wallet'           => ['received' => $wallet['received'], 'paid' => $wallet['paid'], 'balance' => $wallet['balance']],
             'credit_available' => self::creditAvailable($agent, $client),
-            'shipments'        => array_values(array_filter($shipments, fn (array $shipment) => $shipment['due'] > 0)),
-            'expenses'         => $purchaseOrderId ? [] : $this->expenses($agent, $client, $currency->id),
-            'orders'           => $this->orders($agent, $client, $currency->id, $purchaseOrderId),
+            'shipments'        => array_values(array_filter($shipments, fn (array $shipment) => !isset($shipmentSkips[$shipment['stock_delivery_id']][DepositRequestItemKindEnum::SHIPMENT->value]))),
+            'expenses'         => array_values(array_filter($expenses, fn (array $expense) => !isset($expenseSkips[$expense['agent_payment_id']][DepositRequestItemKindEnum::EXPENSE->value]))),
+            'orders'           => array_values(array_filter($orders, fn (array $order) => $order['advance_due'] > 0 || $order['balance_due'] > 0)),
+            'skipped'          => $skipped,
+        ];
+    }
+
+    /**
+     * The lines the agent skipped because the money reached it outside a request, by id and kind.
+     *
+     * @param  list<int>  $ids
+     * @return array<int, array<string, array{at?: string, by?: string|null, reason?: string|null}>>
+     */
+    private function skipsOf(string $table, array $ids): array
+    {
+        if (!$ids) {
+            return [];
+        }
+
+        return DB::table($table)
+            ->whereIn('id', $ids)
+            ->whereRaw('data->? is not null', [SkipAgentMoneyRequestLine::DATA_KEY])
+            ->get(['id', DB::raw('data->\''.SkipAgentMoneyRequestLine::DATA_KEY.'\' as skips')])
+            ->mapWithKeys(fn ($row) => [(int) $row->id => json_decode((string) $row->skips, true) ?: []])
+            ->all();
+    }
+
+    /**
+     * @param  array{at?: string, by?: string|null, reason?: string|null}  $skip
+     * @param  array<string, mixed>|null  $order
+     * @param  array<string, mixed>|null  $shipment
+     * @param  array<string, mixed>|null  $expense
+     * @return array{kind: string, due: float, at: string|null, by: string|null, reason: string|null, order: array<string, mixed>|null, shipment: array<string, mixed>|null, expense: array<string, mixed>|null}
+     */
+    private function skippedLine(string $kind, float $due, array $skip, ?array $order = null, ?array $shipment = null, ?array $expense = null): array
+    {
+        return [
+            'kind'     => $kind,
+            'due'      => $due,
+            'at'       => $skip['at'] ?? null,
+            'by'       => $skip['by'] ?? null,
+            'reason'   => $skip['reason'] ?? null,
+            'order'    => $order,
+            'shipment' => $shipment,
+            'expense'  => $expense,
         ];
     }
 
