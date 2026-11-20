@@ -46,6 +46,7 @@ class GetFirstLoadProps
         'Actions/SysAdmin/User/UI/GetUserOrganisationLayout.php',
         'Actions/Chat/WithChatNavigation.php',
         'Actions/Chat/WithChatAgentAuthorisation.php',
+        'Actions/Dispatching/CrossDispatch/UI/IndexCrossDispatchSettings.php',
         'Actions/Goods/ProductDevelopment/ProductDevelopmentAccess.php',
         'Actions/Traits/Authorisations/WithShopPpcPermissions.php',
     ];

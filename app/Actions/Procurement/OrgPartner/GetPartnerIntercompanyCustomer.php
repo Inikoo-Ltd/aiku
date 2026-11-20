@@ -35,11 +35,7 @@ class GetPartnerIntercompanyCustomer
             ->first();
 
         if ($customer) {
-            $orgPartner->update([
-                'data' => array_replace_recursive($orgPartner->data ?? [], [
-                    'intercompany_customers' => [$shopId => $customer->id],
-                ]),
-            ]);
+            $orgPartner->mergeIntoData('intercompany_customers', [$shopId => $customer->id]);
         }
 
         return $customer;

@@ -33,9 +33,7 @@ class UpdatePartnerLeadTimeEstimate extends OrgAction
             'Lead time is measured from delivery history and cannot be overridden'
         );
 
-        $data = $orgPartner->data;
-        data_set($data, 'shopping.lead_time_days', (int) $modelData['lead_time_days']);
-        $orgPartner->update(['data' => $data]);
+        $orgPartner->mergeIntoData('shopping', ['lead_time_days' => (int) $modelData['lead_time_days']]);
 
         return $orgPartner;
     }

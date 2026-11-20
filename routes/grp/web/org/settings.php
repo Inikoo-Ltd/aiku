@@ -6,6 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Dispatching\CrossDispatch\UI\IndexCrossDispatchSettings;
+use App\Actions\Dispatching\CrossDispatch\UpdateCrossDispatchSettings;
 use App\Actions\Helpers\GoogleDrive\CallbackClientGoogleDrive;
 use App\Actions\SysAdmin\Organisation\UI\EditOrganisationSettings;
 use App\Actions\SysAdmin\Organisation\UI\IndexHistoryInOrganisationSetting;
@@ -14,3 +16,5 @@ use Illuminate\Support\Facades\Route;
 Route::get('', EditOrganisationSettings::class)->name('edit');
 Route::get("google-drive-callback", [CallbackClientGoogleDrive::class, 'callback'])->name('google_drive.callback');
 Route::get('changelogs', IndexHistoryInOrganisationSetting::class)->name('changelogs');
+Route::get('dispatch-from-other-warehouses', IndexCrossDispatchSettings::class)->name('cross_dispatch.index');
+Route::patch('dispatch-from-other-warehouses/{orgPartner}', UpdateCrossDispatchSettings::class)->name('cross_dispatch.update');

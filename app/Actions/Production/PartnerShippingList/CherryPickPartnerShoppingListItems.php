@@ -236,11 +236,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
             'as_organisation_id' => $buyer->id,
         ], strict: false);
 
-        $orgPartner->update([
-            'data' => array_replace_recursive($orgPartner->data, [
-                'intercompany_customers' => [$shop->id => $customer->id],
-            ]),
-        ]);
+        $orgPartner->mergeIntoData('intercompany_customers', [$shop->id => $customer->id]);
 
         return $customer;
     }

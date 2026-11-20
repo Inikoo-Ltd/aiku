@@ -22,6 +22,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use RuntimeException;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use App\Models\Traits\HasHistory;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -43,9 +47,32 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPartner query()
  * @mixin \Eloquent
  */
-class OrgPartner extends Model
+class OrgPartner extends Model implements Auditable
 {
     use InOrganisation;
+    use HasHistory;
+
+    public const array CROSS_DISPATCH_DEFAULTS = [
+        'enabled_by_origin'       => false,
+        'enabled_by_dispatcher'   => false,
+        'goods_price_basis'       => 'dispatcher_cost',
+        'dispatch_fee_per_parcel' => 0,
+        'shipping_pass_through'   => 'at_cost',
+        'settlement_period'       => 'monthly',
+        'allow_customs_crossing'  => false,
+        'tax_treatment'           => 'origin_shop_rules',
+    ];
+
+    public const array CROSS_DISPATCH_OPTIONS = [
+        'goods_price_basis'     => ['dispatcher_cost'],
+        'shipping_pass_through' => ['at_cost'],
+        'settlement_period'     => ['weekly', 'monthly', 'quarterly'],
+        'tax_treatment'         => ['origin_shop_rules'],
+    ];
+
+    protected array $auditInclude = [
+        'status',
+    ];
 
     protected $casts = [
         'sources'           => 'array',
@@ -64,6 +91,56 @@ class OrgPartner extends Model
     protected $guarded = [];
 
 
+
+    public function generateTags(): array
+    {
+        return [
+            'procurement',
+        ];
+    }
+
+    /**
+     * Terms for orders of this row's organisation dispatched by its partner's warehouse; a missing key reads as its default.
+     *
+     * @return array{enabled_by_origin: bool, enabled_by_dispatcher: bool, goods_price_basis: string, dispatch_fee_per_parcel: float, shipping_pass_through: string, settlement_period: string, allow_customs_crossing: bool, tax_treatment: string}
+     */
+    public function crossDispatchSettings(): array
+    {
+        $settings = array_merge(
+            self::CROSS_DISPATCH_DEFAULTS,
+            Arr::only((array) Arr::get($this->data ?? [], 'cross_dispatch', []), array_keys(self::CROSS_DISPATCH_DEFAULTS))
+        );
+
+        foreach (['enabled_by_origin', 'enabled_by_dispatcher', 'allow_customs_crossing'] as $flag) {
+            $settings[$flag] = (bool) $settings[$flag];
+        }
+        $settings['dispatch_fee_per_parcel'] = (float) $settings['dispatch_fee_per_parcel'];
+
+        return $settings;
+    }
+
+    /**
+     * Sets keys under one top-level key of data in a single statement on the stored row, so a writer holding an older copy of the model never brings back or wipes what another writer put under a different key.
+     *
+     * @param  array<int|string, mixed>  $values
+     */
+    public function mergeIntoData(string $key, array $values): void
+    {
+        DB::update(
+            "update org_partners set data = jsonb_set(coalesce(data, '{}'::jsonb), array[?::text], coalesce(data -> ?::text, '{}'::jsonb) || ?::jsonb), updated_at = now() where id = ?",
+            [$key, $key, json_encode((object) $values), $this->id]
+        );
+
+        $this->data = static::whereKey($this->id)->value('data');
+        $this->syncOriginalAttribute('data');
+    }
+
+    public function isCrossDispatchEnabled(): bool
+    {
+        $settings = $this->crossDispatchSettings();
+
+        return $settings['enabled_by_origin'] && $settings['enabled_by_dispatcher'];
+    }
 
     public function stats(): HasOne
     {

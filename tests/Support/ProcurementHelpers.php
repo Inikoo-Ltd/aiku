@@ -589,3 +589,32 @@ function madeBySeller(\App\Models\Inventory\OrgStock $sellerOrgStock): \App\Mode
             'org_stock_id' => $sellerOrgStock->id,
         ]);
 }
+
+/**
+ * The direction "orders of $origin (given a dropshipping shop) dispatched by $dispatcher's warehouse" (a second company made for it when none is given), with its cross-dispatch settings wiped back to the defaults.
+ */
+function crossDispatchDirection(Organisation $origin, ?Organisation $dispatcher = null): \App\Models\Procurement\OrgPartner
+{
+    $dispatcher ??= Organisation::where('code', 'xdw2')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($origin->group, array_merge(Organisation::factory()->definition(), ['code' => 'xdw2', 'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP]));
+
+    $orgPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $origin->id)->where('partner_id', $dispatcher->id)->first()
+        ?? \App\Actions\Procurement\OrgPartner\StoreOrgPartner::make()->action($origin, $dispatcher);
+
+    Shop::where('organisation_id', $origin->id)->where('type', \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING)->exists()
+        || StoreShop::make()->action($origin, array_merge(Shop::factory()->definition(), ['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]));
+    \App\Models\Inventory\Warehouse::where('organisation_id', $dispatcher->id)->exists()
+        || \App\Actions\Inventory\Warehouse\StoreWarehouse::run($dispatcher, \App\Models\Inventory\Warehouse::factory()->definition());
+
+    $orgPartner->update(['data' => \Illuminate\Support\Arr::except($orgPartner->data ?? [], 'cross_dispatch')]);
+
+    return $orgPartner->refresh();
+}
+
+function userWithOnlyPermissions(Organisation $organisation, array $permissions): User
+{
+    $user = User::factory()->create(['group_id' => $organisation->group_id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($user, $permissions);
+
+    return $user->refresh();
+}

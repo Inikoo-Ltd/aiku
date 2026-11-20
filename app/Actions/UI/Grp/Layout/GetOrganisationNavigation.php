@@ -13,6 +13,7 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatNavigation;
+use App\Actions\Dispatching\CrossDispatch\UI\IndexCrossDispatchSettings;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -513,6 +514,18 @@ class GetOrganisationNavigation
                     'parameters' => [$organisation->slug],
                 ],
             ];
+
+            if (IndexCrossDispatchSettings::canBeManagedBy($user, $organisation) && IndexCrossDispatchSettings::directionsQuery($organisation)->exists()) {
+                $navigation['setting']['topMenu']['subSections'][] = [
+                    'label'   => __('Dispatch from other warehouses'),
+                    'icon'    => ['fal', 'fa-truck-container'],
+                    'root'    => 'grp.org.settings.cross_dispatch.',
+                    'route'   => [
+                        'name'       => 'grp.org.settings.cross_dispatch.index',
+                        'parameters' => [$organisation->slug],
+                    ],
+                ];
+            }
         }
 
         return $navigation;

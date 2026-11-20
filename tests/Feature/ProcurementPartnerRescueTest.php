@@ -8,7 +8,18 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Dispatching\CrossDispatch\UpdateCrossDispatchSettings;
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Inventory\Warehouse\StoreWarehouse;
+use App\Actions\SysAdmin\Organisation\StoreOrganisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Models\Catalogue\Shop;
+use App\Models\Inventory\Warehouse;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
@@ -531,4 +542,200 @@ test('partner showcase lists the customer account the partner buys under', funct
 
     expect(collect($accounts)->pluck('reference'))->toContain($customer->reference)
         ->and(collect($accounts)->firstWhere('reference', $customer->reference)['shop'])->toBe($shop->name);
+});
+
+test('dispatch from other warehouses is off by default, with the default terms and nothing stored', function () {
+    $orgPartner = crossDispatchDirection($this->organisation);
+
+    expect($orgPartner->data)->not->toHaveKey('cross_dispatch')
+        ->and($orgPartner->isCrossDispatchEnabled())->toBeFalse()
+        ->and($orgPartner->crossDispatchSettings())->toBe([
+            'enabled_by_origin'       => false,
+            'enabled_by_dispatcher'   => false,
+            'goods_price_basis'       => 'dispatcher_cost',
+            'dispatch_fee_per_parcel' => 0.0,
+            'shipping_pass_through'   => 'at_cost',
+            'settlement_period'       => 'monthly',
+            'allow_customs_crossing'  => false,
+            'tax_treatment'           => 'origin_shop_rules',
+        ]);
+});
+
+test('each company switches only its own side, and a direction is on once both have', function () {
+    $orgPartner = crossDispatchDirection($this->organisation);
+    $dispatcher = $orgPartner->partner;
+    $dataBefore = $orgPartner->data;
+
+    userWithOnlyPermissions($this->organisation, ['org-admin.'.$this->organisation->id]);
+    $this->patch(route('grp.org.settings.cross_dispatch.update', [$this->organisation->slug, $orgPartner->id]), [
+        'enabled'               => true,
+        'enabled_by_dispatcher' => true,
+    ])->assertRedirect();
+
+    $orgPartner->refresh();
+    expect($orgPartner->crossDispatchSettings()['enabled_by_origin'])->toBeTrue()
+        ->and($orgPartner->crossDispatchSettings()['enabled_by_dispatcher'])->toBeFalse()
+        ->and($orgPartner->isCrossDispatchEnabled())->toBeFalse()
+        ->and(Arr::except($orgPartner->data, 'cross_dispatch'))->toBe($dataBefore);
+
+    userWithOnlyPermissions($this->organisation, ['org-admin.'.$dispatcher->id]);
+    $this->patch(route('grp.org.settings.cross_dispatch.update', [$dispatcher->slug, $orgPartner->id]), [
+        'enabled'                 => true,
+        'dispatch_fee_per_parcel' => 1.5,
+        'settlement_period'       => 'quarterly',
+    ])->assertRedirect();
+
+    $orgPartner->refresh();
+    expect($orgPartner->isCrossDispatchEnabled())->toBeTrue()
+        ->and($orgPartner->crossDispatchSettings()['dispatch_fee_per_parcel'])->toBe(1.5)
+        ->and($orgPartner->crossDispatchSettings()['settlement_period'])->toBe('quarterly');
+
+    $this->patch(route('grp.org.settings.cross_dispatch.update', [$dispatcher->slug, $orgPartner->id]), ['enabled' => false])->assertRedirect();
+
+    $orgPartner->refresh();
+    expect($orgPartner->isCrossDispatchEnabled())->toBeFalse()
+        ->and($orgPartner->crossDispatchSettings()['enabled_by_origin'])->toBeTrue();
+
+    $this->patch(route('grp.org.settings.cross_dispatch.update', [$dispatcher->slug, $orgPartner->id]), ['settlement_period' => 'daily'])
+        ->assertSessionHasErrors('settlement_period');
+});
+
+test('only an organisation admin of one of the two companies changes the dispatch from other warehouses settings', function () {
+    $orgPartner = crossDispatchDirection($this->organisation);
+    $dispatcher = $orgPartner->partner;
+    $outsider   = Organisation::where('code', 'xdw3')->first()
+        ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'xdw3', 'type' => OrganisationTypeEnum::SHOP]));
+
+    userWithOnlyPermissions($this->organisation, ['org-admin.'.$this->organisation->id, 'org-admin.'.$outsider->id]);
+    $this->patch(route('grp.org.settings.cross_dispatch.update', [$dispatcher->slug, $orgPartner->id]), ['enabled' => true])->assertForbidden();
+    $this->get(route('grp.org.settings.cross_dispatch.index', [$dispatcher->slug]))->assertForbidden();
+    $this->patch(route('grp.org.settings.cross_dispatch.update', [$outsider->slug, $orgPartner->id]), ['enabled' => true])->assertNotFound();
+
+    $hiddenPair = OrgPartner::where('organisation_id', $this->organisation->id)->where('partner_id', $outsider->id)->firstOrFail();
+    userWithOnlyPermissions($this->organisation, ['org-admin.'.$this->organisation->id]);
+    $this->patch(route('grp.org.settings.cross_dispatch.update', [$this->organisation->slug, $hiddenPair->id]), ['enabled' => true])->assertNotFound();
+    expect(fn () => UpdateCrossDispatchSettings::make()->action($orgPartner, $outsider, ['enabled' => true]))->toThrow(NotFoundHttpException::class)
+        ->and($hiddenPair->refresh()->data)->not->toHaveKey('cross_dispatch');
+
+    userWithOnlyPermissions($this->organisation, []);
+    $this->patch(route('grp.org.settings.cross_dispatch.update', [$outsider->slug, $orgPartner->id]), ['enabled' => true])->assertForbidden();
+
+    userWithOnlyPermissions($this->organisation, ["org-supervisor.{$this->organisation->id}.procurement"]);
+    $this->patch(route('grp.org.settings.cross_dispatch.update', [$this->organisation->slug, $orgPartner->id]), ['enabled' => true])->assertForbidden();
+
+    expect($orgPartner->refresh()->data)->not->toHaveKey('cross_dispatch');
+});
+
+test('changes to the dispatch from other warehouses settings are kept in the history', function () {
+    OrgPartner::enableAuditing();
+    $orgPartner  = crossDispatchDirection($this->organisation);
+    $admin       = userWithOnlyPermissions($this->organisation, ['org-admin.'.$this->organisation->id]);
+    $auditsCount = $orgPartner->audits()->count();
+
+    $this->patch(route('grp.org.settings.cross_dispatch.update', [$this->organisation->slug, $orgPartner->id]), [
+        'enabled'                 => true,
+        'dispatch_fee_per_parcel' => 0,
+        'settlement_period'       => 'monthly',
+    ])->assertRedirect();
+
+    $audit = $orgPartner->audits()->orderByDesc('id')->first();
+    expect($orgPartner->audits()->count())->toBe($auditsCount + 1)
+        ->and($audit->event)->toBe('updated')
+        ->and($audit->user_id)->toBe($admin->id)
+        ->and($audit->new_values)->toBe(['data.cross_dispatch.enabled_by_origin' => true]);
+
+    $this->patch(route('grp.org.settings.cross_dispatch.update', [$this->organisation->slug, $orgPartner->id]), ['enabled' => true])->assertRedirect();
+    expect($orgPartner->audits()->count())->toBe($auditsCount + 1);
+});
+
+test('the dispatch from other warehouses settings and the other keys of the partner row never overwrite each other from an old copy', function () {
+    $orgPartner = crossDispatchDirection($this->organisation);
+    $dispatcher = $orgPartner->partner;
+    $dataBefore = $orgPartner->data;
+
+    try {
+        $oldCopy = OrgPartner::find($orgPartner->id);
+        UpdateCrossDispatchSettings::make()->action($orgPartner, $this->organisation, ['enabled' => true]);
+        $oldCopy->mergeIntoData('shopping', ['lead_time_days' => 7]);
+        $oldCopy->mergeIntoData('intercompany_customers', [987654 => 5]);
+
+        expect($oldCopy->data)->toBe($orgPartner->fresh()->data)
+            ->and($oldCopy->crossDispatchSettings()['enabled_by_origin'])->toBeTrue()
+            ->and(data_get($oldCopy->data, 'shopping.lead_time_days'))->toBe(7);
+
+        $oldCopy = OrgPartner::find($orgPartner->id);
+        UpdateCrossDispatchSettings::make()->action($orgPartner, $this->organisation, ['enabled' => false]);
+        OrgPartner::find($orgPartner->id)->mergeIntoData('intercompany_customers', [987655 => 6]);
+        UpdateCrossDispatchSettings::make()->action($oldCopy, $dispatcher, ['enabled' => true]);
+
+        $stored = $orgPartner->fresh();
+        expect($stored->crossDispatchSettings()['enabled_by_origin'])->toBeFalse()
+            ->and($stored->crossDispatchSettings()['enabled_by_dispatcher'])->toBeTrue()
+            ->and($stored->data['intercompany_customers'])->toMatchArray([987654 => 5, 987655 => 6])
+            ->and(data_get($stored->data, 'shopping.lead_time_days'))->toBe(7);
+    } finally {
+        $orgPartner->fresh()->update(['data' => $dataBefore]);
+    }
+});
+
+test('the dispatch from other warehouses screen shows the history of a direction to the admins of both companies', function () {
+    OrgPartner::enableAuditing();
+    $orgPartner = crossDispatchDirection($this->organisation);
+    $dispatcher = $orgPartner->partner;
+
+    $admin = userWithOnlyPermissions($this->organisation, ['org-admin.'.$dispatcher->id]);
+    $this->patch(route('grp.org.settings.cross_dispatch.update', [$dispatcher->slug, $orgPartner->id]), ['enabled' => true])->assertRedirect();
+
+    $audit = $orgPartner->audits()->orderByDesc('id')->first();
+    expect($audit->new_values)->toBe(['data.cross_dispatch.enabled_by_dispatcher' => true])
+        ->and($audit->organisation_id)->toBe($this->organisation->id);
+
+    $listsTheChange = fn (AssertableInertia $page) => $page
+        ->where('history.data', fn ($rows) => collect($rows)->contains(
+            fn (array $row) => $row['id'] === $audit->id
+                && $row['user_id'] === $admin->id
+                && $row['record'] === $this->organisation->name.' → '.$dispatcher->name
+                && $row['new_values'] === ['data.cross_dispatch.enabled_by_dispatcher' => true]
+        ))
+        ->etc();
+
+    $this->get(route('grp.org.settings.cross_dispatch.index', [$dispatcher->slug]))->assertInertia($listsTheChange);
+
+    userWithOnlyPermissions($this->organisation, ['org-admin.'.$this->organisation->id]);
+    $this->get(route('grp.org.settings.cross_dispatch.index', [$this->organisation->slug]))->assertInertia($listsTheChange);
+});
+
+test('the dispatch from other warehouses screen lists both directions of the organisation, each with its own switch', function () {
+    $outgoing   = crossDispatchDirection($this->organisation);
+    $dispatcher = $outgoing->partner;
+    $incoming   = crossDispatchDirection($dispatcher, $this->organisation);
+    $shop       = createShop()[2];
+    $shopType   = $shop->type;
+    $otherShop  = Shop::where('organisation_id', $dispatcher->id)->first()
+        ?? StoreShop::make()->action($dispatcher, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::DROPSHIPPING]));
+    createWarehouse();
+    Warehouse::where('organisation_id', $dispatcher->id)->exists() || StoreWarehouse::run($dispatcher, Warehouse::factory()->definition());
+
+    try {
+        $shop->updateQuietly(['type' => ShopTypeEnum::DROPSHIPPING]);
+        $otherShop->updateQuietly(['type' => ShopTypeEnum::DROPSHIPPING]);
+        UpdateCrossDispatchSettings::make()->action($outgoing, $dispatcher, ['enabled' => true]);
+
+        userWithOnlyPermissions($this->organisation, ['org-admin.'.$this->organisation->id]);
+        $this->get(route('grp.org.settings.cross_dispatch.index', [$this->organisation->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Org/Dispatching/CrossDispatchSettings')
+                ->where('options.settlement_period', ['weekly', 'monthly', 'quarterly'])
+                ->where('data.data', function ($rows) use ($outgoing, $incoming, $dispatcher) {
+                    $rows = collect($rows)->keyBy('id');
+
+                    return $rows->every(fn (array $row) => $row['origin_name'] !== $row['dispatcher_name'])
+                        && Arr::only($rows[$outgoing->id], ['is_origin', 'our_enabled', 'their_enabled', 'is_on', 'currency_code']) === ['is_origin' => true, 'our_enabled' => false, 'their_enabled' => true, 'is_on' => false, 'currency_code' => $dispatcher->currency->code]
+                        && Arr::only($rows[$incoming->id], ['is_origin', 'our_enabled', 'their_enabled']) === ['is_origin' => false, 'our_enabled' => false, 'their_enabled' => false]
+                        && $rows[$incoming->id]['update_route']['parameters'] === [$this->organisation->slug, $incoming->id];
+                })
+                ->etc());
+    } finally {
+        $shop->updateQuietly(['type' => $shopType]);
+    }
 });
