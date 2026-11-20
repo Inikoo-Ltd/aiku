@@ -34,6 +34,7 @@ use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\Production\PartnerShippingList\AssignToProduceLinesAutomatically;
+use App\Actions\Production\PartnerShippingList\NotifyProductionShortfall;
 use App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -235,8 +236,13 @@ class SubmitOrder extends OrgAction
             CustomerHydrateBasket::run($order->customer_id);
         }
 
-        StoreToProduceItemsFromOrder::run($order);
-        DB::afterCommit(fn () => rescue(fn () => AssignToProduceLinesAutomatically::run($order)));
+        $toProduceLineIds = collect(StoreToProduceItemsFromOrder::run($order))->pluck('id')->all();
+        DB::afterCommit(function () use ($order, $toProduceLineIds) {
+            rescue(fn () => AssignToProduceLinesAutomatically::run($order));
+            if ($toProduceLineIds) {
+                rescue(fn () => NotifyProductionShortfall::dispatch($order, $toProduceLineIds));
+            }
+        });
 
         $this->orderHydrators($order);
         $this->orderHandlingHydrators($order, $oldState);

@@ -40,6 +40,7 @@ enum UserNotificationEnum: string
     case GOOGLE_ADS_CLICK_CAPTURE_DROP = 'google_ads_click_capture_drop';
     case MANUFACTURE_PAYROLL_CHANGED = 'manufacture_payroll_changed';
     case MANUFACTURE_OVERTIME_REMINDER = 'manufacture_overtime_reminder';
+    case PRODUCTION_SHORTFALL = 'production_shortfall';
     case SALES_LEAD = 'sales_lead';
     case RESTOCK_QUESTION = 'restock_question';
     case ASSISTANT_QUESTION = 'assistant_question';
@@ -103,6 +104,7 @@ enum UserNotificationEnum: string
             self::GOOGLE_ADS_CLICK_CAPTURE_DROP => __('Aiku recorded fewer than 85% of yesterday\'s Google Ads clicks of a shop I market'),
             self::MANUFACTURE_PAYROLL_CHANGED   => __('The production manager changes a week already locked for payroll'),
             self::MANUFACTURE_OVERTIME_REMINDER => __('On Monday, the overtime of last week nobody has approved or rejected yet, before payroll locks'),
+            self::PRODUCTION_SHORTFALL          => __('An order needs products made that are not in stock, and they wait on the To Produce board'),
             self::PURCHASE_ORDER_MINIMUM_POKE   => __('Another organisation asks me to add to my draft to reach a supplier minimum (email and Slack come grouped every 15 minutes)'),
             self::SALES_LEAD                    => __('A customer of my organisation asks the AI assistant for a call about a big order, and when nobody has taken it yet'),
             self::RESTOCK_QUESTION              => __('A customer of my organisation asks the AI assistant when a product will be back in stock and we have no reliable date, and when nobody has answered yet'),
@@ -140,6 +142,10 @@ enum UserNotificationEnum: string
 
         if ($this === self::GOOGLE_ADS_CLICK_CAPTURE_DROP || $this === self::MANUFACTURE_PAYROLL_CHANGED || $this === self::MANUFACTURE_OVERTIME_REMINDER || in_array($this, self::PROCUREMENT_EVENTS, true)) {
             return ['email'];
+        }
+
+        if ($this === self::PRODUCTION_SHORTFALL) {
+            return ['email', 'browser'];
         }
 
         if ($this === self::SALES_LEAD || $this === self::RESTOCK_QUESTION || $this === self::ASSISTANT_QUESTION) {
@@ -188,6 +194,7 @@ enum UserNotificationEnum: string
             self::GOOGLE_ADS_CLICK_CAPTURE_DROP => 'fal fa-chart-line-down',
             self::MANUFACTURE_PAYROLL_CHANGED   => 'fal fa-lock',
             self::MANUFACTURE_OVERTIME_REMINDER => 'fal fa-user-clock',
+            self::PRODUCTION_SHORTFALL          => 'fal fa-industry-alt',
             self::SALES_LEAD                    => 'fal fa-phone-alt',
             self::RESTOCK_QUESTION              => 'fal fa-box-open',
             self::ASSISTANT_QUESTION            => 'fal fa-head-side-brain',

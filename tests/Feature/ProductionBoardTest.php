@@ -2572,3 +2572,58 @@ test('a backlog card and a job whose recipe uses a product made here flag what s
     $puckJobLine->tasks()->update(['state' => \App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum::DONE]);
     expect(\App\Actions\Production\JobOrder\GetMadeIngredientShortfalls::run($this->production)['job_items'])->not->toHaveKey($puckJobLine->id);
 });
+
+test('an order short of a product made in-house tells the floor supervisors, and nobody once the line is already on a job', function () {
+    [, , $shop] = createShop();
+    [, $product] = createProduct($shop);
+    $orgStock    = $product->orgStocks()->first();
+    $product->update(['code' => $orgStock->code.'-short']);
+    if (!Artefact::where('organisation_id', $shop->organisation_id)->where('org_stock_id', $orgStock->id)->exists()) {
+        StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'SHORT-01', 'name' => 'Short'])
+            ->update(['org_stock_id' => $orgStock->id]);
+    }
+    $customer = createCustomer($shop);
+    $order    = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'SHORT-'.uniqid(),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => 3]));
+    $orgStock->update(['quantity_in_locations' => 2, 'quantity_available' => 2]);
+    $lines = \App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::run($order->refresh());
+    expect($lines)->toHaveCount(1);
+
+    $production   = Artefact::where('org_stock_id', $orgStock->id)->first()->production;
+    $staffOf      = function (string $name, ?string $positionCode) use ($production) {
+        $employee = \App\Actions\HumanResources\Employee\StoreEmployee::make()->action($production->organisation, array_merge(\App\Models\HumanResources\Employee::factory()->definition(), ['contact_name' => $name, 'state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING->value]));
+        if ($positionCode) {
+            $employee->jobPositions()->attach($production->organisation->jobPositions()->where('code', $positionCode)->first()->id, ['group_id' => $production->group_id, 'organisation_id' => $production->organisation_id]);
+        }
+        $user = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($production->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+        $user->employees()->attach($employee->id, ['status' => true, 'group_id' => $production->group_id, 'organisation_id' => $production->organisation_id]);
+        $user->givePermissionTo("productions_operations.$production->id");
+
+        return $user->refresh();
+    };
+    $supervisor = $staffOf('Shortfall Supervisor', 'prod-m');
+    $picker     = $staffOf('Shortfall Picker', null);
+
+    \Illuminate\Support\Facades\Notification::fake();
+    \App\Actions\Production\PartnerShippingList\NotifyProductionShortfall::run($order, [$lines[0]->id]);
+    \Illuminate\Support\Facades\Notification::assertSentTo($supervisor, \App\Notifications\ProductionShortfallNotification::class, fn (\App\Notifications\ProductionShortfallNotification $notification) => $notification->lines === [$orgStock->code.' '.$orgStock->name.': 1']
+        && str_contains($notification->url(), 'to-produce'));
+    \Illuminate\Support\Facades\Notification::assertNotSentTo($picker, \App\Notifications\ProductionShortfallNotification::class);
+
+    $fill = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FILL-SHORT-'.uniqid(), 'name' => 'Fill short']);
+    $fill->update(['settings' => ['fills_size' => 'short'], 'org_stock_id' => null]);
+    \Illuminate\Support\Facades\Notification::fake();
+    expect(\App\Actions\Production\PartnerShippingList\NotifyProductionShortfall::run($order, [$lines[0]->id]))->toBe(0);
+    $fill->update(['settings' => []]);
+
+    $lines[0]->update(['job_order_id' => \App\Actions\Production\JobOrder\StoreJobOrder::make()->action($production, [])->id]);
+    \Illuminate\Support\Facades\Notification::fake();
+    expect(\App\Actions\Production\PartnerShippingList\NotifyProductionShortfall::run($order, [$lines[0]->id]))->toBe(0);
+    \Illuminate\Support\Facades\Notification::assertNothingSent();
+});
