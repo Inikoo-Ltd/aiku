@@ -196,6 +196,7 @@ use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Models\Ordering\Adjustment;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Imports\Ordering\TransactionImport;
+use App\Imports\Dropshipping\CustomerSalesChannelPortfoliosImport;
 use App\Models\Helpers\Upload;
 use App\Models\Helpers\TaxCategory;
 use App\Actions\Ordering\Order\UI\IndexOrderChannels;
@@ -2824,6 +2825,46 @@ test('transaction import matches codes in any case and accepts products outside 
 
     expect($record->refresh()->status)->toBe(UploadRecordStatusEnum::COMPLETE->value)
         ->and($order->transactions()->where('model_type', 'Product')->pluck('model_id')->all())->toBe([$this->product->id]);
+});
+
+test('portfolio import matches skus in any case', function () {
+    $this->product->updateQuietly(['is_for_sale' => true]);
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        Platform::where('type', PlatformTypeEnum::MANUAL)->first(),
+        []
+    );
+
+    $upload = Upload::create([
+        'group_id'          => $customerSalesChannel->group_id,
+        'organisation_id'   => $customerSalesChannel->organisation_id,
+        'model'             => 'Portfolio',
+        'parent_type'       => $customerSalesChannel->getMorphClass(),
+        'parent_id'         => $customerSalesChannel->id,
+        'original_filename' => 'test.xlsx',
+        'filename'          => 'test.xlsx',
+        'filesize'          => 0,
+        'number_rows'       => 0,
+        'number_success'    => 0,
+        'number_fails'      => 0,
+    ]);
+
+    $record = $upload->records()->create([
+        'values' => [],
+        'status' => UploadRecordStatusEnum::PROCESSING,
+    ]);
+
+    $code = $this->product->code;
+    $notForSaleTwin = $this->product->replicate();
+    $notForSaleTwin->slug = $this->product->slug.'-twin';
+    $notForSaleTwin->is_for_sale = false;
+    $notForSaleTwin->saveQuietly();
+
+    (new CustomerSalesChannelPortfoliosImport($customerSalesChannel, $upload))
+        ->storeModel(collect(['sku' => mb_strtolower($code) === $code ? mb_strtoupper($code) : mb_strtolower($code)]), $record);
+
+    expect($record->refresh()->status)->toBe(UploadRecordStatusEnum::COMPLETE->value)
+        ->and($customerSalesChannel->portfolios()->pluck('item_id')->all())->toBe([$this->product->id]);
 });
 
 test('recalculating basket totals skips orders that are no longer baskets', function () {

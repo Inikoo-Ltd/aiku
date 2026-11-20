@@ -11,6 +11,7 @@ namespace App\Actions\Goods\TradeUnit\UI;
 use App\Enums\Goods\Packaging\PackagingLevelEnum;
 use App\Enums\Goods\Packaging\PackagingMaterialCategoryEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitBatteryTypeEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitElectronicsCategoryEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitNonPackagingMaterialEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitPackagingWeightEnum;
 use App\Models\Goods\PackagingComponent;
@@ -98,6 +99,8 @@ class GetTradeUnitCompliance
             'non_packaging_edit_route' => $editRoute ? [...$editRoute, 'parameters' => [...$editRoute['parameters'], 'section' => 'non_packaging_materials']] : null,
             'battery_type'             => TradeUnitBatteryTypeEnum::labels()[Arr::get($compliance, 'batteries.type')] ?? null,
             'batteries_edit_route'     => $editRoute ? [...$editRoute, 'parameters' => [...$editRoute['parameters'], 'section' => 'batteries']] : null,
+            'electronics_category'     => TradeUnitElectronicsCategoryEnum::labels()[Arr::get($compliance, 'electronics.category')] ?? null,
+            'electronics_edit_route'   => $editRoute ? [...$editRoute, 'parameters' => [...$editRoute['parameters'], 'section' => 'electronics']] : null,
             'packaging' => $family ? [
                 'code'              => $family->code,
                 'status'            => $family->status,

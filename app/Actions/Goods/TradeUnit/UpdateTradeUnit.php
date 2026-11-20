@@ -29,6 +29,7 @@ use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
 use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitBatteryTypeEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitElectronicsCategoryEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitNonPackagingMaterialEnum;
@@ -201,6 +202,11 @@ class UpdateTradeUnit extends OrgAction
             $complianceChanged = true;
             $batteryType         = Arr::pull($modelData, 'battery_type');
             $batteryType ? data_set($compliance, 'batteries.type', $batteryType) : Arr::forget($compliance, 'batteries');
+        }
+        if (Arr::has($modelData, 'electronics_category')) {
+            $complianceChanged   = true;
+            $electronicsCategory = Arr::pull($modelData, 'electronics_category');
+            $electronicsCategory ? data_set($compliance, 'electronics.category', $electronicsCategory) : Arr::forget($compliance, 'electronics');
         }
         if ($complianceChanged) {
             $modelData['compliance'] = $compliance;
@@ -477,6 +483,7 @@ class UpdateTradeUnit extends OrgAction
         ];
 
         $rules['battery_type'] = ['sometimes', 'nullable', Rule::enum(TradeUnitBatteryTypeEnum::class)];
+        $rules['electronics_category'] = ['sometimes', 'nullable', Rule::enum(TradeUnitElectronicsCategoryEnum::class)];
         foreach (TradeUnitNonPackagingMaterialEnum::cases() as $material) {
             $rules[$material->field()] = ['sometimes', 'nullable', 'numeric', 'min:0'];
         }

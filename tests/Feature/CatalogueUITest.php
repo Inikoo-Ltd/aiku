@@ -3153,6 +3153,35 @@ test('a compliance editor declares the battery type of a trade unit and the comp
     expect($tradeUnit->refresh()->compliance)->toEqual(['brand' => 'Kept brand']);
 });
 
+test('a compliance editor declares the electronics category of a trade unit and the compliance tab shows it', function () {
+    setPermissionsTeamId($this->group->id);
+    $compliance = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $compliance->givePermissionTo(['compliance.view', 'compliance.edit']);
+    actingAs($compliance);
+
+    $tradeUnit = $this->product->tradeUnits()->first();
+    $tradeUnit->update(['compliance' => ['brand' => 'Kept brand']]);
+
+    get(route('grp.goods.trade-units.edit', [$tradeUnit->slug, 'section' => 'electronics']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions.0.route.parameters.tab', 'compliance')
+            ->where('formData.blueprint', fn ($blueprint) => count(collect($blueprint)->firstWhere('key', 'electronics')['fields']['electronics_category']['options']) === 11));
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['electronics_category' => '3.1.2'])->assertSessionHasNoErrors();
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['electronics_category' => '9.9.9'])->assertSessionHasErrors('electronics_category');
+    expect($tradeUnit->refresh()->compliance)->toEqual(['brand' => 'Kept brand', 'electronics' => ['category' => '3.1.2']]);
+
+    get(route('grp.goods.trade-units.show', [$tradeUnit->slug, 'tab' => 'compliance']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('compliance.electronics_category', '3.1.2 LED lamps, LED strips (1 piece = 1 m)')
+            ->where('compliance.electronics_edit_route.parameters.section', 'electronics'));
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['electronics_category' => null])->assertSessionHasNoErrors();
+    expect($tradeUnit->refresh()->compliance)->toEqual(['brand' => 'Kept brand']);
+});
+
 test('the trade unit development tab shows only for a trade unit in process or with developments', function () {
     $tradeUnit      = $this->product->tradeUnits()->first();
     $originalStatus = $tradeUnit->status;

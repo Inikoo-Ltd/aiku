@@ -592,6 +592,18 @@ class IndexRetinaPortfolios extends RetinaAction
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
                     ],
+                    'copy_to_channels' => $this->customer->customerSalesChannels()
+                        ->whereNot('customer_sales_channels.id', $this->customerSalesChannel->id)
+                        ->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN)
+                        ->with('platform')
+                        ->get()
+                        ->map(fn (CustomerSalesChannel $channel) => [
+                            'id'       => $channel->id,
+                            'name'     => $channel->name ?: $channel->reference,
+                            'platform' => $channel->platform?->name,
+                        ])
+                        ->values()
+                        ->all(),
                     'images'    => [
                         'get'   => [
                             'name'       => 'retina.dropshipping.products.images.index',

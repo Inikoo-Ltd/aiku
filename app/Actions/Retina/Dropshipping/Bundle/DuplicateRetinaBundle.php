@@ -12,6 +12,8 @@ use App\Actions\Dropshipping\Bundle\DuplicateBundle;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\Bundle;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class DuplicateRetinaBundle extends RetinaAction
@@ -23,15 +25,32 @@ class DuplicateRetinaBundle extends RetinaAction
     /**
      * @throws \Throwable
      */
-    public function handle(Bundle $bundle): Bundle
+    public function handle(Bundle $bundle, array $modelData): Bundle
     {
-        return DuplicateBundle::make()->action($bundle);
+        $targetChannelId = Arr::get($modelData, 'customer_sales_channel_id');
+
+        return DuplicateBundle::make()->action(
+            $bundle,
+            $targetChannelId ? CustomerSalesChannel::findOrFail($targetChannelId) : null
+        );
     }
 
     public function authorize(ActionRequest $request): bool
     {
         return $this->customerSalesChannel->customer_id == $this->customer?->id
             && $this->bundle->customer_sales_channel_id == $this->customerSalesChannel->id;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'customer_sales_channel_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('customer_sales_channels', 'id')->where('customer_id', $this->customer->id),
+            ],
+        ];
     }
 
     /**
@@ -43,6 +62,6 @@ class DuplicateRetinaBundle extends RetinaAction
         $this->bundle               = $bundle;
         $this->initialisation($request);
 
-        $this->handle($bundle);
+        $this->handle($bundle, $this->validatedData);
     }
 }

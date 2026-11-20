@@ -62,7 +62,13 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
         ];
 
         try {
-            $product = Product::where('shop_id', $this->customerSalesChannel->shop_id)->where('code', $modelData['sku'])->first();
+            $product = Product::where('shop_id', $this->customerSalesChannel->shop_id)
+                ->whereRaw('lower(code) = lower(?)', [$modelData['sku']])
+                ->orderByDesc('is_for_sale')
+                ->orderByRaw('code = ? desc', [$modelData['sku']])
+                ->orderByRaw("case state when 'active' then 0 when 'discontinuing' then 1 else 2 end")
+                ->orderByDesc('id')
+                ->first();
 
             if (! $product) {
                 throw ValidationException::withMessages(['sku' => 'SKU not found in this shop.']);

@@ -12,23 +12,26 @@ use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Bundle;
 use App\Models\Dropshipping\BundleItem;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Helpers\Media;
 
 /**
  * The copy is a new bundle with its own product, sku and unlinked portfolio, so its products can
  * change before it is published, while the original keeps describing what was listed and sold.
+ * Given another channel of the same customer, the copy is made there, so a bundle built for one
+ * store can be published in another (CUS-1842).
  */
 class DuplicateBundle extends OrgAction
 {
     /**
      * @throws \Throwable
      */
-    public function handle(Bundle $bundle): Bundle
+    public function handle(Bundle $bundle, ?CustomerSalesChannel $customerSalesChannel = null): Bundle
     {
         /** @var Product $product */
         $product = $bundle->bundleable;
 
-        $copy = StoreBundle::make()->action($bundle->customerSalesChannel, [
+        $copy = StoreBundle::make()->action($customerSalesChannel ?? $bundle->customerSalesChannel, [
             'name'        => $product->name,
             'description' => $product->description,
             'rrp'         => $product->rrp,
@@ -52,11 +55,11 @@ class DuplicateBundle extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Bundle $bundle): Bundle
+    public function action(Bundle $bundle, ?CustomerSalesChannel $customerSalesChannel = null): Bundle
     {
         $this->asAction = true;
         $this->initialisationFromShop($bundle->customer->shop, []);
 
-        return $this->handle($bundle);
+        return $this->handle($bundle, $customerSalesChannel);
     }
 }

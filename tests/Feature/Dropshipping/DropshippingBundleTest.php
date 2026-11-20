@@ -892,3 +892,62 @@ test('the bundle page data says whether its products are locked', function () {
     expect(\App\Http\Resources\CRM\BundleResource::make($bundle)->resolve())
         ->toHaveKey('components_locked', true);
 });
+
+test('an rrp changed on a listed ebay bundle becomes its portfolio price and is sent to ebay with the price', function () {
+    $ebayChannel = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first(),
+        ['reference' => 'bundle_test_ebay_channel']
+    );
+
+    $bundle = StoreBundle::make()->action($ebayChannel, [
+        'name'     => 'eBay Bundle',
+        'rrp'      => 11.5,
+        'products' => [['product_id' => $this->product->id, 'quantity' => 1]],
+    ]);
+
+    $portfolio = Portfolio::where('bundle_id', $bundle->id)->firstOrFail();
+    $portfolio->update(['platform_product_id' => '360483695011', 'platform_status' => true]);
+
+    \App\Actions\Dropshipping\Ebay\Product\UpdateEbayOffer::mock()
+        ->shouldReceive('handle')
+        ->once()
+        ->withArgs(fn (Portfolio $sentPortfolio, bool $withTitle, bool $withPrice) => $withPrice && (float) $sentPortfolio->customer_price === 16.99)
+        ->andReturnNull();
+
+    UpdateBundle::make()->action($bundle, ['rrp' => 16.99]);
+
+    $portfolio->refresh();
+    expect((float) $bundle->bundleable->refresh()->rrp)->toEqual(16.99)
+        ->and((float) $portfolio->customer_price)->toEqual(16.99)
+        ->and((float) $portfolio->selling_price)->toEqual(16.99);
+});
+
+test('a bundle is copied to another channel of the customer as an unlisted bundle there', function () {
+    $otherChannel = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first(),
+        ['reference' => 'bundle_test_copy_target_channel']
+    );
+
+    $bundle = StoreBundle::make()->action($this->customerSalesChannel, [
+        'name'     => 'Bundle To Copy',
+        'products' => [
+            ['product_id' => $this->product->id, 'quantity' => 1],
+            ['product_id' => $this->secondProduct->id, 'quantity' => 2],
+        ],
+    ]);
+    Portfolio::where('bundle_id', $bundle->id)->update(['platform_product_id' => 'gid://shopify/Product/3']);
+
+    $copy = \App\Actions\Dropshipping\Bundle\DuplicateBundle::make()->action($bundle, $otherChannel);
+
+    $copyPortfolio = Portfolio::where('bundle_id', $copy->id)->firstOrFail();
+
+    expect($copy->customer_sales_channel_id)->toBe($otherChannel->id)
+        ->and($copyPortfolio->customer_sales_channel_id)->toBe($otherChannel->id)
+        ->and($copyPortfolio->platform_product_id)->toBeNull()
+        ->and($copy->bundleable->name)->toBe('Bundle To Copy')
+        ->and($copy->items()->pluck('quantity', 'item_id')->map(fn ($quantity) => (float) $quantity)->sortKeys()->all())
+        ->toBe([$this->product->id => 1.0, $this->secondProduct->id => 2.0])
+        ->and($bundle->refresh()->customer_sales_channel_id)->toBe($this->customerSalesChannel->id);
+});

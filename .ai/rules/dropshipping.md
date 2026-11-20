@@ -90,3 +90,6 @@ INI-287 (17 Nov 2026). CreateNewBulkPortfoliosToTiktok only queues StoreNewProdu
 
 ## eBay: a 25001 on a reused unpublished offer gets one retry on a fresh offer
 CUS-1839 (18 Nov 2026). After an eBay "Database Server exception" mid upload, the SKU's unpublished offer answered every updateOffer/publish with errorId 25001 "A system error has occurred. Internal server error", and StoreEbayProduct reused it on every re-upload. StoreEbayProduct::retryOnFreshOffer now deletes that offer (DELETE offer/{id}) and runs handle once more (isRetryOnFreshOffer), only when the offer is not PUBLISHED and our price may replace its price (sendsOurPrice, or no price on eBay), so a live listing or a seller-priced draft is never deleted. Not covered: a 25001 on the inventory_item PUT or on getOffers.
+
+## A bundle's RRP is its portfolio price, and an edit sends it to the platform
+PRE-124 (20 Nov 2026). `UpdateBundle` writes the RRP (sent or recalculated from the components) to the portfolio's customer_price and selling_price, then calls `UpdateAndUploadRetinaPortfolioToCurrentChannel` with `customer_price`, so eBay gets `withPrice`. Calling it with `[]` updates only the title: the listing keeps selling at the old price. Bundle portfolios are not in My Products, so this edit is the customer's only way to reprice a bundle.
