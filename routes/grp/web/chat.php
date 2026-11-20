@@ -78,4 +78,6 @@ Route::prefix('staff')->name('staff.')->middleware('throttle:240,1')->group(func
     Route::post('/team/toggle', \App\Actions\Chat\Staff\ToggleStaffTeamMember::class)->name('team.toggle');
     Route::get('/coworkers', \App\Actions\Chat\Staff\Json\GetStaffCoworkers::class)->name('coworkers.index');
     Route::get('/gifs', \App\Actions\Chat\Staff\Json\SearchGifs::class)->name('gifs.search');
+    Route::get('/slack', \App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class)->name('slack.index');
+    Route::get('/slack/{slackChannel}', [\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class, 'inSlackChannel'])->name('slack.show');
 });

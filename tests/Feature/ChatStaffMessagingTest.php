@@ -1439,7 +1439,7 @@ test('who is in each kept Slack channel comes from a paged member list and from 
     ]);
     $totals = \App\Actions\Chat\Staff\Slack\SyncSlackChannelMembers::run();
 
-    expect($kept->members()->pluck('slack_user_id')->sort()->values()->all())->toBe(['UAIKUBOT', "UA$s", "UB$s"])
+    expect($kept->members()->pluck('slack_user_id')->sort()->values()->all())->toBe(collect(['UAIKUBOT', "UA$s", "UB$s"])->sort()->values()->all())
         ->and($stayed->refresh()->joined_at)->not->toBeNull()
         ->and($ignored->members()->count())->toBe(0)
         ->and($totals['failed'])->toBe([]);
@@ -1899,4 +1899,114 @@ test('pins and bookmarks of public Slack channels are kept from Slack lists and 
         ->and($secret->refresh()->pinned_at)->toBeNull();
 
     expect(fn () => $this->artisan('slack:sync-pins-and-bookmarks')->run())->toThrow(RuntimeException::class, 'missing_scope');
+});
+
+test('Slack channels are read in the staff chat by linked staff only: the list, a channel stream newest page first, older pages by cursor, thread replies and deleted messages left out, INI-430', function () {
+    $s        = Str::upper(Str::random(6));
+    $group    = $this->organisation->group;
+    $newUser  = fn () => User::factory()->create(['group_id' => $group->id, 'language_id' => $this->user->language_id]);
+    $viewer   = $newUser();
+    $stranger = $newUser();
+    \App\Models\Chat\SlackUser::create(['slack_id' => "UVIEW$s", 'user_id' => $viewer->id, 'email' => $viewer->email, 'real_name' => 'Viewer Person']);
+    \App\Models\Chat\SlackUser::create(['slack_id' => "UANN$s", 'real_name' => 'Ann Author', 'avatar_url' => 'https://avatars.slack-edge.com/ann.png']);
+
+    $channel = SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CSTREAM$s", 'name' => "stream-$s", 'is_member' => true, 'data' => ['topic' => ['value' => 'Where things happen']]]);
+    $ignored = SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CSTRIGN$s", 'name' => "ignored-$s", 'is_ignored' => true]);
+    $private = SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CSTRPRIV$s", 'name' => "private-$s", 'is_public' => false]);
+
+    $start = now()->subDays(2)->startOfMinute();
+    $ts    = fn (int $i) => sprintf('%d.%06d', $start->timestamp + $i * 60, $i);
+    $store = fn (int $i, string $text, array $attributes = []) => SlackMessage::create(array_merge([
+        'slack_channel_id' => $channel->id,
+        'ts'               => $ts($i),
+        'slack_user_id'    => "UANN$s",
+        'text'             => $text,
+        'sent_at'          => $start->copy()->addMinutes($i),
+        'data'             => [],
+    ], $attributes));
+    for ($i = 1; $i <= 52; $i++) {
+        $store($i, "Message $i :+1:", match ($i) {
+            52      => ['thread_ts' => $ts(52), 'data' => ['reply_count' => 2, 'latest_reply' => $ts(61)]],
+            50      => ['text' => '', 'data' => ['files' => [['name' => 'sheet.xlsx']]]],
+            49      => ['slack_user_id' => "UVIEW$s"],
+            default => [],
+        });
+    }
+    $store(60, 'Hidden thread reply', ['thread_ts' => $ts(52)]);
+    $store(61, 'Shared thread reply', ['thread_ts' => $ts(52), 'subtype' => 'thread_broadcast']);
+    $store(62, 'Deleted message')->delete();
+    $reacted = SlackMessage::where('slack_channel_id', $channel->id)->where('ts', $ts(51))->sole();
+    \App\Models\Chat\SlackMessageReaction::create(['slack_message_id' => $reacted->id, 'slack_user_id' => "UANN$s", 'name' => 'tada']);
+    \App\Models\Chat\SlackMessageReaction::create(['slack_message_id' => $reacted->id, 'slack_user_id' => "UVIEW$s", 'name' => 'tada']);
+
+    $texts = fn (array $page) => array_map(fn (array $message) => trim(\App\Actions\Chat\Staff\Slack\FormatSlackMessages::plainText($message['nodes'])), $page['data']);
+
+    actingAs($viewer)->get(route('grp.chat.staff.slack.index'))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Chat/StaffMessaging')
+            ->where('slack_channels', function ($channels) use ($channel, $ignored, $private) {
+                $ids = collect($channels)->pluck('id');
+
+                return $ids->contains($channel->id) && !$ids->contains($ignored->id) && !$ids->contains($private->id)
+                    && collect($channels)->firstWhere('id', $channel->id)['topic'] === 'Where things happen';
+            })
+            ->where('slack_messages', null));
+
+    $firstPage = null;
+    actingAs($viewer)->get(route('grp.chat.staff.slack.show', $channel->id))->assertOk()
+        ->assertInertia(function (AssertableInertia $page) use (&$firstPage, $s) {
+            $page->component('Chat/StaffMessaging')
+                ->where('slack_channel.name', "stream-$s")
+                ->missing('slack_messages')
+                ->loadDeferredProps(function (AssertableInertia $reload) use (&$firstPage) {
+                    $firstPage = $reload->toArray()['props']['slack_messages'];
+                });
+        });
+
+    $byText = collect($firstPage['data'])->keyBy(fn (array $message) => trim(\App\Actions\Chat\Staff\Slack\FormatSlackMessages::plainText($message['nodes'])));
+    expect($firstPage['data'])->toHaveCount(50)
+        ->and($texts($firstPage)[0])->toBe('Shared thread reply')
+        ->and($texts($firstPage)[1])->toBe('Message 52 👍')
+        ->and($texts($firstPage))->not->toContain('Hidden thread reply')->not->toContain('Deleted message')
+        ->and($byText['Message 52 👍']['reply_count'])->toBe(2)
+        ->and($byText['Message 52 👍']['latest_reply_at'])->not->toBeNull()
+        ->and($byText['Message 52 👍']['author'])->toBe(['key' => "UANN$s", 'user_id' => null, 'name' => 'Ann Author', 'avatar' => null, 'is_bot' => false])
+        ->and($byText['Message 49 👍']['author'])->toBe([
+            'key'     => 'user-'.$viewer->id,
+            'user_id' => $viewer->id,
+            'name'    => $viewer->chatName(),
+            'avatar'  => $viewer->image_id ? User::chatAvatarOf($viewer->imageSources(0, 48)) : null,
+            'is_bot'  => false,
+        ])
+        ->and(json_encode($firstPage))->not->toContain('slack-edge')
+        ->and($byText['Message 51 👍']['reactions'])->toBe([['name' => 'tada', 'unicode' => '🎉', 'url' => null, 'count' => 2, 'people' => ['Ann Author', $viewer->chatName()]]])
+        ->and($byText['']['files'])->toBe([['name' => 'sheet.xlsx']])
+        ->and($firstPage['next_cursor'])->not->toBeNull();
+
+    $countQueries = function (int $perPage) use ($channel) {
+        \Illuminate\Support\Facades\DB::flushQueryLog();
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        \App\Actions\Chat\Staff\Slack\GetSlackChannelMessages::make()->handle($channel, $perPage);
+        $count = count(\Illuminate\Support\Facades\DB::getQueryLog());
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        return $count;
+    };
+    expect($countQueries(50))->toBe($countQueries(5));
+
+    $olderPage = null;
+    actingAs($viewer)->get(route('grp.chat.staff.slack.show', [$channel->id, 'cursor' => $firstPage['next_cursor']]))->assertOk()
+        ->assertInertia(function (AssertableInertia $page) use (&$olderPage) {
+            $page->loadDeferredProps(function (AssertableInertia $reload) use (&$olderPage) {
+                $olderPage = $reload->toArray()['props']['slack_messages'];
+            });
+        });
+    expect($texts($olderPage))->toBe(['Message 3 👍', 'Message 2 👍', 'Message 1 👍'])
+        ->and($olderPage['next_cursor'])->toBeNull();
+
+    actingAs($viewer)->get(route('grp.chat.staff.slack.show', $ignored->id))->assertForbidden();
+    actingAs($viewer)->get(route('grp.chat.staff.slack.show', $private->id))->assertForbidden();
+
+    actingAs($stranger)->get(route('grp.chat.staff.slack.index'))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('slack_channels', []));
+    actingAs($stranger)->get(route('grp.chat.staff.slack.show', $channel->id))->assertForbidden();
 });

@@ -44,11 +44,26 @@ class FormatSlackMessages
     private array $atoms = [];
 
     /**
+     * Every emoji name of the last page handled, resolved once for the whole page (reactions included), keyed by
+     * "name" or "name::skin-tone-N".
+     *
+     * @var array<string, array{unicode: string}|array{url: string|null, name: string}|null>
+     */
+    public array $resolvedEmoji = [];
+
+    /**
      * @param  iterable<SlackMessage>  $messages
+     * @param  list<string>  $alsoResolveEmoji  names to resolve in the same lookup, such as the page's reactions
      * @return array<int, list<array<string, mixed>>>
      */
-    public function handle(iterable $messages): array
+    public function handle(iterable $messages, array $alsoResolveEmoji = []): array
     {
+        $names = array_fill_keys($alsoResolveEmoji, true);
+        foreach ($messages as $message) {
+            $names += $this->emojiNamesIn($message->text, $message->data ?? []);
+        }
+        $this->resolvedEmoji = $names === [] ? [] : ResolveSlackEmoji::make()->many(array_keys($names));
+
         $formatted = [];
         foreach ($messages as $message) {
             $formatted[$message->id] = $this->message($message->text, $message->data ?? []);
@@ -105,10 +120,54 @@ class FormatSlackMessages
      */
     public function emoji(string $name, ?string $skinTone, ?string $unicodeHex = null): ?array
     {
-        $unicodeHex ??= $this->emojiInMessage[$name.($skinTone ? '::'.$skinTone : '')] ?? null;
+        $key = $name.($skinTone ? '::'.$skinTone : '');
+        $unicodeHex ??= $this->emojiInMessage[$key] ?? null;
         $unicode = $unicodeHex ? $this->unicodeFromHex($unicodeHex) : null;
+        if ($unicode !== null) {
+            return ['type' => 'emoji', 'name' => $name, 'skin_tone' => $skinTone, 'unicode' => $unicode];
+        }
 
-        return $unicode === null ? null : ['type' => 'emoji', 'name' => $name, 'skin_tone' => $skinTone, 'unicode' => $unicode];
+        $resolved = $this->resolvedEmoji[$key] ?? null;
+        if (isset($resolved['unicode'])) {
+            return ['type' => 'emoji', 'name' => $name, 'skin_tone' => $skinTone, 'unicode' => $resolved['unicode']];
+        }
+
+        return isset($resolved['url']) ? ['type' => 'emoji', 'name' => $name, 'skin_tone' => $skinTone, 'unicode' => null, 'url' => $resolved['url']] : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, true>
+     */
+    private function emojiNamesIn(?string $text, array $data): array
+    {
+        $names = [];
+        $add   = function (string $source) use (&$names) {
+            preg_match_all('/:([a-z0-9_+\'-]+):(?::(skin-tone-[2-6]):)?/u', $source, $matches, PREG_SET_ORDER);
+            foreach ($matches as $match) {
+                $names[$match[1].(($match[2] ?? '') !== '' ? '::'.$match[2] : '')] = true;
+            }
+        };
+        $walk = function (mixed $value) use (&$walk, &$names, $add) {
+            if (is_string($value)) {
+                $add($value);
+
+                return;
+            }
+            if (!is_array($value)) {
+                return;
+            }
+            if (($value['type'] ?? null) === 'emoji' && is_string($value['name'] ?? null) && !is_string($value['unicode'] ?? null)) {
+                $names[$value['name'].(isset($value['skin_tone']) ? '::skin-tone-'.(int) $value['skin_tone'] : '')] = true;
+            }
+            foreach ($value as $child) {
+                $walk($child);
+            }
+        };
+        $add((string) $text);
+        $walk($data);
+
+        return $names;
     }
 
     /**

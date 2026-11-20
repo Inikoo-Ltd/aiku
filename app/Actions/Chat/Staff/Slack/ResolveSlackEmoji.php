@@ -311,22 +311,67 @@ class ResolveSlackEmoji
      */
     public function handle(string $name): ?array
     {
-        $parts = array_values(array_filter(explode(':', $name)));
-        if (!$parts) {
-            return null;
-        }
-        $base = $parts[0];
-        $tone = self::SKIN_TONES[$parts[1] ?? ''] ?? '';
+        return $this->many([$name])[$name];
+    }
 
+    /**
+     * Resolves a whole page of names at once: one slack_emojis query per alias hop, never one per name.
+     *
+     * @param  iterable<string>  $names
+     * @return array<string, array{unicode: string}|array{url: string|null, name: string}|null>
+     */
+    public function many(iterable $names): array
+    {
+        $parsed = [];
+        foreach ($names as $name) {
+            $parts = array_values(array_filter(explode(':', $name)));
+            $parsed[$name] = $parts ? ['base' => $parts[0], 'tone' => self::SKIN_TONES[$parts[1] ?? ''] ?? ''] : null;
+        }
+
+        $customs = [];
+        $targets = [];
+        $pending = array_values(array_unique(array_column(array_filter($parsed), 'base')));
+        for ($hops = 0; $hops <= self::MAX_ALIAS_HOPS && $pending !== []; $hops++) {
+            $found = SlackEmoji::whereIn('name', $pending)->with('copy')->get()->keyBy('name');
+            $next  = [];
+            foreach ($pending as $base) {
+                $emoji = $found[$base] ?? null;
+                if (!$emoji) {
+                    continue;
+                }
+                if ($emoji->alias_for) {
+                    $targets[$base] = $emoji->alias_for;
+                    $next[]         = $emoji->alias_for;
+                } else {
+                    $customs[$base] = ['url' => $emoji->copy?->fullResolutionUrls()['original_url'], 'name' => $emoji->name];
+                }
+            }
+            $pending = array_values(array_diff(array_unique($next), array_keys($customs), array_keys($targets)));
+        }
+
+        $resolved = [];
+        foreach ($parsed as $name => $entry) {
+            $resolved[$name] = $entry ? $this->resolveBase($entry['base'], $entry['tone'], $customs, $targets) : null;
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * @param  array<string, array{url: string|null, name: string}>  $customs
+     * @param  array<string, string>  $targets
+     * @return array{unicode: string}|array{url: string|null, name: string}|null
+     */
+    private function resolveBase(string $base, string $tone, array $customs, array $targets): ?array
+    {
         for ($hops = 0; $hops <= self::MAX_ALIAS_HOPS; $hops++) {
-            $emoji = SlackEmoji::where('name', $base)->first();
-            if (!$emoji) {
+            if (isset($customs[$base])) {
+                return $customs[$base];
+            }
+            if (!isset($targets[$base])) {
                 break;
             }
-            if (!$emoji->alias_for) {
-                return ['url' => $emoji->copy?->fullResolutionUrls()['original_url'], 'name' => $emoji->name];
-            }
-            $base = $emoji->alias_for;
+            $base = $targets[$base];
         }
 
         $unicode = self::STANDARD[$base] ?? null;

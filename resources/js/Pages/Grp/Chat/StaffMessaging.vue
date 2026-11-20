@@ -10,7 +10,8 @@ import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faComments, faPlus, faSearch, faUser, faTasks } from "@fal"
+import { faArchive, faChevronRight, faComments, faHashtag, faPlus, faSearch, faUser, faTasks } from "@fal"
+import InputText from "primevue/inputtext"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -19,14 +20,44 @@ import MessagingConversation from "@/Components/Messaging/MessagingConversation.
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useTruncate } from "@/Composables/useTruncate"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
+import SlackChannelStream, { type SlackStreamMessage } from "@/Components/Messaging/Slack/SlackChannelStream.vue"
 
-library.add(faComments, faPlus, faSearch, faUser, faTasks)
+library.add(faArchive, faChevronRight, faComments, faHashtag, faPlus, faSearch, faUser, faTasks)
+
+interface SlackChannelListItem {
+    id: number
+    slack_id: string
+    name: string | null
+    topic: string | null
+    is_archived: boolean
+    last_message_at: string | null
+}
 
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     selected_ulid: string | null
+    slack_channels?: SlackChannelListItem[]
+    slack_channel?: { id: number; name: string | null; topic: string | null; is_archived: boolean } | null
+    slack_messages?: { data: SlackStreamMessage[] } | null
 }>()
+
+const isSlack = computed(() => props.slack_channels !== undefined)
+const sourceToggle = computed({
+    get: () => (isSlack.value ? "slack" : "chats"),
+    set: (source: string) => router.visit(route(source === "slack" ? "grp.chat.staff.slack.index" : "grp.chat.staff.index")),
+})
+const slackFilter = ref("")
+const isArchivedOpen = ref(false)
+const slackChannelLinks = computed(() => Object.fromEntries((props.slack_channels ?? []).map((channel) => [channel.slack_id, channel.id])))
+const filteredSlackChannels = computed(() => {
+    const q = slackFilter.value.trim().toLowerCase().replace(/^#/, "")
+    return (props.slack_channels ?? []).filter((channel) => !q || (channel.name ?? "").toLowerCase().includes(q) || (channel.topic ?? "").toLowerCase().includes(q))
+})
+const activeSlackChannels = computed(() => filteredSlackChannels.value.filter((channel) => !channel.is_archived))
+const archivedSlackChannels = computed(() => filteredSlackChannels.value.filter((channel) => channel.is_archived))
+const showArchived = computed(() => isArchivedOpen.value || (slackFilter.value.trim() !== "" && archivedSlackChannels.value.length > 0) || !!props.slack_channel?.is_archived)
 
 const store = useStaffMessaging()
 const myId = computed(() => usePage().props?.auth?.user?.id)
@@ -153,20 +184,83 @@ onUnmounted(() => {
 
     <div class="flex min-h-[50vh] md:min-h-[70vh] h-[calc(100vh-10rem)] border-t border-gray-200">
         <!-- LEFT: conversation list -->
-        <div class="w-full md:w-80 shrink-0 border-r border-gray-200 bg-white flex flex-col" :class="selectedUlid ? 'hidden md:flex' : 'flex'">
-            <div class="p-3 border-b border-gray-200">
+        <div class="w-full md:w-80 shrink-0 border-r border-gray-200 bg-white flex flex-col" :class="selectedUlid || slack_channel ? 'hidden md:flex' : 'flex'">
+            <div class="p-3 border-b border-gray-200 space-y-2">
+                <SegmentedToggle
+                    v-model="sourceToggle"
+                    :options="[{ label: ctrans('Chats'), value: 'chats', icon: 'fal fa-comments' }, { label: ctrans('Slack'), value: 'slack', icon: 'fal fa-hashtag' }]"
+                    :aria-label="ctrans('Messages from')" />
                 <div class="relative">
                     <FontAwesomeIcon icon="fal fa-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs" fixed-width aria-hidden="true" />
-                    <input
+                    <InputText
+                        v-if="isSlack"
+                        v-model="slackFilter"
+                        :placeholder="ctrans('Filter channels')"
+                        size="small"
+                        class="w-full !pl-8" />
+                    <InputText
+                        v-else
                         v-model="query"
-                        type="text"
                         :placeholder="ctrans('Search or start a new chat…')"
-                        class="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]"
+                        size="small"
+                        class="w-full !pl-8"
                         @input="onSearchInput" />
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto">
+            <div v-if="isSlack" class="flex-1 overflow-y-auto">
+                <div v-if="!slack_channels?.length" class="px-4 py-8 text-center text-xs text-gray-500 space-y-1">
+                    <FontAwesomeIcon icon="fal fa-hashtag" class="text-2xl text-gray-300" fixed-width aria-hidden="true" />
+                    <p class="font-medium text-gray-700">{{ ctrans("No Slack channels to show") }}</p>
+                    <p>{{ ctrans("Public Slack channels show here once your aiku account is linked to your Slack account by the same email address.") }}</p>
+                </div>
+                <template v-else>
+                    <Link
+                        v-for="channel in activeSlackChannels"
+                        :key="'slack-' + channel.id"
+                        :href="route('grp.chat.staff.slack.show', channel.id)"
+                        preserve-state
+                        preserve-scroll
+                        class="flex items-start gap-x-2 px-3 py-2 border-b border-gray-50 hover:bg-gray-50"
+                        :class="slack_channel?.id === channel.id ? 'bg-[var(--app-accent-soft)]' : ''">
+                        <FontAwesomeIcon icon="fal fa-hashtag" class="mt-1 text-gray-400 text-xs" fixed-width aria-hidden="true" />
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-x-1">
+                                <span class="text-sm font-medium text-gray-900 truncate">{{ channel.name }}</span>
+                                <span v-if="channel.last_message_at" class="text-xxs text-gray-400 shrink-0 whitespace-nowrap">{{ useFormatTime(channel.last_message_at, { formatTime: 'dd MMM' }) }}</span>
+                            </div>
+                            <div v-if="channel.topic" class="text-xs text-gray-500 truncate">{{ channel.topic }}</div>
+                        </div>
+                    </Link>
+                    <div v-if="!filteredSlackChannels.length" class="px-3 py-6 text-center text-xs text-gray-400">{{ ctrans('No matches') }}</div>
+                    <template v-if="archivedSlackChannels.length">
+                        <button
+                            type="button"
+                            class="w-full flex items-center gap-x-2 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50"
+                            :aria-expanded="showArchived"
+                            @click="isArchivedOpen = !isArchivedOpen">
+                            <FontAwesomeIcon icon="fal fa-chevron-right" class="text-[10px] transition-transform" :class="showArchived && 'rotate-90'" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon icon="fal fa-archive" fixed-width aria-hidden="true" />
+                            {{ ctrans("Archived (:count)", { count: String(archivedSlackChannels.length) }) }}
+                        </button>
+                        <template v-if="showArchived">
+                            <Link
+                                v-for="channel in archivedSlackChannels"
+                                :key="'slack-' + channel.id"
+                                :href="route('grp.chat.staff.slack.show', channel.id)"
+                                preserve-state
+                                preserve-scroll
+                                class="flex items-center gap-x-2 px-3 py-1.5 pl-8 text-gray-500 hover:bg-gray-50"
+                                :class="slack_channel?.id === channel.id ? 'bg-[var(--app-accent-soft)]' : ''">
+                                <FontAwesomeIcon icon="fal fa-hashtag" class="text-xs" fixed-width aria-hidden="true" />
+                                <span class="text-sm truncate">{{ channel.name }}</span>
+                            </Link>
+                        </template>
+                    </template>
+                </template>
+            </div>
+
+            <div v-else class="flex-1 overflow-y-auto">
                 <template v-if="showCoworkerResults">
                     <div class="px-3 pt-2 pb-1 text-xs text-gray-500">{{ ctrans('Start a chat with…') }}</div>
                     <button
@@ -188,10 +282,10 @@ onUnmounted(() => {
                         v-for="conversation in filteredConversations"
                         :key="conversation.ulid"
                         class="w-full flex items-center gap-x-3 px-3 py-2.5 hover:bg-gray-50 text-left border-b border-gray-50"
-                        :class="selectedUlid === conversation.ulid ? 'bg-[--app-accent-soft]' : ''"
+                        :class="selectedUlid === conversation.ulid ? 'bg-[var(--app-accent-soft)]' : ''"
                         @click="selectConversation(conversation.ulid)">
                         <div v-if="conversation.type === 'group'" class="h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                            <FontAwesomeIcon icon="fal fa-comments" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon icon="fal fa-comments" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
                         </div>
                         <div v-else class="relative h-9 w-9 rounded-full overflow-hidden bg-gray-200 shrink-0">
                             <Image v-if="conversationAvatar(conversation)" :src="conversationAvatar(conversation)" :alt="conversationTitle(conversation)" image-cover />
@@ -204,7 +298,7 @@ onUnmounted(() => {
                             </div>
                             <div class="text-xs text-gray-500 truncate">{{ useTruncate(conversation.last_message ?? '', 40) }}</div>
                         </div>
-                        <span v-if="conversation.unread_count > 0" class="bg-[--app-accent] text-[--app-accent-text] rounded-full h-5 min-w-[1.25rem] px-1.5 flex items-center justify-center text-xxs shrink-0">{{ conversation.unread_count }}</span>
+                        <span v-if="conversation.unread_count > 0" class="bg-[var(--app-accent)] text-[var(--app-accent-text)] rounded-full h-5 min-w-[1.25rem] px-1.5 flex items-center justify-center text-xxs shrink-0">{{ conversation.unread_count }}</span>
                     </button>
                     <div v-if="!filteredConversations.length" class="px-3 py-6 text-center text-xs text-gray-400">{{ ctrans('No messages yet') }}</div>
                     <Link
@@ -219,9 +313,20 @@ onUnmounted(() => {
         </div>
 
         <!-- RIGHT: conversation -->
-        <div class="flex-1 h-full min-w-0" :class="selectedUlid ? 'flex' : 'hidden md:flex'">
+        <div class="flex-1 h-full min-w-0" :class="selectedUlid || slack_channel ? 'flex' : 'hidden md:flex'">
+            <SlackChannelStream
+                v-if="isSlack && slack_channel"
+                :key="'slack-' + slack_channel.id"
+                :channel="slack_channel"
+                :messages="slack_messages ?? undefined"
+                :channel-links="slackChannelLinks"
+                @back="router.visit(route('grp.chat.staff.slack.index'))" />
+            <div v-else-if="isSlack" class="flex-1 flex flex-col items-center justify-center text-gray-400">
+                <FontAwesomeIcon icon="fal fa-hashtag" class="text-5xl mb-3" fixed-width aria-hidden="true" />
+                <span class="text-sm">{{ ctrans('Select a Slack channel') }}</span>
+            </div>
             <MessagingConversation
-                v-if="selectedConversation"
+                v-else-if="selectedConversation"
                 :conversation="selectedConversation"
                 full-screen
                 @back="closeConversation"
