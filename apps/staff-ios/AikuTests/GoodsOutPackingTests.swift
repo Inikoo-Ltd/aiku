@@ -319,4 +319,9 @@ struct GoodsOutPackingTests {
         #expect(throws: GoodsOutProblem(message: "The boxes hold more than the 1 picked.")) { try GoodsOutBoxDraft.inputs(boxes, picked: 1).get() }
         #expect(throws: GoodsOutProblem(message: "Each box number must be from 1 to 999.")) { try GoodsOutBoxDraft.inputs([GoodsOutBoxDraft(id: 0, box: "0", quantity: "1")], picked: 1).get() }
     }
+
+    @Test func aParcelCanBeRemovedOnlyWhileAnotherIsLeftAsOnAndroid() {
+        #expect(GoodsOutRemoteParcelsEditor.canRemoveParcel(parcelCount: 1) == false)
+        #expect(GoodsOutRemoteParcelsEditor.canRemoveParcel(parcelCount: 2))
+    }
 }

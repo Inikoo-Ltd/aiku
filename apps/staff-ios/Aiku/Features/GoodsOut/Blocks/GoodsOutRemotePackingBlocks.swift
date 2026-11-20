@@ -307,12 +307,19 @@ struct GoodsOutRemoteParcelsEditor: View {
 
     private var usesBoxes: Bool { note.packingDetails?.hasBoxPackingList == true }
 
+    static func canRemoveParcel(parcelCount: Int) -> Bool { parcelCount > 1 }
+
     var body: some View {
         GoodsOutSectionTitle(title: "Parcels (\(drafts.count))", detail: usesBoxes ? "kg · L × W × H cm · boxes" : "kg · L × W × H cm")
         Card {
             ForEach($drafts) { $draft in
                 let index = drafts.firstIndex { $0.id == draft.id } ?? 0
-                GoodsOutParcelDraftRow(title: "Parcel \(index + 1)", draft: $draft, usesBoxes: usesBoxes) {
+                GoodsOutParcelDraftRow(
+                    title: "Parcel \(index + 1)",
+                    draft: $draft,
+                    usesBoxes: usesBoxes,
+                    canRemove: Self.canRemoveParcel(parcelCount: drafts.count)
+                ) {
                     drafts.removeAll { $0.id == draft.id }
                 }
                 RowDivider()
@@ -342,6 +349,7 @@ struct GoodsOutRemoteParcelsEditor: View {
             .frame(height: 0)
             .onAppear { load(note.parcels) }
             .onChange(of: note.parcels) { _, parcels in load(parcels) }
+            .onChange(of: drafts) { problem = nil }
     }
 
     private var isChanged: Bool {
@@ -383,6 +391,7 @@ private struct GoodsOutParcelDraftRow: View {
     let title: String
     @Binding var draft: GoodsOutParcelDraft
     let usesBoxes: Bool
+    let canRemove: Bool
     let remove: () -> Void
 
     var body: some View {
@@ -399,7 +408,10 @@ private struct GoodsOutParcelDraftRow: View {
                         .minimumScaleFactor(0.8)
                 }
                 Spacer(minLength: 8)
-                IconButton(.trash, label: "Remove \(title)", tint: AikuColor.danger, action: remove)
+                if canRemove {
+                    IconButton(.close, label: "Remove \(title)", tint: AikuColor.text3, action: remove)
+                        .accessibilityIdentifier("goodsOut.removeParcel")
+                }
             }
             HStack(spacing: 6) {
                 field($draft.weight, placeholder: "kg", label: "weight in kilograms", keyboard: .decimalPad)
