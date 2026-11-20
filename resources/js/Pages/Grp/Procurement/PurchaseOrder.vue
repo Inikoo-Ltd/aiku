@@ -613,6 +613,8 @@ const submitErrors = ref<string[]>([])
 const othersNotReady = ref(false)
 const submitAction = ref<any>(null)
 const submitWithoutWaitingReason = ref("")
+const submitWithoutWaitingReasonMinLength = 10
+const submitWithoutWaitingReasonTooShort = computed(() => submitWithoutWaitingReason.value.trim().length < submitWithoutWaitingReasonMinLength)
 const retrySendVia = ref<string>(doNotSend)
 
 const submitWithoutWaiting = () => {
@@ -2005,7 +2007,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			<label for="purchase-order-submit-without-waiting" class="text-sm font-medium text-gray-700">
 				{{ ctrans("Or submit only this order now, without waiting for them. Write why:") }} <span class="text-red-500">*</span>
 			</label>
-			<Textarea id="purchase-order-submit-without-waiting" v-model="submitWithoutWaitingReason" rows="2" autoResize maxlength="1000" fluid />
+			<Textarea id="purchase-order-submit-without-waiting" v-model="submitWithoutWaitingReason" rows="2" autoResize maxlength="1000" fluid aria-describedby="purchase-order-submit-without-waiting-length" />
+			<p
+				id="purchase-order-submit-without-waiting-length"
+				class="text-xs"
+				:class="submitWithoutWaitingReasonTooShort ? 'text-amber-600' : 'text-green-600'"
+				aria-live="polite"
+			>
+				{{ submitWithoutWaitingReasonTooShort
+					? ctrans("At least :min characters (:count/:min)", { min: submitWithoutWaitingReasonMinLength, count: submitWithoutWaitingReason.trim().length })
+					: ctrans(":count/:max characters", { count: submitWithoutWaitingReason.trim().length, max: 1000 }) }}
+			</p>
 			<p class="text-xs text-gray-500">{{ ctrans("Their orders stay as drafts for them to submit later.") }}</p>
 		</div>
 
@@ -2022,7 +2034,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					type="primary"
 					full
 					class="disabled:opacity-50"
-					:disabled="submitWithoutWaitingReason.trim().length < 10"
+					:disabled="submitWithoutWaitingReasonTooShort"
 					:loading="submitLoading"
 					@click="submitWithoutWaiting"
 				>
