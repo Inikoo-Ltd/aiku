@@ -28,6 +28,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $name
  * @property string|null $description
  * @property TicketProjectStatusEnum $status
+ * @property bool $is_pinned
  * @property int|null $owner_id
  * @property \Illuminate\Support\Carbon $start_date
  * @property \Illuminate\Support\Carbon|null $target_date
@@ -60,6 +61,7 @@ class TicketProject extends Model
     {
         return [
             'status'      => TicketProjectStatusEnum::class,
+            'is_pinned'   => 'boolean',
             'start_date'  => 'date',
             'target_date' => 'date',
         ];

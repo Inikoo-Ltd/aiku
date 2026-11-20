@@ -786,6 +786,49 @@ test('sub-projects roll their work up into the parent and the projects list reme
     expect($ios->fresh()->parent_id)->toBe($parent->id);
 });
 
+test('projects show how many days they have been quiet, counting real activity only and the sub-projects', function () {
+    $parent = StoreTicketProject::make()->action($this->group, ['name' => 'Quiet parent INI-412', 'start_date' => now()->subDays(30)->toDateString()]);
+    $child  = StoreTicketProject::make()->action($this->group, ['name' => 'Quiet child INI-412', 'start_date' => now()->subDays(30)->toDateString(), 'parent_id' => $parent->id]);
+    $old    = StoreTicket::make()->action($this->group, ['subject' => 'Finished long ago']);
+    $old->update(['ticket_project_id' => $child->id, 'status' => TicketStatusEnum::RESOLVED, 'created_at' => now()->subDays(40), 'resolved_at' => now()->subDays(25), 'closed_at' => now()->subDays(25)]);
+    $old->forceFill(['updated_at' => now()])->saveQuietly();
+    $parent->updates()->create(['body' => 'Weekly check: this project has been quiet for 30 days.', 'created_at' => now()->subDay()]);
+
+    get(route('grp.projects.index', ['filter' => ['global' => 'Quiet parent INI-412']]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('data.data.0.slug', $parent->slug)
+        ->where('data.data.0.quiet_days', 25)
+        ->where('data.data.0.children.0.quiet_days', 25));
+
+    $child->updates()->create(['body' => 'Trials restarted', 'created_at' => now()->subDays(3)]);
+
+    get(route('grp.projects.show', $parent->slug))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('project.quiet_days', 3)
+        ->where('sub_projects.0.quiet_days', 3));
+    get(route('grp.projects.show', $child->slug))->assertInertia(fn (AssertableInertia $page) => $page->where('project.quiet_days', 3));
+    AikuServer::actingAs($this->user)->tool(\App\Mcp\Tools\ProjectsTool::class, ['project' => $child->slug])->assertOk()->assertSee('quiet_days');
+
+    $parent->update(['status' => \App\Enums\Helpers\Ticket\TicketProjectStatusEnum::ON_HOLD]);
+    get(route('grp.projects.show', $parent->slug))->assertInertia(fn (AssertableInertia $page) => $page->where('project.quiet_days', null));
+});
+
+test('a pinned project is an ongoing area: no target date, first in the list, set from the page or the MCP tool', function () {
+    $area = StoreTicketProject::make()->action($this->group, ['name' => 'Pinned area INI-412', 'start_date' => now()->subDays(60)->toDateString(), 'target_date' => now()->subDays(5)->toDateString()]);
+    StoreTicketProject::make()->action($this->group, ['name' => 'Pinned area INI-412 neighbour', 'start_date' => now()->subDays(60)->toDateString()]);
+
+    AikuServer::actingAs($this->user)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'update', 'project' => $area->slug, 'pinned' => true])->assertOk();
+    expect($area->fresh())->is_pinned->toBeTrue()->target_date->toBeNull();
+
+    get(route('grp.projects.index', ['filter' => ['global' => 'Pinned area INI-412']]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('data.data.0.slug', $area->slug)
+        ->where('data.data.0.is_pinned', true)
+        ->where('data.data.0.progress.days_left', null)
+        ->where('data.data.1.is_pinned', false));
+    AikuServer::actingAs($this->user)->tool(\App\Mcp\Tools\ProjectsTool::class, ['project' => $area->slug])->assertOk()->assertSee('pinned');
+
+    patch(route('grp.models.ticket_project.update', $area->id), ['is_pinned' => false])->assertSessionHasNoErrors();
+    get(route('grp.projects.show', $area->slug))->assertInertia(fn (AssertableInertia $page) => $page->where('project.is_pinned', false));
+});
+
 test('ticket page suggests similar tickets the viewer can see', function () {
     setPermissionsTeamId($this->group->id);
     $outsider = User::factory()->create(['group_id' => $this->group->id]);

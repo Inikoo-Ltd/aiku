@@ -29,7 +29,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Changes projects (see projects-tool), acting as the authenticated user with the same rights as the project page: the owner, the team and ticket leads can change a project; anyone can create one. Pick one action. create: a new project from name, start_date and optional goal, target_date, owner, team (aiku usernames) and parent (makes it a sub-project of that project). update: change name, goal, status, start_date, target_date, owner, parent ("none" to make it top-level again), or add_team/remove_team usernames. add_work: put tickets and staff tasks into the project by reference (e.g. "HELP-12, TASK-4"), optionally under a milestone. move_work: move items already in the project to another milestone (milestone "none" takes them off any milestone), or take them out of the project with remove=true. milestone: create a milestone (new name), or change an existing one (by name or id) with rename, start_date, due_date, done true/false, delete=true, or position (1 = first). post_update: post a progress update with optional health (on_track, at_risk, off_track); the owner and team are notified by bell and email. Changes show in the item\'s history. Confirm with the user before deleting milestones or taking work out.')]
+#[Description('Changes projects (see projects-tool), acting as the authenticated user with the same rights as the project page: the owner, the team and ticket leads can change a project; anyone can create one. Pick one action. create: a new project from name, start_date and optional goal, target_date, owner, team (aiku usernames) and parent (makes it a sub-project of that project). update: change name, goal, status, pinned (true makes it an ongoing area kept at the top, with no target date), start_date, target_date, owner, parent ("none" to make it top-level again), or add_team/remove_team usernames. add_work: put tickets and staff tasks into the project by reference (e.g. "HELP-12, TASK-4"), optionally under a milestone. move_work: move items already in the project to another milestone (milestone "none" takes them off any milestone), or take them out of the project with remove=true. milestone: create a milestone (new name), or change an existing one (by name or id) with rename, start_date, due_date, done true/false, delete=true, or position (1 = first). post_update: post a progress update with optional health (on_track, at_risk, off_track); the owner and team are notified by bell and email. Changes show in the item\'s history. Confirm with the user before deleting milestones or taking work out.')]
 class ProjectWriteTool extends Tool
 {
     public function handle(Request $request): Response
@@ -96,6 +96,7 @@ class ProjectWriteTool extends Tool
             'start_date'  => $request->get('start_date'),
             'target_date' => $request->get('target_date'),
             'owner_id'    => $request->filled('owner') ? $this->userId($user, $request->string('owner')->toString()) : null,
+            'is_pinned'   => $request->has('pinned') ? $request->boolean('pinned') : null,
         ], fn ($value) => $value !== null && $value !== '');
 
         if ($request->filled('add_team') || $request->filled('remove_team')) {
@@ -114,7 +115,7 @@ class ProjectWriteTool extends Tool
         }
 
         if ($modelData === []) {
-            return Response::error('Nothing to change: give name, goal, status, start_date, target_date, owner, parent, add_team or remove_team.');
+            return Response::error('Nothing to change: give name, goal, status, pinned, start_date, target_date, owner, parent, add_team or remove_team.');
         }
 
         try {
@@ -346,6 +347,7 @@ class ProjectWriteTool extends Tool
             'name'        => $schema->string()->description('create/update: project name'),
             'goal'        => $schema->string()->description('create/update: what the project must achieve'),
             'status'      => $schema->string()->description('update: '.implode(', ', array_column(TicketProjectStatusEnum::cases(), 'value'))),
+            'pinned'      => $schema->boolean()->description('update: true makes it an ongoing area with no end date, kept at the top of the list (its target date is cleared); false makes it a normal project'),
             'start_date'  => $schema->string()->description('create/update/milestone: YYYY-MM-DD'),
             'target_date' => $schema->string()->description('create/update: YYYY-MM-DD'),
             'due_date'    => $schema->string()->description('milestone: YYYY-MM-DD'),

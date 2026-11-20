@@ -30,6 +30,7 @@ class TicketProjectsResource extends JsonResource
             'slug'         => $project->slug,
             'name'         => $project->name,
             'status'       => $project->status->value,
+            'is_pinned'    => $project->is_pinned,
             'status_label' => TicketProjectStatusEnum::labels()[$project->status->value],
             'health'       => $health?->value,
             'health_label' => $health ? TicketProjectHealthEnum::labels()[$health->value] : null,
@@ -38,6 +39,7 @@ class TicketProjectsResource extends JsonResource
             'owner'        => IndexTicketProjects::person($project->owner),
             'members'      => $project->members->map(fn (User $member) => IndexTicketProjects::person($member))->values()->all(),
             'progress'     => IndexTicketProjects::rolledUpProgress($project),
+            'quiet_days'   => IndexTicketProjects::quietDays($project),
             'children'     => $project->relationLoaded('children')
                 ? $project->children->map(fn (TicketProject $child) => (new self($child))->toArray($request))->values()->all()
                 : [],
