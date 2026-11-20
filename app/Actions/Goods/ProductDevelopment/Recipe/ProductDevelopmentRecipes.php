@@ -12,6 +12,7 @@ namespace App\Actions\Goods\ProductDevelopment\Recipe;
 use App\Actions\Goods\ProductDevelopment\NotifyProductDevelopmentUsers;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
 use App\Actions\Production\Artefact\BranchArtefact;
+use App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep;
 use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFactoryPhoto;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentComponentStatusEnum;
@@ -30,6 +31,7 @@ use App\Models\Goods\ProductDevelopmentSample;
 use App\Models\SysAdmin\User;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactManufactureTask;
+use App\Models\Production\RawMaterial;
 use App\Models\Production\RecipeStepRawMaterial;
 
 /**
@@ -268,8 +270,29 @@ class ProductDevelopmentRecipes
         ]));
         $formulation->update(['artefact_id' => $artefact->id]);
         $formulation->setRelation('artefact', $artefact);
+        self::seedFromEarlierRun($formulation, $artefact);
 
         return $artefact;
+    }
+
+    /**
+     * A stage that became a blend after its trial runs were made on the SKU's artefact (HELP-4838) starts its own
+     * artefact from the ingredients its latest run recorded, so the next run or the approval carries on from there.
+     */
+    private static function seedFromEarlierRun(ProductDevelopmentFormulation $formulation, Artefact $artefact): void
+    {
+        $earlierRun = $formulation->samples()->reorder()->where('artefact_id', '!=', $artefact->id)->whereNotNull('recipe')->orderByDesc('number')->first();
+        $recipeStep = ArtefactManufactureTask::where('artefact_id', $artefact->id)->orderBy('position')->first();
+        if (!$earlierRun || !$recipeStep) {
+            return;
+        }
+
+        foreach ($earlierRun->recipe['ingredients'] ?? [] as $ingredient) {
+            $rawMaterial = RawMaterial::where('organisation_id', $artefact->organisation_id)->where('code', $ingredient['code'])->first();
+            if ($rawMaterial && (float) $ingredient['quantity'] > 0 && $rawMaterial->artefact_id !== $artefact->id) {
+                AttachRawMaterialToRecipeStep::make()->action($recipeStep, ['raw_material_id' => $rawMaterial->id, 'quantity_per_unit' => (float) $ingredient['quantity']]);
+            }
+        }
     }
 
     private static function stageArtefactCode(int $organisationId, string $skuCode, int $position): string

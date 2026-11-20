@@ -35,7 +35,9 @@ trait WithProductDevelopmentFormulationRules
 
     /**
      * A SKU has at most one finished product stage, and a stage whose trial run is approved keeps its type: an
-     * approved blend is already an ingredient of the finished product.
+     * approved blend is already an ingredient of the finished product. A trial run being made keeps the artefact
+     * it was raised on (HELP-4838), so a stage can turn into a blend meanwhile; it becomes the finished product
+     * only when that run is on the SKU's artefact.
      */
     protected function validateFormulationType(Validator $validator, ProductDevelopmentItem $item, ?ProductDevelopmentFormulation $formulation, ?string $type): void
     {
@@ -49,8 +51,11 @@ trait WithProductDevelopmentFormulationRules
             return;
         }
 
-        if ($formulation && $formulation->samples()->whereIn('status', [ProductDevelopmentSampleStatusEnum::IN_PROGRESS->value, ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW->value])->exists()) {
-            $validator->errors()->add('type', __('This stage has a trial run being made or in review: finish it before changing the type'));
+        if ($type === ProductDevelopmentFormulationTypeEnum::FINISHED_PRODUCT->value && $formulation && $formulation->samples()
+            ->whereIn('status', [ProductDevelopmentSampleStatusEnum::IN_PROGRESS->value, ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW->value])
+            ->where(fn ($query) => $query->whereNull('artefact_id')->orWhere('artefact_id', '!=', $item->artefact_id ?? 0))
+            ->exists()) {
+            $validator->errors()->add('type', __('This stage has a trial run being made on its own artefact: finish it before making it the finished product'));
 
             return;
         }

@@ -106,6 +106,11 @@ function saved() {
                 <div v-if="brief" class="truncate text-xs text-gray-500">
                     {{ brief.development.code }} · {{ brief.development.name }} · {{ ctrans("Trial run :number of :sku", { number: brief.trial_run, sku: brief.sku.code }) }}
                 </div>
+                <div v-if="brief?.brief.stage" class="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                    <span class="font-medium text-gray-800">{{ brief.brief.stage.name }}</span>
+                    <span class="rounded-full border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-2 py-0.5 text-gray-700">{{ brief.brief.stage.type }}</span>
+                    <span v-if="brief.brief.stage.artefact" class="whitespace-nowrap text-gray-500">{{ brief.brief.stage.artefact }}</span>
+                </div>
             </div>
             <FontAwesomeIcon v-if="collapsible" icon="fal fa-chevron-down" class="text-gray-400 transition-transform" :class="open ? 'rotate-180' : ''" fixed-width aria-hidden="true" />
         </button>

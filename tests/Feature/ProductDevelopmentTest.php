@@ -2345,6 +2345,37 @@ test('a blend stage is made on its own artefact, becomes an ingredient once appr
         ->and(collect($recipes::recipe($legacyArtefact)['ingredients'])->pluck('quantity', 'code')->all())->toEqual(['MAND'.$legacyItem->id => 0.05]);
 });
 
+test('a stage changes type while its trial run is being made, but only becomes the finished product when that run is on the SKU artefact, HELP-4838', function () {
+    [$productDevelopment] = inHouseDevelopment($this, 1);
+    $item    = $productDevelopment->items()->with(['tradeUnit', 'artefact'])->firstOrFail();
+    $stage   = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::formulations($item)->first();
+    $update  = fn (array $data) => patch(route('grp.models.product_development.formulation.update', ['productDevelopmentFormulation' => $stage->id]), $data);
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, ['item_ids' => [$item->id], 'quantity' => 1]);
+    $run = $item->samples()->where('number', 1)->firstOrFail();
+    expect($run->status->value)->toBe('in_progress')->and($run->artefact_id)->toBe($item->artefact_id);
+
+    $mandarin = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($item->artefact->production, ['type' => 'stock', 'code' => 'MAND'.$item->id, 'description' => 'Mandarin oil', 'unit' => 'kilogram']);
+    \App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep::make()->action(\App\Models\Production\ArtefactManufactureTask::where('artefact_id', $item->artefact_id)->firstOrFail(), ['raw_material_id' => $mandarin->id, 'quantity_per_unit' => 0.05]);
+
+    $update(['name' => 'EO Fragrance Blend', 'type' => 'base_blend'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($stage->fresh()->type->value)->toBe('base_blend')->and($run->fresh()->artefact_id)->toBe($item->artefact_id);
+    $update(['type' => 'finished_product'])->assertSessionHasNoErrors();
+    $update(['type' => 'base_blend'])->assertSessionHasNoErrors();
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('formulation.skus.0.formulations.0.can_create_artefact', false));
+    post(route('grp.models.product_development.formulation.artefact', ['productDevelopmentFormulation' => $stage->id]))->assertSessionHasErrors('formulation');
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($run->fresh(), $this->user);
+    \App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample::make()->action($run->fresh(), $this->user, ['operation' => \App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample::REQUEST_CHANGES, 'comment' => 'Less mandarin']);
+    $nextRun  = \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample::make()->action($item->fresh(), $this->user, ['product_development_formulation_id' => $stage->id]);
+    $artefact = $stage->fresh()->artefact;
+    expect($nextRun->artefact_id)->toBe($artefact->id)
+        ->and(collect(\App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::recipe($artefact)['ingredients'])->pluck('quantity', 'code')->all())->toEqual(['MAND'.$item->id => 0.05]);
+    $update(['type' => 'intermediate'])->assertSessionHasNoErrors();
+    $update(['type' => 'finished_product'])->assertSessionHasErrors('type');
+});
+
 test('a trial run a development asks for shows the artisan the development, and its first step is the formulation, which the development keeps, HELP-4545', function () {
     [$productDevelopment, $production] = inHouseDevelopment($this, 1);
     $item                              = $productDevelopment->items()->with(['artefact', 'tradeUnit'])->firstOrFail();

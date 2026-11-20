@@ -9,15 +9,11 @@
 namespace App\Actions\Goods\ProductDevelopment\Recipe;
 
 use App\Actions\OrgAction;
-use App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep;
 use App\Actions\Production\Artefact\SetArtefactAsMix;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentSampleStatusEnum;
 use App\Models\Goods\ProductDevelopmentFormulation;
-use App\Models\Goods\ProductDevelopmentSample;
 use App\Models\Production\Artefact;
-use App\Models\Production\ArtefactManufactureTask;
-use App\Models\Production\RawMaterial;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
@@ -52,34 +48,14 @@ class CreateProductDevelopmentFormulationArtefact extends OrgAction
         return DB::transaction(function () use ($formulation) {
             ProductDevelopmentFormulation::whereKey($formulation->id)->lockForUpdate()->first();
             $artefact = ProductDevelopmentRecipes::stageArtefact($formulation->refresh());
-            $approved = $formulation->samples()->where('status', ProductDevelopmentSampleStatusEnum::APPROVED->value)->orderByDesc('number')->first();
+            $approved = $formulation->samples()->where('status', ProductDevelopmentSampleStatusEnum::APPROVED->value)->exists();
 
             if ($approved) {
-                $this->copyApprovedIngredients($approved, $artefact);
                 SetArtefactAsMix::make()->action($artefact, true);
             }
 
             return $artefact;
         });
-    }
-
-    /**
-     * The approved trial run was made on another artefact (the SKU's): its recorded ingredients go on the new
-     * artefact's first step, so the blend's recipe is the one that was approved, not an empty one.
-     */
-    private function copyApprovedIngredients(ProductDevelopmentSample $approved, Artefact $artefact): void
-    {
-        $recipeStep = ArtefactManufactureTask::where('artefact_id', $artefact->id)->orderBy('position')->first();
-        if (!$recipeStep || $approved->artefact_id === $artefact->id) {
-            return;
-        }
-
-        foreach ($approved->recipe['ingredients'] ?? [] as $ingredient) {
-            $rawMaterial = RawMaterial::where('organisation_id', $artefact->organisation_id)->where('code', $ingredient['code'])->first();
-            if ($rawMaterial && (float) $ingredient['quantity'] > 0 && $rawMaterial->artefact_id !== $artefact->id) {
-                AttachRawMaterialToRecipeStep::make()->action($recipeStep, ['raw_material_id' => $rawMaterial->id, 'quantity_per_unit' => (float) $ingredient['quantity']]);
-            }
-        }
     }
 
     public function afterValidator(Validator $validator): void
@@ -92,6 +68,12 @@ class CreateProductDevelopmentFormulationArtefact extends OrgAction
 
         if ($this->formulation->artefact_id) {
             $validator->errors()->add('formulation', __('This stage already has its artefact'));
+
+            return;
+        }
+
+        if ($this->formulation->samples()->whereIn('status', [ProductDevelopmentSampleStatusEnum::IN_PROGRESS->value, ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW->value])->exists()) {
+            $validator->errors()->add('formulation', __('A trial run of this stage is still being made: its artefact is created once it is reviewed'));
 
             return;
         }
