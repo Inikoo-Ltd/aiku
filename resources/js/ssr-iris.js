@@ -155,7 +155,7 @@ const startServer = () => createServer(
 			},
 		})
 
-		response.body = buildSSRBody("app", page, appHtml)
+		response.body = buildSSRBody("app", page, appHtml).toWellFormed()
 		response.head.unshift(...renderedBlocksStylesheets(ssrContext.modules ?? new Set()))
 
 		return response
