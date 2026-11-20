@@ -1324,6 +1324,13 @@ test('concept is uploaded and marked up with pins and freehand lines, and a deve
     expect($concept->fresh()->data['upload']['kind'])->toBe('pdf');
     SubmitProductDevelopmentDesignVersion::make()->action($concept->fresh(), $people['designer']);
 
+    $reviewNotice = fn (\App\Models\SysAdmin\User $user) => $user->notifications()->get()->pluck('data.body')->first(fn ($body) => str_starts_with((string) $body, 'Open the design'));
+    expect($reviewNotice($people['approver']))->toBe('Open the design to pin comments, tick the checks and approve or request changes.')
+        ->and($reviewNotice($this->user))->toBe('Open the design to pin comments, tick the checks and approve or request changes.')
+        ->and($reviewNotice($people['agent']))->toBe('Open the design to pin comments and confirm the factory print limits. The owner or an approver approves it.')
+        ->and($reviewNotice($people['compliance']))->toBe('Open the design to look it over and pin comments. The owner or an approver approves it.')
+        ->and($reviewNotice($people['designer']))->toBeNull();
+
     $pin    = StoreProductDevelopmentComment::make()->action($productDevelopment, $people['buyer'], ['body' => 'Logo bigger', 'design_round_id' => $concept->id, 'pin' => ['x' => 0.3, 'y' => 0.2, 'page' => 2]]);
     $stroke = StoreProductDevelopmentComment::make()->action($productDevelopment, $people['buyer'], ['body' => 'This whole area', 'design_round_id' => $concept->id, 'stroke' => ['page' => 1, 'points' => [[0.1, 0.1], [0.2, 0.15], [0.3, 0.1]]]]);
     expect($pin->data['pin']['page'])->toBe(2)

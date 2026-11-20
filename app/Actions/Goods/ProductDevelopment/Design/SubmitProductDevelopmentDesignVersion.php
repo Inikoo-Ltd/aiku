@@ -64,15 +64,28 @@ class SubmitProductDevelopmentDesignVersion extends OrgAction
             ->flatMap(fn (ProductDevelopmentMemberRoleEnum $role) => $notifier->usersWithRole($productDevelopment, $role))
             ->push($productDevelopment->owner);
 
-        NotifyProductDevelopmentUsers::run(
-            $productDevelopment,
-            $reviewers,
-            UserNotificationEnum::PRODUCT_DEVELOPMENT_TASK,
-            __(':round v:version of :code is ready for review', ['round' => $roundLabel, 'version' => $designRound->version, 'code' => $productDevelopment->code]),
-            __('Open the design to pin comments, tick the checks and approve or request changes.'),
-            url: route('grp.product_developments.design', ['productDevelopment' => $productDevelopment->slug, 'round' => $designRound->round->value, 'version' => $designRound->version]),
-            except: $user,
-        );
+        $access                = $this->productDevelopmentAccess();
+        $hasPrintLimitsCheck   = array_key_exists(ProductDevelopmentDesignRounds::CHECK_PRINT_LIMITS, ProductDevelopmentDesignRounds::checks($productDevelopment));
+        [$approvers, $others]  = $reviewers->filter()->partition(fn (User $reviewer) => $access->canApproveDesign($reviewer, $productDevelopment));
+        [$agents, $commenters] = $others->partition(fn (User $reviewer) => $hasPrintLimitsCheck && $access->canConfirmPrintLimits($reviewer, $productDevelopment));
+
+        $recipientsByBody = [
+            __('Open the design to pin comments, tick the checks and approve or request changes.')                  => $approvers,
+            __('Open the design to pin comments and confirm the factory print limits. The owner or an approver approves it.') => $agents,
+            __('Open the design to look it over and pin comments. The owner or an approver approves it.')           => $commenters,
+        ];
+
+        foreach ($recipientsByBody as $body => $recipients) {
+            NotifyProductDevelopmentUsers::run(
+                $productDevelopment,
+                $recipients,
+                UserNotificationEnum::PRODUCT_DEVELOPMENT_TASK,
+                __(':round v:version of :code is ready for review', ['round' => $roundLabel, 'version' => $designRound->version, 'code' => $productDevelopment->code]),
+                $body,
+                url: route('grp.product_developments.design', ['productDevelopment' => $productDevelopment->slug, 'round' => $designRound->round->value, 'version' => $designRound->version]),
+                except: $user,
+            );
+        }
 
         return $designRound;
     }
