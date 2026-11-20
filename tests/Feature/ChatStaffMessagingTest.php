@@ -1368,3 +1368,36 @@ test('a Slack file too large for the media library is kept on the large files di
     expect(\Illuminate\Support\Facades\Storage::disk('staff-chat-r2')->get('slack-files/FLARGE1/can-you-sell-this.mp4'))->toBe(str_repeat('v', 20))
         ->and($copy::run($message, $file('FLARGE2', $copy::MAX_LARGE_BYTES + 1))->only(['state', 'reason']))->toBe(['state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::SKIPPED, 'reason' => 'larger than 1 GB']);
 });
+
+test('nothing is kept of an ignored Slack channel: no messages, reactions, files or history, and it is never joined', function () {
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Config::set('services.slack.signing_secret', 'shh');
+    Queue::fake();
+    $group   = \App\Models\SysAdmin\Group::firstOrFail();
+    $ignored = SlackChannel::create(['group_id' => $group->id, 'slack_id' => 'CIGNORE1', 'name' => 'ticket-mirror', 'is_member' => false, 'is_ignored' => true]);
+    $earlier = SlackMessage::create(['slack_channel_id' => $ignored->id, 'ts' => '1789700000.000100', 'text' => 'kept before', 'sent_at' => now(), 'data' => ['files' => [['id' => 'FIGNORE1', 'size' => 5, 'url_private_download' => 'https://files.slack.com/files-pri/T1-FIGNORE1/x.png']], 'reactions' => [['name' => 'eyes', 'users' => ['UA'], 'count' => 1]]]]);
+    $post    = function (array $event) {
+        $body      = json_encode(['type' => 'event_callback', 'event' => $event]);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/json',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+
+    expect(\App\Actions\Chat\Staff\Slack\StoreSlackMessage::run(['type' => 'message', 'channel' => 'CIGNORE1', 'channel_type' => 'channel', 'user' => 'U1', 'text' => 'HELP-1 is now Done', 'ts' => '1789700001.000100']))->toBeNull();
+    $post(['type' => 'reaction_added', 'user' => 'UB', 'reaction' => 'tada', 'item' => ['type' => 'message', 'channel' => 'CIGNORE1', 'ts' => $earlier->ts]])->assertOk();
+    expect($ignored->messages()->count())->toBe(1)
+        ->and($earlier->reactions()->count())->toBe(0)
+        ->and(\App\Actions\Chat\Staff\Slack\CopySlackMessageFile::run($earlier, $earlier->data['files'][0]))->toBeNull()
+        ->and(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::make()->dryRun($ignored))->toBe([])
+        ->and(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::run($ignored))->toBe(['queued' => 0, 'recorded' => 0]);
+
+    Http::fake(['slack.com/api/conversations.list*' => Http::response(['ok' => true, 'channels' => [['id' => 'CIGNORE1', 'name' => 'ticket-mirror', 'is_member' => false, 'is_archived' => false]]])]);
+    expect(SyncSlackPublicChannels::run($group, join: true, history: true))->toMatchArray(['joined' => 0, 'messages' => 0])
+        ->and($ignored->refresh()->is_ignored)->toBeTrue();
+    Http::assertNotSent(fn (HttpRequest $request) => !str_contains($request->url(), 'conversations.list'));
+});

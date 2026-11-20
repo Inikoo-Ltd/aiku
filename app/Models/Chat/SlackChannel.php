@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $is_archived
  * @property bool $is_member
  * @property bool $is_public
+ * @property bool $is_ignored
  * @property \Illuminate\Support\Carbon|null $deleted_in_slack_at
  * @property array|null $data
  * @property string|null $history_backfilled_to
@@ -32,6 +33,7 @@ class SlackChannel extends Model
 
     protected $attributes = [
         'is_public' => true,
+        'is_ignored' => false,
     ];
 
     protected function casts(): array
@@ -40,6 +42,7 @@ class SlackChannel extends Model
             'is_archived'       => 'boolean',
             'is_member'         => 'boolean',
             'is_public'         => 'boolean',
+            'is_ignored'        => 'boolean',
             'deleted_in_slack_at' => 'datetime',
             'data'              => 'array',
             'history_synced_at' => 'datetime',

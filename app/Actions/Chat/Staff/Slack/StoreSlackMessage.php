@@ -38,7 +38,7 @@ class StoreSlackMessage
         $channel = $channelType === 'channel'
             ? SlackChannel::firstOrCreate(['slack_id' => $slackChannelId], ['group_id' => Group::firstOrFail()->id, 'is_member' => true])
             : SlackChannel::where('slack_id', $slackChannelId)->first();
-        if (!$channel || !$channel->is_public) {
+        if (!$channel || !$channel->is_public || $channel->is_ignored) {
             return null;
         }
 

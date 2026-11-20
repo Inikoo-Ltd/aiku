@@ -49,7 +49,7 @@ class CopySlackMessageFiles
 
         $messages = SlackMessage::query()
             ->select(['id', 'slack_channel_id', 'data'])
-            ->whereIn('slack_channel_id', SlackChannel::where('is_public', true)->when($channel, fn ($query) => $query->whereKey($channel->id))->select('id'))
+            ->whereIn('slack_channel_id', SlackChannel::where('is_public', true)->where('is_ignored', false)->when($channel, fn ($query) => $query->whereKey($channel->id))->select('id'))
             ->whereRaw("jsonb_typeof(data->'files') = 'array'");
 
         foreach ($messages->lazyById(200) as $message) {
@@ -130,7 +130,7 @@ class CopySlackMessageFiles
                         else 'to_copy'
                     end as category
                 from slack_messages m
-                join slack_channels c on c.id = m.slack_channel_id and c.is_public and (?::int is null or c.id = ?::int)
+                join slack_channels c on c.id = m.slack_channel_id and c.is_public and not c.is_ignored and (?::int is null or c.id = ?::int)
                 cross join jsonb_array_elements(case when jsonb_typeof(m.data->'files') = 'array' then m.data->'files' else '[]'::jsonb end) f
                 where m.deleted_at is null and f->>'id' is not null
                   and not exists (select 1 from slack_files s where s.slack_id = f->>'id' and s.state <> all(?::text[]))

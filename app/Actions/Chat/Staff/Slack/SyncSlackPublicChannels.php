@@ -63,12 +63,12 @@ class SyncSlackPublicChannels
                 $totals['channels']++;
                 $listed[] = $channel->slack_id;
 
-                if ($join && $channel->is_public && !$channel->is_member && !$channel->is_archived) {
+                if ($join && $channel->is_public && !$channel->is_ignored && !$channel->is_member && !$channel->is_archived) {
                     $this->slackCall($client, 'conversations.join', ['channel' => $channel->slack_id], 'post');
                     $channel->update(['is_member' => true]);
                     $totals['joined']++;
                 }
-                if ($history && $channel->is_public && $channel->is_member && (!$catchUpOnly || $channel->history_synced_at)) {
+                if ($history && $channel->is_public && !$channel->is_ignored && $channel->is_member && (!$catchUpOnly || $channel->history_synced_at)) {
                     $totals['messages'] += $this->syncHistory($client, $channel);
                 }
             }

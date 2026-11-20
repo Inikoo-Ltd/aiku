@@ -42,7 +42,7 @@ class StoreSlackMessageReaction
 
         $message = SlackMessage::query()
             ->where('ts', (string) Arr::get($event, 'item.ts'))
-            ->whereHas('channel', fn ($channel) => $channel->where('slack_id', Arr::get($event, 'item.channel'))->where('is_public', true))
+            ->whereHas('channel', fn ($channel) => $channel->where('slack_id', Arr::get($event, 'item.channel'))->where('is_public', true)->where('is_ignored', false))
             ->first();
         if (!$message) {
             return;
@@ -111,7 +111,7 @@ class StoreSlackMessageReaction
         $added = 0;
         SlackMessage::query()
             ->whereRaw("jsonb_typeof(data->'reactions') = 'array'")
-            ->whereHas('channel', fn ($channel) => $channel->where('is_public', true))
+            ->whereHas('channel', fn ($channel) => $channel->where('is_public', true)->where('is_ignored', false))
             ->chunkById(500, function ($messages) use (&$added) {
                 foreach ($messages as $message) {
                     $added += $this->fromStoredMessage($message);

@@ -56,7 +56,7 @@ class CopySlackMessageFile
     public function handle(SlackMessage $message, array $file): ?SlackFile
     {
         $slackId = Arr::get($file, 'id');
-        if (!$slackId || !$message->channel->is_public) {
+        if (!$slackId || !$message->channel->is_public || $message->channel->is_ignored) {
             return null;
         }
 
