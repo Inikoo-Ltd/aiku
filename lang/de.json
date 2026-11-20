@@ -26908,5 +26908,7 @@
     "Back, correct the quantity": "Zurück, Menge korrigieren",
     "Yes, the quantity is right": "Ja, die Menge stimmt",
     "Too fast": "Zu schnell",
-    "More than ten times the target: check the quantity and the times": "Mehr als das Zehnfache des Ziels: Menge und Zeiten prüfen"
+    "More than ten times the target: check the quantity and the times": "Mehr als das Zehnfache des Ziels: Menge und Zeiten prüfen",
+    ":units units": ":units Stück",
+    "Needed by :date": "Benötigt bis :date"
 }

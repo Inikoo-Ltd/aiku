@@ -783,7 +783,7 @@ test('production job positions carry the factory roles all the way to the user',
     expect($user->refresh()->hasRole('production-operator-'.$this->production->id))->toBeFalse();
 });
 
-test('an operative only sees the factory jobs page and nothing group or commercial', function () {
+test('an operative only sees the factory jobs and materials check pages and nothing group or commercial', function () {
     SeedJobPositions::make()->handle($this->organisation);
     $operativePosition = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'prod-c')->first();
 
@@ -804,7 +804,7 @@ test('an operative only sees the factory jobs page and nothing group or commerci
     $organisationNavigation = \App\Actions\UI\Grp\Layout\GetOrganisationNavigation::run($user, $this->organisation);
 
     expect($user->hasGroupAccess())->toBeFalse()
-        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $user)))->toBe(['jobs'])
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $user)))->toBe(['jobs', 'materials_check'])
         ->and(array_keys($organisationNavigation))
         ->not->toContain('overview', 'chat')
         ->and($organisationNavigation['calendar']['roots'])->toBe(['grp.org.calendar.'])

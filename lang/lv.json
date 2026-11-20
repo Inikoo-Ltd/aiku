@@ -2128,5 +2128,9 @@
     "Too fast": "Pārāk ātri",
     "More than ten times the target: check the quantity and the times": "Vairāk nekā desmitkārt pārsniegts mērķis: pārbaudiet daudzumu un laikus",
     "Yes, I would like :brand to send me WhatsApp updates about my orders, deliveries, restocks and membership.": "Jā, es vēlos, lai :brand man sūta WhatsApp ziņas par maniem pasūtījumiem, piegādēm, preču atjaunošanu krājumos un dalību.",
-    "Yes, I would like to receive occasional offers and news from :brand on WhatsApp.": "Jā, es vēlos saņemt neregulārus piedāvājumus un jaunumus no :brand pa WhatsApp."
+    "Yes, I would like to receive occasional offers and news from :brand on WhatsApp.": "Jā, es vēlos saņemt neregulārus piedāvājumus un jaunumus no :brand pa WhatsApp.",
+    ":units units": ":units gab.",
+    "Needed by :date": "Vajadzīgs līdz :date",
+    "Needed by": "Vajadzīgs līdz",
+    ":skos SKOs": ":skos SKO"
 }

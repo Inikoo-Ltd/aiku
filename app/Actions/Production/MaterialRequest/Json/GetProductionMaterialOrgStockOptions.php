@@ -9,6 +9,7 @@
 namespace App\Actions\Production\MaterialRequest\Json;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\MaterialRequest\GetDayMaterialsChecklist;
 use App\Actions\Production\MaterialRequest\MaterialsCheckAuthorisation;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Inventory\OrgStock;
@@ -22,7 +23,7 @@ class GetProductionMaterialOrgStockOptions extends OrgAction
     /**
      * SKOs the factory can ask the warehouse for, with what the shelves and the factory hold.
      *
-     * @return Collection<int, array{id: int, code: string, name: string|null, warehouse_skos: float, factory_skos: float}>
+     * @return Collection<int, array{id: int, code: string, name: string|null, warehouse_skos: float, factory_skos: float, packed_in: float, box_units: float|null}>
      */
     public function handle(Production $production, string $search): Collection
     {
@@ -39,6 +40,8 @@ class GetProductionMaterialOrgStockOptions extends OrgAction
                 'org_stocks.id',
                 'org_stocks.code',
                 'org_stocks.name',
+                'org_stocks.packed_in',
+                DB::raw('coalesce(('.GetDayMaterialsChecklist::supplierBoxUnitsSql('org_stocks.id').'), nullif(org_stocks.packed_in, 0)) as box_units'),
                 DB::raw("coalesce((select sum(quantity) from location_org_stocks where org_stock_id = org_stocks.id and location_id <> $factoryLocationId), 0) as warehouse_skos"),
                 DB::raw("coalesce((select sum(quantity) from location_org_stocks where org_stock_id = org_stocks.id and location_id = $factoryLocationId), 0) as factory_skos"),
             ])
@@ -49,6 +52,8 @@ class GetProductionMaterialOrgStockOptions extends OrgAction
                 'name'           => $row->name,
                 'warehouse_skos' => (float) $row->warehouse_skos,
                 'factory_skos'   => (float) $row->factory_skos,
+                'packed_in'      => (float) $row->packed_in,
+                'box_units'      => $row->box_units === null ? null : (float) $row->box_units,
             ]);
     }
 

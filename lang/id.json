@@ -23654,5 +23654,6 @@
     "material": "bahan",
     ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO oleh :name, :time|:count SKO oleh :name, :time",
     "Yes, I would like :brand to send me WhatsApp updates about my orders, deliveries, restocks and membership.": "Ya, saya ingin :brand mengirimkan kabar melalui WhatsApp tentang pesanan, pengiriman, stok kembali, dan keanggotaan saya.",
-    "Yes, I would like to receive occasional offers and news from :brand on WhatsApp.": "Ya, saya ingin menerima penawaran dan berita sesekali dari :brand melalui WhatsApp."
+    "Yes, I would like to receive occasional offers and news from :brand on WhatsApp.": "Ya, saya ingin menerima penawaran dan berita sesekali dari :brand melalui WhatsApp.",
+    "Needed by :date": "Dibutuhkan paling lambat :date"
 }

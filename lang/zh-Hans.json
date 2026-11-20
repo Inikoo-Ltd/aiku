@@ -25969,5 +25969,7 @@
     "Your items": "您的货品",
     "claim :state": "索赔 :state",
     "e.g. 3 of 12 jars arrived broken, the rest fine": "例如：12 个罐子中有 3 个到货时破损，其余完好",
-    "expected :expected, received :received": "预计 :expected，实收 :received"
+    "expected :expected, received :received": "预计 :expected，实收 :received",
+    ":units units": ":units 件",
+    "Needed by :date": ":date 前需要"
 }

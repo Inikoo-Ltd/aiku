@@ -30,6 +30,7 @@ type MaterialItem = {
     to_location: string | null
     drop_point: string | null
     is_urgent: boolean
+    needed_by: string | null
     note: string | null
     org_stock_code: string
     org_stock_name: string
@@ -58,6 +59,7 @@ const props = defineProps<{
 }>()
 
 const locale = useLocaleStore()
+const todayIso = new Date().toLocaleDateString("sv-SE")
 
 const source = reactive<Record<number, number | null>>({})
 const quantity = reactive<Record<number, number | null>>({})
@@ -134,6 +136,9 @@ const leadTime = (minutes: number | null) => {
 
         <template #cell(bring)="{ item }">
             <div class="font-semibold tabular-nums">{{ item.bring }}</div>
+            <div v-if="item.needed_by && scope === 'open'" class="text-xs" :class="item.needed_by <= todayIso ? 'text-red-600' : 'text-amber-700'">
+                {{ ctrans("Needed by :date", { date: useFormatTime(item.needed_by) }) }}
+            </div>
             <div v-if="item.note" class="text-xs text-gray-600">{{ item.note }}</div>
             <div v-if="item.warehouse_short" class="text-xs text-red-600">
                 <FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width aria-hidden="true" />

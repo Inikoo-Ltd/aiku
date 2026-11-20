@@ -29,7 +29,7 @@ class StoreManualProductionMaterialRequest extends OrgAction
      * Materials the factory asks for when it needs them, outside the morning check: any SKO,
      * in the unit the factory counts it in, to a drop point in the factory.
      *
-     * @param array<int, array{org_stock_id: int, requested_quantity: float|null, requested_unit: string, production_drop_point_id: int, is_urgent?: bool, note?: string|null}> $lines
+     * @param array<int, array{org_stock_id: int, requested_quantity: float|null, requested_unit: string, production_drop_point_id: int, is_urgent?: bool, needed_by?: string|null, note?: string|null}> $lines
      */
     public function handle(Production $production, array $lines, ?User $user): ProductionMaterialRequest
     {
@@ -60,7 +60,9 @@ class StoreManualProductionMaterialRequest extends OrgAction
                     'requested_quantity'       => $quantity,
                     'requested_unit'           => $unit,
                     'skos_to_bring'            => $unit === ProductionMaterialRequestUnitEnum::SKO ? $quantity : null,
+                    'box_units'                => $unit === ProductionMaterialRequestUnitEnum::BOX ? self::boxUnits((int) $line['org_stock_id']) : null,
                     'is_urgent'                => (bool) ($line['is_urgent'] ?? false),
+                    'needed_by'                => $line['needed_by'] ?? null,
                     'note'                     => $line['note'] ?? null,
                     'state'                    => ProductionMaterialRequestItemStateEnum::PENDING,
                 ];
@@ -68,6 +70,16 @@ class StoreManualProductionMaterialRequest extends OrgAction
 
             return $request;
         });
+    }
+
+    /**
+     * Units in one box as the morning check counts it: the main supplier's carton, else the SKO's pack.
+     */
+    public static function boxUnits(int $orgStockId): ?float
+    {
+        $boxUnits = DB::selectOne('select coalesce(('.GetDayMaterialsChecklist::supplierBoxUnitsSql('org_stocks.id').'), nullif(org_stocks.packed_in, 0)) as box_units from org_stocks where id = ?', [$orgStockId])?->box_units;
+
+        return $boxUnits === null ? null : (float) $boxUnits;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -88,6 +100,7 @@ class StoreManualProductionMaterialRequest extends OrgAction
             'lines.*.requested_quantity'       => ['nullable', 'required_unless:lines.*.requested_unit,all', 'numeric', 'gt:0', 'max:1000000'],
             'lines.*.production_drop_point_id' => ['required', 'integer', Rule::exists('production_drop_points', 'id')->where('production_id', $this->production->id)->whereNull('deleted_at')],
             'lines.*.is_urgent'                => ['sometimes', 'boolean'],
+            'lines.*.needed_by'                => ['nullable', 'date_format:Y-m-d', 'after_or_equal:today'],
             'lines.*.note'                     => ['nullable', 'string', 'max:500'],
         ];
     }

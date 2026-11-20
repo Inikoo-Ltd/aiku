@@ -26132,5 +26132,7 @@
     "Back, correct the quantity": "Înapoi, corectați cantitatea",
     "Yes, the quantity is right": "Da, cantitatea este corectă",
     "Too fast": "Prea rapid",
-    "More than ten times the target: check the quantity and the times": "De peste zece ori obiectivul: verificați cantitatea și orele"
+    "More than ten times the target: check the quantity and the times": "De peste zece ori obiectivul: verificați cantitatea și orele",
+    ":units units": ":units bucăți",
+    "Needed by :date": "Necesar până la :date"
 }

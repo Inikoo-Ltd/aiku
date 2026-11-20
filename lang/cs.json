@@ -27112,5 +27112,7 @@
     "Back, correct the quantity": "Zpět, opravit množství",
     "Yes, the quantity is right": "Ano, množství je správné",
     "Too fast": "Příliš rychle",
-    "More than ten times the target: check the quantity and the times": "Více než desetinásobek cíle: zkontrolujte množství a časy"
+    "More than ten times the target: check the quantity and the times": "Více než desetinásobek cíle: zkontrolujte množství a časy",
+    ":units units": ":units ks",
+    "Needed by :date": "Potřeba do :date"
 }

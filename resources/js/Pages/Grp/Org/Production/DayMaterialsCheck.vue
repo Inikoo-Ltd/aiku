@@ -51,6 +51,7 @@ type RequestItem = {
     bring: string
     drop_point: string | null
     is_urgent: boolean
+    needed_by: string | null
     note: string | null
     delivered_skos: number
     state: "pending" | "delivered" | "short"
@@ -84,6 +85,7 @@ const props = defineProps<{
 const showDropPoints = ref(false)
 
 const locale = useLocaleStore()
+const todayIso = new Date().toLocaleDateString("sv-SE")
 
 const toIsoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 
@@ -219,6 +221,7 @@ const dayPlanRoute = computed(() => route("grp.org.productions.show.operations.d
                     <span class="whitespace-nowrap font-medium">{{ item.code }}</span>
                     <span class="tabular-nums text-gray-700">{{ item.bring }}</span>
                     <span v-if="item.drop_point" class="text-gray-500">→ {{ item.drop_point }}</span>
+                    <span v-if="item.needed_by && item.state === 'pending'" class="text-xs" :class="item.needed_by <= todayIso ? 'text-red-600' : 'text-amber-700'">{{ ctrans("Needed by :date", { date: useFormatTime(item.needed_by) }) }}</span>
                     <span v-if="item.note" class="text-gray-500">· {{ item.note }}</span>
                     <span v-if="item.state === 'delivered'" class="text-xs text-gray-500">
                         {{ ctransChoice(":count SKO by :name, :time|:count SKOs by :name, :time", item.delivered_skos, { count: locale.number(item.delivered_skos), name: item.done_by ?? "-", time: useFormatTime(item.done_at, { formatTime: "hm" }) }) }}

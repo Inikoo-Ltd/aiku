@@ -13,6 +13,7 @@ import InputNumber from "primevue/inputnumber"
 import InputText from "primevue/inputtext"
 import Select from "primevue/select"
 import Checkbox from "primevue/checkbox"
+import DatePicker from "primevue/datepicker"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -22,7 +23,7 @@ import { useLocaleStore } from "@/Stores/locale"
 
 library.add(faPlus, faTimes, faPaperPlane, faBolt)
 
-type OrgStockOption = { id: number, code: string, name: string | null, warehouse_skos: number, factory_skos: number }
+type OrgStockOption = { id: number, code: string, name: string | null, warehouse_skos: number, factory_skos: number, packed_in: number, box_units: number | null }
 type DropPoint = { id: number, name: string }
 type Unit = { value: string, label: string }
 
@@ -33,6 +34,7 @@ type Line = {
     requested_unit: string
     production_drop_point_id: number | null
     is_urgent: boolean
+    needed_by: Date | null
     note: string
 }
 
@@ -54,6 +56,7 @@ const newLine = (): Line => ({
     requested_unit: "box",
     production_drop_point_id: lastDropPoint.value,
     is_urgent: false,
+    needed_by: null,
     note: "",
 })
 
@@ -77,6 +80,26 @@ function setDropPoint(line: Line, dropPointId: number | null) {
     lastDropPoint.value = dropPointId
 }
 
+const today = new Date(new Date().setHours(0, 0, 0, 0))
+const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+
+function comesTo(line: Line): string | null {
+    const packedIn = line.orgStock?.packed_in ?? 0
+    const quantity = line.requested_quantity ?? 0
+    if (!packedIn || !quantity) {
+        return null
+    }
+    if (line.requested_unit === "box" && line.orgStock?.box_units) {
+        const units = quantity * line.orgStock.box_units
+        const skos = ctrans(":skos SKOs", { skos: locale.number(units / packedIn) })
+        return packedIn === 1 ? `= ${skos}` : `= ${skos} (${ctrans(":units units", { units: locale.number(units) })})`
+    }
+    if (line.requested_unit === "sko" && packedIn !== 1) {
+        return `= ${ctrans(":units units", { units: locale.number(quantity * packedIn) })}`
+    }
+    return null
+}
+
 const isReady = (line: Line) => !!line.orgStock && !!line.production_drop_point_id && (line.requested_unit === "all" || (line.requested_quantity ?? 0) > 0)
 const readyLines = computed(() => lines.value.filter(isReady))
 
@@ -97,6 +120,7 @@ function send() {
             requested_unit: line.requested_unit,
             production_drop_point_id: line.production_drop_point_id,
             is_urgent: line.is_urgent,
+            needed_by: line.needed_by ? toLocalIsoDate(line.needed_by) : null,
             note: line.note || null,
         })),
     }, {
@@ -156,16 +180,21 @@ function send() {
                         </div>
                     </div>
 
-                    <InputNumber
-                        v-if="line.requested_unit !== 'all'"
-                        v-model="line.requested_quantity"
-                        :min="0"
-                        :maxFractionDigits="3"
-                        :placeholder="ctrans('Qty')"
-                        :pt="{ pcInputText: { root: { class: '!w-20 !py-1 !text-sm !text-right' } } }"
-                        :aria-label="ctrans('Quantity')" />
+                    <div>
+                        <div class="flex items-start gap-2">
+                            <InputNumber
+                                v-if="line.requested_unit !== 'all'"
+                                v-model="line.requested_quantity"
+                                :min="0"
+                                :maxFractionDigits="3"
+                                :placeholder="ctrans('Qty')"
+                                :pt="{ pcInputText: { root: { class: '!w-20 !py-1 !text-sm !text-right' } } }"
+                                :aria-label="ctrans('Quantity')" />
 
-                    <Select v-model="line.requested_unit" :options="units" optionLabel="label" optionValue="value" class="w-36" :pt="{ label: { class: '!py-1 !text-sm' } }" :aria-label="ctrans('Unit')" />
+                            <Select v-model="line.requested_unit" :options="units" optionLabel="label" optionValue="value" class="w-36" :pt="{ label: { class: '!py-1 !text-sm' } }" :aria-label="ctrans('Unit')" />
+                        </div>
+                        <div v-if="comesTo(line)" class="mt-0.5 whitespace-nowrap text-xs tabular-nums text-gray-500">{{ comesTo(line) }}</div>
+                    </div>
 
                     <Select
                         :modelValue="line.production_drop_point_id"
@@ -183,6 +212,17 @@ function send() {
                         <FontAwesomeIcon icon="fal fa-bolt" fixed-width aria-hidden="true" />
                         {{ ctrans("Urgent") }}
                     </label>
+
+                    <DatePicker
+                        v-model="line.needed_by"
+                        :minDate="today"
+                        dateFormat="d M yy"
+                        :manualInput="false"
+                        showClear
+                        :placeholder="ctrans('Needed by')"
+                        class="[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
+                        :pt="{ pcInputText: { root: { class: '!w-32 !py-1 !text-sm' } } }"
+                        :aria-label="ctrans('Needed by')" />
 
                     <InputText v-model="line.note" :placeholder="ctrans('Note (optional)')" maxlength="500" class="min-w-40 flex-1 !py-1 !text-sm" :aria-label="ctrans('Note')" />
 

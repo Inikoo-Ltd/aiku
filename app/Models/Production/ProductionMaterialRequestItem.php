@@ -33,6 +33,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric|null $requested_quantity
  * @property ProductionMaterialRequestUnitEnum|null $requested_unit
  * @property bool $is_urgent
+ * @property string|null $needed_by
  * @property string|null $note
  * @property numeric $unbooked_skos
  * @property string|null $short_reason

@@ -11,6 +11,7 @@ namespace App\Actions\UI\Grp\Layout;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\Artefact\UI\ShowDevelopmentRoom;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
+use App\Actions\Production\MaterialRequest\MaterialsCheckAuthorisation;
 use App\Actions\Production\RawMaterial\UI\IndexRawMaterials;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\User;
@@ -53,6 +54,18 @@ class GetProductionNavigation
                 "productions_procurement.$production->id.view",
             ]
         );
+
+        if (!$canSeeAllCrafts && MaterialsCheckAuthorisation::canRequestMaterials($user, $production)) {
+            $navigation['materials_check'] = [
+                'root'  => 'grp.org.productions.show.operations.materials_check',
+                'label' => __('Materials check'),
+                'icon'  => ['fal', 'fa-clipboard-check'],
+                'route' => [
+                    'name'       => 'grp.org.productions.show.operations.materials_check',
+                    'parameters' => [$production->organisation->slug, $production->slug]
+                ],
+            ];
+        }
 
         if ($canSeeAllCrafts || $user->hasAnyPermission(["accounting.$production->organisation_id.view"])) {
             $navigation["crafts"] = [

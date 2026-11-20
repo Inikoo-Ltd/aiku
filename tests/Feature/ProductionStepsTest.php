@@ -1800,6 +1800,58 @@ test('the factory asks for any SKO to a drop point, the warehouse sees it under 
     $this->production->update(['factory_location_id' => null]);
 });
 
+test('the factory says when it needs a material by, the warehouse sees the soonest first, and a box shows the SKOs and units it comes to', function () {
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-NBY', 'name' => 'Needed by warehouse']);
+    $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-NBY', 'name' => 'Needed by area']);
+    $factory   = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'NBY-FACTORY', 'name' => 'NBY-FACTORY'] + \App\Models\Inventory\Location::factory()->definition());
+    \App\Actions\Production\Production\SetProductionFactoryLocation::make()->handle($this->production, $factory);
+    $dropPoint = \App\Models\Production\ProductionDropPoint::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'production_id'   => $this->production->id,
+        'name'            => 'NBY bench',
+    ]);
+
+    $bottles = labelTestOrgStock($this->organisation, $this->group);
+    $bottles->update(['packed_in' => 300]);
+    $caps = labelTestOrgStock($this->organisation, $this->group);
+    $caps->update(['packed_in' => 50]);
+
+    $operator = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+    $operator->givePermissionTo("productions_operations.{$this->production->id}.view");
+    actingAs($operator);
+
+    expect(collect(get(route('grp.json.production.material_org_stocks.index', ['production' => $this->production->id, 'search' => $bottles->code]))->json())->firstWhere('id', $bottles->id))
+        ->toMatchArray(['packed_in' => 300.0, 'box_units' => 300.0]);
+
+    \Pest\Laravel\post(route('grp.models.production.material_requests.store', ['production' => $this->production->id]), [
+        'lines' => [['org_stock_id' => $caps->id, 'requested_quantity' => 1, 'requested_unit' => 'box', 'production_drop_point_id' => $dropPoint->id, 'needed_by' => now()->subDay()->toDateString()]],
+    ])->assertSessionHasErrors('lines.0.needed_by');
+
+    $later = now()->addDays(3)->toDateString();
+    $sooner = now()->addDay()->toDateString();
+    \Pest\Laravel\post(route('grp.models.production.material_requests.store', ['production' => $this->production->id]), [
+        'lines' => [
+            ['org_stock_id' => $caps->id, 'requested_quantity' => 3, 'requested_unit' => 'sko', 'production_drop_point_id' => $dropPoint->id],
+            ['org_stock_id' => $bottles->id, 'requested_quantity' => 2, 'requested_unit' => 'box', 'production_drop_point_id' => $dropPoint->id, 'needed_by' => $later],
+            ['org_stock_id' => $caps->id, 'requested_quantity' => 1, 'requested_unit' => 'pallet', 'production_drop_point_id' => $dropPoint->id, 'needed_by' => $sooner],
+        ],
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    $request = \App\Models\Production\ProductionMaterialRequest::where('production_id', $this->production->id)->latest('id')->firstOrFail();
+    $bottleLine = $request->items()->where('org_stock_id', $bottles->id)->firstOrFail();
+    expect((float) $bottleLine->box_units)->toBe(300.0)
+        ->and($bottleLine->skos_to_bring)->toBeNull()
+        ->and($bottleLine->needed_by)->toBe($later);
+
+    actingAs($this->guest->getUser());
+    $open = get(route('grp.org.warehouses.show.inventory.production_materials.index', [$this->organisation->slug, $warehouse->slug]))->viewData('page')['props']['data']['data'];
+    expect(collect($open)->pluck('bring')->all())->toBe(['1 Pallet', '2 Boxes = 2 SKOs (600 units)', '3 SKOs (150 units)'])
+        ->and(collect($open)->pluck('needed_by')->all())->toBe([$sooner, $later, null]);
+
+    $this->production->update(['factory_location_id' => null]);
+});
+
 test('a line whose done mix made more kg than required can be given whole to another artisan', function () {
     [$artisanA, $artisanB, , $line, $tasks, $splitUrl] = stepOwnerFixture($this);
     [$mix, $making, $packing] = $tasks->all();

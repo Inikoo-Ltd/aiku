@@ -26788,5 +26788,7 @@
     "Stock check: :subject": "Stock check: :subject",
     ":sko at :location": ":sko at :location",
     ":count offline actions of :name expired unresolved": ":count offline actions of :name expired unresolved",
-    "These offline actions were still open after :days days, so Aiku and the shelves may disagree. Please check them:": "These offline actions were still open after :days days, so Aiku and the shelves may disagree. Please check them:"
+    "These offline actions were still open after :days days, so Aiku and the shelves may disagree. Please check them:": "These offline actions were still open after :days days, so Aiku and the shelves may disagree. Please check them:",
+    ":units units": ":units units",
+    "Needed by :date": "Needed by :date"
 }

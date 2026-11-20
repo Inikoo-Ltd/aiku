@@ -87,7 +87,9 @@ class IndexProductionMaterialRequestItems extends OrgAction
 
         InertiaTable::updateQueryBuilderParameters($prefix);
 
-        $query = $scope === self::DONE ? self::doneItems($warehouse) : self::pendingItems($warehouse)->orderByDesc('production_material_request_items.is_urgent');
+        $query = $scope === self::DONE ? self::doneItems($warehouse) : self::pendingItems($warehouse)
+            ->orderByDesc('production_material_request_items.is_urgent')
+            ->orderByRaw('production_material_request_items.needed_by asc nulls last');
 
         return QueryBuilder::for($query)
             ->join('org_stocks', 'org_stocks.id', 'production_material_request_items.org_stock_id')
@@ -108,6 +110,7 @@ class IndexProductionMaterialRequestItems extends OrgAction
                 DB::raw('coalesce(production_material_request_items.delivered_at, production_material_request_items.short_at) as done_at'),
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
+                'org_stocks.packed_in as org_stock_packed_in',
                 DB::raw('(select locations.code '.self::SHELVES_SQL.' order by shelf.picking_priority nulls last, shelf.quantity desc limit 1) as location_code'),
                 DB::raw('(select locations.sort_code '.self::SHELVES_SQL.' order by shelf.picking_priority nulls last, shelf.quantity desc limit 1) as location_sort_code'),
                 DB::raw('coalesce((select sum(shelf.quantity) '.self::SHELVES_SQL.'), 0) as warehouse_skos'),
@@ -139,7 +142,8 @@ class IndexProductionMaterialRequestItems extends OrgAction
             'org_stock_code'     => $item->org_stock_code,
             'org_stock_name'     => $item->org_stock_name,
             'location_code'      => $item->location_code,
-            'bring'              => self::bringLabel($item),
+            'bring'              => self::bringLabel($item, (float) $item->org_stock_packed_in),
+            'needed_by'          => $item->needed_by,
             'skos_to_bring'      => $item->skos_to_bring === null ? null : (float) $item->skos_to_bring,
             'remaining_skos'     => $remaining,
             'delivered_skos'     => (float) $item->delivered_skos,
@@ -158,9 +162,10 @@ class IndexProductionMaterialRequestItems extends OrgAction
     }
 
     /**
-     * What the factory asked for, in its words: "3 Boxes", "1 Pallets", "All there is", or the SKOs of the morning check.
+     * What the factory asked for, in its words, with what it comes to where the pack is known:
+     * "3 Boxes = 3 SKOs (900 units)", "2 SKOs (600 units)", "All there is".
      */
-    public static function bringLabel(ProductionMaterialRequestItem $item): string
+    public static function bringLabel(ProductionMaterialRequestItem $item, float $packedIn = 0): string
     {
         if ($item->requested_unit === ProductionMaterialRequestUnitEnum::ALL) {
             return ProductionMaterialRequestUnitEnum::labels()['all'];
@@ -168,9 +173,35 @@ class IndexProductionMaterialRequestItems extends OrgAction
 
         $unit     = $item->requested_unit?->value ?? 'sko';
         $quantity = (float) ($item->requested_unit ? $item->requested_quantity : $item->skos_to_bring);
-        $labels   = $quantity == 1 ? ProductionMaterialRequestUnitEnum::singularLabels() : ProductionMaterialRequestUnitEnum::labels();
+        $label    = self::quantityLabel($quantity, $unit);
 
-        return rtrim(rtrim(number_format($quantity, 3, '.', ''), '0'), '.').' '.$labels[$unit];
+        if ($packedIn <= 0) {
+            return $label;
+        }
+
+        if ($item->requested_unit === ProductionMaterialRequestUnitEnum::BOX && (float) $item->box_units > 0) {
+            $units = $quantity * (float) $item->box_units;
+
+            return $label.' = '.self::quantityLabel($units / $packedIn, 'sko').($packedIn == 1 ? '' : ' ('.__(':units units', ['units' => self::number($units)]).')');
+        }
+
+        if ($unit === 'sko' && $packedIn != 1) {
+            return $label.' ('.__(':units units', ['units' => self::number($quantity * $packedIn)]).')';
+        }
+
+        return $label;
+    }
+
+    private static function quantityLabel(float $quantity, string $unit): string
+    {
+        $labels = $quantity == 1 ? ProductionMaterialRequestUnitEnum::singularLabels() : ProductionMaterialRequestUnitEnum::labels();
+
+        return self::number($quantity).' '.$labels[$unit];
+    }
+
+    private static function number(float $quantity): string
+    {
+        return rtrim(rtrim(number_format($quantity, 3, '.', ''), '0'), '.');
     }
 
     public static function pendingItems(Warehouse $warehouse): Builder
