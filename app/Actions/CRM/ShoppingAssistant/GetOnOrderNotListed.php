@@ -35,7 +35,11 @@ use Lorisleiva\Actions\Concerns\AsObject;
  *
  * The candidates' cleaned names are embedded nightly per shop (HydrateCatalogueSearchEmbeddings), only
  * for shops that carry the organisation's whole range (TEASE_MIN_SHARE of its biggest), and the
- * conditions are checked again live, so stock that got a product or arrived stops being teased at once.
+ * conditions are checked again on a 10-minute cache of candidate ids, so stock that got a product or
+ * arrived stops being teased within 10 minutes.
+ *
+ * ponytail: the confirming tool trusts the model to pass the query it searched (as sister_shop_products
+ * does); the sentence names nothing, and needs a real match. Tie it to the turn's search if it misfires.
  */
 class GetOnOrderNotListed
 {
@@ -53,7 +57,7 @@ class GetOnOrderNotListed
 
     public const float NAME_MARGIN = 0.05;
 
-    private const int MAX_PRODUCT_NAMES = 12;
+    private const int MAX_PRODUCT_NAMES = 30;
 
     private const string NOT_FOR_EVERYONE = '/\b(exclusive|private\s*label|bespoke|custom(ised|ized)?|personali[sz]ed|samples?|tests?|testers?|for\s+customer|raw\s+material|not\s+for\s+(re)?sale|polo|uniform|staff)\b/i';
 
