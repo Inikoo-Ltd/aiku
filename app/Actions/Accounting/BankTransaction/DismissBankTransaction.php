@@ -18,6 +18,7 @@ use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -39,10 +40,13 @@ class DismissBankTransaction extends OrgAction
             $bankTransaction = BankTransaction::lockForUpdate()->findOrFail($bankTransaction->id);
 
             $alreadyPaid = (bool) ($modelData['already_paid'] ?? false);
-            $namedOrder  = $alreadyPaid && !$bankTransaction->order_id && isset($modelData['order_id'])
-                && in_array($bankTransaction->match_state, [BankTransactionMatchStateEnum::UNMATCHED, BankTransactionMatchStateEnum::REVIEW], true)
+            $namedOrder  = $alreadyPaid && isset($modelData['order_id'])
+                && in_array($bankTransaction->match_state, [BankTransactionMatchStateEnum::UNMATCHED, BankTransactionMatchStateEnum::REVIEW, BankTransactionMatchStateEnum::MATCHED], true)
                 ? Order::where('organisation_id', $bankTransaction->organisation_id)->lockForUpdate()->find($modelData['order_id'])
                 : null;
+            if ($alreadyPaid && isset($modelData['order_id']) && !$namedOrder) {
+                throw ValidationException::withMessages(['note' => __('This order cannot be used for this bank payment')]);
+            }
             if ($namedOrder) {
                 ($modelData['from_suggestion'] ?? false)
                     ? $this->checkHandPaymentOn($namedOrder, $bankTransaction)
@@ -64,7 +68,7 @@ class DismissBankTransaction extends OrgAction
 
             $bankTransaction->update([
                 'match_state' => $alreadyPaid ? BankTransactionMatchStateEnum::ALREADY_PAID : BankTransactionMatchStateEnum::DISMISSED,
-                'match_data'  => array_merge($bankTransaction->match_data, [
+                'match_data'  => array_merge(Arr::except($bankTransaction->match_data, $namedOrder ? ['order_ids', 'reason'] : []), [
                     'dismissed_note' => $modelData['note'],
                     'dismissed_by'   => $this->user?->contact_name ?? $this->user?->username ?? 'staff',
                     'dismissed_at'   => now()->toIso8601String(),

@@ -152,7 +152,10 @@ const markAlreadyPaid = (line: BankLine) => {
 	rowError.value = null
 	router.post(route("grp.models.org.bank_transaction.dismiss", [props.organisationId, line.id]), { note: ALREADY_PAID_NOTE, already_paid: true }, {
 		preserveScroll: true,
-		onError: (errors: Record<string, string>) => (rowError.value = { id: line.id, message: Object.values(errors ?? {})[0] ?? ctrans("Something went wrong") }),
+		onError: (errors: Record<string, string>) => {
+			open(line, "already_paid")
+			error.value = Object.values(errors ?? {})[0] ?? ctrans("Something went wrong")
+		},
 	})
 }
 
@@ -268,12 +271,12 @@ const loadPayerOrders = async (line: BankLine) => {
 const open = (line: BankLine, kind: "pay" | "already_paid" | "credit" | "dismiss" | "point") => {
 	selected.value = line
 	action.value = kind
-	orderPick.value = line.order_reference ?? ""
+	orderPick.value = kind === "already_paid" ? "" : line.order_reference ?? ""
 	customerPick.value = ""
 	absorbBankFee.value = false
 	note.value = ""
 	error.value = null
-	if ((kind === "pay" || kind === "already_paid") && !line.order_reference) {
+	if (kind === "already_paid" || (kind === "pay" && !line.order_reference)) {
 		loadPayerOrders(line)
 	}
 	if (kind === "credit" || kind === "point") {
@@ -559,7 +562,7 @@ const submit = () => {
 						</template>
 					</AutoComplete>
 				</label>
-				<div v-if="!selected.order_reference && selected.counterparty_name" class="space-y-1">
+				<div v-if="(action === 'already_paid' || !selected.order_reference) && selected.counterparty_name" class="space-y-1">
 					<span class="block text-xs font-medium text-gray-600">{{ action === "already_paid" ? ctrans("Paid orders of customers named like :payer", { payer: selected.counterparty_name }) : ctrans("Unpaid orders of customers named like :payer", { payer: selected.counterparty_name }) }}</span>
 					<div v-if="payerOrders === null" class="skeleton h-8 rounded" />
 					<p v-else-if="payerOrders.length === 0" class="text-xs text-gray-500">{{ ctrans("None found: search by order number or customer name above") }}</p>

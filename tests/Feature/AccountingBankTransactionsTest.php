@@ -3155,6 +3155,22 @@ test('a line naming no order suggests orders of a customer named like the payer,
     \App\Actions\Accounting\BankTransaction\RestoreBankTransaction::make()->handle($alreadyPaid);
     $alreadyPaid->refresh()->update(['match_state' => BankTransactionMatchStateEnum::ALREADY_PAID, 'match_data' => ['order_ids' => [$paidByHand->id]]]);
     expect(fn () => $handPick($secondTransfer->refresh(), $paidByHand->id))->toThrow(\Illuminate\Validation\ValidationException::class, 'Another bank payment of this amount');
+
+    $alreadyPaid->update(['match_state' => BankTransactionMatchStateEnum::UNMATCHED, 'match_data' => []]);
+    $typoReference = $line('s14', 2454, $name.' Health GmbH');
+    $typoReference->update(['match_state' => BankTransactionMatchStateEnum::REVIEW, 'order_id' => $owing->id, 'match_data' => ['reason' => 'order still in the basket', 'order_ids' => [$owing->id]]]);
+    $handPick($typoReference, $paidByHand->id);
+    expect($typoReference->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($typoReference->order_id)->toBe($paidByHand->id)
+        ->and($typoReference->match_data)->not->toHaveKey('order_ids');
+    \App\Actions\Accounting\BankTransaction\RestoreBankTransaction::make()->handle($typoReference);
+    expect($typoReference->refresh()->match_state)->not->toBe(BankTransactionMatchStateEnum::ALREADY_PAID);
+
+    $typoReference->update(['match_state' => BankTransactionMatchStateEnum::MATCHED, 'order_id' => $owing->id, 'match_data' => []]);
+    expect(fn () => $handPick($typoReference, 0))->toThrow(\Illuminate\Validation\ValidationException::class, 'This order cannot be used');
+    $handPick($typoReference, $paidByHand->id);
+    expect($typoReference->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($typoReference->order_id)->toBe($paidByHand->id);
 });
 
 test('an orderchamp payout is linked only to the one hand-paid order of its country and amount, everything else stays for staff', function () {
