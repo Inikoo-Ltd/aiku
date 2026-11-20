@@ -10,6 +10,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ctrans } from "@/Composables/useTrans"
 import CheckoutPaymentBankTransfer from "@/Components/Retina/Ecom/CheckoutPaymentBankTransfer.vue"
 import CheckoutPaymentCard from "@/Components/Retina/Ecom/CheckoutPaymentCard.vue"
+import { isCardPaymentInFlight } from "@/Composables/useCheckoutComFlow"
 import { faArrowLeft, faCreditCardFront, faUniversity } from "@fal"
 import { faExclamationTriangle, faStar, faBoxHeart, faShieldAlt } from "@fas"
 import { Head } from "@inertiajs/vue3"
@@ -87,7 +88,7 @@ onMounted(() => {
                 }
             })
             .listen(".basket-changed", (eventData: { order_id: number }) => {
-                if (eventData.order_id == (props.order as any)?.id) {
+                if (eventData.order_id == (props.order as any)?.id && !isCardPaymentInFlight.value) {
                     window.location.reload()
                 }
             })

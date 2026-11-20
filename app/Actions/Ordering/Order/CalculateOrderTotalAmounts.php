@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Ordering\Order\OrderChargesEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Events\RetinaBasketChangedEvent;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -106,6 +107,7 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         data_set($modelData, 'number_item_transactions', $numberItemTransactions);
 
 
+        $previousTotalAmount = $order->total_amount;
         $order->update($modelData);
         $order->stats->update(
             [
@@ -127,6 +129,10 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
                     'amount_in_basket' => $order->total_amount,
                 ]);
             }
+        }
+
+        if ($order->state == OrderStateEnum::CREATING && $previousTotalAmount != $order->total_amount) {
+            broadcast(new RetinaBasketChangedEvent($order->customer_id, $order->id));
         }
 
         if (in_array($order->state, [

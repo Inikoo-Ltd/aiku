@@ -5246,6 +5246,7 @@ test('a basket line may exceed stock, is zeroed while out of stock and restored 
 
     $lowStockLine = RetinaEcomUpdateTransaction::make()->action($lowStockLine, $this->customer, ['quantity_ordered' => 7]);
     expect((float) $lowStockLine->quantity_ordered)->toBe(7.0);
+    Event::assertDispatched(RetinaBasketChangedEvent::class, fn (RetinaBasketChangedEvent $event) => $event->orderId == $basket->id && $event->customerId == $basket->customer_id);
 
     $issues = fn () => (new class () {
         use \App\Actions\Traits\WithBasketStockIssues;
@@ -5264,6 +5265,7 @@ test('a basket line may exceed stock, is zeroed while out of stock and restored 
 
     DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 0]);
 
+    Event::fake([RetinaBasketChangedEvent::class]);
     SyncBasketLinesWithProductStock::run($lowStock->fresh());
     $lowStockLine = $lowStockLine->fresh();
 
@@ -5275,11 +5277,11 @@ test('a basket line may exceed stock, is zeroed while out of stock and restored 
         ->and($issues()['low_stock'])->toBe([])
         ->and($issues()['out_of_stock'][0]['code'])->toBe($lowStock->code)
         ->and($issues()['out_of_stock'][0]['held_quantity'])->toBe(7.0);
-    Event::assertDispatchedTimes(RetinaBasketChangedEvent::class, 1);
     Event::assertDispatched(RetinaBasketChangedEvent::class, fn (RetinaBasketChangedEvent $event) => $event->orderId == $basket->id && $event->customerId == $basket->customer_id);
 
+    Event::fake([RetinaBasketChangedEvent::class]);
     SyncBasketLinesWithProductStock::run($lowStock->fresh());
-    Event::assertDispatchedTimes(RetinaBasketChangedEvent::class, 1);
+    Event::assertNotDispatched(RetinaBasketChangedEvent::class);
 
     DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 5]);
     SyncBasketLinesWithProductStock::run($lowStock->fresh());
@@ -5290,7 +5292,12 @@ test('a basket line may exceed stock, is zeroed while out of stock and restored 
         ->and((float) $basket->fresh()->goods_amount)->toBe(14.0)
         ->and(Arr::get($lowStockLine->data, SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY))->toBeNull()
         ->and($issues()['low_stock'][0]['held_quantity'])->toBe(0.0);
-    Event::assertDispatchedTimes(RetinaBasketChangedEvent::class, 2);
+    Event::assertDispatched(RetinaBasketChangedEvent::class, fn (RetinaBasketChangedEvent $event) => $event->orderId == $basket->id);
+
+    CalculateOrderTotalAmounts::make()->handle($basket->fresh(), forceRecalculate: true);
+    Event::fake([RetinaBasketChangedEvent::class]);
+    CalculateOrderTotalAmounts::make()->handle($basket->fresh(), forceRecalculate: true);
+    Event::assertNotDispatched(RetinaBasketChangedEvent::class);
 
     DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 0]);
     SyncBasketLinesWithProductStock::run($lowStock->fresh());

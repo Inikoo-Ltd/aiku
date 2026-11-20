@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import CheckoutComSandboxTestCard from "@/Components/Retina/CheckoutComSandboxTestCard.vue"
-import { onMounted, ref, inject } from "vue"
+import { onMounted, onUnmounted, ref, inject, watch } from "vue"
+import { isCardPaymentInFlight } from "@/Composables/useCheckoutComFlow"
 import { loadCheckoutWebComponents } from '@checkout.com/checkout-web-components';
 import { useCopyText } from "@/Composables/useCopyText"
 import { router, usePage } from "@inertiajs/vue3"
@@ -119,7 +120,27 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
 };
 
 const paymentResponseId = ref<string | null>(null)
+watch(paymentResponseId, (id) => {
+    isCardPaymentInFlight.value = !!id
+})
+
+const SESSION_RELOAD_AFTER_MS = 55 * 60 * 1000
+const pageOpenedAt = Date.now()
+let staleSessionCheck: ReturnType<typeof setInterval> | undefined
+const reloadIfSessionStale = () => {
+    if (document.visibilityState === "visible" && !paymentResponseId.value && Date.now() - pageOpenedAt > SESSION_RELOAD_AFTER_MS) {
+        window.location.reload()
+    }
+}
+onUnmounted(() => {
+    clearInterval(staleSessionCheck)
+    document.removeEventListener("visibilitychange", reloadIfSessionStale)
+})
+
 onMounted(async () => {
+    staleSessionCheck = setInterval(reloadIfSessionStale, 60 * 1000)
+    document.addEventListener("visibilitychange", reloadIfSessionStale)
+
     const pendingPaymentId = usePage().props?.flash?.pending_cko_payment_id
     if (pendingPaymentId) {
         fromPendingRedirect.value = true

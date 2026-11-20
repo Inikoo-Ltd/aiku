@@ -10,6 +10,8 @@ import { CheckoutComFlow } from "@/types/CheckoutComFlow"
 import { CheckoutTranslations } from "@/Composables/Unique/CheckoutFlowTranslation"
 import { set } from "lodash"
 
+export const isCardPaymentInFlight = ref(false)
+
 export function useCheckoutCom(checkoutComData: CheckoutComFlow, otherOptions?: {
   isChangeLabelToSaved?: boolean
 }) {

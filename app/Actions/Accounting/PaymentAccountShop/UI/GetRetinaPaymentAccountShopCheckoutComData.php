@@ -26,6 +26,11 @@ class GetRetinaPaymentAccountShopCheckoutComData
     use WithCheckoutCom;
     use CalculatesPaymentWithBalance;
 
+    /**
+     * A card session is priced when the checkout page opens; an old tab must not charge that price
+     * after the basket changed (PRE-126). CheckoutPaymentCard.vue reloads the page before this runs out.
+     */
+    public const int SESSION_EXPIRES_IN_SECONDS = 3600;
 
     public function handle(Order $order, PaymentAccountShop $paymentAccountShop, OrderPaymentApiPoint $orderPaymentApiPoint): array
     {
@@ -52,6 +57,7 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->amount    = $toPayByOther;
         $paymentSessionRequest->currency  = $order->currency->code;
         $paymentSessionRequest->reference = $order->reference;
+        $paymentSessionRequest->expires_on = now()->addSeconds(self::SESSION_EXPIRES_IN_SECONDS)->toDateTime();
 
 
         $product                      = new Product();

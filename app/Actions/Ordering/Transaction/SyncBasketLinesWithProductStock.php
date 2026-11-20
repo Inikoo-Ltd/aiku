@@ -14,7 +14,6 @@ use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\LogBasketEvent;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Events\RetinaBasketChangedEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Transaction;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -66,20 +65,18 @@ class SyncBasketLinesWithProductStock implements ShouldBeUnique
         $offersPreOrder = GetProductPreOrder::make()->type($product) !== null;
 
         foreach ($lines as $line) {
-            $changed = ($product->refresh()->available_quantity ?? 0) <= 0 && !$offersPreOrder
-                ? $this->nil($line)
-                : $this->restore($line);
-
-            if ($changed) {
-                broadcast(new RetinaBasketChangedEvent($line->order->customer_id, $line->order_id));
+            if (($product->refresh()->available_quantity ?? 0) <= 0 && !$offersPreOrder) {
+                $this->nil($line);
+            } else {
+                $this->restore($line);
             }
         }
     }
 
-    private function nil(Transaction $line): bool
+    private function nil(Transaction $line): void
     {
         if ($line->quantity_ordered <= 0) {
-            return false;
+            return;
         }
 
         $held = (float) $line->quantity_ordered;
@@ -93,20 +90,16 @@ class SyncBasketLinesWithProductStock implements ShouldBeUnique
             'data'             => array_merge($line->data ?? [], [self::HELD_QUANTITY_KEY => $held]),
         ]);
         $this->recalculateOrder($line, -$held);
-
-        return true;
     }
 
-    private function restore(Transaction $line): bool
+    private function restore(Transaction $line): void
     {
         $held = Arr::get($line->data, self::HELD_QUANTITY_KEY);
         if (!$held || $line->quantity_ordered > 0) {
-            return false;
+            return;
         }
 
         UpdateTransaction::make()->action($line, ['quantity_ordered' => $held]);
-
-        return true;
     }
 
     private function recalculateOrder(Transaction $line, float $delta): void
