@@ -13,10 +13,17 @@ use App\Actions\Chat\ChatSession\AssignChatToAgent;
 use App\Actions\Chat\ChatSession\CloseChatSession;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\StoreChatSession;
+use App\Actions\Chat\Staff\Slack\SyncSlackPublicChannels;
+use App\Models\Chat\SlackChannel;
+use App\Models\Chat\SlackMessage;
 use App\Models\Catalogue\Product;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
+use Illuminate\Http\Client\Request as HttpRequest;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 
@@ -776,4 +783,123 @@ test('rail clicks are counted per day, user, view and button', function () {
     actingAs($this->user)
         ->postJson(route('grp.models.profile.rail-click'), ['button' => 'online', 'view' => 'huge'])
         ->assertUnprocessable();
+});
+
+test('messages of public Slack channels are kept as they arrive, edits and deletions included, and private ones never', function () {
+    Config::set('services.slack.signing_secret', 'shh');
+    $slackUserIdBefore = $this->user->slack_user_id;
+    $this->user->update(['slack_user_id' => 'UPUBLIC1']);
+
+    $post = function (array $event) {
+        $body      = json_encode(['type' => 'event_callback', 'event' => $event]);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/json',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+
+    $message = ['type' => 'message', 'channel' => 'CPUBLIC1', 'channel_type' => 'channel', 'user' => 'UPUBLIC1', 'text' => 'Pallet 12 is ready', 'ts' => '1789138198.657369'];
+    $post($message)->assertOk();
+    $post($message)->assertOk();
+
+    $channel = SlackChannel::where('slack_id', 'CPUBLIC1')->firstOrFail();
+    $stored  = $channel->messages()->get();
+    expect($stored)->toHaveCount(1)
+        ->and($stored[0]->text)->toBe('Pallet 12 is ready')
+        ->and($stored[0]->user_id)->toBe($this->user->id)
+        ->and($stored[0]->sent_at->timestamp)->toBe(1789138198)
+        ->and($stored[0]->data['ts'])->toBe('1789138198.657369');
+
+    $post(['type' => 'message', 'subtype' => 'message_changed', 'channel' => 'CPUBLIC1', 'channel_type' => 'channel', 'ts' => '1789138300.000100', 'message' => ['type' => 'message', 'user' => 'UPUBLIC1', 'text' => 'Pallet 13 is ready', 'ts' => '1789138198.657369', 'edited' => ['user' => 'UPUBLIC1', 'ts' => '1789138299.000000']]])->assertOk();
+    $post(['type' => 'message', 'channel' => 'CPUBLIC1', 'channel_type' => 'channel', 'user' => 'UUNKNOWN', 'text' => 'On it', 'ts' => '1789138400.000200', 'thread_ts' => '1789138198.657369'])->assertOk();
+
+    $edited = $channel->messages()->where('ts', '1789138198.657369')->firstOrFail();
+    $reply  = $channel->messages()->where('ts', '1789138400.000200')->firstOrFail();
+    expect($channel->messages()->count())->toBe(2)
+        ->and($edited->text)->toBe('Pallet 13 is ready')
+        ->and($edited->edited_at->timestamp)->toBe(1789138299)
+        ->and($reply->thread_ts)->toBe('1789138198.657369')
+        ->and($reply->user_id)->toBeNull()
+        ->and($reply->slack_user_id)->toBe('UUNKNOWN');
+
+    $post(['type' => 'message', 'subtype' => 'message_deleted', 'channel' => 'CPUBLIC1', 'channel_type' => 'channel', 'ts' => '1789138500.000300', 'deleted_ts' => '1789138400.000200'])->assertOk();
+    expect($channel->messages()->count())->toBe(1)
+        ->and(SlackMessage::withTrashed()->where('slack_channel_id', $channel->id)->count())->toBe(2);
+
+    $post(['type' => 'message', 'channel' => 'GPRIVATE1', 'channel_type' => 'group', 'user' => 'UPUBLIC1', 'text' => 'private channel', 'ts' => '1789138600.000400'])->assertOk();
+    $post(['type' => 'message', 'channel' => 'DDIRECT1', 'channel_type' => 'im', 'user' => 'UPUBLIC1', 'text' => 'direct message', 'ts' => '1789138700.000500'])->assertOk();
+    $post(['type' => 'message', 'channel' => 'GGROUPDM1', 'channel_type' => 'mpim', 'user' => 'UPUBLIC1', 'text' => 'group direct message', 'ts' => '1789138800.000600'])->assertOk();
+    $post(['type' => 'message', 'subtype' => 'message_changed', 'channel' => 'CUNKNOWN1', 'message' => ['user' => 'UPUBLIC1', 'text' => 'kind of channel not said', 'ts' => '1789138900.000700']])->assertOk();
+    expect(SlackChannel::whereIn('slack_id', ['GPRIVATE1', 'DDIRECT1', 'GGROUPDM1', 'CUNKNOWN1'])->count())->toBe(0)
+        ->and(SlackMessage::withTrashed()->whereIn('text', ['private channel', 'direct message', 'group direct message', 'kind of channel not said'])->count())->toBe(0);
+
+    $post(['type' => 'message', 'subtype' => 'message_changed', 'channel' => 'CPUBLIC1', 'message' => ['user' => 'UPUBLIC1', 'text' => 'Pallet 14 is ready', 'ts' => '1789138198.657369']])->assertOk();
+    expect($edited->refresh()->text)->toBe('Pallet 14 is ready');
+
+    $this->user->update(['slack_user_id' => $slackUserIdBefore]);
+});
+
+test('the Slack sync lists public channels only, joins them only when asked and brings their history with thread replies', function () {
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Sleep::fake();
+    $group      = $this->organisation->group;
+    $joinAllowed = true;
+    $newestPage = Http::sequence()
+        ->push(['ok' => false, 'error' => 'ratelimited'], 429, ['Retry-After' => '7'])
+        ->push(['ok' => true, 'messages' => [['user' => 'U9', 'text' => 'thread start', 'ts' => '1789120000.000100', 'reply_count' => 1]], 'response_metadata' => ['next_cursor' => 'page2']])
+        ->whenEmpty(Http::response(['ok' => true, 'messages' => []]));
+
+    Http::fake([
+        'slack.com/api/conversations.list*'    => Http::response(['ok' => true, 'channels' => [
+            ['id' => 'CSYNCIN1', 'name' => 'warehouse', 'is_member' => true, 'is_archived' => false],
+            ['id' => 'CSYNCOUT1', 'name' => 'random', 'is_member' => false, 'is_archived' => false],
+        ]]),
+        'slack.com/api/conversations.join'     => function () use (&$joinAllowed) {
+            return Http::response($joinAllowed ? ['ok' => true] : ['ok' => false, 'error' => 'missing_scope']);
+        },
+        'slack.com/api/conversations.history*' => function (HttpRequest $request) use ($newestPage) {
+            return match (true) {
+                $request['channel'] !== 'CSYNCIN1' => Http::response(['ok' => true, 'messages' => [['user' => 'U9', 'text' => 'hello from random', 'ts' => '1789130000.000100']]]),
+                isset($request['cursor'])          => Http::response(['ok' => true, 'messages' => [['user' => 'U9', 'text' => 'first ever', 'ts' => '1789100000.000100']]]),
+                default                            => $newestPage($request),
+            };
+        },
+        'slack.com/api/conversations.replies*' => Http::response(['ok' => true, 'messages' => [
+            ['user' => 'U9', 'text' => 'thread start', 'ts' => '1789120000.000100', 'thread_ts' => '1789120000.000100'],
+            ['user' => 'U8', 'text' => 'thread reply', 'ts' => '1789120500.000100', 'thread_ts' => '1789120000.000100'],
+        ]]),
+    ]);
+
+    $totals = SyncSlackPublicChannels::run($group, history: true);
+
+    $inside  = SlackChannel::where('slack_id', 'CSYNCIN1')->firstOrFail();
+    $outside = SlackChannel::where('slack_id', 'CSYNCOUT1')->firstOrFail();
+    expect($totals)->toBe(['channels' => 2, 'joined' => 0, 'messages' => 3])
+        ->and($inside->name)->toBe('warehouse')
+        ->and($inside->messages()->orderBy('ts')->pluck('text')->all())->toBe(['first ever', 'thread start', 'thread reply'])
+        ->and($inside->history_backfilled_to)->toBe('1789100000.000100')
+        ->and($inside->history_synced_at)->not->toBeNull()
+        ->and($outside->is_member)->toBeFalse()
+        ->and($outside->messages()->count())->toBe(0);
+    Sleep::assertSleptTimes(1);
+    Http::assertNotSent(fn (HttpRequest $request) => str_contains($request->url(), 'conversations.join'));
+    Http::assertSent(fn (HttpRequest $request) => str_contains($request->url(), 'conversations.list') && $request['types'] === 'public_channel');
+
+    $totals = SyncSlackPublicChannels::run($group, join: true, history: true);
+
+    expect($totals['joined'])->toBe(1)
+        ->and($outside->refresh()->is_member)->toBeTrue()
+        ->and($outside->messages()->pluck('text')->all())->toBe(['hello from random'])
+        ->and($inside->messages()->count())->toBe(3);
+
+    Http::assertSent(fn (HttpRequest $request) => str_contains($request->url(), 'conversations.join') && $request['channel'] === 'CSYNCOUT1');
+    Http::assertSent(fn (HttpRequest $request) => str_contains($request->url(), 'conversations.history') && $request['channel'] === 'CSYNCIN1' && isset($request['oldest']));
+
+    $joinAllowed = false;
+    $outside->update(['is_member' => false]);
+    expect(fn () => SyncSlackPublicChannels::run($group, join: true))->toThrow(RuntimeException::class, 'missing_scope');
 });
