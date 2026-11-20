@@ -15,6 +15,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import AgentReceiveGoodsButton from "@/Components/Procurement/AgentReceiveGoodsButton.vue"
 import AgentGoodsReceiptItemCheckDialog, { type CheckableItem } from "@/Components/Procurement/AgentGoodsReceiptItemCheckDialog.vue"
+import PurchaseOrderLinePackButtons from "@/Components/Procurement/PurchaseOrderLinePackButtons.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
@@ -52,6 +53,13 @@ type Line = {
 	outstanding: number
 	unchecked: number
 	items: ReceiptItem[]
+	packing: {
+		quantity_packable: number
+		quantity_to_check: number
+		quantity_packed: number
+		pack_route: routeType | null
+		unpack_route: routeType | null
+	}
 }
 
 const props = defineProps<{
@@ -234,6 +242,10 @@ function itemStatus(item: ReceiptItem) {
 										<span v-if="line.unchecked" class="whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700 ring-1 ring-inset ring-amber-200">
 											{{ ctrans("Not checked yet") }}
 										</span>
+										<span v-if="line.packing.quantity_packed > 0" class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700 ring-1 ring-inset ring-green-200">
+											<FontAwesomeIcon :icon="faBoxCheck" fixed-width aria-hidden="true" />
+											{{ ctrans(":units packed", { units: formatQuantity(line.packing.quantity_packed) }) }}
+										</span>
 									</div>
 								</td>
 								<td class="px-3 py-2 text-right tabular-nums" v-tooltip="ctrans(':skos SKO', { skos: skos(line, line.ordered) })">{{ formatQuantity(line.ordered) }}</td>
@@ -246,7 +258,14 @@ function itemStatus(item: ReceiptItem) {
 										{{ ctrans(":units to replace rejects", { units: formatQuantity(toReplace(line)) }) }}
 									</div>
 								</td>
-								<td class="py-2 pl-3"></td>
+								<td class="py-2 pl-3 text-right">
+									<PurchaseOrderLinePackButtons
+										v-if="line.packing.pack_route || line.packing.unpack_route"
+										:code="line.code"
+										:packing="line.packing"
+										:unitsPerSko="line.units_per_pack"
+									/>
+								</td>
 							</tr>
 
 							<tr v-for="item in line.items" :key="`item-${item.id}`" class="border-b border-gray-100 bg-gray-50/60 text-xs">

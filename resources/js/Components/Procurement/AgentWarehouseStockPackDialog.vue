@@ -24,7 +24,6 @@ type Stock = {
 	image_thumbnail?: object | null
 	quantity: number
 	is_unchecked: boolean
-	is_from_goods_receipt: boolean
 }
 
 const props = defineProps<{
@@ -118,7 +117,6 @@ function submit() {
 							:step="1"
 							:maxFractionDigits="3"
 							:suffix="` ${ctrans('units')}`"
-							:disabled="stock.is_from_goods_receipt"
 							showButtons
 							buttonLayout="horizontal"
 							inputClass="text-center"
@@ -135,8 +133,7 @@ function submit() {
 							</template>
 						</InputNumber>
 						<span class="block text-xs text-gray-500">
-							<template v-if="stock.is_from_goods_receipt">{{ ctrans("From a goods receipt: all its :units units are packed together", { units: locale.number(stock.quantity) }) }}</template>
-							<template v-else-if="!quantityOf(stock)">{{ ctrans("Not packed, stays received") }}</template>
+							<template v-if="!quantityOf(stock)">{{ ctrans("Not packed, stays received") }}</template>
 							<template v-else-if="leftOf(stock) > 0">{{ ctrans(":left of the :units units stay received, not packed", { left: locale.number(leftOf(stock)), units: locale.number(stock.quantity) }) }}</template>
 							<template v-else>{{ ctrans("All :units units", { units: locale.number(stock.quantity) }) }}</template>
 						</span>

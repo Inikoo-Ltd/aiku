@@ -79,13 +79,21 @@ class CheckAgentGoodsReceiptItem extends OrgAction
                 }
             }
 
+            $quantitySplitOff = round($item->quantitySplitOff(), 3);
+            if ((float) $item->quantity - $quantityRejected < $quantitySplitOff - 0.0001) {
+                throw ValidationException::withMessages(['quantity_rejected' => __(':packed units of these goods are already packed: no more than :quantity units can be rejected', [
+                    'packed'   => $quantitySplitOff,
+                    'quantity' => round((float) $item->quantity - $quantitySplitOff, 3),
+                ])]);
+            }
+
             $item->update([
                 'quantity_rejected'  => $quantityRejected,
                 'reject_reason'      => Arr::get($modelData, 'reject_reason'),
                 'checked_at'         => now(),
                 'checked_by_user_id' => $user?->id,
             ]);
-            $item->agentWarehouseStock?->update(['quantity' => $item->quantityAccepted()]);
+            $item->agentWarehouseStock?->update(['quantity' => round($item->quantityAccepted() - $quantitySplitOff, 3)]);
         });
 
         $this->savePhotos($item, $photos);

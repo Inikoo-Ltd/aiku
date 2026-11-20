@@ -10,6 +10,7 @@
 namespace App\Actions\Procurement\AgentGoodsReceipt\UI;
 
 use App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentProductsInProduction;
+use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
 use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
@@ -50,6 +51,8 @@ class GetPurchaseOrderGoodsReceipts
 
         $lines = $purchaseOrder->purchaseOrderTransactions()
             ->whereNotNull('supplier_product_id')
+            ->select('purchase_order_transactions.*')
+            ->tap(fn ($query) => IndexPurchaseOrderTransactions::selectAgentWarehouseQuantities($query))
             ->with(['supplierProduct:id,code,name,units_per_pack', 'orgStock.tradeUnits.image'])
             ->get()
             ->sortBy(fn (PurchaseOrderTransaction $transaction) => $transaction->supplierProduct?->code)
@@ -115,6 +118,33 @@ class GetPurchaseOrderGoodsReceipts
             'outstanding'     => $isLive ? ($isPastProduction ? min($owed, $rejected) : $owed) : 0,
             'unchecked'       => $items->filter(fn (AgentGoodsReceiptItem $item) => !$item->isChecked())->count(),
             'items'           => $items->map(fn (AgentGoodsReceiptItem $item) => $this->item($item, $agentOrganisationSlug, $canEdit))->values(),
+            'packing'         => $this->packing($transaction, $canEdit),
+        ];
+    }
+
+    /**
+     * What of the line is received waiting to be packed and what is packed outside a container, with packing or
+     * unpacking it for the agent editing its own order.
+     */
+    private function packing(PurchaseOrderTransaction $transaction, bool $canEdit): array
+    {
+        $packable = round((float) $transaction->getAttribute('quantity_packable'), 3);
+        $packed   = round((float) $transaction->getAttribute('quantity_packed'), 3);
+        $route    = fn (string $name) => [
+            'name'       => $name,
+            'parameters' => [
+                'purchaseOrder'            => $transaction->purchase_order_id,
+                'purchaseOrderTransaction' => $transaction->id,
+            ],
+            'method'     => 'patch',
+        ];
+
+        return [
+            'quantity_packable' => $packable,
+            'quantity_to_check' => round((float) $transaction->getAttribute('quantity_to_check'), 3),
+            'quantity_packed'   => $packed,
+            'pack_route'        => $canEdit && $packable > 0 ? $route('grp.models.purchase-order.transaction.pack') : null,
+            'unpack_route'      => $canEdit && $packed > 0 ? $route('grp.models.purchase-order.transaction.unpack') : null,
         ];
     }
 

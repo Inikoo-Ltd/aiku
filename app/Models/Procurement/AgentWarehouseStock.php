@@ -84,6 +84,22 @@ class AgentWarehouseStock extends Model
     }
 
     /**
+     * The rows packed off a goods receipt row: same goods receipt, purchase order line and supplier product, with no
+     * receipt line of their own. Together with the row they hold what its receipt line accepted.
+     */
+    public static function splitOffsOf(AgentWarehouseStock $stock): Builder
+    {
+        return self::query()
+            ->where('agent_goods_receipt_id', $stock->agent_goods_receipt_id)
+            ->where('purchase_order_transaction_id', $stock->purchase_order_transaction_id)
+            ->where('supplier_product_id', $stock->supplier_product_id)
+            ->whereKeyNot($stock->id)
+            ->whereNotExists(fn ($query) => $query->selectRaw('1')
+                ->from('agent_goods_receipt_items')
+                ->whereColumn('agent_goods_receipt_items.agent_warehouse_stock_id', 'agent_warehouse_stocks.id'));
+    }
+
+    /**
      * The units of a row the agent still holds: goods of its purchase order line put in a container (staged or
      * dispatched, not cancelled) have left the warehouse, taken from the line's packed rows first and then its oldest,
      * so a later goods receipt for the rest of a line stays held and a received row is not hidden by a packed one

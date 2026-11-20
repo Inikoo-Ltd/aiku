@@ -22,10 +22,10 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * The agent takes back a line marked packed by mistake: the row returns to received, waiting to be packed again. A row
- * from a goods receipt can only be packed whole, so when only part of it went in a container the rest shows as packed;
- * unpacking it shows that rest as received again, since what is held is worked out from the containers of its purchase
- * order line (AgentWarehouseStock::heldQuantitySql). A row whose units all went in a container is left alone.
+ * The agent takes back a line marked packed by mistake: the row returns to received, waiting to be packed again. When
+ * only part of a packed row went in a container, unpacking it shows the rest as received again, since what is held is
+ * worked out from the containers of its purchase order line (AgentWarehouseStock::heldQuantitySql). A row whose units
+ * all went in a container is left alone. A part packed off a goods receipt row is merged back into it.
  */
 class UnpackAgentWarehouseStock extends OrgAction
 {
@@ -44,24 +44,63 @@ class UnpackAgentWarehouseStock extends OrgAction
     {
         return DB::transaction(function () use ($agentWarehouseStock) {
             $stock = AgentWarehouseStock::whereKey($agentWarehouseStock->id)->lockForUpdate()->firstOrFail();
-            $code  = $stock->supplierProduct?->code;
 
-            if ($stock->state === AgentWarehouseStockStateEnum::RECEIVED) {
-                throw ValidationException::withMessages(['unpack' => __(':code is not packed', ['code' => $code])]);
-            }
-
-            $heldQuantity = (float) AgentWarehouseStock::whereKey($stock->id)
-                ->selectRaw(AgentWarehouseStock::heldQuantitySql().' as held_quantity')
-                ->value('held_quantity');
-
-            if ($heldQuantity <= 0) {
-                throw ValidationException::withMessages(['unpack' => __(':code is already in a container', ['code' => $code])]);
-            }
-
-            $stock->update(['state' => AgentWarehouseStockStateEnum::RECEIVED]);
-
-            return $stock;
+            return self::unpackLocked($stock);
         });
+    }
+
+    /**
+     * Unpacks a stock row already locked for update. A part packed off a goods receipt row goes back into that row
+     * once both are received, so checking its receipt line again counts it (AgentWarehouseStock::splitOffsOf).
+     */
+    public static function unpackLocked(AgentWarehouseStock $stock): AgentWarehouseStock
+    {
+        $code = $stock->supplierProduct?->code;
+
+        if ($stock->state === AgentWarehouseStockStateEnum::RECEIVED) {
+            throw ValidationException::withMessages(['unpack' => __(':code is not packed', ['code' => $code])]);
+        }
+
+        $heldQuantity = (float) AgentWarehouseStock::whereKey($stock->id)
+            ->selectRaw(AgentWarehouseStock::heldQuantitySql().' as held_quantity')
+            ->value('held_quantity');
+
+        if ($heldQuantity <= 0) {
+            throw ValidationException::withMessages(['unpack' => __(':code is already in a container', ['code' => $code])]);
+        }
+
+        $stock->update(['state' => AgentWarehouseStockStateEnum::RECEIVED]);
+
+        return self::mergeIntoGoodsReceiptRow($stock);
+    }
+
+    private static function mergeIntoGoodsReceiptRow(AgentWarehouseStock $stock): AgentWarehouseStock
+    {
+        $receiptRowId = $stock->agent_goods_receipt_id ? DB::table('agent_goods_receipt_items')
+            ->join('agent_warehouse_stocks', 'agent_warehouse_stocks.id', 'agent_goods_receipt_items.agent_warehouse_stock_id')
+            ->where('agent_warehouse_stocks.agent_goods_receipt_id', $stock->agent_goods_receipt_id)
+            ->where('agent_warehouse_stocks.purchase_order_transaction_id', $stock->purchase_order_transaction_id)
+            ->where('agent_warehouse_stocks.supplier_product_id', $stock->supplier_product_id)
+            ->value('agent_warehouse_stocks.id') : null;
+
+        $receiptRow = $receiptRowId ? AgentWarehouseStock::whereKey($receiptRowId)->lockForUpdate()->first() : null;
+        if (!$receiptRow || $receiptRow->state !== AgentWarehouseStockStateEnum::RECEIVED) {
+            return $stock;
+        }
+
+        $receivedSplitOffs = AgentWarehouseStock::splitOffsOf($receiptRow)
+            ->where('state', AgentWarehouseStockStateEnum::RECEIVED)
+            ->lockForUpdate()
+            ->get();
+
+        if ($receivedSplitOffs->isEmpty()) {
+            return $receiptRow;
+        }
+
+        $receiptRow->update(['quantity' => round((float) $receiptRow->quantity + (float) $receivedSplitOffs->sum('quantity'), 3)]);
+        AgentWarehouseStock::whereIn('id', $receivedSplitOffs->pluck('id'))->delete();
+
+        return $receiptRow;
     }
 
     public function authorize(ActionRequest $request): bool

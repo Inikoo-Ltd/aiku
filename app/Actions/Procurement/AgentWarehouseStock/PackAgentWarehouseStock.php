@@ -43,9 +43,10 @@ class PackAgentWarehouseStock extends OrgAction
     }
 
     /**
-     * Packs a stock row already locked for update. Packing part of it leaves the rest as a received row of its own, and
-     * the part can not be more than the agent still holds of the row (AgentWarehouseStock::heldQuantitySql). A row from
-     * a goods receipt is packed whole: checking its receipt line sets the row's quantity, which a split would undo.
+     * Packs a stock row already locked for update. Packing part of it moves that part to a packed row of its own and
+     * keeps the rest on this row, received, and the part can not be more than the agent still holds of the row
+     * (AgentWarehouseStock::heldQuantitySql). A row from a goods receipt keeps its receipt line, so checking that line
+     * again sets this row to what was accepted less the packed parts (AgentGoodsReceiptItem::quantitySplitOff).
      */
     public static function packLocked(AgentWarehouseStock $stock, ?float $quantity = null): AgentWarehouseStock
     {
@@ -66,10 +67,6 @@ class PackAgentWarehouseStock extends OrgAction
             $stock->update(['state' => AgentWarehouseStockStateEnum::PACKED_FOR_NEXT_CONTAINER]);
 
             return $stock;
-        }
-
-        if ($stock->agent_goods_receipt_id) {
-            throw ValidationException::withMessages(['pack' => __(':code comes from a goods receipt and is packed whole', ['code' => $code])]);
         }
 
         $stock->update(['quantity' => round($available - $quantity, 3)]);

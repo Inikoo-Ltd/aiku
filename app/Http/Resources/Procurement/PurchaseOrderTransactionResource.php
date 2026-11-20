@@ -307,6 +307,14 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'patch',
             ] : null,
+            'unpack_route'                     => $isAgentEditing && $packed > 0 ? [
+                'name'       => 'grp.models.purchase-order.transaction.unpack',
+                'parameters' => [
+                    'purchaseOrder'            => $transaction->purchase_order_id,
+                    'purchaseOrderTransaction' => $transaction->id,
+                ],
+                'method'     => 'patch',
+            ] : null,
             'containers_route'                 => $canAddToContainer ? [
                 'name'       => 'grp.json.purchase_order.open_agent_containers',
                 'parameters' => ['purchaseOrder' => $transaction->purchase_order_id],

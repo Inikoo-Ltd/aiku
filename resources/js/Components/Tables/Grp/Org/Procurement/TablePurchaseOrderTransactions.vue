@@ -25,6 +25,7 @@ import PurchaseOrderLineQuantityChange from '@/Components/Procurement/PurchaseOr
 import PurchaseOrderLineAgentUnitExpense from '@/Components/Procurement/PurchaseOrderLineAgentUnitExpense.vue'
 import PurchaseOrderLineAddToContainerDialog from '@/Components/Procurement/PurchaseOrderLineAddToContainerDialog.vue'
 import PurchaseOrderLineMoveDialog from '@/Components/Procurement/PurchaseOrderLineMoveDialog.vue'
+import PurchaseOrderLinePackButtons from '@/Components/Procurement/PurchaseOrderLinePackButtons.vue'
 import PingIcon from '@/Components/Utils/PingIcon.vue'
 import { getOrderingLevels, unitsPerOrderingLevel, suggestionAtOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -373,8 +374,6 @@ function isBraveModeActive(): boolean {
     return isBraveMode.value
 }
 
-const packingId = ref<number | null>(null)
-
 function isFullyPacked(item: any) {
     const warehouse = item.agent_warehouse
     return !!warehouse && warehouse.quantity_packed > 0 && warehouse.quantity_packed >= Number(item.quantity_ordered) - 0.001
@@ -388,55 +387,6 @@ function isAllInContainers(item: any) {
 const isReceivedAtAgentWarehouse = (item: any) => Number(item.agent_warehouse?.quantity_received ?? 0) > 0
 
 const isLoadedBeforePacking =(item: any) => isAllInContainers(item) && !isFullyPacked(item)
-
-function packItem(item: any) {
-    const packRoute = item.agent_warehouse?.pack_route
-    if (!packRoute) {
-        return
-    }
-
-    router.patch(route(packRoute.name, packRoute.parameters), {}, {
-        preserveScroll: true,
-        onStart: () => (packingId.value = item.id),
-        onFinish: () => (packingId.value = null),
-        onSuccess: () => notify({ title: ctrans('Success'), text: ctrans(':code packed', { code: item.code }), type: 'success' }),
-        onError: (errors: Record<string, string>) => notify({ title: ctrans('Something went wrong'), text: Object.values(errors ?? {})[0], type: 'error' }),
-    })
-}
-
-function confirmPackItem(event: MouseEvent, item: any) {
-    const warehouse = item.agent_warehouse
-    if (!warehouse?.pack_route) {
-        return
-    }
-
-    if (warehouse.quantity_to_check <= 0 || isBraveModeActive()) {
-        packItem(item)
-        return
-    }
-
-    confirm.require({
-        group: 'pack-item',
-        target: event.currentTarget as HTMLElement,
-        message: ctrans(':units of the :total units of :code are not checked yet. Once packed they can no longer be checked. Pack them anyway?', {
-            units: locale.number(warehouse.quantity_to_check),
-            total: locale.number(warehouse.quantity_packable),
-            code: item.code,
-        }),
-        acceptLabel: ctrans('Pack anyway'),
-        rejectLabel: ctrans('Cancel'),
-        accept: () => packItem(item),
-    })
-}
-
-function packTooltip(item: any) {
-    const warehouse = item.agent_warehouse
-    const tooltip = ctrans('Click to mark the :units received units as packed', { units: locale.number(warehouse.quantity_packable) })
-
-    return warehouse.quantity_to_check > 0
-        ? `${tooltip}. ${ctrans(':units of them are not checked yet', { units: locale.number(warehouse.quantity_to_check) })}`
-        : tooltip
-}
 
 const _table = ref<InstanceType<typeof Table> | null>(null)
 const containerDialogItems = ref<any[]>([])
@@ -1182,20 +1132,12 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     />
                 </a>
 
-                <Button
-                    v-if="item.agent_warehouse?.pack_route && !isAllInContainers(item)"
-                    :label="ctrans('Mark packed')"
-                    :tooltip="packTooltip(item)"
-                    type="tertiary"
-                    size="xs"
-                    :loading="packingId === item.id"
-                    :disabled="packingId === item.id"
-                    @click="confirmPackItem($event, item)"
-                >
-                    <template #icon>
-                        <FontAwesomeIcon :icon="faBoxCheck" class="text-green-600" fixed-width aria-hidden="true" />
-                    </template>
-                </Button>
+                <PurchaseOrderLinePackButtons
+                    v-if="item.agent_warehouse?.pack_route || item.agent_warehouse?.unpack_route"
+                    :code="item.code"
+                    :packing="item.agent_warehouse"
+                    :canPack="!isAllInContainers(item)"
+                />
 
                 <Button
                     v-if="item.agent_warehouse?.containers_route"

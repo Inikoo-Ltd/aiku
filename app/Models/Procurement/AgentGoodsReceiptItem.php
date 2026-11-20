@@ -66,6 +66,18 @@ class AgentGoodsReceiptItem extends Model implements HasMedia
     }
 
     /**
+     * The units of this line already packed off its warehouse row (PackAgentWarehouseStock::packLocked).
+     */
+    public function quantitySplitOff(): float
+    {
+        if (!$this->agentWarehouseStock?->agent_goods_receipt_id) {
+            return 0;
+        }
+
+        return (float) AgentWarehouseStock::splitOffsOf($this->agentWarehouseStock)->sum('quantity');
+    }
+
+    /**
      * Once its goods are packed for a container the line is history: its check can no longer be changed.
      */
     public function isEditable(): bool
