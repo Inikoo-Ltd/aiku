@@ -8,6 +8,7 @@
 
 namespace App\Models\Catalogue;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Catalogue\Shop\Traits\WithAnkorstoreApi;
 use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
 use App\Actions\Catalogue\Shop\Traits\WithOrderchampApi;
@@ -72,6 +73,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Brand;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
+use App\Models\Helpers\CurrencyExchange;
 use App\Models\Helpers\InvoiceTransactionHasFeedback;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\Query;
@@ -1041,6 +1043,62 @@ class Shop extends Model implements HasMedia, Auditable
     public function customersChooseChannelLanguage(): bool
     {
         return (bool) Arr::get($this->settings, 'channel_languages');
+    }
+
+    /**
+     * Shown as whole numbers, as WHOLE_NUMBER_PRACTICE_CURRENCIES in resources/js/Stores/locale.ts.
+     */
+    public const array DISPLAY_CURRENCY_WHOLE_NUMBERS = ['CZK', 'HUF', 'SEK', 'UAH', 'IDR'];
+
+    /**
+     * Currencies customers may see prices in; the shop's own currency is always one of them and is the only one they are charged in.
+     *
+     * @return array<int, string>
+     */
+    public function displayCurrencyCodes(): array
+    {
+        return array_values(array_unique(array_merge(
+            [$this->currency->code],
+            Arr::get($this->settings, 'display_currencies') ?? []
+        )));
+    }
+
+    /**
+     * A manager can only offer a currency we keep a daily exchange rate for and whose rounding we handle (2 decimals, or whole numbers).
+     *
+     * @return array<int, string>
+     */
+    public static function currencyCodesWithExchangeRate(): array
+    {
+        return Currency::query()
+            ->where(fn ($query) => $query->where('code', config('app.currency_exchange.pivot'))
+                ->orWhereIn('id', CurrencyExchange::query()->select('currency_id')))
+            ->where(fn ($query) => $query->where('fraction_digits', 2)->orWhereIn('code', self::DISPLAY_CURRENCY_WHOLE_NUMBERS))
+            ->orderBy('code')
+            ->pluck('code')->all();
+    }
+
+    /**
+     * Indicative rates from the shop currency, empty while the shop offers only its own currency.
+     *
+     * @return array<int, array{code: string, name: string, rate: float, fraction_digits: int}>
+     */
+    public function displayCurrencyRates(): array
+    {
+        $codes = $this->displayCurrencyCodes();
+        if (count($codes) === 1) {
+            return [];
+        }
+
+        return Currency::whereIn('code', $codes)->orderBy('code')->get()
+            ->map(fn (Currency $currency) => [
+                'code'            => $currency->code,
+                'name'            => $currency->name,
+                'rate'            => (float) GetCurrencyExchange::make()->cachedOrStored($this->currency, $currency),
+                'fraction_digits' => in_array($currency->code, self::DISPLAY_CURRENCY_WHOLE_NUMBERS, true) ? 0 : 2,
+            ])
+            ->filter(fn (array $displayCurrency) => $displayCurrency['rate'] > 0)
+            ->values()->all();
     }
 
     public function enablesLanguage(mixed $code): bool

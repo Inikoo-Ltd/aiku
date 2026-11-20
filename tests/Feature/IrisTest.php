@@ -1592,3 +1592,147 @@ test('enabled languages shop setting is saved, always keeps the main language, i
     expect($shop->enabledLanguageIds())->toBe([$shop->language_id])
         ->and($shop->restrictsLanguages())->toBeFalse();
 });
+
+function displayCurrencyCodesFor(\App\Models\Catalogue\Shop $shop): array
+{
+    $codes = array_values(array_diff(['CZK', 'HUF', 'PLN'], [$shop->currency->code]));
+    foreach ($codes as $code) {
+        $currency = \App\Models\Helpers\Currency::where('code', $code)->firstOrFail();
+        \App\Models\Helpers\CurrencyExchange::firstOrCreate(['currency_id' => $currency->id, 'date' => now()->toDateString()], ['exchange' => 1, 'source' => 'test']);
+    }
+
+    return $codes;
+}
+
+function setShopDisplayCurrencies(\App\Models\Catalogue\Shop $shop, ?array $codes): void
+{
+    $settings = $shop->settings ?? [];
+    if ($codes === null) {
+        unset($settings['display_currencies']);
+    } else {
+        $settings['display_currencies'] = $codes;
+    }
+    $shop->settings = $settings;
+    $shop->saveQuietly();
+}
+
+function asDropshippingShop(\App\Models\Catalogue\Shop $shop, bool $isDropshipping = true): void
+{
+    static $originalTypes = [];
+    $originalTypes[$shop->id] ??= $shop->fresh()->type;
+    $shop->type = $isDropshipping ? ShopTypeEnum::DROPSHIPPING : $originalTypes[$shop->id];
+    $shop->saveQuietly();
+}
+
+test('display currencies: by default a shop offers only its own currency and a customer cannot choose another', function () {
+    asDropshippingShop($this->shop);
+    setShopDisplayCurrencies($this->shop, null);
+    $shop = $this->shop->fresh();
+    [$otherCode] = displayCurrencyCodesFor($shop);
+    $webUser = createWebUser(createCustomer($shop));
+
+    expect($shop->displayCurrencyCodes())->toBe([$shop->currency->code])
+        ->and($shop->displayCurrencyRates())->toBe([]);
+
+    expect(fn () => \App\Actions\Retina\UI\Profile\UpdateRetinaProfile::make()->action($webUser->fresh(), ['display_currency' => $otherCode]))
+        ->toThrow(ValidationException::class);
+
+    asDropshippingShop($this->shop, false);
+});
+
+test('display currencies shop setting is saved without the shop currency, is audited and only takes currencies with an exchange rate', function () {
+    Http::fake();
+    setShopDisplayCurrencies($this->shop, null);
+    [$czk] = displayCurrencyCodesFor($this->shop);
+    $shopCode = $this->shop->currency->code;
+
+    asDropshippingShop($this->shop, false);
+    expect(fn () => \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop->fresh(), ['display_currencies' => [$czk]]))
+        ->toThrow(ValidationException::class);
+
+    asDropshippingShop($this->shop);
+    $shop = \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop->fresh(), ['display_currencies' => [$czk, $shopCode]]);
+
+    expect($shop->settings['display_currencies'])->toBe([$czk])
+        ->and($shop->displayCurrencyCodes())->toBe([$shopCode, $czk])
+        ->and($shop->audits()->latest('id')->first()->new_values)->toMatchArray(['settings.display_currencies' => [$czk]]);
+
+    $currencyWithoutRate = \App\Models\Helpers\Currency::whereNotIn('id', \App\Models\Helpers\CurrencyExchange::query()->select('currency_id'))
+        ->where('code', '!=', config('app.currency_exchange.pivot'))->value('code');
+    expect(fn () => \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop, ['display_currencies' => [$currencyWithoutRate]]))
+        ->toThrow(ValidationException::class);
+
+    $zeroDecimalCurrency = \App\Models\Helpers\Currency::where('fraction_digits', 0)->whereNotIn('code', \App\Models\Catalogue\Shop::DISPLAY_CURRENCY_WHOLE_NUMBERS)->first();
+    if ($zeroDecimalCurrency) {
+        \App\Models\Helpers\CurrencyExchange::firstOrCreate(['currency_id' => $zeroDecimalCurrency->id, 'date' => now()->toDateString()], ['exchange' => 1, 'source' => 'test']);
+        expect(\App\Models\Catalogue\Shop::currencyCodesWithExchangeRate())->not->toContain($zeroDecimalCurrency->code);
+    }
+
+    $shop = \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop, ['display_currencies' => []]);
+    expect($shop->displayCurrencyCodes())->toBe([$shopCode]);
+
+    asDropshippingShop($this->shop, false);
+});
+
+test('display currency rates come from the daily exchange with whole numbers for CZK and HUF, without calling a rate provider', function () {
+    Http::fake();
+    $codes = displayCurrencyCodesFor($this->shop);
+    $shopCode = $this->shop->currency->code;
+    $rates = ['CZK' => 25.31, 'HUF' => 391.7, 'PLN' => 4.2834];
+    foreach ($codes as $code) {
+        Cache::put('current-currency-exchange:'.$shopCode.'-'.$code, $rates[$code], 60);
+    }
+    setShopDisplayCurrencies($this->shop, $codes);
+
+    $displayCurrencies = collect($this->shop->fresh()->displayCurrencyRates())->keyBy('code');
+
+    expect($displayCurrencies->keys()->sort()->values()->all())->toBe(collect([...$codes, $shopCode])->sort()->values()->all())
+        ->and($displayCurrencies[$shopCode]['rate'])->toBe(1.0);
+    foreach ($codes as $code) {
+        expect($displayCurrencies[$code]['rate'])->toBe($rates[$code])
+            ->and($displayCurrencies[$code]['fraction_digits'])->toBe($code === 'PLN' ? 2 : 0);
+    }
+    Http::assertNothingSent();
+
+    setShopDisplayCurrencies($this->shop, null);
+});
+
+test('a customer display currency is saved on the web user, limited to the shop list, and orders stay in the shop currency', function () {
+    [$czk, $huf] = displayCurrencyCodesFor($this->shop);
+    asDropshippingShop($this->shop);
+    setShopDisplayCurrencies($this->shop, [$czk]);
+    $customer = createCustomer($this->shop->fresh());
+    $webUser = createWebUser($customer);
+    $choose = fn (?string $code) => \App\Actions\Retina\UI\Profile\UpdateRetinaProfile::make()->action($webUser->fresh(), ['display_currency' => $code]);
+
+    $choose($czk);
+    expect($webUser->fresh()->settings['display_currency'])->toBe($czk);
+
+    expect(fn () => $choose($huf))->toThrow(ValidationException::class);
+    expect($webUser->fresh()->settings['display_currency'])->toBe($czk);
+
+    $product = createProduct($this->shop)[1];
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer->fresh(), [
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    $transaction = \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, [
+        'quantity_ordered' => 2,
+        'gross_amount'     => 12.34,
+        'net_amount'       => 12.34,
+    ]);
+    $order->refresh();
+
+    expect($order->currency_id)->toBe($this->shop->currency_id)
+        ->and((float) $transaction->net_amount)->toBe(round((float) $product->price * 2, 2))
+        ->and((float) $order->net_amount)->toBe((float) $order->transactions()->sum('net_amount'));
+
+    $choose($this->shop->currency->code);
+    expect($webUser->fresh()->settings['display_currency'])->toBeNull();
+
+    asDropshippingShop($this->shop, false);
+    expect(fn () => $choose($czk))->toThrow(ValidationException::class);
+
+    setShopDisplayCurrencies($this->shop, null);
+});

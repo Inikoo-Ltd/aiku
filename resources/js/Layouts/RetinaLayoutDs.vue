@@ -53,6 +53,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { useAutoCollapseLeftSidebar } from "@/Composables/useAutoCollapseLeftSidebar"
 import WebsiteLanguageSwitch from "@/Components/Utils/WebsiteLanguageSwitch.vue"
+import DisplayCurrencySwitch from "@/Components/Utils/DisplayCurrencySwitch.vue"
 library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
 
 const layout = useLayoutStore()
@@ -158,6 +159,14 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 								:currentCode="layout.iris.locale"
 								:shopLanguageCode="layout.iris.website_i18n.shop_language?.code"
 								:saveToProfileUrl="layout.user && layout.iris?.is_logged_in ? route('retina.models.profile.update') : null"
+							/>
+
+							<DisplayCurrencySwitch
+								v-if="layout.user && layout.iris?.is_logged_in && (layout.retina?.display_currencies?.length ?? 0) > 1"
+								class="place-self-end mr-2"
+								:currencies="layout.retina.display_currencies"
+								:currentCode="layout.retina.display_currency?.code ?? layout.retina.currency?.code"
+								:saveToProfileUrl="route('retina.models.profile.update')"
 							/>
 
 							<!-- My Balance -->

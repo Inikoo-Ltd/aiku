@@ -118,6 +118,8 @@ class HandleRetinaInertiaRequests extends Middleware
                 "retina"   => [
                     "type"     => $website->shop->type->value,
                     "currency" => CurrencyResource::make($website->shop->currency)->toArray(request()),
+                    'display_currencies' => $displayCurrencies = $webUser ? $website->shop->displayCurrencyRates() : [],
+                    'display_currency'   => collect($displayCurrencies)->firstWhere('code', Arr::get($webUser?->settings, 'display_currency')),
                     'portal_link' => Arr::get($website->shop->settings, 'portal.link', ''),
                     "balance"  => $webUser?->customer?->balance,
                     'organisation'      => $website->organisation->slug,

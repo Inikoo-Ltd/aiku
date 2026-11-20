@@ -54,6 +54,18 @@ class GetCurrencyExchange
     }
 
 
+    /**
+     * Never calls a rate provider, for request paths that must not wait on one.
+     */
+    public function cachedOrStored(Currency $baseCurrency, Currency $targetCurrency): ?float
+    {
+        if ($baseCurrency->code === $targetCurrency->code) {
+            return 1.0;
+        }
+
+        return ((float) Cache::get('current-currency-exchange:'.$baseCurrency->code.'-'.$targetCurrency->code)) ?: $this->latestStoredExchange($baseCurrency, $targetCurrency);
+    }
+
     private function rememberPair(string $pair): void
     {
         $pairs = Cache::get(WarmCurrencyExchanges::PAIRS_KEY, []);

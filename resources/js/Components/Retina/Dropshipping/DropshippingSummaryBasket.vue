@@ -1,6 +1,7 @@
 <script setup lang="ts">
 
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
+import IndicativeTotalNote from "@/Components/Retina/Dropshipping/IndicativeTotalNote.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { inject, onMounted, ref } from "vue"
 import { Link, router } from "@inertiajs/vue3"
@@ -431,6 +432,8 @@ onMounted(() => {
             <div class="border border-gray-200 p-2 rounded">
                 <OrderSummary :order_summary="summary.order_summary"
                               :currency_code="summary.order_summary?.currency?.data?.code"/>
+                <IndicativeTotalNote :currency="summary.order_summary?.currency?.data?.code"
+                                     :total="Object.values(summary.order_summary ?? {}).filter(Array.isArray).at(-1)?.[0]?.price_total"/>
             </div>
         </div>
 

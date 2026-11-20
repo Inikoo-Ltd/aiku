@@ -225,6 +225,10 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.enabled_languages', array_values(array_unique(array_map('intval', Arr::pull($modelData, 'enabled_languages') ?? []))));
         }
 
+        if (Arr::has($modelData, 'display_currencies')) {
+            data_set($modelData, 'settings.display_currencies', array_values(array_diff(array_unique(Arr::pull($modelData, 'display_currencies') ?? []), [$shop->currency->code])));
+        }
+
         if (Arr::has($modelData, 'channel_languages')) {
             data_set($modelData, 'settings.channel_languages', (bool) Arr::pull($modelData, 'channel_languages'));
         }
@@ -1349,6 +1353,11 @@ class UpdateShop extends OrgAction
 
         foreach ($this->preOrderTextFields($this->shop) as $field => $path) {
             $rules[$field] = ['sometimes', 'nullable', 'string', 'max:5000'];
+        }
+
+        if ($this->has('display_currencies')) {
+            $rules['display_currencies']   = [$this->shop->type === ShopTypeEnum::DROPSHIPPING ? 'nullable' : 'prohibited', 'array'];
+            $rules['display_currencies.*'] = ['string', Rule::in([...Shop::currencyCodesWithExchangeRate(), $this->shop->currency->code])];
         }
 
         if (!$this->strict) {

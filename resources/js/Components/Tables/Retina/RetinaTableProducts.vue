@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
+import IndicativePrice from "@/Components/Utils/IndicativePrice.vue"
 import { Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject } from "vue"
@@ -90,14 +91,14 @@ const layout = inject('layout', retinaLayoutStructure)
         <template #cell(price)="{ item }">
             <div class="flex justify-end">
 
-                {{ locale.currencyFormat(layout?.retina?.currency.code, item.price) }}
+                <IndicativePrice :currency="layout?.retina?.currency.code" :amount="item.price" />
             </div>
         </template>
 
         <!-- Column: RPP -->
         <template #cell(rrp)="{ item }">
          <div class="flex justify-end">
-                {{ locale.currencyFormat(layout?.retina?.currency.code, item.rrp) }}
+                <IndicativePrice :currency="layout?.retina?.currency.code" :amount="item.rrp" />
             </div>
         </template>
 

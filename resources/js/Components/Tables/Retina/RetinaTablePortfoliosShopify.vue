@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import IndicativePrice from "@/Components/Utils/IndicativePrice.vue"
 import {Link, router} from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import {Product} from "@/types/product"
@@ -861,10 +862,10 @@ onMounted(() => {
 
             <div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
                 <div>
-                    {{ ctrans("Price:") }} {{ locale.currencyFormat(product.currency_code, product.price) }}
+                    {{ ctrans("Price:") }} <IndicativePrice :currency="product.currency_code" :amount="product.price" />
                 </div>
                 <div>
-                    {{ ctrans("RRP:") }} {{ locale.currencyFormat(product.currency_code, product.customer_price) }}
+                    {{ ctrans("RRP:") }} <IndicativePrice :currency="product.currency_code" :amount="product.customer_price" />
                 </div>
             </div>
             <div v-if="product.is_shopify_variant_adopted" class="mt-1 flex items-center gap-x-2 text-sm text-gray-600">

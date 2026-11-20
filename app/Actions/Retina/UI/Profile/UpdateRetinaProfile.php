@@ -14,9 +14,11 @@ use App\Actions\Traits\UI\WithProfile;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\WebUser;
 use App\Rules\AlphaDashDot;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Rules\Password;
@@ -29,6 +31,11 @@ class UpdateRetinaProfile extends RetinaAction
 
     public function handle(WebUser $webUser, array $modelData): WebUser
     {
+        if (Arr::exists($modelData, 'display_currency')) {
+            $displayCurrency = Arr::pull($modelData, 'display_currency');
+            data_set($modelData, 'settings.display_currency', $displayCurrency === $webUser->shop->currency->code ? null : $displayCurrency);
+        }
+
         return UpdateWebUser::run($webUser, $modelData);
     }
 
@@ -76,6 +83,8 @@ class UpdateRetinaProfile extends RetinaAction
 
 
             'language_id' => ['sometimes', 'required', 'integer', $this->webUser->shop->restrictsLanguages() ? Rule::in($this->webUser->shop->enabledLanguageIds()) : 'exists:languages,id'],
+
+            'display_currency' => ['sometimes', $this->webUser->shop->type === ShopTypeEnum::DROPSHIPPING ? 'nullable' : 'prohibited', 'string', Rule::in($this->webUser->shop->displayCurrencyCodes())],
 
 
         ];

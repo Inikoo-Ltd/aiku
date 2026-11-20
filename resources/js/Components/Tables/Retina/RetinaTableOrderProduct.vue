@@ -1,5 +1,6 @@
 <script setup lang='ts'>
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import IndicativePrice from '@/Components/Utils/IndicativePrice.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Table from '@/Components/Table/Table.vue'
 import Tag from '@/Components/Tag.vue'
@@ -92,6 +93,14 @@ const debounceUpdateQuantity = debounce(
                     </div>
 
                 </div>
+            </template>
+
+            <template #cell(price)="{ item }">
+                <IndicativePrice charged :currency="item.currency_code" :amount="item.price" />
+            </template>
+
+            <template #cell(net_amount)="{ item }">
+                <IndicativePrice charged :currency="item.currency_code" :amount="item.net_amount" />
             </template>
 
             <!-- Column: Quantity -->
