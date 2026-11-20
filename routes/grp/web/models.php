@@ -638,6 +638,7 @@ use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransact
 use App\Actions\Procurement\PurchaseOrderTransaction\GetPurchaseOrderTransactionMoveSuppliers;
 use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier;
 use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionsToSupplier;
+use App\Actions\Procurement\PurchaseOrderTransaction\UndoCancelPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\GetPurchaseOrderPullSources;
 use App\Actions\Procurement\PurchaseOrderTransaction\GetPurchaseOrderPullSourceLines;
@@ -2210,6 +2211,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::patch('transactions/{purchaseOrderTransaction:id}/update', UpdatePurchaseOrderTransaction::class)->name('transaction.update')->withoutScopedBindings();
     Route::delete('transactions/{purchaseOrderTransaction:id}/delete', DeletePurchaseOrderTransaction::class)->name('transaction.delete')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/cancel', CancelPurchaseOrderTransaction::class)->name('transaction.cancel')->withoutScopedBindings();
+    Route::post('transactions/{purchaseOrderTransaction:id}/undo-cancel', UndoCancelPurchaseOrderTransaction::class)->name('transaction.cancel.undo')->withoutScopedBindings();
     Route::get('transactions/move-suppliers', GetPurchaseOrderTransactionMoveSuppliers::class)->name('transaction.move.suppliers');
     Route::post('transactions/{purchaseOrderTransaction:id}/move', MovePurchaseOrderTransactionToSupplier::class)->name('transaction.move')->withoutScopedBindings();
     Route::post('transactions/move', MovePurchaseOrderTransactionsToSupplier::class)->name('transaction.move_many');

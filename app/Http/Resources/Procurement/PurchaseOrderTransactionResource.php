@@ -13,6 +13,7 @@ use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
 use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionPriceChange;
 use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionQuantityChange;
 use App\Actions\Procurement\PurchaseOrderTransaction\SetPurchaseOrderTransactionAgentUnitExpense;
+use App\Actions\Procurement\PurchaseOrderTransaction\UndoCancelPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -180,6 +181,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 'method'     => 'post',
             ] : null,
             'undoMove'             => $this->undoMove($transaction),
+            'undoCancel'           => $this->undoCancel($transaction, $request),
             'cancelRoute'          => $this->isCancellable($transaction) ? [
                 'name'            => 'grp.models.purchase-order.transaction.cancel',
                 'parameters'      => [
@@ -396,6 +398,38 @@ class PurchaseOrderTransactionResource extends JsonResource
             'blocked_reason' => array_key_exists('undo_move_blocked_reason', $transaction->getAttributes())
                 ? $transaction->getAttribute('undo_move_blocked_reason')
                 : UndoMovePurchaseOrderTransaction::blockedReason($transaction),
+        ];
+    }
+
+    private function undoCancel(PurchaseOrderTransaction $transaction, $request): ?array
+    {
+        $purchaseOrder = $transaction->purchaseOrder;
+
+        if ($transaction->state !== PurchaseOrderTransactionStateEnum::CANCELLED
+            || !$purchaseOrder
+            || !in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)
+            || UndoCancelPurchaseOrderTransaction::isCancelledByMove($transaction)) {
+            return null;
+        }
+
+        $agentOrganisationId = $purchaseOrder->isAgentOrder() ? $purchaseOrder->agent?->organisation_id : null;
+        $user                = $request->user();
+
+        if (!$user?->authTo("procurement.$transaction->organisation_id.edit")
+            && !($agentOrganisationId !== null && $user?->authTo("procurement.$agentOrganisationId.edit"))) {
+            return null;
+        }
+
+        return [
+            'route'          => [
+                'name'       => 'grp.models.purchase-order.transaction.cancel.undo',
+                'parameters' => [
+                    'purchaseOrder'            => $transaction->purchase_order_id,
+                    'purchaseOrderTransaction' => $transaction->id,
+                ],
+                'method'     => 'post',
+            ],
+            'blocked_reason' => UndoCancelPurchaseOrderTransaction::blockedReason($transaction),
         ];
     }
 

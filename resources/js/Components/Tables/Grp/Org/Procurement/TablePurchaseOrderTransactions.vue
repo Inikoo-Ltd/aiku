@@ -433,6 +433,40 @@ function confirmUndoMove(event: MouseEvent, item: any) {
     })
 }
 
+const undoingCancelId = ref<number | null>(null)
+const undoCancelErrors = ref<Record<number, string>>({})
+
+function undoCancel(item: any) {
+    router.post(route(item.undoCancel.route.name, item.undoCancel.route.parameters), {}, {
+        preserveScroll: true,
+        onStart: () => {
+            undoingCancelId.value = item.id
+            delete undoCancelErrors.value[item.id]
+        },
+        onFinish: () => (undoingCancelId.value = null),
+        onError: (errors: Record<string, string>) => (undoCancelErrors.value[item.id] = Object.values(errors ?? {})[0] ?? ctrans('Could not undo the cancel')),
+    })
+}
+
+function confirmUndoCancel(event: MouseEvent, item: any) {
+    if (isBraveModeActive()) {
+        undoCancel(item)
+        return
+    }
+
+    confirm.require({
+        group: 'pack-item',
+        target: event.currentTarget as HTMLElement,
+        message: ctrans('Put :code back on this order with :quantity units?', {
+            code: item.code,
+            quantity: locale.number(Number(item.quantity_ordered)),
+        }),
+        acceptLabel: ctrans('Undo cancel'),
+        rejectLabel: ctrans('Keep cancelled'),
+        accept: () => undoCancel(item),
+    })
+}
+
 function onMoved() {
     _table.value?.clearSelection()
     selectedRows.value = {}
@@ -1101,6 +1135,21 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     {{ cancellationLabel(item.cancellation) }}
                 </span>
 
+                <Button
+                    v-if="item.undoCancel"
+                    :label="ctrans('Undo cancel')"
+                    :tooltip="item.undoCancel.blocked_reason ?? ctrans('Put this item back on the order')"
+                    type="tertiary"
+                    size="xs"
+                    :loading="undoingCancelId === item.id"
+                    :disabled="!!item.undoCancel.blocked_reason || undoingCancelId === item.id"
+                    @click="confirmUndoCancel($event, item)"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon :icon="faUndo" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+
                 <span
                     v-if="isLoadedBeforePacking(item)"
                     class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200"
@@ -1187,6 +1236,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 />
 
             </div>
+
+            <p v-if="undoCancelErrors[item.id]" class="text-xs text-red-600">{{ undoCancelErrors[item.id] }}</p>
 
             <div v-if="item.agent_warehouse?.containers?.length" class="flex flex-wrap justify-end gap-1">
                 <span
