@@ -1271,6 +1271,20 @@ describe('production reward pay bands', function () {
             ->and($taskB->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE);
         \App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession::make()->action($wholeBatch);
 
+        $taskA->update(['quantity_required' => 0.9]);
+        $taskB->update(['quantity_required' => 10.1]);
+        $firstPart = StartManufactureTaskSession::make()->action($this->guest->getUser(), $taskA);
+        $firstPart->update(['started_at' => now()->subHours(2)]);
+        $firstPart = CloseManufactureTaskSession::make()->action($firstPart, ['quantity_made' => 10])->refresh();
+        expect($firstPart->shares->pluck('quantity_made', 'job_order_item_task_id')->map(fn ($quantity) => (float) $quantity)->all())->toBe([$taskA->id => 0.9, $taskB->id => 9.1]);
+        $lastPart = StartManufactureTaskSession::make()->action($this->guest->getUser(), $taskA);
+        $lastPart->update(['started_at' => now()->subHour()]);
+        $lastPart = CloseManufactureTaskSession::make()->action($lastPart, ['quantity_made' => 1])->refresh();
+        expect($taskA->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+            ->and($taskB->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+        \App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession::make()->action($lastPart);
+        \App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession::make()->action($firstPart);
+
         \App\Actions\Production\JobOrderItemTask\SeparateJobOrderItemTasks::make()->action($taskA);
         expect($taskA->refresh()->combined_task_id)->toBeNull()
             ->and($taskB->refresh()->combined_task_id)->toBeNull();
