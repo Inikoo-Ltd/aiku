@@ -44,7 +44,7 @@ class UpdatePartnerShoppingListItem extends OrgAction
             $this->ensureBuyerCanChange($partnerShoppingListItem);
 
             if (!Arr::pull($modelData, 'break_batch') && isset($modelData['quantity'])) {
-                $modelData['quantity'] = RoundPartnerQuantityToBatches::run($partnerShoppingListItem->orgPartner, $partnerShoppingListItem->stock_id, (float) $modelData['quantity']);
+                $modelData['quantity'] = RoundPartnerQuantityToBatches::run($partnerShoppingListItem->orgPartner, $partnerShoppingListItem->stock_id, (float) $modelData['quantity'], $partnerShoppingListItem->id);
             }
 
             return $this->update($partnerShoppingListItem, $modelData);

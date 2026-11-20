@@ -35,6 +35,7 @@ use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
+use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
 use App\Actions\Procurement\ShoppingListItem\DeleteShoppingListItem;
 use App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem;
@@ -444,7 +445,7 @@ describe('partner browse', function () {
                 ->where('bucketLabel', 'Out of stock')
                 ->where('perPage', 25)
                 ->where('perPageOptions', [25, 100, 500])
-                ->where('items.data', fn ($rows) => collect($rows)->every(fn ($row) => collect(['quarterly_usage', 'stock_cover', 'stock_deliveries', 'units_per_pack', 'quantity_ordered', 'other_open_purchase_orders'])
+                ->where('items.data', fn ($rows) => collect($rows)->every(fn ($row) => collect(['quarterly_usage', 'stock_cover', 'stock_deliveries', 'units_per_pack', 'quantity_ordered', 'other_open_purchase_orders', 'hub_stock'])
                     ->every(fn ($key) => array_key_exists($key, (array) $row))))
                 ->has('items.data')
                 ->has('addRoute.name');
@@ -490,7 +491,8 @@ test('partner shopping list keeps rows in place when lines share a created_at', 
     UpdatePartnerShoppingListItem::make()->action($newer->refresh(), ['priority' => 'urgent']);
 
     $this->get(route('grp.org.procurement.org_partners.show.shopping_list.index', [$this->organisation->slug, $this->orgPartner->id]))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => collect($rows)->pluck('id')->take(2)->all() === [$newer->id, $older->id]));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => collect($rows)->pluck('id')->take(2)->all() === [$newer->id, $older->id]
+            && collect($rows)->every(fn ($row) => is_numeric($row['hub_stock']) && $row['hub_stock'] >= 0)));
 });
 
 test('UI partner shipping list index', function () {
@@ -705,6 +707,48 @@ test('batch size is hinted to the partner buyer and to the factory board', funct
 
     $rows = collect($this->get(route('grp.json.org_partner.shopping_list_org_stocks', [$this->orgPartner->id]))->json('data'));
     expect($rows->firstWhere('id', $orgStock->id)['batch_size'])->toBe(45);
+});
+
+test('hub lines take the hub free shelf stock before rounding up to a whole batch', function () {
+    $seller = $this->orgPartner->partner;
+    $wasHub = $seller->is_manufacturing_hub;
+    $seller->update(['is_manufacturing_hub' => true]);
+
+    $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
+    [, $sellerProduct] = createProduct($sellerShop);
+    $sellerOrgStock = $sellerProduct->orgStocks()->first();
+    $stockId        = $sellerOrgStock->stock_id;
+
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+    DB::table('artefacts')->where('org_stock_id', $sellerOrgStock->id)->update(['deleted_at' => now()]);
+    $artefact   = StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'HUB-4840', 'name' => 'Hub batch', 'recommended_batch_size' => 78 * max(1, (int) $sellerOrgStock->packed_in)]);
+    $artefact->update(['org_stock_id' => $sellerOrgStock->id]);
+    $sellerOrgStock->update(['quantity_available' => 18]);
+    PartnerShoppingListItem::where('stock_id', $stockId)->forceDelete();
+
+    expect(RoundPartnerQuantityToBatches::run($this->orgPartner, $stockId, 10))->toBe(10.0)
+        ->and(RoundPartnerQuantityToBatches::run($this->orgPartner, $stockId, 19))->toBe(78.0);
+
+    $line = submittedPartnerShoppingListItem($this->orgPartner, $sellerOrgStock, ['quantity' => 10]);
+
+    expect((float) $line->quantity)->toBe(10.0)
+        ->and(RoundPartnerQuantityToBatches::freeSkosByStockId($this->orgPartner, [$stockId])[$stockId])->toBe(8.0)
+        ->and(RoundPartnerQuantityToBatches::run($this->orgPartner, $stockId, 10))->toBe(78.0)
+        ->and(RoundPartnerQuantityToBatches::run($this->orgPartner, $stockId, 8))->toBe(8.0);
+
+    UpdatePartnerShoppingListItem::make()->action($line, ['quantity' => 18]);
+    expect((float) $line->refresh()->quantity)->toBe(18.0);
+
+    UpdatePartnerShoppingListItem::make()->action($line, ['quantity' => 20]);
+    expect((float) $line->refresh()->quantity)->toBe(78.0);
+
+    $line->update(['quantity' => 15]);
+    $line->replicate()->fill(['quantity' => 15, 'created_at' => now()->subDay()])->save();
+    expect(RoundPartnerQuantityToBatches::unclaimedSkosByStockId($this->orgPartner, [$stockId], $line->id)[$stockId])->toBe(3.0)
+        ->and(RoundPartnerQuantityToBatches::freeSkosByStockId($this->orgPartner, [$stockId])[$stockId])->toBe(0.0);
+
+    PartnerShoppingListItem::where('stock_id', $stockId)->forceDelete();
+    $seller->update(['is_manufacturing_hub' => $wasHub]);
 });
 
 test('the partner stock picker shows how long the buyer own stock lasts', function () {

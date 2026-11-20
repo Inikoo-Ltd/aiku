@@ -67,6 +67,7 @@ class PreparePartnerShoppingListOrder extends OrgAction
             $stockIds   = $orgStocks->pluck('stock_id')->unique()->values()->all();
             $mismatched = array_flip(EnsurePartnerOrderPackedInMatches::make()->mismatchedStockIds($orgPartner, $stockIds));
             $quanta     = RoundPartnerQuantityToBatches::quantaByStockId($orgPartner, $stockIds);
+            $freeSkos   = RoundPartnerQuantityToBatches::freeSkosByStockId($orgPartner, $stockIds);
             $drafts     = PartnerShoppingListItem::where('org_partner_id', $orgPartner->id)
                 ->where('state', ShoppingListItemStateEnum::DRAFT)
                 ->whereIn('org_stock_id', $orgStocks->keys())
@@ -94,7 +95,7 @@ class PreparePartnerShoppingListOrder extends OrgAction
                     continue;
                 }
 
-                $quantity = RoundPartnerQuantityToBatches::roundUp((float) $line['skos'], $quanta[$orgStock->stock_id] ?? 1);
+                $quantity = RoundPartnerQuantityToBatches::roundUpPastFreeStock((float) $line['skos'], $quanta[$orgStock->stock_id] ?? 1, $freeSkos[$orgStock->stock_id] ?? 0);
                 $cost     = (float) $line['skos'] > 0 ? round($line['cost'] * $quantity / (float) $line['skos'], 2) : (float) $line['cost'];
 
                 if ($budget !== null) {

@@ -186,10 +186,13 @@ interface BatchedItem {
 	org_stock_code: string
 	quantity: number
 	order_quantum: number
+	hub_stock?: number | null
 }
 
 const isPartBatch = (item: BatchedItem) =>
-	Number(item.order_quantum) > 1 && Number(item.quantity) % Number(item.order_quantum) !== 0
+	Number(item.order_quantum) > 1 &&
+	Number(item.quantity) % Number(item.order_quantum) !== 0 &&
+	Number(item.quantity) > Number(item.hub_stock ?? 0)
 
 const breakingBatchOf = ref<BatchedItem | null>(null)
 const breakBatchQuantity = ref<number | null>(null)

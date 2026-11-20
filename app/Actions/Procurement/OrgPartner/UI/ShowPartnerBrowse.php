@@ -303,8 +303,9 @@ class ShowPartnerBrowse extends OrgAction
 
             $exchange = $this->orgPartner->exchangeToOrgCurrency();
             $quanta   = RoundPartnerQuantityToBatches::make()->quanta($this->orgPartner, $sellerOrgStocks->filter()->pluck('id')->all());
+            $freeSkos = RoundPartnerQuantityToBatches::freeSkosByStockId($this->orgPartner, $sellerOrgStocks->filter()->pluck('stock_id')->unique()->values()->all());
 
-            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $orderHistory, $exchange, $quanta) {
+            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $orderHistory, $exchange, $quanta, $freeSkos) {
                 $sellerOrgStock = $sellerOrgStocks[$product->id] ?? null;
                 $quantum        = $sellerOrgStock ? ($quanta[$sellerOrgStock->id] ?? 1) : 1;
                 $buyerOrgStock  = $sellerOrgStock ? $buyerOrgStocks->get($sellerOrgStock->stock_id) : null;
@@ -331,7 +332,7 @@ class ShowPartnerBrowse extends OrgAction
                         ? (int) $buyerOrgStock->stats->days_of_cover
                         : null,
                     'recommended_quantity'  => $buyerOrgStock?->stats?->recommended_order_quantity !== null
-                        ? (int) RoundPartnerQuantityToBatches::roundUp(ceil((float) $buyerOrgStock->stats->recommended_order_quantity), $quantum)
+                        ? (int) RoundPartnerQuantityToBatches::roundUpPastFreeStock(ceil((float) $buyerOrgStock->stats->recommended_order_quantity), $quantum, $sellerOrgStock ? ($freeSkos[$sellerOrgStock->stock_id] ?? 0) : 0)
                         : null,
                     'shopping_list_item_id' => $openItem?->id,
                     'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,

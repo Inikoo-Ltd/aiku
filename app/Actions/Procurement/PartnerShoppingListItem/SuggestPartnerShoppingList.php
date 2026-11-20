@@ -313,6 +313,7 @@ class SuggestPartnerShoppingList extends OrgAction
             ->keyBy('id');
 
         $quanta       = RoundPartnerQuantityToBatches::quantaByStockId($orgPartner, $buyerStocks->pluck('stock_id')->all());
+        $freeSkos     = RoundPartnerQuantityToBatches::freeSkosByStockId($orgPartner, $buyerStocks->pluck('stock_id')->all());
         $candidatesBy = collect($candidates)->keyBy('stock_id');
 
         $lines     = [];
@@ -326,7 +327,7 @@ class SuggestPartnerShoppingList extends OrgAction
                 continue;
             }
 
-            $quantity = RoundPartnerQuantityToBatches::roundUp((float) $rescueLine['skos'], $quanta[$buyerStock->stock_id] ?? 1);
+            $quantity = RoundPartnerQuantityToBatches::roundUpPastFreeStock((float) $rescueLine['skos'], $quanta[$buyerStock->stock_id] ?? 1, $freeSkos[$buyerStock->stock_id] ?? 0);
             $cost     = round($rescueLine['cost'] * $quantity / $rescueLine['skos'], 2);
 
             if ($quantity < 1 || $cost > $remaining) {
