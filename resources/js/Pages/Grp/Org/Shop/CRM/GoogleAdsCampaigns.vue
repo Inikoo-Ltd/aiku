@@ -11,6 +11,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 import TableGoogleAdsCampaigns from "@/Components/Tables/Grp/Org/CRM/TableGoogleAdsCampaigns.vue"
+import type { GoogleAdsProfitSummary } from "@/Components/Tables/Grp/Org/CRM/TableGoogleAdsCampaigns.vue"
 import DateIntervalTabs from "@/Components/Navigation/DateIntervalTabs.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -33,6 +34,8 @@ const props = defineProps<{
     custom_range: { from: string; to: string } | null
     compare: boolean
     comparison_label: string | null
+    can_see_profit: boolean
+    summary: GoogleAdsProfitSummary | null
 }>()
 
 /**
@@ -85,7 +88,10 @@ const lastFetched = computed(() => {
     <div class="mx-4 mt-2 text-xs text-gray-500">
         {{ ctrans("Impressions, clicks, conversions, conversion value and ROAS are Google's own figures for the period. Spend is shown in") }}
         {{ shop_currency }}; {{ ctrans("budgets, cost per click, cost per conversion and conversion value are in the ad account's currency.") }}
+        <template v-if="can_see_profit">
+            {{ ctrans("Orders and profit are Aiku's own, in :currency; open a campaign to see its orders.", { currency: shop_currency }) }}
+        </template>
     </div>
 
-    <TableGoogleAdsCampaigns :data="data" :currency="shop_currency" />
+    <TableGoogleAdsCampaigns :data="data" :currency="shop_currency" :summary="summary" />
 </template>

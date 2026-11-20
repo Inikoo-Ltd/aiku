@@ -79,10 +79,17 @@ class GoogleAdsCampaignsResource extends JsonResource
                 ...TrafficSourceCampaignMetric::IMPRESSION_SHARE_COLUMNS,
             ]),
 
+            ...($this->hasProfit() ? $this->nullableFloats(IndexGoogleAdsCampaigns::PROFIT_KEYS) : []),
+
             /* Only present when the listing was asked to compare, so the table knows to draw the
                change under each figure rather than guessing from a row of nulls. */
             'previous' => $this->when($this->hasPreviousPeriod(), fn () => $this->previousValues()),
         ];
+    }
+
+    private function hasProfit(): bool
+    {
+        return array_key_exists('profit', $this->resource->getAttributes());
     }
 
     private function hasPreviousPeriod(): bool
@@ -97,7 +104,11 @@ class GoogleAdsCampaignsResource extends JsonResource
     {
         $values = [];
 
-        foreach (IndexGoogleAdsCampaigns::METRIC_KEYS as $key) {
+        $keys = $this->hasProfit()
+            ? [...IndexGoogleAdsCampaigns::METRIC_KEYS, ...IndexGoogleAdsCampaigns::PROFIT_KEYS]
+            : IndexGoogleAdsCampaigns::METRIC_KEYS;
+
+        foreach ($keys as $key) {
             $previous     = $this->resource->{$key.IndexGoogleAdsCampaigns::PREVIOUS_SUFFIX};
             $values[$key] = $previous !== null ? (float) $previous : null;
         }

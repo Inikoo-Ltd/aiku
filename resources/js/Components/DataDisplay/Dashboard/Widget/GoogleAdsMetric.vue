@@ -20,7 +20,7 @@ import { ctrans } from "@/Composables/useTrans"
 const props = withDefaults(
     defineProps<{
         value: number | null
-        kind: "count" | "money" | "percent" | "share" | "roas"
+        kind: "count" | "money" | "profit" | "percent" | "share" | "roas"
         currency?: string
         previous?: number | null
         better?: "up" | "down" | "none"
@@ -39,6 +39,7 @@ const label = computed(() => {
         case "count":
             return locale.number(props.value)
         case "money":
+        case "profit":
             return locale.currencyFormat(props.currency ?? "", props.value)
         case "percent":
             return props.value.toFixed(2) + "%"
@@ -52,6 +53,7 @@ const label = computed(() => {
 const valueClass = computed(() => {
     if (props.value === null) return "text-gray-400"
     if (props.kind === "roas") return props.value >= 1 ? "text-[#006300]" : "text-[#d03b3b]"
+    if (props.kind === "profit" && props.value < 0) return "text-[#d03b3b]"
 
     return props.size === "lg" || props.strong ? "text-gray-900" : "text-gray-600"
 })
@@ -79,7 +81,7 @@ const change = computed<{ text: string; direction: number } | null>(() => {
         return props.value > 0 ? { text: ctrans("new"), direction: 1 } : null
     }
 
-    const percent = ((props.value - previous) / previous) * 100
+    const percent = ((props.value - previous) / Math.abs(previous)) * 100
 
     return { text: (percent >= 0 ? "+" : "") + percent.toFixed(1) + "%", direction: Math.sign(percent) }
 })
@@ -103,6 +105,7 @@ const previousLabel = computed(() => {
         case "count":
             return ctrans("Period before") + ": " + locale.number(previous)
         case "money":
+        case "profit":
             return ctrans("Period before") + ": " + locale.currencyFormat(props.currency ?? "", previous)
         case "percent":
             return ctrans("Period before") + ": " + previous.toFixed(2) + "%"

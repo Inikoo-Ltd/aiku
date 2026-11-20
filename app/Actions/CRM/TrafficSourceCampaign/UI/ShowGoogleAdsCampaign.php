@@ -16,6 +16,7 @@ use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Models\Helpers\Media;
 use App\Actions\OrgAction;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
+use App\Http\Resources\CRM\GoogleAdsOrdersResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSourceCampaign;
 use App\Models\CRM\TrafficSourceCampaignConversion;
@@ -38,6 +39,7 @@ class ShowGoogleAdsCampaign extends OrgAction
     use WithShopPpcPermissions;
     use WithGoogleAdsInterval;
     use WithGoogleAdsCampaignJourney;
+    use WithGoogleAdsProfit;
 
     public function handle(TrafficSourceCampaign $trafficSourceCampaign): TrafficSourceCampaign
     {
@@ -47,7 +49,8 @@ class ShowGoogleAdsCampaign extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, TrafficSourceCampaign $trafficSourceCampaign, ActionRequest $request): TrafficSourceCampaign
     {
         $this->initialisationFromShop($shop, $request);
-        $this->canEdit = $this->canEditGoogleAds($request->user(), $shop);
+        $this->canEdit      = $this->canEditGoogleAds($request->user(), $shop);
+        $this->canSeeProfit = $this->canSeeAdsProfit($request->user(), $shop);
 
         if (
             $trafficSourceCampaign->trafficSource->shop_id !== $shop->id
@@ -71,7 +74,7 @@ class ShowGoogleAdsCampaign extends OrgAction
             return $this->inProcessResponse($trafficSourceCampaign, $request);
         }
 
-        return Inertia::render(
+        $response = Inertia::render(
             'Org/Shop/CRM/GoogleAdsCampaign',
             [
                 'can_edit'    => $this->canEdit,
@@ -161,6 +164,7 @@ class ShowGoogleAdsCampaign extends OrgAction
                 'conversions_by_action' => $this->conversionsByAction($trafficSourceCampaign),
                 'daily'                 => $this->daily($trafficSourceCampaign),
                 'attribution'           => $this->attribution($trafficSourceCampaign),
+                ...$this->profitProps($trafficSourceCampaign),
                 'ad_groups'             => $data['ad_groups'] ?? [],
                 'asset_groups'          => $data['asset_groups'] ?? [],
                 'exclusions'            => $data['exclusions'] ?? [],
@@ -177,6 +181,34 @@ class ShowGoogleAdsCampaign extends OrgAction
                 }),
             ]
         );
+
+        return $this->canSeeProfit
+            ? $response->table(IndexGoogleAdsOrders::make()->tableStructure(self::ORDERS_TABLE))
+            : $response;
+    }
+
+    private const string ORDERS_TABLE = 'orders';
+
+    /**
+     * What the campaign earned against what it cost, from Aiku's own orders, and the orders behind it.
+     *
+     * @return array<string, mixed>
+     */
+    private function profitProps(TrafficSourceCampaign $campaign): array
+    {
+        if (!$this->canSeeProfit) {
+            return ['can_see_profit' => false];
+        }
+
+        $ordersIndex = IndexGoogleAdsOrders::make();
+        $orders      = $ordersIndex->handle($this->shop, $campaign, self::ORDERS_TABLE);
+
+        return [
+            'can_see_profit'  => true,
+            'profit'          => $ordersIndex->googleAdsProfitSummary($this->shop, campaignId: $campaign->id),
+            'profit_previous' => $this->isComparing() ? $ordersIndex->googleAdsProfitSummary($this->shop, true, $campaign->id) : null,
+            'orders'          => GoogleAdsOrdersResource::collection($orders)->additional(['totals' => $ordersIndex->totals]),
+        ];
     }
 
     /**

@@ -42,6 +42,7 @@ use App\Actions\Iris\CaptureTrafficSource;
 use App\Actions\CRM\TrafficSource\StoreTrafficSourceCost;
 use App\Actions\CRM\TrafficSource\UI\IndexTrafficSources;
 use App\Actions\CRM\TrafficSourceCampaign\UI\IndexGoogleAdsCampaigns;
+use App\Actions\CRM\TrafficSourceCampaign\UI\IndexGoogleAdsOrders;
 use App\Actions\CRM\TrafficSourceCampaign\UI\ShowGoogleAdsCampaign;
 use App\Actions\CRM\TrafficSource\UI\TrafficSourceTabsEnum;
 use App\Actions\Catalogue\Shop\StoreShop;
@@ -68,6 +69,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
+use App\Models\Inventory\OrgStock;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
@@ -5460,5 +5462,208 @@ describe('mailshot ready-made links', function () {
         expect($link['ready_made']['key'])->toBe('whatsapp_opt_in')
             ->and($link['ready_made']['utm'])->toBe(['utm_campaign' => 'whatsapp_optin'])
             ->and($link['is_internal'])->toBeTrue();
+    });
+});
+
+function createGoogleAdsOrder(Shop $shop, string $customerKey, \App\Models\Catalogue\Product $product, int $quantity, ?string $clickId, string $state = 'dispatched'): int
+{
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action(createOwnCustomer($shop, $customerKey), [
+        'date'             => now()->toDateString(),
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action(
+        $order,
+        $product->historicAsset,
+        array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => $quantity])
+    );
+
+    DB::table('orders')->where('id', $order->id)->update([
+        'state'                    => $state,
+        'submitted_at'             => now()->subDays(2),
+        'google_ads_click_id'      => $clickId,
+        'google_ads_click_id_type' => $clickId ? 'gclid' : null,
+        'google_ads_clicked_at'    => $clickId ? now()->subDays(3) : null,
+    ]);
+
+    return $order->id;
+}
+
+function recordGoogleAdsClick(Shop $shop, string $clickId, string $campaignRef): void
+{
+    DB::table('traffic_source_clicks')->insert([
+        'shop_id'       => $shop->id,
+        'type'          => 'google-ads',
+        'campaign_ref'  => $campaignRef,
+        'click_id'      => $clickId,
+        'click_id_type' => 'gclid',
+        'is_bot'        => false,
+        'is_repeat'     => false,
+        'created_at'    => now()->subDays(3),
+    ]);
+}
+
+/**
+ * What the margin box of the order shows, with every unit costed at the last purchase price.
+ */
+function googleAdsOrderProfit(int $orderId, float $unitCost): float
+{
+    $lines = DB::table('transactions')
+        ->where('order_id', $orderId)
+        ->where('model_type', 'Product')
+        ->whereNull('deleted_at')
+        ->get();
+
+    $net    = (float) $lines->sum('net_amount');
+    $orgNet = (float) $lines->sum('org_net_amount');
+    $cost   = $unitCost * (float) $lines->sum('quantity_ordered');
+
+    return round($net * ($orgNet - $cost) / $orgNet, 2);
+}
+
+describe('google ads profit', function () {
+    beforeEach(function () {
+        resetMarketingFixtures();
+
+        list(
+            $this->organisation,
+            $this->user,
+            $this->shop
+        ) = createOwnShop('google ads profit');
+
+        DB::table('orders')->where('shop_id', $this->shop->id)->whereNotNull('google_ads_click_id')->update(['google_ads_click_id' => null]);
+        DB::table('traffic_source_clicks')->where('shop_id', $this->shop->id)->where('type', 'google-ads')->delete();
+
+        list(, $this->product) = createProduct($this->shop);
+
+        $orgStock = OrgStock::where('organisation_id', $this->shop->organisation_id)->orderBy('id')->firstOrFail();
+        DB::table('product_has_org_stocks')->where('product_id', $this->product->id)->delete();
+        DB::table('product_has_org_stocks')->insert([
+            'product_id'   => $this->product->id,
+            'org_stock_id' => $orgStock->id,
+            'quantity'     => 1,
+            'dividend'     => 1,
+            'divisor'      => 1,
+        ]);
+        DB::table('org_stocks')->where('id', $orgStock->id)->update(['lpp_per_sku' => 4]);
+
+        $this->trafficSource = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
+
+        $this->spring = TrafficSourceCampaign::create([
+            'traffic_source_id' => $this->trafficSource->id,
+            'reference'         => 'ref-'.uniqid(),
+            'name'              => 'Spring Sale',
+            'type'              => 'google-ads',
+            'data'              => ['status' => 'ENABLED', 'currency' => $this->shop->currency->code],
+        ]);
+        $this->brand = TrafficSourceCampaign::create([
+            'traffic_source_id' => $this->trafficSource->id,
+            'reference'         => 'ref-'.uniqid(),
+            'name'              => 'Brand',
+            'type'              => 'google-ads',
+            'data'              => ['status' => 'ENABLED', 'currency' => $this->shop->currency->code],
+        ]);
+
+        StoreTrafficSourceCost::run($this->trafficSource, [
+            'date'                       => now()->subDays(1)->toDateString(),
+            'source_amount'              => 50.00,
+            'source_currency_id'         => $this->shop->currency_id,
+            'traffic_source_campaign_id' => $this->spring->id,
+        ]);
+
+        $clicks = [];
+        foreach (['spring_a', 'spring_b', 'brand', 'unmatched', 'cancelled'] as $name) {
+            $clicks[$name] = 'gclid-'.$name.'-'.uniqid();
+        }
+        recordGoogleAdsClick($this->shop, $clicks['spring_a'], $this->spring->reference);
+        recordGoogleAdsClick($this->shop, $clicks['spring_b'], $this->spring->reference);
+        recordGoogleAdsClick($this->shop, $clicks['brand'], $this->brand->reference);
+        recordGoogleAdsClick($this->shop, $clicks['unmatched'], 'not-a-campaign-'.uniqid());
+        recordGoogleAdsClick($this->shop, $clicks['cancelled'], $this->spring->reference);
+
+        $this->springOrderA = createGoogleAdsOrder($this->shop, 'google ads profit a', $this->product, 2, $clicks['spring_a']);
+        $this->springOrderB = createGoogleAdsOrder($this->shop, 'google ads profit b', $this->product, 1, $clicks['spring_b']);
+        $this->brandOrder   = createGoogleAdsOrder($this->shop, 'google ads profit brand', $this->product, 1, $clicks['brand']);
+        $this->unmatched    = createGoogleAdsOrder($this->shop, 'google ads profit unmatched', $this->product, 1, $clicks['unmatched']);
+        createGoogleAdsOrder($this->shop, 'google ads profit cancelled', $this->product, 3, $clicks['cancelled'], 'cancelled');
+        createGoogleAdsOrder($this->shop, 'google ads profit no click', $this->product, 1, null);
+
+        $this->springProfit = googleAdsOrderProfit($this->springOrderA, 4) + googleAdsOrderProfit($this->springOrderB, 4);
+        $this->brandProfit  = googleAdsOrderProfit($this->brandOrder, 4);
+
+        fakeCurrentRoute();
+    });
+
+    it('sets the profit of the orders a campaign won the last click of against what it cost', function () {
+        $index               = IndexGoogleAdsCampaigns::make();
+        $index->canSeeProfit = true;
+
+        $row = $index->handle($this->shop)->firstWhere('id', $this->spring->id);
+
+        expect((int) $row->ad_orders)->toBe(2)
+            ->and((float) $row->profit)->toEqualWithDelta($this->springProfit, 0.01)
+            ->and((float) $row->profit_after_spend)->toEqualWithDelta($this->springProfit - 50, 0.01)
+            ->and((float) $row->poas)->toEqualWithDelta(round($this->springProfit / 50, 2), 0.001);
+    });
+
+    it('leaves profit out of the campaigns listing for staff who may not see margins', function () {
+        $row = IndexGoogleAdsCampaigns::make()->handle($this->shop)->firstWhere('id', $this->spring->id);
+
+        expect(array_key_exists('profit', $row->getAttributes()))->toBeFalse();
+    });
+
+    it('sets what one campaign earned against what it cost', function () {
+        $summary = IndexGoogleAdsCampaigns::make()->googleAdsProfitSummary($this->shop, campaignId: $this->spring->id);
+
+        expect($summary['spend'])->toBe(50.0)
+            ->and($summary['orders'])->toBe(2)
+            ->and($summary['orders_without_profit'])->toBe(0)
+            ->and($summary['profit'])->toEqualWithDelta($this->springProfit, 0.01)
+            ->and($summary['profit_after_spend'])->toEqualWithDelta($this->springProfit - 50, 0.01)
+            ->and($summary['poas'])->toEqualWithDelta(round($this->springProfit / 50, 2), 0.001);
+    });
+
+    it('gives a campaign with no spend in the period no POAS', function () {
+        $summary = IndexGoogleAdsCampaigns::make()->googleAdsProfitSummary($this->shop, campaignId: $this->brand->id);
+
+        expect($summary['spend'])->toBe(0.0)
+            ->and($summary['orders'])->toBe(1)
+            ->and($summary['profit'])->toEqualWithDelta($this->brandProfit, 0.01)
+            ->and($summary['poas'])->toBeNull();
+    });
+
+    it('counts every order after an ad click in the shop total, matched to a campaign or not, and none without one', function () {
+        $summary = IndexGoogleAdsCampaigns::make()->googleAdsProfitSummary($this->shop);
+
+        expect($summary['orders'])->toBe(4)
+            ->and($summary['profit'])->toEqualWithDelta($this->springProfit + $this->brandProfit + googleAdsOrderProfit($this->unmatched, 4), 0.01);
+    });
+
+    it('leaves an order it could not cost out of the profit but still counts it', function () {
+        DB::table('org_stocks')
+            ->whereIn('id', DB::table('product_has_org_stocks')->where('product_id', $this->product->id)->pluck('org_stock_id'))
+            ->update(['lpp_per_sku' => 0, 'sku_value' => 0]);
+
+        $summary = IndexGoogleAdsCampaigns::make()->googleAdsProfitSummary($this->shop, campaignId: $this->spring->id);
+
+        expect($summary['orders'])->toBe(2)
+            ->and($summary['orders_without_profit'])->toBe(2)
+            ->and($summary['profit'])->toBeNull()
+            ->and($summary['poas'])->toBeNull();
+    });
+
+    it('lists the orders of a campaign with the profit their margin box shows', function () {
+        $index  = IndexGoogleAdsOrders::make();
+        $orders = $index->handle($this->shop, $this->spring);
+
+        $orderA = $orders->firstWhere('id', $this->springOrderA);
+
+        expect($orders->total())->toBe(2)
+            ->and($index->totals['orders'])->toBe(2)
+            ->and($index->totals['profit'])->toEqualWithDelta($this->springProfit, 0.01)
+            ->and($orderA->campaign)->toBe('Spring Sale')
+            ->and((float) $orderA->profit)->toEqualWithDelta(googleAdsOrderProfit($this->springOrderA, 4), 0.01)
+            ->and((bool) $orderA->is_estimated)->toBeTrue();
     });
 });

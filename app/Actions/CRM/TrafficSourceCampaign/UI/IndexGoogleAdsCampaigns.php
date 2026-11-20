@@ -34,6 +34,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexGoogleAdsCampaigns extends OrgAction
 {
     use WithGoogleAdsInterval;
+    use WithGoogleAdsProfit;
     use WithMarketingAuthorisation;
     use WithShopPpcPermissions;
 
@@ -85,6 +86,11 @@ class IndexGoogleAdsCampaigns extends OrgAction
 
         $selectFields = array_merge($selectFields, $this->metricFields());
 
+        if ($this->canSeeProfit) {
+            $queryBuilder->leftJoinSub($this->periodCampaignOrders($shop), 'campaign_orders', 'campaign_orders.traffic_source_campaign_id', '=', 'traffic_source_campaigns.id');
+            $selectFields = array_merge($selectFields, $this->profitFields());
+        }
+
         /* The same three subqueries again over the period before, every figure suffixed _previous,
            so a row carries both sides of the comparison and the resource works out the change. */
         if ($this->isComparing()) {
@@ -94,6 +100,11 @@ class IndexGoogleAdsCampaigns extends OrgAction
                 ->leftJoinSub($this->periodConversions(true), 'conversions_previous', 'conversions_previous.traffic_source_campaign_id', '=', 'traffic_source_campaigns.id');
 
             $selectFields = array_merge($selectFields, $this->metricFields(self::PREVIOUS_SUFFIX));
+
+            if ($this->canSeeProfit) {
+                $queryBuilder->leftJoinSub($this->periodCampaignOrders($shop, true), 'campaign_orders_previous', 'campaign_orders_previous.traffic_source_campaign_id', '=', 'traffic_source_campaigns.id');
+                $selectFields = array_merge($selectFields, $this->profitFields(self::PREVIOUS_SUFFIX));
+            }
         }
 
         return $queryBuilder
@@ -123,6 +134,7 @@ class IndexGoogleAdsCampaigns extends OrgAction
                 ],
                 array_keys(self::BREAKDOWN_COLUMNS),
                 TrafficSourceCampaignMetric::IMPRESSION_SHARE_COLUMNS,
+                $this->canSeeProfit ? self::PROFIT_KEYS : [],
             ))
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -200,6 +212,37 @@ class IndexGoogleAdsCampaigns extends OrgAction
         ];
 
         return array_merge($fields, $this->breakdownFields($suffix), $this->impressionShareFields($suffix));
+    }
+
+    /**
+     * Figures from Aiku's own orders, next to Google's.
+     */
+    public const array PROFIT_KEYS = [
+        'ad_orders',
+        'ad_sales',
+        'profit',
+        'profit_after_spend',
+        'poas',
+    ];
+
+    /**
+     * Profit is null, not zero, for a campaign with no costed order in the period, so its POAS shows
+     * a dash rather than a loss it did not make.
+     *
+     * @return array<int, \Illuminate\Database\Query\Expression>
+     */
+    private function profitFields(string $suffix = ''): array
+    {
+        $orders = 'campaign_orders'.$suffix;
+        $spend  = "COALESCE(costs{$suffix}.spend, 0)";
+
+        return [
+            DB::raw("COALESCE({$orders}.ad_orders, 0) as ad_orders{$suffix}"),
+            DB::raw("COALESCE({$orders}.ad_sales, 0) as ad_sales{$suffix}"),
+            DB::raw("{$orders}.profit as profit{$suffix}"),
+            DB::raw("COALESCE({$orders}.profit, 0) - {$spend} as profit_after_spend{$suffix}"),
+            DB::raw("CASE WHEN {$spend} > 0 AND {$orders}.profit IS NOT NULL THEN ROUND({$orders}.profit / {$spend}, 2) END as poas{$suffix}"),
+        ];
     }
 
     /**
@@ -355,7 +398,7 @@ class IndexGoogleAdsCampaigns extends OrgAction
                     icon: $column['icon'] ?? null,
                     tooltip: $column['tooltip'],
                     canBeHidden: true,
-                    hidden: !in_array($key, self::DEFAULT_COLUMNS, true),
+                    hidden: !in_array($key, $this->defaultColumns(), true),
                     sortable: true,
                     align: 'right',
 
@@ -364,7 +407,58 @@ class IndexGoogleAdsCampaigns extends OrgAction
                     tooltipIcon: !isset($column['icon']),
                 );
             }
+
+            if ($this->canSeeProfit) {
+                foreach ($this->profitColumns() as $key => $column) {
+                    $table->column(
+                        key: $key,
+                        label: $column['label'],
+                        tooltip: $column['tooltip'],
+                        canBeHidden: true,
+                        hidden: !in_array($key, $this->defaultColumns(), true),
+                        sortable: true,
+                        align: 'right',
+                        tooltipIcon: true,
+                    );
+                }
+            }
         };
+    }
+
+    /**
+     * With profit on show the table opens on spend against what the ads earned; Google's own reach
+     * figures stay a click away in the column chooser.
+     *
+     * @return array<int, string>
+     */
+    private function defaultColumns(): array
+    {
+        return $this->canSeeProfit ? self::PROFIT_DEFAULT_COLUMNS : self::DEFAULT_COLUMNS;
+    }
+
+    private const array PROFIT_DEFAULT_COLUMNS = [
+        'clicks',
+        'spend',
+        'roas',
+        'ad_orders',
+        'ad_sales',
+        'profit',
+        'profit_after_spend',
+        'poas',
+    ];
+
+    /**
+     * @return array<string, array{label: string, tooltip: string}>
+     */
+    private function profitColumns(): array
+    {
+        return [
+            'ad_orders'          => ['label' => __('Orders'), 'tooltip' => __('Orders submitted in the period whose last Google ad click before the order was on this campaign, the way Google counts a conversion')],
+            'ad_sales'           => ['label' => __('Items net'), 'tooltip' => __('What the items of those orders sold for after discounts, in the shop\'s currency')],
+            'profit'             => ['label' => __('Profit'), 'tooltip' => __('Items net minus what the stock cost, as on each order. Shipping, payment fees and running costs are not taken off.')],
+            'profit_after_spend' => ['label' => __('Profit − spend'), 'tooltip' => __('Profit minus what the campaign cost')],
+            'poas'               => ['label' => __('POAS'), 'tooltip' => __('Profit on ad spend: profit divided by what the campaign cost. Under 1× the campaign cost more than it earned.')],
+        ];
     }
 
     /**
@@ -435,7 +529,8 @@ class IndexGoogleAdsCampaigns extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($shop, $request);
-        $this->canEdit = $this->canEditGoogleAds($request->user(), $shop);
+        $this->canEdit      = $this->canEditGoogleAds($request->user(), $shop);
+        $this->canSeeProfit = $this->canSeeAdsProfit($request->user(), $shop);
 
         return $this->handle($shop);
     }
@@ -484,7 +579,9 @@ class IndexGoogleAdsCampaigns extends OrgAction
                     'parameters' => $request->route()->originalParameters(),
                 ],
                 ...$this->periodProps(),
-                'data' => GoogleAdsCampaignsResource::collection($campaigns),
+                'can_see_profit' => $this->canSeeProfit,
+                'summary'        => $this->canSeeProfit ? $this->googleAdsProfitSummary($this->shop) : null,
+                'data'           => GoogleAdsCampaignsResource::collection($campaigns),
             ]
         )->table($this->tableStructure());
     }
