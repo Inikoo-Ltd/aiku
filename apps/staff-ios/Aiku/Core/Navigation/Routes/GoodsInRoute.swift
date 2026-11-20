@@ -3,13 +3,12 @@ import Foundation
 enum GoodsInRoute: Hashable, Sendable {
     case backlog
     case stockDeliveries
-    case stockDeliveriesIn(state: GoodsInDeliveryState)
-    case stockDelivery(reference: String)
-    case scannedStockDelivery(id: Int, reference: String)
+    case stockDeliveriesIn(state: GoodsInDeliveryStateFilter)
+    case stockDeliveriesFiltered(GoodsInDeliveryFilter)
+    case stockDelivery(id: Int, reference: String)
+    case checkScan(deliveryID: Int, reference: String)
+    case placeItem(deliveryID: Int, itemID: Int, reference: String, skoCode: String)
     case returns
-    case returnsToProcess
-    case returnDetail(reference: String)
-    case returnID(id: Int, reference: String)
-    case placeItem(reference: String, sko: String)
-    case placeNewItem(reference: String, sko: String)
+    case returnsIn(state: GoodsInReturnStateFilter)
+    case returnDetail(id: Int, reference: String)
 }

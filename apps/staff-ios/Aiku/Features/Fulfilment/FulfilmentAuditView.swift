@@ -165,15 +165,15 @@ private struct StoredItemAuditScreen: View {
     }
 
     private func palletCard(_ audit: MobileStoredItemAudit) -> some View {
-        var facts: [GoodsInFact] = []
+        var facts: [GoodsInField] = []
         if let pallet = audit.pallet {
-            facts.append(GoodsInFact("Pallet", PalletDeliveryText.joined([pallet.reference, pallet.customerReference])))
+            facts.append(GoodsInField("Pallet", PalletDeliveryText.joined([pallet.reference, pallet.customerReference])))
         }
-        facts.append(GoodsInFact("Location", audit.pallet?.location?.code ?? "no location"))
+        facts.append(GoodsInField("Location", audit.pallet?.location?.code ?? "no location"))
         if let customer = audit.customer?.name {
-            facts.append(GoodsInFact("Customer", customer))
+            facts.append(GoodsInField("Customer", customer))
         }
-        return GoodsInFactGrid(title: "Pallet", facts: facts)
+        return GoodsInFieldGrid(title: "Pallet", fields: facts)
     }
 
     private func lineRow(_ line: MobileStoredItemAudit.Line, canCount: Bool) -> some View {

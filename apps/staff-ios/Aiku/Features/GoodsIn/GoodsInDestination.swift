@@ -2,137 +2,58 @@ import SwiftUI
 
 struct GoodsInDestination: View {
     let route: GoodsInRoute
-
-    var body: some View {
-        content
-            .modifier(GoodsInRemoteLoading(route: route))
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        switch route {
-        case .backlog:
-            GoodsInBacklogView()
-        case .stockDeliveries:
-            GoodsInDeliveriesView()
-        case .stockDeliveriesIn(let state):
-            GoodsInDeliveriesView(initialScope: .state(state))
-        case .stockDelivery(let reference), .scannedStockDelivery(_, let reference):
-            GoodsInRemoteGate(isWaiting: GoodsInStore.shared.isWaitingForDelivery(reference), title: reference) {
-                GoodsInDeliveryView(reference: reference)
-            }
-        case .returns:
-            GoodsInReturnsView()
-        case .returnsToProcess:
-            GoodsInReturnsView(scope: .toProcess)
-        case .returnDetail(let reference), .returnID(_, let reference):
-            GoodsInRemoteGate(isWaiting: GoodsInStore.shared.isWaitingForReturn(reference), title: reference) {
-                GoodsInReturnDetailView(reference: reference)
-            }
-        case .placeItem(let reference, let sko):
-            GoodsInPlaceItemView(reference: reference, sko: sko)
-        case .placeNewItem(let reference, let sko):
-            GoodsInPlaceNewItemView(reference: reference, sko: sko)
-        }
-    }
-}
-
-private struct GoodsInRemoteGate<Content: View>: View {
-    let isWaiting: Bool
-    let title: String
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        if isWaiting {
-            AppScreen(title: title, kicker: "Goods in") {
-                if let message = GoodsInStore.shared.loadError {
-                    InlineAlert(title: "Couldn’t load from Aiku", message: message)
-                } else {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, minHeight: 120)
-                        .accessibilityLabel("Loading")
-                }
-            }
-        } else {
-            content
-        }
-    }
-}
-
-private struct GoodsInRemoteLoading: ViewModifier {
-    let route: GoodsInRoute
     @State private var warehouseStore = WarehouseStore.shared
-    @State private var store = GoodsInStore.shared
     @Environment(\.apiClient) private var apiClient
-    @Environment(ToastCenter.self) private var toasts
 
-    func body(content: Content) -> some View {
-        content
-            .onChange(of: store.actionError) { _, message in
-                guard let message else { return }
-                toasts.show(message, tone: .danger)
-                store.clearActionError()
+    var body: some View {
+        if let warehouseID = warehouseStore.selected?.id {
+            GoodsInRouteScreen(route: route, warehouseID: warehouseID, service: .live(apiClient))
+                .id(GoodsInScreenKey(route: route, warehouseID: warehouseID))
+        } else {
+            AppScreen(title: "Goods in") {
+                GoodsOutSkeletonCard(rows: 3)
             }
-            .task(id: GoodsInLoadKey(route: route, warehouseID: warehouseStore.selected?.id)) {
-                await load(isRefresh: false)
-            }
-            .modifier(GoodsInRefresh(isEnabled: route.isRefreshable) {
-                await load(isRefresh: true)
-            })
-    }
-
-    private func load(isRefresh: Bool) async {
-        guard let warehouse = warehouseStore.selected else {
-            if store.isRemote { store.resetToSample() }
-            return
         }
-        store.prepareRemote(warehouseID: warehouse.id, apiClient: apiClient)
+    }
+}
+
+private struct GoodsInScreenKey: Hashable {
+    let route: GoodsInRoute
+    let warehouseID: Int
+}
+
+private struct GoodsInRouteScreen: View {
+    let route: GoodsInRoute
+    let warehouseID: Int
+    let service: GoodsInService
+
+    var body: some View {
         switch route {
         case .backlog:
-            await store.loadHub(apiClient: apiClient)
-        case .stockDeliveries, .stockDeliveriesIn:
-            if isRefresh { await store.reloadList(apiClient: apiClient) }
-        case .stockDelivery(let reference), .placeItem(let reference, _), .placeNewItem(let reference, _):
-            await store.loadDelivery(reference, apiClient: apiClient)
-        case .scannedStockDelivery(let id, _):
-            await store.loadDelivery(id: id, apiClient: apiClient)
+            GoodsInBacklogScreen(feed: GoodsInBacklogFeed(warehouseID: warehouseID, service: service))
+        case .stockDeliveries:
+            GoodsInDeliveriesScreen(feed: GoodsInDeliveriesFeed(warehouseID: warehouseID, service: service))
+        case .stockDeliveriesIn(let state):
+            GoodsInDeliveriesScreen(feed: GoodsInDeliveriesFeed(warehouseID: warehouseID, filter: GoodsInDeliveryFilter(state: state), service: service))
+        case .stockDeliveriesFiltered(let filter):
+            GoodsInDeliveriesScreen(feed: GoodsInDeliveriesFeed(warehouseID: warehouseID, filter: filter, service: service))
+        case let .stockDelivery(id, reference):
+            GoodsInDeliveryScreen(reference: reference, feed: GoodsInFeeds.shared.delivery(warehouseID: warehouseID, id: id, service: service))
+        case let .checkScan(deliveryID, reference):
+            GoodsInCheckScanScreen(reference: reference, feed: GoodsInFeeds.shared.delivery(warehouseID: warehouseID, id: deliveryID, service: service))
+        case let .placeItem(deliveryID, itemID, _, skoCode):
+            GoodsInPlaceItemScreen(
+                itemID: itemID,
+                skoCode: skoCode,
+                feed: GoodsInFeeds.shared.delivery(warehouseID: warehouseID, id: deliveryID, service: service),
+                finder: GoodsInLocationFinder(warehouseID: warehouseID, service: service)
+            )
         case .returns:
-            await store.reloadReturns(apiClient: apiClient)
-        case .returnsToProcess:
-            await store.reloadReturns(scope: .toProcess, apiClient: apiClient)
-        case .returnDetail(let reference):
-            await store.loadReturn(reference, apiClient: apiClient)
-        case .returnID(let id, _):
-            await store.loadReturn(id: id, apiClient: apiClient)
+            GoodsInReturnsScreen(feed: GoodsInReturnsFeed(warehouseID: warehouseID, service: service))
+        case .returnsIn(let state):
+            GoodsInReturnsScreen(feed: GoodsInReturnsFeed(warehouseID: warehouseID, state: state, service: service))
+        case let .returnDetail(id, reference):
+            GoodsInReturnScreen(reference: reference, feed: GoodsInReturnFeed(warehouseID: warehouseID, returnID: id, service: service))
         }
     }
-}
-
-private struct GoodsInRefresh: ViewModifier {
-    let isEnabled: Bool
-    let action: @MainActor () async -> Void
-
-    func body(content: Content) -> some View {
-        if isEnabled {
-            content.screenRefreshable(action)
-        } else {
-            content
-        }
-    }
-}
-
-private extension GoodsInRoute {
-    var isRefreshable: Bool {
-        switch self {
-        case .placeItem, .placeNewItem:
-            false
-        default:
-            true
-        }
-    }
-}
-
-private struct GoodsInLoadKey: Hashable {
-    let route: GoodsInRoute
-    let warehouseID: Int?
 }

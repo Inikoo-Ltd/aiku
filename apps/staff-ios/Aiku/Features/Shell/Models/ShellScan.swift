@@ -149,7 +149,7 @@ enum ShellScanCatalog {
             code: delivery.reference,
             kind: .stockDelivery,
             detail: delivery.stateLabel ?? ShellScanKind.stockDelivery.fallbackDetail,
-            link: .goodsIn(.scannedStockDelivery(id: delivery.id, reference: delivery.reference))
+            link: .goodsIn(.stockDelivery(id: delivery.id, reference: delivery.reference))
         )
     }
 

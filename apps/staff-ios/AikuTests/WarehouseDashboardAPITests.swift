@@ -123,7 +123,7 @@ struct WarehouseDashboardAPITests {
         #expect(WarehouseDashboardText.goodsOutSubtitle(goodsOut) == "Dispatching backlog · 101 in the warehouse")
         #expect(WarehouseDashboardText.dispatched(goodsOut)?.value == "142 today · 151 yesterday by now")
         #expect(WarehouseDashboardText.inventorySubtitle(inventory) == "4,812 current SKOs")
-        #expect(WarehouseDashboardText.returnsToProcess(goodsIn) == WarehouseDashboardFigure(label: "Returns to process", value: "5", link: .goodsIn(.returnsToProcess)))
+        #expect(WarehouseDashboardText.returnsToProcess(goodsIn) == WarehouseDashboardFigure(label: "Returns to process", value: "5", link: .goodsIn(.returnsIn(state: .toProcess))))
         #expect(WarehouseDashboardText.tiles(goodsOut).map(\.label) == ["To do", "Picking", "Waiting", "To pack", "Packed"])
         #expect(WarehouseDashboardText.tiles(goodsOut).map(\.tone) == [.neutral, .info, .warn, .info, .info])
         #expect(WarehouseDashboardText.tiles(inventory).map(\.tone) == [.warn, .danger, .neutral])
@@ -169,45 +169,11 @@ struct WarehouseDashboardAPITests {
                 Issue.record("\(tile.id) does not open the stock deliveries")
                 continue
             }
-            let query = GoodsInListRequest(scope: .state(state), filter: GoodsInDeliveryFilter()).query(page: 1)
-            #expect(query.state == states[tile.id])
+            let query = GoodsInDeliveryFilter(state: state).query(page: 1)
+            #expect(query.state.rawValue == states[tile.id])
             #expect(query.source == nil)
         }
         #expect(WarehouseDashboardText.tiles(goodsIn).map(\.id) == ["arriving", "received", "checked", "booking_in"])
-    }
-
-    @Test func openingAStockDeliveryStateClearsTheFilters() {
-        let store = GoodsInStore(deliveries: [], returns: [])
-        store.applyFilter(GoodsInDeliveryFilter(sources: [.agent]))
-
-        store.showScope(.state(.checked))
-
-        #expect(store.filter == GoodsInDeliveryFilter())
-        #expect(store.listScope == .state(.checked))
-        #expect(store.currentListRequest.query(page: 1).state == "checked")
-    }
-
-    @Test func returnsToProcessAsksTheServerForThoseReturnsOnly() async throws {
-        let (transport, client) = client(["mobile/warehouses/1/returns": Self.returns])
-        let store = GoodsInStore(deliveries: [], returns: [])
-        store.prepareRemote(warehouseID: 1, apiClient: client)
-
-        await store.reloadReturns(scope: .toProcess, apiClient: client)
-
-        let url = try #require(transport.requests.last?.url)
-        let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        #expect(query.contains(URLQueryItem(name: "state", value: "to_process")))
-        #expect(store.visibleReturns(in: .toProcess).map(\.reference) == ["GB591132-r2"])
-        #expect(store.visibleReturns(in: .all).isEmpty)
-    }
-
-    @Test func sampleReturnsToProcessAreReceivedOrReturning() {
-        let store = GoodsInStore()
-
-        let toProcess = store.visibleReturns(in: .toProcess)
-
-        #expect(toProcess.allSatisfy { $0.state == .received || $0.state == .returning })
-        #expect(store.visibleReturns(in: .all).count == store.returns.count)
     }
 
     @Test func eachInventoryTileOpensTheSkosInTheBucketItCounts() throws {

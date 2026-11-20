@@ -67,8 +67,8 @@ enum ShellSearchFormat {
     static func tone(_ row: MobileSearchRow) -> Tone {
         switch row.type {
         case .deliveryNotes: GoodsOutDeliveryNoteState(apiState: row.state)?.tone ?? .neutral
-        case .stockDeliveries: GoodsInRemote.state(row.state).tone
-        case .returns: GoodsInRemote.returnState(row.state).chip.tone
+        case .stockDeliveries: GoodsInText.deliveryTone(row.state ?? "")
+        case .returns: GoodsInText.returnTone(row.state ?? "")
         case .pallets: FulfilmentStorageText.palletStateTone(row.state)
         case .palletDeliveries: PalletDeliveryText.deliveryTone(row.state)
         case .palletReturns: PalletReturnText.stateTone(row.state)
@@ -83,8 +83,8 @@ enum ShellSearchFormat {
         case .skoFamilies: .inventory(.family(code: reference))
         case .locations: .locations(.location(code: reference))
         case .deliveryNotes: .goodsOut(.deliveryNoteID(id: row.id))
-        case .stockDeliveries: .goodsIn(.scannedStockDelivery(id: row.id, reference: reference))
-        case .returns: .goodsIn(.returnID(id: row.id, reference: reference))
+        case .stockDeliveries: .goodsIn(.stockDelivery(id: row.id, reference: reference))
+        case .returns: .goodsIn(.returnDetail(id: row.id, reference: reference))
         case .pallets: .fulfilment(.pallet(id: row.id, reference: reference))
         case .palletDeliveries: .fulfilment(.palletDelivery(id: row.id, reference: reference))
         case .palletReturns: .fulfilment(.palletReturn(id: row.id, reference: reference))

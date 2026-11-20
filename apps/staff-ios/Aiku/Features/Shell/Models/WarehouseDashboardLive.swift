@@ -95,7 +95,7 @@ enum WarehouseDashboardText {
 
     static func returnsToProcess(_ goodsIn: MobileWarehouseDashboard.GoodsIn) -> WarehouseDashboardFigure? {
         guard let count = goodsIn.returnsToProcess else { return nil }
-        return WarehouseDashboardFigure(label: "Returns to process", value: count.grouped, link: .goodsIn(.returnsToProcess))
+        return WarehouseDashboardFigure(label: "Returns to process", value: count.grouped, link: .goodsIn(.returnsIn(state: .toProcess)))
     }
 
     static func tiles(_ goodsOut: MobileWarehouseDashboard.GoodsOut) -> [WarehouseDashboardTile] {
@@ -111,7 +111,7 @@ enum WarehouseDashboardText {
 
     static func tiles(_ goodsIn: MobileWarehouseDashboard.GoodsIn) -> [WarehouseDashboardTile] {
         [
-            WarehouseDashboardTile(id: "arriving", label: "Arriving", value: goodsIn.arriving, tone: .neutral, link: .goodsIn(.stockDeliveriesIn(state: .arriving))),
+            WarehouseDashboardTile(id: "arriving", label: "Arriving", value: goodsIn.arriving, tone: .neutral, link: .goodsIn(.stockDeliveriesIn(state: .dispatched))),
             WarehouseDashboardTile(id: "received", label: "Received", value: goodsIn.received, tone: .info, link: .goodsIn(.stockDeliveriesIn(state: .received))),
             WarehouseDashboardTile(id: "checked", label: "Checked", value: goodsIn.checked, tone: .info, link: .goodsIn(.stockDeliveriesIn(state: .checked))),
             WarehouseDashboardTile(id: "booking_in", label: "Booking in", value: goodsIn.bookingIn, tone: .info, link: .goodsIn(.stockDeliveriesIn(state: .bookingIn)))

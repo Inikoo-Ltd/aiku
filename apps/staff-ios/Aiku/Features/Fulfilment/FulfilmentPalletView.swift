@@ -98,18 +98,18 @@ private struct StoredPalletScreen: View {
 
     private func facts(_ pallet: MobileStoredPallet) -> some View {
         var facts = [
-            GoodsInFact("State", pallet.stateLabel ?? pallet.state),
-            GoodsInFact("Status", pallet.statusLabel ?? pallet.status ?? "—"),
-            GoodsInFact("Type", FulfilmentStorageText.typeText(pallet) ?? "—"),
-            GoodsInFact("Location", FulfilmentStorageText.locationText(pallet))
+            GoodsInField("State", pallet.stateLabel ?? pallet.state),
+            GoodsInField("Status", pallet.statusLabel ?? pallet.status ?? "—"),
+            GoodsInField("Type", FulfilmentStorageText.typeText(pallet) ?? "—"),
+            GoodsInField("Location", FulfilmentStorageText.locationText(pallet))
         ]
         if let customerReference = PalletDeliveryText.quoted(pallet.customerReference) {
-            facts.append(GoodsInFact("Customer ref", customerReference))
+            facts.append(GoodsInField("Customer ref", customerReference))
         }
         if let notes = pallet.notes, !notes.isEmpty {
-            facts.append(GoodsInFact("Notes", notes))
+            facts.append(GoodsInField("Notes", notes))
         }
-        return GoodsInFactGrid(title: "Pallet", facts: facts)
+        return GoodsInFieldGrid(title: "Pallet", fields: facts)
     }
 
     @ViewBuilder

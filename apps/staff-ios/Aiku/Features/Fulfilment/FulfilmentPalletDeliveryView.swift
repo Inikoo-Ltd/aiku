@@ -220,20 +220,20 @@ private struct PalletDeliveryScreen: View {
     private func countsCard(_ delivery: MobilePalletDeliveryDetail) -> some View {
         let counts = delivery.counts
         var facts = [
-            GoodsInFact("Pallets", counts.pallets.grouped),
-            GoodsInFact("Boxes", counts.boxes.grouped),
-            GoodsInFact("Oversize", counts.oversizes.grouped),
-            GoodsInFact("Total", counts.total.grouped)
+            GoodsInField("Pallets", counts.pallets.grouped),
+            GoodsInField("Boxes", counts.boxes.grouped),
+            GoodsInField("Oversize", counts.oversizes.grouped),
+            GoodsInField("Total", counts.total.grouped)
         ]
         if delivery.state != "confirmed" {
             facts += [
-                GoodsInFact("Received", (counts.received ?? 0).grouped),
-                GoodsInFact("Booking in", (counts.bookingIn ?? 0).grouped),
-                GoodsInFact("Booked in", counts.bookedIn.grouped),
-                GoodsInFact("Not received", counts.notReceived.grouped)
+                GoodsInField("Received", (counts.received ?? 0).grouped),
+                GoodsInField("Booking in", (counts.bookingIn ?? 0).grouped),
+                GoodsInField("Booked in", counts.bookedIn.grouped),
+                GoodsInField("Not received", counts.notReceived.grouped)
             ]
         }
-        return GoodsInFactGrid(title: "Summary", facts: facts)
+        return GoodsInFieldGrid(title: "Summary", fields: facts)
     }
 
     @ViewBuilder
