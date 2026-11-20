@@ -20,6 +20,10 @@ enum NotesEnum: string
     case WAREHOUSE              = 'warehouse';
     case WAREHOUSE_TEMPORARY    = 'warehouse_temporary';
     case CREDIT_TRANSACTION     = 'credit_transaction';
+    case PURCHASE_ORDER_ORGANISATION = 'purchase_order_organisation';
+    case PURCHASE_ORDER_AGENT   = 'purchase_order_agent';
+    case PURCHASE_ORDER_AGENT_FOR_SUPPLIER = 'purchase_order_agent_for_supplier';
+    case PURCHASE_ORDER_SUPPLIER = 'purchase_order_supplier';
 
 
     public function label(): string
@@ -32,6 +36,10 @@ enum NotesEnum: string
             self::WAREHOUSE             => __("Warehouse Note (Private)"),
             self::WAREHOUSE_TEMPORARY   => __("Warehouse Note (Temporary)"),
             self::CREDIT_TRANSACTION    => __("Credit Transaction Note"),
+            self::PURCHASE_ORDER_ORGANISATION => __("Organisation Note"),
+            self::PURCHASE_ORDER_AGENT  => __("Agent Note (for organisation)"),
+            self::PURCHASE_ORDER_AGENT_FOR_SUPPLIER => __("Agent Note (for supplier)"),
+            self::PURCHASE_ORDER_SUPPLIER => __("Supplier Note"),
         };
     }
 
@@ -65,6 +73,22 @@ enum NotesEnum: string
             self::CREDIT_TRANSACTION    => [
                 "bgColor"       => "#B873F5",
                 "textColor"     => "#B873F5",
+            ],
+            self::PURCHASE_ORDER_ORGANISATION => [
+                "bgColor"       => "#599FF0",
+                "textColor"     => "#599FF0",
+            ],
+            self::PURCHASE_ORDER_AGENT  => [
+                "bgColor"       => "#FCD34D",
+                "textColor"     => "#FCD34D",
+            ],
+            self::PURCHASE_ORDER_AGENT_FOR_SUPPLIER => [
+                "bgColor"       => "#FF9C62",
+                "textColor"     => "#FF9C62",
+            ],
+            self::PURCHASE_ORDER_SUPPLIER => [
+                "bgColor"       => "#D8B4FE",
+                "textColor"     => "#D8B4FE",
             ],
         }, $excludedKeys);
     }

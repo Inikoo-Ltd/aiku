@@ -354,6 +354,7 @@ class ShowPurchaseOrder extends OrgAction
                             'number_purchase_orders' => $stockDelivery->number_purchase_orders,
                         ])->values()
                     : [],
+                'order_notes'              => $this->getOrderNotes($purchaseOrder, $request),
                 'deposits'                 => $purchaseOrder->isAgentOrder() ? $this->getDeposits($purchaseOrder) : null,
                 'agent_money'              => $agentMoney = ConfirmPurchaseOrderPayment::acceptsPayments($purchaseOrder) ? $this->getAgentMoney($purchaseOrder) : null,
                 'payments'                 => !$agentMoney && ConfirmPurchaseOrderPayment::acceptsPayments($purchaseOrder) ? $this->getPayments($purchaseOrder, $request) : null,
@@ -548,6 +549,18 @@ class ShowPurchaseOrder extends OrgAction
     {
         return UpdatePurchaseOrder::isDeliveryAddressChangeable($purchaseOrder)
             && $request->user()->authTo("procurement.$purchaseOrder->organisation_id.edit");
+    }
+
+    /**
+     * @return array{note_list: list<array<string, mixed>>}
+     */
+    private function getOrderNotes(PurchaseOrder $purchaseOrder, ActionRequest $request): array
+    {
+        if ($this->isAgentViewingOwnOrder($purchaseOrder)) {
+            return GetPurchaseOrderNotes::run($purchaseOrder, GetPurchaseOrderNotes::VIEWER_AGENT, $this->agentCanEdit);
+        }
+
+        return GetPurchaseOrderNotes::run($purchaseOrder, GetPurchaseOrderNotes::VIEWER_ORGANISATION, $request->user()->authTo("procurement.$purchaseOrder->organisation_id.edit"));
     }
 
     private function isAgentViewingOwnOrder(PurchaseOrder $purchaseOrder): bool

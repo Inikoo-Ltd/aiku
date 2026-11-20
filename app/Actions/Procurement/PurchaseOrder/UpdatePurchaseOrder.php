@@ -21,6 +21,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
 use App\Rules\IUnique;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -37,6 +38,8 @@ class UpdatePurchaseOrder extends OrgAction
     private PurchaseOrder $purchaseOrder;
 
     private bool $actingAsAgent = false;
+
+    private bool $canWriteAgentNotes = false;
 
     /**
      * An agent order's clean handover is judged by management, never by the agent or the buyer.
@@ -62,6 +65,8 @@ class UpdatePurchaseOrder extends OrgAction
 
     public const array AGENT_FIELDS = [
         'agent_reference',
+        'agent_notes',
+        'agent_notes_for_supplier',
         'proposed_ready_at',
         'deposit_amount',
         'estimated_production_date',
@@ -164,12 +169,18 @@ class UpdatePurchaseOrder extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction || $request->user()->authTo("procurement.{$this->organisation->id}.edit")) {
+        if ($this->asAction) {
             return true;
         }
 
         $agentOrganisationId = $this->purchaseOrder->isAgentOrder() ? $this->purchaseOrder->agent?->organisation_id : null;
-        if ($agentOrganisationId && $request->user()->authTo("procurement.$agentOrganisationId.edit")) {
+        $this->canWriteAgentNotes = $agentOrganisationId && $request->user()->authTo("procurement.$agentOrganisationId.edit");
+
+        if ($request->user()->authTo("procurement.{$this->organisation->id}.edit")) {
+            return true;
+        }
+
+        if ($this->canWriteAgentNotes) {
             $this->actingAsAgent = true;
 
             return true;
@@ -186,7 +197,10 @@ class UpdatePurchaseOrder extends OrgAction
                 'required',
                 $this->strict ? 'alpha_dash:ascii' : 'string',
             ],
-            'notes' => ['sometimes', 'string'],
+            'notes'                => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'agent_notes'          => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'agent_notes_for_supplier' => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'supplier_notes'       => ['sometimes', 'nullable', 'string', 'max:5000'],
             'delivery_type'        => ['sometimes', 'nullable', 'string', 'in:parcel,container'],
             'parcel_reference'     => ['sometimes', 'nullable', 'string', 'max:255'],
             'incoterm'             => ['sometimes', 'nullable', 'string'],
@@ -218,11 +232,15 @@ class UpdatePurchaseOrder extends OrgAction
         ];
 
         if (!$this->asAction) {
-            $rules = Arr::except($rules, [...array_keys(PurchaseOrderStageEnum::MARKABLE_FIELDS), 'deposit_paid_at', 'balance_paid_at']);
+            $rules = Arr::except($rules, [...array_keys(PurchaseOrderStageEnum::MARKABLE_FIELDS), 'deposit_paid_at', 'balance_paid_at', 'supplier_notes']);
         }
 
         if ($this->actingAsAgent) {
             return Arr::only($rules, self::AGENT_FIELDS);
+        }
+
+        if (!$this->asAction && !$this->canWriteAgentNotes) {
+            $rules = Arr::except($rules, ['agent_notes', 'agent_notes_for_supplier']);
         }
 
         if (!$this->asAction && $this->purchaseOrder->isAgentOrder() && request()->user()->authorisedShopOrganisations()->doesntExist()) {
@@ -301,6 +319,11 @@ class UpdatePurchaseOrder extends OrgAction
         $this->initialisation($purchaseOrder->organisation, $request);
 
         return $this->handle($purchaseOrder, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 
     public function jsonResponse(PurchaseOrder $purchaseOrder): PurchaseOrderResource

@@ -12,7 +12,10 @@ import Dialog from "primevue/dialog"
 import DatePicker from "primevue/datepicker"
 import Select from "primevue/select"
 import FileUpload from "primevue/fileupload"
+import Textarea from "primevue/textarea"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import BoxNote from "@/Components/Pallet/BoxNote.vue"
+import type { PDRNotes } from "@/types/Pallet"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
@@ -94,6 +97,9 @@ interface PurchaseOrderDetail {
 		editable: boolean
 		blocked: string | null
 	}
+	notes: {
+		note_list: PDRNotes[]
+	}
 	documents: {
 		open: boolean
 		types: { value: string; label: string }[]
@@ -121,6 +127,7 @@ const props = defineProps<{
 	productionRoute?: string
 	depositRoute?: string
 	documentsRoute?: string
+	notesRoute?: string
 }>()
 
 const purchaseOrderId = defineModel<number | null>({ required: true })
@@ -231,6 +238,50 @@ const saveProduction = async () => {
 		productionError.value = (errors && Object.values(errors)[0]?.[0]) ?? ctrans("The dates could not be saved. Try again.")
 	} finally {
 		isSavingProduction.value = false
+	}
+}
+
+const editingNote = ref<PDRNotes | null>(null)
+const noteDraft = ref("")
+const isSavingNote = ref(false)
+const noteError = ref<string | null>(null)
+
+const isEditingNote = computed({
+	get: () => editingNote.value !== null,
+	set: (visible: boolean) => {
+		if (!visible) {
+			editingNote.value = null
+		}
+	},
+})
+
+const openNoteEditor = (note: PDRNotes) => {
+	editingNote.value = note
+	noteDraft.value = note.note ?? ""
+	noteError.value = null
+}
+
+const saveNote = async () => {
+	const id = purchaseOrderId.value
+	if (!props.notesRoute || id === null || !editingNote.value) {
+		return
+	}
+
+	isSavingNote.value = true
+	noteError.value = null
+	try {
+		const { data } = await axios.post<PurchaseOrderDetail>(props.notesRoute.replace(/\/0\/notes$/, `/${id}/notes`), {
+			[editingNote.value.field]: noteDraft.value.trim() === "" ? null : noteDraft.value.trim(),
+		})
+		if (purchaseOrderId.value === id) {
+			detail.value = data
+		}
+		editingNote.value = null
+	} catch (error: any) {
+		const errors = error?.response?.data?.errors as Record<string, string[]> | undefined
+		noteError.value = (errors && Object.values(errors)[0]?.[0]) ?? ctrans("The note could not be saved. Try again.")
+	} finally {
+		isSavingNote.value = false
 	}
 }
 
@@ -595,6 +646,17 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 				</div>
 			</section>
 
+			<section v-if="detail.notes?.note_list.length" class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+				<BoxNote
+					v-for="note in detail.notes.note_list"
+					:key="note.field"
+					:noteData="{ ...note, editable: note.editable && !!notesRoute }"
+					:updateRoute="{ name: '', parameters: {} }"
+					disableModal
+					@click="openNoteEditor(note)"
+				/>
+			</section>
+
 			<section class="overflow-hidden rounded-lg border border-gray-200">
 				<div class="border-b border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Shipping documents") }}</div>
 				<div class="space-y-3 p-3">
@@ -685,6 +747,24 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 				</Button>
 				<Button type="primary" full :label="depositChoice === 'request' ? ctrans('Send request') : ctrans('Confirm')" :loading="isSavingDeposit" @click="saveDeposit">
 					<template #icon><FontAwesomeIcon :icon="depositChoice === 'request' ? 'fal fa-hand-holding-usd' : 'fal fa-check'" fixed-width aria-hidden="true" /></template>
+				</Button>
+			</div>
+		</template>
+	</Dialog>
+
+	<Dialog v-model:visible="isEditingNote" modal :header="editingNote?.label ?? ctrans('Note')" :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }">
+		<div class="space-y-2 text-sm">
+			<p v-if="editingNote?.information" class="text-xs text-gray-500">{{ editingNote.information }}</p>
+			<Textarea v-model="noteDraft" rows="6" autoResize :maxlength="5000" :disabled="isSavingNote" class="w-full text-sm" />
+			<p v-if="noteError" class="text-xs text-red-600">{{ noteError }}</p>
+		</div>
+		<template #footer>
+			<div class="flex w-full gap-2">
+				<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isEditingNote = false">
+					<template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+				</Button>
+				<Button type="primary" full :label="ctrans('Save')" :loading="isSavingNote" @click="saveNote">
+					<template #icon><FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" /></template>
 				</Button>
 			</div>
 		</template>

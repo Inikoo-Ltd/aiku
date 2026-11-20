@@ -27,6 +27,7 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderDepositPayment;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Supplier;
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderNotes;
 use App\Models\SupplyChain\SupplierShareLink;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -38,7 +39,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * One purchase order sent to the supplier, as the supplier sees it: what the order document it received already says
  * (products, quantities, its own prices, terms), who submitted it and how far the order is up to hand over. Our costs,
- * extra costs, notes, deliveries and containers stay out. The supplier sees the money paid to it for the order, by
+ * extra costs, deliveries and containers stay out, and of the notes only the one written to the supplier and its own. The supplier sees the money paid to it for the order, by
  * the buyer (deposit payments) or by the agent from its ledger: a ledger entry typed deposit or balance is that, any
  * other payment is the deposit when it is the first and the balance after it, and sets its own production dates while the order is open.
  */
@@ -57,7 +58,7 @@ class ShowSupplierPortalPurchaseOrder
     ];
 
     /**
-     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, payments: array<string, mixed>, deposit: array<string, mixed>, production: array<string, mixed>, documents: array<string, mixed>, lines: list<array<string, mixed>>}
+     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, payments: array<string, mixed>, deposit: array<string, mixed>, production: array<string, mixed>, documents: array<string, mixed>, notes: array{note_list: list<array<string, mixed>>}, lines: list<array<string, mixed>>}
      */
     public function handle(Supplier $supplier, int $purchaseOrderId, ?string $token = null): array
     {
@@ -101,6 +102,7 @@ class ShowSupplierPortalPurchaseOrder
             'deposit'    => $this->deposit($purchaseOrder, $supplier),
             'production' => $this->production($purchaseOrder),
             'documents'  => $this->documents($purchaseOrder, $token),
+            'notes'      => GetPurchaseOrderNotes::run($purchaseOrder, GetPurchaseOrderNotes::VIEWER_SUPPLIER, true),
             'lines'      => $lines->map(fn (PurchaseOrderTransaction $line) => $this->line($line, $purchaseOrder))->values()->all(),
         ];
     }

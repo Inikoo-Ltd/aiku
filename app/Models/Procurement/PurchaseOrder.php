@@ -64,6 +64,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property PurchaseOrderStateEnum $state
  * @property PurchaseOrderDeliveryStateEnum $delivery_state
  * @property string|null $notes
+ * @property string|null $agent_notes
+ * @property string|null $agent_notes_for_supplier
+ * @property string|null $supplier_notes
  * @property \Illuminate\Support\Carbon $date latest relevant date
  * @property string|null $in_process_at
  * @property \Illuminate\Support\Carbon|null $submitted_at
@@ -278,6 +281,9 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'supplier_id',
         'state',
         'notes',
+        'agent_notes',
+        'agent_notes_for_supplier',
+        'supplier_notes',
         'cost_total',
         'cost_items',
         'cost_extra',

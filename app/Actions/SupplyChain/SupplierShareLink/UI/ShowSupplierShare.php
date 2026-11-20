@@ -157,6 +157,9 @@ class ShowSupplierShare
             'purchase_order_production_route' => $token === null
                 ? route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'path' => 'purchase-orders/0/production'])
                 : route('grp.supplier_share.purchase_order.production', ['token' => $token, 'purchaseOrder' => 0]),
+            'purchase_order_notes_route' => $token === null
+                ? route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'path' => 'purchase-orders/0/notes'])
+                : route('grp.supplier_share.purchase_order.notes', ['token' => $token, 'purchaseOrder' => 0]),
             'purchase_order_deposit_route' => $token === null
                 ? route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'path' => 'purchase-orders/0/deposit'])
                 : route('grp.supplier_share.purchase_order.deposit', ['token' => $token, 'purchaseOrder' => 0]),

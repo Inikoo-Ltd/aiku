@@ -34,6 +34,7 @@ use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalPurchaseOrder
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalProfile;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierPortalPurchaseOrderDocument;
 use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalPurchaseOrderDocument;
+use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalPurchaseOrderNotes;
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalPurchaseOrderProduction;
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalPurchaseOrderDeposit;
 use App\Actions\SupplyChain\SupplierShareLink\SendSupplierShareCode;
@@ -66,6 +67,7 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::get('products/{supplierProduct}/websites', GetSupplierPortalProductWebsites::class)->whereNumber('supplierProduct')->name('product_websites');
         Route::get('purchase-orders/{purchaseOrder}', ShowSupplierPortalPurchaseOrder::class)->whereNumber('purchaseOrder')->name('purchase_order');
         Route::post('purchase-orders/{purchaseOrder}/production', UpdateSupplierPortalPurchaseOrderProduction::class)->middleware('throttle:supplier-portal-submit')->whereNumber('purchaseOrder')->name('purchase_order.production');
+        Route::post('purchase-orders/{purchaseOrder}/notes', UpdateSupplierPortalPurchaseOrderNotes::class)->middleware('throttle:supplier-portal-submit')->whereNumber('purchaseOrder')->name('purchase_order.notes');
         Route::post('purchase-orders/{purchaseOrder}/deposit', UpdateSupplierPortalPurchaseOrderDeposit::class)->middleware('throttle:supplier-portal-submit')->whereNumber('purchaseOrder')->name('purchase_order.deposit');
         Route::post('purchase-orders/{purchaseOrder}/documents', StoreSupplierPortalPurchaseOrderDocument::class)->middleware('throttle:supplier-portal-submit')->whereNumber('purchaseOrder')->name('purchase_order.documents.store');
         Route::get('purchase-orders/{purchaseOrder}/documents/{media:ulid}', DownloadSupplierPortalPurchaseOrderDocument::class)->whereNumber('purchaseOrder')->name('purchase_order.document');

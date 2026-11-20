@@ -46,6 +46,8 @@ import Dialog from "primevue/dialog"
 import Select from "primevue/select"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import AspoDepositsChecklist from "@/Components/Procurement/AspoDepositsChecklist.vue"
+import BoxNote from "@/Components/Pallet/BoxNote.vue"
+import type { PDRNotes } from "@/types/Pallet"
 import PurchaseOrderPayments from "@/Components/Procurement/PurchaseOrderPayments.vue"
 import PurchaseOrderDepositPayments, { type PurchaseOrderPaymentsData } from "@/Components/Procurement/PurchaseOrderDepositPayments.vue"
 import AgentPurchaseOrderMoney, { type AgentPurchaseOrderMoneyData } from "@/Components/Procurement/AgentPurchaseOrderMoney.vue"
@@ -270,6 +272,7 @@ const props = defineProps < {
 	}
 	showcase?: { blueprint: any[]; updateRoute: routeType }
 	notes?: {}
+	order_notes?: { note_list: PDRNotes[] }
 	note_store_route?: routeType
 	note_form?: object
 	attachments?: {}
@@ -1337,6 +1340,15 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</template>
 	</PageHeading>
 	<p v-if="actionError" class="mx-4 mt-2 text-xs text-red-600">{{ actionError }}</p>
+
+	<div v-if="order_notes?.note_list.length" class="grid h-fit w-full grid-cols-2 gap-2 border-b border-gray-300 p-2 lg:max-h-64" :class="order_notes.note_list.length > 2 ? 'lg:grid-cols-4' : ''">
+		<BoxNote
+			v-for="note in order_notes.note_list"
+			:key="note.field"
+			:noteData="note"
+			:updateRoute="routes.updatePurchaseOrderRoute"
+		/>
+	</div>
 
 	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :skipRoute="stages.skip_route" :deposit="stages.deposit" :sample="stages.sample" :cho="stages.cho" :closeOld="stages.close_old" :blockedChecks="blockedChecks" @blockedCheck="showReceiveGoods">
 		<template v-if="agent_money && !stageActions.deposit_paid" #stage-deposit_paid>
