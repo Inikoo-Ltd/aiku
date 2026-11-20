@@ -173,8 +173,8 @@ struct InventorySkoListScreen: View {
             }
         } else {
             CardList(feed.items) { item in
-                InventorySkoRow(reference: item.reference, chip: item.chip, subtitle: item.subtitle, quantityText: item.quantityText) {
-                    router.open(InventoryRoute.skoID(id: item.id))
+                InventorySkoRow(reference: item.reference, chip: item.chip, subtitle: item.subtitle, quantityText: item.quantityText, location: item.location) {
+                    open(item)
                 }
             }
             if feed.hasMorePages {
@@ -186,6 +186,14 @@ struct InventorySkoListScreen: View {
     }
 
     private var isAbnormalities: Bool { scope == .abnormalities }
+
+    private func open(_ item: InventorySkoListItem) {
+        if let location = item.location, warehouse?.can.viewLocations == true {
+            router.open(LocationsRoute.skoInLocation(sko: item.reference, location: location.code))
+        } else {
+            router.open(InventoryRoute.skoID(id: item.skoID))
+        }
+    }
 
     @ViewBuilder
     private func emptyState(filterCount: Int, reset: @escaping () -> Void) -> some View {
@@ -214,7 +222,7 @@ struct InventorySkoListScreen: View {
             if let id = await feed.skoID(scanned: code, warehouseID: warehouse.id) {
                 router.open(InventoryRoute.skoID(id: id))
             } else if feed.items.count == 1, let only = feed.items.first {
-                router.open(InventoryRoute.skoID(id: only.id))
+                router.open(InventoryRoute.skoID(id: only.skoID))
             } else if feed.items.isEmpty {
                 lookupMessage = "No SKO for \(code)"
             }

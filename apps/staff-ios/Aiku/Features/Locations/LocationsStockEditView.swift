@@ -6,10 +6,21 @@ struct LocationsStockEditView: View {
     @Environment(AppRouter.self) private var router
     @State private var store = LocationsStore.shared
     @Environment(\.apiClient) private var apiClient
+    @State private var lookedUpCode: String?
 
     var body: some View {
         content
+            .task(id: locationCode) {
+                if !isLoaded {
+                    await store.loadLocation(code: locationCode, apiClient: apiClient)
+                }
+                lookedUpCode = locationCode
+            }
             .screenRefreshable { await store.loadLocation(code: locationCode, apiClient: apiClient) }
+    }
+
+    private var isLoaded: Bool {
+        store.warehouse.location(code: locationCode).map { !store.isWaitingForSkos(in: $0) } ?? false
     }
 
     @ViewBuilder
@@ -17,6 +28,11 @@ struct LocationsStockEditView: View {
         if let context = resolved {
             LocationsStockEditForm(location: context.location, slot: context.slot, store: store)
                 .id("\(context.location.code)|\(context.slot.skoReference)")
+        } else if lookedUpCode != locationCode {
+            AppScreen(title: "\(sko) in \(locationCode)", kicker: "SKO in location") {
+                SkeletonRow()
+                SkeletonRow()
+            }
         } else {
             AppScreen(title: "\(sko) in \(locationCode)", kicker: "SKO in location") {
                 EmptyState(
@@ -35,7 +51,7 @@ struct LocationsStockEditView: View {
         if let location = store.warehouse.location(code: locationCode) {
             return location.slot(sko).map { (location, $0) }
         }
-        guard let fallback = store.warehouse.locations.first(where: { !$0.slots.isEmpty }), let slot = fallback.slots.first else { return nil }
+        guard store.source == .sample, let fallback = store.warehouse.locations.first(where: { !$0.slots.isEmpty }), let slot = fallback.slots.first else { return nil }
         return (fallback, slot)
     }
 }

@@ -120,6 +120,9 @@ struct MobileOrgStockRow: Decodable, Sendable, Equatable, Identifiable {
     var stockValue: OptionalFlexibleDouble? = nil
     var numberLocations: Int? = nil
     var lastSeenAt: String? = nil
+    var locationOrgStockId: Int? = nil
+    var location: MobileOrgStockDetail.LocationReference? = nil
+    var locationQuantity: OptionalFlexibleDouble? = nil
 }
 
 struct MobileOrgStocksPage: Decodable, Sendable, Equatable {

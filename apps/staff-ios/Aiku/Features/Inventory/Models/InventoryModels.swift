@@ -331,11 +331,26 @@ struct InventoryReasonChoice: Identifiable, Hashable, Sendable {
 }
 
 struct InventorySkoListItem: Identifiable, Hashable, Sendable {
-    let id: Int
+    let skoID: Int
     let reference: String
     let subtitle: String
     let chip: Chip?
     let quantityText: String?
+    var location: InventorySkoListLocation? = nil
+
+    var id: InventorySkoListKey { InventorySkoListKey(skoID: skoID, locationOrgStockID: location?.locationOrgStockID) }
+}
+
+struct InventorySkoListKey: Hashable, Sendable {
+    let skoID: Int
+    let locationOrgStockID: Int?
+}
+
+struct InventorySkoListLocation: Hashable, Sendable {
+    let locationOrgStockID: Int
+    let code: String
+    let quantityText: String?
+    let isNegative: Bool
 }
 
 struct InventoryDashboardSummary: Hashable, Sendable {
