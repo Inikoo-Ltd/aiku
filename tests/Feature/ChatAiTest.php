@@ -2031,3 +2031,25 @@ test('aura is angry with an agent who wrote again by hand suggestions she had ri
 
     \App\Models\Chat\ChatAiDraft::whereKey([$first->id, $old->id, $right->id, $second->id])->delete();
 });
+
+test('a shop with premium dispatch tells the assistant how an order is dispatched faster, in the shop\'s own words', function () {
+    $facts  = fn () => collect(\App\Actions\Chat\ChatSession\GetChatShopFacts::make()->shopFacts($this->shop))->firstWhere('title', 'How to get an order dispatched faster');
+    $charge = \App\Actions\Billables\Charge\StoreCharge::make()->action($this->shop, [
+        'code'        => 'Premium-Chat',
+        'name'        => 'Premium dispatch',
+        'description' => 'If the order is placed before 12 noon on a business day it will be shipped that same day.',
+        'type'        => \App\Enums\Catalogue\Charge\ChargeTypeEnum::PREMIUM,
+        'trigger'     => \App\Enums\Catalogue\Charge\ChargeTriggerEnum::SELECTED_BY_CUSTOMER,
+        'state'       => \App\Enums\Catalogue\Charge\ChargeStateEnum::ACTIVE,
+        'settings'    => ['amount' => '7.5'],
+    ], strict: false);
+    $price = \Illuminate\Support\Number::currency(7.5, $this->shop->currency?->code ?? 'GBP');
+
+    expect($facts()['body'])->toBe('The paid option for faster dispatch is Premium dispatch, '.$price.' extra, chosen by the customer in the basket. What the shop says about it, which decides what it offers and whether it is running at all: "If the order is placed before 12 noon on a business day it will be shipped that same day."');
+
+    $charge->update(['description' => 'Premium dispatch']);
+    expect($facts()['body'])->toEndWith('chosen by the customer in the basket');
+
+    $charge->update(['state' => \App\Enums\Catalogue\Charge\ChargeStateEnum::DISCONTINUED, 'status' => false]);
+    expect($facts())->toBeNull();
+});

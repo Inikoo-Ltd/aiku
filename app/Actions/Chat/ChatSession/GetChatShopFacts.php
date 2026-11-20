@@ -106,6 +106,7 @@ class GetChatShopFacts
             ($bonus = $this->firstOrderBonus($shop, null)) ? ['title' => __('First order bonus'), 'body' => $bonus] : null,
             ($methods = $this->paymentMethods($shop)) ? ['title' => __('Payment methods'), 'body' => $methods] : null,
             ($charges = $this->charges($shop)) ? ['title' => __('Charges'), 'body' => $charges] : null,
+            ($faster = $this->fasterDispatch($shop)) ? ['title' => __('How to get an order dispatched faster'), 'body' => $faster] : null,
             ($bundles = $this->bundleDiscount($shop)) ? ['title' => __('Bundle discount'), 'body' => $bundles] : null,
             ($restock = $this->restockTime($shop)) ? ['title' => __('How long products are out of stock'), 'body' => $restock] : null,
             ($currency = $this->currency($shop)) ? ['title' => __('Currency'), 'body' => $currency] : null,
@@ -487,6 +488,30 @@ class GetChatShopFacts
             ->join('; ');
 
         return $charges ? __('Charges an order can carry').': '.$charges : null;
+    }
+
+    /**
+     * The shop's own premium dispatch charge, in the shop's own words: price, cut-off and whether it is suspended differ per shop.
+     */
+    private function fasterDispatch(Shop $shop): ?string
+    {
+        $charge = $shop->charges()
+            ->where('state', ChargeStateEnum::ACTIVE)
+            ->where('status', true)
+            ->where('type', ChargeTypeEnum::PREMIUM->value)
+            ->orderBy('id')
+            ->first();
+
+        if (!$charge || blank(data_get($charge->settings, 'amount'))) {
+            return null;
+        }
+
+        $description = trim((string) $charge->description);
+        $body        = __('The paid option for faster dispatch is :name, :price extra, chosen by the customer in the basket', ['name' => $charge->name, 'price' => $this->money($shop, (float) data_get($charge->settings, 'amount'))]);
+
+        return $description === '' || mb_strtolower($description) === mb_strtolower(trim($charge->name))
+            ? $body
+            : $body.'. '.__('What the shop says about it, which decides what it offers and whether it is running at all').': "'.$description.'"';
     }
 
     /**
