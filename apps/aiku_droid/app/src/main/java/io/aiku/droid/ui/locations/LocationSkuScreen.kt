@@ -61,6 +61,8 @@ import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.SkuRoute
 import io.aiku.droid.ui.states.SessionExpiredScreen
+import io.aiku.droid.ui.sync.OfflineCopyNote
+import io.aiku.droid.ui.sync.QueueEventEffect
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 @Composable
@@ -115,6 +117,7 @@ private fun LocationSkuContent(state: LocationUiState, location: LocationViewMod
         }
         location.eventHandled()
     }
+    QueueEventEffect(event = state.queueEvent, reference = detail?.code ?: locationCode, onHandled = location::queueEventHandled, onQueued = { openSheet = null })
 
     val footer: (@Composable ColumnScope.() -> Unit)? = if (sko != null && (canEditStocks || canEditLocations)) {
         {
@@ -173,6 +176,7 @@ private fun LocationSkuContent(state: LocationUiState, location: LocationViewMod
         refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = location::refresh, isEnabled = !state.isWorking),
     ) {
         val current = draft
+        state.copyAt?.let { OfflineCopyNote(copyAt = it) }
         when {
             sko != null && current != null -> SkoSettings(
                 sko = sko,

@@ -24,6 +24,7 @@ class ClockingViewModel(
     private val clockingApi: ClockingApi,
     private val sessions: SessionRepository,
     private val cache: ScreenCache,
+    private val onClockedOut: () -> Unit = {},
 ) : ViewModel(), ClockingController {
 
     private val mutableState = MutableStateFlow(ClockingUiState())
@@ -175,6 +176,9 @@ class ClockingViewModel(
             mutableState.update { it.copy(scan = scan) }
             if (scan is ClockingScanState.Recorded) {
                 refresh()
+                if (scan.result.clocking.isClockOut) {
+                    onClockedOut()
+                }
             }
         }
     }

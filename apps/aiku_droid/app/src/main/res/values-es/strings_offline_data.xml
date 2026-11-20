@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Sin conexión</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Sin conexión · %d pendiente</item>
+        <item quantity="many">Sin conexión · %d pendientes</item>
+        <item quantity="other">Sin conexión · %d pendientes</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">Sincronizando %d</item>
+        <item quantity="many">Sincronizando %d</item>
+        <item quantity="other">Sincronizando %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d requiere su atención</item>
+        <item quantity="many">%d requieren su atención</item>
+        <item quantity="other">%d requieren su atención</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d acción requiere su atención</item>
+        <item quantity="many">%d acciones requieren su atención</item>
+        <item quantity="other">%d acciones requieren su atención</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Abra Aiku para ver qué hacer.</string>
+    <string name="offline_sync_channel_name">Sincronización sin conexión</string>
+    <string name="offline_sync_channel_description">Se muestra mientras se envía a Aiku el trabajo guardado en el teléfono.</string>
+    <string name="offline_sync_sending">Enviando el trabajo guardado en el teléfono</string>
+    <string name="offline_sign_out_title">Trabajo pendiente de sincronizar</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">%d acción suya está pendiente; se enviará cuando vuelva a iniciar sesión en este teléfono.</item>
+        <item quantity="many">%d acciones suyas están pendientes; se enviarán cuando vuelva a iniciar sesión en este teléfono.</item>
+        <item quantity="other">%d acciones suyas están pendientes; se enviarán cuando vuelva a iniciar sesión en este teléfono.</item>
+    </plurals>
+</resources>

@@ -107,6 +107,7 @@ fun AppScreen(
 
     Column(modifier = modifier.fillMaxSize().background(colors.background)) {
         header()
+        OfflineIndicator()
         PullRefreshBox(refresh = refresh, modifier = Modifier.weight(1f).fillMaxWidth()) {
             Column(
                 modifier = Modifier
@@ -509,7 +510,16 @@ private fun RowScope.BarTab(item: BarItem, isActive: Boolean, onClick: () -> Uni
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Icon(painter = painterResource(item.icon), contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
-            Text(text = stringResource(item.label), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = tint, maxLines = 1)
+            Text(
+                text = stringResource(item.label),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = tint,
+                textAlign = TextAlign.Center,
+                lineHeight = 13.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
         if (item.badge != null) {
             CountBadge(

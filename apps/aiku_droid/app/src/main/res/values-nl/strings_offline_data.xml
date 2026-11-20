@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Offline</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Offline · %d wacht</item>
+        <item quantity="other">Offline · %d wachten</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">%d wordt gesynchroniseerd</item>
+        <item quantity="other">%d worden gesynchroniseerd</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d heeft aandacht nodig</item>
+        <item quantity="other">%d hebben aandacht nodig</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d actie heeft uw aandacht nodig</item>
+        <item quantity="other">%d acties hebben uw aandacht nodig</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Open Aiku om te zien wat er moet gebeuren.</string>
+    <string name="offline_sync_channel_name">Offline synchronisatie</string>
+    <string name="offline_sync_channel_description">Wordt getoond terwijl werk dat op de telefoon is opgeslagen naar Aiku wordt verzonden.</string>
+    <string name="offline_sync_sending">Op de telefoon opgeslagen werk wordt verzonden</string>
+    <string name="offline_sign_out_title">Werk wacht op synchronisatie</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">%d actie van u wacht; deze wordt verzonden wanneer u opnieuw inlogt op deze telefoon.</item>
+        <item quantity="other">%d acties van u wachten; ze worden verzonden wanneer u opnieuw inlogt op deze telefoon.</item>
+    </plurals>
+</resources>

@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Зменшити</string>
     <string name="stepper_increase">Збільшити</string>
     <string name="switcher_current">%1$s · поточний</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Застосувати · %1$s</string>
-    <string name="sync_both">Обидва</string>
-    <string name="sync_conflict_explanation">Для кожного рядка, що відрізняється, можна вибрати «Моє» або «Aiku»; для кількостей також «Обидва» (сумується, але не більше, ніж потрібно рядку). Ваш вибір показано заповненим.</string>
-    <string name="sync_conflicts_explanation">Як під час злиття: відкрийте запис, щоб вибрати рядок за рядком, або залиште все з одного боку. Нічого з відхиленого не втрачається: воно залишається в історії синхронізації.</string>
     <string name="sync_conflicts_title">Вирішити конфлікти</string>
-    <string name="sync_explanation">Робота на рівні рядків зберігається на телефоні в режимі офлайн: збір, не зібрано, пакування, перевірка, розміщення, аудит, переміщення. Після повторного підключення кожну дію звіряють із версією, з якої вона почалася: якщо в Aiku нічого не змінилося, вона завантажується автоматично, інакше чекає на вас у розділі «Вирішити конфлікти». Для обліку часу та зміни станів потрібне з\'єднання.</string>
-    <string name="sync_keep_all_aiku">Залишити все з Aiku</string>
-    <string name="sync_keep_all_mine">Залишити все моє</string>
-    <string name="sync_kept_all_aiku">Залишено все з Aiku</string>
-    <string name="sync_kept_all_mine">Залишено все ваше</string>
     <string name="sync_kicker">Профіль</string>
-    <string name="sync_last_sync">Остання синхронізація</string>
-    <string name="sync_lines_differ">Рядки, що відрізняються</string>
-    <string name="sync_mine">Моє</string>
-    <string name="sync_no_conflict">Немає конфлікту</string>
     <string name="sync_now_in_aiku">Зараз в Aiku</string>
-    <string name="sync_oldest_first">спочатку найстаріші</string>
-    <string name="sync_online_only_body">Відвантаження, етикетки, завершення, відправлення, скасування та «Позначити як отримано» взаємодіють із перевізниками, принтерами або клієнтами, тому працюють лише онлайн. Ваш збір і пакування збережено, їх буде завантажено, коли ви повернетеся в мережу.</string>
-    <string name="sync_online_only_note">Головна кнопка з\'явиться, щойно телефон буде онлайн і чергу буде синхронізовано.</string>
-    <string name="sync_online_only_title">Для завершення потрібне з\'єднання</string>
-    <string name="sync_resolve_all">Вирішити все одразу</string>
-    <string name="sync_same_on_both">Однаково з обох боків</string>
-    <string name="sync_synced">Синхронізовано</string>
     <string name="sync_title">Офлайн і синхронізація</string>
-    <string name="sync_use_aiku_for_all">Aiku для всіх</string>
-    <string name="sync_use_mine_for_all">Моє для всіх</string>
-    <string name="sync_view">Переглянути</string>
-    <string name="sync_waiting">Очікує на завантаження</string>
     <string name="sync_yours">Ваше</string>
     <string name="tab_home">Головна</string>
     <string name="tab_inbox">Вхідні</string>
@@ -2665,23 +2640,5 @@
         <item quantity="few">%d дії</item>
         <item quantity="many">%d дій</item>
         <item quantity="other">%d дії</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">Aiku: %1$d</item>
-        <item quantity="few">Aiku: %1$d</item>
-        <item quantity="many">Aiku: %1$d</item>
-        <item quantity="other">Aiku: %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">обидва: %1$d</item>
-        <item quantity="few">обидва: %1$d</item>
-        <item quantity="many">обидва: %1$d</item>
-        <item quantity="other">обидва: %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">моє: %1$d</item>
-        <item quantity="few">моє: %1$d</item>
-        <item quantity="many">моє: %1$d</item>
-        <item quantity="other">моє: %1$d</item>
     </plurals>
 </resources>

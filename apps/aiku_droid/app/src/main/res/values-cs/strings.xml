@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Snížit</string>
     <string name="stepper_increase">Zvýšit</string>
     <string name="switcher_current">%1$s · aktuální</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Použít · %1$s</string>
-    <string name="sync_both">Obě</string>
-    <string name="sync_conflict_explanation">Každý odlišný řádek nabízí Moje nebo Aiku; u množství také Obě (sečteno, nikdy nad to, co řádek potřebuje). Vaše volba je zobrazena vyplněná.</string>
-    <string name="sync_conflicts_explanation">Jako při řešení sloučení: otevřete záznam a vybírejte řádek po řádku, nebo ponechte vše z jedné strany. Nic, co zahodíte, se neztratí: zůstane v historii synchronizace.</string>
     <string name="sync_conflicts_title">Vyřešit konflikty</string>
-    <string name="sync_explanation">Práce na úrovni řádků se offline ukládá v telefonu: vychystání, nevychystáno, balení, kontrola, umístění, audit, přesun. Po připojení se každá akce porovná s verzí, ze které vycházela: pokud se v Aiku nic nezměnilo, odešle se sama, jinak na vás čeká v části Vyřešit konflikty. Docházka a změny stavu vyžadují připojení.</string>
-    <string name="sync_keep_all_aiku">Ponechat všechny z Aiku</string>
-    <string name="sync_keep_all_mine">Ponechat všechny moje</string>
-    <string name="sync_kept_all_aiku">Ponechány všechny z Aiku</string>
-    <string name="sync_kept_all_mine">Ponechány všechny vaše</string>
     <string name="sync_kicker">Profil</string>
-    <string name="sync_last_sync">Poslední synchronizace</string>
-    <string name="sync_lines_differ">Řádky, které se liší</string>
-    <string name="sync_mine">Moje</string>
-    <string name="sync_no_conflict">Bez konfliktu</string>
     <string name="sync_now_in_aiku">Nyní v Aiku</string>
-    <string name="sync_oldest_first">nejstarší první</string>
-    <string name="sync_online_only_body">Zásilky, štítky, finalizace, odeslání, zrušení a Označit jako přijaté komunikují s dopravci, tiskárnami nebo zákazníky, takže fungují pouze online. Vaše vychystávání a balení se uloží a odešlou, až budete opět online.</string>
-    <string name="sync_online_only_note">Hlavní tlačítko se vrátí, jakmile bude telefon online a fronta se synchronizuje.</string>
-    <string name="sync_online_only_title">Finalizace vyžaduje připojení</string>
-    <string name="sync_resolve_all">Vyřešit vše najednou</string>
-    <string name="sync_same_on_both">Stejné na obou stranách</string>
-    <string name="sync_synced">Synchronizováno</string>
     <string name="sync_title">Offline a synchronizace</string>
-    <string name="sync_use_aiku_for_all">Použít Aiku pro všechny</string>
-    <string name="sync_use_mine_for_all">Použít moje pro všechny</string>
-    <string name="sync_view">Zobrazit</string>
-    <string name="sync_waiting">Čeká na odeslání</string>
     <string name="sync_yours">Vaše</string>
     <string name="tab_home">Domov</string>
     <string name="tab_inbox">Schránka</string>
@@ -2665,23 +2640,5 @@
         <item quantity="few">%d akce</item>
         <item quantity="many">%d akce</item>
         <item quantity="other">%d akcí</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">Aiku: %1$d</item>
-        <item quantity="few">Aiku: %1$d</item>
-        <item quantity="many">Aiku: %1$d</item>
-        <item quantity="other">Aiku: %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">Obě: %1$d</item>
-        <item quantity="few">Obě: %1$d</item>
-        <item quantity="many">Obě: %1$d</item>
-        <item quantity="other">Obě: %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">Moje: %1$d</item>
-        <item quantity="few">Moje: %1$d</item>
-        <item quantity="many">Moje: %1$d</item>
-        <item quantity="other">Moje: %1$d</item>
     </plurals>
 </resources>

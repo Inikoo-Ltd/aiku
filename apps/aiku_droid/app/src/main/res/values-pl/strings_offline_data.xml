@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Offline</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Offline · %d czeka</item>
+        <item quantity="few">Offline · %d czekają</item>
+        <item quantity="many">Offline · %d czeka</item>
+        <item quantity="other">Offline · %d czeka</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">Synchronizacja: %d</item>
+        <item quantity="few">Synchronizacja: %d</item>
+        <item quantity="many">Synchronizacja: %d</item>
+        <item quantity="other">Synchronizacja: %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d wymaga Twojej uwagi</item>
+        <item quantity="few">%d wymagają Twojej uwagi</item>
+        <item quantity="many">%d wymaga Twojej uwagi</item>
+        <item quantity="other">%d wymaga Twojej uwagi</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d działanie wymaga Twojej uwagi</item>
+        <item quantity="few">%d działania wymagają Twojej uwagi</item>
+        <item quantity="many">%d działań wymaga Twojej uwagi</item>
+        <item quantity="other">%d działania wymaga Twojej uwagi</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Otwórz Aiku, aby zobaczyć, co zrobić.</string>
+    <string name="offline_sync_channel_name">Synchronizacja offline</string>
+    <string name="offline_sync_channel_description">Wyświetlane podczas wysyłania do Aiku pracy zapisanej w telefonie.</string>
+    <string name="offline_sync_sending">Wysyłanie pracy zapisanej w telefonie</string>
+    <string name="offline_sign_out_title">Praca czeka na synchronizację</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">%d Twoje działanie czeka; zostanie wysłane, gdy ponownie zalogujesz się na tym telefonie.</item>
+        <item quantity="few">%d Twoje działania czekają; zostaną wysłane, gdy ponownie zalogujesz się na tym telefonie.</item>
+        <item quantity="many">%d Twoich działań czeka; zostaną wysłane, gdy ponownie zalogujesz się na tym telefonie.</item>
+        <item quantity="other">%d Twojego działania czeka; zostanie wysłane, gdy ponownie zalogujesz się na tym telefonie.</item>
+    </plurals>
+</resources>

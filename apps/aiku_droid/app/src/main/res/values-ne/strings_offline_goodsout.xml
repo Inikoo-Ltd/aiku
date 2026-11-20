@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">अफलाइन · %1$s को सुरक्षित प्रति</string>
+    <string name="goodsout_offline_copy_body">यो डेलिभरी नोटमा तपाईंको काम यही फोनमा रहन्छ र फेरि अनलाइन हुँदा पठाइन्छ।</string>
+    <string name="goodsout_offline_saved">यो फोनमा सुरक्षित गरियो। फेरि अनलाइन हुँदा सिंक हुन्छ।</string>
+    <string name="goodsout_offline_waiting_to_sync">सिंकको प्रतीक्षामा</string>
+    <string name="goodsout_offline_needs_you">तपाईं चाहिन्छ</string>
+    <string name="goodsout_offline_queued_group">यो फोनमा सुरक्षित</string>
+    <string name="goodsout_offline_queued_pick">%2$s बाट %1$s पिक गरियो</string>
+    <string name="goodsout_offline_queued_pick_plain">%1$s पिक गरियो</string>
+    <string name="goodsout_offline_queued_not_picked">%1$s पिक गरिएन</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">गोदामको प्रतीक्षामा %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">ग्राहक सेवालाई सुम्पियो %1$s</string>
+    <string name="goodsout_offline_queued_pack">%1$s प्याक गरियो</string>
+    <string name="goodsout_offline_flush_waiting">यो डेलिभरी नोटमा तपाईंको काम अझै सिंक भएको छैन। सिंक भएपछि फेरि प्रयास गर्नुहोस्।</string>
+    <string name="goodsout_offline_flush_needs_you">यो डेलिभरी नोटमा तपाईंको केही कामलाई पहिले तपाईं चाहिन्छ।</string>
+    <string name="goodsout_offline_scan_online_only">जडान चाहिन्छ</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · सिंकको प्रतीक्षामा</string>
+    <string name="goodsout_offline_online_only_kicker">जडान चाहिन्छ</string>
+    <string name="goodsout_offline_online_only_title">यसका लागि जडान चाहिन्छ</string>
+    <string name="goodsout_offline_online_only_body">काम सुरु गर्ने, सक्ने वा लिने, प्याकिङ, अन्तिम रूप दिने, पठाउने र पिकिङ सत्रहरू Aiku ले तुरुन्तै जाँच्छ, त्यसैले यी अनलाइनमा मात्र चल्छन्।</string>
+    <string name="goodsout_offline_online_only_waiting">यो फोनमा सिंकको प्रतीक्षामा रहेका कार्यहरू: %1$d। यी सुरक्षित छन् र फेरि अनलाइन हुनेबित्तिकै पठाइन्छन्।</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">यो फोनमा तपाईंको केही पनि सिंकको प्रतीक्षामा छैन।</string>
+    <string name="goodsout_offline_online_only_back_online">तपाईं फेरि अनलाइन हुनुहुन्छ। जारी राख्न पछाडि जानुहोस्।</string>
+    <string name="goodsout_offline_online_only_view">प्रतीक्षामा रहेको काम हेर्नुहोस्</string>
+</resources>

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.InventoryApi
+import io.aiku.droid.data.api.InventoryResponses
 import io.aiku.droid.data.api.Edited
 import io.aiku.droid.data.api.LocationDetail
 import io.aiku.droid.data.api.LocationOrgStock
@@ -14,20 +15,39 @@ import io.aiku.droid.data.api.PickingChannel
 import io.aiku.droid.data.api.StockLevel
 import io.aiku.droid.data.api.StockMovementReasons
 import io.aiku.droid.data.api.WarehouseAbilities
+import io.aiku.droid.data.offline.NoOfflineWork
+import io.aiku.droid.data.offline.OfflineRecordKey
+import io.aiku.droid.data.offline.OfflineRecordType
+import io.aiku.droid.data.offline.OfflineWork
+import io.aiku.droid.data.offline.QueuedAction
+import io.aiku.droid.data.offline.QueuedActionState
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.goodsout.problem
 import io.aiku.droid.ui.inventory.LocationFinder
+import io.aiku.droid.ui.inventory.MovementReasonsMemory
+import io.aiku.droid.ui.inventory.QueuedStockWrite
+import io.aiku.droid.ui.inventory.StockOfflinePayloads
+import io.aiku.droid.ui.inventory.stockOperations
+import io.aiku.droid.ui.inventory.versions
+import io.aiku.droid.ui.inventory.withQueued
+import io.aiku.droid.ui.inventory.withRequestId
 import io.aiku.droid.ui.inventory.StockEvent
 import io.aiku.droid.ui.inventory.canEditLocations
 import io.aiku.droid.ui.inventory.canEditStocks
 import io.aiku.droid.ui.inventory.stockRefusal
+import io.aiku.droid.ui.sync.QueueEvent
+import io.aiku.droid.ui.sync.RecordQueue
+import io.aiku.droid.ui.sync.StatusGate
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
+
+private const val HTTP_OK = 200
 
 enum class LocationAction { Audit, MoveAll, MoveSome, Remove }
 
@@ -58,6 +78,9 @@ data class LocationUiState(
     val working: Any? = null,
     val event: StockEvent? = null,
     val writeErrors: Map<String, List<String>> = emptyMap(),
+    val pending: List<QueuedAction> = emptyList(),
+    val copyAt: Instant? = null,
+    val queueEvent: QueueEvent? = null,
 ) {
     val isWorking: Boolean get() = working != null
 }
@@ -67,10 +90,18 @@ class LocationViewModel(
     private val sessions: SessionRepository,
     warehouseId: Long,
     private val locationId: Long,
+    offlineWork: OfflineWork = NoOfflineWork,
+    private val reasonsMemory: MovementReasonsMemory = MovementReasonsMemory(),
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(LocationUiState())
     val state: StateFlow<LocationUiState> = mutableState.asStateFlow()
+
+    private val queue = RecordQueue(offlineWork, warehouseId, OfflineRecordKey(OfflineRecordType.LOCATION, locationId))
+
+    val isOnline: StateFlow<Boolean> = queue.online
+
+    private var base: LocationDetail? = null
 
     val finder = LocationFinder(
         api = api,
@@ -82,6 +113,24 @@ class LocationViewModel(
     )
 
     private var loadJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            queue.pending.collect { actions ->
+                mutableState.update { current ->
+                    current.copy(
+                        pending = actions.filter { it.operation in stockOperations && it.state != QueuedActionState.VOID },
+                        location = base?.withQueued(actions) ?: current.location,
+                    )
+                }
+            }
+        }
+        queue.watchSettled(viewModelScope) {
+            if (!mutableState.value.isWorking) {
+                load()
+            }
+        }
+    }
 
     fun onStart() {
         if (loadJob?.isActive != true && !mutableState.value.isWorking) {
@@ -102,31 +151,59 @@ class LocationViewModel(
         if (mutableState.value.reasons != null) {
             return
         }
+        reasonsMemory.reasons?.let { remembered ->
+            mutableState.update { it.copy(reasons = remembered, reasonsProblem = null) }
+            return
+        }
         mutableState.update { it.copy(reasonsProblem = null) }
         viewModelScope.launch {
             when (val result = api.stockMovementReasons(token)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(reasons = result.value) }
+                is GoodsOutResult.Loaded -> {
+                    reasonsMemory.reasons = result.value
+                    mutableState.update { it.copy(reasons = result.value) }
+                }
                 GoodsOutResult.SessionExpired -> expireSession()
                 else -> mutableState.update { it.copy(reasonsProblem = result.problem()) }
             }
         }
     }
 
-    fun write(write: LocationWrite) {
+    fun queueEventHandled() {
+        mutableState.update { it.copy(queueEvent = null) }
+    }
+
+    fun undoQueued(localId: Long) = queue.undo(localId)
+
+    fun write(requested: LocationWrite) {
         val token = token() ?: return
+        val write = requested.withRequestId(queue::newClientRequestId)
+        val shown = mutableState.value.location ?: return
         if (!startWorking(write)) {
             return
         }
         viewModelScope.launch {
-            when (val result = api.writeLocation(token, locationId, write)) {
-                is GoodsOutResult.Loaded -> mutableState.update {
-                    it.copy(
-                        location = result.value.location,
-                        working = null,
-                        problem = null,
-                        event = StockEvent.Done(action = write, removed = result.value.removed),
-                    )
+            val queued = queuedWrites(write, shown)
+            if (queued.isEmpty()) {
+                if (!passesStatusGate()) {
+                    return@launch
                 }
+            } else if (queue.shouldQueue() && enqueue(queued)) {
+                return@launch
+            }
+            when (val result = api.writeLocation(token, locationId, write)) {
+                is GoodsOutResult.Loaded -> {
+                    base = result.value.location
+                    mutableState.update {
+                        it.copy(
+                            location = result.value.location.withQueued(queue.pending.value),
+                            copyAt = null,
+                            working = null,
+                            problem = null,
+                            event = StockEvent.Done(action = write, removed = result.value.removed),
+                        )
+                    }
+                }
+                GoodsOutResult.Unreachable -> if (queued.size != 1 || !enqueue(queued)) refuse(result)
                 else -> refuse(result)
             }
         }
@@ -138,13 +215,65 @@ class LocationViewModel(
             return
         }
         viewModelScope.launch {
+            if (!passesStatusGate()) {
+                return@launch
+            }
             when (val result = api.updateLocationOrgStock(token, locationOrgStockId, update)) {
-                is GoodsOutResult.Loaded -> mutableState.update {
-                    it.copy(location = result.value, working = null, problem = null, event = StockEvent.Done(action = SettingsSaved(locationOrgStockId)))
+                is GoodsOutResult.Loaded -> {
+                    base = result.value
+                    mutableState.update {
+                        it.copy(
+                            location = result.value.withQueued(queue.pending.value),
+                            copyAt = null,
+                            working = null,
+                            problem = null,
+                            event = StockEvent.Done(action = SettingsSaved(locationOrgStockId)),
+                        )
+                    }
                 }
                 else -> refuse(result)
             }
         }
+    }
+
+    private suspend fun passesStatusGate(): Boolean {
+        val event = when (queue.statusGate()) {
+            StatusGate.Go -> return true
+            StatusGate.OnlineOnly -> QueueEvent.OnlineOnly
+            StatusGate.NeedsYou -> QueueEvent.NeedsYou
+        }
+        mutableState.update { it.copy(working = null, queueEvent = event) }
+        return false
+    }
+
+    private fun queuedWrites(write: LocationWrite, shown: LocationDetail): List<QueuedStockWrite> = when (write) {
+        is LocationWrite.Audit -> listOf(
+            StockOfflinePayloads.auditLocation(locationId, write.counts, (base ?: shown).versions(), write.clientRequestId ?: queue.newClientRequestId()),
+        )
+        is LocationWrite.MoveAll -> shown.orgStocks.filter { it.stock > 0.0 }.mapIndexed { index, sko ->
+            StockOfflinePayloads.moveToLocation(sko.locationOrgStockId, write.targetLocationId, sko.stock, write.requestIdFor(index))
+        }
+        is LocationWrite.MoveSome -> write.items.filter { it.quantity > 0.0 }.mapNotNull { item ->
+            shown.orgStocks.firstOrNull { it.id == item.orgStockId }?.let { sko -> sko.locationOrgStockId to item.quantity }
+        }.mapIndexed { index, (linkId, quantity) ->
+            StockOfflinePayloads.moveToLocation(linkId, write.targetLocationId, quantity, write.requestIdFor(index))
+        }
+        is LocationWrite.RemoveOrgStocks -> emptyList()
+    }
+
+    private fun LocationWrite.requestIdFor(index: Int): String {
+        val own = when (this) {
+            is LocationWrite.MoveAll -> clientRequestId
+            is LocationWrite.MoveSome -> clientRequestId
+            else -> null
+        }
+        return own?.takeIf { index == 0 } ?: queue.newClientRequestId()
+    }
+
+    private suspend fun enqueue(writes: List<QueuedStockWrite>): Boolean {
+        val queued = writes.map { queue.enqueue(it.operation, it.payload) ?: return false }
+        mutableState.update { it.copy(working = null, queueEvent = QueueEvent.Queued(queued.first().operation)) }
+        return true
     }
 
     fun eventHandled() {
@@ -183,8 +312,20 @@ class LocationViewModel(
         mutableState.update { it.copy(isLoading = true, isRefreshing = isPull, problem = null) }
 
         loadJob = viewModelScope.launch {
-            when (val result = api.location(token, locationId)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(location = result.value, isLoading = false, isRefreshing = false) }
+            val loaded = queue.load(
+                live = { api.location(token, locationId) },
+                parse = { body -> InventoryResponses.parseLocation(HTTP_OK, body) },
+            )
+            when (val result = loaded.result) {
+                is GoodsOutResult.Loaded -> {
+                    base = result.value
+                    mutableState.update {
+                        it.copy(location = result.value.withQueued(queue.pending.value), copyAt = loaded.copyAt, isLoading = false, isRefreshing = false)
+                    }
+                    if (loaded.copyAt == null && result.value.orgStocks.isNotEmpty()) {
+                        loadReasons()
+                    }
+                }
                 GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
                 else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
             }

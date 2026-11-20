@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Offline</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Offline · %d väntar</item>
+        <item quantity="other">Offline · %d väntar</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">Synkar %d</item>
+        <item quantity="other">Synkar %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d kräver åtgärd</item>
+        <item quantity="other">%d kräver åtgärd</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d åtgärd kräver din uppmärksamhet</item>
+        <item quantity="other">%d åtgärder kräver din uppmärksamhet</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Öppna Aiku för att se vad som ska göras.</string>
+    <string name="offline_sync_channel_name">Offlinesynkning</string>
+    <string name="offline_sync_channel_description">Visas medan arbete som sparats på telefonen skickas till Aiku.</string>
+    <string name="offline_sync_sending">Skickar arbete som sparats på telefonen</string>
+    <string name="offline_sign_out_title">Arbete väntar på synkning</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">%d åtgärd från dig väntar; den skickas när du loggar in igen på den här telefonen.</item>
+        <item quantity="other">%d åtgärder från dig väntar; de skickas när du loggar in igen på den här telefonen.</item>
+    </plurals>
+</resources>

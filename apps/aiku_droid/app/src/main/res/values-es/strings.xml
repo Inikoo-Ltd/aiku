@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Reducir</string>
     <string name="stepper_increase">Aumentar</string>
     <string name="switcher_current">%1$s · actual</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Aplicar · %1$s</string>
-    <string name="sync_both">Ambos</string>
-    <string name="sync_conflict_explanation">Cada línea que difiere ofrece Mío o Aiku; las cantidades también admiten Ambos (sumadas, nunca por encima de lo que necesita la línea). Su elección se muestra rellena.</string>
-    <string name="sync_conflicts_explanation">Como resolver una fusión: abra un registro para elegir línea por línea, o mantenga todo de un lado. Nada de lo que descarte se pierde: se queda en el historial de sincronización.</string>
     <string name="sync_conflicts_title">Resolver conflictos</string>
-    <string name="sync_explanation">El trabajo por líneas se guarda en el teléfono sin conexión: preparar, no preparado, embalar, comprobar, ubicar, auditar, mover. Al volver la conexión, cada acción se compara con la versión de la que partió: si nada cambió en Aiku, se sube sola; si no, le espera en Resolver conflictos. El fichaje y los cambios de estado requieren conexión.</string>
-    <string name="sync_keep_all_aiku">Mantener todo lo de Aiku</string>
-    <string name="sync_keep_all_mine">Mantener todo lo mío</string>
-    <string name="sync_kept_all_aiku">Se ha mantenido todo lo de Aiku</string>
-    <string name="sync_kept_all_mine">Se ha mantenido todo lo suyo</string>
     <string name="sync_kicker">Perfil</string>
-    <string name="sync_last_sync">Última sincronización</string>
-    <string name="sync_lines_differ">Líneas que difieren</string>
-    <string name="sync_mine">Mío</string>
-    <string name="sync_no_conflict">Sin conflicto</string>
     <string name="sync_now_in_aiku">Ahora en Aiku</string>
-    <string name="sync_oldest_first">más antiguos primero</string>
-    <string name="sync_online_only_body">Envíos, etiquetas, finalizar, expedir, cancelar y Marcar como recibida se comunican con transportistas, impresoras o clientes, así que solo funcionan con conexión. Su preparación y su embalaje se guardan y se suben cuando vuelva a tener conexión.</string>
-    <string name="sync_online_only_note">El botón principal vuelve en cuanto el teléfono tenga conexión y la cola se haya sincronizado.</string>
-    <string name="sync_online_only_title">Finalizar requiere conexión</string>
-    <string name="sync_resolve_all">Resolver todo a la vez</string>
-    <string name="sync_same_on_both">Igual en ambos lados</string>
-    <string name="sync_synced">Sincronizado</string>
     <string name="sync_title">Sin conexión y sincronización</string>
-    <string name="sync_use_aiku_for_all">Usar Aiku para todo</string>
-    <string name="sync_use_mine_for_all">Usar lo mío para todo</string>
-    <string name="sync_view">Ver</string>
-    <string name="sync_waiting">Pendiente de subir</string>
     <string name="sync_yours">Lo suyo</string>
     <string name="tab_home">Inicio</string>
     <string name="tab_inbox">Bandeja de entrada</string>
@@ -2556,20 +2531,5 @@
         <item quantity="one">%d acción</item>
         <item quantity="many">%d acciones</item>
         <item quantity="other">%d acciones</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">%1$d Aiku</item>
-        <item quantity="many">%1$d Aiku</item>
-        <item quantity="other">%1$d Aiku</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">%1$d ambos</item>
-        <item quantity="many">%1$d ambos</item>
-        <item quantity="other">%1$d ambos</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">%1$d mío</item>
-        <item quantity="many">%1$d míos</item>
-        <item quantity="other">%1$d míos</item>
     </plurals>
 </resources>

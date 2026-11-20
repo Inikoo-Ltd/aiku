@@ -3,6 +3,7 @@ package io.aiku.droid
 import android.content.Context
 import android.os.Build
 import android.os.SystemClock
+import android.provider.Settings
 import io.aiku.droid.data.api.AikuHttpClient
 import io.aiku.droid.data.api.AppVersionApi
 import io.aiku.droid.data.api.AuthApi
@@ -34,6 +35,21 @@ import io.aiku.droid.data.cache.ScreenCacheInterceptor
 import io.aiku.droid.data.cache.SqliteScreenCacheStore
 import io.aiku.droid.data.images.ImageSource
 import io.aiku.droid.data.images.RemoteImages
+import io.aiku.droid.data.offline.DeviceOfflineWork
+import io.aiku.droid.data.offline.DownloadPrefetcher
+import io.aiku.droid.data.offline.NetworkConnectivity
+import io.aiku.droid.data.offline.OfflineDevice
+import io.aiku.droid.data.offline.OfflineDownloadInterceptor
+import io.aiku.droid.data.offline.OfflineDownloads
+import io.aiku.droid.data.offline.OfflineHeadersInterceptor
+import io.aiku.droid.data.offline.OfflineQueue
+import io.aiku.droid.data.offline.OfflineSyncApi
+import io.aiku.droid.data.offline.OfflineSyncEngine
+import io.aiku.droid.data.offline.OfflineWork
+import io.aiku.droid.data.offline.OkHttpOfflineSyncApi
+import io.aiku.droid.data.offline.ServerClock
+import io.aiku.droid.data.offline.SqliteOfflineStore
+import io.aiku.droid.data.offline.WorkManagerSyncScheduler
 import io.aiku.droid.data.session.DeviceRecentSearches
 import io.aiku.droid.data.session.DeviceSessionRepository
 import io.aiku.droid.data.session.DeviceWarehouseCache
@@ -48,6 +64,8 @@ import io.aiku.droid.data.settings.DeviceSettings
 import io.aiku.droid.data.settings.PreferencesPendingLanguage
 import io.aiku.droid.push.FirebasePushTokenSource
 import io.aiku.droid.push.NotificationPrompt
+import io.aiku.droid.push.OfflineNotices
+import io.aiku.droid.push.OfflineOpenRequests
 import io.aiku.droid.push.PushInbox
 import io.aiku.droid.push.PushRegistration
 import io.aiku.droid.push.WorkNotifications
@@ -65,6 +83,16 @@ class AppContainer(context: Context) {
 
     val language = AppLanguageSettings(DeviceAppLocales.store(context))
 
+    private val offlinePreferences = context.getSharedPreferences(OFFLINE_PREFERENCES, Context.MODE_PRIVATE)
+
+    private val offlineDevice = OfflineDevice(offlinePreferences)
+
+    private val serverClock = ServerClock(
+        preferences = offlinePreferences,
+        elapsedRealtime = SystemClock::elapsedRealtime,
+        bootCount = { Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, -1).takeIf { it >= 0 } },
+    )
+
     private val httpClient = AikuHttpClient.create(
         apiBaseUrl = BuildConfig.AIKU_API_BASE_URL,
         appKey = BuildConfig.AIKU_APP_KEY,
@@ -74,6 +102,14 @@ class AppContainer(context: Context) {
     )
         .newBuilder()
         .addInterceptor(ScreenCacheInterceptor(cache = { screenCache }))
+        .addInterceptor(OfflineDownloadInterceptor(downloads = { offlineDownloads }, prefetcher = { offlinePrefetcher }))
+        .addInterceptor(
+            OfflineHeadersInterceptor(
+                deviceId = { offlineDevice.deviceId },
+                appVersion = OfflineHeadersInterceptor.appVersionOf(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+                clock = serverClock,
+            ),
+        )
         .build()
 
     private val mobileApi = OkHttpMobileApi(httpClient, BuildConfig.AIKU_API_BASE_URL)
@@ -106,6 +142,12 @@ class AppContainer(context: Context) {
     val searchApi: SearchApi = OkHttpSearchApi(mobileApi, httpClient)
 
     val warehouseDashboardApi: WarehouseDashboardApi = OkHttpWarehouseDashboardApi(mobileApi)
+
+    val offlineOperationsApi: io.aiku.droid.data.api.OfflineOperationsApi = io.aiku.droid.data.api.OkHttpOfflineOperationsApi(mobileApi)
+
+    val movementReasons = io.aiku.droid.ui.inventory.MovementReasonsMemory()
+
+    val offlineWork: OfflineWork by lazy { deviceOfflineWork }
 
     val images: ImageSource = RemoteImages(httpClient, BuildConfig.AIKU_API_BASE_URL)
 
@@ -184,7 +226,40 @@ class AppContainer(context: Context) {
         scope = applicationScope,
     )
 
+    private val offlineCipher = KeystoreCipher(OFFLINE_KEY_ALIAS)
+
+    private val offlineStore = SqliteOfflineStore(context.applicationContext)
+
+    private val offlineDownloads: OfflineDownloads = OfflineDownloads(store = offlineStore, cipher = offlineCipher, sessions = sessions)
+
+    private val offlineSyncApi: OfflineSyncApi = OkHttpOfflineSyncApi(client = { httpClient }, baseUrl = BuildConfig.AIKU_API_BASE_URL)
+
+    private val offlinePrefetcher: DownloadPrefetcher = DownloadPrefetcher(api = offlineSyncApi, downloads = offlineDownloads, scope = applicationScope)
+
+    private val connectivity = NetworkConnectivity(context.applicationContext)
+
+    private val offlineQueue = OfflineQueue(store = offlineStore, cipher = offlineCipher)
+
+    val offlineOpenRequests = OfflineOpenRequests()
+
+    private val deviceOfflineWork = DeviceOfflineWork(
+        actions = offlineQueue,
+        downloads = offlineDownloads,
+        engine = OfflineSyncEngine(queue = offlineQueue, device = offlineDevice, api = offlineSyncApi, sessions = sessions),
+        api = offlineSyncApi,
+        device = offlineDevice,
+        sessions = sessions,
+        clock = serverClock,
+        scheduler = WorkManagerSyncScheduler(context.applicationContext),
+        isOnline = connectivity.isOnline,
+        scope = applicationScope,
+        notices = OfflineNotices(context.applicationContext, workNotifications),
+    )
+
     init {
+        connectivity.start()
+        offlineDownloads.start(applicationScope)
+        deviceOfflineWork.start()
         if (sessions.session.value == null) {
             warehouseCache.clear()
             recentSearches.clear()
@@ -210,6 +285,8 @@ class AppContainer(context: Context) {
         const val UPDATE_PREFERENCES = "aiku_updates"
         const val ACCOUNT_LANGUAGE_PREFERENCES = "aiku_account_language"
         const val SESSION_KEY_ALIAS = "aiku_session_key"
+        const val OFFLINE_PREFERENCES = "aiku_offline"
+        const val OFFLINE_KEY_ALIAS = "aiku_offline_key"
         const val MAX_DEVICE_NAME_LENGTH = 100
     }
 }

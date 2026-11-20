@@ -1,68 +1,118 @@
 package io.aiku.droid.ui.sync
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.R
+import io.aiku.droid.data.offline.QueuedAction
+import io.aiku.droid.data.offline.QueuedActionState
 import io.aiku.droid.ui.components.AikuButton
+import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
+import io.aiku.droid.ui.components.ControlShape
+import io.aiku.droid.ui.components.EmptyState
+import io.aiku.droid.ui.components.EmptyTone
 import io.aiku.droid.ui.components.GroupLabel
-import io.aiku.droid.ui.components.ItemRow
+import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.RowDivider
-import io.aiku.droid.ui.components.Tone
-import io.aiku.droid.ui.components.fakeData
+import io.aiku.droid.ui.components.StatusBadge
+import io.aiku.droid.ui.components.lastUpdatedTime
+import io.aiku.droid.ui.goodsout.quantityText
+import io.aiku.droid.ui.locations.LIST_SEPARATOR
+import io.aiku.droid.ui.navigation.ConflictRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.ResolveConflictsRoute
-import io.aiku.droid.ui.navigation.SyncQueueRoute
 import io.aiku.droid.ui.theme.LocalAikuColors
+import java.time.Instant
+import java.time.ZoneId
+
+private const val QUANTITY = "quantity"
 
 @Composable
-fun SyncQueueScreen() {
+fun SyncQueueScreen(viewModel: SyncQueueViewModel) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val colors = LocalAikuColors.current
     val navigator = LocalAppNavigator.current
 
     AppScreen(
         header = { AppHeader(title = stringResource(R.string.sync_title), kicker = stringResource(R.string.sync_kicker)) },
         activeTab = MainTab.Menu,
-        footer = {
-            AikuButton(
-                text = SyncSamples.BACK_ONLINE,
-                onClick = { navigator.open(ResolveConflictsRoute) },
-                icon = R.drawable.ic_ui_next,
-                height = 52.dp,
-                modifier = Modifier.fillMaxWidth().fakeData(cornerRadius = 8.dp),
-            )
+        footer = if (state.isOnline && state.waitingCount > 0) {
+            {
+                AikuButton(
+                    text = stringResource(R.string.offline_stock_sync_now),
+                    onClick = viewModel::syncNow,
+                    height = 52.dp,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        } else {
+            null
         },
     ) {
-        OfflineStatusBar(text = SyncSamples.OFFLINE_STATUS, onView = { navigator.switchSection(SyncQueueRoute) })
-        Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
-            GroupLabel(text = stringResource(R.string.sync_waiting), modifier = Modifier.weight(1f))
-            Text(text = stringResource(R.string.sync_oldest_first), fontSize = 12.sp, color = colors.textTertiary, modifier = Modifier.padding(end = 4.dp))
+        if (!state.isOnline) {
+            InlineAlert(title = stringResource(R.string.offline_stock_offline_title), body = stringResource(R.string.offline_stock_offline_body), tone = AlertTone.Warn)
         }
-        ListGroup(modifier = Modifier.fakeData()) {
-            SyncSamples.waiting.forEachIndexed { index, action ->
-                if (index > 0) {
-                    RowDivider()
+        if (state.needsYouCount > 0) {
+            InlineAlert(
+                title = pluralStringResource(R.plurals.offline_stock_needs_you_count, state.needsYouCount, state.needsYouCount),
+                tone = AlertTone.Danger,
+                actionLabel = stringResource(R.string.offline_stock_resolve),
+                onAction = { navigator.open(ResolveConflictsRoute) },
+            )
+        }
+        if (state.isEmpty) {
+            EmptyState(
+                icon = R.drawable.ic_ui_check,
+                title = stringResource(R.string.offline_stock_queue_empty_title),
+                body = stringResource(R.string.offline_stock_queue_empty_body),
+                tone = EmptyTone.Success,
+            )
+        }
+        state.groups.forEach { group ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val groupTitle = recordTitle(group.record, group.title)
+                GroupLabel(text = groupTitle)
+                ListGroup {
+                    group.actions.forEachIndexed { index, action ->
+                        if (index > 0) {
+                            RowDivider()
+                        }
+                        QueueRow(
+                            action = action,
+                            onUndo = { viewModel.undo(action.localId) },
+                            onResolve = { navigator.open(ResolveConflictsRoute) },
+                            onOpen = action.result?.operationId
+                                ?.takeIf { action.state == QueuedActionState.APPLIED }
+                                ?.let { operationId -> { navigator.open(ConflictRoute(id = operationId, title = groupTitle)) } },
+                        )
+                    }
                 }
-                ItemRow(code = action.title, subtitle = action.subtitle, chip = action.chip, chipTone = Tone.Neutral, showPhoto = false)
             }
         }
-        GroupLabel(text = stringResource(R.string.sync_last_sync))
-        ListGroup(modifier = Modifier.fakeData()) {
-            ItemRow(code = SyncSamples.LAST_SYNC_TITLE, subtitle = SyncSamples.LAST_SYNC_SUBTITLE, chip = stringResource(R.string.sync_synced), chipTone = Tone.Success, showPhoto = false)
-        }
         Text(
-            text = stringResource(R.string.sync_explanation),
+            text = stringResource(R.string.offline_stock_queue_note),
             fontSize = 12.sp,
             lineHeight = 18.sp,
             color = colors.textQuaternary,
@@ -71,27 +121,50 @@ fun SyncQueueScreen() {
     }
 }
 
-internal data class QueuedAction(val title: String, val chip: String, val subtitle: String)
+@Composable
+private fun QueueRow(action: QueuedAction, onUndo: () -> Unit, onResolve: () -> Unit, onOpen: (() -> Unit)?) {
+    val colors = LocalAikuColors.current
+    val locale = LocalConfiguration.current.locales[0]
+    val needsYou = action.state == QueuedActionState.NEEDS_YOU
+    val quantity = action.payload.doubleField(QUANTITY)?.let { quantityText(it) }
+    val title = listOfNotNull(operationLabel(action.operation), quantity).joinToString(LIST_SEPARATOR)
+    val subtitle = listOfNotNull(
+        lastUpdatedTime(action.performedAt, Instant.now(), ZoneId.systemDefault(), locale),
+        action.result?.message?.takeIf { needsYou && it.isNotBlank() },
+    ).joinToString(LIST_SEPARATOR)
 
-internal object SyncSamples {
-    const val OFFLINE_STATUS = "Offline since 10:09 · 4 actions waiting"
-    const val BACK_ONLINE = "Back online · 2 conflicts to resolve"
-    const val LAST_SYNC_TITLE = "12 actions uploaded"
-    const val LAST_SYNC_SUBTITLE = "Version check passed · 09:58"
-    const val CONFLICTS_STATUS = "2 uploaded automatically · 2 need you"
-    const val ONLINE_ONLY_STATUS = "Offline · 4 actions waiting"
-    const val CONFLICTS_KICKER = "Back online · 2 of 4 uploaded"
-    const val CONFLICT_KICKER = "Conflict 1 of 2 · delivery note"
-    const val LINES_DIFFER = "2 of 4 lines"
-    const val ONLINE_ONLY_KICKER = "Delivery note · Wholesale"
-    const val PARCEL_TITLE = "Parcel 1"
-    const val PARCEL_SUBTITLE = "3.4 kg · 40 × 30 × 20 cm · saved offline"
-
-    val waiting = listOf(
-        QueuedAction("AR24811 · Picked 6 × SKO-00733", "Waiting", "A-03-02 · 10:12 · based on version of 10:05"),
-        QueuedAction("AR24811 · Not picked 2 × SKO-00953", "Waiting", "Out of stock · 10:14"),
-        QueuedAction("SKO-00733 · Audit A-03-02", "Waiting", "30 → 28 · Damaged stock · 10:20"),
-        QueuedAction("SDaw-0093 · Checked 108 × SKO-00412", "Waiting", "10:31"),
-    )
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .then(
+                when {
+                    needsYou -> Modifier.clickable(role = Role.Button, onClick = onResolve)
+                    onOpen != null -> Modifier.clickable(role = Role.Button, onClick = onOpen)
+                    else -> Modifier
+                },
+            )
+            .padding(start = 14.dp, end = 6.dp, top = 8.dp, bottom = 8.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(text = title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
+            Text(text = subtitle, fontSize = 12.sp, color = colors.textTertiary)
+        }
+        queuedStateLabel(action.state)?.let { (label, tone) -> StatusBadge(text = label, tone = tone) }
+        if (action.canUndo) {
+            Text(
+                text = stringResource(R.string.offline_stock_undo),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = colors.cautionInk,
+                modifier = Modifier
+                    .heightIn(min = 44.dp)
+                    .clip(ControlShape)
+                    .clickable(role = Role.Button, onClick = onUndo)
+                    .padding(horizontal = 10.dp, vertical = 12.dp),
+            )
+        }
+    }
 }
-

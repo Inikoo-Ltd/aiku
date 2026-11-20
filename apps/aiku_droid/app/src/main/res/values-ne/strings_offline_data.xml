@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">अफलाइन</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">अफलाइन · %d पर्खिँदै</item>
+        <item quantity="other">अफलाइन · %d पर्खिँदै</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">सिङ्क हुँदै: %d</item>
+        <item quantity="other">सिङ्क हुँदै: %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d मा तपाईंको ध्यान चाहिन्छ</item>
+        <item quantity="other">%d मा तपाईंको ध्यान चाहिन्छ</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d कार्यमा तपाईंको ध्यान चाहिन्छ</item>
+        <item quantity="other">%d कार्यहरूमा तपाईंको ध्यान चाहिन्छ</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">के गर्ने हेर्न Aiku खोल्नुहोस्।</string>
+    <string name="offline_sync_channel_name">अफलाइन सिङ्क</string>
+    <string name="offline_sync_channel_description">फोनमा सुरक्षित गरिएको काम Aiku मा पठाउँदा देखाइन्छ।</string>
+    <string name="offline_sync_sending">फोनमा सुरक्षित गरिएको काम पठाउँदै</string>
+    <string name="offline_sign_out_title">सिङ्कको प्रतीक्षामा काम</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">तपाईंको %d कार्य पर्खिरहेको छ; यो फोनमा फेरि साइन इन गर्दा यो पठाइनेछ।</item>
+        <item quantity="other">तपाईंका %d कार्यहरू पर्खिरहेका छन्; यो फोनमा फेरि साइन इन गर्दा यिनीहरू पठाइनेछन्।</item>
+    </plurals>
+</resources>

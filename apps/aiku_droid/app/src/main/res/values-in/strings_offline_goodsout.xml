@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">Offline · salinan tersimpan dari %1$s</string>
+    <string name="goodsout_offline_copy_body">Pekerjaan Anda pada surat jalan ini disimpan di ponsel ini dan dikirim saat Anda kembali online.</string>
+    <string name="goodsout_offline_saved">Tersimpan di ponsel ini. Disinkronkan saat Anda kembali online.</string>
+    <string name="goodsout_offline_waiting_to_sync">Menunggu sinkronisasi</string>
+    <string name="goodsout_offline_needs_you">Perlu Anda</string>
+    <string name="goodsout_offline_queued_group">Tersimpan di ponsel ini</string>
+    <string name="goodsout_offline_queued_pick">Diambil %1$s di %2$s</string>
+    <string name="goodsout_offline_queued_pick_plain">Diambil %1$s</string>
+    <string name="goodsout_offline_queued_not_picked">Tidak diambil %1$s</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">Menunggu gudang %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">Diteruskan ke CS %1$s</string>
+    <string name="goodsout_offline_queued_pack">Dikemas %1$s</string>
+    <string name="goodsout_offline_flush_waiting">Pekerjaan Anda pada surat jalan ini belum tersinkron. Coba lagi setelah tersinkron.</string>
+    <string name="goodsout_offline_flush_needs_you">Sebagian pekerjaan Anda pada surat jalan ini perlu Anda tangani dulu.</string>
+    <string name="goodsout_offline_scan_online_only">Perlu koneksi</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · menunggu sinkronisasi</string>
+    <string name="goodsout_offline_online_only_kicker">Perlu koneksi</string>
+    <string name="goodsout_offline_online_only_title">Ini memerlukan koneksi</string>
+    <string name="goodsout_offline_online_only_body">Memulai, menyelesaikan atau mengambil alih pekerjaan, pengemasan, finalisasi, pengiriman, dan sesi picking langsung diperiksa oleh Aiku, jadi hanya berfungsi saat online.</string>
+    <string name="goodsout_offline_online_only_waiting">Tindakan yang menunggu sinkronisasi di ponsel ini: %1$d. Semuanya aman dan dikirim begitu Anda kembali online.</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">Tidak ada pekerjaan Anda yang menunggu sinkronisasi di ponsel ini.</string>
+    <string name="goodsout_offline_online_only_back_online">Anda kembali online. Kembali untuk melanjutkan.</string>
+    <string name="goodsout_offline_online_only_view">Lihat pekerjaan yang menunggu</string>
+</resources>

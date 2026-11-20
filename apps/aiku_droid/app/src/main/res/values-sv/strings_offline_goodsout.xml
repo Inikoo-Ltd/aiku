@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">Offline · sparad kopia från %1$s</string>
+    <string name="goodsout_offline_copy_body">Ditt arbete med den här följesedeln finns kvar på telefonen och skickas när du är online igen.</string>
+    <string name="goodsout_offline_saved">Sparat på den här telefonen. Synkas när du är online igen.</string>
+    <string name="goodsout_offline_waiting_to_sync">Väntar på synk</string>
+    <string name="goodsout_offline_needs_you">Behöver dig</string>
+    <string name="goodsout_offline_queued_group">Sparat på den här telefonen</string>
+    <string name="goodsout_offline_queued_pick">Plockade %1$s på %2$s</string>
+    <string name="goodsout_offline_queued_pick_plain">Plockade %1$s</string>
+    <string name="goodsout_offline_queued_not_picked">Ej plockat %1$s</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">Väntar på lagret %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">Skickat till kundtjänst %1$s</string>
+    <string name="goodsout_offline_queued_pack">Packade %1$s</string>
+    <string name="goodsout_offline_flush_waiting">Ditt arbete med den här följesedeln har inte synkats än. Försök igen när det har gjort det.</string>
+    <string name="goodsout_offline_flush_needs_you">En del av ditt arbete med den här följesedeln behöver dig innan detta kan göras.</string>
+    <string name="goodsout_offline_scan_online_only">Kräver anslutning</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · väntar på synk</string>
+    <string name="goodsout_offline_online_only_kicker">Kräver anslutning</string>
+    <string name="goodsout_offline_online_only_title">Det här kräver en anslutning</string>
+    <string name="goodsout_offline_online_only_body">Att starta, avsluta eller ta över arbete, packning, slutförande, utskick och plocksessioner kontrolleras av Aiku direkt, så de fungerar bara online.</string>
+    <string name="goodsout_offline_online_only_waiting">Åtgärder som väntar på synk på den här telefonen: %1$d. De är säkra och skickas så fort du är online igen.</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">Inget från dig väntar på synk på den här telefonen.</string>
+    <string name="goodsout_offline_online_only_back_online">Du är online igen. Gå tillbaka för att fortsätta.</string>
+    <string name="goodsout_offline_online_only_view">Visa väntande arbete</string>
+</resources>

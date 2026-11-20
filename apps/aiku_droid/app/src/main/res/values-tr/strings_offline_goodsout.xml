@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">Çevrimdışı · %1$s tarihli kayıtlı kopya</string>
+    <string name="goodsout_offline_copy_body">Bu irsaliyedeki çalışmanız bu telefonda kalır ve yeniden çevrimiçi olduğunuzda gönderilir.</string>
+    <string name="goodsout_offline_saved">Bu telefona kaydedildi. Yeniden çevrimiçi olduğunuzda eşitlenir.</string>
+    <string name="goodsout_offline_waiting_to_sync">Eşitleme bekliyor</string>
+    <string name="goodsout_offline_needs_you">Sizi bekliyor</string>
+    <string name="goodsout_offline_queued_group">Bu telefona kaydedildi</string>
+    <string name="goodsout_offline_queued_pick">%2$s konumundan %1$s toplandı</string>
+    <string name="goodsout_offline_queued_pick_plain">%1$s toplandı</string>
+    <string name="goodsout_offline_queued_not_picked">%1$s toplanmadı</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">Depoyu bekliyor %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">Müşteri hizmetlerine iletildi %1$s</string>
+    <string name="goodsout_offline_queued_pack">%1$s paketlendi</string>
+    <string name="goodsout_offline_flush_waiting">Bu irsaliyedeki çalışmanız henüz eşitlenmedi. Eşitlendiğinde yeniden deneyin.</string>
+    <string name="goodsout_offline_flush_needs_you">Bu irsaliyedeki çalışmanızın bir kısmı, bu yapılmadan önce sizi bekliyor.</string>
+    <string name="goodsout_offline_scan_online_only">Bağlantı gerekiyor</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · eşitleme bekliyor</string>
+    <string name="goodsout_offline_online_only_kicker">Bağlantı gerekiyor</string>
+    <string name="goodsout_offline_online_only_title">Bunun için bağlantı gerekiyor</string>
+    <string name="goodsout_offline_online_only_body">İşi başlatma, bitirme veya devralma, paketleme, sonlandırma, sevkiyat ve toplama oturumları Aiku tarafından hemen kontrol edilir, bu yüzden yalnızca çevrimiçi çalışır.</string>
+    <string name="goodsout_offline_online_only_waiting">Bu telefonda eşitleme bekleyen işlemler: %1$d. Güvendeler ve yeniden çevrimiçi olur olmaz gönderilirler.</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">Bu telefonda sizden eşitleme bekleyen bir şey yok.</string>
+    <string name="goodsout_offline_online_only_back_online">Yeniden çevrimiçisiniz. Devam etmek için geri dönün.</string>
+    <string name="goodsout_offline_online_only_view">Bekleyen işleri gör</string>
+</resources>

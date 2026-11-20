@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">离线 · 保存于 %1$s 的副本</string>
+    <string name="goodsout_offline_copy_body">你在此发货单上的操作会保存在这部手机上，恢复网络后发送。</string>
+    <string name="goodsout_offline_saved">已保存在这部手机上。恢复网络后同步。</string>
+    <string name="goodsout_offline_waiting_to_sync">等待同步</string>
+    <string name="goodsout_offline_needs_you">需要你处理</string>
+    <string name="goodsout_offline_queued_group">已保存在这部手机上</string>
+    <string name="goodsout_offline_queued_pick">已在 %2$s 拣货 %1$s</string>
+    <string name="goodsout_offline_queued_pick_plain">已拣货 %1$s</string>
+    <string name="goodsout_offline_queued_not_picked">未拣货 %1$s</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">等待仓库 %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">已转交客服 %1$s</string>
+    <string name="goodsout_offline_queued_pack">已打包 %1$s</string>
+    <string name="goodsout_offline_flush_waiting">你在此发货单上的操作尚未同步。同步完成后再试。</string>
+    <string name="goodsout_offline_flush_needs_you">你在此发货单上的部分操作需要先处理，才能执行此操作。</string>
+    <string name="goodsout_offline_scan_online_only">需要网络连接</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · 等待同步</string>
+    <string name="goodsout_offline_online_only_kicker">需要网络连接</string>
+    <string name="goodsout_offline_online_only_title">此操作需要网络连接</string>
+    <string name="goodsout_offline_online_only_body">开始、完成或接手工作、打包、完成、发货以及拣货会话都由 Aiku 立即检查，因此只能在线使用。</string>
+    <string name="goodsout_offline_online_only_waiting">这部手机上等待同步的操作：%1$d。它们是安全的，恢复网络后会立即发送。</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">这部手机上没有你等待同步的操作。</string>
+    <string name="goodsout_offline_online_only_back_online">你已恢复网络。返回继续操作。</string>
+    <string name="goodsout_offline_online_only_view">查看等待中的操作</string>
+</resources>

@@ -25,6 +25,7 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private const val DATE_TIME_PATTERN = "d MMM HH:mm"
@@ -103,6 +104,24 @@ internal fun channelName(channel: String, fallback: String? = null): String? =
 
 internal fun quantityText(value: Double, label: String? = null): String =
     label?.takeIf { it.isNotBlank() } ?: decimalFormat().format(value)
+
+internal fun skoLabel(value: Double, packedIn: Double?, roundToUnits: Boolean = false): String? {
+    val perSko = packedIn?.roundToInt() ?: return null
+    val units = value * perSko
+    if (perSko <= 1 || value < 0 || (!roundToUnits && abs(units - units.roundToInt()) > SKO_LABEL_TOLERANCE)) {
+        return null
+    }
+    val wholeUnits = units.roundToInt()
+    val wholePacks = wholeUnits / perSko
+    val loose = wholeUnits % perSko
+    return when {
+        loose == 0 -> wholePacks.toString()
+        wholePacks == 0 -> "$loose/$perSko"
+        else -> "$wholePacks $loose/$perSko"
+    }
+}
+
+private const val SKO_LABEL_TOLERANCE = 0.001
 
 internal fun pluralQuantity(value: Double): Int = if (value == value.toInt().toDouble()) value.toInt() else PLURAL_FOR_FRACTION
 

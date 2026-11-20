@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Micșorați</string>
     <string name="stepper_increase">Măriți</string>
     <string name="switcher_current">%1$s · curent</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Aplicați · %1$s</string>
-    <string name="sync_both">Ambele</string>
-    <string name="sync_conflict_explanation">Fiecare linie diferită oferă Ale mele sau Aiku; cantitățile pot lua și Ambele (adunate, niciodată peste cât are nevoie linia). Alegerea dvs. apare completată.</string>
-    <string name="sync_conflicts_explanation">Ca la rezolvarea unei îmbinări: deschideți o înregistrare pentru a alege linie cu linie sau păstrați tot dintr-o parte. Nimic din ce renunțați nu se pierde: rămâne în istoricul de sincronizare.</string>
     <string name="sync_conflicts_title">Rezolvați conflictele</string>
-    <string name="sync_explanation">Munca la nivel de linie se salvează pe telefon cât timp sunteți offline: cules, necules, ambalare, verificare, plasare, audit, mutare. La reconectare, fiecare acțiune este comparată cu versiunea de la care a pornit: dacă nimic nu s-a schimbat în Aiku, se încarcă singură, altfel vă așteaptă în Rezolvați conflictele. Pontajul și schimbările de stare necesită conexiune.</string>
-    <string name="sync_keep_all_aiku">Păstrați toate din Aiku</string>
-    <string name="sync_keep_all_mine">Păstrați toate ale mele</string>
-    <string name="sync_kept_all_aiku">Au fost păstrate toate din Aiku</string>
-    <string name="sync_kept_all_mine">Au fost păstrate toate ale dvs.</string>
     <string name="sync_kicker">Profil</string>
-    <string name="sync_last_sync">Ultima sincronizare</string>
-    <string name="sync_lines_differ">Linii care diferă</string>
-    <string name="sync_mine">Ale mele</string>
-    <string name="sync_no_conflict">Niciun conflict</string>
     <string name="sync_now_in_aiku">Acum în Aiku</string>
-    <string name="sync_oldest_first">cele mai vechi primele</string>
-    <string name="sync_online_only_body">Expedițiile, etichetele, finalizarea, expedierea, anularea și Marcați ca recepționat comunică cu transportatori, imprimante sau clienți, deci funcționează doar online. Culesul și ambalarea dvs. sunt salvate și se încarcă atunci când reveniți online.</string>
-    <string name="sync_online_only_note">Butonul principal revine imediat ce telefonul este online și coada s-a sincronizat.</string>
-    <string name="sync_online_only_title">Finalizarea necesită conexiune</string>
-    <string name="sync_resolve_all">Rezolvați totul deodată</string>
-    <string name="sync_same_on_both">La fel în ambele părți</string>
-    <string name="sync_synced">Sincronizat</string>
     <string name="sync_title">Offline și sincronizare</string>
-    <string name="sync_use_aiku_for_all">Folosiți Aiku pentru toate</string>
-    <string name="sync_use_mine_for_all">Folosiți-le pe ale mele pentru toate</string>
-    <string name="sync_view">Vizualizați</string>
-    <string name="sync_waiting">Așteaptă încărcarea</string>
     <string name="sync_yours">Ale dvs.</string>
     <string name="tab_home">Acasă</string>
     <string name="tab_inbox">Inbox</string>
@@ -2556,20 +2531,5 @@
         <item quantity="one">%d acțiune</item>
         <item quantity="few">%d acțiuni</item>
         <item quantity="other">%d de acțiuni</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">Aiku: %1$d</item>
-        <item quantity="few">Aiku: %1$d</item>
-        <item quantity="other">Aiku: %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">Ambele: %1$d</item>
-        <item quantity="few">Ambele: %1$d</item>
-        <item quantity="other">Ambele: %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">Ale mele: %1$d</item>
-        <item quantity="few">Ale mele: %1$d</item>
-        <item quantity="other">Ale mele: %1$d</item>
     </plurals>
 </resources>

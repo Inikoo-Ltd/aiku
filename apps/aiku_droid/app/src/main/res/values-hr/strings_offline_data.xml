@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Izvan mreže</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Izvan mreže · %d čeka</item>
+        <item quantity="few">Izvan mreže · %d čekaju</item>
+        <item quantity="other">Izvan mreže · %d čeka</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">Sinkronizacija: %d</item>
+        <item quantity="few">Sinkronizacija: %d</item>
+        <item quantity="other">Sinkronizacija: %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d traži vašu pažnju</item>
+        <item quantity="few">%d traže vašu pažnju</item>
+        <item quantity="other">%d traži vašu pažnju</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d radnja traži vašu pažnju</item>
+        <item quantity="few">%d radnje traže vašu pažnju</item>
+        <item quantity="other">%d radnji traži vašu pažnju</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Otvorite Aiku da vidite što učiniti.</string>
+    <string name="offline_sync_channel_name">Sinkronizacija izvan mreže</string>
+    <string name="offline_sync_channel_description">Prikazuje se dok se rad spremljen na telefonu šalje u Aiku.</string>
+    <string name="offline_sync_sending">Slanje rada spremljenog na telefonu</string>
+    <string name="offline_sign_out_title">Rad čeka sinkronizaciju</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">%d vaša radnja čeka; poslat će se kada se ponovno prijavite na ovom telefonu.</item>
+        <item quantity="few">%d vaše radnje čekaju; poslat će se kada se ponovno prijavite na ovom telefonu.</item>
+        <item quantity="other">%d vaših radnji čeka; poslat će se kada se ponovno prijavite na ovom telefonu.</item>
+    </plurals>
+</resources>

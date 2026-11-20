@@ -103,6 +103,8 @@ internal fun PackLineSheet(
     writeErrors: Map<String, List<String>>,
     onAct: (DeliveryNoteWrite) -> Unit,
     onDismiss: () -> Unit,
+    queued: List<QueuedLineWork> = emptyList(),
+    onUndoQueued: (Long) -> Unit = {},
 ) {
     var step by remember { mutableStateOf(PackLineStep.Main) }
     val code = line.orgStock?.code?.takeIf { it.isNotBlank() } ?: stringResource(R.string.goodsout_line_unknown_sko)
@@ -129,6 +131,8 @@ internal fun PackLineSheet(
             onAct = onAct,
             onUnpack = { step = PackLineStep.ConfirmUnpack },
             onDismiss = onDismiss,
+            queued = queued,
+            onUndoQueued = onUndoQueued,
         )
     }
 }
@@ -144,6 +148,8 @@ private fun PackLineContent(
     onAct: (DeliveryNoteWrite) -> Unit,
     onUnpack: () -> Unit,
     onDismiss: () -> Unit,
+    queued: List<QueuedLineWork>,
+    onUndoQueued: (Long) -> Unit,
 ) {
     var pending by remember { mutableStateOf<PackLineWrite?>(null) }
     val canPack = note.stage == DeliveryNoteStage.Packing && line.quantityToPack > 0.0
@@ -179,6 +185,7 @@ private fun PackLineContent(
                 },
             )
         }
+        QueuedWorkGroup(work = queued, line = line, onUndo = onUndoQueued)
         if (line.quantityPacked > 0.0) {
             AikuButton(
                 text = stringResource(R.string.goodsout_unpack),

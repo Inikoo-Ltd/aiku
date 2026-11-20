@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">Izvan mreže · spremljena kopija od %1$s</string>
+    <string name="goodsout_offline_copy_body">Vaš rad na ovoj otpremnici ostaje na ovom telefonu i šalje se kad ponovno budete na mreži.</string>
+    <string name="goodsout_offline_saved">Spremljeno na ovom telefonu. Sinkronizira se kad ponovno budete na mreži.</string>
+    <string name="goodsout_offline_waiting_to_sync">Čeka sinkronizaciju</string>
+    <string name="goodsout_offline_needs_you">Treba vas</string>
+    <string name="goodsout_offline_queued_group">Spremljeno na ovom telefonu</string>
+    <string name="goodsout_offline_queued_pick">Prikupljeno %1$s na %2$s</string>
+    <string name="goodsout_offline_queued_pick_plain">Prikupljeno %1$s</string>
+    <string name="goodsout_offline_queued_not_picked">Nije prikupljeno %1$s</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">Čeka skladište %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">Proslijeđeno korisničkoj službi %1$s</string>
+    <string name="goodsout_offline_queued_pack">Zapakirano %1$s</string>
+    <string name="goodsout_offline_flush_waiting">Vaš rad na ovoj otpremnici još nije sinkroniziran. Pokušajte ponovno kad bude.</string>
+    <string name="goodsout_offline_flush_needs_you">Dio vašeg rada na ovoj otpremnici treba vas prije nego što ovo bude moguće.</string>
+    <string name="goodsout_offline_scan_online_only">Treba vezu</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · čeka sinkronizaciju</string>
+    <string name="goodsout_offline_online_only_kicker">Treba vezu</string>
+    <string name="goodsout_offline_online_only_title">Za ovo je potrebna veza</string>
+    <string name="goodsout_offline_online_only_body">Početak, završetak ili preuzimanje posla, pakiranje, finalizaciju, otpremu i sesije prikupljanja Aiku provjerava odmah, pa rade samo na mreži.</string>
+    <string name="goodsout_offline_online_only_waiting">Radnje koje na ovom telefonu čekaju sinkronizaciju: %1$d. Sigurne su i šalju se čim ponovno budete na mreži.</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">Ništa vaše ne čeka sinkronizaciju na ovom telefonu.</string>
+    <string name="goodsout_offline_online_only_back_online">Ponovno ste na mreži. Vratite se za nastavak.</string>
+    <string name="goodsout_offline_online_only_view">Pogledaj rad na čekanju</string>
+</resources>

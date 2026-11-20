@@ -136,6 +136,7 @@ private fun ScanToPickContent(viewModel: DeliveryNoteViewModel, state: DeliveryN
         },
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.goodsout_note_refresh_failed_title), onRetry = viewModel::retry) }
+        state.offlineCopy?.let { OfflineCopyNotice(copy = it) }
         if (!canScan) {
             InlineAlert(title = stringResource(R.string.goodsout_scan_unavailable_title), body = stringResource(R.string.goodsout_scan_unavailable_body), tone = AlertTone.Info)
         } else {
@@ -229,7 +230,12 @@ internal fun ScanLog(entries: List<ScanLogEntry>, notFoundLabel: String = string
 
 @Composable
 private fun scanLogChip(entry: ScanLogEntry, notFoundLabel: String): Pair<String, Tone> = when (entry.status) {
-    ScanPickStatus.PICKED, ScanPackStatus.PACKED -> stringResource(R.string.goodsout_scan_plus, quantityText(entry.quantity)) to Tone.Success
+    ScanPickStatus.PICKED, ScanPackStatus.PACKED -> if (entry.isQueued) {
+        stringResource(R.string.goodsout_offline_scan_queued, quantityText(entry.quantity)) to Tone.Warn
+    } else {
+        stringResource(R.string.goodsout_scan_plus, quantityText(entry.quantity)) to Tone.Success
+    }
+    ScanLogStatus.ONLINE_ONLY -> stringResource(R.string.goodsout_offline_scan_online_only) to Tone.Warn
     ScanPickStatus.ALREADY_PICKED, ScanPackStatus.ALREADY_PACKED, ScanPackStatus.NOTHING_TO_PACK -> stringResource(R.string.goodsout_scan_nothing_left_chip) to Tone.Warn
     ScanPickStatus.NO_STOCK -> stringResource(R.string.goodsout_scan_no_stock) to Tone.Danger
     ScanPickStatus.NOT_FOUND -> notFoundLabel to Tone.Danger

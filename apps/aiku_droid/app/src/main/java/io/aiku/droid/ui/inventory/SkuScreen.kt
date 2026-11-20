@@ -54,6 +54,10 @@ import io.aiku.droid.ui.navigation.LocationSkuRoute
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.StockHistoryRoute
 import io.aiku.droid.ui.states.SessionExpiredScreen
+import io.aiku.droid.ui.sync.OfflineCopyNote
+import io.aiku.droid.ui.sync.QueueEventEffect
+import io.aiku.droid.ui.sync.QueuedActionsBlock
+import io.aiku.droid.ui.sync.QueuedRow
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 private data class StockActionButtonSpec(val action: SkoAction, @StringRes val label: Int, @DrawableRes val icon: Int)
@@ -104,6 +108,7 @@ private fun SkuContent(state: SkoUiState, sko: SkoViewModel, code: String) {
         }
         sko.eventHandled()
     }
+    QueueEventEffect(event = state.queueEvent, reference = shownCode, onHandled = sko::queueEventHandled, onQueued = { openSheet = null })
 
     AppScreen(
         header = {
@@ -127,6 +132,10 @@ private fun SkuContent(state: SkoUiState, sko: SkoViewModel, code: String) {
         showBar = true,
         refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = sko::refresh, isEnabled = !state.isWorking),
     ) {
+        state.copyAt?.let { OfflineCopyNote(copyAt = it) }
+        if (detail != null) {
+            QueuedActionsBlock(rows = state.pending.map { QueuedRow(it, skoQueuedText(it, detail)) }, onUndo = sko::undoQueued)
+        }
         when {
             detail != null -> SkuBlocks(detail = detail, state = state, actions = actions, onAction = { openSheet = it })
             state.problem != null -> StockLoadProblem(problem = state.problem, title = stringResource(R.string.inventory_sko_failed), onRetry = sko::retry)

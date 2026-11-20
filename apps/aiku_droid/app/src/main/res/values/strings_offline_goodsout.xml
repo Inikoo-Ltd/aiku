@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">Offline · saved copy from %1$s</string>
+    <string name="goodsout_offline_copy_body">Your work on this note is kept on this phone and sent when you are back online.</string>
+    <string name="goodsout_offline_saved">Saved on this phone. It syncs when you are back online.</string>
+    <string name="goodsout_offline_waiting_to_sync">Waiting to sync</string>
+    <string name="goodsout_offline_needs_you">Needs you</string>
+    <string name="goodsout_offline_queued_group">Saved on this phone</string>
+    <string name="goodsout_offline_queued_pick">Picked %1$s at %2$s</string>
+    <string name="goodsout_offline_queued_pick_plain">Picked %1$s</string>
+    <string name="goodsout_offline_queued_not_picked">Not picked %1$s</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">Waiting for the warehouse %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">Passed to customer services %1$s</string>
+    <string name="goodsout_offline_queued_pack">Packed %1$s</string>
+    <string name="goodsout_offline_flush_waiting">Your work on this note has not synced yet. Try again once it has.</string>
+    <string name="goodsout_offline_flush_needs_you">Some of your work on this note needs you before this can be done.</string>
+    <string name="goodsout_offline_scan_online_only">Needs a connection</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · waiting to sync</string>
+    <string name="goodsout_offline_online_only_kicker">Needs a connection</string>
+    <string name="goodsout_offline_online_only_title">This needs a connection</string>
+    <string name="goodsout_offline_online_only_body">Starting, finishing or taking over work, packing, finalising, dispatch and picking sessions are checked by Aiku straight away, so they only work online.</string>
+    <string name="goodsout_offline_online_only_waiting">Actions waiting to sync on this phone: %1$d. They are safe and are sent as soon as you are back online.</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">Nothing from you is waiting to sync on this phone.</string>
+    <string name="goodsout_offline_online_only_back_online">You are back online. Go back to carry on.</string>
+    <string name="goodsout_offline_online_only_view">View waiting work</string>
+</resources>

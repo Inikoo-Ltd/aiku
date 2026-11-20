@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Zmniejsz</string>
     <string name="stepper_increase">Zwiększ</string>
     <string name="switcher_current">%1$s · bieżący</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Zastosuj · %1$s</string>
-    <string name="sync_both">Obydwa</string>
-    <string name="sync_conflict_explanation">Każdy różniący się wiersz oferuje Moje lub Aiku; dla ilości można też wybrać Oba (zsumowane, ale nigdy więcej, niż wiersz potrzebuje). Twój wybór jest wypełniony.</string>
-    <string name="sync_conflicts_explanation">Jak przy scalaniu zmian: otwórz rekord, aby wybierać wiersz po wierszu, albo zachowaj wszystko z jednej strony. Nic, co odrzucisz, nie przepada: zostaje w historii synchronizacji.</string>
     <string name="sync_conflicts_title">Rozwiąż konflikty</string>
-    <string name="sync_explanation">Praca na poziomie wierszy jest zapisywana na telefonie w trybie offline: kompletowanie, nieskompletowane, pakowanie, sprawdzanie, rozlokowanie, audyt, przenoszenie. Po ponownym połączeniu każda czynność jest porównywana z wersją, od której się zaczęła: jeśli w Aiku nic się nie zmieniło, wysyła się sama, w przeciwnym razie czeka na Ciebie w sekcji Rozwiąż konflikty. Rejestracja czasu pracy i zmiany statusu wymagają połączenia.</string>
-    <string name="sync_keep_all_aiku">Zachowaj wszystkie z Aiku</string>
-    <string name="sync_keep_all_mine">Zachowaj wszystkie moje</string>
-    <string name="sync_kept_all_aiku">Zachowano wszystkie z Aiku</string>
-    <string name="sync_kept_all_mine">Zachowano wszystkie Twoje</string>
     <string name="sync_kicker">Profil</string>
-    <string name="sync_last_sync">Ostatnia synchronizacja</string>
-    <string name="sync_lines_differ">Różniące się wiersze</string>
-    <string name="sync_mine">Moje</string>
-    <string name="sync_no_conflict">Brak konfliktu</string>
     <string name="sync_now_in_aiku">Obecnie w Aiku</string>
-    <string name="sync_oldest_first">od najstarszych</string>
-    <string name="sync_online_only_body">Przesyłki, etykiety, zakończenie, wysyłka, anulowanie i Oznacz jako otrzymane komunikują się z przewoźnikami, drukarkami lub klientami, więc działają tylko online. Twoje kompletowanie i pakowanie są zapisane i zostaną wysłane, gdy wrócisz do sieci.</string>
-    <string name="sync_online_only_note">Główny przycisk wróci, gdy tylko telefon będzie online, a kolejka się zsynchronizuje.</string>
-    <string name="sync_online_only_title">Zakończenie wymaga połączenia</string>
-    <string name="sync_resolve_all">Rozwiąż wszystko naraz</string>
-    <string name="sync_same_on_both">Tak samo po obu stronach</string>
-    <string name="sync_synced">Zsynchronizowano</string>
     <string name="sync_title">Offline i synchronizacja</string>
-    <string name="sync_use_aiku_for_all">Użyj Aiku dla wszystkich</string>
-    <string name="sync_use_mine_for_all">Użyj moich dla wszystkich</string>
-    <string name="sync_view">Wyświetl</string>
-    <string name="sync_waiting">Czeka na wysłanie</string>
     <string name="sync_yours">Twoje</string>
     <string name="tab_home">Strona główna</string>
     <string name="tab_inbox">Skrzynka odbiorcza</string>
@@ -2665,23 +2640,5 @@
         <item quantity="few">%d czynności</item>
         <item quantity="many">%d czynności</item>
         <item quantity="other">%d czynności</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">Aiku: %1$d</item>
-        <item quantity="few">Aiku: %1$d</item>
-        <item quantity="many">Aiku: %1$d</item>
-        <item quantity="other">Aiku: %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">Oba: %1$d</item>
-        <item quantity="few">Oba: %1$d</item>
-        <item quantity="many">Oba: %1$d</item>
-        <item quantity="other">Oba: %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">Moje: %1$d</item>
-        <item quantity="few">Moje: %1$d</item>
-        <item quantity="many">Moje: %1$d</item>
-        <item quantity="other">Moje: %1$d</item>
     </plurals>
 </resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Offline</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="other">Offline · %d menunggu</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="other">Menyinkronkan %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="other">%d perlu tindakan Anda</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="other">%d tindakan perlu perhatian Anda</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Buka Aiku untuk melihat apa yang harus dilakukan.</string>
+    <string name="offline_sync_channel_name">Sinkronisasi offline</string>
+    <string name="offline_sync_channel_description">Ditampilkan saat pekerjaan yang disimpan di ponsel dikirim ke Aiku.</string>
+    <string name="offline_sync_sending">Mengirim pekerjaan yang disimpan di ponsel</string>
+    <string name="offline_sign_out_title">Pekerjaan menunggu sinkronisasi</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="other">%d tindakan Anda sedang menunggu; akan dikirim saat Anda masuk lagi di ponsel ini.</item>
+    </plurals>
+</resources>

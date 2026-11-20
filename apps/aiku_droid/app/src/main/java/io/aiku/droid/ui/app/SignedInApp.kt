@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -20,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -35,6 +37,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import io.aiku.droid.AppContainer
+import io.aiku.droid.data.offline.SyncReason
 import io.aiku.droid.R
 import io.aiku.droid.data.api.ChatContextKind
 import io.aiku.droid.data.api.DeliveryNoteBucket
@@ -72,9 +75,12 @@ import io.aiku.droid.ui.clocking.OvertimeViewModel
 import io.aiku.droid.ui.clocking.TimesheetDayScreen
 import io.aiku.droid.ui.clocking.TimesheetsScreen
 import io.aiku.droid.ui.components.AikuButton
+import io.aiku.droid.ui.components.ButtonLook
 import io.aiku.droid.ui.components.ButtonStyle
+import io.aiku.droid.ui.components.ConfirmDialog
 import io.aiku.droid.ui.components.FullScreenMessage
 import io.aiku.droid.ui.components.LocalImageSource
+import io.aiku.droid.ui.components.LocalOfflineIndicator
 import io.aiku.droid.ui.components.LocalTabHandoff
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.TabHandoff
@@ -284,9 +290,13 @@ import io.aiku.droid.ui.states.ServerErrorScreen
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.states.StatePreviewScreen
 import io.aiku.droid.ui.sync.ConflictScreen
+import io.aiku.droid.ui.sync.OnlineOnlyGate
 import io.aiku.droid.ui.sync.OnlineOnlyScreen
+import io.aiku.droid.ui.sync.ConflictViewModel
 import io.aiku.droid.ui.sync.ResolveConflictsScreen
+import io.aiku.droid.ui.sync.ResolveConflictsViewModel
 import io.aiku.droid.ui.sync.SyncQueueScreen
+import io.aiku.droid.ui.sync.SyncQueueViewModel
 import io.aiku.droid.ui.theme.Appearance
 import java.time.LocalDate
 
@@ -344,7 +354,9 @@ private fun WarehouseApp(
 ) {
     val clockingViewModel: ClockingViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { ClockingViewModel(container.clockingApi, container.sessions, container.screenCache) }
+            initializer {
+                ClockingViewModel(container.clockingApi, container.sessions, container.screenCache, onClockedOut = { container.offlineWork.syncNow(SyncReason.CLOCK_OUT) })
+            }
         },
     )
     val leaveViewModel: LeaveViewModel = viewModel(
@@ -388,13 +400,23 @@ private fun WarehouseApp(
     val toasts = remember { ToastState() }
     var isSwitcherOpen by remember { mutableStateOf(false) }
     var isReportOpen by remember { mutableStateOf(false) }
+    var signOutWaiting by remember { mutableIntStateOf(0) }
     val navigator = remember(navController) {
         NavControllerNavigator(
             navController = navController,
             onShowSwitcher = { isSwitcherOpen = true },
             onShowReport = { isReportOpen = true },
-            onSignOut = onSignOut,
+            onSignOut = {
+                val waiting = container.offlineWork.waitingCount.value
+                if (!container.offlineWork.isOnline.value && waiting > 0) signOutWaiting = waiting else onSignOut()
+            },
         )
+    }
+    val offlineOpen by container.offlineOpenRequests.isPending.collectAsStateWithLifecycle()
+    LaunchedEffect(offlineOpen) {
+        if (container.offlineOpenRequests.take()) {
+            navigator.open(ResolveConflictsRoute)
+        }
     }
     val resources = LocalResources.current
     val currentWarehouses by rememberUpdatedState(warehouses)
@@ -443,6 +465,7 @@ private fun WarehouseApp(
         LocalScanController provides container.scans,
         LocalImageSource provides container.images,
         LocalInventoryServices provides remember(container) { InventoryServices(container.inventoryApi, container.sessions) },
+        LocalOfflineIndicator provides container.offlineWork,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AppNavHost(
@@ -472,6 +495,19 @@ private fun WarehouseApp(
         }
         if (isReportOpen) {
             ReportProblemSheet(onDismiss = { isReportOpen = false })
+        }
+        if (signOutWaiting > 0) {
+            ConfirmDialog(
+                title = stringResource(R.string.offline_sign_out_title),
+                body = pluralStringResource(R.plurals.offline_sign_out_body, signOutWaiting, signOutWaiting),
+                confirmLabel = stringResource(R.string.sign_out),
+                onConfirm = {
+                    signOutWaiting = 0
+                    onSignOut()
+                },
+                onDismiss = { signOutWaiting = 0 },
+                confirmLook = ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_log_out),
+            )
         }
     }
 }
@@ -558,10 +594,21 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
             val changePasswordState by changePasswordViewModel.state.collectAsStateWithLifecycle()
             ChangePasswordScreen(state = changePasswordState, actions = changePasswordViewModel)
         }
-        composable<SyncQueueRoute> { SyncQueueScreen() }
-        composable<ResolveConflictsRoute> { ResolveConflictsScreen() }
-        composable<ConflictRoute> { entry -> entry.toRoute<ConflictRoute>().let { route -> ConflictScreen(route.reference) } }
-        composable<OnlineOnlyRoute> { entry -> entry.toRoute<OnlineOnlyRoute>().let { route -> OnlineOnlyScreen(route.reference) } }
+        composable<SyncQueueRoute> {
+            SyncQueueScreen(viewModel(factory = viewModelFactory { initializer { SyncQueueViewModel(container.offlineWork, container.offlineOperationsApi, container.sessions) } }))
+        }
+        composable<ResolveConflictsRoute> {
+            ResolveConflictsScreen(viewModel(factory = viewModelFactory { initializer { ResolveConflictsViewModel(container.offlineOperationsApi, container.sessions) } }))
+        }
+        composable<ConflictRoute> { entry ->
+            val route = entry.toRoute<ConflictRoute>()
+            val conflict: ConflictViewModel = viewModel(
+                key = "conflict-${route.id}",
+                factory = viewModelFactory { initializer { ConflictViewModel(container.offlineOperationsApi, container.sessions, container.offlineWork, route.id) } },
+            )
+            ConflictScreen(conflict, route.title)
+        }
+        composable<OnlineOnlyRoute> { entry -> entry.toRoute<OnlineOnlyRoute>().let { route -> OnlineOnlyScreen(route.reference, container.offlineWork) } }
         composable<StatePreviewRoute> { entry -> entry.toRoute<StatePreviewRoute>().let { route -> StatePreviewScreen(route.kind) } }
         composable<NotDesignedRoute> { entry -> entry.toRoute<NotDesignedRoute>().let { route -> NotDesignedScreen(route.title) } }
         composable<InventoryDashboardRoute> {
@@ -599,7 +646,16 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
             val route = entry.toRoute<SkuRoute>()
             val sko: SkoViewModel = viewModel(
                 key = "sko-$currentWarehouseId-${route.id}",
-                factory = viewModelFactory { initializer { SkoViewModel(container.inventoryApi, container.sessions, currentWarehouseId, route.id) } },
+                factory = viewModelFactory { initializer {
+                        SkoViewModel(
+                            container.inventoryApi,
+                            container.sessions,
+                            currentWarehouseId,
+                            route.id,
+                            offlineWork = container.offlineWork,
+                            reasonsMemory = container.movementReasons,
+                        )
+                    } },
             )
             SkuScreen(sko = sko, code = route.code)
         }
@@ -690,7 +746,7 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
             val route = entry.toRoute<GoodsInReturnRoute>()
             val customerReturn: ReturnViewModel = viewModel(
                 key = "return-$currentWarehouseId-${route.id}",
-                factory = viewModelFactory { initializer { ReturnViewModel(container.goodsInApi, container.sessions, currentWarehouseId, route.id) } },
+                factory = viewModelFactory { initializer { ReturnViewModel(container.goodsInApi, container.sessions, currentWarehouseId, route.id, container.offlineWork) } },
             )
             GoodsInReturnScreen(customerReturn = customerReturn, reference = route.reference)
         }
@@ -769,22 +825,32 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
                 key = "picking-sessions-$currentWarehouseId",
                 factory = viewModelFactory { initializer { PickingSessionsViewModel(container.pickingSessionApi, container.sessions, currentWarehouseId) } },
             )
-            PickingSessionsScreen(sessions = sessions)
+            OnlineOnlyGate(reference = stringResource(R.string.section_picking_sessions), offlineWork = container.offlineWork) { PickingSessionsScreen(sessions = sessions) }
         }
         composable<PickingSessionRoute> { entry ->
-            entry.toRoute<PickingSessionRoute>().let { route -> PickingSessionScreen(rememberPickingSession(container, route.id, currentWarehouseId), route.reference) }
+            entry.toRoute<PickingSessionRoute>().let { route ->
+                OnlineOnlyGate(reference = route.reference, offlineWork = container.offlineWork) {
+                    PickingSessionScreen(rememberPickingSession(container, route.id, currentWarehouseId), route.reference)
+                }
+            }
         }
         composable<PickByLocationRoute> { entry ->
             entry.toRoute<PickByLocationRoute>().let { route ->
-                PickByLocationScreen(
-                    session = rememberPickingSession(container, route.id, currentWarehouseId),
-                    reference = route.reference,
-                    rememberNote = { id -> rememberDeliveryNote(container, id) },
-                )
+                OnlineOnlyGate(reference = route.reference, offlineWork = container.offlineWork) {
+                    PickByLocationScreen(
+                        session = rememberPickingSession(container, route.id, currentWarehouseId),
+                        reference = route.reference,
+                        rememberNote = { id -> rememberDeliveryNote(container, id) },
+                    )
+                }
             }
         }
         composable<PackByScanRoute> { entry ->
-            entry.toRoute<PackByScanRoute>().let { route -> PackByScanScreen(rememberPickingSession(container, route.id, currentWarehouseId), route.reference) }
+            entry.toRoute<PackByScanRoute>().let { route ->
+                OnlineOnlyGate(reference = route.reference, offlineWork = container.offlineWork) {
+                    PackByScanScreen(rememberPickingSession(container, route.id, currentWarehouseId), route.reference)
+                }
+            }
         }
         composable<TrolleysRoute> {
             val trolleys: EquipmentListViewModel<Trolley> = viewModel(
@@ -838,7 +904,9 @@ private fun rememberAreas(container: AppContainer, warehouseId: Long): AreasView
 @Composable
 private fun rememberLocation(container: AppContainer, warehouseId: Long, locationId: Long): LocationViewModel = viewModel(
     key = "location-$warehouseId-$locationId",
-    factory = viewModelFactory { initializer { LocationViewModel(container.inventoryApi, container.sessions, warehouseId, locationId) } },
+    factory = viewModelFactory { initializer {
+        LocationViewModel(container.inventoryApi, container.sessions, warehouseId, locationId, container.offlineWork, container.movementReasons)
+    } },
 )
 
 @Composable
@@ -846,7 +914,15 @@ private fun rememberStockDelivery(container: AppContainer, warehouseId: Long, st
     key = "stock-delivery-$warehouseId-$stockDeliveryId",
     factory = viewModelFactory {
         initializer {
-            StockDeliveryViewModel(container.goodsInApi, container.inventoryApi, container.sessions, warehouseId, stockDeliveryId, container.stockDeliveryHandoff)
+            StockDeliveryViewModel(
+                container.goodsInApi,
+                container.inventoryApi,
+                container.sessions,
+                warehouseId,
+                stockDeliveryId,
+                container.stockDeliveryHandoff,
+                container.offlineWork,
+            )
         }
     },
 )
@@ -854,7 +930,9 @@ private fun rememberStockDelivery(container: AppContainer, warehouseId: Long, st
 @Composable
 private fun rememberDeliveryNote(container: AppContainer, deliveryNoteId: Long): DeliveryNoteViewModel = viewModel(
     key = "delivery-note-$deliveryNoteId",
-    factory = viewModelFactory { initializer { DeliveryNoteViewModel(container.goodsOutApi, container.sessions, deliveryNoteId, container.deliveryNoteHandoff) } },
+    factory = viewModelFactory {
+        initializer { DeliveryNoteViewModel(container.goodsOutApi, container.sessions, deliveryNoteId, container.deliveryNoteHandoff, offline = container.offlineWork) }
+    },
 )
 
 @Composable

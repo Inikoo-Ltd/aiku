@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.aiku.droid.data.api.CheckResult
 import io.aiku.droid.data.api.GoodsInApi
+import io.aiku.droid.data.api.GoodsInResponses
 import io.aiku.droid.data.api.GoodsInWriteStatus
 import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.InventoryApi
@@ -11,19 +12,32 @@ import io.aiku.droid.data.api.PlaceTarget
 import io.aiku.droid.data.api.ScanMatch
 import io.aiku.droid.data.api.StockDelivery
 import io.aiku.droid.data.api.StockDeliveryWrite
+import io.aiku.droid.data.offline.NoOfflineWork
+import io.aiku.droid.data.offline.OfflineOperation
+import io.aiku.droid.data.offline.OfflineRecordKey
+import io.aiku.droid.data.offline.OfflineRecordType
+import io.aiku.droid.data.offline.OfflineWork
+import io.aiku.droid.data.offline.QueuedAction
+import io.aiku.droid.data.offline.QueuedActionState
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.goodsout.problem
 import io.aiku.droid.ui.inventory.LocationFinder
 import io.aiku.droid.ui.scan.ScanProblem
 import io.aiku.droid.ui.scan.scanProblem
+import io.aiku.droid.ui.sync.QueueEvent
+import io.aiku.droid.ui.sync.RecordQueue
+import io.aiku.droid.ui.sync.StatusGate
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.UUID
+import kotlinx.serialization.json.JsonObject
+import java.time.Instant
+
+private const val HTTP_OK = 200
 
 sealed interface GoodsInEvent {
     data class Done(val action: Any, val message: String?, val isNothingChanged: Boolean, val wasRaised: Boolean = false) : GoodsInEvent
@@ -50,6 +64,9 @@ data class StockDeliveryUiState(
     val unsurePlacement: StockDeliveryWrite? = null,
     val lookingUpCode: String? = null,
     val scanOutcome: LineScanOutcome? = null,
+    val pending: List<QueuedAction> = emptyList(),
+    val copyAt: Instant? = null,
+    val queueEvent: QueueEvent? = null,
 ) {
     val isWorking: Boolean get() = working != null
 
@@ -93,10 +110,15 @@ class StockDeliveryViewModel(
     private val warehouseId: Long,
     private val stockDeliveryId: Long,
     private val handoff: StockDeliveryHandoff = StockDeliveryHandoff(),
-    private val newRequestId: () -> String = { UUID.randomUUID().toString() },
+    offlineWork: OfflineWork = NoOfflineWork,
+    private val newRequestId: () -> String = offlineWork::newClientRequestId,
 ) : ViewModel() {
 
-    private val mutableState = MutableStateFlow(StockDeliveryUiState(delivery = handoff.take(stockDeliveryId)))
+    private val queue = RecordQueue(offlineWork, warehouseId, OfflineRecordKey(OfflineRecordType.STOCK_DELIVERY, stockDeliveryId))
+
+    private var base: StockDelivery? = handoff.take(stockDeliveryId)
+
+    private val mutableState = MutableStateFlow(StockDeliveryUiState(delivery = base?.withQueued(queue.pending.value)))
     val state: StateFlow<StockDeliveryUiState> = mutableState.asStateFlow()
 
     val finder = LocationFinder(
@@ -108,6 +130,24 @@ class StockDeliveryViewModel(
     )
 
     private var loadJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            queue.pending.collect { actions ->
+                mutableState.update { current ->
+                    current.copy(
+                        pending = actions.filter { it.operation == OfflineOperation.PLACE_STOCK_DELIVERY_ITEM && it.state != QueuedActionState.VOID },
+                        delivery = base?.withQueued(actions) ?: current.delivery,
+                    )
+                }
+            }
+        }
+        queue.watchSettled(viewModelScope) {
+            if (!mutableState.value.isWorking) {
+                load()
+            }
+        }
+    }
 
     fun onStart() {
         if (loadJob?.isActive != true && !mutableState.value.isWorking) {
@@ -128,8 +168,16 @@ class StockDeliveryViewModel(
     }
 
     fun handOver() {
-        mutableState.value.delivery?.let(handoff::hand)
+        base?.let(handoff::hand)
     }
+
+    fun queueEventHandled() {
+        mutableState.update { it.copy(queueEvent = null) }
+    }
+
+    fun undoQueued(localId: Long) = queue.undo(localId)
+
+    val isOnline: StateFlow<Boolean> = queue.online
 
     fun selectView(view: DeliveryView) {
         mutableState.update { it.copy(chosenView = view) }
@@ -222,20 +270,35 @@ class StockDeliveryViewModel(
 
     private fun act(write: StockDeliveryWrite) {
         val token = token() ?: return
-        if (mutableState.value.delivery == null || mutableState.value.isWorking) {
+        val shown = mutableState.value.delivery
+        if (shown == null || mutableState.value.isWorking) {
             return
         }
         loadJob?.cancel()
-        mutableState.update { it.copy(working = write, event = null, isLoading = false, isRefreshing = false, writeErrors = emptyMap(), unsurePlacement = null) }
+        mutableState.update {
+            it.copy(working = write, event = null, queueEvent = null, isLoading = false, isRefreshing = false, writeErrors = emptyMap(), unsurePlacement = null)
+        }
 
         viewModelScope.launch {
+            val queued = placement(write, shown)
+            if (queued == null) {
+                when (queue.statusGate()) {
+                    StatusGate.OnlineOnly -> return@launch mutableState.update { it.copy(working = null, queueEvent = QueueEvent.OnlineOnly) }
+                    StatusGate.NeedsYou -> return@launch mutableState.update { it.copy(working = null, queueEvent = QueueEvent.NeedsYou) }
+                    StatusGate.Go -> Unit
+                }
+            } else if (queue.shouldQueue() && enqueue(queued)) {
+                return@launch
+            }
             when (val result = api.writeStockDelivery(token, warehouseId, stockDeliveryId, write)) {
                 is GoodsOutResult.Loaded -> {
                     val outcome = result.value
                     val wasRaised = write is StockDeliveryWrite.Check && outcome.delivery.item(write.itemId)?.wasRaisedAbove(write.skoQuantity) == true
+                    base = outcome.delivery
                     mutableState.update {
                         it.copy(
-                            delivery = outcome.delivery,
+                            delivery = outcome.delivery.withQueued(queue.pending.value),
+                            copyAt = null,
                             working = null,
                             problem = null,
                             event = GoodsInEvent.Done(
@@ -248,7 +311,7 @@ class StockDeliveryViewModel(
                     }
                 }
                 GoodsOutResult.SessionExpired -> mutableState.update { it.copy(working = null, isSessionExpired = true) }
-                else -> {
+                else -> if (result != GoodsOutResult.Unreachable || queued == null || !enqueue(queued)) {
                     val errors = (result as? GoodsOutResult.Invalid)?.errors.orEmpty()
                     val isUnsure = write.isPlacement && (result == GoodsOutResult.Unreachable || result is GoodsOutResult.ServerError)
                     mutableState.update {
@@ -264,14 +327,51 @@ class StockDeliveryViewModel(
         }
     }
 
+    private fun placement(write: StockDeliveryWrite, shown: StockDelivery): JsonObject? = when (write) {
+        is StockDeliveryWrite.Place -> GoodsInOfflinePayloads.place(
+            stockDeliveryId = stockDeliveryId,
+            itemId = write.itemId,
+            quantity = write.quantity,
+            target = write.target,
+            setAsPickingLocation = write.setAsPickingLocation,
+            clientRequestId = write.clientRequestId,
+        )
+        is StockDeliveryWrite.PlaceAll -> shown.item(write.itemId)?.skoToPlace?.takeIf { it > 0.0 }?.let { quantity ->
+            GoodsInOfflinePayloads.place(
+                stockDeliveryId = stockDeliveryId,
+                itemId = write.itemId,
+                quantity = quantity,
+                target = write.target,
+                setAsPickingLocation = write.setAsPickingLocation,
+                clientRequestId = write.clientRequestId,
+            )
+        }
+        else -> null
+    }
+
+    private suspend fun enqueue(payload: JsonObject): Boolean {
+        queue.enqueue(OfflineOperation.PLACE_STOCK_DELIVERY_ITEM, payload) ?: return false
+        mutableState.update { it.copy(working = null, queueEvent = QueueEvent.Queued(OfflineOperation.PLACE_STOCK_DELIVERY_ITEM)) }
+        return true
+    }
+
     private fun load(isPull: Boolean = false) {
         val token = token() ?: return
         loadJob?.cancel()
         mutableState.update { it.copy(isLoading = true, isRefreshing = isPull, problem = null) }
 
         loadJob = viewModelScope.launch {
-            when (val result = api.stockDelivery(token, warehouseId, stockDeliveryId)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(delivery = result.value, isLoading = false, isRefreshing = false) }
+            val loaded = queue.load(
+                live = { api.stockDelivery(token, warehouseId, stockDeliveryId) },
+                parse = { body -> GoodsInResponses.parseStockDelivery(HTTP_OK, body) },
+            )
+            when (val result = loaded.result) {
+                is GoodsOutResult.Loaded -> {
+                    base = result.value
+                    mutableState.update {
+                        it.copy(delivery = result.value.withQueued(queue.pending.value), copyAt = loaded.copyAt, isLoading = false, isRefreshing = false)
+                    }
+                }
                 GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
                 else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
             }

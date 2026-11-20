@@ -8,7 +8,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -120,7 +122,7 @@ fun HomeScreen(update: AppUpdate.Available? = null, onDismissUpdate: () -> Unit 
         if (hasWarehouse && shortcuts.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 GroupLabel(text = stringResource(R.string.home_shortcuts))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
                     shortcuts.forEach { shortcut ->
                         ShortcutTile(shortcut = shortcut, onClick = { navigator.open(shortcut.route) }, modifier = Modifier.weight(1f))
                     }
@@ -264,12 +266,13 @@ private fun ClockingCard(summary: ClockingSummaryLines?, lastUpdated: Instant?, 
 private fun ShortcutTile(shortcut: Shortcut, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = LocalAikuColors.current
 
-    Box(modifier = modifier) {
+    Box(modifier = modifier.fillMaxHeight()) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier
                 .fillMaxWidth()
+                .fillMaxHeight()
                 .clip(CardShape)
                 .background(colors.surface)
                 .border(1.dp, colors.border, CardShape)
@@ -285,7 +288,9 @@ private fun ShortcutTile(shortcut: Shortcut, onClick: () -> Unit, modifier: Modi
                 fontWeight = FontWeight.SemiBold,
                 color = colors.textSecondary,
                 textAlign = TextAlign.Center,
-                maxLines = 1,
+                lineHeight = 15.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
         if (shortcut.badge != null) {

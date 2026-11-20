@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Намали</string>
     <string name="stepper_increase">Увеличи</string>
     <string name="switcher_current">%1$s · текущ</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Приложи · %1$s</string>
-    <string name="sync_both">И двете</string>
-    <string name="sync_conflict_explanation">Всеки различаващ се ред предлага „Мое“ или „Aiku“; при количествата може и „И двете“ (събрани, но никога над нужното за реда). Вашият избор се показва запълнен.</string>
-    <string name="sync_conflicts_explanation">Като при разрешаване на сливане: отворете запис, за да изберете ред по ред, или запазете всичко от едната страна. Нищо отхвърлено не се губи: остава в историята на синхронизацията.</string>
     <string name="sync_conflicts_title">Разрешаване на конфликти</string>
-    <string name="sync_explanation">Работата по редове се запазва на телефона, докато сте офлайн: вземане, несъбрано, опаковане, проверка, складиране, одит, преместване. При повторно свързване всяко действие се проверява спрямо версията, от която е започнало: ако нищо не се е променило в Aiku, се качва автоматично, иначе ви чака в „Разрешаване на конфликти“. Отчитането на работно време и промените на състояние изискват връзка.</string>
-    <string name="sync_keep_all_aiku">Запази всички от Aiku</string>
-    <string name="sync_keep_all_mine">Запази всички мои</string>
-    <string name="sync_kept_all_aiku">Запазени са всички от Aiku</string>
-    <string name="sync_kept_all_mine">Запазени са всички ваши</string>
     <string name="sync_kicker">Профил</string>
-    <string name="sync_last_sync">Последна синхронизация</string>
-    <string name="sync_lines_differ">Различаващи се редове</string>
-    <string name="sync_mine">Мое</string>
-    <string name="sync_no_conflict">Няма конфликт</string>
     <string name="sync_now_in_aiku">Сега в Aiku</string>
-    <string name="sync_oldest_first">първо най-старите</string>
-    <string name="sync_online_only_body">Пратките, етикетите, финализирането, изпращането, отказването и „Маркиране като получено“ комуникират с куриери, принтери или клиенти, затова работят само онлайн. Събирането и опаковането ви са запазени и ще се качат, когато сте отново онлайн.</string>
-    <string name="sync_online_only_note">Основният бутон се връща веднага щом телефонът е онлайн и опашката е синхронизирана.</string>
-    <string name="sync_online_only_title">Финализирането изисква връзка</string>
-    <string name="sync_resolve_all">Разреши всичко наведнъж</string>
-    <string name="sync_same_on_both">Еднакво от двете страни</string>
-    <string name="sync_synced">Синхронизирано</string>
     <string name="sync_title">Офлайн и синхронизация</string>
-    <string name="sync_use_aiku_for_all">Използвай Aiku за всички</string>
-    <string name="sync_use_mine_for_all">Използвай моите за всички</string>
-    <string name="sync_view">Преглед</string>
-    <string name="sync_waiting">Чака качване</string>
     <string name="sync_yours">Ваше</string>
     <string name="tab_home">Начало</string>
     <string name="tab_inbox">Входящи</string>
@@ -2447,17 +2422,5 @@
     <plurals name="states_offline_actions">
         <item quantity="one">%d действие</item>
         <item quantity="other">%d действия</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">%1$d Aiku</item>
-        <item quantity="other">%1$d Aiku</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">%1$d и двете</item>
-        <item quantity="other">%1$d и двете</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">%1$d мое</item>
-        <item quantity="other">%1$d мои</item>
     </plurals>
 </resources>

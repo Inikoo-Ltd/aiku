@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Verringern</string>
     <string name="stepper_increase">Erhöhen</string>
     <string name="switcher_current">%1$s · aktuell</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Anwenden · %1$s</string>
-    <string name="sync_both">Beide</string>
-    <string name="sync_conflict_explanation">Jede abweichende Zeile bietet „Meins“ oder „Aiku“; bei Mengen ist auch „Beide“ möglich (addiert, nie mehr als die Zeile benötigt). Ihre Auswahl wird gefüllt angezeigt.</string>
-    <string name="sync_conflicts_explanation">Wie das Auflösen eines Merges: Öffnen Sie einen Datensatz, um Zeile für Zeile zu wählen, oder behalten Sie alles von einer Seite. Nichts, was Sie verwerfen, geht verloren: Es bleibt im Synchronisierungsverlauf.</string>
     <string name="sync_conflicts_title">Konflikte lösen</string>
-    <string name="sync_explanation">Arbeit auf Positionsebene wird offline auf dem Telefon gespeichert: kommissionieren, nicht kommissioniert, packen, prüfen, einlagern, Prüfung, umlagern. Bei erneuter Verbindung wird jede Aktion mit der Version verglichen, von der sie ausging: Hat sich in Aiku nichts geändert, wird sie automatisch hochgeladen, andernfalls wartet sie unter „Konflikte lösen“ auf Sie. Zeiterfassung und Statusänderungen benötigen eine Verbindung.</string>
-    <string name="sync_keep_all_aiku">Alle von Aiku behalten</string>
-    <string name="sync_keep_all_mine">Alle meine behalten</string>
-    <string name="sync_kept_all_aiku">Alle von Aiku behalten</string>
-    <string name="sync_kept_all_mine">Alle Ihre behalten</string>
     <string name="sync_kicker">Profil</string>
-    <string name="sync_last_sync">Letzte Synchronisierung</string>
-    <string name="sync_lines_differ">Abweichende Zeilen</string>
-    <string name="sync_mine">Meins</string>
-    <string name="sync_no_conflict">Kein Konflikt</string>
     <string name="sync_now_in_aiku">Jetzt in Aiku</string>
-    <string name="sync_oldest_first">älteste zuerst</string>
-    <string name="sync_online_only_body">Sendungen, Etiketten, Abschließen, Versand, Stornieren und „Als erhalten markieren“ kommunizieren mit Versanddienstleistern, Druckern oder Kunden und funktionieren daher nur online. Ihre Kommissionierung und Ihr Packen werden gespeichert und hochgeladen, sobald Sie wieder online sind.</string>
-    <string name="sync_online_only_note">Die Hauptschaltfläche erscheint wieder, sobald das Telefon online ist und die Warteschlange synchronisiert wurde.</string>
-    <string name="sync_online_only_title">Abschließen benötigt eine Verbindung</string>
-    <string name="sync_resolve_all">Alles auf einmal lösen</string>
-    <string name="sync_same_on_both">Auf beiden Seiten gleich</string>
-    <string name="sync_synced">Synchronisiert</string>
     <string name="sync_title">Offline &amp; Synchronisierung</string>
-    <string name="sync_use_aiku_for_all">Aiku für alle verwenden</string>
-    <string name="sync_use_mine_for_all">Meine für alle verwenden</string>
-    <string name="sync_view">Ansehen</string>
-    <string name="sync_waiting">Wartet auf Upload</string>
     <string name="sync_yours">Ihre</string>
     <string name="tab_home">Start</string>
     <string name="tab_inbox">Posteingang</string>
@@ -2447,17 +2422,5 @@
     <plurals name="states_offline_actions">
         <item quantity="one">%d Aktion</item>
         <item quantity="other">%d Aktionen</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">%1$d Aiku</item>
-        <item quantity="other">%1$d Aiku</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">%1$d beide</item>
-        <item quantity="other">%1$d beide</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">%1$d meine</item>
-        <item quantity="other">%1$d meine</item>
     </plurals>
 </resources>

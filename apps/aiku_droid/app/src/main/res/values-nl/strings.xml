@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Verlagen</string>
     <string name="stepper_increase">Verhogen</string>
     <string name="switcher_current">%1$s · huidig</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Toepassen · %1$s</string>
-    <string name="sync_both">Beide</string>
-    <string name="sync_conflict_explanation">Elke afwijkende regel biedt Mijn of Aiku; bij aantallen kan ook Beide (opgeteld, nooit meer dan de regel nodig heeft). Je keuze wordt gevuld weergegeven.</string>
-    <string name="sync_conflicts_explanation">Net als het oplossen van een merge: open een record om regel voor regel te kiezen, of behoud alles van één kant. Niets wat je verwerpt, gaat verloren: het blijft in de synchronisatiegeschiedenis.</string>
     <string name="sync_conflicts_title">Conflicten oplossen</string>
-    <string name="sync_explanation">Werk op regelniveau wordt offline op de telefoon opgeslagen: picken, niet gepickt, inpakken, controleren, plaatsen, audit, verplaatsen. Bij opnieuw verbinden wordt elke actie vergeleken met de versie waarmee die begon: als er in Aiku niets is veranderd, wordt ze vanzelf geüpload, anders wacht ze op je in Conflicten oplossen. Klokken en statuswijzigingen hebben een verbinding nodig.</string>
-    <string name="sync_keep_all_aiku">Alles van Aiku behouden</string>
-    <string name="sync_keep_all_mine">Al het mijne behouden</string>
-    <string name="sync_kept_all_aiku">Alles van Aiku behouden</string>
-    <string name="sync_kept_all_mine">Al het jouwe behouden</string>
     <string name="sync_kicker">Profiel</string>
-    <string name="sync_last_sync">Laatste synchronisatie</string>
-    <string name="sync_lines_differ">Regels die verschillen</string>
-    <string name="sync_mine">Mijn</string>
-    <string name="sync_no_conflict">Geen conflict</string>
     <string name="sync_now_in_aiku">Nu in Aiku</string>
-    <string name="sync_oldest_first">oudste eerst</string>
-    <string name="sync_online_only_body">Zendingen, labels, afronden, verzenden, annuleren en Markeren als ontvangen communiceren met vervoerders, printers of klanten, dus ze werken alleen online. Je picken en inpakken worden opgeslagen en geüpload zodra je weer online bent.</string>
-    <string name="sync_online_only_note">De hoofdknop komt terug zodra de telefoon online is en de wachtrij is gesynchroniseerd.</string>
-    <string name="sync_online_only_title">Afronden heeft een verbinding nodig</string>
-    <string name="sync_resolve_all">Alles in één keer oplossen</string>
-    <string name="sync_same_on_both">Aan beide kanten hetzelfde</string>
-    <string name="sync_synced">Gesynchroniseerd</string>
     <string name="sync_title">Offline &amp; synchronisatie</string>
-    <string name="sync_use_aiku_for_all">Aiku voor alles gebruiken</string>
-    <string name="sync_use_mine_for_all">Het mijne voor alles gebruiken</string>
-    <string name="sync_view">Bekijken</string>
-    <string name="sync_waiting">Wacht op upload</string>
     <string name="sync_yours">Jouw versie</string>
     <string name="tab_home">Home</string>
     <string name="tab_inbox">Inbox</string>
@@ -2447,17 +2422,5 @@
     <plurals name="states_offline_actions">
         <item quantity="one">%d actie</item>
         <item quantity="other">%d acties</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">%1$d Aiku</item>
-        <item quantity="other">%1$d Aiku</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">%1$d beide</item>
-        <item quantity="other">%1$d beide</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">%1$d mijn</item>
-        <item quantity="other">%1$d mijn</item>
     </plurals>
 </resources>

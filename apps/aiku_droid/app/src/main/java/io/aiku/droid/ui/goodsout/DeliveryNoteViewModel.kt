@@ -6,9 +6,12 @@ import io.aiku.droid.data.api.AttachmentDownload
 import io.aiku.droid.data.api.DeliveryAddressFields
 import io.aiku.droid.data.api.DeliveryNote
 import io.aiku.droid.data.api.DeliveryNoteBucket
+import io.aiku.droid.data.api.DeliveryNoteLine
 import io.aiku.droid.data.api.DeliveryNoteWrite
 import io.aiku.droid.data.api.GoodsOutApi
+import io.aiku.droid.data.api.GoodsOutResponses
 import io.aiku.droid.data.api.GoodsOutResult
+import io.aiku.droid.data.api.NoteActionOutcome
 import io.aiku.droid.data.api.NoteActionStatus
 import io.aiku.droid.data.api.PickedBay
 import io.aiku.droid.data.api.Picker
@@ -22,7 +25,15 @@ import io.aiku.droid.data.api.Shipper
 import io.aiku.droid.data.api.ShipperDirective
 import io.aiku.droid.data.api.Trolley
 import io.aiku.droid.data.api.WriteErrorKey
+import io.aiku.droid.data.api.clientRequestId
+import io.aiku.droid.data.api.isOfflineLineWork
 import io.aiku.droid.data.api.waitsForPlatform
+import io.aiku.droid.data.api.withClientRequestId
+import io.aiku.droid.data.offline.NoOfflineWork
+import io.aiku.droid.data.offline.OfflineOperation
+import io.aiku.droid.data.offline.OfflineWork
+import io.aiku.droid.data.offline.QueuedAction
+import io.aiku.droid.data.offline.QueuedActionState
 import io.aiku.droid.data.session.SessionRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +41,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
 import java.io.File
 import java.time.Instant
 
@@ -52,10 +64,12 @@ data class ScanLogEntry(
     val status: String,
     val quantity: Double = 0.0,
     val message: String? = null,
+    val isQueued: Boolean = false,
 )
 
 object ScanLogStatus {
     const val FAILED = "failed"
+    const val ONLINE_ONLY = "online_only"
 }
 
 sealed interface DeliveryNoteEvent {
@@ -64,6 +78,9 @@ sealed interface DeliveryNoteEvent {
     data class ScanFeedback(val message: String?) : DeliveryNoteEvent
     data class LineDone(val code: String, val isEverythingPicked: Boolean) : DeliveryNoteEvent
     data class LinePacked(val code: String) : DeliveryNoteEvent
+    data object Queued : DeliveryNoteEvent
+    data class NeedsConnection(val reference: String) : DeliveryNoteEvent
+    data class QueuedWorkLeft(val needsYou: Int, val waiting: Int) : DeliveryNoteEvent
 }
 
 sealed interface ShipmentFollowUp {
@@ -103,25 +120,60 @@ data class DeliveryNoteUiState(
     val shipmentFollowUp: ShipmentFollowUp? = null,
     val shippers: Choices<Shipper> = Choices(),
     val shipperDirective: ShipperDirective? = null,
+    val isOnline: Boolean = true,
+    val isQueueing: Boolean = false,
+    val offlineCopy: OfflineCopy? = null,
+    val queued: List<QueuedLineWork> = emptyList(),
 ) {
     val isWorking: Boolean get() = working != null
+
+    fun queuedFor(lineId: Long): List<QueuedLineWork> = queued.filter { it.lineId == lineId }
 
     val canRefresh: Boolean get() = !isWorking && queuedScans == 0
 }
 
-class DeliveryNoteHandoff {
-    private var note: DeliveryNote? = null
+data class HandedNote(val note: DeliveryNote, val copy: OfflineCopy?)
 
-    fun hand(note: DeliveryNote) {
-        this.note = note
+class DeliveryNoteHandoff {
+    private var handed: HandedNote? = null
+
+    fun hand(note: DeliveryNote, copy: OfflineCopy? = null) {
+        handed = HandedNote(note, copy)
     }
 
-    fun take(deliveryNoteId: Long): DeliveryNote? {
-        val handed = note?.takeIf { it.id == deliveryNoteId }
-        note = null
-        return handed
+    fun take(deliveryNoteId: Long): DeliveryNote? = takeHanded(deliveryNoteId)?.note
+
+    fun takeHanded(deliveryNoteId: Long): HandedNote? {
+        val taken = handed?.takeIf { it.note.id == deliveryNoteId }
+        handed = null
+        return taken
     }
 }
+
+private val openQueueStates = setOf(QueuedActionState.WAITING, QueuedActionState.SENDING, QueuedActionState.NEEDS_YOU)
+
+internal val DeliveryNoteWrite.changesStatus: Boolean
+    get() = when (this) {
+        is DeliveryNoteWrite.StartPicking,
+        DeliveryNoteWrite.TakeOver,
+        is DeliveryNoteWrite.SetAsPicked,
+        DeliveryNoteWrite.SetAsPacked,
+        DeliveryNoteWrite.PutBackIncompleteSets,
+        DeliveryNoteWrite.AutoFinishWaiting,
+        DeliveryNoteWrite.BackToPicking,
+        DeliveryNoteWrite.UndoSetAsPicked,
+        is DeliveryNoteWrite.SetPicker,
+        DeliveryNoteWrite.StartPacking,
+        DeliveryNoteWrite.UndoPacking,
+        DeliveryNoteWrite.Unpack,
+        DeliveryNoteWrite.FinaliseAndDispatch,
+        DeliveryNoteWrite.Finalise,
+        DeliveryNoteWrite.Dispatch,
+        is DeliveryNoteWrite.Cancel,
+        is DeliveryNoteWrite.SetPacker,
+        -> true
+        else -> false
+    }
 
 class DeliveryNoteViewModel(
     private val api: GoodsOutApi,
@@ -129,14 +181,59 @@ class DeliveryNoteViewModel(
     private val deliveryNoteId: Long,
     private val handoff: DeliveryNoteHandoff = DeliveryNoteHandoff(),
     private val clock: () -> Instant = Instant::now,
+    private val offline: OfflineWork = NoOfflineWork,
 ) : ViewModel() {
 
-    private val mutableState = MutableStateFlow(DeliveryNoteUiState(note = handoff.take(deliveryNoteId)))
+    private val record = deliveryNoteRecord(deliveryNoteId)
+    private val handed = handoff.takeHanded(deliveryNoteId)
+    private var base: DeliveryNote? = handed?.note
+    private var copySeenAt: Instant? = handed?.copy?.seenAt
+    private var baseAt: Instant? = handed?.let { it.copy?.seenAt ?: clock() }
+    private var pending: List<QueuedAction> = offline.pendingFor(record).value
+    private val flushedIds = mutableSetOf<Long>()
+
+    private val mutableState = MutableStateFlow(
+        DeliveryNoteUiState(isOnline = offline.isOnline.value, offlineCopy = handed?.copy).withOverlay(),
+    )
     val state: StateFlow<DeliveryNoteUiState> = mutableState.asStateFlow()
 
     private var loadJob: Job? = null
     private val pendingScans = ArrayDeque<QueuedScan>()
     private var scanJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            offline.pendingFor(record).collect { actions ->
+                val settled = pending.any { earlier -> earlier.localId !in flushedIds && actions.none { it.localId == earlier.localId } }
+                pending = actions
+                mutableState.update { it.withOverlay() }
+                if (settled && offline.isOnline.value && loadJob?.isActive != true && !mutableState.value.isWorking) {
+                    load()
+                }
+            }
+        }
+        viewModelScope.launch {
+            offline.isOnline.collect { isOnline ->
+                val cameBack = isOnline && !mutableState.value.isOnline
+                mutableState.update { it.copy(isOnline = isOnline).withOverlay() }
+                if (cameBack && mutableState.value.offlineCopy != null && !mutableState.value.isWorking) {
+                    load()
+                }
+            }
+        }
+    }
+
+    private fun DeliveryNoteUiState.withOverlay(): DeliveryNoteUiState = copy(
+        note = base?.withQueued(pending, copySeenAt),
+        queued = queuedLineWork(pending),
+        isQueueing = offline.shouldQueue(record),
+    )
+
+    private fun showLive(note: DeliveryNote) {
+        base = note
+        baseAt = clock()
+        copySeenAt = null
+    }
 
     fun onStart() {
         if (loadJob?.isActive != true && !mutableState.value.isWorking) {
@@ -157,7 +254,13 @@ class DeliveryNoteViewModel(
     }
 
     fun handOver() {
-        mutableState.value.note?.let(handoff::hand)
+        base?.let { handoff.hand(it, mutableState.value.offlineCopy) }
+    }
+
+    fun undoQueued(localId: Long) {
+        if (pending.any { it.localId == localId && it.state == QueuedActionState.WAITING }) {
+            offline.undo(localId)
+        }
     }
 
     fun eventHandled() {
@@ -170,47 +273,129 @@ class DeliveryNoteViewModel(
         if (mutableState.value.isWorking) {
             return
         }
+        if (write.isOfflineLineWork) {
+            actOnLine(token, before, write.withClientRequestId(write.clientRequestId ?: offline.newClientRequestId()))
+            return
+        }
+        if (!offline.isOnline.value) {
+            mutableState.update { it.copy(event = DeliveryNoteEvent.NeedsConnection(before.reference)) }
+            return
+        }
         loadJob?.cancel()
         mutableState.update { it.copy(working = write, event = null, isLoading = false, isRefreshing = false, writeErrors = emptyMap()) }
 
         viewModelScope.launch {
-            when (val result = api.write(token, deliveryNoteId, write)) {
-                is GoodsOutResult.Loaded -> {
-                    val outcome = result.value
-                    val route = routeChange(before, outcome.note)
-                    if (route != null) {
-                        handoff.hand(outcome.note)
-                    }
-                    mutableState.update {
-                        it.copy(
-                            note = outcome.note,
-                            working = null,
-                            problem = null,
-                            shipmentFollowUp = null,
-                            event = DeliveryNoteEvent.Acted(
-                                message = outcome.message,
-                                isNothingChanged = outcome.status == NoteActionStatus.NOTHING_CHANGED,
-                                route = route,
-                                warning = outcome.warning,
-                            ),
-                        )
-                    }
+            if (write.changesStatus && !flushQueuedWork()) {
+                return@launch
+            }
+            handleWrite(before, write, api.write(token, deliveryNoteId, write))
+        }
+    }
+
+    private fun actOnLine(token: String, before: DeliveryNote, write: DeliveryNoteWrite) {
+        if (offline.shouldQueue(record)) {
+            viewModelScope.launch { queueLine(before, write, isFallback = false) }
+            return
+        }
+        loadJob?.cancel()
+        mutableState.update { it.copy(working = write, event = null, isLoading = false, isRefreshing = false, writeErrors = emptyMap()) }
+
+        viewModelScope.launch {
+            val result = api.write(token, deliveryNoteId, write)
+            if (result == GoodsOutResult.Unreachable && queueLine(before, write, isFallback = true)) {
+                mutableState.update { it.copy(working = null) }
+                return@launch
+            }
+            handleWrite(before, write, result)
+        }
+    }
+
+    private suspend fun flushQueuedWork(): Boolean {
+        if (pending.none { it.state in openQueueStates }) {
+            return true
+        }
+        flushedIds += pending.map { it.localId }
+        if (offline.flush(record)) {
+            return true
+        }
+        val left = offline.pendingFor(record).value
+        mutableState.update {
+            it.copy(
+                working = null,
+                event = DeliveryNoteEvent.QueuedWorkLeft(
+                    needsYou = left.count { action -> action.state == QueuedActionState.NEEDS_YOU },
+                    waiting = left.count { action -> action.state == QueuedActionState.WAITING || action.state == QueuedActionState.SENDING },
+                ),
+            )
+        }
+        return false
+    }
+
+    private suspend fun queueLine(note: DeliveryNote, write: DeliveryNoteWrite, isFallback: Boolean): Boolean {
+        val clientRequestId = write.clientRequestId ?: offline.newClientRequestId()
+        val event = when (val plan = offlinePlan(note, write, clientRequestId, pending)) {
+            is OfflineLinePlan.Queue -> {
+                plan.replaces?.let(offline::undo)
+                if (!enqueue(note, plan.operation, plan.payload, clientRequestId)) {
+                    return false
                 }
-                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(working = null, isSessionExpired = true) }
-                else -> {
-                    val errors = (result as? GoodsOutResult.Invalid)?.errors.orEmpty()
-                    val followUp = shipmentFollowUp(write, errors)
-                    mutableState.update {
-                        it.copy(
-                            working = null,
-                            writeErrors = errors,
-                            shipmentFollowUp = followUp,
-                            event = if (followUp == null) result.refusal() else null,
-                        )
-                    }
-                    if (result is GoodsOutResult.Unreachable && write.waitsForPlatform) {
-                        load()
-                    }
+                DeliveryNoteEvent.Queued
+            }
+            is OfflineLinePlan.Undo -> {
+                offline.undo(plan.localId)
+                DeliveryNoteEvent.Queued
+            }
+            OfflineLinePlan.NothingToDo -> if (isFallback) return false else DeliveryNoteEvent.Acted(message = null, isNothingChanged = true, route = null)
+            OfflineLinePlan.OnlineOnly -> if (isFallback) return false else DeliveryNoteEvent.NeedsConnection(note.reference)
+        }
+        mutableState.update { it.copy(event = event) }
+        return true
+    }
+
+    private suspend fun enqueue(note: DeliveryNote, operation: OfflineOperation, payload: JsonObject, clientRequestId: String): Boolean {
+        val warehouseId = note.warehouseId ?: return false
+        val seenAt = offline.downloaded(record)?.seenAt ?: copySeenAt
+        return runCatching { offline.enqueue(warehouseId, operation, record, payload, clientRequestId, seenAt) }.isSuccess
+    }
+
+    private fun handleWrite(before: DeliveryNote, write: DeliveryNoteWrite, result: GoodsOutResult<NoteActionOutcome>) {
+        when (result) {
+            is GoodsOutResult.Loaded -> {
+                val outcome = result.value
+                val route = routeChange(before, outcome.note)
+                if (route != null) {
+                    handoff.hand(outcome.note)
+                }
+                showLive(outcome.note)
+                mutableState.update {
+                    it.copy(
+                        offlineCopy = null,
+                        working = null,
+                        problem = null,
+                        shipmentFollowUp = null,
+                        event = DeliveryNoteEvent.Acted(
+                            message = outcome.message,
+                            isNothingChanged = outcome.status == NoteActionStatus.NOTHING_CHANGED,
+                            route = route,
+                            warning = outcome.warning,
+                        ),
+                    ).withOverlay()
+                }
+            }
+            GoodsOutResult.SessionExpired -> mutableState.update { it.copy(working = null, isSessionExpired = true) }
+            else -> {
+                val errors = (result as? GoodsOutResult.Invalid)?.errors.orEmpty()
+                val followUp = shipmentFollowUp(write, errors)
+                mutableState.update {
+                    it.copy(
+                        working = null,
+                        writeErrors = errors,
+                        shipmentFollowUp = followUp,
+                        event = if (followUp == null) result.refusal() else null,
+                    )
+                }
+                if (result is GoodsOutResult.Unreachable && write.waitsForPlatform) {
+                    load()
                 }
             }
         }
@@ -301,11 +486,19 @@ class DeliveryNoteViewModel(
         if (barcode.isEmpty()) {
             return
         }
+        if (offline.shouldQueue(record)) {
+            scanOffline(barcode = barcode, isPacking = false, quantity = 1.0, target = null)
+            return
+        }
         enqueueScan(QueuedScan.Pick(ScanPickRequest(barcode = barcode, quantity = 1.0)))
     }
 
     fun pickAllScanned() {
         val target = mutableState.value.scanTarget ?: return
+        if (offline.shouldQueue(record)) {
+            scanOffline(barcode = target.barcode, isPacking = false, quantity = null, target = target)
+            return
+        }
         enqueueScan(
             QueuedScan.Pick(
                 ScanPickRequest(barcode = target.barcode, quantity = null, deliveryNoteItemId = target.lineId, locationOrgStockId = target.locationOrgStockId),
@@ -316,6 +509,10 @@ class DeliveryNoteViewModel(
     fun pickScannedAmount(amount: Int) {
         val target = mutableState.value.scanTarget ?: return
         if (amount <= 0) {
+            return
+        }
+        if (offline.shouldQueue(record)) {
+            scanOffline(barcode = target.barcode, isPacking = false, quantity = amount.toDouble(), target = target)
             return
         }
         enqueueScan(
@@ -330,11 +527,19 @@ class DeliveryNoteViewModel(
         if (barcode.isEmpty()) {
             return
         }
+        if (offline.shouldQueue(record)) {
+            scanOffline(barcode = barcode, isPacking = true, quantity = 1.0, target = null)
+            return
+        }
         enqueueScan(QueuedScan.Pack(ScanPackRequest(barcode = barcode, quantity = 1.0)))
     }
 
     fun packAllScanned() {
         val target = mutableState.value.scanTarget ?: return
+        if (offline.shouldQueue(record)) {
+            scanOffline(barcode = target.barcode, isPacking = true, quantity = null, target = target)
+            return
+        }
         enqueueScan(QueuedScan.Pack(ScanPackRequest(barcode = target.barcode, quantity = null, deliveryNoteItemId = target.lineId)))
     }
 
@@ -343,7 +548,85 @@ class DeliveryNoteViewModel(
         if (amount <= 0) {
             return
         }
+        if (offline.shouldQueue(record)) {
+            scanOffline(barcode = target.barcode, isPacking = true, quantity = amount.toDouble(), target = target)
+            return
+        }
         enqueueScan(QueuedScan.Pack(ScanPackRequest(barcode = target.barcode, quantity = amount.toDouble(), deliveryNoteItemId = target.lineId)))
+    }
+
+    private fun scanOffline(barcode: String, isPacking: Boolean, quantity: Double?, target: ScanTarget?) {
+        val note = mutableState.value.note ?: return
+        val matching = if (target != null) listOfNotNull(note.line(target.lineId)) else note.lines.filter { it.matchesScan(barcode) }
+        val workable = matching.filterNot { it.inPickingSession }
+        val left: (DeliveryNoteLine) -> Double = if (isPacking) ({ it.quantityToPack }) else ({ it.quantityToPick })
+        val line = workable.firstOrNull { left(it) > 0.0 }
+        val missStatus = when {
+            matching.isEmpty() -> ScanPickStatus.NOT_FOUND
+            workable.isEmpty() -> ScanLogStatus.ONLINE_ONLY
+            line == null -> if (isPacking) ScanPackStatus.ALREADY_PACKED else ScanPickStatus.ALREADY_PICKED
+            else -> null
+        }
+        if (line == null || missStatus != null) {
+            logOfflineScanMiss(barcode, missStatus ?: ScanPickStatus.NOT_FOUND)
+            return
+        }
+        val remaining = left(line)
+        val amount = offlineQuantity(minOf(quantity ?: remaining, remaining))
+        val locationOrgStockId = if (isPacking) null else note.pickLocation(line, target?.locationOrgStockId)
+        if (!isPacking && locationOrgStockId == null) {
+            logOfflineScanMiss(barcode, ScanPickStatus.NO_STOCK)
+            return
+        }
+        val clientRequestId = offline.newClientRequestId()
+        val operation = if (isPacking) OfflineOperation.PACK else OfflineOperation.PICK
+        val payload = if (locationOrgStockId == null) {
+            GoodsOutOfflinePayload.pack(note.id, line.id, amount, clientRequestId)
+        } else {
+            GoodsOutOfflinePayload.pick(note.id, line.id, locationOrgStockId, amount, clientRequestId)
+        }
+
+        viewModelScope.launch {
+            if (!enqueue(note, operation, payload, clientRequestId)) {
+                logOfflineScanMiss(barcode, ScanLogStatus.FAILED)
+                return@launch
+            }
+            val isLineDone = remaining - amount <= 0.0
+            val code = line.orgStock?.code?.takeIf { it.isNotBlank() } ?: barcode
+            val event = when {
+                !isLineDone -> null
+                isPacking -> DeliveryNoteEvent.LinePacked(code = code)
+                else -> DeliveryNoteEvent.LineDone(code = code, isEverythingPicked = note.lines.none { it.id != line.id && it.quantityToPick > 0.0 })
+            }
+            val entry = ScanLogEntry(
+                code = barcode,
+                at = clock(),
+                status = if (isPacking) ScanPackStatus.PACKED else ScanPickStatus.PICKED,
+                quantity = amount,
+                isQueued = true,
+            )
+            mutableState.update {
+                it.copy(
+                    scanTarget = if (isLineDone) null else ScanTarget(
+                        lineId = line.id,
+                        barcode = barcode,
+                        locationCode = line.locations.firstOrNull { location -> location.locationOrgStockId == locationOrgStockId }?.code,
+                        locationOrgStockId = locationOrgStockId,
+                    ),
+                    scanLog = listOf(entry) + it.scanLog,
+                    event = event ?: it.event,
+                )
+            }
+        }
+    }
+
+    private fun logOfflineScanMiss(barcode: String, status: String) {
+        mutableState.update {
+            it.copy(
+                scanLog = listOf(ScanLogEntry(code = barcode, at = clock(), status = status)) + it.scanLog,
+                event = DeliveryNoteEvent.ScanFeedback(message = null),
+            )
+        }
     }
 
     fun closeScanPanel() {
@@ -415,9 +698,10 @@ class DeliveryNoteViewModel(
             else -> null
         }
 
+        showLive(note)
         mutableState.update {
             it.copy(
-                note = note,
+                offlineCopy = null,
                 problem = null,
                 scanTarget = when {
                     keepsTarget -> it.scanTarget
@@ -426,7 +710,7 @@ class DeliveryNoteViewModel(
                 },
                 scanLog = listOf(entry) + it.scanLog,
                 event = event ?: it.event,
-            )
+            ).withOverlay()
         }
     }
 
@@ -445,9 +729,10 @@ class DeliveryNoteViewModel(
             else -> null
         }
 
+        showLive(note)
         mutableState.update {
             it.copy(
-                note = note,
+                offlineCopy = null,
                 problem = null,
                 scanTarget = when {
                     keepsTarget -> it.scanTarget
@@ -456,7 +741,7 @@ class DeliveryNoteViewModel(
                 },
                 scanLog = listOf(entry) + it.scanLog,
                 event = event ?: it.event,
-            )
+            ).withOverlay()
         }
     }
 
@@ -486,14 +771,47 @@ class DeliveryNoteViewModel(
         mutableState.update { it.copy(isLoading = true, isRefreshing = isPull, problem = null) }
 
         loadJob = viewModelScope.launch {
+            if (!offline.isOnline.value && (showDownloaded() || base != null)) {
+                mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = null) }
+                return@launch
+            }
             when (val result = api.deliveryNote(token, deliveryNoteId)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(note = result.value, isLoading = false, isRefreshing = false) }
+                is GoodsOutResult.Loaded -> {
+                    showLive(result.value)
+                    mutableState.update { it.copy(isLoading = false, isRefreshing = false, offlineCopy = null).withOverlay() }
+                }
                 GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
+                GoodsOutResult.Unreachable -> if (!showDownloaded()) {
+                    mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
+                }
                 else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
             }
         }
     }
+
+    private suspend fun showDownloaded(): Boolean {
+        val downloaded = offline.downloaded(record) ?: return false
+        val shownAt = baseAt
+        if (base != null && shownAt != null && !downloaded.seenAt.isAfter(shownAt)) {
+            return false
+        }
+        val note = (GoodsOutResponses.parseDeliveryNote(HTTP_OK, downloaded.body) as? GoodsOutResult.Loaded)?.value ?: return false
+        base = note
+        baseAt = downloaded.seenAt
+        copySeenAt = downloaded.seenAt
+        mutableState.update {
+            it.copy(
+                isLoading = false,
+                isRefreshing = false,
+                problem = null,
+                offlineCopy = OfflineCopy(seenAt = downloaded.seenAt, downloadedAt = downloaded.downloadedAt),
+            ).withOverlay()
+        }
+        return true
+    }
 }
+
+private const val HTTP_OK = 200
 
 internal fun routeChange(before: DeliveryNote, after: DeliveryNote): Any? {
     val previous = deliveryNoteRoute(id = before.id, reference = before.reference, state = before.state)

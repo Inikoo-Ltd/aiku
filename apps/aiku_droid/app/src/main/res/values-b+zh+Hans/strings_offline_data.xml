@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">离线</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="other">离线 · %d 项等待中</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="other">正在同步 %d 项</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="other">%d 项需要您处理</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="other">%d 项操作需要您处理</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">打开 Aiku 查看如何处理。</string>
+    <string name="offline_sync_channel_name">离线同步</string>
+    <string name="offline_sync_channel_description">在将手机上保存的工作发送到 Aiku 时显示。</string>
+    <string name="offline_sync_sending">正在发送手机上保存的工作</string>
+    <string name="offline_sign_out_title">工作等待同步</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="other">您有 %d 项操作在等待；在此手机上重新登录后将发送。</item>
+    </plurals>
+</resources>

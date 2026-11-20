@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Офлайн</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Офлайн · %d чака</item>
+        <item quantity="other">Офлайн · %d чакат</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">Синхронизиране: %d</item>
+        <item quantity="other">Синхронизиране: %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d изисква вашето внимание</item>
+        <item quantity="other">%d изискват вашето внимание</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d действие изисква вашето внимание</item>
+        <item quantity="other">%d действия изискват вашето внимание</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Отворете Aiku, за да видите какво да направите.</string>
+    <string name="offline_sync_channel_name">Офлайн синхронизация</string>
+    <string name="offline_sync_channel_description">Показва се, докато работата, запазена на телефона, се изпраща към Aiku.</string>
+    <string name="offline_sync_sending">Изпращане на работата, запазена на телефона</string>
+    <string name="offline_sign_out_title">Работа чака синхронизация</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">%d ваше действие чака; ще бъде изпратено, когато влезете отново на този телефон.</item>
+        <item quantity="other">%d ваши действия чакат; ще бъдат изпратени, когато влезете отново на този телефон.</item>
+    </plurals>
+</resources>

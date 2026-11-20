@@ -57,6 +57,8 @@ import io.aiku.droid.ui.inventory.StockEvent
 import io.aiku.droid.ui.inventory.StockLoadProblem
 import io.aiku.droid.ui.inventory.countText
 import io.aiku.droid.ui.inventory.dayText
+import io.aiku.droid.ui.inventory.knownTargets
+import io.aiku.droid.ui.inventory.locationQueuedText
 import io.aiku.droid.ui.inventory.refusalText
 import io.aiku.droid.ui.inventory.stockText
 import io.aiku.droid.ui.navigation.LocalAppNavigator
@@ -65,6 +67,10 @@ import io.aiku.droid.ui.navigation.LocationSkuRoute
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.StockHistoryRoute
 import io.aiku.droid.ui.states.SessionExpiredScreen
+import io.aiku.droid.ui.sync.OfflineCopyNote
+import io.aiku.droid.ui.sync.QueueEventEffect
+import io.aiku.droid.ui.sync.QueuedActionsBlock
+import io.aiku.droid.ui.sync.QueuedRow
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 @Composable
@@ -106,6 +112,7 @@ private fun LocationContent(state: LocationUiState, location: LocationViewModel,
         }
         location.eventHandled()
     }
+    QueueEventEffect(event = state.queueEvent, reference = shownCode, onHandled = location::queueEventHandled, onQueued = { openSheet = null })
 
     AppScreen(
         header = {
@@ -130,6 +137,11 @@ private fun LocationContent(state: LocationUiState, location: LocationViewModel,
         showBar = true,
         refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = location::refresh, isEnabled = !state.isWorking),
     ) {
+        state.copyAt?.let { OfflineCopyNote(copyAt = it) }
+        if (detail != null) {
+            val targetCodes = detail.knownTargets().associate { it.id to it.code } + listOfNotNull(finder.picked?.let { it.id to it.code })
+            QueuedActionsBlock(rows = state.pending.map { QueuedRow(it, locationQueuedText(it, detail, targetCodes)) }, onUndo = location::undoQueued)
+        }
         when {
             detail != null -> LocationBlocks(detail = detail, actions = actions, onAction = { openSheet = it })
             state.problem != null -> StockLoadProblem(problem = state.problem, title = stringResource(R.string.locations_location_failed), onRetry = location::retry)
@@ -163,6 +175,7 @@ internal fun LocationSheets(
     onlyLinkId: Long? = null,
 ) {
     val errorText = state.writeErrors.values.flatten().firstOrNull()
+    val isOnline by location.isOnline.collectAsStateWithLifecycle()
 
     when (sheet) {
         LocationAction.Audit -> AuditLocationSheet(
@@ -179,6 +192,7 @@ internal fun LocationSheets(
             moveAll = sheet == LocationAction.MoveAll,
             onlyLinkId = onlyLinkId,
             finder = location.finder,
+            isOnline = isOnline,
             isWorking = state.isWorking,
             errorText = errorText,
             onMove = location::write,

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">Offline · gespeicherte Kopie von %1$s</string>
+    <string name="goodsout_offline_copy_body">Ihre Arbeit an diesem Lieferschein bleibt auf diesem Telefon und wird gesendet, sobald Sie wieder online sind.</string>
+    <string name="goodsout_offline_saved">Auf diesem Telefon gespeichert. Wird synchronisiert, sobald Sie wieder online sind.</string>
+    <string name="goodsout_offline_waiting_to_sync">Wartet auf Synchronisierung</string>
+    <string name="goodsout_offline_needs_you">Braucht Sie</string>
+    <string name="goodsout_offline_queued_group">Auf diesem Telefon gespeichert</string>
+    <string name="goodsout_offline_queued_pick">%1$s an %2$s kommissioniert</string>
+    <string name="goodsout_offline_queued_pick_plain">%1$s kommissioniert</string>
+    <string name="goodsout_offline_queued_not_picked">%1$s nicht kommissioniert</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">Wartet auf das Lager %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">An Kundendienst übergeben %1$s</string>
+    <string name="goodsout_offline_queued_pack">%1$s verpackt</string>
+    <string name="goodsout_offline_flush_waiting">Ihre Arbeit an diesem Lieferschein ist noch nicht synchronisiert. Versuchen Sie es erneut, sobald sie es ist.</string>
+    <string name="goodsout_offline_flush_needs_you">Ein Teil Ihrer Arbeit an diesem Lieferschein braucht Sie, bevor dies möglich ist.</string>
+    <string name="goodsout_offline_scan_online_only">Braucht eine Verbindung</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · wartet auf Synchronisierung</string>
+    <string name="goodsout_offline_online_only_kicker">Braucht eine Verbindung</string>
+    <string name="goodsout_offline_online_only_title">Dafür ist eine Verbindung nötig</string>
+    <string name="goodsout_offline_online_only_body">Arbeit starten, abschließen oder übernehmen, Verpacken, Abschließen, Versand und Kommissionier-Sitzungen prüft Aiku sofort, daher funktionieren sie nur online.</string>
+    <string name="goodsout_offline_online_only_waiting">Aktionen, die auf diesem Telefon auf Synchronisierung warten: %1$d. Sie sind sicher und werden gesendet, sobald Sie wieder online sind.</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">Von Ihnen wartet nichts auf diesem Telefon auf Synchronisierung.</string>
+    <string name="goodsout_offline_online_only_back_online">Sie sind wieder online. Gehen Sie zurück, um weiterzumachen.</string>
+    <string name="goodsout_offline_online_only_view">Wartende Arbeit ansehen</string>
+</resources>

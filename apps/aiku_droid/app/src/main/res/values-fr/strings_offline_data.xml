@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Hors ligne</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Hors ligne · %d en attente</item>
+        <item quantity="many">Hors ligne · %d en attente</item>
+        <item quantity="other">Hors ligne · %d en attente</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">Synchronisation : %d</item>
+        <item quantity="many">Synchronisation : %d</item>
+        <item quantity="other">Synchronisation : %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d requiert votre attention</item>
+        <item quantity="many">%d requièrent votre attention</item>
+        <item quantity="other">%d requièrent votre attention</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d action requiert votre attention</item>
+        <item quantity="many">%d actions requièrent votre attention</item>
+        <item quantity="other">%d actions requièrent votre attention</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Ouvrez Aiku pour voir quoi faire.</string>
+    <string name="offline_sync_channel_name">Synchronisation hors ligne</string>
+    <string name="offline_sync_channel_description">Affichée pendant l\'envoi à Aiku du travail enregistré sur le téléphone.</string>
+    <string name="offline_sync_sending">Envoi du travail enregistré sur le téléphone</string>
+    <string name="offline_sign_out_title">Travail en attente de synchronisation</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">%d action de votre part est en attente ; elle sera envoyée lorsque vous vous reconnecterez sur ce téléphone.</item>
+        <item quantity="many">%d actions de votre part sont en attente ; elles seront envoyées lorsque vous vous reconnecterez sur ce téléphone.</item>
+        <item quantity="other">%d actions de votre part sont en attente ; elles seront envoyées lorsque vous vous reconnecterez sur ce téléphone.</item>
+    </plurals>
+</resources>

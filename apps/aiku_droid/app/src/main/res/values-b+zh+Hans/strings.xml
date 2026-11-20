@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">减少</string>
     <string name="stepper_increase">增加</string>
     <string name="switcher_current">%1$s · 当前</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">应用 · %1$s</string>
-    <string name="sync_both">两者</string>
-    <string name="sync_conflict_explanation">每个不同的明细行可选择“我的”或“Aiku”；数量还可以选择“两者”（相加，但绝不超过该明细行所需数量）。您的选择会以填充样式显示。</string>
-    <string name="sync_conflicts_explanation">类似于解决合并冲突：打开记录逐行选择，或全部保留某一方。您舍弃的内容不会丢失：它会保留在同步历史中。</string>
     <string name="sync_conflicts_title">解决冲突</string>
-    <string name="sync_explanation">离线时，明细行级别的操作会保存在手机上：拣货、未拣货、打包、检查、上架、盘点、移动。重新连接后，每个操作都会与其开始时的版本进行比对：如果 Aiku 中没有变化，会自动上传；否则会在“解决冲突”中等待您处理。考勤打卡和状态更改需要网络连接。</string>
-    <string name="sync_keep_all_aiku">全部保留 Aiku 的</string>
-    <string name="sync_keep_all_mine">全部保留我的</string>
-    <string name="sync_kept_all_aiku">已全部保留 Aiku 的</string>
-    <string name="sync_kept_all_mine">已全部保留您的</string>
     <string name="sync_kicker">个人资料</string>
-    <string name="sync_last_sync">上次同步</string>
-    <string name="sync_lines_differ">不同的明细行</string>
-    <string name="sync_mine">我的</string>
-    <string name="sync_no_conflict">无冲突</string>
     <string name="sync_now_in_aiku">Aiku 当前</string>
-    <string name="sync_oldest_first">最早在前</string>
-    <string name="sync_online_only_body">货件、标签、完成、发货、取消和标记为已收到需要与承运商、打印机或客户通信，因此只能在线使用。您的拣货和打包已保存，恢复连接后会上传。</string>
-    <string name="sync_online_only_note">手机恢复在线且队列同步完成后，主按钮会立即恢复。</string>
-    <string name="sync_online_only_title">完成需要网络连接</string>
-    <string name="sync_resolve_all">一次性全部解决</string>
-    <string name="sync_same_on_both">两边相同</string>
-    <string name="sync_synced">已同步</string>
     <string name="sync_title">离线与同步</string>
-    <string name="sync_use_aiku_for_all">全部使用 Aiku 的</string>
-    <string name="sync_use_mine_for_all">全部使用我的</string>
-    <string name="sync_view">查看</string>
-    <string name="sync_waiting">等待上传</string>
     <string name="sync_yours">您的</string>
     <string name="tab_home">首页</string>
     <string name="tab_inbox">收件箱</string>
@@ -2338,14 +2313,5 @@
     </plurals>
     <plurals name="states_offline_actions">
         <item quantity="other">%d 个操作</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="other">Aiku %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="other">两者 %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="other">我的 %1$d</item>
     </plurals>
 </resources>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Çevrimdışı</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Çevrimdışı · %d bekliyor</item>
+        <item quantity="other">Çevrimdışı · %d bekliyor</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">Senkronize ediliyor: %d</item>
+        <item quantity="other">Senkronize ediliyor: %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d sizi bekliyor</item>
+        <item quantity="other">%d sizi bekliyor</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d işlem ilginizi bekliyor</item>
+        <item quantity="other">%d işlem ilginizi bekliyor</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Ne yapılacağını görmek için Aiku\'yu açın.</string>
+    <string name="offline_sync_channel_name">Çevrimdışı senkronizasyon</string>
+    <string name="offline_sync_channel_description">Telefonda kaydedilen işler Aiku\'ya gönderilirken gösterilir.</string>
+    <string name="offline_sync_sending">Telefonda kaydedilen işler gönderiliyor</string>
+    <string name="offline_sign_out_title">Senkronizasyon bekleyen işler</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">Sizden %d işlem bekliyor; bu telefonda yeniden oturum açtığınızda gönderilecek.</item>
+        <item quantity="other">Sizden %d işlem bekliyor; bu telefonda yeniden oturum açtığınızda gönderilecek.</item>
+    </plurals>
+</resources>

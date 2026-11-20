@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Offline</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Offline · %d čeká</item>
+        <item quantity="few">Offline · %d čekají</item>
+        <item quantity="many">Offline · %d čeká</item>
+        <item quantity="other">Offline · %d čeká</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">Synchronizace: %d</item>
+        <item quantity="few">Synchronizace: %d</item>
+        <item quantity="many">Synchronizace: %d</item>
+        <item quantity="other">Synchronizace: %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d vyžaduje váš zásah</item>
+        <item quantity="few">%d vyžadují váš zásah</item>
+        <item quantity="many">%d vyžaduje váš zásah</item>
+        <item quantity="other">%d vyžaduje váš zásah</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d akce vyžaduje váš zásah</item>
+        <item quantity="few">%d akce vyžadují váš zásah</item>
+        <item quantity="many">%d akce vyžaduje váš zásah</item>
+        <item quantity="other">%d akcí vyžaduje váš zásah</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Otevřete Aiku a podívejte se, co udělat.</string>
+    <string name="offline_sync_channel_name">Offline synchronizace</string>
+    <string name="offline_sync_channel_description">Zobrazuje se při odesílání práce uložené v telefonu do Aiku.</string>
+    <string name="offline_sync_sending">Odesílání práce uložené v telefonu</string>
+    <string name="offline_sign_out_title">Práce čeká na synchronizaci</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">%d vaše akce čeká; odešle se, až se na tomto telefonu znovu přihlásíte.</item>
+        <item quantity="few">%d vaše akce čekají; odešlou se, až se na tomto telefonu znovu přihlásíte.</item>
+        <item quantity="many">%d vaší akce čeká; odešle se, až se na tomto telefonu znovu přihlásíte.</item>
+        <item quantity="other">%d vašich akcí čeká; odešlou se, až se na tomto telefonu znovu přihlásíte.</item>
+    </plurals>
+</resources>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">Bezsaistē · saglabāta kopija no %1$s</string>
+    <string name="goodsout_offline_copy_body">Jūsu darbs ar šo pavadzīmi paliek šajā tālrunī un tiks nosūtīts, kad atkal būsiet tiešsaistē.</string>
+    <string name="goodsout_offline_saved">Saglabāts šajā tālrunī. Tiks sinhronizēts, kad atkal būsiet tiešsaistē.</string>
+    <string name="goodsout_offline_waiting_to_sync">Gaida sinhronizāciju</string>
+    <string name="goodsout_offline_needs_you">Nepieciešama jūsu rīcība</string>
+    <string name="goodsout_offline_queued_group">Saglabāts šajā tālrunī</string>
+    <string name="goodsout_offline_queued_pick">Savākts %1$s no %2$s</string>
+    <string name="goodsout_offline_queued_pick_plain">Savākts %1$s</string>
+    <string name="goodsout_offline_queued_not_picked">Nav savākts %1$s</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">Gaida noliktavu %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">Nodots klientu apkalpošanai %1$s</string>
+    <string name="goodsout_offline_queued_pack">Iepakots %1$s</string>
+    <string name="goodsout_offline_flush_waiting">Jūsu darbs ar šo pavadzīmi vēl nav sinhronizēts. Mēģiniet vēlreiz, kad tas būs.</string>
+    <string name="goodsout_offline_flush_needs_you">Daļai jūsu darba ar šo pavadzīmi vispirms nepieciešama jūsu rīcība.</string>
+    <string name="goodsout_offline_scan_online_only">Nepieciešams savienojums</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · gaida sinhronizāciju</string>
+    <string name="goodsout_offline_online_only_kicker">Nepieciešams savienojums</string>
+    <string name="goodsout_offline_online_only_title">Šim nepieciešams savienojums</string>
+    <string name="goodsout_offline_online_only_body">Darba sākšanu, pabeigšanu vai pārņemšanu, iepakošanu, pabeigšanu, nosūtīšanu un savākšanas sesijas Aiku pārbauda uzreiz, tāpēc tās darbojas tikai tiešsaistē.</string>
+    <string name="goodsout_offline_online_only_waiting">Darbības, kas šajā tālrunī gaida sinhronizāciju: %1$d. Tās ir drošībā un tiks nosūtītas, tiklīdz būsiet tiešsaistē.</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">Nekas no jums šajā tālrunī negaida sinhronizāciju.</string>
+    <string name="goodsout_offline_online_only_back_online">Jūs atkal esat tiešsaistē. Atgriezieties, lai turpinātu.</string>
+    <string name="goodsout_offline_online_only_view">Skatīt gaidošo darbu</string>
+</resources>

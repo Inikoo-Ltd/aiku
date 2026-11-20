@@ -1,5 +1,6 @@
 package io.aiku.droid.ui.inventory
 
+import io.aiku.droid.ui.sync.FakeOfflineWork
 import io.aiku.droid.data.api.AuditCount
 import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.LocationDetail
@@ -64,7 +65,7 @@ class SkoViewModelTest {
     private fun loaded(): SkoViewModel {
         api.orgStock = GoodsOutResult.Loaded(detail)
         api.movementPages = { GoodsOutResult.Loaded(MovementPage(movements(1L..12L), meta(1, 3, 120))) }
-        return SkoViewModel(api, FakeSessions(), warehouseId = 1, orgStockId = 77).also { it.onStart() }
+        return SkoViewModel(api, FakeSessions(), warehouseId = 1, orgStockId = 77, offlineWork = FakeOfflineWork()).also { it.onStart() }
     }
 
     @Test
@@ -108,11 +109,17 @@ class SkoViewModelTest {
 
             val state = sko.state.value
             assertEquals(index.toDouble(), state.orgStock?.quantityInLocations ?: -1.0, 0.0)
-            assertEquals(StockEvent.Done(action = write, message = "Done $index"), state.event)
+            assertEquals(StockEvent.Done(action = api.orgStockWrites.last(), message = "Done $index"), state.event)
             assertFalse(state.isWorking)
             sko.eventHandled()
         }
-        assertEquals(writes, api.orgStockWrites)
+        assertEquals(
+            listOf(
+                (writes[0] as OrgStockWrite.Audit).copy(clientRequestId = "req-1"),
+                (writes[1] as OrgStockWrite.Move).copy(clientRequestId = "req-2"),
+            ) + writes.drop(2),
+            api.orgStockWrites,
+        )
         assertEquals(1 + writes.size, api.movementRequests.size)
     }
 

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">Offline · uložená kópia z %1$s</string>
+    <string name="goodsout_offline_copy_body">Vaša práca na tomto doklade zostáva v tomto telefóne a odošle sa, keď budete opäť online.</string>
+    <string name="goodsout_offline_saved">Uložené v tomto telefóne. Synchronizuje sa, keď budete opäť online.</string>
+    <string name="goodsout_offline_waiting_to_sync">Čaká na synchronizáciu</string>
+    <string name="goodsout_offline_needs_you">Vyžaduje vás</string>
+    <string name="goodsout_offline_queued_group">Uložené v tomto telefóne</string>
+    <string name="goodsout_offline_queued_pick">Vychystané %1$s z %2$s</string>
+    <string name="goodsout_offline_queued_pick_plain">Vychystané %1$s</string>
+    <string name="goodsout_offline_queued_not_picked">Nevychystané %1$s</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">Čaká na sklad %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">Odovzdané zákazníckemu servisu %1$s</string>
+    <string name="goodsout_offline_queued_pack">Zabalené %1$s</string>
+    <string name="goodsout_offline_flush_waiting">Vaša práca na tomto doklade ešte nie je synchronizovaná. Skúste to znova, keď bude.</string>
+    <string name="goodsout_offline_flush_needs_you">Časť vašej práce na tomto doklade vyžaduje vás, kým to bude možné.</string>
+    <string name="goodsout_offline_scan_online_only">Vyžaduje pripojenie</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · čaká na synchronizáciu</string>
+    <string name="goodsout_offline_online_only_kicker">Vyžaduje pripojenie</string>
+    <string name="goodsout_offline_online_only_title">Na toto je potrebné pripojenie</string>
+    <string name="goodsout_offline_online_only_body">Začatie, dokončenie alebo prevzatie práce, balenie, finalizáciu, expedíciu a vychystávacie relácie Aiku kontroluje okamžite, preto fungujú len online.</string>
+    <string name="goodsout_offline_online_only_waiting">Akcie čakajúce na synchronizáciu v tomto telefóne: %1$d. Sú v bezpečí a odošlú sa, hneď ako budete opäť online.</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">Nič od vás v tomto telefóne nečaká na synchronizáciu.</string>
+    <string name="goodsout_offline_online_only_back_online">Ste opäť online. Vráťte sa späť a pokračujte.</string>
+    <string name="goodsout_offline_online_only_view">Zobraziť čakajúcu prácu</string>
+</resources>

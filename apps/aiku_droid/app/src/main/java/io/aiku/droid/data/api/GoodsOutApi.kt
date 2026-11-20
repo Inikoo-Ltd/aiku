@@ -1,9 +1,11 @@
 package io.aiku.droid.data.api
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNames
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -346,6 +348,7 @@ data class LineLocation(
     val type: String? = null,
     @SerialName("quantity_picked") val quantityPicked: Double? = null,
     @SerialName("picking_id") val pickingId: Long? = null,
+    val version: Long? = null,
 )
 
 @Serializable
@@ -405,8 +408,12 @@ data class DeliveryNoteLine(
     @SerialName("replacement_reason") val replacementReason: String? = null,
     @SerialName("indivisible_set") val isIndivisibleSet: Boolean = false,
     val pickings: List<LinePicking> = emptyList(),
+    @SerialName("barcodes") val barcodeValues: List<String?> = emptyList(),
+    @SerialName("in_picking_session") val inPickingSession: Boolean = false,
 ) {
     val unNumbersText: String? get() = unNumbers.displayText()
+
+    val barcodes: List<String> get() = barcodeValues.filterNotNull().filter { it.isNotBlank() }
 
     val isPackingDone: Boolean get() = isDonePacking || isPacked
 }
@@ -466,6 +473,7 @@ data class IncompleteSetPart(
     val locations: List<String> = emptyList(),
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class DeliveryNote(
     val id: Long,
@@ -508,7 +516,7 @@ data class DeliveryNote(
     @SerialName("available_actions") val availableActions: List<DeliveryNoteAction> = emptyList(),
     @SerialName("can_handle") val canHandle: Boolean = false,
     @SerialName("is_taken_over") val isTakenOver: Boolean = false,
-    val settings: PickingSettings = PickingSettings(),
+    @JsonNames("picking_settings") val settings: PickingSettings = PickingSettings(),
     @SerialName("incomplete_sets") val incompleteSets: List<IncompleteSetPart> = emptyList(),
     val consumables: List<Consumable> = emptyList(),
     val packaging: NotePackaging? = null,
@@ -612,6 +620,42 @@ enum class WaitingKind(val key: String) {
     Crm("crm"),
 }
 
+val DeliveryNoteWrite.isOfflineLineWork: Boolean
+    get() = this is DeliveryNoteWrite.Pick ||
+        this is DeliveryNoteWrite.PickAll ||
+        this is DeliveryNoteWrite.NotPicked ||
+        this is DeliveryNoteWrite.Waiting ||
+        this is DeliveryNoteWrite.Pack
+
+val DeliveryNoteWrite.lineId: Long?
+    get() = when (this) {
+        is DeliveryNoteWrite.Pick -> lineId
+        is DeliveryNoteWrite.PickAll -> lineId
+        is DeliveryNoteWrite.NotPicked -> lineId
+        is DeliveryNoteWrite.Waiting -> lineId
+        is DeliveryNoteWrite.Pack -> lineId
+        else -> null
+    }
+
+val DeliveryNoteWrite.clientRequestId: String?
+    get() = when (this) {
+        is DeliveryNoteWrite.Pick -> clientRequestId
+        is DeliveryNoteWrite.PickAll -> clientRequestId
+        is DeliveryNoteWrite.NotPicked -> clientRequestId
+        is DeliveryNoteWrite.Waiting -> clientRequestId
+        is DeliveryNoteWrite.Pack -> clientRequestId
+        else -> null
+    }
+
+fun DeliveryNoteWrite.withClientRequestId(id: String): DeliveryNoteWrite = when (this) {
+    is DeliveryNoteWrite.Pick -> copy(clientRequestId = id)
+    is DeliveryNoteWrite.PickAll -> copy(clientRequestId = id)
+    is DeliveryNoteWrite.NotPicked -> copy(clientRequestId = id)
+    is DeliveryNoteWrite.Waiting -> copy(clientRequestId = id)
+    is DeliveryNoteWrite.Pack -> copy(clientRequestId = id)
+    else -> this
+}
+
 sealed interface DeliveryNoteWrite {
     data class StartPicking(val trolleyId: Long?) : DeliveryNoteWrite
     data object TakeOver : DeliveryNoteWrite
@@ -624,16 +668,16 @@ sealed interface DeliveryNoteWrite {
     data class ChangeTrolley(val trolleyId: Long?) : DeliveryNoteWrite
     data class ChangePickedBay(val pickedBayId: Long?) : DeliveryNoteWrite
     data class SetPicker(val userId: Long?) : DeliveryNoteWrite
-    data class Pick(val lineId: Long, val locationOrgStockId: Long, val quantity: Double) : DeliveryNoteWrite
-    data class PickAll(val lineId: Long, val locationOrgStockId: Long?) : DeliveryNoteWrite
-    data class NotPicked(val lineId: Long, val quantity: Double?, val reason: NotPickedReason, val note: String?) : DeliveryNoteWrite
-    data class Waiting(val lineId: Long, val kind: WaitingKind, val quantity: Double, val note: String?) : DeliveryNoteWrite
+    data class Pick(val lineId: Long, val locationOrgStockId: Long, val quantity: Double, val clientRequestId: String? = null) : DeliveryNoteWrite
+    data class PickAll(val lineId: Long, val locationOrgStockId: Long?, val clientRequestId: String? = null) : DeliveryNoteWrite
+    data class NotPicked(val lineId: Long, val quantity: Double?, val reason: NotPickedReason, val note: String?, val clientRequestId: String? = null) : DeliveryNoteWrite
+    data class Waiting(val lineId: Long, val kind: WaitingKind, val quantity: Double, val note: String?, val clientRequestId: String? = null) : DeliveryNoteWrite
     data class UndoPicking(val lineId: Long, val pickingId: Long) : DeliveryNoteWrite
     data object StartPacking : DeliveryNoteWrite
     data object UndoPacking : DeliveryNoteWrite
     data object Unpack : DeliveryNoteWrite
     data class SetParcels(val parcels: List<ParcelWrite>) : DeliveryNoteWrite
-    data class Pack(val lineId: Long, val quantity: Double?) : DeliveryNoteWrite
+    data class Pack(val lineId: Long, val quantity: Double?, val clientRequestId: String? = null) : DeliveryNoteWrite
     data class UnpackLine(val lineId: Long) : DeliveryNoteWrite
     data class SetBoxes(val lineId: Long, val boxes: List<LineBox>) : DeliveryNoteWrite
     data object FinaliseAndDispatch : DeliveryNoteWrite

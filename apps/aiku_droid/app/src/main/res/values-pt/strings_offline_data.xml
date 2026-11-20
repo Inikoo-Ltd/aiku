@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Offline</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Offline · %d em espera</item>
+        <item quantity="many">Offline · %d em espera</item>
+        <item quantity="other">Offline · %d em espera</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">A sincronizar %d</item>
+        <item quantity="many">A sincronizar %d</item>
+        <item quantity="other">A sincronizar %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d requer a sua atenção</item>
+        <item quantity="many">%d requerem a sua atenção</item>
+        <item quantity="other">%d requerem a sua atenção</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d ação requer a sua atenção</item>
+        <item quantity="many">%d ações requerem a sua atenção</item>
+        <item quantity="other">%d ações requerem a sua atenção</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Abra o Aiku para ver o que fazer.</string>
+    <string name="offline_sync_channel_name">Sincronização offline</string>
+    <string name="offline_sync_channel_description">Mostrada enquanto o trabalho guardado no telemóvel é enviado para o Aiku.</string>
+    <string name="offline_sync_sending">A enviar o trabalho guardado no telemóvel</string>
+    <string name="offline_sign_out_title">Trabalho a aguardar sincronização</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">%d ação sua está em espera; será enviada quando voltar a iniciar sessão neste telemóvel.</item>
+        <item quantity="many">%d ações suas estão em espera; serão enviadas quando voltar a iniciar sessão neste telemóvel.</item>
+        <item quantity="other">%d ações suas estão em espera; serão enviadas quando voltar a iniciar sessão neste telemóvel.</item>
+    </plurals>
+</resources>

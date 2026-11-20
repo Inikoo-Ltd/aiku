@@ -63,6 +63,7 @@ import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.GroupLabel
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ListRow
+import io.aiku.droid.ui.components.LocalOfflineIndicator
 import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.fakeData
@@ -82,10 +83,6 @@ import io.aiku.droid.ui.navigation.TimesheetsRoute
 import io.aiku.droid.ui.states.StatePreview
 import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.theme.LocalAikuColors
-
-private object ProfileSample {
-    const val SYNC_WAITING = 3
-}
 
 private enum class ProfileScanMode(val mode: ScanMode, @StringRes val label: Int, @StringRes val caption: Int?) {
     Automatic(ScanMode.Automatic, R.string.profile_scan_automatic, R.string.profile_scan_automatic_caption),
@@ -113,6 +110,7 @@ fun ProfileScreen(
     val staff = LocalStaff.current
     val warehouse = LocalWarehouse.current
     val hasWarehouse = LocalWarehouses.current.isNotEmpty()
+    val syncWaiting by LocalOfflineIndicator.current.waitingCount.collectAsStateWithLifecycle()
     val navigator = LocalAppNavigator.current
     val clocking = LocalClocking.current
     val clockingState by clocking.state.collectAsStateWithLifecycle()
@@ -192,8 +190,7 @@ fun ProfileScreen(
                 RowDivider()
                 AppRow(
                     label = stringResource(R.string.profile_offline_sync),
-                    value = pluralStringResource(R.plurals.profile_sync_waiting, ProfileSample.SYNC_WAITING, ProfileSample.SYNC_WAITING),
-                    isSampleValue = true,
+                    value = pluralStringResource(R.plurals.profile_sync_waiting, syncWaiting, syncWaiting),
                     onClick = { navigator.open(SyncQueueRoute) },
                 )
                 RowDivider()

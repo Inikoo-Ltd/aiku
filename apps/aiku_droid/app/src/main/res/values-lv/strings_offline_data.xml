@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Bezsaistē</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="zero">Bezsaistē · gaida: %d</item>
+        <item quantity="one">Bezsaistē · gaida: %d</item>
+        <item quantity="other">Bezsaistē · gaida: %d</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="zero">Sinhronizē: %d</item>
+        <item quantity="one">Sinhronizē: %d</item>
+        <item quantity="other">Sinhronizē: %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="zero">Jūsu rīcību prasa: %d</item>
+        <item quantity="one">Jūsu rīcību prasa: %d</item>
+        <item quantity="other">Jūsu rīcību prasa: %d</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="zero">%d darbības prasa jūsu rīcību</item>
+        <item quantity="one">%d darbība prasa jūsu rīcību</item>
+        <item quantity="other">%d darbības prasa jūsu rīcību</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Atveriet Aiku, lai redzētu, kas jādara.</string>
+    <string name="offline_sync_channel_name">Bezsaistes sinhronizācija</string>
+    <string name="offline_sync_channel_description">Tiek rādīts, kamēr tālrunī saglabātais darbs tiek nosūtīts uz Aiku.</string>
+    <string name="offline_sync_sending">Sūta tālrunī saglabāto darbu</string>
+    <string name="offline_sign_out_title">Darbs gaida sinhronizāciju</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="zero">%d jūsu darbības gaida; tās tiks nosūtītas, kad atkal pierakstīsieties šajā tālrunī.</item>
+        <item quantity="one">%d jūsu darbība gaida; tā tiks nosūtīta, kad atkal pierakstīsieties šajā tālrunī.</item>
+        <item quantity="other">%d jūsu darbības gaida; tās tiks nosūtītas, kad atkal pierakstīsieties šajā tālrunī.</item>
+    </plurals>
+</resources>

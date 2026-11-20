@@ -1,5 +1,6 @@
 package io.aiku.droid.ui.locations
 
+import io.aiku.droid.ui.sync.FakeOfflineWork
 import io.aiku.droid.data.api.AuditCount
 import io.aiku.droid.data.api.Edited
 import io.aiku.droid.data.api.GoodsOutResult
@@ -72,7 +73,7 @@ class LocationViewModelTest {
 
     private fun loaded(): LocationViewModel {
         api.location = GoodsOutResult.Loaded(detail())
-        return LocationViewModel(api, FakeSessions(), warehouseId = 1, locationId = 220).also { it.onStart() }
+        return LocationViewModel(api, FakeSessions(), warehouseId = 1, locationId = 220, offlineWork = FakeOfflineWork()).also { it.onStart() }
     }
 
     @Test
@@ -118,9 +119,10 @@ class LocationViewModelTest {
 
         val state = location.state.value
         assertEquals(28.0, state.location?.orgStock(5501)?.stock ?: 0.0, 0.0)
-        assertEquals(StockEvent.Done(action = write), state.event)
+        val sent = write.copy(clientRequestId = "req-1")
+        assertEquals(StockEvent.Done(action = sent), state.event)
         assertFalse(state.isWorking)
-        assertEquals(220L to write, api.locationWrites.single())
+        assertEquals(220L to sent, api.locationWrites.single())
     }
 
     @Test

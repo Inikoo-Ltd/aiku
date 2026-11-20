@@ -127,17 +127,23 @@ object GoodsOutResponses {
         is DeliveryNoteWrite.Pick -> post(linePath(write.lineId, "pick")) {
             put("location_org_stock_id", write.locationOrgStockId)
             put("quantity", quantityValue(write.quantity))
+            putClientRequestId(write.clientRequestId)
         }
-        is DeliveryNoteWrite.PickAll -> post(linePath(write.lineId, "pick-all")) { put("location_org_stock_id", write.locationOrgStockId) }
+        is DeliveryNoteWrite.PickAll -> post(linePath(write.lineId, "pick-all")) {
+            put("location_org_stock_id", write.locationOrgStockId)
+            putClientRequestId(write.clientRequestId)
+        }
         is DeliveryNoteWrite.NotPicked -> post(linePath(write.lineId, "not-picked")) {
             put("quantity", write.quantity?.let(::quantityValue))
             put("reason", write.reason.key)
             put("note", write.note?.trim()?.takeIf { it.isNotEmpty() })
+            putClientRequestId(write.clientRequestId)
         }
         is DeliveryNoteWrite.Waiting -> post(linePath(write.lineId, "waiting")) {
             put("kind", write.kind.key)
             put("quantity", quantityValue(write.quantity))
             put("note", write.note?.trim()?.takeIf { it.isNotEmpty() })
+            putClientRequestId(write.clientRequestId)
         }
         is DeliveryNoteWrite.UndoPicking -> WriteRequest(WriteMethod.Delete, linePath(write.lineId, "pickings/${write.pickingId}"), body = null)
         DeliveryNoteWrite.StartPacking -> post("start-packing")
@@ -154,7 +160,10 @@ object GoodsOutResponses {
                 }
             }
         }
-        is DeliveryNoteWrite.Pack -> post(linePath(write.lineId, "pack")) { put("quantity", write.quantity?.let(::quantityValue)) }
+        is DeliveryNoteWrite.Pack -> post(linePath(write.lineId, "pack")) {
+            put("quantity", write.quantity?.let(::quantityValue))
+            putClientRequestId(write.clientRequestId)
+        }
         is DeliveryNoteWrite.UnpackLine -> post(linePath(write.lineId, "unpack"))
         is DeliveryNoteWrite.SetBoxes -> post(linePath(write.lineId, "boxes")) {
             putJsonArray("boxes") {
@@ -198,6 +207,10 @@ object GoodsOutResponses {
                 putContact(write.address)
             }
         }
+    }
+
+    private fun JsonObjectBuilder.putClientRequestId(clientRequestId: String?) {
+        clientRequestId?.let { put("client_request_id", it) }
     }
 
     private fun JsonObjectBuilder.putContact(address: DeliveryAddressFields) {
