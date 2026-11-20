@@ -12,6 +12,7 @@ namespace App\Actions\Goods\ProductDevelopment\UI;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
 use App\Actions\Goods\ProductDevelopment\RecordProductDevelopmentActivity;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentStageDueDate;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentCopySectionEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentChecklistItemStateEnum;
@@ -97,6 +98,7 @@ class GetProductDevelopmentActivity
                 'created' => [__('Created :code', ['code' => $productDevelopment->code]), []],
                 RecordProductDevelopmentActivity::STAGE_MOVED => [__('Moved from :from to :to', ['from' => $old['stage'] ?? '—', 'to' => $new['stage'] ?? '—']), []],
                 RecordProductDevelopmentActivity::SKUS_ADDED => [trans_choice('Added :count SKU|Added :count SKUs', count($new['skus'] ?? []), ['count' => count($new['skus'] ?? [])]), [['label' => __('SKUs'), 'old' => null, 'new' => implode(', ', $new['skus'] ?? [])]]],
+                RecordProductDevelopmentActivity::INFORMATION_COPIED => [__('Copied the information of :source into :sku', ['source' => $new['source'] ?? '', 'sku' => $new['sku'] ?? '']), [['label' => __('Copied'), 'old' => null, 'new' => collect($new['sections'] ?? [])->map(fn (string $section) => ProductDevelopmentCopySectionEnum::labels()[$section] ?? $section)->implode(', ')]]],
                 RecordProductDevelopmentActivity::MEMBERS_ADDED => [__('Added members'), [['label' => __('Members'), 'old' => null, 'new' => implode(', ', $new['members'] ?? [])]]],
                 RecordProductDevelopmentActivity::FILES_UPLOADED => [$this->filesSentence($new), [['label' => __('Files'), 'old' => null, 'new' => implode(', ', $new['files'] ?? [])]]],
                 UpdateProductDevelopmentStageDueDate::STAGE_DUE_CHANGED => [__('Changed the due date of :stage', ['stage' => $new['stage'] ?? '']), [['label' => __('Due'), 'old' => $this->displayValue('target_online_date', $old['due_at'] ?? null), 'new' => $this->displayValue('target_online_date', $new['due_at'] ?? null)]]],

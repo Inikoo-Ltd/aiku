@@ -18,6 +18,7 @@ import Textarea from "primevue/textarea"
 import RadioButton from "primevue/radiobutton"
 import Select from "primevue/select"
 import DatePicker from "primevue/datepicker"
+import Checkbox from "primevue/checkbox"
 import { useFitToViewport } from "@/Components/Goods/ProductDevelopment/useFitToViewport"
 import ProductDevelopmentRemoteSelect from "@/Components/Goods/ProductDevelopment/ProductDevelopmentRemoteSelect.vue"
 import ProductDevelopmentUserSelect from "@/Components/Goods/ProductDevelopment/ProductDevelopmentUserSelect.vue"
@@ -32,9 +33,9 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPlus, faTimes, faLightbulbOn, faArrowLeft, faSparkles, faPaintBrush, faTag, faPaperclip, faFilePdf, faImage, faFilm, faBoxOpen, faFlask } from "@fal"
+import { faPlus, faTimes, faLightbulbOn, faArrowLeft, faSparkles, faPaintBrush, faTag, faPaperclip, faFilePdf, faImage, faFilm, faBoxOpen, faFlask, faCopy } from "@fal"
 import { faSave } from "@fas"
-library.add(faPlus, faTimes, faSave, faLightbulbOn, faArrowLeft, faSparkles, faPaintBrush, faTag, faPaperclip, faFilePdf, faImage, faFilm, faBoxOpen, faFlask)
+library.add(faPlus, faTimes, faSave, faLightbulbOn, faArrowLeft, faSparkles, faPaintBrush, faTag, faPaperclip, faFilePdf, faImage, faFilm, faBoxOpen, faFlask, faCopy)
 
 interface Option {
     value: string | number
@@ -51,6 +52,7 @@ const props = defineProps<{
     currentUserId: number
     options: {
         kinds: { value: "product" | "recipe", label: string, description: string, icon: string }[]
+        copy_sections: { value: string, label: string, description: string, kinds: ("product" | "recipe")[] }[]
         productions: { value: number, label: string, organisation: string | null }[]
         types: Option[]
         roles: Option[]
@@ -80,6 +82,9 @@ interface SkuRow {
     trade_unit_id: number | null
     brief: string
     images: { file: File, url: string }[]
+    copying: boolean
+    copy_from_trade_unit_id: number | null
+    copy_sections: string[]
     code_error?: string | null
     checking?: boolean
 }
@@ -108,7 +113,29 @@ const onComponentPicked = (row: ComponentRow, option: { code?: string, name?: st
     row.url = option.url ?? null
 }
 
-const newSku = (): SkuRow => ({ mode: "new", code: "", name: "", trade_unit_id: null, brief: "", images: [] })
+const newSku = (): SkuRow => ({ mode: "new", code: "", name: "", trade_unit_id: null, brief: "", images: [], copying: false, copy_from_trade_unit_id: null, copy_sections: props.options.copy_sections.map((section) => section.value) })
+
+const copySections = computed(() => props.options.copy_sections.filter((section) => section.kinds.includes(form.kind)))
+
+function stopCopying(sku: SkuRow) {
+    sku.copying = false
+    sku.copy_from_trade_unit_id = null
+}
+
+function onCopySourcePicked(sku: SkuRow, option: { label: string, name?: string }) {
+    if (!sku.name.trim() && option.name) {
+        sku.name = option.name
+    }
+}
+
+function copyPayload(sku: SkuRow) {
+    if (!sku.copying || !sku.copy_from_trade_unit_id) {
+        return {}
+    }
+    const available = copySections.value.map((section) => section.value)
+    const sections = sku.copy_sections.filter((section) => available.includes(section))
+    return sections.length ? { copy_from_trade_unit_id: sku.copy_from_trade_unit_id, copy_sections: sections } : {}
+}
 const skus = ref<SkuRow[]>([newSku()])
 
 /* Brief references (PDF) for the range, and reference images per SKU, uploaded with the development */
@@ -289,7 +316,7 @@ function submit() {
         items: sentRows.map((index) => {
             const sku = skus.value[index]
             const details = { brief: sku.brief || null, images: sku.images.map((image) => image.file) }
-            return sku.mode === "existing" ? { trade_unit_id: sku.trade_unit_id, ...details } : { code: sku.code, name: sku.name, ...details }
+            return sku.mode === "existing" ? { trade_unit_id: sku.trade_unit_id, ...details } : { code: sku.code, name: sku.name, ...copyPayload(sku), ...details }
         }),
         brief_files: briefFiles.value,
         members: sentMembers.map((index) => members.value[index]),
@@ -497,6 +524,32 @@ function submit() {
                                 <Button type="tertiary" :tooltip="ctrans('Remove SKU')" class="h-10 w-10 justify-center justify-self-end" @click="skus.splice(index, 1)">
                                     <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
                                 </Button>
+                            </div>
+
+                            <div v-if="sku.mode === 'new'" class="rounded-md border border-dashed border-gray-200 px-3 py-2">
+                                <Button v-if="!sku.copying" type="tertiary" size="xs" :label="ctrans('Copy information from an existing product')" @click="sku.copying = true">
+                                    <template #icon><FontAwesomeIcon icon="fal fa-copy" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+                                </Button>
+                                <div v-else class="space-y-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="shrink-0 text-xs font-medium text-gray-700">{{ ctrans("Copy from") }}</span>
+                                        <ProductDevelopmentRemoteSelect v-model="sku.copy_from_trade_unit_id" :searchRoute="searchRoutes.trade_units" :placeholder="ctrans('Search the product to copy from')" class="min-w-0 flex-1" @picked="onCopySourcePicked(sku, $event)" />
+                                        <Button type="tertiary" size="xs" :tooltip="ctrans('Do not copy')" @click="stopCopying(sku)">
+                                            <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                                        </Button>
+                                    </div>
+                                    <p v-if="error(`items.${index}.copy_from_trade_unit_id`)" class="text-xs text-red-600">{{ error(`items.${index}.copy_from_trade_unit_id`) }}</p>
+                                    <div class="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
+                                        <label v-for="section in copySections" :key="section.value" class="flex cursor-pointer items-start gap-2 text-sm">
+                                            <Checkbox v-model="sku.copy_sections" :value="section.value" :inputId="`copy-${index}-${section.value}`" class="mt-0.5" />
+                                            <span class="min-w-0">
+                                                <span class="block text-gray-800">{{ section.label }}</span>
+                                                <span class="block text-xs text-gray-500">{{ section.description }}</span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <p class="text-xs text-gray-500">{{ ctrans("The new SKU stays its own product in the same family. Compliance should check the copied details still apply to the new packaging.") }}</p>
+                                </div>
                             </div>
 
                             <Textarea v-model="sku.brief" rows="2" autoResize class="w-full text-sm" :placeholder="ctrans('Short brief for this product (optional): fragrance, colour, look…')" />

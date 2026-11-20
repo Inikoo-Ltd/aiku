@@ -13,6 +13,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import ProductDevelopmentProgressBar from "@/Components/Goods/ProductDevelopment/ProductDevelopmentProgressBar.vue"
 import ProductDevelopmentSkuList from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSkuList.vue"
+import ProductDevelopmentCopiedFrom from "@/Components/Goods/ProductDevelopment/ProductDevelopmentCopiedFrom.vue"
 import ProductDevelopmentSpecField from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSpecField.vue"
 import ProductDevelopmentSupplierProductLink from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSupplierProductLink.vue"
 import { productDevelopmentColor } from "@/Components/Goods/ProductDevelopment/productDevelopmentColors"
@@ -109,6 +110,8 @@ const linkDialog = ref<InstanceType<typeof ProductDevelopmentSupplierProductLink
                             <span class="text-xs tabular-nums text-gray-500">{{ summary(selected).done }}/{{ summary(selected).total }}</span>
                         </div>
                     </div>
+
+                    <ProductDevelopmentCopiedFrom v-if="selected.copied_from" :copiedFrom="selected.copied_from" />
 
                     <p v-if="summary(selected).missing.length" class="text-xs text-amber-800">
                         <span class="font-medium">{{ ctrans("Still missing:") }}</span> {{ summary(selected).missing.join(", ") }}
