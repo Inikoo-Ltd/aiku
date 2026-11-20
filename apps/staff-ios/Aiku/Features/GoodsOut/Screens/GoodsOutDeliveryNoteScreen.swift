@@ -243,6 +243,7 @@ struct GoodsOutRemoteNotices: View {
     let note: GoodsOutDeliveryNote
 
     var body: some View {
+        GoodsOutOfflineNotices(noteID: note.apiID)
         if let notice = note.remote?.readOnlyNotice {
             InlineAlert(tone: .info, title: "Read only", message: notice)
         }

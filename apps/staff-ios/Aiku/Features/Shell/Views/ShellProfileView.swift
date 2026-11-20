@@ -10,6 +10,8 @@ struct ShellProfileView: View {
     @AppStorage(ScanSettingsKey.vibrate) private var vibrates = true
     private let languages = LanguageStore.shared
     @State private var isChoosingWarehouse = false
+    @State private var isConfirmingSignOut = false
+    private let offline = OfflineWork.shared
     private let clocking = ClockingStore.shared
 
     var body: some View {
@@ -57,7 +59,11 @@ struct ShellProfileView: View {
                         router.open(ShellRoute.language)
                     }
                     RowDivider()
-                    ShellValueRow(title: "Offline & sync", value: ShellProfileContent.syncWaiting) {
+                    ShellValueRow(
+                        title: "Offline & sync",
+                        value: ShellProfileContent.syncValue(waiting: offline.waitingCount, needsYou: offline.needsYouCount),
+                        valueTone: offline.needsYouCount > 0 ? .warn : nil
+                    ) {
                         router.open(SystemRoute.syncQueue)
                     }
                     RowDivider()
@@ -77,7 +83,11 @@ struct ShellProfileView: View {
                 }
             }
             AikuButton("Log out", icon: .logout, kind: .danger) {
-                signOut()
+                if offline.waitingCount > 0 {
+                    isConfirmingSignOut = true
+                } else {
+                    signOut()
+                }
             }
             .accessibilityIdentifier("shell.profile.logout")
             #if DEBUG
@@ -85,6 +95,15 @@ struct ShellProfileView: View {
             #endif
         }
         .shellWarehouseSheet(isPresented: $isChoosingWarehouse)
+        .aikuConfirm(
+            "Work waiting to sync",
+            isPresented: $isConfirmingSignOut,
+            message: ShellProfileContent.signOutWaitingMessage(offline.waitingCount),
+            confirmTitle: "Log out",
+            isDestructive: true
+        ) {
+            signOut()
+        }
         .task { await authStore.refreshProfile() }
         .task { await clocking.load() }
         .screenRefreshable { await authStore.refreshProfile() }

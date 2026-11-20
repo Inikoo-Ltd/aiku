@@ -16,12 +16,15 @@ extension GoodsOutStore {
         if !name.isEmpty {
             currentUser = name
         }
+        startFollowingOfflineWork()
         guard !isRemote || self.userID != userID || warehouseID != warehouse.id else { return }
+        GoodsOutOfflineCopies.shared.reset()
         enterRemote(userID: userID, warehouseID: warehouse.id)
     }
 
     func resetToSample() {
         guard isRemote else { return }
+        GoodsOutOfflineCopies.shared.reset()
         leaveRemote()
         notes = GoodsOutSampleData.notes
         currentUser = GoodsOutSampleData.currentUser
@@ -124,6 +127,8 @@ extension GoodsOutStore {
         guard isRemote else { return (.failed(message: "Sign in and choose a warehouse to work on delivery notes."), nil) }
         guard let id = noteID(for: reference) else { return (.failed(message: "This delivery note is not in the selected warehouse."), nil) }
         guard !isWorking(on: reference) else { return (.failed(message: "Still working on the last action."), nil) }
+        if let queued = queueOffline(action, noteID: id) { return (queued, nil) }
+        if let unsettled = await settleOfflineWork(before: action, noteID: id) { return (unsettled, nil) }
         setWorking(reference, true)
         defer { setWorking(reference, false) }
         do {
@@ -133,6 +138,7 @@ extension GoodsOutStore {
             return (response.isNothingChanged ? .nothingChanged(message: message) : .done(message: message), response.result)
         } catch {
             if error.isCancellation { return (.failed(message: ""), nil) }
+            if error as? APIError == .offline, let queued = queueOffline(action, noteID: id, force: true) { return (queued, nil) }
             await reloadIfPlatformUnanswered(action, error: error, noteID: id)
             return (.failed(message: GoodsOutMapper.message(for: error)), nil)
         }
@@ -144,6 +150,9 @@ extension GoodsOutStore {
     }
 
     func scanToPick(_ reference: String, code: String, line: GoodsOutLine?) async -> (outcome: GoodsOutScanOutcome, message: String?) {
+        if let id = noteID(for: reference), let offlineScan = offlineScanToPick(noteID: id, code: code, lineID: line?.apiID) {
+            return offlineScan
+        }
         let (outcome, result) = await performForResult(.scanPick(barcode: code, lineID: line?.apiID), on: reference)
         if case .failed(let message) = outcome {
             return (.notOnNote(code: code), message.isEmpty ? nil : message)

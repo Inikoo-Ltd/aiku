@@ -196,7 +196,7 @@ struct GoodsOutPackingTests {
         #expect(try bodyText(.parcels([GoodsOutParcelInput(weightKg: 1.5, dimensionsCm: [30, 20, 10], boxes: nil)])) == #"{"parcels":[{"boxes":null,"dimensions_cm":[30,20,10],"weight_kg":1.5}]}"#)
         #expect(try bodyText(.scanPack(barcode: "5001")) == #"{"barcode":"5001","delivery_note_item_id":null,"quantity":1}"#)
         #expect(Endpoint.goodsOutNoteAction(noteID: 700, .pack(line: 22, quantity: nil)).path == "mobile/delivery-notes/700/lines/22/pack")
-        #expect(try bodyText(.pack(line: 22, quantity: nil)) == #"{"quantity":null}"#)
+        #expect(try bodyText(.pack(line: 22, quantity: nil, clientRequestID: "request-1")) == #"{"client_request_id":"request-1","quantity":null}"#)
         #expect(Endpoint.goodsOutNoteAction(noteID: 700, .unpack(line: 22)).path == "mobile/delivery-notes/700/lines/22/unpack")
         #expect(try bodyText(.boxes(line: 22, [GoodsOutLineBoxInput(box: 1, quantity: 0.5)])) == #"{"boxes":[{"box":1,"quantity":0.5}]}"#)
         #expect(try bodyText(.addShipment(shipperID: 39, tracking: " TRK1 ")) == #"{"cost":null,"override_lock":false,"sender_name":null,"shipper_id":39,"tracking":"TRK1"}"#)

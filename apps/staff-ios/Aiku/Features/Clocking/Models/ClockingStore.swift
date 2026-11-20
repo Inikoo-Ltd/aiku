@@ -186,6 +186,9 @@ final class ClockingStore {
                 workingHoursLabel = "\(start) - \(end)"
             }
             let kind: ClockingEventKind = response.clocking?.type == "clock_out" ? .clockOut : .clockIn
+            if kind == .clockOut {
+                OfflineWork.shared.syncNow(.clockOut)
+            }
             let time = ClockingMapper.secondsSinceMidnight(response.clocking?.clockedAt, in: timeZone) ?? now
             let event = ClockingEvent(time: time, kind: kind, viaMobileApp: true, place: response.machine?.name ?? "Clocking machine", clockingID: response.clocking?.id, isLate: response.clocking?.isLate ?? false)
             await load()

@@ -1,9 +1,31 @@
 import Foundation
 import Observation
 
-struct SystemSyncResult: Equatable, Sendable {
-    let uploaded: Int
-    let conflicts: Int
+struct SystemSyncService: Sendable {
+    var operations: @Sendable (OfflineOperationsState) async throws -> [OfflineOperationEntry]
+    var resolve: @Sendable (Int, OfflineResolution) async throws -> OfflineResolveOutcome
+    var rollback: @Sendable (Int, String?) async throws -> OfflineOperationEntry
+
+    static let live = SystemSyncService(
+        operations: { try await OfflineSyncAPI.shared.operations($0) },
+        resolve: { try await OfflineSyncAPI.shared.resolve(operationID: $0, resolution: $1) },
+        rollback: { try await OfflineSyncAPI.shared.rollback(operationID: $0, reason: $1) }
+    )
+}
+
+struct SystemQueueGroup: Identifiable, Sendable {
+    let record: OfflineRecordKey
+    let title: String
+    let entries: [QueueEntry]
+
+    var id: OfflineRecordKey { record }
+}
+
+enum SystemSyncChange: Equatable, Sendable {
+    case resolved(OfflineResolution)
+    case rolledBack
+    case refused(String)
+    case sessionExpired
 }
 
 @MainActor
@@ -11,162 +33,141 @@ struct SystemSyncResult: Equatable, Sendable {
 final class SystemSyncStore {
     static let shared = SystemSyncStore()
 
-    private(set) var actions: [SystemQueuedAction]
-    private(set) var conflicts: [SystemConflict]
-    private(set) var history: [SystemSyncRecord]
-    private(set) var isOnline: Bool
-    private(set) var hasSynced = false
-    let offlineSince: String
+    private(set) var openOperations: [OfflineOperationEntry] = []
+    private(set) var recentOperations: [OfflineOperationEntry] = []
+    private(set) var hasLoaded = false
+    private(set) var isLoading = false
+    private(set) var loadError: String?
+    private(set) var workingOn: Int?
+    private(set) var ranAgain: [Int: [OfflineOperationEntry]] = [:]
 
-    init(
-        actions: [SystemQueuedAction] = SystemSyncSampleData.actions,
-        conflicts: [SystemConflict] = SystemSyncSampleData.conflicts,
-        history: [SystemSyncRecord] = SystemSyncSampleData.history,
-        isOnline: Bool = false,
-        offlineSince: String = SystemSyncSampleData.offlineSince
-    ) {
-        self.actions = actions
-        self.conflicts = conflicts
-        self.history = history
-        self.isOnline = isOnline
-        self.offlineSince = offlineSince
+    @ObservationIgnored private let service: SystemSyncService
+    @ObservationIgnored private var titles: [OfflineRecordKey: String] = [:]
+
+    init(service: SystemSyncService = .live) {
+        self.service = service
     }
 
-    var waitingActions: [SystemQueuedAction] { actions.filter { $0.status == .waiting } }
-
-    var reviewActions: [SystemQueuedAction] { actions.filter { $0.status == .needsReview } }
-
-    var uploadedCount: Int { actions.filter { $0.status == .uploaded }.count }
-
-    var pendingCount: Int { waitingActions.count + reviewActions.count }
-
-    var openConflicts: [SystemConflict] {
-        guard hasSynced else { return [] }
-        return conflicts.filter(\.isOpen)
+    func load() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            async let open = service.operations(.open)
+            async let recent = service.operations(.recent)
+            openOperations = try await open
+            recentOperations = try await recent
+            hasLoaded = true
+            loadError = nil
+            rememberTitles(openOperations + recentOperations)
+        } catch where error.isCancellation {
+            return
+        } catch {
+            loadError = Self.message(for: error)
+        }
     }
 
-    var resolvedConflicts: [SystemConflict] {
-        guard hasSynced else { return [] }
-        return conflicts.filter { !$0.isOpen }
+    func operation(_ id: Int) -> OfflineOperationEntry? {
+        openOperations.first { $0.key == id } ?? recentOperations.first { $0.key == id }
     }
 
-    var canSignOut: Bool { pendingCount == 0 }
-
-    func conflict(reference: String) -> SystemConflict? {
-        conflicts.first { $0.reference == reference } ?? conflicts.first
+    func resolve(_ id: Int, with resolution: OfflineResolution) async -> SystemSyncChange? {
+        guard workingOn == nil, operation(id)?.allowedResolutions.contains(resolution) == true else { return nil }
+        workingOn = id
+        defer { workingOn = nil }
+        do {
+            let outcome = try await service.resolve(id, resolution)
+            replace(outcome.operation)
+            ranAgain[id] = outcome.results
+            return .resolved(resolution)
+        } catch {
+            return Self.refusal(error)
+        }
     }
 
-    func position(of reference: String) -> Int {
-        (conflicts.firstIndex { $0.reference == reference } ?? 0) + 1
+    func rollback(_ id: Int, reason: String?) async -> SystemSyncChange? {
+        guard workingOn == nil, operation(id)?.canRollback == true else { return nil }
+        workingOn = id
+        defer { workingOn = nil }
+        do {
+            replace(try await service.rollback(id, reason))
+            return .rolledBack
+        } catch {
+            return Self.refusal(error)
+        }
     }
 
-    @discardableResult
-    func syncNow(at time: String) -> SystemSyncResult {
-        isOnline = true
-        hasSynced = true
-        let openReferences = Set(conflicts.filter(\.isOpen).map(\.reference))
-        var uploaded = 0
-        for index in actions.indices where actions[index].status == .waiting {
-            if let reference = actions[index].conflictReference, openReferences.contains(reference) {
-                actions[index].status = .needsReview
-            } else {
-                actions[index].status = .uploaded
-                uploaded += 1
+    func groups(of queue: [QueueEntry], downloaded: (OfflineRecordKey) -> DownloadedRecord?) -> [SystemQueueGroup] {
+        var order: [OfflineRecordKey] = []
+        var byRecord: [OfflineRecordKey: [QueueEntry]] = [:]
+        for entry in queue {
+            guard let record = entry.record else { continue }
+            if byRecord[record] == nil {
+                order.append(record)
+            }
+            byRecord[record, default: []].append(entry)
+        }
+        return order.map { record in
+            SystemQueueGroup(record: record, title: title(of: record, downloaded: downloaded), entries: byRecord[record] ?? [])
+        }
+    }
+
+    func title(of record: OfflineRecordKey, downloaded: (OfflineRecordKey) -> DownloadedRecord?) -> String {
+        if let known = titles[record] {
+            return record.type.title(known)
+        }
+        if let reference = downloaded(record).flatMap({ Self.reference(in: $0.body) }) {
+            titles[record] = reference
+            return record.type.title(reference)
+        }
+        return record.type.title("#\(record.id)")
+    }
+
+    func reset() {
+        openOperations = []
+        recentOperations = []
+        hasLoaded = false
+        loadError = nil
+        ranAgain = [:]
+        titles = [:]
+    }
+
+    static func reference(in body: Data) -> String? {
+        guard let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
+              let data = object["data"] as? [String: Any] else { return nil }
+        return ["reference", "code"].lazy.compactMap { data[$0] as? String }.first { !$0.isEmpty }
+    }
+
+    private func rememberTitles(_ entries: [OfflineOperationEntry]) {
+        for entry in entries {
+            guard let record = entry.record?.key else { continue }
+            let title = entry.labels.title.components(separatedBy: " · ").first?.trimmingCharacters(in: .whitespaces) ?? ""
+            if !title.isEmpty, titles[record] == nil {
+                titles[record] = title
             }
         }
-        if uploaded > 0 {
-            history.insert(
-                SystemSyncRecord(
-                    title: uploaded == 1 ? "1 action uploaded" : "\(uploaded) actions uploaded",
-                    detail: "Version check passed · \(time)",
-                    chip: Chip("Synced", .success),
-                    icon: .check
-                ),
-                at: 0
-            )
+    }
+
+    private func replace(_ updated: OfflineOperationEntry) {
+        if let index = openOperations.firstIndex(where: { $0.key == updated.key }) {
+            openOperations.remove(at: index)
         }
-        let conflictCount = Set(actions.filter { $0.status == .needsReview }.compactMap(\.conflictReference)).count
-        return SystemSyncResult(uploaded: uploaded, conflicts: conflictCount)
-    }
-
-    func choose(_ choice: SystemConflictChoice, line lineID: String, in reference: String) {
-        guard let conflictIndex = conflicts.firstIndex(where: { $0.reference == reference }),
-              conflicts[conflictIndex].isOpen,
-              let lineIndex = conflicts[conflictIndex].lines.firstIndex(where: { $0.id == lineID }),
-              conflicts[conflictIndex].lines[lineIndex].choices.contains(choice)
-        else { return }
-        conflicts[conflictIndex].lines[lineIndex].choice = choice
-    }
-
-    func chooseAll(_ choice: SystemConflictChoice, in reference: String) {
-        guard let conflictIndex = conflicts.firstIndex(where: { $0.reference == reference }), conflicts[conflictIndex].isOpen else { return }
-        for lineIndex in conflicts[conflictIndex].lines.indices where conflicts[conflictIndex].lines[lineIndex].choices.contains(choice) {
-            conflicts[conflictIndex].lines[lineIndex].choice = choice
+        if let index = recentOperations.firstIndex(where: { $0.key == updated.key }) {
+            recentOperations[index] = updated
+        } else {
+            recentOperations.insert(updated, at: 0)
         }
     }
 
-    @discardableResult
-    func apply(_ reference: String, at time: String) -> Bool {
-        guard let conflictIndex = conflicts.firstIndex(where: { $0.reference == reference }),
-              conflicts[conflictIndex].isOpen,
-              conflicts[conflictIndex].canApply
-        else { return false }
-        conflicts[conflictIndex].isResolved = true
-        for index in actions.indices where actions[index].conflictReference == reference && actions[index].status == .needsReview {
-            actions[index].status = .uploaded
-        }
-        let conflict = conflicts[conflictIndex]
-        history.insert(
-            SystemSyncRecord(
-                title: "\(conflict.headerTitle) resolved",
-                detail: "\(conflict.choiceSummary) · \(time)",
-                chip: Chip("Synced", .success),
-                icon: .check
-            ),
-            at: 0
-        )
-        return true
+    private static func refusal(_ error: Error) -> SystemSyncChange {
+        if error as? APIError == .unauthorized { return .sessionExpired }
+        return .refused(message(for: error))
     }
 
-    @discardableResult
-    func resolveAll(keeping choice: SystemConflictChoice, at time: String) -> Int {
-        let references = openConflicts.map(\.reference)
-        var resolved = 0
-        for reference in references {
-            chooseAll(choice, in: reference)
-            if apply(reference, at: time) {
-                resolved += 1
-            }
+    private static func message(for error: Error) -> String {
+        switch error as? APIError {
+        case .offline: "This needs a connection"
+        case .some(let apiError): apiError.errorDescription ?? "Something went wrong"
+        case nil: "Something went wrong"
         }
-        return resolved
-    }
-
-    @discardableResult
-    func discardQueue(at time: String) -> Int {
-        var discarded = 0
-        for index in actions.indices where actions[index].status == .waiting || actions[index].status == .needsReview {
-            actions[index].status = .discarded
-            discarded += 1
-        }
-        for index in conflicts.indices where conflicts[index].isOpen {
-            conflicts[index].isDiscarded = true
-        }
-        if discarded > 0 {
-            history.insert(
-                SystemSyncRecord(
-                    title: discarded == 1 ? "1 action discarded" : "\(discarded) actions discarded",
-                    detail: "Kept in sync history · \(time)",
-                    chip: Chip("Discarded", .neutral),
-                    icon: .trash
-                ),
-                at: 0
-            )
-        }
-        return discarded
-    }
-
-    static func clockTime(_ date: Date = .now) -> String {
-        let components = Calendar.current.dateComponents([.hour, .minute], from: date)
-        return String(format: "%02d:%02d", components.hour ?? 0, components.minute ?? 0)
     }
 }

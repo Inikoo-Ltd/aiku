@@ -57,6 +57,12 @@ struct RootView: View {
         }
         .onChange(of: authStore.userID, initial: true) { _, userID in
             CrashReporting.identify(userID: userID)
+            startOfflineWork(userID: userID)
+        }
+        .onChange(of: authStore.isSignedIn) { _, isSignedIn in
+            if !isSignedIn {
+                OfflineWork.shared.signedOut()
+            }
         }
         .task(id: authStore.userID) {
             guard let userID = authStore.userID, userID > 0 else { return }
@@ -71,6 +77,7 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
+            OfflineWork.shared.syncNow(.foreground)
             Task { await appVersions.check() }
             Task {
                 await authStore.refreshProfile()
@@ -87,6 +94,15 @@ struct RootView: View {
 
     private var resolvedModules: ModuleAccess? {
         ModuleAccess.resolve(warehouse: warehouseStore.selected, isSignedIn: (authStore.userID ?? 0) > 0)
+    }
+
+    private func startOfflineWork(userID: Int?) {
+        guard authStore.isSignedIn, let token = KeychainTokenStore.shared.load() else { return }
+        if let userID, userID > 0 {
+            OfflineWork.shared.signedIn(userID: userID, token: token)
+        } else {
+            OfflineWork.shared.resume(token: token)
+        }
     }
 
     private func sendPendingLanguage() async {
