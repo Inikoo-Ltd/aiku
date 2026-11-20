@@ -54,6 +54,10 @@ use App\Actions\Dropshipping\Shopify\Product\SetShopifyPortfolioPriceManagement;
 use App\Actions\Retina\Shopify\SetRetinaShopifyPortfoliosPriceManagement;
 use App\Actions\Dropshipping\Shopify\WithShopifyPortfolioMatching;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
+use App\Actions\Retina\Dropshipping\Portfolio\RetranslateRetinaPortfolios;
+use App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel;
+use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
+use App\Models\Helpers\Language;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Dropshipping\Shopify\Product\AdoptShopifyProductVariant;
 use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
@@ -128,7 +132,7 @@ beforeEach(function () {
     }
     $this->shop = $shop;
 
-    $this->shop = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN]);
+    $this->shop = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN, 'channel_languages' => false]);
 
     $this->customer = createCustomer($this->shop);
 
@@ -3239,4 +3243,326 @@ test('a price for a shopify store whose exchange rate is missing is not sent', f
     [$price, $error] = $converter->convert(new \App\Models\Dropshipping\ShopifyUser(['data' => ['shop' => ['currencyCode' => 'PLN']]]), $eur, 22.73);
 
     expect($price)->toBeNull()->and($error)->toContain('PLN');
+});
+
+
+function channelTextsLanguage($test): Language
+{
+    return Language::where('code', $test->shop->language->code === 'de' ? 'fr' : 'de')->firstOrFail();
+}
+
+function translateTestProduct($test, Language $language, bool $withDescription = true): void
+{
+    $test->product->update(['description' => '<p>Plain description</p>', 'description_extra' => 'Plain extra']);
+    $test->product->setTranslation('name_i8n', $language->code, 'Übersetzter Name '.$test->product->code)
+        ->setTranslation('description_extra_i8n', $language->code, 'Übersetztes Extra');
+    $withDescription
+        ? $test->product->setTranslation('description_i8n', $language->code, '<p>Übersetzte Beschreibung</p>')
+        : $test->product->forgetTranslation('description_i8n', $language->code);
+    $test->product->save();
+    $test->product->refresh();
+}
+
+function retinaLanguageWebUser($test, Customer $customer): WebUser
+{
+    $website = LaunchWebsite::make()->action(createWebsite($test->shop));
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($website);
+
+    $webUser = StoreWebUser::make()->action($customer, ['username' => 'lang-'.Str::random(8), 'email' => Str::random(8).'@testmail.com', 'password' => 'test']);
+    actingAs($webUser, 'retina');
+
+    return $webUser;
+}
+
+function shopifyUploadFakes(): void
+{
+    ShopifyFake::fake([
+        'productVariantsWithSku'        => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
+        'productCreate'                 => ShopifyFake::graphql(['productCreate' => ['product' => shopifyProductNode('gid://shopify/Product/7100', 'gid://shopify/ProductVariant/8100', ''), 'userErrors' => []]]),
+        'ProductVariantsList'           => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8100', 'title' => 'Default Title', 'price' => '0.00', 'updatedAt' => 'x', 'inventoryQuantity' => 0, 'product' => ['id' => 'gid://shopify/Product/7100', 'title' => 'Listed Product']]]]]]),
+        'ProductVariantsCreate'         => ShopifyFake::graphql(['productVariantsBulkCreate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8101', 'title' => 'Default Title']], 'userErrors' => []]]),
+        'getProduct'                    => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7100', 'gid://shopify/ProductVariant/8101', 'TR-1')]),
+        'GET shop.json'                 => ['shop' => ['id' => 1]],
+        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7100', 'title' => 'Listed Product', 'status' => 'ACTIVE']]),
+        'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8101', 'inventoryItem' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/1']]]]]]]]),
+    ]);
+}
+
+test('with channel languages off a channel gets the shop texts, shows no language choice and cannot re-translate', function () {
+    Queue::fake();
+    $language = channelTextsLanguage($this);
+    translateTestProduct($this, $language);
+
+    $channel = shopifyProductChannel($this, 'languages-off')->customerSalesChannel;
+    expect($channel->language_id)->toBeNull();
+
+    $channel->update(['language_id' => $language->id]);
+    $portfolio = StorePortfolio::make()->action($channel->refresh(), $this->product, []);
+
+    $fields = collect(EditRetinaCustomerSalesChannel::make()->getCustomerSalesChannelSettingsBlueprint($channel))->pluck('fields')->collapse();
+
+    expect($channel->productTextsLocale())->toBeNull()
+        ->and($portfolio->customer_product_name)->toBe($this->product->name)
+        ->and($portfolio->customer_description)->toBe('<p>Plain description</p>')
+        ->and($fields->has('language_id'))->toBeFalse()
+        ->and(fn () => RetranslateRetinaPortfolios::make()->handle($channel, [$portfolio->id]))->toThrow(ValidationException::class);
+
+    retinaLanguageWebUser($this, $channel->customer);
+    $this->postJson(route('retina.models.dropshipping.bulk.retranslate', $channel->id), ['portfolios' => [$portfolio->id]])->assertForbidden();
+    $this->patchJson(route('retina.models.customer_sales_channel.update', $channel->id), ['language_id' => $language->id])->assertUnprocessable();
+});
+
+test('shopify create sends exactly what it sent before while channel languages are off', function () {
+    Queue::fake();
+    $language = channelTextsLanguage($this);
+    translateTestProduct($this, $language);
+    $channel = shopifyProductChannel($this, 'languages-off-create')->customerSalesChannel;
+    $channel->update(['language_id' => $language->id]);
+
+    $portfolio = StorePortfolio::make()->action($channel->refresh(), $this->product, []);
+    $portfolio->update(['sku' => 'TR-1', 'customer_product_name' => 'A title the customer typed', 'customer_description' => 'Their own description']);
+
+    shopifyUploadFakes();
+    StoreNewProductToCurrentShopify::make()->handle($portfolio->refresh(), []);
+
+    $product = ShopifyFake::calls('productCreate')[0]['variables']['product'];
+    expect($product['title'])->toBe($this->product->name)
+        ->and($product['handle'])->toStartWith(Str::slug($this->product->name))
+        ->and($product['descriptionHtml'])->toStartWith('<p>Plain description</p> Plain extra ');
+});
+
+test('a channel in another language gets the translated texts of a new product, per field, on shopify create and from the customer language', function () {
+    Queue::fake();
+    $language = channelTextsLanguage($this);
+    $this->shop = UpdateShop::make()->action($this->shop, ['enabled_languages' => [$language->id], 'channel_languages' => true]);
+    translateTestProduct($this, $language, withDescription: false);
+
+    $customer = StoreCustomer::make()->action($this->shop, [...Customer::factory()->definition(), 'email' => Str::lower(Str::random(12)).'@shopify-test.com']);
+    $webUser  = retinaLanguageWebUser($this, $customer);
+    $webUser->update(['language_id' => $language->id]);
+    $shopifyUser = StoreShopifyUser::make()->handle($customer, ['name' => 'languages-on']);
+    $shopifyUser->update(['shopify_location_id' => 'gid://shopify/Location/1001', 'shopify_fulfilment_service_id' => 'gid://shopify/FulfillmentService/501']);
+    $channel = $shopifyUser->refresh()->customerSalesChannel;
+
+    $portfolio = StorePortfolio::make()->action($channel, $this->product, []);
+    $portfolio->update(['sku' => 'TR-1']);
+
+    shopifyUploadFakes();
+    StoreNewProductToCurrentShopify::make()->handle($portfolio->refresh(), []);
+    $created = ShopifyFake::calls('productCreate')[0]['variables']['product'];
+
+    $fields = collect(EditRetinaCustomerSalesChannel::make()->getCustomerSalesChannelSettingsBlueprint($channel))->pluck('fields')->collapse();
+
+    expect($channel->language_id)->toBe($language->id)
+        ->and($portfolio->customer_product_name)->toBe('Übersetzter Name '.$this->product->code)
+        ->and($portfolio->customer_description)->toBe('<p>Plain description</p>')
+        ->and($created['title'])->toBe('Übersetzter Name '.$this->product->code)
+        ->and($created['descriptionHtml'])->toStartWith('<p>Plain description</p> Übersetztes Extra ')
+        ->and($fields->get('language_id')['value'])->toBe($language->id)
+        ->and(collect($fields->get('language_id')['options'])->pluck('value')->sort()->values()->all())->toBe(collect([$this->shop->language_id, $language->id])->sort()->values()->all());
+
+    UpdateShop::make()->action($this->shop, ['channel_languages' => false]);
+});
+
+test('re-translate replaces the texts of a live shopify product only when its owner presses it, and keeps its handle', function () {
+    Queue::fake();
+    $language = channelTextsLanguage($this);
+    $this->shop = UpdateShop::make()->action($this->shop, ['enabled_languages' => [$language->id], 'channel_languages' => true]);
+    translateTestProduct($this, $language);
+
+    $channel   = shopifyProductChannel($this, 'retranslate-live')->customerSalesChannel;
+    $portfolio = StorePortfolio::make()->action($channel, $this->product, []);
+    $portfolio->update([
+        'sku'                         => 'TR-1',
+        'customer_product_name'       => 'My own title',
+        'platform_handle'             => 'my-own-handle',
+        'platform_product_id'         => 'gid://shopify/Product/7500',
+        'platform_product_variant_id' => 'gid://shopify/ProductVariant/8500',
+    ]);
+
+    retinaLanguageWebUser($this, $channel->customer);
+    $this->patchJson(route('retina.models.customer_sales_channel.update', $channel->id), ['language_id' => $language->id])->assertSuccessful();
+
+    expect($channel->refresh()->language_id)->toBe($language->id)
+        ->and($portfolio->refresh()->customer_product_name)->toBe('My own title');
+
+    ShopifyFake::fake([
+        'ProductVariantsList'       => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8500', 'title' => 'Default Title', 'price' => '0.00', 'updatedAt' => 'x', 'inventoryQuantity' => 0, 'product' => ['id' => 'gid://shopify/Product/7500', 'title' => 'My own title']]]]]]),
+        'ProductVariantsBulkUpdate' => ShopifyFake::graphql(['productVariantsBulkUpdate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8500']], 'userErrors' => []]]),
+        'productUpdate'             => ShopifyFake::graphql(['productUpdate' => ['product' => shopifyProductNode('gid://shopify/Product/7500', 'gid://shopify/ProductVariant/1', 'x'), 'userErrors' => []]]),
+        'getProduct'                => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7500', 'gid://shopify/ProductVariant/8500', 'TR-1')]),
+    ]);
+
+    $this->postJson(route('retina.models.dropshipping.bulk.retranslate', $channel->id), ['portfolios' => [$portfolio->id]])
+        ->assertOk()
+        ->assertExactJson(['in_store' => 1, 'only_my_products' => 0, 'refused' => []]);
+
+    $update = ShopifyFake::calls('productUpdate')[0]['variables']['input'];
+    $portfolio->refresh();
+
+    expect($portfolio->customer_product_name)->toBe('Übersetzter Name '.$this->product->code)
+        ->and($portfolio->customer_description)->toBe('<p>Übersetzte Beschreibung</p>')
+        ->and($portfolio->platform_handle)->toBe('my-own-handle')
+        ->and($update['title'])->toBe('Übersetzter Name '.$this->product->code)
+        ->and($update['descriptionHtml'])->toStartWith('<p>Übersetzte Beschreibung</p> Übersetztes Extra ')
+        ->and(ShopifyFake::calls('ProductVariantsBulkUpdate'))->toBeEmpty()
+        ->and(ShopifyFake::$stray)->toBeEmpty();
+
+    UpdateShop::make()->action($this->shop, ['channel_languages' => false]);
+});
+
+test('a shopify edit sends a changed title or description to the store, and a price edit with the same words never does', function () {
+    Queue::fake();
+    $channel   = shopifyProductChannel($this, 'edit-texts')->customerSalesChannel;
+    $portfolio = StorePortfolio::make()->action($channel, $this->product, []);
+    $portfolio->update([
+        'sku'                         => 'ED-1',
+        'customer_product_name'       => 'Their title ',
+        'customer_description'        => '<p>Their   description &amp; more</p>',
+        'platform_product_id'         => 'gid://shopify/Product/7600',
+        'platform_product_variant_id' => 'gid://shopify/ProductVariant/8600',
+    ]);
+
+    $fakes = [
+        'ProductVariantsList'       => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8600', 'title' => 'Default Title', 'price' => '0.00', 'updatedAt' => 'x', 'inventoryQuantity' => 0, 'product' => ['id' => 'gid://shopify/Product/7600', 'title' => 'Their title']]]]]]),
+        'ProductVariantsBulkUpdate' => ShopifyFake::graphql(['productVariantsBulkUpdate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8600']], 'userErrors' => []]]),
+        'getProduct'                => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7600', 'gid://shopify/ProductVariant/8600', 'ED-1')]),
+        'productUpdate'             => ShopifyFake::graphql(['productUpdate' => ['product' => shopifyProductNode('gid://shopify/Product/7600', 'gid://shopify/ProductVariant/1', 'x'), 'userErrors' => []]]),
+    ];
+
+    ShopifyFake::fake($fakes);
+    UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio->refresh(), [
+        'customer_product_name' => 'Their title',
+        'customer_description'  => "<p>Their description &amp; more</p>\n",
+        'customer_price'        => '21',
+    ]);
+    $priceOnly = ShopifyFake::calls('productUpdate');
+
+    ShopifyFake::fake($fakes);
+    UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio->refresh(), [
+        'customer_product_name' => 'Their new title',
+        'customer_description'  => '<p>Their description &amp; more</p>',
+    ]);
+    $titleEdit = ShopifyFake::calls('productUpdate');
+
+    expect($priceOnly)->toBeEmpty()
+        ->and($titleEdit)->toHaveCount(1)
+        ->and($titleEdit[0]['variables']['input']['title'])->toBe('Their new title')
+        ->and($titleEdit[0]['variables']['input'])->not->toHaveKey('descriptionHtml')
+        ->and(ShopifyFake::$stray)->toBeEmpty();
+});
+
+test('a price edit of a product whose texts were never edited sends no text, as the dialog shows our texts for them', function () {
+    Queue::fake();
+    $this->product->update(['description' => '<p>Our description</p>']);
+    $channel   = shopifyProductChannel($this, 'edit-null-texts')->customerSalesChannel;
+    $portfolio = StorePortfolio::make()->action($channel, $this->product, []);
+    $portfolio->update([
+        'sku'                         => 'ED-2',
+        'customer_product_name'       => null,
+        'customer_description'        => null,
+        'platform_product_id'         => 'gid://shopify/Product/7700',
+        'platform_product_variant_id' => 'gid://shopify/ProductVariant/8700',
+    ]);
+
+    ShopifyFake::fake([
+        'ProductVariantsList'       => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8700', 'title' => 'Default Title', 'price' => '0.00', 'updatedAt' => 'x', 'inventoryQuantity' => 0, 'product' => ['id' => 'gid://shopify/Product/7700', 'title' => 'x']]]]]]),
+        'ProductVariantsBulkUpdate' => ShopifyFake::graphql(['productVariantsBulkUpdate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8700']], 'userErrors' => []]]),
+        'getProduct'                => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7700', 'gid://shopify/ProductVariant/8700', 'ED-2')]),
+    ]);
+
+    UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio->refresh(), [
+        'customer_product_name' => $this->product->name,
+        'customer_description'  => '<p>Our description</p>',
+        'customer_price'        => '23',
+    ]);
+
+    expect(ShopifyFake::calls('productUpdate'))->toBeEmpty()
+        ->and(ShopifyFake::$stray)->toBeEmpty();
+});
+
+test('editing the texts of a product not yet in the shopify store sends nothing and records no error', function () {
+    Queue::fake();
+    $channel   = shopifyProductChannel($this, 'edit-not-uploaded')->customerSalesChannel;
+    $portfolio = StorePortfolio::make()->action($channel, $this->product, []);
+    $portfolio->update(['sku' => 'ED-3']);
+
+    ShopifyFake::fake([]);
+
+    UpdateAndUploadRetinaPortfolioToCurrentChannel::make()->updateShopifyChannel($portfolio->refresh(), ['customer_product_name' => 'Old title', 'customer_description' => null]);
+
+    expect(ShopifyFake::calls('productUpdate'))->toBeEmpty()
+        ->and($portfolio->refresh()->errors_response)->toBeEmpty();
+});
+
+test('re-translate with no description translation leaves the description alone, in aiku and in the store', function () {
+    Queue::fake();
+    $language   = channelTextsLanguage($this);
+    $this->shop = UpdateShop::make()->action($this->shop, ['enabled_languages' => [$language->id], 'channel_languages' => true]);
+    translateTestProduct($this, $language, withDescription: false);
+
+    $channel   = shopifyProductChannel($this, 'retranslate-name-only')->customerSalesChannel;
+    $portfolio = StorePortfolio::make()->action($channel, $this->product, []);
+    $portfolio->update([
+        'sku'                         => 'TR-2',
+        'customer_description'        => null,
+        'platform_product_id'         => 'gid://shopify/Product/7800',
+        'platform_product_variant_id' => 'gid://shopify/ProductVariant/8800',
+    ]);
+    $channel->update(['language_id' => $language->id]);
+    $otherChannel = shopifyProductChannel($this, 'retranslate-not-in-store')->customerSalesChannel;
+    $otherChannel->update(['language_id' => $language->id]);
+    $notInStore = StorePortfolio::make()->action($otherChannel, $this->product, []);
+    $notInStore->update(['customer_product_name' => 'Not uploaded']);
+
+    ShopifyFake::fake([
+        'getProduct'    => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7800', 'gid://shopify/ProductVariant/8800', 'TR-2')]),
+        'productUpdate' => ShopifyFake::graphql(['productUpdate' => ['product' => shopifyProductNode('gid://shopify/Product/7800', 'gid://shopify/ProductVariant/1', 'x'), 'userErrors' => []]]),
+    ]);
+
+    $result      = RetranslateRetinaPortfolios::make()->handle($channel->refresh(), [$portfolio->id]);
+    $otherResult = RetranslateRetinaPortfolios::make()->handle($otherChannel->refresh(), [$notInStore->id]);
+    $input       = ShopifyFake::calls('productUpdate')[0]['variables']['input'];
+
+    expect($result)->toBe(['in_store' => 1, 'only_my_products' => 0, 'refused' => []])
+        ->and($otherResult)->toBe(['in_store' => 0, 'only_my_products' => 1, 'refused' => []])
+        ->and(ShopifyFake::calls('productUpdate'))->toHaveCount(1)
+        ->and($input['title'])->toBe('Übersetzter Name '.$this->product->code)
+        ->and($input)->not->toHaveKey('descriptionHtml')
+        ->and($portfolio->refresh()->customer_description)->toBeNull()
+        ->and(ShopifyFake::calls('ProductVariantsBulkUpdate'))->toBeEmpty()
+        ->and(ShopifyFake::$stray)->toBeEmpty();
+
+    UpdateShop::make()->action($this->shop, ['channel_languages' => false]);
+});
+
+test('re-translate puts the texts back and says so when shopify refuses them', function () {
+    Queue::fake();
+    $language   = channelTextsLanguage($this);
+    $this->shop = UpdateShop::make()->action($this->shop, ['enabled_languages' => [$language->id], 'channel_languages' => true]);
+    translateTestProduct($this, $language);
+
+    $channel   = shopifyProductChannel($this, 'retranslate-refused')->customerSalesChannel;
+    $portfolio = StorePortfolio::make()->action($channel, $this->product, []);
+    $portfolio->update([
+        'sku'                         => 'TR-3',
+        'customer_product_name'       => 'Kept title',
+        'platform_product_id'         => 'gid://shopify/Product/7900',
+        'platform_product_variant_id' => 'gid://shopify/ProductVariant/8900',
+    ]);
+    $channel->update(['language_id' => $language->id]);
+
+    ShopifyFake::fake([
+        'getProduct'    => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7900', 'gid://shopify/ProductVariant/8900', 'TR-3')]),
+        'productUpdate' => ShopifyFake::graphql(['productUpdate' => ['product' => null, 'userErrors' => [['field' => ['title'], 'message' => 'Title is too long']]]]),
+    ]);
+
+    $result = RetranslateRetinaPortfolios::make()->handle($channel->refresh(), [$portfolio->id]);
+
+    expect($result['in_store'])->toBe(0)
+        ->and($result['refused'])->toHaveCount(1)
+        ->and($result['refused'][0])->toContain('Title is too long')
+        ->and($portfolio->refresh()->customer_product_name)->toBe('Kept title');
+
+    UpdateShop::make()->action($this->shop, ['channel_languages' => false]);
 });

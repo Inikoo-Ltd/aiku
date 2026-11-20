@@ -224,11 +224,16 @@ class StoreShopifyProduct extends RetinaAction
             $description = '<br><br>'.$attachmentLinks;
 
             // Prepare variables for the mutation
+            $channel = $portfolio->customerSalesChannel;
+            [$title, $mainDescription] = $channel->productTextsLocale()
+                ? [$portfolio->customer_product_name ?: $channel->productText($product, 'name'), $portfolio->customer_description ?: $channel->productText($product, 'description')]
+                : [$product->name, $product->description];
+
             $variables = [
                 'product' => [
-                    'title'           => $product->name,
-                    'handle'          => Str::slug($product->name).substr(now()->timestamp, -3),
-                    'descriptionHtml' => $product->description.' '.$product->description_extra.' '.$description,
+                    'title'           => $title,
+                    'handle'          => Str::slug($title).substr(now()->timestamp, -3),
+                    'descriptionHtml' => $mainDescription.' '.$channel->productText($product, 'description_extra').' '.$description,
                     'productType'     => $product->family?->name,
                     'vendor'          => $product->shop->name,
                     'tags'            => $product->tags()->pluck('name')->toArray()

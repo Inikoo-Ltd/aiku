@@ -421,6 +421,14 @@ class IndexRetinaPortfolios extends RetinaAction
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
                     ],
+                    'bulk_retranslate'            => $this->customerSalesChannel->productTextsLocale() ? [
+                        'name'       => 'retina.models.dropshipping.bulk.retranslate',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ],
+                        'language'   => $this->customerSalesChannel->language->name,
+                        'max'        => RetranslateRetinaPortfolios::MAX_PORTFOLIOS,
+                    ] : false,
                     'batch_all_dimensions_update' => [
                         'name'       => 'retina.models.dropshipping.shopify.batch_all_dimensions_update',
                         'parameters' => [

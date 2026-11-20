@@ -13,7 +13,9 @@ use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Dropshipping\WooCommerceConnectionFailureEnum;
+use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
+use App\Models\Helpers\Language;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Ordering\Order;
 use App\Models\Traits\HasHistory;
@@ -105,6 +107,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \App\Models\Dropshipping\Platform $platform
+ * @property int|null $language_id
+ * @property-read \App\Models\Helpers\Language|null $language
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\Portfolio> $portfolios
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
@@ -153,6 +157,7 @@ class CustomerSalesChannel extends Model implements Authenticatable, Auditable
         'status',
         'state',
         'connection_status',
+        'language_id',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -213,6 +218,34 @@ class CustomerSalesChannel extends Model implements Authenticatable, Auditable
     public function platform(): BelongsTo
     {
         return $this->belongsTo(Platform::class);
+    }
+
+    public function language(): BelongsTo
+    {
+        return $this->belongsTo(Language::class);
+    }
+
+    /**
+     * The language products are written in for this channel, or null for the shop's own texts as before.
+     */
+    public function productTextsLocale(): ?string
+    {
+        $shop = $this->shop;
+
+        if (!$this->language_id || $this->language_id == $shop->language_id || !$shop->customersChooseChannelLanguage() || !in_array($this->language_id, $shop->enabledLanguageIds())) {
+            return null;
+        }
+
+        return $this->language->code;
+    }
+
+    public function productText(Product $product, string $field): ?string
+    {
+        $locale = $this->productTextsLocale();
+
+        $translation = $locale ? $product->getTranslation($field.'_i8n', $locale, false) : null;
+
+        return filled($translation) ? $translation : $product->{$field};
     }
 
     public function orders(): HasMany

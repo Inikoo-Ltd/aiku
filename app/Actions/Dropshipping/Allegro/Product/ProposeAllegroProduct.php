@@ -202,7 +202,7 @@ class ProposeAllegroProduct
             'model'       => $product->family?->name ?? null,
             'mpn'         => $product->mpn ?? null,         // Manufacturer Part Number
             'sku'         => $product->code ?? null,
-            'description' => $product->description ?? null,
+            'description' => $portfolio->customerSalesChannel->productText($product, 'description'),
             'condition'   => 'NEW',
             'capacity'    => 10,
             'essential_oil_type' => $product->essential_oil_type ?? 'OIL',

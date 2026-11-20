@@ -66,6 +66,7 @@ class UpdateRetinaCustomerSalesChannel extends RetinaAction
             'tax_category_id'   => ['sometimes', 'nullable', 'integer', Rule::exists('tax_categories', 'id')],
             'status'       => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'name' => ['sometimes', 'string', 'max:255'],
+            'language_id' => ['sometimes', 'nullable', 'integer', Rule::in($this->customerSalesChannel->shop->customersChooseChannelLanguage() ? $this->customerSalesChannel->shop->enabledLanguageIds() : [])],
             'shipping_service'              => ['sometimes', 'string'],
             'shipping_price'              => ['sometimes', 'numeric', 'min:0', 'decimal:0,2'],
             'shipping_max_dispatch_time'              => ['sometimes', 'integer'],

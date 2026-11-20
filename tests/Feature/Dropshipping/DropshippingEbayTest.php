@@ -115,7 +115,7 @@ beforeEach(function () {
     }
     $this->shop = $shop;
 
-    $this->shop = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN]);
+    $this->shop = UpdateShop::make()->action($this->shop, ['state' => ShopStateEnum::OPEN, 'channel_languages' => false]);
 
     $this->gb = Country::where('code', 'GB')->firstOrFail();
     $this->shop->update([
@@ -3045,4 +3045,39 @@ test('a channel moved to another postage policy moves its listings still on the 
         ->and($moved['listingDescription'])->toBe('Old description on eBay');
 
     Http::assertNotSent(fn (Request $request) => $request->method() === 'PUT' && str_ends_with($request->url(), 'offer-seller'));
+});
+
+test('a channel language saves through the eBay settings, and re-translating an eBay draft sends the title only: no price, no description, the draft stays unpublished', function () {
+    $language   = \App\Models\Helpers\Language::where('code', $this->shop->language->code === 'de' ? 'fr' : 'de')->firstOrFail();
+    $this->shop = UpdateShop::make()->action($this->shop, ['enabled_languages' => [$language->id], 'channel_languages' => true]);
+    $this->product->setTranslation('name_i8n', $language->code, 'Übersetzte Kerze')->setTranslation('description_i8n', $language->code, '<p>Übersetzt</p>')->save();
+
+    $ebayUser  = ebayChannel($this);
+    $portfolio = listedEbayPortfolio($this, $ebayUser);
+
+    fakeEbay($this, ebayAccountRoutes([]));
+    UpdateEbayCustomerSalesChannel::run($ebayUser->customerSalesChannel, ['language_id' => $language->id]);
+    $channel = $ebayUser->customerSalesChannel->refresh();
+
+    $portfolio->update(['customer_product_name' => 'My own title', 'platform_status' => false, 'data' => ['is_platform_draft' => true]]);
+
+    fakeEbay($this, [
+        '/bulk_update_price_quantity' => ['responses' => [['statusCode' => 200, 'offerId' => 'offer-1', 'sku' => 'sku-on-ebay']]],
+        '/sell/inventory/v1/offer'    => ebayOfferRoutes(offerById: ['listingDescription' => null]),
+        '/inventory_item/'            => ebayInventoryItemRoute(),
+    ]);
+
+    $result = \App\Actions\Retina\Dropshipping\Portfolio\RetranslateRetinaPortfolios::make()->handle($channel, [$portfolio->id]);
+
+    expect($channel->language_id)->toBe($language->id)
+        ->and($result)->toBe(['in_store' => 1, 'only_my_products' => 0, 'refused' => []])
+        ->and(sentEbayRequest('PUT', '/sell/inventory/v1/inventory_item/sku-on-ebay')->data()['product']['title'])->toBe('Übersetzte Kerze')
+        ->and($portfolio->refresh()->customer_product_name)->toBe('Übersetzte Kerze')
+        ->and($portfolio->customer_description)->toBe('<p>Übersetzt</p>');
+
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), 'bulk_update_price_quantity')
+        || str_ends_with(parse_url($request->url(), PHP_URL_PATH), '/publish')
+        || ($request->method() === 'PUT' && str_contains($request->url(), '/sell/inventory/v1/offer/')));
+
+    UpdateShop::make()->action($this->shop, ['channel_languages' => false]);
 });

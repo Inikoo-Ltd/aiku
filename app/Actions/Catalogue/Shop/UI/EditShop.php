@@ -763,6 +763,14 @@ class EditShop extends OrgAction
                             'valueProp'   => 'id',
                             'value'       => $shop->enabledLanguageIds(),
                         ],
+                        ...($shop->type === ShopTypeEnum::DROPSHIPPING ? [
+                            'channel_languages' => [
+                                'type'        => 'toggle',
+                                'label'       => __('Customers can choose a language per channel'),
+                                'information' => __('Customers pick one of the languages above for each of their sales channels, and products they add to it get their name and description in that language. Products already in their stores keep their texts.'),
+                                'value'       => $shop->customersChooseChannelLanguage(),
+                            ],
+                        ] : []),
                     ],
                 ],
 

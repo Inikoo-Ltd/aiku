@@ -1035,6 +1035,14 @@ class Shop extends Model implements HasMedia, Auditable
         return Arr::get($this->settings, 'enabled_languages') !== null;
     }
 
+    /**
+     * Off until a manager switches it on: until then every channel gets the shop's own product texts.
+     */
+    public function customersChooseChannelLanguage(): bool
+    {
+        return (bool) Arr::get($this->settings, 'channel_languages');
+    }
+
     public function enablesLanguage(mixed $code): bool
     {
         return is_string($code) && in_array($code, $this->enabledLanguageCodes(), true);

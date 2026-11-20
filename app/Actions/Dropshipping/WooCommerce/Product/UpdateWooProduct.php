@@ -15,6 +15,7 @@ use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -22,21 +23,36 @@ class UpdateWooProduct implements ShouldBeUnique
 {
     use AsAction;
 
-    public function handle(Portfolio $portfolio): void
+    /**
+     * @param  array<int, string>|null  $onlyFields  name and/or description: sends just those, and never the price
+     *
+     * @return bool whether WooCommerce took the update
+     */
+    public function handle(Portfolio $portfolio, ?array $onlyFields = null): bool
     {
         if ($portfolio->platform_product_id == null || !$portfolio->customerSalesChannel || !$portfolio->platform_status) {
-            return;
+            return false;
         }
 
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
         if ($customerSalesChannel->status != CustomerSalesChannelStatusEnum::OPEN) {
-            return;
+            return false;
         }
 
         $wooCommerceUser = $customerSalesChannel->user;
         if (!$wooCommerceUser instanceof WooCommerceUser) {
-            return;
+            return false;
+        }
+
+        $productData = [
+            'regular_price' => (string) $portfolio->customer_price,
+            'name'          => $portfolio->customer_product_name,
+            'description'   => $portfolio->customer_description
+        ];
+
+        if ($onlyFields !== null) {
+            $productData = Arr::only($productData, $onlyFields);
         }
 
         $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
@@ -44,23 +60,29 @@ class UpdateWooProduct implements ShouldBeUnique
         $wooCommerceUser->setTimeout(45);
 
         try {
-            $wooCommerceUser->updateWooCommerceProduct(
-                $portfolio->platform_product_id,
-                [
-                    'regular_price' => (string) $portfolio->customer_price,
-                    'name'          => $portfolio->customer_product_name,
-                    'description'   => $portfolio->customer_description
-                ]
-            );
+            $response = $wooCommerceUser->updateWooCommerceProduct($portfolio->platform_product_id, $productData);
+
+            if (!Arr::get($response, 'id')) {
+                UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => 'E1: '.json_encode($response)
+                ]);
+
+                return false;
+            }
 
             UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
                 'status'           => PlatformPortfolioLogsStatusEnum::OK
             ]);
+
+            return true;
         } catch (Throwable $e) {
             UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
                 'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                 'response' => 'E2: '.$e->getMessage()
             ]);
+
+            return false;
         }
     }
 }

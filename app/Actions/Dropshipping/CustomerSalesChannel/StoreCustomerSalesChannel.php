@@ -38,6 +38,10 @@ class StoreCustomerSalesChannel extends OrgAction
         $modelData['shop_id']           = $customer->shop_id;
         $modelData['platform_id']       = $platform->id;
 
+        if ($customer->shop->customersChooseChannelLanguage()) {
+            data_set($modelData, 'language_id', $this->customerLanguageId($customer), overwrite: false);
+        }
+
         /** @var CustomerSalesChannel $customerSalesChannel */
         $customerSalesChannel           = $customer->customerSalesChannels()->create($modelData);
 
@@ -47,6 +51,16 @@ class StoreCustomerSalesChannel extends OrgAction
 
 
         return $customerSalesChannel;
+    }
+
+    /**
+     * The language of the customer's main web user, when the shop offers it.
+     */
+    public function customerLanguageId(Customer $customer): ?int
+    {
+        $languageId = $customer->webUsers()->orderByDesc('is_root')->orderBy('id')->value('language_id');
+
+        return in_array($languageId, $customer->shop->enabledLanguageIds()) ? $languageId : null;
     }
 
     public function rules(): array

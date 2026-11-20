@@ -6,6 +6,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\WooCommerceUser;
+use App\Models\Helpers\Language;
 use App\Models\Helpers\TaxCategory;
 use Illuminate\Support\Arr;
 use Spatie\LaravelOptions\Options;
@@ -225,6 +226,7 @@ trait WithCustomerSalesChannelSettingsBlueprint
                         'label' => __('Store name'),
                         'value' => $customerSalesChannel->name
                     ],
+                    ...$this->channelLanguageField($customerSalesChannel),
                 ]
             ],
             [
@@ -256,6 +258,31 @@ trait WithCustomerSalesChannelSettingsBlueprint
                 ]
             ],
             ...$properties
+        ];
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private function channelLanguageField(CustomerSalesChannel $customerSalesChannel): array
+    {
+        $shop = $customerSalesChannel->shop;
+
+        if (!$shop->customersChooseChannelLanguage()) {
+            return [];
+        }
+
+        return [
+            'language_id' => [
+                'type'        => 'select',
+                'label'       => __('Language of product texts'),
+                'information' => __('Products you add to this channel from now on get their name and description in this language, where we have a translation. Products already in this channel keep their texts: select them in My Products and use Re-translate to change them.'),
+                'options'     => Language::whereIn('id', $shop->enabledLanguageIds())->orderBy('name')->get()->map(fn (Language $language) => [
+                    'value' => $language->id,
+                    'label' => $language->name,
+                ])->all(),
+                'value'       => $customerSalesChannel->language_id ?? $shop->language_id,
+            ],
         ];
     }
 

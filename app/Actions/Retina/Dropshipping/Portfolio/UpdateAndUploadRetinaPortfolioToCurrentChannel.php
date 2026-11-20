@@ -78,7 +78,7 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
             match ($portfolio->platform->type) {
                 PlatformTypeEnum::EBAY => $this->updateEbayChannel($portfolio, $beforeSave, $setsPrice),
                 PlatformTypeEnum::WOOCOMMERCE => UpdateWooProduct::run($portfolio),
-                PlatformTypeEnum::SHOPIFY => $this->updateShopifyChannel($portfolio),
+                PlatformTypeEnum::SHOPIFY => $this->updateShopifyChannel($portfolio, $beforeSave),
                 PlatformTypeEnum::WIX => UpdateWixProduct::run($portfolio),
                 default => null
             };
@@ -109,15 +109,45 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
         }
     }
 
-    public function updateShopifyChannel(Portfolio $portfolio): void
+    /**
+     * Compared with what was saved before, not with wasChanged(): the variant update saves the portfolio again. The edit
+     * dialog shows our text where the portfolio has none and always posts both texts back, reformatted by the editor and
+     * the sanitizer, so a text counts as changed only when its words differ from what the dialog showed, and only the
+     * text that changed is sent: a price edit never rewrites a title or description the merchant changed in Shopify.
+     * Formatting alone (bold, links, lists) is not a change and is not sent.
+     */
+    public function updateShopifyChannel(Portfolio $portfolio, array $beforeSave): void
     {
+        [$titleChanged, $descriptionChanged] = self::changedTexts($portfolio, $beforeSave);
+
         [$priced, $priceMessage] = UpdateShopifyProductVariant::run($portfolio);
 
-        if ($portfolio->wasChanged(['customer_product_name', 'customer_description'])) {
-            UpdateShopifyProduct::run($portfolio);
+        if ($portfolio->platform_product_id && ($titleChanged || $descriptionChanged)) {
+            UpdateShopifyProduct::run($portfolio, $titleChanged, $descriptionChanged);
         }
 
         $this->shopifyPriceRefusal = !$priced && $portfolio->platform_product_id ? $priceMessage : null;
+    }
+
+    /**
+     * @return array{0: bool, 1: bool}
+     */
+    public static function changedTexts(Portfolio $portfolio, array $beforeSave): array
+    {
+        $item = $portfolio->item;
+
+        $shownName        = fn (?string $name) => $name ?? $item?->name ?? $portfolio->item_name ?? $portfolio->item_code;
+        $shownDescription = fn (?string $description) => $description ?? $item?->description;
+
+        return [
+            self::readableText($shownName($portfolio->customer_product_name)) !== self::readableText($shownName(Arr::get($beforeSave, 'customer_product_name'))),
+            self::readableText($shownDescription($portfolio->customer_description)) !== self::readableText($shownDescription(Arr::get($beforeSave, 'customer_description'))),
+        ];
+    }
+
+    public static function readableText(?string $html): string
+    {
+        return trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags(str_replace('>', '> ', (string) $html)), ENT_QUOTES | ENT_HTML5)));
     }
 
     public function rules(): array

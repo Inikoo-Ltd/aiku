@@ -23,9 +23,9 @@ class UpdateEbayOffer implements ShouldBeUnique
 {
     use AsAction;
 
-    public function getJobUniqueId(Portfolio $portfolio, bool $withTitle = false, bool $withPrice = false): string
+    public function getJobUniqueId(Portfolio $portfolio, bool $withTitle = false, bool $withPrice = false, bool $titleOnly = false): string
     {
-        return $portfolio->id.($withTitle ? '-title' : '').($withPrice ? '-price' : '');
+        return $portfolio->id.($withTitle ? '-title' : '').($withPrice ? '-price' : '').($titleOnly ? '-only' : '');
     }
 
     /**
@@ -33,10 +33,11 @@ class UpdateEbayOffer implements ShouldBeUnique
      * The title is only sent when the customer saved the product: a price run must not overwrite a title changed on eBay.
      * A draft (unpublished on eBay, not in Seller Hub) is updated too, so it publishes at the price aiku shows.
      * withPrice sends a price the customer typed in themselves, even when the policy leaves prices to them.
+     * titleOnly sends no price at all, whatever the policy (Re-translate changes texts only).
      *
      * @return string|null the reason eBay refused the update, null when it took it or nothing was sent
      */
-    public function handle(Portfolio $portfolio, bool $withTitle = false, bool $withPrice = false): ?string
+    public function handle(Portfolio $portfolio, bool $withTitle = false, bool $withPrice = false, bool $titleOnly = false): ?string
     {
         $isLiveOrDraft = $portfolio->platform_status || Arr::get($portfolio->data, 'is_platform_draft');
 
@@ -55,7 +56,7 @@ class UpdateEbayOffer implements ShouldBeUnique
             return null;
         }
 
-        $sendsPrice = $withPrice || StoreEbayProduct::sendsOurPrice($portfolio);
+        $sendsPrice = !$titleOnly && ($withPrice || StoreEbayProduct::sendsOurPrice($portfolio));
 
         if (!$withTitle && !$sendsPrice) {
             return null;

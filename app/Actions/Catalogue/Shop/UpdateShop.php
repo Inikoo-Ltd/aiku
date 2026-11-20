@@ -225,6 +225,10 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.enabled_languages', array_values(array_unique(array_map('intval', Arr::pull($modelData, 'enabled_languages') ?? []))));
         }
 
+        if (Arr::has($modelData, 'channel_languages')) {
+            data_set($modelData, 'settings.channel_languages', (bool) Arr::pull($modelData, 'channel_languages'));
+        }
+
         if (Arr::has($modelData, 'chat_enabled')) {
             data_set($modelData, 'settings.chat.enabled', (bool) Arr::pull($modelData, 'chat_enabled'));
         }
@@ -1222,6 +1226,7 @@ class UpdateShop extends OrgAction
             'download_pdf_columns'                                    => ['sometimes', 'array'],
             'extra_languages'                                         => ['sometimes', 'array', 'nullable'],
             'enabled_languages'                                       => ['sometimes', 'array', 'nullable'],
+            'channel_languages'                                       => ['sometimes', 'boolean'],
             'enabled_languages.*'                                     => ['integer', Rule::exists('languages', 'id')->where('status', true)],
             'image'                                                   => [
                 'sometimes',

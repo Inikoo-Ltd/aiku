@@ -83,6 +83,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\FetchRetinaCustomerSale
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\SyncRetinaCustomerSalesChannelPortfolioManually;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UnSuspendRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaCustomerSalesChannel;
+use App\Actions\Retina\Dropshipping\Portfolio\RetranslateRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\DismissRetinaCustomerSalesChannelNotice;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaEbayCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
@@ -425,6 +426,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
 
     Route::post('{customerSalesChannel:id}/bulk-unlink', UnlinkAndDeleteBulkRetinaPortfolio::class)->name('bulk.unlink')->whereNumber('customerSalesChannel');
     Route::post('{customerSalesChannel:id}/bulk-unlink-only', BulkUnlinkRetinaPortfolio::class)->name('bulk.unlink_only')->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/bulk-retranslate', RetranslateRetinaPortfolios::class)->name('bulk.retranslate')->whereNumber('customerSalesChannel');
 
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings()->whereNumber('shopifyUser');
 

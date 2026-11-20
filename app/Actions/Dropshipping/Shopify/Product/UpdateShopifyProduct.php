@@ -28,7 +28,7 @@ class UpdateShopifyProduct extends RetinaAction
     use WithPortfolioErrorResponse;
     use HasBucketAttachment;
 
-    public function handle(Portfolio $portfolio): array
+    public function handle(Portfolio $portfolio, bool $withTitle = true, bool $withDescription = true): array
     {
         if ($portfolio->isShopifyVariantAdopted()) {
             return [true, 'The merchant owns this listing, nothing is sent'];
@@ -112,11 +112,11 @@ class UpdateShopifyProduct extends RetinaAction
 
             // Prepare variables for the mutation - only updating descriptionHtml
             $variables = [
-                'input' => [
+                'input' => array_filter([
                     'id'              => $portfolio->platform_product_id,
-                    'title'           => $portfolio->customer_product_name,
-                    'descriptionHtml' => $portfolio->customer_description.' '.$product->description_extra . ' ' .$description,
-                ]
+                    'title'           => $withTitle ? $portfolio->customer_product_name : null,
+                    'descriptionHtml' => $withDescription ? $portfolio->customer_description.' '.$portfolio->customerSalesChannel->productText($product, 'description_extra') . ' ' .$description : null,
+                ], fn ($value) => $value !== null)
             ];
 
             // Make the GraphQL request

@@ -35,7 +35,9 @@ import {
 	faDownload,
 	faTimes,
 	faPencilAlt,
-	faTag
+	faTag,
+	faLanguage,
+	faExclamationTriangle
 } from "@fal"
 import { faCheck } from "@fas"
 import axios from "axios"
@@ -112,6 +114,7 @@ const props = defineProps<{
 		bulk_upload: routeType
 		bulk_unlink: routeType
 		bulk_unlink_only: routeType
+		bulk_retranslate: (routeType & { language: string; max: number }) | false
 		batch_all_dimensions_update: routeType
 		itemRoute: routeType
 		updatePortfolioRoute: routeType
@@ -552,6 +555,45 @@ const submitBulkPriceManagement = () => {
 }
 
 const pendingBulkAction = ref<any>(null)
+
+const isOpenRetranslate = ref(false)
+const isRetranslating = ref(false)
+const retranslateCount = ref(0)
+const retranslateResult = ref<{ in_store: number; only_my_products: number; refused: string[] } | null>(null)
+const retranslateError = ref<string | null>(null)
+
+const openRetranslate = () => {
+	retranslateCount.value = selectedProducts.value.length
+	retranslateResult.value = null
+	retranslateError.value = null
+	isOpenRetranslate.value = true
+}
+
+const closeRetranslate = () => {
+	isOpenRetranslate.value = false
+	if (retranslateResult.value) {
+		selectedProducts.value = []
+		debReloadPage()
+	}
+}
+
+const submitRetranslate = async () => {
+	if (!props.routes.bulk_retranslate) return
+	isRetranslating.value = true
+	retranslateError.value = null
+	try {
+		const response = await axios.post(
+			route(props.routes.bulk_retranslate.name, props.routes.bulk_retranslate.parameters),
+			{ portfolios: selectedProducts.value }
+		)
+		retranslateResult.value = response.data
+	} catch (error: any) {
+		const errors = error?.response?.data?.errors
+		retranslateError.value = errors ? String(Object.values(errors).flat()[0]) : ctrans("Something went wrong part way. Some products may already have their new texts: reload the page to check before trying again.")
+	} finally {
+		isRetranslating.value = false
+	}
+}
 const confirmPendingBulkAction = () => {
 	const action = pendingBulkAction.value
 	pendingBulkAction.value = null
@@ -1522,6 +1564,19 @@ const layout = inject("layout", layoutStructure)
 				size="xs" />
 
 			<Button
+				v-if="selectedProducts.length > 0 && props.routes.bulk_retranslate"
+				type="tertiary"
+				:label="ctrans('Re-translate (:_count)', { _count: selectedProducts.length })"
+				:disabled="selectedProducts.length > props.routes.bulk_retranslate.max"
+				v-tooltip="selectedProducts.length > props.routes.bulk_retranslate.max ? ctrans('Select up to :max products', { max: props.routes.bulk_retranslate.max }) : ctrans('Replace the name and description with ours in :language', { language: props.routes.bulk_retranslate.language })"
+				@click="openRetranslate"
+				size="xs">
+				<template #icon>
+					<FontAwesomeIcon :icon="faLanguage" fixed-width aria-hidden="true" />
+				</template>
+			</Button>
+
+			<Button
 				v-if="selectedProducts.length > 0 && !isHiddenBulkButton"
 				v-tooltip="
 					ctrans('Upload as new product to the :platform', {
@@ -1878,6 +1933,50 @@ const layout = inject("layout", layoutStructure)
 					"
 					@click="confirmPendingBulkAction" />
 			</div>
+		</div>
+	</Modal>
+
+	<Modal v-if="props.routes.bulk_retranslate" :isOpen="isOpenRetranslate" @onClose="closeRetranslate" width="w-full max-w-lg">
+		<div class="p-2">
+			<h3 class="text-sm font-semibold text-gray-700">
+				{{ ctrans("Re-translate :count products into :language?", { count: retranslateCount, language: props.routes.bulk_retranslate.language }) }}
+			</h3>
+			<template v-if="!retranslateResult">
+				<p class="mt-3 text-sm text-gray-600">
+					{{ ctrans("The name and description you have for these products will be replaced by ours in :language, where we have a translation. Any changes you made to them will be lost, and we cannot bring them back for you. For products already in your store, the new name and description are sent there too, keeping their web address: on eBay only the title, never the description, and on other platforms they change in My Products only. Prices are not sent.", { language: props.routes.bulk_retranslate.language }) }}
+				</p>
+				<p v-if="retranslateError" class="mt-3 text-xs text-red-600">{{ retranslateError }}</p>
+				<div class="mt-6 flex w-full gap-2">
+					<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="closeRetranslate">
+						<template #icon>
+							<FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+					<Button type="tertiary" full :label="ctrans('Yes, replace my texts')" :loading="isRetranslating" @click="submitRetranslate">
+						<template #icon>
+							<FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+				</div>
+			</template>
+			<template v-else>
+				<p class="mt-3 text-sm text-gray-600">
+					{{ ctrans(":count products were updated in your store.", { count: retranslateResult.in_store }) }}
+					{{ ctrans(":count products were changed in My Products only: they are not in your store yet, the listing is your own, or we do not send text changes to this platform.", { count: retranslateResult.only_my_products }) }}
+					{{ ctrans("Products we have no :language translation for kept their texts.", { language: props.routes.bulk_retranslate.language }) }}
+				</p>
+				<p v-if="retranslateResult.refused.length" class="mt-3 text-xs text-red-600">{{ ctrans("Your store did not take these, so they kept their texts:") }}</p>
+				<ul v-if="retranslateResult.refused.length" class="mt-1 list-disc pl-5 text-xs text-red-600">
+					<li v-for="message in retranslateResult.refused" :key="message">{{ message }}</li>
+				</ul>
+				<div class="mt-6 flex w-full gap-2">
+					<Button type="primary" full :label="ctrans('Close')" @click="closeRetranslate">
+						<template #icon>
+							<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+				</div>
+			</template>
 		</div>
 	</Modal>
 
