@@ -58,7 +58,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import { routeType } from "@/types/route"
-import { InputText, InputNumber, Message, Dialog, Textarea, Checkbox } from "primevue"
+import { InputText, InputNumber, Message, Dialog, Textarea, Checkbox, Select } from "primevue"
 import QuantitySelector from "@/Components/Dropshipping/QuantitySelector.vue"
 import { EditorContent } from "@tiptap/vue-3"
 import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
@@ -130,6 +130,7 @@ const props = defineProps<{
 		update: routeType
 		delete: routeType
 		duplicate: routeType
+		copy_to_channels?: { id: number, name: string, platform: string | null }[]
 		calculate: routeType
 		images: routeType
 		ai: any
@@ -504,6 +505,8 @@ const compTableFilterForSale = computed(() => {
 
 // action bundle edit
 const openEditModal = (item: any) => {
+	copyTargetChannelId.value = null
+	copiedToChannelName.value = null
 	isOpenModalEditProduct.value = true
 	selectedEditProduct.value = {
 		...item,
@@ -541,6 +544,15 @@ const productSelectorPreselected = ref<any[]>([])
 const pendingSyncBundleIds = ref<number[]>([])
 const componentsLocked = ref(false)
 const isDuplicatingBundle = ref(false)
+const copyTargetChannelId = ref<number | null>(null)
+const isCopyingBundle = ref(false)
+const copiedToChannelName = ref<string | null>(null)
+const copyTargetChannels = computed(() =>
+	(props.bundle_routes.copy_to_channels ?? []).map(channel => ({
+		id: channel.id,
+		label: channel.platform ? `${channel.name} (${channel.platform})` : channel.name,
+	}))
+)
 
 const emptyBundleSummary = () => ({
 	total_price: 0,
@@ -1102,6 +1114,38 @@ const submitBundle = (withSync = false) => {
 			},
 			onFinish: () => {
 				isSubmitBundle.value = false
+			},
+		}
+	)
+}
+const copyBundleToChannel = () => {
+	if (!copyTargetChannelId.value) {
+		return
+	}
+	const target = copyTargetChannels.value.find(channel => channel.id === copyTargetChannelId.value)
+	router.post(
+		route(props.bundle_routes.duplicate.name, {
+			...props.bundle_routes.duplicate.parameters,
+			bundle: selectedEditProduct.value?.bundle_id
+		}),
+		{ customer_sales_channel_id: copyTargetChannelId.value },
+		{
+			preserveScroll: true,
+			preserveState: true,
+			onStart: () => {
+				isCopyingBundle.value = true
+				submitError.value = null
+				copiedToChannelName.value = null
+			},
+			onSuccess: () => {
+				copiedToChannelName.value = target?.label ?? null
+				copyTargetChannelId.value = null
+			},
+			onError: errors => {
+				submitError.value = Object.values(errors)[0] || ctrans("Failed to copy the bundle, please try again")
+			},
+			onFinish: () => {
+				isCopyingBundle.value = false
 			},
 		}
 	)
@@ -1741,6 +1785,33 @@ onBeforeUnmount(() => {
 						</button>
 					</div>
 				</div>
+			</div>
+
+			<div v-if="copyTargetChannels.length && selectedEditProduct?.bundle_id" class="mb-5">
+				<label class="text-sm font-semibold">
+					{{ ctrans("Copy to another channel") }}
+				</label>
+				<div class="mt-2 flex items-center gap-2">
+					<Select
+						v-model="copyTargetChannelId"
+						:options="copyTargetChannels"
+						optionLabel="label"
+						optionValue="id"
+						:placeholder="ctrans('Select a channel')"
+						class="flex-1"
+						size="small" />
+					<Button
+						@click="copyBundleToChannel"
+						type="tertiary"
+						size="xs"
+						icon="fal fa-clone"
+						:label="ctrans('Copy bundle')"
+						:loading="isCopyingBundle"
+						:disabled="!copyTargetChannelId || isCopyingBundle || isSubmitBundle" />
+				</div>
+				<p v-if="copiedToChannelName" class="mt-2 text-sm text-green-700">
+					{{ ctrans("Copied to :channel. Open that channel's Bundles to publish it.", { channel: copiedToChannelName }) }}
+				</p>
 			</div>
 
 			<div class="mb-5">
