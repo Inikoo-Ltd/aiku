@@ -35,6 +35,8 @@ interface DueOrder {
 	reference: string
 	is_open: boolean
 	submitted_at: string | null
+	deposit_paid_at: string | null
+	deposit_paid_amount: number
 	placed_by: string | null
 	route: routeType
 	supplier_id: number | null
@@ -456,6 +458,13 @@ const send = () => {
 									<span class="text-gray-400">·</span>
 									<span class="whitespace-nowrap" :title="ctrans('Calendar days since the order was submitted (Day Zero)')">{{ ctrans("Age") }} Z+{{ ageInDays(line.order.submitted_at) }}</span>
 								</template>
+								<span v-if="line.kind === 'advance' && line.order.deposit_paid_at" v-tooltip="ctrans('The deposit to the supplier is recorded as paid on the purchase order')" class="inline-flex items-center gap-1 whitespace-nowrap rounded border border-green-200 bg-green-50 px-1.5 text-green-700">
+									<FontAwesomeIcon icon="fal fa-check-double" fixed-width aria-hidden="true" />
+									{{ line.order.deposit_paid_amount > 0 ? ctrans("Deposit paid :amount · :date", { amount: money(line.order.deposit_paid_amount), date: line.order.deposit_paid_at }) : ctrans("Deposit paid :date", { date: line.order.deposit_paid_at }) }}
+								</span>
+								<span v-if="line.order.paid_to_supplier > 0" class="whitespace-nowrap rounded border border-gray-200 px-1.5 text-gray-700">
+									{{ ctrans("Paid to supplier :amount", { amount: money(line.order.paid_to_supplier) }) }}
+								</span>
 							</div>
 							<div class="flex items-center gap-1">
 								<FontAwesomeIcon v-tooltip="ctrans('Purchase order')" icon="fal fa-clipboard-list" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
