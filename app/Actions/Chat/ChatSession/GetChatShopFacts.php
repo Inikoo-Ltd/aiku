@@ -87,6 +87,10 @@ class GetChatShopFacts
         '/slovensk[aá] po[sš]ta/u'            => 'Slovenská pošta',
     ];
 
+    public const int PREMIUM_DISPATCH_DAYS = 90;
+
+    public const int PREMIUM_DISPATCH_MIN_ORDERS = 20;
+
     /**
      * What the shop's own settings say, one entry each, for the knowledge base.
      *
@@ -491,13 +495,12 @@ class GetChatShopFacts
     }
 
     /**
-     * The shop's own premium dispatch charge, in the shop's own words: price, cut-off and whether it is suspended differ per shop.
+     * The shop's premium dispatch charge and what it delivered: an active charge is on sale and running whatever its description says (Raul, 21 Nov 2026), so the text is never quoted.
      */
     private function fasterDispatch(Shop $shop): ?string
     {
         $charge = $shop->charges()
             ->where('state', ChargeStateEnum::ACTIVE)
-            ->where('status', true)
             ->where('type', ChargeTypeEnum::PREMIUM->value)
             ->orderBy('id')
             ->first();
@@ -506,12 +509,39 @@ class GetChatShopFacts
             return null;
         }
 
-        $description = trim((string) $charge->description);
-        $body        = __('The paid option for faster dispatch is :name, :price extra, chosen by the customer in the basket', ['name' => $charge->name, 'price' => $this->money($shop, (float) data_get($charge->settings, 'amount'))]);
+        $body    = __('For faster dispatch the customer can add :name in the basket, for :price extra', ['name' => $charge->name, 'price' => $this->money($shop, (float) data_get($charge->settings, 'amount'))]);
+        $sameDay = $this->premiumSameDayOutOfTen($shop);
 
-        return $description === '' || mb_strtolower($description) === mb_strtolower(trim($charge->name))
+        return $sameDay === null
             ? $body
-            : $body.'. '.__('What the shop says about it, which decides what it offers and whether it is running at all').': "'.$description.'"';
+            : $body.'. '.__('Over the last :days days, :count out of 10 orders with it placed before 12 noon on a working day were dispatched the same day', ['days' => self::PREMIUM_DISPATCH_DAYS, 'count' => $sameDay]);
+    }
+
+    /**
+     * Of the shop's premium dispatch orders placed before noon (shop time) Monday to Friday, how many in ten left the same day; null when there are too few to say or fewer than 8 in 10 made it, so no weak claim is made, and never more than 9, so it does not read as a guarantee.
+     */
+    protected function premiumSameDayOutOfTen(Shop $shop): ?int
+    {
+        $timezone = $shop->timezone?->name ?? 'UTC';
+        $row      = DB::selectOne(
+            <<<'SQL'
+            select count(*) as orders,
+                count(*) filter (where (dispatched_at at time zone ?)::date = (submitted_at at time zone ?)::date) as same_day
+            from orders
+            where shop_id = ?
+                and is_premium_dispatch
+                and deleted_at is null
+                and dispatched_at is not null
+                and submitted_at >= ?
+                and extract(isodow from submitted_at at time zone ?) between 1 and 5
+                and extract(hour from submitted_at at time zone ?) < 12
+            SQL,
+            [$timezone, $timezone, $shop->id, now()->subDays(self::PREMIUM_DISPATCH_DAYS)->toDateTimeString(), $timezone, $timezone]
+        );
+
+        $outOfTen = $row && $row->orders >= self::PREMIUM_DISPATCH_MIN_ORDERS ? (int) floor($row->same_day * 10 / $row->orders) : 0;
+
+        return $outOfTen >= 8 ? min(9, $outOfTen) : null;
     }
 
     /**
