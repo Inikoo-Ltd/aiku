@@ -184,7 +184,7 @@ watch(
 
 const orderOf = (purchaseOrderId: number | null) => props.due.orders.find((order) => order.purchase_order_id === purchaseOrderId)
 
-type LineFilter = "all" | "purchase_orders" | "shipments" | "expenses"
+type LineFilter = "all" | "purchase_orders" | "deposits" | "balances" | "deposit_paid" | "shipments" | "expenses" | "selected"
 
 const lineFilter = ref<LineFilter>("all")
 const search = ref("")
@@ -259,24 +259,37 @@ const matchesSearch = (line: Line) => {
 }
 
 const searchedLines = computed(() => lines.value.filter(matchesSearch))
-const isPurchaseOrderLine = (line: Line) => line.kind === "advance" || line.kind === "balance"
-const purchaseOrderLines = computed(() => searchedLines.value.filter(isPurchaseOrderLine))
-const shipmentLines = computed(() => searchedLines.value.filter((line) => line.kind === "shipment"))
-const expenseLines = computed(() => searchedLines.value.filter((line) => line.kind === "expense"))
+const lineFilterMatches: Record<LineFilter, (line: Line) => boolean> = {
+	all: () => true,
+	purchase_orders: (line) => line.kind === "advance" || line.kind === "balance",
+	deposits: (line) => line.kind === "advance",
+	balances: (line) => line.kind === "balance",
+	deposit_paid: (line) => line.kind === "advance" && !!line.order?.deposit_paid_at,
+	shipments: (line) => line.kind === "shipment",
+	expenses: (line) => line.kind === "expense",
+	selected: (line) => !!ticked[line.key],
+}
 
-const lineFilterOptions = computed<{ label: string; value: LineFilter; count: number }[]>(() => [
-	{ label: ctrans("All"), value: "all", count: searchedLines.value.length },
-	{ label: ctrans("PO"), value: "purchase_orders", count: purchaseOrderLines.value.length },
-	{ label: ctrans("Shipment"), value: "shipments", count: shipmentLines.value.length },
-	{ label: ctrans("Expenses"), value: "expenses", count: expenseLines.value.length },
-])
+const linesFor = (filter: LineFilter) => searchedLines.value.filter(lineFilterMatches[filter])
 
-const visibleLines = computed(() => {
-	if (lineFilter.value === "purchase_orders") return purchaseOrderLines.value
-	if (lineFilter.value === "shipments") return shipmentLines.value
-	if (lineFilter.value === "expenses") return expenseLines.value
-	return searchedLines.value
-})
+const lineFilterOptions = computed<{ label: string; value: LineFilter; count: number; help?: string }[]>(() =>
+	(
+		[
+			{ label: ctrans("All"), value: "all" },
+			{ label: ctrans("PO"), value: "purchase_orders", help: ctrans("Deposit and balance lines of purchase orders") },
+			{ label: ctrans("Deposit"), value: "deposits" },
+			{ label: ctrans("Balance"), value: "balances" },
+			{ label: ctrans("Deposit paid"), value: "deposit_paid", help: ctrans("Deposit lines of orders whose deposit is already recorded as paid on the purchase order: check before asking for it") },
+			{ label: ctrans("Stock delivery"), value: "shipments" },
+			{ label: ctrans("Expenses"), value: "expenses" },
+			{ label: ctrans("Selected"), value: "selected" },
+		] as { label: string; value: LineFilter; help?: string }[]
+	)
+		.map((option) => ({ ...option, count: linesFor(option.value).length }))
+		.filter((option) => option.value === "all" || option.value === lineFilter.value || option.count > 0)
+)
+
+const visibleLines = computed(() => linesFor(lineFilter.value))
 
 
 const tickedCount = computed(() => visibleLines.value.filter((line) => ticked[line.key]).length)
@@ -414,15 +427,15 @@ const send = () => {
 	</div>
 
 	<div v-if="lines.length" class="sticky top-10 z-[5] mx-4 mt-4 bg-white pt-2">
+		<IconField class="mb-2 w-96 max-w-full">
+			<InputIcon>
+				<FontAwesomeIcon icon="fal fa-search" fixed-width aria-hidden="true" />
+			</InputIcon>
+			<InputText v-model="search" type="search" size="small" class="w-full" :class="fieldFocusClass" :placeholder="ctrans('Search supplier, PO, product, person, amount…')" :aria-label="ctrans('Search the lines')" />
+		</IconField>
 		<div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-4 py-2">
 			<div class="flex flex-wrap items-center gap-3">
 				<SegmentedToggle v-model="lineFilter" :options="lineFilterOptions" :ariaLabel="ctrans('Show the lines for')" />
-				<IconField>
-					<InputIcon>
-						<FontAwesomeIcon icon="fal fa-search" fixed-width aria-hidden="true" />
-					</InputIcon>
-					<InputText v-model="search" type="search" size="small" class="w-72 max-w-full" :class="fieldFocusClass" :placeholder="ctrans('Search supplier, PO, product, person, amount…')" :aria-label="ctrans('Search the lines')" />
-				</IconField>
 				<span class="text-sm text-gray-600">{{ ctrans(":count of :total lines selected", { count: String(chosen.length), total: String(lines.length) }) }}</span>
 				<Button
 					v-if="depositLines.length"
