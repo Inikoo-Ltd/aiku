@@ -553,13 +553,9 @@ class GetPartnerStockCoverBuckets
             ->offset(0);
     }
 
-    /**
-     * Our SKO is already being sorted: on an open purchase order to anyone, on the order being
-     * prepared for this partner, in a stock delivery not yet put away, or on the hub shopping list.
-     */
-    private function alreadyComingExpression(OrgPartner $orgPartner): string
+    private function onOrderOrDeliveryExpression(OrgPartner $orgPartner): string
     {
-        return "(exists (select 1 from purchase_order_transactions pot
+        return "exists (select 1 from purchase_order_transactions pot
                 join purchase_orders po on po.id = pot.purchase_order_id and po.deleted_at is null
                 where pot.org_stock_id = os.id and pot.deleted_at is null
                     and po.state not in ('".PurchaseOrderStateEnum::CANCELLED->value."', '".PurchaseOrderStateEnum::NOT_RECEIVED->value."')
@@ -576,10 +572,35 @@ class GetPartnerStockCoverBuckets
             StockDeliveryStateEnum::RECEIVED->value,
             StockDeliveryStateEnum::CHECKED->value,
             StockDeliveryStateEnum::BOOKING_IN->value,
-        ])."'))
+        ])."'))";
+    }
+
+    /**
+     * Our SKO is already being sorted: on an open purchase order to anyone, on the order being
+     * prepared for this partner, in a stock delivery not yet put away, or on the hub shopping list.
+     */
+    private function alreadyComingExpression(OrgPartner $orgPartner): string
+    {
+        return '('.$this->onOrderOrDeliveryExpression($orgPartner)."
             or exists (select 1 from partner_shopping_list_items sli
                 where sli.org_stock_id = os.id and sli.deleted_at is null
                     and sli.state in ('".implode("', '", [...ShoppingListItemStateEnum::onPartnerBuyerList(), ShoppingListItemStateEnum::ORDERED->value])."')))";
+    }
+
+    /**
+     * What "Hide what is already on order" hides: on an open purchase order or a delivery not put
+     * away, or sent to this partner and not dispatched yet. A draft basket line is not on order, so
+     * a row does not vanish while its quantity is being typed.
+     */
+    private function sentOrComingExpression(OrgPartner $orgPartner): string
+    {
+        return '('.$this->onOrderOrDeliveryExpression($orgPartner)."
+            or exists (select 1 from partner_shopping_list_items sli
+                left join transactions sli_transactions on sli_transactions.id = sli.transaction_id
+                left join orders sli_orders on sli_orders.id = sli_transactions.order_id
+                where sli.stock_id = p.stock_id and sli.org_partner_id = ".(int) $orgPartner->id." and sli.deleted_at is null
+                    and sli.state in ('".ShoppingListItemStateEnum::OPEN->value."', '".ShoppingListItemStateEnum::ORDERED->value."')
+                    and (sli_orders.state is null or sli_orders.state not in ('".OrderStateEnum::DISPATCHED->value."', '".OrderStateEnum::CANCELLED->value."'))))";
     }
 
     /**
@@ -612,6 +633,28 @@ class GetPartnerStockCoverBuckets
             ->whereRaw("(os.health_rank in ('A', 'B') or {$this->rescueQuantity($spare, $leadDays, $orgPartner)} * {$this->orgSkoPrice($orgPartner)} >= ".self::MINIMUM_LINE_VALUE.')');
 
         return [$query, $expression, $spare];
+    }
+
+    /**
+     * Every SKO the partner can sell us with its stock group and rank, worst group first.
+     *
+     * @return Collection<int, object{stock_id: int, bucket: string, health_rank: string|null}>
+     */
+    public function stockRows(OrgPartner $orgPartner, bool $hideOnOrder = false): Collection
+    {
+        $expression = $this->bucketExpression(GetPartnerLeadTime::run($orgPartner)['days']);
+
+        return DB::query()
+            ->fromSub(
+                $this->scopedQuery($orgPartner)
+                    ->when($hideOnOrder, fn ($query) => $query->whereRaw('not '.$this->sentOrComingExpression($orgPartner)))
+                    ->selectRaw("p.stock_id, $expression as bucket, os.health_rank, s.stock_value, s.days_of_cover"),
+                'r'
+            )
+            ->orderByRaw("array_position(array['".implode("', '", array_keys(self::BUCKETS))."'], r.bucket)")
+            ->orderByRaw("case r.health_rank when 'A' then 1 when 'B' then 2 when 'C' then 3 when 'D' then 4 when 'Z' then 5 end nulls last")
+            ->orderByRaw("case when r.bucket = 'dead' then -r.stock_value else r.days_of_cover end nulls last")
+            ->get(['r.stock_id', 'r.bucket', 'r.health_rank']);
     }
 
     /**

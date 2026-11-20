@@ -13,6 +13,8 @@ import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
 import RenderWhenVisible from "@/Components/Utils/RenderWhenVisible.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
+import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
+import Checkbox from "primevue/checkbox"
 import { capitalize } from "@/Composables/capitalize"
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
@@ -47,9 +49,14 @@ const props = defineProps<{
     title: string
     orgPartner: { id: number, slug: string, currency: string }
     addRoute: { name: string, parameters: (string | number)[] }
-    bucket: string
+    bucket: string | null
     bucketLabel: string
     rank: string | null
+    hideOrdered: boolean
+    filterOptions: {
+        cover: { value: string, label: string, tooltip: string, count: number }[]
+        rank: { value: string, label: string, count: number }[]
+    }
     perPage: number
     perPageOptions: number[]
     items: { data: BucketItem[], total: number, prev_page_url: string | null, next_page_url: string | null, from: number | null, to: number | null }
@@ -121,6 +128,21 @@ function changePerPage(perPage: number) {
     router.reload({ data: { per_page: perPage, page: 1 }, only: ["items", "perPage"], preserveScroll: true })
 }
 
+function visit(change: { cover?: string | null, rank?: string | null, hide_ordered?: boolean }) {
+    const next = { cover: props.bucket, rank: props.rank, hide_ordered: props.hideOrdered, ...change }
+
+    router.get(
+        route("grp.org.procurement.org_partners.show.shopping.items.index", [route().params["organisation"], props.orgPartner.id]),
+        {
+            ...(next.cover ? { cover: next.cover } : {}),
+            ...(next.rank ? { rank: next.rank } : {}),
+            ...(next.hide_ordered ? { hide_ordered: 1 } : {}),
+            ...(props.perPage !== props.perPageOptions[0] ? { per_page: props.perPage } : {}),
+        },
+        { preserveScroll: true }
+    )
+}
+
 const amountOf = (item: BucketItem) => quantityFor(item) * Number(item.price ?? 0)
 </script>
 
@@ -129,6 +151,15 @@ const amountOf = (item: BucketItem) => quantityFor(item) * Number(item.price ?? 
     <PageHeading :data="pageHead" />
 
     <div class="mx-4 mt-5">
+        <div class="mb-3 flex flex-wrap items-center gap-2">
+            <PillFilterBar :label="ctrans('Stock group')" :options="filterOptions.cover" :selected="bucket" @select="(value) => visit({ cover: value })" />
+            <PillFilterBar :label="ctrans('Rank')" :options="filterOptions.rank" :selected="rank" @select="(value) => visit({ rank: value })" />
+            <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1 text-xs" :class="hideOrdered ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-white text-gray-600'">
+                <Checkbox :modelValue="hideOrdered" binary size="small" @update:modelValue="(value: boolean) => visit({ hide_ordered: value })" />
+                {{ ctrans("Hide what is already on order") }}
+            </label>
+        </div>
+
         <div class="mb-2 flex items-baseline justify-between text-sm text-gray-500">
             <span>
                 <b class="font-semibold text-gray-800">{{ bucketLabel }}</b>
@@ -230,7 +261,7 @@ const amountOf = (item: BucketItem) => quantityFor(item) * Number(item.price ?? 
                 </tbody>
             </table>
             <p v-if="!items.data.length" class="py-10 text-center text-sm text-gray-400">
-                {{ ctrans("No items in this bucket") }}
+                {{ ctrans("No products match these filters") }}
             </p>
         </div>
 

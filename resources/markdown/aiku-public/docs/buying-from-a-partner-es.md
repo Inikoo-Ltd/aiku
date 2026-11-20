@@ -1,8 +1,8 @@
 ---
 title: Comprar a un socio
 summary: La guía del comprador - empieza por el panel de compras, rellena la lista a mano, desde el catálogo del socio o con auto-fill, y recibe la mercancía cuando llega.
-date: 2026-11-10
-source_date: 2026-11-10
+date: 2026-11-21
+source_date: 2026-11-21
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -22,6 +22,7 @@ Para quienes <em>cursan</em> pedidos a socios. Mantienes una lista abierta de lo
 Junto al panel, la pestaña **Shopping list** contiene todas las líneas abiertas.
 
 - **Add stocks** abre la lista de stock del socio con su disponibilidad, cómo se empaqueta cada artículo, tu propio stock actual y cuánto has usado en los últimos cuatro trimestres. Las cantidades están en las unidades de envío del vendedor (SKOs).
+- **All products** abre todo lo que vende el socio en una sola lista. Fíltrala por **Stock group** (Out of stock, Doomed, Critical, Danger, Watch, Covered, Dead stock, We never stocked) y **Rank**, marca **Hide what is already on order** para dejar fuera lo que está en un pedido abierto, en una entrega aún sin ubicar o ya enviado al socio, y fija las cantidades en las propias filas para añadirlas a la lista.
 - Cada línea cuenta la historia del stock de un vistazo — *su stock*, *nuestro stock* y cuándo *nos quedamos sin él* — más el importe a tu precio de compra, con el total de las líneas abiertas al pie de la tabla.
 - Cuando el socio fabrica él mismo el artículo, la línea también dice *made in batches of N units* y, cuando los dos números no dividen exacto, *full batches every N SKO* - el **order step**, el pedido más pequeño que llena hornadas completas exactamente. Un botón redondea tu cantidad hasta ahí. Pedir fuera del step está permitido y lo dice: se fabrica una hornada completa de todos modos, así que el pedido puede retrasarse o la cantidad ajustarse, y un pedido por debajo de un step completo espera en la fábrica hasta que se le une otra demanda. Ver [Hornadas, packs y hornadas parciales](/docs/batches-packs-and-part-batches-es).
 - Las líneas abiertas son totalmente tuyas: elige la **priority** (low → urgent) directamente en el desplegable de la tabla, o elimina la línea con su botón de papelera. Para cambiar una cantidad, usa **Browse** — el stepper del mismo artículo ahí edita la línea abierta directamente. En cuanto el socio recoge una línea, esta se bloquea, y su estado te dice dónde está.
@@ -88,6 +89,7 @@ Cuando el socio despacha, cada línea llega con los lotes que el socio recogió 
 <ul>
 <li><b>Ver qué hay que comprar:</b> tu organización → <b>Procurement → Partners</b> → abre el socio → <b>Shopping</b> (el panel) → trabaja las casillas de riesgo.</li>
 <li><b>Añadir a la lista:</b> <b>Shopping list</b> → <b>Add stocks</b>, o <b>Browse</b> y fija cantidades en las fichas de producto, o <b>Auto-fill</b> (o <b>+ fill</b> en una casilla del panel) para una propuesta.</li>
+<li><b>Elegir entre todo lo que vende el socio:</b> <b>Shopping list</b> → <b>All products</b> → filtra por <b>Stock group</b> y <b>Rank</b> → fija las cantidades en las filas.</li>
 <li><b>Pedir en hornadas completas:</b> el botón junto a <i>full batches every N SKO</i> en la línea o en la ficha de producto.</li>
 <li><b>Ajustar líneas abiertas:</b> cambia la priority o elimina líneas en la tabla de la lista de la compra; cambia cantidades desde las fichas de producto en <b>Browse</b>.</li>
 <li><b>Dejar que alguien rellene la lista con su asistente de IA (administradores):</b> <b>Sysadmin → Users</b> → abre el usuario → <b>Edit</b> → <b>Access</b> → activa <b>Can connect AI assistant</b> y después <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>

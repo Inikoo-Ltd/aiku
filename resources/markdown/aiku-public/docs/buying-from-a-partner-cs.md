@@ -1,8 +1,8 @@
 ---
 title: Nákup od partnera
 summary: Průvodce pro kupujícího - začněte u nákupního dashboardu, naplňte seznam ručně, z partnerova katalogu nebo pomocí automatického doplnění, a přijměte zboží, když dorazí.
-date: 2026-11-10
-source_date: 2026-11-10
+date: 2026-11-21
+source_date: 2026-11-21
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -22,6 +22,7 @@ Pro lidi, kteří partnerské objednávky <em>zadávají</em>. Vedete jeden otev
 Vedle dashboardu drží záložka **Shopping list** (Nákupní seznam) všechny otevřené řádky.
 
 - **Add stocks** (Přidat skladové položky) otevře partnerův seznam skladových zásob s jejich dostupností, způsobem balení, vaším aktuálním skladem a tím, kolik jste toho spotřebovali za poslední čtyři čtvrtletí. Množství jsou v prodejních jednotkách prodávajícího (SKO).
+- **All products** (Všechny produkty) otevře vše, co partner prodává, jako jeden seznam. Filtrujte ho podle **Stock group** (Out of stock, Doomed, Critical, Danger, Watch, Covered, Dead stock, We never stocked) a **Rank**, zaškrtněte **Hide what is already on order**, abyste vynechali to, co je na otevřené objednávce, v dodávce, která ještě není naskladněná, nebo už odeslané partnerovi, a množství nastavte přímo v řádcích, čímž je přidáte na seznam.
 - Každý řádek na první pohled ukazuje příběh skladu — *jejich sklad*, *náš sklad* a kdy *nám dojde* — plus částku ve vaší nákupní ceně, s celkovým součtem otevřených položek v patě tabulky.
 - Tam, kde si partner položku sám vyrábí, řádek navíc uvádí *made in batches of N units* (vyrobeno v dávkách po N kusech) a tam, kde se to s baleními nedělí rovnoměrně, *full batches every N SKO* (celé dávky po N SKO) — **order step** (objednávací krok), nejmenší objednávka, kterou celé dávky zaplní přesně. Tlačítko zaokrouhlí vaše množství nahoru na tento krok. Objednávka mimo krok je povolená a stránka to říká: stejně se vyrobí celá dávka, takže se objednávka může zpozdit nebo se upraví množství, a objednávka pod jeden celý krok čeká v továrně, dokud se k ní nepřipojí jiná poptávka. Viz [Dávky, balení a částečné dávky](/docs/batches-packs-and-part-batches-cs).
 - Otevřené řádky jsou plně vaše: zvolte **priority** (prioritu, od nízké po naléhavou) přímo z rozevíracího seznamu v tabulce, nebo řádek odstraňte tlačítkem koše. Pro změnu množství použijte **Browse** (Procházet) — stejný stepper u dané položky tam upraví otevřený řádek přímo. Jakmile partner řádek vychystá, uzamkne se a jeho stav vám ukáže, kde se nachází.
@@ -88,6 +89,7 @@ Když partner expeduje, každý řádek přijde s již vyplněnými dávkami, kt
 <ul>
 <li><b>Zjistit, co je třeba koupit:</b> vaše organizace → <b>Procurement → Partners</b> (Nákup → Partneři) → otevřít partnera → <b>Shopping</b> (dashboard) → projít dlaždice rizik.</li>
 <li><b>Přidat na seznam:</b> <b>Shopping list</b> (Nákupní seznam) → <b>Add stocks</b> (Přidat skladové položky), nebo <b>Browse</b> (Procházet) a nastavit množství na kartách produktů, nebo <b>Auto-fill</b> (Automatické doplnění) (nebo <b>+ fill</b> na dlaždici dashboardu) pro návrh.</li>
+<li><b>Vybrat ze všeho, co partner prodává:</b> <b>Shopping list</b> (Nákupní seznam) → <b>All products</b> (Všechny produkty) → filtrujte podle <b>Stock group</b> a <b>Rank</b> → nastavte množství v řádcích.</li>
 <li><b>Objednat v celých dávkách:</b> tlačítko vedle <i>full batches every N SKO</i> na řádku nebo na kartě produktu.</li>
 <li><b>Upravit otevřené řádky:</b> změnit prioritu nebo smazat řádky v tabulce nákupního seznamu; změnit množství na kartách produktů v <b>Browse</b>.</li>
 <li><b>Nechat někoho plnit seznam přes jeho AI asistenta (administrátoři):</b> <b>Sysadmin → Users</b> (Správa systému → Uživatelé) → otevřít uživatele → <b>Edit</b> (Upravit) → <b>Access</b> (Přístup) → zapnout <b>Can connect AI assistant</b>, poté <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>

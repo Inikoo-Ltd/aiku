@@ -32,6 +32,7 @@ use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Models\Production\Production;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
+use App\Actions\Procurement\PartnerShoppingListItem\SubmitPartnerShoppingList;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
@@ -458,6 +459,52 @@ describe('partner browse', function () {
 
         $this->get($route.'?cover=out&per_page=9999')
             ->assertInertia(fn (AssertableInertia $page) => $page->where('perPage', 25)->where('items.per_page', 25));
+    });
+
+    test('UI partner cover bucket items lists every stock group and hides what is on order', function () {
+        $seller = $this->orgPartner->partner;
+        $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
+        [, $sellerProduct] = createProduct($sellerShop);
+        $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerProduct->orgStocks()->first()->stock])[0];
+        $buyerOrgStock->update(['quantity_available' => 10, 'health_rank' => HealthRankEnum::B]);
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+
+        $route   = route('grp.org.procurement.org_partners.show.shopping.items.index', [$this->organisation->slug, $this->orgPartner->id]);
+        $buckets = GetPartnerStockCoverBuckets::make();
+        $listed  = fn (bool $hideOnOrder) => $buckets->stockRows($this->orgPartner, $hideOnOrder)->pluck('stock_id')->contains($buyerOrgStock->stock_id);
+        $total   = $buckets->stockRows($this->orgPartner)->count();
+
+        expect($listed(false))->toBeTrue();
+
+        $this->get($route)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('bucket', null)
+            ->where('bucketLabel', 'All products')
+            ->where('hideOrdered', false)
+            ->where('items.total', $total)
+            ->where('filterOptions.cover', fn ($options) => collect($options)->pluck('value')->all() === array_keys(GetPartnerStockCoverBuckets::BUCKETS)
+                && collect($options)->sum('count') === $total
+                && collect($options)->firstWhere('value', 'w1')['label'] === 'Doomed')
+            ->where('filterOptions.rank', fn ($options) => collect($options)->pluck('value')->all() === ['A', 'B', 'C', 'D', 'Z']
+                && collect($options)->firstWhere('value', 'B')['count'] >= 1));
+
+        $this->get($route.'?rank=B')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('rank', 'B')
+            ->where('items.total', $buckets->stockRows($this->orgPartner)->where('health_rank', 'B')->count()));
+
+        $draft = StorePartnerShoppingListItem::make()->action($this->orgPartner, $buyerOrgStock, ['quantity' => 2]);
+        expect($draft->state)->toBe(ShoppingListItemStateEnum::DRAFT)
+            ->and($listed(true))->toBeTrue();
+
+        SubmitPartnerShoppingList::make()->action($this->orgPartner);
+        expect($listed(true))->toBeFalse()
+            ->and($listed(false))->toBeTrue();
+
+        $this->get($route.'?hide_ordered=1')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('hideOrdered', true)
+            ->where('items.total', $buckets->stockRows($this->orgPartner, true)->count()));
+
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+        $buyerOrgStock->update(['health_rank' => null]);
     });
 });
 

@@ -1,8 +1,8 @@
 ---
 title: Cumpărarea de la un partener
 summary: Ghidul cumpărătorului - pornește de la dashboard-ul de cumpărături, completează lista manual, din catalogul partenerului sau cu auto-completare, și recepționează marfa la sosire.
-date: 2026-11-10
-source_date: 2026-11-10
+date: 2026-11-21
+source_date: 2026-11-21
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -22,6 +22,7 @@ Pentru persoanele care <em>plasează</em> comenzile către parteneri. Ții o sin
 Lângă dashboard, tab-ul **Shopping list** (lista de cumpărături) ține fiecare linie deschisă.
 
 - **Add stocks** (adaugă stocuri) deschide lista de stocuri a partenerului cu disponibilitatea lor, cum e ambalat fiecare articol, stocul tău propriu curent, și cât ai folosit în ultimele patru trimestre. Cantitățile sunt în unitățile de expediere ale vânzătorului (SKO-uri).
+- **All products** (toate produsele) deschide tot ce vinde partenerul într-o singură listă. Filtreaz-o după **Stock group** (Out of stock, Doomed, Critical, Danger, Watch, Covered, Dead stock, We never stocked) și **Rank**, bifează **Hide what is already on order** ca să lași deoparte ce este pe o comandă deschisă, într-o livrare încă nepusă la raft sau deja trimis partenerului, și setează cantitățile direct pe rânduri ca să le adaugi pe listă.
 - Fiecare linie spune povestea stocului dintr-o privire — *stocul lor*, *stocul nostru* și când *ne terminăm* — plus suma la prețul tău de cumpărare, cu totalul articolelor deschise la baza tabelului.
 - Unde partenerul face el însuși articolul, linia mai spune și *made in batches of N units* (făcut în loturi de N unități) și, unde cele două nu se împart exact, *full batches every N SKO* (loturi întregi la fiecare N SKO) - **order step** (pasul de comandă), cea mai mică comandă pe care loturile întregi o umplu exact. Un buton rotunjește cantitatea ta în sus la el. Comanda în afara pasului e permisă și spune asta: un lot întreg se face oricum, așa că livrarea poate întârzia sau cantitatea poate fi ajustată, iar o comandă sub un pas întreg așteaptă la fabrică până se alătură altă cerere. Vezi [Loturi, pachete și loturi parțiale](/docs/batches-packs-and-part-batches-ro).
 - Liniile deschise sunt pe deplin ale tale: alege **priority** (prioritatea, de la scăzut la urgent) direct din dropdown-ul din tabel, sau șterge linia cu butonul de coș. Ca să schimbi o cantitate, folosește **Browse** (răsfoire) — stepper-ul aceluiași articol de acolo editează direct linia deschisă. Odată ce partenerul preia o linie, aceasta se blochează, iar starea ei îți spune unde se află.
@@ -88,6 +89,7 @@ Când partenerul expediază, fiecare linie sosește cu loturile pe care partener
 <ul>
 <li><b>Vezi ce trebuie cumpărat:</b> organizația ta → <b>Procurement → Partners</b> → deschide partenerul → <b>Shopping</b> (dashboard-ul) → lucrează plăcile de risc.</li>
 <li><b>Adaugă pe listă:</b> <b>Shopping list</b> → <b>Add stocks</b>, sau <b>Browse</b> și setează cantități pe fișele de produs, sau <b>Auto-fill</b> (sau <b>+ fill</b> pe o placă din dashboard) pentru o propunere.</li>
+<li><b>Alege din tot ce vinde partenerul:</b> <b>Shopping list</b> → <b>All products</b> → filtrează după <b>Stock group</b> și <b>Rank</b> → setează cantitățile pe rânduri.</li>
 <li><b>Comandă în loturi întregi:</b> butonul de lângă <i>full batches every N SKO</i> pe linie sau pe fișa produsului.</li>
 <li><b>Ajustează liniile deschise:</b> schimbă prioritatea sau șterge linii în tabelul listei de cumpărături; schimbă cantități din fișele de produs în <b>Browse</b>.</li>
 <li><b>Lasă pe cineva să completeze lista prin asistentul lui AI (administratori):</b> <b>Sysadmin → Users</b> → deschide utilizatorul → <b>Edit</b> → <b>Access</b> → activează <b>Can connect AI assistant</b>, apoi <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>

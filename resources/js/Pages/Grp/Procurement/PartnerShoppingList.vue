@@ -27,8 +27,8 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { Upload } from "@/types/Upload"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCut, faUpload, faPaperPlane, faIndustryAlt, faBan, faBells, faChevronDoubleDown, faEquals, faChevronDoubleUp, faExclamationTriangle } from "@fal"
-library.add(faCut, faUpload, faPaperPlane, faIndustryAlt, faBan, faBells, faChevronDoubleDown, faEquals, faChevronDoubleUp, faExclamationTriangle)
+import { faList, faCut, faUpload, faPaperPlane, faIndustryAlt, faBan, faBells, faChevronDoubleDown, faEquals, faChevronDoubleUp, faExclamationTriangle } from "@fal"
+library.add(faList, faCut, faUpload, faPaperPlane, faIndustryAlt, faBan, faBells, faChevronDoubleDown, faEquals, faChevronDoubleUp, faExclamationTriangle)
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -86,6 +86,10 @@ const toggleFilter = (key: string, value: string) => {
 	router.get(url.toString(), {}, { preserveState: true, preserveScroll: true, replace: true, ...tableLoadingEvents })
 }
 const routeParams = route().params
+
+function openAllProducts() {
+	router.visit(route("grp.org.procurement.org_partners.show.shopping.items.index", [routeParams["organisation"], props.orgPartner.id]))
+}
 
 function confirmDeleteAll() {
 	confirm.require({
@@ -518,6 +522,12 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 				icon="fal fa-upload"
 				:label="ctrans('Upload')"
 				@click="isUploadOpen = true" />
+			<Button
+				type="tertiary"
+				icon="fal fa-list"
+				:label="ctrans('All products')"
+				:tooltip="ctrans('Everything this partner sells, to filter by stock group and add to the basket')"
+				@click="openAllProducts" />
 			<Button :label="ctrans('Add stocks')" @click="isModalOpen = true" type="tertiary" icon="far fa-plus" />
 			<Button
 				type="primary"

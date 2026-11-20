@@ -1,8 +1,8 @@
 ---
 title: Pirkšana no partnera
 summary: Pircēja rokasgrāmata - sāc no iepirkumu paneļa, aizpildi sarakstu ar roku, no partnera kataloga vai ar automātisku aizpildi, un saņem preci, kad tā pienāk.
-date: 2026-11-10
-source_date: 2026-11-10
+date: 2026-11-21
+source_date: 2026-11-21
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -22,6 +22,7 @@ Cilvēkiem, kas <em>pasūta</em> preces no partneriem. Tu uzturi vienu atklātu 
 Blakus panelim cilne **Shopping list** (Iepirkumu saraksts) satur visas atklātās rindas.
 
 - **Add stocks** (Pievienot preces) atver partnera preču sarakstu ar viņu pieejamību, iepakojumu, tavu pašreizējo krājumu un cik daudz esi izmantojis pēdējos četros ceturkšņos. Daudzumi ir pārdevēja nosūtīšanas vienībās (SKO).
+- **All products** (Visi produkti) atver visu, ko partneris pārdod, vienā sarakstā. Filtrē to pēc **Stock group** (Out of stock, Doomed, Critical, Danger, Watch, Covered, Dead stock, We never stocked) un **Rank**, atzīmē **Hide what is already on order**, lai izlaistu to, kas ir atvērtā pasūtījumā, piegādē, kas vēl nav izvietota, vai jau nosūtīts partnerim, un iestati daudzumus tieši rindās, lai pievienotu tos sarakstam.
 - Katra rinda uzreiz stāsta krājuma stāstu — *viņu krājums*, *mūsu krājums* un kad *mums beigsies* — plus summa tavā pirkšanas cenā, ar atklāto vienību kopsummu tabulas apakšā.
 - Kur partneris vienību izgatavo pats, rinda arī saka *made in batches of N units* (izgatavots partijās pa N vienībām) un, ja abi skaitļi nedalās vienmērīgi, *full batches every N SKO* (pilnas partijas ik pa N SKO) — tas ir **order step** (pasūtījuma solis), mazākais pasūtījums, ko pilnas partijas aizpilda tieši. Poga noapaļo tavu daudzumu uz to. Pasūtīt ārpus soļa ir atļauts, un tas arī tiek pateikts: pilna partija tik un tā tiek izgatavota, tāpēc pasūtījums var kavēties vai daudzums tikt koriģēts, un pasūtījums, kas mazāks par vienu pilnu soli, gaida ražotnē, kamēr tam pievienojas cits pieprasījums. Skaties [Partijas, iepakojumi un daļējas partijas](/docs/batches-packs-and-part-batches-lv).
 - Atklātās rindas pilnībā pieder tev: izvēlies **priority** (prioritāti, no zema līdz steidzamam) tieši nolaižamajā izvēlnē tabulā vai noņem rindu ar tās papīrgrozu. Lai mainītu daudzumu, izmanto **Browse** (Pārlūkot) — tā paša produkta soļotājs tur tieši rediģē atklāto rindu. Tiklīdz partneris rindu nokomplektē, tā tiek slēgta, un tās statuss parāda, kur tā atrodas.
@@ -88,6 +89,7 @@ Kad partneris nosūta preces, katra rinda pienāk ar jau aizpildītām partijām
 <ul>
 <li><b>Redzēt, kas jāpērk:</b> tava organizācija → <b>Procurement → Partners</b> → atver partneri → <b>Shopping</b> (panelis) → strādā ar riska kartītēm.</li>
 <li><b>Pievienot sarakstam:</b> <b>Shopping list</b> → <b>Add stocks</b>, vai <b>Browse</b> un iestati daudzumus uz produktu kartītēm, vai <b>Auto-fill</b> (vai <b>+ fill</b> uz paneļa kartītes) priekšlikumam.</li>
+<li><b>Izvēlies no visa, ko partneris pārdod:</b> <b>Shopping list</b> → <b>All products</b> → filtrē pēc <b>Stock group</b> un <b>Rank</b> → iestati daudzumus rindās.</li>
 <li><b>Pasūtīt pilnās partijās:</b> poga blakus <i>full batches every N SKO</i> uz rindas vai produkta kartītes.</li>
 <li><b>Pielāgot atklātās rindas:</b> maini prioritāti vai dzēs rindas iepirkumu saraksta tabulā; maini daudzumus no produktu kartītēm sadaļā <b>Browse</b>.</li>
 <li><b>Ļaut kādam aizpildīt sarakstu ar sava mākslīgā intelekta asistenta palīdzību (administratoriem):</b> <b>Sysadmin → Users</b> → atver lietotāju → <b>Edit</b> → <b>Access</b> → ieslēdz <b>Can connect AI assistant</b>, tad <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>

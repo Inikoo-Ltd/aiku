@@ -1,8 +1,8 @@
 ---
 title: Kupowanie od partnera
 summary: Przewodnik dla kupującego - zacznij od pulpitu zakupów, uzupełnij listę ręcznie, z katalogu partnera albo za pomocą auto-fill, i odbierz towar, gdy dotrze.
-date: 2026-11-10
-source_date: 2026-11-10
+date: 2026-11-21
+source_date: 2026-11-21
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -22,6 +22,7 @@ Dla osób, które <em>składają</em> zamówienia partnerskie. Prowadzisz jedną
 Obok pulpitu zakładka **Shopping list** (Lista zakupowa) przechowuje wszystkie otwarte pozycje.
 
 - **Add stocks** (Dodaj towary) otwiera listę stanów magazynowych partnera z ich dostępnością, sposobem pakowania każdej pozycji, Twoim własnym bieżącym stanem i tym, ile zużyłeś w ostatnich czterech kwartałach. Ilości podane są w jednostkach wysyłkowych sprzedającego (SKO).
+- **All products** (Wszystkie produkty) otwiera wszystko, co sprzedaje partner, jako jedną listę. Filtruj ją według **Stock group** (Out of stock, Doomed, Critical, Danger, Watch, Covered, Dead stock, We never stocked) i **Rank**, zaznacz **Hide what is already on order**, aby pominąć to, co jest na otwartym zamówieniu, w dostawie jeszcze nierozłożonej albo już wysłane do partnera, i ustaw ilości bezpośrednio w wierszach, aby dodać je do listy.
 - Każda pozycja pokazuje historię stanu na pierwszy rzut oka - *their stock* (ich stan), *our stock* (nasz stan) i kiedy *we run out* (nam się skończy) - a do tego kwotę w Twojej cenie zakupu, z sumą otwartych pozycji u dołu tabeli.
 - Tam, gdzie partner sam wytwarza dany produkt, pozycja podaje też *made in batches of N units* (wytwarzane w partiach po N sztuk) i, gdy te dwie liczby nie dzielą się równo, *full batches every N SKO* (pełne partie co N SKO) - **order step** (krok zamówienia), najmniejsze zamówienie, które wypełnia pełne partie dokładnie. Przycisk zaokrągla Twoją ilość w górę do niego. Zamawianie poza krokiem jest dozwolone i tak jest napisane: pełna partia i tak powstaje, więc zamówienie może zostać opóźnione albo ilość dostosowana, a zamówienie poniżej jednego pełnego kroku czeka w fabryce, aż dołączy do niego inny popyt. Zobacz [Partie, opakowania i częściowe partie](/docs/batches-packs-and-part-batches-pl).
 - Otwarte pozycje są w pełni Twoje: wybierz **priority** (priorytet, low → urgent, niski → pilny) prosto z listy rozwijanej w tabeli, albo usuń pozycję przyciskiem kosza. Aby zmienić ilość, użyj **Browse** (Przeglądaj) - licznik przy tym samym produkcie edytuje tam otwartą pozycję bezpośrednio. Gdy partner skompletuje pozycję, blokuje się ona, a jej stan mówi, na jakim jest etapie.
@@ -88,6 +89,7 @@ Gdy partner wysyła towar, każda linia przychodzi z już wypełnionymi partiami
 <ul>
 <li><b>Zobacz, co trzeba kupić:</b> Twoja organizacja → <b>Procurement → Partners</b> (Zakupy → Partnerzy) → otwórz partnera → <b>Shopping</b> (Zakupy, pulpit) → popracuj nad kafelkami ryzyka.</li>
 <li><b>Dodaj do listy:</b> <b>Shopping list</b> (Lista zakupowa) → <b>Add stocks</b> (Dodaj towary), albo <b>Browse</b> (Przeglądaj) i ustaw ilości na kartach produktów, albo <b>Auto-fill</b> (lub <b>+ fill</b> na kafelku pulpitu) po propozycję.</li>
+<li><b>Wybierz ze wszystkiego, co sprzedaje partner:</b> <b>Shopping list</b> (Lista zakupowa) → <b>All products</b> (Wszystkie produkty) → filtruj według <b>Stock group</b> i <b>Rank</b> → ustaw ilości w wierszach.</li>
 <li><b>Zamów w pełnych partiach:</b> przycisk obok <i>full batches every N SKO</i> na pozycji albo na karcie produktu.</li>
 <li><b>Dostosuj otwarte pozycje:</b> zmień priorytet albo usuń pozycje w tabeli listy zakupowej; zmień ilości z kart produktów w <b>Browse</b> (Przeglądaj).</li>
 <li><b>Pozwól komuś uzupełniać listę przez jego asystenta AI (administratorzy):</b> <b>Sysadmin → Users</b> (Administracja systemu → Użytkownicy) → otwórz użytkownika → <b>Edit</b> → <b>Access</b> → włącz <b>Can connect AI assistant</b>, a potem <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>

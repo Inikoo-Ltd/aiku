@@ -22,6 +22,7 @@ use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
@@ -29,6 +30,7 @@ use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -40,15 +42,23 @@ class IndexPartnerCoverBucketItems extends OrgAction
     use WithPartnerShoppingSubNavigation;
 
     private OrgPartner $orgPartner;
-    private string $bucket;
+    private ?string $bucket;
     private ?string $rank;
+    private bool $hideOnOrder = false;
+    private Collection $stockRows;
     private int $perPage = 25;
 
     public const array PER_PAGE_OPTIONS = [25, 100, 500];
 
-    public function handle(OrgPartner $orgPartner, string $bucket, ?string $rank): LengthAwarePaginator
+    public function handle(OrgPartner $orgPartner, ?string $bucket, ?string $rank, bool $hideOnOrder = false): LengthAwarePaginator
     {
-        $stockIds = GetPartnerStockCoverBuckets::make()->stockIdsInBucket($orgPartner, $bucket, $rank);
+        $this->stockRows = GetPartnerStockCoverBuckets::make()->stockRows($orgPartner, $hideOnOrder);
+
+        $stockIds = $this->stockRows
+            ->when($bucket, fn (Collection $rows) => $rows->where('bucket', $bucket))
+            ->when($rank, fn (Collection $rows) => $rows->where('health_rank', $rank))
+            ->pluck('stock_id')
+            ->all();
 
         $paginator = OrgStock::query()
             ->where('organisation_id', $orgPartner->partner_id)
@@ -193,19 +203,47 @@ class IndexPartnerCoverBucketItems extends OrgAction
         return $paginator;
     }
 
-    private function bucketLabel(): string
+    private function bucketLabel(?string $bucket = null): string
     {
-        $meta = GetPartnerStockCoverBuckets::BUCKETS[$this->bucket];
+        $bucket ??= $this->bucket;
+        if ($bucket === null) {
+            return __('All products');
+        }
+
+        $meta = GetPartnerStockCoverBuckets::BUCKETS[$bucket];
         $edges = ['w2' => 2, 'w3' => 3, 'w4' => 4];
 
-        return __($meta['label'], ['days' => ($edges[$this->bucket] ?? 1) * GetPartnerLeadTime::run($this->orgPartner)['days']]);
+        return __($meta['label'], ['days' => ($edges[$bucket] ?? 1) * GetPartnerLeadTime::run($this->orgPartner)['days']]);
+    }
+
+    /**
+     * @return array{cover: array<int, array{value: string, label: string, tooltip: string, count: int}>, rank: array<int, array{value: string, label: string, count: int}>}
+     */
+    private function filterOptions(): array
+    {
+        $inGroup = $this->bucket ? $this->stockRows->where('bucket', $this->bucket) : $this->stockRows;
+
+        return [
+            'cover' => collect(GetPartnerStockCoverBuckets::BUCKETS)->map(fn (array $meta, string $bucket) => [
+                'value'   => $bucket,
+                'label'   => explode(':', __($meta['label']))[0],
+                'tooltip' => $this->bucketLabel($bucket),
+                'count'   => $this->stockRows->where('bucket', $bucket)->count(),
+            ])->values()->all(),
+            'rank'  => collect(HealthRankEnum::cases())->map(fn (HealthRankEnum $healthRank) => [
+                'value' => $healthRank->value,
+                'label' => $healthRank->value,
+                'count' => $inGroup->where('health_rank', $healthRank->value)->count(),
+            ])->all(),
+        ];
     }
 
     public function asController(Organisation $organisation, OrgPartner $orgPartner, ActionRequest $request): LengthAwarePaginator
     {
         $this->orgPartner = $orgPartner;
-        $cover            = $request->input('cover', 'out');
-        $this->bucket     = array_key_exists($cover, GetPartnerStockCoverBuckets::BUCKETS) ? $cover : 'out';
+        $cover            = $request->input('cover');
+        $this->bucket     = is_string($cover) && array_key_exists($cover, GetPartnerStockCoverBuckets::BUCKETS) ? $cover : null;
+        $this->hideOnOrder = $request->boolean('hide_ordered');
         $rank             = $request->input('rank');
         $this->rank       = in_array($rank, ['A', 'B', 'C', 'D', 'Z'], true) ? $rank : null;
         $perPage          = (int) $request->input('per_page', 25);
@@ -213,7 +251,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
 
         $this->initialisation($organisation, $request);
 
-        return $this->handle($orgPartner, $this->bucket, $this->rank);
+        return $this->handle($orgPartner, $this->bucket, $this->rank, $this->hideOnOrder);
     }
 
     public function htmlResponse(LengthAwarePaginator $items, ActionRequest $request): Response
@@ -244,6 +282,8 @@ class IndexPartnerCoverBucketItems extends OrgAction
                 'bucket'      => $this->bucket,
                 'bucketLabel' => $this->bucketLabel(),
                 'rank'        => $this->rank,
+                'hideOrdered' => $this->hideOnOrder,
+                'filterOptions' => $this->filterOptions(),
                 'perPage'     => $this->perPage,
                 'perPageOptions' => self::PER_PAGE_OPTIONS,
                 'items'       => $items,

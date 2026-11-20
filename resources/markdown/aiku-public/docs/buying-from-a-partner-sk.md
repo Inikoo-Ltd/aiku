@@ -1,8 +1,8 @@
 ---
 title: Nákup od partnera
 summary: Sprievodca pre nákupcov - začnite na nákupnom paneli, doplňte zoznam ručne, z partnerovho katalógu alebo pomocou automatického dopĺňania, a prevezmite tovar po jeho príchode.
-date: 2026-11-10
-source_date: 2026-11-10
+date: 2026-11-21
+source_date: 2026-11-21
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -22,6 +22,7 @@ Pre ľudí, ktorí <em>zadávajú</em> objednávky partnerom. Vediete si jeden o
 Vedľa panelu záložka **Shopping list** obsahuje každý otvorený riadok.
 
 - **Add stocks** otvorí partnerov skladový zoznam s ich dostupnosťou, spôsobom balenia každej položky, vaším vlastným aktuálnym stavom skladu a tým, koľko ste spotrebovali za posledné štyri štvrťroky. Množstvá sú v predajných jednotkách predávajúceho (SKO).
+- **All products** otvorí všetko, čo partner predáva, ako jeden zoznam. Filtrujte ho podľa **Stock group** (Out of stock, Doomed, Critical, Danger, Watch, Covered, Dead stock, We never stocked) a **Rank**, zaškrtnite **Hide what is already on order**, aby ste vynechali to, čo je na otvorenej objednávke, v dodávke, ktorá ešte nie je naskladnená, alebo už odoslané partnerovi, a množstvá nastavte priamo v riadkoch, čím ich pridáte do zoznamu.
 - Každý riadok na prvý pohľad rozpráva príbeh skladu — *ich sklad*, *náš sklad* a kedy *nám dôjde* — plus sumu vo vašej nákupnej cene, so súčtom otvorených položiek v päte tabuľky.
 - Tam, kde si partner položku vyrába sám, riadok tiež hovorí *made in batches of N units* (vyrába sa v dávkach po N kusoch) a tam, kde sa dve čísla nedelia presne, aj *full batches every N SKO* (celé dávky každých N SKO) — **order step**, najmenšia objednávka, ktorú celé dávky vyplnia presne. Tlačidlo zaokrúhli vaše množstvo nahor naň. Objednávka mimo stepu je povolená a hovorí to: celá dávka sa vyrobí tak či tak, takže objednávka môže byť oneskorená alebo množstvo upravené, a objednávka pod jeden celý step čaká na dielni, kým sa k nej nepridá ďalší dopyt. Viď [Dávky, balenia a čiastočné dávky](/docs/batches-packs-and-part-batches-sk).
 - Otvorené riadky sú plne vaše: vyberte **priority** (low → urgent) priamo z rozbaľovacieho zoznamu v tabuľke, alebo riadok odstráňte tlačidlom koša. Na zmenu množstva použite **Browse** — rovnaký prepínač množstva tam upravuje otvorený riadok priamo. Keď si partner riadok vyzdvihne, uzamkne sa a jeho stav vám povie, kde sa nachádza.
@@ -88,6 +89,7 @@ Keď partner expeduje, každý riadok príde s už vyplnenými dávkami, ktoré 
 <ul>
 <li><b>Zistiť, čo treba nakúpiť:</b> vaša organizácia → <b>Procurement → Partners</b> → otvorte partnera → <b>Shopping</b> (panel) → prechádzajte rizikové dlaždice.</li>
 <li><b>Pridať do zoznamu:</b> <b>Shopping list</b> → <b>Add stocks</b>, alebo <b>Browse</b> a nastavte množstvá na kartách produktov, alebo <b>Auto-fill</b> (či <b>+ fill</b> na dlaždici panelu) pre návrh.</li>
+<li><b>Vybrať zo všetkého, čo partner predáva:</b> <b>Shopping list</b> → <b>All products</b> → filtrujte podľa <b>Stock group</b> a <b>Rank</b> → nastavte množstvá v riadkoch.</li>
 <li><b>Objednať v celých dávkach:</b> tlačidlo vedľa <i>full batches every N SKO</i> na riadku alebo na karte produktu.</li>
 <li><b>Upraviť otvorené riadky:</b> zmeňte prioritu alebo vymažte riadky v tabuľke nákupného zoznamu; množstvá meňte na kartách produktov v <b>Browse</b>.</li>
 <li><b>Nechať niekoho dopĺňať zoznam cez jeho AI asistenta (administrátori):</b> <b>Sysadmin → Users</b> → otvorte používateľa → <b>Edit</b> → <b>Access</b> → zapnite <b>Can connect AI assistant</b>, potom <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>

@@ -1,7 +1,7 @@
 ---
 title: Buying from a partner
 summary: The buyer's guide - start from the shopping dashboard, fill the list by hand, from the partner's catalogue or with auto-fill, and receive the goods when they arrive.
-date: 2026-11-10
+date: 2026-11-21
 tags: procurement, intercompany, shopping-list
 category: procurement
 help_routes: grp.org.procurement.org_partners.show.browse, grp.org.procurement.org_partners.show.shopping_list
@@ -22,6 +22,7 @@ For the people who <em>place</em> partner orders. You keep one open list of what
 Next to the dashboard, the **Shopping list** tab holds every open line.
 
 - **Add stocks** opens the partner's stock list with their availability, how each item is packed, your own current stock, and how much you have used over the last four quarters. Quantities are in the seller's shipping units (SKOs).
+- **All products** opens everything the partner sells as one list. Filter it by **Stock group** (Out of stock, Doomed, Critical, Danger, Watch, Covered, Dead stock, We never stocked) and **Rank**, tick **Hide what is already on order** to leave out what is on an open order, in a delivery not put away yet or already sent to the partner, and set quantities right on the rows to add them to the list.
 - Each line tells the stock story at a glance — *their stock*, *our stock*, and when *we run out* — plus the amount at your buying price, with the open items' total at the foot of the table.
 - Where the partner makes the item themselves, the line also says *made in batches of N units* and, where the two do not divide evenly, *full batches every N SKO* - the **order step**, the smallest order whole batches fill exactly. A button rounds your quantity up to it. Ordering off the step is allowed and says so: a full batch is made either way, so the order may be delayed or the quantity adjusted, and an order below one whole step waits at the factory until other demand joins it. See [Batches, packs and part batches](/docs/batches-packs-and-part-batches).
 - Open lines are fully yours: pick the **priority** (low → urgent) straight from the dropdown in the table, or remove the line with its bin button. To change a quantity, use **Browse** — the same item's stepper there edits the open line directly. Once the partner picks a line it locks, and its state tells you where it is.
@@ -88,6 +89,7 @@ When the partner dispatches, each line arrives with the batches the partner pick
 <ul>
 <li><b>See what needs buying:</b> your organisation → <b>Procurement → Partners</b> → open the partner → <b>Shopping</b> (the dashboard) → work the risk tiles.</li>
 <li><b>Add to the list:</b> <b>Shopping list</b> → <b>Add stocks</b>, or <b>Browse</b> and set quantities on the product cards, or <b>Auto-fill</b> (or <b>+ fill</b> on a dashboard tile) for a proposal.</li>
+<li><b>Pick from everything the partner sells:</b> <b>Shopping list</b> → <b>All products</b> → filter by <b>Stock group</b> and <b>Rank</b> → set quantities on the rows.</li>
 <li><b>Order in whole batches:</b> the button beside <i>full batches every N SKO</i> on the line or the product card.</li>
 <li><b>Adjust open lines:</b> change the priority or delete lines in the shopping list table; change quantities from the product cards in <b>Browse</b>.</li>
 <li><b>Let someone fill the list through their AI assistant (administrators):</b> <b>Sysadmin → Users</b> → open the user → <b>Edit</b> → <b>Access</b> → switch on <b>Can connect AI assistant</b>, then <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
