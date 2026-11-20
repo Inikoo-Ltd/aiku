@@ -24,11 +24,12 @@ import StaffTaskQuickLook from "@/Components/Tasks/StaffTaskQuickLook.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import TicketProjectQuietBadge from "@/Components/Tickets/TicketProjectQuietBadge.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt } from "@fal"
+import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack } from "@fal"
 
-library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt)
+library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack)
 
 type Person = { id: number; name: string; avatar: Record<string, string> | null }
 type Route = { name: string; parameters?: Record<string, unknown> }
@@ -65,6 +66,7 @@ const props = defineProps<{
         description: string | null
         status: string
         status_label: string
+        is_pinned: boolean
         start_date: string
         target_date: string | null
         owner: Person | null
@@ -73,9 +75,10 @@ const props = defineProps<{
         health_label: string | null
         health_at: string | null
         last_update_at: string | null
+        quiet_days: number | null
         parent: { id: number; slug: string; name: string } | null
     }
-    sub_projects: { slug: string; name: string; status: string; status_label: string; health: Health | null; health_label: string | null; owner: Person | null; progress: { total: number; done: number; open: number; percent: number | null; time_percent: number | null; days_left: number | null } }[]
+    sub_projects: { slug: string; name: string; status: string; status_label: string; health: Health | null; health_label: string | null; owner: Person | null; quiet_days: number | null; progress: { total: number; done: number; open: number; percent: number | null; time_percent: number | null; days_left: number | null } }[]
     indicators: { key: string; level: "info" | "warning" | "danger"; text: string }[]
     milestones: Milestone[]
     progress: { total: number; done: number; open: number; percent: number | null; time_percent: number | null; week: number; weeks: number | null; days_left: number | null }
@@ -154,6 +157,7 @@ const editForm = useForm({
     name: props.project.name,
     description: props.project.description ?? "",
     status: props.project.status,
+    is_pinned: props.project.is_pinned,
     start_date: props.project.start_date,
     target_date: props.project.target_date ?? "",
     owner_id: props.project.owner?.id ?? null,
@@ -165,6 +169,7 @@ const openEditor = () => {
         name: props.project.name,
         description: props.project.description ?? "",
         status: props.project.status,
+        is_pinned: props.project.is_pinned,
         start_date: props.project.start_date,
         target_date: props.project.target_date ?? "",
         owner_id: props.project.owner?.id ?? null,
@@ -563,6 +568,7 @@ const burnUpOptions = {
                                 <span class="flex gap-1">
                                     <span v-if="sub.health" class="rounded-full px-2 py-0.5 text-xs" :class="healthClasses[sub.health]">{{ sub.health_label }}</span>
                                     <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{{ sub.status_label }}</span>
+                                    <TicketProjectQuietBadge :days="sub.quiet_days" />
                                 </span>
                             </td>
                             <td class="py-1.5">
@@ -585,7 +591,11 @@ const burnUpOptions = {
                     <span class="font-normal opacity-75">· {{ ctrans("as of :date", { date: useFormatTime(project.health_at ?? undefined, { formatTime: "mdy" }) }) }}</span>
                 </span>
                 <span v-else class="text-xs text-gray-400">{{ ctrans("No health set") }}</span>
+                <span v-if="project.is_pinned" class="inline-flex items-center gap-1 rounded-full bg-[var(--app-accent-soft)] px-2 py-0.5 text-xs text-[var(--app-accent-deep)]">
+                    <FontAwesomeIcon icon="fal fa-thumbtack" fixed-width />{{ ctrans("Pinned") }}
+                </span>
                 <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{{ project.status_label }}</span>
+                <TicketProjectQuietBadge :days="project.quiet_days" />
                 <div class="flex items-center gap-1">
                     <TicketUserAvatar v-if="project.owner" v-tooltip="ctrans('Owner') + ': ' + project.owner.name" :name="project.owner.name" :avatar="project.owner.avatar" size="sm" class="ring-2 ring-[var(--app-accent-strong)]" />
                     <TicketUserAvatar v-for="member in project.members" :key="member.id" v-tooltip="member.name" :name="member.name" :avatar="member.avatar" size="sm" />
@@ -1122,11 +1132,18 @@ const burnUpOptions = {
                     <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Start") }} <span class="text-red-500">*</span></label>
                     <DatePicker :model-value="asDate(editForm.start_date)" date-format="d M yy" :class="fieldFocusClass" class="w-full" @update:model-value="editForm.start_date = fromDate($event) ?? editForm.start_date" />
                 </div>
-                <div>
+                <div v-if="!editForm.is_pinned">
                     <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Target") }}</label>
                     <DatePicker :model-value="asDate(editForm.target_date)" date-format="d M yy" show-button-bar :class="fieldFocusClass" class="w-full" @update:model-value="editForm.target_date = fromDate($event) ?? ''" />
                 </div>
             </div>
+            <label v-if="!editForm.parent_id" class="flex items-start gap-2 text-sm text-gray-700">
+                <Checkbox v-model="editForm.is_pinned" binary input-id="project-is-pinned" class="mt-0.5" />
+                <span>
+                    <FontAwesomeIcon icon="fal fa-thumbtack" class="mr-1 text-gray-500" fixed-width />{{ ctrans("Pinned: an ongoing area with no end date") }}
+                    <span class="block text-xs text-gray-500">{{ ctrans("Kept at the top of the projects list, with no target date. Its sub-projects carry the dates.") }}</span>
+                </span>
+            </label>
             <p v-if="editForm.errors.start_date || editForm.errors.target_date" class="text-xs text-red-600">{{ editForm.errors.start_date || editForm.errors.target_date }}</p>
             <div v-if="options.parents.length || editForm.parent_id">
                 <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Sub-project of") }}</label>

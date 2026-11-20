@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Group\GoodsIn;
 
+use App\Actions\Api\Group\Inventory\WithMobileStockWriteRequests;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\CalculateReturnDeliveryNoteItemTotalSowed;
 use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
@@ -27,6 +28,7 @@ use Lorisleiva\Actions\ActionRequest;
 trait WithMobileReturnItemPuts
 {
     use WithMobileReturns;
+    use WithMobileStockWriteRequests;
 
     /**
      * @throws \Throwable
@@ -41,8 +43,24 @@ trait WithMobileReturnItemPuts
         $data = Validator::make($request->all(), array_filter([
             'quantity'              => ['sometimes', 'nullable', 'numeric', 'gt:0', 'max:1000000'],
             'location_org_stock_id' => $type === SowingTypeEnum::SOW ? ['required', 'integer', 'min:1', 'max:'.self::MAX_ID] : null,
+            'client_request_id'     => ['sometimes', 'nullable', 'uuid'],
         ]))->validate();
 
+        return $this->oncePerClientRequest(
+            $user,
+            $data['client_request_id'] ?? null,
+            fn () => $this->storeReturnPut($warehouse, $returnDeliveryNote, $returnDeliveryNoteItem, $data, $type, $user),
+            fn () => $this->respondWithReturn($warehouse, $returnDeliveryNote, $user, 'nothing_changed', __('Already done.'))
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     *
+     * @throws \Throwable
+     */
+    private function storeReturnPut(Warehouse $warehouse, ReturnDeliveryNote $returnDeliveryNote, ReturnDeliveryNoteItem $returnDeliveryNoteItem, array $data, SowingTypeEnum $type, User $user): JsonResponse
+    {
         [$quantity, $locationOrgStock, $packedIn] = DB::transaction(function () use ($warehouse, $returnDeliveryNote, $returnDeliveryNoteItem, $data, $type, $user) {
             $returnDeliveryNote = ReturnDeliveryNote::lockForUpdate()->findOrFail($returnDeliveryNote->id);
             $this->ensureReturnState($returnDeliveryNote, ReturnDeliveryNoteStateEnum::RETURNING);

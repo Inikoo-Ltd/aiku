@@ -30,6 +30,8 @@ class UpsertStockDeliveryItemPlaced extends OrgAction
 {
     use WithGoodsInBookInAuthorisation;
     private StockDeliveryItem $stockDeliveryItem;
+    private ?User $sower = null;
+    private bool $withoutStockMovement = false;
 
     public function rules(): array
     {
@@ -107,7 +109,7 @@ class UpsertStockDeliveryItemPlaced extends OrgAction
                 ]);
             }
 
-            $user = auth()->user();
+            $user = $this->sower ?? auth()->user();
             data_set($modelData, 'sower_user_id', $user?->id);
 
             $setAsPickingLocation = (bool) Arr::pull($modelData, 'set_as_picking_location', false);
@@ -127,7 +129,7 @@ class UpsertStockDeliveryItemPlaced extends OrgAction
                 );
             }
 
-            StoreSowing::make()->action($stockDeliveryItem, $user, $modelData);
+            StoreSowing::make()->action($stockDeliveryItem, $user, $modelData, $this->withoutStockMovement);
 
             $stockDeliveryItem = CalculateStockDeliveryItemTotalPlaced::run($stockDeliveryItem);
 
@@ -172,10 +174,12 @@ class UpsertStockDeliveryItemPlaced extends OrgAction
         return $this->handle($stockDeliveryItem, $this->validatedData);
     }
 
-    public function action(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
+    public function action(StockDeliveryItem $stockDeliveryItem, array $modelData, ?User $sower = null, bool $withoutStockMovement = false): StockDeliveryItem
     {
-        $this->asAction          = true;
-        $this->stockDeliveryItem = $stockDeliveryItem;
+        $this->asAction             = true;
+        $this->stockDeliveryItem    = $stockDeliveryItem;
+        $this->sower                = $sower;
+        $this->withoutStockMovement = $withoutStockMovement;
         $this->initialisation($stockDeliveryItem->organisation, $modelData);
 
         return $this->handle($stockDeliveryItem, $this->validatedData);

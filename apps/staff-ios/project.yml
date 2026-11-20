@@ -34,6 +34,8 @@ targets:
       path: Aiku/Resources/Info.plist
       properties:
         CFBundleDisplayName: Aiku
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDevelopmentRegion: en
         CFBundleLocalizations: [en, bg, cs, de, es, fr, hi, hr, hu, id, it, ja, lv, ne, nl, pl, pt, ro, sk, sv, tr, uk, zh-Hans]
         AikuAPIBaseURL: $(API_BASE_URL)

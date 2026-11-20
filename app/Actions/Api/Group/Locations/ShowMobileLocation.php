@@ -65,6 +65,7 @@ class ShowMobileLocation
                         'picking_location'                      => $this->pickLocation($sko?->picking_location_id, $pickCodes->all()),
                         'picking_dropshipping_location'         => $this->pickLocation($sko?->picking_dropshipping_location_id, $pickCodes->all()),
                         'quantity_value'                        => (float) $orgStock->quantity,
+                        'version'                               => (int) $link?->version,
                     ]);
                 })
                 ->values()

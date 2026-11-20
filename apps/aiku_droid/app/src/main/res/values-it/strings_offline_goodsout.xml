@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">Offline · copia salvata delle %1$s</string>
+    <string name="goodsout_offline_copy_body">Il tuo lavoro su questa bolla resta su questo telefono e viene inviato quando torni online.</string>
+    <string name="goodsout_offline_saved">Salvato su questo telefono. Si sincronizza quando torni online.</string>
+    <string name="goodsout_offline_waiting_to_sync">In attesa di sincronizzazione</string>
+    <string name="goodsout_offline_needs_you">Richiede la tua attenzione</string>
+    <string name="goodsout_offline_queued_group">Salvato su questo telefono</string>
+    <string name="goodsout_offline_queued_pick">%1$s prelevato/i da %2$s</string>
+    <string name="goodsout_offline_queued_pick_plain">%1$s prelevato/i</string>
+    <string name="goodsout_offline_queued_not_picked">%1$s non prelevato/i</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">In attesa del magazzino %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">Passato al servizio clienti %1$s</string>
+    <string name="goodsout_offline_queued_pack">%1$s imballato/i</string>
+    <string name="goodsout_offline_flush_waiting">Il tuo lavoro su questa bolla non è ancora sincronizzato. Riprova quando lo sarà.</string>
+    <string name="goodsout_offline_flush_needs_you">Parte del tuo lavoro su questa bolla richiede la tua attenzione prima di poter fare questo.</string>
+    <string name="goodsout_offline_scan_online_only">Richiede una connessione</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · in attesa di sincronizzazione</string>
+    <string name="goodsout_offline_online_only_kicker">Richiede una connessione</string>
+    <string name="goodsout_offline_online_only_title">Serve una connessione</string>
+    <string name="goodsout_offline_online_only_body">Avviare, finire o prendere in carico il lavoro, l\'imballaggio, la finalizzazione, la spedizione e le sessioni di prelievo vengono controllati subito da Aiku, quindi funzionano solo online.</string>
+    <string name="goodsout_offline_online_only_waiting">Azioni in attesa di sincronizzazione su questo telefono: %1$d. Sono al sicuro e vengono inviate appena torni online.</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">Niente di tuo è in attesa di sincronizzazione su questo telefono.</string>
+    <string name="goodsout_offline_online_only_back_online">Sei di nuovo online. Torna indietro per continuare.</string>
+    <string name="goodsout_offline_online_only_view">Vedi il lavoro in attesa</string>
+</resources>

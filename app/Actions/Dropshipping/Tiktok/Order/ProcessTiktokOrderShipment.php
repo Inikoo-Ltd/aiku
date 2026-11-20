@@ -22,8 +22,8 @@ use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -34,52 +34,74 @@ class ProcessTiktokOrderShipment extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    public function handle(Order|PalletReturn $order): void
+    /**
+     * @throws \Throwable
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function handle(Order|PalletReturn $order, ?DeliveryNote $deliveryNote = null): void
     {
-        try {
-            DB::transaction(function () use ($order) {
-                $fulfillOrderId = $order->platform_order_id;
+        $shipmentParent = $order instanceof PalletReturn
+            ? $order
+            : ($deliveryNote ?? $order->deliveryNotes->firstOrFail());
 
-                if ($order instanceof PalletReturn) {
-                    $deliveryNote = $order;
-                } else {
-                    $deliveryNote = $order->deliveryNotes->firstOrFail();
-                }
-
-                /** @var TiktokUser $tiktokUser */
-                $tiktokUser = $order->customerSalesChannel->user;
-
-                $getOrder = $tiktokUser->getOrder($fulfillOrderId);
-
-                $id = Arr::get($getOrder, 'data.orders.0.packages.0.id');
-                $status = Arr::get($getOrder, 'data.orders.0.status');
-
-                if ($id && $status === "AWAITING_COLLECTION") {
-                    $this->packageWasShipped($tiktokUser, $order, $deliveryNote, $id);
-
-                    return;
-                }
-
-                $tiktokPackage = $tiktokUser->createOrderPackage($fulfillOrderId);
-                $tiktokPackageId = Arr::get($tiktokPackage, 'data.package_id');
-                $tiktokPackageDetail = $tiktokUser->getPackageDetail($tiktokPackageId);
-
-                $tiktokShippingLabel = $tiktokUser->getOrderLabel($tiktokPackageId);
-                $tiktokShippingLabelUrl = Arr::get($tiktokShippingLabel, 'data.doc_url');
-
-                $this->processShipment(
-                    $order,
-                    $deliveryNote,
-                    $tiktokPackageDetail,
-                    $tiktokShippingLabelUrl
-                );
-
-                $tiktokUser->shipPackage($tiktokPackageId);
-            });
-        } catch (\Throwable $th) {
-            \Sentry::captureException($th);
-            Log::error($th->getMessage());
+        if ($shipmentParent->shipments()->exists()) {
+            return;
         }
+
+        DB::transaction(function () use ($order, $shipmentParent) {
+            $fulfillOrderId = $order->platform_order_id;
+
+            /** @var TiktokUser $tiktokUser */
+            $tiktokUser = $order->customerSalesChannel->user;
+
+            $getOrder = $this->ensureTiktokAnswered($tiktokUser->getOrder($fulfillOrderId));
+
+            $id = Arr::get($getOrder, 'data.orders.0.packages.0.id');
+            $status = Arr::get($getOrder, 'data.orders.0.status');
+
+            if ($id && $status === "AWAITING_COLLECTION") {
+                $this->packageWasShipped($tiktokUser, $order, $shipmentParent, $id);
+
+                return;
+            }
+
+            $tiktokPackage = $this->ensureTiktokAnswered($tiktokUser->createOrderPackage($fulfillOrderId));
+            $tiktokPackageId = Arr::get($tiktokPackage, 'data.package_id');
+
+            if (!$tiktokPackageId) {
+                throw ValidationException::withMessages([
+                    'message' => __('TikTok did not create a package for this order.')
+                ]);
+            }
+
+            $tiktokPackageDetail = $this->ensureTiktokAnswered($tiktokUser->getPackageDetail($tiktokPackageId));
+
+            $tiktokShippingLabel = $this->ensureTiktokAnswered($tiktokUser->getOrderLabel($tiktokPackageId));
+            $tiktokShippingLabelUrl = Arr::get($tiktokShippingLabel, 'data.doc_url');
+
+            $this->processShipment(
+                $order,
+                $shipmentParent,
+                $tiktokPackageDetail,
+                $tiktokShippingLabelUrl
+            );
+
+            $tiktokUser->shipPackage($tiktokPackageId);
+        });
+    }
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function ensureTiktokAnswered(array $response): array
+    {
+        if (Arr::get($response, 'error')) {
+            throw ValidationException::withMessages([
+                'message' => __('TikTok did not return the shipment: :error', ['error' => Arr::get($response, 'data')])
+            ]);
+        }
+
+        return $response;
     }
 
     /**
@@ -92,9 +114,9 @@ class ProcessTiktokOrderShipment extends OrgAction
         DeliveryNote|PalletReturn $deliveryNote,
         $tiktokPackageId
     ): void {
-        $tiktokPackageDetail = $tiktokUser->getPackageDetail($tiktokPackageId);
+        $tiktokPackageDetail = $this->ensureTiktokAnswered($tiktokUser->getPackageDetail($tiktokPackageId));
 
-        $tiktokShippingLabel = $tiktokUser->getOrderLabel($tiktokPackageId);
+        $tiktokShippingLabel = $this->ensureTiktokAnswered($tiktokUser->getOrderLabel($tiktokPackageId));
         $tiktokShippingLabelUrl = Arr::get($tiktokShippingLabel, 'data.doc_url');
 
         $this->processShipment(
@@ -165,7 +187,7 @@ class ProcessTiktokOrderShipment extends OrgAction
     {
         $this->initialisation($deliveryNote->organisation, $request);
 
-        $this->handle($deliveryNote->orders->firstOrFail());
+        $this->handle($deliveryNote->orders->firstOrFail(), $deliveryNote);
     }
 
     public function inRetinaFulfilment(ActionRequest $request, PalletReturn $palletReturn)

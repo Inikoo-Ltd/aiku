@@ -15211,6 +15211,280 @@
         }
       }
     },
+    "Ask your supervisor to install it when convenient.": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Помолете вашия супервайзър да я инсталира, когато е удобно."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Požádejte vedoucího, aby ji nainstaloval, až se mu to bude hodit."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bitten Sie Ihren Vorgesetzten, sie bei Gelegenheit zu installieren."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pida a su supervisor que la instale cuando le venga bien."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Demandez à votre responsable de l'installer quand cela lui convient."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "सुविधानुसार इसे इंस्टॉल करने के लिए अपने पर्यवेक्षक से कहें।"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zamolite nadzornika da je instalira kad mu odgovara."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kérje meg a felettesét, hogy telepítse, amikor alkalmas."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Minta pengawas Anda untuk memasangnya saat ada waktu."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Chieda al suo supervisore di installarla quando possibile."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "都合のよいときにインストールするよう、責任者に依頼してください。"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lūdziet savam vadītājam to instalēt, kad ērti."
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "सुविधा अनुसार यसलाई इन्स्टल गर्न आफ्नो सुपरभाइजरलाई भन्नुहोस्।"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vraag je leidinggevende om hem te installeren wanneer het uitkomt."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Poproś kierownika o jej zainstalowanie, gdy będzie to możliwe."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Peça ao seu supervisor para a instalar quando for conveniente."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rugați-l pe supervizor să o instaleze când este posibil."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Požiadajte vedúceho, aby ju nainštaloval, keď sa mu to bude hodiť."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Be din arbetsledare att installera den när det passar."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uygun olduğunda yüklemesini süpervizörünüzden isteyin."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Попросіть свого керівника встановити її, коли буде зручно."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "请让您的主管在方便时安装。"
+          }
+        }
+      }
+    },
+    "Ask your supervisor to install the new version on this phone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Помолете вашия супервайзър да инсталира новата версия на този телефон."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Požádejte vedoucího, aby do tohoto telefonu nainstaloval novou verzi."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bitten Sie Ihren Vorgesetzten, die neue Version auf diesem Telefon zu installieren."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pida a su supervisor que instale la nueva versión en este teléfono."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Demandez à votre responsable d'installer la nouvelle version sur ce téléphone."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अपने पर्यवेक्षक से इस फ़ोन पर नया संस्करण इंस्टॉल करने को कहें।"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zamolite nadzornika da instalira novu verziju na ovaj telefon."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kérje meg a felettesét, hogy telepítse az új verziót erre a telefonra."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Minta pengawas Anda untuk memasang versi baru di ponsel ini."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Chieda al suo supervisore di installare la nuova versione su questo telefono."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "このスマートフォンに新しいバージョンをインストールするよう、責任者に依頼してください。"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lūdziet savam vadītājam instalēt jauno versiju šajā tālrunī."
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "यो फोनमा नयाँ संस्करण इन्स्टल गर्न आफ्नो सुपरभाइजरलाई भन्नुहोस्।"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vraag je leidinggevende om de nieuwe versie op deze telefoon te installeren."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Poproś kierownika o zainstalowanie nowej wersji na tym telefonie."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Peça ao seu supervisor para instalar a nova versão neste telemóvel."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rugați-l pe supervizor să instaleze noua versiune pe acest telefon."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Požiadajte vedúceho, aby do tohto telefónu nainštaloval novú verziu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Be din arbetsledare att installera den nya versionen på den här telefonen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Yeni sürümü bu telefona yüklemesini süpervizörünüzden isteyin."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Попросіть свого керівника встановити нову версію на цей телефон."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "请让您的主管在此手机上安装新版本。"
+          }
+        }
+      }
+    },
     "Assign picker": {
       "extractionState": "manual",
       "localizations": {
@@ -97821,6 +98095,143 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "无异常"
+          }
+        }
+      }
+    },
+    "No app on this phone can open the update link.": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Няма приложение на този телефон, което да отвори връзката за актуализация."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "V tomto telefonu není aplikace, která umí otevřít odkaz na aktualizaci."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Keine App auf diesem Telefon kann den Update-Link öffnen."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ninguna aplicación de este teléfono puede abrir el enlace de actualización."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aucune application de ce téléphone ne peut ouvrir le lien de mise à jour."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "इस फ़ोन पर कोई भी ऐप अपडेट लिंक नहीं खोल सकता।"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nijedna aplikacija na ovom telefonu ne može otvoriti poveznicu za ažuriranje."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ezen a telefonon egy alkalmazás sem tudja megnyitni a frissítési linket."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tidak ada aplikasi di ponsel ini yang dapat membuka tautan pembaruan."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nessuna app su questo telefono può aprire il link di aggiornamento."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "このスマートフォンにはアップデートリンクを開けるアプリがありません。"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Šajā tālrunī nav lietotnes, kas var atvērt atjauninājuma saiti."
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "यो फोनमा अद्यावधिक लिङ्क खोल्न सक्ने कुनै एप छैन।"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Geen app op deze telefoon kan de updatelink openen."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Na tym telefonie nie ma aplikacji, która otworzy link do aktualizacji."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nenhuma aplicação neste telemóvel consegue abrir a ligação de atualização."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nicio aplicație de pe acest telefon nu poate deschide linkul de actualizare."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "V tomto telefóne nie je aplikácia, ktorá dokáže otvoriť odkaz na aktualizáciu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ingen app på den här telefonen kan öppna uppdateringslänken."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bu telefonda güncelleme bağlantısını açabilecek bir uygulama yok."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "На цьому телефоні немає застосунку, який може відкрити посилання на оновлення."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "此手机上没有可以打开更新链接的应用。"
           }
         }
       }
@@ -183590,6 +184001,143 @@
         }
       }
     },
+    "This version of the app (%@) can no longer be used. Install version %@ to keep working.": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Тази версия на приложението (%1$@) вече не може да се използва. Инсталирайте версия %2$@, за да продължите работа."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tuto verzi aplikace (%1$@) už nelze používat. Chcete-li dál pracovat, nainstalujte verzi %2$@."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Diese App-Version (%1$@) kann nicht mehr verwendet werden. Installieren Sie Version %2$@, um weiterzuarbeiten."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esta versión de la aplicación (%1$@) ya no se puede usar. Instale la versión %2$@ para seguir trabajando."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cette version de l'application (%1$@) ne peut plus être utilisée. Installez la version %2$@ pour continuer à travailler."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ऐप का यह संस्करण (%1$@) अब उपयोग नहीं किया जा सकता। काम जारी रखने के लिए संस्करण %2$@ इंस्टॉल करें।"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ova verzija aplikacije (%1$@) više se ne može koristiti. Za nastavak rada instalirajte verziju %2$@."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Az alkalmazás ezen verziója (%1$@) már nem használható. A további munkához telepítse a(z) %2$@ verziót."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Versi aplikasi ini (%1$@) tidak dapat digunakan lagi. Pasang versi %2$@ agar dapat terus bekerja."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Questa versione dell'app (%1$@) non può più essere usata. Installi la versione %2$@ per continuare a lavorare."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "このバージョンのアプリ（%1$@）は使用できなくなりました。引き続き作業するには、バージョン%2$@をインストールしてください。"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Šo lietotnes versiju (%1$@) vairs nevar izmantot. Instalējiet versiju %2$@, lai turpinātu darbu."
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "एपको यो संस्करण (%1$@) अब प्रयोग गर्न मिल्दैन। काम जारी राख्न संस्करण %2$@ इन्स्टल गर्नुहोस्।"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Deze versie van de app (%1$@) kan niet meer worden gebruikt. Installeer versie %2$@ om verder te kunnen werken."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tej wersji aplikacji (%1$@) nie można już używać. Zainstaluj wersję %2$@, aby dalej pracować."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esta versão da aplicação (%1$@) já não pode ser utilizada. Instale a versão %2$@ para continuar a trabalhar."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Această versiune a aplicației (%1$@) nu mai poate fi folosită. Instalați versiunea %2$@ pentru a putea lucra în continuare."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Táto verzia aplikácie (%1$@) sa už nedá používať. Ak chcete pokračovať v práci, nainštalujte verziu %2$@."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Den här versionen av appen (%1$@) kan inte längre användas. Installera version %2$@ för att fortsätta arbeta."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uygulamanın bu sürümü (%1$@) artık kullanılamaz. Çalışmaya devam etmek için %2$@ sürümünü yükleyin."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Цю версію застосунку (%1$@) більше не можна використовувати. Установіть версію %2$@, щоб продовжити роботу."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "此版本的应用（%1$@）已无法使用。请安装版本 %2$@ 以继续工作。"
+          }
+        }
+      }
+    },
     "This warehouse has no picked bays.": {
       "extractionState": "manual",
       "localizations": {
@@ -192224,6 +192772,143 @@
         }
       }
     },
+    "Update": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Актуализиране"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aktualizovat"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aktualisieren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Actualizar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mettre à jour"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अपडेट करें"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ažuriraj"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Frissítés"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Perbarui"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiorna"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "アップデート"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Atjaunināt"
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अद्यावधिक गर्नुहोस्"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Update"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aktualizuj"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Atualizar"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Actualizați"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aktualizovať"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uppdatera"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Güncelle"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Оновити"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "更新"
+          }
+        }
+      }
+    },
     "Update location": {
       "extractionState": "manual",
       "localizations": {
@@ -192494,6 +193179,280 @@
           "stringUnit": {
             "state": "translated",
             "value": "更新申请"
+          }
+        }
+      }
+    },
+    "Update required": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Нужна е актуализация"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vyžaduje se aktualizace"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Update erforderlich"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Actualización obligatoria"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mise à jour requise"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अपडेट आवश्यक"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Potrebno ažuriranje"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Frissítés szükséges"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pembaruan diperlukan"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiornamento obbligatorio"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "アップデートが必要です"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nepieciešams atjauninājums"
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अद्यावधिक आवश्यक"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Update vereist"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wymagana aktualizacja"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Atualização obrigatória"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Actualizare necesară"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vyžaduje sa aktualizácia"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uppdatering krävs"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Güncelleme gerekli"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Потрібне оновлення"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "需要更新"
+          }
+        }
+      }
+    },
+    "Update when you have a moment.": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Актуализирайте, когато имате възможност."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aktualizujte, až budete mít chvilku."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aktualisieren Sie, wenn Sie einen Moment Zeit haben."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Actualice cuando tenga un momento."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mettez à jour dès que vous avez un moment."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "समय मिलने पर अपडेट करें।"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ažurirajte kad stignete."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Frissítsen, amikor van egy perce."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Perbarui saat Anda sempat."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiorni quando ha un momento."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "時間のあるときにアップデートしてください。"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Atjauniniet, kad jums ir brīvs brīdis."
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "फुर्सद हुँदा अद्यावधिक गर्नुहोस्।"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Update wanneer je even tijd hebt."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zaktualizuj, gdy znajdziesz chwilę."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Atualize quando tiver um momento."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Actualizați când aveți un moment."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aktualizujte, keď budete mať chvíľu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uppdatera när du har en stund över."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fırsat bulduğunuzda güncelleyin."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Оновіть, коли матимете хвилинку."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "方便时请更新。"
           }
         }
       }
@@ -194549,6 +195508,143 @@
           "stringUnit": {
             "state": "translated",
             "value": "版本"
+          }
+        }
+      }
+    },
+    "Version %@ is available": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Налична е версия %1$@"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Je k dispozici verze %1$@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Version %1$@ ist verfügbar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La versión %1$@ está disponible"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La version %1$@ est disponible"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "संस्करण %1$@ उपलब्ध है"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dostupna je verzija %1$@"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Elérhető a(z) %1$@ verzió"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Versi %1$@ tersedia"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "È disponibile la versione %1$@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "バージョン%1$@が利用可能です"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pieejama versija %1$@"
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "संस्करण %1$@ उपलब्ध छ"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Versie %1$@ is beschikbaar"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dostępna jest wersja %1$@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "A versão %1$@ está disponível"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Versiunea %1$@ este disponibilă"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "K dispozícii je verzia %1$@"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Version %1$@ finns tillgänglig"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ sürümü mevcut"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Доступна версія %1$@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "版本 %1$@ 现已推出"
           }
         }
       }

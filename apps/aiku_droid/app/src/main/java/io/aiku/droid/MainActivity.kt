@@ -16,8 +16,10 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import io.aiku.droid.data.offline.SyncReason
 import io.aiku.droid.data.settings.AppLanguage
 import io.aiku.droid.data.settings.DeviceAppLocales
+import io.aiku.droid.push.OfflineOpen
 import io.aiku.droid.push.PushData
 import io.aiku.droid.ui.app.SignedInApp
 import io.aiku.droid.ui.app.WarehousesViewModel
@@ -88,6 +90,7 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         container.appVersions.check()
         container.accountLanguage.onForeground()
+        container.offlineWork.syncNow(SyncReason.FOREGROUND)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -113,6 +116,11 @@ class MainActivity : ComponentActivity() {
             return
         }
         val extras = intent.extras ?: return
+        if (extras.getString(OfflineOpen.EXTRA) == OfflineOpen.RESOLVE_CONFLICTS) {
+            container.offlineOpenRequests.request()
+            intent.replaceExtras(Bundle())
+            return
+        }
         val pushOpen = PushData.openOf(PushData.keys.associateWith { extras.getString(it) }) ?: return
         container.pushInbox.receive(pushOpen)
         intent.replaceExtras(Bundle())

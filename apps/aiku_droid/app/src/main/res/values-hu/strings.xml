@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Csökkentés</string>
     <string name="stepper_increase">Növelés</string>
     <string name="switcher_current">%1$s · jelenlegi</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Alkalmazás · %1$s</string>
-    <string name="sync_both">Mindkettő</string>
-    <string name="sync_conflict_explanation">Minden eltérő sornál választható a Saját vagy az Aiku; mennyiségeknél a Mindkettő is (összeadva, de soha nem több, mint amennyi a sornak kell). A választása kitöltve jelenik meg.</string>
-    <string name="sync_conflicts_explanation">Mint egy összefésülés feloldása: nyisson meg egy rekordot, és válasszon soronként, vagy tartsa meg az egyik oldal összes adatát. Semmi sem vész el, amit elvet: megmarad a szinkronizálási előzményekben.</string>
     <string name="sync_conflicts_title">Konfliktusok feloldása</string>
-    <string name="sync_explanation">Offline állapotban a soronkénti munka a telefonon mentődik: komissiózás, nincs komissiózva, csomagolás, ellenőrzés, elhelyezés, leltár, áthelyezés. Újracsatlakozáskor minden műveletet összevet a kiinduló verzióval: ha az Aikuban semmi sem változott, magától feltöltődik, egyébként a Konfliktusok feloldása alatt várja Önt. A munkaidő-rögzítéshez és az állapotváltásokhoz kapcsolat szükséges.</string>
-    <string name="sync_keep_all_aiku">Az összes Aiku-adat megtartása</string>
-    <string name="sync_keep_all_mine">Az összes saját megtartása</string>
-    <string name="sync_kept_all_aiku">Az összes Aiku-adat megtartva</string>
-    <string name="sync_kept_all_mine">Az összes saját megtartva</string>
     <string name="sync_kicker">Profil</string>
-    <string name="sync_last_sync">Utolsó szinkronizálás</string>
-    <string name="sync_lines_differ">Eltérő sorok</string>
-    <string name="sync_mine">Saját</string>
-    <string name="sync_no_conflict">Nincs konfliktus</string>
     <string name="sync_now_in_aiku">Jelenleg az Aikuban</string>
-    <string name="sync_oldest_first">legrégebbi elöl</string>
-    <string name="sync_online_only_body">A szállítmányok, címkék, véglegesítés, feladás, törlés és a Beérkezettnek jelölés futárszolgálatokkal, nyomtatókkal vagy ügyfelekkel kommunikál, ezért csak online működik. A komissiózás és a csomagolás mentésre kerül, és feltöltődik, amikor újra online lesz.</string>
-    <string name="sync_online_only_note">A fő gomb visszatér, amint a telefon online és a sor szinkronizálódott.</string>
-    <string name="sync_online_only_title">A véglegesítéshez kapcsolat szükséges</string>
-    <string name="sync_resolve_all">Minden feloldása egyszerre</string>
-    <string name="sync_same_on_both">Mindkét oldalon azonos</string>
-    <string name="sync_synced">Szinkronizálva</string>
     <string name="sync_title">Offline és szinkronizálás</string>
-    <string name="sync_use_aiku_for_all">Aiku használata mindenhol</string>
-    <string name="sync_use_mine_for_all">Saját használata mindenhol</string>
-    <string name="sync_view">Megtekintés</string>
-    <string name="sync_waiting">Feltöltésre vár</string>
     <string name="sync_yours">Saját</string>
     <string name="tab_home">Főoldal</string>
     <string name="tab_inbox">Beérkezett</string>
@@ -2447,17 +2422,5 @@
     <plurals name="states_offline_actions">
         <item quantity="one">%d művelet</item>
         <item quantity="other">%d művelet</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">%1$d Aiku</item>
-        <item quantity="other">%1$d Aiku</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">%1$d mindkettő</item>
-        <item quantity="other">%1$d mindkettő</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">%1$d saját</item>
-        <item quantity="other">%1$d saját</item>
     </plurals>
 </resources>

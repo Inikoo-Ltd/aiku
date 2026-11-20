@@ -111,21 +111,40 @@ enum InventoryLive {
     static func listItem(_ row: MobileOrgStockRow, scope: InventorySkoScope) -> InventorySkoListItem {
         let isAbnormalities = scope == .abnormalities
         let name = row.name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let location = isAbnormalities ? nil : listLocation(row)
         let detail: String?
         if isAbnormalities {
             detail = dayText(row.lastSeenAt).map { "Last seen \($0)" }
+        } else if location != nil {
+            detail = nil
         } else {
             let count = row.numberLocations ?? 0
             detail = count == 1 ? "1 location" : "\(count.grouped) locations"
         }
         let stateLabel = row.stateLabel?.isEmpty == false ? row.stateLabel : nil
         return InventorySkoListItem(
-            id: row.id,
+            skoID: row.id,
             reference: row.code,
             subtitle: [name?.isEmpty == false ? name : nil, detail].compactMap { $0 }.joined(separator: " · "),
             chip: row.state == InventorySkoState.active.rawValue ? nil : stateLabel.map { Chip($0, isAbnormalities || row.state == InventorySkoState.abnormality.rawValue ? .danger : .neutral) },
-            quantityText: isAbnormalities ? nil : quantityText(row.quantityAvailable?.value, label: row.quantityAvailableLabel)
+            quantityText: isAbnormalities ? nil : quantityText(row.quantityAvailable?.value, label: row.quantityAvailableLabel),
+            location: location
         )
+    }
+
+    static func listLocation(_ row: MobileOrgStockRow) -> InventorySkoListLocation? {
+        guard let place = row.location, let linkID = row.locationOrgStockId else { return nil }
+        let quantity = row.locationQuantity?.value
+        return InventorySkoListLocation(
+            locationOrgStockID: linkID,
+            code: place.code,
+            quantityText: quantity.map { $0 < 0 ? "−\(plainQuantityText(abs($0)))" : plainQuantityText($0) },
+            isNegative: (quantity ?? 0) < 0
+        )
+    }
+
+    static func plainQuantityText(_ value: Double) -> String {
+        value.formatted(.number.grouping(.never).precision(.fractionLength(0...2)).locale(Locale(identifier: "en_GB")))
     }
 
     static func levels(_ link: MobileOrgStockDetail.Link) -> String? {
@@ -376,7 +395,7 @@ final class InventorySkoListFeed {
             let page = try await service.orgStocks(request.warehouseID, request.query(page: currentPage + 1, perPage: Self.pageSize))
             guard loadedRequest == request else { return }
             let known = Set(items.map(\.id))
-            items += page.data.filter { !known.contains($0.id) }.map { InventoryLive.listItem($0, scope: request.scope) }
+            items += page.data.map { InventoryLive.listItem($0, scope: request.scope) }.filter { !known.contains($0.id) }
             apply(page)
         } catch where error.isCancellation {
             return

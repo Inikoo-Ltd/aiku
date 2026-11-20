@@ -37,8 +37,9 @@ class UndoSetAsWaitingWarehouse extends OrgAction
             'state'                      => (float)$deliveryNoteItem->quantity_waiting_crm > 0
                 ? DeliveryNoteItemStateEnum::HANDLING_BLOCKED
                 : DeliveryNoteItemStateEnum::HANDLING,
-            'quantity_waiting_warehouse' => 0,
-            'is_handled'                 => false,
+            'quantity_waiting_warehouse'   => 0,
+            'is_handled'                   => false,
+            'waiting_warehouse_cleared_at' => now(),
         ];
 
         $deliveryNoteItem->update(

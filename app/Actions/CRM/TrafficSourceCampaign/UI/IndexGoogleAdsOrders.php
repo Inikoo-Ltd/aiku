@@ -74,7 +74,7 @@ class IndexGoogleAdsOrders extends OrgAction
         $this->totals = $this->totalsOf($queryBuilder);
 
         return $queryBuilder
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }
 

@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Diminuisci</string>
     <string name="stepper_increase">Aumenta</string>
     <string name="switcher_current">%1$s · attuale</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Applica · %1$s</string>
-    <string name="sync_both">Entrambi</string>
-    <string name="sync_conflict_explanation">Ogni riga diversa offre La mia o Aiku; le quantità possono anche usare Entrambi (sommate, mai oltre quanto serve alla riga). La sua scelta è mostrata piena.</string>
-    <string name="sync_conflicts_explanation">Come quando si risolve un merge: apra un record per scegliere riga per riga, oppure mantenga tutto di una parte. Niente di ciò che scarta va perso: resta nello storico di sincronizzazione.</string>
     <string name="sync_conflicts_title">Risolvi conflitti</string>
-    <string name="sync_explanation">Il lavoro sulle righe viene salvato sul telefono quando è offline: prelievo, non prelevato, imballaggio, verifica, stoccaggio, conteggio, spostamento. Alla riconnessione ogni azione viene confrontata con la versione da cui è partita: se in Aiku non è cambiato nulla viene caricata da sola, altrimenti la aspetta in Risolvi conflitti. Timbrature e cambi di stato richiedono una connessione.</string>
-    <string name="sync_keep_all_aiku">Mantieni tutte quelle di Aiku</string>
-    <string name="sync_keep_all_mine">Mantieni tutte le mie</string>
-    <string name="sync_kept_all_aiku">Mantenute tutte quelle di Aiku</string>
-    <string name="sync_kept_all_mine">Mantenute tutte le sue</string>
     <string name="sync_kicker">Profilo</string>
-    <string name="sync_last_sync">Ultima sincronizzazione</string>
-    <string name="sync_lines_differ">Righe diverse</string>
-    <string name="sync_mine">La mia</string>
-    <string name="sync_no_conflict">Nessun conflitto</string>
     <string name="sync_now_in_aiku">Ora in Aiku</string>
-    <string name="sync_oldest_first">prima i più vecchi</string>
-    <string name="sync_online_only_body">Spedizioni, etichette, finalizzazione, invio, annullamento e Segna come ricevuto comunicano con corrieri, stampanti o clienti, quindi funzionano solo online. Il suo prelievo e il suo imballaggio sono salvati e verranno caricati quando torna online.</string>
-    <string name="sync_online_only_note">Il pulsante principale ricompare non appena il telefono è online e la coda è sincronizzata.</string>
-    <string name="sync_online_only_title">La finalizzazione richiede una connessione</string>
-    <string name="sync_resolve_all">Risolvi tutto in una volta</string>
-    <string name="sync_same_on_both">Uguale da entrambe le parti</string>
-    <string name="sync_synced">Sincronizzato</string>
     <string name="sync_title">Offline e sincronizzazione</string>
-    <string name="sync_use_aiku_for_all">Usa Aiku per tutto</string>
-    <string name="sync_use_mine_for_all">Usa le mie per tutto</string>
-    <string name="sync_view">Visualizza</string>
-    <string name="sync_waiting">In attesa di caricamento</string>
     <string name="sync_yours">La sua versione</string>
     <string name="tab_home">Home</string>
     <string name="tab_inbox">Posta in arrivo</string>
@@ -2556,20 +2531,5 @@
         <item quantity="one">%d azione</item>
         <item quantity="other">%d azioni</item>
         <item quantity="many">%d azioni</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">Aiku: %1$d</item>
-        <item quantity="other">Aiku: %1$d</item>
-        <item quantity="many">Aiku: %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">entrambi: %1$d</item>
-        <item quantity="other">entrambi: %1$d</item>
-        <item quantity="many">entrambi: %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">la mia: %1$d</item>
-        <item quantity="other">le mie: %1$d</item>
-        <item quantity="many">le mie: %1$d</item>
     </plurals>
 </resources>

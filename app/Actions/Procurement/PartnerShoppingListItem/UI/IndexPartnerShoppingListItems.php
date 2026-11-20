@@ -164,6 +164,8 @@ class IndexPartnerShoppingListItems extends OrgAction
             ->groupBy('org_stocks.health_rank')
             ->pluck('total', 'rank');
         $originCounts   = $items()->selectRaw('suggested_by_hub, count(*) as total')->groupBy('suggested_by_hub')->pluck('total', 'suggested_by_hub');
+        $productionLines = PartnerShoppingListItem::whereOrderKind($items(), 'production')->count();
+        $rescueLines     = PartnerShoppingListItem::whereOrderKind($items(), 'rescue')->count();
         $categoryCounts = $items()
             ->leftJoin('org_stocks as partner_org_stocks', function ($join) {
                 $join->on('partner_org_stocks.stock_id', 'partner_shopping_list_items.stock_id')
@@ -186,6 +188,14 @@ class IndexPartnerShoppingListItems extends OrgAction
                 ])),
                 'engine'  => $stateOfLineOrPiece,
             ]] : []),
+            'order'    => [
+                'label'   => __('Order'),
+                'options' => [
+                    $option('production', __('Production'), $productionLines),
+                    $option('rescue', __('Rescue'), $rescueLines),
+                ],
+                'engine'  => fn ($query, array $values) => count($values) === 1 && in_array($values[0], ['production', 'rescue'], true) ? PartnerShoppingListItem::whereOrderKind($query, $values[0]) : $query,
+            ],
             'category' => [
                 'label'   => __('Category'),
                 'options' => $withCounts(
@@ -425,6 +435,12 @@ class IndexPartnerShoppingListItems extends OrgAction
             ->selectRaw(PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).' as price_per_sko');
     }
 
+    /** An open line still waiting for the hub's shelf counts against the free stock, so its own quantity is given back to it. */
+    private function isQueuedForHubShelf(PartnerShoppingListItem $row): bool
+    {
+        return $row->state === ShoppingListItemStateEnum::OPEN && !$row->pre_picked_at && !$row->job_order_id && !$row->preparing_at;
+    }
+
     /**
      * The same stock picture a purchase order line shows (stock, cover, deliveries, other open orders),
      * so the list can be fine tuned the same way. Quantities on the list are SKOs, the stock cover
@@ -443,12 +459,13 @@ class IndexPartnerShoppingListItems extends OrgAction
         $quarterlyUsage  = GetOrgStocksQuarterlyUsage::run($orgStockIds);
         $stockDeliveries = GetOrgStocksStockDeliveries::run($orgStockIds);
         $leadTimeDays    = GetPartnerLeadTime::run($orgPartner)['days'];
+        $unclaimedSkos   = RoundPartnerQuantityToBatches::unclaimedSkosByStockId($orgPartner, $orgStocks->pluck('stock_id')->unique()->values()->all());
 
         if ($this->productionSteps->isEmpty()) {
             $this->loadProductionSteps($paginator->getCollection());
         }
 
-        $paginator->getCollection()->transform(function ($row) use ($orgStocks, $exchange, $quarterlyUsage, $stockDeliveries, $leadTimeDays) {
+        $paginator->getCollection()->transform(function ($row) use ($orgStocks, $exchange, $quarterlyUsage, $stockDeliveries, $leadTimeDays, $unclaimedSkos) {
             $orgStock  = $orgStocks->get($row->org_stock_id);
             $tradeUnit = $orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
             $packedIn  = (float) ($orgStock?->packed_in ?: 1);
@@ -470,6 +487,9 @@ class IndexPartnerShoppingListItems extends OrgAction
             $row->quantity_ordered         = (float) $row->quantity * $packedIn;
             $row->partner_units_per_carton = (float) ($row->order_quantum ?: 1) * $packedIn;
             $row->whole_cartons_only       = true;
+            $row->hub_stock                = isset($unclaimedSkos[$orgStock?->stock_id])
+                ? max(0.0, $unclaimedSkos[$orgStock->stock_id] + ($this->isQueuedForHubShelf($row) ? (float) $row->quantity : 0))
+                : 0.0;
             $row->partner_stock            = null;
 
             return $row;

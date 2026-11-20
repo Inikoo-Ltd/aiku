@@ -2345,6 +2345,37 @@ test('a blend stage is made on its own artefact, becomes an ingredient once appr
         ->and(collect($recipes::recipe($legacyArtefact)['ingredients'])->pluck('quantity', 'code')->all())->toEqual(['MAND'.$legacyItem->id => 0.05]);
 });
 
+test('a stage changes type while its trial run is being made, but only becomes the finished product when that run is on the SKU artefact, HELP-4838', function () {
+    [$productDevelopment] = inHouseDevelopment($this, 1);
+    $item    = $productDevelopment->items()->with(['tradeUnit', 'artefact'])->firstOrFail();
+    $stage   = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::formulations($item)->first();
+    $update  = fn (array $data) => patch(route('grp.models.product_development.formulation.update', ['productDevelopmentFormulation' => $stage->id]), $data);
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, ['item_ids' => [$item->id], 'quantity' => 1]);
+    $run = $item->samples()->where('number', 1)->firstOrFail();
+    expect($run->status->value)->toBe('in_progress')->and($run->artefact_id)->toBe($item->artefact_id);
+
+    $mandarin = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($item->artefact->production, ['type' => 'stock', 'code' => 'MAND'.$item->id, 'description' => 'Mandarin oil', 'unit' => 'kilogram']);
+    \App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep::make()->action(\App\Models\Production\ArtefactManufactureTask::where('artefact_id', $item->artefact_id)->firstOrFail(), ['raw_material_id' => $mandarin->id, 'quantity_per_unit' => 0.05]);
+
+    $update(['name' => 'EO Fragrance Blend', 'type' => 'base_blend'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($stage->fresh()->type->value)->toBe('base_blend')->and($run->fresh()->artefact_id)->toBe($item->artefact_id);
+    $update(['type' => 'finished_product'])->assertSessionHasNoErrors();
+    $update(['type' => 'base_blend'])->assertSessionHasNoErrors();
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('formulation.skus.0.formulations.0.can_create_artefact', false));
+    post(route('grp.models.product_development.formulation.artefact', ['productDevelopmentFormulation' => $stage->id]))->assertSessionHasErrors('formulation');
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($run->fresh(), $this->user);
+    \App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample::make()->action($run->fresh(), $this->user, ['operation' => \App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample::REQUEST_CHANGES, 'comment' => 'Less mandarin']);
+    $nextRun  = \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample::make()->action($item->fresh(), $this->user, ['product_development_formulation_id' => $stage->id]);
+    $artefact = $stage->fresh()->artefact;
+    expect($nextRun->artefact_id)->toBe($artefact->id)
+        ->and(collect(\App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::recipe($artefact)['ingredients'])->pluck('quantity', 'code')->all())->toEqual(['MAND'.$item->id => 0.05]);
+    $update(['type' => 'intermediate'])->assertSessionHasNoErrors();
+    $update(['type' => 'finished_product'])->assertSessionHasErrors('type');
+});
+
 test('a trial run a development asks for shows the artisan the development, and its first step is the formulation, which the development keeps, HELP-4545', function () {
     [$productDevelopment, $production] = inHouseDevelopment($this, 1);
     $item                              = $productDevelopment->items()->with(['artefact', 'tradeUnit'])->firstOrFail();
@@ -3132,4 +3163,39 @@ test('a cancelled development leaves the list and the All count, and shows under
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('data.data', fn ($rows) => collect($rows)->pluck('code')->contains($productDevelopment->code)));
+});
+
+test('the To produce board lists the trial runs a development asks for, counts those waiting for an artisan, and assigns and releases them, HELP-4839', function () {
+    [$productDevelopment, $production] = inHouseDevelopment($this, 2);
+    [$first, $second]                  = $productDevelopment->items()->orderBy('position')->get()->all();
+    $artisan                           = \App\Actions\HumanResources\Employee\StoreEmployee::make()->action($production->organisation, [
+        ...\App\Models\HumanResources\Employee::factory()->make(['organisation_id' => $production->organisation_id])->toArray(),
+        'worker_number'   => 'W'.rand(1000, 9999),
+        'alias'           => 'Alias '.rand(1000, 9999),
+        'type'            => \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+    ]);
+
+    [$waiting, $released] = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, ['item_ids' => [$first->id, $second->id], 'quantity' => 3]);
+    $released->jobOrderItems()->firstOrFail()->tasks()->update(['employee_id' => $artisan->id]);
+    \App\Actions\Production\JobOrder\ConfirmJobOrder::make()->action($released);
+
+    $board = fn () => get(route('grp.org.productions.show.to_produce.index', [$production->organisation->slug, $production->slug]))->assertOk()->viewData('page')['props']['trialRuns'];
+    $runs  = collect($board()['runs'])->keyBy('id');
+    expect($board()['unassigned'])->toBe(1)
+        ->and($runs->keys()->all())->toBe([$waiting->id, $released->id])
+        ->and($runs[$waiting->id]['awaiting_release'])->toBeTrue()
+        ->and($runs[$waiting->id]['can_pick_artisan'])->toBeTrue()
+        ->and($runs[$waiting->id]['artisans'])->toBe([])
+        ->and($runs[$waiting->id]['development'])->toBe(['code' => $productDevelopment->code, 'name' => $productDevelopment->name, 'slug' => $productDevelopment->slug])
+        ->and($runs[$waiting->id]['artefacts'][0]['quantity'])->toEqual(3)
+        ->and($runs[$released->id]['awaiting_release'])->toBeFalse()
+        ->and($runs[$released->id]['artisans'])->toBe([$artisan->contact_name])
+        ->and($runs[$released->id]['can_pick_artisan'])->toBeFalse();
+
+    patch(route('grp.models.job-order.update', ['jobOrder' => $waiting->id]), ['employee_id' => $artisan->id])->assertSessionHasNoErrors();
+    patch(route('grp.models.job-order.confirm', ['jobOrder' => $waiting->id]))->assertSessionHasNoErrors();
+    expect($board()['unassigned'])->toBe(0)
+        ->and(collect($board()['runs'])->firstWhere('id', $waiting->id)['artisans'])->toBe([$artisan->contact_name]);
 });

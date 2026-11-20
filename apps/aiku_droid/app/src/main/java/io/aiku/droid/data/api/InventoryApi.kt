@@ -198,6 +198,7 @@ data class LocationOrgStock(
     @SerialName("image_url") val imageUrl: String? = null,
     @SerialName("picking_location") val pickingLocation: PlaceRef? = null,
     @SerialName("picking_dropshipping_location") val pickingDropshippingLocation: PlaceRef? = null,
+    @Serializable(with = LenientIntOrNull::class) val version: Int? = null,
 ) {
     val stock: Double get() = quantityValue ?: quantity
 
@@ -222,9 +223,9 @@ data class AuditCount(val locationOrgStockId: Long, val quantity: Double, val re
 data class MoveSomeItem(val orgStockId: Long, val quantity: Double, val removeAfterMove: Boolean)
 
 sealed interface LocationWrite {
-    data class Audit(val counts: List<AuditCount>) : LocationWrite
-    data class MoveAll(val targetLocationId: Long, val removeAfterMove: Boolean) : LocationWrite
-    data class MoveSome(val targetLocationId: Long, val items: List<MoveSomeItem>) : LocationWrite
+    data class Audit(val counts: List<AuditCount>, val clientRequestId: String? = null) : LocationWrite
+    data class MoveAll(val targetLocationId: Long, val removeAfterMove: Boolean, val clientRequestId: String? = null) : LocationWrite
+    data class MoveSome(val targetLocationId: Long, val items: List<MoveSomeItem>, val clientRequestId: String? = null) : LocationWrite
     data class RemoveOrgStocks(val orgStockIds: List<Long>) : LocationWrite
 }
 
@@ -423,6 +424,7 @@ data class OrgStockLocation(
     @SerialName("is_default_dropshipping") val isDefaultDropshipping: Boolean = false,
     @SerialName("audited_at") val auditedAt: String? = null,
     val location: OrgStockLocationPlace,
+    @Serializable(with = LenientIntOrNull::class) val version: Int? = null,
 ) {
     val stockType: LocationStockType? get() = LocationStockType.ofKey(type)
 }
@@ -462,8 +464,8 @@ data class OrgStockDetail(
 data class MoveTarget(val locationOrgStockId: Long, val quantity: Double)
 
 sealed interface OrgStockWrite {
-    data class Audit(val counts: List<AuditCount>) : OrgStockWrite
-    data class Move(val fromLocationOrgStockId: Long, val targets: List<MoveTarget>) : OrgStockWrite
+    data class Audit(val counts: List<AuditCount>, val clientRequestId: String? = null) : OrgStockWrite
+    data class Move(val fromLocationOrgStockId: Long, val targets: List<MoveTarget>, val clientRequestId: String? = null) : OrgStockWrite
     data class Consume(val locationOrgStockId: Long, val quantity: Double, val note: String?) : OrgStockWrite
     data class AddLocation(val locationId: Long, val type: LocationStockType) : OrgStockWrite
     data class RemoveLocations(val locationOrgStockIds: List<Long>) : OrgStockWrite

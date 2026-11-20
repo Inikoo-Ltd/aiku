@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Kurangi</string>
     <string name="stepper_increase">Tambah</string>
     <string name="switcher_current">%1$s · saat ini</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Terapkan · %1$s</string>
-    <string name="sync_both">Keduanya</string>
-    <string name="sync_conflict_explanation">Setiap baris yang berbeda menawarkan Milik saya atau Aiku; kuantitas juga dapat memakai Keduanya (dijumlahkan, tidak pernah melebihi kebutuhan baris). Pilihan Anda ditampilkan terisi.</string>
-    <string name="sync_conflicts_explanation">Seperti menyelesaikan merge: buka catatan untuk memilih baris per baris, atau pertahankan semua dari satu sisi. Yang Anda buang tidak hilang: semuanya tetap ada di riwayat sinkronisasi.</string>
     <string name="sync_conflicts_title">Selesaikan konflik</string>
-    <string name="sync_explanation">Pekerjaan tingkat baris disimpan di ponsel saat offline: ambil, tidak diambil, kemas, periksa, tempatkan, audit, pindahkan. Saat tersambung kembali, setiap tindakan diperiksa terhadap versi awalnya: jika tidak ada yang berubah di Aiku, tindakan diunggah otomatis; jika ada, tindakan menunggu Anda di Selesaikan konflik. Absensi dan perubahan status memerlukan koneksi.</string>
-    <string name="sync_keep_all_aiku">Pertahankan semua dari Aiku</string>
-    <string name="sync_keep_all_mine">Pertahankan semua milik saya</string>
-    <string name="sync_kept_all_aiku">Semua dari Aiku dipertahankan</string>
-    <string name="sync_kept_all_mine">Semua milik Anda dipertahankan</string>
     <string name="sync_kicker">Profil</string>
-    <string name="sync_last_sync">Sinkronisasi terakhir</string>
-    <string name="sync_lines_differ">Baris yang berbeda</string>
-    <string name="sync_mine">Milik saya</string>
-    <string name="sync_no_conflict">Tidak ada konflik</string>
     <string name="sync_now_in_aiku">Saat ini di Aiku</string>
-    <string name="sync_oldest_first">terlama lebih dulu</string>
-    <string name="sync_online_only_body">Kiriman, label, finalisasi, pengiriman, pembatalan, dan Tandai sebagai diterima berkomunikasi dengan kurir, printer, atau pelanggan, sehingga hanya berfungsi saat online. Picking dan pengemasan Anda disimpan dan diunggah saat Anda kembali online.</string>
-    <string name="sync_online_only_note">Tombol utama kembali muncul segera setelah ponsel online dan antrean telah tersinkron.</string>
-    <string name="sync_online_only_title">Finalisasi memerlukan koneksi</string>
-    <string name="sync_resolve_all">Selesaikan semuanya sekaligus</string>
-    <string name="sync_same_on_both">Sama di kedua sisi</string>
-    <string name="sync_synced">Tersinkron</string>
     <string name="sync_title">Offline &amp; sinkronisasi</string>
-    <string name="sync_use_aiku_for_all">Gunakan Aiku untuk semua</string>
-    <string name="sync_use_mine_for_all">Gunakan milik saya untuk semua</string>
-    <string name="sync_view">Lihat</string>
-    <string name="sync_waiting">Menunggu diunggah</string>
     <string name="sync_yours">Milik Anda</string>
     <string name="tab_home">Beranda</string>
     <string name="tab_inbox">Kotak masuk</string>
@@ -2338,14 +2313,5 @@
     </plurals>
     <plurals name="states_offline_actions">
         <item quantity="other">%d tindakan</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="other">%1$d Aiku</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="other">%1$d keduanya</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="other">%1$d milik saya</item>
     </plurals>
 </resources>

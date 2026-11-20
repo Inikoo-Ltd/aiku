@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\OrgSupplier\UI;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgSupplier\GetSupplierOrderCapacity;
 use App\Actions\Procurement\OrgSupplier\GetSupplierStockCoverBuckets;
+use App\Actions\Procurement\OrgSupplier\PrepareSupplierPurchaseOrder;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -124,6 +125,7 @@ class ShowSupplierShoppingDashboard extends OrgAction
 
         return [
             'cover'                 => GetSupplierStockCoverBuckets::run($orgSupplier),
+            'prepare'               => PrepareSupplierPurchaseOrder::make()->summary($orgSupplier),
             'order_capacity'        => $orderCapacity,
             'late_purchase_orders'  => $this->latePurchaseOrders($orgSupplier),
             'open_stock_deliveries' => $this->openStockDeliveries($orgSupplier),
@@ -196,6 +198,8 @@ class ShowSupplierShoppingDashboard extends OrgAction
                 'orderCapacity'       => $data['order_capacity'],
                 'latePurchaseOrders'  => $data['late_purchase_orders'],
                 'openStockDeliveries' => $data['open_stock_deliveries'],
+                'prepareOrder'        => $data['prepare'],
+                'canPrepareOrder'     => $request->user()->authTo("procurement.{$this->organisation->id}.edit"),
             ]
         );
     }

@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -65,7 +66,7 @@ class IndexTicketProjects extends OrgAction
             }
         };
 
-        return QueryBuilder::for(self::projectsQuery($group)->whereNull('ticket_projects.parent_id')->with(['children' => fn ($query) => self::withProgress($query)]))
+        return QueryBuilder::for(self::projectsQuery($group)->whereNull('ticket_projects.parent_id')->orderByDesc('ticket_projects.is_pinned')->with(['children' => fn ($query) => self::withProgress($query)]))
             ->allowedFilters([$globalSearch])
             ->defaultSort(AllowedSort::custom('status', $statusOrder), 'target_date')
             ->allowedSorts([AllowedSort::custom('status', $statusOrder), 'name', 'start_date', 'target_date'])
@@ -89,6 +90,7 @@ class IndexTicketProjects extends OrgAction
     {
         return self::projectsQuery($group)
             ->with(['parent:id,slug', 'children' => fn ($query) => self::withProgress($query)])
+            ->orderByDesc('is_pinned')
             ->orderByRaw("case status when 'active' then 0 when 'on_hold' then 1 when 'done' then 2 else 3 end")
             ->orderBy('target_date')
             ->get();
@@ -110,7 +112,42 @@ class IndexTicketProjects extends OrgAction
                 'staffTasks',
                 'staffTasks as done_staff_tasks_count'      => fn ($query) => $query->where('status', StaffTaskStatusEnum::DONE),
                 'staffTasks as cancelled_staff_tasks_count' => fn ($query) => $query->where('status', StaffTaskStatusEnum::CANCELLED),
-            ]);
+            ])
+            ->addSelect(DB::raw(self::LAST_ACTIVITY_SQL.' as last_activity_at'));
+    }
+
+    /**
+     * Last real activity: a progress update other than the weekly stale check's own, a ticket or task
+     * added, resolved or closed, an open ticket or task changed, or the start date. Resolved and
+     * cancelled work counts only by when it was finished, so a later bulk touch does not revive it.
+     */
+    private const string LAST_ACTIVITY_SQL = "greatest(
+        ticket_projects.start_date::timestamptz,
+        (select max(u.created_at) from ticket_project_updates u where u.ticket_project_id = ticket_projects.id and u.body not ilike 'Weekly check:%'),
+        (select max(greatest(t.created_at, t.resolved_at, t.closed_at, case when t.status not in ('resolved', 'cancelled') then t.updated_at end)) from tickets t where t.ticket_project_id = ticket_projects.id and t.deleted_at is null),
+        (select max(greatest(s.created_at, s.closed_at, case when s.status not in ('done', 'cancelled') then s.updated_at end)) from staff_tasks s where s.ticket_project_id = ticket_projects.id and s.deleted_at is null)
+    )";
+
+    /**
+     * Days since the last real activity of an active project or any of its sub-projects; null for
+     * projects that are on hold, done or cancelled.
+     */
+    public static function quietDays(TicketProject $project): ?int
+    {
+        if ($project->status !== TicketProjectStatusEnum::ACTIVE) {
+            return null;
+        }
+
+        $lastActivity = array_key_exists('last_activity_at', $project->getAttributes())
+            ? $project->getAttributes()['last_activity_at']
+            : TicketProject::whereKey($project->id)->selectRaw(self::LAST_ACTIVITY_SQL.' as last_activity_at')->value('last_activity_at');
+
+        $dates = collect([$lastActivity])
+            ->concat($project->relationLoaded('children') ? $project->children->map(fn (TicketProject $child) => $child->getAttributes()['last_activity_at'] ?? null) : [])
+            ->filter()
+            ->map(fn ($date) => Carbon::parse($date));
+
+        return $dates->isEmpty() ? null : (int) $dates->max()->startOfDay()->diffInDays(Carbon::today());
     }
 
     /**

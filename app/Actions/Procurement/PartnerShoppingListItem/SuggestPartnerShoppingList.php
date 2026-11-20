@@ -25,6 +25,7 @@ use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Models\Helpers\Tag;
 use App\Models\Procurement\OrgPartner;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -147,6 +148,7 @@ class SuggestPartnerShoppingList extends OrgAction
     /**
      * Candidate partner SKOs with price, availability, buyer stock and average quarterly usage.
      * A manufacturing hub makes to order, so its shelf stock does not limit what can be suggested.
+     * Only what the partner makes is suggested: the rest it holds is a rescue order, added by hand.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -154,6 +156,7 @@ class SuggestPartnerShoppingList extends OrgAction
     {
         $rows = $this->candidatesQuery($orgPartner)
             ->whereNull('partner_shopping_list_items.id')
+            ->whereRaw(PartnerShoppingListItem::madeBySellerSql('org_stocks.id'))
             ->when(!$sellerStockIsNoLimit, fn ($query) => $query->where('org_stocks.quantity_available', '>', 0))
             ->whereRaw('coalesce(buyer_org_stocks.is_excluded_from_auto_ordering, false) = false')
             ->whereRaw('not '.Tag::outOfOrderingSeasonSql('org_stocks.stock_id', (int) GetPartnerLeadTime::run($orgPartner)['days']))
@@ -313,6 +316,7 @@ class SuggestPartnerShoppingList extends OrgAction
             ->keyBy('id');
 
         $quanta       = RoundPartnerQuantityToBatches::quantaByStockId($orgPartner, $buyerStocks->pluck('stock_id')->all());
+        $freeSkos     = RoundPartnerQuantityToBatches::freeSkosByStockId($orgPartner, $buyerStocks->pluck('stock_id')->all());
         $candidatesBy = collect($candidates)->keyBy('stock_id');
 
         $lines     = [];
@@ -326,7 +330,7 @@ class SuggestPartnerShoppingList extends OrgAction
                 continue;
             }
 
-            $quantity = RoundPartnerQuantityToBatches::roundUp((float) $rescueLine['skos'], $quanta[$buyerStock->stock_id] ?? 1);
+            $quantity = RoundPartnerQuantityToBatches::roundUpPastFreeStock((float) $rescueLine['skos'], $quanta[$buyerStock->stock_id] ?? 1, $freeSkos[$buyerStock->stock_id] ?? 0);
             $cost     = round($rescueLine['cost'] * $quantity / $rescueLine['skos'], 2);
 
             if ($quantity < 1 || $cost > $remaining) {

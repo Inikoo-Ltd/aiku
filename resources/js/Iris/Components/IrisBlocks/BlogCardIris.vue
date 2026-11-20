@@ -47,7 +47,7 @@ const label = computed(() => props.ctaLabel || ctrans("Read more"))
 			<div
 				v-else
 				class="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-				<span class="text-3xl font-semibold text-gray-300">{{ post.title?.charAt(0) }}</span>
+				<span class="text-3xl font-semibold text-gray-300">{{ Array.from(post.title ?? "")[0] }}</span>
 			</div>
 
 			<time

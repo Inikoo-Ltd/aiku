@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Azalt</string>
     <string name="stepper_increase">Artır</string>
     <string name="switcher_current">%1$s · geçerli</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Uygula · %1$s</string>
-    <string name="sync_both">Her ikisi</string>
-    <string name="sync_conflict_explanation">Farklı olan her satırda Benimki veya Aiku seçeneği sunulur; miktarlarda Her ikisi de seçilebilir (toplanır, satırın ihtiyacını asla aşmaz). Seçiminiz dolu olarak gösterilir.</string>
-    <string name="sync_conflicts_explanation">Bir birleştirmeyi çözmek gibi: satır satır seçmek için bir kaydı açın veya bir tarafın tümünü koruyun. Attığınız hiçbir şey kaybolmaz: senkronizasyon geçmişinde kalır.</string>
     <string name="sync_conflicts_title">Çakışmaları çöz</string>
-    <string name="sync_explanation">Çevrimdışıyken satır düzeyindeki işler telefona kaydedilir: toplama, toplanmadı, paketleme, kontrol, yerleştirme, sayım, taşıma. Bağlantı geri geldiğinde her işlem başladığı sürümle karşılaştırılır: Aiku\'da hiçbir şey değişmediyse kendiliğinden yüklenir, aksi halde Çakışmaları çöz bölümünde sizi bekler. Puantaj ve durum değişiklikleri için bağlantı gerekir.</string>
-    <string name="sync_keep_all_aiku">Tümünde Aiku\'yu koru</string>
-    <string name="sync_keep_all_mine">Tümünde benimkini koru</string>
-    <string name="sync_kept_all_aiku">Tümünde Aiku\'nunki korundu</string>
-    <string name="sync_kept_all_mine">Tümünde sizinki korundu</string>
     <string name="sync_kicker">Profil</string>
-    <string name="sync_last_sync">Son senkronizasyon</string>
-    <string name="sync_lines_differ">Farklı olan satırlar</string>
-    <string name="sync_mine">Benimki</string>
-    <string name="sync_no_conflict">Çakışma yok</string>
     <string name="sync_now_in_aiku">Şu anda Aiku\'da</string>
-    <string name="sync_oldest_first">önce en eski</string>
-    <string name="sync_online_only_body">Gönderiler, etiketler, kesinleştirme, sevkiyat, iptal ve Teslim alındı olarak işaretle; kargo firmaları, yazıcılar veya müşterilerle iletişim kurar, bu yüzden yalnızca çevrimiçiyken çalışır. Toplama ve paketleme işleriniz kaydedilir ve bağlantı geri geldiğinde yüklenir.</string>
-    <string name="sync_online_only_note">Telefon çevrimiçi olup kuyruk senkronize edildiğinde ana düğme geri gelir.</string>
-    <string name="sync_online_only_title">Kesinleştirme için bağlantı gerekir</string>
-    <string name="sync_resolve_all">Hepsini tek seferde çöz</string>
-    <string name="sync_same_on_both">İki tarafta da aynı</string>
-    <string name="sync_synced">Senkronize edildi</string>
     <string name="sync_title">Çevrimdışı ve senkronizasyon</string>
-    <string name="sync_use_aiku_for_all">Tümü için Aiku\'yu kullan</string>
-    <string name="sync_use_mine_for_all">Tümü için benimkini kullan</string>
-    <string name="sync_view">Görüntüle</string>
-    <string name="sync_waiting">Yüklenmeyi bekliyor</string>
     <string name="sync_yours">Sizinki</string>
     <string name="tab_home">Ana sayfa</string>
     <string name="tab_inbox">Gelen kutusu</string>
@@ -2447,17 +2422,5 @@
     <plurals name="states_offline_actions">
         <item quantity="one">%d işlem</item>
         <item quantity="other">%d işlem</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">%1$d Aiku</item>
-        <item quantity="other">%1$d Aiku</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">%1$d her ikisi</item>
-        <item quantity="other">%1$d her ikisi</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">%1$d benimki</item>
-        <item quantity="other">%1$d benimki</item>
     </plurals>
 </resources>

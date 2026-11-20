@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">घटाउनुहोस्</string>
     <string name="stepper_increase">बढाउनुहोस्</string>
     <string name="switcher_current">%1$s · हालको</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">लागू गर्नुहोस् · %1$s</string>
-    <string name="sync_both">दुवै</string>
-    <string name="sync_conflict_explanation">प्रत्येक फरक लाइनले मेरो वा Aiku विकल्प दिन्छ; परिमाणहरूमा दुवै पनि लिन सकिन्छ (जोडेर, लाइनलाई चाहिनेभन्दा कहिल्यै बढी होइन)। तपाईंको छनोट भरिएको देखाइन्छ।</string>
-    <string name="sync_conflicts_explanation">मर्ज समाधान गरेजस्तै: लाइन-लाइन छान्न रेकर्ड खोल्नुहोस्, वा एक पक्षका सबै राख्नुहोस्। तपाईंले छोडेको केही पनि हराउँदैन: त्यो सिङ्क इतिहासमा रहन्छ।</string>
     <string name="sync_conflicts_title">विवाद समाधान गर्नुहोस्</string>
-    <string name="sync_explanation">अफलाइन हुँदा लाइन-स्तरका काम फोनमा सुरक्षित हुन्छन्: पिक, पिक नगरिएको, प्याक, जाँच, राख्ने, अडिट, सार्ने। फेरि जडान हुँदा प्रत्येक कार्यलाई सुरु भएको संस्करणसँग जाँचिन्छ: Aiku मा केही परिवर्तन नभए आफैँ अपलोड हुन्छ, नत्र “विवाद समाधान गर्नुहोस्” मा तपाईंलाई पर्खन्छ। क्लकिङ र स्थिति परिवर्तनका लागि जडान चाहिन्छ।</string>
-    <string name="sync_keep_all_aiku">Aiku का सबै राख्नुहोस्</string>
-    <string name="sync_keep_all_mine">मेरा सबै राख्नुहोस्</string>
-    <string name="sync_kept_all_aiku">Aiku का सबै राखियो</string>
-    <string name="sync_kept_all_mine">तपाईंका सबै राखियो</string>
     <string name="sync_kicker">प्रोफाइल</string>
-    <string name="sync_last_sync">अन्तिम सिङ्क</string>
-    <string name="sync_lines_differ">फरक लाइनहरू</string>
-    <string name="sync_mine">मेरो</string>
-    <string name="sync_no_conflict">कुनै विवाद छैन</string>
     <string name="sync_now_in_aiku">अहिले Aiku मा</string>
-    <string name="sync_oldest_first">पुरानो पहिले</string>
-    <string name="sync_online_only_body">ढुवानी, लेबल, अन्तिम रूप दिने, पठाउने, रद्द गर्ने र प्राप्त भनी चिन्ह लगाउने कार्यहरू कुरियर, प्रिन्टर वा ग्राहकसँग जोडिन्छन्, त्यसैले अनलाइनमा मात्र काम गर्छन्। तपाईंको पिकिङ र प्याकिङ सुरक्षित हुन्छ र फेरि जडान भएपछि अपलोड हुन्छ।</string>
-    <string name="sync_online_only_note">फोन अनलाइन भई लाइन सिङ्क हुनेबित्तिकै मुख्य बटन फर्कन्छ।</string>
-    <string name="sync_online_only_title">अन्तिम रूप दिन जडान चाहिन्छ</string>
-    <string name="sync_resolve_all">सबै एकैपटक समाधान गर्नुहोस्</string>
-    <string name="sync_same_on_both">दुवैतर्फ उस्तै</string>
-    <string name="sync_synced">सिङ्क भयो</string>
     <string name="sync_title">अफलाइन र सिङ्क</string>
-    <string name="sync_use_aiku_for_all">सबैका लागि Aiku को प्रयोग गर्नुहोस्</string>
-    <string name="sync_use_mine_for_all">सबैका लागि मेरो प्रयोग गर्नुहोस्</string>
-    <string name="sync_view">हेर्नुहोस्</string>
-    <string name="sync_waiting">अपलोड हुन पर्खिँदै</string>
     <string name="sync_yours">तपाईंको</string>
     <string name="tab_home">गृहपृष्ठ</string>
     <string name="tab_inbox">इनबक्स</string>
@@ -2447,17 +2422,5 @@
     <plurals name="states_offline_actions">
         <item quantity="one">%d कार्य</item>
         <item quantity="other">%d कार्य</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">%1$d Aiku</item>
-        <item quantity="other">%1$d Aiku</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">%1$d दुवै</item>
-        <item quantity="other">%1$d दुवै</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">%1$d मेरो</item>
-        <item quantity="other">%1$d मेरा</item>
     </plurals>
 </resources>

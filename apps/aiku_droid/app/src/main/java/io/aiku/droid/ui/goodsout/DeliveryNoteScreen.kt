@@ -70,6 +70,8 @@ import io.aiku.droid.ui.navigation.AskCrmRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
 import io.aiku.droid.ui.navigation.MainTab
+import io.aiku.droid.ui.navigation.OnlineOnlyRoute
+import io.aiku.droid.ui.navigation.ResolveConflictsRoute
 import io.aiku.droid.ui.navigation.ScanToPickRoute
 import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
@@ -150,6 +152,9 @@ internal fun DeliveryNoteEvents(
     val resources = LocalResources.current
     val scanFeedback = LocalScanController.current.feedback
     val problemTexts = GoodsOutProblem.entries.associateWith { problemText(it) }
+    val savedText = stringResource(R.string.goodsout_offline_saved)
+    val waitingText = stringResource(R.string.goodsout_offline_flush_waiting)
+    val needsYouText = stringResource(R.string.goodsout_offline_flush_needs_you)
 
     LaunchedEffect(event) {
         when (event) {
@@ -177,6 +182,21 @@ internal fun DeliveryNoteEvents(
                 onLineDone(event)
             }
             is DeliveryNoteEvent.LinePacked -> toasts.show(resources.getString(R.string.goodsout_scan_line_packed_toast, event.code), ToastKind.Success)
+            DeliveryNoteEvent.Queued -> {
+                onActed()
+                toasts.show(savedText, ToastKind.Info)
+            }
+            is DeliveryNoteEvent.NeedsConnection -> {
+                onActed()
+                navigator.open(OnlineOnlyRoute(reference = event.reference))
+            }
+            is DeliveryNoteEvent.QueuedWorkLeft -> {
+                val text = if (event.needsYou > 0) needsYouText else waitingText
+                if (onSheetProblem != null) onSheetProblem(text) else toasts.show(text, ToastKind.Warning)
+                if (event.needsYou > 0) {
+                    navigator.open(ResolveConflictsRoute)
+                }
+            }
             null -> return@LaunchedEffect
         }
         onHandled()
@@ -200,14 +220,16 @@ private fun DeliveryNoteContent(viewModel: DeliveryNoteViewModel, state: Deliver
         sheetProblem = null
     }
     val runAction: (DeliveryNoteAction) -> Unit = { action ->
-        when (val step = note.stepFor(action)) {
-            is ActionStep.Run -> viewModel.act(step.write)
-            is ActionStep.Sheet -> openSheet(step.sheet)
-            is ActionStep.Open -> {
+        val step = note.stepFor(action)
+        when {
+            step is ActionStep.Blocked -> Unit
+            !state.isOnline -> navigator.open(OnlineOnlyRoute(reference = note.reference))
+            step is ActionStep.Run -> viewModel.act(step.write)
+            step is ActionStep.Sheet -> openSheet(step.sheet)
+            step is ActionStep.Open -> {
                 viewModel.handOver()
                 navigator.open(step.route)
             }
-            is ActionStep.Blocked -> Unit
         }
     }
     val openDocument: (String, String) -> Unit = { key, url ->
@@ -251,6 +273,7 @@ private fun DeliveryNoteContent(viewModel: DeliveryNoteViewModel, state: Deliver
         refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = state.canRefresh),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.goodsout_note_refresh_failed_title), onRetry = viewModel::retry) }
+        state.offlineCopy?.let { OfflineCopyNotice(copy = it) }
         DeliveryNoteNotices(note = note)
         StateStepper(steps = deliveryNoteSteps(current = stage ?: DeliveryNoteStage.ToDo, isComplete = stage == DeliveryNoteStage.Dispatched))
         DeliveryNoteFlags(note = note)
@@ -306,7 +329,7 @@ private fun DeliveryNoteContent(viewModel: DeliveryNoteViewModel, state: Deliver
             note.canScanToPack -> PackingScanCard(note = note, queuedScans = state.queuedScans)
             else -> Unit
         }
-        DeliveryNoteLineList(note = note, onLineClick = { line -> openSheet(NoteSheet.Line(line.id)) })
+        DeliveryNoteLineList(note = note, queued = state.queued, onLineClick = { line -> openSheet(NoteSheet.Line(line.id)) })
         DeliveryNoteParcels(
             note = note,
             writeErrors = state.writeErrors,
@@ -452,7 +475,17 @@ private fun NoteSheets(
         )
         is NoteSheet.Line -> note.line(sheet.lineId)?.let { line ->
             when {
-                note.canWorkLines -> LineActionsSheet(note = note, line = line, isWorking = isWorking, problem = problem, onAct = viewModel::act, onDismiss = onDismiss)
+                note.canWorkLines -> LineActionsSheet(
+                    note = note,
+                    line = line,
+                    isWorking = isWorking,
+                    problem = problem,
+                    onAct = viewModel::act,
+                    onDismiss = onDismiss,
+                    queued = state.queuedFor(line.id),
+                    isQueueing = state.isQueueing,
+                    onUndoQueued = viewModel::undoQueued,
+                )
                 line.canBeOpenedForPacking(note) -> PackLineSheet(
                     note = note,
                     line = line,
@@ -461,6 +494,8 @@ private fun NoteSheets(
                     writeErrors = state.writeErrors,
                     onAct = viewModel::act,
                     onDismiss = onDismiss,
+                    queued = state.queuedFor(line.id),
+                    onUndoQueued = viewModel::undoQueued,
                 )
                 else -> Unit
             }
@@ -893,7 +928,7 @@ private fun SummaryDetailCard(note: DeliveryNote) {
 }
 
 @Composable
-private fun DeliveryNoteLineList(note: DeliveryNote, onLineClick: (DeliveryNoteLine) -> Unit) {
+private fun DeliveryNoteLineList(note: DeliveryNote, queued: List<QueuedLineWork>, onLineClick: (DeliveryNoteLine) -> Unit) {
     val stage = note.stage
     val title = when {
         stage == DeliveryNoteStage.Picked -> stringResource(R.string.dn_state_picked)
@@ -918,6 +953,7 @@ private fun DeliveryNoteLineList(note: DeliveryNote, onLineClick: (DeliveryNoteL
             DeliveryNoteLineRow(
                 line = line,
                 stage = stage,
+                queued = queued.filter { it.lineId == line.id },
                 onClick = if (note.canWorkLines || line.canBeOpenedForPacking(note)) ({ onLineClick(line) }) else null,
             )
         }
@@ -956,7 +992,7 @@ private fun lineStatusChip(line: DeliveryNoteLine, status: LineStatus, stage: De
 }
 
 @Composable
-private fun DeliveryNoteLineRow(line: DeliveryNoteLine, stage: DeliveryNoteStage?, onClick: (() -> Unit)?) {
+private fun DeliveryNoteLineRow(line: DeliveryNoteLine, stage: DeliveryNoteStage?, queued: List<QueuedLineWork>, onClick: (() -> Unit)?) {
     val colors = LocalAikuColors.current
     val status = lineStatusOf(line, stage)
     val sko = line.orgStock
@@ -991,13 +1027,14 @@ private fun DeliveryNoteLineRow(line: DeliveryNoteLine, stage: DeliveryNoteStage
         required = required,
         quantityTone = lineQuantityTone(status),
         imageUrl = sko?.imageUrl,
-        extra = if (details.isEmpty() && pickings.isEmpty()) {
+        extra = if (details.isEmpty() && pickings.isEmpty() && queued.isEmpty()) {
             null
         } else {
             {
                 pickings.forEach { picking ->
                     Text(text = picking, fontSize = 12.sp, lineHeight = 16.sp, color = colors.textTertiary)
                 }
+                QueuedWorkMarks(work = queued, line = line)
                 details.forEach { detail ->
                     Text(text = detail, fontSize = 12.sp, lineHeight = 16.sp, color = colors.warnInk)
                 }

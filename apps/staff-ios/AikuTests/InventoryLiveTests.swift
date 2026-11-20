@@ -101,6 +101,58 @@ struct InventoryLiveTests {
         #expect(await calls.queries.first?.search == "eo")
     }
 
+    @Test func negativeStockShowsOneRowPerSkoLocation() async throws {
+        let page = try decode(MobileOrgStocksPage.self, #"{"data":[{"id":7,"code":"EO-07","name":"Mint","state":"active","state_label":"Active","quantity_available":-5,"quantity_available_label":"-5","number_locations":2,"location_org_stock_id":70,"location":{"id":1,"code":"A-01"},"location_quantity":-3.5},{"id":7,"code":"EO-07","name":"Mint","state":"active","state_label":"Active","quantity_available":-5,"quantity_available_label":"-5","number_locations":2,"location_org_stock_id":71,"location":{"id":2,"code":"B-02"},"location_quantity":"2"}],"meta":{"current_page":1,"last_page":1,"per_page":50,"total":2}}"#)
+        let feed = InventorySkoListFeed(service: InventoryService(orgStocks: { _, _ in page }))
+
+        await feed.reload(InventorySkoListRequest(warehouseID: 4, scope: .negative, search: "", filter: InventoryLiveSkoFilter()))
+
+        #expect(feed.items.count == 2)
+        #expect(Set(feed.items.map(\.id)).count == 2)
+        #expect(feed.items.map(\.skoID) == [7, 7])
+        #expect(feed.items[0].subtitle == "Mint")
+        #expect(feed.items[0].quantityText == "-5")
+        #expect(feed.items[0].location == InventorySkoListLocation(locationOrgStockID: 70, code: "A-01", quantityText: "−3.5", isNegative: true))
+        #expect(feed.items[1].location == InventorySkoListLocation(locationOrgStockID: 71, code: "B-02", quantityText: "2", isNegative: false))
+    }
+
+    @Test func twoLocationsOfOneSkoStayTwoRowsAcrossPages() async throws {
+        let row = #"{"id":7,"code":"EO-07","name":"Mint","state":"active","location_org_stock_id":%d,"location":{"id":%d,"code":"L-%d"},"location_quantity":-1}"#
+        func page(_ number: Int, _ links: [Int]) throws -> MobileOrgStocksPage {
+            let rows = links.map { String(format: row, $0, $0, $0) }.joined(separator: ",")
+            return try decode(MobileOrgStocksPage.self, #"{"data":[\#(rows)],"meta":{"current_page":\#(number),"last_page":2,"per_page":1,"total":2}}"#)
+        }
+        let first = try page(1, [70])
+        let second = try page(2, [70, 71])
+        let feed = InventorySkoListFeed(service: InventoryService(orgStocks: { _, query in
+            query.page == 1 ? first : second
+        }))
+
+        await feed.reload(InventorySkoListRequest(warehouseID: 4, scope: .negative, search: "", filter: InventoryLiveSkoFilter()))
+        await feed.loadNextPage()
+
+        #expect(feed.items.map { $0.location?.code } == ["L-70", "L-71"])
+    }
+
+    @Test func locationQuantitiesReadLikeAndroidWithoutGroupingAndTwoDecimals() {
+        func line(_ quantity: Double) -> String? {
+            InventoryLive.listLocation(MobileOrgStockRow(id: 1, code: "X", state: "active", locationOrgStockId: 9, location: .init(id: 1, code: "A"), locationQuantity: OptionalFlexibleDouble(quantity)))?.quantityText
+        }
+
+        #expect(line(-35907) == "−35907")
+        #expect(line(-5536.714) == "−5536.71")
+        #expect(line(-13.52) == "−13.52")
+        #expect(line(1684) == "1684")
+    }
+
+    @Test func rowsWithoutALocationKeepTheLocationCount() throws {
+        let item = InventoryLive.listItem(MobileOrgStockRow(id: 3, code: "X-1", name: "Odd", state: "active", numberLocations: 2), scope: .current)
+
+        #expect(item.location == nil)
+        #expect(item.subtitle == "Odd · 2 locations")
+        #expect(item.id == InventorySkoListKey(skoID: 3, locationOrgStockID: nil))
+    }
+
     @Test func abnormalitiesShowLastSeenWithoutStock() throws {
         let row = MobileOrgStockRow(id: 3, code: "X-1", name: "Odd", state: "abnormality", stateLabel: "Abnormality", lastSeenAt: "2026-11-02T10:00:00+00:00")
         let item = InventoryLive.listItem(row, scope: .abnormalities)

@@ -32,6 +32,10 @@ class UpdateTicketProject extends OrgAction
             $this->syncMilestones($project, Arr::pull($modelData, 'milestones') ?? []);
         }
 
+        if (Arr::get($modelData, 'is_pinned')) {
+            $modelData['target_date'] = null;
+        }
+
         $project->update($modelData);
 
         return $project;
@@ -83,6 +87,7 @@ class UpdateTicketProject extends OrgAction
             'name'                    => ['sometimes', 'string', 'max:255'],
             'description'             => ['sometimes', 'nullable', 'string', 'max:20000'],
             'status'                  => ['sometimes', Rule::enum(TicketProjectStatusEnum::class)],
+            'is_pinned'               => ['sometimes', 'boolean'],
             'start_date'              => ['sometimes', 'date'],
             'target_date'             => ['sometimes', 'nullable', 'date', 'after_or_equal:'.($this->get('start_date') ?? ($this->updatingProject ?? request()->route('ticketProject'))?->start_date?->toDateString() ?? '1900-01-01')],
             'owner_id'                => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('group_id', $this->group->id)],

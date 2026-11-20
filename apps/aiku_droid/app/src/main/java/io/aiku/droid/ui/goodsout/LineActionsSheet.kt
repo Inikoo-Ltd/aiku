@@ -53,6 +53,13 @@ internal fun NotPickedReason.label(): Int = when (this) {
     NotPickedReason.NotApplicable -> R.string.goodsout_reason_not_applicable
 }
 
+internal data class LineOffers(val pickAll: Boolean, val notPicked: Boolean, val waiting: Boolean)
+
+internal fun lineOffers(note: DeliveryNote, line: DeliveryNoteLine): LineOffers {
+    val hasLeft = line.quantityToPick > 0.0
+    return LineOffers(pickAll = hasLeft, notPicked = hasLeft && note.settings.allowPickerSetNotPicked, waiting = hasLeft && note.settings.allowWaiting)
+}
+
 internal fun DeliveryNoteLine.defaultLocation(): LineLocation? =
     locations.firstOrNull { (it.quantityPicked ?: 0.0) > 0.0 } ?: locations.firstOrNull { (it.stock ?: 0.0) > 0.0 } ?: locations.firstOrNull()
 
@@ -64,6 +71,9 @@ internal fun LineActionsSheet(
     problem: String?,
     onAct: (DeliveryNoteWrite) -> Unit,
     onDismiss: () -> Unit,
+    queued: List<QueuedLineWork> = emptyList(),
+    isQueueing: Boolean = false,
+    onUndoQueued: (Long) -> Unit = {},
 ) {
     var step by remember { mutableStateOf<LineStep>(LineStep.Actions) }
     var locationId by remember { mutableStateOf(line.defaultLocation()?.locationOrgStockId) }
@@ -81,6 +91,9 @@ internal fun LineActionsSheet(
             onWaiting = { step = LineStep.Waiting(it) },
             onUndo = { step = LineStep.Undo(it) },
             onDismiss = onDismiss,
+            queued = queued,
+            isQueueing = isQueueing,
+            onUndoQueued = onUndoQueued,
         )
         LineStep.Location -> PickLocationSheet(
             line = line,
@@ -131,12 +144,14 @@ private fun LineActionsContent(
     onWaiting: (WaitingKind) -> Unit,
     onUndo: (LinePicking) -> Unit,
     onDismiss: () -> Unit,
+    queued: List<QueuedLineWork>,
+    isQueueing: Boolean,
+    onUndoQueued: (Long) -> Unit,
 ) {
     val code = line.orgStock?.code?.takeIf { it.isNotBlank() } ?: stringResource(R.string.goodsout_line_unknown_sko)
     val toPick = line.quantityToPick
     val toPickText = quantityText(toPick, line.quantityToPickLabel)
-    val hasLeft = toPick > 0.0
-    val settings = note.settings
+    val offers = lineOffers(note, line)
     var reason by remember { mutableStateOf(NotPickedReason.OutOfStock) }
     var notPickedNote by remember { mutableStateOf("") }
     var pending by remember { mutableStateOf<LineWrite?>(null) }
@@ -161,7 +176,7 @@ private fun LineActionsContent(
             )
         },
     ) {
-        if (hasLeft) {
+        if (offers.pickAll) {
             AikuButton(
                 text = stringResource(R.string.goodsout_line_pick_all, toPickText),
                 onClick = {
@@ -180,6 +195,7 @@ private fun LineActionsContent(
                 line = line,
                 location = location,
                 canChooseLocation = line.locations.size > 1,
+                minimum = if (isQueueing) (location.quantityPicked ?: 0.0) - queued.unsentPickedAt(line.id, location.locationOrgStockId) else 0.0,
                 isWorking = isWorking && pending == LineWrite.Pick,
                 onChooseLocation = onChooseLocation,
                 onSave = { amount ->
@@ -188,7 +204,7 @@ private fun LineActionsContent(
                 },
             )
         }
-        if (hasLeft && settings.allowPickerSetNotPicked) {
+        if (offers.notPicked) {
             GroupLabel(text = stringResource(R.string.goodsout_not_picked_reason))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 NotPickedReason.entries.forEach { option ->
@@ -213,7 +229,7 @@ private fun LineActionsContent(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        if (hasLeft && settings.allowWaiting) {
+        if (offers.waiting) {
             GroupLabel(text = stringResource(R.string.goodsout_cant_finish_line))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 AikuButton(
@@ -234,6 +250,7 @@ private fun LineActionsContent(
                 )
             }
         }
+        QueuedWorkGroup(work = queued, line = line, onUndo = onUndoQueued)
         if (line.pickings.isNotEmpty()) {
             GroupLabel(text = stringResource(R.string.goodsout_line_pickings))
             ListGroup {
@@ -260,6 +277,7 @@ private fun PickAtLocation(
     line: DeliveryNoteLine,
     location: LineLocation,
     canChooseLocation: Boolean,
+    minimum: Double,
     isWorking: Boolean,
     onChooseLocation: () -> Unit,
     onSave: (Double) -> Unit,
@@ -286,7 +304,7 @@ private fun PickAtLocation(
         value = amount,
         valueText = quantityText(amount),
         onValueChange = { amount = it },
-        min = 0.0,
+        min = minimum.coerceIn(0.0, current),
         max = maximum,
         helper = stringResource(R.string.goodsout_line_pick_at_helper, location.code),
     )

@@ -9094,6 +9094,8 @@
     "eBay said: \":message\"": "eBay je odgovorio: \":message\"",
     "In your basket (packs ordered × units in each pack = units):": "U vašoj košarici (naručena pakiranja × komada u pakiranju = komada):",
     "On its way to us: :families.": "Na putu prema nama: :families.",
+    "We have this on order with our supplier. It is not on our website yet.": "To smo naručili od našeg dobavljača. Još nije na našoj web stranici.",
+    "Coming soon to our website: :families.": "Uskoro na našoj web stranici: :families.",
     "Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.": "Prema tome kako naše skladište radi ovaj tjedan, procjenjujemo da će vaša narudžba biti poslana :day. Ovo je procjena, a ne zajamčeni datum.",
     "Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.": "Prema tome kako naše skladište radi ovaj tjedan, procjenjujemo da će vaša narudžba biti poslana između :from i :to. Ovo je procjena, a ne zajamčeni datum.",
     "These items of your order could not be picked: :items. Our team needs to know whether to send the order without them or with a replacement.": "Ovi artikli iz vaše narudžbe nisu mogli biti pripremljeni: :items. Naš tim treba znati poslati li narudžbu bez njih ili sa zamjenom.",

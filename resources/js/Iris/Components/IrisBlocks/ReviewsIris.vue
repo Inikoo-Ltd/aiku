@@ -415,7 +415,7 @@ const reviewLink = computed(() => {
             <div class="flex items-start gap-3 border-b border-gray-100 px-5 py-4 w-full">
                 <div
                     class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500 text-sm font-semibold text-white">
-                    {{ selectedReview.name?.charAt(0)?.toUpperCase() ?? "?" }}
+                    {{ Array.from(selectedReview.name ?? "")[0]?.toUpperCase() ?? "?" }}
                 </div>
 
                 <div class="min-w-0 flex-1">

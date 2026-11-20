@@ -8,6 +8,7 @@
 import { Head, Link, router } from "@inertiajs/vue3"
 import { ref, computed } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
@@ -16,10 +17,10 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExclamationTriangle } from "@fal"
+import { faExclamationTriangle, faShoppingCart } from "@fal"
 import ModalAutoFillSupplierShoppingList from "@/Components/Procurement/ModalAutoFillSupplierShoppingList.vue"
 
-library.add(faExclamationTriangle)
+library.add(faExclamationTriangle, faShoppingCart)
 
 type RankBreakdown = { rank: string, count: number, on_list: number }
 type CoverBucket = { bucket: string, label: string, tone: keyof typeof toneClasses, count: number, on_list: number, on_the_way: number, untouched: number, stock_value: number, ranks: RankBreakdown[] }
@@ -46,6 +47,8 @@ const props = defineProps<{
     latePurchaseOrders: LatePurchaseOrder[]
     openStockDeliveries: OpenStockDelivery[]
     orderCapacity: OrderCapacity
+    prepareOrder: { lines: number, cost: number, buckets: Record<string, { lines: number, cost: number }> }
+    canPrepareOrder: boolean
 }>()
 
 const toneClasses = {
@@ -80,6 +83,24 @@ const removeMisplaced = (bucket: string) => {
         { data: { bucket }, ...dashboardReload }
     )
 }
+
+const isPreparingOrder = ref(false)
+const prepareOrderError = ref<string | null>(null)
+
+const submitPrepareOrder = () => {
+    prepareOrderError.value = null
+    router.post(
+        route("grp.org.procurement.org_suppliers.show.shopping.prepare", [route().params.organisation, props.orgSupplier.slug]),
+        {},
+        {
+            onStart: () => { isPreparingOrder.value = true },
+            onFinish: () => { isPreparingOrder.value = false },
+            onError: (errors) => { prepareOrderError.value = errors.prepare ?? Object.values(errors)[0] ?? ctrans("Could not prepare the order") },
+        }
+    )
+}
+
+const toOrder = (bucket: CoverBucket) => props.prepareOrder.buckets[bucket.bucket]
 
 const autoFillOpen = ref(false)
 const autoFillScope = ref<{ bucket: string, rank: string | null, label: string } | null>(null)
@@ -124,6 +145,25 @@ const rankClasses: Record<string, string> = {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+
+    <div v-if="canPrepareOrder" class="mx-4 mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white p-4">
+        <Button
+            type="tertiary"
+            :label="ctrans('Prepare order')"
+            :loading="isPreparingOrder"
+            :disabled="!prepareOrder.lines"
+            @click="submitPrepareOrder">
+            <template #icon>
+                <FontAwesomeIcon :icon="faShoppingCart" class="text-green-600" fixed-width aria-hidden="true" />
+            </template>
+        </Button>
+        <span v-if="prepareOrder.lines" class="text-sm text-gray-600">
+            {{ ctrans(":lines lines, :amount: what is out of stock, doomed or critical, enough to last until the next delivery, never more than our largest order of it in the last year", { lines: prepareOrder.lines, amount: useLocaleStore().currencyFormat(orgSupplier.currency, prepareOrder.cost) }) }}
+        </span>
+        <span v-else class="text-sm text-gray-400">{{ ctrans("Nothing out of stock, doomed or critical needs ordering") }}</span>
+        <span class="text-xs text-gray-400">{{ ctrans("Lines go on the draft purchase order, where you can change them before submitting") }}</span>
+        <p v-if="prepareOrderError" class="w-full text-xs text-red-600">{{ prepareOrderError }}</p>
+    </div>
 
     <div class="mx-4 mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
         <div class="rounded-lg border border-gray-200 bg-white p-4">
@@ -201,7 +241,7 @@ const rankClasses: Record<string, string> = {
         </div>
     </div>
 
-    <div class="mx-4 mt-4 rounded-xl border-2 border-indigo-200 bg-indigo-50/40 p-4">
+    <div class="mx-4 mt-4 rounded-xl border-2 border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] p-4">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Link
                 v-for="bucket in coverBuckets"
@@ -221,6 +261,9 @@ const rankClasses: Record<string, string> = {
                         <button type="button" class="ml-0.5 rounded border border-red-300 px-1 text-[10px] hover:bg-red-100" @click.prevent.stop="removeMisplaced(bucket.bucket)">
                             {{ ctrans("remove") }}
                         </button>
+                    </span>
+                    <span v-else-if="toOrder(bucket)" class="text-xs font-medium tabular-nums">
+                        {{ toOrder(bucket).lines ? ctrans(":count to order", { count: toOrder(bucket).lines.toLocaleString() }) : ctrans("nothing to order") }}
                     </span>
                     <span v-else-if="needsAction(bucket)" class="text-xs font-medium tabular-nums">
                         {{ ctrans(":count need action", { count: bucket.untouched.toLocaleString() }) }}
@@ -274,12 +317,12 @@ const rankClasses: Record<string, string> = {
             <div class="rounded-lg bg-gray-50 p-2">
                 <div class="mb-2 flex items-center justify-between px-1">
                     <span class="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
-                        <span class="h-2 w-2 rounded-full bg-indigo-100 ring-1 ring-indigo-300" />
+                        <span class="h-2 w-2 rounded-full bg-[var(--app-accent-soft)] ring-1 ring-[var(--app-accent-muted)]" />
                         {{ ctrans("On shopping list") }}
                     </span>
-                    <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium tabular-nums text-indigo-600">{{ stats.open_items_count }}</span>
+                    <span class="rounded-full bg-[var(--app-accent-soft)] px-2 py-0.5 text-xs font-medium tabular-nums text-[var(--app-accent)]">{{ stats.open_items_count }}</span>
                 </div>
-                <Link :href="route(shoppingListRoute.name, shoppingListRoute.parameters)" class="block rounded-md bg-white p-2 shadow-sm hover:bg-indigo-50">
+                <Link :href="route(shoppingListRoute.name, shoppingListRoute.parameters)" class="block rounded-md bg-white p-2 shadow-sm hover:bg-[var(--app-accent-soft)]">
                     <div class="text-sm font-bold text-gray-900">{{ stats.open_items_count }} {{ ctrans("items") }}</div>
                     <div class="text-xs text-gray-500">{{ useLocaleStore().currencyFormat(orgSupplier.currency, stats.estimated_total) }} {{ ctrans("waiting to be ordered") }}</div>
                     <div v-if="stats.oldest_item_at" class="mt-1 text-xs text-gray-500">
@@ -303,7 +346,7 @@ const rankClasses: Record<string, string> = {
                         v-for="sd in column.deliveries"
                         :key="sd.id"
                         :href="route('grp.org.procurement.stock_deliveries.show', [route().params.organisation, sd.slug])"
-                        class="block rounded-md border-l-2 p-2 shadow-sm hover:ring-1 hover:ring-indigo-300"
+                        class="block rounded-md border-l-2 p-2 shadow-sm hover:ring-1 hover:ring-[var(--app-accent-muted)]"
                         :class="isProblemOrder(sd) ? 'border-red-400 bg-red-50' : [column.card, sd.days_old > agingThreshold() ? 'border-amber-400' : 'border-transparent']"
                     >
                         <div class="flex items-baseline justify-between gap-2">
@@ -331,7 +374,7 @@ const rankClasses: Record<string, string> = {
             <li v-for="purchaseOrder in latePurchaseOrders" :key="purchaseOrder.id" class="flex items-center justify-between gap-3 px-4 py-3">
                 <div>
                     <Link
-                        class="text-sm font-medium text-indigo-600 hover:underline"
+                        class="text-sm font-medium text-[var(--app-accent)] hover:underline"
                         :href="route('grp.org.procurement.org_suppliers.show.purchase-orders.show', [route().params.organisation, orgSupplier.slug, purchaseOrder.slug])"
                     >
                         {{ purchaseOrder.reference }}

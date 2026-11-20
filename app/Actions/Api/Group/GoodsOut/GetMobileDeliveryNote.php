@@ -129,6 +129,7 @@ class GetMobileDeliveryNote
             'can_edit_contact'        => $deliveryNote->canBeWorkedOnBy($user),
             'available_actions'       => $availableActions,
             'settings'                => $this->pickingSettings($deliveryNote->organisation),
+            'picking_settings'        => $this->pickingSettings($deliveryNote->organisation),
             'incomplete_sets'         => $this->incompleteSets($deliveryNote),
             'read_only_notice'        => $showDeliveryNote->getAuroraNotice($deliveryNote) ?? $showDeliveryNote->getReadOnlyNotice($deliveryNote, $isEditable),
             'warning'                 => $showDeliveryNote->getWarning($deliveryNote)['text'] ?? null,
@@ -323,8 +324,32 @@ class GetMobileDeliveryNote
         $pickings            = Picking::query()->whereIn('delivery_note_item_id', $items->pluck('id'))->with('location')->orderBy('id')->get();
         $pickingsByLine      = $pickings->groupBy('delivery_note_item_id');
         $locationOrgStockIds = $this->pickingLocationOrgStockIds($pickings);
+        $offline             = [
+            'versions'           => $this->locationVersions($deliveryNote, $items->pluck('org_stock_id')->merge($pickings->pluck('org_stock_id'))),
+            'is_scannable'       => $this->isScannableDeliveryNote($deliveryNote),
+            'in_picking_session' => $deliveryNote->pickingSessions()->exists(),
+        ];
 
-        return $items->map(fn (DeliveryNoteItem $item, int $position) => $this->line($item, $rows[$position], $pickingsByLine->get($item->id, collect()), $locationOrgStockIds))->all();
+        return $items->map(fn (DeliveryNoteItem $item, int $position) => $this->line($item, $rows[$position], $pickingsByLine->get($item->id, collect()), $locationOrgStockIds, $offline))->all();
+    }
+
+    /**
+     * @param Collection<int, int|null> $orgStockIds
+     * @return Collection<int, int>
+     */
+    private function locationVersions(DeliveryNote $deliveryNote, Collection $orgStockIds): Collection
+    {
+        $orgStockIds = $orgStockIds->filter()->unique()->values();
+
+        if ($orgStockIds->isEmpty()) {
+            return collect();
+        }
+
+        return LocationOrgStock::query()
+            ->where('warehouse_id', $deliveryNote->warehouse_id)
+            ->whereIn('org_stock_id', $orgStockIds)
+            ->pluck('version', 'id')
+            ->map(fn ($version) => (int) $version);
     }
 
     /**
@@ -337,7 +362,7 @@ class GetMobileDeliveryNote
 
         $row = FetchDeliveryNoteItemRow::run($item)?->resolve();
 
-        return $row ? $this->lineLocations($item, $row['locations'] ?? [], $item->pickings()->orderBy('id')->get()) : [];
+        return $row ? $this->lineLocations($item, $row['locations'] ?? [], $item->pickings()->orderBy('id')->get(), $this->locationVersions($item->deliveryNote, collect([$item->org_stock_id]))) : [];
     }
 
     /**
@@ -362,24 +387,27 @@ class GetMobileDeliveryNote
     /**
      * @param Collection<int, Picking> $pickings
      * @param Collection<string, int> $locationOrgStockIds
+     * @param Collection<int, int> $versions
      * @return array<int, array<string, mixed>>
      */
-    private function linePickings(DeliveryNoteItem $item, Collection $pickings, Collection $locationOrgStockIds): array
+    private function linePickings(DeliveryNoteItem $item, Collection $pickings, Collection $locationOrgStockIds, Collection $versions): array
     {
         return $pickings
-            ->map(function (Picking $picking) use ($item, $locationOrgStockIds) {
-                $isNotPick = $picking->type === PickingTypeEnum::NOT_PICK;
-                $reason    = $isNotPick ? $picking->not_picked_reason : null;
+            ->map(function (Picking $picking) use ($item, $locationOrgStockIds, $versions) {
+                $isNotPick          = $picking->type === PickingTypeEnum::NOT_PICK;
+                $reason             = $isNotPick ? $picking->not_picked_reason : null;
+                $locationOrgStockId = $picking->location_id ? $locationOrgStockIds->get($picking->location_id.'-'.$picking->org_stock_id) : null;
 
                 return [
                     'id'                      => $picking->id,
                     'type'                    => $picking->type?->value,
-                    'location_org_stock_id'   => $picking->location_id ? $locationOrgStockIds->get($picking->location_id.'-'.$picking->org_stock_id) : null,
+                    'location_org_stock_id'   => $locationOrgStockId,
                     'location_code'           => $picking->location?->code,
                     'quantity'                => (float) $picking->quantity,
                     'quantity_label'          => $this->formatScanQuantity($item, (float) $picking->quantity),
                     'not_picked_reason'       => $reason?->value,
                     'not_picked_reason_label' => $reason ? PickingNotPickedReasonEnum::labels()[$reason->value] : null,
+                    'version'                 => $locationOrgStockId ? $versions->get($locationOrgStockId) : null,
                 ];
             })
             ->values()
@@ -413,9 +441,10 @@ class GetMobileDeliveryNote
      * @param array<string, mixed> $row
      * @param Collection<int, Picking> $pickings
      * @param Collection<string, int> $locationOrgStockIds
+     * @param array{versions: Collection<int, int>, is_scannable: bool, in_picking_session: bool} $offline
      * @return array<string, mixed>
      */
-    private function line(DeliveryNoteItem $item, array $row, Collection $pickings, Collection $locationOrgStockIds): array
+    private function line(DeliveryNoteItem $item, array $row, Collection $pickings, Collection $locationOrgStockIds, array $offline): array
     {
         $quantityRequired = (float) $row['quantity_required'];
         $quantityPicked   = (float) ($row['quantity_picked'] ?? $item->quantity_picked);
@@ -454,8 +483,8 @@ class GetMobileDeliveryNote
             'is_picked'                  => (bool) ($row['is_picked'] ?? $quantityToPick == 0),
             'is_done_packing'            => $isDonePacking,
             'is_packed'                  => $isDonePacking,
-            'locations'                  => $this->lineLocations($item, $row['locations'] ?? [], $pickings),
-            'pickings'                   => $this->linePickings($item, $pickings, $locationOrgStockIds),
+            'locations'                  => $this->lineLocations($item, $row['locations'] ?? [], $pickings, $offline['versions']),
+            'pickings'                   => $this->linePickings($item, $pickings, $locationOrgStockIds, $offline['versions']),
             'boxes'                      => $this->lineBoxes($row['boxes'] ?? []),
             'warehouse_area'             => $row['warehouse_area'] ?? null,
             'note_to_pickers'            => $row['note_to_pickers'] ?? null,
@@ -463,6 +492,8 @@ class GetMobileDeliveryNote
             'un_numbers'                 => $row['un_numbers'] ?? null,
             'replacement_reason'         => $row['replacement_reason_label'] ?? null,
             'indivisible_set'            => !empty($row['indivisible_set']),
+            'barcodes'                   => $offline['is_scannable'] && $row['barcode'] ? [(string) $row['barcode']] : [],
+            'in_picking_session'         => $offline['in_picking_session'],
         ];
     }
 
@@ -480,9 +511,10 @@ class GetMobileDeliveryNote
 
     /**
      * @param Collection<int, Picking> $pickings
+     * @param Collection<int, int> $versions
      * @return array<int, array<string, mixed>>
      */
-    private function lineLocations(DeliveryNoteItem $item, mixed $locations, Collection $pickings): array
+    private function lineLocations(DeliveryNoteItem $item, mixed $locations, Collection $pickings, Collection $versions): array
     {
         $locations          = collect($locations instanceof JsonResource ? $locations->resolve() : (array) $locations);
         $warehouseLocations = Location::whereIn('id', $locations->pluck('location_id')->filter()->all())
@@ -501,6 +533,7 @@ class GetMobileDeliveryNote
                 'type'                  => $location['type'],
                 'quantity_picked'       => (float) $location['quantity_picked'],
                 'picking_id'            => $pickings->first(fn (Picking $picking) => $picking->location_id == $location['location_id'])?->id,
+                'version'               => $versions->get((int) $location['id']),
             ])
             ->values()
             ->all();

@@ -341,7 +341,7 @@ test('mobile SKO detail lists the locations of this warehouse only, picking firs
 
     expect(array_keys($response->json('data.locations.0')))->toBe([
         'location_org_stock_id', 'type', 'quantity', 'quantity_label', 'picking_priority', 'notes', 'min_stock', 'max_stock',
-        'replenishment_stock', 'is_default_wholesale', 'is_default_dropshipping', 'audited_at', 'location',
+        'replenishment_stock', 'is_default_wholesale', 'is_default_dropshipping', 'audited_at', 'location', 'version',
     ]);
 
     mobileInventoryViewer($this->group);
@@ -678,10 +678,11 @@ test('mobile locations gain a barcode, last audit, pick locations, image and num
     expect(array_slice(array_keys($detail), 0, count($summaryKeys)))->toBe($summaryKeys)
         ->and(array_slice(array_keys($detail), count($summaryKeys)))->toBe(['pallets', 'org_stocks', 'can'])
         ->and($detail['last_audited_at'])->toBe($lastAudited)
-        ->and(array_slice(array_keys($sko), -10))->toBe([
+        ->and(array_slice(array_keys($sko), -11))->toBe([
             'default_wholesale_picking_location', 'default_dropshipping_picking_location', 'min_stock', 'max_stock', 'replenishment_stock', 'audited_at',
-            'image_url', 'picking_location', 'picking_dropshipping_location', 'quantity_value',
+            'image_url', 'picking_location', 'picking_dropshipping_location', 'quantity_value', 'version',
         ])
+        ->and($sko['version'])->toBe((int) $link->version)
         ->and($sko['quantity'])->toBe('30')
         ->and($sko['quantity_value'])->toBe(30)
         ->and($sko['min_stock'])->toBe(12)

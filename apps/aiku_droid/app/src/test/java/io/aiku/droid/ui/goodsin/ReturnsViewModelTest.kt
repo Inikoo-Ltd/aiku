@@ -19,6 +19,7 @@ import io.aiku.droid.data.api.ReturnStateFilter
 import io.aiku.droid.data.api.ReturnWrite
 import io.aiku.droid.data.api.StateCounts
 import io.aiku.droid.ui.inventory.FakeSessions
+import io.aiku.droid.ui.sync.FakeOfflineWork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -145,7 +146,7 @@ class ReturnsViewModelTest {
         api.customerReturn = GoodsOutResult.Loaded(customerReturn(ReturnState.RECEIVED, item(remaining = 3.0), GoodsInActionKey.START))
         val returning = customerReturn(ReturnState.RETURNING, item(remaining = 3.0), GoodsInActionKey.PUT_BACK, GoodsInActionKey.UNDO)
         api.returnWriteResults = answer(returning)
-        val detail = ReturnViewModel(api, FakeSessions(), warehouseId = 1, returnId = 5)
+        val detail = ReturnViewModel(api, FakeSessions(), warehouseId = 1, returnId = 5, offlineWork = FakeOfflineWork())
         detail.onStart()
 
         detail.start()
@@ -157,9 +158,9 @@ class ReturnsViewModelTest {
         assertEquals(
             listOf(
                 ReturnWrite.Start,
-                ReturnWrite.Returned(itemId = 51, quantity = 1.5, locationOrgStockId = 5501),
-                ReturnWrite.Damaged(itemId = 51, quantity = 0.5),
-                ReturnWrite.NotReturned(itemId = 51, quantity = 1.0),
+                ReturnWrite.Returned(itemId = 51, quantity = 1.5, locationOrgStockId = 5501, clientRequestId = "req-1"),
+                ReturnWrite.Damaged(itemId = 51, quantity = 0.5, clientRequestId = "req-2"),
+                ReturnWrite.NotReturned(itemId = 51, quantity = 1.0, clientRequestId = "req-3"),
                 ReturnWrite.UndoPut(putId = 700),
             ),
             api.returnWrites,

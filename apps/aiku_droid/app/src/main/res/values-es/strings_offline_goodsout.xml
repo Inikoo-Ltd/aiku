@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">Sin conexión · copia guardada de %1$s</string>
+    <string name="goodsout_offline_copy_body">Tu trabajo en este albarán se guarda en este teléfono y se envía cuando vuelvas a tener conexión.</string>
+    <string name="goodsout_offline_saved">Guardado en este teléfono. Se sincroniza cuando vuelvas a tener conexión.</string>
+    <string name="goodsout_offline_waiting_to_sync">Pendiente de sincronizar</string>
+    <string name="goodsout_offline_needs_you">Requiere tu atención</string>
+    <string name="goodsout_offline_queued_group">Guardado en este teléfono</string>
+    <string name="goodsout_offline_queued_pick">%1$s preparado(s) en %2$s</string>
+    <string name="goodsout_offline_queued_pick_plain">%1$s preparado(s)</string>
+    <string name="goodsout_offline_queued_not_picked">%1$s no preparado(s)</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">En espera del almacén %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">Pasado a atención al cliente %1$s</string>
+    <string name="goodsout_offline_queued_pack">%1$s embalado(s)</string>
+    <string name="goodsout_offline_flush_waiting">Tu trabajo en este albarán aún no se ha sincronizado. Vuelve a intentarlo cuando lo esté.</string>
+    <string name="goodsout_offline_flush_needs_you">Parte de tu trabajo en este albarán requiere tu atención antes de poder hacer esto.</string>
+    <string name="goodsout_offline_scan_online_only">Requiere conexión</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · pendiente de sincronizar</string>
+    <string name="goodsout_offline_online_only_kicker">Requiere conexión</string>
+    <string name="goodsout_offline_online_only_title">Esto requiere conexión</string>
+    <string name="goodsout_offline_online_only_body">Empezar, terminar o asumir un trabajo, el embalaje, la finalización, el envío y las sesiones de preparación los comprueba Aiku al instante, así que solo funcionan con conexión.</string>
+    <string name="goodsout_offline_online_only_waiting">Acciones pendientes de sincronizar en este teléfono: %1$d. Están a salvo y se envían en cuanto vuelvas a tener conexión.</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">No tienes nada pendiente de sincronizar en este teléfono.</string>
+    <string name="goodsout_offline_online_only_back_online">Vuelves a tener conexión. Vuelve atrás para continuar.</string>
+    <string name="goodsout_offline_online_only_view">Ver trabajo pendiente</string>
+</resources>

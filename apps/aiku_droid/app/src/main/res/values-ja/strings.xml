@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">減らす</string>
     <string name="stepper_increase">増やす</string>
     <string name="switcher_current">%1$s · 現在</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">適用 · %1$s</string>
-    <string name="sync_both">両方</string>
-    <string name="sync_conflict_explanation">異なる各明細では「自分」か「Aiku」を選べます。数量では「両方」も選べます（合算されますが、明細の必要数を超えることはありません）。選択した方が塗りつぶしで表示されます。</string>
-    <string name="sync_conflicts_explanation">マージの解決と同じです。レコードを開いて1行ずつ選ぶか、どちらか一方をすべて残します。破棄したものは失われず、同期履歴に残ります。</string>
     <string name="sync_conflicts_title">競合を解決</string>
-    <string name="sync_explanation">オフライン中は明細単位の作業がスマートフォンに保存されます（ピッキング、未ピッキング、梱包、検品、格納、棚卸、移動）。再接続すると、各操作は開始時のバージョンと照合されます。Aikuで何も変わっていなければ自動でアップロードされ、そうでなければ「競合を解決」で待機します。打刻と状態の変更には接続が必要です。</string>
-    <string name="sync_keep_all_aiku">すべてAikuのものを残す</string>
-    <string name="sync_keep_all_mine">すべて自分のものを残す</string>
-    <string name="sync_kept_all_aiku">すべてAikuのものを残しました</string>
-    <string name="sync_kept_all_mine">すべてあなたのものを残しました</string>
     <string name="sync_kicker">プロフィール</string>
-    <string name="sync_last_sync">最終同期</string>
-    <string name="sync_lines_differ">異なる明細</string>
-    <string name="sync_mine">自分</string>
-    <string name="sync_no_conflict">競合なし</string>
     <string name="sync_now_in_aiku">現在のAiku</string>
-    <string name="sync_oldest_first">古い順</string>
-    <string name="sync_online_only_body">配送、ラベル、確定、出荷、キャンセル、受領済みにする操作は、配送業者、プリンター、顧客とやり取りするため、オンラインでのみ使えます。ピッキングと梱包は保存され、オンラインに戻るとアップロードされます。</string>
-    <string name="sync_online_only_note">スマートフォンがオンラインになり、キューの同期が完了すると、メインボタンが戻ります。</string>
-    <string name="sync_online_only_title">確定には接続が必要です</string>
-    <string name="sync_resolve_all">すべてを一度に解決</string>
-    <string name="sync_same_on_both">両方とも同じ</string>
-    <string name="sync_synced">同期済み</string>
     <string name="sync_title">オフラインと同期</string>
-    <string name="sync_use_aiku_for_all">すべてにAikuのものを使用</string>
-    <string name="sync_use_mine_for_all">すべてに自分のものを使用</string>
-    <string name="sync_view">表示</string>
-    <string name="sync_waiting">アップロード待ち</string>
     <string name="sync_yours">あなたのもの</string>
     <string name="tab_home">ホーム</string>
     <string name="tab_inbox">受信箱</string>
@@ -2338,14 +2313,5 @@
     </plurals>
     <plurals name="states_offline_actions">
         <item quantity="other">%d件の操作</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="other">Aiku %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="other">両方 %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="other">自分 %1$d</item>
     </plurals>
 </resources>

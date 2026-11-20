@@ -17,6 +17,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.R
+import io.aiku.droid.data.offline.QueuedAction
 import io.aiku.droid.data.api.Ability
 import io.aiku.droid.data.api.CheckResult
 import io.aiku.droid.data.api.DeliveryNoteAction
@@ -62,6 +63,12 @@ import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.PlaceItemRoute
 import io.aiku.droid.ui.navigation.StockDeliveryScanRoute
 import io.aiku.droid.ui.scan.LocalScanController
+import io.aiku.droid.ui.sync.OfflineCopyNote
+import io.aiku.droid.ui.sync.QueueEventEffect
+import io.aiku.droid.ui.sync.QueuedActionsBlock
+import io.aiku.droid.ui.sync.QueuedRow
+import io.aiku.droid.ui.sync.doubleField
+import io.aiku.droid.ui.sync.longField
 import io.aiku.droid.ui.scan.ScanEffect
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import java.time.ZoneId
@@ -156,6 +163,7 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
         doneText = { done -> doneText(done, state.delivery ?: delivery) { id, args -> resources.getString(id, *args) } },
         onDone = { closeSheet() },
     )
+    QueueEventEffect(event = state.queueEvent, reference = delivery.reference, onHandled = viewModel::queueEventHandled, onQueued = closeSheet)
     ScanEffect(enabled = delivery.scansLines(view) && sheet == null) { scan -> viewModel.scanLine(scan.code) }
     LaunchedEffect(outcome) {
         when (outcome) {
@@ -201,12 +209,14 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
         refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = !state.isWorking),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.goodsin_delivery_refresh_failed), onRetry = viewModel::retry) }
+        state.copyAt?.let { OfflineCopyNote(copyAt = it) }
         DeliveryStatus(delivery = delivery)
         OrdererCard(delivery = delivery, zone = zone)
         DeliveryInfoCard(delivery = delivery)
         SummaryCard(delivery = delivery)
         ViewTabs(options = delivery.views().map { it to viewLabel(delivery, it) }, active = view, onSelect = viewModel::selectView)
         state.lookingUpCode?.let { code -> InlineAlert(title = stringResource(R.string.scan_looking_up, code), tone = AlertTone.Info) }
+        QueuedActionsBlock(rows = state.pending.map { QueuedRow(it, placementQueuedText(it, delivery)) }, onUndo = viewModel::undoQueued)
         when (view) {
             DeliveryView.Items -> ArrivingItems(delivery = delivery)
             DeliveryView.Check -> CheckItems(
@@ -322,6 +332,19 @@ private fun doneText(done: GoodsInEvent.Done, delivery: StockDelivery, text: (In
     is StockDeliveryWrite.Check -> checkDoneText(done, delivery, text)
     is StockDeliveryWrite.RecordCheck -> text(if (action.result == CheckResult.Passed) R.string.goodsin_toast_check_passed else R.string.goodsin_toast_check_failed, emptyArray())
     else -> null
+}
+
+@Composable
+private fun placementQueuedText(action: QueuedAction, delivery: StockDelivery): String {
+    val item = action.payload.longField(GoodsInOfflinePayloads.STOCK_DELIVERY_ITEM_ID)?.let(delivery::item)
+    val quantity = quantityText(action.payload.doubleField(GoodsInOfflinePayloads.QUANTITY) ?: 0.0)
+    val linkId = action.payload.longField(GoodsInOfflinePayloads.LOCATION_ORG_STOCK_ID)
+    val location = item?.locations?.firstOrNull { it.locationOrgStockId == linkId }?.location?.code
+    return if (location != null) {
+        stringResource(R.string.offline_stock_placed, quantity, item.code, location)
+    } else {
+        stringResource(R.string.offline_stock_placed_new, quantity, item?.code.orEmpty())
+    }
 }
 
 @Composable

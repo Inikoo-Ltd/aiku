@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">オフライン</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="other">オフライン · %d件待機中</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="other">%d件を同期中</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="other">%d件の対応が必要</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="other">%d件の操作に対応が必要です</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Aikuを開いて対応を確認してください。</string>
+    <string name="offline_sync_channel_name">オフライン同期</string>
+    <string name="offline_sync_channel_description">スマートフォンに保存した作業をAikuに送信している間に表示されます。</string>
+    <string name="offline_sync_sending">スマートフォンに保存した作業を送信中</string>
+    <string name="offline_sign_out_title">同期待ちの作業</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="other">あなたの操作%d件が待機中です。このスマートフォンで再度ログインすると送信されます。</item>
+    </plurals>
+</resources>

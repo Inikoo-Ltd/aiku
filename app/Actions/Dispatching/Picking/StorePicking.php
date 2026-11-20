@@ -10,10 +10,12 @@ namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
+use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
@@ -30,6 +32,30 @@ class StorePicking extends OrgAction
 
     protected DeliveryNoteItem $deliveryNoteItem;
     private User|null $user = null;
+    private bool $writesStockMovementNow = false;
+    private bool $locationCountedSince = false;
+    private bool $refusesShortStock = false;
+
+    public function writingStockMovementNow(): static
+    {
+        $this->writesStockMovementNow = true;
+
+        return $this;
+    }
+
+    public function withLocationCountedSince(): static
+    {
+        $this->locationCountedSince = true;
+
+        return $this;
+    }
+
+    public function refusingShortStock(): static
+    {
+        $this->refusesShortStock = true;
+
+        return $this;
+    }
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, array $modelData): Picking
     {
@@ -70,20 +96,29 @@ class StorePicking extends OrgAction
                     - (float)$deliveryNoteItem->quantity_waiting_crm;
 
                 if ($outstanding <= 0) {
-                    abort(422, 'Nothing left to pick: the required quantity is already picked or waiting');
+                    throw new PickingRefusedException(PickingRefusedException::NOTHING_LEFT_TO_PICK, 'Nothing left to pick: the required quantity is already picked or waiting');
                 }
+
+                $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding);
 
                 /*
                  * A pick can never take more than the location holds, otherwise the
                  * location stock would go negative. If the system quantity is wrong
                  * the location must be stock-audited first.
                  */
-                $availableInLocation = (float)$locationOrgStock->quantity;
-                if ($availableInLocation <= 0) {
-                    abort(422, 'Nothing to pick: the location has no stock, audit the location first');
+                if (!$this->locationCountedSince) {
+                    $availableInLocation = (float)$locationOrgStock->quantity;
+                    if ($availableInLocation <= 0) {
+                        throw new PickingRefusedException(PickingRefusedException::LOCATION_EMPTY, 'Nothing to pick: the location has no stock, audit the location first');
+                    }
+
+                    if ($this->refusesShortStock && round($availableInLocation, 6) < round($modelData['quantity'], 6)) {
+                        throw new PickingRefusedException(PickingRefusedException::NOT_ENOUGH_STOCK, 'Not enough stock: the location holds less than was picked, audit the location first');
+                    }
+
+                    $modelData['quantity'] = min($modelData['quantity'], $availableInLocation);
                 }
 
-                $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding, $availableInLocation);
                 data_set($modelData, 'last_picked_at', now());
             }
 
@@ -98,7 +133,13 @@ class StorePicking extends OrgAction
 
 
         if ($picking->type == PickingTypeEnum::PICK) {
-            StorePickingOrgStockMovement::dispatch($picking->id, $this->user?->id)->afterCommit();
+            if ($this->locationCountedSince) {
+                $this->pickAlreadyHeldByTheCount($picking);
+            } elseif ($this->writesStockMovementNow) {
+                StorePickingOrgStockMovement::run($picking->id, $this->user?->id);
+            } else {
+                StorePickingOrgStockMovement::dispatch($picking->id, $this->user?->id)->afterCommit();
+            }
         }
 
 
@@ -124,6 +165,27 @@ class StorePicking extends OrgAction
         AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote->refresh());
 
         return $picking;
+    }
+
+    private function pickAlreadyHeldByTheCount(Picking $picking): void
+    {
+        if ((float)$picking->quantity == 0.0) {
+            return;
+        }
+
+        StoreOrgStockMovement::run(
+            $picking->orgStock,
+            $picking->location,
+            [
+                'quantity'    => (float)$picking->quantity,
+                'type'        => OrgStockMovementTypeEnum::CANCEL_PICKED,
+                'user_id'     => $this->user?->id,
+                'parent_type' => 'DeliveryNote',
+                'parent_id'   => $picking->delivery_note_id,
+            ]
+        );
+
+        StorePickingOrgStockMovement::run($picking->id, $this->user?->id);
     }
 
     public function rules(): array

@@ -5,17 +5,27 @@ import androidx.lifecycle.viewModelScope
 import io.aiku.droid.data.api.CustomerReturn
 import io.aiku.droid.data.api.CustomerReturnRow
 import io.aiku.droid.data.api.GoodsInApi
+import io.aiku.droid.data.api.GoodsInResponses
 import io.aiku.droid.data.api.GoodsInWriteStatus
 import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.ReturnQuery
 import io.aiku.droid.data.api.ReturnStateFilter
 import io.aiku.droid.data.api.ReturnWrite
 import io.aiku.droid.data.api.StateCounts
+import io.aiku.droid.data.offline.NoOfflineWork
+import io.aiku.droid.data.offline.OfflineRecordKey
+import io.aiku.droid.data.offline.OfflineRecordType
+import io.aiku.droid.data.offline.OfflineWork
+import io.aiku.droid.data.offline.QueuedAction
+import io.aiku.droid.data.offline.QueuedActionState
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.goodsout.problem
 import io.aiku.droid.ui.inventory.PagedList
 import io.aiku.droid.ui.inventory.SEARCH_DEBOUNCE_MILLIS
+import io.aiku.droid.ui.sync.QueueEvent
+import io.aiku.droid.ui.sync.RecordQueue
+import io.aiku.droid.ui.sync.StatusGate
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +33,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
+
+private const val HTTP_OK = 200
 
 data class ReturnsUiState(
     val state: ReturnStateFilter = ReturnStateFilter.All,
@@ -122,6 +135,9 @@ data class ReturnUiState(
     val working: ReturnWrite? = null,
     val event: GoodsInEvent? = null,
     val writeErrors: Map<String, List<String>> = emptyMap(),
+    val pending: List<QueuedAction> = emptyList(),
+    val copyAt: Instant? = null,
+    val queueEvent: QueueEvent? = null,
 ) {
     val isWorking: Boolean get() = working != null
 }
@@ -131,12 +147,35 @@ class ReturnViewModel(
     private val sessions: SessionRepository,
     private val warehouseId: Long,
     private val returnId: Long,
+    offlineWork: OfflineWork = NoOfflineWork,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(ReturnUiState())
     val state: StateFlow<ReturnUiState> = mutableState.asStateFlow()
 
+    private val queue = RecordQueue(offlineWork, warehouseId, OfflineRecordKey(OfflineRecordType.RETURN, returnId))
+
+    private var base: CustomerReturn? = null
+
     private var loadJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            queue.pending.collect { actions ->
+                mutableState.update { current ->
+                    current.copy(
+                        pending = actions.filter { it.operation in returnOperations && it.state != QueuedActionState.VOID },
+                        customerReturn = base?.withQueued(actions) ?: current.customerReturn,
+                    )
+                }
+            }
+        }
+        queue.watchSettled(viewModelScope) {
+            if (!mutableState.value.isWorking) {
+                load()
+            }
+        }
+    }
 
     fun onStart() {
         if (loadJob?.isActive != true && !mutableState.value.isWorking) {
@@ -160,18 +199,24 @@ class ReturnViewModel(
         mutableState.update { it.copy(event = null) }
     }
 
+    fun queueEventHandled() {
+        mutableState.update { it.copy(queueEvent = null) }
+    }
+
     fun clearWriteErrors() {
         mutableState.update { it.copy(writeErrors = emptyMap()) }
     }
 
+    fun undoQueued(localId: Long) = queue.undo(localId)
+
     fun start() = act(ReturnWrite.Start)
 
     fun backToStock(itemId: Long, quantity: Double?, locationOrgStockId: Long) =
-        act(ReturnWrite.Returned(itemId = itemId, quantity = quantity, locationOrgStockId = locationOrgStockId))
+        act(ReturnWrite.Returned(itemId = itemId, quantity = quantity, locationOrgStockId = locationOrgStockId, clientRequestId = queue.newClientRequestId()))
 
-    fun damaged(itemId: Long, quantity: Double?) = act(ReturnWrite.Damaged(itemId = itemId, quantity = quantity))
+    fun damaged(itemId: Long, quantity: Double?) = act(ReturnWrite.Damaged(itemId = itemId, quantity = quantity, clientRequestId = queue.newClientRequestId()))
 
-    fun notReturned(itemId: Long, quantity: Double?) = act(ReturnWrite.NotReturned(itemId = itemId, quantity = quantity))
+    fun notReturned(itemId: Long, quantity: Double?) = act(ReturnWrite.NotReturned(itemId = itemId, quantity = quantity, clientRequestId = queue.newClientRequestId()))
 
     fun undo(putId: Long) = act(ReturnWrite.UndoPut(putId))
 
@@ -179,31 +224,60 @@ class ReturnViewModel(
 
     private fun act(write: ReturnWrite) {
         val token = sessions.session.value?.token ?: return
-        if (mutableState.value.customerReturn == null || mutableState.value.isWorking) {
+        val shown = mutableState.value.customerReturn
+        if (shown == null || mutableState.value.isWorking) {
             return
         }
         loadJob?.cancel()
-        mutableState.update { it.copy(working = write, event = null, isLoading = false, isRefreshing = false, writeErrors = emptyMap()) }
+        mutableState.update { it.copy(working = write, event = null, queueEvent = null, isLoading = false, isRefreshing = false, writeErrors = emptyMap()) }
 
         viewModelScope.launch {
+            val queued = queuedWrite(write, shown)
+            if (queued == null) {
+                when (queue.statusGate()) {
+                    StatusGate.OnlineOnly -> return@launch mutableState.update { it.copy(working = null, queueEvent = QueueEvent.OnlineOnly) }
+                    StatusGate.NeedsYou -> return@launch mutableState.update { it.copy(working = null, queueEvent = QueueEvent.NeedsYou) }
+                    StatusGate.Go -> Unit
+                }
+            } else if (queue.shouldQueue() && enqueue(queued)) {
+                return@launch
+            }
             when (val result = api.writeReturn(token, warehouseId, returnId, write)) {
-                is GoodsOutResult.Loaded -> mutableState.update {
-                    it.copy(
-                        customerReturn = result.value.customerReturn,
-                        working = null,
-                        problem = null,
-                        event = GoodsInEvent.Done(
-                            action = write,
-                            message = result.value.message,
-                            isNothingChanged = result.value.status == GoodsInWriteStatus.NOTHING_CHANGED,
-                        ),
-                    )
+                is GoodsOutResult.Loaded -> {
+                    base = result.value.customerReturn
+                    mutableState.update {
+                        it.copy(
+                            customerReturn = result.value.customerReturn.withQueued(queue.pending.value),
+                            copyAt = null,
+                            working = null,
+                            problem = null,
+                            event = GoodsInEvent.Done(
+                                action = write,
+                                message = result.value.message,
+                                isNothingChanged = result.value.status == GoodsInWriteStatus.NOTHING_CHANGED,
+                            ),
+                        )
+                    }
                 }
                 GoodsOutResult.SessionExpired -> mutableState.update { it.copy(working = null, isSessionExpired = true) }
-                else -> mutableState.update {
-                    it.copy(working = null, writeErrors = (result as? GoodsOutResult.Invalid)?.errors.orEmpty(), event = result.goodsInRefusal())
-                }
+                GoodsOutResult.Unreachable -> if (queued == null || !enqueue(queued)) refuse(GoodsOutResult.Unreachable)
+                else -> refuse(result)
             }
+        }
+    }
+
+    private fun queuedWrite(write: ReturnWrite, shown: CustomerReturn): QueuedReturnWrite? =
+        GoodsInOfflinePayloads.returnPut(returnId, write) { itemId -> shown.item(itemId)?.remaining }
+
+    private suspend fun enqueue(queued: QueuedReturnWrite): Boolean {
+        queue.enqueue(queued.operation, queued.payload) ?: return false
+        mutableState.update { it.copy(working = null, queueEvent = QueueEvent.Queued(queued.operation)) }
+        return true
+    }
+
+    private fun refuse(result: GoodsOutResult<*>) {
+        mutableState.update {
+            it.copy(working = null, writeErrors = (result as? GoodsOutResult.Invalid)?.errors.orEmpty(), event = result.goodsInRefusal())
         }
     }
 
@@ -213,8 +287,22 @@ class ReturnViewModel(
         mutableState.update { it.copy(isLoading = true, isRefreshing = isPull, problem = null) }
 
         loadJob = viewModelScope.launch {
-            when (val result = api.customerReturn(token, warehouseId, returnId)) {
-                is GoodsOutResult.Loaded -> mutableState.update { it.copy(customerReturn = result.value, isLoading = false, isRefreshing = false) }
+            val loaded = queue.load(
+                live = { api.customerReturn(token, warehouseId, returnId) },
+                parse = { body -> GoodsInResponses.parseReturn(HTTP_OK, body) },
+            )
+            when (val result = loaded.result) {
+                is GoodsOutResult.Loaded -> {
+                    base = result.value
+                    mutableState.update {
+                        it.copy(
+                            customerReturn = result.value.withQueued(queue.pending.value),
+                            copyAt = loaded.copyAt,
+                            isLoading = false,
+                            isRefreshing = false,
+                        )
+                    }
+                }
                 GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
                 else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }
             }

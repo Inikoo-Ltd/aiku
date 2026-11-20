@@ -43,6 +43,8 @@ import io.aiku.droid.data.api.ReturnPut
 import io.aiku.droid.data.api.ReturnState
 import io.aiku.droid.data.api.ReturnType
 import io.aiku.droid.data.api.ReturnWrite
+import io.aiku.droid.data.offline.OfflineOperation
+import io.aiku.droid.data.offline.QueuedAction
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.AlertTone
@@ -75,6 +77,12 @@ import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.states.SessionExpiredScreen
+import io.aiku.droid.ui.sync.OfflineCopyNote
+import io.aiku.droid.ui.sync.QueueEventEffect
+import io.aiku.droid.ui.sync.QueuedActionsBlock
+import io.aiku.droid.ui.sync.QueuedRow
+import io.aiku.droid.ui.sync.doubleField
+import io.aiku.droid.ui.sync.longField
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 private const val DISPATCHED_STATE = "dispatched"
@@ -163,6 +171,7 @@ private fun ReturnContent(viewModel: ReturnViewModel, state: ReturnUiState, cust
         doneText = { done -> returnDoneText(done.action, state.customerReturn ?: customerReturn) { id, args -> resources.getString(id, *args) } },
         onDone = { closeSheet() },
     )
+    QueueEventEffect(event = state.queueEvent, reference = customerReturn.reference, onHandled = viewModel::queueEventHandled, onQueued = closeSheet)
 
     AppScreen(
         header = {
@@ -183,6 +192,7 @@ private fun ReturnContent(viewModel: ReturnViewModel, state: ReturnUiState, cust
         refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = !state.isWorking),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.goodsin_return_refresh_failed), onRetry = viewModel::retry) }
+        state.copyAt?.let { OfflineCopyNote(copyAt = it) }
         if (customerReturn.state == ReturnState.CANCELLED) {
             InlineAlert(title = customerReturn.stateLabel, body = stringResource(R.string.goodsin_return_cancelled), tone = AlertTone.Danger)
         } else {
@@ -195,6 +205,7 @@ private fun ReturnContent(viewModel: ReturnViewModel, state: ReturnUiState, cust
         if (customerReturn.timeline.isNotEmpty()) {
             StateTimeline(entries = customerReturn.timeline.map { TimelineEntry(label = it.label, date = momentText(it.at, zone)) })
         }
+        QueuedActionsBlock(rows = state.pending.map { QueuedRow(it, returnQueuedText(it, customerReturn)) }, onUndo = viewModel::undoQueued)
         SectionHeading(
             title = stringResource(R.string.goodsin_items),
             caption = pluralStringResource(R.plurals.goodsin_return_handled_count, customerReturn.items.size, handled, customerReturn.items.size),
@@ -300,6 +311,22 @@ private fun returnFooter(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+    }
+}
+
+@Composable
+private fun returnQueuedText(action: QueuedAction, customerReturn: CustomerReturn): String {
+    val item = action.payload.longField(GoodsInOfflinePayloads.RETURN_ITEM_ID)?.let(customerReturn::item)
+    val code = item?.code.orEmpty()
+    val quantity = quantityText(action.payload.doubleField(GoodsInOfflinePayloads.QUANTITY) ?: 0.0)
+    return when (action.operation) {
+        OfflineOperation.RETURN_PUT_BACK -> {
+            val linkId = action.payload.longField(GoodsInOfflinePayloads.LOCATION_ORG_STOCK_ID)
+            val location = item?.locations?.firstOrNull { it.locationOrgStockId == linkId }?.location?.code.orEmpty()
+            stringResource(R.string.offline_stock_put_back, quantity, code, location)
+        }
+        OfflineOperation.RETURN_DAMAGED -> stringResource(R.string.offline_stock_damaged, quantity, code)
+        else -> stringResource(R.string.offline_stock_not_returned, quantity, code)
     }
 }
 

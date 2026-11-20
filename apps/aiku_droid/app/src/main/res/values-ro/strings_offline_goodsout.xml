@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">Offline · copie salvată de la %1$s</string>
+    <string name="goodsout_offline_copy_body">Munca ta pe acest aviz rămâne pe acest telefon și este trimisă când revii online.</string>
+    <string name="goodsout_offline_saved">Salvat pe acest telefon. Se sincronizează când revii online.</string>
+    <string name="goodsout_offline_waiting_to_sync">Așteaptă sincronizarea</string>
+    <string name="goodsout_offline_needs_you">Necesită atenția ta</string>
+    <string name="goodsout_offline_queued_group">Salvat pe acest telefon</string>
+    <string name="goodsout_offline_queued_pick">Colectat %1$s din %2$s</string>
+    <string name="goodsout_offline_queued_pick_plain">Colectat %1$s</string>
+    <string name="goodsout_offline_queued_not_picked">Necolectat %1$s</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">Așteaptă depozitul %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">Transmis la serviciul clienți %1$s</string>
+    <string name="goodsout_offline_queued_pack">Ambalat %1$s</string>
+    <string name="goodsout_offline_flush_waiting">Munca ta pe acest aviz nu este încă sincronizată. Încearcă din nou după ce se sincronizează.</string>
+    <string name="goodsout_offline_flush_needs_you">O parte din munca ta pe acest aviz necesită atenția ta înainte de a putea face asta.</string>
+    <string name="goodsout_offline_scan_online_only">Necesită conexiune</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · așteaptă sincronizarea</string>
+    <string name="goodsout_offline_online_only_kicker">Necesită conexiune</string>
+    <string name="goodsout_offline_online_only_title">Pentru asta e nevoie de conexiune</string>
+    <string name="goodsout_offline_online_only_body">Începerea, terminarea sau preluarea lucrului, ambalarea, finalizarea, expedierea și sesiunile de colectare sunt verificate imediat de Aiku, deci funcționează doar online.</string>
+    <string name="goodsout_offline_online_only_waiting">Acțiuni care așteaptă sincronizarea pe acest telefon: %1$d. Sunt în siguranță și sunt trimise imediat ce revii online.</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">Nimic de la tine nu așteaptă sincronizarea pe acest telefon.</string>
+    <string name="goodsout_offline_online_only_back_online">Ești din nou online. Întoarce-te pentru a continua.</string>
+    <string name="goodsout_offline_online_only_view">Vezi munca în așteptare</string>
+</resources>

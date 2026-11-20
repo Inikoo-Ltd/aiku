@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">Offline · cópia guardada de %1$s</string>
+    <string name="goodsout_offline_copy_body">O seu trabalho nesta guia fica neste telemóvel e é enviado quando voltar a estar online.</string>
+    <string name="goodsout_offline_saved">Guardado neste telemóvel. Sincroniza quando voltar a estar online.</string>
+    <string name="goodsout_offline_waiting_to_sync">A aguardar sincronização</string>
+    <string name="goodsout_offline_needs_you">Precisa de si</string>
+    <string name="goodsout_offline_queued_group">Guardado neste telemóvel</string>
+    <string name="goodsout_offline_queued_pick">Recolhido %1$s em %2$s</string>
+    <string name="goodsout_offline_queued_pick_plain">Recolhido %1$s</string>
+    <string name="goodsout_offline_queued_not_picked">Não recolhido %1$s</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">A aguardar o armazém %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">Passado ao apoio ao cliente %1$s</string>
+    <string name="goodsout_offline_queued_pack">Embalado %1$s</string>
+    <string name="goodsout_offline_flush_waiting">O seu trabalho nesta guia ainda não foi sincronizado. Tente de novo quando estiver.</string>
+    <string name="goodsout_offline_flush_needs_you">Parte do seu trabalho nesta guia precisa de si antes de poder fazer isto.</string>
+    <string name="goodsout_offline_scan_online_only">Precisa de ligação</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · a aguardar sincronização</string>
+    <string name="goodsout_offline_online_only_kicker">Precisa de ligação</string>
+    <string name="goodsout_offline_online_only_title">Isto precisa de ligação</string>
+    <string name="goodsout_offline_online_only_body">Iniciar, terminar ou assumir trabalho, embalar, finalizar, expedir e as sessões de recolha são verificados pela Aiku de imediato, por isso só funcionam online.</string>
+    <string name="goodsout_offline_online_only_waiting">Ações a aguardar sincronização neste telemóvel: %1$d. Estão seguras e são enviadas assim que voltar a estar online.</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">Nada seu está a aguardar sincronização neste telemóvel.</string>
+    <string name="goodsout_offline_online_only_back_online">Voltou a estar online. Volte atrás para continuar.</string>
+    <string name="goodsout_offline_online_only_view">Ver trabalho pendente</string>
+</resources>

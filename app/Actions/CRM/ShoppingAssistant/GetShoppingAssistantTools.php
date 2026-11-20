@@ -153,6 +153,8 @@ class GetShoppingAssistantTools
 
     public const array ONLY_FOR_DROPSHIPPING = ['products_not_in_store', 'ebay_listing_problems'];
 
+    private const string ON_ORDER_NOTE = 'on_order_not_listed are items we have on order with our supplier that are not on the website yet (names cleaned, never to be shown). When one is the same kind of item the customer asked for, not just the same material, colour or theme, and none of the products found is that kind of item, call on_order_not_listed with the same query and never say we do not have it. Otherwise ignore them.';
+
     private const int MAX_NOT_IN_STORE = 10;
 
     public const int MAX_DETAILS = 20;
@@ -342,7 +344,7 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'coming_soon',
-                'The new ranges on their way to us that are not in stock yet: families whose new products are on an agreed purchase order or a delivery not yet in our warehouse. Use it when the customer asks in general what is new, coming soon or arriving. The system lists the range names under your reply; it gives no dates, prices or quantities. Returns no products.',
+                'The new ranges coming to our website that are not in stock yet: families whose new products are on order with our supplier or on a delivery not yet in our warehouse. Use it when the customer asks in general what is new, coming soon or arriving. The system lists the range names under your reply; it gives no dates, prices or quantities. Returns no products.',
                 []
             ),
             $this->tool(
@@ -369,6 +371,12 @@ class GetShoppingAssistantTools
                 'shipping_cost',
                 'What shipping costs for the customer\'s current basket. Use it when the customer asks about shipping, postage, carriage or delivery cost. The sentence with the amount is added under your reply by the system; you get no figure. Returns no products.',
                 []
+            ),
+            $this->tool(
+                'on_order_not_listed',
+                'Tell the customer that what they asked for is on order with our supplier and not on the website yet. Use it only when search_products returned on_order_not_listed with an item that is the same kind of item the customer asked for. The system adds the sentence under your reply. Returns no products.',
+                ['query' => ['type' => 'string', 'description' => 'The same query you gave search_products.']],
+                ['query']
             ),
             $this->tool(
                 'sister_shop_products',
@@ -539,6 +547,7 @@ class GetShoppingAssistantTools
                 'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
                 'report_to_engineers'            => $this->reportToEngineers($conversation, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
+                'on_order_not_listed'            => $this->onOrderNotListed($customer, $arguments, $conversation->language_code),
                 'sister_shop_products'           => $this->sisterShopProducts($conversation, $arguments),
                 'shop_information'               => $this->shopInformation($customer, $arguments),
                 'recent_emails_to_customer'      => $this->recentEmailsToCustomer($customer),
@@ -641,6 +650,13 @@ class GetShoppingAssistantTools
         if ($discontinued->isNotEmpty()) {
             $result['content']['discontinued'] = $discontinued->map(fn (Product $product) => array_filter(['name' => $product->name, 'family' => $product->family?->name]))->values()->all();
             $result['content']['note']         = 'The code the customer typed is a product we no longer sell, listed under discontinued. Say by its name that it has been discontinued, never guess what else the code could be, and present the products returned, which are the closest to it.';
+        }
+        if ($query !== '' && $byCode->isEmpty() && $discontinued->isEmpty()) {
+            $onOrder = $this->onOrderMatches($customer, $query, $nearest);
+            if ($onOrder) {
+                $result['content']['on_order_not_listed'] = $onOrder;
+                $result['content']['on_order_note']       = self::ON_ORDER_NOTE;
+            }
         }
         $named = $outOfStock->concat($discontinued);
         if ($named->isNotEmpty()) {
@@ -1639,6 +1655,50 @@ class GetShoppingAssistantTools
         $sisterId = data_get($website?->settings, 'shopping_assistant.sister_website_id');
 
         return $sisterId ? Website::where('id', $sisterId)->where('state', WebsiteStateEnum::LIVE)->first() : null;
+    }
+
+    /**
+     * Search keeps working when the on-order check fails (cache, SQL or embedding error).
+     *
+     * @return array<int, string>
+     */
+    private function onOrderMatches(Customer $customer, string $query, Collection $nearest): array
+    {
+        try {
+            return GetOnOrderNotListed::make()->handle($customer->shop, $query, $nearest->pluck('name')->filter()->values()->all());
+        } catch (Throwable $exception) {
+            Log::warning('Shopping assistant on-order check failed: '.$exception->getMessage());
+
+            return [];
+        }
+    }
+
+    /**
+     * HELP-4843: stock on order with no product yet (GetOnOrderNotListed). The match is checked again
+     * here, so the sentence is only added when the data holds it, and it names nothing: no names,
+     * dates, prices or quantities, and no back-in-stock email, which needs a product.
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
+     */
+    private function onOrderNotListed(Customer $customer, array $arguments, string $locale): array
+    {
+        $query = is_string($arguments['query'] ?? null) ? trim($arguments['query']) : '';
+        if ($query === '') {
+            return $this->error('query must be a non-empty string.');
+        }
+
+        if (!$this->onOrderMatches($customer, $query, SearchCatalogueByMeaning::run($customer->shop, $query, $customer, self::DEFAULT_LIMIT + self::MAX_OUT_OF_STOCK, false))) {
+            return ['content' => ['found' => false, 'note' => 'Nothing on order matches that. Do not say we have it on order.'], 'products' => [], 'error' => null];
+        }
+
+        return [
+            'content'  => ['found' => true, 'note' => 'The sentence that it is on order with our supplier and not on the website yet is added under your reply. Say it in your own words in one short sentence, naming the kind of item the customer asked for, never a stock name, date, price or quantity, and do not offer an email when it arrives.'],
+            'products' => [],
+            'error'    => null,
+            'fact'     => __('We have this on order with our supplier. It is not on our website yet.', [], $locale),
+        ];
     }
 
     /**

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">オフライン · %1$s の保存済みコピー</string>
+    <string name="goodsout_offline_copy_body">この納品書での作業はこの端末に保存され、オンラインに戻ると送信されます。</string>
+    <string name="goodsout_offline_saved">この端末に保存しました。オンラインに戻ると同期されます。</string>
+    <string name="goodsout_offline_waiting_to_sync">同期待ち</string>
+    <string name="goodsout_offline_needs_you">対応が必要</string>
+    <string name="goodsout_offline_queued_group">この端末に保存済み</string>
+    <string name="goodsout_offline_queued_pick">%2$s から %1$s ピッキング</string>
+    <string name="goodsout_offline_queued_pick_plain">%1$s ピッキング</string>
+    <string name="goodsout_offline_queued_not_picked">%1$s 未ピッキング</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">倉庫待ち %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">CSに引き継ぎ %1$s</string>
+    <string name="goodsout_offline_queued_pack">%1$s 梱包</string>
+    <string name="goodsout_offline_flush_waiting">この納品書での作業はまだ同期されていません。同期後にもう一度お試しください。</string>
+    <string name="goodsout_offline_flush_needs_you">この納品書での作業の一部に、先に対応が必要です。</string>
+    <string name="goodsout_offline_scan_online_only">接続が必要</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · 同期待ち</string>
+    <string name="goodsout_offline_online_only_kicker">接続が必要</string>
+    <string name="goodsout_offline_online_only_title">この操作には接続が必要です</string>
+    <string name="goodsout_offline_online_only_body">作業の開始・完了・引き継ぎ、梱包、確定、出荷、ピッキングセッションはAikuがその場で確認するため、オンラインでのみ使えます。</string>
+    <string name="goodsout_offline_online_only_waiting">この端末で同期待ちの操作: %1$d 件。安全に保存されており、オンラインに戻るとすぐに送信されます。</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">この端末で同期待ちのあなたの操作はありません。</string>
+    <string name="goodsout_offline_online_only_back_online">オンラインに戻りました。戻って作業を続けてください。</string>
+    <string name="goodsout_offline_online_only_view">同期待ちの作業を見る</string>
+</resources>

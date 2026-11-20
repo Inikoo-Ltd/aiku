@@ -222,6 +222,7 @@ data class ItemLocation(
     @SerialName("quantity_label") val quantityLabel: String? = null,
     @SerialName("is_default_wholesale") val isDefaultWholesale: Boolean = false,
     @SerialName("is_default_dropshipping") val isDefaultDropshipping: Boolean = false,
+    @Serializable(with = LenientIntOrNull::class) val version: Int? = null,
 ) {
     val stockType: LocationStockType? get() = LocationStockType.ofKey(type)
 }
@@ -487,6 +488,7 @@ data class CustomerReturnItem(
     @SerialName("remaining_label") val remainingLabel: String? = null,
     val puts: List<ReturnPut> = emptyList(),
     val locations: List<ItemLocation> = emptyList(),
+    val barcodes: List<String> = emptyList(),
 ) {
     val code: String get() = sko?.code.orEmpty()
 
@@ -516,9 +518,9 @@ data class CustomerReturn(
 
 sealed interface ReturnWrite {
     data object Start : ReturnWrite
-    data class Returned(val itemId: Long, val quantity: Double?, val locationOrgStockId: Long) : ReturnWrite
-    data class Damaged(val itemId: Long, val quantity: Double?) : ReturnWrite
-    data class NotReturned(val itemId: Long, val quantity: Double?) : ReturnWrite
+    data class Returned(val itemId: Long, val quantity: Double?, val locationOrgStockId: Long, val clientRequestId: String? = null) : ReturnWrite
+    data class Damaged(val itemId: Long, val quantity: Double?, val clientRequestId: String? = null) : ReturnWrite
+    data class NotReturned(val itemId: Long, val quantity: Double?, val clientRequestId: String? = null) : ReturnWrite
     data class UndoPut(val putId: Long) : ReturnWrite
     data object SetAsReturned : ReturnWrite
 }

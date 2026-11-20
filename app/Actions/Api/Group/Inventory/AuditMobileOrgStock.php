@@ -29,6 +29,7 @@ class AuditMobileOrgStock
 {
     use AsController;
     use WithMobileOrgStocks;
+    use WithMobileStockWriteRequests;
 
     public const float SAME_QUANTITY_TOLERANCE = 0.000001;
 
@@ -58,7 +59,7 @@ class AuditMobileOrgStock
      *
      * @throws ValidationException
      */
-    private function auditsWithReasons(array $counts, Collection $links): array
+    public function auditsWithReasons(array $counts, Collection $links): array
     {
         $audits = [];
         $errors = [];
@@ -105,6 +106,7 @@ class AuditMobileOrgStock
         /** @var User $user */
         $user = $request->user();
         $this->ensureCanChangeOrgStock($user, $warehouse, $orgStock);
+        $clientRequestId = $this->optionalClientRequestId($request->all());
 
         $data = Validator::make($request->all(), [
             'counts'                         => ['required', 'array', 'min:1'],
@@ -115,14 +117,21 @@ class AuditMobileOrgStock
             'counts.*.note'                  => ['sometimes', 'nullable', 'string'],
         ])->validate();
 
-        $changed = $this->handle($orgStock, $warehouse, $data['counts'], $user);
-
-        return $this->respondWithOrgStock(
-            $warehouse,
-            $orgStock,
+        return $this->oncePerClientRequest(
             $user,
-            $changed ? 'done' : 'nothing_changed',
-            $changed ? __('Stock count saved.') : __('The count matches the stock, nothing changed.')
+            $clientRequestId,
+            function () use ($orgStock, $warehouse, $data, $user) {
+                $changed = $this->handle($orgStock, $warehouse, $data['counts'], $user);
+
+                return $this->respondWithOrgStock(
+                    $warehouse,
+                    $orgStock,
+                    $user,
+                    $changed ? 'done' : 'nothing_changed',
+                    $changed ? __('Stock count saved.') : __('The count matches the stock, nothing changed.')
+                );
+            },
+            fn () => $this->respondWithOrgStock($warehouse, $orgStock, $user, 'nothing_changed', __('Already done.'))
         );
     }
 }

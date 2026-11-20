@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Minska</string>
     <string name="stepper_increase">Öka</string>
     <string name="switcher_current">%1$s · aktuell</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Tillämpa · %1$s</string>
-    <string name="sync_both">Båda</string>
-    <string name="sync_conflict_explanation">Varje rad som skiljer sig erbjuder Mina eller Aiku; antal kan även ta Båda (adderat, aldrig mer än raden behöver). Ditt val visas ifyllt.</string>
-    <string name="sync_conflicts_explanation">Som att lösa en sammanslagning: öppna en post för att välja rad för rad, eller behåll allt från en sida. Inget du förkastar går förlorat: det finns kvar i synkhistoriken.</string>
     <string name="sync_conflicts_title">Lös konflikter</string>
-    <string name="sync_explanation">Arbete på radnivå sparas på telefonen när du är offline: plocka, ej plockad, packa, kontrollera, placera, granska, flytta. Vid återanslutning kontrolleras varje åtgärd mot versionen den utgick från: om inget har ändrats i Aiku laddas den upp automatiskt, annars väntar den på dig under Lös konflikter. Stämpling och statusändringar kräver anslutning.</string>
-    <string name="sync_keep_all_aiku">Behåll alla från Aiku</string>
-    <string name="sync_keep_all_mine">Behåll alla mina</string>
-    <string name="sync_kept_all_aiku">Behöll alla från Aiku</string>
-    <string name="sync_kept_all_mine">Behöll alla dina</string>
     <string name="sync_kicker">Profil</string>
-    <string name="sync_last_sync">Senaste synkning</string>
-    <string name="sync_lines_differ">Rader som skiljer sig</string>
-    <string name="sync_mine">Mina</string>
-    <string name="sync_no_conflict">Ingen konflikt</string>
     <string name="sync_now_in_aiku">Nu i Aiku</string>
-    <string name="sync_oldest_first">äldsta först</string>
-    <string name="sync_online_only_body">Försändelser, etiketter, slutför, utleverans, avbryt och Markera som mottaget kommunicerar med transportörer, skrivare eller kunder, så de fungerar bara online. Din plockning och packning sparas och laddas upp när du är tillbaka.</string>
-    <string name="sync_online_only_note">Huvudknappen kommer tillbaka så snart telefonen är online och kön har synkats.</string>
-    <string name="sync_online_only_title">Slutför kräver anslutning</string>
-    <string name="sync_resolve_all">Lös allt på en gång</string>
-    <string name="sync_same_on_both">Samma på båda sidor</string>
-    <string name="sync_synced">Synkat</string>
     <string name="sync_title">Offline och synkning</string>
-    <string name="sync_use_aiku_for_all">Använd Aiku för alla</string>
-    <string name="sync_use_mine_for_all">Använd mina för alla</string>
-    <string name="sync_view">Visa</string>
-    <string name="sync_waiting">Väntar på uppladdning</string>
     <string name="sync_yours">Dina</string>
     <string name="tab_home">Hem</string>
     <string name="tab_inbox">Inkorg</string>
@@ -2447,17 +2422,5 @@
     <plurals name="states_offline_actions">
         <item quantity="one">%d åtgärd</item>
         <item quantity="other">%d åtgärder</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">%1$d Aiku</item>
-        <item quantity="other">%1$d Aiku</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">%1$d båda</item>
-        <item quantity="other">%1$d båda</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">%1$d mina</item>
-        <item quantity="other">%1$d mina</item>
     </plurals>
 </resources>

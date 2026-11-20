@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Offline</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Offline · %d vár</item>
+        <item quantity="other">Offline · %d vár</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">Szinkronizálás: %d</item>
+        <item quantity="other">Szinkronizálás: %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d az Ön beavatkozására vár</item>
+        <item quantity="other">%d az Ön beavatkozására vár</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d művelet az Ön beavatkozására vár</item>
+        <item quantity="other">%d művelet az Ön beavatkozására vár</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Nyissa meg az Aikut, hogy lássa, mi a teendő.</string>
+    <string name="offline_sync_channel_name">Offline szinkronizálás</string>
+    <string name="offline_sync_channel_description">Akkor jelenik meg, amikor a telefonon mentett munkát elküldjük az Aikunak.</string>
+    <string name="offline_sync_sending">A telefonon mentett munka küldése</string>
+    <string name="offline_sign_out_title">Szinkronizálásra váró munka</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">%d művelete várakozik; akkor küldjük el, amikor újra bejelentkezik ezen a telefonon.</item>
+        <item quantity="other">%d művelete várakozik; akkor küldjük el, amikor újra bejelentkezik ezen a telefonon.</item>
+    </plurals>
+</resources>

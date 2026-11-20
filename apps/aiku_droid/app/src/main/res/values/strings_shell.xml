@@ -63,44 +63,7 @@
 
     <string name="sync_title">Offline &amp; sync</string>
     <string name="sync_kicker">Profile</string>
-    <string name="sync_view">View</string>
-    <string name="sync_waiting">Waiting to upload</string>
-    <string name="sync_oldest_first">oldest first</string>
-    <string name="sync_last_sync">Last sync</string>
-    <string name="sync_synced">Synced</string>
-    <string name="sync_explanation">Line-level work is saved on the phone while offline: pick, not picked, pack, check, place, audit, move. On reconnect each action is checked against the version it started from: if nothing changed in Aiku it uploads by itself, otherwise it waits for you in Resolve conflicts. Clocking and state changes need a connection.</string>
     <string name="sync_conflicts_title">Resolve conflicts</string>
-    <string name="sync_resolve_all">Resolve everything at once</string>
-    <string name="sync_keep_all_mine">Keep all mine</string>
-    <string name="sync_keep_all_aiku">Keep all Aiku</string>
-    <string name="sync_kept_all_mine">Kept all of yours</string>
-    <string name="sync_kept_all_aiku">Kept all of Aiku’s</string>
-    <string name="sync_conflicts_explanation">Like resolving a merge: open a record to choose line by line, or keep all of one side. Nothing you discard is lost: it stays in the sync history.</string>
-    <string name="sync_use_mine_for_all">Use mine for all</string>
-    <string name="sync_use_aiku_for_all">Use Aiku for all</string>
-    <string name="sync_lines_differ">Lines that differ</string>
     <string name="sync_yours">Yours</string>
     <string name="sync_now_in_aiku">Now in Aiku</string>
-    <string name="sync_mine">Mine</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_both">Both</string>
-    <string name="sync_same_on_both">Same on both sides</string>
-    <string name="sync_no_conflict">No conflict</string>
-    <string name="sync_conflict_explanation">Each differing line offers Mine or Aiku; quantities can also take Both (added up, never above what the line needs). Your choice is shown filled.</string>
-    <string name="sync_apply">Apply · %1$s</string>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">%1$d mine</item>
-        <item quantity="other">%1$d mine</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">%1$d both</item>
-        <item quantity="other">%1$d both</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">%1$d Aiku</item>
-        <item quantity="other">%1$d Aiku</item>
-    </plurals>
-    <string name="sync_online_only_title">Finalise needs a connection</string>
-    <string name="sync_online_only_body">Shipments, labels, finalise, dispatch, cancel and Mark as received talk to carriers, printers or customers, so they only work online. Your picking and packing are saved and upload when you’re back.</string>
-    <string name="sync_online_only_note">The main button comes back as soon as the phone is online and the queue has synced.</string>
 </resources>

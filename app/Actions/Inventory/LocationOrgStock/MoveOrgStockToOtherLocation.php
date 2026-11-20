@@ -39,6 +39,10 @@ class MoveOrgStockToOtherLocation extends OrgAction
 
     private LocationOrgStock|null $targetLocationOrgStock = null;
 
+    private bool $withoutSourceMovement = false;
+
+    private bool $withoutTargetMovement = false;
+
     /**
      * @throws \Throwable
      */
@@ -49,17 +53,20 @@ class MoveOrgStockToOtherLocation extends OrgAction
             $reason   = Arr::get($modelData, 'reason');
             $note     = Arr::get($modelData, 'note');
 
-            $sourceMovement = $this->processStockMovement($currentLocationStock, [
+            $sourceMovement = $this->withoutSourceMovement ? null : $this->processStockMovement($currentLocationStock, [
                 'quantity' => $currentLocationStock->quantity - $quantity,
                 'reason'   => $reason,
                 'note'     => $note,
             ]);
-            $this->processStockMovement($targetLocation, [
-                'quantity' => $targetLocation->quantity + $quantity,
-                'batches'  => AllocateOrgStockMovementBatches::make()->movedBatches($sourceMovement),
-                'reason'   => $reason,
-                'note'     => $note,
-            ]);
+
+            if (!$this->withoutTargetMovement) {
+                $this->processStockMovement($targetLocation, [
+                    'quantity' => $targetLocation->quantity + $quantity,
+                    'batches'  => $sourceMovement ? AllocateOrgStockMovementBatches::make()->movedBatches($sourceMovement) : [],
+                    'reason'   => $reason,
+                    'note'     => $note,
+                ]);
+            }
 
             SetOrgStockPickingLocation::dispatch($currentLocationStock->org_stock_id)->delay(2);
             OrgStockHydrateQuantityInLocations::run($currentLocationStock->org_stock_id);
@@ -135,7 +142,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
             return;
         }
 
-        if ((float) $value > (float) $this->sourceLocationOrgStock->quantity + 0.000001) {
+        if (!$this->withoutSourceMovement && (float) $value > (float) $this->sourceLocationOrgStock->quantity + 0.000001) {
             $fail(__('Only :quantity in stock in :location, can not move more than that.', [
                 'quantity' => trimDecimalZeros($this->sourceLocationOrgStock->quantity),
                 'location' => $this->sourceLocationOrgStock->location->code,
@@ -146,14 +153,35 @@ class MoveOrgStockToOtherLocation extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(LocationOrgStock $currentLocationStock, LocationOrgStock $targetLocationOrgStock, array $modelData, User|null $user = null): LocationOrgStock
+    public function action(LocationOrgStock $currentLocationStock, LocationOrgStock $targetLocationOrgStock, array $modelData, User|null $user = null, bool $withoutSourceMovement = false, bool $withoutTargetMovement = false): LocationOrgStock
     {
         $this->asAction = true;
         $this->user = $user;
         $this->sourceLocationOrgStock = $currentLocationStock;
         $this->targetLocationOrgStock = $targetLocationOrgStock;
-        $this->initialisation($currentLocationStock->organisation, $modelData);
-        return $this->handle($currentLocationStock, $targetLocationOrgStock, $this->validatedData);
+        $this->withoutSourceMovement = $withoutSourceMovement;
+        $this->withoutTargetMovement = $withoutTargetMovement;
+
+        return DB::transaction(function () use ($currentLocationStock, $targetLocationOrgStock, $modelData) {
+            $this->lockRowsInIdOrder($currentLocationStock, $targetLocationOrgStock);
+            $this->initialisation($currentLocationStock->organisation, $modelData);
+
+            return $this->handle($currentLocationStock, $targetLocationOrgStock, $this->validatedData);
+        });
+    }
+
+    private function lockRowsInIdOrder(LocationOrgStock $sourceLocationOrgStock, LocationOrgStock $targetLocationOrgStock): void
+    {
+        $quantities = LocationOrgStock::whereIn('id', [$sourceLocationOrgStock->id, $targetLocationOrgStock->id])
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->pluck('quantity', 'id');
+
+        foreach ([$sourceLocationOrgStock, $targetLocationOrgStock] as $locationOrgStock) {
+            if ($quantities->has($locationOrgStock->id)) {
+                $locationOrgStock->forceFill(['quantity' => $quantities->get($locationOrgStock->id)])->syncOriginalAttribute('quantity');
+            }
+        }
     }
 
     /**
@@ -164,8 +192,12 @@ class MoveOrgStockToOtherLocation extends OrgAction
         $this->user = request()->user();
         $this->sourceLocationOrgStock = $locationOrgStock;
         $this->targetLocationOrgStock = $targetLocationOrgStock;
-        $this->initialisation($locationOrgStock->organisation, $request);
 
-        $this->handle($locationOrgStock, $targetLocationOrgStock, $this->validatedData);
+        DB::transaction(function () use ($locationOrgStock, $targetLocationOrgStock, $request) {
+            $this->lockRowsInIdOrder($locationOrgStock, $targetLocationOrgStock);
+            $this->initialisation($locationOrgStock->organisation, $request);
+
+            $this->handle($locationOrgStock, $targetLocationOrgStock, $this->validatedData);
+        });
     }
 }

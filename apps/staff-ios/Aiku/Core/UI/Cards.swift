@@ -121,6 +121,7 @@ struct Avatar: View {
 struct ListRow<Leading: View, Trailing: View>: View {
     let title: String
     var subtitle: String?
+    var detail: Text?
     var chips: [Chip] = []
     var showsChevron = false
     var action: (() -> Void)?
@@ -130,6 +131,7 @@ struct ListRow<Leading: View, Trailing: View>: View {
     init(
         _ title: String,
         subtitle: String? = nil,
+        detail: Text? = nil,
         chips: [Chip] = [],
         showsChevron: Bool = false,
         action: (() -> Void)? = nil,
@@ -138,6 +140,7 @@ struct ListRow<Leading: View, Trailing: View>: View {
     ) {
         self.title = title
         self.subtitle = subtitle
+        self.detail = detail
         self.chips = chips
         self.showsChevron = showsChevron
         self.action = action
@@ -171,6 +174,12 @@ struct ListRow<Leading: View, Trailing: View>: View {
                         .font(.aiku(13))
                         .foregroundStyle(AikuColor.text3)
                         .multilineTextAlignment(.leading)
+                }
+                if let detail {
+                    detail
+                        .font(.aiku(13, .medium))
+                        .foregroundStyle(AikuColor.text2)
+                        .lineLimit(1)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -44,7 +44,7 @@ class StoreMobileExternalShipment
                 if ($this->isFaireShipment($deliveryNote)) {
                     StoreShipmentFromFaire::run($deliveryNote);
                 } else {
-                    ProcessTiktokOrderShipment::run($deliveryNote->orders->firstOrFail());
+                    ProcessTiktokOrderShipment::run($deliveryNote->orders->firstOrFail(), $deliveryNote);
                 }
             });
 

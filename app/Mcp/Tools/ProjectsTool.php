@@ -21,7 +21,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Projects group tickets (HELP-n, INI-n) and staff tasks (TASK-n) of one big piece of work under milestones, with progress updates. A project can have sub-projects one level deep; the progress of a parent includes the work of its sub-projects. Without a project: lists projects with parent, sub-projects, status, health, owner, team, dates and progress (work done against time used). With a project slug: shows its goal, milestones (with done/total work), every ticket and task the user can see with state, assignee and milestone, the latest progress updates, deployed commits and open work per person. Use project-write-tool to change anything. Read only.')]
+#[Description('Projects group tickets (HELP-n, INI-n) and staff tasks (TASK-n) of one big piece of work under milestones, with progress updates. A project can have sub-projects one level deep; the progress of a parent includes the work of its sub-projects. Without a project: lists projects with parent, sub-projects, status, pinned (an ongoing area with no end date, kept at the top), health, owner, team, dates, progress (work done against time used) and quiet_days (days since the last real activity of an active project, null when not active). With a project slug: shows its goal, milestones (with done/total work), every ticket and task the user can see with state, assignee and milestone, the latest progress updates, deployed commits, open work per person and quiet_days. Use project-write-tool to change anything. Read only.')]
 #[IsReadOnly]
 class ProjectsTool extends Tool
 {
@@ -62,12 +62,14 @@ class ProjectsTool extends Tool
             'parent'      => $project->parent?->slug,
             'sub_projects' => $project->children->pluck('slug')->all(),
             'status'      => $project->status->value,
+            'pinned'      => $project->is_pinned,
             'health'      => $project->updates->first()?->health?->value,
             'owner'       => $project->owner?->username,
             'team'        => $project->members->pluck('username')->all(),
             'start_date'  => $project->start_date->toDateString(),
             'target_date' => $project->target_date?->toDateString(),
             'progress'    => IndexTicketProjects::rolledUpProgress($project),
+            'quiet_days'  => IndexTicketProjects::quietDays($project),
             'url'         => route('grp.projects.show', $project->slug),
         ])->values()->all();
     }
@@ -100,12 +102,14 @@ class ProjectsTool extends Tool
                 'progress' => IndexTicketProjects::rolledUpProgress($child),
             ])->values()->all(),
             'status'      => $project->status->value,
+            'pinned'      => $project->is_pinned,
             'health'      => $updates->firstWhere('health', '!==', null)['health'] ?? null,
             'owner'       => $project->owner?->username,
             'team'        => $project->members->pluck('username')->all(),
             'start_date'  => $project->start_date->toDateString(),
             'target_date' => $project->target_date?->toDateString(),
             'progress'    => IndexTicketProjects::progress($project, $totals['total'], $totals['done'], $totals['cancelled']),
+            'quiet_days'  => IndexTicketProjects::quietDays($project),
             'hidden_work' => $totals['total'] - $work->count(),
             'milestones'  => $project->milestones->map(fn (TicketProjectMilestone $milestone) => [
                 'id'         => $milestone->id,

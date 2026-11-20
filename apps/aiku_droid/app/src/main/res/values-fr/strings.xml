@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Diminuer</string>
     <string name="stepper_increase">Augmenter</string>
     <string name="switcher_current">%1$s · actuel</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Appliquer · %1$s</string>
-    <string name="sync_both">Les deux</string>
-    <string name="sync_conflict_explanation">Chaque ligne qui diffère propose Moi ou Aiku ; les quantités peuvent aussi prendre Les deux (additionnées, jamais au-delà de ce dont la ligne a besoin). Votre choix est affiché en plein.</string>
-    <string name="sync_conflicts_explanation">Comme pour résoudre une fusion : ouvrez un enregistrement pour choisir ligne par ligne, ou gardez tout d\'un même côté. Rien de ce que vous écartez n\'est perdu : tout reste dans l\'historique de synchronisation.</string>
     <string name="sync_conflicts_title">Résoudre les conflits</string>
-    <string name="sync_explanation">Le travail au niveau des lignes est enregistré sur le téléphone en mode hors ligne : préparation, non préparé, emballage, vérification, rangement, audit, déplacement. À la reconnexion, chaque action est comparée à la version dont elle est partie : si rien n\'a changé dans Aiku, elle s\'envoie d\'elle-même ; sinon, elle vous attend dans Résoudre les conflits. Le pointage et les changements d\'état nécessitent une connexion.</string>
-    <string name="sync_keep_all_aiku">Garder toutes celles d\'Aiku</string>
-    <string name="sync_keep_all_mine">Garder toutes les miennes</string>
-    <string name="sync_kept_all_aiku">Toutes celles d\'Aiku ont été gardées</string>
-    <string name="sync_kept_all_mine">Toutes les vôtres ont été gardées</string>
     <string name="sync_kicker">Profil</string>
-    <string name="sync_last_sync">Dernière synchronisation</string>
-    <string name="sync_lines_differ">Lignes qui diffèrent</string>
-    <string name="sync_mine">Moi</string>
-    <string name="sync_no_conflict">Aucun conflit</string>
     <string name="sync_now_in_aiku">Actuellement dans Aiku</string>
-    <string name="sync_oldest_first">les plus anciens d\'abord</string>
-    <string name="sync_online_only_body">Expéditions, étiquettes, finalisation, envoi, annulation et Marquer comme reçu communiquent avec des transporteurs, des imprimantes ou des clients : ils ne fonctionnent donc qu\'en ligne. Votre préparation et votre emballage sont enregistrés et seront envoyés à votre retour en ligne.</string>
-    <string name="sync_online_only_note">Le bouton principal revient dès que le téléphone est en ligne et que la file d\'attente est synchronisée.</string>
-    <string name="sync_online_only_title">La finalisation nécessite une connexion</string>
-    <string name="sync_resolve_all">Tout résoudre d\'un coup</string>
-    <string name="sync_same_on_both">Identique des deux côtés</string>
-    <string name="sync_synced">Synchronisé</string>
     <string name="sync_title">Hors ligne et synchronisation</string>
-    <string name="sync_use_aiku_for_all">Utiliser Aiku pour tout</string>
-    <string name="sync_use_mine_for_all">Utiliser les miennes pour tout</string>
-    <string name="sync_view">Voir</string>
-    <string name="sync_waiting">En attente d\'envoi</string>
     <string name="sync_yours">Votre version</string>
     <string name="tab_home">Accueil</string>
     <string name="tab_inbox">Boîte de réception</string>
@@ -2556,20 +2531,5 @@
         <item quantity="one">%d action</item>
         <item quantity="other">%d actions</item>
         <item quantity="many">%d actions</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">Aiku : %1$d</item>
-        <item quantity="other">Aiku : %1$d</item>
-        <item quantity="many">Aiku : %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">les deux : %1$d</item>
-        <item quantity="other">les deux : %1$d</item>
-        <item quantity="many">les deux : %1$d</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">moi : %1$d</item>
-        <item quantity="other">moi : %1$d</item>
-        <item quantity="many">moi : %1$d</item>
     </plurals>
 </resources>

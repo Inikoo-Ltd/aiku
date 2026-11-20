@@ -32,7 +32,7 @@ import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
 import Checkbox from "primevue/checkbox"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faCalendarDay, faMagic, faHourglassHalf } from "@fal"
+import { faCalendarDay, faMagic, faHourglassHalf, faFlask, faCheck } from "@fal"
 
 library.add(faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag, faBars, faBuilding, faBells, faCalendarDay, faMagic, faHourglassHalf)
 
@@ -128,6 +128,7 @@ const props = defineProps<{
     periodsAfterOpening?: PeriodAfterOpeningOption[]
     productionBlockedNotice?: InstanceType<typeof OrdersBlockedByProductionNotice>['$props']['notice'] | null
     manualJobOrder?: InstanceType<typeof ModalCreateManualJobOrder>["$props"]["options"]
+    trialRuns?: { unassigned: number, runs: TrialRun[] } | null
     groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, shop_name?: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null, published_labels?: PublishedLabel[] }[] }[] | null
 }>()
 
@@ -615,6 +616,65 @@ function createMixJobOrders() {
     )
 }
 
+type TrialRun = {
+    id: number
+    reference: string
+    slug: string
+    created_at: string | null
+    awaiting_release: boolean
+    artisans: string[]
+    nobody: boolean
+    can_pick_artisan: boolean
+    proposed_artisan: { id: number, name: string | null } | null
+    artefacts: { code: string | null, name: string | null, quantity: number }[]
+    steps_done: number
+    steps: number
+    development: { code: string, name: string | null, slug: string | null }
+}
+
+library.add(faFlask, faCheck)
+const showTrialRuns = ref(false)
+const trialPicking = ref<TrialRun | null>(null)
+const trialPickerPosition = ref({ x: 0, y: 0 })
+const trialErrors = reactive<Record<number, string>>({})
+const trialBusy = ref<number | null>(null)
+
+function openTrialPicker(run: TrialRun, event: MouseEvent) {
+    trialPicking.value = run
+    trialPickerPosition.value = {
+        x: Math.max(8, Math.min(event.clientX - 40, window.innerWidth - 330)),
+        y: Math.max(8, Math.min(event.clientY + 8, window.innerHeight - 420)),
+    }
+}
+
+function firstError(errors: Record<string, string | string[]>): string {
+    const error = Object.values(errors)[0]
+    return Array.isArray(error) ? error.join(" · ") : String(error ?? "")
+}
+
+function releaseTrialRun(run: TrialRun) {
+    trialBusy.value = run.id
+    router.patch(route("grp.models.job-order.confirm", { jobOrder: run.id }), {}, {
+        preserveScroll: true,
+        onStart: () => delete trialErrors[run.id],
+        onError: errors => trialErrors[run.id] = firstError(errors),
+        onFinish: () => trialBusy.value = null,
+    })
+}
+
+function assignTrialRun(employeeId: number) {
+    const run = trialPicking.value
+    trialPicking.value = null
+    if (!run) return
+    trialBusy.value = run.id
+    router.patch(route("grp.models.job-order.update", { jobOrder: run.id }), { employee_id: employeeId }, {
+        preserveScroll: true,
+        onStart: () => delete trialErrors[run.id],
+        onSuccess: () => run.awaiting_release ? releaseTrialRun(run) : trialBusy.value = null,
+        onError: errors => { trialErrors[run.id] = firstError(errors); trialBusy.value = null },
+    })
+}
+
 function jobOrderHref(item: { job_order_slug: string }) {
     return route("grp.org.productions.show.operations.job-orders.show", [route().params["organisation"], route().params["production"], item.job_order_slug])
 }
@@ -923,6 +983,17 @@ function jobOrderHref(item: { job_order_slug: string }) {
                 <button v-if="boardFilters.artisan.length" type="button" class="mt-1 w-full rounded px-2 py-1 text-left text-xs text-gray-400 hover:bg-gray-50" @click="boardFilters.artisan = []">{{ ctrans("Everybody") }}</button>
             </div>
         </div>
+        <button
+            v-if="trialRuns?.runs.length"
+            type="button"
+            v-tooltip="ctrans('Trial runs Product Development asked for; the count is those still waiting for an artisan or to be released')"
+            class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+            :class="showTrialRuns ? 'border-pink-500 bg-pink-500 text-white shadow-sm' : 'border-pink-300 bg-pink-50 text-pink-700 hover:bg-pink-100'"
+            @click="showTrialRuns = !showTrialRuns">
+            <FontAwesomeIcon icon="fal fa-flask" fixed-width />
+            <span>{{ ctrans("Trial runs") }}</span>
+            <span class="rounded-full px-1.5 text-xs tabular-nums" :class="showTrialRuns ? 'bg-white/20' : trialRuns.unassigned ? 'bg-pink-500 text-white' : 'bg-white text-pink-600'">{{ trialRuns.unassigned || trialRuns.runs.length }}</span>
+        </button>
             <button v-if="boardFilters.source.length || boardFilters.family.length || boardFilters.requester.length || boardFilters.priority.length" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="boardFilters.source = []; boardFilters.family = []; boardFilters.requester = []; boardFilters.priority = []">× {{ ctrans("Clear") }}</button>
         </div>
     </div>
@@ -961,6 +1032,70 @@ function jobOrderHref(item: { job_order_slug: string }) {
             <template v-else>{{ pipeline.count }} {{ ctrans("backlog lines are covered by stock waiting to be booked in") }} · {{ ctrans("ignore") }}</template>
         </Link>
     </div>
+
+    <div v-if="groupBy === 'board' && showTrialRuns && trialRuns?.runs.length" class="mx-4 mt-3 overflow-x-auto rounded-lg border border-pink-300 bg-white text-sm dark:bg-gray-900">
+        <table class="min-w-full">
+            <thead class="whitespace-nowrap bg-pink-100 text-left text-xs font-medium uppercase tracking-wide text-pink-800">
+                <tr>
+                    <th class="px-3 py-2">{{ ctrans("Job") }}</th>
+                    <th class="px-3 py-2">{{ ctrans("Development") }}</th>
+                    <th class="px-3 py-2">{{ ctrans("Trial") }}</th>
+                    <th class="px-3 py-2 text-right">{{ ctrans("Quantity") }}</th>
+                    <th class="px-3 py-2">{{ ctrans("Artisan") }}</th>
+                    <th class="px-3 py-2 text-right">{{ ctrans("Steps") }}</th>
+                    <th class="px-3 py-2"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-pink-100">
+                <tr v-for="run in trialRuns.runs" :key="run.id" class="bg-pink-50 align-top dark:bg-pink-950/30">
+                    <td class="whitespace-nowrap px-3 py-2">
+                        <Link :href="jobOrderHref({ job_order_slug: run.slug })" class="font-medium text-gray-800 hover:underline">{{ run.reference }}</Link>
+                        <div v-if="run.created_at" class="text-xs text-gray-400">{{ useFormatTime(run.created_at) }}</div>
+                    </td>
+                    <td class="px-3 py-2">
+                        <Link v-if="run.development.slug" :href="route('grp.product_developments.show', [run.development.slug, { tab: 'formulation' }])" class="whitespace-nowrap font-medium text-gray-800 hover:underline">{{ run.development.code }}</Link>
+                        <span v-else class="whitespace-nowrap font-medium text-gray-800">{{ run.development.code }}</span>
+                        <div v-if="run.development.name" class="text-xs text-gray-500">{{ run.development.name }}</div>
+                    </td>
+                    <td class="px-3 py-2">
+                        <div v-for="(artefact, index) in run.artefacts" :key="index">
+                            <span class="whitespace-nowrap font-medium">{{ artefact.code }}</span>
+                            <span class="ml-1 text-gray-500">{{ artefact.name }}</span>
+                        </div>
+                    </td>
+                    <td class="px-3 py-2 text-right tabular-nums">
+                        <div v-for="(artefact, index) in run.artefacts" :key="index">{{ useLocaleStore().number(artefact.quantity) }}</div>
+                    </td>
+                    <td class="px-3 py-2">
+                        <template v-if="run.artisans.length">{{ run.artisans.join(", ") }}</template>
+                        <span v-else class="font-medium text-pink-700">{{ ctrans("Nobody yet") }}</span>
+                        <div v-if="!run.artisans.length && run.proposed_artisan?.name" class="text-xs text-gray-500">{{ ctrans("Proposed: :name", { name: run.proposed_artisan.name }) }}</div>
+                        <div v-if="trialErrors[run.id]" class="mt-1 text-xs text-red-600">{{ trialErrors[run.id] }}</div>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums">{{ run.steps_done }}/{{ run.steps }}</td>
+                    <td class="whitespace-nowrap px-3 py-2 text-right">
+                        <LoadingIcon v-if="trialBusy === run.id" />
+                        <template v-else-if="canCreateJobOrder && (run.awaiting_release || run.can_pick_artisan)">
+                            <Button v-if="run.can_pick_artisan" type="tertiary" size="xs" :label="run.awaiting_release ? ctrans('Assign and release') : ctrans('Assign')" @click="openTrialPicker(run, $event)">
+                                <template #icon><FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-pink-600" fixed-width aria-hidden="true" /></template>
+                            </Button>
+                            <Button v-else type="tertiary" size="xs" :label="ctrans('Release')" @click="releaseTrialRun(run)">
+                                <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                            </Button>
+                        </template>
+                        <span v-else-if="!run.awaiting_release" class="text-xs text-gray-500">{{ run.steps && run.steps_done === run.steps ? ctrans("Made, to hand to the development office") : run.steps_done ? ctrans("Producing") : ctrans("Released") }}</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <Teleport to="body">
+        <div v-if="trialPicking" class="fixed inset-0 z-40" @click="trialPicking = null" />
+        <div v-if="trialPicking" class="fixed z-50 w-80 rounded-lg border border-pink-300 bg-white p-3 text-xs shadow-xl dark:bg-gray-900" :style="{ left: trialPickerPosition.x + 'px', top: trialPickerPosition.y + 'px' }">
+            <div class="mb-2 font-semibold text-gray-700">{{ trialPicking.awaiting_release ? ctrans("Who makes :reference? It is released to the floor", { reference: trialPicking.reference }) : ctrans("Who makes :reference?", { reference: trialPicking.reference }) }}</div>
+            <ArtisanPicker :artisans="artisanWorkload ?? []" :default-maker="trialPicking.proposed_artisan ? { maker_id: trialPicking.proposed_artisan.id, maker: trialPicking.proposed_artisan.name } : null" @pick="assignTrialRun" />
+        </div>
+    </Teleport>
 
     <div v-if="assignError" class="mx-4 mt-3 text-sm text-red-600">{{ assignError }}</div>
 

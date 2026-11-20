@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="goodsout_offline_copy_title">Офлайн · збережена копія від %1$s</string>
+    <string name="goodsout_offline_copy_body">Ваша робота з цією накладною залишається на цьому телефоні й буде надіслана, щойно ви знову будете онлайн.</string>
+    <string name="goodsout_offline_saved">Збережено на цьому телефоні. Синхронізується, коли ви знову будете онлайн.</string>
+    <string name="goodsout_offline_waiting_to_sync">Очікує синхронізації</string>
+    <string name="goodsout_offline_needs_you">Потребує вас</string>
+    <string name="goodsout_offline_queued_group">Збережено на цьому телефоні</string>
+    <string name="goodsout_offline_queued_pick">Зібрано %1$s у %2$s</string>
+    <string name="goodsout_offline_queued_pick_plain">Зібрано %1$s</string>
+    <string name="goodsout_offline_queued_not_picked">Не зібрано %1$s</string>
+    <string name="goodsout_offline_queued_waiting_warehouse">Очікує склад %1$s</string>
+    <string name="goodsout_offline_queued_waiting_crm">Передано службі підтримки %1$s</string>
+    <string name="goodsout_offline_queued_pack">Упаковано %1$s</string>
+    <string name="goodsout_offline_flush_waiting">Вашу роботу з цією накладною ще не синхронізовано. Спробуйте ще раз, коли її буде синхронізовано.</string>
+    <string name="goodsout_offline_flush_needs_you">Частина вашої роботи з цією накладною потребує вас, перш ніж це можна буде зробити.</string>
+    <string name="goodsout_offline_scan_online_only">Потрібне з’єднання</string>
+    <string name="goodsout_offline_scan_queued">+%1$s · очікує синхронізації</string>
+    <string name="goodsout_offline_online_only_kicker">Потрібне з’єднання</string>
+    <string name="goodsout_offline_online_only_title">Для цього потрібне з’єднання</string>
+    <string name="goodsout_offline_online_only_body">Початок, завершення чи перехоплення роботи, пакування, завершення, відвантаження та сесії збирання Aiku перевіряє одразу, тому вони працюють лише онлайн.</string>
+    <string name="goodsout_offline_online_only_waiting">Дії, що очікують синхронізації на цьому телефоні: %1$d. Вони в безпеці й будуть надіслані, щойно ви знову будете онлайн.</string>
+    <string name="goodsout_offline_online_only_nothing_waiting">Від вас нічого не очікує синхронізації на цьому телефоні.</string>
+    <string name="goodsout_offline_online_only_back_online">Ви знову онлайн. Поверніться назад, щоб продовжити.</string>
+    <string name="goodsout_offline_online_only_view">Переглянути роботу в черзі</string>
+</resources>

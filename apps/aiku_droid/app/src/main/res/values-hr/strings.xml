@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Smanji</string>
     <string name="stepper_increase">Povećaj</string>
     <string name="switcher_current">%1$s · trenutno</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Primijeni · %1$s</string>
-    <string name="sync_both">Oboje</string>
-    <string name="sync_conflict_explanation">Svaki redak koji se razlikuje nudi Moje ili Aiku; količine mogu uzeti i Oboje (zbrojeno, nikad više od onoga što redak treba). Vaš je odabir prikazan ispunjeno.</string>
-    <string name="sync_conflicts_explanation">Kao rješavanje spajanja: otvorite zapis i birajte redak po redak ili zadržite sve s jedne strane. Ništa što odbacite nije izgubljeno: ostaje u povijesti sinkronizacije.</string>
     <string name="sync_conflicts_title">Riješi sukobe</string>
-    <string name="sync_explanation">Rad na razini retka sprema se na telefon dok ste izvan mreže: branje, nije ubrano, pakiranje, provjera, smještaj, inventura, premještanje. Pri ponovnom spajanju svaka se radnja provjerava prema verziji od koje je krenula: ako se u Aikuu ništa nije promijenilo, šalje se sama, inače vas čeka u Riješi sukobe. Evidencija radnog vremena i promjene statusa trebaju vezu.</string>
-    <string name="sync_keep_all_aiku">Zadrži sve iz Aikua</string>
-    <string name="sync_keep_all_mine">Zadrži sve moje</string>
-    <string name="sync_kept_all_aiku">Zadržano sve iz Aikua</string>
-    <string name="sync_kept_all_mine">Zadržano sve vaše</string>
     <string name="sync_kicker">Profil</string>
-    <string name="sync_last_sync">Zadnja sinkronizacija</string>
-    <string name="sync_lines_differ">Retci koji se razlikuju</string>
-    <string name="sync_mine">Moje</string>
-    <string name="sync_no_conflict">Nema sukoba</string>
     <string name="sync_now_in_aiku">Sada u Aikuu</string>
-    <string name="sync_oldest_first">najstarije prvo</string>
-    <string name="sync_online_only_body">Pošiljke, naljepnice, završetak, otprema, otkazivanje i Označi kao primljeno komuniciraju s prijevoznicima, pisačima ili kupcima pa rade samo na mreži. Vaše branje i pakiranje su spremljeni i šalju se kad se vratite na mrežu.</string>
-    <string name="sync_online_only_note">Glavni gumb vraća se čim je telefon na mreži i red je sinkroniziran.</string>
-    <string name="sync_online_only_title">Za završetak je potrebna veza</string>
-    <string name="sync_resolve_all">Riješi sve odjednom</string>
-    <string name="sync_same_on_both">Isto na obje strane</string>
-    <string name="sync_synced">Sinkronizirano</string>
     <string name="sync_title">Izvan mreže i sinkronizacija</string>
-    <string name="sync_use_aiku_for_all">Koristi Aiku za sve</string>
-    <string name="sync_use_mine_for_all">Koristi moje za sve</string>
-    <string name="sync_view">Prikaži</string>
-    <string name="sync_waiting">Čeka slanje</string>
     <string name="sync_yours">Vaše</string>
     <string name="tab_home">Početna</string>
     <string name="tab_inbox">Pristiglo</string>
@@ -2556,20 +2531,5 @@
         <item quantity="one">%d radnja</item>
         <item quantity="few">%d radnje</item>
         <item quantity="other">%d radnji</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="one">%1$d Aiku</item>
-        <item quantity="few">%1$d Aiku</item>
-        <item quantity="other">%1$d Aiku</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="one">%1$d oboje</item>
-        <item quantity="few">%1$d oboje</item>
-        <item quantity="other">%1$d oboje</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="one">%1$d moje</item>
-        <item quantity="few">%1$d moje</item>
-        <item quantity="other">%1$d moje</item>
     </plurals>
 </resources>

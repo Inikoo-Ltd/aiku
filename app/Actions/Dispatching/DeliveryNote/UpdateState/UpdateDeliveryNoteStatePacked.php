@@ -37,6 +37,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
+use Throwable;
 
 class UpdateDeliveryNoteStatePacked extends OrgAction
 {
@@ -146,11 +147,7 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
 
             //Note: be careful if one day we delete these shipments in UnpackDeliveryNote
             if ($deliveryNote->is_shipping_by_external && $deliveryNote->shipments->isEmpty()) {
-                if ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE) {
-                    StoreShipmentFromFaire::run($deliveryNote);
-                } elseif ($order->platform?->type == PlatformTypeEnum::TIKTOK) {
-                    ProcessTiktokOrderShipment::run($order);
-                }
+                $this->storeExternalShipment($deliveryNote, $order);
             }
 
 
@@ -162,6 +159,25 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
         DeliveryNoteHydrateTrolleys::dispatch($deliveryNote->id);
 
         return $deliveryNote;
+    }
+
+    /**
+     * The platform's shipment is fetched as a courtesy: when the platform fails or has no shipment yet,
+     * the note is still packed and staff get the shipment later with the "Get shipment" button.
+     */
+    private function storeExternalShipment(DeliveryNote $deliveryNote, ?Order $order): void
+    {
+        try {
+            DB::transaction(function () use ($deliveryNote, $order) {
+                if ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE) {
+                    StoreShipmentFromFaire::run($deliveryNote);
+                } elseif ($order?->platform?->type == PlatformTypeEnum::TIKTOK) {
+                    ProcessTiktokOrderShipment::run($order, $deliveryNote);
+                }
+            });
+        } catch (Throwable $exception) {
+            \Sentry::captureException($exception);
+        }
     }
 
     /**

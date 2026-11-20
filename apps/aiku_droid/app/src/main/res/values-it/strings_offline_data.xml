@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Offline</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Offline · %d in attesa</item>
+        <item quantity="many">Offline · %d in attesa</item>
+        <item quantity="other">Offline · %d in attesa</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">Sincronizzazione: %d</item>
+        <item quantity="many">Sincronizzazione: %d</item>
+        <item quantity="other">Sincronizzazione: %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d richiede il suo intervento</item>
+        <item quantity="many">%d richiedono il suo intervento</item>
+        <item quantity="other">%d richiedono il suo intervento</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d azione richiede il suo intervento</item>
+        <item quantity="many">%d azioni richiedono il suo intervento</item>
+        <item quantity="other">%d azioni richiedono il suo intervento</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Apra Aiku per vedere cosa fare.</string>
+    <string name="offline_sync_channel_name">Sincronizzazione offline</string>
+    <string name="offline_sync_channel_description">Mostrata mentre il lavoro salvato sul telefono viene inviato ad Aiku.</string>
+    <string name="offline_sync_sending">Invio del lavoro salvato sul telefono</string>
+    <string name="offline_sign_out_title">Lavoro in attesa di sincronizzazione</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">%d sua azione è in attesa; verrà inviata quando accederà di nuovo su questo telefono.</item>
+        <item quantity="many">%d sue azioni sono in attesa; verranno inviate quando accederà di nuovo su questo telefono.</item>
+        <item quantity="other">%d sue azioni sono in attesa; verranno inviate quando accederà di nuovo su questo telefono.</item>
+    </plurals>
+</resources>

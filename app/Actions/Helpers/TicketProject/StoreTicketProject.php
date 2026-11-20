@@ -40,6 +40,7 @@ class StoreTicketProject extends OrgAction
             'name'         => ['required', 'string', 'max:255'],
             'description'  => ['sometimes', 'nullable', 'string', 'max:20000'],
             'start_date'   => ['required', 'date'],
+            'is_pinned'    => ['sometimes', 'boolean'],
             'target_date'  => ['sometimes', 'nullable', 'date', 'after_or_equal:start_date'],
             'owner_id'     => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
             'member_ids'   => ['sometimes', 'array'],

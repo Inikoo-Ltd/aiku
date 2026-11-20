@@ -254,7 +254,7 @@ class GetProductDevelopmentFormulation
             'trial_runs'  => ['total' => $own->count(), 'reviewed' => $own->filter(fn (ProductDevelopmentSample $sample) => in_array($sample->status, [ProductDevelopmentSampleStatusEnum::APPROVED, ProductDevelopmentSampleStatusEnum::CHANGES_REQUIRED], true))->count()],
             'can_edit'    => $canEdit,
             'can_change_type' => $canChangeType && !$approved,
-            'can_create_artefact' => $canEdit && $formulation->type->hasOwnArtefact() && !$formulation->artefact_id && (bool) $item->artefact_id,
+            'can_create_artefact' => $canEdit && $formulation->type->hasOwnArtefact() && !$formulation->artefact_id && (bool) $item->artefact_id && !$own->contains(fn (ProductDevelopmentSample $sample) => in_array($sample->status, [ProductDevelopmentSampleStatusEnum::IN_PROGRESS, ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW], true)),
             'can_delete'  => $canRemove && !$latest,
             'routes'      => [
                 'update' => ['name' => 'grp.models.product_development.formulation.update', 'parameters' => ['productDevelopmentFormulation' => $formulation->id]],

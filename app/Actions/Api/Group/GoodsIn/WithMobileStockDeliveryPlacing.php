@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Group\GoodsIn;
 
+use App\Actions\Api\Group\Inventory\WithMobileStockWriteRequests;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
 use App\Models\GoodsIn\StockDelivery;
@@ -26,6 +27,7 @@ use Throwable;
 trait WithMobileStockDeliveryPlacing
 {
     use WithMobileStockDeliveries;
+    use WithMobileStockWriteRequests;
 
     /**
      * @throws Throwable
@@ -45,7 +47,7 @@ trait WithMobileStockDeliveryPlacing
             'client_request_id'       => ['required', 'uuid'],
         ]))->validate();
 
-        $cacheKey = 'mobile-goods-in-place:'.$user->id.':'.strtolower($data['client_request_id']);
+        $cacheKey = self::mobileWriteKey($user->id, $data['client_request_id']);
         if (!Cache::add($cacheKey, $stockDeliveryItem->id, now()->addDay())) {
             return $this->respondWithStockDelivery($warehouse, $stockDelivery, $user, 'nothing_changed', __('Already placed.'));
         }

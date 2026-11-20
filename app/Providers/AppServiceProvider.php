@@ -9,6 +9,7 @@
 
 namespace App\Providers;
 
+use App\Actions\Api\Group\Offline\MobileOfflineHandlerRegistry;
 use App\Services\GeocoderService;
 use App\Services\Translation;
 use App\Models\SysAdmin\User;
@@ -64,6 +65,8 @@ class AppServiceProvider extends ServiceProvider
                 new CommandDesignPattern(),
             ]);
         });
+
+        $this->app->scoped(MobileOfflineHandlerRegistry::class);
 
         $this->app->singleton(GeocoderService::class, function ($app) {
             return new GeocoderService();

@@ -363,6 +363,19 @@ test('switching a portfolio off takes it out of its sales channel product count'
     expect($channel->refresh()->number_portfolios)->toBe($before);
 })->depends('update customer portfolio');
 
+test('a platform check that marks a portfolio live takes it out of its sales channel broken count', function (Portfolio $portfolio) {
+    $portfolio->refresh()->update(['platform_status' => false]);
+    $channel = $portfolio->customerSalesChannel;
+    CustomerSalesChannelsHydratePortfolios::run($channel);
+    $broken = $channel->refresh()->number_portfolio_broken;
+
+    $portfolio->update(['platform_status' => true]);
+    expect($channel->refresh()->number_portfolio_broken)->toBe($broken - 1);
+
+    $portfolio->update(['platform_status' => false]);
+    expect($channel->refresh()->number_portfolio_broken)->toBe($broken);
+})->depends('update customer portfolio');
+
 test('putting a product back in a sales channel discards its stale images zip', function (Portfolio $portfolio) {
     $staleZip = DownloadPortfolioCustomerSalesChannel::create([
         'customer_sales_channel_id' => $portfolio->customer_sales_channel_id,

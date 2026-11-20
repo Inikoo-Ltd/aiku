@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Офлайн</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Офлайн · %d очікує</item>
+        <item quantity="few">Офлайн · %d очікують</item>
+        <item quantity="many">Офлайн · %d очікують</item>
+        <item quantity="other">Офлайн · %d очікує</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">Синхронізація: %d</item>
+        <item quantity="few">Синхронізація: %d</item>
+        <item quantity="many">Синхронізація: %d</item>
+        <item quantity="other">Синхронізація: %d</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d потребує вашої уваги</item>
+        <item quantity="few">%d потребують вашої уваги</item>
+        <item quantity="many">%d потребують вашої уваги</item>
+        <item quantity="other">%d потребує вашої уваги</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d дія потребує вашої уваги</item>
+        <item quantity="few">%d дії потребують вашої уваги</item>
+        <item quantity="many">%d дій потребують вашої уваги</item>
+        <item quantity="other">%d дії потребує вашої уваги</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Відкрийте Aiku, щоб побачити, що зробити.</string>
+    <string name="offline_sync_channel_name">Офлайн-синхронізація</string>
+    <string name="offline_sync_channel_description">Показується, поки робота, збережена на телефоні, надсилається в Aiku.</string>
+    <string name="offline_sync_sending">Надсилання роботи, збереженої на телефоні</string>
+    <string name="offline_sign_out_title">Робота очікує на синхронізацію</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">%d ваша дія очікує; її буде надіслано, коли ви знову ввійдете на цьому телефоні.</item>
+        <item quantity="few">%d ваші дії очікують; їх буде надіслано, коли ви знову ввійдете на цьому телефоні.</item>
+        <item quantity="many">%d ваших дій очікують; їх буде надіслано, коли ви знову ввійдете на цьому телефоні.</item>
+        <item quantity="other">%d вашої дії очікує; її буде надіслано, коли ви знову ввійдете на цьому телефоні.</item>
+    </plurals>
+</resources>

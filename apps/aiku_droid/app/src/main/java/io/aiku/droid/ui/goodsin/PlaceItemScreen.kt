@@ -61,8 +61,11 @@ import io.aiku.droid.ui.inventory.LocationPicker
 import io.aiku.droid.ui.locations.LIST_SEPARATOR
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
+import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
 import io.aiku.droid.ui.states.SessionExpiredScreen
+import io.aiku.droid.ui.sync.OfflineCopyNote
+import io.aiku.droid.ui.sync.QueueEventEffect
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 private sealed interface PlaceChoice {
@@ -107,6 +110,8 @@ private fun PlaceItemContent(viewModel: StockDeliveryViewModel, state: StockDeli
     val navigator = LocalAppNavigator.current
     val resources = LocalResources.current
     val finderState by viewModel.finder.state.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
+    val scanFeedback = LocalScanController.current.feedback
     var choice by remember(item.id) { mutableStateOf(item.preferredChoice()) }
     var quantity by remember(item.id) { mutableDoubleStateOf(item.skoToPlace) }
     var setAsPicking by remember(item.id) { mutableStateOf(item.locations.isEmpty()) }
@@ -116,7 +121,7 @@ private fun PlaceItemContent(viewModel: StockDeliveryViewModel, state: StockDeli
     val picked = finderState.picked
     val target: PlaceTarget? = when {
         chosenLink != null -> PlaceTarget.Link(chosenLink.locationOrgStockId, chosenLink.location.code)
-        choice == PlaceChoice.Another && picked != null ->
+        choice == PlaceChoice.Another && picked != null && isOnline ->
             item.locations.firstOrNull { it.location.id == picked.id }?.let { PlaceTarget.Link(it.locationOrgStockId, it.location.code) }
                 ?: PlaceTarget.Location(picked.id, picked.code)
         else -> null
@@ -143,9 +148,11 @@ private fun PlaceItemContent(viewModel: StockDeliveryViewModel, state: StockDeli
         val linked = item.locations.firstOrNull { it.location.code.equals(scan.code.trim(), ignoreCase = true) }
         if (linked != null) {
             choice = PlaceChoice.Link(linked.locationOrgStockId)
-        } else {
+        } else if (isOnline) {
             choice = PlaceChoice.Another
             viewModel.finder.scan(scan.code)
+        } else {
+            scanFeedback.rejected()
         }
     }
     GoodsInEvents(
@@ -163,6 +170,7 @@ private fun PlaceItemContent(viewModel: StockDeliveryViewModel, state: StockDeli
             }
         },
     )
+    QueueEventEffect(event = state.queueEvent, reference = delivery.reference, onHandled = viewModel::queueEventHandled, onQueued = navigator::back)
 
     AppScreen(
         header = {
@@ -201,6 +209,7 @@ private fun PlaceItemContent(viewModel: StockDeliveryViewModel, state: StockDeli
         },
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.goodsin_delivery_refresh_failed), onRetry = viewModel::retry) }
+        state.copyAt?.let { OfflineCopyNote(copyAt = it) }
         if (state.unsurePlacement != null) {
             InlineAlert(
                 title = stringResource(R.string.goodsin_place_unsure_title),
@@ -229,16 +238,20 @@ private fun PlaceItemContent(viewModel: StockDeliveryViewModel, state: StockDeli
                 },
             )
         }
-        ChoiceRow(
-            title = stringResource(R.string.goodsin_another_location),
-            subtitle = picked?.takeIf { choice == PlaceChoice.Another }?.code ?: stringResource(R.string.goodsin_another_location_body),
-            selected = choice == PlaceChoice.Another,
-            onClick = {
-                isLocationMissing = false
-                choice = PlaceChoice.Another
-            },
-        )
-        if (choice == PlaceChoice.Another) {
+        if (isOnline) {
+            ChoiceRow(
+                title = stringResource(R.string.goodsin_another_location),
+                subtitle = picked?.takeIf { choice == PlaceChoice.Another }?.code ?: stringResource(R.string.goodsin_another_location_body),
+                selected = choice == PlaceChoice.Another,
+                onClick = {
+                    isLocationMissing = false
+                    choice = PlaceChoice.Another
+                },
+            )
+        } else {
+            HelperNote(text = stringResource(R.string.offline_stock_another_location_offline))
+        }
+        if (choice == PlaceChoice.Another && isOnline) {
             LocationPicker(
                 state = finderState,
                 placeholder = stringResource(R.string.goodsin_search_location),

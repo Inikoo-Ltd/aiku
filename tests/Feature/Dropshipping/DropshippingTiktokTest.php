@@ -19,6 +19,7 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Tiktok\Order\FulfillOrderToTiktok;
 use App\Actions\Dropshipping\Tiktok\Order\GetTiktokOrdersApi;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
+use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\Dropshipping\Tiktok\Product\CheckTiktokPortfolio;
@@ -35,6 +36,7 @@ use App\Actions\Dropshipping\Tiktok\User\UpdateTiktokUser;
 use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -49,6 +51,7 @@ use App\Models\Dropshipping\PlatformPortfolioLogs;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\TiktokUser;
+use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Client\Request;
@@ -58,6 +61,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 
@@ -1146,4 +1150,70 @@ test('the tiktok shipper is looked up in the order organisation, never taken fro
         ->and($shipper->name)->toBe($providerName.' (TikTok)')
         ->and($otherOrganisationShipper->refresh()->organisation_id)->toBe($otherOrganisation->id)
         ->and(ProcessTiktokOrderShipment::make()->getShipper($this->organisation, $providerName)->id)->toBe($shipper->id);
+});
+
+function tiktokOrderWithTwoDeliveryNotes(TiktokUser $tiktokUser, $product): array
+{
+    $portfolio = tiktokListedPortfolio($tiktokUser, $product, 'TT-TWO-NOTES');
+    $orderId   = '5764614130388'.random_int(10000, 99999);
+
+    fakeTiktokOrderIntake(
+        [tiktokOrder($orderId, [['product_id' => 'TT-TWO-NOTES']])],
+        ['TT-TWO-NOTES' => ['external_product_id' => (string) $portfolio->id]]
+    );
+    HandleOrderIncomingTiktok::run(tiktokWebhookPayload($tiktokUser, $orderId));
+
+    $order = Order::where('platform_order_id', $orderId)->firstOrFail();
+
+    $deliveryNotes = [];
+    foreach (['first', 'second'] as $position) {
+        $deliveryNotes[] = StoreDeliveryNote::make()->action($order, [
+            'reference'        => 'DN-TT-'.$position.'-'.Str::random(6),
+            'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+            'date'             => date('Y-m-d'),
+            'delivery_address' => new Address(Address::factory()->definition()),
+            'warehouse_id'     => $order->organisation->warehouses()->value('id') ?? createWarehouse()->id,
+        ]);
+    }
+
+    return [$order->refresh(), ...$deliveryNotes];
+}
+
+test('the tiktok shipment is stored on the delivery note it was asked for, never on the order first note, HELP-4759', function () {
+    $tiktokUser = tiktokChannel($this->customer);
+    [$order, $firstDeliveryNote, $secondDeliveryNote] = tiktokOrderWithTwoDeliveryNotes($tiktokUser, $this->product);
+
+    fakeTiktok([
+        '/order/202309/orders' => tiktokOk(['orders' => [['id' => $order->platform_order_id, 'status' => 'AWAITING_SHIPMENT', 'packages' => []]]]),
+        '/shipping_documents'  => tiktokOk(['doc_url' => 'https://tiktok.test/label.pdf']),
+        '/ship'                => tiktokOk([]),
+        '/packages/PKG-TT-1'   => tiktokOk(['shipping_provider_id' => 'SP-1', 'shipping_provider_name' => 'Royal Mail', 'tracking_number' => 'TT-TRK-1']),
+        '/fulfillment/202512/packages' => tiktokOk(['package_id' => 'PKG-TT-1']),
+    ]);
+
+    ProcessTiktokOrderShipment::run($order, $secondDeliveryNote);
+
+    expect($secondDeliveryNote->shipments()->count())->toBe(1)
+        ->and($secondDeliveryNote->shipments()->first()->tracking)->toBe('TT-TRK-1')
+        ->and($secondDeliveryNote->shipments()->first()->combined_label_url)->toBe('https://tiktok.test/label.pdf')
+        ->and($firstDeliveryNote->shipments()->count())->toBe(0);
+
+    $requestsBefore = Http::recorded()->count();
+    ProcessTiktokOrderShipment::run($order, $secondDeliveryNote);
+
+    expect(Http::recorded()->count())->toBe($requestsBefore)
+        ->and($secondDeliveryNote->shipments()->count())->toBe(1);
+});
+
+test('a tiktok error getting the shipment reaches the user and stores nothing, HELP-4759', function () {
+    $tiktokUser = tiktokChannel($this->customer);
+    [$order, , $secondDeliveryNote] = tiktokOrderWithTwoDeliveryNotes($tiktokUser, $this->product);
+
+    fakeTiktok([
+        '/order/202309/orders' => tiktokError(36009003, 'Order status is not allowed for this operation'),
+    ]);
+
+    expect(fn () => ProcessTiktokOrderShipment::run($order, $secondDeliveryNote))
+        ->toThrow(ValidationException::class, 'Order status is not allowed for this operation')
+        ->and($secondDeliveryNote->shipments()->count())->toBe(0);
 });

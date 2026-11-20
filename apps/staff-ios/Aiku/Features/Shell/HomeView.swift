@@ -8,6 +8,7 @@ struct HomeView: View {
     private let workBadges = WorkBadgesStore.shared
     private let clocking = ClockingStore.shared
     private let inbox = ShellInboxStore.shared
+    private let appVersions = AppVersionStore.shared
 
     var body: some View {
         ScreenScaffold(spacing: 20) {
@@ -15,6 +16,11 @@ struct HomeView: View {
                 header
             }
         } content: {
+            if case .available(_, let latestVersionName, let updateURL) = appVersions.banner {
+                AppUpdateBanner(latestVersionName: latestVersionName, updateURL: updateURL) {
+                    appVersions.dismissBanner()
+                }
+            }
             clockingCard
             if session.hasWarehouseAccess {
                 shortcuts

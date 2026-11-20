@@ -119,13 +119,14 @@ class IndexPartnerCoverBucketItems extends OrgAction
         $priceFactor = GetPartnerBuyingPriceFactor::run($this->orgPartner);
         $landedCosts = GetPartnerLandedCost::appliesTo($this->orgPartner) ? GetPartnerLandedCost::run($sellerOrgStockIds->all()) : [];
         $quanta      = RoundPartnerQuantityToBatches::make()->quanta($this->orgPartner, $sellerOrgStockIds->all());
+        $freeSkos    = RoundPartnerQuantityToBatches::freeSkosByStockId($this->orgPartner, $paginator->getCollection()->pluck('stock_id')->unique()->values()->all());
 
         $buyerOrgStockIds = $buyerOrgStocks->pluck('id')->values();
         $quarterlyUsage   = $buyerOrgStockIds->isEmpty() ? collect() : GetOrgStocksQuarterlyUsage::run($buyerOrgStockIds);
         $stockDeliveries  = $buyerOrgStockIds->isEmpty() ? collect() : GetOrgStocksStockDeliveries::run($buyerOrgStockIds);
         $leadTimeDays     = GetPartnerLeadTime::run($this->orgPartner)['days'];
 
-        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems, $sentQuantities, $priceFactor, $landedCosts, $quanta, $quarterlyUsage, $stockDeliveries, $leadTimeDays) {
+        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems, $sentQuantities, $priceFactor, $landedCosts, $quanta, $freeSkos, $quarterlyUsage, $stockDeliveries, $leadTimeDays) {
             $quantum       = $quanta[$orgStock->id] ?? 1;
             $product       = $products->get($orgStock->id);
             $webImages     = $product ? json_decode($product->web_images ?? 'null', true) : null;
@@ -133,6 +134,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
             $openItem      = $openItems->get($orgStock->stock_id);
             $unitsPerSko   = $product && (float) $product->quantity > 0 ? (float) $product->quantity : null;
             $packedIn      = (float) ($buyerOrgStock?->packed_in ?: 1);
+            $hubFreeSkos   = $freeSkos[$orgStock->stock_id] ?? 0;
 
             return (object) [
                 'id'                    => $orgStock->id,
@@ -146,7 +148,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
                     ? (int) $buyerOrgStock->stats->days_of_cover
                     : null,
                 'recommended_quantity'  => $buyerOrgStock?->stats?->recommended_order_quantity !== null
-                    ? (int) RoundPartnerQuantityToBatches::roundUp(ceil((float) $buyerOrgStock->stats->recommended_order_quantity), $quantum)
+                    ? (int) RoundPartnerQuantityToBatches::roundUpPastFreeStock(ceil((float) $buyerOrgStock->stats->recommended_order_quantity), $quantum, $hubFreeSkos)
                     : null,
                 'order_quantum'         => $quantum,
                 'price'                 => isset($landedCosts[$orgStock->id]) && (float) $orgStock->packed_in > 0
@@ -168,6 +170,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
                 'quantity_ordered'         => ($openItem ? (float) $openItem->quantity : 0) * $packedIn,
                 'partner_units_per_carton' => (float) $quantum * $packedIn,
                 'whole_cartons_only'       => true,
+                'hub_stock'                => $hubFreeSkos,
             ];
         });
 

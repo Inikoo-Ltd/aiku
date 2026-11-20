@@ -8,6 +8,7 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonEncoder
@@ -15,6 +16,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
@@ -152,11 +154,12 @@ object InventoryResponses {
     }
 
     fun locationWriteBody(write: LocationWrite): JsonObject = when (write) {
-        is LocationWrite.Audit -> countsBody(write.counts, unchangedReason = MovementReasonKey.RECOUNT)
+        is LocationWrite.Audit -> countsBody(write.counts, unchangedReason = MovementReasonKey.RECOUNT, clientRequestId = write.clientRequestId)
         is LocationWrite.MoveAll -> buildJsonObject {
             put("location_id", write.targetLocationId)
             put("remove_after_move", write.removeAfterMove)
             put("reason", MovementReasonKey.TRANSFER)
+            write.clientRequestId?.let { put("client_request_id", it) }
         }
         is LocationWrite.MoveSome -> buildJsonObject {
             put("location_id", write.targetLocationId)
@@ -170,6 +173,7 @@ object InventoryResponses {
                 }
             }
             put("reason", MovementReasonKey.TRANSFER)
+            write.clientRequestId?.let { put("client_request_id", it) }
         }
         is LocationWrite.RemoveOrgStocks -> buildJsonObject {
             putJsonArray("org_stock_ids") { write.orgStockIds.forEach { add(JsonPrimitive(it)) } }
@@ -192,7 +196,7 @@ object InventoryResponses {
     }
 
     fun orgStockWriteBody(write: OrgStockWrite): JsonObject = when (write) {
-        is OrgStockWrite.Audit -> countsBody(write.counts, unchangedReason = null)
+        is OrgStockWrite.Audit -> countsBody(write.counts, unchangedReason = null, clientRequestId = write.clientRequestId)
         is OrgStockWrite.Move -> buildJsonObject {
             putJsonArray("targets") {
                 write.targets.forEach { target ->
@@ -202,6 +206,7 @@ object InventoryResponses {
                     }
                 }
             }
+            write.clientRequestId?.let { put("client_request_id", it) }
         }
         is OrgStockWrite.Consume -> buildJsonObject {
             put("quantity", GoodsOutResponses.quantityValue(write.quantity))
@@ -216,15 +221,18 @@ object InventoryResponses {
         }
     }
 
-    private fun countsBody(counts: List<AuditCount>, unchangedReason: String?): JsonObject = buildJsonObject {
-        putJsonArray("counts") {
-            counts.forEach { count ->
-                addJsonObject {
-                    put("location_org_stock_id", count.locationOrgStockId)
-                    put("quantity", GoodsOutResponses.quantityValue(count.quantity))
-                    put("reason", count.reason ?: unchangedReason)
-                    put("note", count.note.trimmedOrNull())
-                }
+    private fun countsBody(counts: List<AuditCount>, unchangedReason: String?, clientRequestId: String?): JsonObject = buildJsonObject {
+        put("counts", countsArray(counts, unchangedReason))
+        clientRequestId?.let { put("client_request_id", it) }
+    }
+
+    internal fun countsArray(counts: List<AuditCount>, unchangedReason: String?): JsonArray = buildJsonArray {
+        counts.forEach { count ->
+            addJsonObject {
+                put("location_org_stock_id", count.locationOrgStockId)
+                put("quantity", GoodsOutResponses.quantityValue(count.quantity))
+                put("reason", count.reason ?: unchangedReason)
+                put("note", count.note.trimmedOrNull())
             }
         }
     }

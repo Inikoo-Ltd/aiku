@@ -235,9 +235,10 @@ test('mobile delivery note page sends the header and the lines in walk order whi
             'quantity_to_pick', 'quantity_to_pick_label', 'quantity_not_picked', 'quantity_packed', 'quantity_packed_label', 'quantity_to_pack',
             'quantity_to_pack_label', 'quantity_waiting_warehouse', 'quantity_waiting_crm', 'is_handled', 'is_picked', 'is_done_packing', 'is_packed',
             'locations', 'pickings', 'boxes', 'warehouse_area', 'note_to_pickers', 'note_to_packers', 'un_numbers', 'replacement_reason', 'indivisible_set',
+            'barcodes', 'in_picking_session',
         ])
         ->and(array_keys($response->json('data.lines.0.locations.0')))->toBe([
-            'location_org_stock_id', 'location_id', 'code', 'stock', 'stock_label', 'type', 'quantity_picked', 'picking_id',
+            'location_org_stock_id', 'location_id', 'code', 'stock', 'stock_label', 'type', 'quantity_picked', 'picking_id', 'version',
         ]);
 });
 

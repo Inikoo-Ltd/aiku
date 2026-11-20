@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_indicator_offline">Offline</string>
+    <plurals name="offline_indicator_offline_waiting">
+        <item quantity="one">Offline · %d wartet</item>
+        <item quantity="other">Offline · %d warten</item>
+    </plurals>
+    <plurals name="offline_indicator_syncing">
+        <item quantity="one">%d wird synchronisiert</item>
+        <item quantity="other">%d werden synchronisiert</item>
+    </plurals>
+    <plurals name="offline_indicator_need_you">
+        <item quantity="one">%d erfordert Ihr Handeln</item>
+        <item quantity="other">%d erfordern Ihr Handeln</item>
+    </plurals>
+    <plurals name="offline_notification_need_you_title">
+        <item quantity="one">%d Aktion erfordert Ihr Handeln</item>
+        <item quantity="other">%d Aktionen erfordern Ihr Handeln</item>
+    </plurals>
+    <string name="offline_notification_need_you_body">Öffnen Sie Aiku, um zu sehen, was zu tun ist.</string>
+    <string name="offline_sync_channel_name">Offline-Synchronisierung</string>
+    <string name="offline_sync_channel_description">Wird angezeigt, während auf dem Telefon gespeicherte Arbeit an Aiku gesendet wird.</string>
+    <string name="offline_sync_sending">Auf dem Telefon gespeicherte Arbeit wird gesendet</string>
+    <string name="offline_sign_out_title">Arbeit wartet auf Synchronisierung</string>
+    <plurals name="offline_sign_out_body">
+        <item quantity="one">%d Aktion von Ihnen wartet; sie wird gesendet, wenn Sie sich auf diesem Telefon wieder anmelden.</item>
+        <item quantity="other">%d Aktionen von Ihnen warten; sie werden gesendet, wenn Sie sich auf diesem Telefon wieder anmelden.</item>
+    </plurals>
+</resources>

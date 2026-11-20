@@ -205,6 +205,9 @@ test('mobile return detail lists the items with this warehouse locations and is 
             'type'                  => 'picking',
             'quantity'              => json_decode(json_encode((float) $link->quantity)),
             'quantity_label'        => trimDecimalZeros($link->quantity),
+            'location_id'           => $link->location_id,
+            'location_code'         => $link->location->code,
+            'version'               => (int) $link->version,
         ]])
         ->assertJsonPath('data.available_actions', [['key' => 'start', 'label' => 'Start']]);
 

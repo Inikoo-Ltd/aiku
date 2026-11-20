@@ -197,7 +197,7 @@ const heroTitle = computed(
 
                                 <span v-else class="text-3xl font-bold text-gray-400">
 
-                                    {{ props.shop_profile?.name?.charAt(0)?.toUpperCase() ?? "?" }}
+                                    {{ Array.from(props.shop_profile?.name ?? "")[0]?.toUpperCase() ?? "?" }}
 
                                 </span>
 

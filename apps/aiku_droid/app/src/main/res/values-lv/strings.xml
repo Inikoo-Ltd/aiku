@@ -1954,35 +1954,10 @@
     <string name="stepper_decrease">Samazināt</string>
     <string name="stepper_increase">Palielināt</string>
     <string name="switcher_current">%1$s · pašreizējā</string>
-    <string name="sync_aiku">Aiku</string>
-    <string name="sync_apply">Lietot · %1$s</string>
-    <string name="sync_both">Abi</string>
-    <string name="sync_conflict_explanation">Katrai atšķirīgajai rindai var izvēlēties Mans vai Aiku; daudzumiem var izvēlēties arī Abi (saskaitīti, nekad vairāk, nekā rindai vajag). Jūsu izvēle ir parādīta aizpildīta.</string>
-    <string name="sync_conflicts_explanation">Kā sapludināšanas atrisināšana: atveriet ierakstu, lai izvēlētos rindu pa rindai, vai paturiet visu no vienas puses. Nekas, ko atmetat, nepazūd: tas paliek sinhronizācijas vēsturē.</string>
     <string name="sync_conflicts_title">Atrisināt konfliktus</string>
-    <string name="sync_explanation">Rindu līmeņa darbs bezsaistē tiek saglabāts tālrunī: komplektēšana, nav komplektēts, iepakošana, pārbaude, izvietošana, inventarizācija, pārvietošana. Atjaunojot savienojumu, katra darbība tiek salīdzināta ar versiju, no kuras tā sākās: ja sistēmā Aiku nekas nav mainījies, tā tiek augšupielādēta automātiski, citādi tā gaida jūs sadaļā Atrisināt konfliktus. Pierakstam un statusa maiņām nepieciešams savienojums.</string>
-    <string name="sync_keep_all_aiku">Paturēt visu no Aiku</string>
-    <string name="sync_keep_all_mine">Paturēt visu manu</string>
-    <string name="sync_kept_all_aiku">Paturēts viss no Aiku</string>
-    <string name="sync_kept_all_mine">Paturēts viss jūsu</string>
     <string name="sync_kicker">Profils</string>
-    <string name="sync_last_sync">Pēdējā sinhronizācija</string>
-    <string name="sync_lines_differ">Atšķirīgās rindas</string>
-    <string name="sync_mine">Mans</string>
-    <string name="sync_no_conflict">Nav konflikta</string>
     <string name="sync_now_in_aiku">Tagad sistēmā Aiku</string>
-    <string name="sync_oldest_first">vecākie vispirms</string>
-    <string name="sync_online_only_body">Sūtījumi, etiķetes, pabeigšana, nosūtīšana, atcelšana un Atzīmēt kā saņemtu sazinās ar pārvadātājiem, printeriem vai klientiem, tāpēc tie darbojas tikai tiešsaistē. Jūsu komplektēšana un iepakošana tiek saglabāta un augšupielādēta, kad atkal būsiet tiešsaistē.</string>
-    <string name="sync_online_only_note">Galvenā poga atgriežas, tiklīdz tālrunis ir tiešsaistē un rinda ir sinhronizēta.</string>
-    <string name="sync_online_only_title">Pabeigšanai nepieciešams savienojums</string>
-    <string name="sync_resolve_all">Atrisināt visu uzreiz</string>
-    <string name="sync_same_on_both">Vienāds abās pusēs</string>
-    <string name="sync_synced">Sinhronizēts</string>
     <string name="sync_title">Bezsaiste un sinhronizācija</string>
-    <string name="sync_use_aiku_for_all">Izmantot Aiku visiem</string>
-    <string name="sync_use_mine_for_all">Izmantot manu visiem</string>
-    <string name="sync_view">Skatīt</string>
-    <string name="sync_waiting">Gaida augšupielādi</string>
     <string name="sync_yours">Jūsu</string>
     <string name="tab_home">Sākums</string>
     <string name="tab_inbox">Pastkaste</string>
@@ -2556,20 +2531,5 @@
         <item quantity="zero">%d darbības</item>
         <item quantity="one">%d darbība</item>
         <item quantity="other">%d darbības</item>
-    </plurals>
-    <plurals name="sync_apply_aiku">
-        <item quantity="zero">%1$d Aiku</item>
-        <item quantity="one">%1$d Aiku</item>
-        <item quantity="other">%1$d Aiku</item>
-    </plurals>
-    <plurals name="sync_apply_both">
-        <item quantity="zero">%1$d abi</item>
-        <item quantity="one">%1$d abi</item>
-        <item quantity="other">%1$d abi</item>
-    </plurals>
-    <plurals name="sync_apply_mine">
-        <item quantity="zero">%1$d mani</item>
-        <item quantity="one">%1$d mans</item>
-        <item quantity="other">%1$d mani</item>
     </plurals>
 </resources>

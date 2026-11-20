@@ -122,7 +122,7 @@ class GetDispatchHubShowcase
             ->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED)
             ->where('delivery_notes.dispatched_at', '>=', $startOfDay)
             ->selectRaw(Shop::dispatchingChannelSql().' as channel')
-            ->selectRaw('exists (select 1 from org_partners where org_partners.customer_id = delivery_notes.customer_id) as is_partner')
+            ->selectRaw('exists (select 1 from org_partners where org_partners.partner_id = ? and org_partners.customer_id = delivery_notes.customer_id) as is_partner', [$warehouse->organisation_id])
             ->selectRaw('count(*) as dispatched')
             ->groupBy('channel', 'is_partner')
             ->get();

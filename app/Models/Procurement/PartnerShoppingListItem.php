@@ -233,6 +233,27 @@ class PartnerShoppingListItem extends Model
             ->where('state', ShoppingListItemStateEnum::OPEN);
     }
 
+    /**
+     * HELP-4842: the seller makes this SKO in its production room. A hub's basket is split on it: what
+     * it makes is the production order, everything else it only holds is the rescue order.
+     */
+    public static function madeBySellerSql(string $sellerOrgStockId): string
+    {
+        return "exists (select 1 from artefacts where artefacts.org_stock_id = $sellerOrgStockId and artefacts.deleted_at is null)";
+    }
+
+    public static function isProductionLineSql(string $items = 'partner_shopping_list_items'): string
+    {
+        return "exists (select 1 from org_stocks seller_made
+            where seller_made.stock_id = $items.stock_id and seller_made.organisation_id = $items.partner_organisation_id
+                and ".self::madeBySellerSql('seller_made.id').')';
+    }
+
+    public static function whereOrderKind(Builder|EloquentBuilder $query, string $kind, string $items = 'partner_shopping_list_items'): Builder|EloquentBuilder
+    {
+        return $query->whereRaw(($kind === 'rescue' ? 'not ' : '').self::isProductionLineSql($items));
+    }
+
     public static function draftPartnerLineFor(int $orgPartnerId, int $orgStockId): EloquentBuilder
     {
         return static::query()

@@ -19,6 +19,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Helpers\Tag;
 use App\Models\Procurement\OrgPartner;
+use App\Models\Procurement\PartnerShoppingListItem;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -586,7 +587,8 @@ class GetPartnerStockCoverBuckets
      * spare: it keeps what its own demand needs over the same critical threshold. Without a demand
      * forecast for the partner's SKO we cannot tell what it needs, so nothing is spare. A line that
      * cannot reach MINIMUM_LINE_VALUE (in our currency) is left out unless the SKO is an A or B
-     * bestseller; so is one the partner has no price for.
+     * bestseller; so is one the partner has no price for. From a manufacturing hub only what it makes
+     * is ordered this way (HELP-4842): the rest it only holds is a rescue line, added by hand.
      *
      * @return array{0: Builder, 1: string, 2: string} query, bucket expression, spare expression
      */
@@ -597,7 +599,11 @@ class GetPartnerStockCoverBuckets
 
         $query = $this->scopedQuery($orgPartner)
             ->leftJoinLateral($this->rowFacts($orgPartner, $leadDays), 'rf')
-            ->when(!$orgPartner->partner->is_manufacturing_hub, fn ($query) => $query->whereRaw("$spare >= 1"))
+            ->when(
+                $orgPartner->partner->is_manufacturing_hub,
+                fn ($query) => $query->whereRaw(PartnerShoppingListItem::madeBySellerSql('p.id')),
+                fn ($query) => $query->whereRaw("$spare >= 1")
+            )
             ->whereRaw('not '.$this->alreadyComingExpression($orgPartner))
             ->whereRaw('coalesce(os.is_excluded_from_auto_ordering, false) = false')
             ->whereRaw('not '.Tag::outOfOrderingSeasonSql('os.stock_id', $leadDays))

@@ -91,9 +91,16 @@ object GoodsInResponses {
         is ReturnWrite.Returned -> post("items/${write.itemId}/returned") {
             put("quantity", write.quantity?.let(GoodsOutResponses::quantityValue))
             put("location_org_stock_id", write.locationOrgStockId)
+            write.clientRequestId?.let { put("client_request_id", it) }
         }
-        is ReturnWrite.Damaged -> post("items/${write.itemId}/damaged") { put("quantity", write.quantity?.let(GoodsOutResponses::quantityValue)) }
-        is ReturnWrite.NotReturned -> post("items/${write.itemId}/not-returned") { put("quantity", write.quantity?.let(GoodsOutResponses::quantityValue)) }
+        is ReturnWrite.Damaged -> post("items/${write.itemId}/damaged") {
+            put("quantity", write.quantity?.let(GoodsOutResponses::quantityValue))
+            write.clientRequestId?.let { put("client_request_id", it) }
+        }
+        is ReturnWrite.NotReturned -> post("items/${write.itemId}/not-returned") {
+            put("quantity", write.quantity?.let(GoodsOutResponses::quantityValue))
+            write.clientRequestId?.let { put("client_request_id", it) }
+        }
         is ReturnWrite.UndoPut -> WriteRequest(WriteMethod.Delete, "puts/${write.putId}", body = null)
         ReturnWrite.SetAsReturned -> post("set-as-returned")
     }

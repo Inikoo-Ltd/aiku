@@ -10,10 +10,17 @@ struct RootView: View {
     private let theme = ThemeStore.shared
     private let warehouseStore = WarehouseStore.shared
     private let languages = LanguageStore.shared
+    private let appVersions = AppVersionStore.shared
 
     var body: some View {
         Group {
-            if authStore.isSignedIn {
+            if case .required(let latestVersionName, let updateURL) = appVersions.update {
+                UpdateRequiredView(
+                    latestVersionName: latestVersionName,
+                    updateURL: updateURL,
+                    installedVersionName: appVersions.installed.name
+                )
+            } else if authStore.isSignedIn {
                 MainView()
                     .environment(\.signOut, SignOutAction { signOut() })
             } else {
@@ -24,6 +31,9 @@ struct RootView: View {
         .preferredColorScheme(theme.mode.colorScheme)
         .onChange(of: colorScheme, initial: true) { _, scheme in
             theme.systemIsDark = scheme == .dark
+        }
+        .task {
+            await appVersions.check()
         }
         .task(id: authStore.isSignedIn) {
             await authStore.refreshProfile()
@@ -61,6 +71,7 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
+            Task { await appVersions.check() }
             Task {
                 await authStore.refreshProfile()
                 await sendPendingLanguage()

@@ -5,22 +5,33 @@ struct InventorySkoRow: View {
     let chip: Chip?
     let subtitle: String
     var quantityText: String?
+    var location: InventorySkoListLocation?
     var action: (() -> Void)?
 
     init(reference: String, chip: Chip?, subtitle: String, quantity: Int?, action: (() -> Void)? = nil) {
         self.init(reference: reference, chip: chip, subtitle: subtitle, quantityText: quantity?.grouped, action: action)
     }
 
-    init(reference: String, chip: Chip?, subtitle: String, quantityText: String?, action: (() -> Void)? = nil) {
+    init(reference: String, chip: Chip?, subtitle: String, quantityText: String?, location: InventorySkoListLocation? = nil, action: (() -> Void)? = nil) {
         self.reference = reference
         self.chip = chip
         self.subtitle = subtitle
         self.quantityText = quantityText
+        self.location = location
         self.action = action
     }
 
+    private var locationLine: Text? {
+        guard let location else { return nil }
+        guard let quantity = location.quantityText else { return Text(verbatim: location.code) }
+        return Text(verbatim: "\(location.code) · ")
+            + Text(verbatim: quantity)
+                .fontWeight(.bold)
+                .foregroundStyle(location.isNegative ? Tone.danger.ink : AikuColor.text)
+    }
+
     var body: some View {
-        ListRow(reference, subtitle: subtitle, chips: chip.map { [$0] } ?? [], action: action) {
+        ListRow(reference, subtitle: subtitle.isEmpty ? nil : subtitle, detail: locationLine, chips: chip.map { [$0] } ?? [], action: action) {
             ProductThumb(size: 48, label: "Product photo of \(reference)")
         } trailing: {
             if let quantityText {
@@ -32,7 +43,7 @@ struct InventorySkoRow: View {
                     .fixedSize()
             }
         }
-        .accessibilityIdentifier("inventory.sko.\(reference)")
+        .accessibilityIdentifier(location.map { "inventory.sko.\(reference).\($0.code)" } ?? "inventory.sko.\(reference)")
     }
 }
 
