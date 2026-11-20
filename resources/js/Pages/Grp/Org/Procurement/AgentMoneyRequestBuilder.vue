@@ -10,12 +10,14 @@ import { Head, Link, router } from "@inertiajs/vue3"
 import { useIntersectionObserver } from "@vueuse/core"
 import Checkbox from "primevue/checkbox"
 import InputNumber from "primevue/inputnumber"
+import IconField from "primevue/iconfield"
+import InputIcon from "primevue/inputicon"
 import InputText from "primevue/inputtext"
 import Select from "primevue/select"
 import Textarea from "primevue/textarea"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd, faCheckDouble } from "@fal"
+import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd, faCheckDouble, faSearch } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Icon from "@/Components/Icon.vue"
@@ -28,7 +30,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd, faCheckDouble)
+library.add(faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd, faCheckDouble, faSearch)
 
 interface DueOrder {
 	purchase_order_id: number
@@ -51,6 +53,7 @@ interface DueOrder {
 	advance_percentage: number
 	advance_due: number
 	balance_due: number
+	products: string
 }
 
 interface DueShipment {
@@ -184,13 +187,85 @@ const orderOf = (purchaseOrderId: number | null) => props.due.orders.find((order
 type LineFilter = "all" | "purchase_orders" | "shipments" | "expenses"
 
 const lineFilter = ref<LineFilter>("all")
+const search = ref("")
+
+const digitsOf = (text: string) => text.replace(/\D/g, "")
+
+const lineKindLabel = (line: Line) =>
+	({ advance: ctrans("Advance"), balance: ctrans("Balance"), shipment: ctrans("Shipment costs"), expense: line.expense?.type_label ?? ctrans("Expense") })[line.kind]
+
+const lineSearchTexts = (line: Line): string[] => {
+	const order = line.order
+	const shipment = line.shipment
+	const expense = line.expense
+	return [
+		lineKindLabel(line),
+		order?.reference,
+		order?.supplier_company,
+		order?.supplier_name,
+		order?.supplier_nickname,
+		order?.supplier_code,
+		order?.placed_by,
+		order?.products,
+		order?.submitted_at,
+		order?.deposit_paid_at,
+		shipment?.reference,
+		shipment?.state_icon?.tooltip,
+		...(shipment?.charges.map((charge) => charge.label) ?? []),
+		expense?.notes,
+		expense?.reference,
+		expense?.supplier_code,
+		expense?.supplier_name,
+		expense?.purchase_order_reference,
+		expense?.date,
+	].filter((text): text is string => !!text)
+}
+
+const lineAmounts = (line: Line): number[] =>
+	[
+		line.due,
+		lineTotal(line),
+		lineRequested(line),
+		line.order?.paid_to_supplier,
+		line.order?.deposit_paid_amount,
+		...(line.shipment?.charges.map((charge) => charge.amount) ?? []),
+	].filter((amount): amount is number => typeof amount === "number" && amount > 0)
+
+const lineIndex = computed(() =>
+	Object.fromEntries(
+		lines.value.map((line) => {
+			const amountsOfLine = lineAmounts(line)
+			return [
+				line.key,
+				{
+					text: [...lineSearchTexts(line), ...amountsOfLine.map(money)].join(" ").toLowerCase(),
+					numbers: amountsOfLine.flatMap((amount) => [digitsOf(money(amount)), String(Math.round(amount))]),
+				},
+			]
+		})
+	)
+)
+
+const searchTokens = computed(() => search.value.toLowerCase().split(/\s+/).filter(Boolean))
+
+const matchesSearch = (line: Line) => {
+	if (!searchTokens.value.length) return true
+	const index = lineIndex.value[line.key]
+	return searchTokens.value.every((token) => {
+		if (index.text.includes(token)) return true
+		const digits = digitsOf(token)
+		return /^[\d.,]+$/.test(token) && digits !== "" && index.numbers.some((number) => number.includes(digits))
+	})
+}
+
+const searchedLines = computed(() => lines.value.filter(matchesSearch))
 const isPurchaseOrderLine = (line: Line) => line.kind === "advance" || line.kind === "balance"
-const purchaseOrderLines = computed(() => lines.value.filter(isPurchaseOrderLine))
-const shipmentLines = computed(() => lines.value.filter((line) => line.kind === "shipment"))
-const expenseLines = computed(() => lines.value.filter((line) => line.kind === "expense"))
+const purchaseOrderLines = computed(() => searchedLines.value.filter(isPurchaseOrderLine))
+const shipmentLines = computed(() => searchedLines.value.filter((line) => line.kind === "shipment"))
+const expenseLines = computed(() => searchedLines.value.filter((line) => line.kind === "expense"))
 
 const lineFilterOptions = computed<{ label: string; value: LineFilter; count: number }[]>(() => [
-	{ label: ctrans("All"), value: "all", count: lines.value.length },
+	{ label: ctrans("All"), value: "all", count: searchedLines.value.length },
 	{ label: ctrans("PO"), value: "purchase_orders", count: purchaseOrderLines.value.length },
 	{ label: ctrans("Shipment"), value: "shipments", count: shipmentLines.value.length },
 	{ label: ctrans("Expenses"), value: "expenses", count: expenseLines.value.length },
@@ -200,7 +275,7 @@ const visibleLines = computed(() => {
 	if (lineFilter.value === "purchase_orders") return purchaseOrderLines.value
 	if (lineFilter.value === "shipments") return shipmentLines.value
 	if (lineFilter.value === "expenses") return expenseLines.value
-	return lines.value
+	return searchedLines.value
 })
 
 
@@ -342,6 +417,12 @@ const send = () => {
 		<div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-4 py-2">
 			<div class="flex flex-wrap items-center gap-3">
 				<SegmentedToggle v-model="lineFilter" :options="lineFilterOptions" :ariaLabel="ctrans('Show the lines for')" />
+				<IconField>
+					<InputIcon>
+						<FontAwesomeIcon icon="fal fa-search" fixed-width aria-hidden="true" />
+					</InputIcon>
+					<InputText v-model="search" type="search" size="small" class="w-72 max-w-full" :class="fieldFocusClass" :placeholder="ctrans('Search supplier, PO, product, person, amount…')" :aria-label="ctrans('Search the lines')" />
+				</IconField>
 				<span class="text-sm text-gray-600">{{ ctrans(":count of :total lines selected", { count: String(chosen.length), total: String(lines.length) }) }}</span>
 				<Button
 					v-if="depositLines.length"

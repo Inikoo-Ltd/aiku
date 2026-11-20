@@ -36,7 +36,7 @@ class GetAgentMoneyRequestLines
     public const float DEFAULT_ADVANCE_PERCENTAGE = 30;
 
     /**
-     * @return array{currency_code: string, wallet: array{received: float, paid: float, balance: float}, credit_available: float, shipments: list<array{stock_delivery_id: int, stock_delivery_slug: string, reference: string, state: string|null, charges: list<array{type: string, label: string, amount: float}>, total: float, requested: float, due: float}>, expenses: list<array{agent_payment_id: int, type: string, type_label: string, date: string, amount: float, requested: float, due: float, reference: string|null, notes: string|null, supplier_code: string|null, supplier_name: string|null, purchase_order_reference: string|null, purchase_order_slug: string|null, receipt: string|null}>, orders: list<array{purchase_order_id: int, purchase_order_slug: string, reference: string, is_open: bool, submitted_at: string|null, deposit_paid_at: string|null, deposit_paid_amount: float, placed_by: string|null, supplier_id: int|null, supplier_slug: string|null, supplier_code: string|null, supplier_name: string|null, supplier_company: string|null, supplier_nickname: string|null, total: float, requested: float, paid_to_supplier: float, advance_percentage: float, advance_due: float, balance_due: float}>}
+     * @return array{currency_code: string, wallet: array{received: float, paid: float, balance: float}, credit_available: float, shipments: list<array{stock_delivery_id: int, stock_delivery_slug: string, reference: string, state: string|null, charges: list<array{type: string, label: string, amount: float}>, total: float, requested: float, due: float}>, expenses: list<array{agent_payment_id: int, type: string, type_label: string, date: string, amount: float, requested: float, due: float, reference: string|null, notes: string|null, supplier_code: string|null, supplier_name: string|null, purchase_order_reference: string|null, purchase_order_slug: string|null, receipt: string|null}>, orders: list<array{purchase_order_id: int, purchase_order_slug: string, reference: string, is_open: bool, submitted_at: string|null, deposit_paid_at: string|null, deposit_paid_amount: float, placed_by: string|null, supplier_id: int|null, supplier_slug: string|null, supplier_code: string|null, supplier_name: string|null, supplier_company: string|null, supplier_nickname: string|null, total: float, requested: float, paid_to_supplier: float, advance_percentage: float, advance_due: float, balance_due: float, products: string}>}
      */
     public function handle(Agent $agent, Organisation $client, ?int $purchaseOrderId = null): array
     {
@@ -117,7 +117,7 @@ class GetAgentMoneyRequestLines
             ->groupBy('purchase_order_deposit_payments.purchase_order_id')
             ->selectRaw('purchase_order_deposit_payments.purchase_order_id, sum(purchase_order_deposit_payments.amount) as amount');
 
-        return PurchaseOrder::query()
+        $orders = PurchaseOrder::query()
             ->where('purchase_orders.organisation_id', $client->id)
             ->where('purchase_orders.agent_id', $agent->id)
             ->trackedThroughAgent()
@@ -188,7 +188,35 @@ class GetAgentMoneyRequestLines
                 ];
             })
             ->filter(fn (array $order) => $order['advance_due'] > 0 || $order['balance_due'] > 0)
-            ->values()
+            ->values();
+
+        $products = $this->productsOf($orders->pluck('purchase_order_id')->all());
+
+        return $orders
+            ->map(fn (array $order) => [...$order, 'products' => $products[$order['purchase_order_id']] ?? ''])
+            ->all();
+    }
+
+    /**
+     * The codes and names of the products on each order, so the agent can find an order by what it buys.
+     *
+     * @param  list<int>  $purchaseOrderIds
+     * @return array<int, string>
+     */
+    private function productsOf(array $purchaseOrderIds): array
+    {
+        if (!$purchaseOrderIds) {
+            return [];
+        }
+
+        return DB::table('purchase_order_transactions')
+            ->leftJoin('supplier_products', 'supplier_products.id', 'purchase_order_transactions.supplier_product_id')
+            ->leftJoin('org_stocks', 'org_stocks.id', 'purchase_order_transactions.org_stock_id')
+            ->whereIn('purchase_order_transactions.purchase_order_id', $purchaseOrderIds)
+            ->groupBy('purchase_order_transactions.purchase_order_id')
+            ->selectRaw('purchase_order_transactions.purchase_order_id, string_agg(distinct concat_ws(\' \', supplier_products.code collate "C", supplier_products.name collate "C", org_stocks.code collate "C", org_stocks.name collate "C"), \' \') as products')
+            ->pluck('products', 'purchase_order_id')
+            ->map(fn ($products) => (string) $products)
             ->all();
     }
 
