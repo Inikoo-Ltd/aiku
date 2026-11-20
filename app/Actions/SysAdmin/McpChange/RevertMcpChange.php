@@ -135,6 +135,7 @@ class RevertMcpChange
                 McpChangeTypeEnum::PRODUCTION_SETUP => $this->revertProductionSetup($target, $mcpChange->before),
                 McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS => $this->revertSupplierProductLinks($mcpChange),
                 McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING => $this->revertOrgStockAutoOrdering($mcpChange->before),
+                McpChangeTypeEnum::ORG_STOCK_FLAGS => $this->revertOrgStockFlags($mcpChange->before),
                 McpChangeTypeEnum::PRODUCT_PACKAGING => $this->revertProductPackaging($mcpChange->before),
                 McpChangeTypeEnum::INFO_WEBSITE_CONTENT => RevertStaticWebsiteChange::run($mcpChange),
                 McpChangeTypeEnum::STAFF_CHAT_LISTS => $this->revertStaffChatLists($mcpChange->before),
@@ -316,6 +317,13 @@ class RevertMcpChange
     {
         foreach ($before['org_stocks'] as $orgStockId => $orgStock) {
             UpdateOrgStock::make()->action(OrgStock::findOrFail($orgStockId), ['is_excluded_from_auto_ordering' => $orgStock['do_not_auto_order']]);
+        }
+    }
+
+    private function revertOrgStockFlags(array $before): void
+    {
+        foreach ($before['org_stocks'] as $orgStockId => $orgStock) {
+            UpdateOrgStock::make()->action(OrgStock::findOrFail($orgStockId), Arr::except($orgStock, 'code'));
         }
     }
 

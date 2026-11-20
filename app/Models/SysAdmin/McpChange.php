@@ -128,7 +128,7 @@ class McpChange extends Model
             return $organisationId && $user->authTo("procurement.$organisationId.edit");
         }
 
-        if ($this->type === McpChangeTypeEnum::STOCK_LOCATIONS) {
+        if (in_array($this->type, [McpChangeTypeEnum::STOCK_LOCATIONS, McpChangeTypeEnum::ORG_STOCK_FLAGS])) {
             $organisation = Organisation::find(data_get($this->data, 'target.organisation_id'));
 
             return $organisation && $user->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($organisation));

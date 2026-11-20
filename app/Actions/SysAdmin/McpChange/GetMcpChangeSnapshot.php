@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\McpChange;
 
+use App\Mcp\Tools\OrgStockFlagsTool;
 use App\Actions\Chat\ChatSession\WaitForCustomerReply;
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -88,6 +89,7 @@ class GetMcpChangeSnapshot
             McpChangeTypeEnum::PRODUCTION_SETUP => $this->productionSetup($target),
             McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS => $this->supplierProductLinks($target),
             McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING => $this->orgStockAutoOrdering($target),
+            McpChangeTypeEnum::ORG_STOCK_FLAGS => $this->orgStockFlags($target),
             McpChangeTypeEnum::PRODUCT_PACKAGING => $this->productPackaging($target),
             McpChangeTypeEnum::STAFF_CHAT_LISTS => $this->staffChatLists($target),
             McpChangeTypeEnum::CUSTOMS_INVOICE => ['shipments' => PartnerShipment::where('org_partner_id', $target['org_partner_id'])
@@ -152,6 +154,12 @@ class GetMcpChangeSnapshot
             return collect($snapshot['org_stocks'])
                 ->map(fn (array $orgStock) => $orgStock['code'].': '.($orgStock['do_not_auto_order'] ? 'kept out of order suggestions' : 'suggested'))
                 ->implode(', ');
+        }
+
+        if ($type === McpChangeTypeEnum::ORG_STOCK_FLAGS) {
+            return collect($snapshot['org_stocks'])
+                ->map(fn (array $orgStock) => $orgStock['code'].': '.collect(OrgStockFlagsTool::FLAGS)->map(fn (string $flag) => $flag.'='.($orgStock[$flag] ? 'yes' : 'no'))->implode(', '))
+                ->implode('; ');
         }
 
         if ($type === McpChangeTypeEnum::PRODUCT_PACKAGING) {
@@ -471,6 +479,19 @@ class GetMcpChangeSnapshot
                 ->get(['id', 'code', 'is_excluded_from_auto_ordering'])
                 ->mapWithKeys(fn (OrgStock $orgStock) => [
                     $orgStock->id => ['code' => $orgStock->code, 'do_not_auto_order' => (bool) $orgStock->is_excluded_from_auto_ordering],
+                ])
+                ->all(),
+        ];
+    }
+
+    private function orgStockFlags(array $target): array
+    {
+        return [
+            'org_stocks' => OrgStock::whereIn('id', $target['org_stock_ids'])
+                ->orderBy('id')
+                ->get(['id', 'code', ...OrgStockFlagsTool::FLAGS])
+                ->mapWithKeys(fn (OrgStock $orgStock) => [
+                    $orgStock->id => ['code' => $orgStock->code, ...collect(OrgStockFlagsTool::FLAGS)->mapWithKeys(fn (string $flag) => [$flag => (bool) $orgStock->{$flag}])->all()],
                 ])
                 ->all(),
         ];

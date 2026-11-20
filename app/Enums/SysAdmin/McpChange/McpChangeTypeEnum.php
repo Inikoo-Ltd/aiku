@@ -32,6 +32,7 @@ enum McpChangeTypeEnum: string
     case PRODUCTION_SETUP = 'production_setup';
     case SUPPLIER_PRODUCT_LINKS = 'supplier_product_links';
     case ORG_STOCK_AUTO_ORDERING = 'org_stock_auto_ordering';
+    case ORG_STOCK_FLAGS = 'org_stock_flags';
     case INFO_WEBSITE_CONTENT = 'info_website_content';
     case PRODUCT_PACKAGING = 'product_packaging';
     case STAFF_CHAT_LISTS = 'staff_chat_lists';
@@ -58,6 +59,7 @@ enum McpChangeTypeEnum: string
             'production_setup'      => __('Factory location and work areas'),
             'supplier_product_links' => __('SKOs attached to suppliers'),
             'org_stock_auto_ordering' => __('SKOs kept out of order suggestions'),
+            'org_stock_flags'       => __('SKO on demand, made in-house or made fresh'),
             'info_website_content'  => __('Info website pages and shared parts'),
             'product_packaging'     => __('Product packaging weighed'),
             'staff_chat_lists'      => __('Who gets Ask CRM and Ask warehouse questions'),
@@ -72,7 +74,7 @@ enum McpChangeTypeEnum: string
     {
         return match ($this) {
             McpChangeTypeEnum::RELATED_PRODUCTS, McpChangeTypeEnum::WEBSITE_REDIRECTS => 'can_use_mcp_web',
-            McpChangeTypeEnum::ORG_STOCK_STATE, McpChangeTypeEnum::SUPPLIER_PRODUCT_AVAILABILITY => 'can_use_mcp_discontinue',
+            McpChangeTypeEnum::ORG_STOCK_STATE, McpChangeTypeEnum::SUPPLIER_PRODUCT_AVAILABILITY, McpChangeTypeEnum::ORG_STOCK_FLAGS => 'can_use_mcp_discontinue',
             McpChangeTypeEnum::PARTNER_SHOPPING_LIST, McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS, McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING, McpChangeTypeEnum::CUSTOMS_INVOICE => 'can_use_mcp_procurement',
             McpChangeTypeEnum::PRODUCTION_RECORD, McpChangeTypeEnum::PRODUCTION_RECIPE, McpChangeTypeEnum::PRODUCTION_SETUP => 'can_use_mcp_production',
             McpChangeTypeEnum::PLACED_ORDER => 'can_use_mcp_place_orders',

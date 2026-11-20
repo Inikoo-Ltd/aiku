@@ -1702,6 +1702,45 @@ describe('org stock discontinue tools', function () {
             ->and($mcpChange->refresh()->reverted_by_id)->toBe($this->user->id);
     });
 
+    test('flags tool reads sko flags, switches on demand after confirmation and reverts', function () {
+        $orgStock = $this->orgStocks[1];
+        $orgStock->update(['is_on_demand' => false, 'is_made_in_house' => false, 'is_fresh' => false]);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\OrgStockFlagsTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$orgStock->code, 'NOPE-999'],
+        ])->assertOk()->assertSee('"not_found":["NOPE-999"]')->assertSee('"is_on_demand":false');
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\OrgStockFlagsTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$orgStock->code],
+            'is_on_demand' => true,
+        ])->assertHasErrors(['request_text is required']);
+
+        expect($orgStock->refresh()->is_on_demand)->toBeFalse();
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\OrgStockFlagsTool::class, [
+            'organisation'     => $this->organisation->code,
+            'codes'            => [$orgStock->code],
+            'is_on_demand'     => true,
+            'is_made_in_house' => true,
+            'request_text'     => 'yes, put it on demand',
+        ])->assertOk()->assertSee('change_log_id');
+
+        $mcpChange = App\Models\SysAdmin\McpChange::latest('id')->first();
+
+        expect($orgStock->refresh()->is_on_demand)->toBeTrue()
+            ->and($orgStock->is_made_in_house)->toBeTrue()
+            ->and($orgStock->is_fresh)->toBeFalse()
+            ->and($mcpChange->type)->toBe(App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::ORG_STOCK_FLAGS)
+            ->and($mcpChange->data['after_text'])->toContain('is_on_demand=yes');
+
+        App\Actions\SysAdmin\McpChange\RevertMcpChange::run($mcpChange, $this->user);
+
+        expect($orgStock->refresh()->is_on_demand)->toBeFalse()
+            ->and($orgStock->is_made_in_house)->toBeFalse();
+    });
+
     test('supplier products of a sko are made unavailable per organisation or for the supplier, logged and revertable', function () {
         $orgStock           = $this->orgStocks[0];
         $supplier           = App\Actions\SupplyChain\Supplier\StoreSupplier::make()->action($this->group, App\Models\SupplyChain\Supplier::factory()->definition());
