@@ -3520,11 +3520,18 @@ test('picking waiting warehouse and crm flow', function () {
 
     \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1]);
 
-    $item->update(['quantity_waiting_warehouse' => 2]);
+    expect($item->refresh()->getRawOriginal('waiting_warehouse_cleared_at'))->toBeNull();
+
+    $item->update(['locked_at' => null]);
+    \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1]);
+    expect($item->refresh()->getRawOriginal('waiting_warehouse_cleared_at'))->not->toBeNull();
+
+    $item->update(['quantity_waiting_warehouse' => 2, 'waiting_warehouse_cleared_at' => null, 'locked_at' => null]);
     \App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse::run($item->refresh(), $this->user, [
         'quantity'              => 1,
         'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
     ]);
+    expect($item->refresh()->getRawOriginal('waiting_warehouse_cleared_at'))->not->toBeNull();
 
     $item->update(['quantity_waiting_warehouse' => 2, 'locked_at' => null]);
     $undone = \App\Actions\Dispatching\Picking\UndoSetAsWaitingWarehouse::run($item->refresh());

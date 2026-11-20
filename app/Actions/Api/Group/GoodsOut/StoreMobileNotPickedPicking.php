@@ -38,11 +38,27 @@ class StoreMobileNotPickedPicking
         $this->ensureLineOfNote($deliveryNote, $deliveryNoteItem);
 
         $data = Validator::make($request->all(), [
-            'quantity' => ['sometimes', 'nullable', 'numeric', 'gt:0'],
-            'reason'   => ['required', Rule::enum(PickingNotPickedReasonEnum::class)],
-            'note'     => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'quantity'          => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            'reason'            => ['required', Rule::enum(PickingNotPickedReasonEnum::class)],
+            'note'              => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'client_request_id' => ['sometimes', 'nullable', 'uuid'],
         ])->validate();
 
+        return MobileClientRequest::once(
+            $user,
+            $data['client_request_id'] ?? null,
+            fn () => $this->markNotPicked($deliveryNote, $deliveryNoteItem, $user, $data),
+            fn () => $this->respondWith($deliveryNote, $user, 'nothing_changed', __('Already done.'))
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function markNotPicked(DeliveryNote $deliveryNote, DeliveryNoteItem $deliveryNoteItem, User $user, array $data): JsonResponse
+    {
         $deliveryNoteItem->refresh();
         $outstanding = StoreNotPickPicking::make()->outstandingQuantity($deliveryNoteItem);
         $quantity    = isset($data['quantity']) ? (float) $data['quantity'] : $outstanding;

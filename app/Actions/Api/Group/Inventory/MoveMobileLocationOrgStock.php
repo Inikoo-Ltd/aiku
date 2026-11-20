@@ -22,6 +22,7 @@ class MoveMobileLocationOrgStock
 {
     use AsController;
     use WithMobileOrgStocks;
+    use WithMobileStockWriteRequests;
 
     /**
      * @throws \Throwable
@@ -31,6 +32,7 @@ class MoveMobileLocationOrgStock
         /** @var User $user */
         $user = $request->user();
         [$warehouse, $orgStock] = $this->ensureCanChangeLink($user, $locationOrgStock);
+        $clientRequestId = $this->optionalClientRequestId($request->all());
 
         $data = Validator::make($request->all(), [
             'targets'                         => ['required', 'array', 'min:1'],
@@ -42,11 +44,18 @@ class MoveMobileLocationOrgStock
         $targets = array_map(fn (array $target) => Arr::only($target, ['location_org_stock_id', 'quantity']), $data['targets']);
         $this->ownLinks($orgStock, $warehouse, array_unique(Arr::pluck($targets, 'location_org_stock_id')));
 
-        MoveOrgStockToMultipleLocations::make()->action($locationOrgStock, ['targets' => $targets], $user);
+        return $this->oncePerClientRequest(
+            $user,
+            $clientRequestId,
+            function () use ($locationOrgStock, $targets, $user, $warehouse, $orgStock) {
+                MoveOrgStockToMultipleLocations::make()->action($locationOrgStock, ['targets' => $targets], $user);
 
-        return $this->respondWithOrgStock($warehouse, $orgStock, $user, 'done', __('Moved :quantity from :location.', [
-            'quantity' => trimDecimalZeros(collect($targets)->sum(fn (array $target) => (float) $target['quantity'])),
-            'location' => $locationOrgStock->location->code,
-        ]));
+                return $this->respondWithOrgStock($warehouse, $orgStock, $user, 'done', __('Moved :quantity from :location.', [
+                    'quantity' => trimDecimalZeros(collect($targets)->sum(fn (array $target) => (float) $target['quantity'])),
+                    'location' => $locationOrgStock->location->code,
+                ]));
+            },
+            fn () => $this->respondWithOrgStock($warehouse, $orgStock, $user, 'nothing_changed', __('Already done.'))
+        );
     }
 }

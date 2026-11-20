@@ -8,6 +8,7 @@
 
 namespace App\Actions\Api\Group\Locations;
 
+use App\Actions\Api\Group\Inventory\WithMobileStockWriteRequests;
 use App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Models\Inventory\Location;
@@ -24,6 +25,7 @@ class AuditMobileLocation
 {
     use AsController;
     use WithMobileLocationsAccess;
+    use WithMobileStockWriteRequests;
 
     /**
      * Counting a location is the web SKO audit (AuditLocationOrgStock) done for each SKO counted
@@ -56,6 +58,7 @@ class AuditMobileLocation
         $user = $request->user();
         $this->ensureCanViewLocations($user, $location->warehouse);
         abort_unless(self::canEditStocks($user, $location->warehouse), 403);
+        $clientRequestId = $this->optionalClientRequestId($request->all());
 
         $data = Validator::make($request->all(), [
             'counts'                         => ['required', 'array', 'min:1'],
@@ -65,8 +68,11 @@ class AuditMobileLocation
             'counts.*.note'                  => ['sometimes', 'nullable', 'string'],
         ])->validate();
 
-        $location = $this->handle($location, $data['counts'], $user);
-
-        return response()->json(['data' => (new ShowMobileLocation())->forUser($location, $user)]);
+        return $this->oncePerClientRequest(
+            $user,
+            $clientRequestId,
+            fn () => response()->json(['data' => (new ShowMobileLocation())->forUser($this->handle($location, $data['counts'], $user), $user)]),
+            fn () => response()->json(['data' => (new ShowMobileLocation())->forUser($location, $user)])
+        );
     }
 }

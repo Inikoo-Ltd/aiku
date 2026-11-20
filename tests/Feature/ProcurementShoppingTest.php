@@ -470,7 +470,7 @@ test('UI partner shopping list index', function () {
             ->has('title')
             ->has('data')
             ->has('orgStockFetchRoute')
-            ->where('filterGroups', fn ($groups) => collect($groups)->pluck('key')->all() === ['category', 'origin', 'rank']
+            ->where('filterGroups', fn ($groups) => collect($groups)->pluck('key')->all() === ['order', 'category', 'origin', 'rank']
                 && collect(collect($groups)->firstWhere('key', 'origin')['options'])->pluck('value')->all() === ['us', 'hub'])
             ->where('queryBuilderProps.default.elementGroups', fn ($groups) => collect($groups)->keys()->all() === ['priority']);
     });
@@ -883,6 +883,7 @@ test('auto-fill suggests shopping list within budget from usage history', functi
     $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
     [, $sellerProduct] = createProduct($sellerShop);
     $sellerOrgStock = $sellerProduct->orgStocks()->first();
+    madeBySeller($sellerOrgStock);
     $sellerOrgStock->update(['quantity_available' => 50]);
 
     $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
@@ -924,6 +925,37 @@ test('auto-fill suggests shopping list within budget from usage history', functi
         ->and($item->notes)->toBe($line['reason']);
 });
 
+test('auto-fill only suggests what the partner makes, the rest is a rescue order', function () {
+    $seller = $this->orgPartner->partner;
+    $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
+    [, $sellerProduct] = createProduct($sellerShop);
+    $sellerOrgStock = $sellerProduct->orgStocks()->first();
+
+    $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+    $buyerOrgStock->update(['quantity_available' => 0, 'is_on_demand' => false, 'is_excluded_from_auto_ordering' => false]);
+    $buyerOrgStock->stats()->update(['days_of_cover' => null, 'recommended_order_quantity' => null, 'predicted_daily_usage' => 5.5]);
+    DB::table('org_stocks')->where('id', $sellerOrgStock->id)->update(['quantity_available' => 50]);
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+        ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
+        ->delete();
+
+    $isSuggested = fn (): bool => collect(SuggestPartnerShoppingList::make()->action($this->orgPartner, 100000)['lines'])
+        ->contains('org_stock_id', $sellerOrgStock->id);
+
+    $artefact = madeBySeller($sellerOrgStock);
+
+    expect($isSuggested())->toBeTrue();
+
+    DB::table('artefacts')->where('id', $artefact->id)->update(['deleted_at' => now()]);
+
+    try {
+        expect($isSuggested())->toBeFalse();
+    } finally {
+        DB::table('artefacts')->where('id', $artefact->id)->update(['deleted_at' => null]);
+    }
+});
+
 test('on demand buyer org stock excluded from partner shopping', function () {
     $seller = $this->orgPartner->partner;
     $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
@@ -956,6 +988,7 @@ test('seasonal SKO is only suggested from a partner when an order placed today w
     $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
     [, $sellerProduct] = createProduct($sellerShop);
     $sellerOrgStock = $sellerProduct->orgStocks()->first();
+    madeBySeller($sellerOrgStock);
     $sellerOrgStock->update(['quantity_available' => 50]);
 
     $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
@@ -1021,6 +1054,7 @@ test('do-not-auto-order buyer org stock excluded from auto-fill but kept in buck
     $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
     [, $sellerProduct] = createProduct($sellerShop);
     $sellerOrgStock = $sellerProduct->orgStocks()->first();
+    madeBySeller($sellerOrgStock);
     $sellerOrgStock->update(['quantity_available' => 50]);
 
     $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];

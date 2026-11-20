@@ -40,14 +40,28 @@ class PackMobileDeliveryNoteItem
         $this->ensureLineOfNote($deliveryNote, $deliveryNoteItem);
 
         $data = Validator::make($request->all(), [
-            'quantity' => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            'quantity'          => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            'client_request_id' => ['sometimes', 'nullable', 'uuid'],
         ])->validate();
 
+        return MobileClientRequest::once(
+            $user,
+            $data['client_request_id'] ?? null,
+            fn () => $this->pack($deliveryNote, $deliveryNoteItem, $user, isset($data['quantity']) ? (float) $data['quantity'] : null),
+            fn () => $this->respondWith($deliveryNote, $user, 'nothing_changed', __('Already done.'))
+        );
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    private function pack(DeliveryNote $deliveryNote, DeliveryNoteItem $deliveryNoteItem, User $user, ?float $quantity): JsonResponse
+    {
         $packedBefore = $this->packedQuantity($deliveryNoteItem);
         $warning      = null;
 
         try {
-            UpdateDeliveryNoteItemPacking::make()->action($deliveryNoteItem, $user, isset($data['quantity']) ? (float) $data['quantity'] : null);
+            UpdateDeliveryNoteItemPacking::make()->action($deliveryNoteItem, $user, $quantity);
         } catch (ValidationException|HttpException $exception) {
             $warning = $this->promotionRefusal($exception, $deliveryNoteItem, $packedBefore);
         }

@@ -34,6 +34,7 @@ class StoreSowing extends OrgAction
 
     protected DeliveryNoteItem|StockDeliveryItem|ReturnDeliveryNoteItem $parent;
     private User|null $user = null;
+    private bool $withoutStockMovement = false;
 
     public function handle(DeliveryNoteItem|StockDeliveryItem|ReturnDeliveryNoteItem $parent, array $modelData): Sowing
     {
@@ -80,7 +81,7 @@ class StoreSowing extends OrgAction
         $sowing = $parent->sowings()->create($modelData);
         $sowing->refresh();
 
-        if ($sowType === SowingTypeEnum::SOW && $locationOrgStock) {
+        if ($sowType === SowingTypeEnum::SOW && $locationOrgStock && !$this->withoutStockMovement) {
             $movementData = [
                 'quantity' => $sowing->quantity,
                 'type'     => $orgStockMovement,
@@ -189,11 +190,12 @@ class StoreSowing extends OrgAction
         $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    public function action(ReturnDeliveryNoteItem|DeliveryNoteItem|StockDeliveryItem $parent, ?User $user, array $modelData): Sowing
+    public function action(ReturnDeliveryNoteItem|DeliveryNoteItem|StockDeliveryItem $parent, ?User $user, array $modelData, bool $withoutStockMovement = false): Sowing
     {
-        $this->asAction = true;
-        $this->user     = $user;
-        $this->parent   = $parent;
+        $this->asAction             = true;
+        $this->user                 = $user;
+        $this->parent               = $parent;
+        $this->withoutStockMovement = $withoutStockMovement;
 
         if ($parent instanceof StockDeliveryItem) {
             $this->initialisation($parent->organisation, $modelData);

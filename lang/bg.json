@@ -9488,6 +9488,8 @@
     "eBay said: \":message\"": "eBay отговори: \":message\"",
     "In your basket (packs ordered × units in each pack = units):": "Във вашата количка (поръчани опаковки × бройки в опаковка = бройки):",
     "On its way to us: :families.": "На път към нас: :families.",
+    "We have this on order with our supplier. It is not on our website yet.": "Поръчали сме това от нашия доставчик. Все още не е на нашия сайт.",
+    "Coming soon to our website: :families.": "Скоро на нашия сайт: :families.",
     "Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.": "Според това как работи складът ни тази седмица, очакваме поръчката ви да бъде изпратена на :day. Това е прогноза, а не гарантирана дата.",
     "Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.": "Според това как работи складът ни тази седмица, очакваме поръчката ви да бъде изпратена между :from и :to. Това е прогноза, а не гарантирана дата.",
     "These items of your order could not be picked: :items. Our team needs to know whether to send the order without them or with a replacement.": "Тези артикули от поръчката ви не можаха да бъдат взети: :items. Екипът ни трябва да знае дали да изпрати поръчката без тях или със заместител.",

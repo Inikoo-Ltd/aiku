@@ -33,6 +33,7 @@ class PickAllMobileDeliveryNoteItem
 
         $data = Validator::make($request->all(), [
             'location_org_stock_id' => ['sometimes', 'nullable', 'integer'],
+            'client_request_id'     => ['sometimes', 'nullable', 'uuid'],
         ])->validate();
 
         $lineLocations    = app(GetMobileDeliveryNote::class)->pickingLocations($deliveryNoteItem);
@@ -44,6 +45,16 @@ class PickAllMobileDeliveryNoteItem
             return $this->respondWith($deliveryNote, $user, 'nothing_changed', __('No location of this line holds stock.'));
         }
 
+        return MobileClientRequest::once(
+            $user,
+            $data['client_request_id'] ?? null,
+            fn () => $this->pickAll($deliveryNote, $deliveryNoteItem, $locationOrgStock, $user),
+            fn () => $this->respondWith($deliveryNote, $user, 'nothing_changed', __('Already done.'))
+        );
+    }
+
+    private function pickAll(DeliveryNote $deliveryNote, DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, User $user): JsonResponse
+    {
         $before = $this->lineSnapshot($deliveryNoteItem);
 
         PickAllItem::run($deliveryNoteItem->refresh(), [

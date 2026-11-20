@@ -3511,6 +3511,36 @@ describe('partner shopping list', function () {
         expect(fn () => SubmitPartnerShoppingList::make()->action($this->orgPartner))->toThrow(ValidationException::class);
     });
 
+    test('the basket splits into production and rescue lines, and submits one kind at a time', function () {
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('state', ShoppingListItemStateEnum::DRAFT)->delete();
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        madeBySeller($sellerOrgStock);
+        $heldOnly = createOrgStocks($this->orgPartner->organisation, [StoreStock::make()->action($this->orgPartner->organisation->group, Stock::factory()->definition())])[0];
+        createOrgStocks($this->orgPartner->partner, [$heldOnly->stock]);
+
+        $production = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 4]);
+        $rescue     = StorePartnerShoppingListItem::make()->action($this->orgPartner, $heldOnly, ['quantity' => 2]);
+
+        actingAs($this->adminGuest->getUser());
+        $orderOptions = fn () => collect($this->withoutVite()->get(route('grp.org.procurement.org_partners.show.shopping_list.index', [$this->organisation->slug, $this->orgPartner->id]))
+            ->assertOk()
+            ->inertiaProps('filterGroups'))->firstWhere('key', 'order')['options'];
+
+        expect(collect($orderOptions())->pluck('count', 'value')->all())->toBe(['production' => 1, 'rescue' => 1]);
+
+        post(route('grp.org.procurement.org_partners.show.shopping_list.submit', [$this->organisation->slug, $this->orgPartner->id]), ['order' => 'rescue'])
+            ->assertRedirect();
+
+        expect($rescue->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN)
+            ->and($production->refresh()->state)->toBe(ShoppingListItemStateEnum::DRAFT);
+
+        post(route('grp.org.procurement.org_partners.show.shopping_list.submit', [$this->organisation->slug, $this->orgPartner->id]), ['order' => 'other'])
+            ->assertSessionHasErrors('order');
+
+        expect(SubmitPartnerShoppingList::make()->action($this->orgPartner, orderKind: 'production'))->toBe(1)
+            ->and($production->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN);
+    });
+
     test('submitting the list of a partner of another organisation is not found', function () {
         $anotherOrganisation = $this->agent->organisation;
         $foreignOrgPartner   = OrgPartner::where('organisation_id', $anotherOrganisation->id)->where('partner_id', $this->orgPartner->partner_id)->first()
@@ -3776,12 +3806,17 @@ describe('partner shopping list', function () {
         $this->orgPartner->partner->update(['is_manufacturing_hub' => true]);
         PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
         $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
-        createOrgStocks($this->orgPartner->partner, [$stock])[0]->update(['state' => OrgStockStateEnum::ACTIVE]);
+        $sellerOrgStock = createOrgStocks($this->orgPartner->partner, [$stock])[0];
+        $sellerOrgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
         $this->buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$stock])[0];
         $this->buyerOrgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'quantity_available' => 0, 'health_rank' => HealthRankEnum::A, 'is_on_demand' => false, 'is_excluded_from_auto_ordering' => false]);
         $this->buyerOrgStock->stats()->updateOrCreate([], ['predicted_daily_usage' => 2, 'days_of_cover' => 0]);
         $orgPartner = $this->orgPartner->refresh();
         $rescued    = fn () => GetPartnerStockCoverBuckets::make()->rescueItems($orgPartner)->pluck('org_stock_id')->map(fn ($id) => (int) $id)->all();
+
+        expect($rescued())->not->toContain($this->buyerOrgStock->id);
+
+        madeBySeller($sellerOrgStock);
 
         expect($rescued())->toContain($this->buyerOrgStock->id);
 

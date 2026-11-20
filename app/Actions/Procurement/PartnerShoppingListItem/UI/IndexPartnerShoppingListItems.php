@@ -164,6 +164,8 @@ class IndexPartnerShoppingListItems extends OrgAction
             ->groupBy('org_stocks.health_rank')
             ->pluck('total', 'rank');
         $originCounts   = $items()->selectRaw('suggested_by_hub, count(*) as total')->groupBy('suggested_by_hub')->pluck('total', 'suggested_by_hub');
+        $productionLines = PartnerShoppingListItem::whereOrderKind($items(), 'production')->count();
+        $rescueLines     = PartnerShoppingListItem::whereOrderKind($items(), 'rescue')->count();
         $categoryCounts = $items()
             ->leftJoin('org_stocks as partner_org_stocks', function ($join) {
                 $join->on('partner_org_stocks.stock_id', 'partner_shopping_list_items.stock_id')
@@ -186,6 +188,14 @@ class IndexPartnerShoppingListItems extends OrgAction
                 ])),
                 'engine'  => $stateOfLineOrPiece,
             ]] : []),
+            'order'    => [
+                'label'   => __('Order'),
+                'options' => [
+                    $option('production', __('Production'), $productionLines),
+                    $option('rescue', __('Rescue'), $rescueLines),
+                ],
+                'engine'  => fn ($query, array $values) => count($values) === 1 && in_array($values[0], ['production', 'rescue'], true) ? PartnerShoppingListItem::whereOrderKind($query, $values[0]) : $query,
+            ],
             'category' => [
                 'label'   => __('Category'),
                 'options' => $withCounts(

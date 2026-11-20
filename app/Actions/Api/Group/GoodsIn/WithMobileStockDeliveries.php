@@ -241,7 +241,7 @@ trait WithMobileStockDeliveries
     protected function skoLocationsInWarehouse(Warehouse $warehouse, array $orgStockIds): Collection
     {
         return StockDeliveryItemResource::locationsQuery()
-            ->addSelect('location_org_stocks.type')
+            ->addSelect(['location_org_stocks.type', 'location_org_stocks.version'])
             ->whereIn('location_org_stocks.org_stock_id', $orgStockIds)
             ->where('location_org_stocks.warehouse_id', $warehouse->id)
             ->where('locations.warehouse_id', $warehouse->id)
@@ -311,6 +311,7 @@ trait WithMobileStockDeliveries
                 ...$this->skoFields('quantity', $location->quantity, $packedIn),
                 'is_default_wholesale'    => (bool) $location->default_wholesale_picking_location,
                 'is_default_dropshipping' => (bool) $location->default_dropshipping_picking_location,
+                'version'                 => (int) $location->version,
             ])->values()->all(),
             'placements'               => $item->sowings->map(fn (Sowing $sowing) => [
                 'id'       => $sowing->id,

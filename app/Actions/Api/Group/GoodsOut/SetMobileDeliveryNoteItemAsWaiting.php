@@ -34,9 +34,10 @@ class SetMobileDeliveryNoteItemAsWaiting
         $this->ensureLineOfNote($deliveryNote, $deliveryNoteItem);
 
         $data = Validator::make($request->all(), [
-            'kind'     => ['required', Rule::in(['warehouse', 'crm'])],
-            'quantity' => ['required', 'numeric', 'gt:0'],
-            'note'     => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'kind'              => ['required', Rule::in(['warehouse', 'crm'])],
+            'quantity'          => ['required', 'numeric', 'gt:0'],
+            'note'              => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'client_request_id' => ['sometimes', 'nullable', 'uuid'],
         ])->validate();
 
         $modelData = array_filter([
@@ -44,9 +45,22 @@ class SetMobileDeliveryNoteItemAsWaiting
             'note'     => $data['note'] ?? null,
         ], fn ($value) => $value !== null);
 
+        return MobileClientRequest::once(
+            $user,
+            $data['client_request_id'] ?? null,
+            fn () => $this->setWaiting($deliveryNote, $deliveryNoteItem, $user, $data['kind'], $modelData),
+            fn () => $this->respondWith($deliveryNote, $user, 'nothing_changed', __('Already done.'))
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $modelData
+     */
+    private function setWaiting(DeliveryNote $deliveryNote, DeliveryNoteItem $deliveryNoteItem, User $user, string $kind, array $modelData): JsonResponse
+    {
         $before = $this->lineSnapshot($deliveryNoteItem);
 
-        $this->passingWebRefusals(fn () => $data['kind'] === 'warehouse'
+        $this->passingWebRefusals(fn () => $kind === 'warehouse'
             ? SetAsWaitingWarehouse::make()->action($deliveryNoteItem->refresh(), $user, $modelData)
             : SetAsWaitingCrm::make()->action($deliveryNoteItem->refresh(), $user, $modelData), 'quantity');
 
@@ -55,7 +69,7 @@ class SetMobileDeliveryNoteItemAsWaiting
             $user,
             $before,
             $this->lineSnapshot($deliveryNoteItem),
-            $data['kind'] === 'warehouse' ? __('Set as waiting for the warehouse.') : __('Passed to customer services.'),
+            $kind === 'warehouse' ? __('Set as waiting for the warehouse.') : __('Passed to customer services.'),
             __('Nothing changed on this line.')
         );
     }

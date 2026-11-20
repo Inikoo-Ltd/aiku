@@ -26787,6 +26787,8 @@
     "eBay said: \":message\"": "eBay respondió: \":message\"",
     "In your basket (packs ordered × units in each pack = units):": "En su cesta (paquetes pedidos × unidades por paquete = unidades):",
     "On its way to us: :families.": "En camino hacia nosotros: :families.",
+    "We have this on order with our supplier. It is not on our website yet.": "Lo tenemos pedido a nuestro proveedor. Todavía no está en nuestra web.",
+    "Coming soon to our website: :families.": "Próximamente en nuestra web: :families.",
     "Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.": "Según cómo está funcionando nuestro almacén esta semana, calculamos que su pedido saldrá el :day. Es una estimación, no una fecha garantizada.",
     "Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.": "Según cómo está funcionando nuestro almacén esta semana, calculamos que su pedido saldrá entre el :from y el :to. Es una estimación, no una fecha garantizada.",
     "These items of your order could not be picked: :items. Our team needs to know whether to send the order without them or with a replacement.": "Estos artículos de su pedido no se han podido preparar: :items. Nuestro equipo necesita saber si enviar el pedido sin ellos o con un sustituto.",

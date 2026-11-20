@@ -170,6 +170,7 @@ trait WithMobileOrgStocks
                     'name' => $area->name,
                 ] : null,
             ],
+            'version'                 => (int) $link->version,
         ];
     }
 

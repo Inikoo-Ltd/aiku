@@ -8,6 +8,7 @@
 
 namespace App\Actions\Api\Group\Locations;
 
+use App\Actions\Api\Group\Inventory\WithMobileStockWriteRequests;
 use App\Actions\Inventory\Location\MassMoveLocationOrgStocks;
 use App\Models\Inventory\Location;
 use App\Models\SysAdmin\User;
@@ -19,6 +20,7 @@ class MoveAllMobileLocationOrgStocks
 {
     use AsController;
     use WithMobileLocationsAccess;
+    use WithMobileStockWriteRequests;
 
     /**
      * The web "Move All SKO" of the Location page (MassMoveLocationOrgStocks), with its own
@@ -32,8 +34,15 @@ class MoveAllMobileLocationOrgStocks
         $user = $request->user();
         $this->ensureCanViewLocations($user, $location->warehouse);
 
-        MassMoveLocationOrgStocks::make()->asController($location, $request);
+        return $this->oncePerClientRequest(
+            $user,
+            $this->optionalClientRequestId($request->all()),
+            function () use ($location, $request, $user) {
+                MassMoveLocationOrgStocks::make()->asController($location, $request);
 
-        return response()->json(['data' => (new ShowMobileLocation())->forUser($location->refresh(), $user)]);
+                return response()->json(['data' => (new ShowMobileLocation())->forUser($location->refresh(), $user)]);
+            },
+            fn () => response()->json(['data' => (new ShowMobileLocation())->forUser($location->refresh(), $user)])
+        );
     }
 }

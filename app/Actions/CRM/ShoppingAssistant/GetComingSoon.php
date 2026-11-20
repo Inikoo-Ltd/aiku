@@ -20,8 +20,9 @@ use Lorisleiva\Actions\Concerns\AsObject;
 /**
  * INI-396, Raul 19 Nov 2026: "what is coming soon?" answered from stock on its way to us. A product
  * is coming soon (ProductStatusEnum::COMING_SOON: active, no stock, its stock never in our warehouse)
- * and only counts when its stock is on an agreed purchase order line or a stock delivery not yet put
- * away: coming-soon products with neither are stale and left out. Products made for one customer
+ * and only counts when its stock is on an open purchase order line submitted in the last
+ * GetOnOrderNotListed::RECENT_MONTHS months (HELP-4843: submitted counts, new stock sits there for
+ * weeks) or a stock delivery not yet put away: coming-soon products with neither are stale and left out. Products made for one customer
  * (product_has_exclusive_customers) never count (hard rule). Only family names reach the customer, as
  * a line written by code: no dates (deliveries slip), no prices, no quantities, no number of products.
  */
@@ -60,14 +61,14 @@ class GetComingSoon
             'content'  => [
                 'found'  => true,
                 'ranges' => $families,
-                'note'   => 'The line under your reply, written by the system, lists new ranges on their way to us. In one or two sentences say that these are on their way and point to the line. Never say when they arrive and never give a date, price, quantity or number of products. '
+                'note'   => 'The line under your reply, written by the system, lists new ranges coming to our website: on order with our supplier or on their way to us. In one or two sentences say that these are coming soon and point to the line. Never say when they arrive and never give a date, price, quantity or number of products. '
                     .($remindersOn
                         ? 'Offer an email the moment one lands; if they say yes, call notify_when_back_in_stock with that range name as query and customer_agreed true.'
                         : 'Say they will find it on the website as soon as it lands.'),
             ],
             'products' => [],
             'error'    => null,
-            'fact'     => __('On its way to us: :families.', ['families' => implode(', ', $families)], $locale),
+            'fact'     => __('Coming soon to our website: :families.', ['families' => implode(', ', $families)], $locale),
         ];
     }
 
@@ -76,7 +77,7 @@ class GetComingSoon
      */
     public function families(int $shopId): array
     {
-        $agreed     = PurchaseOrderStateEnum::agreedValues();
+        $open       = PurchaseOrderStateEnum::openValues();
         $deliveries = array_map(fn (StockDeliveryStateEnum $state) => $state->value, self::ON_THE_WAY_DELIVERY_STATES);
         $finished   = [StockDeliveryItemStateEnum::CANCELLED->value, StockDeliveryItemStateEnum::NOT_RECEIVED->value, StockDeliveryItemStateEnum::PLACED->value];
 
@@ -97,7 +98,9 @@ class GetComingSoon
                         ->whereColumn('purchase_order_transactions.org_stock_id', 'product_has_org_stocks.org_stock_id')
                         ->whereNull('purchase_order_transactions.deleted_at')
                         ->whereNotIn('purchase_order_transactions.state', [PurchaseOrderTransactionStateEnum::CANCELLED->value, PurchaseOrderTransactionStateEnum::NOT_RECEIVED->value, PurchaseOrderTransactionStateEnum::SETTLED->value])
-                        ->whereIn('purchase_orders.state', $agreed))
+                        ->whereNull('purchase_orders.deleted_at')
+                        ->whereIn('purchase_orders.state', $open)
+                        ->where('purchase_orders.submitted_at', '>=', now()->subMonths(GetOnOrderNotListed::RECENT_MONTHS)))
                     ->orWhereExists(fn ($query) => $query->from('stock_delivery_items')
                         ->join('stock_deliveries', 'stock_deliveries.id', '=', 'stock_delivery_items.stock_delivery_id')
                         ->whereColumn('stock_delivery_items.org_stock_id', 'product_has_org_stocks.org_stock_id')

@@ -17,6 +17,7 @@ use App\Http\Resources\Procurement\ReturnDeliveryNoteItemsResource;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use App\Models\GoodsIn\Sowing;
+use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
@@ -147,7 +148,7 @@ trait WithMobileReturns
             ->where('location_org_stocks.warehouse_id', $warehouse->id)
             ->where('locations.warehouse_id', $warehouse->id)
             ->whereNull('locations.deleted_at')
-            ->select(['location_org_stocks.id', 'location_org_stocks.org_stock_id', 'location_org_stocks.quantity', 'location_org_stocks.type', 'locations.id as location_id', 'locations.code as location_code'])
+            ->select(['location_org_stocks.id', 'location_org_stocks.org_stock_id', 'location_org_stocks.quantity', 'location_org_stocks.type', 'location_org_stocks.version', 'locations.id as location_id', 'locations.code as location_code'])
             ->orderByRaw(ReturnDeliveryNoteItemsResource::defaultLocationOrder($returnDeliveryNote->shop?->type))
             ->orderBy('location_org_stocks.picking_priority')
             ->get()
@@ -194,8 +195,20 @@ trait WithMobileReturns
                 'location'              => ['id' => $location->location_id, 'code' => $location->location_code],
                 'type'                  => $location->type,
                 ...$this->skoFields('quantity', $location->quantity, $packedIn),
+                'location_id'           => $location->location_id,
+                'location_code'         => $location->location_code,
+                'version'               => (int) $location->version,
             ])->values()->all(),
+            'barcodes'     => $orgStock ? self::skoBarcodes($orgStock) : [],
         ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function skoBarcodes(OrgStock $orgStock): array
+    {
+        return array_values(array_unique(array_filter([$orgStock->barcode, $orgStock->unit_barcode], fn (?string $barcode) => $barcode !== null && $barcode !== '')));
     }
 
     protected function putTypeLabel(SowingTypeEnum $type): string
