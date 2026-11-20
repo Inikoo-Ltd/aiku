@@ -147,7 +147,7 @@ const submitInstruction = () => {
 					</div>
 					<div v-if="card.purchase_orders.length" class="mt-0.5 text-xs text-gray-500">
 						{{ ctrans("Purchase orders") }}:
-						<span v-for="(reference, index) in card.purchase_orders" :key="reference" class="whitespace-nowrap">{{ reference }}<template v-if="index < card.purchase_orders.length - 1">, </template></span>
+						<template v-for="(reference, index) in card.purchase_orders" :key="reference"><span class="whitespace-nowrap">{{ reference }}</span><template v-if="index < card.purchase_orders.length - 1">, </template></template>
 					</div>
 				</div>
 				<div v-if="card.update_route || card.make_instruction_route" class="flex shrink-0 flex-wrap gap-2">

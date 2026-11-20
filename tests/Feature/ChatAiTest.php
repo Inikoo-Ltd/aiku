@@ -2009,3 +2009,25 @@ test('suggestions taken counts only drafts with an outcome, per shop for everyon
     $session->messages()->withTrashed()->forceDelete();
     $session->forceDelete();
 });
+
+test('aura is angry with an agent who wrote again by hand suggestions she had right', function () {
+    $lost = fn (array $more = []) => \App\Models\Chat\ChatAiDraft::create($more + [
+        'group_id'           => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id,
+        'topic'              => \App\Enums\CRM\Livechat\ChatTopicEnum::OTHER, 'text' => 'Yes, we ship to Spain daily.',
+        'facts'              => ['mode' => \App\Actions\Chat\ChatSession\DraftChatReply::ASSISTANT],
+        'status'             => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED, 'change_class' => 'discarded',
+        'decided_by_user_id' => $this->user->id, 'decided_at' => now()->subDay(), 'time_lost' => true,
+    ]);
+    $acceptance = \App\Actions\Chat\Reports\GetChatAiAcceptance::make();
+
+    $first = $lost();
+    $old   = $lost(['decided_at' => now()->subDays(\App\Actions\Chat\Reports\GetChatAiAcceptance::ANGRY_DAYS + 1)]);
+    $right = $lost(['time_lost' => false]);
+    expect($acceptance->isAngryWith($this->user->id))->toBeFalse();
+
+    $second = $lost();
+    expect($acceptance->isAngryWith($this->user->id))->toBeTrue()
+        ->and($acceptance->isAngryWith($this->user->id + 1000))->toBeFalse();
+
+    \App\Models\Chat\ChatAiDraft::whereKey([$first->id, $old->id, $right->id, $second->id])->delete();
+});

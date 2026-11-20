@@ -144,7 +144,7 @@ struct GoodsOutAPITests {
         _ = await store.loadNote(id: 501, errorKey: "AR24811")
         let line = try #require(store.note("AR24811")?.lines.first { $0.apiID == 11 })
 
-        let sending = Task { await store.quickLine(.pickAll(line: 11, locationOrgStockID: 91), line: line.id, change: .pickAll, on: "AR24811") }
+        let sending = Task { await store.quickLine(.pickAll(line: 11, locationOrgStockID: 91, clientRequestID: "request-1"), line: line.id, change: .pickAll, on: "AR24811") }
         try await Task.sleep(for: .milliseconds(50))
 
         #expect(store.note("AR24811")?.lines.first { $0.id == line.id }?.isHandled == true)
@@ -154,7 +154,7 @@ struct GoodsOutAPITests {
         #expect(await sending.value == .done(message: "Trolley changed."))
         #expect(!store.isSending(line.id, on: "AR24811"))
         #expect(!store.isWorking(on: "AR24811"))
-        #expect(await calls.actions.map(\.1) == [.pickAll(line: 11, locationOrgStockID: 91)])
+        #expect(await calls.actions.map(\.1) == [.pickAll(line: 11, locationOrgStockID: 91, clientRequestID: "request-1")])
     }
 
     @MainActor
@@ -272,12 +272,12 @@ struct GoodsOutAPITests {
         #expect(start.method == .post)
         #expect(String(decoding: try #require(start.body), as: UTF8.self) == #"{"trolley_id":null}"#)
 
-        let pick = Endpoint.goodsOutNoteAction(noteID: 501, .pick(line: 11, locationOrgStockID: 91, quantity: 2))
+        let pick = Endpoint.goodsOutNoteAction(noteID: 501, .pick(line: 11, locationOrgStockID: 91, quantity: 2, clientRequestID: "request-1"))
         #expect(pick.path == "mobile/delivery-notes/501/lines/11/pick")
-        #expect(String(decoding: try #require(pick.body), as: UTF8.self) == #"{"location_org_stock_id":91,"quantity":2}"#)
+        #expect(String(decoding: try #require(pick.body), as: UTF8.self) == #"{"client_request_id":"request-1","location_org_stock_id":91,"quantity":2}"#)
 
-        let waiting = Endpoint.goodsOutNoteAction(noteID: 501, .waiting(line: 11, kind: .crm, quantity: 1.5, note: "  "))
-        #expect(String(decoding: try #require(waiting.body), as: UTF8.self) == #"{"kind":"crm","note":null,"quantity":1.5}"#)
+        let waiting = Endpoint.goodsOutNoteAction(noteID: 501, .waiting(line: 11, kind: .crm, quantity: 1.5, note: "  ", clientRequestID: "request-2"))
+        #expect(String(decoding: try #require(waiting.body), as: UTF8.self) == #"{"client_request_id":"request-2","kind":"crm","note":null,"quantity":1.5}"#)
 
         let undo = Endpoint.goodsOutNoteAction(noteID: 501, .undoPicking(line: 11, pickingID: 300))
         #expect(undo.method == .delete)

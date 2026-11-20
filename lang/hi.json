@@ -5344,6 +5344,7 @@
     "Draft": "ड्राफ़्ट",
     "Draft Initiated:": "ड्राफ़्ट शुरू हुआ:",
     "Draft by Aiku: read it, change what you need, then send": "Aiku का ड्राफ़्ट: इसे पढ़ें, जो चाहें बदलें, फिर भेजें",
+    "Draft by Aura: read it, change what you need, then send": "Aura का ड्राफ़्ट: इसे पढ़ें, जो चाहें बदलें, फिर भेजें",
     "Draft not saved": "ड्राफ़्ट सहेजा नहीं गया",
     "Draft order for :heading not created: :error": ":heading के लिए ड्राफ़्ट ऑर्डर नहीं बना: :error",
     "Draft orders": "ड्राफ़्ट ऑर्डर",
@@ -22700,5 +22701,7 @@
     "Warehouse :warehouse · Factory :factory": "गोदाम :warehouse · कारखाना :factory",
     "Wrong Weights": "गलत वज़न",
     "material": "सामग्री",
-    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO, :name द्वारा, :time|:count SKO, :name द्वारा, :time"
+    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO, :name द्वारा, :time|:count SKO, :name द्वारा, :time",
+    "Yes, I would like :brand to send me WhatsApp updates about my orders, deliveries, restocks and membership.": "हाँ, :brand मुझे मेरे ऑर्डर, डिलीवरी, रीस्टॉक और सदस्यता के बारे में WhatsApp पर अपडेट भेज सकता है।",
+    "Yes, I would like to receive occasional offers and news from :brand on WhatsApp.": "हाँ, :brand मुझे WhatsApp पर कभी-कभी ऑफ़र और समाचार भेज सकता है।"
 }

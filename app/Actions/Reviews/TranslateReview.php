@@ -36,7 +36,7 @@ class TranslateReview implements ShouldBeUnique
 
 
         $languages    = Shop::where('is_aiku', true)->where('state', ShopStateEnum::OPEN)->pluck('language_id')->unique();
-        $existing     = $review->translations['message'] ?? [];
+        $existing     = $review->messageTranslations();
         $translations = $existing;
         foreach ($languages as $shopLanguageId) {
             if (!$override && !empty($existing[$shopLanguageId])) {
@@ -52,7 +52,7 @@ class TranslateReview implements ShouldBeUnique
         }
 
         $currentTranslations            = $review->translations;
-        $currentTranslations['message'] = $translations;
+        $currentTranslations['message'] = (object) $translations;
         $review->update(['translations' => $currentTranslations]);
 
         return $review;

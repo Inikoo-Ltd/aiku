@@ -2,15 +2,15 @@ import SwiftUI
 
 struct SystemOnlineOnlyView: View {
     @Environment(AppRouter.self) private var router
-    @State private var store = SystemSyncStore.shared
+    private let offline = OfflineWork.shared
 
     private let steps = ["To do", "Picking", "Picked", "Packing", "Packed", "Finalised", "Dispatched"]
     private let currentStep = 4
 
     var body: some View {
         AppScreen(title: "AR24811", kicker: "Delivery note · Wholesale") {
-            if store.isOnline {
-                SystemStatusBanner("Online · \(waitingLabel)", tone: store.pendingCount == 0 ? .success : .info, actionTitle: "View") {
+            if offline.isOnline {
+                SystemStatusBanner("Online · \(waitingLabel)", tone: offline.waitingCount == 0 ? .success : .info, actionTitle: "View") {
                     router.open(SystemRoute.syncQueue)
                 }
             } else {
@@ -39,7 +39,7 @@ struct SystemOnlineOnlyView: View {
     }
 
     private var waitingLabel: String {
-        store.pendingCount == 1 ? "1 action waiting" : "\(store.pendingCount) actions waiting"
+        OfflineTexts.count(offline.waitingCount, "action waiting", "actions waiting")
     }
 
     private var progress: some View {

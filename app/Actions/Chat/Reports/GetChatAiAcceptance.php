@@ -40,6 +40,10 @@ class GetChatAiAcceptance
 
     public const int RATE_DAYS = 28;
 
+    public const int ANGRY_DAYS = 7;
+
+    public const int ANGRY_AFTER = 2;
+
     public static function band(int $adopted, int $decided, int $minimum = self::MIN_DRAFTS_FOR_BAND): ?string
     {
         if ($decided < $minimum) {
@@ -149,6 +153,22 @@ class GetChatAiAcceptance
         );
 
         return DB::query()->fromSub($rows, 'users_acceptance')->select('users_acceptance.*');
+    }
+
+    /**
+     * Aura turns red for an agent who, in the last ANGRY_DAYS, wrote again by hand at least
+     * ANGRY_AFTER suggestions she had right (time_lost). Only the mood reaches the agent, never
+     * the count.
+     */
+    public function isAngryWith(int $userId): bool
+    {
+        return DB::table('chat_ai_drafts')
+            ->leftJoin('chat_messages as reply', fn ($join) => $join->on('reply.id', '=', 'chat_ai_drafts.reply_message_id')->whereNotNull('chat_ai_drafts.chat_session_id')->where('reply.sender_type', 'agent'))
+            ->leftJoin('chat_agents', 'chat_agents.id', '=', 'reply.sender_id')
+            ->where('chat_ai_drafts.time_lost', true)
+            ->where('chat_ai_drafts.decided_at', '>=', now()->subDays(self::ANGRY_DAYS))
+            ->whereRaw('coalesce(chat_ai_drafts.decided_by_user_id, chat_agents.user_id) = ?', [$userId])
+            ->count() >= self::ANGRY_AFTER;
     }
 
     /**

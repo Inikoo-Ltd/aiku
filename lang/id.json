@@ -5712,6 +5712,7 @@
     "Draft": "Draf",
     "Draft Initiated:": "Draf Dimulai:",
     "Draft by Aiku: read it, change what you need, then send": "Draf dari Aiku: baca, ubah seperlunya, lalu kirim",
+    "Draft by Aura: read it, change what you need, then send": "Draf dari Aura: baca, ubah seperlunya, lalu kirim",
     "Draft from :name's assistant": "Draf dari asisten :name",
     "Draft from an assistant": "Draf dari asisten",
     "Draft not saved": "Draf tidak tersimpan",
@@ -23651,5 +23652,7 @@
     "Warehouse :warehouse · Factory :factory": "Gudang :warehouse · Pabrik :factory",
     "Wrong Weights": "Bobot salah",
     "material": "bahan",
-    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO oleh :name, :time|:count SKO oleh :name, :time"
+    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO oleh :name, :time|:count SKO oleh :name, :time",
+    "Yes, I would like :brand to send me WhatsApp updates about my orders, deliveries, restocks and membership.": "Ya, saya ingin :brand mengirimkan kabar melalui WhatsApp tentang pesanan, pengiriman, stok kembali, dan keanggotaan saya.",
+    "Yes, I would like to receive occasional offers and news from :brand on WhatsApp.": "Ya, saya ingin menerima penawaran dan berita sesekali dari :brand melalui WhatsApp."
 }

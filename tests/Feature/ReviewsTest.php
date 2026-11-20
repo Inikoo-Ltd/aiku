@@ -35,6 +35,7 @@ use App\Actions\Reviews\TranslateReply;
 use App\Actions\Reviews\TranslateReview;
 use App\Actions\Reviews\TranslateReviewMessage;
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
+use App\Actions\Maintenance\Reviews\RepairReviewMessageTranslations;
 use App\Actions\Reviews\UI\IndexReviewsInIris;
 use App\Actions\Reviews\UpdateReview;
 use App\InertiaTable\InertiaTable;
@@ -63,6 +64,7 @@ use App\Models\Reviews\ReviewReaction;
 use App\Models\Reviews\ShopReviewStat;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia;
 
@@ -855,4 +857,72 @@ test('the supplier portal shows its customer reviews in the portal language, and
             ->where('language', 'hi')
             ->loadDeferredProps('feedback', fn ($reload) => $reload
                 ->where('feedback.customers.recent', fn ($rows) => collect($rows)->pluck('message')->contains('बढ़िया उत्पाद'))));
+});
+
+function storeMessageTranslations(Review $review, array $message): Review
+{
+    DB::table('reviews')->where('id', $review->id)->update(['translations' => json_encode(['message' => $message])]);
+
+    return $review->refresh();
+}
+
+function messageTranslationsType(Review $review): ?string
+{
+    return DB::table('reviews')->where('id', $review->id)->value(DB::raw("jsonb_typeof(translations->'message')"));
+}
+
+test('message translations stored as a list are found by language, and a new translation turns the list into an object instead of growing it', function () {
+    $english = Language::where('code', 'en')->firstOrFail();
+    $hindi   = Language::where('code', 'hi')->firstOrFail();
+    $review  = storeMessageTranslations(storeProductReview(['message' => 'Skvělý produkt']), [[$english->id => 'Great product'], [$english->id => 'Great product, again']]);
+    Translate::mock()->shouldReceive('handle')->once()->andReturn('बढ़िया उत्पाद');
+
+    expect(TranslateReviewMessage::run($review, $english))->toBe('Great product')
+        ->and(TranslateReviewMessage::run($review->refresh(), $hindi))->toBe('बढ़िया उत्पाद')
+        ->and(TranslateReviewMessage::run($review->refresh(), $hindi))->toBe('बढ़िया उत्पाद')
+        ->and(messageTranslationsType($review))->toBe('object')
+        ->and($review->refresh()->translations['message'])->toEqual([$english->id => 'Great product', $hindi->id => 'बढ़िया उत्पाद']);
+});
+
+test('TranslateReview keeps message translations stored as a list and saves an object, also when it has nothing to add', function () {
+    $english = Language::where('code', 'en')->firstOrFail();
+    $this->shop->update(['is_aiku' => true]);
+    Translate::mock()->shouldReceive('handle')->andReturn('');
+
+    $listed   = storeMessageTranslations(storeProductReview(['message' => 'Skvělý produkt']), [[$english->id => 'Great product']]);
+    $untranslatable = storeProductReview(['message' => 'Skvělý produkt']);
+    TranslateReview::run($listed);
+    TranslateReview::run($untranslatable);
+
+    expect(messageTranslationsType($listed))->toBe('object')
+        ->and($listed->refresh()->messageTranslations()[$english->id])->toBe('Great product')
+        ->and(messageTranslationsType($untranslatable))->toBe('object');
+});
+
+test('repair:review_message_translations only counts without --apply, and with it rewrites message translations keyed by language, leaving keyed reviews and updated_at alone', function () {
+    $english = Language::where('code', 'en')->firstOrFail();
+    $hindi   = Language::where('code', 'hi')->firstOrFail();
+    $listed  = storeMessageTranslations(storeProductReview(['message' => 'Skvělý produkt']), [[$english->id => 'Great product'], [$hindi->id => 'बढ़िया उत्पाद'], [$english->id => 'Great product, again']]);
+    $empty   = storeMessageTranslations(storeProductReview(['message' => 'Skvělý produkt']), []);
+    $stray   = storeMessageTranslations(storeProductReview(['message' => 'Skvělý produkt']), [$english->id => 'Great product', 'message' => []]);
+    $keyed   = storeMessageTranslations(storeProductReview(['message' => 'Skvělý produkt']), [$english->id => 'Great product']);
+    $ids     = [$listed->id, $empty->id, $stray->id, $keyed->id];
+    $updated = DB::table('reviews')->where('id', $listed->id)->value('updated_at');
+
+    expect(RepairReviewMessageTranslations::make()->reviewsToRepair()->whereKey($ids)->orderBy('id')->pluck('id')->all())
+        ->toBe([$listed->id, $empty->id, $stray->id]);
+
+    $this->artisan('repair:review_message_translations')->expectsOutputToContain('Nothing was changed')->assertSuccessful();
+    expect(messageTranslationsType($listed))->toBe('array');
+
+    $this->artisan('repair:review_message_translations', ['--apply' => true])->assertSuccessful();
+
+    expect(messageTranslationsType($listed))->toBe('object')
+        ->and($listed->refresh()->translations['message'])->toEqual([$english->id => 'Great product', $hindi->id => 'बढ़िया उत्पाद'])
+        ->and(messageTranslationsType($empty))->toBe('object')
+        ->and($empty->refresh()->translations['message'])->toBe([])
+        ->and($stray->refresh()->translations['message'])->toBe([$english->id => 'Great product'])
+        ->and($keyed->refresh()->translations['message'])->toBe([$english->id => 'Great product'])
+        ->and(DB::table('reviews')->where('id', $listed->id)->value('updated_at'))->toBe($updated)
+        ->and(RepairReviewMessageTranslations::make()->reviewsToRepair()->whereKey($ids)->exists())->toBeFalse();
 });

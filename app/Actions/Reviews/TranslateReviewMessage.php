@@ -24,8 +24,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * A review's message in one language, translated once and kept in reviews.translations.message beside the shop
  * languages TranslateReview fills, so the supplier portal can show reviews in a supplier's language. The key is
- * written on its own, so a TranslateReview running at the same time keeps it. The backfill command takes only the
- * reviews the portal can quote (GetAgentSalesProducts::publicReviews); any other review is translated when first shown.
+ * written on its own, so a TranslateReview running at the same time keeps it. A message still stored as a list
+ * (see Review::messageTranslations) is replaced by its keyed form, never appended to, or the key would not be found
+ * and the review would be translated again on every view (INI-283). The backfill command takes only the reviews the
+ * portal can quote (GetAgentSalesProducts::publicReviews); any other review is translated when first shown.
  */
 class TranslateReviewMessage implements ShouldBeUnique
 {
@@ -44,8 +46,8 @@ class TranslateReviewMessage implements ShouldBeUnique
 
     public function handle(Review $review, Language $language): ?string
     {
-        $stored = data_get($review->translations, 'message.'.$language->id);
-        if (is_string($stored) && $stored !== '') {
+        $stored = $review->messageTranslations()[$language->id] ?? null;
+        if ($stored !== null) {
             return $stored;
         }
 
@@ -65,8 +67,10 @@ class TranslateReviewMessage implements ShouldBeUnique
         }
 
         DB::update(
-            "update reviews set translations = coalesce(translations, '{}'::jsonb) || jsonb_build_object('message', coalesce(translations->'message', '{}'::jsonb) || jsonb_build_object(?::text, ?::text)) where id = ?",
-            [(string) $language->id, $translated, $review->id]
+            "update reviews set translations = (case when jsonb_typeof(translations) = 'object' then translations else '{}'::jsonb end)
+                || jsonb_build_object('message', (case when jsonb_typeof(translations->'message') = 'object' then translations->'message' else ?::jsonb end) || jsonb_build_object(?::text, ?::text))
+                where id = ?",
+            [json_encode((object) $review->messageTranslations()), (string) $language->id, $translated, $review->id]
         );
 
         return $translated;

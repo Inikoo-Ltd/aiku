@@ -170,7 +170,7 @@ class ShowStaffTask extends OrgAction
                             default       => 'fal fa-pencil',
                         },
                         'text'   => $text,
-                        'by'     => $audit->user?->chatName(),
+                        'by'     => $audit->user instanceof User ? $audit->user->chatName() : null,
                         'change' => StaffTask::historyTextChange($field, $old, $value),
                     ];
                 }

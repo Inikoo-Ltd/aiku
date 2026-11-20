@@ -82,8 +82,7 @@ class StoreStockDeliveryFeedback extends OrgAction
      */
     public static function round(StockDelivery $stockDelivery, User $author): StockDeliveryFeedback
     {
-        $suppliers  = self::suppliersOn($stockDelivery);
-        $supplierId = $suppliers->count() === 1 ? $suppliers->first()->id : null;
+        $supplierId = self::addressedSupplierId($stockDelivery);
 
         return StockDeliveryFeedback::createOrFirst(['stock_delivery_id' => $stockDelivery->id], [
             'group_id'        => $stockDelivery->group_id,
@@ -111,6 +110,20 @@ class StoreStockDeliveryFeedback extends OrgAction
                 'caption'      => __('Delivery feedback'),
             ]);
         }
+    }
+
+    /**
+     * The supplier the general part is for: the delivery's own supplier on a direct delivery, even when some lines
+     * come from another supplier, else the only supplier of its lines; null leaves it to the agent or partner.
+     */
+    public static function addressedSupplierId(StockDelivery $stockDelivery): ?int
+    {
+        if ($stockDelivery->supplier_id && !$stockDelivery->agent_id) {
+            return $stockDelivery->supplier_id;
+        }
+        $suppliers = self::suppliersOn($stockDelivery);
+
+        return $suppliers->count() === 1 ? $suppliers->first()->id : null;
     }
 
     /**

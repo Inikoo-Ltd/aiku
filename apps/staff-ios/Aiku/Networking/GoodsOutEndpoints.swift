@@ -329,8 +329,8 @@ struct GoodsOutReturnNoteDTO: Decodable, Equatable, Sendable {
 
 struct GoodsOutLineCountsDTO: Decodable, Equatable, Sendable {
     let all: Int?
-    let todo: Int?
-    let done: Int?
+    var todo: Int?
+    var done: Int?
 }
 
 struct GoodsOutIncompleteSetPartDTO: Decodable, Equatable, Sendable {
@@ -354,11 +354,12 @@ struct GoodsOutLineLocationDTO: Decodable, Equatable, Sendable {
     let locationOrgStockId: Int?
     let locationId: Int?
     let code: String?
-    let stock: Double?
-    let stockLabel: String?
+    var stock: Double?
+    var stockLabel: String?
     let type: String?
-    let quantityPicked: Double?
+    var quantityPicked: Double?
     let pickingId: Int?
+    let version: Int?
 }
 
 struct GoodsOutLinePickingDTO: Decodable, Equatable, Sendable {
@@ -386,22 +387,22 @@ struct GoodsOutLineDTO: Decodable, Equatable, Sendable {
     let orgStock: GoodsOutLineOrgStockDTO?
     let quantityRequired: Double?
     let quantityRequiredLabel: String?
-    let quantityPicked: Double?
-    let quantityPickedLabel: String?
-    let quantityToPick: Double?
-    let quantityToPickLabel: String?
-    let quantityNotPicked: Double?
-    let quantityPacked: Double?
-    let quantityPackedLabel: String?
-    let quantityToPack: Double?
-    let quantityToPackLabel: String?
-    let quantityWaitingWarehouse: Double?
-    let quantityWaitingCrm: Double?
+    var quantityPicked: Double?
+    var quantityPickedLabel: String?
+    var quantityToPick: Double?
+    var quantityToPickLabel: String?
+    var quantityNotPicked: Double?
+    var quantityPacked: Double?
+    var quantityPackedLabel: String?
+    var quantityToPack: Double?
+    var quantityToPackLabel: String?
+    var quantityWaitingWarehouse: Double?
+    var quantityWaitingCrm: Double?
     let isHandled: Bool?
-    let isPicked: Bool?
-    let isDonePacking: Bool?
+    var isPicked: Bool?
+    var isDonePacking: Bool?
     let isPacked: Bool?
-    let locations: [GoodsOutLineLocationDTO]?
+    var locations: [GoodsOutLineLocationDTO]?
     let pickings: [GoodsOutLinePickingDTO]?
     let boxes: [GoodsOutLineBoxDTO]?
     let warehouseArea: GoodsOutLooseText?
@@ -410,6 +411,14 @@ struct GoodsOutLineDTO: Decodable, Equatable, Sendable {
     let unNumbers: GoodsOutLooseText?
     let replacementReason: GoodsOutLooseText?
     let indivisibleSet: Bool?
+    let barcodes: [String?]?
+    let inPickingSession: Bool?
+
+    var scanCodes: [String] {
+        ((barcodes ?? []).compactMap { $0 } + [orgStock?.barcode].compactMap { $0 })
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
 }
 
 struct GoodsOutDeliveryNoteDTO: Decodable, Equatable, Sendable {
@@ -467,12 +476,15 @@ struct GoodsOutDeliveryNoteDTO: Decodable, Equatable, Sendable {
     let canEditContact: Bool?
     let availableActions: [GoodsOutNoteActionDTO]?
     let settings: GoodsOutPickingSettingsDTO?
+    let pickingSettings: GoodsOutPickingSettingsDTO?
     let incompleteSets: [GoodsOutIncompleteSetPartDTO]?
     let readOnlyNotice: String?
     let warning: String?
     let returnDeliveryNote: GoodsOutReturnNoteDTO?
-    let lineCounts: GoodsOutLineCountsDTO?
-    let lines: [GoodsOutLineDTO]?
+    var lineCounts: GoodsOutLineCountsDTO?
+    var lines: [GoodsOutLineDTO]?
+
+    var effectiveSettings: GoodsOutPickingSettingsDTO? { settings ?? pickingSettings }
 
     func action(_ key: String) -> GoodsOutNoteActionDTO? {
         availableActions?.first { $0.key == key }
@@ -618,21 +630,51 @@ struct GoodsOutNoteAction: Equatable, Sendable {
     static func changePickedBay(pickedBayID: Int?) -> GoodsOutNoteAction { .post("picked-bay", ["picked_bay_id": .optional(pickedBayID)]) }
     static func setPicker(userID: Int?) -> GoodsOutNoteAction { .post("picker", ["user_id": .optional(userID)]) }
 
-    static func pick(line: Int, locationOrgStockID: Int, quantity: Double) -> GoodsOutNoteAction {
-        .post(Self.line(line, "pick"), ["location_org_stock_id": .int(locationOrgStockID), "quantity": .quantity(quantity)])
+    static func pick(line: Int, locationOrgStockID: Int, quantity: Double, clientRequestID: String = GoodsOutNoteAction.newClientRequestID()) -> GoodsOutNoteAction {
+        .post(Self.line(line, "pick"), [
+            "location_org_stock_id": .int(locationOrgStockID),
+            "quantity": .quantity(quantity),
+            clientRequestKey: .string(clientRequestID)
+        ])
     }
 
-    static func pickAll(line: Int, locationOrgStockID: Int?) -> GoodsOutNoteAction {
-        .post(Self.line(line, "pick-all"), ["location_org_stock_id": .optional(locationOrgStockID)])
+    static func pickAll(line: Int, locationOrgStockID: Int?, clientRequestID: String = GoodsOutNoteAction.newClientRequestID()) -> GoodsOutNoteAction {
+        .post(Self.line(line, "pick-all"), ["location_org_stock_id": .optional(locationOrgStockID), clientRequestKey: .string(clientRequestID)])
     }
 
-    static func notPicked(line: Int, quantity: Double?, reason: GoodsOutNotPickedReasonKey, note: String?) -> GoodsOutNoteAction {
-        .post(Self.line(line, "not-picked"), ["quantity": .quantity(quantity), "reason": .string(reason.rawValue), "note": .optional(note)])
+    static func notPicked(
+        line: Int,
+        quantity: Double?,
+        reason: GoodsOutNotPickedReasonKey,
+        note: String?,
+        clientRequestID: String = GoodsOutNoteAction.newClientRequestID()
+    ) -> GoodsOutNoteAction {
+        .post(Self.line(line, "not-picked"), [
+            "quantity": .quantity(quantity),
+            "reason": .string(reason.rawValue),
+            "note": .optional(note),
+            clientRequestKey: .string(clientRequestID)
+        ])
     }
 
-    static func waiting(line: Int, kind: GoodsOutWaitingKind, quantity: Double, note: String?) -> GoodsOutNoteAction {
-        .post(Self.line(line, "waiting"), ["kind": .string(kind.rawValue), "quantity": .quantity(quantity), "note": .optional(note)])
+    static func waiting(
+        line: Int,
+        kind: GoodsOutWaitingKind,
+        quantity: Double,
+        note: String?,
+        clientRequestID: String = GoodsOutNoteAction.newClientRequestID()
+    ) -> GoodsOutNoteAction {
+        .post(Self.line(line, "waiting"), [
+            "kind": .string(kind.rawValue),
+            "quantity": .quantity(quantity),
+            "note": .optional(note),
+            clientRequestKey: .string(clientRequestID)
+        ])
     }
+
+    static let clientRequestKey = "client_request_id"
+
+    static func newClientRequestID() -> String { UUID().uuidString.lowercased() }
 
     static func undoPicking(line: Int, pickingID: Int) -> GoodsOutNoteAction {
         .delete(Self.line(line, "pickings/\(pickingID)"))
@@ -847,8 +889,8 @@ extension GoodsOutNoteAction {
         ])
     }
 
-    static func pack(line: Int, quantity: Double?) -> GoodsOutNoteAction {
-        .post(Self.line(line, "pack"), ["quantity": .quantity(quantity)])
+    static func pack(line: Int, quantity: Double?, clientRequestID: String = GoodsOutNoteAction.newClientRequestID()) -> GoodsOutNoteAction {
+        .post(Self.line(line, "pack"), ["quantity": .quantity(quantity), clientRequestKey: .string(clientRequestID)])
     }
 
     static func unpack(line: Int) -> GoodsOutNoteAction {

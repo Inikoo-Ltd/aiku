@@ -5570,6 +5570,7 @@
     "Draft": "मस्यौदा",
     "Draft Initiated:": "मस्यौदा सुरु गरिएको:",
     "Draft by Aiku: read it, change what you need, then send": "Aiku को मस्यौदा: पढ्नुहोस्, चाहिएको परिवर्तन गर्नुहोस्, त्यसपछि पठाउनुहोस्",
+    "Draft by Aura: read it, change what you need, then send": "Aura को मस्यौदा: पढ्नुहोस्, चाहिएको परिवर्तन गर्नुहोस्, त्यसपछि पठाउनुहोस्",
     "Draft from :name's assistant": ":name को सहायकबाट मस्यौदा",
     "Draft from an assistant": "सहायकबाट मस्यौदा",
     "Draft not saved": "मस्यौदा सुरक्षित भएन",
@@ -23440,5 +23441,7 @@
     "Warehouse :warehouse · Factory :factory": "गोदाम :warehouse · कारखाना :factory",
     "Wrong Weights": "गलत तौल",
     "material": "सामग्री",
-    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO :name द्वारा, :time|:count SKO :name द्वारा, :time"
+    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO :name द्वारा, :time|:count SKO :name द्वारा, :time",
+    "Yes, I would like :brand to send me WhatsApp updates about my orders, deliveries, restocks and membership.": "हो, म चाहन्छु कि :brand ले मलाई मेरा अर्डर, डेलिभरी, रिस्टक र सदस्यताबारे WhatsApp मा अपडेट पठाओस्।",
+    "Yes, I would like to receive occasional offers and news from :brand on WhatsApp.": "हो, म :brand बाट WhatsApp मा कहिलेकाहीँ अफर र समाचार प्राप्त गर्न चाहन्छु।"
 }
