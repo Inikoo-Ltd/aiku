@@ -52,6 +52,10 @@ struct LocationsEmptySlotsView: View {
             }
             await feed.reload(request, apiClient: apiClient)
         }
+        .screenRefreshable {
+            guard let request else { return }
+            await feed.reload(request, apiClient: apiClient)
+        }
     }
 
     private var request: LocationsEmptySlotsRequest? {

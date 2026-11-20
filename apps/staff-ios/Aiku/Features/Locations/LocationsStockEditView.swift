@@ -5,8 +5,15 @@ struct LocationsStockEditView: View {
     let locationCode: String
     @Environment(AppRouter.self) private var router
     @State private var store = LocationsStore.shared
+    @Environment(\.apiClient) private var apiClient
 
     var body: some View {
+        content
+            .screenRefreshable { await store.loadLocation(code: locationCode, apiClient: apiClient) }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         if let context = resolved {
             LocationsStockEditForm(location: context.location, slot: context.slot, store: store)
                 .id("\(context.location.code)|\(context.slot.skoReference)")

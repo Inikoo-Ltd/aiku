@@ -33,6 +33,13 @@ struct HomeView: View {
         .task {
             await clocking.load()
         }
+        .screenRefreshable {
+            await clocking.load()
+            await workBadges.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
+            if warehouseStore.selectedID == nil {
+                await inbox.refreshUnread()
+            }
+        }
     }
 
     private var header: some View {

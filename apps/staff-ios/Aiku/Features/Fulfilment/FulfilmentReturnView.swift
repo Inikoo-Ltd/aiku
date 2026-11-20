@@ -84,6 +84,7 @@ private struct PalletReturnScreen: View {
             }
         }
         .onAppear { Task { await live.load() } }
+        .screenRefreshable { await live.load() }
         .onChange(of: live.event) { _, event in
             guard let event else { return }
             switch event {

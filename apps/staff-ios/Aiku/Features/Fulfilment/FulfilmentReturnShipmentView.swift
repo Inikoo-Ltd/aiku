@@ -91,6 +91,10 @@ private struct ReturnShipmentScreen: View {
             savedParcels = saved
             parcels = saved.isEmpty ? [ReturnParcelDraft()] : saved
         }
+        .screenRefreshable {
+            await live.load()
+            await live.loadShippers()
+        }
         .onChange(of: live.event) { _, event in
             guard case .done(let message, let tone) = event else { return }
             toasts.show(message, tone: tone)

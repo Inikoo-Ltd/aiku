@@ -22,6 +22,8 @@ import GoogleAdsSearchTerms from "@/Components/DataDisplay/Dashboard/Widget/Goog
 import GoogleAdsAddKeyword from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAddKeyword.vue"
 import ConfirmDialog from "primevue/confirmdialog"
 import GoogleAdsMetric from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsMetric.vue"
+import TableGoogleAdsOrders from "@/Components/Tables/Grp/Org/CRM/TableGoogleAdsOrders.vue"
+import type { GoogleAdsProfitSummary } from "@/Components/Tables/Grp/Org/CRM/TableGoogleAdsCampaigns.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import type { Timeline as TimelineStep } from "@/types/Timeline"
 import GoogleAdsAdCreative from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAdCreative.vue"
@@ -125,6 +127,10 @@ const props = defineProps<{
         cost: number
         roas: number | null
     }
+    can_see_profit?: boolean
+    profit?: GoogleAdsProfitSummary
+    profit_previous?: GoogleAdsProfitSummary | null
+    orders?: {}
     ad_groups: {
         id: string
         name: string | null
@@ -205,6 +211,10 @@ const enumLabel = (value: string | null) => (value ? value.replace(/_/g, " ").to
 const percent = (value: number | null, decimals = 2) => (value === null ? "—" : value.toFixed(decimals) + "%")
 
 const moneyOrDash = (value: number | null) => (value === null ? "—" : money(value))
+
+const profitPrevious = (key: keyof GoogleAdsProfitSummary): number | null | undefined =>
+    props.profit_previous ? (props.profit_previous[key] as number | null) : undefined
+
 
 const isSearch = computed(() => props.campaign.channel_type === "SEARCH")
 
@@ -342,6 +352,55 @@ const notServingReasons = computed(() =>
     </div>
 
     <div class="grid grid-cols-1 gap-4 px-4 pb-6 lg:grid-cols-3">
+        <!-- What the campaign earned against what it cost, from Aiku's own orders and costs. -->
+        <section v-if="can_see_profit && profit" class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 class="text-sm font-medium text-gray-800">
+                    {{ ctrans("Profit from this campaign") }}
+                    <span class="font-normal text-gray-500">· {{ period_label }}</span>
+                    <HelpTip :text="ctrans('Orders submitted in the period whose last Google ad click before the order was on this campaign, counted in full the way Google counts a conversion. Profit is what the items sold for after discounts minus what the stock cost, as on each order. Shipping, payment fees and running costs are not taken off.')" />
+                </h2>
+                <span class="text-xs text-gray-500">
+                    {{ ctrans("Last ad click, in") }} {{ campaign.shop_currency }}
+                </span>
+            </div>
+
+            <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                <div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Spend") }}</div>
+                    <GoogleAdsMetric :value="profit.spend" kind="money" :currency="campaign.shop_currency" size="lg" better="none" :previous="profitPrevious('spend')" />
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Orders") }}</div>
+                    <GoogleAdsMetric :value="profit.orders" kind="count" size="lg" :previous="profitPrevious('orders')" />
+                    <div v-if="profit.orders_without_profit > 0" class="text-xs text-gray-500">
+                        {{ ctrans(":count without a cost", { count: locale.number(profit.orders_without_profit) }) }}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Items net") }}</div>
+                    <GoogleAdsMetric :value="profit.sales" kind="money" :currency="campaign.shop_currency" size="lg" :previous="profitPrevious('sales')" />
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500">
+                        {{ ctrans("Profit") }}<span v-if="profit.margin !== null"> · {{ locale.number(profit.margin) }}%</span>
+                    </div>
+                    <GoogleAdsMetric :value="profit.profit" kind="profit" :currency="campaign.shop_currency" size="lg" :previous="profitPrevious('profit')" />
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Profit − spend") }}</div>
+                    <GoogleAdsMetric :value="profit.profit_after_spend" kind="profit" :currency="campaign.shop_currency" size="lg" :previous="profitPrevious('profit_after_spend')" />
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500">
+                        {{ ctrans("POAS") }}
+                        <HelpTip :text="ctrans('Profit on ad spend: profit divided by spend. Under 1× the campaign cost more than it earned.')" />
+                    </div>
+                    <GoogleAdsMetric :value="profit.poas" kind="roas" size="lg" :previous="profitPrevious('poas')" />
+                </div>
+            </div>
+        </section>
+
         <!-- Identity: the settings that decide what the figures below were ever going to look like. -->
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200">
             <h2 class="text-sm font-medium text-gray-800">
@@ -544,6 +603,16 @@ const notServingReasons = computed(() =>
                     </tbody>
                 </table>
             </div>
+        </section>
+
+        <section v-if="can_see_profit && orders" id="orders" class="overflow-hidden rounded-xl bg-white ring-1 ring-gray-200 lg:col-span-3">
+            <div class="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-5">
+                <h2 class="text-sm font-medium text-gray-800">
+                    {{ ctrans("Orders from this campaign") }}
+                    <span class="font-normal text-gray-500">· {{ period_label }}</span>
+                </h2>
+            </div>
+            <TableGoogleAdsOrders :data="orders" tab="orders" :currency="campaign.shop_currency" />
         </section>
 
         <!-- Aiku's own attribution, on purpose in its own block and on its own time base. -->

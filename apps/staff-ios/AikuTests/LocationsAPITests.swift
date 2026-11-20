@@ -16,6 +16,15 @@ struct LocationsAPITests {
         }
     }
 
+    private struct SlowTransport: HTTPTransport {
+        let routed: RoutedTransport
+
+        func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+            try await Task.sleep(for: .milliseconds(50))
+            return try await routed.data(for: request)
+        }
+    }
+
     private static let locationJSON = #"""
     {"id":7,"slug":"a-03-02","code":"A-03-02","status":"operational","area":{"id":3,"code":"A","name":"Picking"},
      "allow_stocks":true,"allow_fulfilment":false,"allow_dropshipping":true,"is_goods_out":false,"keep_empty_org_stocks":true,
@@ -60,6 +69,28 @@ struct LocationsAPITests {
             transport: RoutedTransport(responses: responses),
             tokenProvider: { "1|tok" }
         )
+    }
+
+    private func slowClient() -> APIClient {
+        APIClient(
+            configuration: AppConfiguration(apiBaseURL: URL(string: "https://app.aiku.test/app/api")!, mobileAppKey: "key"),
+            transport: SlowTransport(routed: RoutedTransport(responses: Self.responses)),
+            tokenProvider: { "1|tok" }
+        )
+    }
+
+    @Test func aScreenLeftWhileLoadingStillLeavesTheChosenWarehouseLoaded() async {
+        let store = LocationsStore()
+        let europaDrive = await warehouse(1)
+        let leftScreen = Task { await store.loadRemote(for: 291, warehouse: europaDrive, apiClient: slowClient()) }
+        await Task.yield()
+        leftScreen.cancel()
+
+        await store.loadRemote(for: 291, warehouse: europaDrive, apiClient: slowClient())
+
+        #expect(store.remoteWarehouse?.id == 1)
+        #expect(store.warehouse.areas.map(\.code) == ["A"])
+        #expect(store.warehouse.locations.map(\.code) == ["A-03-02"])
     }
 
     @Test func locationsQueryOnlySendsTheFiltersInUse() {
@@ -126,6 +157,67 @@ struct LocationsAPITests {
         await store.reloadList(apiClient: client())
 
         #expect(store.warehouse.location(code: "A-03-02")?.slots.count == 1)
+    }
+
+    @Test func refreshingTheWarehouseUpdatesTheOverviewAndKeepsTheLoadedLocations() async {
+        let store = LocationsStore()
+        let europaDrive = await warehouse(1)
+        store.selectedWarehouse = { europaDrive }
+        await store.loadRemote(for: 291, warehouse: europaDrive, apiClient: client())
+        await store.loadLocation(code: "A-03-02", apiClient: client())
+        var changed = Self.responses
+        changed["mobile/warehouses/1/locations-overview"] = changed["mobile/warehouses/1/locations-overview"]!
+            .replacingOccurrences(of: #""number_locations":40"#, with: #""number_locations":41"#)
+            .replacingOccurrences(of: #""enabled":false"#, with: #""enabled":true"#)
+        changed["mobile/warehouses/1/areas"] = #"{"data":[{"id":3,"code":"A","name":"Picking","picking_position":1.5,"number_locations":40,"number_locations_broken":0,"number_empty_locations":10,"stock_value":1000},{"id":4,"code":"B","name":"Bulk","picking_position":null,"number_locations":1,"number_locations_broken":0,"number_empty_locations":1,"stock_value":0}]}"#
+
+        await store.refreshWarehouse(apiClient: client(changed))
+
+        #expect(store.loadError == nil)
+        #expect(store.warehouse.summary.locationCount == 41)
+        #expect(store.warehouse.autoRemoval.isOn)
+        #expect(store.warehouse.areas.map(\.code) == ["A", "B"])
+        #expect(store.warehouse.location(code: "A-03-02")?.slots.count == 1)
+    }
+
+    @Test func refreshingTheWarehouseKeepsWhatIsShownWhenAikuCannotBeReached() async {
+        let store = LocationsStore()
+        let europaDrive = await warehouse(1)
+        store.selectedWarehouse = { europaDrive }
+        await store.loadRemote(for: 291, warehouse: europaDrive, apiClient: client())
+
+        await store.refreshWarehouse(apiClient: client([:]))
+
+        #expect(store.loadError != nil)
+        #expect(store.warehouse.summary.locationCount == 40)
+        #expect(store.warehouse.areas.map(\.code) == ["A"])
+        #expect(store.warehouse.locations.map(\.code) == ["A-03-02"])
+    }
+
+    @Test func refreshingAfterAWarehouseSwitchLoadsTheChosenWarehouseInsteadOfTheOldOne() async {
+        let store = LocationsStore()
+        let europaDrive = await warehouse(1)
+        let paris = await warehouse(4)
+        store.selectedWarehouse = { europaDrive }
+        await store.loadRemote(for: 291, warehouse: europaDrive, apiClient: client())
+
+        store.selectedWarehouse = { paris }
+        await store.refreshWarehouse(apiClient: client())
+
+        #expect(store.loadError == "You don’t have access to locations in Paris.")
+    }
+
+    @Test func refreshingTheListAfterAWarehouseSwitchLoadsTheChosenWarehouse() async {
+        let store = LocationsStore()
+        let europaDrive = await warehouse(1)
+        let paris = await warehouse(4)
+        store.selectedWarehouse = { europaDrive }
+        await store.loadRemote(for: 291, warehouse: europaDrive, apiClient: client())
+
+        store.selectedWarehouse = { paris }
+        await store.refreshList(apiClient: client())
+
+        #expect(store.loadError == "You don’t have access to locations in Paris.")
     }
 
     @Test func locationOutsideTheLoadedPageIsLookedUpByCode() async {

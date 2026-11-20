@@ -74,30 +74,60 @@ private struct GoodsInRemoteLoading: ViewModifier {
                 store.clearActionError()
             }
             .task(id: GoodsInLoadKey(route: route, warehouseID: warehouseStore.selected?.id)) {
-            let store = GoodsInStore.shared
-            guard let warehouse = warehouseStore.selected else {
-                if store.isRemote { store.resetToSample() }
-                return
+                await load(isRefresh: false)
             }
-            store.prepareRemote(warehouseID: warehouse.id, apiClient: apiClient)
-            switch route {
-            case .backlog:
-                await store.loadHub(apiClient: apiClient)
-            case .stockDeliveries, .stockDeliveriesIn:
-                break
-            case .stockDelivery(let reference), .placeItem(let reference, _), .placeNewItem(let reference, _):
-                await store.loadDelivery(reference, apiClient: apiClient)
-            case .scannedStockDelivery(let id, _):
-                await store.loadDelivery(id: id, apiClient: apiClient)
-            case .returns:
-                await store.reloadReturns(apiClient: apiClient)
-            case .returnsToProcess:
-                await store.reloadReturns(scope: .toProcess, apiClient: apiClient)
-            case .returnDetail(let reference):
-                await store.loadReturn(reference, apiClient: apiClient)
-            case .returnID(let id, _):
-                await store.loadReturn(id: id, apiClient: apiClient)
-            }
+            .modifier(GoodsInRefresh(isEnabled: route.isRefreshable) {
+                await load(isRefresh: true)
+            })
+    }
+
+    private func load(isRefresh: Bool) async {
+        guard let warehouse = warehouseStore.selected else {
+            if store.isRemote { store.resetToSample() }
+            return
+        }
+        store.prepareRemote(warehouseID: warehouse.id, apiClient: apiClient)
+        switch route {
+        case .backlog:
+            await store.loadHub(apiClient: apiClient)
+        case .stockDeliveries, .stockDeliveriesIn:
+            if isRefresh { await store.reloadList(apiClient: apiClient) }
+        case .stockDelivery(let reference), .placeItem(let reference, _), .placeNewItem(let reference, _):
+            await store.loadDelivery(reference, apiClient: apiClient)
+        case .scannedStockDelivery(let id, _):
+            await store.loadDelivery(id: id, apiClient: apiClient)
+        case .returns:
+            await store.reloadReturns(apiClient: apiClient)
+        case .returnsToProcess:
+            await store.reloadReturns(scope: .toProcess, apiClient: apiClient)
+        case .returnDetail(let reference):
+            await store.loadReturn(reference, apiClient: apiClient)
+        case .returnID(let id, _):
+            await store.loadReturn(id: id, apiClient: apiClient)
+        }
+    }
+}
+
+private struct GoodsInRefresh: ViewModifier {
+    let isEnabled: Bool
+    let action: @MainActor () async -> Void
+
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content.screenRefreshable(action)
+        } else {
+            content
+        }
+    }
+}
+
+private extension GoodsInRoute {
+    var isRefreshable: Bool {
+        switch self {
+        case .placeItem, .placeNewItem:
+            false
+        default:
+            true
         }
     }
 }

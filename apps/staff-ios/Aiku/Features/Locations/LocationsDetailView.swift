@@ -24,6 +24,7 @@ struct LocationsDetailView: View {
                 await store.loadLocation(code: code, apiClient: apiClient)
                 lookedUpCode = code
             }
+            .screenRefreshable { await store.loadLocation(code: code, apiClient: apiClient) }
     }
 
     @ViewBuilder

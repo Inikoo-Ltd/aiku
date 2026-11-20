@@ -36,6 +36,10 @@ struct FulfilmentStoredItemsView: View {
             }
             await feed.reload(warehouseID: warehouseID, apiClient: apiClient)
         }
+        .screenRefreshable {
+            guard let warehouseID else { return }
+            await feed.reload(warehouseID: warehouseID, apiClient: apiClient)
+        }
         .aikuSheet(item: $opened) { row in
             if let warehouseID {
                 StoredItemSheet(row: row, warehouseID: warehouseID) { pallet in

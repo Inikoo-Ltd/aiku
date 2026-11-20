@@ -7,6 +7,8 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
+import type { TableColumn } from "@/types/Table"
+import { ctrans } from "@/Composables/useTrans"
 import GoogleAdsMetric from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsMetric.vue"
 import { campaignTypeLabel } from "@/Composables/googleAdsCampaignType"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -55,13 +57,25 @@ library.add(
     faExclamationTriangle
 )
 
-defineProps<{
+export type GoogleAdsProfitSummary = {
+    spend: number
+    orders: number
+    orders_without_profit: number
+    sales: number
+    profit: number | null
+    margin: number | null
+    profit_after_spend: number | null
+    poas: number | null
+}
+
+const props = defineProps<{
     data: {}
     currency: string
     tab?: string
+    summary?: GoogleAdsProfitSummary | null
 }>()
 
-type Kind = "count" | "money" | "shop_money" | "percent" | "share" | "roas"
+type Kind = "count" | "money" | "shop_money" | "profit" | "percent" | "share" | "roas"
 type Better = "up" | "down" | "none"
 
 /* Spend is the one figure in the shop's currency; everything else with a currency is in the ad
@@ -95,14 +109,76 @@ const metricCells: Record<string, { kind: Kind; better?: Better; strong?: boolea
     search_absolute_top_impression_share: { kind: "share" },
     search_rank_lost_absolute_top_impression_share: { kind: "share", better: "down" },
     search_budget_lost_absolute_top_impression_share: { kind: "share", better: "down" },
+    ad_orders: { kind: "count" },
+    ad_sales: { kind: "shop_money" },
+    profit: { kind: "profit", strong: true },
+    profit_after_spend: { kind: "profit" },
+    poas: { kind: "roas" },
+}
+
+const totalKeys: Record<string, keyof GoogleAdsProfitSummary> = {
+    spend: "spend",
+    ad_orders: "orders",
+    ad_sales: "sales",
+    profit: "profit",
+    profit_after_spend: "profit_after_spend",
+    poas: "poas",
+}
+
+const isShopCurrency = (kind: Kind) => kind === "shop_money" || kind === "profit"
+
+const metricKind = (kind: Kind) => (kind === "shop_money" ? "money" : kind)
+
+const periodKeys = ["period", "from", "to", "compare"]
+
+const ordersHref = (item: { route: { name: string; parameters: Record<string, string> } }) => {
+    const query = new URLSearchParams(window.location.search)
+    const kept = new URLSearchParams()
+
+    for (const key of periodKeys) {
+        const value = query.get(key)
+        if (value !== null) {
+            kept.set(key, value)
+        }
+    }
+
+    const queryString = kept.toString()
+
+    return route(item.route.name, item.route.parameters) + (queryString ? "?" + queryString : "") + "#orders"
 }
 
 const cellSlot = (key: string) => `cell(${key})`
+
+const linkedOutCells = Object.fromEntries(Object.entries(metricCells).filter(([key]) => key !== "ad_orders"))
 </script>
 
 <template>
     <div>
         <Table :resource="data" :name="tab" class="mt-3">
+            <template #topRows="{ show, columns, isCheckBox }: { show: (key: string) => boolean, columns: TableColumn[], isCheckBox: boolean }">
+                <tr v-if="props.summary" class="bg-gray-100 font-semibold text-gray-800">
+                    <td v-if="isCheckBox" />
+                    <td
+                        v-for="column in columns"
+                        v-show="show(column.key)"
+                        :key="`totals-${column.key}`"
+                        class="whitespace-nowrap py-1 text-xs lg:py-2 lg:text-[13px]"
+                        :class="column.align === 'right' ? 'pl-1.5 pr-2 text-right tabular-nums lg:pl-3' : 'px-2 lg:px-6'">
+                        <span
+                            v-if="column.key === 'name'"
+                            v-tooltip="ctrans('Every order of the shop in the period that followed a Google ad click, including the few whose click could not be matched to a campaign.')">
+                            {{ ctrans("Total") }}
+                        </span>
+                        <GoogleAdsMetric
+                            v-else-if="totalKeys[column.key] && metricCells[column.key]"
+                            :value="props.summary[totalKeys[column.key]] as number | null"
+                            :kind="metricKind(metricCells[column.key].kind)"
+                            :currency="currency"
+                            strong />
+                    </td>
+                </tr>
+            </template>
+
             <template #cell(name)="{ item }">
                 <Link :href="route(item.route.name, item.route.parameters)" class="primaryLink">
                     {{ item.name }}
@@ -119,11 +195,24 @@ const cellSlot = (key: string) => `cell(${key})`
                 </div>
             </template>
 
-            <template v-for="(cell, key) in metricCells" :key="key" #[cellSlot(key)]="{ item }">
+            <template #cell(ad_orders)="{ item }">
+                <component
+                    :is="item.ad_orders > 0 ? Link : 'div'"
+                    :href="item.ad_orders > 0 ? ordersHref(item) : undefined"
+                    v-tooltip="item.ad_orders > 0 ? ctrans('See these orders') : undefined"
+                    :class="item.ad_orders > 0 ? 'primaryLink' : ''">
+                    <GoogleAdsMetric
+                        :value="item.ad_orders"
+                        kind="count"
+                        :previous="item.previous ? item.previous.ad_orders : undefined" />
+                </component>
+            </template>
+
+            <template v-for="(cell, key) in linkedOutCells" :key="key" #[cellSlot(key)]="{ item }">
                 <GoogleAdsMetric
                     :value="item[key]"
-                    :kind="cell.kind === 'shop_money' ? 'money' : cell.kind"
-                    :currency="cell.kind === 'shop_money' ? currency : item.currency_code ?? currency"
+                    :kind="metricKind(cell.kind)"
+                    :currency="isShopCurrency(cell.kind) ? currency : item.currency_code ?? currency"
                     :previous="item.previous ? item.previous[key] : undefined"
                     :better="cell.better ?? 'up'"
                     :strong="cell.strong ?? false" />

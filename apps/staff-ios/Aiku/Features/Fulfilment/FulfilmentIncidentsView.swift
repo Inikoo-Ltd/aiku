@@ -29,5 +29,9 @@ struct FulfilmentIncidentsView: View {
             guard let warehouseID else { return }
             await feed.reload(warehouseID: warehouseID, apiClient: apiClient)
         }
+        .screenRefreshable {
+            guard let warehouseID else { return }
+            await feed.reload(warehouseID: warehouseID, apiClient: apiClient)
+        }
     }
 }
