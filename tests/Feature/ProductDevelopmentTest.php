@@ -3164,3 +3164,38 @@ test('a cancelled development leaves the list and the All count, and shows under
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('data.data', fn ($rows) => collect($rows)->pluck('code')->contains($productDevelopment->code)));
 });
+
+test('the To produce board lists the trial runs a development asks for, counts those waiting for an artisan, and assigns and releases them, HELP-4839', function () {
+    [$productDevelopment, $production] = inHouseDevelopment($this, 2);
+    [$first, $second]                  = $productDevelopment->items()->orderBy('position')->get()->all();
+    $artisan                           = \App\Actions\HumanResources\Employee\StoreEmployee::make()->action($production->organisation, [
+        ...\App\Models\HumanResources\Employee::factory()->make(['organisation_id' => $production->organisation_id])->toArray(),
+        'worker_number'   => 'W'.rand(1000, 9999),
+        'alias'           => 'Alias '.rand(1000, 9999),
+        'type'            => \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+    ]);
+
+    [$waiting, $released] = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, ['item_ids' => [$first->id, $second->id], 'quantity' => 3]);
+    $released->jobOrderItems()->firstOrFail()->tasks()->update(['employee_id' => $artisan->id]);
+    \App\Actions\Production\JobOrder\ConfirmJobOrder::make()->action($released);
+
+    $board = fn () => get(route('grp.org.productions.show.to_produce.index', [$production->organisation->slug, $production->slug]))->assertOk()->viewData('page')['props']['trialRuns'];
+    $runs  = collect($board()['runs'])->keyBy('id');
+    expect($board()['unassigned'])->toBe(1)
+        ->and($runs->keys()->all())->toBe([$waiting->id, $released->id])
+        ->and($runs[$waiting->id]['awaiting_release'])->toBeTrue()
+        ->and($runs[$waiting->id]['can_pick_artisan'])->toBeTrue()
+        ->and($runs[$waiting->id]['artisans'])->toBe([])
+        ->and($runs[$waiting->id]['development'])->toBe(['code' => $productDevelopment->code, 'name' => $productDevelopment->name, 'slug' => $productDevelopment->slug])
+        ->and($runs[$waiting->id]['artefacts'][0]['quantity'])->toEqual(3)
+        ->and($runs[$released->id]['awaiting_release'])->toBeFalse()
+        ->and($runs[$released->id]['artisans'])->toBe([$artisan->contact_name])
+        ->and($runs[$released->id]['can_pick_artisan'])->toBeFalse();
+
+    patch(route('grp.models.job-order.update', ['jobOrder' => $waiting->id]), ['employee_id' => $artisan->id])->assertSessionHasNoErrors();
+    patch(route('grp.models.job-order.confirm', ['jobOrder' => $waiting->id]))->assertSessionHasNoErrors();
+    expect($board()['unassigned'])->toBe(0)
+        ->and(collect($board()['runs'])->firstWhere('id', $waiting->id)['artisans'])->toBe([$artisan->contact_name]);
+});

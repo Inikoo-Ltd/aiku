@@ -26,7 +26,8 @@ use Lorisleiva\Actions\ActionRequest;
 /**
  * A small batch of an experiment, raised by the development team. On the floor it is a job order like any
  * other, so the artisan works it the same way; what is made goes to the development team's office, not to
- * the warehouse, and never onto the To produce board.
+ * the warehouse. Its artefact has no SKO, so it never joins the To produce lanes; runs Product Development asks for are
+ * listed in the board's own Trial runs section (HELP-4839).
  */
 class StoreTrialRunJobOrder extends OrgAction
 {

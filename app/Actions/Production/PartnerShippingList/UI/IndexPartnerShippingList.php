@@ -27,12 +27,18 @@ use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Actions\Production\JobOrder\StoreManualJobOrder;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\PartnerShoppingListItem;
+use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
+use App\Models\Production\JobOrderItemTask;
+use App\Models\Goods\ProductDevelopment;
+use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
+use App\Models\SysAdmin\User;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
 use App\Models\Production\Production;
@@ -389,6 +395,68 @@ class IndexPartnerShippingList extends OrgAction
             });
     }
 
+
+    /**
+     * Trial runs Product Development asked for (HELP-4839). Their artefacts have no SKO, so they never reach the
+     * lanes; the board lists them on their own so the production manager sees new requests, gives them an
+     * artisan and releases them. A run counts as unassigned while no step has anyone to make it.
+     *
+     * @return array{unassigned: int, runs: array<int, array<string, mixed>>}
+     */
+    private function getTrialRuns(User $user): array
+    {
+        $jobOrders = JobOrder::where('production_id', $this->production->id)
+            ->whereRaw(JobOrder::REQUESTED_BY_DEVELOPMENT_SQL)
+            ->whereIn('state', JobOrderStateEnum::open())
+            ->with(['employee', 'jobOrderItems.artefact', 'jobOrderItems.employee', 'jobOrderItems.tasks.employee', 'jobOrderItems.tasks.manufactureTask.artisans'])
+            ->orderBy('created_at')
+            ->get();
+
+        $access       = new ProductDevelopmentAccess();
+        $developments = ProductDevelopment::where('group_id', $this->organisation->group_id)
+            ->whereIn('code', $jobOrders->pluck('data.product_development')->unique()->values()->all())
+            ->get()
+            ->keyBy('code');
+        $proposed = Employee::whereIn('id', $jobOrders->pluck('data.proposed_employee_id')->filter()->unique()->values()->all())->pluck('contact_name', 'id');
+
+        $runs = $jobOrders->map(function (JobOrder $jobOrder) use ($user, $access, $developments, $proposed) {
+            $tasks       = $jobOrder->jobOrderItems->flatMap(fn (JobOrderItem $item) => $item->setRelation('jobOrder', $jobOrder)->tasks->each(fn (JobOrderItemTask $task) => $task->setRelation('jobOrderItem', $item)));
+            $artisans    = $tasks->map(fn (JobOrderItemTask $task) => $task->assignee()?->contact_name)->filter()->unique()->values()->all();
+            $nobody      = $tasks->every(fn (JobOrderItemTask $task) => !$task->assignee() && !$task->isRestricted());
+            $development = $developments->get($jobOrder->data['product_development']);
+            $canView     = $development && $access->canView($user, $development);
+            $proposedId  = $jobOrder->data['proposed_employee_id'] ?? null;
+
+            return [
+                'id'                 => $jobOrder->id,
+                'reference'          => $jobOrder->reference,
+                'slug'               => $jobOrder->slug,
+                'created_at'         => $jobOrder->created_at?->toIso8601String(),
+                'awaiting_release'   => $jobOrder->isAwaitingRelease(),
+                'artisans'           => $artisans,
+                'nobody'             => $nobody,
+                'can_pick_artisan'   => ($jobOrder->isAwaitingRelease() || $nobody) && $tasks->every(fn (JobOrderItemTask $task) => !$task->employee_id),
+                'proposed_artisan'   => $proposedId ? ['id' => (int) $proposedId, 'name' => $proposed->get($proposedId)] : null,
+                'artefacts'          => $jobOrder->jobOrderItems->map(fn (JobOrderItem $item) => [
+                    'code'     => $item->artefact?->code,
+                    'name'     => $item->artefact?->name,
+                    'quantity' => (float) $item->quantity,
+                ])->values()->all(),
+                'steps_done'         => $tasks->where('state', JobOrderItemTaskStateEnum::DONE)->count(),
+                'steps'              => $tasks->count(),
+                'development'        => [
+                    'code' => $jobOrder->data['product_development'],
+                    'name' => $canView ? $development->name : null,
+                    'slug' => $canView ? $development->slug : null,
+                ],
+            ];
+        })->values();
+
+        return [
+            'unassigned' => $runs->filter(fn (array $run) => $run['awaiting_release'] || $run['nobody'])->count(),
+            'runs'       => $runs->all(),
+        ];
+    }
     /** @return array<string, array{label: string, elements: array<string, array{0: string, 1: int}>, engine: Closure}> */
     public function getElementGroups(): array
     {
@@ -934,6 +1002,7 @@ class IndexPartnerShippingList extends OrgAction
                 'simpleBoard'  => $this->production->hasSimpleBoard(),
                 'periodsAfterOpening' => TradeUnitBestBeforeEnum::periodAfterOpeningOptions(),
                 'productionBlockedNotice' => $this->groupBy === 'board' ? GetOrdersBlockedByProduction::make()->notice($this->organisation) : null,
+                'trialRuns'    => $this->groupBy === 'board' ? $this->getTrialRuns($request->user()) : null,
                 'artisanWorkload' => in_array($this->groupBy, ['maker', 'board', 'mixes']) ? $this->getArtisanWorkload() : null,
                 'groups'       => $this->groupBy && $this->groupBy !== 'mixes' ? $this->getGroups($items) : null,
                 'hitchhikers'  => ['count' => $this->hitchhikerCount, 'showing' => $this->showHitchhikers],
