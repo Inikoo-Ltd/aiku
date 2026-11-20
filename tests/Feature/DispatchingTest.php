@@ -750,7 +750,7 @@ test('packing an externally shipped faire note is not undone when faire fails, H
     $deliveryNote->shop->updateQuietly(['engine' => \App\Enums\Catalogue\Shop\ShopEngineEnum::FAIRE]);
 
     try {
-        StoreShipmentFromFaire::shouldRun()->andThrow(new RuntimeException('Faire is down'));
+        StoreShipmentFromFaire::shouldRun()->andThrow(new \RuntimeException('Faire is down'));
 
         giveParcelDimensions($deliveryNote);
         $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);

@@ -4062,7 +4062,7 @@ test('the repair of sheet rows duplicated by a goods receipt keeps to the agent 
         ->and($saved?->quantity)->toEqual(40);
 });
 
-test('packing part of a stock sheet line splits it, the rest staying received, and a goods receipt line is packed whole', function () {
+test('packing part of a stock sheet line or a goods receipt line splits it, the rest staying received', function () {
     [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
     $supplierProduct = $orgSupplierProduct->supplierProduct;
     $purchaseOrder   = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
@@ -4096,7 +4096,12 @@ test('packing part of a stock sheet line splits it, the rest staying received, a
         'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => 30]],
     ]);
     $receiptRow = App\Models\Procurement\AgentWarehouseStock::where('agent_goods_receipt_id', $receipt->id)->firstOrFail();
-    expect(fn () => $pack->handle($receiptRow, 10))->toThrow(\Illuminate\Validation\ValidationException::class);
+    $packedReceiptPart = $pack->handle($receiptRow, 10);
+    expect((float) $packedReceiptPart->quantity)->toBe(10.0)
+        ->and($packedReceiptPart->state)->toBe($packed)
+        ->and($packedReceiptPart->agent_goods_receipt_id)->toBe($receipt->id)
+        ->and((float) $receiptRow->refresh()->quantity)->toBe(20.0)
+        ->and($receiptRow->state)->toBe($received);
     expect($pack->handle($receiptRow)->state)->toBe($packed);
 });
 
