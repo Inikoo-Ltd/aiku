@@ -4,6 +4,7 @@ struct LocationsAreasView: View {
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
     @State private var store = LocationsStore.shared
+    @Environment(\.apiClient) private var apiClient
     @State private var isScanning = false
 
     var body: some View {
@@ -26,6 +27,7 @@ struct LocationsAreasView: View {
             }
         }
         .loadsRemoteLocations(into: store)
+        .screenRefreshable { await store.refreshWarehouse(apiClient: apiClient) }
         .fullScreenCover(isPresented: $isScanning) {
             LocationsScanCover(title: "Scan location") {
                 isScanning = false

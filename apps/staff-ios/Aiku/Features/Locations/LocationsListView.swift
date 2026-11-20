@@ -74,6 +74,7 @@ struct LocationsListView: View {
             guard !Task.isCancelled else { return }
             await store.reloadList(apiClient: apiClient)
         }
+        .screenRefreshable { await store.refreshList(apiClient: apiClient) }
         .aikuSheet(isPresented: $isFiltering) {
             LocationsFilterSheet(initial: store.listFilter, areas: store.warehouse.areas) { draft in
                 await store.resultCount(for: draft, apiClient: apiClient)

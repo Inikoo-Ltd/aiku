@@ -24,8 +24,10 @@ final class LocationsStore {
     private(set) var loadError: String?
     private(set) var detailLoadedCodes: Set<String> = []
     @ObservationIgnored var selectedWarehouseID: @MainActor () -> Int? = { WarehouseStore.shared.selectedID }
+    @ObservationIgnored var selectedWarehouse: @MainActor () -> MobileWarehouse? = { WarehouseStore.shared.selected }
     private(set) var abilities: [String: MobileLocation.Abilities] = [:]
     @ObservationIgnored private var loadedKey: LocationsLoadKey?
+    @ObservationIgnored private var remoteUserID: Int?
 
     init(warehouse: LocationsWarehouse = LocationsSampleData.warehouse) {
         self.warehouse = warehouse
@@ -90,6 +92,7 @@ final class LocationsStore {
         let key = LocationsLoadKey(userID: userID, warehouseID: chosen?.id)
         guard loadedKey != key else { return }
         loadedKey = key
+        remoteUserID = userID
         loadError = nil
         do {
             guard let chosen else {
@@ -121,6 +124,42 @@ final class LocationsStore {
             loadedKey = nil
             loadError = error.localizedDescription
             isLoadingList = false
+        }
+    }
+
+    func refreshList(apiClient: APIClient) async {
+        if await reloadedForChangedWarehouse(apiClient: apiClient) { return }
+        await reloadList(apiClient: apiClient)
+    }
+
+    private func reloadedForChangedWarehouse(apiClient: APIClient) async -> Bool {
+        guard source == .remote, let remoteUserID else { return false }
+        let chosen = selectedWarehouse()
+        guard chosen?.id != remoteWarehouse?.id else { return false }
+        loadedKey = nil
+        await loadRemote(for: remoteUserID, warehouse: chosen, apiClient: apiClient)
+        return true
+    }
+
+    func refreshWarehouse(apiClient: APIClient) async {
+        if await reloadedForChangedWarehouse(apiClient: apiClient) { return }
+        guard source == .remote, let refreshed = remoteWarehouse else { return }
+        do {
+            async let overview = apiClient.fetchLocationsOverview(warehouseID: refreshed.id)
+            async let areas = apiClient.fetchWarehouseAreas(warehouseID: refreshed.id)
+            let (loadedOverview, loadedAreas) = try await (overview, areas)
+            guard refreshed.id == remoteWarehouse?.id else { return }
+            remoteOverview = loadedOverview
+            warehouse.areas = loadedAreas.map(LocationsArea.init(remote:))
+            warehouse.summary = LocationsWarehouseSummary(remote: loadedOverview)
+            if let removal = loadedOverview.emptyLocationsRemoval {
+                warehouse.autoRemoval = LocationsAutoRemoval(remote: removal)
+            }
+            loadError = nil
+        } catch where error.isCancellation {
+            return
+        } catch {
+            loadError = error.localizedDescription
         }
     }
 
@@ -282,6 +321,7 @@ final class LocationsStore {
         lastPage = 0
         loadError = nil
         loadedKey = nil
+        remoteUserID = nil
     }
 
     private func merge(_ fetched: [LocationsLocation], replacingAll: Bool) {

@@ -46,6 +46,7 @@ private struct StoredPalletScreen: View {
             }
         }
         .task { await live.load() }
+        .screenRefreshable { await live.load() }
         .onChange(of: live.done) { _, done in
             guard let done else { return }
             toasts.show(done.message, tone: done.tone)

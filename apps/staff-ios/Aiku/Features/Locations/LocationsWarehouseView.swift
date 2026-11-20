@@ -62,6 +62,7 @@ struct LocationsWarehouseView: View {
             }
         }
         .loadsRemoteLocations(into: store)
+        .screenRefreshable { await store.refreshWarehouse(apiClient: apiClient) }
     }
 
     private func changeAutoRemoval(_ isOn: Bool) {

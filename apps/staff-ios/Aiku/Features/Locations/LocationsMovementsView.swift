@@ -55,5 +55,6 @@ private struct LocationsMovementsList: View {
         .task {
             await feed.reload(apiClient: apiClient)
         }
+        .screenRefreshable { await feed.reload(apiClient: apiClient) }
     }
 }

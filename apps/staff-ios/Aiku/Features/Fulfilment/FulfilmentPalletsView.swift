@@ -50,6 +50,10 @@ struct FulfilmentPalletsView: View {
             }
             await feed.reload(warehouseID: warehouseID, apiClient: apiClient)
         }
+        .screenRefreshable {
+            guard let warehouseID else { return }
+            await feed.reload(warehouseID: warehouseID, apiClient: apiClient)
+        }
         .hardwareScanner { code in
             Task { await openScanned(code) }
         }

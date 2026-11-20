@@ -12,6 +12,10 @@ struct LocationsAreaDetailView: View {
             .task(id: code) {
                 await store.loadArea(code: code, apiClient: apiClient)
             }
+            .screenRefreshable {
+                await store.refreshWarehouse(apiClient: apiClient)
+                await store.loadArea(code: code, apiClient: apiClient)
+            }
     }
 
     @ViewBuilder
