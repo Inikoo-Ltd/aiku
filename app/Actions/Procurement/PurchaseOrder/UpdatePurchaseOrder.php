@@ -103,6 +103,13 @@ class UpdatePurchaseOrder extends OrgAction
             }
         }
 
+        if (array_key_exists('deposit_amount', $modelData)) {
+            $isDepositNotRequired = $modelData['deposit_amount'] !== null && (float) $modelData['deposit_amount'] == 0;
+            $modelData['data']['deposit_not_required_at'] = $isDepositNotRequired
+                ? (Arr::get($purchaseOrder->data, 'deposit_not_required_at') ?? now()->toIso8601String())
+                : null;
+        }
+
         if ($this->keepsStateReached($purchaseOrder, $modelData)) {
             unset($modelData['state']);
         }
@@ -115,13 +122,6 @@ class UpdatePurchaseOrder extends OrgAction
 
         if ($purchaseOrder->wasChanged(['state', 'delivery_state'])) {
             $this->purchaseOrderHydrate($purchaseOrder);
-        if (array_key_exists('deposit_amount', $modelData)) {
-            $isDepositNotRequired = $modelData['deposit_amount'] !== null && (float) $modelData['deposit_amount'] == 0;
-            $modelData['data']['deposit_not_required_at'] = $isDepositNotRequired
-                ? (Arr::get($purchaseOrder->data, 'deposit_not_required_at') ?? now()->toIso8601String())
-                : null;
-        }
-
         }
 
         if ($purchaseOrder->isAgentOrder() && $purchaseOrder->wasChanged(self::CLEAN_HANDOVER_FIELDS)) {
