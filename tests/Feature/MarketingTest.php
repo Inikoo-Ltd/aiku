@@ -2438,7 +2438,7 @@ describe('fetching meta ads costs', function () {
         $this->instagramAds = createTrafficSource($this->shop, 'instagram-ads', 'Instagram Ads');
 
         $settings = $this->shop->settings ?? [];
-        data_set($settings, 'meta_ads.ad_account_id', '1234567890');
+        data_set($settings, 'meta_ads', ['ad_account_id' => '1234567890']);
         $this->shop->update(['settings' => $settings]);
 
         config()->set('services.meta_ads.access_token', 'system-user-token');
@@ -2700,6 +2700,96 @@ describe('fetching meta ads costs', function () {
     });
 });
 
+describe('meta ad account shared by several shops', function () {
+    beforeEach(function () {
+        resetMarketingFixtures();
+
+        $this->shops = collect(['meta shared account eu', 'meta shared account at'])->map(function (string $key) {
+            $shop = createOwnShop($key)[2];
+            createTrafficSource($shop, 'meta-ads', 'Meta Ads');
+            createTrafficSource($shop, 'instagram-ads', 'Instagram Ads');
+
+            $settings = $shop->settings ?? [];
+            data_set($settings, 'meta_ads', ['ad_account_id' => '5550001111']);
+            $shop->update(['settings' => $settings]);
+
+            TrafficSourceCost::where('shop_id', $shop->id)->delete();
+            TrafficSourceCampaign::whereIn('traffic_source_id', TrafficSource::where('shop_id', $shop->id)->pluck('id'))->delete();
+
+            return $shop;
+        });
+
+        config()->set('services.meta_ads.access_token', 'system-user-token');
+    });
+
+    $setPrefix = function (Shop $shop, ?string $prefix): void {
+        $settings = $shop->settings;
+        data_set($settings, 'meta_ads.campaign_name_prefix', $prefix);
+        $shop->update(['settings' => $settings]);
+    };
+
+    $namedRow = fn (string $campaignId, string $name, float $spend, string $currency) => ['campaign_name' => $name] + metaRow($campaignId, $spend, $currency);
+
+    it('skips a shop with no campaign name prefix rather than storing the whole account as its spend', function () use ($setPrefix, $namedRow) {
+        [$eu, $at] = $this->shops->all();
+        $setPrefix($at, 'AT_');
+
+        Http::fake([
+            'graph.facebook.com/*' => Http::response(metaInsights([
+                $namedRow('130000001', 'EU_Purchase', 40.00, $eu->currency->code),
+                $namedRow('130000002', 'AT_Registration', 10.00, $eu->currency->code),
+            ])),
+        ]);
+
+        Artisan::call('traffic-source:fetch-meta-costs', ['shop' => $eu->slug]);
+
+        expect(TrafficSourceCost::where('shop_id', $eu->id)->count())->toBe(0)
+            ->and(Artisan::output())->toContain('shared with other shops');
+    });
+
+    it('takes every campaign named by any of the shop\'s comma separated prefixes', function () use ($setPrefix, $namedRow) {
+        [$eu, $at] = $this->shops->all();
+        $setPrefix($eu, 'EU_');
+        $setPrefix($at, 'AT_, Boost AWGifts AT');
+
+        Http::fake([
+            'graph.facebook.com/*' => Http::response(metaInsights([
+                $namedRow('130000011', 'EU_Purchase', 40.00, $at->currency->code),
+                $namedRow('130000012', 'AT_Registration', 10.00, $at->currency->code),
+                $namedRow('130000013', 'Boost AWGifts AT - XFOSET', 3.00, $at->currency->code),
+                $namedRow('130000014', 'AWG HU | Registration', 7.00, $at->currency->code),
+            ])),
+        ]);
+
+        Artisan::call('traffic-source:fetch-meta-costs', ['shop' => $at->slug]);
+
+        expect((float) TrafficSourceCost::where('shop_id', $at->id)->sum('source_amount'))->toBe(13.0)
+            ->and(TrafficSourceCost::where('shop_id', $at->id)->whereNull('traffic_source_campaign_id')->count())->toBe(0);
+    });
+
+    it('sums the spend of campaigns another shop owns into one campaign-less row a day', function () use ($setPrefix, $namedRow) {
+        [$eu, $at] = $this->shops->all();
+        $setPrefix($eu, 'AWG');
+        $setPrefix($at, 'AWG');
+
+        $insights = metaInsights([
+            $namedRow('130000021', 'AWG HU | Registration', 7.00, $eu->currency->code),
+            $namedRow('130000022', 'AWG NL | Remarketing', 5.00, $eu->currency->code),
+        ]);
+        Http::fake(['graph.facebook.com/*' => Http::response($insights)]);
+
+        Artisan::call('traffic-source:fetch-meta-costs', ['shop' => $eu->slug]);
+        Artisan::call('traffic-source:fetch-meta-costs', ['shop' => $at->slug]);
+
+        $atCosts = TrafficSourceCost::where('shop_id', $at->id)->get();
+
+        expect(TrafficSourceCost::where('shop_id', $eu->id)->whereNotNull('traffic_source_campaign_id')->count())->toBe(2)
+            ->and($atCosts)->toHaveCount(1)
+            ->and($atCosts->first()->traffic_source_campaign_id)->toBeNull()
+            ->and((float) $atCosts->first()->source_amount)->toBe(12.0);
+    });
+});
+
 describe('fetching google ads campaigns', function () {
     beforeEach(function () {
         resetMarketingFixtures();
@@ -2817,7 +2907,7 @@ describe('splitting instagram from meta', function () {
         $this->instagramAds = createTrafficSource($this->shop, 'instagram-ads', 'Instagram Ads');
 
         $settings = $this->shop->settings ?? [];
-        data_set($settings, 'meta_ads.ad_account_id', '1234567890');
+        data_set($settings, 'meta_ads', ['ad_account_id' => '1234567891']);
         $this->shop->update(['settings' => $settings]);
 
         config()->set('services.meta_ads.access_token', 'system-user-token');

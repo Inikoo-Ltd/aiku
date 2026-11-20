@@ -39,10 +39,12 @@ use Illuminate\Support\Facades\Log;
  * One ad account often advertises more than one shop - a retail brand and its dropship arm share a
  * business and a payment method, and the campaigns are told apart only by how they are named. Such
  * an account goes on every shop it serves, each with `shop.settings.meta_ads.campaign_name_prefix`
- * naming the campaigns that belong to that shop, e.g. `AW UK` and `AWD UK`. A shop with no prefix
- * takes the whole account, which is what a shop that owns its account alone wants. Spend left to
- * another shop's prefix is counted and reported, because a day's total that silently comes back
- * short reads exactly like an account that underspent.
+ * naming the campaigns that belong to that shop, e.g. `AW UK` and `AWD UK`, or several separated by
+ * commas when one market's campaigns are named more than one way (`AT_, Boost AWGifts AT`). A shop
+ * with no prefix takes the whole account, which is only right for a shop that owns its account
+ * alone: on a shared account it is skipped, because every such shop would store the whole account's
+ * spend as its own (HELP-4857). Spend left to another shop's prefix is counted and reported, because
+ * a day's total that silently comes back short reads exactly like an account that underspent.
  *
  * Campaign references are Meta's numeric campaign ids. The touch history stores whatever the ad's
  * `utm_campaign` said, so campaign-level ROAS only lines up when the ads are tagged with Meta's
@@ -143,8 +145,33 @@ class FetchMetaAdsCosts extends Command
                 return false;
             }
 
+            if ($this->prefixes($shop) === [] && $this->sharesAdAccount($shop)) {
+                $this->warn("{$shop->slug}: skipped, its Meta ad account is shared with other shops and it has no campaign name prefix.");
+                Log::warning('Meta Ads cost fetch skipped a shop on a shared ad account with no campaign name prefix', ['shop' => $shop->slug]);
+
+                return false;
+            }
+
             return true;
         });
+    }
+
+    private function sharesAdAccount(Shop $shop): bool
+    {
+        return Shop::where('id', '!=', $shop->id)
+            ->where('settings->meta_ads->ad_account_id', (string) data_get($shop->settings, 'meta_ads.ad_account_id'))
+            ->exists();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function prefixes(Shop $shop): array
+    {
+        return array_values(array_filter(array_map(
+            fn (string $prefix) => strtolower(trim($prefix)),
+            explode(',', (string) data_get($shop->settings, 'meta_ads.campaign_name_prefix'))
+        )));
     }
 
     private function accessToken(Shop $shop): string
@@ -157,7 +184,7 @@ class FetchMetaAdsCosts extends Command
     {
         $accountId = (string) data_get($shop->settings, 'meta_ads.ad_account_id');
         $token     = $this->accessToken($shop);
-        $prefix    = trim((string) data_get($shop->settings, 'meta_ads.campaign_name_prefix'));
+        $prefixes  = $this->prefixes($shop);
 
         $trafficSources = TrafficSource::where('shop_id', $shop->id)
             ->whereIn('type', [TrafficSourcesTypeEnum::META_ADS->value, TrafficSourcesTypeEnum::INSTAGRAM_ADS->value])
@@ -213,7 +240,7 @@ class FetchMetaAdsCosts extends Command
             }
 
             foreach ($response->json('data', []) as $row) {
-                if (!$this->belongsToShop($row, $prefix)) {
+                if (!$this->belongsToShop($row, $prefixes)) {
                     if ((float) data_get($row, 'spend', 0) > 0) {
                         $skipped++;
                     }
@@ -232,7 +259,7 @@ class FetchMetaAdsCosts extends Command
         }
 
         if ($skipped > 0) {
-            $this->line("  {$skipped} campaign-day(s) with spend left to another shop, outside the '{$prefix}' campaign name prefix.");
+            $this->line("  {$skipped} campaign-day(s) with spend left to another shop, outside the '".implode(', ', $prefixes)."' campaign name prefixes.");
         }
 
         return $this->store($trafficSources, $rows);
@@ -240,17 +267,18 @@ class FetchMetaAdsCosts extends Command
 
     /**
      * A shop with no prefix configured takes every campaign in the account.
+     *
+     * @param list<string> $prefixes
      */
-    private function belongsToShop(array $row, string $prefix): bool
+    private function belongsToShop(array $row, array $prefixes): bool
     {
-        if ($prefix === '') {
+        if ($prefixes === []) {
             return true;
         }
 
-        return str_starts_with(
-            strtolower(trim((string) data_get($row, 'campaign_name'))),
-            strtolower($prefix)
-        );
+        $name = strtolower(trim((string) data_get($row, 'campaign_name')));
+
+        return collect($prefixes)->contains(fn (string $prefix) => str_starts_with($name, $prefix));
     }
 
     /**
@@ -312,6 +340,9 @@ class FetchMetaAdsCosts extends Command
      */
     private function store(\Illuminate\Support\Collection $trafficSources, array $rows): int
     {
+        $stored       = 0;
+        $campaignless = [];
+
         foreach ($rows as $row) {
             $currency      = $this->currency($row['currency']);
             $trafficSource = $trafficSources->get($row['type']);
@@ -329,37 +360,55 @@ class FetchMetaAdsCosts extends Command
                 continue;
             }
 
-            $campaignId = GetTrafficSourceCampaign::run(
-                $trafficSource,
-                $this->campaignReference($row['type'], $row['campaign_id']),
-                $row['campaign_name']
-            );
+            $reference  = $this->campaignReference($row['type'], $row['campaign_id']);
+            $campaignId = GetTrafficSourceCampaign::run($trafficSource, $reference, $row['campaign_name']);
 
-            StoreTrafficSourceCost::run($trafficSource, [
-                'date'                       => $row['date'],
-                'source_amount'              => $row['amount'],
-                'source_currency_id'         => $currency->id,
-                'fetched_via'                => TrafficSourceCostFetchedViaEnum::API->value,
-                'traffic_source_campaign_id' => $campaignId,
-            ]);
+            /* With no campaign of its own (no id, or the reference is another shop's) the spend goes on
+               the source's campaign-less row of the day. Every such campaign of the day shares that one
+               row, so they are summed first: stored one by one, each overwrote the last (HELP-4857). */
+            if ($campaignId === null) {
+                $key = $row['type'].'|'.$row['date'].'|'.$currency->id;
 
-            if ($campaignId) {
-                TrafficSourceCampaignMetric::updateOrCreate(
-                    ['traffic_source_campaign_id' => $campaignId, 'date' => $row['date']],
-                    [
-                        'impressions'              => $row['impressions'],
-                        'clicks'                   => $row['clicks'],
-                        'conversions'              => $row['purchases'],
-                        'source_conversions_value' => $row['purchase_value'],
-                        'registrations'            => $row['registrations'],
-                        'source_cost'              => $row['amount'],
-                        'source_currency_id'       => $currency->id,
-                    ]
-                );
+                $campaignless[$key] ??= ['type' => $row['type'], 'date' => $row['date'], 'currency_id' => $currency->id, 'amount' => 0.0];
+                $campaignless[$key]['amount'] += $row['amount'];
+
+                continue;
             }
+
+            $this->storeCost($trafficSource, $row['date'], $row['amount'], $currency->id, $campaignId);
+            $stored++;
+
+            TrafficSourceCampaignMetric::updateOrCreate(
+                ['traffic_source_campaign_id' => $campaignId, 'date' => $row['date']],
+                [
+                    'impressions'              => $row['impressions'],
+                    'clicks'                   => $row['clicks'],
+                    'conversions'              => $row['purchases'],
+                    'source_conversions_value' => $row['purchase_value'],
+                    'registrations'            => $row['registrations'],
+                    'source_cost'              => $row['amount'],
+                    'source_currency_id'       => $currency->id,
+                ]
+            );
         }
 
-        return count($rows);
+        foreach ($campaignless as $total) {
+            $this->storeCost($trafficSources->get($total['type']), $total['date'], $total['amount'], $total['currency_id'], null);
+            $stored++;
+        }
+
+        return $stored;
+    }
+
+    private function storeCost(TrafficSource $trafficSource, string $date, float $amount, int $currencyId, ?int $campaignId): void
+    {
+        StoreTrafficSourceCost::run($trafficSource, [
+            'date'                       => $date,
+            'source_amount'              => $amount,
+            'source_currency_id'         => $currencyId,
+            'fetched_via'                => TrafficSourceCostFetchedViaEnum::API->value,
+            'traffic_source_campaign_id' => $campaignId,
+        ]);
     }
 
     /**
