@@ -11,6 +11,7 @@ namespace App\Actions\Goods\TradeUnit\UI\Traits;
 
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Enums\Goods\TradeUnit\TradeUnitBatteryTypeEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitElectronicsCategoryEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitNonPackagingMaterialEnum;
@@ -146,6 +147,22 @@ trait WithTradeUnitEditSections
                 'labelProp'   => 'label',
                 'valueProp'   => 'value',
                 'value'       => data_get($tradeUnit?->compliance, 'batteries.type'),
+            ],
+        ];
+    }
+
+    public function getTradeUnitElectronicsFields(?TradeUnit $tradeUnit): array
+    {
+        return [
+            'electronics_category' => [
+                'type'        => 'select-improved',
+                'label'       => __('Electrical and electronic equipment category'),
+                'placeholder' => __('Not electronics'),
+                'multiple'    => false,
+                'options'     => TradeUnitElectronicsCategoryEnum::options(),
+                'labelProp'   => 'label',
+                'valueProp'   => 'value',
+                'value'       => data_get($tradeUnit?->compliance, 'electronics.category'),
             ],
         ];
     }

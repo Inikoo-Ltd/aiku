@@ -7,10 +7,10 @@ import { computed } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faShieldCheck, faTree, faBoxOpen, faFlask, faWeightHanging, faBookOpen, faPencil, faBatteryHalf } from "@fal"
+import { faShieldCheck, faTree, faBoxOpen, faFlask, faWeightHanging, faBookOpen, faPencil, faBatteryHalf, faPlug } from "@fal"
 import { Link } from "@inertiajs/vue3"
 
-library.add(faShieldCheck, faTree, faBoxOpen, faFlask, faWeightHanging, faBookOpen, faPencil, faBatteryHalf)
+library.add(faShieldCheck, faTree, faBoxOpen, faFlask, faWeightHanging, faBookOpen, faPencil, faBatteryHalf, faPlug)
 
 type Field = { label: string, value: string | null }
 
@@ -45,6 +45,8 @@ const props = defineProps<{
         non_packaging_edit_route: { name: string, parameters: Record<string, string> } | null
         battery_type: string | null
         batteries_edit_route: { name: string, parameters: Record<string, string> } | null
+        electronics_category: string | null
+        electronics_edit_route: { name: string, parameters: Record<string, string> } | null
         packaging: {
             code: string
             status: string
@@ -170,6 +172,21 @@ const grams = (value: number | null) => value === null ? "—" : `${Number(value
             <dl class="px-3 py-1.5 grid grid-cols-[minmax(7rem,12rem)_minmax(0,1fr)] gap-2">
                 <dt class="text-gray-500">{{ ctrans("Type (portable, up to 5 kg)") }}</dt>
                 <dd :class="data.battery_type ? 'font-medium' : 'text-gray-400'">{{ data.battery_type ?? ctrans("No batteries") }}</dd>
+            </dl>
+        </section>
+
+        <section class="rounded-lg border border-gray-200 bg-white max-w-5xl">
+            <h3 class="px-3 py-2 border-b border-gray-100 font-semibold flex items-center gap-2">
+                <FontAwesomeIcon icon="fal fa-plug" class="text-gray-400" fixed-width />
+                {{ ctrans("Electronics") }}
+                <Link v-if="data.electronics_edit_route" :href="route(data.electronics_edit_route.name, data.electronics_edit_route.parameters)"
+                      class="ml-auto text-gray-400 hover:text-gray-700" v-tooltip="ctrans('Edit')">
+                    <FontAwesomeIcon icon="fal fa-pencil" fixed-width />
+                </Link>
+            </h3>
+            <dl class="px-3 py-1.5 grid grid-cols-[minmax(7rem,12rem)_minmax(0,1fr)] gap-2">
+                <dt class="text-gray-500">{{ ctrans("Category") }}</dt>
+                <dd :class="data.electronics_category ? 'font-medium' : 'text-gray-400'">{{ data.electronics_category ?? ctrans("Not electronics") }}</dd>
             </dl>
         </section>
 

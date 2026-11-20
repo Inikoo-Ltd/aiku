@@ -146,7 +146,7 @@ class EditTradeUnit extends OrgAction
                             'style' => 'exitEdit',
                             'route' => [
                                 'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => in_array($request->query('section'), ['packaging_materials', 'non_packaging_materials', 'batteries'], true)
+                                'parameters' => in_array($request->query('section'), ['packaging_materials', 'non_packaging_materials', 'batteries', 'electronics'], true)
                                     ? [...$request->route()->originalParameters(), 'tab' => 'compliance']
                                     : array_values($request->route()->originalParameters())
                             ]
@@ -391,6 +391,12 @@ class EditTradeUnit extends OrgAction
                             'label'  => __('Batteries and accumulators'),
                             'icon'   => 'fa-light fa-battery-half',
                             'fields' => $this->getTradeUnitBatteryFields($tradeUnit),
+                        ],
+                        [
+                            'key'    => 'electronics',
+                            'label'  => __('Electronics'),
+                            'icon'   => 'fa-light fa-plug',
+                            'fields' => $this->getTradeUnitElectronicsFields($tradeUnit),
                         ],
                         [
                             'label'  => __('Labeling & Compliance Marks'),
