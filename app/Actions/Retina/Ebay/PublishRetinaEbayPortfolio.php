@@ -59,6 +59,10 @@ class PublishRetinaEbayPortfolio extends RetinaAction
                 'platform_errors' => Arr::get($publishedOffer, 'errors')
             ]);
 
+            if ($this->isTemporaryErrorOverRealRefusal($portfolio, $this->portfolioErrorMessage($displayError))) {
+                return $portfolio;
+            }
+
             return UpdatePortfolio::run($portfolio, [
                 'upload_warning'  => $this->portfolioErrorMessage($displayError),
                 'errors_response' => $this->portfolioErrorResponse($displayError) ?? ['message' => $displayError]

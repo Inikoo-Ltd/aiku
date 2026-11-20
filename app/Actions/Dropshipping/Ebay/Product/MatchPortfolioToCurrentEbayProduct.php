@@ -148,12 +148,14 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
                 'response' => $displayError
             ]);
 
-            UpdatePortfolio::make()->action($portfolio, [
-                'upload_warning' => $this->portfolioErrorMessage($displayError),
-                'errors_response' => [
-                    'message' => __('Your product is not in the listing yet, please publish it first in your ebay shop. Or you can use option: create new product')
-                ]
-            ]);
+            if (!$this->isTemporaryErrorOverRealRefusal($portfolio, $this->portfolioErrorMessage($displayError))) {
+                UpdatePortfolio::make()->action($portfolio, [
+                    'upload_warning' => $this->portfolioErrorMessage($displayError),
+                    'errors_response' => [
+                        'message' => __('Your product is not in the listing yet, please publish it first in your ebay shop. Or you can use option: create new product')
+                    ]
+                ]);
+            }
         }
 
         $portfolio->refresh();

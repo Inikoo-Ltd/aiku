@@ -9,9 +9,10 @@
 namespace App\Actions\CRM\ShoppingAssistant;
 
 use App\Actions\Dropshipping\Ebay\Product\UpdateEbayPortfolio;
-use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
@@ -54,7 +55,7 @@ class GetEbayListingProblems
             ->where('platforms.type', PlatformTypeEnum::EBAY->value)
             ->orderByDesc('customer_sales_channels.number_portfolios')
             ->limit(self::MAX_CHANNELS)
-            ->get(['customer_sales_channels.id', 'customer_sales_channels.name', 'customer_sales_channels.connection_status', 'customer_sales_channels.settings']);
+            ->get(['customer_sales_channels.id', 'customer_sales_channels.name', 'customer_sales_channels.platform_status', 'customer_sales_channels.max_quantity_advertise', 'customer_sales_channels.settings']);
 
         if ($channels->isEmpty()) {
             return ['content' => ['has_ebay' => false, 'note' => 'They have no eBay channel with us. Say so; to connect one, call shop_information for the eBay guide.'], 'products' => [], 'error' => null];
@@ -73,7 +74,7 @@ class GetEbayListingProblems
                 ->where('customer_sales_channel_id', $channel->id)
                 ->where('status', true);
 
-            if ($channel->connection_status !== CustomerSalesChannelConnectionStatusEnum::CONNECTED->value) {
+            if (!$channel->platform_status) {
                 $facts[]  = __('eBay ":channel" is not connected: press Reconnect on that channel in Channels, then upload again.', ['channel' => $name], $locale);
                 $causes[] = 'connection';
             }
@@ -98,10 +99,15 @@ class GetEbayListingProblems
                 $causes[] = 'drafts';
             }
 
-            $rows = $failed->orderByDesc('updated_at')->limit(self::MAX_FAILED)->get(['item_code', 'item_name', 'upload_warning', 'errors_response']);
+            $rows = $failed->orderByDesc('updated_at')->limit(self::MAX_FAILED)->get(['id', 'item_code', 'item_name', 'upload_warning', 'errors_response']);
+            $sellingLimit = false;
             foreach ($rows as $row) {
                 [$cause, $message] = self::refusalOf($row->upload_warning, $row->errors_response);
+                if ($cause === 'ebay_temporary') {
+                    [$cause, $message] = self::refusalBeforeTemporaryError($customer->id, $row->id) ?? [$cause, $message];
+                }
                 $causes[]          = $cause;
+                $sellingLimit      = $sellingLimit || $cause === 'selling_limit';
 
                 if ($cause === 'needs_our_data') {
                     $dataGaps[$row->item_code] = $message;
@@ -114,6 +120,10 @@ class GetEbayListingProblems
 
             if ($failedCount > $rows->count()) {
                 $facts[] = __('And :count more.', ['count' => $number($failedCount - $rows->count())], $locale);
+            }
+
+            if ($sellingLimit && (int) $channel->max_quantity_advertise <= 0) {
+                $facts[] = __('eBay ":channel" sends all the stock we have of each product, which uses up your eBay selling limit fast: set Max Quantity To Advertise in Manage Sales Channel, then upload again.', ['channel' => $name], $locale);
             }
         }
 
@@ -179,6 +189,37 @@ class GetEbayListingProblems
         $message = self::messageOf($warning, $errors);
 
         return [self::causeOf($message), $message];
+    }
+
+    /**
+     * A later "system error" overwrites upload_warning, hiding the refusal eBay gave just before (PRE-127), so read
+     * this portfolio's failed uploads since its last good one and keep the newest refusal that is not temporary.
+     *
+     * @return array{0: string, 1: string}|null
+     */
+    public static function refusalBeforeTemporaryError(int $customerId, int $portfolioId): ?array
+    {
+        $logs = DB::table('platform_portfolio_logs')
+            ->where('customer_id', $customerId)
+            ->where('portfolio_id', $portfolioId)
+            ->where('type', PlatformPortfolioLogsTypeEnum::UPLOAD->value)
+            ->where('status', '!=', PlatformPortfolioLogsStatusEnum::PROCESSING->value)
+            ->orderByDesc('id')
+            ->limit(self::MAX_FAILED * 2)
+            ->get(['status', 'response']);
+
+        foreach ($logs as $log) {
+            if ($log->status !== PlatformPortfolioLogsStatusEnum::FAIL->value) {
+                return null;
+            }
+
+            [$cause, $message] = self::refusalOf($log->response, null);
+            if ($cause !== 'ebay_temporary' && $message !== '') {
+                return [$cause, $message];
+            }
+        }
+
+        return null;
     }
 
     public static function messageOf(?string $warning, mixed $errors): string

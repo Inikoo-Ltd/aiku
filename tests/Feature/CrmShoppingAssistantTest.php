@@ -3730,7 +3730,7 @@ test('on a dropshipping shop Merlin reads why products do not list on the custom
         expect($tools->execute($conversation, 'ebay_listing_problems', [])['content']['has_ebay'])->toBeFalse();
 
         $channel = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, $ebay, ['reference' => 'ebay-'.Str::random(6)]);
-        $channel->update(['name' => 'Moon eBay', 'connection_status' => \App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum::CONNECTED, 'settings' => array_merge($channel->settings ?? [], ['upload_as_draft' => true])]);
+        $channel->update(['name' => 'Moon eBay', 'platform_status' => true, 'max_quantity_advertise' => 0, 'settings' => array_merge($channel->settings ?? [], ['upload_as_draft' => true])]);
         $theirs  = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($stranger, $ebay, ['reference' => 'ebay-'.Str::random(6)]);
         $portfolio = fn ($owner, $onChannel, string $code, bool $listed, ?string $warning = null, mixed $errors = null, array $data = []) => DB::table('portfolios')->insert([
             'group_id' => $owner->group_id, 'organisation_id' => $owner->organisation_id, 'shop_id' => $owner->shop_id, 'customer_id' => $owner->id,
@@ -3746,17 +3746,41 @@ test('on a dropshipping shop Merlin reads why products do not list on the custom
         $portfolio($customer, $channel, 'EB-05', false, null, [['domain' => 'API_INVENTORY', 'errorId' => 25002, 'message' => 'A user error has occurred. You are not allowed to revise an ended item "960079898083".']]);
         $portfolio($customer, $channel, 'EB-06', false);
         $portfolio($stranger, $theirs, 'XX-99', false, 'A user error has occurred. Before you can list this item we need some additional information to create a seller account.');
+        $portfolio($customer, $channel, 'EB-07', false, '[{"errorId":25002,"domain":"API_INVENTORY","message":"A user error has occurred. System error. Unable to process your request. Please try again later."}]');
+        $uploadLog = fn (string $status, string $response) => DB::table('platform_portfolio_logs')->insert([
+            'group_id' => $customer->group_id, 'organisation_id' => $customer->organisation_id, 'shop_id' => $customer->shop_id, 'customer_id' => $customer->id,
+            'customer_sales_channel_id' => $channel->id, 'portfolio_id' => DB::table('portfolios')->where('customer_id', $customer->id)->where('item_code', 'EB-07')->value('id'),
+            'platform_id' => $ebay->id, 'platform_type' => 'ebay', 'type' => 'upload', 'status' => $status, 'response' => $response, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $uploadLog('fail', 'A user error has occurred. Before you can list this item we need some additional information to create a seller account.');
+        $uploadLog('ok', '{}');
+        $uploadLog('fail', 'A user error has occurred. This listing would cause you to exceed the number of items and amount you can list.');
+        $uploadLog('fail', '[{"errorId":25002,"domain":"API_INVENTORY","message":"A user error has occurred. System error. Unable to process your request. Please try again later."}]');
 
         $result = $tools->execute($conversation, 'ebay_listing_problems', []);
         $fact   = $result['fact'];
+        $keepsRefusal = fn (\App\Models\Dropshipping\Portfolio $portfolio, ?string $warning) => (new class () {
+            use \App\Actions\Dropshipping\WithPortfolioErrorResponse;
+
+            public function check(\App\Models\Dropshipping\Portfolio $portfolio, ?string $warning): bool
+            {
+                return $this->isTemporaryErrorOverRealRefusal($portfolio, $warning);
+            }
+        })->check($portfolio, $warning);
+        $reconnect = __('eBay ":channel" is not connected: press Reconnect on that channel in Channels, then upload again.', ['channel' => 'Moon eBay'], 'en');
+        $maxQuantity = __('eBay ":channel" sends all the stock we have of each product, which uses up your eBay selling limit fast: set Max Quantity To Advertise in Manage Sales Channel, then upload again.', ['channel' => 'Moon eBay'], 'en');
 
         expect($result['error'])->toBeNull()
             ->and($result['content']['causes'])->toContain('drafts', 'selling_limit', 'needs_our_data', 'listing_ended')
+            ->and($result['content']['causes'])->not->toContain('connection', 'ebay_temporary', 'seller_account')
+            ->and($fact)->not->toContain($reconnect)
+            ->and($fact)->toContain('EB-07 · Bath Bomb EB-07 · '.__('Your eBay selling limit for this month is reached: upload fewer or cheaper products, ask eBay to raise your limits, or wait for next month.', [], 'en'))
+            ->and($fact)->toContain($maxQuantity)
             ->and($result['content'])->not->toHaveKey('ours_to_fix')
             ->and($result['content']['product_data'])->toContain('products team has been asked')
             ->and(\App\Models\Tasks\StaffTask::where('data->kind', \App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantEngineerTicket::CATALOGUE_TASK_KIND)->where('data->customer_id', $customer->id)->first()?->description)->toContain('EB-04')
             ->and(json_encode($result['content']))->not->toMatch('/\d/')
-            ->and($fact)->toContain(__('eBay ":channel": :listed listed, :drafts drafts not published, :failed refused by eBay, :waiting not sent yet.', ['channel' => 'Moon eBay', 'listed' => 1, 'drafts' => 1, 'failed' => 3, 'waiting' => 1], 'en'))
+            ->and($fact)->toContain(__('eBay ":channel": :listed listed, :drafts drafts not published, :failed refused by eBay, :waiting not sent yet.', ['channel' => 'Moon eBay', 'listed' => 1, 'drafts' => 1, 'failed' => 4, 'waiting' => 1], 'en'))
             ->and($fact)->toContain(__('Upload as draft is on in Manage Sales Channel, so new uploads stay drafts.', [], 'en'))
             ->and($fact)->toContain('EB-03 · Bath Bomb EB-03 · '.__('Your eBay selling limit for this month is reached: upload fewer or cheaper products, ask eBay to raise your limits, or wait for next month.', [], 'en'))
             ->and($fact)->toContain('EB-04 · Bath Bomb EB-04 · '.__('eBay needs information about this product that only we can add: we are looking at it.', [], 'en'))
@@ -3778,6 +3802,12 @@ test('on a dropshipping shop Merlin reads why products do not list on the custom
             ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::refusalOf('The item has an invalid quantity. The quantity must be a valid number greater than 0.', ['message' => 'Your product is not in the listing yet, please publish it first in your ebay shop. Or you can use option: create new product']))->toBe(['other', 'The item has an invalid quantity. The quantity must be a valid number greater than 0.'])
             ->and(\App\Actions\CRM\ShoppingAssistant\GetEbayListingProblems::refusalOf(null, ['message' => 'Your product is not in the listing yet, please publish it first in your ebay shop. Or you can use option: create new product'])[0])->toBe('listing_ended')
             ->and(collect($tools->definitions(true))->pluck('function.name'))->toContain('ebay_listing_problems')
+            ->and(tap($channel)->update(['platform_status' => false, 'max_quantity_advertise' => 5]) && true)->toBeTrue()
+            ->and($tools->execute($conversation, 'ebay_listing_problems', [])['fact'])->toContain($reconnect)->not->toContain($maxQuantity)
+            ->and($keepsRefusal(new \App\Models\Dropshipping\Portfolio(['upload_warning' => 'A user error has occurred. This listing would cause you to exceed the number of items and amount you can list.']), '[{"errorId":25002,"message":"A user error has occurred. System error. Unable to process your request. Please try again later."}]'))->toBeTrue()
+            ->and($keepsRefusal(new \App\Models\Dropshipping\Portfolio(['upload_warning' => 'Too many requests.']), 'A user error has occurred. System error.'))->toBeFalse()
+            ->and($keepsRefusal(new \App\Models\Dropshipping\Portfolio(['upload_warning' => null]), 'A user error has occurred. System error.'))->toBeFalse()
+            ->and($keepsRefusal(new \App\Models\Dropshipping\Portfolio(['upload_warning' => 'A user error has occurred. System error.']), 'The item specific Brand is missing.'))->toBeFalse()
             ->and(collect($tools->definitions())->pluck('function.name'))->not->toContain('ebay_listing_problems');
     } finally {
         $this->shop->update(['type' => $originalType]);

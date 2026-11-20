@@ -88,10 +88,12 @@ class StoreEbayProduct extends RetinaAction
                         'platform_errors' => is_array($platformErrors) ? $platformErrors : null
                     ]);
 
-                    UpdatePortfolio::make()->action($portfolio, [
-                        'upload_warning' => Arr::get($errorResponse, 'message'),
-                        'errors_response' => ['params' => $params] + $errorResponse
-                    ]);
+                    if (!$this->isTemporaryErrorOverRealRefusal($portfolio, Arr::get($errorResponse, 'message'))) {
+                        UpdatePortfolio::make()->action($portfolio, [
+                            'upload_warning' => Arr::get($errorResponse, 'message'),
+                            'errors_response' => ['params' => $params] + $errorResponse
+                        ]);
+                    }
 
                     return $displayError ?: true;
                 }
