@@ -6,6 +6,8 @@ import { faHamsa, faArrowRight } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
+import { packCount } from "@/Composables/packs"
+import { useLocaleStore } from "@/Stores/locale"
 
 library.add(faHamsa, faArrowRight)
 
@@ -26,6 +28,7 @@ const props = defineProps<{
         code: string
         route: routeType
         recommended_batch_size: number | null
+        packed_in: number
         open_jobs: number
         units_in_production: number
         jobs_done: number
@@ -35,16 +38,22 @@ const props = defineProps<{
     }
 }>()
 
+const locale = useLocaleStore()
+
+const inSkos = (units: number): string => packCount(units / props.data.packed_in, props.data.packed_in)
+const inUnits = (units: number): string => ctrans(":count units", { count: locale.number(units) })
+const skosNote = (units: number | null): string => props.data.packed_in > 1 && units ? `${ctrans("SKOs")} · ${inUnits(units)}` : ctrans("SKOs")
+
 const stats = [
     { title: ctrans("Open jobs"), value: props.data.open_jobs },
-    { title: ctrans("Units in production"), value: props.data.units_in_production },
+    { title: ctrans("In production"), value: inSkos(props.data.units_in_production), note: skosNote(props.data.units_in_production) },
     { title: ctrans("Jobs done"), value: props.data.jobs_done },
-    { title: ctrans("Batch size"), value: props.data.recommended_batch_size ?? "-" },
+    { title: ctrans("Batch size"), value: props.data.recommended_batch_size ? inSkos(props.data.recommended_batch_size) : "-", note: skosNote(props.data.recommended_batch_size) },
 ]
 
 const batchLists = [
-    { key: "todo_batches", title: ctrans("To do") },
-    { key: "recent_batches", title: ctrans("Last produced") },
+    { key: "todo_batches", title: ctrans("To do (SKOs)") },
+    { key: "recent_batches", title: ctrans("Last produced (SKOs)") },
 ] as const
 </script>
 
@@ -63,6 +72,7 @@ const batchLists = [
             <div v-for="stat in stats" :key="stat.title" class="bg-white px-4 py-3">
                 <dt class="text-xs text-gray-400 whitespace-nowrap">{{ stat.title }}</dt>
                 <dd class="mt-1 text-xl font-semibold tabular-nums text-gray-800">{{ stat.value }}</dd>
+                <dd v-if="stat.note" class="text-xs tabular-nums text-gray-400">{{ stat.note }}</dd>
             </div>
         </dl>
 
@@ -96,9 +106,10 @@ const batchLists = [
                         </td>
                         <td class="py-0.5 text-gray-500">{{ batch.artisan ?? "-" }}</td>
                         <td class="py-0.5 text-gray-500 whitespace-nowrap">{{ useFormatTime(batch.date) }}</td>
-                        <td class="py-0.5 text-right tabular-nums whitespace-nowrap">
-                            <template v-if="list.key === 'todo_batches'">{{ batch.quantity_made }} / {{ batch.quantity }}</template>
-                            <template v-else>{{ batch.quantity_received }}</template>
+                        <td class="py-0.5 pl-2 text-right tabular-nums whitespace-nowrap">
+                            <template v-if="list.key === 'todo_batches'">{{ inSkos(batch.quantity_made) }} / {{ inSkos(batch.quantity) }}</template>
+                            <template v-else>{{ inSkos(batch.quantity_received) }}</template>
+                            <span v-if="data.packed_in > 1" class="ml-1 text-xs text-gray-400">({{ inUnits(list.key === 'todo_batches' ? batch.quantity : batch.quantity_received) }})</span>
                         </td>
                     </tr>
                 </tbody>

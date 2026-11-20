@@ -102,6 +102,7 @@ class GetArtefactShowcase
                 'parameters' => [$artefact->organisation->slug, $artefact->production->slug, $artefact->slug],
             ],
             'recommended_batch_size' => $artefact->recommended_batch_size,
+            'packed_in'              => $artefact->packedIn(),
             'open_jobs'              => $toDo->count(),
             'units_in_production'    => (float) $toDo->sum(fn ($batch) => $batch->quantity - $batch->quantity_received),
             'jobs_done'              => IndexArtefactBatches::make()->query($artefact)->where('job_order_items.quantity_received', '>', 0)->count(),

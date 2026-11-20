@@ -1118,7 +1118,12 @@ test('production for stock is flagged on the backlog and booking it in fulfils t
         ->assertInertia(fn (AssertableInertia $page) => $page->where('artefact_batches.data.0.id', $jobOrderItem->id)
             ->where('tabs.navigation.artefact_batches.number', 1)
             ->where('tabs.navigation.artefact_batches.type', 'icon'));
-    expect(GetOrgStockShowcase::run($location->warehouse, $orgStock->refresh())['production'])->toMatchArray(['code' => $artefact->code, 'open_jobs' => 0, 'jobs_done' => 1]);
+    $packedIn = $orgStock->packed_in;
+    $orgStock->update(['packed_in' => 8]);
+    $production = GetOrgStockShowcase::run($location->warehouse, $orgStock->refresh())['production'];
+    expect($production)->toMatchArray(['code' => $artefact->code, 'open_jobs' => 0, 'jobs_done' => 1, 'packed_in' => 8])
+        ->and($production['recent_batches'][0]['quantity_received'])->toBe(100.0);
+    $orgStock->update(['packed_in' => $packedIn]);
     $this->organisation->update(['is_manufacturing_hub' => false]);
     get(route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show', [$this->organisation->slug, $location->warehouse->slug, $orgStock->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.artefact_batches'));
