@@ -163,6 +163,7 @@ const isComplete = (stage: Stage): boolean => stage.reached || !!stage.not_requi
 
 const zeroDate = computed(() => props.stages.find((stage) => stage.number === 1)?.date ?? null)
 const zeroOffset = (stage: Stage): number | null => zeroDate.value && stage.date && isComplete(stage) ? daysBetween(zeroDate.value, stage.date) : null
+const zeroOffsetLabel = (offset: number): string => offset < 0 ? `Z${offset}` : `Z+${offset}`
 
 const stageMarks = (stage: Stage) => stage.marks.filter((mark) => !(mark.field === "compliance_complete_at" && stage.checks?.some((check) => check.key === "compliance")))
 const isRequiredSkip = (check: Check) => check.skipped && check.required !== false
@@ -805,7 +806,7 @@ function save() {
             </div>
 
             <slot :name="`stage-${stage.key}`" :stage="stage" />
-            <div v-if="zeroOffset(stage) !== null" class="mt-auto self-end pt-2 text-xs font-medium tabular-nums text-gray-500" v-tooltip="ctrans('Days since stage 1 (Z)')">Z+{{ zeroOffset(stage) }}</div>
+            <div v-if="zeroOffset(stage) !== null" class="mt-auto self-end pt-2 text-xs font-medium tabular-nums text-gray-500" v-tooltip="ctrans('Days since stage 1 (Z)')">{{ zeroOffsetLabel(zeroOffset(stage) as number) }}</div>
             </div>
         </div>
     </div>
