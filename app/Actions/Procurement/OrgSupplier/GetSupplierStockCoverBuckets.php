@@ -43,9 +43,14 @@ class GetSupplierStockCoverBuckets
     /**
      * Per-row lead time, the same order the ordering card reads it: the SKO's own, the supplier product's, then the supplier median.
      */
+    public function leadDaysExpression(int $leadDays): string
+    {
+        return "coalesce(os.measured_lead_time_days, os.estimated_lead_time_days, sp.measured_lead_time_days, sp.estimated_lead_time_days, $leadDays)";
+    }
+
     private function bucketExpression(int $leadDays, string $draftOrderSkos = '0'): string
     {
-        $lead       = "coalesce(os.measured_lead_time_days, os.estimated_lead_time_days, sp.measured_lead_time_days, sp.estimated_lead_time_days, $leadDays)";
+        $lead       = $this->leadDaysExpression($leadDays);
         $understock = "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * $lead)";
 
         return "case

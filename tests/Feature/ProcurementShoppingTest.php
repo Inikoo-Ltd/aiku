@@ -2912,7 +2912,10 @@ test('UI supplier shopping dashboard renders', function () {
             ->has('latePurchaseOrders')
             ->has('openStockDeliveries')
             ->has('shoppingListRoute.name')
-            ->has('stockDeliveriesRoute.name');
+            ->has('stockDeliveriesRoute.name')
+            ->has('prepareOrder.buckets.out')
+            ->has('prepareOrder.buckets.w2')
+            ->where('canPrepareOrder', true);
     });
 });
 
@@ -2944,6 +2947,15 @@ test('supplier shopping dashboard is only for suppliers we buy from directly', f
     expect($this->orgSupplier->org_agent_id)->not->toBeNull();
 
     $this->get(route('grp.org.procurement.org_suppliers.show.shopping.dashboard', [$this->organisation->slug, $this->orgSupplier->slug]))
+        ->assertNotFound();
+
+    $this->post(route('grp.org.procurement.org_suppliers.show.shopping.prepare', [$this->organisation->slug, $this->orgSupplier->slug]))
+        ->assertNotFound();
+
+    [$independentOrgSupplier] = independentOrgSupplierFixture($this);
+    $secondOrganisation       = Organisation::where('code', 'prc2')->first()
+        ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
+    $this->post(route('grp.org.procurement.org_suppliers.show.shopping.prepare', [$secondOrganisation->slug, $independentOrgSupplier->slug]))
         ->assertNotFound();
 });
 
@@ -4426,4 +4438,56 @@ test('neither the agent\'s employees nor the user who asked can approve and pay 
     $this->patch(route('grp.models.deposit_request.approve', $depositRequest->id))->assertSessionHasNoErrors();
     expect($depositRequest->refresh()->approved_by)->toBe($alsoAgent->id);
     actingAs($this->adminGuest->getUser());
+});
+
+test('supplier prepare order puts out of stock SKOs on the supplier draft at the suggested quantity, once, skipping do-not-auto-order SKOs', function () {
+    [$orgSupplier, $supplierProduct, $orgSupplierProduct] = independentOrgSupplierFixture($this);
+    $supplierProduct->update(['cost' => 2, 'units_per_carton' => 100, 'estimated_lead_time_days' => 9]);
+
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock, OrgStock::factory()->definition());
+    $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'packed_in' => 10, 'quantity_available' => 0, 'quantity_in_locations' => 0, 'is_excluded_from_auto_ordering' => false, 'measured_lead_time_days' => null, 'estimated_lead_time_days' => null]);
+    $orgStock->stats()->updateOrCreate([], ['predicted_daily_usage' => 2, 'days_of_cover' => 0, 'forecast_source' => null, 'demand_forecast' => null]);
+
+    $link = StockHasSupplierProduct::firstOrCreate(['stock_id' => $stock->id, 'supplier_product_id' => $supplierProduct->id], ['available' => true]);
+    OrgStockHasOrgSupplierProduct::updateOrCreate(
+        ['org_stock_id' => $orgStock->id, 'org_supplier_product_id' => $orgSupplierProduct->id],
+        ['stock_has_supplier_product_id' => $link->id, 'status' => true, 'local_priority' => 1000]
+    );
+
+    $prepare = App\Actions\Procurement\OrgSupplier\PrepareSupplierPurchaseOrder::make();
+    $line    = collect($prepare->lines($orgSupplier))->firstWhere('org_supplier_product_id', $orgSupplierProduct->id);
+
+    expect($line)->not->toBeNull()
+        ->and($line['bucket'])->toBe('out')
+        ->and($line['skos'])->toBe(80.0)
+        ->and($line['quantity_units'])->toBe(800.0)
+        ->and($line['cost'])->toBe(1600.0)
+        ->and($prepare->summary($orgSupplier)['buckets']['out']['lines'])->toBe(collect($prepare->lines($orgSupplier))->where('bucket', 'out')->count());
+
+    $orgStock->stats()->update(['predicted_daily_usage' => 0.01]);
+    expect(collect($prepare->lines($orgSupplier))->firstWhere('org_supplier_product_id', $orgSupplierProduct->id)['quantity_units'])->toBe(10.0);
+    $orgStock->stats()->update(['predicted_daily_usage' => 2]);
+
+    $orgStock->update(['is_excluded_from_auto_ordering' => true]);
+    expect(collect($prepare->lines($orgSupplier))->firstWhere('org_supplier_product_id', $orgSupplierProduct->id))->toBeNull();
+    $orgStock->update(['is_excluded_from_auto_ordering' => false]);
+
+    $pastOrder = StorePurchaseOrder::make()->action($orgSupplier, []);
+    StorePurchaseOrderTransaction::make()->addOrgSupplierProduct($pastOrder, $orgSupplierProduct, ['quantity_ordered' => 300]);
+    $pastOrder->update(['state' => PurchaseOrderStateEnum::SETTLED]);
+    expect(collect($prepare->lines($orgSupplier))->firstWhere('org_supplier_product_id', $orgSupplierProduct->id)['quantity_units'])->toBe(300.0);
+    $pastOrder->update(['state' => PurchaseOrderStateEnum::CANCELLED]);
+
+    $this->post(route('grp.org.procurement.org_suppliers.show.shopping.prepare', [$this->organisation->slug, $orgSupplier->slug]))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $purchaseOrder = PurchaseOrder::where('parent_type', 'OrgSupplier')->where('parent_id', $orgSupplier->id)->where('state', PurchaseOrderStateEnum::IN_PROCESS)->latest('id')->firstOrFail();
+    $transaction   = $purchaseOrder->purchaseOrderTransactions()->where('org_supplier_product_id', $orgSupplierProduct->id)->firstOrFail();
+
+    expect($purchaseOrder->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS)
+        ->and($purchaseOrder->parent_id)->toBe($orgSupplier->id)
+        ->and((float) $transaction->quantity_ordered)->toBe(800.0)
+        ->and(collect($prepare->lines($orgSupplier))->firstWhere('org_supplier_product_id', $orgSupplierProduct->id))->toBeNull();
 });
