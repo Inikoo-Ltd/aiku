@@ -222,7 +222,7 @@ function money(value: number, compact = false): string {
 
 const legend = [
     { label: ctrans("Complete"), class: "border-emerald-300 bg-emerald-50" },
-    { label: ctrans("Current"), class: "border-2 border-gray-700 bg-white" },
+    { label: ctrans("Current"), class: "border-2 border-[var(--app-accent)] bg-white" },
     { label: ctrans("At risk (due in 3 days)"), class: "border-2 border-amber-400 bg-amber-50" },
     { label: ctrans("Target missed"), class: "border-2 border-red-400 bg-red-50" },
     { label: ctrans("Upcoming (struck through once the target has passed)"), class: "border-gray-200 bg-gray-50" },

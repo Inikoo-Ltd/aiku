@@ -120,9 +120,9 @@ const isCurrent = (segment: JourneySegment) => ["on_track", "at_risk", "overdue"
 
 const cellClass: Record<JourneySegment["state"], string> = {
     done: "border-emerald-300 bg-emerald-50 text-emerald-900",
-    skipped: "border-emerald-200 bg-emerald-50/50 text-emerald-700",
+    skipped: "border-emerald-200 bg-[#f4fbf8] text-emerald-700",
     untracked: "border-dashed border-gray-200 bg-white text-gray-400",
-    on_track: "border-2 border-gray-700 bg-white text-gray-900",
+    on_track: "border-2 border-[var(--app-accent)] bg-white text-gray-900",
     at_risk: "border-2 border-amber-400 bg-amber-50 text-gray-900",
     overdue: "border-2 border-red-400 bg-red-50 text-gray-900",
     future: "border-gray-200 bg-gray-50 text-gray-500"
@@ -141,6 +141,29 @@ const statusLabel = computed(() => ({
     overdue: ctrans("Overdue"),
     completed: ctrans("Completed")
 })[props.ribbon.status])
+
+const chainReach = computed(() => {
+    const currentIndex = props.stages.findIndex((stage) => segmentsByKey.value[stage.key] && isCurrent(segmentsByKey.value[stage.key]))
+    if (currentIndex >= 0) {
+        return { current: currentIndex, reached: currentIndex }
+    }
+    if (props.ribbon.status === "completed") {
+        return { current: -1, reached: props.stages.length - 1 }
+    }
+    const reached = props.stages.reduce((last, stage, index) => ["done", "skipped"].includes(segmentsByKey.value[stage.key]?.state ?? "") ? index : last, -1)
+    return { current: -1, reached }
+})
+
+const lastShownIndex = computed(() => props.stages.reduce((last, stage, index) => segmentsByKey.value[stage.key] || tracksAbsent(stage) ? index : last, -1))
+
+function linkClass(fromIndex: number): string {
+    const { current, reached } = chainReach.value
+    if (current >= 0 && fromIndex === Math.max(current - 1, 0)) {
+        const state = segmentsByKey.value[props.stages[current].key]?.state
+        return `journey-link-active journey-link-${state}`
+    }
+    return fromIndex + 1 <= reached ? "journey-link-done" : "journey-link-future"
+}
 
 const currentSegment = computed(() => props.ribbon.segments.find((segment) => segment.key === props.ribbon.current_stage) ?? null)
 const currentNumber = computed(() => props.stages.findIndex((stage) => stage.key === props.ribbon.current_stage) + 1)
@@ -341,14 +364,15 @@ function isMarkable(segment: JourneySegment): boolean {
                     </slot>
                 </div>
             </td>
-            <td v-for="stage in stages" :key="stage.key" class="journey-stage-cell px-1 py-2 align-middle">
+            <td v-for="(stage, stageIndex) in stages" :key="stage.key" class="journey-stage-cell px-1 py-2 align-middle">
+                <span v-if="stageIndex < lastShownIndex" class="journey-link" :class="linkClass(stageIndex)" aria-hidden="true" />
                 <template v-for="key in [stage.key]" :key="key">
                 <button
                     v-if="segmentsByKey[key]"
                     type="button"
                     :title="cellTitle(segmentsByKey[key])"
-                    class="relative z-[1] flex h-11 w-full min-w-[6.5rem] flex-col items-center justify-center rounded-md border px-1.5 text-[11px] leading-tight focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700"
-                    :class="[cellClass[segmentsByKey[key].state], isMarkable(segmentsByKey[key]) ? 'cursor-pointer hover:brightness-95' : 'cursor-default']"
+                    class="relative z-[1] flex mx-auto h-11 w-[6.25rem] flex-col items-center justify-center rounded-md border px-1.5 text-[11px] leading-tight focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700"
+                    :class="[cellClass[segmentsByKey[key].state], isCurrent(segmentsByKey[key]) && `journey-current journey-current-${segmentsByKey[key].state}`, isMarkable(segmentsByKey[key]) ? 'cursor-pointer hover:brightness-95' : 'cursor-default']"
                     @click="isMarkable(segmentsByKey[key]) && emit('mark', ribbon, segmentsByKey[key], $event)">
                     <template v-if="segmentsByKey[key].state === 'done'">
                         <span class="font-semibold">
@@ -383,9 +407,9 @@ function isMarkable(segment: JourneySegment): boolean {
                     v-else-if="canMark && tracksAbsent(stage)"
                     type="button"
                     :title="`${stage.label}\n${stage.description}\n${ctrans('Not recorded on this order. Click to mark done')}`"
-                    class="relative z-[1] flex h-11 w-full min-w-[6.5rem] cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-200 bg-white text-gray-400 hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700"
+                    class="relative z-[1] flex mx-auto h-11 w-[6.25rem] cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-200 bg-white text-gray-400 hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700"
                     @click="emit('mark', ribbon, absentStage(stage), $event)">—</button>
-                <div v-else-if="tracksAbsent(stage)" class="relative z-[1] flex h-11 items-center justify-center rounded-md border border-dashed border-gray-200 bg-white text-gray-400" :title="ctrans('Not recorded on this order')">—</div>
+                <div v-else-if="tracksAbsent(stage)" class="relative z-[1] mx-auto flex h-11 w-[6.25rem] items-center justify-center rounded-md border border-dashed border-gray-200 bg-white text-gray-400" :title="ctrans('Not recorded on this order')">—</div>
                 <div v-else class="h-11" :title="absentTitle(stage.key)" />
                 </template>
             </td>
@@ -455,12 +479,90 @@ function isMarkable(segment: JourneySegment): boolean {
     position: relative;
 }
 
-.journey-stage-cell::before {
+.journey-link {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 3px;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.journey-link-done {
+    background: #34d399;
+}
+
+.journey-link-future {
+    height: 4px;
+    background: radial-gradient(circle, #cbd5e1 1.5px, transparent 2px) 0 50% / 8px 4px repeat-x;
+}
+
+.journey-current {
+    --journey-link-colour: var(--app-accent);
+}
+
+.journey-link-active {
+    height: 12px;
+}
+
+.journey-link-active::before {
     content: "";
     position: absolute;
     top: 50%;
     left: 0;
     right: 0;
-    border-top: 1px solid #e5e7eb;
+    height: 2px;
+    transform: translateY(-50%);
+    background: #d1d5db;
+}
+
+.journey-link-active::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    background-color: #6b7280;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M4 1.5l4.5 4.5L4 10.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    mask-size: 12px 12px;
+    animation: journey-link-travel 3s ease-in-out infinite;
+}
+
+.journey-current-at_risk {
+    --journey-link-colour: #f59e0b;
+}
+
+.journey-current-overdue {
+    --journey-link-colour: #ef4444;
+}
+
+.journey-current {
+    animation: journey-current-pulse 3s ease-out infinite;
+}
+
+@keyframes journey-link-travel {
+    0% {
+        left: 3.25rem;
+        opacity: 0;
+    }
+    20%,
+    80% {
+        opacity: 1;
+    }
+    100% {
+        left: calc(100% - 3.25rem - 12px);
+        opacity: 0;
+    }
+}
+
+@keyframes journey-current-pulse {
+    0% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--journey-link-colour) 45%, transparent);
+    }
+    70%,
+    100% {
+        box-shadow: 0 0 0 7px transparent;
+    }
 }
 </style>
