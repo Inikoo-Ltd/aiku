@@ -68,6 +68,7 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
         /** @var Product $product */
         $product = Product::where('shop_id', $this->scope->shop_id)
             ->whereRaw('lower(code) = lower(?)', [$validatedData['code']])
+            ->orderByDesc('is_for_sale')
             ->orderByRaw('code = ? desc', [$validatedData['code']])
             ->orderByRaw("case state when 'active' then 0 when 'discontinuing' then 1 else 2 end")
             ->orderByDesc('id')
