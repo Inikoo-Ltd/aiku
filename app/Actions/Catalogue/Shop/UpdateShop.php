@@ -107,6 +107,7 @@ class UpdateShop extends OrgAction
     public function handle(Shop $shop, array $modelData): Shop
     {
         $originalReviewSettings   = Arr::get($shop->settings ?? [], 'reviews');
+        $originalEnabledLanguageIds = $shop->enabledLanguageIds();
         $reviewRatingLabelsTouched = Arr::exists($modelData, 'review_rating_labels');
 
         $originalViewContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel');
@@ -218,6 +219,10 @@ class UpdateShop extends OrgAction
                     $bannedCountriesUpdated = true;
                 }
             }
+        }
+
+        if (Arr::has($modelData, 'enabled_languages')) {
+            data_set($modelData, 'settings.enabled_languages', array_values(array_unique(array_map('intval', Arr::pull($modelData, 'enabled_languages') ?? []))));
         }
 
         if (Arr::has($modelData, 'chat_enabled')) {
@@ -841,6 +846,10 @@ class UpdateShop extends OrgAction
             BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
         }
 
+        if ($shop->website && $shop->enabledLanguageIds() != $originalEnabledLanguageIds) {
+            BreakWebsiteCache::run($shop->website, null);
+        }
+
         if ($shop->website && (bool) Arr::get($shop->settings ?? [], 'packaging_and_inserts.enabled', false) !== $originalPackagingAndInsertsEnabled) {
             BreakWebsiteIrisCache::run($shop->website);
         }
@@ -1212,6 +1221,8 @@ class UpdateShop extends OrgAction
             'invoice_footer'                                          => ['sometimes', 'string', 'max:10000'],
             'download_pdf_columns'                                    => ['sometimes', 'array'],
             'extra_languages'                                         => ['sometimes', 'array', 'nullable'],
+            'enabled_languages'                                       => ['sometimes', 'array', 'nullable'],
+            'enabled_languages.*'                                     => ['integer', Rule::exists('languages', 'id')->where('status', true)],
             'image'                                                   => [
                 'sometimes',
                 'nullable',

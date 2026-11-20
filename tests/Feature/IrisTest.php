@@ -1444,3 +1444,151 @@ test('favicon and apple touch icons redirect to the website icon without a sessi
     expect(app('router')->getRoutes()->match(Request::create('https://www.shop.test/apple-touch-icon-foo.png'))->getName())->toBe('iris.')
         ->and(app('router')->getRoutes()->match(Request::create('https://www.shop.test/logo.png'))->getName())->toBe('iris.');
 });
+
+function enableShopLanguages(\App\Models\Catalogue\Shop $shop, ?array $codes): void
+{
+    $settings = $shop->settings ?? [];
+    if ($codes === null) {
+        unset($settings['enabled_languages']);
+    } else {
+        $settings['enabled_languages'] = array_values(Language::whereIn('code', $codes)->pluck('id')->all());
+    }
+    $shop->settings = $settings;
+    $shop->saveQuietly();
+}
+
+function otherLanguageCodes(\App\Models\Catalogue\Shop $shop): array
+{
+    return Language::whereIn('code', ['fr', 'de', 'es', 'en'])->where('id', '!=', $shop->language_id)->orderBy('code')->limit(2)->pluck('code')->all();
+}
+
+function runWebsiteLocale(Website $website, string $uri, string $method = 'GET')
+{
+    $request = Request::create('http://'.$website->domain.$uri, $method);
+    $request->server->set('QUERY_STRING', (string) parse_url($uri, PHP_URL_QUERY));
+    $request->merge(['website' => $website->fresh(), 'locale' => $website->shop->language->code]);
+
+    return (new \App\Http\Middleware\SetWebsiteLocale())->handle($request, fn () => response('ok'));
+}
+
+function runWebUserLocale(Website $website, array $cookies = [], string $uri = '/app/dashboard')
+{
+    $request = Request::create('http://'.$website->domain.$uri, 'GET', [], $cookies);
+    $request->merge(['website' => $website->fresh()]);
+
+    return (new \App\Http\Middleware\SetWebUserLocale())->handle($request, fn () => response('ok'));
+}
+
+test('website locale without the setting stays the shop language and a not enabled locale redirects to the untouched rest of the url', function () {
+    enableShopLanguages($this->shop, null);
+    $shopCode = $this->shop->language->code;
+    [$otherCode] = otherLanguageCodes($this->shop);
+
+    expect(runWebsiteLocale($this->website, '/about')->getContent())->toBe('ok')
+        ->and(app()->getLocale())->toBe($shopCode)
+        ->and(runWebsiteLocale($this->website, '/about?locale='.$shopCode)->getContent())->toBe('ok')
+        ->and(app()->getLocale())->toBe($shopCode)
+        ->and(runWebsiteLocale($this->website, '/about?locale='.$otherCode, 'POST')->getContent())->toBe('ok')
+        ->and(app()->getLocale())->toBe($shopCode);
+
+    foreach ([$otherCode, 'zz', '', 'x%5B%5D'] as $notEnabled) {
+        $response = runWebsiteLocale($this->website, '/about?page=2&a.b=1&x=1&x=2&flag&locale='.$notEnabled);
+        expect($response->isRedirect('http://'.$this->website->domain.'/about?page=2&a.b=1&x=1&x=2&flag'))->toBeTrue()
+            ->and($response->headers->get('X-Aiku-Cacheable-Redirect'))->toBe('1');
+    }
+
+    expect(runWebsiteLocale($this->website, '/about?locale[]=fr')->isRedirect('http://'.$this->website->domain.'/about'))->toBeTrue();
+});
+
+test('website locale accepts a language enabled for the shop', function () {
+    [$enabledCode, $notEnabledCode] = otherLanguageCodes($this->shop);
+    enableShopLanguages($this->shop, [$enabledCode]);
+
+    expect(runWebsiteLocale($this->website, '/about?locale='.$enabledCode)->getContent())->toBe('ok')
+        ->and(app()->getLocale())->toBe($enabledCode)
+        ->and(runWebsiteLocale($this->website, '/about?locale='.$notEnabledCode)->isRedirect())->toBeTrue();
+
+    enableShopLanguages($this->shop, null);
+});
+
+test('web user locale keeps the old behaviour until the list is saved, then ignores languages not enabled', function () {
+    [$otherCode] = otherLanguageCodes($this->shop);
+    $shopCode = $this->shop->language->code;
+    enableShopLanguages($this->shop, null);
+
+    runWebUserLocale($this->website, ['aiku_guest_locale' => $otherCode]);
+    expect(app()->getLocale())->toBe($otherCode);
+
+    runWebUserLocale($this->website, [], '/app/login?locale='.$otherCode);
+    expect(app()->getLocale())->toBe($shopCode);
+
+    $webUser = createWebUser(createCustomer($this->shop));
+    $webUser->update(['language_id' => Language::where('code', $otherCode)->value('id')]);
+    actingAs($webUser, 'retina');
+
+    runWebUserLocale($this->website);
+    expect(app()->getLocale())->toBe($otherCode);
+
+    enableShopLanguages($this->shop, [$shopCode]);
+    runWebUserLocale($this->website);
+    expect(app()->getLocale())->toBe($shopCode);
+
+    enableShopLanguages($this->shop, [$otherCode]);
+    runWebUserLocale($this->website);
+    expect(app()->getLocale())->toBe($otherCode);
+
+    auth('retina')->logout();
+    runWebUserLocale($this->website, [], '/app/login?locale='.$otherCode);
+    expect(app()->getLocale())->toBe($otherCode);
+
+    enableShopLanguages($this->shop, null);
+});
+
+test('language switch saves the web user language, only enabled ones once the list is saved', function () {
+    [$otherCode] = otherLanguageCodes($this->shop);
+    $otherLanguageId = Language::where('code', $otherCode)->value('id');
+    $webUser = createWebUser(createCustomer($this->shop));
+    $updateLanguage = fn () => \App\Actions\Retina\UI\Profile\UpdateRetinaProfile::make()->action($webUser->fresh(), ['language_id' => $otherLanguageId]);
+
+    enableShopLanguages($this->shop, null);
+    $webUser->update(['language_id' => $this->shop->language_id]);
+    $updateLanguage();
+    expect($webUser->fresh()->language_id)->toBe($otherLanguageId);
+
+    enableShopLanguages($this->shop, [$this->shop->language->code]);
+    $webUser->update(['language_id' => $this->shop->language_id]);
+    expect($updateLanguage)->toThrow(ValidationException::class);
+
+    enableShopLanguages($this->shop, [$otherCode]);
+    $updateLanguage();
+    expect($webUser->fresh()->language_id)->toBe($otherLanguageId);
+
+    enableShopLanguages($this->shop, null);
+});
+
+test('enabled languages shop setting is saved, always keeps the main language, is audited and reaches the iris data', function () {
+    Http::fake();
+    [$otherCode] = otherLanguageCodes($this->shop);
+    $otherLanguageId = Language::where('code', $otherCode)->value('id');
+    enableShopLanguages($this->shop, null);
+    $this->shop->refresh();
+
+    expect($this->shop->enabledLanguageIds())->toBe([$this->shop->language_id])
+        ->and($this->shop->restrictsLanguages())->toBeFalse();
+
+    $shop = \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['enabled_languages' => [$otherLanguageId]]);
+
+    expect($shop->settings['enabled_languages'])->toBe([$otherLanguageId])
+        ->and($shop->enabledLanguageIds())->toBe([$shop->language_id, $otherLanguageId])
+        ->and($shop->audits()->latest('id')->first()->new_values)->toMatchArray(['settings.enabled_languages' => [$otherLanguageId]]);
+
+    $irisData = (new HandleIrisInertiaRequests())->getIrisData($this->website->fresh(), $shop->language->code);
+    expect(collect($irisData['website_i18n']['enabled_languages'])->pluck('code')->all())->toContain($otherCode, $shop->language->code);
+
+    expect(fn () => \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop, ['enabled_languages' => [Language::where('status', false)->value('id')]]))
+        ->toThrow(ValidationException::class);
+
+    $shop = \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop, ['enabled_languages' => []]);
+    expect($shop->enabledLanguageIds())->toBe([$shop->language_id])
+        ->and($shop->restrictsLanguages())->toBeFalse();
+});

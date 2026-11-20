@@ -1001,6 +1001,46 @@ class Shop extends Model implements HasMedia, Auditable
     }
 
     /**
+     * Languages customers may choose on the shop's website; the shop's own language is always one of them.
+     *
+     * @return array<int, int>
+     */
+    public function enabledLanguageIds(): array
+    {
+        return array_values(array_unique(array_merge(
+            [$this->language_id],
+            array_map('intval', Arr::get($this->settings, 'enabled_languages') ?? [])
+        )));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function enabledLanguageCodes(): array
+    {
+        $languageIds = $this->enabledLanguageIds();
+
+        if (count($languageIds) === 1) {
+            return [$this->language->code];
+        }
+
+        return Language::whereIn('id', $languageIds)->pluck('code')->all();
+    }
+
+    /**
+     * Until a manager saves the list, signed-in customers keep whatever language they had before.
+     */
+    public function restrictsLanguages(): bool
+    {
+        return Arr::get($this->settings, 'enabled_languages') !== null;
+    }
+
+    public function enablesLanguage(mixed $code): bool
+    {
+        return is_string($code) && in_array($code, $this->enabledLanguageCodes(), true);
+    }
+
+    /**
      * Faire collects from the retailer and pays us each order later, less its commission.
      */
     public function isFaire(): bool

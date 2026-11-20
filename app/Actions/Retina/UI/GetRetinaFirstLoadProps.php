@@ -15,7 +15,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Language;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -28,22 +27,14 @@ class GetRetinaFirstLoadProps
         /** @var Shop $shop */
         $shop = $request->input('website')->shop;
 
-        if ($webUser) {
-            $language = $webUser->language;
-        } else {
-            $language = Language::where('code', App::currentLocale())->first();
-        }
-        if (!$language) {
-            $language = Language::where('code', Arr::first($shop->extra_languages ?? []))->first();
-        }
-
+        $language = Language::where('code', App::currentLocale())->first() ?? $shop->language;
 
         return
             [
                 'localeData' =>
                 [
                     'language'        => LanguageResource::make($language)->getArray(),
-                    'languageOptions' => GetLanguagesOptions::make()->getExtraShopLanguages($shop->extra_languages),
+                    'languageOptions' => GetLanguagesOptions::make()->getExtraShopLanguages($shop->restrictsLanguages() ? $shop->enabledLanguageIds() : $shop->extra_languages),
                 ],
 
                 'layout'   => GetRetinaLayout::run($request, $webUser),

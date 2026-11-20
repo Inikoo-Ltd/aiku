@@ -22,6 +22,21 @@ export const initialiseIrisApp = () => {
 
     setComponentDebugInfo()
 
+    router.on('before', (event) => {
+        const chosenLocale = layout.iris?.locale
+        const visitUrl = event.detail.visit.url
+        if (
+            event.detail.visit.method === 'get'
+            && chosenLocale
+            && chosenLocale !== layout.iris?.website_i18n?.shop_language?.code
+            && visitUrl.origin === window.location.origin
+            && !visitUrl.pathname.startsWith('/app')
+            && !visitUrl.searchParams.has('locale')
+        ) {
+            visitUrl.searchParams.set('locale', chosenLocale)
+        }
+    })
+
     router.on('navigate', (event) => {
         setComponentDebugInfo()  // To see PHP action and Vue filename in console (window.component)
 

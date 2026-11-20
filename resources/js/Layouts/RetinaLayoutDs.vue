@@ -52,6 +52,7 @@ import PureInputNumber from "@/Components/Pure/PureInputNumber.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { useAutoCollapseLeftSidebar } from "@/Composables/useAutoCollapseLeftSidebar"
+import WebsiteLanguageSwitch from "@/Components/Utils/WebsiteLanguageSwitch.vue"
 library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
 
 const layout = useLayoutStore()
@@ -149,6 +150,15 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 									</div>
 								</div>
 							</div>
+
+							<WebsiteLanguageSwitch
+								v-if="(layout.iris?.website_i18n?.enabled_languages?.length ?? 0) > 1"
+								class="place-self-end mr-2"
+								:languages="layout.iris.website_i18n.enabled_languages"
+								:currentCode="layout.iris.locale"
+								:shopLanguageCode="layout.iris.website_i18n.shop_language?.code"
+								:saveToProfileUrl="layout.user && layout.iris?.is_logged_in ? route('retina.models.profile.update') : null"
+							/>
 
 							<!-- My Balance -->
 							<Link

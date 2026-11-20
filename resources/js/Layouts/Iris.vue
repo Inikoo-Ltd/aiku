@@ -35,6 +35,7 @@ const BundleSidebar = defineAsyncComponent(() => import('@/Components/Dropshippi
 import { useBundle } from '@/Composables/useBundle'
 import { createSidePanel } from '@/Iris/Composables/useSidePanel'
 import SidePanel from '@/Iris/Components/SidePanel.vue'
+const WebsiteLanguageSwitch = defineAsyncComponent(() => import('@/Components/Utils/WebsiteLanguageSwitch.vue'))
 
 interface ChatConfig {
     is_online: boolean
@@ -325,6 +326,16 @@ watch(() => layout.iris?.is_logged_in, syncLoggedInClass)
                 :screen-type="screenType"
                 :custom-sidebar="customSidebar"
             />
+
+            <div v-if="(layout.iris?.website_i18n?.enabled_languages?.length ?? 0) > 1" class="flex justify-end px-4 py-1">
+                <WebsiteLanguageSwitch
+                    :languages="layout.iris.website_i18n.enabled_languages"
+                    :currentCode="layout.iris.locale"
+                    :shopLanguageCode="layout.iris.website_i18n.shop_language?.code"
+                    :saveToProfileUrl="layout.iris?.is_logged_in ? '/app/models/profile' : null"
+                    keepInUrl
+                />
+            </div>
 
             <IrisAnnouncement
                 v-for="item in propsAnnouncementsBottomMenu"

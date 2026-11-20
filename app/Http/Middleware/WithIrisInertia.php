@@ -12,6 +12,7 @@ use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
 use App\Http\Resources\Helpers\LanguageResource;
 use App\Http\Resources\Web\WebsiteIrisResource;
+use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
@@ -108,6 +109,7 @@ trait WithIrisInertia
                 'website_i18n'         => [
                     'current_language' => LanguageResource::make($currentLanguage)->getArray(),
                     'shop_language'    => LanguageResource::make($shop->language)->getArray(),
+                    'enabled_languages' => $this->enabledLanguages($shop),
                 ],
                 'migration_redirect'   => $migrationRedirect
             ];
@@ -122,4 +124,22 @@ trait WithIrisInertia
         return $irisData;
     }
 
+    /**
+     * @return array<int, array{id: int, code: string, name: string, native_name: ?string}>
+     */
+    private function enabledLanguages(Shop $shop): array
+    {
+        $languageIds = $shop->enabledLanguageIds();
+        if (count($languageIds) === 1) {
+            return [];
+        }
+
+        return Language::whereIn('id', $languageIds)->orderBy('name')->get()
+            ->map(fn (Language $language) => [
+                'id'          => $language->id,
+                'code'        => $language->code,
+                'name'        => $language->name,
+                'native_name' => $language->native_name,
+            ])->all();
+    }
 }

@@ -17,6 +17,7 @@ use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
@@ -74,7 +75,7 @@ class UpdateRetinaProfile extends RetinaAction
             'password' => ['sometimes', 'required', app()->isLocal() || app()->environment('testing') ? Password::min(4) : Password::min(8)],
 
 
-            'language_id' => ['sometimes', 'required', 'exists:languages,id'],
+            'language_id' => ['sometimes', 'required', 'integer', $this->webUser->shop->restrictsLanguages() ? Rule::in($this->webUser->shop->enabledLanguageIds()) : 'exists:languages,id'],
 
 
         ];

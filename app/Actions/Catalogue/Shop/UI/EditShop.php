@@ -754,6 +754,15 @@ class EditShop extends OrgAction
                             'options'     => GetLanguagesOptions::make()->all(),
                             'searchable'  => true
                         ],
+                        'enabled_languages' => [
+                            'type'        => 'multiselect-tags',
+                            'label'       => __('Languages customers can choose on the website'),
+                            'information' => __('The main language is always included. With more than one language the website shows a language switch.'),
+                            'options'     => array_values(array_map(fn ($language) => ['id' => $language['id'], 'name' => $language['name']], GetLanguagesOptions::make()->translated())),
+                            'labelProp'   => 'name',
+                            'valueProp'   => 'id',
+                            'value'       => $shop->enabledLanguageIds(),
+                        ],
                     ],
                 ],
 
