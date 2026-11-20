@@ -31,7 +31,8 @@ use Throwable;
  * product only, never on its master. A product whose code and unit content (trade units and
  * units) match a product of a shop written in that language gets that shop's copy as it is,
  * without the AI; every other text is machine translated from the shop's own. How each text was made is kept in data.translation_sources.<locale>, so machine text can be
- * found and redone with --force, and German a person wrote (no marker) is never overwritten.
+ * found and redone with --force, and German a person wrote (no marker) is never overwritten. A product
+ * whose translation is rejected keeps its copies, is marked failed and is left alone until --retry-failed.
  */
 class FillShopProductTranslations
 {
@@ -52,6 +53,7 @@ class FillShopProductTranslations
         {--chunk=50 : products per batch}
         {--apply : write the texts (without it nothing is saved, but texts to translate still go to the AI and are paid for)}
         {--force : redo products whose texts this command already made}
+        {--retry-failed : only the products whose translation was rejected in an earlier run}
         {--model= : OpenRouter model (default: the catalogue translation model)}';
 
     private array $stats = [];
@@ -67,7 +69,7 @@ class FillShopProductTranslations
     /**
      * @return array{stats: array<string, int>, cost: float}
      */
-    public function handle(Shop $shop, Language $language, ?Shop $sourceShop = null, bool $apply = false, bool $force = false, ?int $limit = null, int $chunk = 50, ?string $model = null, ?callable $report = null): array
+    public function handle(Shop $shop, Language $language, ?Shop $sourceShop = null, bool $apply = false, bool $force = false, ?int $limit = null, int $chunk = 50, ?string $model = null, ?callable $report = null, bool $retryFailed = false): array
     {
         $this->stats = ['copied' => 0, 'machine' => 0, 'mixed' => 0, 'nothing_to_translate' => 0, 'failed' => 0];
         $this->cost  = 0;
@@ -80,9 +82,13 @@ class FillShopProductTranslations
             ->where('state', ProductStateEnum::ACTIVE)
             ->whereNull('deleted_at');
 
-        $force
-            ? $query->where(fn ($query) => $query->whereRaw('NOT (coalesce(name_i8n, \'{}\') ?? ?)', [$locale])->orWhereRaw("data->'translation_sources' ?? ?", [$locale]))
-            : $query->whereRaw('NOT (coalesce(name_i8n, \'{}\') ?? ?)', [$locale])->whereRaw("NOT (coalesce(data->'translation_sources', '{}') ?? ?)", [$locale]);
+        if ($retryFailed) {
+            $query->whereRaw("data->'translation_sources'->?->>'failed' is not null", [$locale]);
+        } elseif ($force) {
+            $query->where(fn ($query) => $query->whereRaw('NOT (coalesce(name_i8n, \'{}\') ?? ?)', [$locale])->orWhereRaw("data->'translation_sources' ?? ?", [$locale]));
+        } else {
+            $query->whereRaw('NOT (coalesce(name_i8n, \'{}\') ?? ?)', [$locale])->whereRaw("NOT (coalesce(data->'translation_sources', '{}') ?? ?)", [$locale]);
+        }
 
         $query->chunkById($chunk, function (Collection $products) use ($sourceShop, $language, $locale, $apply, $model, $limit, $report, &$processed) {
             $siblings     = $sourceShop ? $this->siblings($products, $sourceShop) : collect();
@@ -128,21 +134,19 @@ class FillShopProductTranslations
             return;
         }
 
-        $texts = $fields ? $this->askWithRetry($fields, $product, $language, $model) : [];
-        if ($texts !== null) {
-            $texts = $copies + $texts;
-        }
-        $fields += array_map(fn (string $copy) => ['copy' => $copy], $copies);
-        if ($texts === null) {
+        $translated = $fields ? $this->askWithRetry($fields, $product, $language, $model) : [];
+        $failure    = $translated === null ? $this->lastFailure : null;
+        $texts      = $copies + ($translated ?? []);
+        $fields    += array_map(fn (string $copy) => ['copy' => $copy], $copies);
+
+        if ($failure !== null) {
             $this->stats['failed']++;
-            $report && $report($product, $fields, null, $sources, $this->lastFailure);
-
-            return;
+            $report && $report($product, $fields, null, $sources, $failure);
+        } else {
+            $kinds = array_unique(array_values($sources));
+            $this->stats[count($kinds) > 1 ? 'mixed' : $kinds[0]]++;
+            $report && $report($product, $fields, $texts, $sources);
         }
-
-        $kinds = array_unique(array_values($sources));
-        $this->stats[count($kinds) > 1 ? 'mixed' : $kinds[0]]++;
-        $report && $report($product, $fields, $texts, $sources);
 
         if (!$apply) {
             return;
@@ -154,11 +158,11 @@ class FillShopProductTranslations
             $product->setTranslation($field.'_i8n', $locale, $text);
         }
         $data = $product->data ?? [];
-        data_set($data, "translation_sources.$locale", [
+        data_set($data, "translation_sources.$locale", array_filter(['failed' => $failure]) + [
             'fields'          => Arr::only($sources, array_keys($texts)) + Arr::get($data, "translation_sources.$locale.fields", []),
             'hashes'          => array_map('md5', $texts) + Arr::get($data, "translation_sources.$locale.hashes", []),
             'from_product_id' => in_array(self::COPIED, $sources) ? $sibling->id : null,
-            'model'           => in_array(self::MACHINE, $sources) ? $model : null,
+            'model'           => in_array(self::MACHINE, Arr::only($sources, array_keys($texts))) ? $model : null,
             'at'              => now()->toIso8601String(),
         ]);
         $product->data = $data;
@@ -291,7 +295,8 @@ EOT;
 
     private function numbers(string $text): array
     {
-        preg_match_all('/\d+/', html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5), $matches);
+        $plain = preg_replace('/(?<=\d)[.,\x{00A0}\x{202F}](?=\d{3}(?!\d))/u', '', html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5));
+        preg_match_all('/\d+/', $plain, $matches);
 
         return array_values(array_unique($matches[0]));
     }
@@ -391,7 +396,8 @@ EOT;
                         $command->line("  => ".mb_strimwidth(strip_tags($text), 0, 160, '…'));
                     }
                 }
-            }
+            },
+            (bool) $command->option('retry-failed')
         );
 
         $command->table(['source', 'products'], collect($result['stats'])->map(fn ($count, $source) => [$source, $count])->values()->all());

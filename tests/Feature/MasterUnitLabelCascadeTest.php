@@ -729,3 +729,27 @@ test('fill translations resumes past done products and never overwrites german a
     expect($this->product->refresh()->getTranslation('name_i8n', 'de', false))->toBe('Korrigiert')
         ->and($this->product->getTranslation('description_i8n', 'de', false))->toBe('NOCHMAL <p>Lovely soap</p>');
 });
+
+test('fill translations marks a rejected product, leaves it alone on later runs and tries it again only with retry failed', function () {
+    fillTranslationsFixture($this, siblingUnits: 6);
+    $this->aiPrefix = '<b>';
+    $requests       = fn () => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]['messages'][1]['content'] ?? '', 'Lavender soap 100g'))->count();
+
+    $result     = fillTranslations($this);
+    $afterFirst = $requests();
+
+    expect($result['stats']['failed'])->toBe(1)
+        ->and($this->product->refresh()->getTranslation('name_i8n', 'de', false))->toBe('')
+        ->and($this->product->data['translation_sources']['de']['failed'])->toContain('HTML tags changed');
+
+    fillTranslations($this);
+    expect($requests())->toBe($afterFirst);
+
+    $this->aiPrefix = 'DE ';
+    FillShopProductTranslations::run($this->shop, Language::where('code', 'de')->first(), $this->germanShop, true, false, null, 50, null, null, true);
+
+    expect($this->product->refresh()->getTranslation('name_i8n', 'de', false))->toBe('DE Lavender soap 100g')
+        ->and($this->product->data['translation_sources']['de'])->not->toHaveKey('failed')
+        ->and((new FillShopProductTranslations())->invalidReason(['name' => ['translate' => '1,000 beads']], ['name' => '1.000 Perlen']))->toBeNull()
+        ->and((new FillShopProductTranslations())->invalidReason(['name' => ['translate' => '1,000 beads']], ['name' => 'Perlen']))->toContain('numbers lost');
+});
