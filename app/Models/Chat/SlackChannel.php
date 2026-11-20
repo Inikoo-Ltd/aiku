@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $name
  * @property bool $is_archived
  * @property bool $is_member
+ * @property bool $is_public
+ * @property \Illuminate\Support\Carbon|null $deleted_in_slack_at
  * @property array|null $data
  * @property string|null $history_backfilled_to
  * @property \Illuminate\Support\Carbon|null $history_synced_at
@@ -28,11 +30,17 @@ class SlackChannel extends Model
 {
     protected $guarded = [];
 
+    protected $attributes = [
+        'is_public' => true,
+    ];
+
     protected function casts(): array
     {
         return [
             'is_archived'       => 'boolean',
             'is_member'         => 'boolean',
+            'is_public'         => 'boolean',
+            'deleted_in_slack_at' => 'datetime',
             'data'              => 'array',
             'history_synced_at' => 'datetime',
         ];

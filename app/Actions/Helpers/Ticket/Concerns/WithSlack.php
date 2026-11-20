@@ -12,6 +12,8 @@ use App\Models\SysAdmin\User;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
+use RuntimeException;
 
 trait WithSlack
 {
@@ -42,6 +44,24 @@ trait WithSlack
         $token = config('services.slack.notifications.bot_user_oauth_token');
 
         return $token ? Http::withToken($token)->baseUrl('https://slack.com/api') : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $parameters
+     * @return array<string, mixed>
+     */
+    protected function slackCall(PendingRequest $client, string $method, array $parameters, string $verb = 'get'): array
+    {
+        $response = $client->$verb($method, $parameters);
+        while ($response->status() === 429) {
+            Sleep::for(max(1, (int) $response->header('Retry-After')))->seconds();
+            $response = $client->$verb($method, $parameters);
+        }
+        if (!$response->json('ok')) {
+            throw new RuntimeException("Slack $method failed: ".$response->json('error', 'http '.$response->status()));
+        }
+
+        return $response->json();
     }
 
     protected function slackUserToAikuUser(?string $slackUserId): ?User

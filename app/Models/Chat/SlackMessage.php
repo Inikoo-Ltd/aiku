@@ -11,6 +11,7 @@ namespace App\Models\Chat;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -48,8 +49,18 @@ class SlackMessage extends Model
         return $this->belongsTo(SlackChannel::class, 'slack_channel_id');
     }
 
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(SlackMessageReaction::class);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function slackUser(): BelongsTo
+    {
+        return $this->belongsTo(SlackUser::class, 'slack_user_id', 'slack_id');
     }
 }

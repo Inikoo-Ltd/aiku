@@ -878,7 +878,7 @@ test('the Slack sync lists public channels only, joins them only when asked and 
 
     $inside  = SlackChannel::where('slack_id', 'CSYNCIN1')->firstOrFail();
     $outside = SlackChannel::where('slack_id', 'CSYNCOUT1')->firstOrFail();
-    expect($totals)->toBe(['channels' => 2, 'joined' => 0, 'messages' => 3])
+    expect($totals)->toBe(['channels' => 2, 'joined' => 0, 'messages' => 3, 'added' => 3])
         ->and($inside->name)->toBe('warehouse')
         ->and($inside->messages()->orderBy('ts')->pluck('text')->all())->toBe(['first ever', 'thread start', 'thread reply'])
         ->and($inside->history_backfilled_to)->toBe('1789100000.000100')
@@ -892,6 +892,7 @@ test('the Slack sync lists public channels only, joins them only when asked and 
     $totals = SyncSlackPublicChannels::run($group, join: true, history: true);
 
     expect($totals['joined'])->toBe(1)
+        ->and($totals['added'])->toBe(1)
         ->and($outside->refresh()->is_member)->toBeTrue()
         ->and($outside->messages()->pluck('text')->all())->toBe(['hello from random'])
         ->and($inside->messages()->count())->toBe(3);
@@ -902,4 +903,448 @@ test('the Slack sync lists public channels only, joins them only when asked and 
     $joinAllowed = false;
     $outside->update(['is_member' => false]);
     expect(fn () => SyncSlackPublicChannels::run($group, join: true))->toThrow(RuntimeException::class, 'missing_scope');
+});
+
+test('the Slack people directory keeps everyone, matches aiku users by email without overwriting and gives past messages an author', function () {
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    $s       = Str::lower(Str::random(6));
+    $newUser = fn (string $email, ?string $slackUserId = null) => User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'email' => $email, 'slack_user_id' => $slackUserId]);
+
+    $matching = $newUser("match.$s@example.com");
+    $holding  = $newUser("held.$s@example.com", "UOTHER$s");
+    $sharedA  = $newUser("Shared.$s@example.com");
+    $sharedB  = $newUser("shared.$s@example.com");
+    $leaver   = $newUser("gone.$s@example.com");
+    $botOwner = $newUser("bot.$s@example.com");
+
+    $channel = SlackChannel::create(['group_id' => $this->organisation->group->id, 'slack_id' => "CPEOPLE$s", 'is_member' => true]);
+    foreach (["UMATCH$s", "UHELD$s", "USHARED$s"] as $i => $author) {
+        SlackMessage::create(['slack_channel_id' => $channel->id, 'ts' => "178900000$i.000100", 'slack_user_id' => $author, 'text' => 'hello', 'sent_at' => now()]);
+    }
+
+    Http::fake([
+        'slack.com/api/users.list*' => function (HttpRequest $request) use ($s) {
+            return isset($request['cursor'])
+                ? Http::response(['ok' => true, 'members' => [
+                    ['id' => "UGONE$s", 'name' => 'gone', 'deleted' => true, 'profile' => ['email' => "gone.$s@example.com", 'display_name' => 'Gone']],
+                    ['id' => "UBOT$s", 'name' => 'robot', 'is_bot' => true, 'profile' => ['real_name' => 'Robot', 'email' => "bot.$s@example.com"]],
+                ]])
+                : Http::response(['ok' => true, 'members' => [
+                    ['id' => "UMATCH$s", 'name' => 'match', 'real_name' => 'Match Person', 'profile' => ['email' => "Match.$s@Example.com", 'display_name' => 'Matchy', 'image_192' => 'https://avatars.example/m.png']],
+                    ['id' => "UHELD$s", 'name' => 'held', 'profile' => ['email' => "held.$s@example.com"]],
+                    ['id' => "USHARED$s", 'name' => 'shared', 'profile' => ['email' => "shared.$s@example.com"]],
+                ], 'response_metadata' => ['next_cursor' => 'page2']]);
+        },
+    ]);
+
+    \App\Actions\Chat\Staff\Slack\SyncSlackUsers::run();
+    $totals = \App\Actions\Chat\Staff\Slack\SyncSlackUsers::run();
+
+    $people = \App\Models\Chat\SlackUser::where('slack_id', 'like', "%$s")->get()->keyBy('slack_id');
+    expect($totals['people'])->toBe(5)
+        ->and($people)->toHaveCount(5)
+        ->and($people["UMATCH$s"]->user_id)->toBe($matching->id)
+        ->and($people["UMATCH$s"]->display_name)->toBe('Matchy')
+        ->and($people["UMATCH$s"]->avatar_url)->toBe('https://avatars.example/m.png')
+        ->and($people["UMATCH$s"]->email)->toBe("match.$s@example.com")
+        ->and($matching->refresh()->slack_user_id)->toBe("UMATCH$s")
+        ->and($people["UHELD$s"]->user_id)->toBe($holding->id)
+        ->and($holding->refresh()->slack_user_id)->toBe("UOTHER$s")
+        ->and($people["USHARED$s"]->user_id)->toBeNull()
+        ->and($sharedA->refresh()->slack_user_id)->toBeNull()
+        ->and($sharedB->refresh()->slack_user_id)->toBeNull()
+        ->and($people["UGONE$s"]->is_deleted)->toBeTrue()
+        ->and($people["UGONE$s"]->user_id)->toBe($leaver->id)
+        ->and($leaver->refresh()->slack_user_id)->toBeNull()
+        ->and($people["UBOT$s"]->is_bot)->toBeTrue()
+        ->and($people["UBOT$s"]->user_id)->toBeNull()
+        ->and($botOwner->refresh()->slack_user_id)->toBeNull()
+        ->and($channel->messages()->orderBy('ts')->pluck('user_id')->all())->toBe([$matching->id, $holding->id, null])
+        ->and($channel->messages()->where('slack_user_id', "USHARED$s")->first()->slackUser->name)->toBe('shared');
+
+    \App\Actions\Chat\Staff\Slack\StoreSlackMessage::make()->store($channel, ['user' => "UHELD$s", 'text' => 'edited later', 'ts' => '1789000001.000100']);
+    expect($channel->messages()->where('slack_user_id', "UHELD$s")->value('user_id'))->toBe($holding->id);
+});
+
+test('Slack people who join, change or leave are kept up to date from Slack events', function () {
+    Config::set('services.slack.signing_secret', 'shh');
+    $s      = Str::lower(Str::random(6));
+    $joiner = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'email' => "joiner.$s@example.com"]);
+
+    $post = function (array $event) {
+        $body      = json_encode(['type' => 'event_callback', 'event' => $event]);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/json',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+
+    $joined = ['type' => 'team_join', 'user' => ['id' => "UJOIN$s", 'name' => 'joiner', 'real_name' => 'New Joiner', 'profile' => ['email' => "Joiner.$s@example.com", 'display_name' => 'Newbie']]];
+    $post($joined)->assertOk();
+    $post($joined)->assertOk();
+
+    $person = \App\Models\Chat\SlackUser::where('slack_id', "UJOIN$s")->sole();
+    expect($person->display_name)->toBe('Newbie')
+        ->and($person->user_id)->toBe($joiner->id)
+        ->and($joiner->refresh()->slack_user_id)->toBe("UJOIN$s");
+
+    $post(['type' => 'user_change', 'user' => ['id' => "UJOIN$s", 'name' => 'joiner', 'real_name' => 'New Joiner', 'profile' => ['email' => "joiner.$s@example.com", 'display_name' => 'Renamed', 'image_192' => 'https://avatars.example/j.png']]])->assertOk();
+    expect($person->refresh()->display_name)->toBe('Renamed')
+        ->and($person->avatar_url)->toBe('https://avatars.example/j.png');
+
+    $post(['type' => 'user_change', 'user' => ['id' => "UJOIN$s", 'name' => 'joiner', 'deleted' => true, 'profile' => ['display_name' => 'Renamed']]])->assertOk();
+    expect(\App\Models\Chat\SlackUser::where('slack_id', "UJOIN$s")->count())->toBe(1)
+        ->and($person->refresh()->is_deleted)->toBeTrue()
+        ->and($person->email)->toBe("joiner.$s@example.com")
+        ->and($person->user_id)->toBe($joiner->id);
+});
+
+test('files of new public Slack messages are copied into aiku once per Slack file, a login page is refused and big or external files are not downloaded, INI-417', function () {
+    Config::set('services.slack.signing_secret', 'shh');
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    \Illuminate\Support\Facades\Storage::fake('media');
+    $s = Str::lower(Str::random(6));
+    Http::fake([
+        "files.slack.com/files-pri/T1-FPDF$s/*"   => Http::response('%PDF-1.4 delivery note', 200, ['Content-Type' => 'application/pdf']),
+        "files.slack.com/files-pri/T1-FLOGIN$s/*" => Http::response('<!DOCTYPE html><html>Sign in to Slack</html>', 200, ['Content-Type' => 'text/html; charset=utf-8']),
+        "files.slack.com/files-pri/T1-FSTUCK$s/*" => Http::response('stuck', 200, ['Content-Type' => 'text/plain']),
+    ]);
+
+    $post = function (array $event) {
+        $body      = json_encode(['type' => 'event_callback', 'event' => $event]);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/json',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+    $pdf = ['id' => "FPDF$s", 'name' => 'delivery note.pdf', 'mimetype' => 'application/pdf', 'filetype' => 'pdf', 'size' => 22, 'mode' => 'hosted', 'url_private_download' => "https://files.slack.com/files-pri/T1-FPDF$s/download/delivery_note.pdf"];
+    $big = ['id' => "FBIG$s", 'name' => 'video.mov', 'mimetype' => 'video/quicktime', 'size' => 200 * 1024 * 1024, 'mode' => 'hosted', 'url_private_download' => "https://files.slack.com/files-pri/T1-FBIG$s/download/video.mov"];
+    $drive = ['id' => "FDRIVE$s", 'name' => 'Stock sheet', 'mode' => 'external', 'url_private' => 'https://docs.google.com/spreadsheets/d/abc'];
+
+    $post(['type' => 'message', 'channel' => "CFILES$s", 'channel_type' => 'channel', 'text' => 'see attached', 'ts' => '1789200000.000100', 'files' => [$pdf, $big, $drive]])->assertOk();
+    $post(['type' => 'message', 'channel' => "CFILES$s", 'channel_type' => 'channel', 'text' => 'same note again', 'ts' => '1789200100.000200', 'files' => [$pdf]])->assertOk();
+
+    $copied = \App\Models\Chat\SlackFile::where('slack_id', "FPDF$s")->sole();
+    expect($copied->state)->toBe(\App\Enums\CRM\Livechat\SlackFileStateEnum::COPIED)
+        ->and($copied->copy->file_name)->toEndWith('.pdf')
+        ->and(file_get_contents($copied->copy->getPath()))->toBe('%PDF-1.4 delivery note')
+        ->and($copied->message->text)->toBe('see attached')
+        ->and(\App\Models\Chat\SlackFile::where('slack_id', "FBIG$s")->sole()->only(['state', 'reason']))->toBe(['state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::SKIPPED, 'reason' => 'larger than 50 MB'])
+        ->and(\App\Models\Chat\SlackFile::where('slack_id', "FDRIVE$s")->sole()->state)->toBe(\App\Enums\CRM\Livechat\SlackFileStateEnum::EXTERNAL);
+    Http::assertSentCount(1);
+    Http::assertSent(fn (HttpRequest $request) => $request->hasHeader('Authorization', 'Bearer xoxb-test'));
+
+    $message = SlackMessage::where('text', 'see attached')->sole();
+    $login   = ['id' => "FLOGIN$s", 'name' => 'photo.jpg', 'mimetype' => 'image/jpeg', 'size' => 10, 'mode' => 'hosted', 'url_private_download' => "https://files.slack.com/files-pri/T1-FLOGIN$s/download/photo.jpg"];
+    expect(fn () => \App\Actions\Chat\Staff\Slack\CopySlackMessageFile::run($message, $login))->toThrow(RuntimeException::class, 'login page');
+    $refused = \App\Models\Chat\SlackFile::where('slack_id', "FLOGIN$s")->sole();
+    expect($refused->state)->toBe(\App\Enums\CRM\Livechat\SlackFileStateEnum::FAILED)
+        ->and($refused->media_id)->toBeNull()
+        ->and($refused->getMedia('slack_files'))->toHaveCount(0);
+
+    $stuck     = ['id' => "FSTUCK$s", 'name' => 'notes.txt', 'mimetype' => 'text/plain', 'size' => 5, 'mode' => 'hosted', 'url_private_download' => "https://files.slack.com/files-pri/T1-FSTUCK$s/download/notes.txt"];
+    $claimed   = \App\Models\Chat\SlackFile::create(['group_id' => $message->channel->group_id, 'slack_id' => "FSTUCK$s", 'state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::COPYING, 'data' => $stuck]);
+    $sentSoFar = count(Http::recorded());
+    expect(\App\Actions\Chat\Staff\Slack\CopySlackMessageFile::run($message, $stuck)->state)->toBe(\App\Enums\CRM\Livechat\SlackFileStateEnum::COPYING)
+        ->and(count(Http::recorded()))->toBe($sentSoFar);
+    \App\Models\Chat\SlackFile::whereKey($claimed->id)->update(['updated_at' => now()->subMinutes(20)]);
+    expect(\App\Actions\Chat\Staff\Slack\CopySlackMessageFile::run($message, $stuck)->state)->toBe(\App\Enums\CRM\Livechat\SlackFileStateEnum::COPIED);
+});
+
+test('files of Slack messages already stored are copied by a resumable command that skips what is done and records files gone in Slack, INI-418', function () {
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    \Illuminate\Support\Facades\Storage::fake('media');
+    Sleep::fake();
+    $s    = Str::lower(Str::random(6));
+    $more = ['id' => "FMORE$s", 'name' => 'more.png', 'mimetype' => 'image/png', 'size' => 4, 'mode' => 'hosted', 'url_private_download' => "https://files.slack.com/files-pri/T1-FMORE$s/download/more.png"];
+    Http::fake([
+        "files.slack.com/files-pri/T1-FOLD$s/*"  => Http::response('old photo', 200, ['Content-Type' => 'image/png']),
+        "files.slack.com/files-pri/T1-FGONE$s/*" => Http::response('', 404),
+        "files.slack.com/files-pri/T1-FMORE$s/*" => Http::response('more', 200, ['Content-Type' => 'image/png']),
+        'slack.com/api/files.info*'              => Http::response(['ok' => true, 'file' => $more]),
+    ]);
+
+    $channel = SlackChannel::create(['group_id' => $this->organisation->group_id, 'slack_id' => "CHIST$s", 'name' => "history-$s", 'is_member' => true]);
+    $private = SlackChannel::create(['group_id' => $this->organisation->group_id, 'slack_id' => "CPRIV$s", 'name' => "went-private-$s", 'is_member' => true, 'is_public' => false]);
+    $old     = ['id' => "FOLD$s", 'name' => 'old.png', 'mimetype' => 'image/png', 'size' => 9, 'mode' => 'hosted', 'url_private_download' => "https://files.slack.com/files-pri/T1-FOLD$s/download/old.png"];
+    $gone    = ['id' => "FGONE$s", 'name' => 'lost.pdf', 'mimetype' => 'application/pdf', 'size' => 1000, 'mode' => 'hosted', 'url_private_download' => "https://files.slack.com/files-pri/T1-FGONE$s/download/lost.pdf"];
+    $hidden  = ['id' => "FHIDDEN$s", 'mode' => 'hidden_by_limit'];
+    $stub    = ['id' => "FMORE$s", 'file_access' => 'check_file_info'];
+    foreach ([['1500000000.000100', [$old]], ['1500000100.000200', [$old, $gone, $hidden, $stub]]] as [$ts, $files]) {
+        $channel->messages()->create(['ts' => $ts, 'text' => 'from 2017', 'sent_at' => now()->subYears(9), 'data' => ['ts' => $ts, 'files' => $files]]);
+    }
+    $private->messages()->create(['ts' => '1500000200.000300', 'text' => 'private now', 'sent_at' => now()->subYears(9), 'data' => ['files' => [['id' => "FPRIV$s", 'size' => 5, 'url_private_download' => "https://files.slack.com/files-pri/T1-FPRIV$s/x.png"]]]]);
+
+    expect(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::make()->dryRun($channel))->toBe([
+        'ask Slack: check_file_info'    => ['files' => 1, 'bytes' => 0],
+        'not_available: hidden_by_limit' => ['files' => 1, 'bytes' => 0],
+        'to_copy'                       => ['files' => 2, 'bytes' => 1009],
+    ])
+        ->and(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::make()->dryRun($private))->toBe([]);
+
+    expect(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::run($channel, limit: 1))->toBe(['queued' => 1, 'recorded' => 0])
+        ->and(\App\Models\Chat\SlackFile::where('slack_id', "FOLD$s")->sole()->state)->toBe(\App\Enums\CRM\Livechat\SlackFileStateEnum::COPIED)
+        ->and(\App\Models\Chat\SlackFile::where('slack_id', "FGONE$s")->exists())->toBeFalse();
+
+    expect(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::run($channel))->toBe(['queued' => 2, 'recorded' => 1])
+        ->and(\App\Models\Chat\SlackFile::where('slack_id', "FGONE$s")->sole()->only(['state', 'reason']))->toBe(['state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::NOT_AVAILABLE, 'reason' => 'gone in Slack (http 404)'])
+        ->and(\App\Models\Chat\SlackFile::where('slack_id', "FHIDDEN$s")->sole()->reason)->toBe('Slack shows it as hidden_by_limit')
+        ->and(\App\Models\Chat\SlackFile::where('slack_id', "FMORE$s")->sole()->only(['state', 'size']))->toBe(['state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::COPIED, 'size' => 4]);
+
+    expect(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::run($channel))->toBe(['queued' => 0, 'recorded' => 0])
+        ->and(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::make()->dryRun($channel))->toBe([])
+        ->and(\App\Actions\Chat\Staff\Slack\CopySlackMessageFile::run($private->messages()->sole(), ['id' => "FPRIV$s", 'size' => 5, 'url_private_download' => "https://files.slack.com/files-pri/T1-FPRIV$s/x.png"]))->toBeNull()
+        ->and(\App\Models\Chat\SlackFile::where('slack_id', "FPRIV$s")->exists())->toBeFalse();
+
+    \App\Models\Chat\SlackFile::where('slack_id', "FOLD$s")->update(['state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::FAILED]);
+    expect(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::run($channel))->toBe(['queued' => 0, 'recorded' => 0])
+        ->and(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::run($channel, retryFailed: true))->toBe(['queued' => 1, 'recorded' => 0])
+        ->and(\App\Models\Chat\SlackFile::where('slack_id', "FOLD$s")->sole()->state)->toBe(\App\Enums\CRM\Livechat\SlackFileStateEnum::COPIED);
+    Http::assertSentCount(5);
+    Sleep::assertSleptTimes(1);
+});
+
+test('reactions to kept Slack messages are stored and removed as Slack sends them, once each, and the ticket reaction still raises tickets, INI-419', function () {
+    Config::set('services.slack.signing_secret', 'shh');
+    Config::set('services.slack.ticket_reaction', 'ticket');
+    $post = function (array $event) {
+        $body      = json_encode(['type' => 'event_callback', 'event' => $event]);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/json',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+
+    $post(['type' => 'message', 'channel' => 'CREACT1', 'channel_type' => 'channel', 'user' => 'UREACT1', 'text' => 'Truck is here', 'ts' => '1789200000.000100'])->assertOk();
+    $message  = SlackMessage::where('ts', '1789200000.000100')->whereHas('channel', fn ($channel) => $channel->where('slack_id', 'CREACT1'))->firstOrFail();
+    $reaction = ['type' => 'reaction_added', 'user' => 'UREACT2', 'reaction' => 'white_check_mark', 'item' => ['type' => 'message', 'channel' => 'CREACT1', 'ts' => '1789200000.000100'], 'event_ts' => '1789200060.000200'];
+
+    $post($reaction)->assertOk();
+    $post($reaction)->assertOk();
+    $post(['reaction' => 'eyes'] + $reaction)->assertOk();
+    expect($message->reactions()->orderBy('name')->pluck('name')->all())->toBe(['eyes', 'white_check_mark'])
+        ->and($message->reactions()->where('name', 'white_check_mark')->value('slack_user_id'))->toBe('UREACT2')
+        ->and($message->reactions()->where('name', 'white_check_mark')->first()->reacted_at->timestamp)->toBe(1789200060);
+
+    $post(['type' => 'reaction_removed'] + $reaction)->assertOk();
+    $post(['type' => 'reaction_removed'] + $reaction)->assertOk();
+    expect($message->reactions()->pluck('name')->all())->toBe(['eyes']);
+
+    $before = \App\Models\Chat\SlackMessageReaction::count();
+    $post(['item' => ['type' => 'message', 'channel' => 'CREACT1', 'ts' => '1789299999.000000']] + $reaction)->assertOk();
+    $post(['item' => ['type' => 'message', 'channel' => 'CNOTKEPT1', 'ts' => '1789200000.000100']] + $reaction)->assertOk();
+    expect(\App\Models\Chat\SlackMessageReaction::count())->toBe($before);
+
+    Http::fake(['slack.com/*' => Http::response(['ok' => true, 'messages' => []])]);
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    $post(['reaction' => 'ticket'] + $reaction)->assertOk();
+    expect($message->reactions()->where('name', 'ticket')->exists())->toBeTrue();
+    Http::assertSent(fn (HttpRequest $request) => str_contains($request->url(), 'conversations.history') && $request['channel'] === 'CREACT1' && $request['latest'] === '1789200000.000100');
+
+    $message->channel->update(['is_public' => false]);
+    $post(['reaction' => 'tada'] + $reaction)->assertOk();
+    expect($message->reactions()->where('name', 'tada')->exists())->toBeFalse();
+    $message->channel->update(['is_public' => true]);
+
+    $old = $message->channel->messages()->create([
+        'ts'      => '1789100000.000300',
+        'sent_at' => now()->subYear(),
+        'data'    => ['ts' => '1789100000.000300', 'reactions' => [['name' => 'pray', 'users' => ['UREACT1', 'UREACT2'], 'count' => 2], ['name' => '+1', 'users' => ['UREACT3'], 'count' => 1]]],
+    ]);
+    $old->reactions()->create(['slack_user_id' => 'UREACT4', 'name' => 'fire', 'reacted_at' => now()]);
+
+    $this->artisan('slack:fill-message-reactions')->assertSuccessful();
+    $this->artisan('slack:fill-message-reactions')->assertSuccessful();
+    expect($old->reactions()->orderBy('name')->orderBy('slack_user_id')->get(['name', 'slack_user_id'])->map(fn ($row) => "$row->name:$row->slack_user_id")->all())
+        ->toBe(['+1:UREACT3', 'fire:UREACT4', 'pray:UREACT1', 'pray:UREACT2'])
+        ->and($old->reactions()->where('name', 'pray')->value('reacted_at'))->toBeNull();
+
+    \App\Actions\Chat\Staff\Slack\StoreSlackMessage::make()->store($message->channel, ['ts' => '1789200000.000100', 'text' => 'Truck is here', 'reactions' => [['name' => 'truck', 'users' => ['UREACT5']]]]);
+    expect($message->reactions()->where('name', 'truck')->value('slack_user_id'))->toBe('UREACT5')
+        ->and($message->reactions()->where('name', 'eyes')->exists())->toBeTrue();
+});
+
+test('Slack channel events keep the channel list current, and a channel turned private is never stored again, INI-420', function () {
+    Config::set('services.slack.signing_secret', 'shh');
+    $post = function (array $event) {
+        $body      = json_encode(['type' => 'event_callback', 'authorizations' => [['user_id' => 'UAIKUBOT', 'is_bot' => true]], 'event' => $event]);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/json',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+    Http::fake(['slack.com/api/conversations.join' => Http::response(['ok' => true])]);
+
+    $post(['type' => 'channel_created', 'channel' => ['id' => 'CEVENT1', 'name' => 'new-orders', 'created' => 1789300000, 'creator' => 'U1']])->assertOk();
+    $channel = SlackChannel::where('slack_id', 'CEVENT1')->firstOrFail();
+    expect($channel->name)->toBe('new-orders')
+        ->and($channel->is_public)->toBeTrue()
+        ->and($channel->is_member)->toBeFalse()
+        ->and($channel->is_archived)->toBeFalse();
+    Http::assertNothingSent();
+
+    $post(['type' => 'channel_rename', 'channel' => ['id' => 'CEVENT1', 'name' => 'orders-eu', 'created' => 1789300000]])->assertOk();
+    expect($channel->refresh()->name)->toBe('orders-eu');
+
+    $post(['type' => 'member_joined_channel', 'user' => 'USOMEONE', 'channel' => 'CEVENT1', 'channel_type' => 'C'])->assertOk();
+    expect($channel->refresh()->is_member)->toBeFalse();
+    $post(['type' => 'member_joined_channel', 'user' => 'UAIKUBOT', 'channel' => 'CEVENT1', 'channel_type' => 'C'])->assertOk();
+    expect($channel->refresh()->is_member)->toBeTrue();
+    $post(['type' => 'member_left_channel', 'user' => 'UAIKUBOT', 'channel' => 'CEVENT1', 'channel_type' => 'C'])->assertOk();
+    expect($channel->refresh()->is_member)->toBeFalse();
+    $post(['type' => 'member_joined_channel', 'user' => 'UAIKUBOT', 'channel' => 'CEVENT1', 'channel_type' => 'C'])->assertOk();
+    $post(['type' => 'channel_left', 'channel' => 'CEVENT1', 'actor_id' => 'U1'])->assertOk();
+    expect($channel->refresh()->is_member)->toBeFalse();
+    $post(['type' => 'member_joined_channel', 'user' => 'UAIKUBOT', 'channel' => 'GEVENTPRIV1', 'channel_type' => 'G'])->assertOk();
+    expect(SlackChannel::where('slack_id', 'GEVENTPRIV1')->exists())->toBeFalse();
+
+    $post(['type' => 'channel_archive', 'channel' => 'CEVENT1', 'user' => 'U1'])->assertOk();
+    expect($channel->refresh()->is_archived)->toBeTrue();
+    $post(['type' => 'channel_unarchive', 'channel' => 'CEVENT1', 'user' => 'U1'])->assertOk();
+    expect($channel->refresh()->is_archived)->toBeFalse();
+
+    $post(['type' => 'message', 'channel' => 'CEVENT1', 'channel_type' => 'channel', 'user' => 'U1', 'text' => 'kept', 'ts' => '1789300100.000100'])->assertOk();
+    $post(['type' => 'channel_deleted', 'channel' => 'CEVENT1'])->assertOk();
+    expect($channel->refresh()->deleted_in_slack_at)->not->toBeNull()
+        ->and($channel->messages()->pluck('text')->all())->toBe(['kept']);
+    $post(['type' => 'channel_deleted', 'channel' => 'CEVENTNEVERSEEN'])->assertOk();
+    expect(SlackChannel::where('slack_id', 'CEVENTNEVERSEEN')->exists())->toBeFalse();
+
+    $post(['type' => 'channel_created', 'channel' => ['id' => 'CEVENT2', 'name' => 'going-private']])->assertOk();
+    $post(['type' => 'message', 'channel' => 'CEVENT2', 'channel_type' => 'channel', 'user' => 'U1', 'text' => 'said in public', 'ts' => '1789300200.000100'])->assertOk();
+    $post(['type' => 'message', 'subtype' => 'channel_convert_to_private', 'channel' => 'CEVENT2', 'channel_type' => 'channel', 'user' => 'U1', 'text' => 'made this channel private', 'ts' => '1789300300.000100'])->assertOk();
+    $private = SlackChannel::where('slack_id', 'CEVENT2')->firstOrFail();
+    expect($private->is_public)->toBeFalse();
+
+    $post(['type' => 'message', 'channel' => 'CEVENT2', 'channel_type' => 'channel', 'user' => 'U1', 'text' => 'said in private 1', 'ts' => '1789300400.000100'])->assertOk();
+    $post(['type' => 'message', 'channel' => 'CEVENT2', 'user' => 'U1', 'text' => 'said in private 2', 'ts' => '1789300500.000100'])->assertOk();
+    $post(['type' => 'reaction_added', 'user' => 'U2', 'reaction' => 'eyes', 'item' => ['type' => 'message', 'channel' => 'CEVENT2', 'ts' => '1789300200.000100']])->assertOk();
+    expect($private->messages()->pluck('text')->all())->toBe(['said in public'])
+        ->and(\App\Models\Chat\SlackMessageReaction::whereIn('slack_message_id', $private->messages()->pluck('id'))->count())->toBe(0);
+
+    $post(['type' => 'channel_created', 'channel' => ['id' => 'CEVENT3', 'name' => 'also-private']])->assertOk();
+    $post(['type' => 'message', 'channel' => 'CEVENT3', 'channel_type' => 'group', 'user' => 'U1', 'text' => 'private now', 'ts' => '1789300600.000100'])->assertOk();
+    expect(SlackChannel::where('slack_id', 'CEVENT3')->value('is_public'))->toBeFalse();
+    $post(['type' => 'message', 'subtype' => 'channel_convert_to_private', 'channel' => 'CEVENTUNSEEN', 'channel_type' => 'channel', 'user' => 'U1', 'text' => 'made this channel private', 'ts' => '1789300700.000100'])->assertOk();
+    expect(SlackChannel::where('slack_id', 'CEVENTUNSEEN')->exists())->toBeFalse();
+
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    $new = SlackChannel::where('slack_id', 'CEVENT1')->firstOrFail();
+    $new->update(['deleted_in_slack_at' => null]);
+    \App\Actions\Chat\Staff\Slack\UpdateSlackChannelFromEvent::make()->joinNewPublicChannel($private);
+    Http::assertNothingSent();
+    \App\Actions\Chat\Staff\Slack\UpdateSlackChannelFromEvent::make()->joinNewPublicChannel($new);
+    Http::assertSent(fn (HttpRequest $request) => str_contains($request->url(), 'conversations.join') && $request['channel'] === 'CEVENT1');
+    expect($new->refresh()->is_member)->toBeTrue();
+});
+
+test('the Slack catch-up runs nightly without joining, one run at a time, records each run and keeps the error of a failed one, INI-421', function () {
+    config(['app.master' => true]);
+    $schedule   = new \Illuminate\Console\Scheduling\Schedule();
+    $reflection = new ReflectionMethod(\App\Console\Kernel::class, 'schedule');
+    $reflection->invoke(app(\App\Console\Kernel::class), $schedule);
+    $events = collect($schedule->events())->filter(fn ($event) => str_contains((string) $event->command, 'slack:sync-public-channels'));
+
+    expect($events)->toHaveCount(1);
+    $event = $events->first();
+    expect($event->command)->toContain('--history')->not->toContain('--join')
+        ->and($event->expression)->toBe('40 2 * * *')
+        ->and($event->withoutOverlapping)->toBeTrue()
+        ->and($event->onOneServer)->toBeTrue();
+
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Http::fake([
+        'slack.com/api/conversations.list*'    => Http::sequence()
+            ->push(['ok' => true, 'channels' => [['id' => 'CNIGHTLY1', 'name' => 'nightly', 'is_member' => true, 'is_archived' => false]]])
+            ->push(['ok' => false, 'error' => 'invalid_auth']),
+        'slack.com/api/conversations.history*' => Http::response(['ok' => true, 'messages' => [['user' => 'U9', 'text' => 'missed while down', 'ts' => '1789400000.000100']]]),
+    ]);
+
+    $this->artisan('slack:sync-public-channels --history')->assertSuccessful();
+    $run = \App\Models\Chat\SlackSyncRun::latest('id')->firstOrFail();
+    expect($run->finished_at)->not->toBeNull()
+        ->and($run->channels)->toBe(1)
+        ->and($run->messages_read)->toBe(1)
+        ->and($run->messages_added)->toBe(1)
+        ->and($run->error)->toBeNull();
+
+    expect(fn () => $this->artisan('slack:sync-public-channels --history')->run())->toThrow(RuntimeException::class, 'invalid_auth');
+    $failed = \App\Models\Chat\SlackSyncRun::latest('id')->firstOrFail();
+    expect($failed->id)->not->toBe($run->id)
+        ->and($failed->finished_at)->not->toBeNull()
+        ->and($failed->error)->toContain('invalid_auth');
+});
+
+test('the Slack catch-up leaves unfinished history alone, a channel Slack stops listing as public is closed, and only a new channel makes a row', function () {
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Config::set('services.slack.signing_secret', 'shh');
+    Sleep::fake();
+    $group    = \App\Models\SysAdmin\Group::firstOrFail();
+    $done     = SlackChannel::create(['group_id' => $group->id, 'slack_id' => 'CWHOLE1', 'name' => 'whole', 'is_member' => true, 'history_synced_at' => now()->subHour()]);
+    $pending  = SlackChannel::create(['group_id' => $group->id, 'slack_id' => 'CHALF1', 'name' => 'half', 'is_member' => true]);
+    $gone     = SlackChannel::create(['group_id' => $group->id, 'slack_id' => 'CWENT1', 'name' => 'went', 'is_member' => true, 'history_synced_at' => now()->subHour()]);
+    $listed   = fn (string $id, string $name) => ['id' => $id, 'name' => $name, 'is_member' => true, 'is_archived' => false];
+    Http::fake([
+        'slack.com/api/conversations.list*'    => Http::response(['ok' => true, 'channels' => [$listed('CWHOLE1', 'whole'), $listed('CHALF1', 'half')]]),
+        'slack.com/api/conversations.history*' => Http::response(['ok' => true, 'messages' => [['user' => 'U9', 'text' => 'caught up', 'ts' => '1789500000.000100']]]),
+    ]);
+
+    $totals = SyncSlackPublicChannels::run($group, history: true, catchUpOnly: true);
+    expect($totals['messages'])->toBe(1)
+        ->and($done->messages()->count())->toBe(1)
+        ->and($pending->messages()->count())->toBe(0)
+        ->and($pending->refresh()->history_synced_at)->toBeNull()
+        ->and($pending->is_public)->toBeTrue()
+        ->and($gone->refresh()->is_public)->toBeFalse();
+    Http::assertSent(fn (HttpRequest $request) => str_contains($request->url(), 'conversations.history') && $request['channel'] === 'CWHOLE1');
+    Http::assertNotSent(fn (HttpRequest $request) => str_contains($request->url(), 'conversations.history') && $request['channel'] !== 'CWHOLE1');
+
+    $post = function (array $event) {
+        $body      = json_encode(['type' => 'event_callback', 'event' => $event, 'authorizations' => [['user_id' => 'UBOT1']]]);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/json',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+
+    $post(['type' => 'channel_rename', 'channel' => ['id' => 'CNEVERSEEN1', 'name' => 'secret-plans']])->assertOk();
+    $post(['type' => 'channel_archive', 'channel' => 'CNEVERSEEN2'])->assertOk();
+    $post(['type' => 'channel_rename', 'channel' => ['id' => 'CWENT1', 'name' => 'renamed-in-private']])->assertOk();
+    $post(['type' => 'channel_rename', 'channel' => ['id' => 'CWHOLE1', 'name' => 'whole-renamed']])->assertOk();
+    expect(SlackChannel::whereIn('slack_id', ['CNEVERSEEN1', 'CNEVERSEEN2'])->exists())->toBeFalse()
+        ->and($gone->refresh()->name)->toBe('went')
+        ->and($done->refresh()->name)->toBe('whole-renamed');
+
+    $post(['type' => 'member_joined_channel', 'user' => 'UBOT1', 'channel' => 'CHALF1', 'channel_type' => 'G'])->assertOk();
+    expect($pending->refresh()->is_public)->toBeFalse();
+
+    $message = $done->messages()->firstOrFail();
+    $message->update(['data' => ['reactions' => [['name' => 'eyes', 'users' => ['UA', 'UB'], 'count' => 2], ['name' => 'tada', 'users' => ['UA'], 'count' => 1]]] + $message->data]);
+    \App\Actions\Chat\Staff\Slack\StoreSlackMessageReaction::make()->fromStoredMessage($message);
+    $removed = fn (string $name) => ['type' => 'reaction_removed', 'user' => 'UA', 'reaction' => $name, 'item' => ['type' => 'message', 'channel' => 'CWHOLE1', 'ts' => $message->ts]];
+    $post($removed('eyes'))->assertOk();
+    $post($removed('tada'))->assertOk();
+    expect($message->refresh()->data['reactions'])->toEqual([['name' => 'eyes', 'users' => ['UB'], 'count' => 1]]);
+    \App\Actions\Chat\Staff\Slack\StoreSlackMessageReaction::make()->fromStoredMessage($message);
+    expect($message->reactions()->get()->map(fn ($reaction) => $reaction->name.':'.$reaction->slack_user_id)->all())->toBe(['eyes:UB']);
 });
