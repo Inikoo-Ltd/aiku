@@ -48,11 +48,11 @@ class GetPurchaseOrderNotes
             ],
             $viewer === self::VIEWER_SUPPLIER && $isAgentOrder => [
                 $this->note(NotesEnum::PURCHASE_ORDER_AGENT_FOR_SUPPLIER, 'agent_notes_for_supplier', $purchaseOrder->agent_notes_for_supplier, false, __('From the agent.'), __('Agent Note')),
-                $this->note(NotesEnum::PURCHASE_ORDER_SUPPLIER, 'supplier_notes', $purchaseOrder->supplier_notes, $canEdit, __('Only the agent reads this note.'), __('Your Note')),
+                $this->note(NotesEnum::PURCHASE_ORDER_SUPPLIER, 'supplier_notes', $purchaseOrder->supplier_notes, $canEdit, __('Only the agent reads this note.'), __('Your Note'), __('Write a note for the agent: a question about this order, a delay, a change in production…')),
             ],
             $viewer === self::VIEWER_SUPPLIER => [
                 $this->note(NotesEnum::PURCHASE_ORDER_ORGANISATION, 'notes', $purchaseOrder->notes, false, __('From :organisation.', ['organisation' => $organisationName]), $organisationNote),
-                $this->note(NotesEnum::PURCHASE_ORDER_SUPPLIER, 'supplier_notes', $purchaseOrder->supplier_notes, $canEdit, __('Only :organisation reads this note.', ['organisation' => $organisationName]), __('Your Note')),
+                $this->note(NotesEnum::PURCHASE_ORDER_SUPPLIER, 'supplier_notes', $purchaseOrder->supplier_notes, $canEdit, __('Only :organisation reads this note.', ['organisation' => $organisationName]), __('Your Note'), __('Write a note for :organisation: a question about this order, a delay, a change in production…', ['organisation' => $organisationName])),
             ],
             $isAgentOrder => [
                 $this->note(NotesEnum::PURCHASE_ORDER_ORGANISATION, 'notes', $purchaseOrder->notes, $canEdit, __('Only the agent reads this note.'), $organisationNote),
@@ -70,10 +70,11 @@ class GetPurchaseOrderNotes
     /**
      * @return array<string, mixed>
      */
-    private function note(NotesEnum $type, string $field, ?string $note, bool $editable, string $information, ?string $label = null): array
+    private function note(NotesEnum $type, string $field, ?string $note, bool $editable, string $information, ?string $label = null, ?string $placeholder = null): array
     {
         return [
             'label'       => $label ?? $type->label(),
+            'placeholder' => $placeholder,
             'note'        => $note ?? '',
             'information' => $information,
             'editable'    => $editable,

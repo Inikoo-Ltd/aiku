@@ -98,7 +98,7 @@ interface PurchaseOrderDetail {
 		blocked: string | null
 	}
 	notes: {
-		note_list: PDRNotes[]
+		note_list: (PDRNotes & { placeholder?: string | null })[]
 	}
 	documents: {
 		open: boolean
@@ -241,7 +241,7 @@ const saveProduction = async () => {
 	}
 }
 
-const editingNote = ref<PDRNotes | null>(null)
+const editingNote = ref<(PDRNotes & { placeholder?: string | null }) | null>(null)
 const noteDraft = ref("")
 const isSavingNote = ref(false)
 const noteError = ref<string | null>(null)
@@ -255,7 +255,7 @@ const isEditingNote = computed({
 	},
 })
 
-const openNoteEditor = (note: PDRNotes) => {
+const openNoteEditor = (note: PDRNotes & { placeholder?: string | null }) => {
 	editingNote.value = note
 	noteDraft.value = note.note ?? ""
 	noteError.value = null
@@ -755,7 +755,7 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 	<Dialog v-model:visible="isEditingNote" modal :header="editingNote?.label ?? ctrans('Note')" :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }">
 		<div class="space-y-2 text-sm">
 			<p v-if="editingNote?.information" class="text-xs text-gray-500">{{ editingNote.information }}</p>
-			<Textarea v-model="noteDraft" rows="6" autoResize :maxlength="5000" :disabled="isSavingNote" class="w-full text-sm" />
+			<Textarea v-model="noteDraft" rows="6" autoResize :maxlength="5000" :placeholder="editingNote?.placeholder ?? ctrans('Write your note here')" :disabled="isSavingNote" class="w-full text-sm placeholder:italic placeholder:!text-gray-400" />
 			<p v-if="noteError" class="text-xs text-red-600">{{ noteError }}</p>
 		</div>
 		<template #footer>
