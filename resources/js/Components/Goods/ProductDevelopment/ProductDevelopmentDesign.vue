@@ -509,7 +509,7 @@ function startReview(section: Section, row: Row) {
                                     </Link>
                                     <span v-else-if="row.artwork?.source === 'aiku'" class="text-xs text-gray-500">{{ ctrans("Being made in Aiku") }}</span>
                                     <button
-                                        v-else-if="row.can_upload || row.artwork?.can_review || row.artwork?.editor_route"
+                                        v-else-if="row.can_upload || row.artwork?.can_review || row.artwork?.can_compliance_ok || row.artwork?.editor_route"
                                         type="button"
                                         class="text-xs text-amber-700 underline decoration-dotted underline-offset-2 hover:text-amber-900"
                                         aria-haspopup="menu"
@@ -534,6 +534,10 @@ function startReview(section: Section, row: Row) {
                                         <FontAwesomeIcon :icon="row.status.icon" fixed-width aria-hidden="true" />
                                         {{ row.status.label }}
                                     </button>
+                                    <p v-if="row.status.value === 'in_review' && row.artwork" class="mt-1 flex items-center gap-1 whitespace-nowrap text-xs" :class="row.artwork.compliance_ok ? 'text-green-700' : 'text-amber-700'">
+                                        <FontAwesomeIcon :icon="row.artwork.compliance_ok ? 'fal fa-shield-check' : 'fal fa-clock'" fixed-width aria-hidden="true" />
+                                        {{ row.artwork.compliance_ok ? ctrans("Compliance OK") : ctrans("Waiting for Compliance") }}
+                                    </p>
                                     <button v-if="row.artwork?.needs_recheck" type="button" class="mt-1 flex items-center gap-1 text-xs text-amber-700 hover:underline" v-tooltip="ctrans('The label information changed after approval')" @click="openPanel(section, row)">
                                         <FontAwesomeIcon icon="fal fa-exclamation-circle" fixed-width aria-hidden="true" />
                                         {{ ctrans("Recheck: label info changed") }}
@@ -566,7 +570,7 @@ function startReview(section: Section, row: Row) {
                                             <span v-if="row.artwork?.comments" class="absolute -right-0.5 -top-0.5 min-w-[1rem] rounded-full bg-[var(--app-accent)] px-1 text-[10px] leading-4 text-[var(--app-accent-text)] tabular-nums">{{ row.artwork.comments }}</span>
                                         </button>
                                         <button
-                                            v-if="row.can_upload || row.artwork?.can_review || row.artwork?.editor_route"
+                                            v-if="row.can_upload || row.artwork?.can_review || row.artwork?.can_compliance_ok || row.artwork?.editor_route"
                                             type="button"
                                             class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800"
                                             :aria-label="ctrans('More actions')"
@@ -599,7 +603,7 @@ function startReview(section: Section, row: Row) {
         <Popover ref="rowMenu">
             <div v-if="menuFor" class="w-60 text-sm" role="menu">
                 <p class="px-2 pb-1.5 text-xs text-gray-500">{{ menuFor.section.name }} · {{ menuFor.row.code }}</p>
-                <button v-if="menuFor.row.artwork?.can_review" type="button" role="menuitem" class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-gray-800 hover:bg-gray-50" @click="menuFor.row.artwork.pdf_route ? previewArtwork(menuFor.section, menuFor.row) : openPanel(menuFor.section, menuFor.row)">
+                <button v-if="menuFor.row.artwork?.can_review || menuFor.row.artwork?.can_compliance_ok" type="button" role="menuitem" class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-gray-800 hover:bg-gray-50" @click="menuFor.row.artwork.pdf_route ? previewArtwork(menuFor.section, menuFor.row) : openPanel(menuFor.section, menuFor.row)">
                     <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
                     {{ ctrans("Review artwork") }}
                 </button>

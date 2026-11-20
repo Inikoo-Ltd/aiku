@@ -122,6 +122,7 @@ class GetProductDevelopmentActivity
                 RecordProductDevelopmentActivity::DESIGN_SECTION_REMOVED => [__('Removed the :section design section', ['section' => $old['section'] ?? '']), []],
                 RecordProductDevelopmentActivity::ARTWORK_UPLOADED => [__('Uploaded :artwork v:version', ['artwork' => $new['artwork'] ?? '', 'version' => $new['version'] ?? '']), $this->noteChange(__('What changed'), $new['note'] ?? null)],
                 RecordProductDevelopmentActivity::ARTWORK_SUBMITTED => [__('Sent :artwork v:version for review', ['artwork' => $new['artwork'] ?? '', 'version' => $new['version'] ?? '']), $this->noteChange(__('What changed'), $new['note'] ?? null)],
+                RecordProductDevelopmentActivity::ARTWORK_COMPLIANCE_OK => [__('Gave the Compliance OK on :artwork v:version', ['artwork' => $new['artwork'] ?? '', 'version' => $new['version'] ?? '']), []],
                 RecordProductDevelopmentActivity::ARTWORK_APPROVED => [__('Approved :artwork v:version', ['artwork' => $new['artwork'] ?? '', 'version' => $new['version'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
                 RecordProductDevelopmentActivity::SAMPLE_JOB_CREATED => [!empty($new['assignee'])
                     ? __('Asked :person for trial runs of :skus', ['person' => $new['assignee'], 'skus' => implode(', ', $new['skus'] ?? [])])

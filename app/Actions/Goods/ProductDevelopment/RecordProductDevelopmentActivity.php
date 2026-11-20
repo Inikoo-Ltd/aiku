@@ -65,6 +65,8 @@ class RecordProductDevelopmentActivity
 
     public const string ARTWORK_SUBMITTED = 'artwork_submitted';
 
+    public const string ARTWORK_COMPLIANCE_OK = 'artwork_compliance_ok';
+
     public const string ARTWORK_APPROVED = 'artwork_approved';
 
     public const string ARTWORK_CHANGES_REQUIRED = 'artwork_changes_required';

@@ -968,13 +968,19 @@ function completeChecklist(ProductDevelopment $productDevelopment): void
     ProductDevelopmentHydrateChecklist::run($productDevelopment);
 }
 
-function uploadArtwork(\App\Models\Goods\ProductDevelopmentDesignSection $section, \App\Models\SysAdmin\User $user, int $itemId, ?string $note = null): \App\Models\Goods\ProductDevelopmentArtwork
+function uploadArtwork(\App\Models\Goods\ProductDevelopmentDesignSection $section, \App\Models\SysAdmin\User $user, int $itemId, ?string $note = null, bool $withComplianceOk = true): \App\Models\Goods\ProductDevelopmentArtwork
 {
-    return \App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentArtwork::make()->action($section, $user, [
+    $artwork = \App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentArtwork::make()->action($section, $user, [
         'product_development_item_id' => $itemId,
         'file'                        => UploadedFile::fake()->create('artwork-'.$itemId.'.pdf', 80, 'application/pdf'),
         'update_note'                 => $note,
     ]);
+
+    if ($withComplianceOk) {
+        $artwork->update(['compliance_ok_at' => now()]);
+    }
+
+    return $artwork;
 }
 
 function developmentWithDesignTeam(object $test, int $numberSkus): array
@@ -986,22 +992,62 @@ function developmentWithDesignTeam(object $test, int $numberSkus): array
     return [$productDevelopment->fresh(), $people];
 }
 
-test('nobody approves an artwork version they uploaded themselves, not even the owner', function () {
+test('compliance gives its OK before an artwork is approved, the owner then approves their own upload, and nobody else approves or OKs a version they uploaded', function () {
     [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
     $item                          = $productDevelopment->items()->firstOrFail();
     $box                           = $productDevelopment->designSections()->where('name', 'Box')->firstOrFail();
     $boxRow                        = fn (\App\Models\SysAdmin\User $viewer) => collect(GetProductDevelopmentDesignOverview::run($productDevelopment->fresh(), $viewer)['sections'])->firstWhere('name', 'Box')['rows'][0]['artwork'];
+    $review                        = \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make();
+    $complianceOk                  = \App\Actions\Goods\ProductDevelopment\Design\GiveProductDevelopmentArtworkComplianceOk::make();
+    $lastNotice                    = fn (\App\Models\SysAdmin\User $user) => $user->notifications()->get()->pluck('data.title')->filter(fn ($title) => str_contains((string) $title, 'Box'))->all();
 
-    $artwork = uploadArtwork($box, $this->user, $item->id);
+    $artwork = uploadArtwork($box, $this->user, $item->id, null, false);
     expect($productDevelopment->owner_id)->toBe($this->user->id)
-        ->and($boxRow($this->user)['approval_blocked'])->toBe('You uploaded this version, so someone else has to approve it')
-        ->and($boxRow($people['approver'])['approval_blocked'])->toBeNull()
-        ->and(fn () => \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $this->user, ['operation' => 'approve']))
+        ->and($boxRow($this->user)['approval_blocked'])->toBe('Compliance has not given its OK yet')
+        ->and($boxRow($people['approver'])['approval_blocked'])->toBe('Compliance has not given its OK yet')
+        ->and($boxRow($people['compliance'])['can_compliance_ok'])->toBeTrue()
+        ->and($boxRow($people['approver'])['can_compliance_ok'])->toBeFalse()
+        ->and($boxRow($people['approver'])['compliance_ok'])->toBeNull()
+        ->and($lastNotice($people['compliance']))->toHaveCount(1)
+        ->and($lastNotice($people['approver']))->toBe([])
+        ->and(fn () => $review->action($artwork->fresh(), $people['approver'], ['operation' => 'approve']))
+        ->toThrow(ValidationException::class, 'Compliance has not given its OK yet');
+
+    $waitingOn       = collect((new \App\Actions\Goods\ProductDevelopment\ProductDevelopmentWaitingOn())->byRole($productDevelopment->fresh()))->flatten(1)->pluck('label');
+    $complianceRoute = route('grp.models.product_development.artwork.compliance_ok', ['productDevelopmentArtwork' => $artwork->id]);
+    expect($waitingOn)->toContain('Give the Compliance OK on 1 Box artwork')
+        ->and($waitingOn)->not->toContain('Review 1 Box artwork');
+
+    actingAs($people['approver']);
+    patch($complianceRoute)->assertForbidden();
+    actingAs($people['compliance']);
+    patch($complianceRoute)->assertRedirect();
+    actingAs($this->user);
+
+    expect($artwork->fresh()->compliance_ok_by_id)->toBe($people['compliance']->id)
+        ->and($boxRow($this->user)['approval_blocked'])->toBeNull()
+        ->and($boxRow($this->user)['compliance_ok']['at'])->not->toBeNull()
+        ->and($boxRow($people['compliance'])['can_compliance_ok'])->toBeFalse()
+        ->and($lastNotice($people['approver']))->toHaveCount(1)
+        ->and(fn () => $complianceOk->action($artwork->fresh(), $people['compliance']))->toThrow(ValidationException::class, 'This version already has the Compliance OK');
+
+    $review->action($artwork->fresh(), $this->user, ['operation' => 'approve']);
+    expect($artwork->fresh()->status)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum::APPROVED)
+        ->and($artwork->fresh()->reviewed_by_id)->toBe($this->user->id);
+
+    $artwork = uploadArtwork($box, $people['approver'], $item->id, 'New colours', false);
+    expect($artwork->version)->toBe(2)
+        ->and($artwork->compliance_ok_at)->toBeNull()
+        ->and($artwork->compliance_ok_by_id)->toBeNull();
+
+    $complianceOk->action($artwork->fresh(), $people['compliance']);
+    expect(fn () => $review->action($artwork->fresh(), $people['approver'], ['operation' => 'approve']))
         ->toThrow(ValidationException::class, 'You uploaded this version, so someone else has to approve it');
 
-    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $people['approver'], ['operation' => 'approve']);
-    expect($artwork->fresh()->status)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum::APPROVED)
-        ->and($artwork->fresh()->reviewed_by_id)->toBe($people['approver']->id);
+    $artwork = uploadArtwork($box, $people['compliance'], $item->id, 'Warning text moved', false);
+    expect($boxRow($people['compliance'])['compliance_ok_blocked'])->toBe('You uploaded this version, so someone else has to give the Compliance OK')
+        ->and(fn () => $complianceOk->action($artwork->fresh(), $people['compliance']))
+        ->toThrow(ValidationException::class, 'You uploaded this version, so someone else has to give the Compliance OK');
 });
 
 test('artwork is uploaded per SKU in each section, sent back with a required comment, and the stage passes once every SKU in every section is approved', function () {
@@ -2989,6 +3035,7 @@ test('purchasing turns an approved box artwork into its own trade unit, which be
         ['user_id' => $this->user->id, 'role' => ProductDevelopmentMemberRoleEnum::BUYER->value],
         ['user_id' => $approver->id, 'role' => ProductDevelopmentMemberRoleEnum::APPROVER->value],
     ]]);
+    $artwork->update(['compliance_ok_at' => now()]);
     \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $approver, ['operation' => 'approve']);
 
     $designer = newGuestUser($this);

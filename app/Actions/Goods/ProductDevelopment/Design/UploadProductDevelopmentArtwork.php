@@ -77,6 +77,8 @@ class UploadProductDevelopmentArtwork extends OrgAction
                 'review_comment'         => null,
                 'reviewed_by_id'         => null,
                 'reviewed_at'            => null,
+                'compliance_ok_by_id'    => null,
+                'compliance_ok_at'       => null,
             ])->save();
             ProductDevelopmentArtworks::recordVersion($artwork);
 
@@ -89,7 +91,7 @@ class UploadProductDevelopmentArtwork extends OrgAction
             return $artwork;
         });
 
-        ProductDevelopmentArtworks::notifyReviewers($artwork, $user);
+        ProductDevelopmentArtworks::notifyCompliance($artwork, $user);
         CreateProductDevelopmentTask::make()->ensureForDevelopment($productDevelopment->refresh(), $user);
 
         return $artwork;

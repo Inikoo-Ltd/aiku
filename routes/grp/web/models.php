@@ -58,6 +58,7 @@ use App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Design\CancelProductDevelopmentArtworkInAiku;
 use App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentArtworkLayout;
 use App\Actions\Goods\ProductDevelopment\Design\SubmitProductDevelopmentArtwork;
+use App\Actions\Goods\ProductDevelopment\Design\GiveProductDevelopmentArtworkComplianceOk;
 use App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork;
 use App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi;
 use App\Actions\Goods\ProductDevelopment\Recipe\RecordTrialRunFormulation;
@@ -2431,6 +2432,7 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::post('artwork/{productDevelopmentArtwork:id}/image', UploadProductDevelopmentDesignImage::class)->name('artwork.image')->withoutScopedBindings();
     Route::patch('artwork/{productDevelopmentArtwork:id}/submit', SubmitProductDevelopmentArtwork::class)->name('artwork.submit')->withoutScopedBindings();
     Route::patch('artwork/{productDevelopmentArtwork:id}/review', ReviewProductDevelopmentArtwork::class)->name('artwork.review')->withoutScopedBindings();
+    Route::patch('artwork/{productDevelopmentArtwork:id}/compliance-ok', GiveProductDevelopmentArtworkComplianceOk::class)->name('artwork.compliance_ok')->withoutScopedBindings();
     Route::post('artwork/{productDevelopmentArtwork:id}/packaging-sample/photos', UploadProductDevelopmentPackagingSamplePhotos::class)->name('artwork.packaging_sample.photos')->withoutScopedBindings();
     Route::patch('artwork/{productDevelopmentArtwork:id}/packaging-sample', ReviewProductDevelopmentPackagingSample::class)->name('artwork.packaging_sample.review')->withoutScopedBindings();
     Route::post('artwork/{productDevelopmentArtwork:id}/trade-unit', CreateProductDevelopmentArtworkTradeUnit::class)->name('artwork.trade_unit')->withoutScopedBindings();

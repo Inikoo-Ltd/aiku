@@ -13,6 +13,7 @@ import Dialog from "primevue/dialog"
 import Textarea from "primevue/textarea"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import DesignLabelContent from "@/Components/Goods/ProductDevelopment/Design/DesignLabelContent.vue"
+import DesignArtworkComplianceOk from "@/Components/Goods/ProductDevelopment/Design/DesignArtworkComplianceOk.vue"
 import DesignArtworkAiCheck from "@/Components/Goods/ProductDevelopment/Design/DesignArtworkAiCheck.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import DesignArtworkViewer, { type ArtworkPin, type ArtworkStroke } from "@/Components/Goods/ProductDevelopment/Design/DesignArtworkViewer.vue"
@@ -174,6 +175,8 @@ watch(() => [visible.value, props.artwork?.id, props.artwork?.version], ([isVisi
             </div>
 
             <aside class="min-w-0 space-y-3 lg:max-h-[75vh] lg:overflow-y-auto">
+                <DesignArtworkComplianceOk v-if="artwork.can_review || artwork.can_compliance_ok" :artwork="artwork" />
+
                 <div v-if="artwork.can_review" class="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
                     <h3 class="text-sm font-semibold text-gray-800">{{ ctrans("Review V:version", { version: String(artwork.version) }) }}</h3>
                     <p v-if="artwork.approval_blocked" class="flex gap-2 text-xs text-amber-800">

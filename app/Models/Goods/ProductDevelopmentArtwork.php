@@ -38,6 +38,8 @@ use Illuminate\Support\Carbon;
  * @property int|null $reviewed_by_id
  * @property Carbon|null $reviewed_at
  * @property Carbon|null $locked_at
+ * @property int|null $compliance_ok_by_id who gave the Compliance OK on the current version; cleared by every new version
+ * @property Carbon|null $compliance_ok_at
  * @property string|null $approved_label_hash fingerprint of the SKU's label information when it was approved
  * @property int|null $trade_unit_id the printed item (box, label, tag) made from this artwork, once it is a trade unit
  * @property string|null $packaging_sample_status approved or changes_required, set by the designer on the physical box or label
@@ -53,6 +55,7 @@ use Illuminate\Support\Carbon;
  * @property-read Media|null $media
  * @property-read User|null $updatedBy
  * @property-read User|null $reviewedBy
+ * @property-read User|null $complianceOkBy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentArtworkVersion> $versions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentArtworkCheck> $checks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFile> $packagingSamplePhotos
@@ -87,6 +90,7 @@ class ProductDevelopmentArtwork extends Model
             'artwork_updated_at' => 'datetime',
             'reviewed_at'        => 'datetime',
             'locked_at'          => 'datetime',
+            'compliance_ok_at'   => 'datetime',
             'packaging_sample_reviewed_at' => 'datetime',
             'sample_reopened_at'           => 'datetime',
         ];
@@ -120,6 +124,11 @@ class ProductDevelopmentArtwork extends Model
     public function reviewedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by_id');
+    }
+
+    public function complianceOkBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'compliance_ok_by_id');
     }
 
     public function versions(): HasMany

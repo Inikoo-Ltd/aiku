@@ -216,6 +216,15 @@ class ProductDevelopmentAccess
     }
 
     /**
+     * The Compliance OK on an artwork, the green light the owner or an approver waits for: compliance members only.
+     */
+    public function canGiveComplianceOk(User $user, ProductDevelopment $productDevelopment): bool
+    {
+        return $this->isOpenForChanges($productDevelopment)
+            && in_array(ProductDevelopmentMemberRoleEnum::COMPLIANCE, $this->memberRoles($user, $productDevelopment), true);
+    }
+
+    /**
      * Making samples of an in-house SKU: the production team members, the owner and purchasing.
      */
     public function canManageSamples(User $user, ProductDevelopment $productDevelopment): bool

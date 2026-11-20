@@ -57,6 +57,8 @@ class GetProductDevelopmentDesignOverview
 
     private bool $canCreateTradeUnits = false;
 
+    private bool $canGiveComplianceOk = false;
+
     private User $viewer;
 
     /**
@@ -70,9 +72,10 @@ class GetProductDevelopmentDesignOverview
         $canReview = $access->canApproveDesign($viewer, $productDevelopment);
         $this->canCheckPackagingSamples = $access->canDesign($viewer, $productDevelopment);
         $this->canCreateTradeUnits      = $access->canEdit($viewer, $productDevelopment);
+        $this->canGiveComplianceOk      = $access->canGiveComplianceOk($viewer, $productDevelopment);
         $locked    = ProductDevelopmentDesignRounds::isArtworkLocked($productDevelopment);
         $items     = $productDevelopment->items()->with('tradeUnit')->orderBy('position')->orderBy('id')->get();
-        $sections  = $productDevelopment->designSections()->with(['artworks.media', 'artworks.updatedBy', 'artworks.reviewedBy', 'artworks.versions.submittedBy', 'artworks.versions.reviewedBy', 'artworks.versions.sampleReviewedBy', 'artworks.packagingSamplePhotos.media', 'artworks.earlierSamplePhotos.media', 'artworks.packagingSampleReviewedBy', 'artworks.tradeUnit', 'artworks.checks.requestedBy'])->get();
+        $sections  = $productDevelopment->designSections()->with(['artworks.media', 'artworks.updatedBy', 'artworks.reviewedBy', 'artworks.complianceOkBy', 'artworks.versions.submittedBy', 'artworks.versions.reviewedBy', 'artworks.versions.sampleReviewedBy', 'artworks.packagingSamplePhotos.media', 'artworks.earlierSamplePhotos.media', 'artworks.packagingSampleReviewedBy', 'artworks.tradeUnit', 'artworks.checks.requestedBy'])->get();
 
         $this->commentCounts = $productDevelopment->comments()
             ->where('model_type', 'ProductDevelopmentArtwork')
@@ -227,6 +230,13 @@ class GetProductDevelopmentDesignOverview
                 'can_edit_layout' => $canManage && UpdateProductDevelopmentArtworkLayout::isEditable($artwork),
                 'can_review'     => $canReview && $artwork->status === ProductDevelopmentArtworkStatusEnum::IN_REVIEW,
                 'approval_blocked' => $artwork->status === ProductDevelopmentArtworkStatusEnum::IN_REVIEW ? ProductDevelopmentArtworks::approvalBlockedReason($artwork, $this->viewer) : null,
+                'compliance_ok'  => $artwork->compliance_ok_at ? [
+                    'by' => $artwork->complianceOkBy?->contact_name ?: $artwork->complianceOkBy?->username,
+                    'at' => $artwork->compliance_ok_at->toIso8601String(),
+                ] : null,
+                'can_compliance_ok' => $this->canGiveComplianceOk && ProductDevelopmentArtworks::canChange($artwork) && $artwork->status === ProductDevelopmentArtworkStatusEnum::IN_REVIEW && $artwork->compliance_ok_at === null,
+                'compliance_ok_blocked' => $artwork->status === ProductDevelopmentArtworkStatusEnum::IN_REVIEW ? ProductDevelopmentArtworks::complianceOkBlockedReason($artwork, $this->viewer) : null,
+                'compliance_ok_route' => ['name' => 'grp.models.product_development.artwork.compliance_ok', 'parameters' => ['productDevelopmentArtwork' => $artwork->id]],
                 'ai_check'       => [
                     'can_run' => ($canManage || $canReview) && $artwork->version > 0 && $this->hasFile($artwork),
                     'check'   => CheckProductDevelopmentArtworkWithAi::payload($artwork->checks->firstWhere('version', $artwork->version)),

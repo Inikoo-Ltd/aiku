@@ -149,7 +149,9 @@ class ProductDevelopmentWaitingOn
             $statuses = $itemIds->map(fn (int $itemId) => $section->artworks->firstWhere('product_development_item_id', $itemId)?->status ?? ProductDevelopmentArtworkStatusEnum::NOT_SUBMITTED);
             $toMake   = $statuses->filter(fn (ProductDevelopmentArtworkStatusEnum $status) => $status === ProductDevelopmentArtworkStatusEnum::NOT_SUBMITTED)->count();
             $toFix    = $statuses->filter(fn (ProductDevelopmentArtworkStatusEnum $status) => $status === ProductDevelopmentArtworkStatusEnum::CHANGES_REQUIRED)->count();
-            $toReview = $statuses->filter(fn (ProductDevelopmentArtworkStatusEnum $status) => $status === ProductDevelopmentArtworkStatusEnum::IN_REVIEW)->count();
+            $inReview     = $section->artworks->whereIn('product_development_item_id', $itemIds)->where('status', ProductDevelopmentArtworkStatusEnum::IN_REVIEW);
+            $toComplyWith = $inReview->whereNull('compliance_ok_at')->count();
+            $toReview     = $inReview->count() - $toComplyWith;
 
             if ($toMake || $toFix) {
                 $rows->push([
@@ -159,6 +161,16 @@ class ProductDevelopmentWaitingOn
                         ? trans_choice('Fix :count :section artwork|Fix :count :section artworks', $toFix, ['count' => $toFix, 'section' => $section->name])
                         : trans_choice('Upload :count :section artwork|Upload :count :section artworks', $toMake, ['count' => $toMake, 'section' => $section->name]),
                     'detail' => $toFix && $toMake ? trans_choice(':count more to upload|:count more to upload', $toMake, ['count' => $toMake]) : null,
+                    'route'  => $route,
+                ]);
+            }
+
+            if ($toComplyWith) {
+                $rows->push([
+                    'role'   => ProductDevelopmentMemberRoleEnum::COMPLIANCE->value,
+                    'kind'   => self::KIND_REVIEW,
+                    'label'  => trans_choice('Give the Compliance OK on :count :section artwork|Give the Compliance OK on :count :section artworks', $toComplyWith, ['count' => $toComplyWith, 'section' => $section->name]),
+                    'detail' => null,
                     'route'  => $route,
                 ]);
             }

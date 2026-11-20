@@ -53,17 +53,37 @@ class ProductDevelopmentArtworks
     }
 
     /**
-     * Why this artwork cannot be approved yet, or null when it can.
-     */
-    /**
-     * Nobody approves a version they uploaded themselves: the final check is always someone else's.
+     * Why this artwork cannot be approved yet, or null when it can. Compliance gives its OK first. A second
+     * person always looks at a version: the Compliance OK is that second look for the owner, so the owner
+     * approves their own upload once it is given, while any other approver never approves their own.
      */
     public static function approvalBlockedReason(ProductDevelopmentArtwork $artwork, User $reviewer): ?string
     {
-        if ($artwork->updated_by_id === $reviewer->id) {
+        if ($artwork->compliance_ok_at === null) {
+            return __('Compliance has not given its OK yet');
+        }
+
+        if ($artwork->updated_by_id === $reviewer->id && $artwork->productDevelopment->owner_id !== $reviewer->id) {
             return __('You uploaded this version, so someone else has to approve it');
         }
 
+        return self::complianceTextBlockedReason($artwork);
+    }
+
+    /**
+     * Why Compliance cannot give its OK on this version yet, or null when it can.
+     */
+    public static function complianceOkBlockedReason(ProductDevelopmentArtwork $artwork, User $user): ?string
+    {
+        if ($artwork->updated_by_id === $user->id) {
+            return __('You uploaded this version, so someone else has to give the Compliance OK');
+        }
+
+        return self::complianceTextBlockedReason($artwork);
+    }
+
+    private static function complianceTextBlockedReason(ProductDevelopmentArtwork $artwork): ?string
+    {
         return $artwork->section->needs_compliance_text && !self::isComplianceTextApproved($artwork->item)
             ? __('The compliance text of :sku is not approved yet', ['sku' => $artwork->item->tradeUnit->code])
             : null;
@@ -184,6 +204,43 @@ class ProductDevelopmentArtworks
         return $artwork->section->name.' · '.$artwork->item->tradeUnit->code;
     }
 
+    /**
+     * A new version goes to Compliance first. With nobody in the Compliance role the owner is told to add someone,
+     * since the version cannot be approved without the Compliance OK.
+     */
+    public static function notifyCompliance(ProductDevelopmentArtwork $artwork, User $actor): void
+    {
+        $productDevelopment = $artwork->productDevelopment;
+        $compliance         = NotifyProductDevelopmentUsers::make()->usersWithRole($productDevelopment, ProductDevelopmentMemberRoleEnum::COMPLIANCE);
+        $changed            = $artwork->update_note ? ' '.__('What changed: :note', ['note' => $artwork->update_note]) : '';
+
+        if ($compliance->isEmpty()) {
+            NotifyProductDevelopmentUsers::run(
+                $productDevelopment,
+                [$productDevelopment->owner],
+                UserNotificationEnum::PRODUCT_DEVELOPMENT_TASK,
+                __(':artwork of :code waits for a Compliance OK', ['artwork' => self::label($artwork), 'code' => $productDevelopment->code]),
+                __('Nobody in the team has the Compliance role. Add someone so they can give the Compliance OK.'),
+                tab: 'design',
+            );
+
+            return;
+        }
+
+        NotifyProductDevelopmentUsers::run(
+            $productDevelopment,
+            $compliance,
+            UserNotificationEnum::PRODUCT_DEVELOPMENT_TASK,
+            __(':artwork of :code is ready for the Compliance OK', ['artwork' => self::label($artwork), 'code' => $productDevelopment->code]),
+            __('Open the Design tab to check it and give the Compliance OK.').$changed,
+            tab: 'design',
+            except: $actor,
+        );
+    }
+
+    /**
+     * Once Compliance gave its OK, the owner and the approvers are asked for the final approval.
+     */
     public static function notifyReviewers(ProductDevelopmentArtwork $artwork, User $actor): void
     {
         $productDevelopment = $artwork->productDevelopment;
@@ -196,8 +253,8 @@ class ProductDevelopmentArtworks
             $productDevelopment,
             $reviewers,
             UserNotificationEnum::PRODUCT_DEVELOPMENT_TASK,
-            __(':artwork of :code is ready for review', ['artwork' => self::label($artwork), 'code' => $productDevelopment->code]),
-            $artwork->update_note ? __('What changed: :note', ['note' => $artwork->update_note]) : __('Open the Design tab to approve it or ask for changes.'),
+            __(':artwork of :code has the Compliance OK', ['artwork' => self::label($artwork), 'code' => $productDevelopment->code]),
+            __('Open the Design tab to approve it or ask for changes.'),
             tab: 'design',
             except: $actor,
         );

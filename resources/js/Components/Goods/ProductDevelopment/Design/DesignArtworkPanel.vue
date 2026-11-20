@@ -18,6 +18,7 @@ import Image from "@common/Components/Image.vue"
 import TicketUserHoverCard from "@/Components/Tickets/TicketUserHoverCard.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
 import ProductDevelopmentPhotoStrip, { type ProductDevelopmentPhoto } from "@/Components/Goods/ProductDevelopment/ProductDevelopmentPhotoStrip.vue"
+import DesignArtworkComplianceOk from "@/Components/Goods/ProductDevelopment/Design/DesignArtworkComplianceOk.vue"
 import DesignArtworkAiCheck, { type ArtworkAiCheck } from "@/Components/Goods/ProductDevelopment/Design/DesignArtworkAiCheck.vue"
 import ProductDevelopmentCommentComposer, { type Mentionable } from "@/Components/Goods/ProductDevelopment/ProductDevelopmentCommentComposer.vue"
 import { productDevelopmentColor } from "@/Components/Goods/ProductDevelopment/productDevelopmentColors"
@@ -55,6 +56,10 @@ export interface Artwork {
     can_edit_layout: boolean
     can_review: boolean
     approval_blocked: string | null
+    compliance_ok: { by: string | null, at: string } | null
+    can_compliance_ok: boolean
+    compliance_ok_blocked: string | null
+    compliance_ok_route: routeType
     ai_check: ArtworkAiCheck
     review_route: routeType
     comments: number
@@ -399,6 +404,8 @@ watch(() => artwork.value?.comments, (count, previous) => {
                 </template>
 
                 <DesignArtworkAiCheck v-if="artwork && (artwork.ai_check.can_run || artwork.ai_check.check)" :aiCheck="artwork.ai_check" :version="artwork.version" />
+
+                <DesignArtworkComplianceOk v-if="artwork && row.status.value === 'in_review'" :artwork="artwork" />
 
                 <div v-if="artwork?.can_review" class="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-3">
                     <p v-if="artwork.approval_blocked" class="flex gap-2 text-xs text-amber-800">
