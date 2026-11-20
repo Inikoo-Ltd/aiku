@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Actions\Chat\Staff\Slack\StoreSlackMessage;
 use App\Actions\Helpers\Ticket\Concerns\WithSlack;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
@@ -68,6 +69,7 @@ class ReceiveSlackTicketReaction
         $event = $request->input('event', []);
         if (Arr::get($event, 'type') === 'message') {
             dispatch(fn () => StoreTicketCommentFromSlackThread::run($event));
+            StoreSlackMessage::dispatch($event);
 
             return response()->json(['ok' => true]);
         }
