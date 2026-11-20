@@ -28,6 +28,7 @@ final class LocationsStore {
     private(set) var abilities: [String: MobileLocation.Abilities] = [:]
     @ObservationIgnored private var loadedKey: LocationsLoadKey?
     @ObservationIgnored private var remoteUserID: Int?
+    @ObservationIgnored private var remoteLoad: (key: LocationsLoadKey, task: Task<Void, Never>)?
 
     init(warehouse: LocationsWarehouse = LocationsSampleData.warehouse) {
         self.warehouse = warehouse
@@ -91,23 +92,39 @@ final class LocationsStore {
     func loadRemote(for userID: Int, warehouse chosen: MobileWarehouse?, apiClient: APIClient) async {
         let key = LocationsLoadKey(userID: userID, warehouseID: chosen?.id)
         guard loadedKey != key else { return }
-        loadedKey = key
+        if let running = remoteLoad, running.key == key {
+            await running.task.value
+            return
+        }
+        remoteLoad?.task.cancel()
+        let task = Task { await performRemoteLoad(key: key, userID: userID, chosen: chosen, apiClient: apiClient) }
+        remoteLoad = (key, task)
+        await task.value
+        if remoteLoad?.key == key {
+            remoteLoad = nil
+        }
+    }
+
+    private func performRemoteLoad(key: LocationsLoadKey, userID: Int, chosen: MobileWarehouse?, apiClient: APIClient) async {
         remoteUserID = userID
         loadError = nil
+        guard let chosen else {
+            loadedKey = key
+            loadError = "Your account has no warehouse in Aiku."
+            isLoadingList = false
+            return
+        }
+        guard chosen.can.viewLocations else {
+            loadedKey = key
+            loadError = "You don’t have access to locations in \(chosen.name)."
+            isLoadingList = false
+            return
+        }
         do {
-            guard let chosen else {
-                loadError = "Your account has no warehouse in Aiku."
-                isLoadingList = false
-                return
-            }
-            guard chosen.can.viewLocations else {
-                loadError = "You don’t have access to locations in \(chosen.name)."
-                isLoadingList = false
-                return
-            }
             async let overview = apiClient.fetchLocationsOverview(warehouseID: chosen.id)
             async let areas = apiClient.fetchWarehouseAreas(warehouseID: chosen.id)
             let (loadedOverview, loadedAreas) = try await (overview, areas)
+            guard !Task.isCancelled else { return }
             remoteWarehouse = chosen
             remoteOverview = loadedOverview
             warehouse = LocationsWarehouse(
@@ -117,11 +134,11 @@ final class LocationsStore {
                 autoRemoval: loadedOverview.emptyLocationsRemoval.map(LocationsAutoRemoval.init(remote:)) ?? warehouse.autoRemoval
             )
             source = .remote
+            loadedKey = key
             await reloadList(apiClient: apiClient)
         } catch where error.isCancellation {
-            loadedKey = nil
+            return
         } catch {
-            loadedKey = nil
             loadError = error.localizedDescription
             isLoadingList = false
         }
@@ -320,6 +337,8 @@ final class LocationsStore {
         currentPage = 0
         lastPage = 0
         loadError = nil
+        remoteLoad?.task.cancel()
+        remoteLoad = nil
         loadedKey = nil
         remoteUserID = nil
     }
