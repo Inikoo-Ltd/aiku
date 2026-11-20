@@ -41,6 +41,8 @@ use App\Http\Resources\Web\WebpagePageSpeedResource;
 use App\Http\Resources\Web\WebpagePerformanceResource;
 use App\Http\Resources\Web\WebsiteConversionCustomerResource;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Helpers\Period\ComparePeriodEnum;
+use App\Helpers\ComparePeriod;
 use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -48,6 +50,7 @@ use App\Models\Web\SeoReportSubscription;
 use App\Models\Web\Website;
 use Closure;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -70,6 +73,8 @@ class ShowSeoDashboard extends OrgAction
 
     private ?WebsiteConversionEventTypeEnum $conversionType = null;
 
+    private ComparePeriod $compare;
+
     /**
      * @var array{sources: array<int, string>, visits: string|null, min: float|null, max: float|null, landing: string|null, search: string|null}
      */
@@ -85,6 +90,7 @@ class ShowSeoDashboard extends OrgAction
     {
         $this->initialisationFromShop($shop, $request)->withTab(SeoDashboardPageTabsEnum::values());
 
+        $this->compare  = ComparePeriod::fromRequest($request, ComparePeriodEnum::PREVIOUS_PERIOD);
         $this->tableTab = SeoDashboardTabsEnum::tryFrom((string) $request->query('table')) ?? SeoDashboardTabsEnum::WEBPAGES;
 
         $journeyDays             = (int) $request->query('journey_days');
@@ -134,6 +140,11 @@ class ShowSeoDashboard extends OrgAction
                     'range_interval' => DashboardIntervalFilters::run($interval, $userSettings),
                 ],
                 'settings'    => [],
+                'compare'     => $this->compare->prop(
+                    $fromDate ? Carbon::parse($fromDate)->startOfDay() : null,
+                    $fromDate ? Carbon::parse($toDate ?? today())->startOfDay() : null,
+                    ComparePeriodEnum::PREVIOUS_PERIOD
+                ),
                 'website'     => $shop->website ? [
                     'name'   => $shop->website->name,
                     'domain' => $shop->website->domain,
@@ -168,10 +179,10 @@ class ShowSeoDashboard extends OrgAction
                     'navigation' => SeoDashboardTabsEnum::navigation(),
                 ],
                 'performance' => $this->overviewProp(fn () => $shop->website
-                    ? GetWebsitePerformanceStats::run($shop->website, $fromDate, $toDate)
+                    ? GetWebsitePerformanceStats::run($shop->website, $fromDate, $toDate, $this->compare)
                     : null),
                 'search'      => $this->overviewProp(fn () => $shop->website
-                    ? GetWebsiteSearchConsoleStats::run($shop->website, $fromDate, $toDate)
+                    ? GetWebsiteSearchConsoleStats::run($shop->website, $fromDate, $toDate, $this->compare)
                     : null),
                 'page_speed_summary' => $this->overviewProp(fn () => $shop->website
                     ? GetWebsitePageSpeedSummary::run($shop->website)
@@ -214,7 +225,12 @@ class ShowSeoDashboard extends OrgAction
                 SeoDashboardTabsEnum::CONVERSIONS->value => $this->tabProp(
                     SeoDashboardTabsEnum::CONVERSIONS,
                     $shop->website,
-                    fn (Website $website) => WebsiteConversionCustomerResource::collection(IndexWebsiteConversionCustomers::run($website, $fromDate, $toDate, SeoDashboardTabsEnum::CONVERSIONS->value))
+                    function (Website $website) use ($fromDate, $toDate) {
+                        $index     = IndexWebsiteConversionCustomers::make();
+                        $customers = $index->handle($website, $fromDate, $toDate, SeoDashboardTabsEnum::CONVERSIONS->value, withTotals: true);
+
+                        return WebsiteConversionCustomerResource::collection($customers)->additional(['totals' => $index->totals]);
+                    }
                 ),
 
                 'conversion_detail' => Inertia::optional(fn () => $shop->website && $this->conversionCustomerId && $this->conversionType

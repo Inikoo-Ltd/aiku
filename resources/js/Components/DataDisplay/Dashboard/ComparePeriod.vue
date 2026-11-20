@@ -17,30 +17,21 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { faTimes, faCheck } from "@fal"
 import { faExchange } from "@far"
+import { compareQueryKeys, type CompareProp } from "@/Components/DataDisplay/Dashboard/comparePeriod"
 
 library.add(faExchange, faTimes, faCheck)
 
-export type CompareProp = {
-    available: boolean
-    mode: string | null
-    options: { value: string, label: string }[]
-    from: string | null
-    to: string | null
-    custom_from: string | null
-    custom_to: string | null
-    tracking_started_at: string | null
-}
-
 const props = defineProps<{
     compare: CompareProp
-    currentTab: string
+    reloadOnly: string[]
+    note?: string
 }>()
 
 const popover = ref<InstanceType<typeof Popover> | null>(null)
 const isLoading = ref(false)
 
 const isEnabled = ref(props.compare.mode !== null)
-const mode = ref(props.compare.mode ?? "previous_period")
+const mode = ref(props.compare.mode ?? props.compare.default_mode ?? "previous_period")
 const customFrom = ref<string | null>(props.compare.custom_from ?? props.compare.from)
 const customTo = ref<string | null>(props.compare.custom_to ?? props.compare.to)
 
@@ -75,24 +66,28 @@ const toggle = (event: Event) => {
         return
     }
     isEnabled.value = props.compare.mode !== null
-    mode.value = props.compare.mode ?? "previous_period"
+    mode.value = props.compare.mode ?? props.compare.default_mode ?? "previous_period"
     popover.value?.toggle(event)
 }
 
 const apply = () => {
     const url = new URL(window.location.href)
-    ;["compare", "compare_from", "compare_to"].forEach(key => url.searchParams.delete(key))
+    compareQueryKeys.forEach(key => url.searchParams.delete(key))
 
     if (isEnabled.value) {
-        url.searchParams.set("compare", mode.value)
+        if (mode.value !== props.compare.default_mode) {
+            url.searchParams.set("compare", mode.value)
+        }
         if (mode.value === "custom" && customFrom.value && customTo.value) {
             url.searchParams.set("compare_from", customFrom.value)
             url.searchParams.set("compare_to", customTo.value)
         }
+    } else if (props.compare.default_mode) {
+        url.searchParams.set("compare", "none")
     }
 
     router.get(url.pathname + url.search, {}, {
-        only: [props.currentTab, "compare"],
+        only: props.reloadOnly,
         preserveState: true,
         preserveScroll: true,
         onStart: () => { isLoading.value = true },
@@ -133,9 +128,7 @@ const apply = () => {
                 <p v-if="compare.mode && compare.from" class="text-xs text-gray-500">
                     {{ ctrans("Now comparing with :from to :to", { from: compare.from, to: compare.to ?? "" }) }}
                 </p>
-                <p v-if="compare.tracking_started_at" class="text-xs text-gray-400">
-                    {{ ctrans("Touches are recorded since :date, so a period before then has nothing to compare.", { date: compare.tracking_started_at }) }}
-                </p>
+                <p v-if="note" class="text-xs text-gray-400">{{ note }}</p>
                 <div class="flex justify-end gap-2 pt-1">
                     <Button type="tertiary" :label="ctrans('Cancel')" @click="popover?.hide()">
                         <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>

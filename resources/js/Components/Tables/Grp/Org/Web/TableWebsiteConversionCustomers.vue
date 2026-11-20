@@ -38,6 +38,19 @@ type ConversionCustomerRow = {
     last_event_at: string | null
 }
 
+type ConversionTotals = {
+    customers: number
+    add_to_baskets: number
+    checkouts: number
+    purchases: number
+    revenue: number
+}
+
+type TableColumn = {
+    key: string
+    align?: string
+}
+
 type BasketItem = {
     code: string | null
     name: string | null
@@ -77,7 +90,7 @@ type ConversionDetail = {
 library.add(faBarcode)
 
 const props = defineProps<{
-    data: object
+    data: { totals?: ConversionTotals | null }
     tab: string
     currencyCode?: string | null
 }>()
@@ -170,6 +183,29 @@ const openDetail = (customerId: number, type: ConversionType) => {
     })
 }
 
+const totals = computed(() => props.data.totals ?? null)
+
+const totalCell = (key: string): string | null => {
+    const sums = totals.value
+
+    if (!sums) {
+        return null
+    }
+
+    switch (key) {
+        case "name":
+            return ctrans("Total (:count customers)", { count: locale.number(sums.customers) })
+        case "add_to_baskets":
+        case "checkouts":
+        case "purchases":
+            return locale.number(sums[key])
+        case "revenue":
+            return props.currencyCode ? String(locale.currencyFormat(props.currencyCode, sums.revenue)) : locale.number(sums.revenue)
+        default:
+            return null
+    }
+}
+
 const money = (order: OrderEvent) => order.currency_code
     ? String(locale.currencyFormat(order.currency_code, order.net_amount))
     : locale.number(order.net_amount)
@@ -188,6 +224,21 @@ const money = (order: OrderEvent) => order.currency_code
     </div>
 
     <Table :resource="data" :name="tab">
+        <template #topRows="{ show, columns, isCheckBox }: { show: (key: string) => boolean, columns: TableColumn[], isCheckBox: boolean }">
+            <tr v-if="totals && totals.customers > 0" class="bg-gray-100 font-semibold text-gray-800">
+                <td v-if="isCheckBox" />
+                <td
+                    v-for="column in columns"
+                    v-show="show(column.key)"
+                    :key="`totals-${column.key}`"
+                    class="whitespace-nowrap py-1 text-xs lg:py-2 lg:text-[13px]"
+                    :class="column.align === 'right' ? 'pl-1.5 pr-2 text-right tabular-nums lg:pl-3 lg:pr-9' : 'px-2 lg:px-6'"
+                >
+                    {{ totalCell(column.key) }}
+                </td>
+            </tr>
+        </template>
+
         <template #cell(name)="{ item: customer }: { item: ConversionCustomerRow }">
             <Link :href="route(customer.route.name, customer.route.parameters)" class="primaryLink">
                 {{ customer.name || customer.contact_name || customer.email }}

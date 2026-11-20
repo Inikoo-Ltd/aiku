@@ -35,7 +35,14 @@ class IndexWebsiteConversionCustomers extends OrgAction
 {
     private const string CUSTOMER_ID = 'COALESCE(orders.customer_id, web_users.customer_id)';
 
-    public function handle(Website $website, ?string $fromDate = null, ?string $toDate = null, ?string $prefix = null): LengthAwarePaginator
+    /**
+     * Sums of every customer the filters keep, not only the page shown; filled by handle() when asked.
+     *
+     * @var array{customers: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float}|null
+     */
+    public ?array $totals = null;
+
+    public function handle(Website $website, ?string $fromDate = null, ?string $toDate = null, ?string $prefix = null, bool $withTotals = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -65,7 +72,7 @@ class IndexWebsiteConversionCustomers extends OrgAction
             );
         }
 
-        return $queryBuilder
+        $queryBuilder = $queryBuilder
             ->defaultSort('-last_event_at')
             ->select([
                 'customers.id',
@@ -83,9 +90,42 @@ class IndexWebsiteConversionCustomers extends OrgAction
                 'conversions.traffic_source_types',
             ])
             ->allowedSorts(['name', 'add_to_baskets', 'checkouts', 'purchases', 'revenue', 'last_event_at'])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch]);
+
+        if ($withTotals) {
+            $this->totals = $this->totalsOf($queryBuilder);
+        }
+
+        return $queryBuilder
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    /**
+     * @return array{customers: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float}
+     */
+    private function totalsOf(QueryBuilder $queryBuilder): array
+    {
+        $query = (clone $queryBuilder)->getEloquentBuilder()->toBase();
+
+        $query->columns = null;
+        $query->orders  = null;
+
+        $totals = $query
+            ->selectRaw('COUNT(*) as customers')
+            ->selectRaw('COALESCE(SUM(conversions.add_to_baskets), 0) as add_to_baskets')
+            ->selectRaw('COALESCE(SUM(conversions.checkouts), 0) as checkouts')
+            ->selectRaw('COALESCE(SUM(conversions.purchases), 0) as purchases')
+            ->selectRaw('COALESCE(SUM(conversions.revenue), 0) as revenue')
+            ->first();
+
+        return [
+            'customers'      => (int) $totals->customers,
+            'add_to_baskets' => (int) $totals->add_to_baskets,
+            'checkouts'      => (int) $totals->checkouts,
+            'purchases'      => (int) $totals->purchases,
+            'revenue'        => (float) $totals->revenue,
+        ];
     }
 
     public function productCode(?string $prefix): ?string

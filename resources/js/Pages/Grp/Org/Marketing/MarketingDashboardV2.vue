@@ -12,7 +12,9 @@ import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSetti
 import AcquisitionTab from "@/Components/Marketing/V2/AcquisitionTab.vue"
 import OrdersTab from "@/Components/Marketing/V2/OrdersTab.vue"
 import JourneyTab from "@/Components/Marketing/V2/JourneyTab.vue"
-import ComparePeriod, { CompareProp } from "@/Components/Marketing/V2/ComparePeriod.vue"
+import ComparePeriod from "@/Components/DataDisplay/Dashboard/ComparePeriod.vue"
+import { type CompareProp, keepCompareQuery } from "@/Components/DataDisplay/Dashboard/comparePeriod"
+import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
@@ -28,7 +30,7 @@ const props = defineProps<{
     tabs: TSTabs
     intervals: Intervals
     settings: Settings
-    compare: CompareProp
+    compare: CompareProp & { tracking_started_at: string | null }
     acquisition?: InstanceType<typeof AcquisitionTab>["$props"]["data"]
     orders?: InstanceType<typeof OrdersTab>["$props"]["data"]
     journey?: InstanceType<typeof JourneyTab>["$props"]["data"]
@@ -41,13 +43,7 @@ const handleTabUpdate = (tabSlug: string) => {
     }
 
     const url = new URL(window.location.href)
-    const target = new URLSearchParams({ tab: tabSlug })
-    ;["compare", "compare_from", "compare_to"].forEach(key => {
-        const value = url.searchParams.get(key)
-        if (value) {
-            target.set(key, value)
-        }
-    })
+    const target = keepCompareQuery(new URLSearchParams({ tab: tabSlug }), url.searchParams)
 
     router.get(`${url.pathname}?${target.toString()}`, {}, {
         only: [tabSlug],
@@ -70,7 +66,11 @@ const handleTabUpdate = (tabSlug: string) => {
             :reloadOnly="['intervals', 'compare', currentTab]"
         >
             <template #actions>
-                <ComparePeriod v-if="currentTab !== 'journey'" :compare="compare" :currentTab="currentTab" />
+                <ComparePeriod
+                    v-if="currentTab !== 'journey'"
+                    :compare="compare"
+                    :reloadOnly="[currentTab, 'compare']"
+                    :note="compare.tracking_started_at ? ctrans('Touches are recorded since :date, so a period before then has nothing to compare.', { date: compare.tracking_started_at }) : undefined" />
             </template>
         </DashboardSettings>
     </div>
