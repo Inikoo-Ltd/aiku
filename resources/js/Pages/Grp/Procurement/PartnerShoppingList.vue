@@ -359,6 +359,26 @@ function confirmStopSuggesting(event: MouseEvent, item: { id: number; org_stock_
 
 const isSubmitting = ref(false)
 
+const submitKind = (): string | null => {
+	const selected = selectedFilters("order")
+	return selected.length === 1 ? selected[0] : null
+}
+
+const submitCount = (): number => {
+	const kind = submitKind()
+	if (!kind) {
+		return props.draftsCount
+	}
+	return props.filterGroups.find((group) => group.key === "order")?.options.find((option) => option.value === kind)?.count ?? 0
+}
+
+const submitLabel = (): string =>
+	submitKind() === "production"
+		? ctrans("Submit production (:count)", { count: String(submitCount()) })
+		: submitKind() === "rescue"
+		? ctrans("Submit rescue (:count)", { count: String(submitCount()) })
+		: ctrans("Submit (:count)", { count: String(submitCount()) })
+
 const isSubmitConfirmOpen = ref(false)
 
 function confirmSubmit() {
@@ -371,7 +391,7 @@ function confirmSubmit() {
 		header: ctrans("Submit the ongoing PO"),
 		message: ctrans(
 			"Send the :count draft lines to the partner? They see them and start working on them straight away.",
-			{ count: String(props.draftsCount) }
+			{ count: String(submitCount()) }
 		),
 		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
 		acceptProps: { label: ctrans("Submit") },
@@ -384,7 +404,7 @@ function confirmSubmit() {
 					routeParams["organisation"],
 					props.orgPartner.id,
 				]),
-				{},
+				submitKind() ? { order: submitKind() } : {},
 				{
 					preserveScroll: true,
 					onStart: () => (isSubmitting.value = true),
@@ -502,9 +522,9 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 			<Button
 				type="primary"
 				icon="fal fa-paper-plane"
-				:label="ctrans('Submit (:count)', { count: String(draftsCount) })"
+				:label="submitLabel()"
 				:tooltip="ctrans('Send the draft lines to the partner, they do not see them until then')"
-				:disabled="!draftsCount"
+				:disabled="!submitCount()"
 				:loading="isSubmitting"
 				@click="confirmSubmit" />
 		</template>
@@ -551,7 +571,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 				type="button"
 				class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 				:class="selectedFilters(group.key).includes(option.value)
-					? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
+					? 'border-[var(--app-accent)] bg-[var(--app-accent)] text-[var(--app-accent-text)] shadow-sm'
 					: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
 				@click="toggleFilter(group.key, option.value)">
 				<span>{{ option.label }}</span>

@@ -26947,6 +26947,8 @@
     "eBay said: \":message\"": "eBay odpověděl: \":message\"",
     "In your basket (packs ordered × units in each pack = units):": "Ve vašem košíku (objednaná balení × kusů v balení = kusů):",
     "On its way to us: :families.": "Na cestě k nám: :families.",
+    "We have this on order with our supplier. It is not on our website yet.": "Máme to objednané u našeho dodavatele. Na našem webu to zatím není.",
+    "Coming soon to our website: :families.": "Brzy na našem webu: :families.",
     "Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.": "Podle toho, jak náš sklad tento týden pracuje, odhadujeme, že vaše objednávka odejde v :day. Je to odhad, ne zaručené datum.",
     "Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.": "Podle toho, jak náš sklad tento týden pracuje, odhadujeme, že vaše objednávka odejde mezi :from a :to. Je to odhad, ne zaručené datum.",
     "These items of your order could not be picked: :items. Our team needs to know whether to send the order without them or with a replacement.": "Tyto položky vaší objednávky se nepodařilo vychystat: :items. Náš tým potřebuje vědět, zda objednávku poslat bez nich, nebo s náhradou.",

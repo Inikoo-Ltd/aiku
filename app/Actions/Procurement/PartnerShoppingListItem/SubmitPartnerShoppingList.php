@@ -36,13 +36,14 @@ class SubmitPartnerShoppingList extends OrgAction
      * The drafts go to the seller's pool. A draft for an SKO the seller already has an untouched open
      * line for is added to that line, so the seller still sees one line per SKO.
      * A promoted draft is stamped with the submission time, so it queues from the moment it was sent.
-     * With an item, only that draft is sent and the rest stay on the ongoing PO.
+     * With an item, only that draft is sent and the rest stay on the ongoing PO; with an order kind
+     * (production or rescue), only the drafts of that kind are sent.
      *
      * @throws ValidationException
      */
-    public function handle(OrgPartner $orgPartner, ?PartnerShoppingListItem $onlyItem = null): int
+    public function handle(OrgPartner $orgPartner, ?PartnerShoppingListItem $onlyItem = null, ?string $orderKind = null): int
     {
-        $submitted = DB::transaction(function () use ($orgPartner, $onlyItem) {
+        $submitted = DB::transaction(function () use ($orgPartner, $onlyItem, $orderKind) {
             OrgPartner::whereKey($orgPartner->id)->lockForUpdate()->first();
 
             $mergeTargets = PartnerShoppingListItem::query()
@@ -64,6 +65,7 @@ class SubmitPartnerShoppingList extends OrgAction
                     ->where('state', ShoppingListItemStateEnum::DRAFT)
                     ->whereIn('org_stock_id', $mergeTargets->keys())
                     ->when($onlyItem, fn ($query) => $query->whereKey($onlyItem->id))
+                    ->when($orderKind, fn ($query) => PartnerShoppingListItem::whereOrderKind($query, $orderKind))
                     ->get();
 
                 foreach ($mergeableDrafts as $draft) {
@@ -78,6 +80,7 @@ class SubmitPartnerShoppingList extends OrgAction
                 ->where('org_partner_id', $orgPartner->id)
                 ->where('state', ShoppingListItemStateEnum::DRAFT)
                 ->when($onlyItem, fn ($query) => $query->whereKey($onlyItem->id))
+                ->when($orderKind, fn ($query) => PartnerShoppingListItem::whereOrderKind($query, $orderKind))
                 ->update(['state' => ShoppingListItemStateEnum::OPEN, 'created_at' => now(), 'updated_at' => now()]);
 
             if ($promoted > 0) {
@@ -101,7 +104,7 @@ class SubmitPartnerShoppingList extends OrgAction
         abort_unless($orgPartner->organisation_id === $organisation->id, 404);
         $this->initialisation($organisation, $request);
 
-        return $this->handle($orgPartner);
+        return $this->handle($orgPartner, orderKind: $this->validatedData['order'] ?? null);
     }
 
     public function inItem(Organisation $organisation, OrgPartner $orgPartner, PartnerShoppingListItem $partnerShoppingListItem, ActionRequest $request): int
@@ -112,12 +115,19 @@ class SubmitPartnerShoppingList extends OrgAction
         return $this->handle($orgPartner, $partnerShoppingListItem);
     }
 
-    public function action(OrgPartner $orgPartner, ?PartnerShoppingListItem $onlyItem = null): int
+    public function rules(): array
+    {
+        return [
+            'order' => ['sometimes', 'nullable', 'string', 'in:production,rescue'],
+        ];
+    }
+
+    public function action(OrgPartner $orgPartner, ?PartnerShoppingListItem $onlyItem = null, ?string $orderKind = null): int
     {
         $this->asAction = true;
         $this->initialisation($orgPartner->organisation, []);
 
-        return $this->handle($orgPartner, $onlyItem);
+        return $this->handle($orgPartner, $onlyItem, $orderKind);
     }
 
     public function htmlResponse(int $submitted, ActionRequest $request): RedirectResponse

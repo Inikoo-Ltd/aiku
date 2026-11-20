@@ -574,3 +574,18 @@ function createAgentPurchaseOrders(object $test, OrgAgent $orgAgent, int $number
 
     return $orders;
 }
+
+function madeBySeller(\App\Models\Inventory\OrgStock $sellerOrgStock): \App\Models\Production\Artefact
+{
+    $seller     = $sellerOrgStock->organisation;
+    $production = \App\Models\Production\Production::where('organisation_id', $seller->id)->first()
+        ?? \App\Actions\Production\Production\StoreProduction::make()->action($seller, ['code' => 'MBS'.rand(100, 999), 'name' => 'Seller factory']);
+
+    return \App\Models\Production\Artefact::where('org_stock_id', $sellerOrgStock->id)->whereNull('deleted_at')->first()
+        ?? \App\Actions\Production\Artefact\StoreArtefact::make()->action($production, [
+            'state'        => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
+            'code'         => 'MBS-'.$sellerOrgStock->id,
+            'name'         => 'Made by seller',
+            'org_stock_id' => $sellerOrgStock->id,
+        ]);
+}

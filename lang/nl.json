@@ -9895,6 +9895,8 @@
     "eBay said: \":message\"": "eBay antwoordde: \":message\"",
     "In your basket (packs ordered × units in each pack = units):": "In je winkelmand (bestelde verpakkingen × stuks per verpakking = stuks):",
     "On its way to us: :families.": "Onderweg naar ons: :families.",
+    "We have this on order with our supplier. It is not on our website yet.": "We hebben dit besteld bij onze leverancier. Het staat nog niet op onze website.",
+    "Coming soon to our website: :families.": "Binnenkort op onze website: :families.",
     "Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.": "Op basis van hoe ons magazijn deze week draait, schatten we dat je bestelling op :day vertrekt. Dit is een schatting, geen gegarandeerde datum.",
     "Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.": "Op basis van hoe ons magazijn deze week draait, schatten we dat je bestelling tussen :from en :to vertrekt. Dit is een schatting, geen gegarandeerde datum.",
     "These items of your order could not be picked: :items. Our team needs to know whether to send the order without them or with a replacement.": "Deze artikelen uit je bestelling konden niet worden gepickt: :items. Ons team moet weten of we de bestelling zonder deze artikelen of met een vervanger moeten versturen.",

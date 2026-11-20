@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Search;
 
+use App\Actions\CRM\ShoppingAssistant\GetOnOrderNotListed;
 use App\Actions\Helpers\AI\EmbedTexts;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
@@ -59,10 +60,16 @@ class HydrateCatalogueSearchEmbeddings
                 ]), $counts);
             });
 
+        $onOrder = collect(GetOnOrderNotListed::make()->namesToEmbed($shop));
+        foreach ($onOrder->chunk(self::BATCH, true) as $chunk) {
+            $this->embed($shop, GetOnOrderNotListed::MODEL_TYPE, $chunk, $counts);
+        }
+
         $counts['removed'] = DB::table('catalogue_search_embeddings')->where('shop_id', $shop->id)
             ->where(fn ($query) => $query
                 ->where(fn ($query) => $query->where('model_type', 'Product')->whereNotIn('model_id', $this->websiteProducts($shop)->select('id')))
-                ->orWhere(fn ($query) => $query->where('model_type', 'ProductCategory')->whereNotIn('model_id', $this->websiteFamilies($shop)->select('id'))))
+                ->orWhere(fn ($query) => $query->where('model_type', 'ProductCategory')->whereNotIn('model_id', $this->websiteFamilies($shop)->select('id')))
+                ->orWhere(fn ($query) => $query->where('model_type', GetOnOrderNotListed::MODEL_TYPE)->whereNotIn('model_id', $onOrder->keys()->all())))
             ->delete();
 
         return $counts;
@@ -102,7 +109,7 @@ class HydrateCatalogueSearchEmbeddings
     private function embed(Shop $shop, string $modelType, Collection $texts, array &$counts): void
     {
         $texts  = $texts->filter(fn (string $text) => $text !== '');
-        $hashes = DB::table('catalogue_search_embeddings')->where('model_type', $modelType)->whereIn('model_id', $texts->keys())->pluck('content_hash', 'model_id');
+        $hashes = DB::table('catalogue_search_embeddings')->where('shop_id', $shop->id)->where('model_type', $modelType)->whereIn('model_id', $texts->keys())->pluck('content_hash', 'model_id');
         $stale  = $texts->filter(fn (string $text, int $id) => ($hashes[$id] ?? null) !== sha1($text));
 
         $counts['unchanged'] += $texts->count() - $stale->count();
@@ -131,8 +138,8 @@ class HydrateCatalogueSearchEmbeddings
                 'created_at'   => $now,
                 'updated_at'   => $now,
             ])->all(),
-            ['model_type', 'model_id'],
-            ['shop_id', 'content_hash', 'embedding', 'updated_at']
+            ['shop_id', 'model_type', 'model_id'],
+            ['content_hash', 'embedding', 'updated_at']
         );
 
         $counts['embedded'] += $stale->count();
