@@ -28,6 +28,10 @@ class StoreShipmentFromFaire extends OrgAction
 
         $shipment = null;
         foreach (Arr::get($faireOrder, 'shipments') ?? [] as $faireShipment) {
+            if (blank(Arr::get($faireShipment, 'tracking_code'))) {
+                continue;
+            }
+
             $shipperCode = Arr::get($faireShipment, 'carrier').'-faire';
             $shipper     = Shipper::where('code', $shipperCode)->where('organisation_id', $deliveryNote->organisation_id)->first();
 
@@ -74,13 +78,11 @@ class StoreShipmentFromFaire extends OrgAction
      */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): void
     {
-        //
-
         $this->initialisation($deliveryNote->organisation, $request);
 
         $shipment = $this->handle($deliveryNote);
         if ($shipment == null) {
-            throw ValidationException::withMessages(['message' => __('Shipment has not been set up in faire')]);
+            throw ValidationException::withMessages(['message' => __('Faire has no shipment with a tracking number for this order yet.')]);
         }
     }
 }

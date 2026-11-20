@@ -731,6 +731,37 @@ test('a faire shipment without a label bought on faire is recorded', function (D
     Shipper::where('code', 'UPS-faire')->delete();
 })->depends('create second delivery note');
 
+test('a faire shipment without a tracking code is left for later, HELP-4759', function (DeliveryNote $deliveryNote) {
+    GetSpecificFaireOrder::shouldRun()->andReturn(['id' => 'bo_test', 'shipments' => [
+        ['id' => 'sh_no_tracking', 'carrier' => 'UPS', 'tracking_code' => null, 'shipping_label_url' => 'https://faire.test/label.pdf'],
+    ]]);
+
+    expect(StoreShipmentFromFaire::make()->handle($deliveryNote))->toBeNull()
+        ->and($deliveryNote->shipments()->count())->toBe(0);
+})->depends('create second delivery note');
+
+test('packing an externally shipped faire note is not undone when faire fails, HELP-4759', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote   = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote   = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    $deliveryNote->updateQuietly(['is_shipping_by_external' => true]);
+
+    $originalEngine = $deliveryNote->shop->engine;
+    $deliveryNote->shop->updateQuietly(['engine' => \App\Enums\Catalogue\Shop\ShopEngineEnum::FAIRE]);
+
+    try {
+        StoreShipmentFromFaire::shouldRun()->andThrow(new RuntimeException('Faire is down'));
+
+        giveParcelDimensions($deliveryNote);
+        $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+
+        expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PACKED)
+            ->and($deliveryNote->shipments()->count())->toBe(0);
+    } finally {
+        $deliveryNote->shop->updateQuietly(['engine' => $originalEngine]);
+    }
+});
+
 test('a label the platform already bought is recorded even when a shipping rule locks another shipper', function (DeliveryNote $deliveryNote, Shipper $shipper) {
     $lockedShipper = StoreShipper::make()->action($this->organisation, ['code' => 'LOCK', 'name' => 'Locked Shipping', 'trade_as' => 'lock']);
     $rule          = \App\Models\Catalogue\PreferredShipping::create([
