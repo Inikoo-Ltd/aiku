@@ -837,7 +837,8 @@ test('messages of public Slack channels are kept as they arrive, edits and delet
     expect(SlackChannel::whereIn('slack_id', ['GPRIVATE1', 'DDIRECT1', 'GGROUPDM1', 'CUNKNOWN1'])->count())->toBe(0)
         ->and(SlackMessage::withTrashed()->whereIn('text', ['private channel', 'direct message', 'group direct message', 'kind of channel not said'])->count())->toBe(0);
 
-    $post(['type' => 'message', 'subtype' => 'message_changed', 'channel' => 'CPUBLIC1', 'message' => ['user' => 'UPUBLIC1', 'text' => 'Pallet 14 is ready', 'ts' => '1789138198.657369']])->assertOk();
+    $post(['type' => 'message', 'subtype' => 'message_changed', 'channel' => 'CPUBLIC1', 'message' => ['user' => 'UPUBLIC1', 'text' => 'Pallet 14 is ready', 'ts' => '1789138198.657369', 'edited' => ['user' => 'UPUBLIC1', 'ts' => '1789138500.000000']]])->assertOk();
+    $post(['type' => 'message', 'subtype' => 'message_changed', 'channel' => 'CPUBLIC1', 'message' => ['user' => 'UPUBLIC1', 'text' => 'an older wording that arrives late', 'ts' => '1789138198.657369']])->assertOk();
     expect($edited->refresh()->text)->toBe('Pallet 14 is ready');
 
     $this->user->update(['slack_user_id' => $slackUserIdBefore]);
@@ -1400,4 +1401,502 @@ test('nothing is kept of an ignored Slack channel: no messages, reactions, files
     expect(SyncSlackPublicChannels::run($group, join: true, history: true))->toMatchArray(['joined' => 0, 'messages' => 0])
         ->and($ignored->refresh()->is_ignored)->toBeTrue();
     Http::assertNotSent(fn (HttpRequest $request) => !str_contains($request->url(), 'conversations.list'));
+});
+
+test('who is in each kept Slack channel comes from a paged member list and from join and leave events, the bot included, INI-428', function () {
+    Config::set('services.slack.signing_secret', 'shh');
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    $s     = Str::upper(Str::random(6));
+    $group = \App\Models\SysAdmin\Group::firstOrFail();
+    $post  = function (array $event) {
+        $body      = json_encode(['type' => 'event_callback', 'authorizations' => [['user_id' => 'UAIKUBOT', 'is_bot' => true]], 'event' => $event]);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/json',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+    $kept    = SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CMEM$s", 'name' => 'general', 'is_member' => true]);
+    $ignored = SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CMEMIGN$s", 'is_member' => true, 'is_ignored' => true]);
+    $private = SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CMEMPRIV$s", 'is_member' => true, 'is_public' => false]);
+    $ignored->members()->create(['slack_user_id' => "UOLD$s"]);
+    $kept->members()->create(['slack_user_id' => "UGONE$s"]);
+    $stayed = $kept->members()->create(['slack_user_id' => "UA$s", 'joined_at' => now()->subDay()]);
+
+    Http::fake([
+        'slack.com/api/conversations.members*' => function (HttpRequest $request) use ($s) {
+            if ($request['channel'] !== "CMEM$s") {
+                return Http::response(['ok' => true, 'members' => []]);
+            }
+
+            return isset($request['cursor'])
+                ? Http::response(['ok' => true, 'members' => ["UB$s", 'UAIKUBOT']])
+                : Http::response(['ok' => true, 'members' => ["UA$s"], 'response_metadata' => ['next_cursor' => 'page2']]);
+        },
+    ]);
+    $totals = \App\Actions\Chat\Staff\Slack\SyncSlackChannelMembers::run();
+
+    expect($kept->members()->pluck('slack_user_id')->sort()->values()->all())->toBe(['UAIKUBOT', "UA$s", "UB$s"])
+        ->and($stayed->refresh()->joined_at)->not->toBeNull()
+        ->and($ignored->members()->count())->toBe(0)
+        ->and($totals['failed'])->toBe([]);
+    Http::assertNotSent(fn (HttpRequest $request) => in_array($request['channel'] ?? null, ["CMEMIGN$s", "CMEMPRIV$s"], true));
+
+    $post(['type' => 'member_joined_channel', 'user' => "UC$s", 'channel' => "CMEM$s", 'channel_type' => 'C'])->assertOk();
+    $post(['type' => 'member_joined_channel', 'user' => "UC$s", 'channel' => "CMEM$s", 'channel_type' => 'C'])->assertOk();
+    expect($kept->members()->where('slack_user_id', "UC$s")->sole()->joined_at)->not->toBeNull()
+        ->and($kept->refresh()->is_member)->toBeTrue();
+    $post(['type' => 'member_left_channel', 'user' => "UA$s", 'channel' => "CMEM$s", 'channel_type' => 'C'])->assertOk();
+    expect($kept->members()->where('slack_user_id', "UA$s")->exists())->toBeFalse();
+
+    $post(['type' => 'member_joined_channel', 'user' => "UC$s", 'channel' => "CMEMIGN$s", 'channel_type' => 'C'])->assertOk();
+    $post(['type' => 'member_joined_channel', 'user' => "UC$s", 'channel' => "CMEMPRIV$s", 'channel_type' => 'C'])->assertOk();
+    $post(['type' => 'member_joined_channel', 'user' => "UC$s", 'channel' => "GMEM$s", 'channel_type' => 'G'])->assertOk();
+    $post(['type' => 'member_joined_channel', 'user' => "UC$s", 'channel' => "CMEMNEW$s", 'channel_type' => 'C'])->assertOk();
+    expect(\App\Models\Chat\SlackChannelMember::where('slack_user_id', "UC$s")->count())->toBe(1)
+        ->and(SlackChannel::whereIn('slack_id', ["GMEM$s", "CMEMNEW$s"])->exists())->toBeFalse();
+
+    $post(['type' => 'member_left_channel', 'user' => 'UAIKUBOT', 'channel' => "CMEM$s", 'channel_type' => 'C'])->assertOk();
+    expect($kept->refresh()->is_member)->toBeFalse()
+        ->and($kept->members()->where('slack_user_id', 'UAIKUBOT')->exists())->toBeFalse();
+});
+
+test('a kept public Slack channel is visible only to active aiku staff linked to an active Slack person, and an ignored, private or deleted one to nobody, INI-428', function () {
+    $s       = Str::upper(Str::random(6));
+    $group   = \App\Models\SysAdmin\Group::firstOrFail();
+    $newUser = fn (array $attributes = []) => User::factory()->create(array_merge(['group_id' => $group->id, 'language_id' => $this->user->language_id], $attributes));
+    $link    = fn (User $user, string $slackId, array $attributes = []) => \App\Models\Chat\SlackUser::create(array_merge(['slack_id' => $slackId, 'user_id' => $user->id], $attributes));
+
+    $linked      = $newUser();
+    $unlinked    = $newUser();
+    $leaver      = $newUser();
+    $agent       = $newUser();
+    $agentOrg    = \App\Actions\SupplyChain\Agent\StoreAgent::make()->action($group, \App\Models\SupplyChain\Agent::factory()->definition())->organisation_id;
+    $agent->authorisedAgentsOrganisations()->attach($agentOrg, ['org_id' => $agentOrg]);
+    $inactive    = $newUser(['status' => false]);
+    $guest       = $newUser();
+    $borrowed    = $newUser();
+    $link($linked, "UL$s", ['email' => strtoupper($linked->email)]);
+    $link($guest, "UGUEST$s", ['email' => $guest->email, 'data' => ['is_restricted' => true]]);
+    $link($borrowed, "UBORROW$s", ['email' => 'someone.else@example.com']);
+    $link($leaver, "ULEFT$s", ['is_deleted' => true, 'email' => $leaver->email]);
+    $link($agent, "UAGENT$s", ['email' => $agent->email]);
+    $link($inactive, "UOFF$s", ['email' => $inactive->email]);
+
+    $public   = SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CVIS$s", 'is_member' => false, 'is_archived' => true]);
+    $ignored  = SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CVISIGN$s", 'is_ignored' => true]);
+    $private  = SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CVISPRIV$s", 'is_public' => false]);
+    $deleted  = SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CVISDEL$s", 'deleted_in_slack_at' => now()]);
+    $channels = [$public, $ignored, $private, $deleted];
+    $visible  = fn (User $user) => SlackChannel::visibleTo($user)->whereIn('id', collect($channels)->pluck('id'))->pluck('id')->all();
+
+    expect($visible($linked))->toBe([$public->id])
+        ->and($public->isVisibleTo($linked))->toBeTrue();
+    foreach ([$ignored, $private, $deleted] as $hidden) {
+        expect($hidden->isVisibleTo($linked))->toBeFalse();
+    }
+    foreach ([$unlinked, $leaver, $agent, $inactive, $guest, $borrowed] as $refused) {
+        expect($visible($refused))->toBe([])
+            ->and($public->isVisibleTo($refused))->toBeFalse();
+    }
+});
+
+test('Slack markup in a message becomes display nodes: styles, code, quotes, lists, links, mentions, entities and emoji, INI-432', function () {
+    $format = fn (?string $text, array $data = []) => \App\Actions\Chat\Staff\Slack\FormatSlackMessages::make()->handle([new SlackMessage(['id' => 1, 'text' => $text, 'data' => $data])])[1];
+    $plain  = fn (array $nodes) => \App\Actions\Chat\Staff\Slack\FormatSlackMessages::plainText($nodes);
+
+    expect($format("*Bold* and _italic_ and ~gone~ with `a*b*c` and snake_case_name\nsecond line"))->toEqual([
+        ['type' => 'paragraph', 'children' => [
+            ['type' => 'bold', 'children' => [['type' => 'text', 'text' => 'Bold']]],
+            ['type' => 'text', 'text' => ' and '],
+            ['type' => 'italic', 'children' => [['type' => 'text', 'text' => 'italic']]],
+            ['type' => 'text', 'text' => ' and '],
+            ['type' => 'strike', 'children' => [['type' => 'text', 'text' => 'gone']]],
+            ['type' => 'text', 'text' => ' with '],
+            ['type' => 'code', 'text' => 'a*b*c'],
+            ['type' => 'text', 'text' => ' and snake_case_name'],
+            ['type' => 'br'],
+            ['type' => 'text', 'text' => 'second line'],
+        ]],
+    ]);
+
+    expect($format("Look:\n```if (a &lt; b &amp;&amp; *c*) {}\n<https://x.test|kept as text>```\n&gt; quoted *line*\n&gt; second\n• one\n• two _x_\n3. three\n4. four"))->toEqual([
+        ['type' => 'paragraph', 'children' => [['type' => 'text', 'text' => 'Look:']]],
+        ['type' => 'pre', 'text' => "if (a < b && *c*) {}\nkept as text"],
+        ['type' => 'quote', 'children' => [['type' => 'paragraph', 'children' => [
+            ['type' => 'text', 'text' => 'quoted '],
+            ['type' => 'bold', 'children' => [['type' => 'text', 'text' => 'line']]],
+            ['type' => 'br'],
+            ['type' => 'text', 'text' => 'second'],
+        ]]]],
+        ['type' => 'list', 'ordered' => false, 'start' => 1, 'items' => [
+            [['type' => 'text', 'text' => 'one']],
+            [['type' => 'text', 'text' => 'two '], ['type' => 'italic', 'children' => [['type' => 'text', 'text' => 'x']]]],
+        ]],
+        ['type' => 'list', 'ordered' => true, 'start' => 3, 'items' => [
+            [['type' => 'text', 'text' => 'three']],
+            [['type' => 'text', 'text' => 'four']],
+        ]],
+    ]);
+
+    expect($format("&gt;&gt;&gt;all\nof this"))->toEqual([
+        ['type' => 'quote', 'children' => [['type' => 'paragraph', 'children' => [['type' => 'text', 'text' => 'all'], ['type' => 'br'], ['type' => 'text', 'text' => 'of this']]]]],
+    ]);
+
+    expect($format('See *<https://shop.test/a_b_c?x=1&amp;y=2|the _order_>* or <https://shop.test/plain> or <mailto:team@example.test|mail us> or <mailto:a@example.test>')[0]['children'])->toEqual([
+        ['type' => 'text', 'text' => 'See '],
+        ['type' => 'bold', 'children' => [['type' => 'link', 'url' => 'https://shop.test/a_b_c?x=1&y=2', 'text' => 'the _order_']]],
+        ['type' => 'text', 'text' => ' or '],
+        ['type' => 'link', 'url' => 'https://shop.test/plain', 'text' => 'https://shop.test/plain'],
+        ['type' => 'text', 'text' => ' or '],
+        ['type' => 'link', 'url' => 'mailto:team@example.test', 'text' => 'mail us'],
+        ['type' => 'text', 'text' => ' or '],
+        ['type' => 'link', 'url' => 'mailto:a@example.test', 'text' => 'a@example.test'],
+    ]);
+
+    expect($format('<!here> <!channel> <!everyone> <!subteam^S0TEAM1> <!subteam^S0TEAM2|@buyers> <!date^1700000000^{date}|Nov 14> <tel:+441234|call us> Tom &amp; Jerry &amp;lt;b&amp;gt;')[0]['children'])->toEqual([
+        ['type' => 'broadcast', 'range' => 'here'],
+        ['type' => 'text', 'text' => ' '],
+        ['type' => 'broadcast', 'range' => 'channel'],
+        ['type' => 'text', 'text' => ' '],
+        ['type' => 'broadcast', 'range' => 'everyone'],
+        ['type' => 'text', 'text' => ' '],
+        ['type' => 'group', 'id' => 'S0TEAM1', 'label' => null],
+        ['type' => 'text', 'text' => ' '],
+        ['type' => 'group', 'id' => 'S0TEAM2', 'label' => '@buyers'],
+        ['type' => 'text', 'text' => ' '],
+        ['type' => 'text', 'text' => 'Nov 14'],
+        ['type' => 'text', 'text' => ' '],
+        ['type' => 'text', 'text' => 'call us'],
+        ['type' => 'text', 'text' => ' Tom & Jerry &lt;b&gt;'],
+    ]);
+
+    $withEmoji = $format('Done :white_check_mark: :+1::skin-tone-3: :our_logo: at 10:30:45', ['blocks' => [['type' => 'rich_text', 'elements' => [['type' => 'rich_text_section', 'elements' => [
+        ['type' => 'emoji', 'name' => 'white_check_mark', 'unicode' => '2705'],
+        ['type' => 'emoji', 'name' => '+1', 'unicode' => '1f44d-1f3fc', 'skin_tone' => 3],
+    ]]]]]]);
+    expect($withEmoji[0]['children'])->toEqual([
+        ['type' => 'text', 'text' => 'Done '],
+        ['type' => 'emoji', 'name' => 'white_check_mark', 'skin_tone' => null, 'unicode' => '✅'],
+        ['type' => 'text', 'text' => ' '],
+        ['type' => 'emoji', 'name' => '+1', 'skin_tone' => 'skin-tone-3', 'unicode' => '👍🏼'],
+        ['type' => 'text', 'text' => ' :our_logo: at 10:30:45'],
+    ])->and($plain($withEmoji))->toBe("Done ✅ 👍🏼 :our_logo: at 10:30:45\n");
+});
+
+test('Slack mentions and channel references are named from slack_users and slack_channels in one query each for a page of messages, INI-432', function () {
+    $s     = strtoupper(Str::random(6));
+    $group = $this->organisation->group;
+    \App\Models\Chat\SlackUser::create(['slack_id' => "UFMTA$s", 'name' => 'ann.handle', 'real_name' => 'Ann Example', 'display_name' => 'Annie']);
+    \App\Models\Chat\SlackUser::create(['slack_id' => "UFMTB$s", 'name' => 'bob.handle', 'real_name' => 'Bob Example']);
+    SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CFMT$s", 'name' => 'warehouse-news', 'is_member' => true]);
+    SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CPRIV$s", 'name' => 'private-pay-talk', 'is_member' => true, 'is_public' => false]);
+
+    $messages = [
+        new SlackMessage(['id' => 1, 'text' => "<@UFMTA$s> please ask <@UFMTB$s> in <#CFMT$s>", 'data' => []]),
+        new SlackMessage(['id' => 2, 'text' => "<@UNOBODY$s> wrote in <#CGONE$s|old-name> and <#CGONE2$s> and <#CPRIV$s>", 'data' => []]),
+        new SlackMessage(['id' => 3, 'text' => '', 'data' => ['blocks' => [['type' => 'rich_text', 'elements' => [['type' => 'rich_text_section', 'elements' => [
+            ['type' => 'user', 'user_id' => "UFMTA$s"], ['type' => 'text', 'text' => ' see '], ['type' => 'channel', 'channel_id' => "CFMT$s"],
+            ['type' => 'usergroup', 'usergroup_id' => 'S0TEAM1'], ['type' => 'broadcast', 'range' => 'here'],
+        ]]]]]]]),
+    ];
+
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+    \Illuminate\Support\Facades\DB::flushQueryLog();
+    $formatted = \App\Actions\Chat\Staff\Slack\FormatSlackMessages::make()->handle($messages);
+    $queries   = count(\Illuminate\Support\Facades\DB::getQueryLog());
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    $plain = fn (int $id) => \App\Actions\Chat\Staff\Slack\FormatSlackMessages::plainText($formatted[$id]);
+    expect($queries)->toBe(2)
+        ->and($plain(1))->toBe("@Annie please ask @Bob Example in #warehouse-news\n")
+        ->and($plain(2))->toBe("@unknown wrote in #unknown and #unknown and #unknown\n")
+        ->and($formatted[2][0]['children'][0])->toEqual(['type' => 'user', 'id' => "UNOBODY$s", 'name' => null])
+        ->and($plain(3))->toBe("@Annie see #warehouse-news@group@here\n");
+});
+
+test('nothing written in Slack becomes markup or an unsafe link: script tags, javascript and data links, colours and broken markup, INI-432', function () {
+    $format = fn (?string $text, array $data = []) => \App\Actions\Chat\Staff\Slack\FormatSlackMessages::make()->handle([new SlackMessage(['id' => 1, 'text' => $text, 'data' => $data])])[1];
+    $urls   = function (array $nodes) {
+        $found = [];
+        array_walk_recursive($nodes, function ($value, $key) use (&$found) {
+            if (in_array($key, ['url', 'title_url', 'color'], true) && $value !== null) {
+                $found[] = $value;
+            }
+        });
+
+        return $found;
+    };
+
+    $hostile = $format('&lt;script&gt;alert(1)&lt;/script&gt; <javascript:alert(1)|click me> <JaVaScRiPt:alert(2)> <data:text/html;base64,PHNjcmlwdD4=|data> < https://x.test|spaced> <https://x.test/"onmouseover="alert(1)|quoted> &lt;@UFAKE1&gt; <@UFAKE2|<b>name</b>> *bold _crossed* tail_ *unclosed `code` ~~ **');
+
+    expect(\App\Actions\Chat\Staff\Slack\FormatSlackMessages::plainText($hostile))->toBe(
+        "<script>alert(1)</script> click me JaVaScRiPt:alert(2) data spaced quoted <@UFAKE1> <@UFAKE2|bname/b> bold _crossed tail_ *unclosed code ~~ **\n"
+    )->and($urls($hostile))->toBe([])
+        ->and(collect($hostile[0]['children'])->where('type', 'user')->count())->toBe(0);
+
+    $attached = $format('', ['attachments' => [[
+        'color'      => 'red;background:url(javascript:alert(1))',
+        'title'      => '<img src=x onerror=alert(1)>',
+        'title_link' => 'javascript:alert(1)',
+        'image_url'  => 'data:image/svg+xml,<svg onload=alert(1)>',
+        'text'       => '<vbscript:msgbox|vb> ok',
+    ], [
+        'color'      => '36a64f',
+        'title'      => 'Safe',
+        'title_link' => 'https://x.test/t',
+    ]], 'blocks' => [['type' => 'image', 'image_url' => 'javascript:alert(1)', 'alt_text' => 'pic']]]);
+
+    expect($urls($attached))->toBe(['#36a64f', 'https://x.test/t'])
+        ->and($attached[0]['title'])->toBe('img src=x onerror=alert(1)')
+        ->and(\App\Actions\Chat\Staff\Slack\FormatSlackMessages::plainText($attached))->toBe("img src=x onerror=alert(1)\nvb ok\nSafe\n");
+
+    $deep = $format(str_repeat('&gt;', 5000).' deep '.str_repeat('*_~', 2000).'x'.str_repeat('~_*', 2000)."\n".str_repeat("&gt;&gt;&gt;\n", 3000).'end');
+    expect(json_encode($deep))->not->toBeFalse()
+        ->and(\App\Actions\Chat\Staff\Slack\FormatSlackMessages::plainText($deep))->toContain('deep')->toContain('end');
+
+    $started = microtime(true);
+    $huge    = $format(str_repeat('*a* _b_ ~c~ ', 4000));
+    expect(microtime(true) - $started)->toBeLessThan(5.0)
+        ->and(collect($huge[0]['children'])->where('type', 'bold')->count())->toBe(4000);
+});
+
+test('bot messages are read from their Block Kit blocks and attachments, unknown blocks fall back to the text and a file-only message stays empty, INI-432', function () {
+    $format = fn (?string $text, array $data = []) => \App\Actions\Chat\Staff\Slack\FormatSlackMessages::make()->handle([new SlackMessage(['id' => 1, 'text' => $text, 'data' => $data])])[1];
+    $plain  = fn (array $nodes) => \App\Actions\Chat\Staff\Slack\FormatSlackMessages::plainText($nodes);
+
+    $bot = $format('*New Master Product Created *Code:*\nAB-01 View button', ['blocks' => [
+        ['type' => 'header', 'text' => ['type' => 'plain_text', 'text' => '*New Master Product Created']],
+        ['type' => 'section', 'fields' => [['type' => 'mrkdwn', 'text' => "*Code:*\nAB-01"], ['type' => 'mrkdwn', 'text' => "*Name:*\nTest Lamp &amp; Shade"]]],
+        ['type' => 'divider'],
+        ['type' => 'actions', 'elements' => [['type' => 'button', 'text' => ['type' => 'plain_text', 'text' => 'View'], 'url' => 'https://app.test/p/ab-01']]],
+        ['type' => 'context', 'elements' => [['type' => 'plain_text', 'text' => 'Created on 2026-11-20'], ['type' => 'image', 'image_url' => 'https://x.test/i.png', 'alt_text' => 'x'], ['type' => 'mrkdwn', 'text' => 'by *robot*']]],
+        ['type' => 'section', 'text' => ['type' => 'mrkdwn', 'text' => 'Ticket closed by <https://t.test/1|Test Co>'], 'accessory' => ['type' => 'button', 'text' => ['type' => 'plain_text', 'text' => 'Open']]],
+    ]]);
+
+    expect(collect($bot)->pluck('type')->all())->toBe(['header', 'fields', 'divider', 'buttons', 'context', 'paragraph', 'buttons'])
+        ->and($bot[0]['children'])->toEqual([['type' => 'text', 'text' => '*New Master Product Created']])
+        ->and($plain($bot))->toBe("*New Master Product Created\nCode:\nAB-01\nName:\nTest Lamp & Shade\n---\n[View]\nCreated on 2026-11-20  by robot\nTicket closed by Test Co\n[Open]\n");
+
+    $unknown = $format('The *real* text', ['blocks' => [['type' => 'section', 'text' => ['type' => 'mrkdwn', 'text' => 'section']], ['type' => 'table', 'rows' => []]]]);
+    expect($plain($unknown))->toBe("The real text\n")
+        ->and($plain($format('', ['blocks' => [['type' => 'header', 'text' => ['type' => 'plain_text', 'text' => 'Stock alert']], ['type' => 'section', 'text' => ['type' => 'mrkdwn', 'text' => '_3_ lines low']]]])))->toBe("Stock alert\n3 lines low\n")
+        ->and($plain($format(null, ['blocks' => [['type' => 'section', 'text' => ['type' => 'mrkdwn', 'text' => 'only known part']], ['type' => 'video', 'title' => ['type' => 'plain_text', 'text' => 'clip']]]])))->toBe("only known part\n");
+
+    $onlyBlocks = $format('', ['blocks' => [['type' => 'rich_text', 'elements' => [
+        ['type' => 'rich_text_section', 'elements' => [['type' => 'text', 'text' => 'Plan', 'style' => ['bold' => true]], ['type' => 'text', 'text' => "\n"], ['type' => 'link', 'url' => 'https://x.test/a'], ['type' => 'date', 'timestamp' => 1, 'fallback' => 'Monday']]],
+        ['type' => 'rich_text_list', 'style' => 'ordered', 'offset' => 1, 'elements' => [['type' => 'rich_text_section', 'elements' => [['type' => 'text', 'text' => 'b', 'style' => ['code' => true]]]]]],
+        ['type' => 'rich_text_quote', 'elements' => [['type' => 'text', 'text' => 'said']]],
+        ['type' => 'rich_text_preformatted', 'elements' => [['type' => 'text', 'text' => 'x = 1']]],
+        ['type' => 'canvas_thing', 'elements' => []],
+    ]]]]);
+    expect(collect($onlyBlocks)->pluck('type')->all())->toBe(['paragraph', 'list', 'quote', 'pre'])
+        ->and($onlyBlocks[0]['children'][0])->toEqual(['type' => 'bold', 'children' => [['type' => 'text', 'text' => 'Plan']]])
+        ->and($onlyBlocks[1]['start'])->toBe(2)
+        ->and($plain($onlyBlocks))->toBe("Plan\nhttps://x.test/aMonday\n• b\nsaid\nx = 1\n");
+
+    $attachments = $format('', ['attachments' => [
+        ['color' => 'D0D0D0', 'author_name' => 'Ann Example', 'is_share' => true, 'message_blocks' => [['message' => ['blocks' => [['type' => 'rich_text', 'elements' => [['type' => 'rich_text_section', 'elements' => [['type' => 'text', 'text' => 'forwarded words']]]]]]]]]],
+        ['color' => '#2684FF', 'pretext' => 'New ticket', 'title' => 'HELP-1 broken &amp; slow', 'title_link' => 'https://t.test/HELP-1', 'fields' => [['title' => 'Status', 'value' => '*Open*']], 'actions' => [['type' => 'button', 'text' => 'Close Ticket']], 'footer' => 'via <https://t.test|Tracker>'],
+        ['fallback' => 'giphy: dancing'],
+        ['id' => 1],
+    ]]);
+    expect($attachments)->toHaveCount(3)
+        ->and($attachments[1]['color'])->toBe('#2684FF')
+        ->and($attachments[1]['title'])->toBe('HELP-1 broken & slow')
+        ->and($attachments[1]['footer'][1])->toEqual(['type' => 'link', 'url' => 'https://t.test', 'text' => 'Tracker'])
+        ->and($plain($attachments))->toBe("Ann Example\nforwarded words\nHELP-1 broken & slow\nNew ticket\nStatus\nOpen\n[Close Ticket]\nvia Tracker\ngiphy: dancing\n");
+
+    expect($format('', ['files' => [['id' => 'F1']]]))->toBe([])
+        ->and($format(null))->toBe([]);
+});
+
+test('an edited Slack message keeps its earlier wordings in order, and link previews, repeated events and the nightly re-read keep none, INI-422', function () {
+    Config::set('services.slack.signing_secret', 'shh');
+    $post = function (array $event) {
+        $body      = json_encode(['type' => 'event_callback', 'event' => $event]);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/json',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+    $channelId = 'CEDIT'.Str::upper(Str::random(6));
+    $ts        = '1789600000.000100';
+    $edit      = fn (string $text, ?string $editedTs = null, array $extra = []) => $post(['type' => 'message', 'subtype' => 'message_changed', 'channel' => $channelId, 'channel_type' => 'channel', 'ts' => '1789600999.000900', 'message' => array_filter(['type' => 'message', 'user' => 'U1', 'text' => $text, 'ts' => $ts, 'edited' => $editedTs ? ['user' => 'U1', 'ts' => $editedTs] : null]) + $extra])->assertOk();
+
+    $post(['type' => 'message', 'channel' => $channelId, 'channel_type' => 'channel', 'user' => 'U1', 'text' => 'Price list on https://aw.example', 'ts' => $ts])->assertOk();
+    $message = SlackMessage::where('ts', $ts)->whereHas('channel', fn ($channel) => $channel->where('slack_id', $channelId))->sole();
+
+    $edit('Price list on https://aw.example', null, ['attachments' => [['title' => 'AW', 'from_url' => 'https://aw.example']]]);
+    $edit('Price list on https://aw.example', null, ['reply_count' => 2]);
+    expect($message->versions()->count())->toBe(0);
+
+    $edit('New price list on https://aw.example', '1789600100.000000');
+    $edit('New price list on https://aw.example', '1789600100.000000');
+    \App\Actions\Chat\Staff\Slack\StoreSlackMessage::make()->store($message->channel, ['type' => 'message', 'user' => 'U1', 'text' => 'New price list on https://aw.example', 'ts' => $ts, 'edited' => ['user' => 'U1', 'ts' => '1789600100.000000']]);
+    expect($message->versions()->pluck('text')->all())->toBe(['Price list on https://aw.example']);
+
+    $edit('Final price list', '1789600200.000000');
+    $versions = $message->versions()->get();
+    expect($versions->pluck('text')->all())->toBe(['Price list on https://aw.example', 'New price list on https://aw.example'])
+        ->and($versions[0]->replaced_at->timestamp)->toBe(1789600100)
+        ->and($versions[1]->replaced_at->timestamp)->toBe(1789600200)
+        ->and($versions[1]->data['edited']['ts'])->toBe('1789600100.000000')
+        ->and($message->refresh()->text)->toBe('Final price list');
+});
+
+test('custom Slack emoji are kept with a copy of each image, aliases without one, and added, removed and renamed ones follow Slack; names resolve to Unicode or the copy, INI-425', function () {
+    Config::set('services.slack.signing_secret', 'shh');
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    \Illuminate\Support\Facades\Storage::fake('media');
+    $s    = Str::lower(Str::random(6));
+    $png  = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
+    $post = function (array $event) {
+        $body      = json_encode(['type' => 'event_callback', 'event' => $event]);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/json',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+    Http::fake([
+        'slack.com/api/emoji.list*' => Http::sequence()
+            ->push(['ok' => true, 'emoji' => [
+                "aw-logo-$s" => "https://emoji.slack-edge.com/T1/aw-logo-$s/abc.png",
+                "shipit-$s"  => "alias:aw-logo-$s",
+                "yes-$s"     => 'alias:+1',
+                "odd-$s"     => 'https://evil.example.com/odd.png',
+            ]])
+            ->push(['ok' => false, 'error' => 'missing_scope', 'needed' => 'emoji:read']),
+        'emoji.slack-edge.com/*'    => Http::response($png, 200, ['Content-Type' => 'image/png']),
+    ]);
+    $gone = \App\Models\Chat\SlackEmoji::create(['name' => "gone-$s", 'url' => 'https://emoji.slack-edge.com/T1/gone/x.png']);
+
+    $this->artisan('slack:sync-emojis')->assertSuccessful();
+    $logo = \App\Models\Chat\SlackEmoji::where('name', "aw-logo-$s")->sole();
+    $alias = \App\Models\Chat\SlackEmoji::where('name', "shipit-$s")->sole();
+    expect($logo->copy)->not->toBeNull()
+        ->and(file_get_contents($logo->copy->getPath()))->toBe($png)
+        ->and($alias->only(['alias_for', 'url', 'media_id']))->toBe(['alias_for' => "aw-logo-$s", 'url' => null, 'media_id' => null])
+        ->and(\App\Models\Chat\SlackEmoji::where('name', "odd-$s")->sole()->media_id)->toBeNull()
+        ->and($gone->refresh()->removed_in_slack_at)->not->toBeNull();
+    Http::assertNotSent(fn (HttpRequest $request) => str_contains($request->url(), 'evil.example.com'));
+    Http::assertNotSent(fn (HttpRequest $request) => str_contains($request->url(), 'slack-edge.com') && $request->hasHeader('Authorization'));
+
+    $resolve = fn (string $name) => \App\Actions\Chat\Staff\Slack\ResolveSlackEmoji::run($name);
+    expect($resolve(":shipit-$s:"))->toBe(['url' => $logo->copy->fullResolutionUrls()['original_url'], 'name' => "aw-logo-$s"])
+        ->and($resolve("yes-$s"))->toBe(['unicode' => '👍'])
+        ->and($resolve(':wave::skin-tone-3:'))->toBe(['unicode' => "👋\u{1F3FC}"])
+        ->and($resolve('+1::skin-tone-2'))->toBe(['unicode' => "👍\u{1F3FB}"])
+        ->and($resolve('v::skin-tone-5'))->toBe(['unicode' => "✌\u{1F3FE}"])
+        ->and($resolve('white_check_mark'))->toBe(['unicode' => '✅'])
+        ->and($resolve('rocket'))->toBe(['unicode' => '🚀'])
+        ->and($resolve('pig'))->toBeNull()
+        ->and($resolve("no-such-emoji-$s"))->toBeNull();
+
+    $post(['type' => 'emoji_changed', 'subtype' => 'add', 'name' => "parrot-$s", 'value' => "https://emoji.slack-edge.com/T1/parrot-$s/def.png", 'event_ts' => '1789700000.000100'])->assertOk();
+    $parrot = \App\Models\Chat\SlackEmoji::where('name', "parrot-$s")->sole();
+    expect($parrot->media_id)->not->toBeNull();
+
+    $post(['type' => 'emoji_changed', 'subtype' => 'remove', 'names' => ["parrot-$s"], 'event_ts' => '1789700100.000100'])->assertOk();
+    expect($parrot->refresh()->removed_in_slack_at)->not->toBeNull()
+        ->and($parrot->copy)->not->toBeNull();
+
+    $post(['type' => 'emoji_changed', 'subtype' => 'rename', 'old_name' => "aw-logo-$s", 'new_name' => "aw-$s", 'value' => "https://emoji.slack-edge.com/T1/aw-logo-$s/abc.png", 'event_ts' => '1789700200.000100'])->assertOk();
+    expect($logo->refresh()->name)->toBe("aw-$s")
+        ->and($logo->media_id)->not->toBeNull()
+        ->and($alias->refresh()->alias_for)->toBe("aw-$s")
+        ->and($resolve("shipit-$s")['name'])->toBe("aw-$s");
+
+    expect(fn () => \App\Actions\Chat\Staff\Slack\SyncSlackEmojis::run())->toThrow(RuntimeException::class, 'missing_scope');
+
+    config(['app.master' => true]);
+    $schedule = new \Illuminate\Console\Scheduling\Schedule();
+    new ReflectionMethod(\App\Console\Kernel::class, 'schedule')->invoke(app(\App\Console\Kernel::class), $schedule);
+    $nightly = collect($schedule->events())->filter(fn ($event) => str_contains((string) $event->command, 'slack:sync-emojis') || str_contains((string) $event->command, 'slack:sync-pins-and-bookmarks'));
+    expect($nightly)->toHaveCount(2)
+        ->and($nightly->every(fn ($event) => $event->onOneServer && $event->withoutOverlapping))->toBeTrue();
+});
+
+test('pins and bookmarks of public Slack channels are kept from Slack lists and pin events, a pin of something not kept is skipped and a missing scope fails loudly, INI-424', function () {
+    Config::set('services.slack.signing_secret', 'shh');
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    $post = function (array $event) {
+        $body      = json_encode(['type' => 'event_callback', 'event' => $event]);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/json',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+    $s       = Str::upper(Str::random(6));
+    $group   = \App\Models\SysAdmin\Group::firstOrFail();
+    $channel = SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CPINS$s", 'name' => 'procedures', 'is_member' => true]);
+    $private = SlackChannel::create(['group_id' => $group->id, 'slack_id' => "CPRIV$s", 'name' => 'secret', 'is_member' => true, 'is_public' => false]);
+    $store   = fn (SlackChannel $in, string $ts, string $text, array $extra = []) => SlackMessage::create(['slack_channel_id' => $in->id, 'ts' => $ts, 'text' => $text, 'sent_at' => now(), 'data' => []] + $extra);
+    $howTo   = $store($channel, '1789800000.000100', 'How to pack');
+    $prices  = $store($channel, '1789800100.000100', 'Price list');
+    $old     = $store($channel, '1789800200.000100', 'Old procedure', ['pinned_at' => now()->subYear(), 'pinned_by_slack_user_id' => 'U0']);
+    $secret  = $store($private, '1789800300.000100', 'Secret');
+    \App\Models\Chat\SlackFile::create(['group_id' => $group->id, 'slack_id' => "FPIN$s", 'slack_message_id' => $prices->id, 'state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::COPIED]);
+    $gone = $channel->bookmarks()->create(['slack_id' => "BkGONE$s", 'title' => 'Old drive']);
+
+    $pinsList = Http::sequence()
+        ->push(['ok' => true, 'items' => [
+            ['type' => 'message', 'channel' => "CPINS$s", 'created' => 1789900000, 'created_by' => 'U1', 'message' => ['ts' => $howTo->ts, 'text' => 'How to pack']],
+            ['type' => 'file', 'created' => 1789900100, 'created_by' => 'U2', 'file' => ['id' => "FPIN$s"]],
+            ['type' => 'message', 'channel' => "CPINS$s", 'created' => 1789900200, 'created_by' => 'U1', 'message' => ['ts' => '1700000000.000001', 'text' => 'never kept']],
+            ['type' => 'file', 'created' => 1789900300, 'created_by' => 'U2', 'file' => ['id' => 'FUNKNOWN']],
+        ]])
+        ->push(['ok' => false, 'error' => 'missing_scope', 'needed' => 'pins:read']);
+    Http::fake(function (HttpRequest $request) use ($s, $pinsList) {
+        $isOurs = str_contains($request->url().$request->body(), "CPINS$s");
+        if (str_contains($request->url(), 'pins.list')) {
+            return $isOurs ? $pinsList->__invoke($request) : Http::response(['ok' => true, 'items' => []]);
+        }
+        if (str_contains($request->url(), 'bookmarks.list')) {
+            return Http::response(['ok' => true, 'bookmarks' => $isOurs ? [
+                ['id' => "BkA$s", 'channel_id' => "CPINS$s", 'title' => 'Stock sheet', 'link' => 'https://docs.example/sheet', 'emoji' => ':bar_chart:', 'type' => 'link', 'rank' => 'b'],
+                ['id' => "BkB$s", 'channel_id' => "CPINS$s", 'title' => 'Rota', 'link' => 'https://docs.example/rota', 'emoji' => null, 'type' => 'link', 'rank' => 'a'],
+            ] : []]);
+        }
+
+        return Http::response(['ok' => true]);
+    });
+
+    $this->artisan('slack:sync-pins-and-bookmarks')->assertSuccessful();
+    expect($howTo->refresh()->pinned_at->timestamp)->toBe(1789900000)
+        ->and($howTo->pinned_by_slack_user_id)->toBe('U1')
+        ->and($prices->refresh()->pinned_by_slack_user_id)->toBe('U2')
+        ->and($old->refresh()->pinned_at)->toBeNull()
+        ->and(SlackMessage::where('ts', '1700000000.000001')->exists())->toBeFalse()
+        ->and($channel->bookmarks()->whereNull('removed_in_slack_at')->orderBy('position')->pluck('title')->all())->toBe(['Rota', 'Stock sheet'])
+        ->and($gone->refresh()->removed_in_slack_at)->not->toBeNull();
+    Http::assertSent(fn (HttpRequest $request) => str_contains($request->url(), 'bookmarks.list') && $request->method() === 'POST' && $request['channel_id'] === "CPINS$s");
+    Http::assertNotSent(fn (HttpRequest $request) => str_contains($request->url().$request->body(), "CPRIV$s"));
+
+    $post(['type' => 'pin_added', 'user' => 'U3', 'channel_id' => "CPINS$s", 'item' => ['type' => 'message', 'channel' => "CPINS$s", 'message' => ['ts' => $old->ts]], 'event_ts' => '1789950000.000100'])->assertOk();
+    $post(['type' => 'pin_removed', 'user' => 'U3', 'channel_id' => "CPINS$s", 'item' => ['type' => 'message', 'channel' => "CPINS$s", 'message' => ['ts' => $howTo->ts]], 'has_pins' => true, 'event_ts' => '1789950100.000100'])->assertOk();
+    $post(['type' => 'pin_added', 'user' => 'U3', 'channel_id' => "CPINS$s", 'item' => ['type' => 'message', 'channel' => "CPINS$s", 'message' => ['ts' => '1700000000.000002', 'text' => 'not kept']], 'event_ts' => '1789950200.000100'])->assertOk();
+    $post(['type' => 'pin_added', 'user' => 'U3', 'channel_id' => "CPRIV$s", 'item' => ['type' => 'message', 'channel' => "CPRIV$s", 'message' => ['ts' => $secret->ts]], 'event_ts' => '1789950300.000100'])->assertOk();
+    expect($old->refresh()->pinned_by_slack_user_id)->toBe('U3')
+        ->and($old->pinned_at)->not->toBeNull()
+        ->and($howTo->refresh()->pinned_at)->toBeNull()
+        ->and(SlackMessage::where('ts', '1700000000.000002')->exists())->toBeFalse()
+        ->and($secret->refresh()->pinned_at)->toBeNull();
+
+    expect(fn () => $this->artisan('slack:sync-pins-and-bookmarks')->run())->toThrow(RuntimeException::class, 'missing_scope');
 });

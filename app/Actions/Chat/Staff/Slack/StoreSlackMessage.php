@@ -15,6 +15,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreSlackMessage
@@ -72,19 +73,44 @@ class StoreSlackMessage
         $slackUserId = Arr::get($message, 'user');
         $editedTs    = Arr::get($message, 'edited.ts');
 
-        return tap(SlackMessage::withTrashed()->updateOrCreate(
-            ['slack_channel_id' => $channel->id, 'ts' => $ts],
-            [
-                'thread_ts'     => Arr::get($message, 'thread_ts'),
-                'slack_user_id' => $slackUserId,
-                'user_id'       => $slackUserId ? (SlackUser::where('slack_id', $slackUserId)->value('user_id') ?? User::where('slack_user_id', $slackUserId)->value('id')) : null,
-                'subtype'       => Arr::get($message, 'subtype'),
-                'text'          => Arr::get($message, 'text'),
-                'sent_at'       => Carbon::createFromTimestamp((float) $ts),
-                'edited_at'     => $editedTs ? Carbon::createFromTimestamp((float) $editedTs) : null,
-                'data'          => $message,
-            ]
-        ), fn (SlackMessage $stored) => StoreSlackMessageReaction::make()->fromStoredMessage($stored));
+        return DB::transaction(function () use ($channel, $ts, $message, $slackUserId, $editedTs) {
+            $stored = SlackMessage::withTrashed()->where('slack_channel_id', $channel->id)->where('ts', $ts)->lockForUpdate()->first();
+            if ($stored?->edited_at && (!$editedTs || $stored->edited_at->gt(Carbon::createFromTimestamp((float) $editedTs)))) {
+                return $stored;
+            }
+            $this->keepEarlierVersion($stored, $message, $editedTs);
+
+            return tap(SlackMessage::withTrashed()->updateOrCreate(
+                ['slack_channel_id' => $channel->id, 'ts' => $ts],
+                [
+                    'thread_ts'     => Arr::get($message, 'thread_ts'),
+                    'slack_user_id' => $slackUserId,
+                    'user_id'       => $slackUserId ? (SlackUser::where('slack_id', $slackUserId)->value('user_id') ?? User::where('slack_user_id', $slackUserId)->value('id')) : null,
+                    'subtype'       => Arr::get($message, 'subtype'),
+                    'text'          => Arr::get($message, 'text'),
+                    'sent_at'       => Carbon::createFromTimestamp((float) $ts),
+                    'edited_at'     => $editedTs ? Carbon::createFromTimestamp((float) $editedTs) : null,
+                    'data'          => $message,
+                ]
+            ), fn (SlackMessage $stored) => StoreSlackMessageReaction::make()->fromStoredMessage($stored));
+        });
+    }
+
+    /**
+     * Slack sends message_changed for link previews, reply counts and files finishing too; only a new wording keeps the old one.
+     * A message that arrives older than the edit already stored is left alone before this is reached.
+     *
+     * @param  array<string, mixed>  $message
+     */
+    private function keepEarlierVersion(?SlackMessage $stored, array $message, ?string $editedTs): void
+    {
+        if ($stored && (string) $stored->text !== (string) Arr::get($message, 'text')) {
+            $stored->versions()->create([
+                'text'        => $stored->text,
+                'data'        => $stored->data,
+                'replaced_at' => $editedTs ? Carbon::createFromTimestamp((float) $editedTs) : now(),
+            ]);
+        }
     }
 
     private function delete(SlackChannel $channel, string $ts): ?SlackMessage

@@ -8,6 +8,8 @@
 
 namespace App\Models\Chat;
 
+use App\Models\SysAdmin\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -52,5 +54,54 @@ class SlackChannel extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(SlackMessage::class);
+    }
+
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(SlackChannelBookmark::class);
+    }
+
+    public function members(): HasMany
+    {
+        return $this->hasMany(SlackChannelMember::class);
+    }
+
+    public function scopeKept(Builder $query): Builder
+    {
+        return $query->where('is_public', true)->where('is_ignored', false)->whereNull('deleted_in_slack_at');
+    }
+
+    /**
+     * The only answer to "may this aiku user see this Slack channel": every screen, search, file download and API
+     * asks it through this scope or isVisibleTo, never by hand.
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        $query->kept()->where('group_id', $user->group_id);
+        if (!self::userMayReadPublicChannels($user)) {
+            $query->whereRaw('false');
+        }
+
+        return $query;
+    }
+
+    public function isVisibleTo(User $user): bool
+    {
+        return self::visibleTo($user)->whereKey($this->getKey())->exists();
+    }
+
+    /**
+     * Public channels are open to every member of the Slack workspace, so an active aiku user linked to an active
+     * Slack person may read them. The link counts only when both hold the same email, as anyone can type a Slack id
+     * into their own profile, and never for a Slack guest. To open them to all staff instead, delete the SlackUser lines.
+     */
+    public static function userMayReadPublicChannels(User $user): bool
+    {
+        return $user->status
+            && !$user->worksOnlyForAgents()
+            && SlackUser::where('user_id', $user->id)->where('is_bot', false)->where('is_deleted', false)
+                ->whereRaw('lower(email) = ?', [strtolower((string) $user->email)])
+                ->whereRaw("coalesce((data->>'is_restricted')::boolean, false) = false")
+                ->exists();
     }
 }

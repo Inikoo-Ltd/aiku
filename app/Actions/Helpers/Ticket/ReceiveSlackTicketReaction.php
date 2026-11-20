@@ -9,8 +9,11 @@
 namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\Chat\Staff\Slack\StoreSlackMessage;
+use App\Actions\Chat\Staff\Slack\StoreSlackEmoji;
 use App\Actions\Chat\Staff\Slack\StoreSlackMessageReaction;
+use App\Actions\Chat\Staff\Slack\StoreSlackPin;
 use App\Actions\Chat\Staff\Slack\UpdateSlackChannelFromEvent;
+use App\Actions\Chat\Staff\Slack\UpdateSlackChannelMember;
 use App\Actions\Chat\Staff\Slack\StoreSlackUser;
 use App\Actions\Helpers\Ticket\Concerns\WithSlack;
 use App\Models\Helpers\Ticket;
@@ -75,8 +78,21 @@ class ReceiveSlackTicketReaction
 
             return response()->json(['ok' => true]);
         }
+        if (Arr::get($event, 'type') === 'emoji_changed') {
+            dispatch(fn () => StoreSlackEmoji::make()->fromEvent($event));
+
+            return response()->json(['ok' => true]);
+        }
+        if (in_array(Arr::get($event, 'type'), ['pin_added', 'pin_removed'], true)) {
+            dispatch(fn () => StoreSlackPin::make()->fromEvent($event));
+
+            return response()->json(['ok' => true]);
+        }
         if (in_array(Arr::get($event, 'type'), UpdateSlackChannelFromEvent::EVENTS, true)) {
             UpdateSlackChannelFromEvent::run($event, $request->input('authorizations.0.user_id'));
+            if (in_array(Arr::get($event, 'type'), ['member_joined_channel', 'member_left_channel'], true)) {
+                UpdateSlackChannelMember::dispatch($event);
+            }
 
             return response()->json(['ok' => true]);
         }

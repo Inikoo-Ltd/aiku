@@ -28,6 +28,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon $sent_at
  * @property \Illuminate\Support\Carbon|null $edited_at
  * @property array|null $data
+ * @property \Illuminate\Support\Carbon|null $pinned_at
+ * @property string|null $pinned_by_slack_user_id
  */
 class SlackMessage extends Model
 {
@@ -41,7 +43,13 @@ class SlackMessage extends Model
             'data'      => 'array',
             'sent_at'   => 'datetime',
             'edited_at' => 'datetime',
+            'pinned_at' => 'datetime',
         ];
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(SlackMessageVersion::class)->orderBy('id');
     }
 
     public function channel(): BelongsTo

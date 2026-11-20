@@ -1909,6 +1909,42 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('slack:sync-users')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping(60)->sentryMonitor(
+                    monitorSlug: 'SyncSlackUsers',
+                ),
+                name: 'SyncSlackUsers',
+                type: 'command',
+                scheduledAt: '03:40'
+            );
+
+            $this->logSchedule(
+                $schedule->command('slack:sync-channel-members')->dailyAt('03:45')->timezone('UTC')->onOneServer()->withoutOverlapping(60)->sentryMonitor(
+                    monitorSlug: 'SyncSlackChannelMembers',
+                ),
+                name: 'SyncSlackChannelMembers',
+                type: 'command',
+                scheduledAt: '03:45'
+            );
+
+            $this->logSchedule(
+                $schedule->command('slack:sync-pins-and-bookmarks')->dailyAt('03:50')->timezone('UTC')->onOneServer()->withoutOverlapping(60)->sentryMonitor(
+                    monitorSlug: 'SyncSlackPinsAndBookmarks',
+                ),
+                name: 'SyncSlackPinsAndBookmarks',
+                type: 'command',
+                scheduledAt: '03:50'
+            );
+
+            $this->logSchedule(
+                $schedule->command('slack:sync-emojis')->dailyAt('03:55')->timezone('UTC')->onOneServer()->withoutOverlapping(60)->sentryMonitor(
+                    monitorSlug: 'SyncSlackEmojis',
+                ),
+                name: 'SyncSlackEmojis',
+                type: 'command',
+                scheduledAt: '03:55'
+            );
+
+            $this->logSchedule(
                 $schedule->command('production:release_pre_pick')->everyTenMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'ReleaseFullyStockedPrePickLines',
                 ),
