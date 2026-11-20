@@ -395,6 +395,10 @@ extension GoodsOutStore {
         } catch where error.isCancellation {
             return nil
         } catch {
+            if error as? APIError == .offline, let copy = loadOfflineCopy(id: id) {
+                noteErrors[errorKey] = nil
+                return copy
+            }
             noteErrors[errorKey] = GoodsOutMapper.message(for: error)
             return nil
         }
@@ -402,6 +406,11 @@ extension GoodsOutStore {
 
     @discardableResult
     func store(_ dto: GoodsOutDeliveryNoteDTO) -> GoodsOutDeliveryNote {
+        storeMapped(showing(dto))
+    }
+
+    @discardableResult
+    func storeMapped(_ dto: GoodsOutDeliveryNoteDTO) -> GoodsOutDeliveryNote {
         let mapped = GoodsOutMapper.note(from: dto, currentUserID: userID, currentUser: currentUser, now: now())
         knownIDs[mapped.reference] = dto.id
         noteErrors[mapped.reference] = nil

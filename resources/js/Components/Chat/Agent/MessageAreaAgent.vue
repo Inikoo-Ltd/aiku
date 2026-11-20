@@ -2176,8 +2176,8 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
                 <div v-if="aiDraftInEditor" class="flex items-center gap-1.5 px-4 pt-2 text-[11px] font-medium" :class="aiDraftTranslationOf ? 'text-[var(--app-accent)]' : 'text-gray-500'">
                     <img src="/art/invader.svg" class="h-3 select-none" alt="" />
-                    <template v-if="aiDraftTranslationOf && aiDraftLanguages">{{ ctrans("Draft by Aiku in :mine: change what you need, it is sent in :theirs", aiDraftLanguages) }}</template>
-                    <template v-else>{{ ctrans("Draft by Aiku: read it, change what you need, then send") }}</template>
+                    <template v-if="aiDraftTranslationOf && aiDraftLanguages">{{ ctrans("Draft by Aura in :mine: change what you need, it is sent in :theirs", aiDraftLanguages) }}</template>
+                    <template v-else>{{ ctrans("Draft by Aura: read it, change what you need, then send") }}</template>
                 </div>
                 <ChatMessageEditor ref="messageEditor" :key="isEmailChat ? 'email' : 'chat'" v-model="newMessage" @update:model-value="onEditorInput"
                     @picture-refused="composerError = PICTURE_NOT_TAKEN()"

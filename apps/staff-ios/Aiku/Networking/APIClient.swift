@@ -55,24 +55,32 @@ final class APIClient: Sendable {
     static let shared = APIClient(
         configuration: .current,
         tokenProvider: { KeychainTokenStore.shared.load() },
-        languageProvider: { LanguageStore.savedLanguageID() }
+        languageProvider: { LanguageStore.savedLanguageID() },
+        clientIdentity: .current,
+        responseObserver: OfflineNetworkObserver.shared
     )
 
     private let configuration: AppConfiguration
     private let transport: HTTPTransport
     private let tokenProvider: @Sendable () -> String?
     private let languageProvider: @Sendable () -> String?
+    private let clientIdentity: APIClientIdentity?
+    private let responseObserver: (any APIResponseObserving)?
 
     init(
         configuration: AppConfiguration,
         transport: HTTPTransport = URLSession.shared,
         tokenProvider: @escaping @Sendable () -> String? = { nil },
-        languageProvider: @escaping @Sendable () -> String? = { nil }
+        languageProvider: @escaping @Sendable () -> String? = { nil },
+        clientIdentity: APIClientIdentity? = nil,
+        responseObserver: (any APIResponseObserving)? = nil
     ) {
         self.configuration = configuration
         self.transport = transport
         self.tokenProvider = tokenProvider
         self.languageProvider = languageProvider
+        self.clientIdentity = clientIdentity
+        self.responseObserver = responseObserver
     }
 
     func makeRequest(for endpoint: Endpoint) -> URLRequest {
@@ -96,6 +104,11 @@ final class APIClient: Sendable {
         if let mobileAppKey = configuration.mobileAppKey {
             request.setValue(mobileAppKey, forHTTPHeaderField: "X-Aiku-App-Key")
         }
+        if let clientIdentity {
+            request.setValue(clientIdentity.deviceID(), forHTTPHeaderField: APIClientIdentity.deviceHeader)
+            request.setValue(APIClientIdentity.platform, forHTTPHeaderField: APIClientIdentity.platformHeader)
+            request.setValue(clientIdentity.appVersion, forHTTPHeaderField: APIClientIdentity.appVersionHeader)
+        }
         if let body = endpoint.body {
             request.httpBody = body
             request.setValue(endpoint.contentType ?? "application/json", forHTTPHeaderField: "Content-Type")
@@ -115,14 +128,16 @@ final class APIClient: Sendable {
     func perform(_ endpoint: Endpoint) async throws -> (Data, HTTPURLResponse) {
         let data: Data
         let response: URLResponse
+        let request = makeRequest(for: endpoint)
         do {
-            (data, response) = try await transport.data(for: makeRequest(for: endpoint))
+            (data, response) = try await transport.data(for: request)
         } catch let error as URLError {
             throw APIError.offline.unlessCancelled(error)
         }
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
+        responseObserver?.observe(request: request, response: httpResponse, data: data)
         return (data, httpResponse)
     }
 
@@ -166,6 +181,21 @@ final class APIClient: Sendable {
             throw APIError.unexpectedBody
         }
     }
+}
+
+struct APIClientIdentity: Sendable {
+    let deviceID: @Sendable () -> String
+    let appVersion: String
+
+    static let deviceHeader = "X-Aiku-Device"
+    static let platformHeader = "X-Aiku-Platform"
+    static let appVersionHeader = "X-Aiku-App-Version"
+    static let platform = "ios"
+
+    static let current: APIClientIdentity = {
+        let installed = InstalledAppVersion.current()
+        return APIClientIdentity(deviceID: { OfflineDevice.shared.deviceID }, appVersion: "\(installed.name) (\(installed.code))")
+    }()
 }
 
 extension APIError {

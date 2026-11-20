@@ -14,6 +14,7 @@ import { faStar } from "@fas"
 import { ctrans } from "@/Composables/useTrans"
 import { formatChatTime } from "@/Composables/chatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
 import ToggleSwitch from "primevue/toggleswitch"
 
 const props = defineProps<{
@@ -49,6 +50,7 @@ interface Draft {
     other_chats?: { ulid: string, shop: string | null, channel: string | null, url: string }[]
     rating: number | null
     reason: string | null
+    aura_angry?: boolean
     translate_for_me?: boolean
     edit_in_my_language?: boolean
     my_language?: string | null
@@ -377,7 +379,7 @@ onBeforeUnmount(stopListening)
     <div v-if="shown || failure" class="text-xs" :class="inline ? '' : 'mb-1.5'">
         <p v-if="failure" class="mb-1 px-1 text-[11px] text-red-600">{{ failure }}</p>
         <template v-if="!hidden">
-            <div v-if="shown && draft" class="relative rounded-xl border border-[--app-accent-muted] bg-[--app-accent-soft] px-3 py-2">
+            <div v-if="shown && draft" class="relative rounded-xl border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-3 py-2">
                 <button v-if="hasStaffText || draft.text" type="button" :disabled="translating" @click="toggleTranslation"
                     class="absolute right-7 top-1.5 rounded px-1 text-[11px] text-gray-400 hover:text-gray-700 disabled:opacity-50"
                     :aria-pressed="showTranslation"
@@ -385,10 +387,11 @@ onBeforeUnmount(stopListening)
                     <FontAwesomeIcon :icon="faLanguage" fixed-width aria-hidden="true" />
                     <span class="sr-only">{{ showTranslation ? ctrans("Show the original") : ctrans("Translate") }}</span>
                 </button>
-                <img src="/art/invader.svg" class="absolute right-2 top-2 h-3.5 select-none"
-                    :alt="draft.assistant?.of ? ctrans('Draft by Aiku, asked by :name', { name: draft.assistant.of }) : ctrans('Draft by Aiku')"
-                    :title="draft.assistant?.of ? ctrans('Draft by Aiku, asked by :name', { name: draft.assistant.of }) + (draft.assistant.client ? ` · ${draft.assistant.client}` : '') : ctrans('Draft by Aiku')" />
-                <p v-if="inline" class="mb-1 mr-12 font-semibold text-gray-800">{{ ctrans("Draft by Aiku") }}</p>
+                <span class="absolute right-1.5 top-1.5 select-none"
+                    :title="draft.aura_angry ? ctrans('Aura is cross: she had suggestions right that you wrote again by hand') : draft.assistant?.of ? ctrans('Draft by Aura, asked by :name', { name: draft.assistant.of }) + (draft.assistant.client ? ` · ${draft.assistant.client}` : '') : ctrans('Draft by Aura')">
+                    <AuraAvatar class="h-5 w-5" :angry="draft.aura_angry" :label="draft.assistant?.of ? ctrans('Draft by Aura, asked by :name', { name: draft.assistant.of }) : ctrans('Draft by Aura')" />
+                </span>
+                <p v-if="inline" class="mb-1 mr-12 font-semibold text-gray-800">{{ ctrans("Draft by Aura") }}</p>
                 <div v-for="action in questionActions" :key="action.index" class="mr-12 flex flex-wrap items-center gap-2 rounded-md border px-2 py-1.5 text-sm"
                     :class="action.type === 'spam' ? 'border-red-200 bg-red-50 text-red-900' : 'border-green-200 bg-green-50 text-green-900'">
                     <FontAwesomeIcon :icon="action.type === 'spam' ? faTrashAlt : faCheck" :class="action.type === 'spam' ? 'text-red-500' : 'text-green-600'" fixed-width aria-hidden="true" />
@@ -446,7 +449,7 @@ onBeforeUnmount(stopListening)
                     </div>
                 </div>
                 <template v-if="inline && editsInMyLanguage && staffTranslation?.editable">
-                    <p class="mt-1 text-[11px] text-gray-500">{{ ctrans("You edit it in :language below. Sent unchanged, the customer gets Aiku's original; changed, your reply is translated into their language before it is sent.", { language: staffTranslation.language }) }}</p>
+                    <p class="mt-1 text-[11px] text-gray-500">{{ ctrans("You edit it in :language below. Sent unchanged, the customer gets Aura's original; changed, your reply is translated into their language before it is sent.", { language: staffTranslation.language }) }}</p>
                     <p class="mt-1.5 text-[11px] font-medium text-gray-500">{{ ctrans("What the customer gets if you send it unchanged") }}</p>
                     <p role="button" tabindex="0" :aria-expanded="draftOpen" class="cursor-pointer whitespace-pre-line text-gray-700" :class="draftOpen ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'"
                         @click="toggleDraft" @keydown.enter.prevent="toggleDraft" @copy="copied">{{ draft.text }}</p>
@@ -491,7 +494,7 @@ onBeforeUnmount(stopListening)
                             class="absolute bottom-full right-0 z-20 mb-1 w-48 rounded-lg border border-gray-200 bg-white p-1 text-[11px] shadow-lg">
                             <p class="px-2 py-1 text-gray-500">{{ ctrans("What was wrong?") }}</p>
                             <button v-for="reason in ratingReasons" :key="reason.key" type="button" @click="rate(draft.rating, reason.key)"
-                                class="block w-full rounded px-2 py-1 text-left text-gray-800 hover:bg-[--app-accent-soft]">
+                                class="block w-full rounded px-2 py-1 text-left text-gray-800 hover:bg-[var(--app-accent-soft)]">
                                 {{ reason.label }}
                             </button>
                         </div>

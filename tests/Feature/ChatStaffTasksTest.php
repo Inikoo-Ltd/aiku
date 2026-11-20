@@ -1265,3 +1265,14 @@ test('a department task raised for one organisation reaches only that organisati
         ->and($sees($member))->toBeTrue()
         ->and($sees($outsider))->toBeFalse();
 });
+
+test('a task the AI assistant raised from a customer conversation opens, with no name on the customer\'s edits', function () {
+    $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Question from a customer', 'assignee_id' => $this->user->id]);
+    $task->update(['description' => 'The customer also asked something else']);
+
+    $webUser = createWebUser($this->customer);
+    $task->audits()->update(['user_type' => class_basename($webUser), 'user_id' => $webUser->id]);
+
+    actingAs($this->user);
+    get(route('grp.tasks.show', $task->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('timeline.0.text', 'Description edited')->where('timeline.0.by', null));
+});

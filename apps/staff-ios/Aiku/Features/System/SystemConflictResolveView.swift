@@ -3,163 +3,174 @@ import SwiftUI
 struct SystemConflictResolveView: View {
     @Environment(AppRouter.self) private var router
     @Environment(ToastCenter.self) private var toasts
-    @State private var store = SystemSyncStore.shared
+    @Environment(\.signOut) private var signOut
+    private let store = SystemSyncStore.shared
+    private let offline = OfflineWork.shared
     let reference: String
+    @State private var isConfirmingRollback = false
+
+    private var operationID: Int? { Int(reference) }
 
     var body: some View {
-        if let conflict = store.conflict(reference: reference) {
-            content(conflict)
-        } else {
-            AppScreen(title: "Resolve conflict", kicker: "Offline & sync") {
-                EmptyState(icon: .checkDouble, title: "Nothing to resolve", message: "There are no conflicts on this phone.")
-            }
-        }
-    }
-
-    private func content(_ conflict: SystemConflict) -> some View {
-        AppScreen(
-            title: conflict.headerTitle,
-            kicker: "Conflict \(store.position(of: conflict.reference)) of \(store.conflicts.count) · \(conflict.kind)"
-        ) {
-            if conflict.isResolved {
-                InlineAlert(tone: .success, title: "Resolved", message: "\(conflict.choiceSummary). Uploaded to Aiku.")
-            } else if conflict.isDiscarded {
-                InlineAlert(tone: .info, title: "Discarded", message: "Your version stays in the sync history.")
+        Group {
+            if let operationID, let entry = store.operation(operationID) {
+                content(entry, id: operationID)
             } else {
-                HStack(spacing: 8) {
-                    AikuButton("Use mine for all", kind: .secondary) {
-                        store.chooseAll(.mine, in: conflict.reference)
-                    }
-                    .accessibilityIdentifier("system.useMineForAll")
-                    AikuButton("Use Aiku for all", kind: .tertiary) {
-                        store.chooseAll(.aiku, in: conflict.reference)
-                    }
-                    .accessibilityIdentifier("system.useAikuForAll")
-                }
-            }
-            SectionHeading("Lines that differ", detail: "\(conflict.lines.count) of \(conflict.totalLines) lines")
-            ForEach(conflict.lines) { line in
-                SystemConflictLineCard(line: line, isEditable: conflict.isOpen) { choice in
-                    store.choose(choice, line: line.id, in: conflict.reference)
-                }
-            }
-            if !conflict.sameLines.isEmpty {
-                SectionHeading("Same on both sides")
-                CardList(conflict.sameLines) { line in
-                    ListRow(line.sko, subtitle: "No conflict", chips: [line.chip]) {
-                        ProductThumb(size: 48, label: "Product photo of \(line.sko)")
-                    } trailing: {
-                        EmptyView()
+                AppScreen(title: "Resolve conflict", kicker: "Offline & sync") {
+                    if store.isLoading || !store.hasLoaded {
+                        Card {
+                            SkeletonRow()
+                        }
+                    } else {
+                        EmptyState(icon: .checkDouble, title: "Nothing to resolve", message: "This action no longer needs you.", actionTitle: "Back") {
+                            router.back()
+                        }
                     }
                 }
             }
-            HelperText("Each differing line offers Mine or Aiku; quantities can also take Both (added up, never above what the line needs). Your choice is shown filled.")
+        }
+        .task {
+            if let operationID, store.operation(operationID) == nil {
+                await store.load()
+            }
+        }
+    }
+
+    private func content(_ entry: OfflineOperationEntry, id: Int) -> some View {
+        AppScreen(title: entry.labels.title.isEmpty ? entry.operationLabel : entry.labels.title, kicker: entry.operationLabel) {
+            if let instruction = OfflineTexts.instruction(entry), entry.isOpen {
+                InlineAlert(tone: .warn, icon: .warning, title: instruction, message: OfflineTexts.reason(entry.reason))
+            } else if let state = OfflineTexts.state(entry) {
+                InlineAlert(tone: state.tone == .danger ? .danger : state.tone, title: state.text, message: OfflineTexts.reason(entry.reason))
+            }
+            Card {
+                details(entry)
+            }
+            if !entry.countedRows.isEmpty {
+                SectionHeading("Counted")
+                Card {
+                    ForEach(Array(entry.countedRows.enumerated()), id: \.offset) { index, row in
+                        if index > 0 {
+                            RowDivider()
+                        }
+                        ShellValueRow(
+                            title: row.locationCode ?? "—",
+                            value: "\(OfflineTexts.quantity(row.counted)) counted · Aiku \(OfflineTexts.quantity(row.quantity))"
+                        )
+                    }
+                }
+            }
+            if let results = store.ranAgain[id], !results.isEmpty {
+                SectionHeading("Ran again after this")
+                CardList(results) { result in
+                    ListRow(
+                        result.labels.title.isEmpty ? result.operationLabel : result.labels.title,
+                        subtitle: OfflineTexts.reason(result.reason),
+                        icon: result.offlineOperation?.icon ?? .sync,
+                        iconTone: .neutral,
+                        chips: [OfflineTexts.state(result)].compactMap { $0 }
+                    )
+                }
+            }
+            if let record = entry.record?.key {
+                AikuButton("Open \(record.type.title(entry.labels.title.components(separatedBy: " · ").first ?? "#\(record.id)"))", kind: .tertiary) {
+                    open(record)
+                }
+            }
         } footer: {
-            if conflict.isOpen {
-                AikuButton(applyTitle(conflict), icon: conflict.canApply ? .check : nil) {
-                    apply(conflict)
+            if entry.isOpen, !entry.allowedResolutions.isEmpty {
+                VStack(spacing: 8) {
+                    ForEach(entry.allowedResolutions, id: \.self) { resolution in
+                        AikuButton(
+                            resolution.label,
+                            icon: resolution == entry.allowedResolutions.first ? .check : nil,
+                            kind: resolution == entry.allowedResolutions.first ? .primary : .tertiary,
+                            isLoading: store.workingOn == id
+                        ) {
+                            Task { await resolve(id, with: resolution) }
+                        }
+                        .accessibilityIdentifier("system.resolve.\(resolution.rawValue)")
+                    }
                 }
-                .disabled(!conflict.canApply)
-                .accessibilityIdentifier("system.applyConflict")
-            }
-        }
-    }
-
-    private func applyTitle(_ conflict: SystemConflict) -> String {
-        if conflict.canApply {
-            return "Apply · \(conflict.choiceSummary)"
-        }
-        return conflict.undecidedCount == 1 ? "Choose for 1 more line" : "Choose for \(conflict.undecidedCount) more lines"
-    }
-
-    private func apply(_ conflict: SystemConflict) {
-        guard store.apply(conflict.reference, at: SystemSyncStore.clockTime()) else { return }
-        toasts.show("\(conflict.headerTitle) resolved · \(conflict.choiceSummary)")
-        router.back()
-    }
-}
-
-struct SystemConflictLineCard: View {
-    let line: SystemConflictLine
-    var isEditable = true
-    let onChoose: (SystemConflictChoice) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 12) {
-                ProductThumb(size: 44, label: "Product photo of \(line.sko)")
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(line.sko)
-                        .font(.aiku(15, .bold))
-                        .foregroundStyle(AikuColor.text)
-                    Text(line.subtitle)
-                        .font(.aiku(12))
-                        .foregroundStyle(AikuColor.text3)
+            } else if entry.canRollback {
+                AikuButton("Roll back", icon: .undo, kind: .danger, isLoading: store.workingOn == id) {
+                    isConfirmingRollback = true
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityIdentifier("system.rollback")
             }
-            HStack(alignment: .top, spacing: 8) {
-                side(title: "Yours", lines: [line.mineSummary], meta: nil, foreground: AikuColor.ink, background: AikuColor.soft)
-                side(title: "Now in Aiku", lines: [line.aikuSummary], meta: line.aikuBy, foreground: AikuColor.text2, background: AikuColor.bg)
-            }
-            HStack(spacing: 6) {
-                ForEach(line.choices, id: \.self) { choice in
-                    choiceButton(choice)
-                }
-            }
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel("Choose for \(line.sko)")
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(AikuColor.surface, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(line.choice == nil ? AikuColor.warnBd : AikuColor.border))
+        .aikuConfirm(
+            "Roll back this action?",
+            isPresented: $isConfirmingRollback,
+            message: "Aiku undoes what this offline action recorded, the same way as undoing it online.",
+            confirmTitle: "Roll back",
+            isDestructive: true
+        ) {
+            Task { await rollback(id) }
+        }
     }
 
-    private func side(title: String, lines: [String], meta: String?, foreground: Color, background: Color) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(title).font(.aiku(12, .bold))
-            ForEach(lines, id: \.self) { text in
-                Text(text).font(.aiku(12))
-            }
-            if let meta {
-                Text(meta)
-                    .font(.aiku(12))
-                    .foregroundStyle(AikuColor.text3)
-            }
+    @ViewBuilder
+    private func details(_ entry: OfflineOperationEntry) -> some View {
+        if let subtitle = entry.labels.subtitle {
+            ShellValueRow(title: "Line", value: subtitle)
+            RowDivider()
         }
-        .foregroundStyle(foreground)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(background, in: RoundedRectangle(cornerRadius: 8))
+        if let requested = entry.requestedQuantity {
+            ShellValueRow(title: "You did", value: OfflineTexts.quantity(requested))
+            RowDivider()
+            ShellValueRow(title: "Aiku recorded", value: OfflineTexts.quantity(entry.appliedQuantity ?? 0))
+        }
+        if entry.countedSince {
+            RowDivider()
+            ShellValueRow(title: "Counted since", value: "Recorded without a stock movement")
+        }
+        if let name = entry.conflictingUser?.name {
+            RowDivider()
+            ShellValueRow(title: "Changed by", value: name)
+        }
+        if let task = entry.taskReference {
+            RowDivider()
+            ShellValueRow(title: "Stock check", value: task)
+        }
+        if let blockedBy = entry.blockedBySequence {
+            RowDivider()
+            ShellValueRow(title: "Waits for", value: "Your earlier action \(blockedBy)")
+        }
     }
 
-    private func choiceButton(_ choice: SystemConflictChoice) -> some View {
-        let isSelected = line.choice == choice
-        return Button {
-            onChoose(choice)
-        } label: {
-            VStack(spacing: 1) {
-                Text(choice.title)
-                    .font(.aiku(11, .semibold))
-                    .opacity(0.85)
-                Text(line.label(for: choice))
-                    .font(.aiku(15, .bold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-            .foregroundStyle(isSelected ? AikuColor.onPrimary : AikuColor.text2)
-            .padding(.horizontal, 4)
-            .frame(maxWidth: .infinity, minHeight: 48)
-            .background(isSelected ? AikuColor.primary : AikuColor.surface, in: RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(isSelected ? Color.clear : AikuColor.borderStrong))
-            .contentShape(RoundedRectangle(cornerRadius: 8))
+    private func resolve(_ id: Int, with resolution: OfflineResolution) async {
+        guard let change = await store.resolve(id, with: resolution) else { return }
+        handle(change)
+        if case .resolved = change {
+            offline.syncNow(.manual)
         }
-        .buttonStyle(.plain)
-        .disabled(!isEditable)
-        .accessibilityLabel("\(choice.title): \(line.label(for: choice))")
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .accessibilityIdentifier("system.choice.\(line.sko).\(choice.rawValue)")
+    }
+
+    private func rollback(_ id: Int) async {
+        guard let change = await store.rollback(id, reason: nil) else { return }
+        handle(change)
+    }
+
+    private func handle(_ change: SystemSyncChange) {
+        switch change {
+        case .resolved:
+            toasts.show("Marked as resolved")
+        case .rolledBack:
+            toasts.show("Rolled back", tone: .neutral)
+        case .refused(let message):
+            toasts.show(message, tone: .danger)
+        case .sessionExpired:
+            signOut()
+        }
+    }
+
+    private func open(_ record: OfflineRecordKey) {
+        switch record.type {
+        case .deliveryNote:
+            router.open(GoodsOutRoute.deliveryNoteID(id: record.id))
+        default:
+            router.open(SystemRoute.syncQueue)
+        }
     }
 }

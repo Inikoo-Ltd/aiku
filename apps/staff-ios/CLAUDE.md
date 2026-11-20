@@ -30,6 +30,16 @@ Most screens still run on sample data so developers can see each screen before i
 - App Transport Security: `NSAllowsLocalNetworking` covers LAN IP addresses but not `.test` hosts.
 - App version, as on Android: on launch and on every return to the app (at most every 10 minutes after an answer) `AppVersionStore` asks `GET mobile/app-version` and compares the `ios` codes with `CFBundleVersion`, which is `CURRENT_PROJECT_VERSION` in `project.yml` (raise it for every build that leaves a developer's machine). Below `minimum_version_code` the whole app is replaced by Update required; below `latest_version_code` Home shows a banner until it is dismissed for that version. The Update button opens `update_url`; without one the screen says to ask a supervisor. Offline or on an error nothing is blocked. The values come from `MOBILE_IOS_*` in the backend `.env`.
 
+## Offline
+
+Line-level work is saved on the phone while offline and synced to Aiku later (design v3, contract in `aiku_droid-work/phase8-offline-contract.md`), the same way as aiku_droid.
+
+- `Core/Offline` holds it. `OfflineDevice` keeps the install's device id and the per-user sequence counter in the Keychain; `APIClient` sends `X-Aiku-Device`, `X-Aiku-Platform: ios` and `X-Aiku-App-Version` on every request, and `OfflineNetworkObserver` records the server `Date` (`ServerClock`) and keeps the last answer of each delivery note, return, stock delivery, location and SKO page per user (`OfflineDownloads`, prefetching assigned notes from My work and the returns being handled).
+- `OfflineQueue` is a file in Application Support (file protection, excluded from backup) that survives sign out and 401; each action keeps its user and warehouse and syncs only under that user. `OfflineSyncEngine` numbers actions when they are first sent, posts `mobile/warehouses/{w}/offline/sync` in batches of 50, resends a missing earlier number as a void, refetches the records that changed and checks still-open outcomes with `mobile/offline/operations?state=open`. `OfflineWork` (main actor) watches the connection and syncs on reconnect, on return to the app, at clock out, every two minutes while work waits and right after an action is queued. There is no background sync while the app is closed yet.
+- Online writes for pick, pick all, not picked, waiting and pack carry a `client_request_id`; when the phone is offline, or earlier work on the same note has not synced, they are planned against the saved copy with the queued work applied and queued instead (pick all becomes an explicit pick, a changed unsent pick replaces the queued one). Status changes stay online and first wait for the note's queued work to sync. Scan to pick matches the line barcodes offline.
+- Offline & sync lists the queue per record with Undo; Resolve conflicts reads the open and recent operations and posts `resolve` or `rollback`. A user signing in on a phone holding someone else's unsent work sends `mobile/offline/waiting-notice` once per session.
+- Goods in, returns, moves and counts already send through the same queue and endpoints on Android; on iOS only Goods out lines queue so far.
+
 ## Structure
 
 - `App`: entry point, sign-in gate (`RootView`), signed-in navigation stack (`MainView`).
@@ -38,7 +48,8 @@ Most screens still run on sample data so developers can see each screen before i
 - `Core/Theme`: the 11 Aiku themes, light and dark `Palette`, `ThemeStore`, `AikuColor` tokens.
 - `Core/UI`: shared pieces. `AppScreen`/`ScreenScaffold` (header, scroll, footer, tab bar, toasts), `MainTabBar`, `ModuleTabs`, `AikuButton`, `StatusChip`, `Card`, `ListRow`, inputs, `.aikuSheet` and `.aikuConfirm`, `ToastCenter`, `InlineAlert`, `EmptyState`, skeletons, `CameraScanScreen`.
 - `Core/Models`: Foundation-only shared types (`Tone`, `Chip`, `AppIcon`, `Session`).
-- `Features/<Area>`: `Login`, `Shell` (Home, My work, Scan, Inbox, Menu, Profile, Appearance), `Inventory`, `Locations`, `GoodsIn`, `GoodsOut`, `Dispatch`, `Fulfilment`, `Clocking`, `System` (sync queue, conflicts, error and empty states; Debug builds open them from Profile › Design states).
+- `Features/<Area>`: `Login`, `Shell` (Home, My work, Scan, Inbox, Menu, Profile, Appearance), `Inventory`, `Locations`, `GoodsIn`, `GoodsOut`, `Dispatch`, `Fulfilment`, `Clocking`, `System` (Offline & sync queue, Resolve conflicts, error and empty states; Debug builds open the states from Profile › Design states).
+- `Core/Offline`: device id, server clock, offline queue, downloads, sync engine and API, `OfflineWork`.
 - `Networking`: `APIClient`, `Endpoint`, `APIError`, auth endpoints.
 
 ## Languages

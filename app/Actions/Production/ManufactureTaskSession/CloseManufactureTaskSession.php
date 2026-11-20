@@ -360,9 +360,12 @@ class CloseManufactureTaskSession extends OrgAction
     {
         $weights  = ManufactureTaskSession::combinedWeights($members);
         $leftPerMember = $members->mapWithKeys(fn (JobOrderItemTask $member) => [$member->id => round(max(0, (float) $member->quantity_required - (float) $member->quantity_made), 3)]);
-        $made     = abs((float) $modelData['quantity_made'] - $leftPerMember->sum()) < 0.001
-            ? $leftPerMember->all()
-            : self::apportion((float) $modelData['quantity_made'], $weights, $wholeUnits);
+        $quantityMade = (float) $modelData['quantity_made'];
+        $made     = match (true) {
+            abs($quantityMade - $leftPerMember->sum()) < 0.001 => $leftPerMember->all(),
+            $quantityMade < $leftPerMember->sum()              => self::capAtLeft(self::apportion($quantityMade, $weights, $wholeUnits), $leftPerMember->all()),
+            default                                            => self::apportion($quantityMade, $weights, $wholeUnits),
+        };
         $rejected = self::apportion((float) ($modelData['quantity_rejected'] ?? 0), $weights, $wholeUnits);
 
         $session->shares()->delete();
@@ -375,6 +378,42 @@ class CloseManufactureTaskSession extends OrgAction
             ]),
         ]);
         $session->unsetRelation('shares');
+
+        return $shares;
+    }
+
+    /**
+     * An entry short of the combined total never gives a line more than it still needs, or the lines
+     * left short can no longer close when the rest is entered. The excess goes to the lines with room,
+     * whole units first, then part units.
+     *
+     * @param array<int, float> $shares keyed by task id
+     * @param array<int, float> $left what each task still needs, keyed by task id
+     * @return array<int, float>
+     */
+    public static function capAtLeft(array $shares, array $left): array
+    {
+        $overflow = 0.0;
+        foreach ($shares as $id => $share) {
+            if ($share > $left[$id]) {
+                $overflow += $share - $left[$id];
+                $shares[$id] = $left[$id];
+            }
+        }
+
+        foreach ([true, false] as $wholeOnly) {
+            $rooms = collect($shares)->map(fn (float $share, int $id) => round($left[$id] - $share, 3))->sortDesc();
+            foreach ($rooms as $id => $room) {
+                $give = min($overflow, $room);
+                if ($wholeOnly) {
+                    $give = floor($give + 1e-9);
+                }
+                if ($give > 0) {
+                    $shares[$id] = round($shares[$id] + $give, 3);
+                    $overflow    = round($overflow - $give, 3);
+                }
+            }
+        }
 
         return $shares;
     }

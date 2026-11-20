@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\Reports\GetChatAiAcceptance;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
@@ -150,6 +151,7 @@ class HandleChatAiDraft
             'other_chats'      => $chatSession instanceof ChatSession && data_get($draft->facts, 'questions') ? self::otherOpenChats($chatSession) : [],
             'rating'      => $draft->rating,
             'reason'      => $draft->rating_reason,
+            'aura_angry'  => GetChatAiAcceptance::make()->isAngryWith($agent->user_id),
             'translate_for_me' => self::isInAnotherLanguage($chatSession, $draft, self::staffLanguageId($agent, request()->user())),
             'edit_in_my_language' => self::editsInOwnLanguage($agent, self::replyLanguageId($chatSession, $draft)),
             'my_language'      => Language::find(self::staffLanguageId($agent, request()->user()) ?? 0)?->name,

@@ -15,7 +15,16 @@ enum ShellDashboardContent {
 }
 
 enum ShellProfileContent {
-    static let syncWaiting = "3 waiting"
+    static func syncValue(waiting: Int, needsYou: Int) -> String {
+        if needsYou > 0 { return OfflineTexts.count(needsYou, "needs you", "need you") }
+        return waiting > 0 ? "\(waiting) waiting" : "All synced"
+    }
+
+    static func signOutWaitingMessage(_ waiting: Int) -> String {
+        waiting == 1
+            ? "1 action from you is waiting; it will be sent when you sign in again on this phone."
+            : "\(waiting) actions from you are waiting; they will be sent when you sign in again on this phone."
+    }
     static let notifications = "On"
     static let fallbackVersion = "1.0.0"
 
