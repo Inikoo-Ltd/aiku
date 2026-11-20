@@ -2039,6 +2039,7 @@ test('images inside a product are named after it, and any name serves the same i
         'header'  => ['name' => 'Header 2', 'code' => 'header-2', 'logo' => $thumb],
         'family'  => ['name' => 'Notebooks', 'code' => 'LBN', 'products' => [['name' => 'Cuaderno Esotérico Buda', 'code' => 'LBN-55', 'web_images' => ['main' => ['gallery' => $card->compact(['avif' => $thumb, 'original' => \App\Actions\Helpers\Images\GetImgProxyUrl::run($image()->resize(0, 600))])]]]]],
         'banner'  => $thumb,
+        'departmentFamilies' => [\App\Http\Resources\Web\FamiliesInDepartmentWebpageResource::make((object) ['slug' => 'csand', 'code' => 'CSAND', 'name' => 'Sable de bougie', 'canonical_url' => 'https://www.shop.test/candles/csand', 'web_images' => ['main' => ['gallery' => ['avif' => $thumb]]]])->resolve()],
     ];
 
     $short = \App\Actions\Helpers\Images\ShortenWebsiteImageUrls::run($page, new \App\Models\Web\Website(['settings' => ['short_image_urls' => true]]), 'https://www.shop.test/some/page');
@@ -2054,7 +2055,8 @@ test('images inside a product are named after it, and any name serves the same i
         ->and($short['banner'])->toMatch('#^https://www\.shop\.test/i/[0-9a-z]+/[A-Za-z0-9_-]{8}/0x600\.avif$#')
         ->and($page['family']['products'][0]['web_images']['main']['gallery'])->toHaveKey('_cig')
         ->and($cardGallery['_cig'])->toBe(['u' => 'https://www.shop.test', 'b' => 'cuaderno-esoterico-buda'])
-        ->and($cardThumb)->toBe(str_replace('leather-dragon-notebook-20x15-cm', 'cuaderno-esoterico-buda', $namedThumb));
+        ->and($cardThumb)->toBe(str_replace('leather-dragon-notebook-20x15-cm', 'cuaderno-esoterico-buda', $namedThumb))
+        ->and($short['departmentFamilies'][0]['image']['avif'])->toBe(str_replace('leather-dragon-notebook-20x15-cm', 'sable-de-bougie', $namedThumb));
 
     \Illuminate\Support\Facades\Http::fake(['media.test/*' => \Illuminate\Support\Facades\Http::response('avif-bytes', 200, ['Content-Type' => 'image/avif'])]);
     $path = fn (string $url) => Str::after($url, 'https://www.shop.test');

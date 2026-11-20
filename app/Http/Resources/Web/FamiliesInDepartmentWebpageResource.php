@@ -17,6 +17,7 @@ use Illuminate\Support\Arr;
 /**
  * @property mixed $web_images
  * @property mixed $slug
+ * @property mixed $code
  * @property mixed $canonical_url
  * @property mixed $name
  */
@@ -42,6 +43,7 @@ class FamiliesInDepartmentWebpageResource extends JsonResource
 
         return [
             'slug'   => $this->slug,
+            'code'   => $this->code,
             'name'   => $this->name,
             'url'    => $this->canonical_url,
             'image'  => Arr::get($this->web_images, 'main.gallery', Arr::get($this->web_images, 'main.original')),

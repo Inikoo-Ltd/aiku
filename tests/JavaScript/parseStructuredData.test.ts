@@ -128,7 +128,17 @@ const collectImageObjects = (value: unknown): Record<string, unknown>[] => {
 	return [...own, ...Object.values(node).flatMap(collectImageObjects)]
 }
 
-test("department and sub-department pages write every picture they show as a licensed image", () => {
+const collectNodesOfType = (value: unknown, type: string): Record<string, unknown>[] => {
+	if (Array.isArray(value)) return value.flatMap((item) => collectNodesOfType(item, type))
+	if (!value || typeof value !== "object") return []
+
+	const node = value as Record<string, unknown>
+	const own = node["@type"] === type ? [node] : []
+
+	return [...own, ...Object.values(node).flatMap((item) => collectNodesOfType(item, type))]
+}
+
+test("department and sub-department pages write every picture they show as a licensed image, in one carousel list only", () => {
 	const source = {
 		website_name: "Ancient Wisdom",
 		terms_url: "https://www.ancientwisdom.biz/terms-and-conditions",
@@ -177,6 +187,9 @@ test("department and sub-department pages write every picture they show as a lic
 	const departmentJson = JSON.stringify(department)
 	assert.ok(departmentJson.includes("/homefragrance#top-families-0"))
 	assert.ok(departmentJson.includes("/homefragrance#department-list-1"))
+
+	assert.deepEqual(collectNodesOfType(department, "ItemList").map((node) => node["@id"]), ["https://www.ancientwisdom.biz/homefragrance#department-list-1"])
+	assert.equal(collectNodesOfType(subDepartment, "ItemList").length, 1)
 
 	const departmentImages = collectImageObjects(department)
 	const subDepartmentImages = collectImageObjects(subDepartment)

@@ -21,7 +21,7 @@ use Tuupola\Base32;
  * served by ServeWebsiteShortImage. Nothing is stored: the link carries the media id, the
  * imgproxy options and an HMAC, and the image route rebuilds the imgproxy URL from them. An
  * original-format link takes its file's extension, unsigned, so Cloudflare caches it.
- * An image inside a product or category (a node with a name, a code and web images) is named after it,
+ * An image inside a product or category (a node with a name, a code and either web images or a slug) is named after it,
  * /i/{media}/{signature}/{width}x{height or o}/{name}.{ext}, the name left out of the signature
  * so a renamed product never breaks a link search engines have kept.
  */
@@ -43,7 +43,7 @@ class ShortenWebsiteImageUrls
 
     private function shortenUrls(array $data, string $baseUrl, string $pattern, string $imgProxyBaseUrl, ?string $name): array
     {
-        if (is_string($data['name'] ?? null) && is_string($data['code'] ?? null) && array_key_exists('web_images', $data)) {
+        if (is_string($data['name'] ?? null) && is_string($data['code'] ?? null) && (array_key_exists('web_images', $data) || is_string($data['slug'] ?? null))) {
             $name = self::fileName($data['name']);
         }
 
