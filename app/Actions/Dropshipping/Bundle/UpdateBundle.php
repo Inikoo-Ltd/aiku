@@ -148,14 +148,21 @@ class UpdateBundle extends OrgAction
                     'rrp'         => $productRrp
                 ]);
 
-                data_set($portfolioData, 'selling_price', $productRrp);
-                data_set($portfolioData, 'customer_price', $productRrp);
                 data_set($portfolioData, 'sku', $this->getSKU($product->refresh()));
+            }
+
+            $portfolioPrice = $productRrp ?? Arr::get($modelData, 'rrp');
+            if ($portfolioPrice !== null) {
+                data_set($portfolioData, 'selling_price', $portfolioPrice);
+                data_set($portfolioData, 'customer_price', $portfolioPrice);
             }
 
             if ($portfolio && $portfolioData) {
                 UpdatePortfolio::make()->action($portfolio, $portfolioData);
-                UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, []);
+                UpdateAndUploadRetinaPortfolioToCurrentChannel::run(
+                    $portfolio,
+                    $portfolioPrice === null ? [] : ['customer_price' => (string) $portfolioPrice]
+                );
             }
 
             $bundle->refresh();

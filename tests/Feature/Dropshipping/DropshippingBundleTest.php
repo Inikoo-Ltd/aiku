@@ -892,3 +892,33 @@ test('the bundle page data says whether its products are locked', function () {
     expect(\App\Http\Resources\CRM\BundleResource::make($bundle)->resolve())
         ->toHaveKey('components_locked', true);
 });
+
+test('an rrp changed on a listed ebay bundle becomes its portfolio price and is sent to ebay with the price', function () {
+    $ebayChannel = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first(),
+        ['reference' => 'bundle_test_ebay_channel']
+    );
+
+    $bundle = StoreBundle::make()->action($ebayChannel, [
+        'name'     => 'eBay Bundle',
+        'rrp'      => 11.5,
+        'products' => [['product_id' => $this->product->id, 'quantity' => 1]],
+    ]);
+
+    $portfolio = Portfolio::where('bundle_id', $bundle->id)->firstOrFail();
+    $portfolio->update(['platform_product_id' => '360483695011', 'platform_status' => true]);
+
+    \App\Actions\Dropshipping\Ebay\Product\UpdateEbayOffer::mock()
+        ->shouldReceive('handle')
+        ->once()
+        ->withArgs(fn (Portfolio $sentPortfolio, bool $withTitle, bool $withPrice) => $withPrice && (float) $sentPortfolio->customer_price === 16.99)
+        ->andReturnNull();
+
+    UpdateBundle::make()->action($bundle, ['rrp' => 16.99]);
+
+    $portfolio->refresh();
+    expect((float) $bundle->bundleable->refresh()->rrp)->toEqual(16.99)
+        ->and((float) $portfolio->customer_price)->toEqual(16.99)
+        ->and((float) $portfolio->selling_price)->toEqual(16.99);
+});

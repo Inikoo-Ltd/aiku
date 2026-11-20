@@ -1005,6 +1005,7 @@ const syncBundleToPlatform = (payload: any) => {
 		{
 			title: payload.name,
 			description: payload.description,
+			price: payload.rrp,
 		},
 		{
 			preserveScroll: true,
